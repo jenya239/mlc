@@ -626,5 +626,68 @@ module MLC
         return identifier unless identifier.is_a?(String) && !identifier.empty?
         (@current_import_aliases && @current_import_aliases[identifier]) || identifier
       end
+
+      # Get constructor info with generic type substitutions
+      def constructor_info_for(name, scrutinee_type)
+        info = @sum_type_constructors[name]
+        return unless info
+
+        substitutions = generic_substitutions(info, scrutinee_type)
+        return info if substitutions.empty?
+
+        substituted_params = info.param_types.map do |type|
+          apply_type_substitutions(type, substitutions)
+        end
+        substituted_ret_type = apply_type_substitutions(info.ret_type, substitutions)
+
+        FunctionInfo.new(info.name, substituted_params, substituted_ret_type, info.type_params)
+      end
+
+      # Compute generic type variable substitutions
+      def generic_substitutions(info, scrutinee_type)
+        return {} unless info.type_params&.any?
+        return {} unless scrutinee_type.is_a?(HighIR::GenericType)
+
+        base_match = @type_checker_service.type_name(info.ret_type) == @type_checker_service.type_name(scrutinee_type.base_type)
+        return {} unless base_match
+
+        substitutions = {}
+        info.type_params.each_with_index do |param, idx|
+          actual_arg = scrutinee_type.type_args[idx]
+          substitutions[param.name] = actual_arg if actual_arg
+        end
+        substitutions
+      end
+
+      # Apply type variable substitutions recursively
+      def apply_type_substitutions(type, substitutions)
+        case type
+        when HighIR::TypeVariable
+          substitutions[type.name] || type
+        when HighIR::GenericType
+          base = apply_type_substitutions(type.base_type, substitutions)
+          args = type.type_args.map { |arg| apply_type_substitutions(arg, substitutions) }
+          HighIR::Builder.generic_type(base, args)
+        when HighIR::ArrayType
+          HighIR::Builder.array_type(apply_type_substitutions(type.element_type, substitutions))
+        when HighIR::FunctionType
+          params = type.params.map { |param| {name: param[:name], type: apply_type_substitutions(param[:type], substitutions)} }
+          ret_type = apply_type_substitutions(type.ret_type, substitutions)
+          HighIR::Builder.function_type(params, ret_type)
+        when HighIR::RecordType
+          fields = type.fields.map { |field| {name: field[:name], type: apply_type_substitutions(field[:type], substitutions)} }
+          HighIR::Builder.record_type(type.name, fields)
+        when HighIR::SumType
+          variants = type.variants.map do |variant|
+            fields = Array(variant[:fields]).map do |field|
+              {name: field[:name], type: apply_type_substitutions(field[:type], substitutions)}
+            end
+            {name: variant[:name], fields: fields}
+          end
+          HighIR::Builder.sum_type(type.name, variants)
+        else
+          type
+        end
+      end
     end
 end
