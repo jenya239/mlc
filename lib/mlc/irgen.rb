@@ -68,6 +68,7 @@ require_relative "services/type_resolution_service"
 require_relative "services/function_registration_service"
 require_relative "services/sum_type_constructor_service"
 require_relative "services/type_unification_service"
+require_relative "services/lambda_type_inference_service"
 
 module MLC
   class IRGen
@@ -174,6 +175,8 @@ module MLC
           type_checker: @type_checker_service,
           sum_type_constructors: @sum_type_constructors
         )
+        # Phase 18-C: Lambda type inference service (no dependencies)
+        @lambda_type_inference_service = Services::LambdaTypeInferenceService.new
 
         # Initialize type system components (after services)
         @type_constraint_solver ||= TypeSystem::TypeConstraintSolver.new(
@@ -392,48 +395,14 @@ module MLC
         end
       end
 
+      # Phase 18-C: Delegate to LambdaTypeInferenceService
       def expected_lambda_param_types(object_ir, member_name, transformed_args, index)
-        return [] unless object_ir && member_name
-
-        object_type = object_ir.type
-        return [] unless object_type
-
-        case member_name
-        when "map"
-          if index.zero? && object_type.is_a?(HighIR::ArrayType)
-            [object_type.element_type]
-          else
-            []
-          end
-        when "filter"
-          if index.zero? && object_type.is_a?(HighIR::ArrayType)
-            [object_type.element_type]
-          else
-            []
-          end
-        when "fold"
-          if index == 1 && object_type.is_a?(HighIR::ArrayType)
-            accumulator_type = transformed_args.first&.type
-            element_type = object_type.element_type
-            accumulator_type ? [accumulator_type, element_type] : []
-          else
-            []
-          end
-        else
-          []
-        end
+        @lambda_type_inference_service.expected_lambda_param_types(object_ir, member_name, transformed_args, index)
       end
 
+      # Phase 18-C: Delegate to LambdaTypeInferenceService
       def lambda_return_type(arg)
-        return nil unless arg
-
-        if arg.respond_to?(:function_type) && arg.function_type
-          arg.function_type.ret_type
-        elsif arg.respond_to?(:type) && arg.type.is_a?(HighIR::FunctionType)
-          arg.type.ret_type
-        else
-          nil
-        end
+        @lambda_type_inference_service.lambda_return_type(arg)
       end
 
       def transform_block_expr(block_expr)
