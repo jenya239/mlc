@@ -5,22 +5,9 @@ module MLC
       # FunctionTransformer
       # Function and type declaration transformation
       # Auto-extracted from to_core.rb during refactoring
-      # Phase 17: Module context methods migrated to ModuleContextService
+      # Phase 17-A: Module context methods migrated to ModuleContextService
+      # Phase 17-B: Import alias methods migrated to ModuleContextService
       module FunctionTransformer
-      def build_module_alias_keys(function_name, module_info, module_alias)
-        return [] unless function_name
-
-        prefixes = module_alias_prefixes(module_info&.name, module_alias)
-        prefixes.map { |prefix| "#{prefix}.#{function_name}" }
-      end
-
-      def module_alias_prefixes(module_name, module_alias)
-        prefixes = []
-        prefixes << module_name if module_name && !module_name.empty?
-        prefixes << module_alias if module_alias && !module_alias.empty?
-        prefixes.uniq
-      end
-
       def ensure_function_signature(func_decl)
         register_function_signature(func_decl)
         @function_registry.fetch(func_decl.name)
@@ -132,7 +119,7 @@ module MLC
           with_type_params(type_params) do
             param_types = decl.params.map { |param| transform_type(param.type) }
             ret_type = transform_type(decl.ret_type)
-            alias_keys = build_module_alias_keys(decl.name, module_info, module_alias)
+            alias_keys = @module_context_service.build_module_alias_keys(decl.name, module_info, module_alias)
             @function_registry.register(
               decl.name,
               FunctionInfo.new(decl.name, param_types, ret_type, type_params),
@@ -150,7 +137,7 @@ module MLC
 
       def register_module_import(import_decl, current_module)
         module_name = import_decl.path
-        prefixes = module_alias_prefixes(module_name, import_decl.alias)
+        prefixes = @module_context_service.module_alias_prefixes(module_name, import_decl.alias)
         return if prefixes.empty?
 
         selected_items = import_decl.items
