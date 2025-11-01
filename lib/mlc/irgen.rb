@@ -426,7 +426,10 @@ module MLC
 
       def module_member_function_entry(object_node, member_name)
         return unless object_node.is_a?(AST::VarRef)
-        module_member_entry(object_node.name, member_name)
+
+        # Resolve import alias and lookup member in FunctionRegistry
+        resolved = resolve_module_alias(object_node.name)
+        @function_registry.fetch_entry_for_member(resolved, member_name)
       end
 
 
@@ -616,6 +619,12 @@ module MLC
         kind = pattern.kind
         return false if kind == :regex
         %i[constructor wildcard var].include?(kind)
+      end
+
+      # Resolve module import alias
+      def resolve_module_alias(identifier)
+        return identifier unless identifier.is_a?(String) && !identifier.empty?
+        (@current_import_aliases && @current_import_aliases[identifier]) || identifier
       end
     end
 end

@@ -104,21 +104,6 @@ module MLC
 
 
 
-      def resolve_module_alias(identifier)
-        return identifier unless identifier.is_a?(String) && !identifier.empty?
-        (@current_import_aliases && @current_import_aliases[identifier]) || identifier
-      end
-
-      def module_member_entry(container_name, member_name)
-        return unless container_name && member_name
-        resolved = resolve_module_alias(container_name)
-        @function_registry.fetch_entry_for_member(resolved, member_name)
-      end
-
-      def module_member_info(container_name, member_name)
-        entry = module_member_entry(container_name, member_name)
-        entry&.info
-      end
 
 
       def with_current_node(node)
