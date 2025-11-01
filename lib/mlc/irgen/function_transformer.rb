@@ -10,12 +10,17 @@ module MLC
       # Phase 17-C: infer_type_kind migrated to TypeChecker
       # Phase 17-D: Type resolution methods migrated to TypeResolutionService
       # Phase 17-E: with_import_aliases migrated to ModuleContextService
+      # Phase 17-F: Function signature registration migrated to FunctionRegistrationService
       module FunctionTransformer
+      # Ensure function signature exists in registry
+      # Wrapper that transforms types and delegates registration to service
       def ensure_function_signature(func_decl)
         register_function_signature(func_decl)
         @function_registry.fetch(func_decl.name)
       end
 
+      # Register function signature with type transformation
+      # Transforms types using local context, then delegates registration to service
       def register_function_signature(func_decl)
         if @function_registry.registered?(func_decl.name)
           return @function_registry.fetch(func_decl.name)
@@ -28,16 +33,13 @@ module MLC
         with_type_params(type_params) do
           param_types = func_decl.params.map { |param| transform_type(param.type) }
           ret_type = transform_type(func_decl.ret_type)
-          info = FunctionInfo.new(func_decl.name, param_types, ret_type, type_params)
-          @function_registry.register(
-            func_decl.name,
-            info,
-            module_name: @module_context_service.current_module_name,
-            namespace: @module_context_service.current_module_namespace,
-            exported: func_decl.exported,
-            external: func_decl.external,
-            ast_node: func_decl,
-            origin: func_decl.origin
+
+          # Delegate registration to service
+          info = @function_registration_service.register_function_signature(
+            func_decl,
+            param_types,
+            ret_type,
+            type_params
           )
         end
 

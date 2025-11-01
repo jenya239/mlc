@@ -65,6 +65,7 @@ require_relative "services/generic_call_resolver_service"
 require_relative "services/purity_analyzer"
 require_relative "services/module_context_service"
 require_relative "services/type_resolution_service"
+require_relative "services/function_registration_service"
 
 module MLC
   class IRGen
@@ -153,6 +154,10 @@ module MLC
           function_registry: @function_registry,
           type_registry: @type_registry,
           type_checker: @type_checker_service
+        )
+        @function_registration_service = Services::FunctionRegistrationService.new(
+          function_registry: @function_registry,
+          module_context_service: @module_context_service
         )
 
         # Initialize type system components (after services)
