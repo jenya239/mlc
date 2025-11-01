@@ -129,6 +129,7 @@ module MLC
         # @context_manager_service deleted - state management, not business logic
         @type_checker_service = Services::TypeChecker.new(
           function_registry: @function_registry,
+          type_decl_table: @type_decl_table,
           event_bus: @event_bus,
           current_node_proc: -> { @current_node }
         )

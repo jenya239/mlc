@@ -30,8 +30,13 @@ module MLC
 
       NUMERIC_PRIMITIVES = %w[i32 f32 i64 f64 u32 u64].freeze
 
-      def initialize(function_registry:, event_bus: nil, current_node_proc: nil)
+      BUILTIN_CONSTRAINTS = {
+        "Numeric" => %w[i32 f32 i64 f64 u32 u64]
+      }.freeze
+
+      def initialize(function_registry:, type_decl_table: nil, event_bus: nil, current_node_proc: nil)
         @function_registry = function_registry
+        @type_decl_table = type_decl_table || {}
         @event_bus = event_bus
         @current_node_proc = current_node_proc
       end
@@ -158,6 +163,56 @@ module MLC
         qualified = [container_name, member_name].join(".")
         entry = @function_registry.fetch_entry(qualified)
         entry&.info
+      end
+
+      # Type constraint validation
+      def validate_constraint_name(name)
+        return if name.nil? || name.empty?
+        return if BUILTIN_CONSTRAINTS.key?(name)
+
+        type_error("Unknown constraint '#{name}'")
+      end
+
+      def type_satisfies_constraint?(constraint, type_name)
+        allowed = BUILTIN_CONSTRAINTS[constraint]
+        allowed && allowed.include?(type_name)
+      end
+
+      def extract_actual_type_name(type_node)
+        case type_node
+        when AST::PrimType
+          name = type_node.name
+          return nil if name.nil?
+          return nil if name[0]&.match?(/[A-Z]/)
+          name
+        else
+          nil
+        end
+      end
+
+      def normalize_type_params(params)
+        params.map do |tp|
+          name = tp.respond_to?(:name) ? tp.name : tp
+          constraint = tp.respond_to?(:constraint) ? tp.constraint : nil
+          validate_constraint_name(constraint)
+          HighIR::TypeParam.new(name: name, constraint: constraint)
+        end
+      end
+
+      def validate_type_constraints(base_name, actual_type_nodes)
+        decl = @type_decl_table[base_name]
+        return unless decl && decl.type_params.any?
+
+        decl.type_params.zip(actual_type_nodes).each do |param_info, actual_node|
+          next unless param_info.respond_to?(:constraint) && param_info.constraint && !param_info.constraint.empty?
+
+          actual_name = extract_actual_type_name(actual_node)
+          next if actual_name.nil?
+
+          unless type_satisfies_constraint?(param_info.constraint, actual_name)
+            type_error("Type '#{actual_name}' does not satisfy constraint '#{param_info.constraint}' for '#{param_info.name}'")
+          end
+        end
       end
 
       # Backwards compatibility aliases

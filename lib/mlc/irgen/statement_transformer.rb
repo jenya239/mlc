@@ -30,7 +30,7 @@ module MLC
           saved_var_types = @var_type_registry.snapshot unless preserve_scope
           if block.stmts.empty?
             if require_value
-              type_error("Block must end with an expression")
+              @type_checker_service.type_error("Block must end with an expression")
             else
               return HighIR::Builder.block_expr(
                 [],
@@ -89,7 +89,7 @@ module MLC
       def transform_for_statement(stmt)
         iterable_ir = transform_expression(stmt.iterable)
         saved = @var_type_registry.get(stmt.var_name)
-        element_type = infer_iterable_type(iterable_ir)
+        element_type = @type_inference_service.infer_iterable_type(iterable_ir)
         @var_type_registry.set(stmt.var_name, element_type)
         body_ir = within_loop_scope { transform_statement_block(stmt.body, preserve_scope: true) }
 
@@ -104,7 +104,7 @@ module MLC
 
       def transform_if_statement(condition_node, then_node, else_node)
         condition_ir = transform_expression(condition_node)
-        ensure_boolean_type(condition_ir.type, "if condition", node: condition_node)
+        @type_checker_service.ensure_boolean_type(condition_ir.type, "if condition", node: condition_node)
         then_ir = transform_statement_block(then_node)
         else_ir = else_node ? transform_statement_block(else_node) : nil
         HighIR::Builder.if_stmt(condition_ir, then_ir, else_ir)
@@ -112,18 +112,18 @@ module MLC
 
       def transform_return_statement(stmt)
         expected = current_function_return
-        type_error("return statement outside of function") unless expected
+        @type_checker_service.type_error("return statement outside of function") unless expected
 
         expr_ir = stmt.expr ? transform_expression(stmt.expr) : nil
 
-        if void_type?(expected)
-          type_error("return value not allowed in void function", node: stmt) if expr_ir
+        if @type_inference_service.void_type?(expected)
+          @type_checker_service.type_error("return value not allowed in void function", node: stmt) if expr_ir
         else
           unless expr_ir
-            expected_name = describe_type(expected)
-            type_error("return statement requires a value of type #{expected_name}", node: stmt)
+            expected_name = @type_checker_service.describe_type(expected)
+            @type_checker_service.type_error("return statement requires a value of type #{expected_name}", node: stmt)
           end
-          ensure_compatible_type(expr_ir.type, expected, "return statement", node: stmt)
+          @type_checker_service.ensure_compatible_type(expr_ir.type, expected, "return statement", node: stmt)
         end
 
         HighIR::Builder.return_stmt(expr_ir)
@@ -162,7 +162,7 @@ module MLC
               nested = transform_block(stmt, require_value: false)
               acc.concat(nested.statements)
             else
-              type_error("Unsupported statement: #{stmt.class}", node: stmt)
+              @type_checker_service.type_error("Unsupported statement: #{stmt.class}", node: stmt)
             end
           end
         end
@@ -170,7 +170,7 @@ module MLC
 
       def transform_while_statement(condition_node, body_node)
         condition_ir = transform_expression(condition_node)
-        ensure_boolean_type(condition_ir.type, "while condition", node: condition_node)
+        @type_checker_service.ensure_boolean_type(condition_ir.type, "while condition", node: condition_node)
         body_ir = within_loop_scope { transform_statement_block(body_node, preserve_scope: true) }
         HighIR::Builder.while_stmt(condition_ir, body_ir)
       end
@@ -181,10 +181,10 @@ module MLC
         var_type = if stmt.type
                      explicit_type = transform_type(stmt.type)
                      if value_ir.is_a?(HighIR::RecordExpr) && value_ir.type_name == "record"
-                       actual_type_name = type_name(explicit_type)
+                       actual_type_name = @type_checker_service.type_name(explicit_type)
                        value_ir = HighIR::Builder.record(actual_type_name, value_ir.fields, explicit_type)
                      else
-                       ensure_compatible_type(value_ir.type, explicit_type, "variable '#{stmt.name}' initialization")
+                       @type_checker_service.ensure_compatible_type(value_ir.type, explicit_type, "variable '#{stmt.name}' initialization")
                      end
                      explicit_type
                    else
@@ -203,27 +203,27 @@ module MLC
 
       def transform_assignment_statement(stmt)
         unless stmt.target.is_a?(AST::VarRef)
-          type_error("Assignment target must be a variable", node: stmt)
+          @type_checker_service.type_error("Assignment target must be a variable", node: stmt)
         end
 
         target_name = stmt.target.name
         existing_type = @var_type_registry.get(target_name)
-        type_error("Assignment to undefined variable '#{target_name}'", node: stmt) unless existing_type
+        @type_checker_service.type_error("Assignment to undefined variable '#{target_name}'", node: stmt) unless existing_type
 
         value_ir = transform_expression(stmt.value)
-        ensure_compatible_type(value_ir.type, existing_type, "assignment to '#{target_name}'")
+        @type_checker_service.ensure_compatible_type(value_ir.type, existing_type, "assignment to '#{target_name}'")
         @var_type_registry.set(target_name, existing_type)
         target_ir = HighIR::Builder.var(target_name, existing_type)
         [HighIR::Builder.assignment_stmt(target_ir, value_ir)]
       end
 
       def transform_break_statement(stmt)
-        type_error("'break' used outside of loop", node: stmt) if @loop_depth.to_i <= 0
+        @type_checker_service.type_error("'break' used outside of loop", node: stmt) if @loop_depth.to_i <= 0
         [HighIR::Builder.break_stmt]
       end
 
       def transform_continue_statement(stmt)
-        type_error("'continue' used outside of loop", node: stmt) if @loop_depth.to_i <= 0
+        @type_checker_service.type_error("'continue' used outside of loop", node: stmt) if @loop_depth.to_i <= 0
         [HighIR::Builder.continue_stmt]
       end
 

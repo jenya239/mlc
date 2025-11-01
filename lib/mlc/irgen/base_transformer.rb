@@ -13,7 +13,7 @@ module MLC
           FunctionInfo.new("sqrt", [f32], f32)
         else
           if IO_RETURN_TYPES.key?(name)
-            FunctionInfo.new(name, [], io_return_type(name))
+            FunctionInfo.new(name, [], @type_checker_service.io_return_type(name))
           else
             nil
           end
@@ -35,36 +35,12 @@ module MLC
         FunctionInfo.new(info.name, substituted_params, substituted_ret_type, info.type_params)
       end
 
-      def describe_type(type)
-        normalized_type_name(type_name(type)) || "unknown"
-      end
-
-      def ensure_argument_count(member, args, expected)
-        return if args.length == expected
-
-        type_error("Method '#{member}' expects #{expected} argument(s), got #{args.length}")
-      end
 
       def ensure_function_signature(func_decl)
         register_function_signature(func_decl)
         @function_registry.fetch(func_decl.name)
       end
 
-      def ensure_type!(type, message, node: nil)
-        type_error(message, node: node) unless type
-      end
-
-      def extract_actual_type_name(type_node)
-        case type_node
-        when AST::PrimType
-          name = type_node.name
-          return nil if name.nil?
-          return nil if name[0]&.match?(/[A-Z]/)
-          name
-        else
-          nil
-        end
-      end
 
       def fresh_temp_name
         name = "__tmp#{@temp_counter}"
@@ -93,45 +69,20 @@ module MLC
         return true if current_type_params.any? { |tp| tp.name == name }
 
         current_lambda_param_types.any? do |param_type|
-          type_name(param_type) == name
+          @type_checker_service.type_name(param_type) == name
         end
       end
 
-      def io_return_type(name)
-        case IO_RETURN_TYPES[name]
-        when "i32"
-          HighIR::Builder.primitive_type("i32")
-        when "string"
-          HighIR::Builder.primitive_type("string")
-        when :array_of_string
-          HighIR::ArrayType.new(element_type: HighIR::Builder.primitive_type("string"))
-        else
-          HighIR::Builder.primitive_type("i32")
-        end
-      end
 
-      # Delegate type predicate and validation methods to services
-      def void_type?(type)
-        @type_inference_service.void_type?(type)
-      end
 
-      def ensure_compatible_type(actual, expected, context, node: nil)
-        @type_checker_service.ensure_compatible_type(actual, expected, context, node: node)
-      end
 
-      def ensure_boolean_type(type, context, node: nil)
-        @type_checker_service.ensure_boolean_type(type, context, node: node)
-      end
 
-      def infer_iterable_type(iterable_ir, node: nil)
-        @type_inference_service.infer_iterable_type(iterable_ir, node: node)
-      end
 
       def generic_substitutions(info, scrutinee_type)
         return {} unless info.type_params&.any?
         return {} unless scrutinee_type.is_a?(HighIR::GenericType)
 
-        base_match = type_name(info.ret_type) == type_name(scrutinee_type.base_type)
+        base_match = @type_checker_service.type_name(info.ret_type) == @type_checker_service.type_name(scrutinee_type.base_type)
         return {} unless base_match
 
         substitutions = {}
@@ -176,40 +127,9 @@ module MLC
         @function_registry.fetch(name) || @sum_type_constructors[name] || builtin_function_info(name)
       end
 
-      def normalize_type_params(params)
-        params.map do |tp|
-          with_current_node(tp) do
-            name = tp.respond_to?(:name) ? tp.name : tp
-            constraint = tp.respond_to?(:constraint) ? tp.constraint : nil
-            validate_constraint_name(constraint)
-            HighIR::TypeParam.new(name: name, constraint: constraint)
-          end
-        end
-      end
 
-      def normalized_type_name(name)
-        case name
-        when "str"
-          "string"
-        else
-          name
-        end
-      end
 
-      def type_error(message, node: nil, origin: nil)
-        origin ||= node&.origin
-        origin ||= @current_node&.origin
-        raise MLC::CompileError.new(message, origin: origin)
-      end
 
-      def type_name(type)
-        type&.name
-      end
-
-      def type_satisfies_constraint?(constraint, type_name)
-        allowed = BUILTIN_CONSTRAINTS[constraint]
-        allowed && allowed.include?(type_name)
-      end
 
       def resolve_module_alias(identifier)
         return identifier unless identifier.is_a?(String) && !identifier.empty?
@@ -227,41 +147,6 @@ module MLC
         entry&.info
       end
 
-      def validate_constraint_name(name)
-        return if name.nil? || name.empty?
-        return if BUILTIN_CONSTRAINTS.key?(name)
-
-        type_error("Unknown constraint '#{name}'")
-      end
-
-      def validate_function_call(info, args, name)
-        expected = info.param_types || []
-        return if expected.empty?
-
-        if expected.length != args.length
-          type_error("Function '#{name}' expects #{expected.length} argument(s), got #{args.length}")
-        end
-
-        expected.each_with_index do |type, index|
-          ensure_compatible_type(args[index].type, type, "argument #{index + 1} of '#{name}'")
-        end
-      end
-
-      def validate_type_constraints(base_name, actual_type_nodes)
-        decl = @type_decl_table[base_name]
-        return unless decl && decl.type_params.any?
-
-        decl.type_params.zip(actual_type_nodes).each do |param_info, actual_node|
-          next unless param_info.respond_to?(:constraint) && param_info.constraint && !param_info.constraint.empty?
-
-          actual_name = extract_actual_type_name(actual_node)
-          next if actual_name.nil?
-
-          unless type_satisfies_constraint?(param_info.constraint, actual_name)
-            type_error("Type '#{actual_name}' does not satisfy constraint '#{param_info.constraint}' for '#{param_info.name}'")
-          end
-        end
-      end
 
       def with_current_node(node)
         previous = @current_node

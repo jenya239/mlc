@@ -91,7 +91,7 @@ module MLC
           (params != type.params || ret_type != type.ret_type) ? HighIR::Builder.function_type(params, ret_type) : type
         else
           # For primitive types and others, replace if name matches
-          type_name(type) == resolved_name ? resolved_type : type
+          @type_checker_service.type_name(type) == resolved_name ? resolved_type : type
         end
       end
 
@@ -101,7 +101,7 @@ module MLC
         end
 
         # Set type parameters context before transforming types
-        type_params = normalize_type_params(func_decl.type_params)
+        type_params = @type_checker_service.normalize_type_params(func_decl.type_params)
 
         info = nil
         with_type_params(type_params) do
@@ -142,7 +142,7 @@ module MLC
                 item: name,
                 origin: import_origin
               )
-              type_error("Unknown item '#{name}' in stdlib import '#{import_decl.path}'", node: import_decl, origin: import_origin)
+              @type_checker_service.type_error("Unknown item '#{name}' in stdlib import '#{import_decl.path}'", node: import_decl, origin: import_origin)
             end,
             event_bus: @event_bus
           }
@@ -154,7 +154,7 @@ module MLC
         return unless decl
         return if @function_registry.registered?(decl.name)
 
-        type_params = normalize_type_params(decl.type_params)
+        type_params = @type_checker_service.normalize_type_params(decl.type_params)
 
         with_current_node(decl) do
           with_type_params(type_params) do
@@ -223,7 +223,7 @@ module MLC
       end
 
       def build_type_decl_for_import(decl)
-        type_params = normalize_type_params(decl.type_params)
+        type_params = @type_checker_service.normalize_type_params(decl.type_params)
 
         type = nil
 
@@ -249,7 +249,7 @@ module MLC
         return unless sum_type.respond_to?(:variants)
 
         type_decl = @type_decl_table[sum_type_name]
-        type_params = type_decl ? normalize_type_params(type_decl.type_params) : []
+        type_params = type_decl ? @type_checker_service.normalize_type_params(type_decl.type_params) : []
 
         type_param_vars = type_params.map do |tp|
           HighIR::Builder.type_variable(tp.name, constraint: tp.constraint)
@@ -296,13 +296,13 @@ module MLC
       def transform_function(func)
         with_current_node(func) do
           # Normalize and set type params FIRST, before transforming any types
-          type_params = normalize_type_params(func.type_params)
+          type_params = @type_checker_service.normalize_type_params(func.type_params)
           with_type_params(type_params) do
             signature = ensure_function_signature(func)
             param_types = signature.param_types
 
             if param_types.length != func.params.length
-              type_error("Function '#{func.name}' expects #{param_types.length} parameter(s), got #{func.params.length}")
+              @type_checker_service.type_error("Function '#{func.name}' expects #{param_types.length} parameter(s), got #{func.params.length}")
             end
 
             params = func.params.each_with_index.map do |param, index|
@@ -342,10 +342,10 @@ module MLC
 
               body = transform_expression(func.body)
 
-              unless void_type?(ret_type)
-                ensure_compatible_type(body.type, ret_type, "function '#{func.name}' result")
+              unless @type_inference_service.void_type?(ret_type)
+                @type_checker_service.ensure_compatible_type(body.type, ret_type, "function '#{func.name}' result")
               else
-                type_error("function '#{func.name}' should not return a value") unless void_type?(body.type)
+                @type_checker_service.type_error("function '#{func.name}' should not return a value") unless @type_inference_service.void_type?(body.type)
               end
 
               result_func = HighIR::Func.new(
@@ -504,7 +504,7 @@ module MLC
           when AST::GenericType
             # Validate generic constraints before lowering
             base_name = type.base_type.respond_to?(:name) ? type.base_type.name : nil
-            validate_type_constraints(base_name, type.type_params) if base_name
+            @type_checker_service.validate_type_constraints(base_name, type.type_params) if base_name
 
             # Transform to HighIR::GenericType with proper type arguments
             base_type = transform_type(type.base_type)
@@ -539,7 +539,7 @@ module MLC
       def transform_type_decl(decl)
         with_current_node(decl) do
           # Normalize type params first
-          type_params = normalize_type_params(decl.type_params)
+          type_params = @type_checker_service.normalize_type_params(decl.type_params)
 
           type = nil
 
