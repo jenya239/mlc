@@ -9,6 +9,7 @@ module MLC
       # Phase 17-B: Import alias methods migrated to ModuleContextService
       # Phase 17-C: infer_type_kind migrated to TypeChecker
       # Phase 17-D: Type resolution methods migrated to TypeResolutionService
+      # Phase 17-E: with_import_aliases migrated to ModuleContextService
       module FunctionTransformer
       def ensure_function_signature(func_decl)
         register_function_signature(func_decl)
@@ -300,7 +301,7 @@ module MLC
         }
 
         @module_context_service.with_current_module(module_name) do
-          with_import_aliases(context[:import_aliases]) do
+          @module_context_service.with_import_aliases(context[:import_aliases]) do
             build_program_pass_manager.run(context)
           end
         end
@@ -321,14 +322,6 @@ module MLC
           manager.register(:preregister_functions, method(:pass_preregister_functions))
           manager.register(:lower_declarations, method(:pass_lower_declarations))
         end
-      end
-
-      def with_import_aliases(aliases)
-        previous = @current_import_aliases
-        @current_import_aliases = aliases
-        yield
-      ensure
-        @current_import_aliases = previous
       end
 
       def pass_collect_imports(context)

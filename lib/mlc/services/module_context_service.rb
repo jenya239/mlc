@@ -3,20 +3,25 @@
 module MLC
   module Services
     # ModuleContextService - Module and namespace context management
-    # Phase 17: Extracted from IRGen FunctionTransformer
+    # Phase 17-A: Module context methods extracted from FunctionTransformer
+    # Phase 17-B: Import alias helper methods extracted from FunctionTransformer
+    # Phase 17-E: Import alias context scoping extracted from FunctionTransformer
     #
     # Responsibilities:
     # - Track current module name and namespace
+    # - Track current import aliases
     # - Derive module namespace from module name
-    # - Provide scoped access to module context
+    # - Provide scoped access to module and import alias context
+    # - Build module alias keys for functions
     #
     # Dependencies: None (pure state management)
     class ModuleContextService
-      attr_reader :current_module_name, :current_module_namespace
+      attr_reader :current_module_name, :current_module_namespace, :current_import_aliases
 
       def initialize
         @current_module_name = nil
         @current_module_namespace = nil
+        @current_import_aliases = {}
       end
 
       # Execute block within a module context
@@ -36,6 +41,20 @@ module MLC
       ensure
         @current_module_name = previous_name
         @current_module_namespace = previous_namespace
+      end
+
+      # Execute block with import aliases context
+      # Restores previous context after block completes
+      #
+      # @param aliases [Hash] Import alias mapping
+      # @yield Block to execute with import aliases
+      # @return Result of the block
+      def with_import_aliases(aliases)
+        previous = @current_import_aliases
+        @current_import_aliases = aliases
+        yield
+      ensure
+        @current_import_aliases = previous
       end
 
       # Derive namespace from module name
