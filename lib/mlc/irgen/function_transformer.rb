@@ -11,6 +11,7 @@ module MLC
       # Phase 17-D: Type resolution methods migrated to TypeResolutionService
       # Phase 17-E: with_import_aliases migrated to ModuleContextService
       # Phase 17-F: Function signature registration migrated to FunctionRegistrationService
+      # Phase 17-G: register_sum_type_constructors migrated to SumTypeConstructorService
       module FunctionTransformer
       # Ensure function signature exists in registry
       # Wrapper that transforms types and delegates registration to service
@@ -142,7 +143,7 @@ module MLC
         )
 
         @type_decl_table[decl.name] = decl
-        register_sum_type_constructors(decl.name, type_decl_ir.type) if type_decl_ir.type.is_a?(HighIR::SumType)
+        @sum_type_constructor_service.register_sum_type_constructors(decl.name, type_decl_ir.type) if type_decl_ir.type.is_a?(HighIR::SumType)
       end
 
       def build_type_decl_for_import(decl)
@@ -168,25 +169,9 @@ module MLC
         HighIR::TypeDecl.new(name: decl.name, type: type, type_params: type_params)
       end
 
+      # Wrapper for service - needed because method passed as callback to rule_engine
       def register_sum_type_constructors(sum_type_name, sum_type)
-        return unless sum_type.respond_to?(:variants)
-
-        type_decl = @type_decl_table[sum_type_name]
-        type_params = type_decl ? @type_checker_service.normalize_type_params(type_decl.type_params) : []
-
-        type_param_vars = type_params.map do |tp|
-          HighIR::Builder.type_variable(tp.name, constraint: tp.constraint)
-        end
-        generic_ret_type = if type_param_vars.any?
-          HighIR::Builder.generic_type(sum_type, type_param_vars)
-        else
-          sum_type
-        end
-
-        sum_type.variants.each do |variant|
-          field_types = (variant[:fields] || []).map { |field| field[:type] }
-          @sum_type_constructors[variant[:name]] = FunctionInfo.new(variant[:name], field_types, generic_ret_type, type_params)
-        end
+        @sum_type_constructor_service.register_sum_type_constructors(sum_type_name, sum_type)
       end
 
       def transform_function(func)

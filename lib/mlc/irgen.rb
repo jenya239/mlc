@@ -66,6 +66,7 @@ require_relative "services/purity_analyzer"
 require_relative "services/module_context_service"
 require_relative "services/type_resolution_service"
 require_relative "services/function_registration_service"
+require_relative "services/sum_type_constructor_service"
 
 module MLC
   class IRGen
@@ -158,6 +159,11 @@ module MLC
         @function_registration_service = Services::FunctionRegistrationService.new(
           function_registry: @function_registry,
           module_context_service: @module_context_service
+        )
+        @sum_type_constructor_service = Services::SumTypeConstructorService.new(
+          sum_type_constructors: @sum_type_constructors,
+          type_decl_table: @type_decl_table,
+          type_checker: @type_checker_service
         )
 
         # Initialize type system components (after services)
