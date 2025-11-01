@@ -64,6 +64,7 @@ require_relative "services/record_builder_service"
 require_relative "services/generic_call_resolver_service"
 require_relative "services/purity_analyzer"
 require_relative "services/module_context_service"
+require_relative "services/type_resolution_service"
 
 module MLC
   class IRGen
@@ -148,6 +149,11 @@ module MLC
         )
         @record_builder_service = Services::RecordBuilderService.new(self)
         @purity_analyzer = Services::PurityAnalyzer.new
+        @type_resolution_service = Services::TypeResolutionService.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry,
+          type_checker: @type_checker_service
+        )
 
         # Initialize type system components (after services)
         @type_constraint_solver ||= TypeSystem::TypeConstraintSolver.new(

@@ -8,51 +8,11 @@ module MLC
       # Phase 17-A: Module context methods migrated to ModuleContextService
       # Phase 17-B: Import alias methods migrated to ModuleContextService
       # Phase 17-C: infer_type_kind migrated to TypeChecker
+      # Phase 17-D: Type resolution methods migrated to TypeResolutionService
       module FunctionTransformer
       def ensure_function_signature(func_decl)
         register_function_signature(func_decl)
         @function_registry.fetch(func_decl.name)
-      end
-
-      def refresh_function_signatures!(resolved_name)
-        type_info = @type_registry.lookup(resolved_name)
-        return unless type_info
-
-        resolved = type_info.core_ir_type
-
-        @function_registry.each do |info|
-          info.param_types = info.param_types.map do |type|
-            refresh_type_reference(type, resolved_name, resolved)
-          end
-          info.ret_type = refresh_type_reference(info.ret_type, resolved_name, resolved)
-        end
-      end
-
-      # Recursively refresh type references, preserving GenericType structure
-      def refresh_type_reference(type, resolved_name, resolved_type)
-        case type
-        when HighIR::GenericType
-          # Don't replace the entire GenericType, just refresh its base_type
-          base_type = refresh_type_reference(type.base_type, resolved_name, resolved_type)
-          type_args = type.type_args.map { |arg| refresh_type_reference(arg, resolved_name, resolved_type) }
-          if base_type != type.base_type || type_args != type.type_args
-            HighIR::Builder.generic_type(base_type, type_args)
-          else
-            type
-          end
-        when HighIR::ArrayType
-          # Refresh element type
-          element_type = refresh_type_reference(type.element_type, resolved_name, resolved_type)
-          element_type != type.element_type ? HighIR::Builder.array_type(element_type) : type
-        when HighIR::FunctionType
-          # Refresh params and return type
-          params = type.params.map { |p| {name: p[:name], type: refresh_type_reference(p[:type], resolved_name, resolved_type)} }
-          ret_type = refresh_type_reference(type.ret_type, resolved_name, resolved_type)
-          (params != type.params || ret_type != type.ret_type) ? HighIR::Builder.function_type(params, ret_type) : type
-        else
-          # For primitive types and others, replace if name matches
-          @type_checker_service.type_name(type) == resolved_name ? resolved_type : type
-        end
       end
 
       def register_function_signature(func_decl)
@@ -413,7 +373,7 @@ module MLC
           when AST::TypeDecl
             type_decl = transform_type_decl(decl)
             context[:type_items] << type_decl
-            refresh_function_signatures!(decl.name)
+            @type_resolution_service.refresh_function_signatures!(decl.name)
           when AST::FuncDecl
             context[:func_items] << transform_function(decl)
           end
