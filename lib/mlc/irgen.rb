@@ -132,7 +132,9 @@ module MLC
         )
 
         @match_analyzer ||= TypeSystem::MatchAnalyzer.new(
-          ensure_compatible_type: method(:ensure_compatible_type)
+          ensure_compatible_type: method(:ensure_compatible_type),
+          type_registry: @type_registry,
+          check_exhaustiveness: true
         )
 
         @effect_analyzer ||= TypeSystem::EffectAnalyzer.new(
