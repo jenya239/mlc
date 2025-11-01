@@ -54,6 +54,7 @@ require_relative "type_system/effect_analyzer"
 # expression_transformer.rb deleted - methods integrated into IRGen class
 require_relative "irgen/statement_transformer"
 require_relative "irgen/function_transformer"
+require_relative "irgen/pattern_matching_transformer"
 # services/expression_transformer.rb deleted - pure delegation wrapper
 # services/predicate_service.rb deleted - trivial helpers
 # services/context_manager.rb deleted - state management
@@ -78,6 +79,7 @@ module MLC
       # ExpressionTransformer methods now directly in IRGen class (see below)
       include StatementTransformer
       include FunctionTransformer
+      include PatternMatchingTransformer
 
       FunctionInfo = Struct.new(:name, :param_types, :ret_type, :type_params) do
         def initialize(name, param_types, ret_type, type_params = [])
@@ -369,31 +371,6 @@ module MLC
         @rule_engine.apply(:core_ir_expression, expr, context: context)
       end
 
-      def bind_pattern_variables(pattern, scrutinee_type)
-        case pattern[:kind]
-        when :constructor
-          info = constructor_info_for(pattern[:name], scrutinee_type)
-          field_types = info ? info.param_types : []
-          bindings = []
-
-          Array(pattern[:fields]).each_with_index do |field_name, idx|
-            next if field_name.nil? || field_name == "_"
-            field_type = field_types[idx] || HighIR::Builder.primitive_type("auto")
-            @var_type_registry.set(field_name, field_type)
-            bindings << field_name
-          end
-
-          pattern[:bindings] = bindings unless bindings.empty?
-        when :var
-          name = pattern[:name]
-          @var_type_registry.set(name, scrutinee_type) if name && name != "_"
-        when :regex
-          Array(pattern[:bindings]).each do |binding|
-            next if binding.nil? || binding == "_"
-            @var_type_registry.set(binding, HighIR::Builder.primitive_type("string"))
-          end
-        end
-      end
 
       # Phase 18-C: Delegate to LambdaTypeInferenceService
       def expected_lambda_param_types(object_ir, member_name, transformed_args, index)
@@ -446,89 +423,11 @@ module MLC
         @type_unification_service.type_equivalent?(left, right)
       end
 
-      def transform_match_expr(match_expr)
-        scrutinee_ir = transform_expression(match_expr.scrutinee)
 
-        if match_stmt_applicable?(match_expr)
-          return transform_match_expr_to_statement(match_expr, scrutinee_ir)
-        end
 
-        transform_match_expr_core(match_expr, scrutinee_ir)
-      end
 
-      def transform_match_expr_core(match_expr, scrutinee_ir = nil)
-        scrutinee_ir ||= transform_expression(match_expr.scrutinee)
 
-        result = @rule_engine.apply(
-          :core_ir_match_expr,
-          match_expr,
-          context: {
-            scrutinee: scrutinee_ir,
-            match_analyzer: @match_analyzer,
-            transform_arm: method(:transform_match_arm)
-          }
-        )
 
-        unless result.is_a?(HighIR::MatchExpr)
-          raise "Match rule must produce HighIR::MatchExpr, got #{result.class}"
-        end
-
-        result
-      end
-
-      def transform_match_expr_to_statement(match_expr, scrutinee_ir)
-        arms = match_expr.arms.map do |arm|
-          transform_match_arm_statement(scrutinee_ir.type, arm)
-        end
-
-        match_stmt = HighIR::Builder.match_stmt(scrutinee_ir, arms, origin: match_expr.origin)
-        unit_literal = HighIR::Builder.unit_literal(origin: match_expr.origin)
-        HighIR::Builder.block_expr([match_stmt], unit_literal, unit_literal.type, origin: match_expr.origin)
-      end
-
-      def transform_match_arm(scrutinee_type, arm)
-        saved_var_types = @var_type_registry.snapshot
-        pattern = transform_pattern(arm[:pattern])
-        bind_pattern_variables(pattern, scrutinee_type)
-        guard = arm[:guard] ? transform_expression(arm[:guard]) : nil
-        body = transform_expression(arm[:body])
-        {pattern: pattern, guard: guard, body: body}
-      ensure
-        @var_type_registry.restore(saved_var_types)
-      end
-
-      def transform_match_arm_statement(scrutinee_type, arm)
-        saved_var_types = @var_type_registry.snapshot
-        pattern = transform_pattern(arm[:pattern])
-        bind_pattern_variables(pattern, scrutinee_type)
-        guard_ir = arm[:guard] ? transform_expression(arm[:guard]) : nil
-        body_ir = transform_statement_block(arm[:body])
-        {pattern: pattern, guard: guard_ir, body: body_ir}
-      ensure
-        @var_type_registry.restore(saved_var_types)
-      end
-
-      def transform_pattern(pattern)
-        case pattern.kind
-        when :wildcard
-          {kind: :wildcard}
-        when :literal
-          {kind: :literal, value: pattern.data[:value]}
-        when :constructor
-          {kind: :constructor, name: pattern.data[:name], fields: pattern.data[:fields]}
-        when :var
-          {kind: :var, name: pattern.data[:name]}
-        when :regex
-          {
-            kind: :regex,
-            pattern: pattern.data[:pattern],
-            flags: pattern.data[:flags],
-            bindings: pattern.data[:bindings] || []
-          }
-        else
-          raise "Unknown pattern kind: #{pattern.kind}"
-        end
-      end
 
       def transform_pipe(pipe_expr)
         # Desugar pipe operator: left |> right
@@ -558,23 +457,6 @@ module MLC
         end
       end
 
-      def unit_branch_ast?(node)
-        node.is_a?(AST::BlockExpr) && node.result_expr.is_a?(AST::UnitLit)
-      end
-
-      def match_stmt_applicable?(match_expr)
-        match_expr.arms.all? do |arm|
-          unit_branch_ast?(arm[:body]) &&
-            arm[:guard].nil? &&
-            match_stmt_safe_pattern?(arm[:pattern])
-        end
-      end
-
-      def match_stmt_safe_pattern?(pattern)
-        kind = pattern.kind
-        return false if kind == :regex
-        %i[constructor wildcard var].include?(kind)
-      end
 
       # Resolve module import alias
       def resolve_module_alias(identifier)
