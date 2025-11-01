@@ -156,6 +156,7 @@ module MLC
           function_registry: @function_registry,
           type_decl_table: @type_decl_table,
           generic_call_resolver: @generic_call_resolver_service,
+          type_checker: @type_checker_service,
           transformer: self
         )
         @record_builder_service = Services::RecordBuilderService.new(self)

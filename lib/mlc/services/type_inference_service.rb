@@ -19,13 +19,14 @@ module MLC
     # - transformer: IRGen (for helper methods like type_error, type_name)
     class TypeInferenceService
       def initialize(var_type_registry:, type_registry:, function_registry:,
-                     type_decl_table:, generic_call_resolver:, transformer:)
+                     type_decl_table:, generic_call_resolver:, type_checker:, transformer:)
         @var_type_registry = var_type_registry
         @type_registry = type_registry
         @function_registry = function_registry
         @type_decl_table = type_decl_table
         @generic_call_resolver = generic_call_resolver
-        @transformer = transformer
+        @type_checker = type_checker
+        @transformer = transformer  # Временно для методов, которые еще не перенесены
       end
 
       # Infer type for variable or function reference
