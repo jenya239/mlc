@@ -70,6 +70,7 @@ require_relative "services/function_registration_service"
 require_relative "services/sum_type_constructor_service"
 require_relative "services/type_unification_service"
 require_relative "services/lambda_type_inference_service"
+require_relative "services/function_lookup_service"
 
 module MLC
   class IRGen
@@ -179,6 +180,13 @@ module MLC
         )
         # Phase 18-C: Lambda type inference service (no dependencies)
         @lambda_type_inference_service = Services::LambdaTypeInferenceService.new
+        # Phase 18-E: Function lookup service for unified function metadata
+        @function_lookup_service = Services::FunctionLookupService.new(
+          function_registry: @function_registry,
+          sum_type_constructors: @sum_type_constructors,
+          type_checker: @type_checker_service,
+          type_inference: @type_inference_service
+        )
 
         # Initialize type system components (after services)
         @type_constraint_solver ||= TypeSystem::TypeConstraintSolver.new(
@@ -485,33 +493,19 @@ module MLC
         @context.with_current_node(node, &block)
       end
 
-      # Builtin function metadata (migrated from BaseTransformer)
+      # Phase 18-E: Delegate to FunctionLookupService
       def builtin_function_info(name)
-        case name
-        when "sqrt"
-          f32 = HighIR::Builder.primitive_type("f32")
-          FunctionInfo.new("sqrt", [f32], f32)
-        else
-          if IO_RETURN_TYPES.key?(name)
-            FunctionInfo.new(name, [], @type_checker_service.io_return_type(name))
-          else
-            nil
-          end
-        end
+        @function_lookup_service.builtin_function_info(name)
       end
 
-      # Unified function metadata lookup (migrated from BaseTransformer)
+      # Phase 18-E: Delegate to FunctionLookupService
       def lookup_function_info(name)
-        @function_registry.fetch(name) || @sum_type_constructors[name] || builtin_function_info(name)
+        @function_lookup_service.lookup_function_info(name)
       end
 
-      # Function type placeholder for inference (migrated from BaseTransformer)
+      # Phase 18-E: Delegate to FunctionLookupService
       def function_placeholder_type(name)
-        if (info = lookup_function_info(name))
-          @type_inference_service.function_type_from_info(info)
-        else
-          HighIR::Builder.function_type([], HighIR::Builder.primitive_type("auto"))
-        end
+        @function_lookup_service.function_placeholder_type(name)
       end
     end
 end
