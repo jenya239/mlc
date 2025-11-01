@@ -123,6 +123,10 @@ module MLC
         @type_checker_service.ensure_boolean_type(type, context, node: node)
       end
 
+      def infer_iterable_type(iterable_ir, node: nil)
+        @type_inference_service.infer_iterable_type(iterable_ir, node: node)
+      end
+
       def generic_substitutions(info, scrutinee_type)
         return {} unless info.type_params&.any?
         return {} unless scrutinee_type.is_a?(HighIR::GenericType)

@@ -16,7 +16,7 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            type_checker = context.fetch(:type_checker)
+            type_inference = context.fetch(:type_inference)
 
             # Save variable types for scoping
             saved_var_types = transformer.instance_variable_get(:@var_types).dup
@@ -26,7 +26,7 @@ module MLC
 
             node.generators.each do |gen|
               iterable_ir = transformer.send(:transform_expression, gen.iterable)
-              element_type = type_checker.infer_iterable_type(iterable_ir)
+              element_type = type_inference.infer_iterable_type(iterable_ir)
 
               generators << {
                 var_name: gen.var_name,

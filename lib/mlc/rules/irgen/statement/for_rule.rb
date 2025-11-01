@@ -16,7 +16,7 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            type_checker = context.fetch(:type_checker)
+            type_inference = context.fetch(:type_inference)
 
             # Transform iterable expression
             iterable_ir = transformer.send(:transform_expression, node.iterable)
@@ -26,7 +26,7 @@ module MLC
             saved = var_types[node.var_name]
 
             # Infer element type from iterable
-            element_type = type_checker.infer_iterable_type(iterable_ir)
+            element_type = type_inference.infer_iterable_type(iterable_ir)
 
             # Add loop variable to scope
             var_types[node.var_name] = element_type
