@@ -71,6 +71,7 @@ module MLC
       # Восстановить состояние из snapshot
       # @param snapshot [Hash] snapshot состояния
       def restore(snapshot)
+        raise ArgumentError, "Cannot restore from nil snapshot" if snapshot.nil?
         @types = snapshot
       end
 

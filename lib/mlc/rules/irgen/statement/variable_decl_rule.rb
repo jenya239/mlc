@@ -41,8 +41,8 @@ module MLC
                        end
 
             # Add variable to scope with inferred/explicit type
-            var_types = transformer.instance_variable_get(:@var_types)
-            var_types[node.name] = var_type
+            var_type_registry = transformer.instance_variable_get(:@var_type_registry)
+            var_type_registry.set(node.name, var_type)
 
             # Build variable declaration statement
             [MLC::HighIR::Builder.variable_decl_stmt(
