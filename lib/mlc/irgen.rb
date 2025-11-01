@@ -53,8 +53,12 @@ require_relative "type_system/effect_analyzer"
 # irgen/type_inference.rb deleted - methods moved to TypeInferenceService
 # expression_transformer.rb deleted - methods integrated into IRGen class
 require_relative "irgen/statement_transformer"
-require_relative "irgen/function_transformer"
 require_relative "irgen/pattern_matching_transformer"
+# Phase 18-F: FunctionTransformer split into 4 focused modules
+require_relative "irgen/type_transformer"
+require_relative "irgen/function_declaration_transformer"
+require_relative "irgen/stdlib_import_transformer"
+require_relative "irgen/program_transformer"
 # services/expression_transformer.rb deleted - pure delegation wrapper
 # services/predicate_service.rb deleted - trivial helpers
 # services/context_manager.rb deleted - state management
@@ -78,9 +82,13 @@ module MLC
       # BaseTransformer deleted - methods moved to IRGen private section (see bottom of file)
       # TypeInference module deleted - methods moved to TypeInferenceService
       # ExpressionTransformer methods now directly in IRGen class (see below)
+      # Phase 18-F: FunctionTransformer split into 4 focused modules
       include StatementTransformer
-      include FunctionTransformer
       include PatternMatchingTransformer
+      include TypeTransformer
+      include FunctionDeclarationTransformer
+      include StdlibImportTransformer
+      include ProgramTransformer
 
       FunctionInfo = Struct.new(:name, :param_types, :ret_type, :type_params) do
         def initialize(name, param_types, ret_type, type_params = [])
