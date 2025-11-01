@@ -14,11 +14,12 @@ module MLC
           rule_engine: @rule_engine,
           # expression_transformer removed - rules call transformer directly
           type_checker: @type_checker_service,
-          predicates: @predicate_service,
-          context_manager: @context_manager_service,
+          # predicates removed - rules call transformer directly
+          # context_manager removed - state management, not a service
           type_inference: @type_inference_service,
           record_builder: @record_builder_service,
-          generic_call_resolver: @generic_call_resolver_service
+          generic_call_resolver: @generic_call_resolver_service,
+          scope_context: @scope_context_service  # Phase 20: Added for statement rules that need scope context
         }
         result = @rule_engine.apply(:core_ir_statement, stmt, context: context)
         return nil if result.equal?(stmt)
