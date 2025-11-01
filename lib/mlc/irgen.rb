@@ -67,6 +67,7 @@ require_relative "services/module_context_service"
 require_relative "services/type_resolution_service"
 require_relative "services/function_registration_service"
 require_relative "services/sum_type_constructor_service"
+require_relative "services/type_unification_service"
 
 module MLC
   class IRGen
@@ -167,6 +168,11 @@ module MLC
           sum_type_constructors: @sum_type_constructors,
           type_decl_table: @type_decl_table,
           type_checker: @type_checker_service
+        )
+        # Phase 18-B: Type unification service for generic type inference
+        @type_unification_service = Services::TypeUnificationService.new(
+          type_checker: @type_checker_service,
+          sum_type_constructors: @sum_type_constructors
         )
 
         # Initialize type system components (after services)
@@ -461,57 +467,14 @@ module MLC
 
 
 
+      # Phase 18-B: Delegate to TypeUnificationService
       def unify_type(pattern, actual, type_map, context:)
-        return false unless pattern && actual
-
-        case pattern
-        when HighIR::TypeVariable
-          existing = type_map[pattern.name]
-          if existing
-            type_equivalent?(existing, actual)
-          else
-            type_map[pattern.name] = actual
-            true
-          end
-        when HighIR::GenericType
-          return false unless actual.is_a?(HighIR::GenericType)
-          pattern_base = type_name(pattern.base_type)
-          actual_base = type_name(actual.base_type)
-          return false unless pattern_base == actual_base
-
-          pattern.type_args.zip(actual.type_args).all? do |pattern_arg, actual_arg|
-            unify_type(pattern_arg, actual_arg, type_map, context: context)
-          end
-        when HighIR::ArrayType
-          return false unless actual.is_a?(HighIR::ArrayType)
-          unify_type(pattern.element_type, actual.element_type, type_map, context: context)
-        else
-          type_equivalent?(pattern, actual)
-        end
+        @type_unification_service.unify_type(pattern, actual, type_map, context: context)
       end
 
+      # Phase 18-B: Delegate to TypeUnificationService
       def type_equivalent?(left, right)
-        return false if left.nil? || right.nil?
-        return true if left.equal?(right)
-
-        if left.is_a?(HighIR::TypeVariable) && right.is_a?(HighIR::TypeVariable)
-          return left.name == right.name
-        end
-
-        if left.is_a?(HighIR::GenericType) && right.is_a?(HighIR::GenericType)
-          left_base = type_name(left.base_type)
-          right_base = type_name(right.base_type)
-          return false unless left_base == right_base
-          return false unless left.type_args.length == right.type_args.length
-
-          return left.type_args.zip(right.type_args).all? { |l_arg, r_arg| type_equivalent?(l_arg, r_arg) }
-        end
-
-        if left.is_a?(HighIR::ArrayType) && right.is_a?(HighIR::ArrayType)
-          return type_equivalent?(left.element_type, right.element_type)
-        end
-
-        type_name(left) == type_name(right)
+        @type_unification_service.type_equivalent?(left, right)
       end
 
       def transform_match_expr(match_expr)
@@ -651,66 +614,19 @@ module MLC
       end
 
       # Get constructor info with generic type substitutions
+      # Phase 18-B: Delegate to TypeUnificationService
       def constructor_info_for(name, scrutinee_type)
-        info = @sum_type_constructors[name]
-        return unless info
-
-        substitutions = generic_substitutions(info, scrutinee_type)
-        return info if substitutions.empty?
-
-        substituted_params = info.param_types.map do |type|
-          apply_type_substitutions(type, substitutions)
-        end
-        substituted_ret_type = apply_type_substitutions(info.ret_type, substitutions)
-
-        FunctionInfo.new(info.name, substituted_params, substituted_ret_type, info.type_params)
+        @type_unification_service.constructor_info_for(name, scrutinee_type)
       end
 
-      # Compute generic type variable substitutions
+      # Phase 18-B: Delegate to TypeUnificationService
       def generic_substitutions(info, scrutinee_type)
-        return {} unless info.type_params&.any?
-        return {} unless scrutinee_type.is_a?(HighIR::GenericType)
-
-        base_match = @type_checker_service.type_name(info.ret_type) == @type_checker_service.type_name(scrutinee_type.base_type)
-        return {} unless base_match
-
-        substitutions = {}
-        info.type_params.each_with_index do |param, idx|
-          actual_arg = scrutinee_type.type_args[idx]
-          substitutions[param.name] = actual_arg if actual_arg
-        end
-        substitutions
+        @type_unification_service.generic_substitutions(info, scrutinee_type)
       end
 
-      # Apply type variable substitutions recursively
+      # Phase 18-B: Delegate to TypeUnificationService
       def apply_type_substitutions(type, substitutions)
-        case type
-        when HighIR::TypeVariable
-          substitutions[type.name] || type
-        when HighIR::GenericType
-          base = apply_type_substitutions(type.base_type, substitutions)
-          args = type.type_args.map { |arg| apply_type_substitutions(arg, substitutions) }
-          HighIR::Builder.generic_type(base, args)
-        when HighIR::ArrayType
-          HighIR::Builder.array_type(apply_type_substitutions(type.element_type, substitutions))
-        when HighIR::FunctionType
-          params = type.params.map { |param| {name: param[:name], type: apply_type_substitutions(param[:type], substitutions)} }
-          ret_type = apply_type_substitutions(type.ret_type, substitutions)
-          HighIR::Builder.function_type(params, ret_type)
-        when HighIR::RecordType
-          fields = type.fields.map { |field| {name: field[:name], type: apply_type_substitutions(field[:type], substitutions)} }
-          HighIR::Builder.record_type(type.name, fields)
-        when HighIR::SumType
-          variants = type.variants.map do |variant|
-            fields = Array(variant[:fields]).map do |field|
-              {name: field[:name], type: apply_type_substitutions(field[:type], substitutions)}
-            end
-            {name: variant[:name], fields: fields}
-          end
-          HighIR::Builder.sum_type(type.name, variants)
-        else
-          type
-        end
+        @type_unification_service.apply_type_substitutions(type, substitutions)
       end
 
       # Error context management (migrated from BaseTransformer)
