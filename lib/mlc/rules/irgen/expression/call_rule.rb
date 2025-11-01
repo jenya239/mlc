@@ -38,16 +38,16 @@ module MLC
               if entry
                 # Module function (e.g., Math.sqrt)
                 canonical_name = entry.name
-                callee = MLC::HighIR::Builder.var(canonical_name, type_checker.function_placeholder_type(canonical_name))
+                callee = MLC::HighIR::Builder.var(canonical_name, type_inference.function_placeholder_type(canonical_name))
               else
                 # Instance method call (e.g., arr.map)
                 object_ir = transformer.send(:transform_expression, callee_ast.object)
                 member_name = callee_ast.member
-                callee = MLC::HighIR::Builder.member(object_ir, member_name, type_checker.infer_member_type(object_ir.type, member_name))
+                callee = MLC::HighIR::Builder.member(object_ir, member_name, type_inference.infer_member_type(object_ir.type, member_name))
               end
             elsif callee_ast.is_a?(MLC::AST::VarRef)
               # Variable reference (function name)
-              var_type = type_checker.function_placeholder_type(callee_ast.name)
+              var_type = type_inference.function_placeholder_type(callee_ast.name)
               callee = MLC::HighIR::Builder.var(callee_ast.name, var_type)
             else
               # Complex expression (e.g., lambda call)

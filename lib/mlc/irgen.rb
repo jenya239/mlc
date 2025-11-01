@@ -50,7 +50,7 @@ require_relative "type_system/type_constraint_solver"
 require_relative "type_system/generic_call_resolver"
 require_relative "type_system/match_analyzer"
 require_relative "type_system/effect_analyzer"
-require_relative "irgen/type_inference"
+# irgen/type_inference.rb deleted - methods moved to TypeInferenceService
 # expression_transformer.rb deleted - methods integrated into IRGen class
 require_relative "irgen/statement_transformer"
 require_relative "irgen/function_transformer"
@@ -67,7 +67,7 @@ module MLC
   class IRGen
       # Include all transformation modules
       include BaseTransformer
-      include TypeInference
+      # TypeInference module deleted - methods moved to TypeInferenceService
       # ExpressionTransformer methods now directly in IRGen class (see below)
       include StatementTransformer
       include FunctionTransformer
@@ -122,28 +122,6 @@ module MLC
         @current_module_name = nil
         @current_module_namespace = nil
 
-        @type_constraint_solver ||= TypeSystem::TypeConstraintSolver.new(
-          infer_type_arguments: method(:infer_type_arguments),
-          substitute_type: method(:substitute_type),
-          ensure_compatible_type: method(:ensure_compatible_type),
-          type_error: ->(message) { type_error(message) }
-        )
-
-        @generic_call_resolver ||= TypeSystem::GenericCallResolver.new(
-          constraint_solver: @type_constraint_solver
-        )
-
-        @match_analyzer ||= TypeSystem::MatchAnalyzer.new(
-          ensure_compatible_type: method(:ensure_compatible_type),
-          type_registry: @type_registry,
-          check_exhaustiveness: true
-        )
-
-        @effect_analyzer ||= TypeSystem::EffectAnalyzer.new(
-          pure_expression: method(:is_pure_expression),
-          non_literal_type: ->(type) { non_literal_type?(type) }
-        )
-
         # Initialize services for rules
         # @expression_transformer_service deleted - rules call transformer directly
         # @predicate_service deleted - rules call transformer directly (unit_branch_ast?)
@@ -164,6 +142,29 @@ module MLC
           transformer: self
         )
         @record_builder_service = Services::RecordBuilderService.new(self)
+
+        # Initialize type system components (after services)
+        @type_constraint_solver ||= TypeSystem::TypeConstraintSolver.new(
+          infer_type_arguments: @type_inference_service.method(:infer_type_arguments),
+          substitute_type: @type_inference_service.method(:substitute_type),
+          ensure_compatible_type: @type_checker_service.method(:ensure_compatible_type),
+          type_error: ->(message) { @type_checker_service.type_error(message) }
+        )
+
+        @generic_call_resolver ||= TypeSystem::GenericCallResolver.new(
+          constraint_solver: @type_constraint_solver
+        )
+
+        @match_analyzer ||= TypeSystem::MatchAnalyzer.new(
+          ensure_compatible_type: @type_checker_service.method(:ensure_compatible_type),
+          type_registry: @type_registry,
+          check_exhaustiveness: true
+        )
+
+        @effect_analyzer ||= TypeSystem::EffectAnalyzer.new(
+          pure_expression: method(:is_pure_expression),
+          non_literal_type: ->(type) { non_literal_type?(type) }
+        )
 
         ensure_required_rules!
       end

@@ -529,9 +529,21 @@ module MLC
         substitute_type(member_type, type_map)
       end
 
+      # Get function placeholder type (used in CallRule/MemberRule)
+      def function_placeholder_type(name)
+        if (info = @function_registry.fetch(name))
+          function_type_from_info(info)
+        else
+          HighIR::Builder.function_type([], HighIR::Builder.primitive_type("auto"))
+        end
+      end
+
       # Build function type from function info
       def function_type_from_info(info)
-        HighIR::Builder.function_type(info.params, info.ret_type)
+        params = info.param_types.each_with_index.map do |type, index|
+          {name: "arg#{index}", type: type}
+        end
+        HighIR::Builder.function_type(params, info.ret_type)
       end
 
       # Delegate to transformer helper methods

@@ -110,6 +110,15 @@ module MLC
         end
       end
 
+      # Delegate type predicate and validation methods to services
+      def void_type?(type)
+        @type_inference_service.void_type?(type)
+      end
+
+      def ensure_compatible_type(actual, expected, context, node: nil)
+        @type_checker_service.ensure_compatible_type(actual, expected, context, node: node)
+      end
+
       def is_pure_expression(expr)
         case expr
         when HighIR::LiteralExpr, HighIR::VarExpr
