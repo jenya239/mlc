@@ -62,6 +62,7 @@ require_relative "services/type_checker"
 require_relative "services/type_inference_service"
 require_relative "services/record_builder_service"
 require_relative "services/generic_call_resolver_service"
+require_relative "services/purity_analyzer"
 
 module MLC
   class IRGen
@@ -143,6 +144,7 @@ module MLC
           scope_context: @scope_context_service
         )
         @record_builder_service = Services::RecordBuilderService.new(self)
+        @purity_analyzer = Services::PurityAnalyzer.new
 
         # Initialize type system components (after services)
         @type_constraint_solver ||= TypeSystem::TypeConstraintSolver.new(
@@ -163,8 +165,8 @@ module MLC
         )
 
         @effect_analyzer ||= TypeSystem::EffectAnalyzer.new(
-          pure_expression: method(:is_pure_expression),
-          non_literal_type: ->(type) { non_literal_type?(type) }
+          pure_expression: @purity_analyzer.method(:is_pure_expression),
+          non_literal_type: @purity_analyzer.method(:non_literal_type?)
         )
 
         ensure_required_rules!

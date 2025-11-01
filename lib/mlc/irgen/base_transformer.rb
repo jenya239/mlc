@@ -119,77 +119,8 @@ module MLC
         @type_checker_service.ensure_compatible_type(actual, expected, context, node: node)
       end
 
-      def is_pure_expression(expr)
-        case expr
-        when HighIR::LiteralExpr, HighIR::VarExpr
-          true
-        when HighIR::BinaryExpr
-          is_pure_expression(expr.left) && is_pure_expression(expr.right)
-        when HighIR::UnaryExpr
-          is_pure_expression(expr.operand)
-        when HighIR::CallExpr
-          is_pure_call?(expr)
-        when HighIR::MemberExpr
-          is_pure_expression(expr.object)
-        when HighIR::RecordExpr
-          expr.fields.values.all? { |field| is_pure_expression(field) }
-        when HighIR::BlockExpr
-          pure_block_expr?(expr)
-        else
-          false
-        end
-      end
-
-      def is_pure_call?(call_expr)
-        # Check if function name indicates non-pure operation
-        if call_expr.callee.is_a?(HighIR::VarExpr)
-          func_name = call_expr.callee.name
-          # IO functions are not constexpr-compatible
-          return false if func_name =~ /^(println|print|read|write|open|close)/
-          # Stdlib functions that return non-literal types
-          return false if func_name =~ /^(to_string|format|String)/
-        end
-
-        # Check if return type is non-literal (String, collections, etc.)
-        return false if non_literal_type?(call_expr.type)
-
-        # Recursively check arguments
-        call_expr.args.all? { |arg| is_pure_expression(arg) }
-      end
-
-      def non_literal_type?(type)
-        return false if type.nil?
-        return false unless type.respond_to?(:name)
-
-        # String and collection types are not literal types in C++20
-        type.name == "string" ||
-          type.name == "String" ||
-          type.name =~ /^(Array|Vec|HashMap|HashSet)$/
-      end
-
-      def pure_block_expr?(block_expr)
-        statements_pure = block_expr.statements.all? { |stmt| pure_statement?(stmt) }
-        result_pure = block_expr.result.nil? || is_pure_expression(block_expr.result)
-        statements_pure && result_pure
-      end
-
-      def pure_statement?(stmt)
-        case stmt
-        when HighIR::VariableDeclStmt
-          !stmt.mutable && is_pure_expression(stmt.value)
-        when HighIR::ExprStatement
-          is_pure_expression(stmt.expression)
-        when HighIR::Block
-          stmt.stmts.all? { |inner| pure_statement?(inner) }
-        when HighIR::MatchStmt
-          is_pure_expression(stmt.scrutinee) &&
-            stmt.arms.all? do |arm|
-              (arm[:guard].nil? || is_pure_expression(arm[:guard])) &&
-                pure_block_expr?(arm[:body])
-            end
-        else
-          false
-        end
+      def ensure_boolean_type(type, context, node: nil)
+        @type_checker_service.ensure_boolean_type(type, context, node: node)
       end
 
       def generic_substitutions(info, scrutinee_type)
