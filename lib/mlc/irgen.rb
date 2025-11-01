@@ -8,7 +8,7 @@ require_relative "stdlib_resolver"
 require_relative "stdlib_signature_registry"
 require_relative "function_registry"
 require_relative "type_registry"
-require_relative "irgen/base_transformer"
+# Note: base_transformer.rb deleted - methods now in IRGen class (private section at bottom)
 require_relative "services/scope_context_service"
 require_relative "pass_manager"
 require_relative "rules/rule_engine"
@@ -66,8 +66,8 @@ require_relative "services/purity_analyzer"
 
 module MLC
   class IRGen
-      # Include all transformation modules
-      include BaseTransformer
+      # Include transformation modules
+      # BaseTransformer deleted - methods moved to IRGen private section (see bottom of file)
       # TypeInference module deleted - methods moved to TypeInferenceService
       # ExpressionTransformer methods now directly in IRGen class (see below)
       include StatementTransformer
@@ -687,6 +687,44 @@ module MLC
           HighIR::Builder.sum_type(type.name, variants)
         else
           type
+        end
+      end
+
+      # Error context management (migrated from BaseTransformer)
+      def with_current_node(node)
+        previous = @current_node
+        @current_node = node if node
+        yield
+      ensure
+        @current_node = previous
+      end
+
+      # Builtin function metadata (migrated from BaseTransformer)
+      def builtin_function_info(name)
+        case name
+        when "sqrt"
+          f32 = HighIR::Builder.primitive_type("f32")
+          FunctionInfo.new("sqrt", [f32], f32)
+        else
+          if IO_RETURN_TYPES.key?(name)
+            FunctionInfo.new(name, [], @type_checker_service.io_return_type(name))
+          else
+            nil
+          end
+        end
+      end
+
+      # Unified function metadata lookup (migrated from BaseTransformer)
+      def lookup_function_info(name)
+        @function_registry.fetch(name) || @sum_type_constructors[name] || builtin_function_info(name)
+      end
+
+      # Function type placeholder for inference (migrated from BaseTransformer)
+      def function_placeholder_type(name)
+        if (info = lookup_function_info(name))
+          @type_inference_service.function_type_from_info(info)
+        else
+          HighIR::Builder.function_type([], HighIR::Builder.primitive_type("auto"))
         end
       end
     end
