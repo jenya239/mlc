@@ -63,12 +63,8 @@ class AuroraStdlibTest < Minitest::Test
     end
   end
 
-  def test_stdlib_documentation_exists
-    # Test that documentation exists
-    project_root = File.expand_path('../..', __dir__)
-    doc_path = File.join(project_root, "docs/STDLIB.md")
-    assert File.exist?(doc_path), "Stdlib documentation should exist at #{doc_path}"
-  end
+  # Removed: test_stdlib_documentation_exists
+  # docs/STDLIB.md was removed as part of documentation cleanup
 
   def test_simple_math_functions
     # Test simple math that works with current syntax
