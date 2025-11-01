@@ -17,7 +17,8 @@ module MLC
           predicates: @predicate_service,
           context_manager: @context_manager_service,
           type_inference: @type_inference_service,
-          record_builder: @record_builder_service
+          record_builder: @record_builder_service,
+          generic_call_resolver: @generic_call_resolver_service
         }
         result = @rule_engine.apply(:core_ir_statement, stmt, context: context)
         return nil if result.equal?(stmt)

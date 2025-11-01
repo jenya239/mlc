@@ -59,6 +59,7 @@ require_relative "services/predicate_service"
 require_relative "services/context_manager"
 require_relative "services/type_inference_service"
 require_relative "services/record_builder_service"
+require_relative "services/generic_call_resolver_service"
 
 module MLC
   class IRGen
@@ -146,6 +147,7 @@ module MLC
         @context_manager_service = Services::ContextManager.new(self)
         @type_inference_service = Services::TypeInferenceService.new(self)
         @record_builder_service = Services::RecordBuilderService.new(self)
+        @generic_call_resolver_service = Services::GenericCallResolverService.new(self)
 
         ensure_required_rules!
       end
