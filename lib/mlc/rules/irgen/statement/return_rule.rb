@@ -17,9 +17,10 @@ module MLC
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
             type_checker = context.fetch(:type_checker)
+            scope_context = context.fetch(:scope_context)
 
             # Validate: return must be inside function
-            expected = transformer.send(:current_function_return)
+            expected = scope_context.current_function_return
             unless expected
               type_checker.type_error("return statement outside of function")
             end

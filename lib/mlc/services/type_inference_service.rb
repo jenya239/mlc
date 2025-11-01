@@ -19,7 +19,7 @@ module MLC
     # - transformer: IRGen (for helper methods like type_error, type_name)
     class TypeInferenceService
       def initialize(var_type_registry:, type_registry:, function_registry:,
-                     type_decl_table:, generic_call_resolver:, type_checker:, transformer:)
+                     type_decl_table:, generic_call_resolver:, type_checker:, transformer:, scope_context:)
         @var_type_registry = var_type_registry
         @type_registry = type_registry
         @function_registry = function_registry
@@ -27,6 +27,7 @@ module MLC
         @generic_call_resolver = generic_call_resolver
         @type_checker = type_checker
         @transformer = transformer  # Временно для методов, которые еще не перенесены
+        @scope_context = scope_context
       end
 
       # Infer type for variable or function reference
@@ -529,6 +530,8 @@ module MLC
         substitute_type(member_type, type_map)
       end
 
+      public
+
       # Get function placeholder type (used in CallRule/MemberRule)
       def function_placeholder_type(name)
         if (info = @function_registry.fetch(name))
@@ -569,7 +572,7 @@ module MLC
       end
 
       def current_type_params
-        @transformer.send(:current_type_params)
+        @scope_context.current_type_params
       end
     end
   end

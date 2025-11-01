@@ -363,7 +363,7 @@ module MLC
               :core_ir_function,
               result_func,
               context: {
-                type_context: @type_context,
+                type_context: @scope_context_service,
                 type_registry: @type_registry,
                 effect_analyzer: @effect_analyzer
               }

@@ -9,7 +9,7 @@ require_relative "stdlib_signature_registry"
 require_relative "function_registry"
 require_relative "type_registry"
 require_relative "irgen/base_transformer"
-require_relative "irgen/type_context"
+require_relative "services/scope_context_service"
 require_relative "pass_manager"
 require_relative "rules/rule_engine"
 # Note: expression_transformer.rb deleted - methods now in IRGen class directly
@@ -100,7 +100,7 @@ module MLC
         # NEW: Unified type registry
         @type_registry = TypeRegistry.new
         @rule_engine = rule_engine || build_default_rule_engine
-        @type_context = TypeContext.new
+        @scope_context_service = Services::ScopeContextService.new
         @type_constraint_solver = type_constraint_solver
         @generic_call_resolver = generic_call_resolver
         @match_analyzer = match_analyzer
@@ -115,8 +115,8 @@ module MLC
         @var_type_registry = Services::VarTypeRegistry.new  # Track variable types for let bindings
         @temp_counter = 0
         @loop_depth = 0
-        @lambda_param_type_stack = @type_context.lambda_param_stack
-        @function_return_type_stack = @type_context.function_return_stack
+        @lambda_param_type_stack = @scope_context_service.lambda_param_stack
+        @function_return_type_stack = @scope_context_service.function_return_stack
         @current_node = nil
         @current_import_aliases = nil
         @current_module_name = nil
@@ -139,7 +139,8 @@ module MLC
           type_decl_table: @type_decl_table,
           generic_call_resolver: @generic_call_resolver_service,
           type_checker: @type_checker_service,
-          transformer: self
+          transformer: self,
+          scope_context: @scope_context_service
         )
         @record_builder_service = Services::RecordBuilderService.new(self)
 
@@ -266,27 +267,27 @@ module MLC
       end
 
       def with_type_params(params, &block)
-        @type_context.with_type_params(params, &block)
+        @scope_context_service.with_type_params(params, &block)
       end
 
       def current_type_params
-        @type_context.current_type_params
+        @scope_context_service.current_type_params
       end
 
       def with_function_return(type, &block)
-        @type_context.with_function_return(type, &block)
+        @scope_context_service.with_function_return(type, &block)
       end
 
       def current_function_return
-        @type_context.current_function_return
+        @scope_context_service.current_function_return
       end
 
       def with_lambda_param_types(types, &block)
-        @type_context.with_lambda_param_types(types, &block)
+        @scope_context_service.with_lambda_param_types(types, &block)
       end
 
       def current_lambda_param_types
-        @type_context.current_lambda_param_types
+        @scope_context_service.current_lambda_param_types
       end
 
       # Expression transformation methods (migrated from ExpressionTransformer module)
@@ -327,7 +328,8 @@ module MLC
           type_checker: @type_checker_service,
           type_inference: @type_inference_service,
           record_builder: @record_builder_service,
-          generic_call_resolver: @generic_call_resolver_service
+          generic_call_resolver: @generic_call_resolver_service,
+          scope_context: @scope_context_service
         }
         @rule_engine.apply(:core_ir_expression, expr, context: context)
       end

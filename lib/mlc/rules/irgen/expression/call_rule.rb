@@ -18,6 +18,7 @@ module MLC
             transformer = context.fetch(:transformer)
             type_checker = context.fetch(:type_checker)
             type_inference = context.fetch(:type_inference)
+            scope_context = context.fetch(:scope_context)
 
             # Special case: IO functions have fixed return types
             if node.callee.is_a?(MLC::AST::VarRef) && transformer.class::IO_RETURN_TYPES.key?(node.callee.name)
@@ -62,7 +63,7 @@ module MLC
 
               transformed_arg = if arg.is_a?(MLC::AST::Lambda)
                                   # Transform lambda with expected parameter types
-                                  transformer.send(:with_lambda_param_types, expected_params) do
+                                  scope_context.with_lambda_param_types(expected_params) do
                                     transformer.send(:transform_expression, arg)
                                   end
                                 else

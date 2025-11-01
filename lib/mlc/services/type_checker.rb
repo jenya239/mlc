@@ -159,6 +159,10 @@ module MLC
         entry = @function_registry.fetch_entry(qualified)
         entry&.info
       end
+
+      # Backwards compatibility aliases
+      alias_method :ensure_boolean, :ensure_boolean_type
+      alias_method :ensure_compatible, :ensure_compatible_type
     end
   end
 end
