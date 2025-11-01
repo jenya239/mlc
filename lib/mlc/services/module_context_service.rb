@@ -6,6 +6,7 @@ module MLC
     # Phase 17-A: Module context methods extracted from FunctionTransformer
     # Phase 17-B: Import alias helper methods extracted from FunctionTransformer
     # Phase 17-E: Import alias context scoping extracted from FunctionTransformer
+    # Phase 17-H: Module import registration extracted from FunctionTransformer
     #
     # Responsibilities:
     # - Track current module name and namespace
@@ -13,15 +14,18 @@ module MLC
     # - Derive module namespace from module name
     # - Provide scoped access to module and import alias context
     # - Build module alias keys for functions
+    # - Register function aliases for module imports
     #
-    # Dependencies: None (pure state management)
+    # Dependencies:
+    # - function_registry: FunctionRegistry (for import alias registration)
     class ModuleContextService
       attr_reader :current_module_name, :current_module_namespace, :current_import_aliases
 
-      def initialize
+      def initialize(function_registry: nil)
         @current_module_name = nil
         @current_module_namespace = nil
         @current_import_aliases = {}
+        @function_registry = function_registry
       end
 
       # Execute block within a module context
@@ -111,6 +115,43 @@ module MLC
         prefixes << module_name if module_name && !module_name.empty?
         prefixes << module_alias if module_alias && !module_alias.empty?
         prefixes.uniq
+      end
+
+      # Register function aliases for module import
+      # Creates aliases for all functions from the imported module
+      #
+      # @param import_decl [AST::ImportDecl] The import declaration
+      # @param current_module [String] Current module name (unused, for compatibility)
+      #
+      # Examples:
+      #   import Math as M { sin, cos }
+      #   Registers: M.sin -> Math.sin, M.cos -> Math.cos, sin -> Math.sin, cos -> Math.cos
+      def register_module_import(import_decl, current_module = nil)
+        return unless @function_registry
+
+        module_name = import_decl.path
+        prefixes = module_alias_prefixes(module_name, import_decl.alias)
+        return if prefixes.empty?
+
+        selected_items = import_decl.items
+
+        @function_registry.names.each do |canonical_name|
+          entry = @function_registry.fetch_entry(canonical_name)
+          next unless entry&.module_name == module_name
+          next if selected_items && !selected_items.include?(entry.name)
+
+          alias_keys = prefixes.map { |prefix| "#{prefix}.#{entry.name}" }
+          alias_keys << entry.name if selected_items
+
+          alias_keys.each do |alias_key|
+            next if alias_key == entry.name
+            begin
+              @function_registry.register_alias(alias_key, entry.name)
+            rescue ArgumentError
+              next
+            end
+          end
+        end
       end
     end
   end

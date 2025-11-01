@@ -12,6 +12,7 @@ module MLC
       # Phase 17-E: with_import_aliases migrated to ModuleContextService
       # Phase 17-F: Function signature registration migrated to FunctionRegistrationService
       # Phase 17-G: register_sum_type_constructors migrated to SumTypeConstructorService
+      # Phase 17-H: register_module_import migrated to ModuleContextService
       module FunctionTransformer
       # Ensure function signature exists in registry
       # Wrapper that transforms types and delegates registration to service
@@ -100,30 +101,9 @@ module MLC
         end
       end
 
+      # Wrapper for service - delegates module import alias registration
       def register_module_import(import_decl, current_module)
-        module_name = import_decl.path
-        prefixes = @module_context_service.module_alias_prefixes(module_name, import_decl.alias)
-        return if prefixes.empty?
-
-        selected_items = import_decl.items
-
-        @function_registry.names.each do |canonical_name|
-          entry = @function_registry.fetch_entry(canonical_name)
-          next unless entry&.module_name == module_name
-          next if selected_items && !selected_items.include?(entry.name)
-
-          alias_keys = prefixes.map { |prefix| "#{prefix}.#{entry.name}" }
-          alias_keys << entry.name if selected_items
-
-          alias_keys.each do |alias_key|
-            next if alias_key == entry.name
-            begin
-              @function_registry.register_alias(alias_key, entry.name)
-            rescue ArgumentError
-              next
-            end
-          end
-        end
+        @module_context_service.register_module_import(import_decl, current_module)
       end
 
       def register_stdlib_type_metadata(decl, namespace, module_name = nil)

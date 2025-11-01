@@ -126,7 +126,9 @@ module MLC
         @current_import_aliases = nil
 
         # Initialize module context service
-        @module_context_service = Services::ModuleContextService.new
+        @module_context_service = Services::ModuleContextService.new(
+          function_registry: @function_registry
+        )
 
         # Initialize services for rules
         # @expression_transformer_service deleted - rules call transformer directly
