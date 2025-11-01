@@ -38,8 +38,8 @@ module MLC
         end
 
         # Check if this is an IO built-in function
-        if @transformer.class::IO_RETURN_TYPES.key?(name)
-          return_type = @transformer.send(:io_return_type, name)
+        if @type_checker.class::IO_RETURN_TYPES.key?(name)
+          return_type = @type_checker.io_return_type(name)
           return HighIR::Builder.function_type([], return_type)
         end
 
@@ -53,8 +53,8 @@ module MLC
       def infer_call_type(callee, args)
         case callee
         when HighIR::VarExpr
-          if @transformer.class::IO_RETURN_TYPES.key?(callee.name)
-            return @transformer.send(:io_return_type, callee.name)
+          if @type_checker.class::IO_RETURN_TYPES.key?(callee.name)
+            return @type_checker.io_return_type(callee.name)
           end
 
           info = @function_registry.fetch(callee.name)
@@ -68,7 +68,7 @@ module MLC
             instantiation.ret_type
           else
             # Non-generic function - use original logic
-            @transformer.send(:validate_function_call, info, args, callee.name)
+            @type_checker.validate_function_call(info, args, callee.name)
             info.ret_type
           end
 
@@ -81,7 +81,7 @@ module MLC
           end
 
           expected.each_with_index do |param, index|
-            @transformer.send(:ensure_compatible_type, args[index].type, param[:type], "lambda argument #{index + 1}")
+            @type_checker.ensure_compatible_type(args[index].type, param[:type], "lambda argument #{index + 1}")
           end
 
           function_type.ret_type
@@ -90,8 +90,8 @@ module MLC
           member = callee.member
 
           if callee.object.is_a?(HighIR::VarExpr)
-            if (info = @transformer.send(:module_member_info, callee.object.name, member))
-              @transformer.send(:validate_function_call, info, args, member)
+            if (info = @type_checker.module_member_info(callee.object.name, member))
+              @type_checker.validate_function_call(info, args, member)
               return info.ret_type
             end
           end
@@ -122,27 +122,27 @@ module MLC
             type_error("Cannot add #{describe_type(left_type)} and #{describe_type(right_type)}")
           end
         when "-", "*", "%"
-          @transformer.send(:ensure_numeric_type, left_type, "left operand of '#{op}'")
-          @transformer.send(:ensure_numeric_type, right_type, "right operand of '#{op}'")
+          @type_checker.ensure_numeric_type(left_type, "left operand of '#{op}'")
+          @type_checker.ensure_numeric_type(right_type, "right operand of '#{op}'")
           combine_numeric_type(left_type, right_type)
         when "/"
-          @transformer.send(:ensure_numeric_type, left_type, "left operand of '/' ")
-          @transformer.send(:ensure_numeric_type, right_type, "right operand of '/' ")
+          @type_checker.ensure_numeric_type(left_type, "left operand of '/' ")
+          @type_checker.ensure_numeric_type(right_type, "right operand of '/' ")
           if float_type?(left_type) || float_type?(right_type)
             HighIR::Builder.primitive_type("f32")
           else
             HighIR::Builder.primitive_type("i32")
           end
         when "==", "!="
-          @transformer.send(:ensure_compatible_type, left_type, right_type, "comparison '#{op}'")
+          @type_checker.ensure_compatible_type(left_type, right_type, "comparison '#{op}'")
           HighIR::Builder.primitive_type("bool")
         when "<", ">", "<=", ">="
-          @transformer.send(:ensure_numeric_type, left_type, "left operand of '#{op}'")
-          @transformer.send(:ensure_numeric_type, right_type, "right operand of '#{op}'")
+          @type_checker.ensure_numeric_type(left_type, "left operand of '#{op}'")
+          @type_checker.ensure_numeric_type(right_type, "right operand of '#{op}'")
           HighIR::Builder.primitive_type("bool")
         when "&&", "||"
-          @transformer.send(:ensure_boolean_type, left_type, "left operand of '#{op}'")
-          @transformer.send(:ensure_boolean_type, right_type, "right operand of '#{op}'")
+          @type_checker.ensure_boolean_type(left_type, "left operand of '#{op}'")
+          @type_checker.ensure_boolean_type(right_type, "right operand of '#{op}'")
           HighIR::Builder.primitive_type("bool")
         else
           left_type
@@ -155,10 +155,10 @@ module MLC
 
         case op
         when "!"
-          @transformer.send(:ensure_boolean_type, operand_type, "operand of '!'")
+          @type_checker.ensure_boolean_type(operand_type, "operand of '!'")
           HighIR::Builder.primitive_type("bool")
         when "-", "+"
-          @transformer.send(:ensure_numeric_type, operand_type, "operand of '#{op}'")
+          @type_checker.ensure_numeric_type(operand_type, "operand of '#{op}'")
           operand_type
         else
           operand_type
@@ -425,21 +425,21 @@ module MLC
         if object_type.is_a?(HighIR::ArrayType)
           case member
           when "length", "size"
-            @transformer.send(:ensure_argument_count, member, args, 0)
+            @type_checker.ensure_argument_count(member, args, 0)
             HighIR::Builder.primitive_type("i32")
           when "is_empty"
-            @transformer.send(:ensure_argument_count, member, args, 0)
+            @type_checker.ensure_argument_count(member, args, 0)
             HighIR::Builder.primitive_type("bool")
           when "map"
-            @transformer.send(:ensure_argument_count, member, args, 1)
+            @type_checker.ensure_argument_count(member, args, 1)
             element_type = lambda_return_type(args.first)
             type_error("Unable to infer return type of map lambda") unless element_type
             HighIR::ArrayType.new(element_type: element_type)
           when "filter"
-            @transformer.send(:ensure_argument_count, member, args, 1)
+            @type_checker.ensure_argument_count(member, args, 1)
             HighIR::ArrayType.new(element_type: object_type.element_type)
           when "fold"
-            @transformer.send(:ensure_argument_count, member, args, 2)
+            @type_checker.ensure_argument_count(member, args, 2)
             accumulator_type = args.first&.type
             ensure_type!(accumulator_type, "Unable to determine accumulator type for fold")
             accumulator_type
@@ -449,22 +449,22 @@ module MLC
         elsif string_type?(object_type)
           case member
           when "split"
-            @transformer.send(:ensure_argument_count, member, args, 1)
+            @type_checker.ensure_argument_count(member, args, 1)
             HighIR::ArrayType.new(element_type: HighIR::Builder.primitive_type("string"))
           when "trim", "trim_start", "trim_end", "upper", "lower"
-            @transformer.send(:ensure_argument_count, member, args, 0)
+            @type_checker.ensure_argument_count(member, args, 0)
             HighIR::Builder.primitive_type("string")
           when "is_empty"
-            @transformer.send(:ensure_argument_count, member, args, 0)
+            @type_checker.ensure_argument_count(member, args, 0)
             HighIR::Builder.primitive_type("bool")
           when "length"
-            @transformer.send(:ensure_argument_count, member, args, 0)
+            @type_checker.ensure_argument_count(member, args, 0)
             HighIR::Builder.primitive_type("i32")
           else
             type_error("Unknown string method '#{member}'. Supported methods: split, trim, trim_start, trim_end, upper, lower, is_empty, length")
           end
         elsif numeric_type?(object_type) && member == "sqrt"
-          @transformer.send(:ensure_argument_count, member, args, 0)
+          @type_checker.ensure_argument_count(member, args, 0)
           HighIR::Builder.primitive_type("f32")
         else
           type_error("Unknown member '#{member}' for type #{describe_type(object_type)}")
@@ -537,23 +537,23 @@ module MLC
       # Delegate to transformer helper methods
       # (these will move to TypeChecker in Phase 4)
       def type_error(message, node: nil)
-        @transformer.send(:type_error, message, node: node)
+        @type_checker.type_error(message, node: node)
       end
 
       def type_name(type)
-        @transformer.send(:type_name, type)
+        @type_checker.type_name(type)
       end
 
       def describe_type(type)
-        @transformer.send(:describe_type, type)
+        @type_checker.describe_type(type)
       end
 
       def normalized_type_name(name)
-        @transformer.send(:normalized_type_name, name)
+        @type_checker.normalized_type_name(name)
       end
 
       def ensure_type!(type, message, node: nil)
-        @transformer.send(:ensure_type!, type, message, node: node)
+        @type_checker.ensure_type!(type, message, node: node)
       end
 
       def current_type_params

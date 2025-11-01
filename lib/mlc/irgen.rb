@@ -148,7 +148,11 @@ module MLC
         # @expression_transformer_service deleted - rules call transformer directly
         # @predicate_service deleted - rules call transformer directly (unit_branch_ast?)
         # @context_manager_service deleted - state management, not business logic
-        @type_checker_service = Services::TypeChecker.new(self)
+        @type_checker_service = Services::TypeChecker.new(
+          function_registry: @function_registry,
+          event_bus: @event_bus,
+          current_node_proc: -> { @current_node }
+        )
         @generic_call_resolver_service = Services::GenericCallResolverService.new(self)
         @type_inference_service = Services::TypeInferenceService.new(
           var_type_registry: @var_type_registry,
