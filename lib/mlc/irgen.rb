@@ -63,6 +63,7 @@ require_relative "services/type_inference_service"
 require_relative "services/record_builder_service"
 require_relative "services/generic_call_resolver_service"
 require_relative "services/purity_analyzer"
+require_relative "services/module_context_service"
 
 module MLC
   class IRGen
@@ -120,8 +121,9 @@ module MLC
         @function_return_type_stack = @scope_context_service.function_return_stack
         @current_node = nil
         @current_import_aliases = nil
-        @current_module_name = nil
-        @current_module_namespace = nil
+
+        # Initialize module context service
+        @module_context_service = Services::ModuleContextService.new
 
         # Initialize services for rules
         # @expression_transformer_service deleted - rules call transformer directly

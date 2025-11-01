@@ -5,36 +5,8 @@ module MLC
       # FunctionTransformer
       # Function and type declaration transformation
       # Auto-extracted from to_core.rb during refactoring
+      # Phase 17: Module context methods migrated to ModuleContextService
       module FunctionTransformer
-      def with_current_module(module_name)
-        previous_name = @current_module_name
-        previous_namespace = @current_module_namespace
-        @current_module_name = module_name
-        @current_module_namespace = derive_module_namespace(module_name)
-        yield
-      ensure
-        @current_module_name = previous_name
-        @current_module_namespace = previous_namespace
-      end
-
-      def current_module_name
-        @current_module_name
-      end
-
-      def current_module_namespace
-        @current_module_namespace
-      end
-
-      def derive_module_namespace(module_name)
-        return nil if module_name.nil? || module_name.empty? || module_name == "main"
-
-        module_name
-          .gsub("/", "::")
-          .split("::")
-          .map(&:downcase)
-          .join("::")
-      end
-
       def build_module_alias_keys(function_name, module_info, module_alias)
         return [] unless function_name
 
@@ -111,8 +83,8 @@ module MLC
           @function_registry.register(
             func_decl.name,
             info,
-            module_name: current_module_name,
-            namespace: current_module_namespace,
+            module_name: @module_context_service.current_module_name,
+            namespace: @module_context_service.current_module_namespace,
             exported: func_decl.exported,
             external: func_decl.external,
             ast_node: func_decl,
@@ -406,7 +378,7 @@ module MLC
           import_aliases: {}
         }
 
-        with_current_module(module_name) do
+        @module_context_service.with_current_module(module_name) do
           with_import_aliases(context[:import_aliases]) do
             build_program_pass_manager.run(context)
           end
@@ -565,7 +537,7 @@ module MLC
               namespace: nil,  # Main module types have no namespace
               kind: kind,
               exported: decl.exported,
-              module_name: current_module_name
+              module_name: @module_context_service.current_module_name
             )
           end
 
