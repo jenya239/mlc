@@ -7,6 +7,7 @@ module MLC
       # Auto-extracted from to_core.rb during refactoring
       # Phase 17-A: Module context methods migrated to ModuleContextService
       # Phase 17-B: Import alias methods migrated to ModuleContextService
+      # Phase 17-C: infer_type_kind migrated to TypeChecker
       module FunctionTransformer
       def ensure_function_signature(func_decl)
         register_function_signature(func_decl)
@@ -166,7 +167,7 @@ module MLC
 
         type_decl_ir = build_type_decl_for_import(decl)
 
-        kind = infer_type_kind(decl, type_decl_ir.type)
+        kind = @type_checker_service.infer_type_kind(decl, type_decl_ir.type)
         @type_registry.register(
           decl.name,
           ast_node: decl,
@@ -223,33 +224,6 @@ module MLC
           field_types = (variant[:fields] || []).map { |field| field[:type] }
           @sum_type_constructors[variant[:name]] = FunctionInfo.new(variant[:name], field_types, generic_ret_type, type_params)
         end
-      end
-
-      # Helper: Infer type kind from AST and HighIR
-      # @param ast_decl [AST::TypeDecl] AST type declaration
-      # @param core_ir_type [HighIR::Type] HighIR type
-      # @return [Symbol] :primitive, :record, :sum, :opaque
-      def infer_type_kind(ast_decl, core_ir_type)
-        # Check if it's an opaque type (explicit AST::OpaqueType or old-style implicit)
-        if core_ir_type.is_a?(HighIR::OpaqueType) || ast_decl.type.is_a?(AST::OpaqueType)
-          return :opaque
-        end
-
-        # Legacy: Check if it's an old-style opaque type (PrimType with same name as decl)
-        # This handles types declared before AST::OpaqueType was introduced
-        if core_ir_type.is_a?(HighIR::Type) &&
-           core_ir_type.primitive? &&
-           ast_decl.type.is_a?(AST::PrimType) &&
-           ast_decl.type.name == ast_decl.name
-          return :opaque
-        end
-
-        # Otherwise determine from HighIR type
-        return :record if core_ir_type.is_a?(HighIR::RecordType)
-        return :sum if core_ir_type.is_a?(HighIR::SumType)
-        return :primitive if core_ir_type.primitive?
-
-        :unknown
       end
 
       def transform_function(func)
@@ -516,7 +490,7 @@ module MLC
                    end
 
             # Register type in TypeRegistry
-            kind = infer_type_kind(decl, type)
+            kind = @type_checker_service.infer_type_kind(decl, type)
             @type_registry.register(
               decl.name,
               ast_node: decl,

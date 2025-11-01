@@ -215,6 +215,35 @@ module MLC
         end
       end
 
+      # Type kind inference
+      # Determines the kind of a type from AST and HighIR information
+      #
+      # @param ast_decl [AST::TypeDecl] AST type declaration
+      # @param core_ir_type [HighIR::Type] HighIR type
+      # @return [Symbol] :primitive, :record, :sum, :opaque, or :unknown
+      def infer_type_kind(ast_decl, core_ir_type)
+        # Check if it's an opaque type (explicit AST::OpaqueType or old-style implicit)
+        if core_ir_type.is_a?(HighIR::OpaqueType) || ast_decl.type.is_a?(AST::OpaqueType)
+          return :opaque
+        end
+
+        # Legacy: Check if it's an old-style opaque type (PrimType with same name as decl)
+        # This handles types declared before AST::OpaqueType was introduced
+        if core_ir_type.is_a?(HighIR::Type) &&
+           core_ir_type.primitive? &&
+           ast_decl.type.is_a?(AST::PrimType) &&
+           ast_decl.type.name == ast_decl.name
+          return :opaque
+        end
+
+        # Otherwise determine from HighIR type
+        return :record if core_ir_type.is_a?(HighIR::RecordType)
+        return :sum if core_ir_type.is_a?(HighIR::SumType)
+        return :primitive if core_ir_type.primitive?
+
+        :unknown
+      end
+
       # Backwards compatibility aliases
       alias_method :ensure_boolean, :ensure_boolean_type
       alias_method :ensure_compatible, :ensure_compatible_type
