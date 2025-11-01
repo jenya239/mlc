@@ -36,42 +36,15 @@ module MLC
       end
 
 
-      def ensure_function_signature(func_decl)
-        register_function_signature(func_decl)
-        @function_registry.fetch(func_decl.name)
-      end
-
-
-      def fresh_temp_name
-        name = "__tmp#{@temp_counter}"
-        @temp_counter += 1
-        name
-      end
 
       def function_placeholder_type(name)
         if (info = lookup_function_info(name))
-          function_type_from_info(info)
+          @type_inference_service.function_type_from_info(info)
         else
           HighIR::Builder.function_type([], HighIR::Builder.primitive_type("auto"))
         end
       end
 
-      def function_type_from_info(info)
-        params = info.param_types.each_with_index.map do |type, index|
-          {name: "arg#{index}", type: type}
-        end
-        HighIR::Builder.function_type(params, info.ret_type)
-      end
-
-      def generic_type_name?(name)
-        return false unless name
-
-        return true if current_type_params.any? { |tp| tp.name == name }
-
-        current_lambda_param_types.any? do |param_type|
-          @type_checker_service.type_name(param_type) == name
-        end
-      end
 
 
 
