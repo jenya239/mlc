@@ -16,11 +16,10 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_checker = context.fetch(:type_checker)
 
             # Transform initialization value
-            value_ir = expr_svc.transform_expression(node.value)
+            value_ir = transformer.send(:transform_expression, node.value)
 
             # Determine variable type: explicit annotation or inferred from value
             var_type = if node.type

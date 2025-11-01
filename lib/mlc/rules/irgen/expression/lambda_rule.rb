@@ -16,15 +16,13 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_checker = context.fetch(:type_checker)
-            context_mgr = context.fetch(:context_manager)
 
             # Save current var_types for scoping
             saved_var_types = transformer.instance_variable_get(:@var_types).dup
 
             # Get expected parameter types from context (for map/filter/fold)
-            expected_param_types = context_mgr.current_lambda_param_types
+            expected_param_types = transformer.send(:current_lambda_param_types)
 
             # Transform parameters with type inference
             params = node.params.each_with_index.map do |param, index|
@@ -47,7 +45,7 @@ module MLC
             end
 
             # Transform lambda body with parameters in scope
-            body = expr_svc.transform_expression(node.body)
+            body = transformer.send(:transform_expression, node.body)
 
             # Build function type from parameters and return type
             ret_type = body.type

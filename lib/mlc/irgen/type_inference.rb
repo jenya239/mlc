@@ -282,7 +282,7 @@ module MLC
       end
 
       def infer_type(name)
-        return @var_types[name] if @var_types.key?(name)
+        return @var_type_registry.get(name) if @var_type_registry.has?(name)
 
         if (info = lookup_function_info(name))
           return function_type_from_info(info)
@@ -290,7 +290,7 @@ module MLC
 
         return HighIR::Builder.primitive_type("bool") if %w[true false].include?(name)
 
-        scope = @var_types.keys.sort.join(", ")
+        scope = @var_type_registry.keys.sort.join(", ")
         type_error("Unknown identifier '#{name}' (in scope: #{scope})")
       end
 

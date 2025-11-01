@@ -16,18 +16,16 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_checker = context.fetch(:type_checker)
-            context_mgr = context.fetch(:context_manager)
 
             # Validate: return must be inside function
-            expected = context_mgr.current_function_return
+            expected = transformer.send(:current_function_return)
             unless expected
               type_checker.type_error("return statement outside of function")
             end
 
             # Transform return expression (if present)
-            expr_ir = node.expr ? expr_svc.transform_expression(node.expr) : nil
+            expr_ir = node.expr ? transformer.send(:transform_expression, node.expr) : nil
 
             # Validate return type compatibility
             if type_checker.void_type?(expected)

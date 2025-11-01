@@ -15,12 +15,10 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_checker = context.fetch(:type_checker)
-            context_mgr = context.fetch(:context_manager)
 
             # Check if this is a module member function (e.g., Math.sqrt)
-            entry = context_mgr.module_member_function(node.object, node.member) rescue nil
+            entry = transformer.send(:module_member_function_entry, node.object, node.member) rescue nil
             if entry
               # Module function - create variable reference with canonical name
               canonical_name = entry.name
@@ -29,7 +27,7 @@ module MLC
             end
 
             # Regular member access - transform object and infer member type
-            object = expr_svc.transform_expression(node.object)
+            object = transformer.send(:transform_expression, node.object)
             type = type_checker.infer_member_type(object.type, node.member)
 
             # Build HighIR member access expression

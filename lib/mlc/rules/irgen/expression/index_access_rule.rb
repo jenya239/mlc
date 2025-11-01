@@ -15,12 +15,11 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_checker = context.fetch(:type_checker)
 
             # Transform array and index expressions recursively
-            object = expr_svc.transform_expression(node.object)
-            index = expr_svc.transform_expression(node.index)
+            object = transformer.send(:transform_expression, node.object)
+            index = transformer.send(:transform_expression, node.index)
 
             # Validate: object must be array type
             unless object.type.is_a?(MLC::HighIR::ArrayType)

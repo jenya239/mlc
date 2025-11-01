@@ -16,12 +16,11 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_inference = context.fetch(:type_inference)
 
             # Recursively transform left and right operands
-            left = expr_svc.transform_expression(node.left)
-            right = expr_svc.transform_expression(node.right)
+            left = transformer.send(:transform_expression, node.left)
+            right = transformer.send(:transform_expression, node.right)
 
             # Infer binary operation result type
             type = type_inference.infer_binary_type(node.op, left.type, right.type)

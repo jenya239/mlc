@@ -16,11 +16,10 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_inference = context.fetch(:type_inference)
 
             # Recursively transform operand
-            operand = expr_svc.transform_expression(node.operand)
+            operand = transformer.send(:transform_expression, node.operand)
 
             # Infer unary operation result type
             type = type_inference.infer_unary_type(node.op, operand.type)

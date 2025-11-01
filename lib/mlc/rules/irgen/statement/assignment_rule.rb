@@ -16,7 +16,6 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_checker = context.fetch(:type_checker)
 
             # Validate: target must be variable reference
@@ -34,7 +33,7 @@ module MLC
             end
 
             # Transform value expression
-            value_ir = expr_svc.transform_expression(node.value)
+            value_ir = transformer.send(:transform_expression, node.value)
 
             # Validate: value type must be compatible with variable type
             type_checker.ensure_compatible(value_ir.type, existing_type, "assignment to '#{target_name}'")

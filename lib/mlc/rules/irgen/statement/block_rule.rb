@@ -16,10 +16,9 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
 
             # Transform block without requiring value (statement context)
-            nested = expr_svc.transform_block(node, require_value: false)
+            nested = transformer.send(:transform_block, node, require_value: false)
 
             # Return flattened statements
             nested.statements

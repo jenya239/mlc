@@ -16,15 +16,13 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_checker = context.fetch(:type_checker)
             type_inference = context.fetch(:type_inference)
-            context_mgr = context.fetch(:context_manager)
 
             # Special case: IO functions have fixed return types
             if node.callee.is_a?(MLC::AST::VarRef) && transformer.class::IO_RETURN_TYPES.key?(node.callee.name)
-              callee = expr_svc.transform_expression(node.callee)
-              args = node.args.map { |arg| expr_svc.transform_expression(arg) }
+              callee = transformer.send(:transform_expression, node.callee)
+              args = node.args.map { |arg| transformer.send(:transform_expression, arg) }
               type = type_checker.io_return_type(node.callee.name)
               return MLC::HighIR::Builder.call(callee, args, type)
             end
@@ -36,14 +34,14 @@ module MLC
 
             if callee_ast.is_a?(MLC::AST::MemberAccess)
               # Member access call: check if module function or instance method
-              entry = context_mgr.module_member_function(callee_ast.object, callee_ast.member)
+              entry = transformer.send(:module_member_function_entry, callee_ast.object, callee_ast.member)
               if entry
                 # Module function (e.g., Math.sqrt)
                 canonical_name = entry.name
                 callee = MLC::HighIR::Builder.var(canonical_name, type_checker.function_placeholder_type(canonical_name))
               else
                 # Instance method call (e.g., arr.map)
-                object_ir = expr_svc.transform_expression(callee_ast.object)
+                object_ir = transformer.send(:transform_expression, callee_ast.object)
                 member_name = callee_ast.member
                 callee = MLC::HighIR::Builder.member(object_ir, member_name, type_checker.infer_member_type(object_ir.type, member_name))
               end
@@ -53,7 +51,7 @@ module MLC
               callee = MLC::HighIR::Builder.var(callee_ast.name, var_type)
             else
               # Complex expression (e.g., lambda call)
-              callee = expr_svc.transform_expression(callee_ast)
+              callee = transformer.send(:transform_expression, callee_ast)
             end
 
             # Transform arguments with lambda type inference
@@ -64,11 +62,11 @@ module MLC
 
               transformed_arg = if arg.is_a?(MLC::AST::Lambda)
                                   # Transform lambda with expected parameter types
-                                  context_mgr.with_lambda_params(expected_params) do
-                                    expr_svc.transform_expression(arg)
+                                  transformer.send(:with_lambda_param_types, expected_params) do
+                                    transformer.send(:transform_expression, arg)
                                   end
                                 else
-                                  expr_svc.transform_expression(arg)
+                                  transformer.send(:transform_expression, arg)
                                 end
               args << transformed_arg
             end

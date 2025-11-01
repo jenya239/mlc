@@ -16,7 +16,6 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
 
             # Normalize let expression as block expression
             # This ensures type annotations, mutability checks, and scope management
@@ -39,7 +38,7 @@ module MLC
             )
 
             # Transform the normalized block
-            expr_svc.transform_block_expr(block)
+            transformer.send(:transform_block_expr, block)
           end
         end
       end

@@ -55,10 +55,9 @@ require_relative "irgen/type_inference"
 require_relative "irgen/statement_transformer"
 require_relative "irgen/function_transformer"
 # services/expression_transformer.rb deleted - pure delegation wrapper
-# services/predicate_service.rb deleted - trivial helpers
-# services/context_manager.rb deleted - state management
-require_relative "services/var_type_registry"
 require_relative "services/type_checker"
+require_relative "services/predicate_service"
+require_relative "services/context_manager"
 require_relative "services/type_inference_service"
 require_relative "services/record_builder_service"
 require_relative "services/generic_call_resolver_service"
@@ -112,7 +111,7 @@ module MLC
         @function_registry = FunctionRegistry.new
         @type_decl_table = {}
         @sum_type_constructors = {}
-        @var_type_registry = Services::VarTypeRegistry.new  # Track variable types for let bindings
+        @var_types = {}  # Track variable types for let bindings
         @temp_counter = 0
         @loop_depth = 0
         @lambda_param_type_stack = @type_context.lambda_param_stack
@@ -146,19 +145,12 @@ module MLC
 
         # Initialize services for rules
         # @expression_transformer_service deleted - rules call transformer directly
-        # @predicate_service deleted - rules call transformer directly (unit_branch_ast?)
-        # @context_manager_service deleted - state management, not business logic
         @type_checker_service = Services::TypeChecker.new(self)
-        @generic_call_resolver_service = Services::GenericCallResolverService.new(self)
-        @type_inference_service = Services::TypeInferenceService.new(
-          var_type_registry: @var_type_registry,
-          type_registry: @type_registry,
-          function_registry: @function_registry,
-          type_decl_table: @type_decl_table,
-          generic_call_resolver: @generic_call_resolver_service,
-          transformer: self
-        )
+        @predicate_service = Services::PredicateService.new(self)
+        @context_manager_service = Services::ContextManager.new(self)
+        @type_inference_service = Services::TypeInferenceService.new(self)
         @record_builder_service = Services::RecordBuilderService.new(self)
+        @generic_call_resolver_service = Services::GenericCallResolverService.new(self)
 
         ensure_required_rules!
       end
@@ -316,9 +308,9 @@ module MLC
           function_registry: @function_registry,
           rule_engine: @rule_engine,
           # expression_transformer removed - rules call transformer directly
-          # predicates removed - rules call transformer directly
-          # context_manager removed - state management, not a service
           type_checker: @type_checker_service,
+          predicates: @predicate_service,
+          context_manager: @context_manager_service,
           type_inference: @type_inference_service,
           record_builder: @record_builder_service,
           generic_call_resolver: @generic_call_resolver_service
@@ -336,18 +328,18 @@ module MLC
           Array(pattern[:fields]).each_with_index do |field_name, idx|
             next if field_name.nil? || field_name == "_"
             field_type = field_types[idx] || HighIR::Builder.primitive_type("auto")
-            @var_type_registry.set(field_name, field_type)
+            @var_types[field_name] = field_type
             bindings << field_name
           end
 
           pattern[:bindings] = bindings unless bindings.empty?
         when :var
           name = pattern[:name]
-          @var_type_registry.set(name, scrutinee_type) if name && name != "_"
+          @var_types[name] = scrutinee_type if name && name != "_"
         when :regex
           Array(pattern[:bindings]).each do |binding|
             next if binding.nil? || binding == "_"
-            @var_type_registry.set(binding, HighIR::Builder.primitive_type("string"))
+            @var_types[binding] = HighIR::Builder.primitive_type("string")
           end
         end
       end
@@ -402,7 +394,7 @@ module MLC
         # We preserve scope during transformation to allow the trailing expression
         # to see variables defined in the statement portion, and restore the outer
         # scope afterwards to avoid leaking bindings.
-        saved_var_types = @var_type_registry.snapshot
+        saved_var_types = @var_types.dup
 
         statements_ir = transform_statements(block_expr.statements)
         result_ir = transform_expression(block_expr.result_expr)
@@ -410,7 +402,7 @@ module MLC
 
         HighIR::Builder.block_expr(statements_ir, result_ir, block_type)
       ensure
-        @var_type_registry.restore(saved_var_types)
+        @var_types = saved_var_types
       end
 
       def module_member_function_entry(object_node, member_name)
@@ -418,11 +410,96 @@ module MLC
         module_member_entry(object_node.name, member_name)
       end
 
+      def infer_record_from_context(fields)
+        nil
+      end
 
+      def infer_record_from_registry(fields)
+        return nil unless @type_registry
 
+        candidates = @type_registry.types.each_value.filter_map do |type_info|
+          next unless type_info.record?
 
+          type_decl = @type_decl_table[type_info.name]
+          construct_record_from_info(type_info.name, type_info, fields, type_decl)
+        end
 
+        select_best_record_candidate(candidates)
+      end
 
+      def build_anonymous_record(fields)
+        inferred_fields = fields.map { |name, value| {name: name.to_s, type: value.type} }
+        record_type = HighIR::Builder.record_type("record", inferred_fields)
+        HighIR::Builder.record("record", fields, record_type)
+      end
+
+      def build_named_record(type_name, fields)
+        if @type_registry && (type_info = @type_registry.lookup(type_name))
+          type_decl = @type_decl_table[type_name]
+          constructed = construct_record_from_info(type_name, type_info, fields, type_decl)
+          return constructed[:record] if constructed
+
+          base_type = type_info.core_ir_type
+        end
+
+        unless defined?(base_type) && base_type
+          inferred_fields = fields.map { |name, value| {name: name.to_s, type: value.type} }
+          base_type = HighIR::Builder.record_type(type_name, inferred_fields)
+        end
+
+        HighIR::Builder.record(type_name, fields, base_type)
+      end
+
+      def construct_record_from_info(type_name, type_info, fields, type_decl)
+        record_fields = Array(type_info.fields)
+        return nil if record_fields.empty?
+
+        literal_field_names = fields.keys.map(&:to_s)
+        info_field_names = record_fields.map { |field| field[:name].to_s }
+        return nil unless literal_field_names == info_field_names
+
+        type_map = {}
+
+        record_fields.each do |field|
+          field_name = field[:name].to_s
+          literal_expr = fields[field_name] || fields[field[:name]]
+          return nil unless literal_expr
+
+          literal_type = literal_expr.type
+          return nil unless literal_type
+
+          matched = unify_type(field[:type], literal_type, type_map, context: "field '#{field_name}' of '#{type_name}'")
+          return nil unless matched
+        end
+
+        type_params = Array(type_decl&.type_params)
+        type_args = if type_params.any?
+                      type_params.map do |tp|
+                        inferred = type_map[tp.name]
+                        return nil unless inferred
+                        inferred
+                      end
+                    else
+                      []
+                    end
+
+        record_type = if type_args.any?
+                        HighIR::Builder.generic_type(type_info.core_ir_type, type_args)
+                      else
+                        type_info.core_ir_type
+                      end
+
+        record_expr = HighIR::Builder.record(type_name, fields, record_type)
+        concreteness = type_args.count { |arg| !arg.is_a?(HighIR::TypeVariable) }
+
+        {record: record_expr, concreteness: concreteness}
+      end
+
+      def select_best_record_candidate(candidates)
+        return nil if candidates.empty?
+        best = candidates.max_by { |candidate| candidate[:concreteness] }
+        best && best[:record]
+      end
 
       def unify_type(pattern, actual, type_map, context:)
         return false unless pattern && actual
@@ -518,25 +595,25 @@ module MLC
       end
 
       def transform_match_arm(scrutinee_type, arm)
-        saved_var_types = @var_type_registry.snapshot
+        saved_var_types = @var_types.dup
         pattern = transform_pattern(arm[:pattern])
         bind_pattern_variables(pattern, scrutinee_type)
         guard = arm[:guard] ? transform_expression(arm[:guard]) : nil
         body = transform_expression(arm[:body])
         {pattern: pattern, guard: guard, body: body}
       ensure
-        @var_type_registry.restore(saved_var_types)
+        @var_types = saved_var_types
       end
 
       def transform_match_arm_statement(scrutinee_type, arm)
-        saved_var_types = @var_type_registry.snapshot
+        saved_var_types = @var_types.dup
         pattern = transform_pattern(arm[:pattern])
         bind_pattern_variables(pattern, scrutinee_type)
         guard_ir = arm[:guard] ? transform_expression(arm[:guard]) : nil
         body_ir = transform_statement_block(arm[:body])
         {pattern: pattern, guard: guard_ir, body: body_ir}
       ensure
-        @var_type_registry.restore(saved_var_types)
+        @var_types = saved_var_types
       end
 
       def transform_pattern(pattern)

@@ -15,12 +15,11 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             record_builder = context.fetch(:record_builder)
 
             # Transform all field values recursively
             fields = node.fields.transform_keys { |key| key.to_s }
-                              .transform_values { |value| expr_svc.transform_expression(value) }
+                              .transform_values { |value| transformer.send(:transform_expression, value) }
 
             # Determine record type based on type_name
             if node.type_name == "record"

@@ -12,7 +12,7 @@ module MLC
           type_registry: @type_registry,
           function_registry: @function_registry,
           rule_engine: @rule_engine,
-          expression_transformer: @expression_transformer_service,
+          # expression_transformer removed - rules call transformer directly
           type_checker: @type_checker_service,
           predicates: @predicate_service,
           context_manager: @context_manager_service,
@@ -27,7 +27,7 @@ module MLC
 
       def transform_block(block, require_value: true, preserve_scope: false)
         with_current_node(block) do
-          saved_var_types = @var_types.dup unless preserve_scope
+          saved_var_types = @var_type_registry.snapshot unless preserve_scope
           if block.stmts.empty?
             if require_value
               type_error("Block must end with an expression")
@@ -60,7 +60,7 @@ module MLC
           block_type = result_ir ? result_ir.type : HighIR::Builder.primitive_type("void")
           HighIR::Builder.block_expr(statement_nodes, result_ir, block_type)
         ensure
-          @var_types = saved_var_types if defined?(saved_var_types) && !preserve_scope
+          @var_type_registry.restore(saved_var_types) if defined?(saved_var_types) && !preserve_scope
         end
       end
 
@@ -88,17 +88,17 @@ module MLC
 
       def transform_for_statement(stmt)
         iterable_ir = transform_expression(stmt.iterable)
-        saved = @var_types[stmt.var_name]
+        saved = @var_type_registry.get(stmt.var_name)
         element_type = infer_iterable_type(iterable_ir)
-        @var_types[stmt.var_name] = element_type
+        @var_type_registry.set(stmt.var_name, element_type)
         body_ir = within_loop_scope { transform_statement_block(stmt.body, preserve_scope: true) }
 
         HighIR::Builder.for_stmt(stmt.var_name, element_type, iterable_ir, body_ir)
       ensure
         if saved
-          @var_types[stmt.var_name] = saved
+          @var_type_registry.set(stmt.var_name, saved)
         else
-          @var_types.delete(stmt.var_name)
+          @var_type_registry.delete(stmt.var_name)
         end
       end
 
@@ -191,7 +191,7 @@ module MLC
                      value_ir.type
                    end
 
-        @var_types[stmt.name] = var_type
+        @var_type_registry.set(stmt.name, var_type)
 
         [HighIR::Builder.variable_decl_stmt(
           stmt.name,
@@ -207,12 +207,12 @@ module MLC
         end
 
         target_name = stmt.target.name
-        existing_type = @var_types[target_name]
+        existing_type = @var_type_registry.get(target_name)
         type_error("Assignment to undefined variable '#{target_name}'", node: stmt) unless existing_type
 
         value_ir = transform_expression(stmt.value)
         ensure_compatible_type(value_ir.type, existing_type, "assignment to '#{target_name}'")
-        @var_types[target_name] = existing_type
+        @var_type_registry.set(target_name, existing_type)
         target_ir = HighIR::Builder.var(target_name, existing_type)
         [HighIR::Builder.assignment_stmt(target_ir, value_ir)]
       end

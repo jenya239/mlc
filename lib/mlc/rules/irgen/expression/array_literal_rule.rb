@@ -15,11 +15,10 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
             type_checker = context.fetch(:type_checker)
 
             # Transform each element recursively
-            elements = node.elements.map { |elem| expr_svc.transform_expression(elem) }
+            elements = node.elements.map { |elem| transformer.send(:transform_expression, elem) }
 
             # Infer element type from first element (or default to i32)
             element_type = if elements.any?

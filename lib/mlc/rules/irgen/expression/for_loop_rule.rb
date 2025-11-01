@@ -16,10 +16,9 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
 
             # Transform as statement-level for-loop
-            loop_stmt = expr_svc.transform_for_statement(node)
+            loop_stmt = transformer.send(:transform_for_statement, node)
 
             # Wrap in block expression with unit result (for-loops return unit)
             unit_result = MLC::HighIR::Builder.unit_literal(origin: node.origin)

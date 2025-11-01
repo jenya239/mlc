@@ -332,12 +332,12 @@ module MLC
               return result_func
             end
 
-            saved_var_types = @var_types.dup
+            saved_var_types = @var_type_registry.snapshot
             result_func = nil
 
             with_function_return(ret_type) do
               params.each do |param|
-                @var_types[param.name] = param.type
+                @var_type_registry.set(param.name, param.type)
               end
 
               body = transform_expression(func.body)
@@ -389,7 +389,7 @@ module MLC
               )
             end
 
-            @var_types = saved_var_types
+            @var_type_registry.restore(saved_var_types)
             result_func
           end
         end

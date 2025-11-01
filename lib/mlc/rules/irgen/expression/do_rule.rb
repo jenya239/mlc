@@ -16,7 +16,6 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
-            expr_svc = context.fetch(:expression_transformer)
 
             # Handle empty do block
             if node.body.empty?
@@ -25,7 +24,7 @@ module MLC
                 result_expr: MLC::AST::UnitLit.new(origin: node.origin),
                 origin: node.origin
               )
-              return expr_svc.transform_block_expr(block)
+              return transformer.send(:transform_block_expr, block)
             end
 
             # Normalize do body items into block structure
@@ -75,7 +74,7 @@ module MLC
 
             # Build normalized block and transform
             block = MLC::AST::BlockExpr.new(statements: statements, result_expr: result_expr, origin: node.origin)
-            expr_svc.transform_block_expr(block)
+            transformer.send(:transform_block_expr, block)
           end
         end
       end
