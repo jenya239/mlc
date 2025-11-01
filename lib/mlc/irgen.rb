@@ -75,6 +75,7 @@ require_relative "services/sum_type_constructor_service"
 require_relative "services/type_unification_service"
 require_relative "services/lambda_type_inference_service"
 require_relative "services/function_lookup_service"
+require_relative "services/rule_engine_builder"
 
 module MLC
   class IRGen
@@ -117,7 +118,8 @@ module MLC
       def initialize(rule_engine: nil, generic_call_resolver: nil, type_constraint_solver: nil, match_analyzer: nil, effect_analyzer: nil, event_bus: nil)
         # NEW: Unified type registry
         @type_registry = TypeRegistry.new
-        @rule_engine = rule_engine || build_default_rule_engine
+        # Phase 19-A: Use RuleEngineBuilder service
+        @rule_engine = rule_engine || Services::RuleEngineBuilder.build_default
         @type_constraint_solver = type_constraint_solver
         @generic_call_resolver = generic_call_resolver
         @match_analyzer = match_analyzer
@@ -219,7 +221,8 @@ module MLC
           non_literal_type: @purity_analyzer.method(:non_literal_type?)
         )
 
-        ensure_required_rules!
+        # Phase 19-A: Use RuleEngineBuilder service
+        Services::RuleEngineBuilder.ensure_required_rules!(@rule_engine)
       end
 
       def transform(ast)
@@ -237,86 +240,7 @@ module MLC
 
       private
 
-      def build_default_rule_engine
-        engine = Rules::RuleEngine.new
-        engine.register(:core_ir_type_decl, Rules::IRGen::SumConstructorRule.new)
-        engine.register(:core_ir_match_expr, Rules::IRGen::MatchRule.new)
-        engine.register(:core_ir_function, Rules::IRGen::FunctionEffectRule.new)
-        engine.register(:core_ir_stdlib_import, Rules::IRGen::StdlibImportRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::LiteralRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::VarRefRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::MemberRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::CallRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::UnaryRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::PipeRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::BinaryRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::LetRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::RecordLiteralRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::IfRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::ArrayLiteralRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::DoRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::BlockRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::MatchRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::LambdaRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::IndexAccessRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::ForLoopRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::WhileLoopRule.new)
-        engine.register(:core_ir_expression, Rules::IRGen::Expression::ListComprehensionRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::ExprStmtRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::VariableDeclRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::AssignmentRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::ForRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::IfRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::WhileRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::ReturnRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::BreakRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::ContinueRule.new)
-        engine.register(:core_ir_statement, Rules::IRGen::Statement::BlockRule.new)
-        engine
-      end
-
-      def ensure_required_rules!
-        ensure_rule_registered(:core_ir_type_decl, Rules::IRGen::SumConstructorRule)
-        ensure_rule_registered(:core_ir_match_expr, Rules::IRGen::MatchRule)
-        ensure_rule_registered(:core_ir_function, Rules::IRGen::FunctionEffectRule)
-        ensure_rule_registered(:core_ir_stdlib_import, Rules::IRGen::StdlibImportRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::LiteralRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::VarRefRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::MemberRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::CallRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::UnaryRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::PipeRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::BinaryRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::LetRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::RecordLiteralRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::IfRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::ArrayLiteralRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::DoRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::BlockRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::MatchRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::LambdaRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::IndexAccessRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::ForLoopRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::WhileLoopRule)
-        ensure_rule_registered(:core_ir_expression, Rules::IRGen::Expression::ListComprehensionRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::ExprStmtRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::VariableDeclRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::AssignmentRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::ForRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::IfRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::WhileRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::ReturnRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::BreakRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::ContinueRule)
-        ensure_rule_registered(:core_ir_statement, Rules::IRGen::Statement::BlockRule)
-      end
-
-      def ensure_rule_registered(stage, rule_class)
-        rules = @rule_engine.registry[stage.to_sym]
-        return if rules.any? { |rule| rule.is_a?(rule_class) || rule == rule_class || rule.class == rule_class }
-
-        @rule_engine.register(stage, rule_class.new)
-      end
+      # Phase 19-A: Rule engine setup methods moved to RuleEngineBuilder service
 
       # Phase 18-A: Delegate to TransformationContext
       def with_type_params(params, &block)
