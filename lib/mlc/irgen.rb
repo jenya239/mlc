@@ -105,7 +105,6 @@ module MLC
         # NEW: Unified type registry
         @type_registry = TypeRegistry.new
         @rule_engine = rule_engine || build_default_rule_engine
-        @scope_context_service = Services::ScopeContextService.new
         @type_constraint_solver = type_constraint_solver
         @generic_call_resolver = generic_call_resolver
         @match_analyzer = match_analyzer
@@ -120,10 +119,12 @@ module MLC
         @var_type_registry = Services::VarTypeRegistry.new  # Track variable types for let bindings
         @temp_counter = 0
         @loop_depth = 0
-        @lambda_param_type_stack = @scope_context_service.lambda_param_stack
-        @function_return_type_stack = @scope_context_service.function_return_stack
-        @current_node = nil
         @current_import_aliases = nil
+
+        # Phase 18-A: TransformationContext centralizes transformation state
+        @context = Services::TransformationContext.new(var_type_registry: @var_type_registry)
+        @lambda_param_type_stack = @context.lambda_param_stack
+        @function_return_type_stack = @context.function_return_stack
 
         # Initialize module context service
         @module_context_service = Services::ModuleContextService.new(
@@ -138,7 +139,7 @@ module MLC
           function_registry: @function_registry,
           type_decl_table: @type_decl_table,
           event_bus: @event_bus,
-          current_node_proc: -> { @current_node }
+          current_node_proc: -> { @context.current_node }
         )
         @generic_call_resolver_service = Services::GenericCallResolverService.new(self)
         @type_inference_service = Services::TypeInferenceService.new(
@@ -290,28 +291,29 @@ module MLC
         @rule_engine.register(stage, rule_class.new)
       end
 
+      # Phase 18-A: Delegate to TransformationContext
       def with_type_params(params, &block)
-        @scope_context_service.with_type_params(params, &block)
+        @context.with_type_params(params, &block)
       end
 
       def current_type_params
-        @scope_context_service.current_type_params
+        @context.current_type_params
       end
 
       def with_function_return(type, &block)
-        @scope_context_service.with_function_return(type, &block)
+        @context.with_function_return(type, &block)
       end
 
       def current_function_return
-        @scope_context_service.current_function_return
+        @context.current_function_return
       end
 
       def with_lambda_param_types(types, &block)
-        @scope_context_service.with_lambda_param_types(types, &block)
+        @context.with_lambda_param_types(types, &block)
       end
 
       def current_lambda_param_types
-        @scope_context_service.current_lambda_param_types
+        @context.current_lambda_param_types
       end
 
       # Expression transformation methods (migrated from ExpressionTransformer module)
@@ -712,12 +714,8 @@ module MLC
       end
 
       # Error context management (migrated from BaseTransformer)
-      def with_current_node(node)
-        previous = @current_node
-        @current_node = node if node
-        yield
-      ensure
-        @current_node = previous
+      def with_current_node(node, &block)
+        @context.with_current_node(node, &block)
       end
 
       # Builtin function metadata (migrated from BaseTransformer)

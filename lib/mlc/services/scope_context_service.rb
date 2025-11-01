@@ -2,16 +2,29 @@
 
 module MLC
   module Services
-    # ScopeContextService manages scoped state during AST → HighIR transformation
-    # Tracks type parameters, function return types, and lambda parameter types
-    # using stacks to support nested scopes (generic functions, lambdas, etc.)
-    class ScopeContextService
+    # TransformationContext manages all scoped state during AST → HighIR transformation
+    # Phase 18-A: Renamed from ScopeContextService, added current_node and var_type_registry
+    #
+    # Responsibilities:
+    # - Track type parameters (for generic functions)
+    # - Track function return types (for validating return statements)
+    # - Track lambda parameter types (for type inference in lambdas)
+    # - Track current AST node (for error reporting)
+    # - Provide access to variable type registry
+    #
+    # Dependencies:
+    # - var_type_registry: VarTypeRegistry (injected, for tracking variable types)
+    class TransformationContext
       attr_reader :type_param_stack, :lambda_param_stack, :function_return_stack
+      attr_reader :var_type_registry
+      attr_accessor :current_node
 
-      def initialize
+      def initialize(var_type_registry:)
         @type_param_stack = []
         @lambda_param_stack = []
         @function_return_stack = []
+        @var_type_registry = var_type_registry
+        @current_node = nil
       end
 
       # Type parameters (e.g., <T> in fn foo<T>())
@@ -49,6 +62,18 @@ module MLC
       def current_lambda_param_types
         @lambda_param_stack.last || []
       end
+
+      # Current AST node (for error reporting with source location)
+      def with_current_node(node)
+        previous = @current_node
+        @current_node = node if node
+        yield
+      ensure
+        @current_node = previous
+      end
     end
+
+    # Backward compatibility alias
+    ScopeContextService = TransformationContext
   end
 end
