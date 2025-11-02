@@ -7,15 +7,14 @@ module MLC
     module IRGen
       module Statement
         # ReturnRule: Transform AST return statements to HighIR
-        # Contains FULL logic (no delegation to transformer)
-        # Validates return type compatibility with function signature
+        # Phase 23-C: Visitor provides pre-transformed IR nodes via context
+        # Rule focuses on semantics (return type validation)
         class ReturnRule < BaseRule
           def applies?(node, _context = {})
             node.is_a?(MLC::AST::Return)
           end
 
           def apply(node, context = {})
-            transformer = context.fetch(:transformer)
             type_checker = context.fetch(:type_checker)
             scope_context = context.fetch(:scope_context)
 
@@ -25,27 +24,27 @@ module MLC
               type_checker.type_error("return statement outside of function")
             end
 
-            # Transform return expression (if present)
-            expr_ir = node.expr ? transformer.send(:transform_expression, node.expr) : nil
+            # Visitor already transformed return expression - get from context
+            value_ir = context.fetch(:value_ir)
 
             # Validate return type compatibility
             if type_checker.void_type?(expected)
               # Void function: no return value allowed
-              if expr_ir
+              if value_ir
                 type_checker.type_error("return value not allowed in void function", node: node)
               end
             else
               # Non-void function: return value required
-              unless expr_ir
+              unless value_ir
                 expected_name = type_checker.describe_type(expected)
                 type_checker.type_error("return statement requires a value of type #{expected_name}", node: node)
               end
               # Check type compatibility
-              type_checker.ensure_compatible(expr_ir.type, expected, "return statement", node: node)
+              type_checker.ensure_compatible(value_ir.type, expected, "return statement", node: node)
             end
 
             # Build return statement (wrap in array for statement rule convention)
-            [MLC::HighIR::Builder.return_stmt(expr_ir)]
+            [MLC::HighIR::Builder.return_stmt(value_ir)]
           end
         end
       end

@@ -192,6 +192,7 @@ module MLC
             function_registry: @function_registry,
             type_checker: @type_checker_service,
             type_inference: @type_inference_service,
+            scope_context: @scope_context_service,
             var_type_registry: @var_type_registry
           }
         )

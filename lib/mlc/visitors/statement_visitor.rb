@@ -26,6 +26,7 @@ module MLC
         @function_registry = services[:function_registry]
         @type_checker_service = services[:type_checker]
         @type_inference_service = services[:type_inference]
+        @scope_context_service = services[:scope_context]
         @var_type_registry = services[:var_type_registry]
       end
 
@@ -80,6 +81,7 @@ module MLC
           rule_engine: @rule_engine,
           type_checker: @type_checker_service,
           type_inference: @type_inference_service,
+          scope_context: @scope_context_service,
           var_type_registry: @var_type_registry
         }
       end
