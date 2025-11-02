@@ -156,9 +156,9 @@ module MLC
       end
 
       # Visit for loop statement: for x in iter { body }
-      # Recursively visit iterator and body statements
+      # Recursively visit iterable and body statements
       def visit_for_statement(node)
-        iter_ir = @expression_visitor.visit(node.iterator)
+        iter_ir = @expression_visitor.visit(node.iterable)
         body_ir = visit_statements(node.body)
 
         context = statement_rule_context.merge(

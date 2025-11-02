@@ -244,7 +244,7 @@ module MLC
       # Visit if expression: if cond then branch else branch
       # Recursively visit condition and branches, then apply rule
       def visit_if(node)
-        cond_ir = visit(node.cond)
+        cond_ir = visit(node.condition)
         then_ir = visit(node.then_branch)
         else_ir = node.else_branch ? visit(node.else_branch) : nil
 
@@ -332,7 +332,7 @@ module MLC
       # Visit for loop expression: for x in iter { body }
       # Recursively visit iterator and body
       def visit_for_loop(node)
-        iter_ir = visit(node.iterator)
+        iter_ir = visit(node.iterable)
 
         context = expression_rule_context.merge(
           iter_ir: iter_ir
@@ -343,7 +343,7 @@ module MLC
       # Visit while loop expression: while cond { body }
       # Recursively visit condition and body
       def visit_while_loop(node)
-        cond_ir = visit(node.cond)
+        cond_ir = visit(node.condition)
 
         context = expression_rule_context.merge(
           cond_ir: cond_ir
@@ -354,8 +354,11 @@ module MLC
       # Visit list comprehension: [expr | x <- iter, cond]
       # Recursively visit iterator, condition, and body expression
       def visit_list_comprehension(node)
-        iter_ir = visit(node.iterator)
-        cond_ir = node.filter ? visit(node.filter) : nil
+        # ListComprehension has .generators (array of Generator nodes)
+        # Each Generator has .iterable
+        iter_ir = node.generators.empty? ? nil : visit(node.generators[0].iterable)
+        # ListComprehension has .filters (array), not .filter
+        cond_ir = node.filters.empty? ? nil : visit(node.filters[0])
 
         context = expression_rule_context.merge(
           iter_ir: iter_ir,
