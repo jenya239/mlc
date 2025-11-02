@@ -17,7 +17,7 @@ module MLC
     # - @var_type_registry: For binding pattern variables
     # - @rule_engine: For applying match expression rules
     # - @match_analyzer: For match analysis
-    # - constructor_info_for: For getting constructor type info
+    # - @type_unification_service: For getting constructor type info
     # - transform_expression: For transforming arm bodies (expressions)
     # - transform_statement_block: For transforming arm bodies (statements)
     module PatternMatchingTransformer
@@ -121,7 +121,7 @@ module MLC
       def bind_pattern_variables(pattern, scrutinee_type)
         case pattern[:kind]
         when :constructor
-          info = constructor_info_for(pattern[:name], scrutinee_type)
+          info = @type_unification_service.constructor_info_for(pattern[:name], scrutinee_type)
           field_types = info ? info.param_types : []
           bindings = []
 

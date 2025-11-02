@@ -55,7 +55,7 @@ class RulesRuleEngineTest < Minitest::Test
     transformer = MLC::IRGen.new(rule_engine: engine)
     transformer.transform(ast)
 
-    info = transformer.send(:lookup_function_info, "Some")
+    info = transformer.function_registry.lookup("Some")
     refute_nil info
     assert_equal "Option", transformer.type_registry.lookup("Option").name
   end

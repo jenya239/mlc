@@ -5,7 +5,7 @@ require_relative "rules/rule_engine"
 require_relative "diagnostics/event_logger"
 require_relative "irgen"
 require_relative "backend/codegen"
-require_relative "stdlib_scanner"
+require_relative "services/stdlib_scanner"
 
 module MLC
   class Application

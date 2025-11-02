@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'parser/parser'
-require_relative 'ast/nodes'
+require_relative '../parser/parser'
+require_relative '../ast/nodes'
 
 module MLC
   # Metadata for a stdlib function

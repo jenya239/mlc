@@ -15,9 +15,9 @@ require_relative "mlc/parser/parser"
 require_relative "mlc/irgen"
 require_relative "mlc/backend/codegen"
 require_relative "mlc/backend/header_generator"
-require_relative "mlc/stdlib_resolver"
-require_relative "mlc/stdlib_scanner"
-require_relative "mlc/stdlib_signature_registry"
+require_relative "mlc/services/stdlib_resolver"
+require_relative "mlc/services/stdlib_scanner"
+require_relative "mlc/services/stdlib_signature_registry"
 require_relative "mlc/function_registry"
 
 module MLC

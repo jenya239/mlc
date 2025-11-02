@@ -219,57 +219,9 @@ module MLC
 
 
 
-
-
-
-
-      # Phase 18-B: Delegate to TypeUnificationService
-      def unify_type(pattern, actual, type_map, context:)
-        @type_unification_service.unify_type(pattern, actual, type_map, context: context)
-      end
-
-      # Phase 18-B: Delegate to TypeUnificationService
-      def type_equivalent?(left, right)
-        @type_unification_service.type_equivalent?(left, right)
-      end
-
-
-
-
-      # Get constructor info with generic type substitutions
-      # Phase 18-B: Delegate to TypeUnificationService
-      def constructor_info_for(name, scrutinee_type)
-        @type_unification_service.constructor_info_for(name, scrutinee_type)
-      end
-
-      # Phase 18-B: Delegate to TypeUnificationService
-      def generic_substitutions(info, scrutinee_type)
-        @type_unification_service.generic_substitutions(info, scrutinee_type)
-      end
-
-      # Phase 18-B: Delegate to TypeUnificationService
-      def apply_type_substitutions(type, substitutions)
-        @type_unification_service.apply_type_substitutions(type, substitutions)
-      end
-
       # Error context management (migrated from BaseTransformer)
       def with_current_node(node, &block)
         @context.with_current_node(node, &block)
-      end
-
-      # Phase 18-E: Delegate to FunctionLookupService
-      def builtin_function_info(name)
-        @function_lookup_service.builtin_function_info(name)
-      end
-
-      # Phase 18-E: Delegate to FunctionLookupService
-      def lookup_function_info(name)
-        @function_lookup_service.lookup_function_info(name)
-      end
-
-      # Phase 18-E: Delegate to FunctionLookupService
-      def function_placeholder_type(name)
-        @function_lookup_service.function_placeholder_type(name)
       end
     end
 end
