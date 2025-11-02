@@ -57,6 +57,7 @@ require_relative "irgen/statement_transformer"
 require_relative "irgen/pattern_matching_transformer"
 # Phase 23-A: Visitor Pattern for AST traversal
 require_relative "visitors/expression_visitor"
+require_relative "visitors/statement_visitor"
 # Phase 18-F: FunctionTransformer split into 4 focused modules
 require_relative "irgen/type_transformer"
 require_relative "irgen/function_declaration_transformer"
@@ -177,6 +178,20 @@ module MLC
             type_inference: @type_inference_service,
             record_builder: @record_builder_service,
             scope_context: @scope_context_service,
+            var_type_registry: @var_type_registry
+          }
+        )
+
+        # Phase 23-C: Instantiate separate StatementVisitor class
+        @statement_visitor = Visitors::StatementVisitor.new(
+          rule_engine: @rule_engine,
+          transformer: self,
+          expression_visitor: @expression_visitor,
+          services: {
+            type_registry: @type_registry,
+            function_registry: @function_registry,
+            type_checker: @type_checker_service,
+            type_inference: @type_inference_service,
             var_type_registry: @var_type_registry
           }
         )
