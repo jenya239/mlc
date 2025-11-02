@@ -17,7 +17,7 @@ module MLC
     }.freeze
 
     def initialize(stdlib_dir = nil, scanner: nil)
-      @stdlib_dir = stdlib_dir || File.expand_path('stdlib', __dir__)
+      @stdlib_dir = stdlib_dir || File.expand_path('stdlib', File.dirname(__dir__))
       @scanner = scanner || StdlibScanner.new(@stdlib_dir)
     end
 
