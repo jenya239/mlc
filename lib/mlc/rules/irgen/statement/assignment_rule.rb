@@ -17,6 +17,7 @@ module MLC
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
             type_checker = context.fetch(:type_checker)
+            var_type_registry = context.fetch(:var_type_registry)
 
             # Validate: target must be variable reference
             unless node.target.is_a?(MLC::AST::VarRef)
@@ -24,22 +25,27 @@ module MLC
             end
 
             target_name = node.target.name
-            var_types = transformer.instance_variable_get(:@var_types)
 
             # Validate: variable must exist
-            existing_type = var_types[target_name]
+            existing_type = var_type_registry.get(target_name)
             unless existing_type
               type_checker.type_error("Assignment to undefined variable '#{target_name}'", node: node)
             end
 
-            # Transform value expression
-            value_ir = transformer.send(:transform_expression, node.value)
+            # Phase 23-C: Support both visitor path (with value_ir) and legacy path (without)
+            value_ir = if context.key?(:value_ir)
+                         # New path: Visitor provides pre-transformed IR
+                         context.fetch(:value_ir)
+                       else
+                         # Legacy path: Transform inline for backward compatibility
+                         transformer.send(:transform_expression, node.value)
+                       end
 
             # Validate: value type must be compatible with variable type
             type_checker.ensure_compatible(value_ir.type, existing_type, "assignment to '#{target_name}'")
 
             # Update variable type in scope (may refine type)
-            var_types[target_name] = existing_type
+            var_type_registry.set(target_name, existing_type)
 
             # Build assignment statement
             target_ir = MLC::HighIR::Builder.var(target_name, existing_type)

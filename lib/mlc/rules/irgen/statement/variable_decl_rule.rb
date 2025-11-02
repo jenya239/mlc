@@ -17,9 +17,16 @@ module MLC
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
             type_checker = context.fetch(:type_checker)
+            var_type_registry = context.fetch(:var_type_registry)
 
-            # Transform initialization value
-            value_ir = transformer.send(:transform_expression, node.value)
+            # Phase 23-C: Support both visitor path (with value_ir) and legacy path (without)
+            value_ir = if context.key?(:value_ir)
+                         # New path: Visitor provides pre-transformed IR
+                         context.fetch(:value_ir)
+                       else
+                         # Legacy path: Transform inline for backward compatibility
+                         transformer.send(:transform_expression, node.value)
+                       end
 
             # Determine variable type: explicit annotation or inferred from value
             var_type = if node.type
@@ -41,7 +48,6 @@ module MLC
                        end
 
             # Add variable to scope with inferred/explicit type
-            var_type_registry = transformer.instance_variable_get(:@var_type_registry)
             var_type_registry.set(node.name, var_type)
 
             # Build variable declaration statement

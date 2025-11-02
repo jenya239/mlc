@@ -18,7 +18,8 @@ module MLC
           # context_manager removed - state management, not a service
           type_inference: @type_inference_service,
           record_builder: @record_builder_service,
-          scope_context: @scope_context_service  # Added for statement rules that need scope context
+          scope_context: @scope_context_service,  # Added for statement rules that need scope context
+          var_type_registry: @var_type_registry  # Phase 23-C.2: Needed for variable_decl_rule, assignment_rule
         }
         result = @rule_engine.apply(:core_ir_statement, stmt, context: context)
         return nil if result.equal?(stmt)
