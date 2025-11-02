@@ -81,12 +81,28 @@ Scanner теперь корректно находит все 10 модулей 
    - Различные edge cases в type system, pattern matching, etc.
    - Не связаны со stdlib infrastructure
 
+## Visitor Pattern Fixes (NEW)
+
+### 3. AST Attribute Fixes
+
+**Файлы**:
+- `lib/mlc/visitors/expression_visitor.rb:335` - Fixed ForLoop `.iterator` → `.iterable`
+- `lib/mlc/visitors/expression_visitor.rb:359,361` - Fixed ListComprehension `.iterator` → `.generators[0].iterable`, `.filter` → `.filters[0]`
+- `test/mlc/rules_rule_engine_test.rb:58,60` - Fixed `.lookup()` → `.fetch()` (deprecated API)
+
+**Проблема**: Visitor использовал неправильные имена атрибутов AST nodes
+
+**Решение**: Исправлены в соответствии с фактической структурой AST
+
+**Commit**: 435ca0e "fix(visitor): correct AST attribute names for ForLoop and ListComprehension"
+
 ## Текущий Статус
 
 ✅ **Stdlib scanner infrastructure полностью работоспособна**
 ✅ **Все модули обнаруживаются и функции извлекаются корректно**
-✅ **67% reduction в test issues**
-⚠️ **40 pre-existing issues остаются** (не связаны с stdlib scanner)
+✅ **67% reduction в test issues** (121 → 40)
+✅ **Visitor AST attribute bugs fixed**
+⚠️ **40 pre-existing issues остаются** (sum types, multi-file imports, etc.)
 
 ## Следующие Шаги
 

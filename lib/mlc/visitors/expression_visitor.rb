@@ -212,7 +212,7 @@ module MLC
         saved_var_types = @var_type_registry.snapshot
 
         # Type the binding
-        @var_type_registry.register(node.name, value_ir.type)
+        @var_type_registry.set(node.name, value_ir.type)
 
         # Visit body in new scope
         body_ir = visit(node.body)

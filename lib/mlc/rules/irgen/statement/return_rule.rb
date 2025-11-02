@@ -25,7 +25,8 @@ module MLC
             end
 
             # Visitor already transformed return expression - get from context
-            value_ir = context.fetch(:value_ir)
+            # Can be nil for void returns (return without value)
+            value_ir = context.fetch(:value_ir, nil)
 
             # Validate return type compatibility
             if type_checker.void_type?(expected)
