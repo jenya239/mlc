@@ -36,7 +36,6 @@ module MLC
         :scope_context_service,  # Alias for context (backward compatibility)
         :module_context_service,
         :type_checker_service,
-        :generic_call_resolver_service,
         :type_inference_service,
         :record_builder_service,
         :purity_analyzer,
@@ -44,7 +43,6 @@ module MLC
         :function_registration_service,
         :sum_type_constructor_service,
         :type_unification_service,
-        :lambda_type_inference_service,
         :function_lookup_service,
         :temp_counter,
         :loop_depth,
@@ -108,20 +106,16 @@ module MLC
 
         purity_analyzer = Services::PurityAnalyzer.new
 
-        lambda_type_inference_service = Services::LambdaTypeInferenceService.new
-
         # Phase 6: Services with dependencies on core services
-        generic_call_resolver_service = Services::GenericCallResolverService.new(transformer)
-
         type_inference_service = Services::TypeInferenceService.new(
           var_type_registry: var_type_registry,
           type_registry: type_registry,
           function_registry: function_registry,
           type_decl_table: type_decl_table,
-          generic_call_resolver: generic_call_resolver_service,
+          generic_call_resolver: nil,  # TypeSystem::GenericCallResolver created below, passed after instantiation
           type_checker: type_checker_service,
           transformer: transformer,
-          scope_context: scope_context_service  # Phase 20: Fixed - now properly initialized
+          scope_context: scope_context_service
         )
 
         record_builder_service = Services::RecordBuilderService.new(transformer)
@@ -167,6 +161,9 @@ module MLC
           constraint_solver: type_constraint_solver
         )
 
+        # Inject generic_call_resolver into TypeInferenceService
+        type_inference_service.generic_call_resolver = generic_call_resolver
+
         match_analyzer ||= TypeSystem::MatchAnalyzer.new(
           ensure_compatible_type: type_checker_service.method(:ensure_compatible_type),
           type_registry: type_registry,
@@ -200,7 +197,6 @@ module MLC
           scope_context_service: scope_context_service,
           module_context_service: module_context_service,
           type_checker_service: type_checker_service,
-          generic_call_resolver_service: generic_call_resolver_service,
           type_inference_service: type_inference_service,
           record_builder_service: record_builder_service,
           purity_analyzer: purity_analyzer,
@@ -208,7 +204,6 @@ module MLC
           function_registration_service: function_registration_service,
           sum_type_constructor_service: sum_type_constructor_service,
           type_unification_service: type_unification_service,
-          lambda_type_inference_service: lambda_type_inference_service,
           function_lookup_service: function_lookup_service,
           temp_counter: temp_counter,
           loop_depth: loop_depth,

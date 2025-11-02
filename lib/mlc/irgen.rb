@@ -4,8 +4,8 @@ require_relative "ast/nodes"
 require_relative "high_ir/nodes"
 require_relative "high_ir/builder"
 require_relative "event_bus"
-require_relative "stdlib_resolver"
-require_relative "stdlib_signature_registry"
+require_relative "services/stdlib_resolver"
+require_relative "services/stdlib_signature_registry"
 require_relative "function_registry"
 require_relative "type_registry"
 # Note: base_transformer.rb deleted - methods now in IRGen class (private section at bottom)
@@ -67,14 +67,12 @@ require_relative "services/var_type_registry"
 require_relative "services/type_checker"
 require_relative "services/type_inference_service"
 require_relative "services/record_builder_service"
-require_relative "services/generic_call_resolver_service"
 require_relative "services/purity_analyzer"
 require_relative "services/module_context_service"
 require_relative "services/type_resolution_service"
 require_relative "services/function_registration_service"
 require_relative "services/sum_type_constructor_service"
 require_relative "services/type_unification_service"
-require_relative "services/lambda_type_inference_service"
 require_relative "services/function_lookup_service"
 require_relative "services/rule_engine_builder"
 require_relative "services/irgen_container"
@@ -152,7 +150,6 @@ module MLC
         @scope_context_service = container.scope_context_service  # Phase 20: Fixed initialization
         @module_context_service = container.module_context_service
         @type_checker_service = container.type_checker_service
-        @generic_call_resolver_service = container.generic_call_resolver_service
         @type_inference_service = container.type_inference_service
         @record_builder_service = container.record_builder_service
         @purity_analyzer = container.purity_analyzer
@@ -160,7 +157,6 @@ module MLC
         @function_registration_service = container.function_registration_service
         @sum_type_constructor_service = container.sum_type_constructor_service
         @type_unification_service = container.type_unification_service
-        @lambda_type_inference_service = container.lambda_type_inference_service
         @function_lookup_service = container.function_lookup_service
 
         # Maintain backward compatibility for stacks
@@ -210,14 +206,14 @@ module MLC
         @context.current_lambda_param_types
       end
 
-      # Phase 18-C: Delegate to LambdaTypeInferenceService
+      # Delegate to TypeInferenceService
       def expected_lambda_param_types(object_ir, member_name, transformed_args, index)
-        @lambda_type_inference_service.expected_lambda_param_types(object_ir, member_name, transformed_args, index)
+        @type_inference_service.expected_lambda_param_types(object_ir, member_name, transformed_args, index)
       end
 
-      # Phase 18-C: Delegate to LambdaTypeInferenceService
+      # Delegate to TypeInferenceService
       def lambda_return_type(arg)
-        @lambda_type_inference_service.lambda_return_type(arg)
+        @type_inference_service.lambda_return_type(arg)
       end
 
 

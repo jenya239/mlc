@@ -24,7 +24,7 @@ module MLC
             # Determine variable type: explicit annotation or inferred from value
             var_type = if node.type
                          # Explicit type annotation provided
-                         explicit_type = type_checker.transform_type(node.type)
+                         explicit_type = transformer.send(:transform_type, node.type)
 
                          # Special case: anonymous record with explicit type - refine to named record
                          if value_ir.is_a?(MLC::HighIR::RecordExpr) && value_ir.type_name == "record"

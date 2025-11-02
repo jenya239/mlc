@@ -18,13 +18,15 @@ module MLC
     # - generic_call_resolver: GenericCallResolverService
     # - transformer: IRGen (for helper methods like type_error, type_name)
     class TypeInferenceService
+      attr_writer :generic_call_resolver  # Allow injection after initialization
+
       def initialize(var_type_registry:, type_registry:, function_registry:,
                      type_decl_table:, generic_call_resolver:, type_checker:, transformer:, scope_context:)
         @var_type_registry = var_type_registry
         @type_registry = type_registry
         @function_registry = function_registry
         @type_decl_table = type_decl_table
-        @generic_call_resolver = generic_call_resolver
+        @generic_call_resolver = generic_call_resolver  # TypeSystem::GenericCallResolver (set after construction)
         @type_checker = type_checker
         @transformer = transformer  # Временно для методов, которые еще не перенесены
         @scope_context = scope_context

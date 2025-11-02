@@ -68,7 +68,6 @@ module MLC
           type_checker: @type_checker_service,
           type_inference: @type_inference_service,
           record_builder: @record_builder_service,
-          generic_call_resolver: @generic_call_resolver_service,
           scope_context: @scope_context_service
         }
         @rule_engine.apply(:core_ir_expression, expr, context: context)

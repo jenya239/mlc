@@ -29,7 +29,7 @@ module MLC
             params = node.params.each_with_index.map do |param, index|
               if param.is_a?(MLC::AST::LambdaParam)
                 param_type = if param.type
-                               type_checker.transform_type(param.type)
+                               transformer.send(:transform_type, param.type)
                              elsif expected_param_types[index]
                                expected_param_types[index]
                              else
