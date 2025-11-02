@@ -15,6 +15,16 @@ Comprehensive architecture refactoring to eliminate code complexity, improve mai
 - Fixed delegate method bugs
 - All tests pass ✅
 
+### ✅ Phase 22: Eliminate Delegate Methods (3h)
+**Status**: COMPLETE
+**Results**: -48 LOC (removed 8 delegate methods)
+
+- Removed 8 delegate methods from IRGen (~50 lines)
+- Updated 1 call site to use direct service access
+- Fixed test to use function_registry.lookup()
+- Fixed Phase 21 leftover require path issues
+- All tests pass ✅
+
 ## Current Architecture State
 
 **Services** (14):
@@ -35,39 +45,113 @@ Comprehensive architecture refactoring to eliminate code complexity, improve mai
 
 ## Pending Phases
 
-### Phase 22: Eliminate Delegate Methods (3h, Medium)
-**Goal**: Remove unnecessary abstraction layers
+### 🔴 Phase 23: Eliminate transformer.send() Anti-pattern (16h, CRITICAL)
+**Goal**: Remove architectural coupling between Rules and Transformer internals
 
-Current delegate methods in IRGen:
+**Current Problem**:
+- **54 calls** to `transformer.send(:method_name)` in rules/
+- **1 call** in services/record_builder_service.rb
+- Rules directly access private transformer methods via `send()`
+- Violates separation of concerns - rules should only use services
+
+**Breakdown**:
 ```ruby
-# Type unification (5 methods)
-unify_type → @type_unification_service
-type_equivalent? → @type_unification_service
-constructor_info_for → @type_unification_service
-generic_substitutions → @type_unification_service
-apply_type_substitutions → @type_unification_service
+# Most common violations:
+transformer.send(:transform_expression, ...)  # ~35 calls
+transformer.send(:transform_type, ...)        # ~8 calls
+transformer.send(:transform_block_expr, ...)  # ~4 calls
+transformer.send(:transform_statement_block, ...) # ~3 calls
+transformer.send(:unit_branch_ast?, ...)      # ~2 calls
+transformer.send(:module_member_function_entry, ...) # ~1 call
+```
 
-# Function lookup (3 methods)
-builtin_function_info → @function_lookup_service
-lookup_function_info → @function_lookup_service
-function_placeholder_type → @function_lookup_service
+**Solution Options**:
+
+**Option A: ExpressionTransformationService** (Recommended)
+```ruby
+# Create new service to encapsulate transformation logic
+class ExpressionTransformationService
+  def transform_expression(node) ... end
+  def transform_type(node) ... end
+  def transform_block_expr(node) ... end
+  def transform_statement_block(node) ... end
+end
+
+# Rules access via service, not transformer
+context = {
+  expr_transformer: expr_transformation_service,
+  type_transformer: type_transformation_service,
+  ...
+}
+```
+
+**Option B: Visitor Pattern** (More invasive)
+```ruby
+# Each rule becomes a Visitor
+class BinaryRule < BaseRule
+  def visit_binary(node, context)
+    left = accept(node.left, context)
+    right = accept(node.right, context)
+    ...
+  end
+end
 ```
 
 **Tasks**:
-1. Find all call sites of delegate methods
-2. Add missing services to rule context hashes
-3. Replace delegate calls with direct service calls
-4. Remove delegate methods
-5. Verify tests pass
+1. **Analysis Phase** (2h):
+   - Catalog all 54 `transformer.send()` call sites
+   - Group by method name and usage pattern
+   - Determine which methods belong in services vs. utilities
+
+2. **Service Design** (3h):
+   - Create `ExpressionTransformationService`
+   - Create `TypeTransformationService`
+   - Create `StatementTransformationService`
+   - Define clean public APIs
+
+3. **Migration** (8h):
+   - Update all 54 call sites in rules
+   - Update 1 call site in record_builder_service
+   - Add services to rule context hashes
+   - Remove private method access
+
+4. **Cleanup** (2h):
+   - Make transformer methods properly private
+   - Update tests
+   - Verify no remaining `send()` anti-patterns
+
+5. **Verification** (1h):
+   - Run full test suite
+   - Check for regressions
 
 **Benefits**:
-- Reduces indirection
-- Makes dependencies explicit
-- Simplifies IRGen interface
+- Proper separation of concerns
+- Rules depend on stable service interfaces
+- Transformer internals can change without breaking rules
+- Easier to test rules in isolation
+- No more reflection/meta-programming hacks
 
 ---
 
-### Phase 23: Type System Directory Review (2h, Medium)
+### Phase 24: Rename lib/mlc/irgen → lib/mlc/transformers (2h, Low)
+**Goal**: More descriptive directory name
+
+**Tasks**:
+1. Move `lib/mlc/irgen` → `lib/mlc/transformers`
+2. Move `lib/mlc/irgen.rb` → `lib/mlc/transformers.rb`
+3. Rename class `MLC::IRGen` → `MLC::Transformers::IRGen`
+4. Update all require_relative statements
+5. Update tests
+6. Update documentation
+
+**Benefits**:
+- Clearer semantics (`transformers` vs `irgen`)
+- Better project organization
+- Matches Rails conventions
+
+---
+
+### Phase 25: Type System Directory Review (2h, Medium)
 **Goal**: Review type_system/ directory - should it be in services/?
 
 **Current State**:
@@ -102,7 +186,7 @@ C. Split: some to services/, core algorithms stay
 
 ---
 
-### Phase 24: Root Directory Review (2h, Medium)
+### Phase 26: Root Directory Review (2h, Medium)
 **Goal**: Review lib/mlc root files - which should move to subdirectories?
 
 **Current State**:
@@ -144,7 +228,7 @@ D. Hybrid: move some, keep main orchestrators in root
 
 ---
 
-### Phase 25: Phase Comment Cleanup (1h, Low)
+### Phase 27: Phase Comment Cleanup (1h, Low)
 **Goal**: Remove all "Phase XX" comments from codebase
 
 **Tasks**:
@@ -158,7 +242,7 @@ D. Hybrid: move some, keep main orchestrators in root
 
 ---
 
-### Phase 26: Autoloading Infrastructure (8h, High)
+### Phase 28: Autoloading Infrastructure (8h, High)
 **Goal**: Implement Rails-style autoloading for rules, services, and type system
 
 **Current Problem**:
@@ -224,7 +308,7 @@ lib/mlc/
 
 ---
 
-### Phase 27: Ruby IoC Container (12h, High)
+### Phase 29: Ruby IoC Container (12h, High)
 **Goal**: Replace manual dependency injection with proper IoC container
 
 **Current Problem**:
@@ -332,7 +416,7 @@ end
 
 ---
 
-### Phase 28: Service Layer Documentation (4h, Medium)
+### Phase 30: Service Layer Documentation (4h, Medium)
 **Goal**: Document each service's responsibilities and dependencies
 
 **Tasks**:
@@ -343,7 +427,7 @@ end
 
 ---
 
-### Phase 29: Type System Improvements (18h, High)
+### Phase 31: Type System Improvements (18h, High)
 **Goal**: Clean up type system architecture
 
 *Detailed plan to be created after Phase 22-26 complete*
@@ -371,18 +455,25 @@ end
 
 ## Summary
 
-**Immediate Priority** (Next 32h):
+**Immediate Priority** (Next 52h):
 1. ✅ Phase 21: Service Consolidation (DONE)
-2. Phase 22: Eliminate Delegate Methods (3h)
-3. Phase 23: Type System Directory Review (2h)
-4. Phase 24: Root Directory Review (2h)
-5. Phase 25: Phase Comment Cleanup (1h)
-6. Phase 26: Autoloading Infrastructure (8h)
-7. Phase 27: Ruby IoC Container (12h)
-8. Phase 28: Documentation (4h)
+2. ✅ Phase 22: Eliminate Delegate Methods (DONE)
+3. 🔴 **Phase 23: Eliminate transformer.send() Anti-pattern (16h)** ← CRITICAL
+4. Phase 24: Rename irgen → transformers (2h)
+5. Phase 25: Type System Directory Review (2h)
+6. Phase 26: Root Directory Review (2h)
+7. Phase 27: Phase Comment Cleanup (1h)
+8. Phase 28: Autoloading Infrastructure (8h)
+9. Phase 29: Ruby IoC Container (12h)
+10. Phase 30: Documentation (4h)
+11. Phase 31: Type System Improvements (18h+, deferred)
 
-**Total Estimated Effort**: 32 hours
+**Critical Path**: Phase 23 must be completed before Phase 29 (IoC Container)
+
+**Total Estimated Effort**: 52 hours (excluding Phase 31)
 **Expected Benefits**:
+- Eliminate 54+ transformer.send() anti-patterns
+- Proper separation of concerns (Rules → Services, not Transformer)
 - Eliminate 200+ lines of boilerplate
 - Remove 50+ require_relative statements
 - Standard Ruby architecture patterns
