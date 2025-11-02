@@ -55,6 +55,8 @@ require_relative "type_system/effect_analyzer"
 require_relative "irgen/expression_transformer"
 require_relative "irgen/statement_transformer"
 require_relative "irgen/pattern_matching_transformer"
+# Phase 23-A: Visitor Pattern for AST traversal
+require_relative "visitors/expression_visitor"
 # Phase 18-F: FunctionTransformer split into 4 focused modules
 require_relative "irgen/type_transformer"
 require_relative "irgen/function_declaration_transformer"
@@ -84,6 +86,7 @@ module MLC
       # TypeInference module deleted - methods moved to TypeInferenceService
       # Phase 19-B: ExpressionTransformer extracted into module
       # Phase 18-F: FunctionTransformer split into 4 focused modules
+      # Phase 23-A: Visitor Pattern (separate class, not mixin)
       include ExpressionTransformer
       include StatementTransformer
       include PatternMatchingTransformer
@@ -162,6 +165,21 @@ module MLC
         # Maintain backward compatibility for stacks
         @lambda_param_type_stack = @context.lambda_param_stack
         @function_return_type_stack = @context.function_return_stack
+
+        # Phase 23-A: Instantiate separate ExpressionVisitor class
+        @expression_visitor = Visitors::ExpressionVisitor.new(
+          rule_engine: @rule_engine,
+          transformer: self,
+          services: {
+            type_registry: @type_registry,
+            function_registry: @function_registry,
+            type_checker: @type_checker_service,
+            type_inference: @type_inference_service,
+            record_builder: @record_builder_service,
+            scope_context: @scope_context_service,
+            var_type_registry: @var_type_registry
+          }
+        )
       end
 
       def transform(ast)

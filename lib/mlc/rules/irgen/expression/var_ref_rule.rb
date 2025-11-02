@@ -7,17 +7,17 @@ module MLC
     module IRGen
       module Expression
         # VarRefRule: Transform AST variable references to HighIR variables
-        # Contains FULL logic (no delegation to transformer)
+        # Phase 23-B: Already clean - no child transformations needed
+        # Rule focuses on semantics (type inference)
         class VarRefRule < BaseRule
           def applies?(node, _context = {})
             node.is_a?(MLC::AST::VarRef)
           end
 
           def apply(node, context = {})
-            transformer = context.fetch(:transformer)
             type_inference = context.fetch(:type_inference)
 
-            # Infer variable type from transformer's type context
+            # Infer variable type from type inference service
             type = type_inference.infer_variable_type(node.name)
 
             # Build HighIR variable reference

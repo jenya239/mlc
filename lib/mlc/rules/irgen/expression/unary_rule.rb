@@ -7,25 +7,24 @@ module MLC
     module IRGen
       module Expression
         # UnaryRule: Transform AST unary operations to HighIR unary expressions
-        # Contains FULL logic (no delegation to transformer)
-        # Recursive transformation via transformer from context
+        # Phase 23-B: Visitor provides pre-transformed IR nodes via context
+        # Rule focuses on semantics (type inference + IR construction)
         class UnaryRule < BaseRule
           def applies?(node, _context = {})
             node.is_a?(MLC::AST::UnaryOp)
           end
 
           def apply(node, context = {})
-            transformer = context.fetch(:transformer)
             type_inference = context.fetch(:type_inference)
 
-            # Recursively transform operand
-            operand = transformer.send(:transform_expression, node.operand)
+            # Visitor already transformed operand - get from context
+            operand_ir = context.fetch(:operand_ir)
 
             # Infer unary operation result type
-            type = type_inference.infer_unary_type(node.op, operand.type)
+            type = type_inference.infer_unary_type(node.op, operand_ir.type)
 
             # Build HighIR unary expression
-            MLC::HighIR::Builder.unary(node.op, operand, type)
+            MLC::HighIR::Builder.unary(node.op, operand_ir, type)
           end
         end
       end

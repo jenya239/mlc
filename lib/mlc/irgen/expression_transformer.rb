@@ -31,27 +31,11 @@ module MLC
     module ExpressionTransformer
       # Transform AST expression to HighIR expression
       # Main entry point for expression transformation
+      # Phase 23-A: Delegates to separate ExpressionVisitor class
       def transform_expression(expr)
-        with_current_node(expr) do
-          # Special case: AST::Block is a statement block (extends Stmt, not Expr)
-          # but can appear in expression context (e.g., function bodies).
-          # Convert it to a block expression using statement transformer.
-          if expr.is_a?(AST::Block)
-            return transform_block(expr, require_value: true)
-          end
-
-          # Apply transformation rules
-          result = apply_expression_rules(expr)
-
-          # If no rule applied, this is a compiler bug - all AST expression types
-          # should be covered by rules in lib/mlc/rules/irgen/expression/
-          if result.equal?(expr)
-            raise CompileError, "No transformation rule applied for #{expr.class}. " \
-                                "This indicates a missing rule in the IRGen rule engine."
-          end
-
-          result
-        end
+        # Delegate to ExpressionVisitor instance (Phase 23-A)
+        # Visitor handles tree traversal, rules handle semantic processing
+        @expression_visitor.visit(expr)
       end
 
       # Apply expression transformation rules with full context
