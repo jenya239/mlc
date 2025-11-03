@@ -209,7 +209,7 @@ $ grep -r "@var_types" lib/mlc/rules
 - После: **30 issues (13F + 17E)**
 - **Улучшение: -1 issue (-3%)**
 
-**Commit**: (pending)
+**Commit**: d091ae8 "fix(visitor): resolve list comprehension filter scope bug"
 
 ## Текущий Статус
 
