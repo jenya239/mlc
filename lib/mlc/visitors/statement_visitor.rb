@@ -111,7 +111,7 @@ module MLC
       # Visit return statement: return expr
       # Recursively visit expression if present, then apply rule
       def visit_return(node)
-        value_ir = node.value ? @expression_visitor.visit(node.value) : nil
+        value_ir = node.expr ? @expression_visitor.visit(node.expr) : nil
 
         context = statement_rule_context.merge(
           value_ir: value_ir

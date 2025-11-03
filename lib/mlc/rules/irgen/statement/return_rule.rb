@@ -20,15 +20,20 @@ module MLC
             type_inference = context.fetch(:type_inference)
             scope_context = context.fetch(:scope_context)
 
+            # Phase 23-C: Support both visitor path (with value_ir) and legacy path (without)
+            value_ir = if context.key?(:value_ir)
+                         # New path: Visitor provides pre-transformed IR
+                         context.fetch(:value_ir)
+                       else
+                         # Legacy path: Transform inline for backward compatibility
+                         node.expr ? transformer.send(:transform_expression, node.expr) : nil
+                       end
+
             # Validate: return must be inside function
             expected = scope_context.current_function_return
             unless expected
               type_checker.type_error("return statement outside of function")
             end
-
-            # Transform return value expression if present
-            # Can be nil for void returns (return without value)
-            value_ir = node.expr ? transformer.send(:transform_expression, node.expr) : nil
 
             # Validate return type compatibility
             if type_inference.void_type?(expected)
