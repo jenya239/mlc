@@ -211,4 +211,30 @@ Rules still using `transformer.send()`:
 
 ---
 
-**Session End**: Partial migration completed, -4 test issues fixed. Visitor pattern infrastructure is working, but more rules need dual-path pattern implementation.
+### Session: 2025-11-03 Continuation - RecordLiteral Visitor Bug Fix
+
+**Bug Fixed**: `lib/mlc/visitors/expression_visitor.rb:235` - RecordLiteral field iteration bug
+
+**Problem**: Code incorrectly treated fields as array of field objects with `:name` and `:value` keys, when AST::RecordLit.fields is actually a Hash `{field_name => value_expr}`.
+
+**Before**:
+```ruby
+fields_ir = node.fields.each_with_object({}) do |field, hash|
+  hash[field[:name].to_s] = visit(field[:value])
+end
+```
+
+**After**:
+```ruby
+fields_ir = node.fields.each_with_object({}) do |(name, value), hash|
+  hash[name.to_s] = visit(value)
+end
+```
+
+**Impact**: Prevents "no implicit conversion of Symbol into Integer" error when visitor pattern processes RecordLit nodes. This bug would manifest when visitor path is actively used for record literals.
+
+**Test Results**: No change in test suite (still 12F + 11E = 23 issues). The bug was latent - would cause errors when visitor pattern is fully activated for record literals.
+
+---
+
+**Session End**: Partial migration completed, -4 test issues fixed in previous session. RecordLiteral visitor bug fixed to prevent future errors.

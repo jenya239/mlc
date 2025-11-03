@@ -231,8 +231,9 @@ module MLC
       # Recursively visit field values, then apply rule
       def visit_record_literal(node)
         # Transform fields hash: keys → string keys, values → IR values
-        fields_ir = node.fields.each_with_object({}) do |field, hash|
-          hash[field[:name].to_s] = visit(field[:value])
+        # node.fields is a Hash of {field_name => value_expr}
+        fields_ir = node.fields.each_with_object({}) do |(name, value), hash|
+          hash[name.to_s] = visit(value)
         end
 
         context = expression_rule_context.merge(
