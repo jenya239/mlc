@@ -35,18 +35,24 @@ module MLC
 
   # Metadata for a stdlib type
   class TypeMetadata
-    attr_reader :name, :qualified_name, :opaque, :fields, :ast_node
+    attr_reader :name, :qualified_name, :opaque, :fields, :variants, :ast_node
 
-    def initialize(name:, qualified_name:, opaque:, fields: [], ast_node:)
+    def initialize(name:, qualified_name:, opaque:, fields: [], variants: [], ast_node:)
       @name = name
       @qualified_name = qualified_name
       @opaque = opaque
-      @fields = fields
+      @fields = fields      # For record types: array of {name:, type:}
+      @variants = variants  # For sum types: array of {name:, fields:}
       @ast_node = ast_node
     end
 
     def opaque?
       @opaque
+    end
+
+    # Check if this is a sum type with variants
+    def sum_type?
+      !@variants.empty?
     end
   end
 
@@ -187,12 +193,14 @@ module MLC
     def create_type_metadata(decl, namespace)
       opaque = decl.type.is_a?(AST::OpaqueType)
       fields = extract_fields(decl.type)
+      variants = extract_variants(decl.type)
 
       TypeMetadata.new(
         name: decl.name,
         qualified_name: "#{namespace}::#{decl.name}",
         opaque: opaque,
         fields: fields,
+        variants: variants,
         ast_node: decl
       )
     end
@@ -205,6 +213,19 @@ module MLC
         {
           name: field[:name],
           type: field[:type]
+        }
+      end
+    end
+
+    # Extract variants from sum type
+    # Returns array of {name:, fields:} hashes for each variant
+    def extract_variants(type)
+      return [] unless type.is_a?(AST::SumType)
+
+      type.variants.map do |variant|
+        {
+          name: variant[:name],
+          fields: variant[:fields] || []
         }
       end
     end
