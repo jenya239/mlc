@@ -213,16 +213,23 @@ $ grep -r "@var_types" lib/mlc/rules
 
 ## Текущий Статус
 
+**Final Test Results**:
+```
+1474 runs, 3766 assertions, 13 failures, 18 errors, 1 skip
+Total issues: 31 (13F + 18E + 1S)
+```
+
 ✅ **Stdlib scanner infrastructure полностью работоспособна**
 ✅ **Все модули обнаруживаются и функции извлекаются корректно**
-✅ **75% reduction в test issues** (121 → 30)
+✅ **74% reduction в test issues** (121 → 31)
 ✅ **Visitor AST attribute bugs fixed**
 ✅ **API compatibility bugs fixed**
 ✅ **VarTypeRegistry migration complete** (all rules use new API)
 ✅ **ReturnRule correctly handles void/valued returns**
 ✅ **ListComprehension scope management fixed**
 ✅ **Fast test script created** (run_failing_tests.sh)
-⚠️ **30 pre-existing issues остаются** (sum types, multi-file imports, etc.)
+✅ **Core features working**: Returns, Lambdas, List comprehensions all pass
+⚠️ **31 architectural issues остаются** (sum types, multi-file imports, etc.)
 
 ## Следующие Шаги
 
