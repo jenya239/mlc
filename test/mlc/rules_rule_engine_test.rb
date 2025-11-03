@@ -57,7 +57,7 @@ class RulesRuleEngineTest < Minitest::Test
 
     info = transformer.function_registry.fetch("Some")
     refute_nil info
-    assert_equal "Option", transformer.type_registry.fetch("Option").name
+    assert_equal "Option", transformer.type_registry.lookup("Option").name
   end
 
   def test_match_rule_builds_core_ir_match_expression

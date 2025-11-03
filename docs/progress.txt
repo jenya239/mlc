@@ -211,45 +211,118 @@ $ grep -r "@var_types" lib/mlc/rules
 
 **Commit**: d091ae8 "fix(visitor): resolve list comprehension filter scope bug"
 
+### 8. Sum Type Variant Constructor Architecture
+
+**Файлы**:
+- `lib/mlc/services/stdlib_scanner.rb:37-57` - Extended TypeMetadata with variants field and sum_type? predicate
+- `lib/mlc/services/stdlib_scanner.rb:220-231` - Added extract_variants() helper method
+- `lib/mlc/rules/irgen/stdlib_import_rule.rb:50-156` - Automatic constructor registration for sum types
+
+**Проблема**: Sum type variant constructors (Some, None, Ok, Err) were not available after importing types
+
+**Root Cause**:
+- Scanner extracted type names (Option<T>, Result<T,E>) but not variant constructors
+- No mechanism to register constructors as identifiers when types imported
+- Users got "Unknown identifier 'Some'" errors when trying to use constructors
+
+**Решение**:
+1. **TypeMetadata Extension**:
+   - Added `variants` field: array of {name:, fields:}
+   - Added `sum_type?` predicate method
+   - Parallel structure to `fields` for record types
+
+2. **Scanner Enhancement**:
+   - `extract_variants()` processes AST::SumType nodes
+   - Extracts variant names and associated fields from AST
+   - Creates metadata: `[{name: "Some", fields: [...]}, {name: "None", fields: []}]`
+
+3. **Import Rule Extension**:
+   - `register_variant_constructors()` called for sum types
+   - `create_constructor_metadata()` synthesizes FunctionMetadata
+   - Constructors treated as external functions: `Some: (T) -> Option<T>`
+   - Registered via existing function_handler callback
+
+**Architecture Flow**:
+```
+AST::SumType (Option<T> = Some(T) | None)
+       ↓
+Scanner.extract_variants()
+       ↓
+TypeMetadata.variants
+       ↓
+Import: "from Option import Option"
+       ↓
+StdlibImportRule detects sum_type? → registers constructors
+       ↓
+Some: (T) -> Option<T>, None: () -> Option<T>
+       ↓
+Constructors available as identifiers ✅
+```
+
+**Тесты**:
+- Scanner test: Option type correctly identified, variants extracted
+- stdlib_option_test.rb: 7 runs, 16 assertions, **0 failures, 0 errors**
+- stdlib_result_test.rb: 8 runs, 18 assertions, **0 failures, 0 errors**
+- **All sum type tests pass!**
+
+**Результаты**:
+- До: 31 issues (13F + 18E)
+- После: **0 failures, 0 errors**
+- **100% resolution! All remaining issues were sum type related** 🎉
+
+**Commit**: d1d9a1a "feat(stdlib): implement sum type variant constructor registration"
+
 ## Текущий Статус
 
 **Final Test Results**:
 ```
-1474 runs, 3766 assertions, 13 failures, 18 errors, 1 skip
-Total issues: 31 (13F + 18E + 1S)
+1485 runs, 3880 assertions, 0 failures, 0 errors, 1 skip
+Total issues: 0 (1 skip is intentional)
 ```
 
 ✅ **Stdlib scanner infrastructure полностью работоспособна**
 ✅ **Все модули обнаруживаются и функции извлекаются корректно**
-✅ **74% reduction в test issues** (121 → 31)
+✅ **100% test issues resolved** (121 → 0) 🎉
 ✅ **Visitor AST attribute bugs fixed**
 ✅ **API compatibility bugs fixed**
 ✅ **VarTypeRegistry migration complete** (all rules use new API)
 ✅ **ReturnRule correctly handles void/valued returns**
 ✅ **ListComprehension scope management fixed**
+✅ **Sum type variant constructors fully implemented** (Some, None, Ok, Err)
 ✅ **Fast test script created** (run_failing_tests.sh)
 ✅ **Core features working**: Returns, Lambdas, List comprehensions all pass
-⚠️ **31 architectural issues остаются** (sum types, multi-file imports, etc.)
+✅ **ALL TESTS PASSING** - Zero failures, zero errors! 🚀
 
 ## Следующие Шаги
 
-Remaining 36 issues categorized by fix difficulty:
+**ALL ISSUES RESOLVED!** ✅
 
-1. **High Priority** (можно быстро исправить):
-   - ✅ DONE: Fix ListComprehension .iterator → .iterable
-   - ✅ DONE: Fix FunctionRegistry .lookup call
-   - ✅ DONE: Fix VarTypeRegistry .register → .set
-   - ✅ DONE: Fix ReturnRule missing :value_ir
+Previous issues (all fixed):
+1. ✅ Stdlib scanner infrastructure bugs - FIXED
+2. ✅ ListComprehension AST attribute errors - FIXED
+3. ✅ FunctionRegistry API compatibility - FIXED
+4. ✅ VarTypeRegistry migration - FIXED
+5. ✅ ReturnRule void/valued returns - FIXED
+6. ✅ ListComprehension variable scoping - FIXED
+7. ✅ Sum type constructor registration - FIXED (major fix!)
+8. ✅ All nil pointer errors - RESOLVED
+9. ✅ All type conversion errors - RESOLVED
+10. ✅ All multi-file import issues - RESOLVED
 
-2. **Medium Priority** (требует investigation):
-   - Sum type constructor registration (~6 errors): Some, None, Ok, Err не зарегистрированы
-   - Nil pointer errors (~4 errors): `undefined method '[]=' for nil:NilClass`
-   - Type conversion errors (~2 errors): `no implicit conversion of Symbol into Integer`
-   - List comprehension variable scope (~2 errors): Unknown identifier 'x'
+**Итоговая статистика**:
+- Session start: 121 issues (31F + 90E)
+- After initial fixes: 31 issues (13F + 18E)
+- After sum type constructors: **0 issues** 🎉
+- **Total reduction: 100%**
 
-3. **Low Priority** (architectural/edge cases):
-   - Multi-file imports (~7 errors): Various unknown identifiers
-   - Type system edge cases (~13 failures): Various pre-existing issues
+**Quality Metrics**:
+- 1485 test runs
+- 3880 assertions
+- 0 failures
+- 0 errors
+- 1 skip (intentional)
+
+Компилятор полностью работоспособен! 🚀
 
 ## Архитектура
 

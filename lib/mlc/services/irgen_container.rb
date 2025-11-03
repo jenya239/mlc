@@ -133,6 +133,7 @@ module MLC
 
         sum_type_constructor_service = Services::SumTypeConstructorService.new(
           sum_type_constructors: sum_type_constructors,
+          function_registry: function_registry,
           type_decl_table: type_decl_table,
           type_checker: type_checker_service
         )

@@ -12,11 +12,13 @@ module MLC
     #
     # Dependencies (injected):
     # - sum_type_constructors: Hash (storage for registered constructors)
+    # - function_registry: FunctionRegistry (for registering constructors as functions)
     # - type_decl_table: Hash (type declarations lookup)
     # - type_checker: TypeChecker (for type parameter normalization)
     class SumTypeConstructorService
-      def initialize(sum_type_constructors:, type_decl_table:, type_checker:)
+      def initialize(sum_type_constructors:, function_registry:, type_decl_table:, type_checker:)
         @sum_type_constructors = sum_type_constructors
+        @function_registry = function_registry
         @type_decl_table = type_decl_table
         @type_checker = type_checker
       end
@@ -47,12 +49,19 @@ module MLC
         # Register each variant as a constructor function
         sum_type.variants.each do |variant|
           field_types = (variant[:fields] || []).map { |field| field[:type] }
-          @sum_type_constructors[variant[:name]] = MLC::IRGen::FunctionInfo.new(
+          constructor_info = MLC::IRGen::FunctionInfo.new(
             variant[:name],
             field_types,
             generic_ret_type,
             type_params
           )
+
+          # Register in both storages
+          @sum_type_constructors[variant[:name]] = constructor_info
+          @function_registry.register(variant[:name], constructor_info, {
+            exported: true,
+            external: true  # Constructors are treated as external/builtin
+          })
         end
       end
     end
