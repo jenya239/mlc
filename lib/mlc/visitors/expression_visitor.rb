@@ -352,18 +352,12 @@ module MLC
       end
 
       # Visit list comprehension: [expr | x <- iter, cond]
-      # Recursively visit iterator, condition, and body expression
+      # Rule handles ALL transformations with proper scoping
+      # Visitor does NOT pre-visit filters/output (they need generator vars in scope)
       def visit_list_comprehension(node)
-        # ListComprehension has .generators (array of Generator nodes)
-        # Each Generator has .iterable
-        iter_ir = node.generators.empty? ? nil : visit(node.generators[0].iterable)
-        # ListComprehension has .filters (array), not .filter
-        cond_ir = node.filters.empty? ? nil : visit(node.filters[0])
-
-        context = expression_rule_context.merge(
-          iter_ir: iter_ir,
-          cond_ir: cond_ir
-        )
+        # Rule transforms everything with correct variable scoping
+        # No pre-visit needed - rule is self-contained
+        context = expression_rule_context
         @rule_engine.apply(:core_ir_expression, node, context: context)
       end
 

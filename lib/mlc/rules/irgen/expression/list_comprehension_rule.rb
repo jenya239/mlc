@@ -17,9 +17,10 @@ module MLC
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
             type_inference = context.fetch(:type_inference)
+            var_type_registry = transformer.instance_variable_get(:@var_type_registry)
 
             # Save variable types for scoping
-            saved_var_types = transformer.instance_variable_get(:@var_types).dup
+            saved_var_types = var_type_registry.snapshot
 
             # Transform generators and add variables to scope
             generators = []
@@ -34,8 +35,8 @@ module MLC
                 var_type: element_type
               }
 
-              # Add generator variable to scope
-              transformer.instance_variable_get(:@var_types)[gen.var_name] = element_type
+              # Add generator variable to scope using new API
+              var_type_registry.set(gen.var_name, element_type)
             end
 
             # Transform filters
@@ -57,7 +58,7 @@ module MLC
             )
           ensure
             # Restore previous variable types scope
-            transformer.instance_variable_set(:@var_types, saved_var_types) if saved_var_types
+            var_type_registry.restore(saved_var_types) if saved_var_types
           end
         end
       end

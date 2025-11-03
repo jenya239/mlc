@@ -18,9 +18,10 @@ module MLC
             transformer = context.fetch(:transformer)
             type_checker = context.fetch(:type_checker)
             scope_context = context.fetch(:scope_context)
+            var_type_registry = transformer.instance_variable_get(:@var_type_registry)
 
             # Save current var_types for scoping
-            saved_var_types = transformer.instance_variable_get(:@var_types).dup
+            saved_var_types = var_type_registry.snapshot
 
             # Get expected parameter types from context (for map/filter/fold)
             expected_param_types = scope_context.current_lambda_param_types
@@ -35,12 +36,12 @@ module MLC
                              else
                                MLC::HighIR::Builder.primitive_type("i32")
                              end
-                transformer.instance_variable_get(:@var_types)[param.name] = param_type
+                var_type_registry.set(param.name, param_type)
                 MLC::HighIR::Param.new(name: param.name, type: param_type)
               else
                 param_name = param.respond_to?(:name) ? param.name : param
                 param_type = expected_param_types[index] || MLC::HighIR::Builder.primitive_type("i32")
-                transformer.instance_variable_get(:@var_types)[param_name] = param_type
+                var_type_registry.set(param_name, param_type)
                 MLC::HighIR::Param.new(name: param_name, type: param_type)
               end
             end
@@ -67,7 +68,7 @@ module MLC
             )
           ensure
             # Restore previous var_types scope
-            transformer.instance_variable_set(:@var_types, saved_var_types) if saved_var_types
+            var_type_registry.restore(saved_var_types) if saved_var_types
           end
         end
       end

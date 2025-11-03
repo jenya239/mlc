@@ -15,7 +15,9 @@ module MLC
           end
 
           def apply(node, context = {})
+            transformer = context.fetch(:transformer)
             type_checker = context.fetch(:type_checker)
+            type_inference = context.fetch(:type_inference)
             scope_context = context.fetch(:scope_context)
 
             # Validate: return must be inside function
@@ -24,12 +26,12 @@ module MLC
               type_checker.type_error("return statement outside of function")
             end
 
-            # Visitor already transformed return expression - get from context
+            # Transform return value expression if present
             # Can be nil for void returns (return without value)
-            value_ir = context.fetch(:value_ir, nil)
+            value_ir = node.expr ? transformer.send(:transform_expression, node.expr) : nil
 
             # Validate return type compatibility
-            if type_checker.void_type?(expected)
+            if type_inference.void_type?(expected)
               # Void function: no return value allowed
               if value_ir
                 type_checker.type_error("return value not allowed in void function", node: node)
