@@ -1,0 +1,631 @@
+=== Phase 25 Strategy: Complete IRGen Elimination ===
+Date: 2025-11-04
+Status: In Progress (70% Complete)
+
+## Executive Summary
+
+**Goal**: Полное удаление IRGen класса и transformer.send() anti-pattern
+**Current State**: Phase 25-B ✅ Complete, Phase 25-C 🔄 Partial (5/25 calls migrated)
+**Tests**: 1485 runs, 3880 assertions, 0 failures, 0 errors ✅
+**Timeline**: 2-3 weeks remaining (28-42 days estimated)
+
+## Architecture Evolution
+
+### Before (Legacy):
+```
+AST → IRGen (monolithic transformer) → HighIR
+         ↓
+    Rules (via transformer.send())
+```
+
+### Current (Transitional):
+```
+AST → Visitors (traversal) + Rules (semantics) → HighIR
+         ↓                      ↓
+  ExpressionVisitor      StatementVisitor
+         ↓                      ↓
+      Rules (still call transformer.send() in 20 places)
+```
+
+### Target (Clean):
+```
+AST → Visitors (traversal) + Rules (semantics) + Services → HighIR
+         ↓                      ↓                    ↓
+  ExpressionVisitor      StatementVisitor      FunctionRegistry
+         ↓                      ↓                TypeRegistry
+      Rules (no transformer dependencies!)     ScopeContext
+                                               TypeInference
+```
+
+## Completed Work
+
+### Phase 25-A (Jun 2025) ✅
+- Created BaseRule and RuleEngine
+- Moved transformer logic from mixins to IRGen class
+- No behavioral changes, pure refactoring
+
+### Phase 25-B (Oct 2025) ✅
+**6 commits, 164 total commits since Phase 2 start**
+
+Migrations completed:
+1. `lib/mlc/visitors/expression_visitor.rb:374` - visit_block()
+   - Eliminated transformer.send(:transform_block)
+   - Implemented block transformation directly in visitor
+
+2. `lib/mlc/visitors/statement_visitor.rb` - All methods
+   - No transformer.send() calls remain
+   - Clean visitor implementation
+
+**Test Results**:
+- Before: 20 errors → After: 12 errors
+- Success: -40% error reduction
+
+**Commit**: Multiple commits, final at 2dbd9c3
+
+### Phase 25-C Part 1 (Nov 2025) ✅
+**1 commit (e331a25)**
+
+Migrated 5 simple block transformation calls:
+
+Files modified:
+- `lib/mlc/rules/irgen/expression/let_rule.rb:41`
+  - transform_block_expr → expression_visitor.visit_block_expr
+
+- `lib/mlc/rules/irgen/expression/do_rule.rb:27,77` (2 calls)
+  - transform_block_expr → expression_visitor.visit_block_expr
+
+- `lib/mlc/rules/irgen/statement/block_rule.rb:21`
+  - transform_block → expression_visitor.visit_block
+
+- `lib/mlc/rules/irgen/statement/expr_stmt_rule.rb:58`
+  - transform_block → expression_visitor.visit_block
+
+**Test Results**: Still passing (0F/0E)
+
+## Remaining Work Breakdown
+
+### Phase 25-C Part 2 (IN PROGRESS) - Utility Methods
+**Estimated: 2-3 days**
+
+**Target**: 5 calls in 5 files
+
+#### 1. within_loop_scope (2 calls)
+**Location**:
+- `lib/mlc/rules/irgen/statement/for_rule.rb:50`
+- `lib/mlc/rules/irgen/statement/while_rule.rb:43`
+
+**Current Implementation** (`lib/mlc/irgen.rb:574-580`):
+```ruby
+def within_loop_scope
+  @loop_depth ||= 0
+  @loop_depth += 1
+  yield
+ensure
+  @loop_depth -= 1
+end
+```
+
+**Migration Strategy**:
+```ruby
+# Option A: Make public helper in IRGen (temporary)
+transformer.within_loop_scope { ... }
+
+# Option B: Move to ScopeContextService (preferred)
+scope_context.within_loop_scope { ... }
+```
+
+**Complexity**: LOW - простой счетчик
+**Files to Modify**: 2 rules + 1 service
+**Tests to Run**: test/mlc/transform_for_test.rb, test/mlc/transform_while_test.rb
+
+---
+
+#### 2. module_member_function_entry (2 calls)
+**Location**:
+- `lib/mlc/rules/irgen/expression/call_rule.rb:39`
+- `lib/mlc/rules/irgen/expression/member_rule.rb:22`
+
+**Current Implementation** (`lib/mlc/irgen.rb:301-307`):
+```ruby
+def module_member_function_entry(object_node, member_name)
+  return unless object_node.is_a?(AST::VarRef)
+  resolved = resolve_module_alias(object_node.name)
+  @function_registry.fetch_entry_for_member(resolved, member_name)
+end
+```
+
+**Migration Strategy**:
+```ruby
+# Option A: Make public in IRGen temporarily
+entry = transformer.module_member_function_entry(object, member)
+
+# Option B: Direct function_registry access (preferred)
+if object.is_a?(AST::VarRef)
+  resolved = transformer.resolve_module_alias(object.name)
+  entry = function_registry.fetch_entry_for_member(resolved, member)
+end
+```
+
+**Complexity**: LOW - простой lookup
+**Dependencies**: resolve_module_alias (needs to be public too)
+**Files to Modify**: 2 rules
+**Tests to Run**: test/mlc/stdlib_*_test.rb
+
+---
+
+#### 3. unit_branch_ast? (2 calls)
+**Location**:
+- `lib/mlc/rules/irgen/expression/if_rule.rb:27-28`
+
+**Current Usage**:
+```ruby
+if transformer.send(:unit_branch_ast?, node.then_branch) &&
+   (node.else_branch.nil? || transformer.send(:unit_branch_ast?, node.else_branch))
+```
+
+**Problem**: Method doesn't exist in current IRGen!
+**Likely deleted in previous refactoring**
+
+**Migration Strategy**:
+```ruby
+# Option A: Recreate as private helper in if_rule.rb
+def unit_branch?(branch)
+  # Check if branch is statement-like (returns unit type)
+  branch.is_a?(AST::Block) && branch.stmts.empty? ||
+  branch.is_a?(AST::WhileLoop) ||
+  # ... other checks
+end
+
+# Option B: Move logic to TypeInferenceService
+type_inference.unit_type?(branch_type)
+```
+
+**Complexity**: MEDIUM - needs investigation
+**Files to Modify**: 1 rule
+**Tests to Run**: test/mlc/transform_if_test.rb
+
+---
+
+#### 4. transform_type (2 calls)
+**Location**:
+- `lib/mlc/rules/irgen/expression/lambda_rule.rb:34`
+- `lib/mlc/rules/irgen/statement/variable_decl_rule.rb:36`
+
+**Current Usage**:
+```ruby
+param_type = transformer.send(:transform_type, param.type)
+```
+
+**Problem**: Method doesn't exist in current IRGen!
+**Likely was type annotation transformer**
+
+**Migration Strategy**:
+```ruby
+# Option A: Direct type node handling
+param_type = case param.type
+when AST::TypeRef
+  type_registry.lookup(param.type.name)
+when AST::GenericType
+  # Handle generics
+else
+  param.type  # Already a HighIR type?
+end
+
+# Option B: Add to TypeRegistry service
+param_type = type_registry.transform_type_annotation(param.type)
+```
+
+**Complexity**: MEDIUM - needs investigation
+**Files to Modify**: 2 rules + potentially TypeRegistry
+**Tests to Run**: test/mlc/transform_lambda_test.rb, test/mlc/transform_variable_decl_test.rb
+
+---
+
+### Phase 25-C Part 3 (PENDING) - Complex Statement Transformations
+**Estimated: 3-5 days**
+
+**Target**: 15 calls in 6 files
+
+#### 1. transform_statement_block (6 calls)
+**Locations**:
+- `lib/mlc/rules/irgen/expression/if_rule.rb:30-31` (2 calls)
+- `lib/mlc/rules/irgen/statement/expr_stmt_rule.rb:69-70` (2 calls)
+- `lib/mlc/rules/irgen/statement/for_rule.rb:51` (1 call)
+- `lib/mlc/rules/irgen/statement/if_rule.rb:42,51` (2 calls)
+
+**Current Implementation** (`lib/mlc/irgen.rb:471-489`):
+```ruby
+def transform_statement_block(node, preserve_scope: false)
+  # Complex logic: handles statement sequences, scope management
+  # Returns array of statement IR nodes
+end
+```
+
+**Migration Strategy**:
+```ruby
+# Option A: Make public in IRGen temporarily
+stmt_block = transformer.transform_statement_block(node)
+
+# Option B: Add to StatementVisitor (preferred)
+stmt_block = statement_visitor.visit_statement_block(node)
+
+# Option C: Inline in each rule (if logic is simple)
+```
+
+**Complexity**: HIGH - complex scope handling
+**Files to Modify**: 6 rules + potentially StatementVisitor
+**Tests to Run**: Multiple test files for if/for/while statements
+
+---
+
+#### 2. transform_for_statement (2 calls)
+**Locations**:
+- `lib/mlc/rules/irgen/expression/for_loop_rule.rb:22`
+- `lib/mlc/rules/irgen/statement/expr_stmt_rule.rb:46`
+
+**Current Implementation** (`lib/mlc/irgen.rb:428-442`):
+```ruby
+def transform_for_statement(stmt)
+  # Transforms for loop to HighIR::ForStmt
+  # Handles iterator, variable binding, body
+end
+```
+
+**Migration Strategy**:
+```ruby
+# Option A: Make public temporarily
+loop_stmt = transformer.transform_for_statement(node)
+
+# Option B: Inline in rules (logic is not too complex)
+# Rules already have access to visitors and services
+
+# Option C: Add visit_for_stmt to StatementVisitor
+```
+
+**Complexity**: MEDIUM
+**Files to Modify**: 2 rules
+**Tests to Run**: test/mlc/transform_for_test.rb
+
+---
+
+#### 3. transform_while_statement (2 calls)
+**Locations**:
+- `lib/mlc/rules/irgen/expression/while_loop_rule.rb:22`
+- `lib/mlc/rules/irgen/statement/expr_stmt_rule.rb:54`
+
+**Current Implementation** (`lib/mlc/irgen.rb:510-515`):
+```ruby
+def transform_while_statement(condition_node, body_node)
+  # Transforms while loop to HighIR::WhileStmt
+end
+```
+
+**Migration Strategy**: Similar to transform_for_statement
+**Complexity**: MEDIUM
+**Files to Modify**: 2 rules
+**Tests to Run**: test/mlc/transform_while_test.rb
+
+---
+
+#### 4. transform_if_statement (1 call)
+**Location**:
+- `lib/mlc/rules/irgen/statement/expr_stmt_rule.rb:50`
+
+**Current Implementation** (`lib/mlc/irgen.rb:444-450`):
+```ruby
+def transform_if_statement(condition_node, then_node, else_node)
+  # Transforms if expression to HighIR::IfStmt
+end
+```
+
+**Migration Strategy**: Similar to above
+**Complexity**: MEDIUM
+**Files to Modify**: 1 rule
+**Tests to Run**: test/mlc/transform_if_test.rb
+
+---
+
+### Phase 25-D (PENDING) - Delete IRGen Entirely
+**Estimated: 5-7 days**
+
+#### Part 1: Move Statement Methods to StatementVisitor
+**Files**: `lib/mlc/visitors/statement_visitor.rb`
+
+Methods to move (~10 methods):
+- transform_expr_statement → visit_expr_stmt
+- transform_for_statement → visit_for_stmt
+- transform_while_statement → visit_while_stmt
+- transform_if_statement → visit_if_stmt
+- transform_return_statement → visit_return
+- transform_statement_block → visit_statement_block
+- transform_statements → visit_statements
+- transform_variable_decl_statement → visit_variable_decl
+- transform_assignment_statement → visit_assignment
+- transform_break/continue_statement → visit_break/continue
+- transform_block_statement → visit_block_stmt
+
+**Complexity**: MEDIUM - mostly mechanical refactoring
+**Tests**: Full test suite
+
+---
+
+#### Part 2: Move Utility Methods to Services
+**Files**: Services layer
+
+Methods to relocate:
+- `module_member_function_entry` → FunctionRegistry service
+- `resolve_module_alias` → ModuleResolver service (new?)
+- `expected_lambda_param_types` → TypeInferenceService
+- `lambda_return_type` → TypeInferenceService
+- `within_loop_scope` → ScopeContextService
+- `unit_branch_ast?` → TypeInferenceService or inline in rules
+
+**Complexity**: MEDIUM
+**Tests**: Targeted tests for each service
+
+---
+
+#### Part 3: Delete IRGen Class
+**File**: `lib/mlc/irgen.rb` (591 lines → DELETE)
+
+**Prerequisites**:
+1. All transformer.send() calls eliminated ✅
+2. All methods moved to appropriate locations ✅
+3. Full test suite passing ✅
+
+**Steps**:
+1. Update PassManager to use visitors directly
+2. Remove IRGen requires from main entry point
+3. Delete `lib/mlc/irgen.rb`
+4. Update documentation
+
+**Risk**: MEDIUM - requires careful testing
+**Tests**: Full test suite (1485 runs)
+
+---
+
+## Phase 26 (FUTURE) - Declarative DSL for Rules
+**Estimated: 20-30 days**
+**Status**: Design phase
+
+### Vision: Imperative → Declarative
+
+**Current (Imperative)**:
+```ruby
+class IfRule < BaseRule
+  def applies?(node, _context = {})
+    node.is_a?(MLC::AST::IfExpr)
+  end
+
+  def apply(node, context = {})
+    cond_ir = context.fetch(:cond_ir)
+    # ... 30 lines of imperative code
+  end
+end
+```
+
+**Target (Declarative)**:
+```ruby
+rule :if_expression do
+  match AST::IfExpr
+
+  transform do |node|
+    condition { visit node.condition }
+    then_branch { visit node.then_branch }
+    else_branch { visit node.else_branch if node.else_branch }
+
+    build HighIR::IfExpr,
+      condition: condition,
+      then_branch: then_branch,
+      else_branch: else_branch,
+      type: infer_if_type(then_branch, else_branch)
+  end
+end
+```
+
+### Scope of Work:
+1. Design DSL syntax (2-3 days)
+2. Implement DSL engine (5-7 days)
+3. Migrate 33 existing rules (10-15 days)
+4. Documentation and examples (3-5 days)
+
+**Inspiration**: See `docs/framework.txt` for CompilerFramework design
+
+---
+
+## Testing Strategy
+
+### Quick Tests (for incremental work):
+```bash
+# Test specific rule migrations
+ruby -Ilib:test test/mlc/transform_for_test.rb
+ruby -Ilib:test test/mlc/transform_while_test.rb
+ruby -Ilib:test test/mlc/transform_if_test.rb
+ruby -Ilib:test test/mlc/transform_lambda_test.rb
+
+# Test stdlib (for module_member_function_entry changes)
+ruby -Ilib:test test/mlc/stdlib_option_test.rb
+ruby -Ilib:test test/mlc/stdlib_result_test.rb
+```
+
+### Full Test Suite (for major commits):
+```bash
+rake test  # Run all 1485 tests
+```
+
+**Expected Results**:
+- ✅ 1485 runs
+- ✅ 3880 assertions
+- ✅ 0 failures
+- ✅ 0 errors
+- ℹ️ 1 skip (intentional)
+
+---
+
+## Recommended Approach: Hybrid Strategy
+
+Based on analysis and documentation review (architect.txt, rules.txt, layers.txt, framework.txt):
+
+### Week 1: Complete Phase 25-C
+- Days 1-2: Part 2 (utility methods)
+- Days 3-5: Part 3 (complex transformations)
+- Day 5: Commit and verify
+
+### Week 2: Complete Phase 25-D
+- Days 1-3: Move methods to visitors/services
+- Day 4: Delete IRGen class
+- Day 5: Full testing and documentation
+
+### Weeks 3-5: Build Declarative DSL (Phase 26)
+- Week 3: Design and implement DSL engine
+- Week 4-5: Migrate rules one-by-one
+- Continuous testing throughout
+
+**Total Timeline**: 5 weeks to complete vision
+
+---
+
+## Decision Points
+
+### Option 1: Incremental (RECOMMENDED)
+**Pros**:
+- ✅ Tests passing at each step
+- ✅ Already 70% complete
+- ✅ Low risk
+- ✅ Team can continue adding features
+
+**Cons**:
+- ❌ Slower (28-42 days remaining)
+- ❌ Temporary code duplication
+- ❌ Architectural compromises
+
+**Verdict**: Best for production compiler with passing tests
+
+### Option 2: Fresh Start
+**Pros**:
+- ✅ Clean architecture
+- ✅ Faster development (15-25 days)
+- ✅ DSL from day 1
+
+**Cons**:
+- ❌ ALL TESTS BREAK for 2-3 weeks
+- ❌ Full development freeze
+- ❌ Higher risk
+- ❌ Rewrite 591 lines + 33 rules
+
+**Verdict**: Too risky for stable codebase
+
+---
+
+## Key Insights from Documentation
+
+### From architect.txt:
+- Sorbet, Roslyn, Ruby MRI all use Visitors + Services (no transformers)
+- Visitor handles TRAVERSAL, Rules handle SEMANTICS
+- Services store shared state
+
+### From rules.txt:
+- Nanopass Framework shows declarative DSL works for compilers
+- Real production examples: Sorbet, ANTLR4, SableCC
+
+### From layers.txt:
+- Target architecture: AST → HIR → MIR → C++
+- Matches Rust/Swift compiler design
+- HIR = desugaring, MIR = optimization ready
+
+### From framework.txt:
+- CompilerFramework design: ~500 lines of reusable code
+- PassManager + Visitors + Rules + Services pattern
+- Proven approach used by Go, Rust (pre-LLVM), V compilers
+
+---
+
+## File Inventory
+
+### Files to Modify (Phase 25-C):
+```
+lib/mlc/rules/irgen/expression/
+  ├── if_rule.rb (unit_branch_ast?, transform_statement_block)
+  ├── lambda_rule.rb (transform_type)
+  ├── call_rule.rb (module_member_function_entry)
+  ├── member_rule.rb (module_member_function_entry)
+  ├── for_loop_rule.rb (transform_for_statement)
+  └── while_loop_rule.rb (transform_while_statement)
+
+lib/mlc/rules/irgen/statement/
+  ├── expr_stmt_rule.rb (all complex transforms)
+  ├── for_rule.rb (within_loop_scope, transform_statement_block)
+  ├── while_rule.rb (within_loop_scope, transform_statement_block)
+  ├── if_rule.rb (transform_statement_block)
+  └── variable_decl_rule.rb (transform_type)
+```
+
+### Files to Delete (Phase 25-D):
+```
+lib/mlc/irgen.rb  # 591 lines → DELETE
+```
+
+### Files to Create/Extend (Phase 25-D):
+```
+lib/mlc/services/module_resolver.rb  # NEW
+lib/mlc/services/scope_context_service.rb  # EXTEND
+lib/mlc/services/type_inference_service.rb  # EXTEND
+lib/mlc/visitors/statement_visitor.rb  # EXTEND
+```
+
+---
+
+## Success Criteria
+
+### Phase 25-C Complete:
+- ✅ Zero transformer.send() calls in rules
+- ✅ All 1485 tests passing
+- ✅ Commit: "Phase 25-C complete - all rules migrated to visitors"
+
+### Phase 25-D Complete:
+- ✅ IRGen class deleted
+- ✅ All methods relocated to appropriate services/visitors
+- ✅ All 1485 tests passing
+- ✅ Commit: "Phase 25-D complete - IRGen eliminated"
+- 🎉 **TRANSFORMER-FREE ARCHITECTURE ACHIEVED**
+
+### Phase 26 Complete (Future):
+- ✅ Declarative DSL implemented
+- ✅ All 33 rules migrated to DSL syntax
+- ✅ Documentation updated
+- ✅ All tests passing
+
+---
+
+## Next Session Checklist
+
+When resuming work:
+
+1. ✅ Read this document
+2. ✅ Check current test status: `rake test`
+3. ✅ Review git log: `git log --oneline -10`
+4. ✅ Check transformer.send() count: `grep -r "transformer.send" lib/mlc/rules | wc -l`
+5. ▶️ Start with Phase 25-C Part 2 (utility methods)
+
+---
+
+## References
+
+- **Progress Log**: `docs/progress.txt`
+- **Architecture Guide**: `docs/ARCHITECTURE_GUIDE.md`
+- **Compiler Layers**: `docs/layers.txt`
+- **Framework Design**: `docs/framework.txt`
+- **Rule Examples**: `docs/rules.txt`
+- **Architect Insights**: `docs/architect.txt`
+
+---
+
+## Notes
+
+- All test results verified as of 2025-11-04
+- Commit e331a25: Phase 25-C part 1 complete
+- Previous commit 2dbd9c3: Phase 25-B complete
+- 164 commits since Phase 2 start (Oct 24, 2025)
+- Zero technical debt: 0 failures, 0 errors in test suite
+
+**Status**: Ready to continue with Phase 25-C Part 2 ✅
