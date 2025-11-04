@@ -4,7 +4,7 @@ require_relative "../test_helper"
 require "open3"
 require "tmpdir"
 
-class AuroraCLITest < Minitest::Test
+class MLCCLITest < Minitest::Test
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
   def test_run_simple_program
@@ -12,10 +12,10 @@ class AuroraCLITest < Minitest::Test
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "main.mlc")
-      File.write(source, <<~AUR)
+      File.write(source, <<~MLC)
         fn main() -> i32 =
           println("hello")
-      AUR
+      MLC
 
       stdout, stderr, status = Open3.capture3(CLI, source)
 
@@ -27,9 +27,9 @@ class AuroraCLITest < Minitest::Test
   def test_run_from_stdin
     skip_unless_compiler_available
 
-    source = <<~AUR
+    source = <<~MLC
       fn main() -> i32 = println("from-stdin")
-    AUR
+    MLC
 
     stdout, stderr, status = Open3.capture3(CLI, "-", stdin_data: source)
 
@@ -42,9 +42,9 @@ class AuroraCLITest < Minitest::Test
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "stdin.mlc")
-      File.write(source, <<~AUR)
+      File.write(source, <<~MLC)
         fn main() -> i32 = println(read_line())
-      AUR
+      MLC
 
       stdout, stderr, status = Open3.capture3(CLI, source, stdin_data: "hello\n")
 
@@ -54,9 +54,9 @@ class AuroraCLITest < Minitest::Test
   end
 
   def test_emit_cpp
-    source = <<~AUR
+    source = <<~MLC
       fn main() -> i32 = 0
-    AUR
+    MLC
 
     stdout, stderr, status = Open3.capture3(CLI, "--emit-cpp", "-", stdin_data: source)
 
@@ -67,10 +67,10 @@ class AuroraCLITest < Minitest::Test
   def test_compile_error_includes_filename
     Dir.mktmpdir do |dir|
       source = File.join(dir, "invalid.mlc")
-      File.write(source, <<~AUR)
+      File.write(source, <<~MLC)
         fn main() -> void =
           if true then 1 else 2
-      AUR
+      MLC
 
       _stdout, stderr, status = Open3.capture3(CLI, source)
 
@@ -84,9 +84,9 @@ class AuroraCLITest < Minitest::Test
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "args.mlc")
-      File.write(source, <<~AUR)
+      File.write(source, <<~MLC)
         fn main() -> i32 = println(args()[1])
-      AUR
+      MLC
 
       stdout, stderr, status = Open3.capture3(CLI, source, "--", "program", "value")
 
@@ -100,11 +100,11 @@ class AuroraCLITest < Minitest::Test
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "let.mlc")
-      File.write(source, <<~AUR)
+      File.write(source, <<~MLC)
         fn main() -> i32 =
           let x = 41
           x + 1
-      AUR
+      MLC
 
       stdout, stderr, status = Open3.capture3(CLI, source)
 
@@ -118,13 +118,13 @@ class AuroraCLITest < Minitest::Test
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "array.mlc")
-      File.write(source, <<~AUR)
+      File.write(source, <<~MLC)
         fn count(items: str[]) -> i32 =
           items.length()
 
         fn main() -> i32 =
           count(["a", "b", "c"])
-      AUR
+      MLC
 
       stdout, stderr, status = Open3.capture3(CLI, source)
 
@@ -138,7 +138,7 @@ class AuroraCLITest < Minitest::Test
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "stats.mlc")
-      File.write(source, <<~AUR)
+      File.write(source, <<~MLC)
         type Stats = { total: i32, warnings: i32, errors: i32 }
 
         fn normalize(line: str) -> str = line.trim()
@@ -172,7 +172,7 @@ class AuroraCLITest < Minitest::Test
             0
           else
             1
-      AUR
+      MLC
 
       input = <<~LOG
         INFO: Start

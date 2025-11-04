@@ -4,11 +4,11 @@ require_relative "../test_helper"
 
 class DoBlockTest < Minitest::Test
   def test_simple_do_block
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = do
         42
       end
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     assert_equal 1, ast.declarations.length
@@ -21,13 +21,13 @@ class DoBlockTest < Minitest::Test
   end
 
   def test_do_block_multiple_expressions
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = do
         let x = 10;
         let y = 20;
         x + y
       end
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     func = ast.declarations.first
@@ -39,13 +39,13 @@ class DoBlockTest < Minitest::Test
   end
 
   def test_do_block_with_function_calls
-    source = <<~AURORA
+    source = <<~MLCORA
       fn greet() -> i32 = do
         println("Hello")
         println("World")
         0
       end
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     func = ast.declarations.first
@@ -57,13 +57,13 @@ class DoBlockTest < Minitest::Test
   end
 
   def test_do_block_compiles
-    source = <<~AURORA
+    source = <<~MLCORA
       fn compute() -> i32 = do
         let x = 10
         let y = 20
         x + y
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "compute"
@@ -71,14 +71,14 @@ class DoBlockTest < Minitest::Test
   end
 
   def test_nested_do_blocks
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = do
         let x = do
           10
         end
         x + 5
       end
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     func = ast.declarations.first

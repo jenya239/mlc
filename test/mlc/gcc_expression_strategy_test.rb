@@ -6,12 +6,12 @@ require_relative "../../lib/mlc"
 class GccExpressionStrategyTest < Minitest::Test
   def test_simple_block_with_gcc_policy
     # Test that gcc_optimized policy generates statement expressions
-    source = <<~AUR
+    source = <<~MLC
       fn test() -> i32 =
         let mut x = 1;
         let mut y = 2;
         x + y
-    AUR
+    MLC
 
     # For now, test that the policy exists and can be created
     policy = MLC::Backend::RuntimePolicy.gcc_optimized
@@ -28,9 +28,9 @@ class GccExpressionStrategyTest < Minitest::Test
 
   def test_simple_function_compiles
     # Simple function without complex blocks
-    source = <<~AUR
+    source = <<~MLC
       fn double(x: i32) -> i32 = x * 2
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "double"
@@ -39,9 +39,9 @@ class GccExpressionStrategyTest < Minitest::Test
 
   def test_trivial_block_inlined
     # Trivial blocks (no statements) could be inlined
-    source = <<~AUR
+    source = <<~MLC
       fn answer() -> i32 = 42
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "42"
@@ -87,11 +87,11 @@ class GccExpressionStrategyTest < Minitest::Test
 
   def test_function_with_statements
     # Function with multiple statements
-    source = <<~AUR
+    source = <<~MLC
       fn compute() -> i32 =
         let x = 10;
         x * 2
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "compute"
@@ -99,9 +99,9 @@ class GccExpressionStrategyTest < Minitest::Test
 
   def test_gcc_expression_with_no_statements
     # Edge case: block with only result expression
-    source = <<~AUR
+    source = <<~MLC
       fn direct() -> i32 = 100
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "100"

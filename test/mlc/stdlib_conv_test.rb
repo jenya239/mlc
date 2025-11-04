@@ -4,12 +4,12 @@ require_relative "../test_helper"
 
 class StdlibConvTest < Minitest::Test
   def test_conv_module_parses
-    source = <<~AURORA
+    source = <<~MLCORA
       import { to_string_i32, parse_i32 } from "Conv"
 
       fn test() -> str =
         to_string_i32(42)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     assert_equal 1, ast.imports.length
@@ -17,84 +17,84 @@ class StdlibConvTest < Minitest::Test
   end
 
   def test_to_string_i32
-    source = <<~AURORA
+    source = <<~MLCORA
       import { to_string_i32 } from "Conv"
 
       fn test() -> str =
         to_string_i32(42)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "to_string_i32"
   end
 
   def test_to_string_f32
-    source = <<~AURORA
+    source = <<~MLCORA
       import { to_string_f32 } from "Conv"
 
       fn test() -> str =
         to_string_f32(3.14)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "to_string_f32"
   end
 
   def test_to_string_bool
-    source = <<~AURORA
+    source = <<~MLCORA
       import { to_string_bool } from "Conv"
 
       fn test() -> str =
         to_string_bool(true)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "to_string_bool"
   end
 
   def test_parse_i32
-    source = <<~AURORA
+    source = <<~MLCORA
       import { parse_i32 } from "Conv"
 
       fn test() -> i32 =
         parse_i32("42")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "parse_i32"
   end
 
   def test_parse_f32
-    source = <<~AURORA
+    source = <<~MLCORA
       import { parse_f32 } from "Conv"
 
       fn test() -> f32 =
         parse_f32("3.14")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "parse_f32"
   end
 
   def test_parse_bool
-    source = <<~AURORA
+    source = <<~MLCORA
       import { parse_bool } from "Conv"
 
       fn test() -> bool =
         parse_bool("true")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "parse_bool"
   end
 
   def test_helper_functions
-    source = <<~AURORA
+    source = <<~MLCORA
       import { int_to_str, str_to_int } from "Conv"
 
       fn test() -> str =
         int_to_str(str_to_int("123"))
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "int_to_str"
@@ -102,7 +102,7 @@ class StdlibConvTest < Minitest::Test
   end
 
   def test_with_do_blocks
-    source = <<~AURORA
+    source = <<~MLCORA
       import { parse_i32, to_string_i32 } from "Conv"
 
       fn process(s: str) -> str = do
@@ -110,7 +110,7 @@ class StdlibConvTest < Minitest::Test
         let doubled = num * 2;
         to_string_i32(doubled)
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "parse_i32"
@@ -118,7 +118,7 @@ class StdlibConvTest < Minitest::Test
   end
 
   def test_combined_with_string_module
-    source = <<~AURORA
+    source = <<~MLCORA
       import { trim } from "String"
       import { parse_i32, to_string_i32 } from "Conv"
 
@@ -127,7 +127,7 @@ class StdlibConvTest < Minitest::Test
         let num = parse_i32(cleaned);
         to_string_i32(num + 1)
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "trim"

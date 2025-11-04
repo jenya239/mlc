@@ -10,10 +10,10 @@ class MidIRTest < Minitest::Test
   end
 
   def test_simple_arithmetic_lowering
-    source = <<~AURORA
+    source = <<~MLCORA
       fn add(x: i32, y: i32) -> i32 = x + y
       fn main() -> i32 = add(2, 3)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     high_ir, _registry = MLC.transform_to_core_with_registry(ast)
@@ -41,10 +41,10 @@ class MidIRTest < Minitest::Test
   end
 
   def test_if_expression_creates_basic_blocks
-    source = <<~AURORA
+    source = <<~MLCORA
       fn abs(x: i32) -> i32 =
         if x < 0 then -x else x
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     high_ir, _registry = MLC.transform_to_core_with_registry(ast)
@@ -79,10 +79,10 @@ class MidIRTest < Minitest::Test
   end
 
   def test_basic_block_structure
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test(x: i32) -> i32 =
         if x > 0 then x * 2 else 0
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     high_ir, _registry = MLC.transform_to_core_with_registry(ast)
@@ -108,10 +108,10 @@ class MidIRTest < Minitest::Test
   end
 
   def test_function_call_lowering
-    source = <<~AURORA
+    source = <<~MLCORA
       fn double(x: i32) -> i32 = x * 2
       fn main() -> i32 = double(5)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     high_ir, _registry = MLC.transform_to_core_with_registry(ast)
@@ -135,10 +135,10 @@ class MidIRTest < Minitest::Test
   end
 
   def test_temporary_variables_creation
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test(x: i32) -> i32 =
         if x > 0 then x + 1 else x - 1
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     high_ir, _registry = MLC.transform_to_core_with_registry(ast)

@@ -14,12 +14,12 @@ class TypeInferenceArchitectureTest < Minitest::Test
   end
 
   def test_sum_constructor_instantiation_produces_generic_type
-    source = <<~AURORA
+    source = <<~MLCORA
       type Option<T> = Some(T) | None
 
       fn build() -> Option<i32> =
         Some(1)
-    AURORA
+    MLCORA
 
     core = build_core_ir(source)
     func = find_function(core, "build")
@@ -31,7 +31,7 @@ class TypeInferenceArchitectureTest < Minitest::Test
   end
 
   def test_generic_function_instantiation_resolves_return_type
-    source = <<~AURORA
+    source = <<~MLCORA
       type Option<T> = Some(T) | None
 
       fn unwrap<T>(opt: Option<T>, default: T) -> T =
@@ -41,7 +41,7 @@ class TypeInferenceArchitectureTest < Minitest::Test
 
       fn use_unwrap() -> i32 =
         unwrap(Some(5), 0)
-    AURORA
+    MLCORA
 
     core = build_core_ir(source)
     func = find_function(core, "use_unwrap")

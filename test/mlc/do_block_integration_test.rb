@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 class DoBlockIntegrationTest < Minitest::Test
   def test_do_block_with_math_stdlib
-    source = <<~AURORA
+    source = <<~MLCORA
       import { sqrt_f } from "Math"
 
       fn distance() -> f32 = do
@@ -12,7 +12,7 @@ class DoBlockIntegrationTest < Minitest::Test
         let y = 4.0;
         sqrt_f(x * x + y * y)
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "sqrt_f"
@@ -21,14 +21,14 @@ class DoBlockIntegrationTest < Minitest::Test
   end
 
   def test_do_block_with_io_stdlib
-    source = <<~AURORA
+    source = <<~MLCORA
       import { println } from "IO"
 
       fn greet(name: str) -> i32 = do
         println("Hello, " + name);
         0
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "println"
@@ -36,7 +36,7 @@ class DoBlockIntegrationTest < Minitest::Test
   end
 
   def test_nested_do_blocks_compile
-    source = <<~AURORA
+    source = <<~MLCORA
       fn compute() -> i32 = do
         let x = do
           let a = 10;
@@ -47,7 +47,7 @@ class DoBlockIntegrationTest < Minitest::Test
         end;
         x + y
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "compute"
@@ -56,7 +56,7 @@ class DoBlockIntegrationTest < Minitest::Test
   end
 
   def test_do_block_with_function_calls
-    source = <<~AURORA
+    source = <<~MLCORA
       import { println } from "IO"
 
       fn helper() -> i32 = 42
@@ -66,7 +66,7 @@ class DoBlockIntegrationTest < Minitest::Test
         println("Result");
         result
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "helper"
@@ -75,7 +75,7 @@ class DoBlockIntegrationTest < Minitest::Test
   end
 
   def test_do_block_complex_example
-    source = <<~AURORA
+    source = <<~MLCORA
       import { sqrt_f, pow_f } from "Math"
 
       fn calculate() -> f32 = do
@@ -86,7 +86,7 @@ class DoBlockIntegrationTest < Minitest::Test
         let result = sqrt_f(a_sq + b_sq);
         result
       end
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     assert_equal 1, ast.imports.length

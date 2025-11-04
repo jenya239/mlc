@@ -1,5 +1,65 @@
 # MLC - Multi-Level Compiler
 
+---
+
+## ⚠️ ЭКСПЕРИМЕНТАЛЬНЫЙ ПРОЕКТ / EXPERIMENTAL PROJECT
+
+**ВАЖНО / IMPORTANT:**
+
+Этот проект является **экспериментальным исследованием** возможностей генерации прототипа транслятора (compiler/transpiler) с использованием AI-агентов (Claude, GitHub Copilot, Cursor).
+
+This project is an **experimental research** into the capabilities of AI agents (Claude, GitHub Copilot, Cursor) for generating compiler/transpiler prototypes.
+
+### Цели проекта / Project Goals
+
+- **Исследование**: Изучение возможностей современных LLM для разработки сложных систем (компиляторов)
+- **Прототипирование**: Быстрое создание прототипа nim-like транслятора в C++
+- **Обучение**: Понимание архитектуры компиляторов через AI-assisted разработку
+
+- **Research**: Exploring modern LLM capabilities for complex system development (compilers)
+- **Prototyping**: Rapid creation of a nim-like to C++ transpiler prototype
+- **Education**: Understanding compiler architecture through AI-assisted development
+
+### ⚠️ Ограничения / Limitations
+
+**НЕ ИСПОЛЬЗУЙТЕ В PRODUCTION / DO NOT USE IN PRODUCTION**
+
+Этот код:
+- ❌ Не предназначен для промышленного использования
+- ❌ Содержит экспериментальные решения и упрощения
+- ❌ Не прошел полноценного security audit
+- ❌ Может содержать ошибки и недоработки
+- ✅ Подходит для исследований и обучения
+- ✅ Демонстрирует возможности AI в разработке
+
+This code:
+- ❌ Not intended for production use
+- ❌ Contains experimental solutions and simplifications
+- ❌ Has not undergone complete security audit
+- ❌ May contain bugs and incomplete features
+- ✅ Suitable for research and education
+- ✅ Demonstrates AI capabilities in development
+
+### Участие AI-агентов / AI Agent Involvement
+
+Большая часть кода была сгенерирована с помощью:
+- **Claude (Anthropic)**: Архитектурные решения, рефакторинг, документация
+- **GitHub Copilot**: Автодополнение кода, тестов
+- **Cursor**: Интерактивная разработка и отладка
+
+Most of the code was generated using:
+- **Claude (Anthropic)**: Architecture decisions, refactoring, documentation
+- **GitHub Copilot**: Code and test autocompletion
+- **Cursor**: Interactive development and debugging
+
+### Контакт / Contact
+
+Это персональный исследовательский проект. Вопросы и предложения приветствуются через GitHub Issues.
+
+This is a personal research project. Questions and suggestions are welcome via GitHub Issues.
+
+---
+
 ## Overview
 
 MLC (Multi-Level Compiler) is a compiler framework that provides:

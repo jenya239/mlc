@@ -3,15 +3,15 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraLambdaTest < Minitest::Test
+class MLCLambdaTest < Minitest::Test
   def test_parse_simple_lambda
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn test() -> i32 =
         let f = x => x + 1;
         f(5)
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     func = ast.declarations.first
 
     # Body should be a block with variable declaration and usage
@@ -28,13 +28,13 @@ class AuroraLambdaTest < Minitest::Test
   end
 
   def test_parse_lambda_with_multiple_params
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn test() -> i32 =
         let add = (x, y) => x + y;
         add(2, 3)
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     func = ast.declarations.first
     block = func.body
     assert_instance_of MLC::AST::Block, block
@@ -46,13 +46,13 @@ class AuroraLambdaTest < Minitest::Test
   end
 
   def test_parse_lambda_with_types
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn test() -> i32 =
         let f = (x: i32) => x + 1;
         f(5)
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     func = ast.declarations.first
     block = func.body
     lambda_expr = block.stmts.first.value
@@ -62,12 +62,12 @@ class AuroraLambdaTest < Minitest::Test
 
   def test_lambda_lowering_to_cpp
     # Test direct lambda expression (not in let binding)
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn apply() -> i32 =
         (x => x + 1)(5)
-    AURORA
+    MLCORA
 
-    cpp_code = MLC.to_cpp(aurora_source)
+    cpp_code = MLC.to_cpp(mlc_source)
 
     # Should generate C++ lambda
     assert_includes cpp_code, "[]"
@@ -76,13 +76,13 @@ class AuroraLambdaTest < Minitest::Test
   end
 
   def test_lambda_in_function_call
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn apply(x: i32) -> i32 =
         let f = y => y + 1;
         f(x)
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     refute_nil ast
   end
 end

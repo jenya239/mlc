@@ -3,7 +3,7 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraBlockExprTest < Minitest::Test
+class MLCBlockExprTest < Minitest::Test
   def test_block_expr_creation
     # Test creating BlockExpr with statements and result_expr
     stmt1 = MLC::AST::VariableDecl.new(

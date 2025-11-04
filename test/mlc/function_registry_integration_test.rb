@@ -5,11 +5,11 @@ require "test_helper"
 module MLC
   class FunctionRegistryIntegrationTest < Minitest::Test
     def test_registers_user_function_metadata
-      source = <<~AURORA
+      source = <<~MLCORA
         module Math::Vector
 
         export fn add(a: i32, b: i32) -> i32 = a + b
-      AURORA
+      MLCORA
 
       transformer = IRGen.new
       ast = MLC.parse(source)
@@ -25,12 +25,12 @@ module MLC
     end
 
     def test_registers_stdlib_function_metadata
-      source = <<~AURORA
+      source = <<~MLCORA
         import Math::{hypotenuse}
 
         fn length(a: f32, b: f32) -> f32 =
           hypotenuse(a, b)
-      AURORA
+      MLCORA
 
       transformer = IRGen.new
       ast = MLC.parse(source)
@@ -45,12 +45,12 @@ module MLC
     end
 
     def test_wildcard_stdlib_alias_generates_function_lookup
-      source = <<~AURORA
+      source = <<~MLCORA
         import * as Math from "Math"
 
         fn calc(a: f32, b: f32) -> f32 =
           Math.hypotenuse(a, b)
-      AURORA
+      MLCORA
 
       transformer = IRGen.new
       ast = MLC.parse(source)
@@ -70,22 +70,22 @@ module MLC
     end
 
     def test_wildcard_user_module_alias_resolves_member
-      module_source = <<~AURORA
+      module_source = <<~MLCORA
         module MyMath
 
         export fn add(a: i32, b: i32) -> i32 = a + b
-      AURORA
+      MLCORA
 
       transformer = IRGen.new
       transformer.transform(MLC.parse(module_source))
 
-      use_source = <<~AURORA
+      use_source = <<~MLCORA
         module Demo
 
         import * as Math from MyMath
 
         fn sum(a: i32, b: i32) -> i32 = Math.add(a, b)
-      AURORA
+      MLCORA
 
       core = transformer.transform(MLC.parse(use_source))
       sum_func = core.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == "sum" }
@@ -102,23 +102,23 @@ module MLC
     end
 
     def test_selective_user_module_import_registers_direct_alias
-      module_source = <<~AURORA
+      module_source = <<~MLCORA
         module Geometry
 
         export fn area(a: f32, b: f32) -> f32 = a * b
         export fn perimeter(a: f32, b: f32) -> f32 = 2.0 * (a + b)
-      AURORA
+      MLCORA
 
       transformer = IRGen.new
       transformer.transform(MLC.parse(module_source))
 
-      use_source = <<~AURORA
+      use_source = <<~MLCORA
         module Demo
 
         import Geometry::{area}
 
         fn square_area(x: f32) -> f32 = area(x, x)
-      AURORA
+      MLCORA
 
       core = transformer.transform(MLC.parse(use_source))
       func = core.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == "square_area" }
@@ -134,21 +134,21 @@ module MLC
     end
 
     def test_selective_user_module_import_lowering_uses_namespace
-      geometry_source = <<~AURORA
+      geometry_source = <<~MLCORA
         module Geometry
 
         export fn area(a: f32, b: f32) -> f32 = a * b
         export fn perimeter(a: f32, b: f32) -> f32 = 2.0 * (a + b)
-      AURORA
+      MLCORA
 
-      demo_source = <<~AURORA
+      demo_source = <<~MLCORA
         module Demo
 
         import Geometry::{area}
 
         fn compute(a: f32, b: f32) -> f32 =
           area(a, b)
-      AURORA
+      MLCORA
 
       transformer = IRGen.new
       transformer.transform(MLC.parse(geometry_source))

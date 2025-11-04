@@ -4,12 +4,12 @@ require_relative "../test_helper"
 
 class StdlibOptionTest < Minitest::Test
   def test_option_module_parses
-    source = <<~AURORA
+    source = <<~MLCORA
       import { Option, some, none, is_some } from "Option"
 
       fn test() -> bool =
         is_some(some(42))
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     assert_equal 1, ast.imports.length
@@ -17,19 +17,19 @@ class StdlibOptionTest < Minitest::Test
   end
 
   def test_option_type_definition
-    source = <<~AURORA
+    source = <<~MLCORA
       import { Option } from "Option"
 
       fn test() -> Option<i32> =
         Some(42)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "Some"
   end
 
   def test_option_is_some_is_none
-    source = <<~AURORA
+    source = <<~MLCORA
       import { is_some, is_none, some, none } from "Option"
 
       fn test_some() -> bool =
@@ -37,7 +37,7 @@ class StdlibOptionTest < Minitest::Test
 
       fn test_none() -> bool =
         is_none(none())
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "is_some"
@@ -45,7 +45,7 @@ class StdlibOptionTest < Minitest::Test
   end
 
   def test_option_unwrap
-    source = <<~AURORA
+    source = <<~MLCORA
       import { unwrap, some, none } from "Option"
 
       fn test_unwrap_some() -> i32 =
@@ -53,28 +53,28 @@ class StdlibOptionTest < Minitest::Test
 
       fn test_unwrap_none() -> i32 =
         unwrap(none(), 99)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "unwrap"
   end
 
   def test_option_map
-    source = <<~AURORA
+    source = <<~MLCORA
       import { map, some } from "Option"
 
       fn double(x: i32) -> i32 = x * 2
 
       fn test_map() -> Option<i32> =
         map(some(21), double)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "map"
   end
 
   def test_option_and_then
-    source = <<~AURORA
+    source = <<~MLCORA
       import { and_then, some, none } from "Option"
 
       fn safe_div(x: i32) -> Option<i32> =
@@ -82,19 +82,19 @@ class StdlibOptionTest < Minitest::Test
 
       fn test() -> Option<i32> =
         and_then(some(10), safe_div)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "and_then"
   end
 
   def test_option_or_else
-    source = <<~AURORA
+    source = <<~MLCORA
       import { or_else, some, none } from "Option"
 
       fn test() -> Option<i32> =
         or_else(none(), some(42))
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "or_else"

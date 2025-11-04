@@ -6,7 +6,7 @@ class OpenGLCoverageTest < Minitest::Test
   include CppAst::Builder::DSL
 
   def test_shader_hpp_generation
-    # Generate shader.hpp using Aurora DSL
+    # Generate shader.hpp using MLC DSL
     ast = namespace_decl("gtkgl::gl",
       class_decl("Shader",
         enum_class("Type", [
@@ -91,7 +91,7 @@ class OpenGLCoverageTest < Minitest::Test
   end
 
   def test_buffer_hpp_generation
-    # Generate buffer.hpp using Aurora DSL
+    # Generate buffer.hpp using MLC DSL
     ast = namespace_decl("gtkgl::gl",
       class_decl("VertexArray",
         function_decl("", "VertexArray", [], block()),
@@ -176,7 +176,7 @@ class OpenGLCoverageTest < Minitest::Test
   end
 
   def test_text_types_hpp_generation
-    # Generate text_types.hpp using Aurora DSL
+    # Generate text_types.hpp using MLC DSL
     ast = namespace_decl("gtkgl::text",
       using_alias("GlyphIndex", "uint32_t"),
       using_alias("FontFaceID", "uint32_t"),

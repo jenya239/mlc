@@ -3,14 +3,14 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraBlockTest < Minitest::Test
+class MLCBlockTest < Minitest::Test
   def test_for_loop_block_ast
-    source = <<~AUR
+    source = <<~MLC
       fn pick(xs: i32[]) -> i32 =
         for x in xs do
           x
         end
-    AUR
+    MLC
 
     ast = MLC.parse(source)
     func = ast.declarations.first
@@ -23,14 +23,14 @@ class AuroraBlockTest < Minitest::Test
   end
 
   def test_block_with_variable_and_assignment
-    source = <<~AUR
+    source = <<~MLC
       fn sum(xs: i32[]) -> i32 =
         for x in xs do
           let mut total = 0;
           total = total + x;
           total
         end
-    AUR
+    MLC
 
     ast = MLC.parse(source)
     block = ast.declarations.first.body.body
@@ -44,14 +44,14 @@ class AuroraBlockTest < Minitest::Test
   end
 
   def test_block_lowering_generates_statements
-    source = <<~AUR
+    source = <<~MLC
       fn apply(xs: i32[]) -> i32 =
         let mut result = 0;
         for x in xs do
           result = x + 1;
         end;
         result
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -61,12 +61,12 @@ class AuroraBlockTest < Minitest::Test
   end
 
   def test_function_level_mutable_assignments
-    source = <<~AUR
+    source = <<~MLC
       fn main() -> i32 =
         let mut x = 0;
         x = x + 1;
         x
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 

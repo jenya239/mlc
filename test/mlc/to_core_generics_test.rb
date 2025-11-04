@@ -4,9 +4,9 @@ require_relative '../test_helper'
 
 class ToCoreGenericsTest < Minitest::Test
   def test_simple_generic_function
-    source = <<~AURORA
+    source = <<~MLCORA
       export fn identity<T>(x: T) -> T = x
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, _ = MLC.transform_to_core_with_registry(ast)
@@ -26,9 +26,9 @@ class ToCoreGenericsTest < Minitest::Test
   end
 
   def test_generic_function_multiple_type_params
-    source = <<~AURORA
+    source = <<~MLCORA
       export fn map<T, U>(x: T, f: fn(T) -> U) -> U = f(x)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, _ = MLC.transform_to_core_with_registry(ast)
@@ -55,9 +55,9 @@ class ToCoreGenericsTest < Minitest::Test
   end
 
   def test_generic_type_declaration
-    source = <<~AURORA
+    source = <<~MLCORA
       export type Option<T> = Some(T) | None
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, _ = MLC.transform_to_core_with_registry(ast)
@@ -86,9 +86,9 @@ class ToCoreGenericsTest < Minitest::Test
   end
 
   def test_generic_type_with_multiple_params
-    source = <<~AURORA
+    source = <<~MLCORA
       export type Result<T, E> = Ok(T) | Err(E)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, _ = MLC.transform_to_core_with_registry(ast)
@@ -113,9 +113,9 @@ class ToCoreGenericsTest < Minitest::Test
   end
 
   def test_function_type_parameter
-    source = <<~AURORA
+    source = <<~MLCORA
       export fn apply<T, U>(f: fn(T) -> U, x: T) -> U = f(x)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, _ = MLC.transform_to_core_with_registry(ast)
@@ -137,9 +137,9 @@ class ToCoreGenericsTest < Minitest::Test
   end
 
   def test_array_of_type_variable
-    source = <<~AURORA
+    source = <<~MLCORA
       export fn length<T>(arr: T[]) -> i32 = 0
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, _ = MLC.transform_to_core_with_registry(ast)
@@ -155,9 +155,9 @@ class ToCoreGenericsTest < Minitest::Test
   end
 
   def test_extern_generic_function
-    source = <<~AURORA
+    source = <<~MLCORA
       export extern fn length<T>(arr: T[]) -> i32
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, _ = MLC.transform_to_core_with_registry(ast)
@@ -173,9 +173,9 @@ class ToCoreGenericsTest < Minitest::Test
   end
 
   def test_nested_generic_array_function
-    source = <<~AURORA
+    source = <<~MLCORA
       export fn first<T>(arr: T[]) -> T = arr[0]
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, _ = MLC.transform_to_core_with_registry(ast)
@@ -193,10 +193,10 @@ class ToCoreGenericsTest < Minitest::Test
 
   def test_generic_with_instantiated_type
     # Test that Option<T> is parsed and transformed correctly
-    source = <<~AURORA
+    source = <<~MLCORA
       export type Option<T> = Some(T) | None
       export fn unwrap<T>(opt: Option<T>, default: T) -> T = default
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, _ = MLC.transform_to_core_with_registry(ast)

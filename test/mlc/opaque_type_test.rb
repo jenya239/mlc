@@ -4,10 +4,10 @@ require_relative '../test_helper'
 
 class OpaqueTypeTest < Minitest::Test
   def test_opaque_type_parsing
-    source = <<~AURORA
+    source = <<~MLCORA
       export type Window
       export type DrawContext
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
 
@@ -26,9 +26,9 @@ class OpaqueTypeTest < Minitest::Test
   end
 
   def test_opaque_type_core_ir_transformation
-    source = <<~AURORA
+    source = <<~MLCORA
       type MyOpaqueType
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, type_registry = MLC.transform_to_core_with_registry(ast)
@@ -44,9 +44,9 @@ class OpaqueTypeTest < Minitest::Test
   end
 
   def test_opaque_type_cpp_name_without_namespace
-    source = <<~AURORA
+    source = <<~MLCORA
       type Handle
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, type_registry = MLC.transform_to_core_with_registry(ast)
@@ -57,7 +57,7 @@ class OpaqueTypeTest < Minitest::Test
   end
 
   def test_opaque_type_cpp_lowering
-    source = <<~AURORA
+    source = <<~MLCORA
       type Handle
 
       extern fn create_handle() -> Handle
@@ -67,7 +67,7 @@ class OpaqueTypeTest < Minitest::Test
         let h = create_handle();
         use_handle(h)
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -79,12 +79,12 @@ class OpaqueTypeTest < Minitest::Test
   end
 
   def test_opaque_type_in_stdlib
-    source = <<~AURORA
+    source = <<~MLCORA
       import { Window, create_window } from "Graphics"
 
       fn test() -> Window =
         create_window(800, 600, "Test")
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -94,7 +94,7 @@ class OpaqueTypeTest < Minitest::Test
   end
 
   def test_opaque_type_vs_record_type
-    source = <<~AURORA
+    source = <<~MLCORA
       // Opaque type (no definition)
       export type Handle
 
@@ -106,7 +106,7 @@ class OpaqueTypeTest < Minitest::Test
 
       extern fn get_handle() -> Handle
       extern fn get_point() -> Point
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     core_ir, type_registry = MLC.transform_to_core_with_registry(ast)

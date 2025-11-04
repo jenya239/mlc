@@ -3,9 +3,9 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraControlFlowStatementTest < Minitest::Test
+class MLCControlFlowStatementTest < Minitest::Test
   def test_if_statement_generates_cpp_if
-    source = <<~AUR
+    source = <<~MLC
       fn adjust(value: i32) -> i32 =
         let mut total = value;
         if total > 10 then {
@@ -14,7 +14,7 @@ class AuroraControlFlowStatementTest < Minitest::Test
           total = total + 5;
         }
         total
-    AUR
+    MLC
 
     ast = MLC.parse(source)
     block = ast.declarations.first.body
@@ -37,7 +37,7 @@ class AuroraControlFlowStatementTest < Minitest::Test
   end
 
   def test_while_statement_generates_cpp_while
-    source = <<~AUR
+    source = <<~MLC
       fn countdown(n: i32) -> i32 =
         let mut value = n;
         while value > 0 do
@@ -45,7 +45,7 @@ class AuroraControlFlowStatementTest < Minitest::Test
           0
         end;
         value
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -54,14 +54,14 @@ class AuroraControlFlowStatementTest < Minitest::Test
   end
 
   def test_return_statement_in_block
-    source = <<~AUR
+    source = <<~MLC
       fn pick(value: i32) -> i32 =
         let mut answer = value;
         if value > 0 then {
           return value;
         };
         answer
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "if (value > 0)"
@@ -69,7 +69,7 @@ class AuroraControlFlowStatementTest < Minitest::Test
   end
 
   def test_break_and_continue_inside_loop
-    source = <<~AUR
+    source = <<~MLC
       fn first_positive(xs: i32[]) -> i32 =
         let mut found = -1;
         for x in xs do
@@ -82,7 +82,7 @@ class AuroraControlFlowStatementTest < Minitest::Test
           0
         end;
         found
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "continue;"
@@ -90,14 +90,14 @@ class AuroraControlFlowStatementTest < Minitest::Test
   end
 
   def test_return_without_expression_in_void_function
-    source = <<~AUR
+    source = <<~MLC
       fn reset() -> void =
         if true then {
           return;
         } else {
           return;
         }
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "return;"

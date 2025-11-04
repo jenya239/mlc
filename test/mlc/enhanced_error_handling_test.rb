@@ -7,13 +7,13 @@ require_relative "../../lib/mlc/parser/error_recovery_parser"
 
 class EnhancedErrorHandlingTest < Minitest::Test
   def test_syntax_error_with_suggestion
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = 
         42
-    AURORA
+    MLCORA
     
     # Test that we can create enhanced syntax errors
-    error = MLC::AuroraSyntaxError.new(
+    error = MLC::MLCSyntaxError.new(
       "Syntax error: missing expression",
       location: "line 1, column 20",
       suggestion: "Add an expression after the equals sign"
@@ -25,7 +25,7 @@ class EnhancedErrorHandlingTest < Minitest::Test
   end
   
   def test_multiple_errors_recovery
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test1() -> i32 = 
         42
       
@@ -34,7 +34,7 @@ class EnhancedErrorHandlingTest < Minitest::Test
       
       fn test3() -> i32 = 
         42
-    AURORA
+    MLCORA
     
     parser = MLC::Parser::ErrorRecoveryParser.new(source)
     
@@ -42,17 +42,17 @@ class EnhancedErrorHandlingTest < Minitest::Test
       parser.parse
     rescue MLC::Parser::MultipleErrors => e
       assert e.errors.length >= 2, "Should have multiple errors"
-      assert e.errors.any? { |err| err.is_a?(MLC::AuroraSyntaxError) }, "Should have syntax errors"
+      assert e.errors.any? { |err| err.is_a?(MLC::MLCSyntaxError) }, "Should have syntax errors"
     end
   end
   
   def test_error_recovery_continues_parsing
-    source = <<~AURORA
+    source = <<~MLCORA
       fn broken() -> i32 = 
         invalid_syntax
       
       fn working() -> i32 = 42
-    AURORA
+    MLCORA
     
     parser = MLC::Parser::ErrorRecoveryParser.new(source)
     
@@ -67,10 +67,10 @@ class EnhancedErrorHandlingTest < Minitest::Test
   end
   
   def test_enhanced_error_messages
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = 
         42
-    AURORA
+    MLCORA
     
     parser = MLC::Parser::ErrorRecoveryParser.new(source)
     
@@ -84,16 +84,16 @@ class EnhancedErrorHandlingTest < Minitest::Test
   end
   
   def test_type_error_suggestions
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = "hello"
-    AURORA
+    MLCORA
     
     # This should compile but we can test the error handling framework
     begin
       MLC.parse(source)
     rescue => e
       # Test that we can create enhanced type errors
-      error = MLC::AuroraTypeError.new(
+      error = MLC::MLCTypeError.new(
         "Type mismatch: expected i32, got string",
         location: "line 1, column 20",
         suggestion: "Use a number instead of a string"
@@ -106,12 +106,12 @@ class EnhancedErrorHandlingTest < Minitest::Test
   end
   
   def test_scope_error_suggestions
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = undefined_variable
-    AURORA
+    MLCORA
     
     # Test scope error creation
-    error = MLC::AuroraScopeError.new(
+    error = MLC::MLCScopeError.new(
       "Undefined variable: undefined_variable",
       location: "line 1, column 20",
       suggestion: "Declare the variable or check the spelling"
@@ -123,7 +123,7 @@ class EnhancedErrorHandlingTest < Minitest::Test
   end
   
   def test_import_error_suggestions
-    error = MLC::AuroraImportError.new(
+    error = MLC::MLCImportError.new(
       "Module 'nonexistent' not found",
       location: "line 1, column 8",
       suggestion: "Check the module name and file path"
@@ -135,10 +135,10 @@ class EnhancedErrorHandlingTest < Minitest::Test
   end
   
   def test_error_context_provided
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = 
         42
-    AURORA
+    MLCORA
     
     parser = MLC::Parser::ErrorRecoveryParser.new(source)
     

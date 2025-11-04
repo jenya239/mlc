@@ -5,11 +5,13 @@ module MLC
     # ProgramTransformer
     # Program-level transformation orchestration
     # Phase 18-F: Extracted from FunctionTransformer
+    # Phase 23-D: Fixed user module import ordering
     #
     # Responsibilities:
     # - Orchestrate full program transformation via pass manager
     # - Collect imports and register import aliases
     # - Preregister types and functions
+    # - Register user module import aliases (AFTER functions are registered)
     # - Lower declarations (types and functions)
     # - Build final HighIR::Module
     #
@@ -24,7 +26,12 @@ module MLC
     # - transform_type_decl: From TypeTransformer
     module ProgramTransformer
       # Transform entire program to HighIR::Module
-      # Orchestrates 4-pass transformation: collect imports, preregister types, preregister functions, lower declarations
+      # Orchestrates 5-pass transformation:
+      # 1. collect imports (defers user module import registration)
+      # 2. preregister types
+      # 3. preregister functions
+      # 4. register import aliases (NOW user module imports can be processed)
+      # 5. lower declarations
       def transform_program(program)
         module_name = program.module_decl ? program.module_decl.name : "main"
         context = {
@@ -33,7 +40,8 @@ module MLC
           type_items: [],
           func_items: [],
           module_name: module_name,
-          import_aliases: {}
+          import_aliases: {},
+          user_module_imports: []  # Phase 23-D: Store deferred user module imports
         }
 
         @module_context_service.with_current_module(module_name) do
@@ -51,18 +59,21 @@ module MLC
         )
       end
 
-      # Build pass manager with 4 transformation passes
+      # Build pass manager with 5 transformation passes
+      # Phase 23-D: Added pass 4 (register_import_aliases) between preregister_functions and lower_declarations
       def build_program_pass_manager
         MLC::PassManager.new.tap do |manager|
           manager.register(:collect_imports, method(:pass_collect_imports))
           manager.register(:preregister_types, method(:pass_preregister_types))
           manager.register(:preregister_functions, method(:pass_preregister_functions))
+          manager.register(:register_import_aliases, method(:pass_register_import_aliases))  # NEW
           manager.register(:lower_declarations, method(:pass_lower_declarations))
         end
       end
 
       # Pass 1: Collect imports and register import aliases
-      # Processes both stdlib and user module imports
+      # Phase 23-D: Defers user module import registration until functions are available
+      # Processes stdlib imports immediately (they're pre-registered)
       def pass_collect_imports(context)
         program = context[:program]
 
@@ -74,9 +85,11 @@ module MLC
           )
 
           if @stdlib_resolver.stdlib_module?(import_decl.path)
+            # Stdlib imports can be processed immediately (functions pre-registered)
             register_stdlib_imports(import_decl)
           else
-            register_module_import(import_decl, context[:module_name])
+            # Phase 23-D: Defer user module imports until functions are registered
+            context[:user_module_imports] << import_decl
           end
         end
       end
@@ -102,7 +115,36 @@ module MLC
         end
       end
 
-      # Pass 4: Lower declarations
+      # Pass 4: Register user module import aliases
+      # Phase 23-D: NEW PASS - Process deferred user module imports
+      # Phase 24-B: Load .mlcmeta files before registering import aliases
+      # Now that functions are registered, we can create import aliases
+      def pass_register_import_aliases(context)
+        context[:user_module_imports].each do |import_decl|
+          # Phase 24-B: Load metadata from .mlcmeta file
+          metadata_path = resolve_metadata_path(import_decl.path)
+          if metadata_path && File.exist?(metadata_path)
+            @metadata_loader_service.load(metadata_path)
+          else
+            # Metadata file not found - imports will fail during alias registration
+            # This allows for better error messages from register_module_import
+          end
+
+          register_module_import(import_decl, context[:module_name])
+        end
+      end
+
+      # Resolve .mlcmeta file path from import path
+      # Converts module path to filesystem path
+      # Example: "Math::Vector" -> "./Math/Vector.mlcmeta"
+      def resolve_metadata_path(import_path)
+        # Convert module path separator (::) to filesystem separator (/)
+        file_path = import_path.gsub('::', '/')
+        # Look for .mlcmeta file in current directory
+        "./#{file_path}.mlcmeta"
+      end
+
+      # Pass 5: Lower declarations
       # Transforms type and function declarations to HighIR
       def pass_lower_declarations(context)
         program = context[:program]

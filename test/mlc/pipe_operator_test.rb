@@ -3,16 +3,16 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraPipeOperatorTest < Minitest::Test
+class MLCPipeOperatorTest < Minitest::Test
   def test_parse_simple_pipe
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn double(x: i32) -> i32 = x + x
 
       fn test(x: i32) -> i32 =
         x |> double
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     test_func = ast.declarations[1]
 
     # Body should be a pipe expression
@@ -21,12 +21,12 @@ class AuroraPipeOperatorTest < Minitest::Test
   end
 
   def test_parse_chained_pipes
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn test(x: i32) -> i32 =
         x |> double |> triple |> square
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     func = ast.declarations.first
 
     # Should be left-associative: ((x |> double) |> triple) |> square
@@ -35,24 +35,24 @@ class AuroraPipeOperatorTest < Minitest::Test
   end
 
   def test_pipe_with_function_call
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn test(x: i32) -> i32 =
         x |> add(5) |> multiply(2)
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     refute_nil ast
   end
 
   def test_pipe_lowering
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn double(x: i32) -> i32 = x + x
 
       fn test(x: i32) -> i32 =
         x |> double
-    AURORA
+    MLCORA
 
-    cpp_code = MLC.to_cpp(aurora_source)
+    cpp_code = MLC.to_cpp(mlc_source)
 
     # Pipe should desugar to function call (with sanitized identifier)
     assert_includes cpp_code, "double_(x)"

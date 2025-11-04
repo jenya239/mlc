@@ -3,14 +3,14 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraSumTypesTest < Minitest::Test
+class MLCSumTypesTest < Minitest::Test
   def test_simple_sum_type
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Shape = Circle(f32) | Rect(f32, f32) | Point
-    AURORA
+    MLCORA
 
     # Parse should work
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     refute_nil ast
 
     # Should have type declaration
@@ -44,11 +44,11 @@ class AuroraSumTypesTest < Minitest::Test
   end
 
   def test_sum_type_with_named_fields
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Result = Ok { value: i32 } | Err { message: i32 }
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     type_decl = ast.declarations.first
     sum_type = type_decl.type
 
@@ -66,11 +66,11 @@ class AuroraSumTypesTest < Minitest::Test
 
   def test_sum_type_lowering_to_cpp
 
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Shape = Circle(f32) | Rect(f32, f32) | Point
-    AURORA
+    MLCORA
 
-    cpp_code = MLC.to_cpp(aurora_source)
+    cpp_code = MLC.to_cpp(mlc_source)
 
     # Should generate structs for each variant
     assert_includes cpp_code, "struct Circle"

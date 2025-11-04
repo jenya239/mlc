@@ -4,7 +4,7 @@ require_relative '../test_helper'
 
 class WhileLoopUnitTypeTest < Minitest::Test
   def test_while_loop_no_dummy_values
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = do
         let mut sum = 0;
         let mut i = 0;
@@ -18,7 +18,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
       end
 
       fn main() -> i32 = test()
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -31,7 +31,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
   end
 
   def test_while_loop_with_block_body
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = do
         let mut count = 0;
 
@@ -44,7 +44,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
       end
 
       fn main() -> i32 = test()
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -54,7 +54,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
   end
 
   def test_while_loop_empty_body
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = do
         let mut x = 0;
 
@@ -65,7 +65,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
       end
 
       fn main() -> i32 = test()
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -74,7 +74,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
   end
 
   def test_while_loop_nested
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = do
         let mut x = 0;
         let mut y = 0;
@@ -91,7 +91,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
       end
 
       fn main() -> i32 = test()
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 

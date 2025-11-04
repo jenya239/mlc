@@ -44,6 +44,7 @@ module MLC
         :sum_type_constructor_service,
         :type_unification_service,
         :function_lookup_service,
+        :metadata_loader_service,
         :temp_counter,
         :loop_depth,
         :current_import_aliases,
@@ -118,8 +119,6 @@ module MLC
           scope_context: scope_context_service
         )
 
-        record_builder_service = Services::RecordBuilderService.new(transformer)
-
         type_resolution_service = Services::TypeResolutionService.new(
           function_registry: function_registry,
           type_registry: type_registry,
@@ -143,11 +142,21 @@ module MLC
           sum_type_constructors: sum_type_constructors
         )
 
+        record_builder_service = Services::RecordBuilderService.new(
+          transformer,
+          type_unification_service: type_unification_service
+        )
+
         function_lookup_service = Services::FunctionLookupService.new(
           function_registry: function_registry,
           sum_type_constructors: sum_type_constructors,
           type_checker: type_checker_service,
           type_inference: type_inference_service
+        )
+
+        metadata_loader_service = Services::MetadataLoaderService.new(
+          function_registry: function_registry,
+          type_registry: type_registry
         )
 
         # Phase 7: Type system components (lazily initialized if not provided)
@@ -206,6 +215,7 @@ module MLC
           sum_type_constructor_service: sum_type_constructor_service,
           type_unification_service: type_unification_service,
           function_lookup_service: function_lookup_service,
+          metadata_loader_service: metadata_loader_service,
           temp_counter: temp_counter,
           loop_depth: loop_depth,
           current_import_aliases: current_import_aliases

@@ -3,17 +3,17 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraArrayTypeTest < Minitest::Test
+class MLCArrayTypeTest < Minitest::Test
   def test_array_parameter_maps_to_std_vector
-    aurora_source = <<~AUR
+    mlc_source = <<~MLC
       fn count(items: str[]) -> i32 =
         if items.is_empty() then
           0
         else
           items.length()
-    AUR
+    MLC
 
-    cpp = MLC.to_cpp(aurora_source)
+    cpp = MLC.to_cpp(mlc_source)
 
     assert_includes cpp, "std::vector<mlc::String>"
     assert_includes cpp, "items.size"

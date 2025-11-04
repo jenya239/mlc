@@ -6,12 +6,12 @@ require_relative "../../lib/mlc"
 class LoweringStrategyIntegrationTest < Minitest::Test
   def test_simple_block_with_default_policy
     # Default policy - function bodies are lowered as statements
-    source = <<~AUR
+    source = <<~MLC
       fn test() -> i32 =
         let x = 1;
         let y = 2;
         x + y
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -23,12 +23,12 @@ class LoweringStrategyIntegrationTest < Minitest::Test
   def test_simple_block_with_optimized_policy
     # Test with optimized policy (future implementation)
     # For now, this will still use IIFE but documents the intention
-    source = <<~AUR
+    source = <<~MLC
       fn test() -> i32 =
         let x = 1;
         let y = 2;
         x + y
-    AUR
+    MLC
 
     # Use optimized policy
     policy = MLC::Backend::RuntimePolicy.optimized
@@ -45,12 +45,12 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
   def test_complex_block_always_uses_iife
     # Complex blocks should always use IIFE regardless of policy
-    source = <<~AUR
+    source = <<~MLC
       fn test(x: i32) -> i32 =
         let y = if x > 0 then x * 2 else 0;
         let z = y + 1;
         z
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -60,9 +60,9 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
   def test_trivial_block_just_returns_value
     # Block with no statements should ideally be inlined
-    source = <<~AUR
+    source = <<~MLC
       fn test() -> i32 = 42
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -72,14 +72,14 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
   def test_block_with_many_statements_uses_iife
     # Block with >3 statements - function bodies don't use IIFE
-    source = <<~AUR
+    source = <<~MLC
       fn test() -> i32 =
         let a = 1;
         let b = 2;
         let c = 3;
         let d = 4;
         a + b + c + d
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -92,13 +92,13 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
   def test_regex_match_uses_iife
     # Regex pattern matching always uses IIFE
-    source = <<~AUR
+    source = <<~MLC
       fn parse(text: string) -> i32 =
         match text {
           /^(\d+)$/ => 1,
           _ => 0
         }
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -109,10 +109,10 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
   def test_list_comprehension_uses_iife
     # List comprehensions always use IIFE
-    source = <<~AUR
+    source = <<~MLC
       fn doubled(xs: i32[]) -> i32[] =
         [x * 2 for x in xs if x > 0]
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -124,7 +124,7 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
   def test_adt_match_uses_std_visit
     # Pure ADT match should use std::visit
-    source = <<~AUR
+    source = <<~MLC
       type Option<T> = Some(T) | None
 
       fn unwrap_or(opt: Option<i32>, default: i32) -> i32 =
@@ -132,7 +132,7 @@ class LoweringStrategyIntegrationTest < Minitest::Test
           Some(x) => x,
           None => default
         }
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -144,10 +144,10 @@ class LoweringStrategyIntegrationTest < Minitest::Test
   def test_collections_use_runtime
     # Collection operations should always use runtime
     # Note: This is a placeholder test - actual collection methods will be added later
-    source = <<~AUR
+    source = <<~MLC
       fn test(xs: i32[]) -> i32 =
         xs.length()
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 
@@ -158,11 +158,11 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
   def test_io_functions_use_runtime
     # IO functions should use runtime
-    source = <<~AUR
+    source = <<~MLC
       fn main() -> i32 =
         println("Hello, World!");
         0
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
 

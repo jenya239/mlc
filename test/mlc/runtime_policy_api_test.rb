@@ -5,9 +5,9 @@ require_relative "../../lib/mlc"
 
 class RuntimePolicyApiTest < Minitest::Test
   def test_to_cpp_accepts_runtime_policy
-    source = <<~AUR
+    source = <<~MLC
       fn test() -> i32 = 42
-    AUR
+    MLC
 
     # Should work with default policy
     cpp = MLC.to_cpp(source)
@@ -31,9 +31,9 @@ class RuntimePolicyApiTest < Minitest::Test
   end
 
   def test_compile_accepts_runtime_policy
-    source = <<~AUR
+    source = <<~MLC
       fn add(x: i32, y: i32) -> i32 = x + y
-    AUR
+    MLC
 
     # Compile with custom policy
     policy = MLC::Backend::RuntimePolicy.gcc_optimized
@@ -45,10 +45,10 @@ class RuntimePolicyApiTest < Minitest::Test
   end
 
   def test_to_hpp_cpp_accepts_runtime_policy
-    source = <<~AUR
+    source = <<~MLC
       fn factorial(n: i32) -> i32 =
         if n <= 1 then 1 else n * factorial(n - 1)
-    AUR
+    MLC
 
     result = MLC.to_hpp_cpp(source, runtime_policy: MLC::Backend::RuntimePolicy.optimized)
 
@@ -58,9 +58,9 @@ class RuntimePolicyApiTest < Minitest::Test
   end
 
   def test_lower_to_cpp_accepts_runtime_policy
-    source = <<~AUR
+    source = <<~MLC
       fn double(x: i32) -> i32 = x * 2
-    AUR
+    MLC
 
     # Parse and transform
     ast = MLC.parse(source)
@@ -86,9 +86,9 @@ class RuntimePolicyApiTest < Minitest::Test
     policy.use_gcc_extensions = true
     policy.match_threshold = 10
 
-    source = <<~AUR
+    source = <<~MLC
       fn test() -> i32 = 100
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source, runtime_policy: policy)
 
@@ -97,9 +97,9 @@ class RuntimePolicyApiTest < Minitest::Test
   end
 
   def test_nil_policy_uses_default
-    source = <<~AUR
+    source = <<~MLC
       fn test() -> i32 = 1 + 2
-    AUR
+    MLC
 
     # Nil policy should work (uses default)
     cpp = MLC.to_cpp(source, runtime_policy: nil)

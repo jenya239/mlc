@@ -3,13 +3,13 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraESMModulesTest < Minitest::Test
+class MLCESMModulesTest < Minitest::Test
   def test_parse_export_function
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       export fn add(a: i32, b: i32) -> i32 = a + b
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     assert_equal 1, ast.declarations.length
     func = ast.declarations[0]
@@ -19,11 +19,11 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_parse_export_type
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       export type Point = { x: f32, y: f32 }
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     assert_equal 1, ast.declarations.length
     type_decl = ast.declarations[0]
@@ -33,14 +33,14 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_parse_mixed_exported_and_private
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       export fn public_fn() -> i32 = 42
       fn private_fn() -> i32 = 24
       export type PublicType = { x: i32 }
       type PrivateType = { y: i32 }
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     assert_equal 4, ast.declarations.length
     assert ast.declarations[0].exported, "First function should be exported"
@@ -50,13 +50,13 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_parse_esm_named_import
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { add, subtract } from Math
 
       fn test() -> i32 = add(1, 2)
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     assert_equal 1, ast.imports.length
     import_decl = ast.imports[0]
@@ -67,13 +67,13 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_parse_esm_wildcard_import
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import * as Math from Math
 
       fn test() -> i32 = Math.add(1, 2)
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     assert_equal 1, ast.imports.length
     import_decl = ast.imports[0]
@@ -84,13 +84,13 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_parse_esm_named_import_with_module_path
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { Vector, Point } from Math::Geometry
 
       fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     import_decl = ast.imports[0]
     assert_equal "Math::Geometry", import_decl.path
@@ -98,13 +98,13 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_backward_compat_simple_import
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import Math
 
       fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     import_decl = ast.imports[0]
     assert_equal "Math", import_decl.path
@@ -113,13 +113,13 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_backward_compat_selective_import
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import Math::{add, subtract}
 
       fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     import_decl = ast.imports[0]
     assert_equal "Math", import_decl.path
@@ -127,15 +127,15 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_multiple_esm_imports
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { add } from Math
       import * as Geo from Geometry
       import Utils
 
       fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     assert_equal 3, ast.imports.length
 
@@ -153,7 +153,7 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_complete_esm_module
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { sqrt } from Math
 
       export type Point = { x: f32, y: f32 }
@@ -162,9 +162,9 @@ class AuroraESMModulesTest < Minitest::Test
         sqrt(p1.x * p1.x + p2.y * p2.y)
 
       fn helper() -> i32 = 42
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     # Verify imports
     assert_equal 1, ast.imports.length
@@ -187,12 +187,12 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_generate_header_with_exports
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       export fn add(a: i32, b: i32) -> i32 = a + b
       fn helper() -> i32 = 42
-    AURORA
+    MLCORA
 
-    result = MLC.to_hpp_cpp(aurora_source)
+    result = MLC.to_hpp_cpp(mlc_source)
 
     # Both functions should be in header (for now, we generate all declarations)
     # But in future, we could omit non-exported ones
@@ -201,26 +201,26 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_esm_import_generates_includes
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { Vector } from Math::Geometry
 
       export fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    result = MLC.to_hpp_cpp(aurora_source)
+    result = MLC.to_hpp_cpp(mlc_source)
 
     # Should generate #include
     assert_includes result[:header], '#include "math/geometry.hpp"'
   end
 
   def test_parse_esm_import_with_relative_path
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { add } from "./math"
 
       fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     import_decl = ast.imports[0]
     assert_equal "./math", import_decl.path
@@ -228,13 +228,13 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_parse_esm_import_with_parent_path
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { Utils } from "../core/utils"
 
       fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     import_decl = ast.imports[0]
     assert_equal "../core/utils", import_decl.path
@@ -242,13 +242,13 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_parse_esm_wildcard_import_with_path
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import * as Math from "./math"
 
       fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     import_decl = ast.imports[0]
     assert_equal "./math", import_decl.path
@@ -257,40 +257,40 @@ class AuroraESMModulesTest < Minitest::Test
   end
 
   def test_generate_include_from_file_path
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { add } from "./math"
 
       export fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    result = MLC.to_hpp_cpp(aurora_source)
+    result = MLC.to_hpp_cpp(mlc_source)
 
     # File path should be preserved in #include
     assert_includes result[:header], '#include "./math.hpp"'
   end
 
   def test_generate_include_from_parent_path
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { Utils } from "../core/utils"
 
       export fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    result = MLC.to_hpp_cpp(aurora_source)
+    result = MLC.to_hpp_cpp(mlc_source)
 
     assert_includes result[:header], '#include "../core/utils.hpp"'
   end
 
   def test_mixed_import_styles
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       import { add } from "./math"
       import { Point } from Geometry
       import * as Utils from "../utils"
 
       export fn test() -> i32 = 0
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
 
     assert_equal 3, ast.imports.length
     assert_equal "./math", ast.imports[0].path

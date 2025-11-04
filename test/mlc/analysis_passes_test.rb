@@ -8,10 +8,10 @@ require_relative "../../lib/mlc/analysis/name_resolution_pass"
 
 class AnalysisPassesTest < Minitest::Test
   def setup
-    @source = <<~AURORA
+    @source = <<~MLCORA
       fn add(x: i32, y: i32) -> i32 = x + y
       fn main() -> i32 = add(2, 3)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(@source)
     @core_ir, @type_registry = MLC.transform_to_core_with_registry(ast)

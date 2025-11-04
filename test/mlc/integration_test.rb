@@ -3,7 +3,7 @@
 require "minitest/autorun"
 require_relative "../../lib/mlc"
 
-class AuroraIntegrationTest < Minitest::Test
+class MLCIntegrationTest < Minitest::Test
   def test_example_1_simple_function
     aurora_code = "fn id(x: i32) -> i32 = x"
     

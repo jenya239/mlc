@@ -4,7 +4,7 @@ require_relative '../test_helper'
 
 class StdlibScannerIntegrationTest < Minitest::Test
   def test_compile_with_math_functions
-    source = <<~AURORA
+    source = <<~MLCORA
       import Math::{ sqrt_f, sin_f }
 
       fn test() -> f32 =
@@ -14,7 +14,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
         let result = test();
         0
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -24,7 +24,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_compile_with_graphics_functions
-    source = <<~AURORA
+    source = <<~MLCORA
       import Graphics::{ create_window, flush_window }
 
       fn test() -> void = do
@@ -36,7 +36,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
         test();
         0
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -46,7 +46,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_imported_graphics_record_type_uses_namespace
-    source = <<~AURORA
+    source = <<~MLCORA
       import { Event } from "Graphics"
 
       fn handle(evt: Event) -> i32 =
@@ -54,7 +54,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
 
       fn main() -> i32 =
         0
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -64,14 +64,14 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_compile_with_io_functions
-    source = <<~AURORA
+    source = <<~MLCORA
       import IO::{ println }
 
       fn main() -> i32 = do
         println("Hello, world!");
         0
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -80,7 +80,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_compile_with_conv_functions
-    source = <<~AURORA
+    source = <<~MLCORA
       import Conv::{ parse_i32, to_string_i32 }
 
       fn test() -> str =
@@ -90,7 +90,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
         let s = test();
         0
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -133,7 +133,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_compile_with_multiple_modules
-    source = <<~AURORA
+    source = <<~MLCORA
       import Math::{ sqrt_f }
       import Graphics::{ create_window }
       import IO::{ println }
@@ -149,7 +149,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
         let y = test();
         0
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -160,7 +160,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_scanner_resolves_math_functions_without_overrides
-    source = <<~AURORA
+    source = <<~MLCORA
       import Math::{ abs }
 
       fn test() -> i32 =
@@ -170,7 +170,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
         let x = test();
         0
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 
@@ -179,12 +179,12 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_conv_to_f32_uses_static_cast_override
-    source = <<~AURORA
+    source = <<~MLCORA
       import Conv::{ to_f32 }
 
       fn main() -> f32 =
         to_f32(42)
-    AURORA
+    MLCORA
 
     cpp = MLC.compile(source).to_source
 

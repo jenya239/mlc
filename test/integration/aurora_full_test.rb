@@ -2,11 +2,11 @@
 
 require "test_helper"
 
-class AuroraFullTest < Minitest::Test
+class MLCFullTest < Minitest::Test
   include CppAst::Builder::DSL
 
   def test_aurora_full_example
-    # Comprehensive example using all Aurora DSL features
+    # Comprehensive example using all MLC DSL features
     ast = program(
       # Product type
       product_type("Point",

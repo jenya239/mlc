@@ -9,7 +9,7 @@ class StdlibSimpleE2ETest < Minitest::Test
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
-  # Helper to run Aurora program and check result
+  # Helper to run MLC program and check result
   def run_aurora(source_code, &block)
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
@@ -26,14 +26,14 @@ class StdlibSimpleE2ETest < Minitest::Test
   def test_array_sum_i32
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       import { sum_i32 } from "Array"
 
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5]
         sum_i32(nums)
       end
-    AUR
+    MLC
       assert_equal 15, status.exitstatus
     end
   end
@@ -41,14 +41,14 @@ class StdlibSimpleE2ETest < Minitest::Test
   def test_array_range
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       import { range, sum_i32 } from "Array"
 
       fn main() -> i32 = do
         let nums = range(1, 11)
         sum_i32(nums)
       end
-    AUR
+    MLC
       assert_equal 55, status.exitstatus  # 1+2+...+10 = 55
     end
   end
@@ -56,7 +56,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   def test_array_min_max
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       import { min_i32, max_i32 } from "Array"
       import { to_string_i32 } from "Conv"
 
@@ -68,7 +68,7 @@ class StdlibSimpleE2ETest < Minitest::Test
         println("Max: " + to_string_i32(max_val))
         0
       end
-    AUR
+    MLC
       assert_match /Min: 1/, stdout
       assert_match /Max: 9/, stdout
     end
@@ -79,14 +79,14 @@ class StdlibSimpleE2ETest < Minitest::Test
   def test_conv_parse_i32
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       import { parse_i32 } from "Conv"
 
       fn main() -> i32 = do
         let num = parse_i32("42")
         num
       end
-    AUR
+    MLC
       assert_equal 42, status.exitstatus
     end
   end
@@ -94,7 +94,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   def test_conv_to_string
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       import { to_string_i32, to_string_f32 } from "Conv"
 
       fn main() -> i32 = do
@@ -104,7 +104,7 @@ class StdlibSimpleE2ETest < Minitest::Test
         println(s2)
         0
       end
-    AUR
+    MLC
       assert_match /42/, stdout
       assert_match /3.14/, stdout
     end
@@ -115,14 +115,14 @@ class StdlibSimpleE2ETest < Minitest::Test
   def test_math_abs
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       import { abs } from "Math"
 
       fn main() -> i32 = do
         let a = abs(-42)
         a
       end
-    AUR
+    MLC
       assert_equal 42, status.exitstatus
     end
   end
@@ -130,7 +130,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   def test_math_min_max
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       import { min, max } from "Math"
 
       fn main() -> i32 = do
@@ -138,7 +138,7 @@ class StdlibSimpleE2ETest < Minitest::Test
         let b = max(10, 20)
         a + b
       end
-    AUR
+    MLC
       assert_equal 30, status.exitstatus  # 10 + 20
     end
   end
@@ -148,7 +148,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   def test_string_operations
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn main() -> i32 = do
         let text = "  Hello World  "
         let trimmed = text.trim()
@@ -156,7 +156,7 @@ class StdlibSimpleE2ETest < Minitest::Test
         println(upper)
         0
       end
-    AUR
+    MLC
       assert_match /HELLO WORLD/, stdout
     end
   end

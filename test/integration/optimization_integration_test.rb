@@ -8,9 +8,9 @@ require "benchmark"
 
 class OptimizationIntegrationTest < Minitest::Test
   def test_optimized_parser_integration
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = 42
-    AURORA
+    MLCORA
     
     # Test that optimized parser works with simple code
     parser = MLC::Parser::OptimizedParser.new(source)
@@ -23,9 +23,9 @@ class OptimizationIntegrationTest < Minitest::Test
   def test_optimized_generator_integration
     skip "OptimizedGenerator is experimental and uses different code generation strategy"
 
-    source = <<~AURORA
+    source = <<~MLCORA
       fn add(a: i32, b: i32) -> i32 = a + b
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
 
@@ -43,9 +43,9 @@ class OptimizationIntegrationTest < Minitest::Test
   end
   
   def test_caching_consistency
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = 42
-    AURORA
+    MLCORA
     
     parser = MLC::Parser::OptimizedParser.new(source)
     
@@ -92,9 +92,9 @@ class OptimizationIntegrationTest < Minitest::Test
   end
   
   def test_memory_efficiency
-    source = <<~AURORA
+    source = <<~MLCORA
       fn test() -> i32 = 42
-    AURORA
+    MLCORA
     
     # Test that optimized parser doesn't leak memory
     parser = MLC::Parser::OptimizedParser.new(source)
@@ -115,8 +115,8 @@ class OptimizationIntegrationTest < Minitest::Test
   end
   
   def test_large_file_performance
-    # Generate a large Aurora file
-    large_source = generate_large_aurora_source(500)
+    # Generate a large MLC file
+    large_source = generate_large_mlc_source(500)
     
     # Test that optimized parser can handle large files
     parser = MLC::Parser::OptimizedParser.new(large_source)
@@ -129,19 +129,19 @@ class OptimizationIntegrationTest < Minitest::Test
   
   private
   
-  def generate_large_aurora_source(function_count)
-    source = <<~AURORA
+  def generate_large_mlc_source(function_count)
+    source = <<~MLCORA
       module LargeTest
       
       fn main() -> i32 = 0
-    AURORA
+    MLCORA
     
     function_count.times do |i|
-      source += <<~AURORA
+      source += <<~MLCORA
         fn function_#{i}(x: i32) -> i32 =
           if x > 0 then x * 2
           else 0
-      AURORA
+      MLCORA
     end
     
     source += "end\n"

@@ -34,11 +34,11 @@ class StdlibIOTest < Minitest::Test
   end
 
   def test_import_selective_from_io
-    source = <<~AURORA
+    source = <<~MLCORA
       import { println, print } from "IO"
 
       fn greet(name: str) -> void = println("Hello")
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
 
@@ -50,11 +50,11 @@ class StdlibIOTest < Minitest::Test
   end
 
   def test_import_wildcard_from_io
-    source = <<~AURORA
+    source = <<~MLCORA
       import * as IO from "IO"
 
       fn test() -> void = IO::println("Test")
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
 
@@ -66,12 +66,12 @@ class StdlibIOTest < Minitest::Test
   end
 
   def test_io_and_math_combined
-    source = <<~AURORA
+    source = <<~MLCORA
       import { sqrt_f } from "Math"
       import { println } from "IO"
 
       fn test() -> f32 = sqrt_f(16.0)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
 

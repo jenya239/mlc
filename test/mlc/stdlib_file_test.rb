@@ -4,12 +4,12 @@ require_relative "../test_helper"
 
 class StdlibFileTest < Minitest::Test
   def test_file_module_parses
-    source = <<~AURORA
+    source = <<~MLCORA
       import { read_to_string, write_string, exists } from "File"
 
       fn test() -> bool =
         exists("test.txt")
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     assert_equal 1, ast.imports.length
@@ -17,7 +17,7 @@ class StdlibFileTest < Minitest::Test
   end
 
   def test_file_read_functions
-    source = <<~AURORA
+    source = <<~MLCORA
       import { read_to_string, read_lines, read_text } from "File"
 
       fn test_read_string() -> str =
@@ -28,7 +28,7 @@ class StdlibFileTest < Minitest::Test
 
       fn test_read_text() -> str =
         read_text("test.txt")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "read_to_string"
@@ -36,7 +36,7 @@ class StdlibFileTest < Minitest::Test
   end
 
   def test_file_write_functions
-    source = <<~AURORA
+    source = <<~MLCORA
       import { write_string, write_lines, write_text } from "File"
 
       fn test_write_string() -> bool =
@@ -47,7 +47,7 @@ class StdlibFileTest < Minitest::Test
 
       fn test_write_text() -> bool =
         write_text("output.txt", "content")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "write_string"
@@ -55,7 +55,7 @@ class StdlibFileTest < Minitest::Test
   end
 
   def test_file_append_functions
-    source = <<~AURORA
+    source = <<~MLCORA
       import { append_string, append_line, append_text } from "File"
 
       fn test_append_string() -> bool =
@@ -66,7 +66,7 @@ class StdlibFileTest < Minitest::Test
 
       fn test_append_text() -> bool =
         append_text("log.txt", "more text")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "append_string"
@@ -74,7 +74,7 @@ class StdlibFileTest < Minitest::Test
   end
 
   def test_file_system_operations
-    source = <<~AURORA
+    source = <<~MLCORA
       import { exists, file_exists, remove_file, delete_file } from "File"
 
       fn test_exists() -> bool =
@@ -88,7 +88,7 @@ class StdlibFileTest < Minitest::Test
 
       fn test_delete() -> bool =
         delete_file("temp.txt")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "exists"
@@ -96,7 +96,7 @@ class StdlibFileTest < Minitest::Test
   end
 
   def test_file_rename_move
-    source = <<~AURORA
+    source = <<~MLCORA
       import { rename_file, move_file } from "File"
 
       fn test_rename() -> bool =
@@ -104,21 +104,21 @@ class StdlibFileTest < Minitest::Test
 
       fn test_move() -> bool =
         move_file("src.txt", "dest.txt")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "rename_file"
   end
 
   def test_file_combined_operations
-    source = <<~AURORA
+    source = <<~MLCORA
       import { read_to_string, write_string, exists } from "File"
 
       fn backup_file(path: str) -> bool =
         if exists(path)
           then write_string(path + ".bak", read_to_string(path))
           else false
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "backup_file"
@@ -128,7 +128,7 @@ class StdlibFileTest < Minitest::Test
   end
 
   def test_safe_read_operations
-    source = <<~AURORA
+    source = <<~MLCORA
       import { safe_read_to_string, safe_read_lines } from "File"
 
       fn test_safe_read() -> Result<str, str> =
@@ -136,7 +136,7 @@ class StdlibFileTest < Minitest::Test
 
       fn test_safe_read_lines() -> Result<str[], str> =
         safe_read_lines("data.txt")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "safe_read_to_string"
@@ -144,7 +144,7 @@ class StdlibFileTest < Minitest::Test
   end
 
   def test_safe_write_operations
-    source = <<~AURORA
+    source = <<~MLCORA
       import { safe_write_string, safe_write_lines, safe_append_string } from "File"
 
       fn test_safe_write() -> Result<bool, str> =
@@ -155,7 +155,7 @@ class StdlibFileTest < Minitest::Test
 
       fn test_safe_append() -> Result<bool, str> =
         safe_append_string("log.txt", "entry")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "safe_write_string"
@@ -164,7 +164,7 @@ class StdlibFileTest < Minitest::Test
   end
 
   def test_safe_file_system_operations
-    source = <<~AURORA
+    source = <<~MLCORA
       import { safe_remove_file, safe_rename_file } from "File"
 
       fn test_safe_remove() -> Result<bool, str> =
@@ -172,7 +172,7 @@ class StdlibFileTest < Minitest::Test
 
       fn test_safe_rename() -> Result<bool, str> =
         safe_rename_file("old.txt", "new.txt")
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "safe_remove_file"
@@ -180,7 +180,7 @@ class StdlibFileTest < Minitest::Test
   end
 
   def test_safe_operations_with_result_combinators
-    source = <<~AURORA
+    source = <<~MLCORA
       import { safe_read_to_string, safe_write_string } from "File"
       import { is_ok, unwrap_or } from "Result"
 
@@ -190,7 +190,7 @@ class StdlibFileTest < Minitest::Test
           then is_ok(safe_write_string(output_path, unwrap_or(result, "")))
           else false
       end
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "process_file"

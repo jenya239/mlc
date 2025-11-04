@@ -142,7 +142,7 @@ class StdlibScannerTest < Minitest::Test
     sqrt = math.functions['sqrt_f']
     assert sqrt.extern?
 
-    # hypotenuse is Aurora function (not extern)
+    # hypotenuse is MLC function (not extern)
     hypotenuse = math.functions['hypotenuse']
     refute_nil hypotenuse
     refute hypotenuse.extern?, "hypotenuse should not be extern"

@@ -3,14 +3,14 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraListComprehensionTest < Minitest::Test
+class MLCListComprehensionTest < Minitest::Test
   def test_parse_and_transform_single_generator
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn double(xs: i32[]) -> i32[] =
         [x * 2 for x in xs]
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     func = ast.declarations.first
 
     assert_instance_of MLC::AST::ListComprehension, func.body
@@ -24,12 +24,12 @@ class AuroraListComprehensionTest < Minitest::Test
   end
 
   def test_lowering_list_comprehension_with_filter
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn positives(xs: i32[]) -> i32[] =
         [x for x in xs if x > 0]
-    AURORA
+    MLCORA
 
-    cpp = MLC.to_cpp(aurora_source)
+    cpp = MLC.to_cpp(mlc_source)
 
     assert_includes cpp, "std::vector<int> result;"
     assert_includes cpp, "for (int x : xs)"

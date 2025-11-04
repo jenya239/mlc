@@ -3,22 +3,22 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraLogicalOpsTest < Minitest::Test
+class MLCLogicalOpsTest < Minitest::Test
   def test_logical_or_in_condition
-    source = <<~AUR
+    source = <<~MLC
       fn main() -> i32 =
         if true || false then 1 else 0
-    AUR
+    MLC
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "true || false"
   end
 
   def test_logical_and_and_or_precedence
-    source = <<~AUR
+    source = <<~MLC
       fn eval(flag: bool) -> bool =
         if flag && true || false then true else false
-    AUR
+    MLC
 
     ast = MLC.parse(source)
     func = ast.declarations.first

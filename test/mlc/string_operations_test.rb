@@ -3,17 +3,17 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraStringOperationsTest < Minitest::Test
+class MLCStringOperationsTest < Minitest::Test
   def test_string_concatenation
-    aurora_source = <<~AUR
+    mlc_source = <<~MLC
       fn greet(name: str) -> str =
         "Hello, " + name + "!"
-    AUR
+    MLC
 
     # This should work but currently fails
     # Let's test what we get
     begin
-      cpp = MLC.to_cpp(aurora_source)
+      cpp = MLC.to_cpp(mlc_source)
       puts "Generated C++:"
       puts cpp
       assert_includes cpp, "Hello"
@@ -25,14 +25,14 @@ class AuroraStringOperationsTest < Minitest::Test
   end
 
   def test_string_interpolation
-    aurora_source = <<~AUR
+    mlc_source = <<~MLC
       fn greet(name: str) -> str =
         "Hello, {name}!"
-    AUR
+    MLC
 
     # This should work but currently fails
     begin
-      cpp = MLC.to_cpp(aurora_source)
+      cpp = MLC.to_cpp(mlc_source)
       puts "Generated C++:"
       puts cpp
       assert_includes cpp, "Hello"
@@ -44,13 +44,13 @@ class AuroraStringOperationsTest < Minitest::Test
   end
 
   def test_string_methods
-    aurora_source = <<~AUR
+    mlc_source = <<~MLC
       fn process(text: str) -> str =
         text.trim().upper()
-    AUR
+    MLC
 
     begin
-      cpp = MLC.to_cpp(aurora_source)
+      cpp = MLC.to_cpp(mlc_source)
       puts "Generated C++:"
       puts cpp
       assert_includes cpp, "trim"

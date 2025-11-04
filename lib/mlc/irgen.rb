@@ -77,6 +77,7 @@ require_relative "services/function_registration_service"
 require_relative "services/sum_type_constructor_service"
 require_relative "services/type_unification_service"
 require_relative "services/function_lookup_service"
+require_relative "services/metadata_loader_service"
 require_relative "services/rule_engine_builder"
 require_relative "services/irgen_container"
 
@@ -162,6 +163,7 @@ module MLC
         @sum_type_constructor_service = container.sum_type_constructor_service
         @type_unification_service = container.type_unification_service
         @function_lookup_service = container.function_lookup_service
+        @metadata_loader_service = container.metadata_loader_service
 
         # Maintain backward compatibility for stacks
         @lambda_param_type_stack = @context.lambda_param_stack

@@ -4,11 +4,11 @@ require_relative '../test_helper'
 
 class TypeInferenceGenericsTest < Minitest::Test
   def test_simple_generic_function_call
-    source = <<~AURORA
+    source = <<~MLCORA
       fn identity<T>(x: T) -> T = x
 
       fn main() -> i32 = identity(42)
-    AURORA
+    MLCORA
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
@@ -24,14 +24,14 @@ class TypeInferenceGenericsTest < Minitest::Test
   end
 
   def test_generic_array_function
-    source = <<~AURORA
+    source = <<~MLCORA
       fn first<T>(arr: T[]) -> T = arr[0]
 
       fn main() -> i32 = do
         let numbers = [1, 2, 3];
         first(numbers)
       end
-    AURORA
+    MLCORA
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
@@ -44,11 +44,11 @@ class TypeInferenceGenericsTest < Minitest::Test
   end
 
   def test_generic_function_multiple_type_params
-    source = <<~AURORA
+    source = <<~MLCORA
       fn pair<T, U>(x: T, y: U) -> i32 = 0
 
       fn main() -> i32 = pair(42, 3.14)
-    AURORA
+    MLCORA
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
@@ -61,11 +61,11 @@ class TypeInferenceGenericsTest < Minitest::Test
   end
 
   def test_generic_with_explicit_return_type
-    source = <<~AURORA
+    source = <<~MLCORA
       fn get_default<T>() -> i32 = 0
 
       fn main() -> i32 = get_default()
-    AURORA
+    MLCORA
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
@@ -78,14 +78,14 @@ class TypeInferenceGenericsTest < Minitest::Test
   end
 
   def test_nested_generic_types
-    source = <<~AURORA
+    source = <<~MLCORA
       fn wrap<T>(x: T) -> i32 = 0
 
       fn main() -> i32 = do
         let arr = [1, 2, 3];
         wrap(arr)
       end
-    AURORA
+    MLCORA
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
@@ -97,7 +97,7 @@ class TypeInferenceGenericsTest < Minitest::Test
   end
 
   def test_generic_type_with_generic_function
-    source = <<~AURORA
+    source = <<~MLCORA
       type Option<T> = Some(T) | None
 
       fn unwrap<T>(opt: Option<T>, default: T) -> T = default
@@ -106,7 +106,7 @@ class TypeInferenceGenericsTest < Minitest::Test
         let opt = Some(42);
         unwrap(opt, 0)
       end
-    AURORA
+    MLCORA
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
@@ -119,11 +119,11 @@ class TypeInferenceGenericsTest < Minitest::Test
 
   def test_type_inference_consistency_check
     # This should fail: T bound to both i32 and f32
-    source = <<~AURORA
+    source = <<~MLCORA
       fn inconsistent<T>(x: T, y: T) -> T = x
 
       fn main() -> i32 = inconsistent(42, 3.14)
-    AURORA
+    MLCORA
 
     assert_raises(MLC::CompileError) do
       MLC.transform_to_core_with_registry(MLC.parse(source))
@@ -131,11 +131,11 @@ class TypeInferenceGenericsTest < Minitest::Test
   end
 
   def test_generic_identity_chain
-    source = <<~AURORA
+    source = <<~MLCORA
       fn identity<T>(x: T) -> T = x
 
       fn main() -> i32 = identity(identity(identity(42)))
-    AURORA
+    MLCORA
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
@@ -148,14 +148,14 @@ class TypeInferenceGenericsTest < Minitest::Test
   end
 
   def test_extern_generic_function
-    source = <<~AURORA
+    source = <<~MLCORA
       extern fn length<T>(arr: T[]) -> i32
 
       fn main() -> i32 = do
         let arr = [1, 2, 3];
         length(arr)
       end
-    AURORA
+    MLCORA
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 

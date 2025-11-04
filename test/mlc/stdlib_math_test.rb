@@ -35,11 +35,11 @@ class StdlibMathTest < Minitest::Test
   end
 
   def test_import_selective_from_math
-    source = <<~AURORA
+    source = <<~MLCORA
       import { sqrt_f, pow_f } from "Math"
 
       fn test() -> f32 = sqrt_f(16.0)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
 
@@ -51,11 +51,11 @@ class StdlibMathTest < Minitest::Test
   end
 
   def test_import_wildcard_from_math
-    source = <<~AURORA
+    source = <<~MLCORA
       import * as Math from "Math"
 
       fn test() -> f32 = Math::sqrt_f(16.0)
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
 
@@ -67,11 +67,11 @@ class StdlibMathTest < Minitest::Test
   end
 
   def test_export_extern_combination
-    source = <<~AURORA
+    source = <<~MLCORA
       module TestMath
 
       export extern fn test_func(x: f32) -> f32
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     func = ast.declarations.first

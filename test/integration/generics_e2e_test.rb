@@ -9,7 +9,7 @@ class GenericsE2ETest < Minitest::Test
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
-  # Helper to run Aurora program and check result
+  # Helper to run MLC program and check result
   def run_aurora(source_code, &block)
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
@@ -25,7 +25,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_identity_function
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn identity<T>(x: T) -> T = x
 
       fn main() -> i32 = do
@@ -33,7 +33,7 @@ class GenericsE2ETest < Minitest::Test
         let b = identity(100)
         a + b
       end
-    AUR
+    MLC
       assert_equal 142, status.exitstatus
     end
   end
@@ -42,7 +42,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_pair_type
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Pair<T, U> = {first: T, second: U}
 
       fn make_pair<T, U>(x: T, y: U) -> Pair<T, U> =
@@ -57,7 +57,7 @@ class GenericsE2ETest < Minitest::Test
         let b = second(p)
         a + b
       end
-    AUR
+    MLC
       assert_equal 30, status.exitstatus
     end
   end
@@ -66,7 +66,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_swap
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Pair<T, U> = {first: T, second: U}
 
       fn swap<T, U>(p: Pair<T, U>) -> Pair<U, T> =
@@ -77,7 +77,7 @@ class GenericsE2ETest < Minitest::Test
         let p2 = swap(p1)
         p2.first + p2.second
       end
-    AUR
+    MLC
       assert_equal 15, status.exitstatus
     end
   end
@@ -86,14 +86,14 @@ class GenericsE2ETest < Minitest::Test
   def test_multiple_type_params
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn add_three<T, U, V>(a: T, b: U, c: V) -> i32 =
         a + b + c
 
       fn main() -> i32 = do
         add_three(10, 20, 30)
       end
-    AUR
+    MLC
       assert_equal 60, status.exitstatus
     end
   end
@@ -102,7 +102,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_array_operations
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn first<T>(arr: T[]) -> T = arr[0]
       fn second<T>(arr: T[]) -> T = arr[1]
 
@@ -112,7 +112,7 @@ class GenericsE2ETest < Minitest::Test
         let b = second(numbers)
         a + b
       end
-    AUR
+    MLC
       assert_equal 30, status.exitstatus
     end
   end
@@ -121,7 +121,7 @@ class GenericsE2ETest < Minitest::Test
   def test_nested_generic_types
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Box<T> = {value: T}
       type Pair<T, U> = {first: T, second: U}
 
@@ -132,7 +132,7 @@ class GenericsE2ETest < Minitest::Test
         let p = make_boxed_pair(100, 50)
         p.first.value + p.second.value
       end
-    AUR
+    MLC
       assert_equal 150, status.exitstatus
     end
   end
@@ -141,7 +141,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_array_of_pairs
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Pair<T, U> = {first: T, second: U}
 
       fn sum_pairs(pairs: Pair<i32, i32>[]) -> i32 =
@@ -151,7 +151,7 @@ class GenericsE2ETest < Minitest::Test
         let pairs = [{first: 10, second: 20}, {first: 30, second: 40}]
         sum_pairs(pairs)
       end
-    AUR
+    MLC
       assert_equal 100, status.exitstatus
     end
   end
@@ -160,7 +160,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_triple
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Triple<T, U, V> = {first: T, second: U, third: V}
 
       fn make_triple<T, U, V>(x: T, y: U, z: V) -> Triple<T, U, V> =
@@ -173,7 +173,7 @@ class GenericsE2ETest < Minitest::Test
         let t = make_triple(10, 20, 30)
         sum_triple(t)
       end
-    AUR
+    MLC
       assert_equal 60, status.exitstatus
     end
   end
@@ -182,7 +182,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_with_conditionals
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn max<T>(a: T, b: T) -> T =
         if a > b then a else b
 
@@ -191,7 +191,7 @@ class GenericsE2ETest < Minitest::Test
         let result2 = max(50, 30)
         result1 + result2
       end
-    AUR
+    MLC
       assert_equal 70, status.exitstatus
     end
   end
@@ -200,7 +200,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_with_let_expressions
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn compute<T>(x: T, y: T) -> T =
         let a = x + y
         let b = a + x
@@ -209,7 +209,7 @@ class GenericsE2ETest < Minitest::Test
       fn main() -> i32 = do
         compute(10, 20)
       end
-    AUR
+    MLC
       assert_equal 40, status.exitstatus
     end
   end
@@ -218,7 +218,7 @@ class GenericsE2ETest < Minitest::Test
   def test_deeply_nested_generics
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Box<T> = {value: T}
 
       fn triple_box<T>(x: T) -> Box<Box<Box<T>>> =
@@ -228,7 +228,7 @@ class GenericsE2ETest < Minitest::Test
         let b = triple_box(42)
         b.value.value.value
       end
-    AUR
+    MLC
       assert_equal 42, status.exitstatus
     end
   end
@@ -237,7 +237,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_array_construction
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Pair<T, U> = {first: T, second: U}
 
       fn main() -> i32 = do
@@ -248,7 +248,7 @@ class GenericsE2ETest < Minitest::Test
         ]
         pairs[0].first + pairs[1].second + pairs[2].first
       end
-    AUR
+    MLC
       assert_equal 10, status.exitstatus
     end
   end
@@ -257,7 +257,7 @@ class GenericsE2ETest < Minitest::Test
   def test_chained_generic_functions
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn double<T>(x: T) -> T = x + x
       fn triple<T>(x: T) -> T = x + x + x
 
@@ -266,7 +266,7 @@ class GenericsE2ETest < Minitest::Test
         let b = triple(a)
         b
       end
-    AUR
+    MLC
       assert_equal 30, status.exitstatus
     end
   end
@@ -275,7 +275,7 @@ class GenericsE2ETest < Minitest::Test
   def test_same_type_param_multiple_uses
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Quad<T> = {a: T, b: T, c: T, d: T}
 
       fn sum_quad(q: Quad<i32>) -> i32 =
@@ -285,7 +285,7 @@ class GenericsE2ETest < Minitest::Test
         let q = {a: 10, b: 20, c: 30, d: 40}
         sum_quad(q)
       end
-    AUR
+    MLC
       assert_equal 100, status.exitstatus
     end
   end
@@ -294,7 +294,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_array_sum
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn get_sum<T>(arr: T[]) -> T =
         arr[0] + arr[1] + arr[2]
 
@@ -302,7 +302,7 @@ class GenericsE2ETest < Minitest::Test
         let nums = [10, 20, 30]
         get_sum(nums)
       end
-    AUR
+    MLC
       assert_equal 60, status.exitstatus
     end
   end
@@ -311,7 +311,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_wrapper_with_output
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       import { to_string_i32 } from "Conv"
 
       type Wrapper<T> = {inner: T, metadata: i32}
@@ -324,7 +324,7 @@ class GenericsE2ETest < Minitest::Test
         println("Result: " + to_string_i32(result))
         result
       end
-    AUR
+    MLC
       assert_match /Result: 99/, stdout
       assert_equal 99, status.exitstatus
     end
@@ -334,7 +334,7 @@ class GenericsE2ETest < Minitest::Test
   def test_complex_nested_structure
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Inner<T> = {value: T}
       type Outer<T, U> = {left: Inner<T>, right: Inner<U>}
 
@@ -348,7 +348,7 @@ class GenericsE2ETest < Minitest::Test
         }
         extract(o)
       end
-    AUR
+    MLC
       assert_equal 100, status.exitstatus
     end
   end
@@ -357,7 +357,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_boolean_select
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn select<T>(flag: bool, a: T, b: T) -> T =
         if flag then a else b
 
@@ -366,7 +366,7 @@ class GenericsE2ETest < Minitest::Test
         let r2 = select(false, 30, 40)
         r1 + r2
       end
-    AUR
+    MLC
       assert_equal 50, status.exitstatus
     end
   end
@@ -375,7 +375,7 @@ class GenericsE2ETest < Minitest::Test
   def test_array_of_boxes
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       type Box<T> = {value: T}
 
       fn main() -> i32 = do
@@ -386,7 +386,7 @@ class GenericsE2ETest < Minitest::Test
         ]
         boxes[0].value + boxes[1].value + boxes[2].value
       end
-    AUR
+    MLC
       assert_equal 60, status.exitstatus
     end
   end
@@ -395,7 +395,7 @@ class GenericsE2ETest < Minitest::Test
   def test_generic_comparison
     skip_unless_compiler_available
 
-    run_aurora(<<~AUR) do |stdout, stderr, status|
+    run_aurora(<<~MLC) do |stdout, stderr, status|
       fn is_greater<T>(a: T, b: T) -> bool = a > b
 
       fn main() -> i32 = do
@@ -405,7 +405,7 @@ class GenericsE2ETest < Minitest::Test
         let result2 = if r2 then 0 else 50
         result + result2
       end
-    AUR
+    MLC
       assert_equal 150, status.exitstatus
     end
   end

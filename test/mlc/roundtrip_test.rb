@@ -3,11 +3,11 @@
 require "minitest/autorun"
 require_relative "../../lib/mlc"
 
-class AuroraRoundtripTest < Minitest::Test
+class MLCRoundtripTest < Minitest::Test
   def test_simple_function
     aurora_code = "fn add(a: i32, b: i32) -> i32 = a + b"
     
-    # 1. Parse Aurora
+    # 1. Parse MLC
     ast = MLC.parse(aurora_code)
     assert_instance_of MLC::AST::Program, ast
     assert_equal 1, ast.declarations.size
@@ -94,10 +94,10 @@ class AuroraRoundtripTest < Minitest::Test
   end
   
   def test_record_type
-    aurora_code = <<~AURORA
+    aurora_code = <<~MLCORA
       type Point = { x: f32, y: f32 }
       fn make_point(x: f32, y: f32) -> Point = { x: x, y: y }
-    AURORA
+    MLCORA
     
     cpp_code = MLC.to_cpp(aurora_code)
     

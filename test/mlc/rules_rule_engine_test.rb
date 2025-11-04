@@ -32,9 +32,9 @@ class RulesRuleEngineTest < Minitest::Test
     engine = MLC::Rules::RuleEngine.new
     engine.register(:core_ir_function, CaptureRule.new(bucket))
 
-    source = <<~AURORA
+    source = <<~MLCORA
       fn id(x: i32) -> i32 = x
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     transformer = MLC::IRGen.new(rule_engine: engine)
@@ -47,9 +47,9 @@ class RulesRuleEngineTest < Minitest::Test
     engine = MLC::Rules::RuleEngine.new
     engine.register(:core_ir_type_decl, MLC::Rules::IRGen::SumConstructorRule.new)
 
-    source = <<~AURORA
+    source = <<~MLCORA
       type Option<T> = Some(T) | None
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     transformer = MLC::IRGen.new(rule_engine: engine)
@@ -64,14 +64,14 @@ class RulesRuleEngineTest < Minitest::Test
     engine = MLC::Rules::RuleEngine.new
     engine.register(:core_ir_match_expr, MLC::Rules::IRGen::MatchRule.new)
 
-    source = <<~AURORA
+    source = <<~MLCORA
       type Option<T> = Some(T) | None
 
       fn unwrap(opt: Option<i32>) -> i32 =
         match opt
           | Some(x) => x
           | None => 0
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     transformer = MLC::IRGen.new(rule_engine: engine)
@@ -85,9 +85,9 @@ class RulesRuleEngineTest < Minitest::Test
     engine = MLC::Rules::RuleEngine.new
     engine.register(:core_ir_function, MLC::Rules::IRGen::FunctionEffectRule.new)
 
-    source = <<~AURORA
+    source = <<~MLCORA
       fn identity(x: i32) -> i32 = x
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     transformer = MLC::IRGen.new(rule_engine: engine)

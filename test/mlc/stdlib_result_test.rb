@@ -4,12 +4,12 @@ require_relative "../test_helper"
 
 class StdlibResultTest < Minitest::Test
   def test_result_module_parses
-    source = <<~AURORA
+    source = <<~MLCORA
       import { Result, ok, err, is_ok } from "Result"
 
       fn test() -> bool =
         is_ok(ok(42))
-    AURORA
+    MLCORA
 
     ast = MLC.parse(source)
     assert_equal 1, ast.imports.length
@@ -17,19 +17,19 @@ class StdlibResultTest < Minitest::Test
   end
 
   def test_result_type_definition
-    source = <<~AURORA
+    source = <<~MLCORA
       import { Result } from "Result"
 
       fn test() -> Result<i32, str> =
         Ok(42)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "Ok"
   end
 
   def test_result_is_ok_is_err
-    source = <<~AURORA
+    source = <<~MLCORA
       import { is_ok, is_err, ok, err } from "Result"
 
       fn test_ok() -> bool =
@@ -37,7 +37,7 @@ class StdlibResultTest < Minitest::Test
 
       fn test_err() -> bool =
         is_err(err("error"))
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "is_ok"
@@ -45,7 +45,7 @@ class StdlibResultTest < Minitest::Test
   end
 
   def test_result_unwrap
-    source = <<~AURORA
+    source = <<~MLCORA
       import { unwrap, ok, err } from "Result"
 
       fn test_unwrap_ok() -> i32 =
@@ -53,42 +53,42 @@ class StdlibResultTest < Minitest::Test
 
       fn test_unwrap_err() -> i32 =
         unwrap(err("failed"), 99)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "unwrap"
   end
 
   def test_result_map
-    source = <<~AURORA
+    source = <<~MLCORA
       import { map, ok } from "Result"
 
       fn double(x: i32) -> i32 = x * 2
 
       fn test_map() -> Result<i32, str> =
         map(ok(21), double)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "map"
   end
 
   def test_result_map_err
-    source = <<~AURORA
+    source = <<~MLCORA
       import { map_err, err } from "Result"
 
       fn to_upper(s: str) -> str = s.upper()
 
       fn test() -> Result<i32, str> =
         map_err(err("error"), to_upper)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "map_err"
   end
 
   def test_result_and_then
-    source = <<~AURORA
+    source = <<~MLCORA
       import { and_then, ok, err } from "Result"
 
       fn safe_div(x: i32) -> Result<i32, str> =
@@ -96,14 +96,14 @@ class StdlibResultTest < Minitest::Test
 
       fn test() -> Result<i32, str> =
         and_then(ok(10), safe_div)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "and_then"
   end
 
   def test_result_or_else
-    source = <<~AURORA
+    source = <<~MLCORA
       import { or_else, ok, err } from "Result"
 
       fn recover(e: str) -> Result<i32, bool> =
@@ -111,7 +111,7 @@ class StdlibResultTest < Minitest::Test
 
       fn test() -> Result<i32, bool> =
         or_else(err("failed"), recover)
-    AURORA
+    MLCORA
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "or_else"

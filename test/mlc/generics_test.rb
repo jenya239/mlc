@@ -3,13 +3,13 @@
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraGenericsTest < Minitest::Test
+class MLCGenericsTest < Minitest::Test
   def test_parse_generic_type
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Result<T, E> = Ok(T) | Err(E)
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     refute_nil ast
 
     type_decl = ast.declarations.first
@@ -22,11 +22,11 @@ class AuroraGenericsTest < Minitest::Test
   end
 
   def test_parse_generic_function
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn identity<T>(x: T) -> T = x
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     func = ast.declarations.first
 
     assert_instance_of MLC::AST::FuncDecl, func
@@ -38,11 +38,11 @@ class AuroraGenericsTest < Minitest::Test
   end
 
   def test_generic_option_type
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Option<T> = Some(T) | None
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     type_decl = ast.declarations.first
 
     assert_equal "Option", type_decl.name
@@ -55,11 +55,11 @@ class AuroraGenericsTest < Minitest::Test
   end
 
   def test_generic_function_with_constraints
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn add<T: Numeric>(a: T, b: T) -> T = a + b
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     func = ast.declarations.first
 
     # Should have type parameter with constraint
@@ -69,23 +69,23 @@ class AuroraGenericsTest < Minitest::Test
   end
 
   def test_constraint_lowering_to_cpp
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn add<T: Numeric>(a: T, b: T) -> T = a + b
-    AURORA
+    MLCORA
 
-    cpp = MLC.to_cpp(aurora_source)
+    cpp = MLC.to_cpp(mlc_source)
 
     assert_includes cpp, "template<typename T>"
     assert_includes cpp, "requires Numeric<T>"
   end
 
   def test_type_constraint_in_cpp_output
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Box<T: Numeric> = { value: T }
       type IntBox = Box<i32>
-    AURORA
+    MLCORA
 
-    cpp = MLC.to_cpp(aurora_source)
+    cpp = MLC.to_cpp(mlc_source)
 
     assert_includes cpp, "template<typename T>"
     assert_includes cpp, "requires Numeric<T>"
@@ -93,13 +93,13 @@ class AuroraGenericsTest < Minitest::Test
   end
 
   def test_type_constraint_violation_raises
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Box<T: Numeric> = { value: T }
       type BoolBox = Box<bool>
-    AURORA
+    MLCORA
 
     error = assert_raises MLC::CompileError do
-      MLC.to_cpp(aurora_source)
+      MLC.to_cpp(mlc_source)
     end
 
     assert_includes error.message, "does not satisfy constraint"
@@ -107,28 +107,28 @@ class AuroraGenericsTest < Minitest::Test
   end
 
   def test_unknown_constraint_raises
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Box<T: Fancy> = { value: T }
-    AURORA
+    MLCORA
 
     error = assert_raises MLC::CompileError do
-      MLC.to_cpp(aurora_source)
+      MLC.to_cpp(mlc_source)
     end
 
     assert_includes error.message, "Unknown constraint"
   end
 
   def test_generic_lowering_to_cpp_templates
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Option<T> = Some(T) | None
 
       fn unwrap_or<T>(opt: Option<T>, default: T) -> T =
         match opt
           | Some(x) => x
           | None => default
-    AURORA
+    MLCORA
 
-    cpp_code = MLC.to_cpp(aurora_source)
+    cpp_code = MLC.to_cpp(mlc_source)
 
     # Should generate C++ templates
     assert_includes cpp_code, "template"

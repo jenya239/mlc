@@ -5,17 +5,17 @@ require "fileutils"
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
 
-class AuroraPatternMatchingTest < Minitest::Test
+class MLCPatternMatchingTest < Minitest::Test
   def test_parse_simple_match
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       fn test(x: i32) -> i32 =
         match x
           | 0 => 1
           | 1 => 2
           | _ => 3
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     refute_nil ast
 
     func = ast.declarations.first
@@ -44,16 +44,16 @@ class AuroraPatternMatchingTest < Minitest::Test
   end
 
   def test_parse_constructor_pattern
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Shape = Circle(f32) | Point
 
       fn area(s: Shape) -> f32 =
         match s
           | Circle(r) => r
           | Point => 0.0f
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     assert_equal 2, ast.declarations.length
 
     func = ast.declarations[1]
@@ -71,16 +71,16 @@ class AuroraPatternMatchingTest < Minitest::Test
   end
 
   def test_match_lowering_to_cpp
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Result = Ok(i32) | Err
 
       fn unwrap(res: Result) -> i32 =
         match res
           | Ok(value) => value
           | Err => 0
-    AURORA
+    MLCORA
 
-    cpp_code = MLC.to_cpp(aurora_source)
+    cpp_code = MLC.to_cpp(mlc_source)
 
     # Should generate std::visit with lambda overload and helper include
     assert_includes cpp_code, '#include "mlc_match.hpp"'
@@ -106,16 +106,16 @@ class AuroraPatternMatchingTest < Minitest::Test
   end
 
   def test_match_with_multiple_fields
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Shape = Rect(f32, f32) | Point
 
       fn area(s: Shape) -> f32 =
         match s
           | Rect(w, h) => w
           | Point => 0.0f
-    AURORA
+    MLCORA
 
-    ast = MLC.parse(aurora_source)
+    ast = MLC.parse(mlc_source)
     func = ast.declarations[1]
     match_expr = func.body
 
@@ -128,7 +128,7 @@ class AuroraPatternMatchingTest < Minitest::Test
   end
 
   def test_match_statement_lowering_is_void_visit
-    aurora_source = <<~AURORA
+    mlc_source = <<~MLCORA
       type Result = Ok(i32) | Err
 
       fn handle(res: Result) -> void =
@@ -138,9 +138,9 @@ class AuroraPatternMatchingTest < Minitest::Test
           end
           | Err => do
           end
-    AURORA
+    MLCORA
 
-    cpp_code = MLC.to_cpp(aurora_source)
+    cpp_code = MLC.to_cpp(mlc_source)
 
     assert_includes cpp_code, "std::visit(overloaded"
     refute_includes cpp_code, "[&]()"

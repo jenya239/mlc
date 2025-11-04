@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 class HeredocTest < Minitest::Test
   def test_heredoc_basic
-    source = <<~'AUR'
+    source = <<~'MLC'
       fn main() -> i32 = do
         let text = <<END
 Hello
@@ -12,7 +12,7 @@ World
 END
         0
       end
-    AUR
+    MLC
 
     lexer = MLC::Parser::Lexer.new(source)
     tokens = lexer.tokenize
@@ -24,7 +24,7 @@ END
   end
 
   def test_heredoc_with_indent_stripping
-    source = <<~'AUR'
+    source = <<~'MLC'
       fn main() -> i32 = do
         let text = <<~END
           Hello
@@ -32,7 +32,7 @@ END
         END
         0
       end
-    AUR
+    MLC
 
     lexer = MLC::Parser::Lexer.new(source)
     tokens = lexer.tokenize
@@ -43,7 +43,7 @@ END
   end
 
   def test_heredoc_preserves_relative_indentation
-    source = <<~'AUR'
+    source = <<~'MLC'
       fn main() -> i32 = do
         let sql = <<~SQL
           SELECT *
@@ -54,7 +54,7 @@ END
         SQL
         0
       end
-    AUR
+    MLC
 
     lexer = MLC::Parser::Lexer.new(source)
     tokens = lexer.tokenize
@@ -67,7 +67,7 @@ END
   end
 
   def test_heredoc_without_tilde_preserves_all_indentation
-    source = <<~'AUR'
+    source = <<~'MLC'
       fn main() -> i32 = do
         let text = <<END
     Indented
@@ -76,7 +76,7 @@ END
         END
         0
       end
-    AUR
+    MLC
 
     lexer = MLC::Parser::Lexer.new(source)
     tokens = lexer.tokenize
@@ -89,7 +89,7 @@ END
   end
 
   def test_heredoc_empty_lines
-    source = <<~'AUR'
+    source = <<~'MLC'
       fn main() -> i32 = do
         let text = <<~END
           First line
@@ -98,7 +98,7 @@ END
         END
         0
       end
-    AUR
+    MLC
 
     lexer = MLC::Parser::Lexer.new(source)
     tokens = lexer.tokenize
@@ -109,14 +109,14 @@ END
   end
 
   def test_heredoc_single_line
-    source = <<~'AUR'
+    source = <<~'MLC'
       fn main() -> i32 = do
         let text = <<~END
           Single line
         END
         0
       end
-    AUR
+    MLC
 
     lexer = MLC::Parser::Lexer.new(source)
     tokens = lexer.tokenize
@@ -127,7 +127,7 @@ END
   end
 
   def test_multiple_heredocs
-    source = <<~'AUR'
+    source = <<~'MLC'
       fn main() -> i32 = do
         let text1 = <<~END1
           First heredoc
@@ -137,7 +137,7 @@ END
         END2
         0
       end
-    AUR
+    MLC
 
     lexer = MLC::Parser::Lexer.new(source)
     tokens = lexer.tokenize
