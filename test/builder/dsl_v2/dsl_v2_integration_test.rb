@@ -308,9 +308,9 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
   end
 
   def test_aurora_syntax_integration
-    # Test Aurora syntax integration
+    # Test MLC syntax integration
     aurora_ast = program do
-      # Aurora-style type definitions
+      # MLC-style type definitions
       type_alias :Vec2, t.tuple(t.f32, t.f32)
 
       # Define the variant component types first as structs
@@ -330,7 +330,7 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
       # Now define Shape as variant of these types
       type_alias :Shape, t.variant(:Circle, :Rect, :Polygon)
 
-      # Aurora-style functions
+      # MLC-style functions
       fn :length,
          params: [[:Vec2, :v]],
          ret: t.f32,

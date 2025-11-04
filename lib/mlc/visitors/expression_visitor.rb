@@ -122,14 +122,12 @@ module MLC
       end
 
       # Visit member access: object.member
-      # Recursively visit object, then apply rule
+      # Let the rule handle object transformation (module member check first)
+      # Phase 23-D: Don't pre-visit object - MemberRule checks for module members
       def visit_member(node)
-        object_ir = visit(node.object)
-
-        context = expression_rule_context.merge(
-          object_ir: object_ir
-        )
-        @rule_engine.apply(:core_ir_expression, node, context: context)
+        # MemberRule checks if this is module member access (e.g., Math.sqrt)
+        # and only transforms object if it's NOT a module member
+        @rule_engine.apply(:core_ir_expression, node, context: expression_rule_context)
       end
 
       # Visit function call: f(args...)

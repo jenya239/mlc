@@ -1,0 +1,221 @@
+Впечатляющий дизайн! Видна продуманная архитектура с cherry-picking лучших идей из современных языков. Вот мои мысли:
+
+## Что особенно сильно
+
+**Архитектурные решения:**
+- Green/Red Tree + Salsa — правильный выбор для IDE
+- HIR/MIR слои с чётким разделением ответственности
+- Прагматичный подход "компиляция в C++" вместо LLVM на старте
+
+**Баланс фич:**
+- Вы избегаете переусложнения (лайт-версия borrow checking, без полного region inference)
+- Фокус на детерминированном десахаринге
+
+## Что стоит расширить/уточнить
+
+### 1. **Система модулей и приватность**
+```
+// Не хватает деталей про:
+- pub(crate), pub(super) аналоги?
+- Как реэкспорты влияют на API stability?
+- Orphan rules для trait impl?
+```
+
+### 2. **Эффекты и capabilities**
+Вы упоминаете `async`, `unsafe`, `actor` как effect-метки, но:
+- Как они композируются? (`async actor fn`?)
+- Есть ли "цветные функции" или effect polymorphism?
+- Нужен ли `throws`/`Result` в сигнатурах (Swift-style)?
+
+```rust
+// Предложение: явная effect-система в типах
+fn process(data: Data) -> Result<Output> throws IoError, async
+```
+
+### 3. **Ownership model — конкретика**
+"NLL-подобная эвристика" — отлично, но нужны чёткие правила:
+```rust
+// Что именно запрещено?
+let x = vec![1,2,3];
+let y = x;      // move
+x.len();        // ❌ use-after-move — это понятно
+
+// А это?
+let mut v = vec![];
+let r = &v;
+v.push(1);      // ❌ мутирование при живой ссылке?
+// Нужен ли полный borrow checker или "simple linear types"?
+```
+
+**Предложение:** Явно зафиксировать градацию:
+- Tier 1: move semantics + use-after-move detection
+- Tier 2: shared/mutable borrow (без lifetimes)
+- Tier 3 (будущее): полный borrow checker
+
+### 4. **Interop с C++ — критичные детали**
+
+```cpp
+// Как мапятся эти случаи?
+enum Result<T, E> { Ok(T), Err(E) }
+// → std::expected или 
+// → struct Result { std::variant<T,E> value; bool is_ok; }?
+
+// Traits с associated types:
+trait Iterator { type Item; fn next(&mut self) -> Option<Item>; }
+// → C++20 concepts? CRTP? Erasure?
+
+// Drop/RAII:
+impl Drop for File { fn drop(&mut self) { close(self.fd); } }
+// → деструктор C++, но как с move?
+```
+
+### 5. **Макросистема — scope creep риск**
+"Проц-макросы (Rust)" — это огромная фича. Рассмотрите:
+- **Phase 1:** Только declarative macros (macro_rules!)
+- **Phase 2:** Derive macros для traits
+- **Phase 3:** Полноценные proc-macros
+
+Или используйте `const fn` + compile-time reflection вместо макросов?
+
+### 6. **Конкурентность — недостающие детали**
+
+```rust
+// Акторы в либе — но нужны гарантии:
+actor Counter {
+    var count: i32  // ← это isolated state?
+    
+    fn increment() { self.count += 1; }
+}
+
+// Как с send/receive?
+let c = Counter::spawn();
+c.send(.increment);  // async?
+let result = c.send(.getCount).await; // request-response?
+
+// Нужна ли концепция Sendable/Send traits?
+```
+
+**Предложения:**
+- Явный `isolated` modifier для actor state
+- Structured concurrency (как Swift): task groups, cancellation
+- CSP-каналы (Go/Rust) vs только mailboxes?
+
+### 7. **Эргономика ошибок**
+
+Вы упоминаете `?` для Result, но:
+```rust
+// Множественные типы ошибок?
+fn complex() -> Result<T, ???> {
+    let a = io_call()?;      // IoError
+    let b = parse_call()?;   // ParseError
+    Ok(combine(a, b))
+}
+
+// Варианты:
+// 1. Error trait + Box<dyn Error> (Rust-style)
+// 2. Sum types: Result<T, IoError | ParseError>
+// 3. Effect handlers (сложно!)
+```
+
+### 8. **Тулинг — приоритизация**
+
+Ваш список полный, но добавьте:
+- **Code coverage** из коробки (llvm-cov аналог)
+- **Benchmark framework** (criterion-style)
+- **Sanitizers integration** (ASan/MSan для C++ output)
+- **Package vetting** (cargo-vet аналог для supply chain)
+
+## Новые идеи для рассмотрения
+
+### 1. **Inline tests (Zig-style)**
+```rust
+fn add(a: i32, b: i32) -> i32 { a + b }
+
+test "add works" {
+    assert_eq(add(2, 3), 5);
+}
+```
+
+### 2. **Ranges и boundary safety**
+```rust
+// Swift-style ranges с compile-time проверками где возможно
+let arr = [1, 2, 3];
+arr[0..2]     // ✅
+arr[0..10]    // ⚠️ warning: potentially out of bounds
+```
+
+### 3. **Discriminated unions для errors**
+```rust
+enum Error {
+    Io(path: String, kind: IoErrorKind),
+    Parse { line: u32, col: u32 },
+    Network(url: Url),
+}
+// С exhaustive matching и хорошими error messages
+```
+
+### 4. **Visibility модификаторы как у Kotlin**
+```rust
+internal struct Config { ... }  // видим внутри модуля
+protected fn helper() { ... }    // только для наследников?
+```
+
+### 5. **Extension methods (Kotlin/Swift)**
+```rust
+extension Vec<T> {
+    fn second(self) -> Option<T> { self.get(1) }
+}
+```
+
+### 6. **Contract programming (Eiffel-inspired)**
+```rust
+fn divide(a: i32, b: i32) -> i32
+    requires b != 0
+    ensures result * b == a
+{
+    a / b
+}
+```
+
+## Возможные подводные камни
+
+⚠️ **C++ codegen сложности:**
+- Exception safety (вы хотите их выключить, но std::optional может бросать)
+- Template bloat от моноформизации
+- Отладка сгенерированного кода
+- ABI stability между версиями
+
+⚠️ **Ecosystem bootstrap:**
+- Как холодный старт без crates.io-эквивалента?
+- Backwards compatibility story
+- Migration path из других языков
+
+⚠️ **Async colored functions:**
+Вы упоминаете async → state machine, но:
+```rust
+fn sync_caller() {
+    async_fn().await;  // ❌ не можем await в sync контексте
+}
+```
+Нужна стратегия для этой проблемы (block_on? executors?).
+
+## Структура документов
+
+Предлагаю разбить на:
+1. **VISION.md** — философия языка, целевая аудитория
+2. **SYNTAX.md** — текущий syntax.txt
+3. **COMPILER.md** — текущий layers.txt + детали passes
+4. **INTEROP.md** — C++/C FFI детали
+5. **STDLIB.md** — core types, traits, async runtime
+6. **ROADMAP.md** — фазы с конкретными milestone'ами
+
+---
+
+**TL;DR:** Фундамент очень крепкий. Главные gap'ы:
+1. Конкретика ownership model (сколько borrow checking?)
+2. C++ interop детали (особенно traits → concepts)
+3. Actor model спецификация (isolation, send/sync)
+4. Error handling стратегия
+5. Async execution model
+
+Хотите углубиться в какую-то конкретную область?

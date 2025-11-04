@@ -15,6 +15,7 @@ require_relative "mlc/parser/parser"
 require_relative "mlc/irgen"
 require_relative "mlc/backend/codegen"
 require_relative "mlc/backend/header_generator"
+require_relative "mlc/codegen/metadata_generator"
 require_relative "mlc/services/stdlib_resolver"
 require_relative "mlc/services/stdlib_scanner"
 require_relative "mlc/services/stdlib_signature_registry"
@@ -126,8 +127,9 @@ module MLC
       cpp_ast.to_source
     end
 
-    # Generate header and implementation files for a module
-    # Returns: { header: String, implementation: String }
+    # Generate header, implementation, and metadata files for a module
+    # Returns: { header: String, implementation: String, metadata: Hash }
+    # Phase 24-A: Added metadata generation
     def to_hpp_cpp(source, filename: nil, runtime_policy: nil)
       # Parse and transform to HighIR
       ast = parse(source, filename: filename)
@@ -144,7 +146,14 @@ module MLC
         runtime_policy: runtime_policy
       )
       generator = Backend::HeaderGenerator.new(lowering)
-      generator.generate(core_ir)
+      cpp_result = generator.generate(core_ir)
+
+      # Phase 24-A: Generate metadata for module exports
+      metadata_gen = CodeGen::MetadataGenerator.new
+      metadata = metadata_gen.generate(core_ir)
+
+      # Return header, implementation, and metadata
+      cpp_result.merge(metadata: metadata)
     rescue CompileError
       raise
     rescue => e

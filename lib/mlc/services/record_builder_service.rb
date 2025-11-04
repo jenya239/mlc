@@ -9,8 +9,9 @@ module MLC
     #   record_builder = context[:record_builder]
     #   type = record_builder.build_named(type_name, fields)
     class RecordBuilderService
-      def initialize(base_transformer)
+      def initialize(base_transformer, type_unification_service:)
         @transformer = base_transformer
+        @type_unification_service = type_unification_service
       end
 
       # Вывести record тип из контекста (пока не используется)
@@ -84,8 +85,8 @@ module MLC
           literal_type = literal_expr.type
           return nil unless literal_type
 
-          # Use transformer's unify_type method
-          matched = @transformer.send(:unify_type, field[:type], literal_type, type_map, context: "field '#{field_name}' of '#{type_name}'")
+          # Use type unification service to match generic types
+          matched = @type_unification_service.unify_type(field[:type], literal_type, type_map, context: "field '#{field_name}' of '#{type_name}'")
           return nil unless matched
         end
 

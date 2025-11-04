@@ -10,7 +10,7 @@ require_relative "../../lib/cpp_ast/builder/optimized_generator"
 
 class PerformanceBenchmark < Minitest::Test
   def setup
-    @large_aurora_source = generate_large_aurora_file(1000)
+    @large_mlc_source = generate_large_aurora_file(1000)
     @large_cpp_source = generate_large_cpp_file(1000)
   end
   
@@ -19,12 +19,12 @@ class PerformanceBenchmark < Minitest::Test
     
     # Test original parser
     original_time = Benchmark.measure do
-      10.times { MLC.parse(@large_aurora_source) }
+      10.times { MLC.parse(@large_mlc_source) }
     end
     
     # Test optimized parser
     optimized_time = Benchmark.measure do
-      10.times { MLC::Parser::OptimizedParser.new(@large_aurora_source).parse }
+      10.times { MLC::Parser::OptimizedParser.new(@large_mlc_source).parse }
     end
     
     puts "Original Parser: #{original_time.real.round(3)}s"
@@ -37,7 +37,7 @@ class PerformanceBenchmark < Minitest::Test
   def test_code_generation_performance
     puts "\n=== Code Generation Performance Benchmark ==="
     
-    ast = MLC.parse(@large_aurora_source)
+    ast = MLC.parse(@large_mlc_source)
     
     # Test original generator
     original_time = Benchmark.measure do
@@ -61,14 +61,14 @@ class PerformanceBenchmark < Minitest::Test
     
     # Test memory usage of original parser
     original_memory = MemoryProfiler.report do
-      MLC.parse(@large_aurora_source)
+      MLC.parse(@large_mlc_source)
     end
     
     original_total = original_memory.total_allocated_memsize
     
     # Test memory usage of optimized parser
     optimized_memory = MemoryProfiler.report do
-      MLC::Parser::OptimizedParser.new(@large_aurora_source).parse
+      MLC::Parser::OptimizedParser.new(@large_mlc_source).parse
     end
     optimized_total = optimized_memory.total_allocated_memsize
     
@@ -89,7 +89,7 @@ class PerformanceBenchmark < Minitest::Test
     puts "\n=== Caching Effectiveness Test ==="
     
     # Test cache hit rate
-    parser = MLC::Parser::OptimizedParser.new(@large_aurora_source)
+    parser = MLC::Parser::OptimizedParser.new(@large_mlc_source)
     
     # First parse (cache miss)
     first_time = Benchmark.measure { parser.parse }
@@ -134,19 +134,19 @@ class PerformanceBenchmark < Minitest::Test
   private
   
   def generate_large_aurora_file(size)
-    source = <<~AURORA
+    source = <<~MLCORA
       module PerformanceTest
       
       fn main() -> i32 = 0
-    AURORA
+    MLCORA
     
     # Add many functions
     size.times do |i|
-      source += <<~AURORA
+      source += <<~MLCORA
         fn function_#{i}(x: i32) -> i32 =
           if x > 0 then x * 2
           else 0
-      AURORA
+      MLCORA
     end
     
     source

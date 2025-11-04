@@ -26,6 +26,7 @@ module MLC
             effects: effects,
             type_params: func.type_params,
             external: func.external,
+            exported: func.exported,
             origin: func.origin
           )
         end

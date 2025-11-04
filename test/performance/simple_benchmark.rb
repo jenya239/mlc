@@ -33,15 +33,15 @@ class SimpleBenchmark < Minitest::Test
   end
   
   def test_aurora_parsing_performance
-    puts "\n=== Aurora Parsing Performance Test ==="
+    puts "\n=== MLC Parsing Performance Test ==="
     
-    source = <<~AURORA
+    source = <<~MLCORA
       fn factorial(n: i32) -> i32 =
         if n <= 1 then 1
         else n * factorial(n - 1)
       
       fn main() -> i32 = factorial(5)
-    AURORA
+    MLCORA
     
     # Test parsing performance
     parse_time = Benchmark.measure do
@@ -61,9 +61,9 @@ class SimpleBenchmark < Minitest::Test
   def test_cpp_generation_performance
     puts "\n=== C++ Generation Performance Test ==="
     
-    source = <<~AURORA
+    source = <<~MLCORA
       fn add(a: i32, b: i32) -> i32 = a + b
-    AURORA
+    MLCORA
     
     # Test generation performance
     gen_time = Benchmark.measure do
@@ -79,8 +79,8 @@ class SimpleBenchmark < Minitest::Test
   def test_large_file_performance
     puts "\n=== Large File Performance Test ==="
     
-    # Generate a large Aurora file
-    large_source = generate_large_aurora_source(100)
+    # Generate a large MLC file
+    large_source = generate_large_mlc_source(100)
     
     # Test parsing large file
     parse_time = Benchmark.measure do
@@ -94,19 +94,19 @@ class SimpleBenchmark < Minitest::Test
   
   private
   
-  def generate_large_aurora_source(function_count)
-    source = String.new(<<~AURORA)
+  def generate_large_mlc_source(function_count)
+    source = String.new(<<~MLCORA)
       module LargeTest
       
       fn main() -> i32 = 0
-    AURORA
+    MLCORA
     
     function_count.times do |i|
-      source << <<~AURORA
+      source << <<~MLCORA
         fn function_#{i}(x: i32) -> i32 =
           if x > 0 then x * 2
           else 0
-      AURORA
+      MLCORA
     end
     
     source

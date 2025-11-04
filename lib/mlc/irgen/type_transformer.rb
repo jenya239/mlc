@@ -108,7 +108,7 @@ module MLC
           end
 
           # Create TypeDecl
-          type_decl = HighIR::TypeDecl.new(name: decl.name, type: type, type_params: type_params)
+          type_decl = HighIR::TypeDecl.new(name: decl.name, type: type, type_params: type_params, exported: decl.exported)
 
           @rule_engine.apply(
             :core_ir_type_decl,
@@ -147,7 +147,7 @@ module MLC
           end
         end
 
-        HighIR::TypeDecl.new(name: decl.name, type: type, type_params: type_params)
+        HighIR::TypeDecl.new(name: decl.name, type: type, type_params: type_params, exported: decl.exported)
       end
     end
   end

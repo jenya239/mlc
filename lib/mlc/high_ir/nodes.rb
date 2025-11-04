@@ -139,9 +139,9 @@ module MLC
     
     # Function declaration
     class Func < Node
-      attr_reader :name, :params, :ret_type, :body, :effects, :type_params, :external
+      attr_reader :name, :params, :ret_type, :body, :effects, :type_params, :external, :exported
 
-      def initialize(name:, params:, ret_type:, body: nil, effects: [], type_params: [], external: false, origin: nil)
+      def initialize(name:, params:, ret_type:, body: nil, effects: [], type_params: [], external: false, exported: false, origin: nil)
         super(origin: origin)
         @name = name
         @params = params  # Array of Param
@@ -150,6 +150,7 @@ module MLC
         @effects = effects  # Array of :noexcept, :constexpr, etc.
         @type_params = type_params  # Array of TypeParam
         @external = external  # Boolean - is this an external (C++) function?
+        @exported = exported  # Boolean - is this exported?
       end
     end
     
@@ -389,13 +390,14 @@ module MLC
     
     # Type declaration
     class TypeDecl < Node
-      attr_reader :name, :type, :type_params
+      attr_reader :name, :type, :type_params, :exported
 
-      def initialize(name:, type:, type_params: [], origin: nil)
+      def initialize(name:, type:, type_params: [], exported: false, origin: nil)
         super(origin: origin)
         @name = name
         @type = type
         @type_params = type_params  # Array of TypeParam
+        @exported = exported  # Boolean - is this exported?
       end
     end
 

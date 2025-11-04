@@ -92,7 +92,8 @@ module MLC
                 body: nil,
                 effects: [],
                 type_params: type_params,
-                external: true
+                external: true,
+                exported: func.exported
               )
               if @function_registry.registered?(func.name)
                 @function_registry.update(
@@ -127,7 +128,8 @@ module MLC
                 body: body,
                 effects: [],
                 type_params: type_params,
-                external: func.external
+                external: func.external,
+                exported: func.exported
               )
             end
 
