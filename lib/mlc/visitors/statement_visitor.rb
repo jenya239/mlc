@@ -64,8 +64,12 @@ module MLC
 
       # Visit sequence of statements
       # Returns array of IR statements
+      # Rules can return arrays, so we need to flatten
       def visit_statements(statements)
-        statements.map { |stmt| visit(stmt) }
+        statements.each_with_object([]) do |stmt, acc|
+          result = visit(stmt)
+          acc.concat(Array(result))
+        end
       end
 
       private

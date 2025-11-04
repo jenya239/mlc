@@ -195,6 +195,9 @@ module MLC
             var_type_registry: @var_type_registry
           }
         )
+
+        # Phase 25-B: Connect statement_visitor back to expression_visitor (breaks circular dependency)
+        @expression_visitor.statement_visitor = @statement_visitor
       end
 
       def transform(ast)
@@ -256,15 +259,6 @@ module MLC
       # =========================================================================
 
       # --- ExpressionTransformer methods ---
-
-      # Transform AST expression to HighIR expression
-      # Main entry point for expression transformation
-      # Phase 23-A: Delegates to separate ExpressionVisitor class
-      def transform_expression(expr)
-        # Delegate to ExpressionVisitor instance (Phase 23-A)
-        # Visitor handles tree traversal, rules handle semantic processing
-        @expression_visitor.visit(expr)
-      end
 
       # Apply expression transformation rules with full context
       # Builds context hash with all necessary dependencies for rules

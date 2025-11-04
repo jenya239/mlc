@@ -22,9 +22,10 @@ module MLC
     # - Multi-pass compilation (different instances for different passes)
     # - Matches rustc/Swift architecture
     class ExpressionVisitor
-      def initialize(rule_engine:, transformer:, services:)
+      def initialize(rule_engine:, transformer:, services:, statement_visitor: nil)
         @rule_engine = rule_engine
-        @transformer = transformer  # IRGen instance for backward compatibility
+        @transformer = transformer  # IRGen instance for with_current_node only
+        @statement_visitor = statement_visitor  # Set later after both visitors created
 
         # Unpack services
         @type_registry = services[:type_registry]
@@ -35,6 +36,9 @@ module MLC
         @scope_context_service = services[:scope_context]
         @var_type_registry = services[:var_type_registry]
       end
+
+      # Setter to break circular dependency (called after StatementVisitor created)
+      attr_writer :statement_visitor
 
       # Main entry point: Visit AST expression node and return IR expression
       # Dispatches to specific visit_* method based on node type
@@ -101,7 +105,7 @@ module MLC
         {
           transformer: @transformer,  # Phase 23-A: Backward compatibility for transformer.send()
           expression_visitor: self,   # Phase 25-B: Direct visitor access
-          statement_visitor: @transformer.instance_variable_get(:@statement_visitor),  # Phase 25-B
+          statement_visitor: @statement_visitor,  # Phase 25-B: Direct visitor access
           type_registry: @type_registry,
           function_registry: @function_registry,
           rule_engine: @rule_engine,
@@ -365,17 +369,15 @@ module MLC
 
       # Visit statement block with scope management
       # Used by block expressions and do blocks
-      # Delegates back to IRGen's statement transformer (for now)
-      # Phase 23-C: Will be replaced with StatementVisitor
+      # Phase 25-B: Delegates to StatementVisitor directly
       def visit_block(block_node, require_value: false)
         @transformer.send(:transform_block, block_node, require_value: require_value)
       end
 
       # Visit statement sequence
-      # Delegates back to IRGen's statement transformer (for now)
-      # Phase 23-C: Will be replaced with StatementVisitor
+      # Phase 25-B: Delegates to StatementVisitor directly
       def visit_statements(statements)
-        @transformer.send(:transform_statements, statements)
+        @statement_visitor.visit_statements(statements)
       end
     end
   end
