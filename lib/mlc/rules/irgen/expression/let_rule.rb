@@ -15,7 +15,6 @@ module MLC
           end
 
           def apply(node, context = {})
-            transformer = context.fetch(:transformer)
             expression_visitor = context.fetch(:expression_visitor)
 
             # Normalize let expression as block expression
@@ -38,8 +37,9 @@ module MLC
               origin: node.origin
             )
 
-            # Transform the normalized block
-            transformer.send(:transform_block_expr, block)
+            # Transform the normalized block using visitor
+            # Phase 25-C: Migrated from transformer.send() to visitor
+            expression_visitor.visit_block_expr(block)
           end
         end
       end

@@ -15,10 +15,11 @@ module MLC
           end
 
           def apply(node, context = {})
-            transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
 
             # Transform block without requiring value (statement context)
-            nested = transformer.send(:transform_block, node, require_value: false)
+            # Phase 25-C: Migrated from transformer.send() to visitor
+            nested = expression_visitor.visit_block(node, require_value: false)
 
             # Return flattened statements
             nested.statements

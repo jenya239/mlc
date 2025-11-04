@@ -15,7 +15,6 @@ module MLC
           end
 
           def apply(node, context = {})
-            transformer = context.fetch(:transformer)
             expression_visitor = context.fetch(:expression_visitor)
 
             # Handle empty do block
@@ -25,7 +24,8 @@ module MLC
                 result_expr: MLC::AST::UnitLit.new(origin: node.origin),
                 origin: node.origin
               )
-              return transformer.send(:transform_block_expr, block)
+              # Phase 25-C: Migrated from transformer.send() to visitor
+              return expression_visitor.visit_block_expr(block)
             end
 
             # Normalize do body items into block structure
@@ -74,8 +74,9 @@ module MLC
             result_expr ||= MLC::AST::UnitLit.new(origin: node.origin)
 
             # Build normalized block and transform
+            # Phase 25-C: Migrated from transformer.send() to visitor
             block = MLC::AST::BlockExpr.new(statements: statements, result_expr: result_expr, origin: node.origin)
-            transformer.send(:transform_block_expr, block)
+            expression_visitor.visit_block_expr(block)
           end
         end
       end

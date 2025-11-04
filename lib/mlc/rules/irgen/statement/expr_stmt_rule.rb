@@ -55,7 +55,8 @@ module MLC
 
               when MLC::AST::Block
                 # Block expression as statement (flatten statements)
-                transformer.send(:transform_block, expr, require_value: false).statements
+                # Phase 25-C: Migrated from transformer.send() to visitor
+                expression_visitor.visit_block(expr, require_value: false).statements
 
               else
                 # General expression as statement
