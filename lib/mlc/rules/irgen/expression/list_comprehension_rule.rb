@@ -16,6 +16,7 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
             type_inference = context.fetch(:type_inference)
             var_type_registry = transformer.instance_variable_get(:@var_type_registry)
 
@@ -26,7 +27,7 @@ module MLC
             generators = []
 
             node.generators.each do |gen|
-              iterable_ir = transformer.send(:transform_expression, gen.iterable)
+              iterable_ir = expression_visitor.visit(gen.iterable)
               element_type = type_inference.infer_iterable_type(iterable_ir)
 
               generators << {
@@ -40,10 +41,10 @@ module MLC
             end
 
             # Transform filters
-            filters = node.filters.map { |filter| transformer.send(:transform_expression, filter) }
+            filters = node.filters.map { |filter| expression_visitor.visit(filter) }
 
             # Transform output expression with generators in scope
-            output_expr = transformer.send(:transform_expression, node.output_expr)
+            output_expr = expression_visitor.visit(node.output_expr)
             element_type = output_expr.type || MLC::HighIR::Builder.primitive_type("i32")
 
             # Build array type and list comprehension expression

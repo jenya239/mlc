@@ -16,6 +16,8 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
+            statement_visitor = context.fetch(:statement_visitor)
             type_checker = context.fetch(:type_checker)
             var_type_registry = context.fetch(:var_type_registry)
 
@@ -25,7 +27,7 @@ module MLC
                          context.fetch(:value_ir)
                        else
                          # Legacy path: Transform inline for backward compatibility
-                         transformer.send(:transform_expression, node.value)
+                         expression_visitor.visit(node.value)
                        end
 
             # Determine variable type: explicit annotation or inferred from value

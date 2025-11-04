@@ -16,6 +16,7 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
             type_checker = context.fetch(:type_checker)
             scope_context = context.fetch(:scope_context)
             var_type_registry = transformer.instance_variable_get(:@var_type_registry)
@@ -47,7 +48,7 @@ module MLC
             end
 
             # Transform lambda body with parameters in scope
-            body = transformer.send(:transform_expression, node.body)
+            body = expression_visitor.visit(node.body)
 
             # Build function type from parameters and return type
             ret_type = body.type

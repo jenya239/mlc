@@ -16,6 +16,8 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
+            statement_visitor = context.fetch(:statement_visitor)
             expr = node.expr
 
             # Phase 23-C: Support both visitor path (with expr_ir) and legacy path
@@ -57,7 +59,7 @@ module MLC
 
               else
                 # General expression as statement
-                ir = transformer.send(:transform_expression, expr)
+                ir = expression_visitor.visit(expr)
 
                 # Special case: if-expression with unit type - convert to if-statement
                 if expr.is_a?(MLC::AST::IfExpr) && ir.is_a?(MLC::HighIR::IfExpr)

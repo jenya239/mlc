@@ -16,10 +16,11 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
             type_checker = context.fetch(:type_checker)
 
             # Transform condition and ensure it's boolean
-            condition_ir = transformer.send(:transform_expression, node.condition)
+            condition_ir = expression_visitor.visit(node.condition)
             type_checker.ensure_boolean(condition_ir.type, "if condition", node: node.condition)
 
             # Check if both branches are unit type (statement-like)
@@ -33,8 +34,8 @@ module MLC
               MLC::HighIR::Builder.block_expr([if_stmt], unit_literal, unit_literal.type)
             else
               # Expression-like if: transform branches as expressions
-              then_branch_ir = transformer.send(:transform_expression, node.then_branch)
-              else_branch_ir = node.else_branch ? transformer.send(:transform_expression, node.else_branch) : nil
+              then_branch_ir = expression_visitor.visit(node.then_branch)
+              else_branch_ir = node.else_branch ? expression_visitor.visit(node.else_branch) : nil
 
               # Infer type from branches
               type = if else_branch_ir

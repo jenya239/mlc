@@ -15,6 +15,7 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
             type_inference = context.fetch(:type_inference)
 
             # Check if this is a module member function (e.g., Math.sqrt)
@@ -27,7 +28,7 @@ module MLC
             end
 
             # Regular member access - transform object and infer member type
-            object = transformer.send(:transform_expression, node.object)
+            object = expression_visitor.visit(node.object)
             type = type_inference.infer_member_type(object.type, node.member)
 
             # Build HighIR member access expression

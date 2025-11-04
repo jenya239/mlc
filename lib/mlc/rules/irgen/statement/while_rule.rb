@@ -16,6 +16,8 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
+            statement_visitor = context.fetch(:statement_visitor)
             type_checker = context.fetch(:type_checker)
 
             # Phase 23-C: Support both visitor path (with cond_ir/body_ir) and legacy path
@@ -24,7 +26,7 @@ module MLC
                              context.fetch(:cond_ir)
                            else
                              # Legacy path: Transform inline for backward compatibility
-                             transformer.send(:transform_expression, node.condition)
+                             expression_visitor.visit(node.condition)
                            end
 
             # Validate boolean condition type

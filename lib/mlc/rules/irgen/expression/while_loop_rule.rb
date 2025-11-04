@@ -16,6 +16,7 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
 
             # Transform as statement-level while-loop
             loop_stmt = transformer.send(:transform_while_statement, node.condition, node.body)

@@ -16,6 +16,7 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
 
             # Transform as statement-level for-loop
             loop_stmt = transformer.send(:transform_for_statement, node)

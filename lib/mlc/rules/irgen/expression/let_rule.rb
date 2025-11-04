@@ -16,6 +16,7 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
 
             # Normalize let expression as block expression
             # This ensures type annotations, mutability checks, and scope management

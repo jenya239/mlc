@@ -16,6 +16,8 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
+            statement_visitor = context.fetch(:statement_visitor)
             type_checker = context.fetch(:type_checker)
             type_inference = context.fetch(:type_inference)
             scope_context = context.fetch(:scope_context)
@@ -26,7 +28,7 @@ module MLC
                          context.fetch(:value_ir)
                        else
                          # Legacy path: Transform inline for backward compatibility
-                         node.expr ? transformer.send(:transform_expression, node.expr) : nil
+                         node.expr ? expression_visitor.visit(node.expr) : nil
                        end
 
             # Validate: return must be inside function

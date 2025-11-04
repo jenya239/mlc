@@ -72,10 +72,12 @@ module MLC
 
       # Build context hash for statement rules
       # Contains all services needed by rules
+      # Phase 25-B: Includes visitors for direct access (eliminates transformer.send())
       def statement_rule_context
         {
           transformer: @transformer,  # Backward compatibility
-          expression_visitor: @expression_visitor,
+          expression_visitor: @expression_visitor,  # Phase 25-B: Direct visitor access
+          statement_visitor: self,  # Phase 25-B: Direct visitor access
           type_registry: @type_registry,
           function_registry: @function_registry,
           rule_engine: @rule_engine,
