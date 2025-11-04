@@ -16,14 +16,15 @@ module MLC
 
           def apply(node, context = {})
             transformer = context.fetch(:transformer)
+            expression_visitor = context.fetch(:expression_visitor)
             type_checker = context.fetch(:type_checker)
             type_inference = context.fetch(:type_inference)
             scope_context = context.fetch(:scope_context)
 
             # Special case: IO functions have fixed return types
             if node.callee.is_a?(MLC::AST::VarRef) && transformer.class::IO_RETURN_TYPES.key?(node.callee.name)
-              callee = transformer.send(:transform_expression, node.callee)
-              args = node.args.map { |arg| transformer.send(:transform_expression, arg) }
+              callee = expression_visitor.visit(node.callee)
+              args = node.args.map { |arg| expression_visitor.visit(arg) }
               type = type_checker.io_return_type(node.callee.name)
               return MLC::HighIR::Builder.call(callee, args, type)
             end
@@ -42,7 +43,7 @@ module MLC
                 callee = MLC::HighIR::Builder.var(canonical_name, type_inference.function_placeholder_type(canonical_name))
               else
                 # Instance method call (e.g., arr.map)
-                object_ir = transformer.send(:transform_expression, callee_ast.object)
+                object_ir = expression_visitor.visit(callee_ast.object)
                 member_name = callee_ast.member
                 callee = MLC::HighIR::Builder.member(object_ir, member_name, type_inference.infer_member_type(object_ir.type, member_name))
               end
@@ -52,7 +53,7 @@ module MLC
               callee = MLC::HighIR::Builder.var(callee_ast.name, var_type)
             else
               # Complex expression (e.g., lambda call)
-              callee = transformer.send(:transform_expression, callee_ast)
+              callee = expression_visitor.visit(callee_ast)
             end
 
             # Transform arguments with lambda type inference
@@ -64,10 +65,10 @@ module MLC
               transformed_arg = if arg.is_a?(MLC::AST::Lambda)
                                   # Transform lambda with expected parameter types
                                   scope_context.with_lambda_param_types(expected_params) do
-                                    transformer.send(:transform_expression, arg)
+                                    expression_visitor.visit(arg)
                                   end
                                 else
-                                  transformer.send(:transform_expression, arg)
+                                  expression_visitor.visit(arg)
                                 end
               args << transformed_arg
             end
