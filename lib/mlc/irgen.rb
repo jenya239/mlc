@@ -271,6 +271,8 @@ module MLC
       def apply_expression_rules(expr)
         context = {
           transformer: self,
+          expression_visitor: @expression_visitor,
+          statement_visitor: @statement_visitor,
           type_registry: @type_registry,
           function_registry: @function_registry,
           rule_engine: @rule_engine,
@@ -352,6 +354,8 @@ module MLC
       def apply_statement_rules(stmt)
         context = {
           transformer: self,
+          expression_visitor: @expression_visitor,
+          statement_visitor: @statement_visitor,
           type_registry: @type_registry,
           function_registry: @function_registry,
           rule_engine: @rule_engine,
