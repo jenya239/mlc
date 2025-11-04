@@ -369,9 +369,49 @@ module MLC
 
       # Visit statement block with scope management
       # Used by block expressions and do blocks
-      # Phase 25-B: Delegates to StatementVisitor directly
+      # Phase 25-B: Implements block transformation directly (eliminates transformer.send)
       def visit_block(block_node, require_value: false)
-        @transformer.send(:transform_block, block_node, require_value: require_value)
+        @transformer.send(:with_current_node, block_node) do
+          saved_var_types = @var_type_registry.snapshot
+
+          # Handle empty blocks
+          if block_node.stmts.empty?
+            if require_value
+              @type_checker_service.type_error("Block must end with an expression")
+            else
+              return HighIR::Builder.block_expr(
+                [],
+                nil,
+                HighIR::Builder.primitive_type("void")
+              )
+            end
+          end
+
+          # Separate tail expression from body statements
+          statements = block_node.stmts.dup
+          tail = require_value ? statements.pop : nil
+
+          # Transform body statements
+          statement_nodes = @statement_visitor.visit_statements(statements)
+          result_ir = nil
+
+          # Handle tail expression
+          if require_value && tail
+            case tail
+            when AST::ExprStmt
+              result_ir = visit(tail.expr)
+            when AST::Return
+              statement_nodes << @statement_visitor.visit(tail)
+            else
+              statement_nodes.concat(@statement_visitor.visit_statements([tail]))
+            end
+          end
+
+          block_type = result_ir ? result_ir.type : HighIR::Builder.primitive_type("void")
+          HighIR::Builder.block_expr(statement_nodes, result_ir, block_type)
+        ensure
+          @var_type_registry.restore(saved_var_types)
+        end
       end
 
       # Visit statement sequence
