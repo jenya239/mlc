@@ -18,12 +18,12 @@ module MLC
     # - @rule_engine: For applying match expression rules
     # - @match_analyzer: For match analysis
     # - @type_unification_service: For getting constructor type info
-    # - transform_expression: For transforming arm bodies (expressions)
+    # - @expression_visitor: For transforming arm bodies (expressions) (Phase 25-B)
     # - transform_statement_block: For transforming arm bodies (statements)
     module PatternMatchingTransformer
       # Entry point: Transform match expression (chooses expression or statement form)
       def transform_match_expr(match_expr)
-        scrutinee_ir = transform_expression(match_expr.scrutinee)
+        scrutinee_ir = @expression_visitor.visit(match_expr.scrutinee)
 
         if match_stmt_applicable?(match_expr)
           return transform_match_expr_to_statement(match_expr, scrutinee_ir)
@@ -35,7 +35,7 @@ module MLC
       # Transform match expression to HighIR::MatchExpr (expression form)
       # Uses rule engine to apply match expression rules
       def transform_match_expr_core(match_expr, scrutinee_ir = nil)
-        scrutinee_ir ||= transform_expression(match_expr.scrutinee)
+        scrutinee_ir ||= @expression_visitor.visit(match_expr.scrutinee)
 
         result = @rule_engine.apply(
           :core_ir_match_expr,
@@ -72,8 +72,8 @@ module MLC
         saved_var_types = @var_type_registry.snapshot
         pattern = transform_pattern(arm[:pattern])
         bind_pattern_variables(pattern, scrutinee_type)
-        guard = arm[:guard] ? transform_expression(arm[:guard]) : nil
-        body = transform_expression(arm[:body])
+        guard = arm[:guard] ? @expression_visitor.visit(arm[:guard]) : nil
+        body = @expression_visitor.visit(arm[:body])
         {pattern: pattern, guard: guard, body: body}
       ensure
         @var_type_registry.restore(saved_var_types)
@@ -85,7 +85,7 @@ module MLC
         saved_var_types = @var_type_registry.snapshot
         pattern = transform_pattern(arm[:pattern])
         bind_pattern_variables(pattern, scrutinee_type)
-        guard_ir = arm[:guard] ? transform_expression(arm[:guard]) : nil
+        guard_ir = arm[:guard] ? @expression_visitor.visit(arm[:guard]) : nil
         body_ir = transform_statement_block(arm[:body])
         {pattern: pattern, guard: guard_ir, body: body_ir}
       ensure

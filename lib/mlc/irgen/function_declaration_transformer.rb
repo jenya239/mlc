@@ -27,7 +27,7 @@ module MLC
     # - with_current_node: From TransformationContext
     # - with_function_return: From TransformationContext
     # - transform_type: From TypeTransformer
-    # - transform_expression: From ExpressionTransformer
+    # - @expression_visitor: For expression transformation (Phase 25-B)
     module FunctionDeclarationTransformer
       # Ensure function signature exists in registry
       # Wrapper that transforms types and delegates registration to service
@@ -113,7 +113,7 @@ module MLC
                 @var_type_registry.set(param.name, param.type)
               end
 
-              body = transform_expression(func.body)
+              body = @expression_visitor.visit(func.body)
 
               unless @type_inference_service.void_type?(ret_type)
                 @type_checker_service.ensure_compatible_type(body.type, ret_type, "function '#{func.name}' result")
