@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../rules/base_rule'
+require_relative '../base_rule'
 
 module MLC
   module IRGenV2
@@ -12,7 +12,13 @@ module MLC
           end
 
           def produce(node, context)
-            services(context).ir_builder.break_node(origin: node)
+            svc = services(context)
+            loops = svc.loop_service
+            unless loops.inside_loop?
+              svc.type_checker.type_error("'break' used outside of loop", node: node)
+            end
+
+            svc.ir_builder.break_node(origin: node)
           end
         end
       end

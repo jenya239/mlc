@@ -12,6 +12,7 @@ require_relative 'identifier_type_resolver'
 require_relative 'high_ir_classifier'
 require_relative 'record_literal_builder'
 require_relative 'array_literal_builder'
+require_relative 'loop_service'
 require_relative 'ast_factory'
 
 module MLC
@@ -25,7 +26,7 @@ module MLC
                     :ast_factory, :var_type_registry, :identifier_type_resolver,
                     :type_checker, :type_decl_table, :expression_type_resolver,
                     :high_ir_classifier, :record_literal_builder, :array_literal_builder,
-                    :scope_context
+                    :scope_context, :loop_service
 
         def initialize(function_registry:, type_registry:)
           @module_resolver = ModuleResolver.new
@@ -64,6 +65,13 @@ module MLC
             type_checker: @type_checker
           )
           @ast_factory = ASTFactory.new
+          @loop_service = LoopService.new(
+            ir_builder: @ir_builder,
+            type_checker: @type_checker,
+            ast_factory: @ast_factory,
+            scope_context: @scope_context,
+            variable_types: @var_type_registry
+          )
         end
       end
     end

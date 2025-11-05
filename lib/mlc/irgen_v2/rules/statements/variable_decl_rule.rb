@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../rules/base_rule'
+require_relative '../base_rule'
 
 module MLC
   module IRGenV2
