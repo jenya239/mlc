@@ -49,6 +49,14 @@ module MLC
           MLC::AST::BinaryOp.new(op: op, left: left, right: right, origin: origin)
         end
 
+        def lambda(params:, body:, origin: nil)
+          MLC::AST::Lambda.new(params: params, body: body, origin: origin)
+        end
+
+        def lambda_param(name:, type: nil, origin: nil)
+          MLC::AST::LambdaParam.new(name: name, type: type, origin: origin)
+        end
+
         def let(name:, value:, body:, mutable: false, type: nil, origin: nil)
           MLC::AST::Let.new(name: name, value: value, body: body, mutable: mutable, type: type, origin: origin)
         end
@@ -59,6 +67,14 @@ module MLC
 
         def array_literal(elements:, origin: nil)
           MLC::AST::ArrayLiteral.new(elements: elements, origin: origin)
+        end
+
+        def generator(var_name:, iterable:, origin: nil)
+          MLC::AST::Generator.new(var_name: var_name, iterable: iterable, origin: origin)
+        end
+
+        def list_comprehension(output_expr:, generators:, filters: [], origin: nil)
+          MLC::AST::ListComprehension.new(output_expr: output_expr, generators: generators, filters: filters, origin: origin)
         end
 
         def block_expr(statements:, result_expr:, origin: nil)

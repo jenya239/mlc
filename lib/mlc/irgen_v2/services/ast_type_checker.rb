@@ -106,6 +106,14 @@ module MLC
           node.is_a?(MLC::AST::IndexAccess)
         end
 
+        def lambda?(node)
+          node.is_a?(MLC::AST::Lambda)
+        end
+
+        def list_comprehension?(node)
+          node.is_a?(MLC::AST::ListComprehension)
+        end
+
         def block_statement?(node)
           node.is_a?(MLC::AST::Block)
         end

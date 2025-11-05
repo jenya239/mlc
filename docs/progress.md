@@ -25,6 +25,11 @@
   - `IndexAccessService` validates array index operations and produces `HighIR::IndexExpr`.  
   - Rule/visitor wiring keeps array indexing declarative; new test covers typed element lookup.
 
+- **Higher-order constructs**  
+  - `LambdaService` scopes parameters with type defaults and emits `HighIR::LambdaExpr`.  
+  - `ListComprehensionService` leverages loop helpers to derive element types and build `ListCompExpr`.  
+  - Engine now covers lambdas and list comprehensions with regression tests.
+
 - **AST abstraction hygiene**  
   - Loop/while/assignment/return rules route all node-shape checks through `ASTTypeChecker`.  
   - `ASTFactory` exposes pattern helpers (`match_arm`, `pattern_var`, etc.) so specs and rules avoid class names.

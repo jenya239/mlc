@@ -13,6 +13,8 @@ require_relative 'rules/if_rule'
 require_relative 'rules/match_rule'
 require_relative 'rules/for_loop_rule'
 require_relative 'rules/while_loop_rule'
+require_relative 'rules/lambda_rule'
+require_relative 'rules/list_comprehension_rule'
 require_relative 'rules/index_access_rule'
 require_relative 'rules/call_rule'
 require_relative 'rules/unary_rule'
@@ -86,6 +88,8 @@ module MLC
         engine.register(:expression, MLC::IRGenV2::Rules::MatchRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::ForLoopRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::WhileLoopRule.new)
+        engine.register(:expression, MLC::IRGenV2::Rules::LambdaRule.new)
+        engine.register(:expression, MLC::IRGenV2::Rules::ListComprehensionRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::IndexAccessRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::CallRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::UnaryRule.new)

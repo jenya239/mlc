@@ -35,6 +35,10 @@ module MLC
           MLC::HighIR::Builder.function_type(params, return_type, origin: origin)
         end
 
+        def param(name:, type:, origin: nil)
+          MLC::HighIR::Param.new(name: name, type: type, origin: origin)
+        end
+
         # Build a primitive type
         def prim_type(name:, origin: nil)
           type(kind: :prim, name: name, origin: origin)
@@ -104,6 +108,27 @@ module MLC
           MLC::HighIR::IndexExpr.new(
             object: object,
             index: index,
+            type: type,
+            origin: origin
+          )
+        end
+
+        def lambda_expr(params:, body:, function_type:, captures: [], origin: nil)
+          MLC::HighIR::LambdaExpr.new(
+            captures: captures,
+            params: params,
+            body: body,
+            function_type: function_type,
+            origin: origin
+          )
+        end
+
+        def list_comprehension(element_type:, generators:, filters:, output_expr:, type:, origin: nil)
+          MLC::HighIR::ListCompExpr.new(
+            element_type: element_type,
+            generators: generators,
+            filters: filters,
+            output_expr: output_expr,
             type: type,
             origin: origin
           )

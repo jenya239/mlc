@@ -142,6 +142,64 @@ module MLC
         assert_equal 'i32', ir.type.name
       end
 
+      def test_handles_lambda_expression
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        factory = engine.services.ast_factory
+        lambda_ast = factory.lambda(
+          params: [factory.lambda_param(name: 'x')],
+          body: factory.var_ref(name: 'x')
+        )
+
+        ir = engine.run_expression(lambda_ast)
+
+        assert_instance_of MLC::HighIR::LambdaExpr, ir
+        assert_equal 1, ir.params.length
+        assert_equal 'x', ir.params.first.name
+        assert_equal 'i32', ir.params.first.type.name
+        assert_equal 'i32', ir.function_type.ret_type.name
+      end
+
+      def test_handles_list_comprehension
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        builder = engine.services.ir_builder
+        array_type = builder.array_type(element_type: builder.prim_type(name: 'i32'))
+        engine.services.var_type_registry.set('arr', array_type)
+
+        factory = engine.services.ast_factory
+        generator = factory.generator(
+          var_name: 'x',
+          iterable: factory.var_ref(name: 'arr')
+        )
+        filter_expr = factory.binary(
+          op: '>',
+          left: factory.var_ref(name: 'x'),
+          right: factory.int_literal(value: 0)
+        )
+
+        comp_ast = factory.list_comprehension(
+          output_expr: factory.var_ref(name: 'x'),
+          generators: [generator],
+          filters: [filter_expr]
+        )
+
+        ir = engine.run_expression(comp_ast)
+
+        assert_instance_of MLC::HighIR::ListCompExpr, ir
+        assert_equal 'array', ir.type.name
+        assert_equal 'i32', ir.element_type.name
+        assert_equal 1, ir.generators.length
+        assert_equal 'x', ir.generators.first[:var_name]
+        assert_equal 1, ir.filters.length
+      end
+
       def test_handles_literal_expression
         engine = Engine.new(
           function_registry: @function_registry,
