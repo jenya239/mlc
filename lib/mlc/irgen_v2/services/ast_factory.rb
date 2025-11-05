@@ -116,6 +116,26 @@ module MLC
         def pattern_var(name:, origin: nil)
           MLC::AST::Pattern.new(kind: :var, data: { name: name }, origin: origin)
         end
+
+        def pattern_constructor(name:, fields: [], origin: nil)
+          MLC::AST::Pattern.new(
+            kind: :constructor,
+            data: { name: name, fields: Array(fields) },
+            origin: origin
+          )
+        end
+
+        def pattern_regex(pattern:, flags: "", bindings: [], origin: nil)
+          MLC::AST::Pattern.new(
+            kind: :regex,
+            data: {
+              pattern: pattern,
+              flags: flags,
+              bindings: Array(bindings)
+            },
+            origin: origin
+          )
+        end
       end
     end
   end

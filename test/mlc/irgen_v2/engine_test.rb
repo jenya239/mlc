@@ -473,6 +473,78 @@ module MLC
         end
       end
 
+      def test_match_constructor_arm_populates_bindings
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        builder = engine.services.ir_builder
+        engine.services.var_type_registry.set('opt', builder.struct_type(name: 'Option'))
+
+        factory = engine.services.ast_factory
+        constructor_body = factory.block_expr(
+          statements: [
+            factory.expr_stmt(expr: factory.var_ref(name: 'value'))
+          ],
+          result_expr: factory.string_literal(value: 'some')
+        )
+
+        match_ast = factory.match_expr(
+          scrutinee: factory.var_ref(name: 'opt'),
+          arms: [
+            factory.match_arm(
+              pattern: factory.pattern_constructor(name: 'Some', fields: ['value']),
+              body: constructor_body
+            ),
+            factory.match_arm(
+              pattern: factory.pattern_constructor(name: 'None', fields: []),
+              body: factory.string_literal(value: 'none')
+            )
+          ]
+        )
+
+        ir = engine.run_expression(match_ast)
+
+        assert_instance_of MLC::HighIR::MatchExpr, ir
+        pattern = ir.arms.first[:pattern]
+        assert_equal :constructor, pattern[:kind]
+        assert_equal 'Some', pattern[:name]
+        assert_equal ['value'], pattern[:bindings]
+      end
+
+      def test_match_regex_arm_provides_capture_bindings
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        builder = engine.services.ir_builder
+        engine.services.var_type_registry.set('text', builder.prim_type(name: 'string'))
+
+        factory = engine.services.ast_factory
+        match_ast = factory.match_expr(
+          scrutinee: factory.var_ref(name: 'text'),
+          arms: [
+            factory.match_arm(
+              pattern: factory.pattern_regex(pattern: '^(\\d+)$', bindings: ['digits']),
+              body: factory.var_ref(name: 'digits')
+            ),
+            factory.match_arm(
+              pattern: factory.pattern_wildcard,
+              body: factory.string_literal(value: '')
+            )
+          ]
+        )
+
+        ir = engine.run_expression(match_ast)
+
+        assert_instance_of MLC::HighIR::MatchExpr, ir
+        regex_pattern = ir.arms.first[:pattern]
+        assert_equal :regex, regex_pattern[:kind]
+        assert_equal ['digits'], regex_pattern[:bindings]
+      end
+
       def test_handles_assignment_statement
         engine = Engine.new(
           function_registry: @function_registry,

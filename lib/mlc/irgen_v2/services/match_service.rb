@@ -153,13 +153,17 @@ module MLC
         def bind_constructor_pattern(pattern, scrutinee_type)
           info = @type_unification_service.constructor_info_for(pattern[:name], scrutinee_type)
           field_types = info ? info.param_types : []
+          bindings = []
 
           Array(pattern[:fields]).each_with_index do |field, index|
             next if ignored_binding?(field)
 
             field_type = field_types[index] || unknown_type
             bind_variable(field, field_type)
+            bindings << field
           end
+
+          pattern[:bindings] = bindings unless bindings.empty?
         end
 
         def bind_variable(name, type)

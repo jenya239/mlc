@@ -12,6 +12,10 @@
   - Statement arms reuse rule-engine visitors; builders gained explicit `match_stmt`.  
   - Regression test added to cover the statement-form lowering.
 
+- **Pattern feature parity**  
+  - Constructor arms now expose `bindings` data for downstream codegen; binding types flow through the variable registry.  
+  - Regex patterns include capture bindings and seed the registry with string types, enabling captures inside bodies.
+
 - **AST abstraction hygiene**  
   - Loop/while/assignment/return rules route all node-shape checks through `ASTTypeChecker`.  
   - `ASTFactory` exposes pattern helpers (`match_arm`, `pattern_var`, etc.) so specs and rules avoid class names.
