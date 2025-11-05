@@ -36,8 +36,8 @@
 
 - **Import & type infrastructure**  
   - Container now exposes module import aliasing on `ModuleResolver` and a type-registration service that wires in sum-type constructors.  
-  - Added integration tests ensuring sum variants register constructors and module aliases resolve to canonical functions.
-  - Introduced `TypeBuilder`/`TypeDeclarationService` to lower AST type declarations via v2 services.
+  - Added integration tests ensuring sum variants register constructors and module aliases resolve to canonical functions.  
+  - Introduced `TypeBuilder`/`TypeDeclarationService` plus an import service that registers stdlib/user imports via v2.
 
 - **AST abstraction hygiene**  
   - Loop/while/assignment/return rules route all node-shape checks through `ASTTypeChecker`.  

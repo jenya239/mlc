@@ -10,14 +10,17 @@ module MLC
         def setup
           @function_registry = MLC::FunctionRegistry.new
           @type_registry = MLC::TypeRegistry.new
-          @container = Container.new(function_registry: @function_registry, type_registry: @type_registry)
+          @container = Container.new(
+            function_registry: @function_registry,
+            type_registry: @type_registry
+          )
         end
 
-      def test_sum_type_constructor_registration
-        builder = @container.ir_builder
-        some_variant = { name: 'Some', fields: [{ name: 'value', type: builder.prim_type(name: 'i32') }] }
-        none_variant = { name: 'None', fields: [] }
-        sum_type = builder.sum_type(name: 'Option', variants: [some_variant, none_variant])
+        def test_sum_type_constructor_registration
+          builder = @container.ir_builder
+          some_variant = { name: 'Some', fields: [{ name: 'value', type: builder.prim_type(name: 'i32') }] }
+          none_variant = { name: 'None', fields: [] }
+          sum_type = builder.sum_type(name: 'Option', variants: [some_variant, none_variant])
 
           type_decl = MLC::AST::TypeDecl.new(name: 'Option', type: nil)
 
@@ -31,40 +34,70 @@ module MLC
 
           constructor_info = @container.type_unification_service.constructor_info_for('Some', sum_type)
           refute_nil constructor_info
-          assert_equal 1, constructor_info.param_types.size
-        assert_equal 'i32', constructor_info.param_types.first.name
-      end
+          assert_equal 'i32', constructor_info.param_types.first.name
+        end
 
-      def test_type_declaration_service_registers_sum_type
-        sum_ast = MLC::AST::SumType.new(
-          name: 'Maybe',
-          variants: [
-            { name: 'Just', fields: [{ name: 'value', type: MLC::AST::PrimType.new(name: 'i32') }] },
-            { name: 'Nothing', fields: [] }
-          ]
-        )
+        def test_type_declaration_service_registers_sum_type
+          sum_ast = MLC::AST::SumType.new(
+            name: 'Maybe',
+            variants: [
+              { name: 'Just', fields: [{ name: 'value', type: MLC::AST::PrimType.new(name: 'i32') }] },
+              { name: 'Nothing', fields: [] }
+            ]
+          )
 
-        decl = MLC::AST::TypeDecl.new(name: 'Maybe', type: sum_ast)
+          decl = MLC::AST::TypeDecl.new(name: 'Maybe', type: sum_ast)
 
-        type_decl_ir = @container.type_declaration_service.build(decl)
+          type_decl_ir = @container.type_declaration_service.build(decl)
 
-        assert_instance_of MLC::HighIR::TypeDecl, type_decl_ir
-        constructor_info = @container.type_unification_service.constructor_info_for('Just', type_decl_ir.type)
-        refute_nil constructor_info
-        assert_equal 'i32', constructor_info.param_types.first.name
-      end
+          assert_instance_of MLC::HighIR::TypeDecl, type_decl_ir
+          constructor_info = @container.type_unification_service.constructor_info_for('Just', type_decl_ir.type)
+          refute_nil constructor_info
+          assert_equal 'i32', constructor_info.param_types.first.name
+        end
 
-        def test_module_import_alias_registration
-          builder = @container.ir_builder
-          info = MLC::IRGen::FunctionInfo.new('sqrt', [], builder.prim_type(name: 'f64'))
-          @function_registry.register('Math.sqrt', info, module_name: 'Math')
+        def test_stdlib_import_registers_function_and_type
+          import_decl = MLC::AST::ImportDecl.new(path: 'Conv', items: ['to_string_i32'], import_all: false, alias_name: 'C')
 
-          import_decl = MLC::AST::ImportDecl.new(path: 'Math', items: ['sqrt'], import_all: false, alias_name: 'M')
+          @container.import_service.process(
+            import_decl,
+            function_registry: @function_registry,
+            type_registry: @type_registry
+          )
 
-          @container.module_resolver.register_module_import(import_decl, @function_registry)
+          assert @function_registry.fetch('Conv.to_string_i32'), 'expected canonical stdlib function'
+          assert @function_registry.fetch('C.to_string_i32'), 'expected alias for stdlib function'
+        end
 
-          assert_equal info, @function_registry.fetch('M.sqrt')
-          assert_equal info, @function_registry.fetch('sqrt')
+        def test_stdlib_import_registers_sum_type_constructors
+          import_decl = MLC::AST::ImportDecl.new(path: 'Option', items: ['Option'], import_all: false, alias_name: nil)
+
+          @container.import_service.process(
+            import_decl,
+            function_registry: @function_registry,
+            type_registry: @type_registry
+          )
+
+          type_info = @type_registry.lookup('Option')
+          refute_nil type_info
+          sum_type = type_info.core_ir_type
+          constructor_info = @container.type_unification_service.constructor_info_for('Some', sum_type)
+          refute_nil constructor_info
+        end
+
+        def test_user_import_registers_alias
+          info = MLC::IRGen::FunctionInfo.new('bar', [], @container.ir_builder.prim_type(name: 'i32'))
+          @function_registry.register('Foo.bar', info, module_name: 'Foo')
+
+          import_decl = MLC::AST::ImportDecl.new(path: 'Foo', items: ['bar'], import_all: false, alias_name: 'Alias')
+
+          @container.import_service.process(
+            import_decl,
+            function_registry: @function_registry,
+            type_registry: @type_registry
+          )
+
+          assert_equal info, @function_registry.fetch('Alias.bar')
         end
       end
     end

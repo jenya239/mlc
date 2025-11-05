@@ -6,6 +6,7 @@ require_relative '../../services/scope_context_service'
 require_relative '../../services/type_unification_service'
 require_relative '../../services/sum_type_constructor_service'
 require_relative '../../services/module_context_service'
+require_relative '../../services/stdlib_signature_registry'
 require_relative 'module_resolver'
 require_relative 'ast_type_checker'
 require_relative 'ir_builder'
@@ -24,6 +25,7 @@ require_relative 'index_access_service'
 require_relative 'type_registration_service'
 require_relative 'type_builder'
 require_relative 'type_declaration_service'
+require_relative 'import_service'
 require_relative '../../type_system/match_analyzer'
 require_relative 'ast_factory'
 
@@ -43,6 +45,7 @@ module MLC
                     :lambda_service, :list_comprehension_service, :index_access_service,
                     :module_context_service, :sum_type_constructor_service,
                     :type_registration_service, :type_builder, :type_declaration_service,
+                    :stdlib_registry, :import_service,
                     :sum_type_constructors
 
         def initialize(function_registry:, type_registry:)
@@ -152,6 +155,15 @@ module MLC
             type_builder: @type_builder,
             type_registration_service: @type_registration_service,
             module_context_service: @module_context_service
+          )
+          @stdlib_registry = MLC::StdlibSignatureRegistry.new
+          @import_service = ImportService.new(
+            stdlib_registry: @stdlib_registry,
+            module_resolver: @module_resolver,
+            type_builder: @type_builder,
+            type_declaration_service: @type_declaration_service,
+            type_registration_service: @type_registration_service,
+            type_checker: @type_checker
           )
         end
       end
