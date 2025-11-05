@@ -129,6 +129,10 @@ module MLC
           )
         end
 
+        def while_stmt(condition:, body:, origin: nil)
+          MLC::HighIR::Builder.while_stmt(condition, body, origin: origin)
+        end
+
         # Build a for node
         def for_node(var:, range:, body:, origin: nil)
           MLC::HighIR::For.new(
@@ -137,6 +141,10 @@ module MLC
             range: range,
             body: body
           )
+        end
+
+        def for_stmt(var_name:, var_type:, iterable:, body:, origin: nil)
+          MLC::HighIR::Builder.for_stmt(var_name, var_type, iterable, body, origin: origin)
         end
 
         # Build a return node
@@ -160,8 +168,8 @@ module MLC
         # Build a block node
         def block(statements:, origin: nil)
           MLC::HighIR::Block.new(
-            origin: origin,
-            statements: statements
+            stmts: statements,
+            origin: origin
           )
         end
 

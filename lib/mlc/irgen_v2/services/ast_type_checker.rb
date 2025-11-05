@@ -90,6 +90,14 @@ module MLC
           node.is_a?(MLC::AST::DoExpr)
         end
 
+        def for_loop?(node)
+          node.is_a?(MLC::AST::ForLoop)
+        end
+
+        def while_loop_expr?(node)
+          node.is_a?(MLC::AST::WhileLoop)
+        end
+
         def expr_stmt?(node)
           node.is_a?(MLC::AST::ExprStmt)
         end
@@ -121,12 +129,12 @@ module MLC
 
         # Check if node is a while statement
         def while_statement?(node)
-          node.is_a?(MLC::AST::While)
+          node.is_a?(MLC::AST::WhileStmt)
         end
 
         # Check if node is a for statement
         def for_statement?(node)
-          node.is_a?(MLC::AST::For)
+          node.is_a?(MLC::AST::ForStmt)
         end
 
         # Check if node is a return statement

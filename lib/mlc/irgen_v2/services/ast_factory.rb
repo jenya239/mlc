@@ -88,6 +88,14 @@ module MLC
         def continue_stmt(origin: nil)
           MLC::AST::Continue.new(origin: origin)
         end
+
+        def for_loop(var_name:, iterable:, body:, origin: nil)
+          MLC::AST::ForLoop.new(var_name: var_name, iterable: iterable, body: body, origin: origin)
+        end
+
+        def while_loop(condition:, body:, origin: nil)
+          MLC::AST::WhileLoop.new(condition: condition, body: body, origin: origin)
+        end
       end
     end
   end

@@ -10,6 +10,8 @@ require_relative 'rules/let_rule'
 require_relative 'rules/record_literal_rule'
 require_relative 'rules/array_literal_rule'
 require_relative 'rules/if_rule'
+require_relative 'rules/for_loop_rule'
+require_relative 'rules/while_loop_rule'
 require_relative 'rules/call_rule'
 require_relative 'rules/unary_rule'
 require_relative 'rules/binary_rule'
@@ -22,6 +24,7 @@ require_relative 'rules/statements/return_rule'
 require_relative 'rules/statements/assignment_rule'
 require_relative 'rules/statements/break_rule'
 require_relative 'rules/statements/continue_rule'
+require_relative 'rules/statements/while_rule'
 require_relative 'visitors/expression_visitor'
 require_relative 'visitors/statement_visitor'
 
@@ -77,6 +80,8 @@ module MLC
         engine.register(:expression, MLC::IRGenV2::Rules::RecordLiteralRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::ArrayLiteralRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::IfRule.new)
+        engine.register(:expression, MLC::IRGenV2::Rules::ForLoopRule.new)
+        engine.register(:expression, MLC::IRGenV2::Rules::WhileLoopRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::CallRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::UnaryRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::BinaryRule.new)
@@ -89,6 +94,7 @@ module MLC
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::AssignmentRule.new)
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::BreakRule.new)
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::ContinueRule.new)
+        engine.register(:statement, MLC::IRGenV2::Rules::Statements::WhileRule.new)
         engine
       end
     end

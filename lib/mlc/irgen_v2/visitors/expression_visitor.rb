@@ -24,6 +24,18 @@ module MLC
           return apply_rules(node, extra_context) if svc.block_expr?(node)
           return apply_rules(node, extra_context) if svc.do_expr?(node)
 
+          if svc.for_loop?(node)
+            iterable_ir = visit(node.iterable)
+            context = extra_context.merge(iterable_ir: iterable_ir)
+            return apply_rules(node, context)
+          end
+
+          if svc.while_loop_expr?(node)
+            condition_ir = visit(node.condition)
+            context = extra_context.merge(condition_ir: condition_ir)
+            return apply_rules(node, context)
+          end
+
           if svc.if_expr?(node)
             condition_ir = visit(node.condition)
             then_ir = visit(node.then_branch)

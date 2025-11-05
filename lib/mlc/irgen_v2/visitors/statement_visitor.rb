@@ -40,6 +40,17 @@ module MLC
             return apply_rule(node)
           end
 
+          if svc.while_statement?(node)
+            cond_ir = @expression_visitor.visit(node.condition)
+            body_statements = extract_block_statements(node.body)
+            return apply_rule(
+              node,
+              cond_ir: cond_ir,
+              body_statements: body_statements,
+              body_origin: node.body
+            )
+          end
+
           raise MLC::CompileError, "StatementVisitor cannot handle #{node.class}"
         end
 
@@ -63,6 +74,14 @@ module MLC
             expression_visitor: @expression_visitor,
             statement_visitor: self
           }
+        end
+
+        def extract_block_statements(body)
+          if body.is_a?(MLC::AST::Block)
+            body.stmts
+          else
+            Array(body)
+          end
         end
       end
     end

@@ -16,7 +16,7 @@ module MLC
     # - var_type_registry: VarTypeRegistry (injected, for tracking variable types)
     class TransformationContext
       attr_reader :type_param_stack, :lambda_param_stack, :function_return_stack
-      attr_reader :var_type_registry
+      attr_reader :var_type_registry, :loop_depth
       attr_accessor :current_node
 
       def initialize(var_type_registry:)
@@ -25,6 +25,7 @@ module MLC
         @function_return_stack = []
         @var_type_registry = var_type_registry
         @current_node = nil
+        @loop_depth = 0
       end
 
       # Type parameters (e.g., <T> in fn foo<T>())
@@ -70,6 +71,17 @@ module MLC
         yield
       ensure
         @current_node = previous
+      end
+
+      def with_loop_scope
+        @loop_depth += 1
+        yield
+      ensure
+        @loop_depth -= 1
+      end
+
+      def inside_loop?
+        @loop_depth.positive?
       end
     end
 

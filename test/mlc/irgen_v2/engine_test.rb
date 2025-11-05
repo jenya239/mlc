@@ -417,6 +417,74 @@ module MLC
         assert_equal 'x', ir.result.name
       end
 
+      def test_handles_for_loop_expression
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        factory = engine.services.ast_factory
+        array_expr = factory.array_literal(
+          elements: [factory.int_literal(value: 1), factory.int_literal(value: 2)]
+        )
+
+        for_expr = factory.for_loop(
+          var_name: 'item',
+          iterable: factory.var_ref(name: 'arr'),
+          body: factory.var_ref(name: 'item')
+        )
+
+        block_ast = factory.block_expr(
+          statements: [
+            factory.variable_decl(name: 'arr', value: array_expr),
+            factory.expr_stmt(expr: for_expr)
+          ],
+          result_expr: factory.var_ref(name: 'arr')
+        )
+
+        ir = engine.run_expression(block_ast)
+
+        assert_instance_of MLC::HighIR::BlockExpr, ir
+        assert_equal 'array', ir.type.name
+        refute engine.services.var_type_registry.has?('item')
+      end
+
+      def test_handles_while_statement
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        factory = engine.services.ast_factory
+        body_block = MLC::AST::Block.new(
+          stmts: [
+            factory.assignment(
+              target: factory.var_ref(name: 'x'),
+              value: factory.int_literal(value: 10)
+            )
+          ]
+        )
+
+        while_stmt = MLC::AST::WhileStmt.new(
+          condition: factory.var_ref(name: 'false'),
+          body: body_block
+        )
+
+        block_ast = factory.block_expr(
+          statements: [
+            factory.variable_decl(name: 'x', value: factory.int_literal(value: 1)),
+            while_stmt
+          ],
+          result_expr: factory.var_ref(name: 'x')
+        )
+
+        ir = engine.run_expression(block_ast)
+
+        assert_instance_of MLC::HighIR::BlockExpr, ir
+        assert_equal 'i32', ir.type.name
+        assert_equal 2, ir.statements.length
+      end
+
       def test_respects_import_aliases
         engine = Engine.new(
           function_registry: @function_registry,
