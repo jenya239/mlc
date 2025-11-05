@@ -47,6 +47,78 @@ module MLC
         assert_equal 'Math.sqrt', ir.name
       end
 
+      def test_handles_record_member_access
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        builder = engine.services.ir_builder
+        record_type = builder.record_type(
+          name: 'Point',
+          fields: [
+            { name: 'x', type: builder.prim_type(name: 'i32') },
+            { name: 'y', type: builder.prim_type(name: 'i32') }
+          ]
+        )
+        @type_registry.register('Point', core_ir_type: record_type, kind: :record)
+        engine.services.var_type_registry.set('pt', record_type)
+
+        factory = engine.services.ast_factory
+        member_ast = factory.member_access(
+          object: factory.var_ref(name: 'pt'),
+          member: 'x'
+        )
+
+        ir = engine.run_expression(member_ast)
+        assert_instance_of MLC::HighIR::MemberExpr, ir
+        assert_equal 'x', ir.member
+        assert_equal 'i32', ir.type.name
+      end
+
+      def test_handles_array_member_access
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        builder = engine.services.ir_builder
+        array_type = builder.array_type(element_type: builder.prim_type(name: 'i32'))
+        engine.services.var_type_registry.set('numbers', array_type)
+
+        factory = engine.services.ast_factory
+        length_ast = factory.member_access(
+          object: factory.var_ref(name: 'numbers'),
+          member: 'length'
+        )
+
+        ir = engine.run_expression(length_ast)
+        assert_instance_of MLC::HighIR::MemberExpr, ir
+        assert_equal 'length', ir.member
+        assert_equal 'i32', ir.type.name
+      end
+
+      def test_handles_string_member_access
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        builder = engine.services.ir_builder
+        string_type = builder.prim_type(name: 'string')
+        engine.services.var_type_registry.set('name', string_type)
+
+        factory = engine.services.ast_factory
+        upper_ast = factory.member_access(
+          object: factory.var_ref(name: 'name'),
+          member: 'upper'
+        )
+
+        ir = engine.run_expression(upper_ast)
+        assert_instance_of MLC::HighIR::MemberExpr, ir
+        assert_equal 'string', ir.type.name
+      end
+
       def test_handles_literal_expression
         engine = Engine.new(
           function_registry: @function_registry,

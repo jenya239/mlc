@@ -97,12 +97,7 @@ module MLC
 
         # Build a member access node
         def member(object:, member:, type:, origin: nil)
-          MLC::HighIR::Member.new(
-            origin: origin,
-            object: object,
-            member: member,
-            type: type
-          )
+          MLC::HighIR::Builder.member(object, member, type, origin: origin)
         end
 
         # Build an if node

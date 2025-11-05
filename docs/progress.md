@@ -16,6 +16,11 @@
   - Constructor arms now expose `bindings` data for downstream codegen; binding types flow through the variable registry.  
   - Regex patterns include capture bindings and seed the registry with string types, enabling captures inside bodies.
 
+- **Member access parity**  
+  - New MemberAccessService resolves record, array, string, and numeric members without referencing AST classes.  
+  - Declarative MemberRule covers non-module accesses; module detection stays in ModuleMemberRule.  
+  - Regression tests ensure record fields, array helpers, and string utilities return expected HighIR types.
+
 - **AST abstraction hygiene**  
   - Loop/while/assignment/return rules route all node-shape checks through `ASTTypeChecker`.  
   - `ASTFactory` exposes pattern helpers (`match_arm`, `pattern_var`, etc.) so specs and rules avoid class names.

@@ -19,6 +19,7 @@ require_relative 'rules/binary_rule'
 require_relative 'rules/block_rule'
 require_relative 'rules/do_rule'
 require_relative 'rules/module_member_rule'
+require_relative 'rules/member_rule'
 require_relative 'rules/statements/expr_stmt_rule'
 require_relative 'rules/statements/variable_decl_rule'
 require_relative 'rules/statements/return_rule'
@@ -90,6 +91,7 @@ module MLC
         engine.register(:expression, MLC::IRGenV2::Rules::BlockRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::DoRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::ModuleMemberRule.new)
+        engine.register(:expression, MLC::IRGenV2::Rules::MemberRule.new)
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::ExprStmtRule.new)
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::VariableDeclRule.new)
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::ReturnRule.new)
