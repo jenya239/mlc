@@ -12,7 +12,7 @@ module MLC
 
         def produce(node, context)
           svc = services(context)
-          svc.match_service.build_expression(
+          svc.match_service.build(
             node,
             expression_visitor: context.fetch(:expression_visitor),
             statement_visitor: context[:statement_visitor]

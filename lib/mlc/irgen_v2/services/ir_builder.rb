@@ -231,6 +231,10 @@ module MLC
           MLC::HighIR::Builder.match_expr(scrutinee, arms, type, origin: origin)
         end
 
+        def match_stmt(scrutinee:, arms:, origin: nil)
+          MLC::HighIR::Builder.match_stmt(scrutinee, arms, origin: origin)
+        end
+
         # Build a unit value
         def unit_literal(origin: nil)
           MLC::HighIR::UnitLiteral.new(origin: origin)

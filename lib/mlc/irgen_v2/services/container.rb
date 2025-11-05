@@ -91,6 +91,8 @@ module MLC
             ir_builder: @ir_builder,
             type_checker: @type_checker,
             var_type_registry: @var_type_registry,
+            ast_factory: @ast_factory,
+            ast_type_checker: @ast_type_checker,
             type_unification_service: @type_unification_service,
             match_analyzer: @match_analyzer
           )

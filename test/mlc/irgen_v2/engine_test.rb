@@ -421,6 +421,58 @@ module MLC
         assert_equal 2, ir.arms.length
       end
 
+      def test_lowers_match_expression_with_unit_branches_to_statement
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        factory = engine.services.ast_factory
+
+        block_body_one = factory.block_expr(
+          statements: [
+            factory.expr_stmt(expr: factory.int_literal(value: 1))
+          ],
+          result_expr: factory.unit_literal
+        )
+
+        block_body_two = factory.block_expr(
+          statements: [
+            factory.expr_stmt(expr: factory.int_literal(value: 2))
+          ],
+          result_expr: factory.unit_literal
+        )
+
+        match_ast = factory.match_expr(
+          scrutinee: factory.int_literal(value: 0),
+          arms: [
+            factory.match_arm(
+              pattern: factory.pattern_var(name: 'value'),
+              body: block_body_one
+            ),
+            factory.match_arm(
+              pattern: factory.pattern_wildcard,
+              body: block_body_two
+            )
+          ]
+        )
+
+        ir = engine.run_expression(match_ast)
+
+        assert_instance_of MLC::HighIR::BlockExpr, ir
+        assert_equal 'unit', ir.type.name
+        assert_equal 1, ir.statements.length
+
+        match_stmt = ir.statements.first
+        assert_instance_of MLC::HighIR::MatchStmt, match_stmt
+        assert_equal 2, match_stmt.arms.length
+
+        match_stmt.arms.each do |arm|
+          assert_instance_of MLC::HighIR::Block, arm[:body]
+          refute_empty arm[:body].stmts
+        end
+      end
+
       def test_handles_assignment_statement
         engine = Engine.new(
           function_registry: @function_registry,

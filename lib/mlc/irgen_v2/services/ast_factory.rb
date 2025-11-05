@@ -112,6 +112,10 @@ module MLC
         def pattern_literal(value:, origin: nil)
           MLC::AST::Pattern.new(kind: :literal, data: { value: value }, origin: origin)
         end
+
+        def pattern_var(name:, origin: nil)
+          MLC::AST::Pattern.new(kind: :var, data: { name: name }, origin: origin)
+        end
       end
     end
   end

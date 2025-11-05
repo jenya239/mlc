@@ -8,17 +8,46 @@ module MLC
     module Services
       # MatchService - Handles match expression lowering and pattern binding
       class MatchService
-        def initialize(ir_builder:, type_checker:, var_type_registry:, type_unification_service:, match_analyzer:)
+        def initialize(
+          ir_builder:,
+          type_checker:,
+          var_type_registry:,
+          ast_factory:,
+          ast_type_checker:,
+          type_unification_service:,
+          match_analyzer:
+        )
           @ir_builder = ir_builder
           @type_checker = type_checker
           @var_type_registry = var_type_registry
+          @ast_factory = ast_factory
+          @ast_type_checker = ast_type_checker
           @type_unification_service = type_unification_service
           @match_analyzer = match_analyzer
         end
 
-        def build_expression(node, expression_visitor:, statement_visitor:)
+        def build(node, expression_visitor:, statement_visitor:)
           scrutinee_ir = expression_visitor.visit(node.scrutinee)
 
+          if statement_visitor && statement_match?(node)
+            return build_statement_form(
+              node,
+              scrutinee_ir,
+              expression_visitor: expression_visitor,
+              statement_visitor: statement_visitor
+            )
+          end
+
+          build_expression_form(
+            node,
+            scrutinee_ir,
+            expression_visitor: expression_visitor
+          )
+        end
+
+        private
+
+        def build_expression_form(node, scrutinee_ir, expression_visitor:)
           analysis = @match_analyzer.analyze(
             scrutinee_type: scrutinee_ir.type,
             arms: node.arms,
@@ -30,7 +59,26 @@ module MLC
           @ir_builder.match_expr(scrutinee: scrutinee_ir, arms: analysis.arms, type: analysis.result_type, origin: node)
         end
 
-        private
+        def build_statement_form(node, scrutinee_ir, expression_visitor:, statement_visitor:)
+          arms = node.arms.map do |arm|
+            transform_statement_arm(
+              scrutinee_ir.type,
+              arm,
+              expression_visitor: expression_visitor,
+              statement_visitor: statement_visitor
+            )
+          end
+
+          match_stmt = @ir_builder.match_stmt(scrutinee: scrutinee_ir, arms: arms, origin: node)
+          unit = @ir_builder.unit_literal(origin: node)
+
+          @ir_builder.block_expr(
+            statements: [match_stmt],
+            result: unit,
+            type: unit.type,
+            origin: node
+          )
+        end
 
         def transform_expression_arm(scrutinee_type, arm, expression_visitor)
           snapshot = @var_type_registry.snapshot
@@ -40,6 +88,20 @@ module MLC
 
           guard_ir = arm[:guard] ? expression_visitor.visit(arm[:guard]) : nil
           body_ir = expression_visitor.visit(arm[:body])
+
+          { pattern: pattern_data, guard: guard_ir, body: body_ir }
+        ensure
+          @var_type_registry.restore(snapshot)
+        end
+
+        def transform_statement_arm(scrutinee_type, arm, expression_visitor:, statement_visitor:)
+          snapshot = @var_type_registry.snapshot
+
+          pattern_data = transform_pattern(arm[:pattern])
+          bind_pattern_variables(pattern_data, scrutinee_type)
+
+          guard_ir = arm[:guard] ? expression_visitor.visit(arm[:guard]) : nil
+          body_ir = build_statement_body(arm[:body], statement_visitor)
 
           { pattern: pattern_data, guard: guard_ir, body: body_ir }
         ensure
@@ -120,6 +182,49 @@ module MLC
 
         def unknown_type
           @unknown_type ||= @ir_builder.prim_type(name: 'auto')
+        end
+
+        def statement_match?(node)
+          node.arms.all? do |arm|
+            arm[:guard].nil? &&
+              statement_safe_pattern?(arm[:pattern]) &&
+              unit_branch?(arm[:body])
+          end
+        end
+
+        def statement_safe_pattern?(pattern)
+          kind = pattern&.kind
+          return false unless kind
+
+          %i[constructor wildcard var].include?(kind)
+        end
+
+        def unit_branch?(body)
+          return false unless @ast_type_checker.block_expr?(body)
+
+          result = body.result_expr
+          result && @ast_type_checker.unit_literal?(result)
+        end
+
+        def build_statement_body(body_ast, statement_visitor)
+          statements = extract_block_statements(body_ast)
+          ir_statements = statement_visitor.visit_statements(statements)
+          @ir_builder.block(statements: ir_statements, origin: body_ast)
+        end
+
+        def extract_block_statements(body_ast)
+          if @ast_type_checker.block_expr?(body_ast)
+            stmts = body_ast.statements.dup
+            if body_ast.result_expr && !@ast_type_checker.unit_literal?(body_ast.result_expr)
+              expr = body_ast.result_expr
+              stmts << @ast_factory.expr_stmt(expr: expr, origin: expr.origin)
+            end
+            stmts
+          elsif @ast_type_checker.block_statement?(body_ast)
+            body_ast.stmts
+          else
+            [@ast_factory.expr_stmt(expr: body_ast, origin: body_ast.origin)]
+          end
         end
       end
     end
