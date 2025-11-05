@@ -1,0 +1,62 @@
+# frozen_string_literal: true
+
+module MLC
+  module IRGenV2
+    module Services
+      # ASTFactory - Centralizes AST node construction for tests and rules
+      class ASTFactory
+        def int_literal(value:, origin: nil)
+          MLC::AST::IntLit.new(value: value, origin: origin)
+        end
+
+        def float_literal(value:, origin: nil)
+          MLC::AST::FloatLit.new(value: value, origin: origin)
+        end
+
+        def string_literal(value:, origin: nil)
+          MLC::AST::StringLit.new(value: value, origin: origin)
+        end
+
+        def regex_literal(pattern:, flags: "", origin: nil)
+          MLC::AST::RegexLit.new(pattern: pattern, flags: flags, origin: origin)
+        end
+
+        def unit_literal(origin: nil)
+          MLC::AST::UnitLit.new(origin: origin)
+        end
+
+        def var_ref(name:, origin: nil)
+          MLC::AST::VarRef.new(name: name, origin: origin)
+        end
+
+        def member_access(object:, member:, origin: nil)
+          MLC::AST::MemberAccess.new(object: object, member: member, origin: origin)
+        end
+
+        def call(callee:, args:, origin: nil)
+          MLC::AST::Call.new(callee: callee, args: args, origin: origin)
+        end
+
+        def unary(op:, operand:, origin: nil)
+          MLC::AST::UnaryOp.new(op: op, operand: operand, origin: origin)
+        end
+
+        def binary(op:, left:, right:, origin: nil)
+          MLC::AST::BinaryOp.new(op: op, left: left, right: right, origin: origin)
+        end
+
+        def let(name:, value:, body:, mutable: false, type: nil, origin: nil)
+          MLC::AST::Let.new(name: name, value: value, body: body, mutable: mutable, type: type, origin: origin)
+        end
+
+        def record_literal(type_name:, fields:, origin: nil)
+          MLC::AST::RecordLit.new(type_name: type_name, fields: fields, origin: origin)
+        end
+
+        def array_literal(elements:, origin: nil)
+          MLC::AST::ArrayLiteral.new(elements: elements, origin: origin)
+        end
+      end
+    end
+  end
+end
