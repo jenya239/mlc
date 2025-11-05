@@ -44,6 +44,10 @@ module MLC
           type(kind: :prim, name: name, origin: origin)
         end
 
+        def type_variable(name:, constraint: nil, origin: nil)
+          MLC::HighIR::Builder.type_variable(name, constraint: constraint, origin: origin)
+        end
+
         # Build a struct type
         def struct_type(name:, origin: nil)
           type(kind: :struct, name: name, origin: origin)
