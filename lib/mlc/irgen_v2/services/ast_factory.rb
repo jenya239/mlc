@@ -117,6 +117,14 @@ module MLC
           MLC::AST::WhileLoop.new(condition: condition, body: body, origin: origin)
         end
 
+        def block(statements:, origin: nil)
+          MLC::AST::Block.new(stmts: statements, origin: origin)
+        end
+
+        def if_stmt(condition:, then_branch:, else_branch: nil, origin: nil)
+          MLC::AST::IfStmt.new(condition: condition, then_branch: then_branch, else_branch: else_branch, origin: origin)
+        end
+
         def match_expr(scrutinee:, arms:, origin: nil)
           MLC::AST::MatchExpr.new(scrutinee: scrutinee, arms: arms, origin: origin)
         end

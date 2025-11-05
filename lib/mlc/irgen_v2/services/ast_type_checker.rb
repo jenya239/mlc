@@ -144,7 +144,7 @@ module MLC
 
         # Check if node is an if statement
         def if_statement?(node)
-          node.is_a?(MLC::AST::If)
+          node.is_a?(MLC::AST::IfStmt)
         end
 
         # Check if node is a while statement

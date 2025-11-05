@@ -149,6 +149,10 @@ module MLC
           MLC::HighIR::Builder.if_expr(cond, then_branch, else_branch, type, origin: origin)
         end
 
+        def if_stmt(condition:, then_body:, else_body:, origin: nil)
+          MLC::HighIR::Builder.if_stmt(condition, then_body, else_body, origin: origin)
+        end
+
         # Build a while node
         def while_node(cond:, body:, origin: nil)
           MLC::HighIR::While.new(

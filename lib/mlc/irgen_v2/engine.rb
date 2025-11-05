@@ -29,6 +29,8 @@ require_relative 'rules/statements/return_rule'
 require_relative 'rules/statements/assignment_rule'
 require_relative 'rules/statements/break_rule'
 require_relative 'rules/statements/continue_rule'
+require_relative 'rules/statements/if_rule'
+require_relative 'rules/statements/for_rule'
 require_relative 'rules/statements/while_rule'
 require_relative 'visitors/expression_visitor'
 require_relative 'visitors/statement_visitor'
@@ -104,6 +106,8 @@ module MLC
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::AssignmentRule.new)
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::BreakRule.new)
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::ContinueRule.new)
+        engine.register(:statement, MLC::IRGenV2::Rules::Statements::IfRule.new)
+        engine.register(:statement, MLC::IRGenV2::Rules::Statements::ForRule.new)
         engine.register(:statement, MLC::IRGenV2::Rules::Statements::WhileRule.new)
         engine
       end

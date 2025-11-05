@@ -30,6 +30,10 @@
   - `ListComprehensionService` leverages loop helpers to derive element types and build `ListCompExpr`.  
   - Engine now covers lambdas and list comprehensions with regression tests.
 
+- **Statement coverage**  
+  - Added declarative statement rules for `if`/`for`, reusing loop helpers for scope management.  
+  - Statement visitor dispatch now routes these constructs through the rule engine; tests assert `HighIR::IfStmt` and `ForStmt` generation.
+
 - **AST abstraction hygiene**  
   - Loop/while/assignment/return rules route all node-shape checks through `ASTTypeChecker`.  
   - `ASTFactory` exposes pattern helpers (`match_arm`, `pattern_var`, etc.) so specs and rules avoid class names.

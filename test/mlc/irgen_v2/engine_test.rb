@@ -200,6 +200,76 @@ module MLC
         assert_equal 1, ir.filters.length
       end
 
+      def test_handles_if_statement
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        builder = engine.services.ir_builder
+        bool_type = builder.prim_type(name: 'bool')
+        engine.services.var_type_registry.set('flag', bool_type)
+
+        factory = engine.services.ast_factory
+        then_block = factory.block(
+          statements: [factory.expr_stmt(expr: factory.int_literal(value: 1))]
+        )
+        else_block = factory.block(
+          statements: [factory.expr_stmt(expr: factory.int_literal(value: 0))]
+        )
+
+        if_stmt = factory.if_stmt(
+          condition: factory.var_ref(name: 'flag'),
+          then_branch: then_block,
+          else_branch: else_block
+        )
+
+        block_ast = factory.block_expr(
+          statements: [if_stmt],
+          result_expr: factory.unit_literal
+        )
+
+        ir = engine.run_expression(block_ast)
+        assert_instance_of MLC::HighIR::BlockExpr, ir
+        assert_instance_of MLC::HighIR::IfStmt, ir.statements.first
+      end
+
+      def test_handles_for_statement
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        builder = engine.services.ir_builder
+        array_type = builder.array_type(element_type: builder.prim_type(name: 'i32'))
+        engine.services.var_type_registry.set('numbers', array_type)
+
+        factory = engine.services.ast_factory
+        body_block = factory.block(
+          statements: [factory.expr_stmt(expr: factory.var_ref(name: 'item'))]
+        )
+
+        for_stmt = factory.for_loop(
+          var_name: 'item',
+          iterable: factory.var_ref(name: 'numbers'),
+          body: body_block
+        )
+
+        block_ast = factory.block_expr(
+          statements: [for_stmt],
+          result_expr: factory.unit_literal
+        )
+
+        ir = engine.run_expression(block_ast)
+
+        assert_instance_of MLC::HighIR::BlockExpr, ir
+        loop_stmt = ir.statements.first
+        assert_instance_of MLC::HighIR::ForStmt, loop_stmt
+        assert_equal 'item', loop_stmt.var_name
+        assert_instance_of MLC::HighIR::Block, loop_stmt.body
+        refute engine.services.var_type_registry.has?('item')
+      end
+
       def test_handles_literal_expression
         engine = Engine.new(
           function_registry: @function_registry,
