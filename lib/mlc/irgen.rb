@@ -571,6 +571,8 @@ module MLC
         nested.statements
       end
 
+      # Phase 25-C Part 2: Made public for rule access (temporary until Phase 25-D)
+      # Simple loop depth counter for break/continue validation
       def within_loop_scope
         @loop_depth ||= 0
         @loop_depth += 1

@@ -1,0 +1,208 @@
+Да, и PHP, и V8 используют очень похожие концепции! Давайте посмотрим:
+
+## PHP (Zend Engine)
+
+PHP использует **классическую Visitor-based архитектуру** с несколькими IR:
+
+```c
+// PHP проходит через несколько стадий
+// 1. AST
+struct _zend_ast {
+    zend_ast_kind kind;
+    zend_ast_attr attr;
+    uint32_t lineno;
+    zend_ast *child[1];
+};
+
+// 2. Visitors для анализа
+void zend_compile_top_stmt(zend_ast *ast) {
+    // Visitor pattern
+    switch (ast->kind) {
+        case ZEND_AST_FUNC_DECL:
+            zend_compile_func_decl(NULL, ast, 1);
+            break;
+        case ZEND_AST_CLASS:
+            zend_compile_class_decl(NULL, ast, 1);
+            break;
+        // ...
+    }
+}
+
+// 3. Services через глобальный контекст
+struct _zend_compiler_globals {
+    zend_stack loop_var_stack;     // Стек переменных циклов
+    zend_class_entry *active_class_entry;  // Текущий класс
+    HashTable *function_table;     // Таблица функций (Service!)
+    HashTable *class_table;        // Таблица классов (Service!)
+    zend_arena *arena;             // Memory allocator (Service!)
+};
+
+// 4. Opcodes (их MIR/LIR)
+struct _zend_op {
+    const void *handler;  // Указатель на обработчик
+    znode_op op1;
+    znode_op op2;
+    znode_op result;
+    uint32_t extended_value;
+    uint32_t lineno;
+    zend_uchar opcode;    // ZEND_ADD, ZEND_ASSIGN, etc
+    zend_uchar op1_type;
+    zend_uchar op2_type;
+    zend_uchar result_type;
+};
+```
+
+PHP даже имеет **оптимизирующие проходы** как rules:
+
+```c
+// Optimizer passes (похоже на наши rules!)
+typedef struct _zend_optimizer_ctx {
+    HashTable *script;
+    HashTable **constants;
+    zend_long optimization_level;
+} zend_optimizer_ctx;
+
+// Различные оптимизации как отдельные passes
+void zend_optimizer_pass1(zend_op_array *op_array, zend_optimizer_ctx *ctx);  // Constant folding
+void zend_optimizer_pass2(zend_op_array *op_array, zend_optimizer_ctx *ctx);  // Dead code elimination
+void zend_optimizer_pass3(zend_op_array *op_array, zend_optimizer_ctx *ctx);  // Jump optimization
+// ...
+```
+
+## V8 JavaScript Engine
+
+V8 ещё ближе к нашей архитектуре - у них **многоуровневый pipeline** с чёткими IR:
+
+```cpp
+// V8 имеет несколько уровней представления:
+
+// 1. AST
+class AstNode : public ZoneObject {
+  public:
+    virtual void Accept(AstVisitor* v) = 0;  // Visitor pattern!
+    // ...
+};
+
+// 2. Ignition Bytecode (первый IR)
+// Интерпретируемый bytecode
+class BytecodeGenerator : public AstVisitor {
+    // Visitor, который генерирует bytecode из AST
+    void VisitVariableDeclaration(VariableDeclaration* decl) override;
+    void VisitFunctionDeclaration(FunctionDeclaration* decl) override;
+    void VisitCall(Call* call) override;
+    
+    // Services
+    BytecodeArrayBuilder* builder_;  // Строитель байткода
+    CompilationInfo* info_;          // Контекст компиляции
+    Scope* scope_;                   // Таблица символов
+};
+
+// 3. TurboFan IR (Sea of Nodes для оптимизаций)
+namespace compiler {
+    // Многоуровневый IR в TurboFan
+    class JSGraph {  // High-level operations
+        Node* JSCall(Node* function, Node* receiver, ...);
+        Node* JSLoadProperty(Node* object, Node* key);
+    };
+    
+    class MachineGraph {  // Low-level operations
+        Node* Int32Add(Node* left, Node* right);
+        Node* Load(MachineType type, Node* base, Node* offset);
+    };
+    
+    // Оптимизации как отдельные passes
+    class Pipeline {
+        void Run() {
+            // Последовательность проходов
+            RunPhase<GraphBuilderPhase>();     // AST → Graph
+            RunPhase<InliningPhase>();         // Инлайнинг
+            RunPhase<TyperPhase>();            // Type inference
+            RunPhase<TypedLoweringPhase>();    // High → Low operations
+            RunPhase<SimplifiedLoweringPhase>(); // Simplified → Machine
+            RunPhase<InstructionSelectionPhase>(); // Выбор инструкций
+            RunPhase<RegisterAllocationPhase>();   // Распределение регистров
+        }
+    };
+}
+```
+
+V8 использует **Services** для хранения состояния:
+
+```cpp
+// Isolate - главный контейнер services
+class Isolate {
+    Heap* heap_;                        // Memory management
+    CompilationCache* compilation_cache_; // Кэш компиляций
+    Builtins* builtins_;                // Встроенные функции
+    ThreadLocalTop thread_local_top_;   // Стек выполнения
+    HandleScopeData handle_scope_data_; // Управление объектами
+    
+    // Статистика и профилирование
+    RuntimeProfiler* runtime_profiler_;
+    CompilationStatistics* compilation_stats_;
+};
+
+// CompilationInfo - контекст компиляции (как наш Services)
+class CompilationInfo {
+    ParseInfo* parse_info_;
+    Isolate* isolate_;
+    Zone* zone_;  // Memory allocator
+    
+    // Флаги и опции
+    bool is_optimizing_compile_;
+    bool is_native_context_independent_;
+};
+```
+
+## Сравнение с нашей архитектурой:
+
+| Аспект | Наша архитектура | PHP | V8 |
+|--------|------------------|-----|-----|
+| **Visitors** | ✅ Есть | ✅ `zend_compile_*` | ✅ `AstVisitor`, `BytecodeGenerator` |
+| **Services** | ✅ Контейнер | ✅ `compiler_globals` | ✅ `Isolate`, `CompilationInfo` |
+| **Rules** | ✅ Декларативные | ⚠️ Императивные passes | ⚠️ Phase-based pipeline |
+| **Несколько IR** | ✅ AST→HIR→MIR | ✅ AST→Opcodes | ✅ AST→Bytecode→Nodes→Machine |
+| **Оптимизации** | ✅ Отдельные passes | ✅ optimizer_pass1,2,3... | ✅ Phases в Pipeline |
+
+## Что интересного можно взять:
+
+### Из PHP:
+```c
+// PHP умно использует арены для аллокаций
+typedef struct _zend_arena {
+    char *ptr;
+    char *end;
+    struct _zend_arena *prev;
+} zend_arena;
+
+// Все временные объекты компиляции в одной арене
+// В конце компиляции - освобождаем всю арену разом!
+```
+
+### Из V8:
+```cpp
+// V8 использует "Sea of Nodes" для оптимизаций
+// Вместо дерева - граф с зависимостями
+Node* effect_chain = graph->start();
+Node* load1 = graph->NewNode(op_load, base, offset, effect_chain);
+Node* add = graph->NewNode(op_add, load1, constant);
+Node* store = graph->NewNode(op_store, base, offset2, add, load1);
+
+// Это позволяет легко делать:
+// - Dead code elimination (нет путей к узлу = мёртвый код)
+// - Common subexpression elimination (одинаковые узлы = один узел)
+// - Instruction scheduling (переупорядочивание по зависимостям)
+```
+
+## Практический вывод:
+
+И PHP, и V8 по сути используют ту же архитектуру, что мы обсуждали:
+
+1. **AST + Visitors** для первичного анализа
+2. **Services/Context** для хранения состояния компиляции
+3. **Несколько уровней IR** для разных стадий оптимизации
+4. **Passes/Phases** вместо монолитного компилятора
+
+Главное отличие - они не используют декларативные rules, а пишут императивный код. Но концептуально это очень похоже!
+
+Хотите, покажу как адаптировать какую-то конкретную технику из V8 или PHP для вашего компилятора?

@@ -1,0 +1,525 @@
+Отличный вопрос! Есть несколько фреймворков, но большинство либо слишком тяжеловесные, либо не для Ruby. Давайте разберём варианты:
+
+## Готовые фреймворки
+
+### 1. **LLVM** (C++, есть Ruby биндинги)
+```ruby
+# ruby-llvm gem
+require 'llvm/core'
+
+module MyCompiler
+  def self.compile_to_llvm(ast)
+    LLVM.init_jit
+    
+    mod = LLVM::Module.new("my_module")
+    builder = LLVM::Builder.new
+    
+    # Но это только последний этап!
+    # AST → HIR → MIR - придётся писать самому
+    # LLVM это только MIR → Machine Code
+  end
+end
+
+# Плюсы: мощные оптимизации, много таргетов
+# Минусы: только низкоуровневый IR, сложный API
+```
+
+### 2. **Truffle/GraalVM** (Ruby)
+```ruby
+# TruffleRuby framework
+class MyLanguage < TruffleLanguage
+  class MyNode < Node
+    def execute(frame)
+      # Truffle сам строит IR и оптимизирует
+    end
+  end
+end
+
+# Плюсы: JIT, полиглот, готовая VM
+# Минусы: привязан к JVM, сложный
+```
+
+### 3. **Nanopass Framework** (Scheme → Ruby порт)
+```ruby
+# Есть попытки портировать, но не production-ready
+class NanopassCompiler
+  define_language L0 do
+    terminals
+      integer: /\d+/
+      variable: /[a-z]+/
+    
+    nonterminals
+      Expr: [
+        integer,
+        variable,
+        [:let, variable, Expr, Expr],
+        [:+, Expr, Expr]
+      ]
+  end
+  
+  define_pass desugar: L0 => L1 do
+    Expr: {
+      [:let, var, val, body] => [:app, [:lambda, var, body], val]
+    }
+  end
+end
+
+# Плюсы: элегантный, академически обоснованный
+# Минусы: нет готового Ruby порта
+```
+
+### 4. **Cranelift** (Rust, можно обернуть)
+```rust
+// Более простая альтернатива LLVM
+use cranelift::prelude::*;
+
+// Но опять же - это только codegen backend
+// Всё остальное писать самому
+```
+
+## Полу-готовые решения для Ruby
+
+### 1. **Parslet** + самописный pipeline
+```ruby
+# Parslet для парсинга, остальное - сами
+require 'parslet'
+
+class MyCompiler
+  def initialize
+    @parser = MyParser.new  # Parslet
+    @transformer = MyTransformer.new  # Parslet::Transform
+    # Дальше всё руками...
+  end
+end
+```
+
+### 2. **RLTK** (Ruby Language Toolkit)
+```ruby
+# gem install rltk
+require 'rltk'
+
+class MyCompiler < RLTK::Parser
+  # Парсер есть
+  production(:expr) do
+    clause('NUM') { |n| AST::Number.new(n) }
+    clause('expr PLUS expr') { |l, _, r| AST::Add.new(l, r) }
+  end
+  
+  # Но IR, passes, services - нет!
+end
+```
+
+## Создаём свой мини-фреймворк
+
+Учитывая отсутствие идеального решения, вот минималистичный фреймворк:
+
+```ruby
+# compiler_framework.rb - базовый фреймворк (~500 строк)
+
+module CompilerFramework
+  # Базовый класс для IR узлов
+  class IRNode
+    include Visitable
+    
+    attr_accessor :metadata, :type, :location
+    
+    def initialize(**attrs)
+      attrs.each { |k, v| instance_variable_set("@#{k}", v) }
+      @metadata = {}
+      @id = SecureRandom.hex(8)
+    end
+    
+    def replace_with(node)
+      # Магия для in-place замены
+      instance_variables.each { |var| remove_instance_variable(var) }
+      node.instance_variables.each do |var|
+        instance_variable_set(var, node.instance_variable_get(var))
+      end
+      self
+    end
+  end
+  
+  # DSL для определения IR
+  class IRBuilder
+    def self.define_ir(name, &block)
+      mod = Module.new
+      builder = new(mod)
+      builder.instance_eval(&block)
+      const_set(name, mod)
+      mod
+    end
+    
+    def initialize(mod)
+      @module = mod
+    end
+    
+    def node(name, *fields)
+      klass = Class.new(IRNode) do
+        attr_accessor *fields
+        
+        define_method :initialize do |*args, **kwargs|
+          if args.any?
+            fields.zip(args).each { |f, v| send("#{f}=", v) }
+          else
+            kwargs.each { |k, v| send("#{k}=", v) }
+          end
+          super()
+        end
+        
+        define_method :children do
+          fields.map { |f| send(f) }.select { |v| v.is_a?(IRNode) }
+        end
+      end
+      
+      @module.const_set(name, klass)
+    end
+  end
+  
+  # Visitor pattern
+  module Visitable
+    def accept(visitor)
+      method = "visit_#{self.class.name.split('::').last.downcase}"
+      if visitor.respond_to?(method)
+        visitor.send(method, self)
+      else
+        visitor.visit_default(self)
+      end
+    end
+  end
+  
+  class Visitor
+    def visit(node)
+      return unless node
+      result = node.accept(self)
+      visit_children(node) unless result == :skip_children
+      result
+    end
+    
+    def visit_children(node)
+      node.children.each { |child| visit(child) }
+    end
+    
+    def visit_default(node)
+      # По умолчанию - обход детей
+    end
+  end
+  
+  # Services container
+  class Services
+    def initialize
+      @services = {}
+    end
+    
+    def register(name, service)
+      @services[name] = service
+    end
+    
+    def [](name)
+      @services[name] || raise("Service #{name} not found")
+    end
+    
+    def method_missing(name, *args)
+      return @services[name] if @services.key?(name)
+      super
+    end
+  end
+  
+  # Rules engine
+  class Rules
+    def initialize(&block)
+      @rules = []
+      instance_eval(&block) if block
+    end
+    
+    def rule(name, pattern, &action)
+      @rules << Rule.new(name, pattern, action)
+    end
+    
+    def apply(node, services = nil)
+      @rules.each do |rule|
+        if result = rule.match_and_apply(node, services)
+          return result
+        end
+      end
+      
+      # Рекурсивно для детей
+      if node.respond_to?(:children)
+        node.children.each do |child|
+          if new_child = apply(child, services)
+            child.replace_with(new_child)
+          end
+        end
+      end
+      
+      nil
+    end
+    
+    class Rule
+      def initialize(name, pattern, action)
+        @name = name
+        @pattern = pattern
+        @action = action
+      end
+      
+      def match_and_apply(node, services)
+        if matches = match(node, @pattern)
+          @action.call(node, matches, services)
+        end
+      end
+      
+      private
+      
+      def match(node, pattern)
+        case pattern
+        when Class
+          node.is_a?(pattern) ? {} : nil
+        when Symbol
+          { pattern => node }
+        when Proc
+          pattern.call(node) ? {} : nil
+        when Hash
+          pattern.all? { |k, v| 
+            node.respond_to?(k) && match(node.send(k), v)
+          } ? {} : nil
+        else
+          node == pattern ? {} : nil
+        end
+      end
+    end
+  end
+  
+  # Pass manager
+  class PassManager
+    attr_reader :passes
+    
+    def initialize
+      @passes = []
+    end
+    
+    def add_pass(name, type, &block)
+      @passes << Pass.new(name, type, block)
+    end
+    
+    def run(ir, services)
+      @passes.each do |pass|
+        puts "Running pass: #{pass.name}" if $DEBUG
+        ir = pass.run(ir, services)
+      end
+      ir
+    end
+    
+    class Pass
+      attr_reader :name, :type
+      
+      def initialize(name, type, block)
+        @name = name
+        @type = type
+        @block = block
+      end
+      
+      def run(ir, services)
+        case @type
+        when :visitor
+          visitor = @block.call(services)
+          visitor.visit(ir)
+          ir
+        when :transformer
+          @block.call(ir, services)
+        when :optimizer
+          optimizer = @block.call(services)
+          optimizer.optimize(ir)
+        else
+          @block.call(ir, services)
+        end
+      end
+    end
+  end
+  
+  # Главный класс компилятора
+  class Compiler
+    attr_reader :services, :passes
+    
+    def initialize
+      @services = Services.new
+      @passes = {}
+      
+      # Регистрируем стандартные сервисы
+      @services.register(:diagnostics, [])
+      @services.register(:symbols, {})
+      @services.register(:types, {})
+    end
+    
+    def define_pipeline(name, &block)
+      manager = PassManager.new
+      manager.instance_eval(&block)
+      @passes[name] = manager
+    end
+    
+    def run_pipeline(name, input)
+      raise "Pipeline #{name} not found" unless @passes[name]
+      @passes[name].run(input, @services)
+    end
+    
+    def compile(source, target: :cpp)
+      ast = parse(source)
+      hir = run_pipeline(:ast_to_hir, ast)
+      mir = run_pipeline(:hir_to_mir, hir)
+      
+      case target
+      when :cpp
+        run_pipeline(:mir_to_cpp, mir)
+      when :bytecode
+        run_pipeline(:mir_to_bytecode, mir)
+      else
+        raise "Unknown target: #{target}"
+      end
+    end
+  end
+end
+```
+
+## Использование фреймворка
+
+```ruby
+# my_compiler.rb
+require_relative 'compiler_framework'
+
+class MyCompiler < CompilerFramework::Compiler
+  include CompilerFramework
+  
+  # Определяем IR уровни
+  HIR = IRBuilder.define_ir :HIR do
+    node :Program, :functions
+    node :Function, :name, :params, :body, :return_type
+    node :Let, :name, :value
+    node :Call, :func, :args
+    node :Closure, :captures, :params, :body
+    node :If, :cond, :then_branch, :else_branch
+  end
+  
+  MIR = IRBuilder.define_ir :MIR do
+    node :BasicBlock, :label, :instructions, :terminator
+    node :Alloc, :size, :align
+    node :Store, :ptr, :value
+    node :Load, :ptr
+    node :Branch, :cond, :true_block, :false_block
+    node :Return, :value
+  end
+  
+  def initialize
+    super
+    
+    # Определяем pipeline AST → HIR
+    define_pipeline :ast_to_hir do
+      # Visitor для анализа
+      add_pass :resolve_names, :visitor do |services|
+        NameResolver.new(services)
+      end
+      
+      add_pass :infer_types, :visitor do |services|
+        TypeInferencer.new(services)
+      end
+      
+      # Transformer с правилами
+      add_pass :desugar, :transformer do |ast, services|
+        rules = Rules.new do
+          # Pipe operator
+          rule :pipe, AST::Pipe do |node|
+            HIR::Call.new(node.right, [node.left])
+          end
+          
+          # Pattern matching
+          rule :match, AST::Match do |node|
+            build_if_chain(node.arms)
+          end
+        end
+        
+        rules.apply(ast, services)
+      end
+    end
+    
+    # Pipeline HIR → MIR
+    define_pipeline :hir_to_mir do
+      add_pass :lower, :transformer do |hir, services|
+        LoweringRules.new.apply(hir, services)
+      end
+      
+      add_pass :build_cfg, :transformer do |mir, services|
+        CFGBuilder.new(services).build(mir)
+      end
+      
+      add_pass :construct_ssa, :optimizer do |services|
+        SSAConstructor.new(services)
+      end
+    end
+    
+    # Pipeline MIR → C++
+    define_pipeline :mir_to_cpp do
+      add_pass :generate, :transformer do |mir, services|
+        CppGenerator.new(services).generate(mir)
+      end
+    end
+  end
+end
+
+# Использование
+compiler = MyCompiler.new
+result = compiler.compile(source_code, target: :cpp)
+```
+
+## Альтернатива: Минималистичный подход
+
+Если не хотите фреймворк, вот простейшая архитектура:
+
+```ruby
+# just_enough_compiler.rb - всё в одном файле
+class Compiler
+  def compile(source)
+    # 1. Parse
+    ast = Parser.new.parse(source)
+    
+    # 2. Однопроходная компиляция с контекстом
+    ctx = Context.new
+    output = []
+    
+    compile_node(ast, ctx, output)
+    
+    output.join("\n")
+  end
+  
+  private
+  
+  def compile_node(node, ctx, out)
+    case node.type
+    when :function
+      ctx.enter_function(node.name)
+      out << "#{node.return_type} #{node.name}(#{node.params}) {"
+      compile_node(node.body, ctx, out)
+      out << "}"
+      ctx.exit_function
+      
+    when :let
+      type = ctx.infer_type(node.value)
+      ctx.define_var(node.name, type)
+      out << "#{type} #{node.name} = #{compile_expr(node.value, ctx)};"
+      
+    when :closure
+      # Сразу компилируем в C++ lambda
+      captures = ctx.find_captures(node)
+      out << "[#{captures.join(',')}](#{node.params}) {"
+      compile_node(node.body, ctx, out)
+      out << "}"
+    end
+  end
+end
+```
+
+## Рекомендация:
+
+1. **Для прототипа** - пишите простой однопроходный компилятор
+2. **Для production** - создайте свой мини-фреймворк (200-500 строк)
+3. **LLVM/MLIR** - только если нужна серьёзная оптимизация и много таргетов
+
+Большинство успешных компиляторов (Go, Rust до LLVM, V) начинали со своего простого фреймворка.
+
+Хотите, покажу как написать минимальный работающий фреймворк для вашего случая за ~300 строк?

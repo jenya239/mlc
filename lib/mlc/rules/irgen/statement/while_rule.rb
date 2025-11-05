@@ -40,7 +40,8 @@ module MLC
                         body_stmts.is_a?(Array) ? wrap_in_block(body_stmts) : body_stmts
                       else
                         # Legacy path: Transform to BlockExpr within loop scope
-                        transformer.send(:within_loop_scope) do
+                        # Phase 25-C Part 2: Migrated from transformer.send() to public method
+                        transformer.within_loop_scope do
                           transformer.send(:transform_statement_block, node.body, preserve_scope: true)
                         end
                       end

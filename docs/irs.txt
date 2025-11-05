@@ -1,0 +1,816 @@
+Отличный вопрос! Давайте спроектируем уровни IR с учётом всех трёх целей (C++, VM, ELF).
+
+## Стратегия: правильные уровни абстракции
+
+### Принцип разделения IR
+
+```ruby
+# Каждый IR решает конкретную задачу
+IR_LEVELS = {
+  ast:     "Синтаксис языка, как написал пользователь",
+  hir:     "High-level IR - семантика без синтаксического сахара", 
+  mir:     "Mid-level IR - явные типы, без высокоуровневых конструкций",
+  lir:     "Low-level IR - близко к машине, но платформо-независимо",
+  backend: "Target-specific - C++, bytecode или машинный код"
+}
+```
+
+## Архитектура с 4 уровнями IR
+
+### 1. AST → HIR (десугаринг)
+
+```ruby
+# AST: как написал пользователь
+module AST
+  class PipeOp < Node
+    # data |> filter(x > 0) |> map(x * 2)
+    attr_reader :left, :right
+  end
+  
+  class MatchExpr < Node
+    # match x { Some(y) => y, None => 0 }
+    attr_reader :expr, :arms
+  end
+end
+
+# HIR: десугаренный, но высокоуровневый
+module HIR
+  # Pipe превратился в вызовы
+  class Call < Node
+    # map(filter(data, lambda1), lambda2)
+    attr_reader :func, :args, :type
+  end
+  
+  # Match превратился в if-else цепочку
+  class If < Node
+    attr_reader :cond, :then_branch, :else_branch, :type
+  end
+  
+  # Важно: сохраняем высокоуровневую семантику!
+  class Closure < Node
+    attr_reader :captures, :params, :body
+  end
+  
+  class Array < Node
+    # Ещё знаем что это массив, не указатель
+    attr_reader :elements, :element_type
+  end
+end
+```
+
+### 2. HIR → MIR (понижение уровня)
+
+```ruby
+# MIR: Explicit memory, но platform-independent
+module MIR  
+  # Closure превратилось в struct + function
+  class Struct < Node
+    attr_reader :fields
+  end
+  
+  class Function < Node
+    attr_reader :params, :locals, :body
+    # Уже есть явные локальные переменные
+  end
+  
+  # Array превратился в память
+  class Alloc < Node
+    attr_reader :size, :align
+  end
+  
+  class Load < Node
+    attr_reader :ptr, :offset, :type
+  end
+  
+  class Store < Node
+    attr_reader :ptr, :offset, :value
+  end
+  
+  # Control flow стал явным
+  class BasicBlock < Node
+    attr_reader :label, :instructions, :terminator
+  end
+  
+  class Branch < Node
+    attr_reader :cond, :true_block, :false_block
+  end
+  
+  # Важно для оптимизаций
+  class Phi < Node
+    # SSA form для оптимизаций
+    attr_reader :incoming
+  end
+end
+```
+
+### 3. MIR → LIR (близко к машине)
+
+```ruby
+# LIR: Almost machine code, but portable
+module LIR
+  # Регистры, но абстрактные
+  class VirtualRegister
+    attr_reader :id, :type
+  end
+  
+  # Инструкции близки к ассемблеру
+  class Add < Instruction
+    attr_reader :dst, :src1, :src2
+  end
+  
+  class LoadImm < Instruction
+    attr_reader :dst, :value
+  end
+  
+  class Call < Instruction
+    attr_reader :target, :args, :result
+    # Calling convention уже определена
+  end
+  
+  class StackAlloc < Instruction
+    attr_reader :size, :align
+  end
+  
+  # Но всё ещё платформо-независимо!
+  # Нет x86-specific инструкций
+end
+```
+
+### 4. LIR → Backend Specific
+
+```ruby
+# Теперь расходимся по таргетам
+module Backend
+  module Cpp
+    class CppAST
+      # Генерируем читаемый C++
+      class Variable < Node
+        attr_reader :type, :name, :init
+      end
+      
+      class Lambda < Node  
+        # C++ lambdas
+      end
+    end
+  end
+  
+  module Bytecode
+    OPCODES = {
+      LOAD_CONST: 0x01,
+      LOAD_LOCAL: 0x02,
+      STORE_LOCAL: 0x03,
+      CALL_FUNC: 0x10,
+      RETURN: 0x20
+    }
+    
+    class Instruction
+      attr_reader :opcode, :args
+    end
+  end
+  
+  module X86_64
+    class MachineInstr
+      # mov rax, [rbp-8]
+      attr_reader :opcode, :operands
+    end
+    
+    class Register
+      # Реальные регистры
+      RAX = 0
+      RBX = 1
+      # ...
+    end
+  end
+end
+```
+
+## Как решить, какой IR нужен
+
+### Вопросы для каждого уровня:
+
+```ruby
+class IRLevelAnalyzer
+  def need_hir?
+    # Нужен HIR если:
+    questions = {
+      "Есть синтаксический сахар?" => true,  # |>, ?., etc
+      "Есть макросы/templates?" => true,
+      "Нужны высокоуровневые оптимизации?" => true, # inline, devirt
+      "Хотим сохранить семантику для отладки?" => true
+    }
+    
+    questions.values.any?
+  end
+  
+  def need_mir?
+    # Нужен MIR если:
+    questions = {
+      "Хотим SSA оптимизации?" => true,  # dead code, const prop
+      "Нужен анализ памяти?" => true,     # escape analysis
+      "Несколько backend'ов?" => true,    # C++, VM, native
+      "Сложный lifetime анализ?" => true
+    }
+    
+    questions.values.any?
+  end
+  
+  def need_lir?
+    # Нужен LIR если:
+    questions = {
+      "Генерируем машинный код?" => true,
+      "Нужен register allocation?" => true,
+      "Хотим instruction selection?" => true,
+      "Портируемость между CPU?" => true
+    }
+    
+    questions.values.any?
+  end
+end
+```
+
+## Примеры из реальных компиляторов
+
+### Rust: HIR → MIR → LLVM IR
+
+```rust
+// Rust HIR - десугаренный, но высокоуровневый
+// Rust MIR - control flow graph, borrowck работает тут
+// LLVM IR - финальная кодогенерация
+```
+
+### Go: AST → SSA → Machine code
+
+```go
+// Go проще - сразу из AST в SSA
+// SSA IR используется и для оптимизаций, и для кодогена
+```
+
+### V8: AST → Bytecode + Turbofan IR
+
+```javascript
+// JavaScript AST → Ignition bytecode (для интерпретатора)
+//              → Turbofan Sea of Nodes (для JIT)
+// Два разных IR для разных целей!
+```
+
+## Рекомендация для вашего проекта
+
+```ruby
+# Минимальный набор для ваших целей
+class FlowCompilerPipeline
+  # 1. AST - из парсера
+  # 2. HIR - десугаренный, типизированный
+  # 3. MIR - memory-explicit, SSA form
+  # Далее развилка:
+  # 4a. C++ AST - для читаемого C++
+  # 4b. Bytecode - для VM  
+  # 4c. LIR → x86 - для нативной генерации
+  
+  def compile(ast, target: :cpp)
+    # AST → HIR
+    hir = lower_to_hir(ast)
+    hir = optimize_hir(hir)  # Инлайнинг, девиртуализация
+    
+    # HIR → MIR  
+    mir = lower_to_mir(hir)
+    mir = optimize_mir(mir)  # Const propagation, DCE
+    
+    # MIR → Target
+    case target
+    when :cpp
+      cpp_ast = mir_to_cpp(mir)
+      emit_cpp_files(cpp_ast)
+      
+    when :bytecode
+      bytecode = mir_to_bytecode(mir)
+      emit_bytecode_file(bytecode)
+      
+    when :native
+      lir = mir_to_lir(mir)
+      lir = register_allocate(lir)
+      machine_code = select_instructions(lir)
+      emit_elf(machine_code)
+    end
+  end
+end
+```
+
+## Структуры данных для IR
+
+```ruby
+# Универсальный базовый класс
+class IRNode
+  attr_reader :id, :type, :metadata
+  
+  def initialize
+    @id = SecureRandom.uuid
+    @metadata = {
+      source_location: nil,
+      original_name: nil,
+      debug_info: nil,
+      attributes: []  # inline, pure, noreturn, etc
+    }
+  end
+end
+
+# HIR сохраняет много информации
+class HIRNode < IRNode
+  attr_reader :semantic_type  # Пользовательский тип
+  attr_reader :effects        # Побочные эффекты
+  attr_reader :purity         # Чистая функция?
+end
+
+# MIR более низкоуровневый
+class MIRNode < IRNode  
+  attr_reader :machine_type   # i32, f64, ptr
+  attr_reader :memory_effects # Читает/пишет память?
+  attr_reader :basic_block    # Принадлежность к блоку
+end
+
+# LIR почти машинный
+class LIRNode < IRNode
+  attr_reader :registers      # Используемые регистры
+  attr_reader :stack_slots    # Слоты на стеке
+  attr_reader :latency        # Латентность инструкции
+end
+```
+
+## Тестирование IR уровней
+
+```ruby
+# Каждый уровень можно тестировать отдельно
+class IRTester
+  def test_hir_lowering
+    ast = parse("x |> f |> g")
+    hir = lower_to_hir(ast)
+    
+    assert_equal "Call", hir.type
+    assert_equal "g", hir.func.name
+    assert_equal "Call", hir.args[0].type
+    assert_equal "f", hir.args[0].func.name
+  end
+  
+  def test_mir_lowering
+    hir = HIR::Closure.new(
+      captures: [:x],
+      params: [:y],
+      body: HIR::Add.new(:x, :y)
+    )
+    
+    mir = lower_to_mir(hir)
+    
+    assert_equal "Struct", mir.type
+    assert_equal [:x], mir.fields
+    assert_equal "Function", mir.associated_func.type
+  end
+  
+  def test_round_trip
+    # HIR → MIR → HIR должно сохранять семантику
+    original = create_hir_program()
+    mir = lower_to_mir(original)
+    restored = raise_to_hir(mir)  # Если возможно
+    
+    assert_semantically_equal original, restored
+  end
+end
+```
+
+## Итоговая рекомендация:
+
+**Для вашего проекта достаточно 3 уровня:**
+
+1. **AST** → парсинг
+2. **HIR** → семантический анализ, десугаринг  
+3. **MIR** → оптимизации, общий для всех бэкендов
+4. **Target** → C++ / Bytecode / x86
+
+**HIR критичен** для сохранения семантики для VM.
+**MIR критичен** для переиспользования оптимизаций между бэкендами.
+**LIR нужен только** если сами генерируете машинный код.
+
+Хотите, покажу конкретный пример lowering'а между уровнями?
+
+
+
+
+Отличный вопрос! Тут есть несколько стратегий. Давайте разберём варианты:
+
+## Стратегия 1: Отдельные компоненты для каждого перехода
+
+```ruby
+# Каждый переход - это отдельный pipeline
+class CompilerPipeline
+  # AST → HIR
+  class ASTToHIR
+    def initialize
+      @services = {
+        symbols: SymbolTable.new,      # Специфичен для AST
+        types: TypeInferencer.new       # Работает на AST
+      }
+      
+      @visitors = [
+        NameResolver.new(@services),   # Резолвит имена в AST
+        TypeChecker.new(@services)      # Проверяет типы в AST
+      ]
+      
+      @rules = DesuggarRules.new        # AST patterns → HIR nodes
+    end
+    
+    def lower(ast)
+      # Сначала анализ
+      @visitors.each { |v| v.visit(ast) }
+      
+      # Потом трансформация
+      HIRBuilder.new(@services, @rules).build(ast)
+    end
+  end
+  
+  # HIR → MIR  
+  class HIRToMIR
+    def initialize(global_context)
+      @services = {
+        memory: MemoryLayout.new,      # Специфичен для MIR
+        blocks: CFGBuilder.new,         # Control flow graph
+        ssa: SSAConstructor.new         # SSA form
+      }
+      
+      @rules = LoweringRules.new       # HIR patterns → MIR instructions
+    end
+    
+    def lower(hir)
+      MIRBuilder.new(@services, @rules).build(hir)
+    end
+  end
+  
+  # MIR → Backends
+  class MIRToTarget
+    # ...
+  end
+end
+```
+
+## Стратегия 2: Общие services, разные rules
+
+```ruby
+# Services живут через весь pipeline
+class GlobalServices
+  attr_reader :symbols, :types, :constants, :diagnostics
+  
+  def initialize
+    @symbols = SymbolTable.new
+    @types = TypeRegistry.new
+    @constants = ConstantPool.new
+    @diagnostics = DiagnosticEngine.new
+    
+    # Метаданные для всех уровней
+    @metadata = {}
+  end
+  
+  # Каждый IR может добавлять свои данные
+  def for_ir(ir_level)
+    @metadata[ir_level] ||= {}
+  end
+end
+
+# Но rules специфичны для перехода
+class Lowering
+  def initialize(services)
+    @services = services  # Общие services
+  end
+  
+  def ast_to_hir
+    rules = Rules.new do
+      # Правила AST → HIR
+      rule :pipe_op do |node|
+        # x |> f → f(x)
+        HIR::Call.new(node.right, [lower(node.left)])
+      end
+      
+      rule :match_expr do |node|
+        # match → if-else chain
+        build_if_chain(node.arms)
+      end
+    end
+    
+    apply_rules(rules, ast)
+  end
+  
+  def hir_to_mir
+    rules = Rules.new do
+      # Правила HIR → MIR
+      rule :closure do |node|
+        # Closure → struct + function
+        struct = MIR::Struct.new(node.captures)
+        func = MIR::Function.new(node.params, node.body)
+        MIR::ClosurePair.new(struct, func)
+      end
+      
+      rule :array_literal do |node|
+        # [1,2,3] → alloc + stores
+        size = node.elements.length * node.element_type.size
+        alloc = MIR::Alloc.new(size)
+        stores = node.elements.map.with_index do |elem, i|
+          MIR::Store.new(alloc, i * elem.size, elem)
+        end
+        MIR::Sequence.new([alloc] + stores)
+      end
+    end
+    
+    apply_rules(rules, hir)
+  end
+end
+```
+
+## Стратегия 3: Унифицированный подход (мой любимый)
+
+```ruby
+# Один движок трансформации, настраиваемый для каждого перехода
+class UnifiedTransformer
+  def initialize(global_services)
+    @services = global_services
+    @passes = []
+  end
+  
+  # Конфигурируем для конкретного перехода
+  def configure_for(transition)
+    case transition
+    when :ast_to_hir
+      @passes = [
+        # Visitors для анализа AST
+        Pass.new(:analyze, NameResolver),
+        Pass.new(:analyze, TypeInferencer),
+        
+        # Rules для трансформации
+        Pass.new(:transform, DesuggarRules),
+        Pass.new(:transform, LowerControlFlow),
+        
+        # Visitors для валидации HIR
+        Pass.new(:validate, HIRVerifier)
+      ]
+      
+    when :hir_to_mir
+      @passes = [
+        # Подготовка
+        Pass.new(:analyze, EscapeAnalysis),
+        Pass.new(:analyze, PurityAnalysis),
+        
+        # Трансформация
+        Pass.new(:transform, LowerClosures),
+        Pass.new(:transform, LowerArrays),
+        Pass.new(:transform, BuildCFG),
+        Pass.new(:transform, ConstructSSA),
+        
+        # Оптимизация
+        Pass.new(:optimize, ConstantPropagation),
+        Pass.new(:optimize, DeadCodeElimination),
+        
+        # Валидация
+        Pass.new(:validate, MIRVerifier)
+      ]
+      
+    when :mir_to_cpp
+      @passes = [
+        Pass.new(:transform, MIRToCppRules),
+        Pass.new(:optimize, CppPrettifier),
+        Pass.new(:emit, CppEmitter)
+      ]
+    end
+    
+    self
+  end
+  
+  def transform(input_ir)
+    current = input_ir
+    
+    @passes.each do |pass|
+      case pass.type
+      when :analyze
+        # Visitor - только анализирует
+        visitor = pass.klass.new(@services)
+        visitor.visit(current)
+        
+      when :transform
+        # Rules - трансформирует
+        rules = pass.klass.new(@services)
+        current = rules.apply(current)
+        
+      when :optimize
+        # Optimizer - улучшает
+        opt = pass.klass.new(@services)
+        current = opt.optimize(current)
+        
+      when :validate
+        # Validator - проверяет инварианты
+        validator = pass.klass.new(@services)
+        validator.validate(current)
+        
+      when :emit
+        # Emitter - генерирует выход
+        emitter = pass.klass.new(@services)
+        return emitter.emit(current)
+      end
+      
+      # Сохраняем промежуточные результаты для отладки
+      @services.save_intermediate(pass.name, current) if debug?
+    end
+    
+    current
+  end
+end
+```
+
+## Практический пример: компиляция замыкания
+
+```ruby
+# Покажем, как одно выражение проходит через все уровни
+source = "let add = |x| |y| x + y"
+
+# 1. AST (из парсера)
+ast = AST::Let.new(
+  name: "add",
+  value: AST::Lambda.new(
+    params: ["x"],
+    body: AST::Lambda.new(
+      params: ["y"], 
+      body: AST::BinOp.new("+", 
+        AST::Var.new("x"),
+        AST::Var.new("y")
+      )
+    )
+  )
+)
+
+# 2. AST → HIR (десугаринг + типизация)
+class ASTToHIR
+  def transform(ast)
+    # Services для этого уровня
+    @symbols.enter_scope
+    @symbols.define("add", type: :pending)
+    
+    # Применяем rules
+    hir = @rules.apply(ast) do |node|
+      case node
+      when AST::Lambda
+        # Анализируем captures
+        captures = find_free_vars(node.body) - node.params
+        HIR::Closure.new(
+          captures: captures,
+          params: node.params,
+          body: transform(node.body),
+          type: @types.infer_closure_type(node)
+        )
+      when AST::Var
+        HIR::VarRef.new(
+          name: node.name,
+          type: @symbols.lookup(node.name).type,
+          is_captured: @current_closure&.captures?(node.name)
+        )
+      end
+    end
+    
+    # Services сохраняют информацию для следующих уровней
+    @services.metadata[:closures] = @closure_info
+    hir
+  end
+end
+
+# Результат HIR
+hir = HIR::Let.new(
+  name: "add",
+  type: "(i32) -> (i32) -> i32",
+  value: HIR::Closure.new(
+    captures: [],
+    params: ["x"],
+    body: HIR::Closure.new(
+      captures: ["x"],  # Захватывает x!
+      params: ["y"],
+      body: HIR::Add.new(
+        HIR::VarRef.new("x", :i32, captured: true),
+        HIR::VarRef.new("y", :i32, captured: false)
+      )
+    )
+  )
+)
+
+# 3. HIR → MIR (lowering closures)
+class HIRToMIR
+  def transform(hir)
+    # Новые services для MIR
+    @memory = MemoryLayout.new
+    @blocks = CFGBuilder.new
+    
+    mir = @rules.apply(hir) do |node|
+      case node
+      when HIR::Closure
+        # Closure становится struct + function
+        if node.captures.any?
+          # Создаём структуру для captures
+          struct_ty = MIR::StructType.new(
+            fields: node.captures.map { |c| 
+              [c, @types.type_of(c)]
+            }
+          )
+          
+          # Функция принимает структуру первым параметром
+          func = MIR::Function.new(
+            params: [[:env, struct_ty]] + node.params,
+            body: transform_with_env(node.body),
+            attrs: [:closure_function]
+          )
+          
+          # Аллокация и инициализация
+          MIR::Sequence.new([
+            MIR::Alloc.new(struct_ty.size, :heap),
+            MIR::InitStruct.new(struct_ty, node.captures),
+            MIR::MakeClosure.new(func, struct_ty)
+          ])
+        else
+          # Простая функция без captures
+          MIR::Function.new(
+            params: node.params,
+            body: transform(node.body)
+          )
+        end
+      end
+    end
+    
+    # SSA construction
+    @ssa.construct(mir)
+    mir
+  end
+end
+
+# Результат MIR
+mir = MIR::Block.new(
+  label: :entry,
+  instructions: [
+    # add_closure1_env struct
+    MIR::StructDef.new("add_closure1_env", []),
+    
+    # add_closure1_fn function
+    MIR::FunctionDef.new("add_closure1_fn",
+      params: [:x],
+      body: [
+        # Аллоцируем struct для внутреннего closure
+        MIR::Alloc.new(:heap, 4),  # size of i32
+        MIR::Store.new(:ptr, 0, :x),
+        MIR::Return.new(:ptr)
+      ]
+    ),
+    
+    # add_closure2_env struct  
+    MIR::StructDef.new("add_closure2_env", [[:x, :i32]]),
+    
+    # add_closure2_fn function
+    MIR::FunctionDef.new("add_closure2_fn",
+      params: [:env, :y],
+      body: [
+        MIR::Load.new(:tmp1, :env, 0),  # load x
+        MIR::Add.new(:tmp2, :tmp1, :y),
+        MIR::Return.new(:tmp2)
+      ]
+    )
+  ]
+)
+```
+
+## Рекомендация: гибридный подход
+
+```ruby
+class CompilerDesign
+  # Глобальные services - живут через весь pipeline
+  GLOBAL_SERVICES = [
+    :symbols,      # Таблица символов
+    :types,        # Типы и их отношения
+    :diagnostics,  # Ошибки и предупреждения
+    :source_map    # Маппинг обратно к исходному коду
+  ]
+  
+  # Локальные services - для конкретных переходов
+  TRANSITION_SERVICES = {
+    ast_to_hir: [:name_resolver, :type_inferencer],
+    hir_to_mir: [:memory_layout, :cfg_builder, :ssa_constructor],
+    mir_to_cpp: [:cpp_formatter, :include_collector],
+    mir_to_vm:  [:constant_pool, :bytecode_builder],
+    mir_to_elf: [:register_allocator, :instruction_selector]
+  }
+  
+  # Rules - всегда специфичны для перехода
+  TRANSITION_RULES = {
+    ast_to_hir: [:desugar, :lower_control_flow],
+    hir_to_mir: [:lower_closures, :lower_arrays, :build_cfg],
+    mir_to_cpp: [:emit_cpp_ast, :prettify],
+    mir_to_vm:  [:emit_bytecode, :optimize_jumps],
+    mir_to_elf: [:select_instructions, :peephole]
+  }
+end
+```
+
+## Ключевые выводы:
+
+1. **Services** могут быть общими (symbols, types) или специфичными (register_allocator)
+2. **Rules** всегда специфичны для конкретного перехода
+3. **Visitors** используются для анализа внутри уровня
+4. **Каждый переход** - это мини-компилятор со своей логикой
+
+Хотите, покажу как организовать тестирование такой многоуровневой системы?

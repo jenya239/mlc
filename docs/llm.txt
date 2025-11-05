@@ -1,0 +1,155 @@
+Отличный вопрос! Да и нет - тут есть интересные нюансы:
+
+## Что LLM знают хорошо
+
+### Поверхностный уровень - отлично:
+```python
+# LLM легко напишут базовый visitor
+class ASTVisitor:
+    def visit_BinaryOp(self, node):
+        self.visit(node.left)
+        self.visit(node.right)
+        
+# Или простой recursive descent parser
+def parse_expr():
+    left = parse_term()
+    while current_token in ['+', '-']:
+        op = current_token
+        advance()
+        right = parse_term()
+        left = BinaryOp(op, left, right)
+    return left
+```
+
+### Стандартные паттерны - тоже знают:
+- Dragon Book алгоритмы
+- LLVM API базовое использование
+- Типичные оптимизации (constant folding, DCE)
+- Классические структуры (AST, CFG, SSA)
+
+## Где начинаются проблемы
+
+### 1. **Тонкости реальных компиляторов**
+```rust
+// LLM может не знать, почему в rustc именно такая последовательность:
+// AST → HIR (зачем?) → THIR (что это?) → MIR (почему не сразу?) → LLVM IR
+
+// Или почему V8 имеет именно такие уровни:
+// AST → Ignition Bytecode (интерпретатор)
+//     ↘ TurboFan Sea of Nodes (JIT)
+//       ↘ Maglev (средний уровень JIT) - зачем три уровня?
+```
+
+### 2. **Неочевидные архитектурные решения**
+```cpp
+// Почему GHC использует STG (Spineless Tagless G-machine)?
+// Почему OCaml использует Flambda IR для оптимизаций?
+// Почему Cranelift выбрал e-graphs вместо традиционных passes?
+```
+
+### 3. **Современные исследования**
+- Equality saturation для оптимизаций (egg)
+- Correctness by construction (CompCert)
+- Incremental computation (Salsa, rustc query system)
+- Effect systems в компиляторах
+
+## Что LLM "галлюцинируют"
+
+### Несуществующие API:
+```python
+# LLM может придумать:
+from llvm import IRBuilder, OptimizationPass  # Такого модуля нет!
+
+# Или смешать API разных проектов:
+builder.CreateCall(callee, args)  # LLVM C++
+builder.call(callee, *args)       # Какой-то Python binding
+builder.emit_call(callee, args)   # Выдумка
+```
+
+### Неправильные детали:
+```ruby
+# "В Ruby MRI используется трёхадресный код" - неверно
+# "V8 компилирует прямо в машинный код" - упрощение
+# "Rust использует region-based memory в MIR" - не совсем так
+```
+
+## Почему так происходит
+
+### 1. **Обучающие данные**:
+- Много учебных примеров (простые)
+- Мало production кода компиляторов (сложные)
+- Stack Overflow - часто устаревшее или упрощённое
+
+### 2. **Противоречивая информация**:
+```
+"Visitor pattern is the best for compilers" - учебники
+"We moved away from visitors" - современные компиляторы
+"Visitors are making a comeback" - новейшие подходы
+```
+
+### 3. **Эволюция подходов**:
+```
+GCC: Monolithic → Passes → Plugins
+LLVM: Clean design → Complex reality
+V8: Simple JIT → Adaptive multi-tier
+Rust: Simple → HIR/MIR → Polonius → ...
+```
+
+## Как эффективно использовать LLM
+
+### ✅ Хорошо для:
+```python
+# Прототипирование
+"Напиши visitor для подсчёта узлов AST"
+"Покажи пример SSA construction"
+"Объясни dominator tree"
+
+# Стандартные алгоритмы
+"Реализуй FIRST/FOLLOW sets"
+"Покажи LR parser"
+"Как работает mark-and-sweep GC"
+```
+
+### ⚠️ Проверяйте:
+```python
+# Специфику реальных систем
+"Как rustc делает borrow checking" - проверьте с документацией
+"Архитектура GraalVM" - может быть устаревшим
+"Оптимизации в Go compiler" - детали могут быть неточными
+```
+
+### ❌ Не доверяйте полностью:
+```python
+# Тонкости production компиляторов
+"Почему WebKit выбрал именно такую архитектуру"
+"Как exactly SpiderMonkey делает shape inference"
+"Внутренние структуры данных GHC"
+```
+
+## Интересное наблюдение
+
+LLM лучше всего знают **паттерны**, но хуже понимают **trade-offs**:
+
+```python
+# LLM знает:
+def constant_folding(node):
+    if node.op == '+' and is_const(node.left) and is_const(node.right):
+        return Const(node.left.value + node.right.value)
+        
+# LLM может не знать:
+# - Когда НЕ стоит делать constant folding (floating point!)
+# - Почему некоторые компиляторы откладывают это до link time
+# - Trade-offs между compile time и optimization quality
+```
+
+## Практический совет
+
+Используйте LLM как **умного junior разработчика**:
+- Отлично для начальной имплементации
+- Хорошо для изучения концепций
+- Полезно для генерации boilerplate
+- НО всегда валидируйте с реальными источниками
+
+И помните: большинство интересных решений в компиляторах - это **не алгоритмы, а инженерные trade-offs**, которые LLM понимают хуже всего.
+
+Хотите, покажу примеры, где LLM типично ошибаются в компиляторных темах?
