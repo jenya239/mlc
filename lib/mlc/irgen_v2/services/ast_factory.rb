@@ -56,6 +56,26 @@ module MLC
         def array_literal(elements:, origin: nil)
           MLC::AST::ArrayLiteral.new(elements: elements, origin: origin)
         end
+
+        def block_expr(statements:, result_expr:, origin: nil)
+          MLC::AST::BlockExpr.new(statements: statements, result_expr: result_expr, origin: origin)
+        end
+
+        def expr_stmt(expr:, origin: nil)
+          MLC::AST::ExprStmt.new(expr: expr, origin: origin)
+        end
+
+        def variable_decl(name:, value:, mutable: false, type: nil, origin: nil)
+          MLC::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type, origin: origin)
+        end
+
+        def return_stmt(expr: nil, origin: nil)
+          MLC::AST::Return.new(expr: expr, origin: origin)
+        end
+
+        def do_expr(body:, origin: nil)
+          MLC::AST::DoExpr.new(body: body, origin: origin)
+        end
       end
     end
   end

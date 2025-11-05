@@ -9,7 +9,10 @@ module MLC
           @engine = engine
           @rule_engine = engine.rule_engine
           @services = engine.services
+          @statement_visitor = nil
         end
+
+        attr_writer :statement_visitor
 
         def visit(node, extra_context = {})
           svc = @services.ast_type_checker
@@ -18,6 +21,20 @@ module MLC
           return apply_rules(node, extra_context) if svc.var_ref?(node)
           return apply_rules(node, extra_context) if svc.member_access?(node)
           return apply_rules(node, extra_context) if svc.let?(node)
+          return apply_rules(node, extra_context) if svc.block_expr?(node)
+          return apply_rules(node, extra_context) if svc.do_expr?(node)
+
+          if svc.if_expr?(node)
+            condition_ir = visit(node.condition)
+            then_ir = visit(node.then_branch)
+            else_ir = node.else_branch ? visit(node.else_branch) : nil
+            context = extra_context.merge(
+              condition_ir: condition_ir,
+              then_ir: then_ir,
+              else_ir: else_ir
+            )
+            return apply_rules(node, context)
+          end
 
           if svc.record_literal?(node)
             fields_ir = build_record_fields(node)
@@ -97,7 +114,12 @@ module MLC
         end
 
         def base_context
-          { services: @services, expression_visitor: self, engine: @engine }
+          {
+            services: @services,
+            expression_visitor: self,
+            statement_visitor: @statement_visitor,
+            engine: @engine
+          }
         end
       end
     end

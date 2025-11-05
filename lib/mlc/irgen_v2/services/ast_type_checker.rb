@@ -60,6 +60,10 @@ module MLC
           node.is_a?(MLC::AST::Let)
         end
 
+        def if_expr?(node)
+          node.is_a?(MLC::AST::IfExpr)
+        end
+
         # Check if node is a binary operation
         def binary_op?(node)
           node.is_a?(MLC::AST::BinaryOp)
@@ -76,6 +80,26 @@ module MLC
 
         def array_literal?(node)
           node.is_a?(MLC::AST::ArrayLiteral)
+        end
+
+        def block_expr?(node)
+          node.is_a?(MLC::AST::BlockExpr)
+        end
+
+        def do_expr?(node)
+          node.is_a?(MLC::AST::DoExpr)
+        end
+
+        def expr_stmt?(node)
+          node.is_a?(MLC::AST::ExprStmt)
+        end
+
+        def variable_decl_statement?(node)
+          node.is_a?(MLC::AST::VariableDecl)
+        end
+
+        def return_statement?(node)
+          node.is_a?(MLC::AST::Return)
         end
 
         # Check if node is an if statement

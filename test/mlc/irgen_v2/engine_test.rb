@@ -332,6 +332,67 @@ module MLC
         assert_equal 2, ir.fields.size
       end
 
+      def test_handles_if_expression
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        factory = engine.services.ast_factory
+        if_ast = MLC::AST::IfExpr.new(
+          condition: factory.var_ref(name: 'true'),
+          then_branch: factory.int_literal(value: 1),
+          else_branch: factory.int_literal(value: 2)
+        )
+
+        ir = engine.run_expression(if_ast)
+        assert_instance_of MLC::HighIR::IfExpr, ir
+        assert_equal 'i32', ir.type.name
+      end
+
+      def test_handles_block_expression
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        factory = engine.services.ast_factory
+        block_ast = factory.block_expr(
+          statements: [
+            factory.variable_decl(name: 'x', value: factory.int_literal(value: 5)),
+            factory.expr_stmt(expr: factory.var_ref(name: 'x'))
+          ],
+          result_expr: factory.var_ref(name: 'x')
+        )
+
+        ir = engine.run_expression(block_ast)
+
+        assert_instance_of MLC::HighIR::BlockExpr, ir
+        assert_equal 'i32', ir.type.name
+        assert_equal 2, ir.statements.length
+        refute engine.services.var_type_registry.has?('x')
+      end
+
+      def test_handles_do_expression
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        factory = engine.services.ast_factory
+        do_ast = factory.do_expr(
+          body: [
+            factory.int_literal(value: 1),
+            factory.int_literal(value: 3)
+          ]
+        )
+
+        ir = engine.run_expression(do_ast)
+
+        assert_instance_of MLC::HighIR::BlockExpr, ir
+        assert_equal 'i32', ir.type.name
+      end
+
       def test_respects_import_aliases
         engine = Engine.new(
           function_registry: @function_registry,

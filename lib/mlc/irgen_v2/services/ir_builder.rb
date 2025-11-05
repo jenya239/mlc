@@ -116,6 +116,10 @@ module MLC
           )
         end
 
+        def if_expr(cond:, then_branch:, else_branch:, type:, origin: nil)
+          MLC::HighIR::Builder.if_expr(cond, then_branch, else_branch, type, origin: origin)
+        end
+
         # Build a while node
         def while_node(cond:, body:, origin: nil)
           MLC::HighIR::While.new(
@@ -161,12 +165,16 @@ module MLC
           )
         end
 
+        def block_expr(statements:, result:, type:, origin: nil)
+          MLC::HighIR::Builder.block_expr(statements, result, type, origin: origin)
+        end
+
         def variable_decl_stmt(name:, type:, value:, mutable: false, origin: nil)
           MLC::HighIR::Builder.variable_decl_stmt(name, type, value, mutable: mutable, origin: origin)
         end
 
-        def block_expr(statements:, result:, type:, origin: nil)
-          MLC::HighIR::Builder.block_expr(statements, result, type, origin: origin)
+        def expr_statement(expression:, origin: nil)
+          MLC::HighIR::Builder.expr_statement(expression, origin: origin)
         end
 
         # Build a variable declaration node

@@ -2,6 +2,7 @@
 
 require_relative '../../services/var_type_registry'
 require_relative '../../services/type_checker'
+require_relative '../../services/scope_context_service'
 require_relative 'module_resolver'
 require_relative 'ast_type_checker'
 require_relative 'ir_builder'
@@ -23,7 +24,8 @@ module MLC
                     :ast_type_checker, :ir_builder, :literal_processor,
                     :ast_factory, :var_type_registry, :identifier_type_resolver,
                     :type_checker, :type_decl_table, :expression_type_resolver,
-                    :high_ir_classifier, :record_literal_builder, :array_literal_builder
+                    :high_ir_classifier, :record_literal_builder, :array_literal_builder,
+                    :scope_context
 
         def initialize(function_registry:, type_registry:)
           @module_resolver = ModuleResolver.new
@@ -38,6 +40,9 @@ module MLC
             function_registry: @function_registry,
             type_decl_table: @type_decl_table,
             current_node_proc: -> { nil }
+          )
+          @scope_context = MLC::Services::TransformationContext.new(
+            var_type_registry: @var_type_registry
           )
           @expression_type_resolver = ExpressionTypeResolver.new(
             type_checker: @type_checker,
