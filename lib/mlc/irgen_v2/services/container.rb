@@ -22,6 +22,8 @@ require_relative 'lambda_service'
 require_relative 'list_comprehension_service'
 require_relative 'index_access_service'
 require_relative 'type_registration_service'
+require_relative 'type_builder'
+require_relative 'type_declaration_service'
 require_relative '../../type_system/match_analyzer'
 require_relative 'ast_factory'
 
@@ -40,7 +42,7 @@ module MLC
                     :match_analyzer, :match_service, :member_access_service,
                     :lambda_service, :list_comprehension_service, :index_access_service,
                     :module_context_service, :sum_type_constructor_service,
-                    :type_registration_service,
+                    :type_registration_service, :type_builder, :type_declaration_service,
                     :sum_type_constructors
 
         def initialize(function_registry:, type_registry:)
@@ -140,6 +142,16 @@ module MLC
             type_registry: @type_registry,
             type_decl_table: @type_decl_table,
             sum_type_constructor_service: @sum_type_constructor_service
+          )
+          @type_builder = TypeBuilder.new(
+            ir_builder: @ir_builder,
+            type_checker: @type_checker
+          )
+          @type_declaration_service = TypeDeclarationService.new(
+            type_checker: @type_checker,
+            type_builder: @type_builder,
+            type_registration_service: @type_registration_service,
+            module_context_service: @module_context_service
           )
         end
       end
