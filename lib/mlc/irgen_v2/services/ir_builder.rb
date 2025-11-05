@@ -54,6 +54,10 @@ module MLC
           MLC::HighIR::Builder.record_type(name, fields, origin: origin)
         end
 
+        def sum_type(name:, variants:, origin: nil)
+          MLC::HighIR::Builder.sum_type(name, variants, origin: origin)
+        end
+
         # Build an array type
         def array_type(element_type:, origin: nil)
           MLC::HighIR::Builder.array_type(element_type, origin: origin)

@@ -34,6 +34,10 @@
   - Added declarative statement rules for `if`/`for`, reusing loop helpers for scope management.  
   - Statement visitor dispatch now routes these constructs through the rule engine; tests assert `HighIR::IfStmt` and `ForStmt` generation.
 
+- **Import & type infrastructure**  
+  - Container now exposes module import aliasing on `ModuleResolver` and a type-registration service that wires in sum-type constructors.  
+  - Added integration tests ensuring sum variants register constructors and module aliases resolve to canonical functions.
+
 - **AST abstraction hygiene**  
   - Loop/while/assignment/return rules route all node-shape checks through `ASTTypeChecker`.  
   - `ASTFactory` exposes pattern helpers (`match_arm`, `pattern_var`, etc.) so specs and rules avoid class names.

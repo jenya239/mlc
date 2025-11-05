@@ -4,6 +4,8 @@ require_relative '../../services/var_type_registry'
 require_relative '../../services/type_checker'
 require_relative '../../services/scope_context_service'
 require_relative '../../services/type_unification_service'
+require_relative '../../services/sum_type_constructor_service'
+require_relative '../../services/module_context_service'
 require_relative 'module_resolver'
 require_relative 'ast_type_checker'
 require_relative 'ir_builder'
@@ -19,6 +21,7 @@ require_relative 'member_access_service'
 require_relative 'lambda_service'
 require_relative 'list_comprehension_service'
 require_relative 'index_access_service'
+require_relative 'type_registration_service'
 require_relative '../../type_system/match_analyzer'
 require_relative 'ast_factory'
 
@@ -36,6 +39,8 @@ module MLC
                     :scope_context, :loop_service, :type_unification_service,
                     :match_analyzer, :match_service, :member_access_service,
                     :lambda_service, :list_comprehension_service, :index_access_service,
+                    :module_context_service, :sum_type_constructor_service,
+                    :type_registration_service,
                     :sum_type_constructors
 
         def initialize(function_registry:, type_registry:)
@@ -84,6 +89,15 @@ module MLC
             scope_context: @scope_context,
             variable_types: @var_type_registry
           )
+          @module_context_service = MLC::Services::ModuleContextService.new(
+            function_registry: @function_registry
+          )
+          @sum_type_constructor_service = MLC::Services::SumTypeConstructorService.new(
+            sum_type_constructors: @sum_type_constructors,
+            function_registry: @function_registry,
+            type_decl_table: @type_decl_table,
+            type_checker: @type_checker
+          )
           @type_unification_service = MLC::Services::TypeUnificationService.new(
             type_checker: @type_checker,
             sum_type_constructors: @sum_type_constructors
@@ -121,6 +135,11 @@ module MLC
           )
           @index_access_service = IndexAccessService.new(
             type_checker: @type_checker
+          )
+          @type_registration_service = TypeRegistrationService.new(
+            type_registry: @type_registry,
+            type_decl_table: @type_decl_table,
+            sum_type_constructor_service: @sum_type_constructor_service
           )
         end
       end
