@@ -3,6 +3,7 @@
 require_relative '../../services/var_type_registry'
 require_relative '../../services/type_checker'
 require_relative '../../services/scope_context_service'
+require_relative '../../services/type_unification_service'
 require_relative 'module_resolver'
 require_relative 'ast_type_checker'
 require_relative 'ir_builder'
@@ -13,6 +14,8 @@ require_relative 'high_ir_classifier'
 require_relative 'record_literal_builder'
 require_relative 'array_literal_builder'
 require_relative 'loop_service'
+require_relative 'match_service'
+require_relative '../../type_system/match_analyzer'
 require_relative 'ast_factory'
 
 module MLC
@@ -26,7 +29,8 @@ module MLC
                     :ast_factory, :var_type_registry, :identifier_type_resolver,
                     :type_checker, :type_decl_table, :expression_type_resolver,
                     :high_ir_classifier, :record_literal_builder, :array_literal_builder,
-                    :scope_context, :loop_service
+                    :scope_context, :loop_service, :type_unification_service,
+                    :match_analyzer, :match_service, :sum_type_constructors
 
         def initialize(function_registry:, type_registry:)
           @module_resolver = ModuleResolver.new
@@ -37,6 +41,7 @@ module MLC
           @ir_builder = IRBuilder.new
           @literal_processor = LiteralProcessor.new(ir_builder: @ir_builder)
           @type_decl_table = {}
+          @sum_type_constructors = {}
           @type_checker = MLC::Services::TypeChecker.new(
             function_registry: @function_registry,
             type_decl_table: @type_decl_table,
@@ -69,8 +74,25 @@ module MLC
             ir_builder: @ir_builder,
             type_checker: @type_checker,
             ast_factory: @ast_factory,
+            ast_type_checker: @ast_type_checker,
             scope_context: @scope_context,
             variable_types: @var_type_registry
+          )
+          @type_unification_service = MLC::Services::TypeUnificationService.new(
+            type_checker: @type_checker,
+            sum_type_constructors: @sum_type_constructors
+          )
+          @match_analyzer = MLC::TypeSystem::MatchAnalyzer.new(
+            ensure_compatible_type: @type_checker.method(:ensure_compatible_type),
+            type_registry: @type_registry,
+            check_exhaustiveness: true
+          )
+          @match_service = MatchService.new(
+            ir_builder: @ir_builder,
+            type_checker: @type_checker,
+            var_type_registry: @var_type_registry,
+            type_unification_service: @type_unification_service,
+            match_analyzer: @match_analyzer
           )
         end
       end

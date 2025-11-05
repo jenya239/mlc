@@ -5,10 +5,11 @@ module MLC
     module Services
       # LoopService - helpers for for/while loop handling
       class LoopService
-        def initialize(ir_builder:, type_checker:, ast_factory:, scope_context:, variable_types:)
+        def initialize(ir_builder:, type_checker:, ast_factory:, ast_type_checker:, scope_context:, variable_types:)
           @ir_builder = ir_builder
           @type_checker = type_checker
           @ast_factory = ast_factory
+          @ast_type_checker = ast_type_checker
           @scope_context = scope_context
           @var_type_registry = variable_types
         end
@@ -24,14 +25,16 @@ module MLC
         end
 
         def normalize_loop_body(body_ast, statement_visitor)
+          checker = @ast_type_checker
+
           statements =
-            case body_ast
-            when MLC::AST::Block
+            if checker.block_statement?(body_ast)
               body_ast.stmts
-            when MLC::AST::BlockExpr
+            elsif checker.block_expr?(body_ast)
               stmts = body_ast.statements.dup
               if body_ast.result_expr
-                stmts << @ast_factory.expr_stmt(expr: body_ast.result_expr, origin: body_ast.result_expr.origin)
+                result = body_ast.result_expr
+                stmts << @ast_factory.expr_stmt(expr: result, origin: result.origin)
               end
               stmts
             else

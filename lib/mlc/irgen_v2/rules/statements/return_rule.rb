@@ -8,7 +8,7 @@ module MLC
       module Statements
         class ReturnRule < BaseRule
           def matches?(node, context)
-            node.is_a?(MLC::AST::Return)
+            services(context).ast_type_checker.return_statement?(node)
           end
 
           def produce(node, context)

@@ -64,6 +64,10 @@ module MLC
           node.is_a?(MLC::AST::IfExpr)
         end
 
+        def match_expr?(node)
+          node.is_a?(MLC::AST::MatchExpr)
+        end
+
         # Check if node is a binary operation
         def binary_op?(node)
           node.is_a?(MLC::AST::BinaryOp)
@@ -96,6 +100,10 @@ module MLC
 
         def while_loop_expr?(node)
           node.is_a?(MLC::AST::WhileLoop)
+        end
+
+        def block_statement?(node)
+          node.is_a?(MLC::AST::Block)
         end
 
         def expr_stmt?(node)
@@ -134,22 +142,7 @@ module MLC
 
         # Check if node is a for statement
         def for_statement?(node)
-          node.is_a?(MLC::AST::ForStmt)
-        end
-
-        # Check if node is a return statement
-        def return_statement?(node)
-          node.is_a?(MLC::AST::Return)
-        end
-
-        # Check if node is a break statement
-        def break_statement?(node)
-          node.is_a?(MLC::AST::Break)
-        end
-
-        # Check if node is a continue statement
-        def continue_statement?(node)
-          node.is_a?(MLC::AST::Continue)
+          node.is_a?(MLC::AST::ForLoop)
         end
 
         # Check if node is a variable declaration

@@ -1,162 +1,32 @@
-=== Session Progress: 2025-11-02 (Продолжение) ===
+=== Session Progress: 2025-11-02 ===
 
-## Завершено
+## Выполнено
 
-### 1. Stdlib Scanner Infrastructure - ПОЛНОСТЬЮ ИСПРАВЛЕНА ✅
+### 1. Match-путь перенесён в IRGen v2
+- Добавлен `MatchService` с построителем IR и привязкой типов (`lib/mlc/irgen_v2/services/match_service.rb`)
+- Контейнер и движок регистрируют анализатор и правило матчинга (`lib/mlc/irgen_v2/services/container.rb`, `lib/mlc/irgen_v2/engine.rb`)
+- Новый `MatchRule` подключён к expression-пайплайну (`lib/mlc/irgen_v2/rules/match_rule.rb`)
+- Добавлен тест, подтверждающий полный проход `match` без обращения к v1 (`test/mlc/irgen_v2/engine_test.rb`)
 
-**Файлы**:
-- `lib/mlc/services/stdlib_scanner.rb:6-15` - Added MLC.parse() forward declaration
-- `lib/mlc/services/stdlib_scanner.rb:70` - Fixed directory path (__dir__ → File.dirname(__dir__))
-- `lib/mlc/services/stdlib_resolver.rb:20` - Fixed directory path (__dir__ → File.dirname(__dir__))
+### 2. Правила и сервисы отвязаны от прямых ссылок на AST-классы
+- `ASTTypeChecker` расширен методами для `match_expr?` и `block_statement?`
+- `LoopService`, `WhileLoopRule`, `WhileRule`, `AssignmentRule`, `ReturnRule`, `StatementVisitor` используют сервисы вместо `is_a?`
+- `ExpressionVisitor` отправляет `match` в rule-engine без ручной обработки
+- IR builder получил фабрику `match_expr`, AST factory — конструкторы ARMs и паттернов
 
-**Проблема**: Scanner не мог парсить .mlc файлы и искал их в неправильной директории
+### 3. Уточнение интеграции с v1 до удаления
+- Старый `CallRule` и `MemberRule` теперь используют публичный API `module_member_function_entry` (убрана `send`)
+- Контейнер хранит `sum_type_constructors` и передаёт их в `TypeUnificationService`, подготавливая почву для удаления legacy transformer
 
-**Решение**:
-1. Добавлена forward declaration MLC.parse() для standalone использования
-2. Исправлен путь к stdlib directory в обоих сервисах
-
-**Результат**:
-```bash
-$ ruby -e "require_relative 'lib/mlc/services/stdlib_scanner'; \
-           scanner = MLC::StdlibScanner.new; \
-           scanner.scan_all; \
-           puts scanner.available_modules.sort"
-
-Array, Conv, File, Graphics, IO, Json, Math, Option, Result, String
+## Тесты
+```
+bundle exec ruby -Ilib -Itest test/mlc/irgen_v2/engine_test.rb
 ```
 
-Scanner теперь корректно находит все 10 модулей и извлекает их функции.
-
-**Commit**: 5cb0772 "fix(stdlib): resolve critical scanner infrastructure bugs"
-
-## Результаты Тестов
-
-### До исправлений
-- 1474 runs
-- 31 failures
-- 90 errors
-- **121 total issues**
-
-### После исправлений
-- 1474 runs
-- 14 failures
-- 26 errors
-- **40 total issues**
-
-### Улучшение
-- **-81 issues (-67%)**
-- Fixes устранили 2/3 ошибок
-
-## Оставшиеся Issues (40)
-
-### Категории ошибок:
-
-1. **Sum type constructors не импортируются** (5+ errors)
-   - `Unknown identifier 'Some'` - Option module
-   - `Unknown identifier 'Ok'` - Result module
-   - **Root cause**: Scanner извлекает тип `Option<T>`, но не регистрирует конструкторы вариантов `Some`/`None`
-   - **Статус**: Architectural issue - требуется расширение TypeMetadata для хранения вариантов
-
-2. **ListComprehension AST attribute mismatch** (2 errors)
-   - `undefined method 'iterator' for ListComprehension`
-   - **Root cause**: Код использует `.iterator`, но AST node имеет `.iterable`
-   - **Статус**: Требует исправления в irgen code
-
-3. **FunctionRegistry missing method** (1 error)
-   - `undefined method 'lookup' for FunctionRegistry`
-   - **Root cause**: API изменился, но не все места обновлены
-   - **Статус**: Trivial fix
-
-4. **Nil pointer errors** (3+ errors)
-   - `undefined method '[]=' for nil:NilClass`
-   - **Root cause**: Различные null safety issues
-   - **Статус**: Requires investigation
-
-5. **Type conversion errors** (1 error)
-   - `no implicit conversion of Symbol into Integer`
-   - **Root cause**: Type mismatch в record type processing
-   - **Статус**: Requires investigation
-
-6. **Other pre-existing issues** (14 failures + остальные errors)
-   - Различные edge cases в type system, pattern matching, etc.
-   - Не связаны со stdlib infrastructure
-
-## Visitor Pattern Fixes (NEW)
-
-### 3. AST Attribute Fixes
-
-**Файлы**:
-- `lib/mlc/visitors/expression_visitor.rb:335` - Fixed ForLoop `.iterator` → `.iterable`
-- `lib/mlc/visitors/expression_visitor.rb:359,361` - Fixed ListComprehension `.iterator` → `.generators[0].iterable`, `.filter` → `.filters[0]`
-- `test/mlc/rules_rule_engine_test.rb:58,60` - Fixed `.lookup()` → `.fetch()` (deprecated API)
-
-**Проблема**: Visitor использовал неправильные имена атрибутов AST nodes
-
-**Решение**: Исправлены в соответствии с фактической структурой AST
-
-**Commit**: 435ca0e "fix(visitor): correct AST attribute names for ForLoop and ListComprehension"
-
-### 4. API Compatibility Fixes
-
-**Файлы**:
-- `lib/mlc/visitors/expression_visitor.rb:215` - Fixed VarTypeRegistry API: `.register()` → `.set()`
-- `lib/mlc/rules/irgen/statement/return_rule.rb:29` - Fixed ReturnRule: `.fetch(:value_ir)` → `.fetch(:value_ir, nil)`
-
-**Проблема**: Code используетустаревшие или некорректные API
-
-**Root Causes**:
-1. VarTypeRegistry API changed from `.register()` to `.set()` but visitor wasn't updated
-2. ReturnRule expected `:value_ir` in context but it's optional for void returns
-
-**Решение**:
-1. Updated visitor to use `.set()` API
-2. Added default `nil` for optional `:value_ir` parameter
-
-**Тесты**:
-- Fixed: test_let_expression_retains_constexpr_effect
-- Fixed: test_let_lowering_generates_lambda_iife
-- Fixed: test_return_statement_in_block
-- Fixed: test_return_without_expression_in_void_function
-
-**Commit**: a9ec0c4 "fix(visitor): correct VarTypeRegistry and ReturnRule API usage"
-
-### 5. Complete VarTypeRegistry Migration in Rules
-
-**Файлы**:
-- `lib/mlc/rules/irgen/expression/list_comprehension_rule.rb:20,23,39,61` - Migrated to var_type_registry service
-- `lib/mlc/rules/irgen/expression/lambda_rule.rb:21,24,39,44,71` - Migrated to var_type_registry service
-
-**Проблема**: Rules still used deprecated `@var_types` instance variable causing nil pointer errors
-
-**Root Cause**:
-- Phase 23 migration introduced `var_type_registry` service
-- Some rules not updated: ListComprehensionRule, LambdaRule
-- Accessing `transformer.instance_variable_get(:@var_types)` returned nil
-- Caused `undefined method '[]=' for nil:NilClass` errors
-
-**Решение**:
-1. Get `var_type_registry` from transformer: `var_type_registry = transformer.instance_variable_get(:@var_type_registry)`
-2. Use `.snapshot` instead of `.dup`: `saved_var_types = var_type_registry.snapshot`
-3. Use `.set(name, type)` instead of `[name] =`: `var_type_registry.set(gen.var_name, element_type)`
-4. Use `.restore(snapshot)` instead of `.instance_variable_set`: `var_type_registry.restore(saved_var_types)`
-
-**Тесты**:
-- Fixed: All list comprehension tests (4+ tests)
-- Fixed: All lambda expression tests (3+ tests)
-- **Total: ~7 errors fixed**
-
-**Verification**:
-```bash
-$ grep -r "@var_types" lib/mlc/rules
-# No results - migration complete!
-```
-
-**Результаты**:
-- До: 40 issues (15F + 25E)
-- После: **33 issues (13F + 20E)**
-- **Улучшение: -7 issues (-17.5%)**
-
-### 6. ReturnRule API Fixes
+## Следующие шаги
+1. Добавить поддержку statement-формы матчинга (MatchStmt) в v2 сервисах
+2. Перенести оставшиеся expression/statement правила с прямыми ссылками на AST в сервисные фасады
+3. После покрытия кейсов удалить legacy `PatternMatchingTransformer` и связанные вызовы в v1
 
 **Файлы**:
 - `lib/mlc/rules/irgen/statement/return_rule.rb:18-19,31` - Fixed type_inference service usage and expression transformation

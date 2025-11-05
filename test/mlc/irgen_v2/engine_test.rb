@@ -393,6 +393,34 @@ module MLC
         assert_equal 'i32', ir.type.name
       end
 
+      def test_handles_match_expression
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        factory = engine.services.ast_factory
+        match_ast = factory.match_expr(
+          scrutinee: factory.int_literal(value: 1),
+          arms: [
+            factory.match_arm(
+              pattern: factory.pattern_literal(value: 0),
+              body: factory.int_literal(value: 0)
+            ),
+            factory.match_arm(
+              pattern: factory.pattern_wildcard,
+              body: factory.int_literal(value: 42)
+            )
+          ]
+        )
+
+        ir = engine.run_expression(match_ast)
+
+        assert_instance_of MLC::HighIR::MatchExpr, ir
+        assert_equal 'i32', ir.type.name
+        assert_equal 2, ir.arms.length
+      end
+
       def test_handles_assignment_statement
         engine = Engine.new(
           function_registry: @function_registry,

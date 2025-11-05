@@ -10,6 +10,7 @@ require_relative 'rules/let_rule'
 require_relative 'rules/record_literal_rule'
 require_relative 'rules/array_literal_rule'
 require_relative 'rules/if_rule'
+require_relative 'rules/match_rule'
 require_relative 'rules/for_loop_rule'
 require_relative 'rules/while_loop_rule'
 require_relative 'rules/call_rule'
@@ -80,6 +81,7 @@ module MLC
         engine.register(:expression, MLC::IRGenV2::Rules::RecordLiteralRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::ArrayLiteralRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::IfRule.new)
+        engine.register(:expression, MLC::IRGenV2::Rules::MatchRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::ForLoopRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::WhileLoopRule.new)
         engine.register(:expression, MLC::IRGenV2::Rules::CallRule.new)

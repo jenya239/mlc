@@ -77,7 +77,9 @@ module MLC
         end
 
         def extract_block_statements(body)
-          if body.is_a?(MLC::AST::Block)
+          checker = @services.ast_type_checker
+
+          if checker.block_statement?(body)
             body.stmts
           else
             Array(body)

@@ -227,6 +227,10 @@ module MLC
           MLC::HighIR::ArrayLiteralExpr.new(elements: elements, type: type, origin: origin)
         end
 
+        def match_expr(scrutinee:, arms:, type:, origin: nil)
+          MLC::HighIR::Builder.match_expr(scrutinee, arms, type, origin: origin)
+        end
+
         # Build a unit value
         def unit_literal(origin: nil)
           MLC::HighIR::UnitLiteral.new(origin: origin)

@@ -96,6 +96,22 @@ module MLC
         def while_loop(condition:, body:, origin: nil)
           MLC::AST::WhileLoop.new(condition: condition, body: body, origin: origin)
         end
+
+        def match_expr(scrutinee:, arms:, origin: nil)
+          MLC::AST::MatchExpr.new(scrutinee: scrutinee, arms: arms, origin: origin)
+        end
+
+        def match_arm(pattern:, body:, guard: nil)
+          { pattern: pattern, body: body, guard: guard }
+        end
+
+        def pattern_wildcard(origin: nil)
+          MLC::AST::Pattern.new(kind: :wildcard, data: {}, origin: origin)
+        end
+
+        def pattern_literal(value:, origin: nil)
+          MLC::AST::Pattern.new(kind: :literal, data: { value: value }, origin: origin)
+        end
       end
     end
   end

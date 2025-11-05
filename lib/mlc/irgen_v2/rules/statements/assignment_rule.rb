@@ -16,7 +16,7 @@ module MLC
             value_ir = context[:value_ir] || context.fetch(:expression_visitor).visit(node.value)
 
             target = node.target
-            unless target.is_a?(MLC::AST::VarRef)
+            unless svc.ast_type_checker.var_ref?(target)
               svc.type_checker.type_error('assignment target must be a variable', node: node)
             end
 

@@ -21,6 +21,7 @@ module MLC
           return apply_rules(node, extra_context) if svc.var_ref?(node)
           return apply_rules(node, extra_context) if svc.member_access?(node)
           return apply_rules(node, extra_context) if svc.let?(node)
+          return apply_rules(node, extra_context) if svc.match_expr?(node)
           return apply_rules(node, extra_context) if svc.block_expr?(node)
           return apply_rules(node, extra_context) if svc.do_expr?(node)
 
