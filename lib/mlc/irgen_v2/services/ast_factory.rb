@@ -33,6 +33,10 @@ module MLC
           MLC::AST::MemberAccess.new(object: object, member: member, origin: origin)
         end
 
+        def index_access(object:, index:, origin: nil)
+          MLC::AST::IndexAccess.new(object: object, index: index, origin: origin)
+        end
+
         def call(callee:, args:, origin: nil)
           MLC::AST::Call.new(callee: callee, args: args, origin: origin)
         end

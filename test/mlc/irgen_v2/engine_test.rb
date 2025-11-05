@@ -119,6 +119,29 @@ module MLC
         assert_equal 'string', ir.type.name
       end
 
+      def test_handles_array_index_access
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        builder = engine.services.ir_builder
+        array_type = builder.array_type(element_type: builder.prim_type(name: 'i32'))
+        engine.services.var_type_registry.set('values', array_type)
+        engine.services.var_type_registry.set('i', builder.prim_type(name: 'i32'))
+
+        factory = engine.services.ast_factory
+        index_ast = factory.index_access(
+          object: factory.var_ref(name: 'values'),
+          index: factory.var_ref(name: 'i')
+        )
+
+        ir = engine.run_expression(index_ast)
+
+        assert_instance_of MLC::HighIR::IndexExpr, ir
+        assert_equal 'i32', ir.type.name
+      end
+
       def test_handles_literal_expression
         engine = Engine.new(
           function_registry: @function_registry,

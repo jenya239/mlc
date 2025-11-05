@@ -16,6 +16,7 @@ require_relative 'array_literal_builder'
 require_relative 'loop_service'
 require_relative 'match_service'
 require_relative 'member_access_service'
+require_relative 'index_access_service'
 require_relative '../../type_system/match_analyzer'
 require_relative 'ast_factory'
 
@@ -32,6 +33,7 @@ module MLC
                     :high_ir_classifier, :record_literal_builder, :array_literal_builder,
                     :scope_context, :loop_service, :type_unification_service,
                     :match_analyzer, :match_service, :member_access_service,
+                    :index_access_service,
                     :sum_type_constructors
 
         def initialize(function_registry:, type_registry:)
@@ -103,6 +105,9 @@ module MLC
             type_registry: @type_registry,
             type_decl_table: @type_decl_table,
             ir_builder: @ir_builder
+          )
+          @index_access_service = IndexAccessService.new(
+            type_checker: @type_checker
           )
         end
       end

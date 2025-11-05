@@ -21,6 +21,10 @@
   - Declarative MemberRule covers non-module accesses; module detection stays in ModuleMemberRule.  
   - Regression tests ensure record fields, array helpers, and string utilities return expected HighIR types.
 
+- **Index access support**  
+  - `IndexAccessService` validates array index operations and produces `HighIR::IndexExpr`.  
+  - Rule/visitor wiring keeps array indexing declarative; new test covers typed element lookup.
+
 - **AST abstraction hygiene**  
   - Loop/while/assignment/return rules route all node-shape checks through `ASTTypeChecker`.  
   - `ASTFactory` exposes pattern helpers (`match_arm`, `pattern_var`, etc.) so specs and rules avoid class names.

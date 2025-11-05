@@ -100,6 +100,15 @@ module MLC
           MLC::HighIR::Builder.member(object, member, type, origin: origin)
         end
 
+        def index(object:, index:, type:, origin: nil)
+          MLC::HighIR::IndexExpr.new(
+            object: object,
+            index: index,
+            type: type,
+            origin: origin
+          )
+        end
+
         # Build an if node
         def if_node(cond:, then_branch:, else_branch:, type:, origin: nil)
           MLC::HighIR::If.new(
