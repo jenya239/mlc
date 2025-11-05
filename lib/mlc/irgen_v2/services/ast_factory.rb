@@ -76,6 +76,18 @@ module MLC
         def do_expr(body:, origin: nil)
           MLC::AST::DoExpr.new(body: body, origin: origin)
         end
+
+        def assignment(target:, value:, origin: nil)
+          MLC::AST::Assignment.new(target: target, value: value, origin: origin)
+        end
+
+        def break_stmt(origin: nil)
+          MLC::AST::Break.new(origin: origin)
+        end
+
+        def continue_stmt(origin: nil)
+          MLC::AST::Continue.new(origin: origin)
+        end
       end
     end
   end

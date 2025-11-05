@@ -393,6 +393,30 @@ module MLC
         assert_equal 'i32', ir.type.name
       end
 
+      def test_handles_assignment_statement
+        engine = Engine.new(
+          function_registry: @function_registry,
+          type_registry: @type_registry
+        )
+
+        factory = engine.services.ast_factory
+        block_ast = factory.block_expr(
+          statements: [
+            factory.variable_decl(name: 'x', value: factory.int_literal(value: 1)),
+            factory.assignment(
+              target: factory.var_ref(name: 'x'),
+              value: factory.int_literal(value: 2)
+            )
+          ],
+          result_expr: factory.var_ref(name: 'x')
+        )
+
+        ir = engine.run_expression(block_ast)
+        assert_equal 'i32', ir.type.name
+        assert_instance_of MLC::HighIR::VarExpr, ir.result
+        assert_equal 'x', ir.result.name
+      end
+
       def test_respects_import_aliases
         engine = Engine.new(
           function_registry: @function_registry,

@@ -177,6 +177,10 @@ module MLC
           MLC::HighIR::Builder.expr_statement(expression, origin: origin)
         end
 
+        def assignment_stmt(target:, value:, origin: nil)
+          MLC::HighIR::Builder.assignment_stmt(target, value, origin: origin)
+        end
+
         # Build a variable declaration node
         def var_decl(name:, value:, type:, origin: nil)
           MLC::HighIR::VarDecl.new(

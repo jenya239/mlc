@@ -102,6 +102,18 @@ module MLC
           node.is_a?(MLC::AST::Return)
         end
 
+        def assignment_statement?(node)
+          node.is_a?(MLC::AST::Assignment)
+        end
+
+        def break_statement?(node)
+          node.is_a?(MLC::AST::Break)
+        end
+
+        def continue_statement?(node)
+          node.is_a?(MLC::AST::Continue)
+        end
+
         # Check if node is an if statement
         def if_statement?(node)
           node.is_a?(MLC::AST::If)

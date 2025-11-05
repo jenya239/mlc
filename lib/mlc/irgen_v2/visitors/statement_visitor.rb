@@ -31,6 +31,15 @@ module MLC
             return apply_rule(node, value_ir: value_ir)
           end
 
+          if svc.assignment_statement?(node)
+            value_ir = @expression_visitor.visit(node.value)
+            return apply_rule(node, value_ir: value_ir)
+          end
+
+          if svc.break_statement?(node) || svc.continue_statement?(node)
+            return apply_rule(node)
+          end
+
           raise MLC::CompileError, "StatementVisitor cannot handle #{node.class}"
         end
 
