@@ -41,7 +41,7 @@ module MLC
           func_items: [],
           module_name: module_name,
           import_aliases: {},
-          user_module_imports: []  # Phase 23-D: Store deferred user module imports
+          user_module_imports: []  # legacy – retained for compatibility but unused in v2 path
         }
 
         @module_context_service.with_current_module(module_name) do
@@ -78,19 +78,16 @@ module MLC
         program = context[:program]
 
         program.imports.each do |import_decl|
-          context[:import_aliases][import_decl.alias] = import_decl.path if import_decl.alias
           context[:imports] << HighIR::Import.new(
             path: import_decl.path,
             items: import_decl.items
           )
 
-          if @stdlib_resolver.stdlib_module?(import_decl.path)
-            # Stdlib imports can be processed immediately (functions pre-registered)
-            register_stdlib_imports(import_decl)
-          else
-            # Phase 23-D: Defer user module imports until functions are registered
-            context[:user_module_imports] << import_decl
-          end
+          @import_service.process(
+            import_decl,
+            function_registry: @function_registry,
+            type_registry: @type_registry
+          )
         end
       end
 
@@ -102,6 +99,9 @@ module MLC
         program.declarations.each do |decl|
           next unless decl.is_a?(AST::TypeDecl)
           @type_decl_table[decl.name] = decl
+
+          type_decl_ir = @type_declaration_service.build(decl)
+          context[:type_items] << type_decl_ir
         end
       end
 
@@ -119,29 +119,8 @@ module MLC
       # Phase 23-D: NEW PASS - Process deferred user module imports
       # Phase 24-B: Load .mlcmeta files before registering import aliases
       # Now that functions are registered, we can create import aliases
-      def pass_register_import_aliases(context)
-        context[:user_module_imports].each do |import_decl|
-          # Phase 24-B: Load metadata from .mlcmeta file
-          metadata_path = resolve_metadata_path(import_decl.path)
-          if metadata_path && File.exist?(metadata_path)
-            @metadata_loader_service.load(metadata_path)
-          else
-            # Metadata file not found - imports will fail during alias registration
-            # This allows for better error messages from register_module_import
-          end
-
-          register_module_import(import_decl, context[:module_name])
-        end
-      end
-
-      # Resolve .mlcmeta file path from import path
-      # Converts module path to filesystem path
-      # Example: "Math::Vector" -> "./Math/Vector.mlcmeta"
-      def resolve_metadata_path(import_path)
-        # Convert module path separator (::) to filesystem separator (/)
-        file_path = import_path.gsub('::', '/')
-        # Look for .mlcmeta file in current directory
-        "./#{file_path}.mlcmeta"
+      def pass_register_import_aliases(_context)
+        # Legacy hook retained for compatibility; imports handled eagerly in pass_collect_imports.
       end
 
       # Pass 5: Lower declarations
@@ -152,8 +131,6 @@ module MLC
         program.declarations.each do |decl|
           case decl
           when AST::TypeDecl
-            type_decl = transform_type_decl(decl)
-            context[:type_items] << type_decl
             @type_resolution_service.refresh_function_signatures!(decl.name)
           when AST::FuncDecl
             context[:func_items] << transform_function(decl)
