@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require "minitest/autorun"
-require_relative "../../lib/mlc"
+require_relative "../test_helper"
 
 class MLCIntegrationTest < Minitest::Test
   def test_example_1_simple_function

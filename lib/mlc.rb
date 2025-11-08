@@ -1,18 +1,20 @@
 # frozen_string_literal: true
 
 require_relative "mlc/ast/nodes"
-require_relative "mlc/high_ir/nodes"
-require_relative "mlc/high_ir/builder"
+require_relative "mlc/semantic_ir/nodes"
+require_relative "mlc/semantic_ir/builder"
+require_relative "mlc/function_signature"
+require_relative "mlc/semantic_gen"
 require_relative "mlc/event_bus"
 require_relative "mlc/diagnostics/event_logger"
 require_relative "mlc/diagnostics/formatter"
 require_relative "mlc/diagnostics/structured_logger"
+require_relative "mlc/error_handling/enhanced_errors"
 require_relative "mlc/analysis/base_pass"
 require_relative "mlc/pass_manager"
 require_relative "mlc/application"
 require_relative "mlc/parser/lexer"
 require_relative "mlc/parser/parser"
-require_relative "mlc/irgen"
 require_relative "mlc/backend/codegen"
 require_relative "mlc/backend/header_generator"
 require_relative "mlc/codegen/metadata_generator"
@@ -20,6 +22,10 @@ require_relative "mlc/services/stdlib_resolver"
 require_relative "mlc/services/stdlib_scanner"
 require_relative "mlc/services/stdlib_signature_registry"
 require_relative "mlc/function_registry"
+require_relative "mlc/type_system/type_constraint_solver"
+require_relative "mlc/type_system/generic_call_resolver"
+require_relative "mlc/type_system/match_analyzer"
+require_relative "mlc/type_system/effect_analyzer"
 
 module MLC
   class ParseError < StandardError; end
@@ -57,7 +63,7 @@ module MLC
       stdlib_scanner = StdlibScanner.new
       to_core = app.build_to_core
 
-      # 3. Transform to HighIR (with type_registry)
+      # 3. Transform to SemanticIR (with type_registry)
       core_ir, type_registry, function_registry = transform_to_core_with_registry(ast, transformer: to_core)
 
       # 4. Lower to C++ AST (with shared type_registry and stdlib_scanner)
@@ -80,7 +86,7 @@ module MLC
       raise ParseError, "Parse error: #{e.message}"
     end
     
-    # Transform Aurora AST to HighIR
+    # Transform Aurora AST to SemanticIR
     # For backward compatibility, returns just core_ir
     # Use transform_to_core_with_registry if you need the type_registry
     def transform_to_core(ast)
@@ -88,9 +94,9 @@ module MLC
       core_ir
     end
 
-    # Transform Aurora AST to HighIR (with TypeRegistry)
+    # Transform Aurora AST to SemanticIR (with TypeRegistry)
     # Returns: [core_ir, type_registry]
-    def transform_to_core_with_registry(ast, transformer: IRGen.new)
+    def transform_to_core_with_registry(ast, transformer: SemanticGen::Pipeline.new)
       core_ir = transformer.transform(ast)
       [core_ir, transformer.type_registry, transformer.function_registry]
     rescue CompileError
@@ -100,8 +106,8 @@ module MLC
       raise CompileError.new("Transform error: #{e.message}", origin: origin)
     end
 
-    # Lower HighIR to C++ AST
-    # @param core_ir [HighIR::Module] HighIR module
+    # Lower SemanticIR to C++ AST
+    # @param core_ir [SemanticIR::Module] SemanticIR module
     # @param type_registry [TypeRegistry] Shared type registry from ToCore
     # @param stdlib_scanner [StdlibScanner] Scanner for automatic stdlib function resolution
     # @param runtime_policy [Backend::RuntimePolicy] Policy for choosing lowering strategies
@@ -131,7 +137,7 @@ module MLC
     # Returns: { header: String, implementation: String, metadata: Hash }
     # Phase 24-A: Added metadata generation
     def to_hpp_cpp(source, filename: nil, runtime_policy: nil)
-      # Parse and transform to HighIR
+      # Parse and transform to SemanticIR
       ast = parse(source, filename: filename)
       core_ir, type_registry, function_registry = transform_to_core_with_registry(ast)
 
@@ -162,4 +168,10 @@ module MLC
       raise CompileError.new(message, origin: origin)
     end
   end
+  
+  IRGen = SemanticGen::Pipeline
+  MLCSyntaxError = AuroraSyntaxError
+  MLCTypeError = AuroraTypeError
+  MLCScopeError = AuroraScopeError
+  MLCImportError = AuroraImportError
 end

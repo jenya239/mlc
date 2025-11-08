@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
-require "minitest/autorun"
+if ENV["TEST_AUDIT_NO_AUTORUN"] == "1"
+  require "minitest"
+  require "minitest/test"
+else
+  require "minitest/autorun"
+end
 require "minitest/pride"
 require_relative "../lib/cpp_ast"
 require_relative "../lib/mlc"

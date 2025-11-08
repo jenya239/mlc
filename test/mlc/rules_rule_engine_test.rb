@@ -9,7 +9,7 @@ class RulesRuleEngineTest < Minitest::Test
     end
 
     def applies?(node, _context = {})
-      node.is_a?(MLC::HighIR::Func)
+      node.is_a?(MLC::SemanticIR::Func)
     end
 
     def apply(node, _context = {})
@@ -37,22 +37,19 @@ class RulesRuleEngineTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    transformer = MLC::IRGen.new(rule_engine: engine)
+    transformer = MLC::SemanticGen::Pipeline.new(rule_engine: engine)
     transformer.transform(ast)
 
     assert_includes bucket, "id"
   end
 
-  def test_sum_constructor_rule_registers_variants
-    engine = MLC::Rules::RuleEngine.new
-    engine.register(:core_ir_type_decl, MLC::Rules::IRGen::SumConstructorRule.new)
-
+  def test_sum_type_constructors_are_registered
     source = <<~MLCORA
       type Option<T> = Some(T) | None
     MLCORA
 
     ast = MLC.parse(source)
-    transformer = MLC::IRGen.new(rule_engine: engine)
+    transformer = MLC::SemanticGen::Pipeline.new
     transformer.transform(ast)
 
     info = transformer.function_registry.fetch("Some")
@@ -61,9 +58,6 @@ class RulesRuleEngineTest < Minitest::Test
   end
 
   def test_match_rule_builds_core_ir_match_expression
-    engine = MLC::Rules::RuleEngine.new
-    engine.register(:core_ir_match_expr, MLC::Rules::IRGen::MatchRule.new)
-
     source = <<~MLCORA
       type Option<T> = Some(T) | None
 
@@ -74,25 +68,25 @@ class RulesRuleEngineTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    transformer = MLC::IRGen.new(rule_engine: engine)
+    transformer = MLC::SemanticGen::Pipeline.new
     core = transformer.transform(ast)
-    func = core.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == "unwrap" }
+    func = core.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == "unwrap" }
 
-    assert_instance_of MLC::HighIR::MatchExpr, func.body
+    assert_instance_of MLC::SemanticIR::MatchExpr, func.body
   end
 
   def test_function_effect_rule_sets_effects
     engine = MLC::Rules::RuleEngine.new
-    engine.register(:core_ir_function, MLC::Rules::IRGen::FunctionEffectRule.new)
+    engine.register(:core_ir_function, MLC::SemanticGen::Rules::FunctionEffectRule.new)
 
     source = <<~MLCORA
       fn identity(x: i32) -> i32 = x
     MLCORA
 
     ast = MLC.parse(source)
-    transformer = MLC::IRGen.new(rule_engine: engine)
+    transformer = MLC::SemanticGen::Pipeline.new(rule_engine: engine)
     core = transformer.transform(ast)
-    func = core.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == "identity" }
+    func = core.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == "identity" }
 
     assert_equal [:constexpr, :noexcept], func.effects
   end

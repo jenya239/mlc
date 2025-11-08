@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require "minitest/autorun"
-require_relative "../../lib/mlc"
+require_relative "../test_helper"
 
 class MLCRoundtripTest < Minitest::Test
   def test_simple_function
@@ -18,13 +17,13 @@ class MLCRoundtripTest < Minitest::Test
     assert_equal 2, func.params.size
     assert_equal "i32", func.ret_type.name
     
-    # 2. Transform to HighIR
+    # 2. Transform to SemanticIR
     core_ir = MLC.transform_to_core(ast)
-    assert_instance_of MLC::HighIR::Module, core_ir
+    assert_instance_of MLC::SemanticIR::Module, core_ir
     assert_equal 1, core_ir.items.size
     
     func_ir = core_ir.items.first
-    assert_instance_of MLC::HighIR::Func, func_ir
+    assert_instance_of MLC::SemanticIR::Func, func_ir
     assert_equal "add", func_ir.name
     
     # 3. Lower to C++ AST
