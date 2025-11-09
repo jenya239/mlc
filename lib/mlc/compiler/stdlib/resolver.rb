@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require_relative 'stdlib_scanner'
+require_relative 'scanner'
 
 module MLC
-  # Resolves stdlib module names to file paths
-  # Now uses StdlibScanner for automatic discovery
-  class StdlibResolver
+  module Compiler
+    # Resolves stdlib module names to file paths
+    # Now uses StdlibScanner for automatic discovery
+    class StdlibResolver
     # DEPRECATED: Legacy constant for backward compatibility
     # Use StdlibScanner for automatic module discovery
     STDLIB_MODULES = {
@@ -17,7 +18,7 @@ module MLC
     }.freeze
 
     def initialize(stdlib_dir = nil, scanner: nil)
-      @stdlib_dir = stdlib_dir || File.expand_path('stdlib', File.dirname(__dir__))
+      @stdlib_dir = stdlib_dir || File.expand_path('../../stdlib', __dir__)
       @scanner = scanner || StdlibScanner.new(@stdlib_dir)
     end
 
@@ -40,6 +41,7 @@ module MLC
     # Get the scanner instance (for accessing function/type metadata)
     def scanner
       @scanner
+    end
     end
   end
 end

@@ -4,7 +4,7 @@ require_relative '../test_helper'
 
 class StdlibScannerTest < Minitest::Test
   def test_scan_math_module
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     math = scanner.module_info('Math')
@@ -27,7 +27,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_scan_graphics_module
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     graphics = scanner.module_info('Graphics')
@@ -57,7 +57,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_cpp_function_name_lookup
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     # Math functions
@@ -77,7 +77,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_conv_module_special_namespace
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     conv = scanner.module_info('Conv')
@@ -92,7 +92,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_io_module_preserves_case
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     io = scanner.module_info('IO')
@@ -103,7 +103,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_available_modules
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     modules = scanner.available_modules
 
     assert_includes modules, 'Math'
@@ -114,7 +114,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_module_exists
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
 
     assert scanner.module_exists?('Math')
     assert scanner.module_exists?('Graphics')
@@ -122,7 +122,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_module_file_path
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
 
     math_path = scanner.module_file_path('Math')
     refute_nil math_path
@@ -133,7 +133,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_extern_vs_regular_functions
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     math = scanner.module_info('Math')
@@ -149,7 +149,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_lazy_scanning
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
 
     # Before scan, no modules
     assert_empty scanner.instance_variable_get(:@modules)
@@ -167,7 +167,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_function_has_params_and_return_type
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     math = scanner.module_info('Math')
@@ -182,7 +182,7 @@ class StdlibScannerTest < Minitest::Test
   end
 
   def test_record_type_has_fields
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     graphics = scanner.module_info('Graphics')

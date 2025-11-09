@@ -5,7 +5,7 @@ require_relative "rules/rule_engine"
 require_relative "diagnostics/event_logger"
 require_relative "semantic_gen"
 require_relative "backend/codegen"
-require_relative "services/stdlib_scanner"
+require_relative "compiler/stdlib/scanner"
 
 module MLC
   class Application
@@ -23,7 +23,7 @@ module MLC
       SemanticGen::Pipeline.new(rule_engine: @rule_engine)
     end
 
-    def build_cpp_lowering(type_registry:, function_registry: nil, stdlib_scanner: StdlibScanner.new, runtime_policy: nil)
+    def build_cpp_lowering(type_registry:, function_registry: nil, stdlib_scanner: Compiler::StdlibScanner.new, runtime_policy: nil)
       Backend::CodeGen.new(
         type_registry: type_registry,
         function_registry: function_registry,

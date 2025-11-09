@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../parser/parser'
-require_relative '../ast/nodes'
+require_relative '../../parser/parser'
+require_relative '../../ast/nodes'
 
 # Forward declare MLC module parse method if not already loaded
 # This allows scanner to work in isolation
@@ -15,8 +15,9 @@ unless MLC.respond_to?(:parse)
 end
 
 module MLC
-  # Metadata for a stdlib function
-  class FunctionMetadata
+  module Compiler
+    # Metadata for a stdlib function
+    class FunctionMetadata
     attr_reader :name, :qualified_name, :extern, :params, :return_type, :ast_node
 
     def initialize(name:, qualified_name:, extern:, params:, return_type:, ast_node:)
@@ -73,7 +74,7 @@ module MLC
   # Eliminates need for manual STDLIB_MODULES and STDLIB_FUNCTIONS registration
   class StdlibScanner
     def initialize(stdlib_dir = nil)
-      @stdlib_dir = stdlib_dir || File.expand_path('stdlib', File.dirname(__dir__))
+      @stdlib_dir = stdlib_dir || File.expand_path('../../stdlib', __dir__)
       @modules = {}           # module_name => ModuleInfo
       @function_map = {}      # function_name => qualified_name
       @scanned = false
@@ -248,5 +249,6 @@ module MLC
         "mlc::#{module_name.downcase}"
       end
     end
+  end
   end
 end

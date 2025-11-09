@@ -18,9 +18,9 @@ require_relative "mlc/parser/parser"
 require_relative "mlc/backend/codegen"
 require_relative "mlc/backend/header_generator"
 require_relative "mlc/codegen/metadata_generator"
-require_relative "mlc/services/stdlib_scanner"
-require_relative "mlc/services/stdlib_resolver"
-require_relative "mlc/services/stdlib_signature_registry"
+require_relative "mlc/compiler/stdlib/scanner"
+require_relative "mlc/compiler/stdlib/resolver"
+require_relative "mlc/compiler/stdlib/signature_registry"
 require_relative "mlc/core/function_registry"
 require_relative "mlc/type_system/type_constraint_solver"
 require_relative "mlc/type_system/generic_call_resolver"
@@ -60,7 +60,7 @@ module MLC
 
       # 2. Build application context
       app = Application.new
-      stdlib_scanner = StdlibScanner.new
+      stdlib_scanner = Compiler::StdlibScanner.new
       to_core = app.build_to_core
 
       # 3. Transform to SemanticIR (with type_registry)
@@ -109,7 +109,7 @@ module MLC
     # Lower SemanticIR to C++ AST
     # @param core_ir [SemanticIR::Module] SemanticIR module
     # @param type_registry [TypeRegistry] Shared type registry from ToCore
-    # @param stdlib_scanner [StdlibScanner] Scanner for automatic stdlib function resolution
+    # @param stdlib_scanner [Compiler::StdlibScanner] Scanner for automatic stdlib function resolution
     # @param runtime_policy [Backend::RuntimePolicy] Policy for choosing lowering strategies
     def lower_to_cpp(core_ir, type_registry: nil, function_registry: nil, stdlib_scanner: nil, event_bus: nil, runtime_policy: nil)
       lowerer = Backend::CodeGen.new(
@@ -141,8 +141,8 @@ module MLC
       ast = parse(source, filename: filename)
       core_ir, type_registry, function_registry = transform_to_core_with_registry(ast)
 
-      # Create StdlibScanner
-      stdlib_scanner = StdlibScanner.new
+      # Create Compiler::Scanner
+      stdlib_scanner = Compiler::StdlibScanner.new
 
       # Generate header and implementation
       lowering = Backend::CodeGen.new(

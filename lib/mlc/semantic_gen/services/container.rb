@@ -7,7 +7,7 @@ require_relative '../../services/type_unification_service'
 require_relative '../../services/type_inference_service'
 require_relative '../../services/sum_type_constructor_service'
 require_relative '../../services/module_context_service'
-require_relative '../../services/stdlib_signature_registry'
+require_relative '../../compiler/stdlib/signature_registry'
 require_relative 'module_resolver'
 require_relative 'ast_type_checker'
 require_relative 'ir_builder'
@@ -182,7 +182,7 @@ module MLC
             type_registration_service: @type_registration_service,
             module_context_service: @module_context_service
           )
-          @stdlib_registry = MLC::StdlibSignatureRegistry.new
+          @stdlib_registry = MLC::Compiler::StdlibSignatureRegistry.new
           @import_service = ImportService.new(
             stdlib_registry: @stdlib_registry,
             module_resolver: @module_resolver,

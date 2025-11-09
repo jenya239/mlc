@@ -99,7 +99,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_stdlib_resolver_uses_scanner
-    resolver = MLC::StdlibResolver.new
+    resolver = MLC::Compiler::StdlibResolver.new
 
     # Should find all stdlib modules
     assert resolver.stdlib_module?('Math')
@@ -113,7 +113,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_stdlib_resolver_resolve_returns_paths
-    resolver = MLC::StdlibResolver.new
+    resolver = MLC::Compiler::StdlibResolver.new
 
     math_path = resolver.resolve('Math')
     refute_nil math_path
@@ -122,11 +122,11 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_scanner_available_from_resolver
-    resolver = MLC::StdlibResolver.new
+    resolver = MLC::Compiler::StdlibResolver.new
     scanner = resolver.scanner
 
     refute_nil scanner
-    assert_instance_of MLC::StdlibScanner, scanner
+    assert_instance_of MLC::Compiler::StdlibScanner, scanner
 
     # Can use scanner to look up functions
     assert_equal 'mlc::math::sqrt_f', scanner.cpp_function_name('sqrt_f')
@@ -192,7 +192,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_scanner_handles_extern_functions
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     graphics = scanner.module_info('Graphics')
@@ -205,7 +205,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_scanner_handles_export_functions
-    scanner = MLC::StdlibScanner.new
+    scanner = MLC::Compiler::StdlibScanner.new
     scanner.scan_all
 
     graphics = scanner.module_info('Graphics')

@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "stdlib_scanner"
+require_relative "scanner"
 
 module MLC
-  # Provides cached access to stdlib function/type signatures backed by StdlibScanner metadata.
-  class StdlibSignatureRegistry
+  module Compiler
+    # Provides cached access to stdlib function/type signatures backed by StdlibScanner metadata.
+    class StdlibSignatureRegistry
     attr_reader :scanner
 
     def initialize(scanner: StdlibScanner.new)
@@ -35,6 +36,7 @@ module MLC
 
     def type_metadata(module_name, type_name)
       types_for(module_name)[type_name]
+    end
     end
   end
 end
