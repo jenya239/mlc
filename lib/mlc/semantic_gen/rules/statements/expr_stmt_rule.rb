@@ -15,7 +15,7 @@ module MLC
             svc = services(context)
             expr_ir = context[:expr_ir] || context.fetch(:expression_visitor).visit(node.expr)
 
-            return nil if drop_noop_statement?(expr_ir)
+            return [] if drop_noop_statement?(expr_ir)
 
             if expr_ir.is_a?(MLC::SemanticIR::BlockExpr)
               return expr_ir.statements
@@ -62,6 +62,9 @@ module MLC
                 statements << services.ir_builder.expr_statement(expression: expr_ir.result, origin: expr_ir.result.origin)
               end
               services.ir_builder.block(statements: statements, origin: expr_ir.origin)
+            when MLC::SemanticIR::Block
+              # Block (statement) already has correct structure
+              expr_ir
             else
               stmt = services.ir_builder.expr_statement(expression: expr_ir, origin: expr_ir.origin)
               services.ir_builder.block(statements: [stmt], origin: expr_ir.origin)

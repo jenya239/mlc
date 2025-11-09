@@ -40,11 +40,11 @@ module MLC
 
             prefixes.each do |prefix|
               alias_key = [prefix, entry.info.name].join('.')
-              register_alias_for(function_registry, alias_key, entry.name)
+              register_alias_for(function_registry, alias_key, entry.canonical_name)
             end
 
             if selected_items && !selected_items.empty?
-              register_alias_for(function_registry, entry.info.name, entry.name)
+              register_alias_for(function_registry, entry.info.name, entry.canonical_name)
             end
           end
         end

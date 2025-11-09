@@ -45,7 +45,9 @@ module MLC
             combine_numeric(left_type, right_type)
           when '/'
             ensure_numeric_pair(op, left_type, right_type, node)
-            return float_type('f64') if float_type?(left_type) || float_type?(right_type)
+            # Division always returns float; use combine_numeric to preserve exact float type
+            return combine_numeric(left_type, right_type) if float_type?(left_type) || float_type?(right_type)
+            # Integer division defaults to f32
             float_type('f32')
           when '==', '!='
             @type_checker.ensure_compatible_type(left_type, right_type, "comparison '#{op}'", node: node)

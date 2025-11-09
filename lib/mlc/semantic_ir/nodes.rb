@@ -312,10 +312,16 @@ module MLC
     # Block of statements
     class Block < Stmt
       attr_reader :stmts
+      alias_method :statements, :stmts
 
       def initialize(stmts:, origin: nil)
         super(origin: origin)
         @stmts = stmts
+      end
+
+      # Block (statement) doesn't have a result expression
+      def result
+        nil
       end
     end
 

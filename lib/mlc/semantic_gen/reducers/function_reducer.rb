@@ -125,6 +125,7 @@ module MLC
             "function '#{func_decl.name}' result",
             node: func_decl
           )
+          @type_checker.assign_expression_type(body_ir, expected_type)
         end
 
       def apply_function_rules(func_ir)
@@ -219,6 +220,10 @@ module MLC
               statements << @services.ir_builder.expr_statement(expression: expr_ir.result, origin: expr_ir.result.origin)
             end
             @services.ir_builder.block(statements: statements, origin: expr_ir.origin)
+          when MLC::SemanticIR::Block
+            # Block (statement) - already has stmts, no need to transform
+            # Just return it as-is since it's already in the right format
+            expr_ir
           when MLC::SemanticIR::UnitLiteral
             @services.ir_builder.block(statements: [], origin: expr_ir.origin)
           else
