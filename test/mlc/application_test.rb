@@ -7,9 +7,9 @@ class ApplicationTest < Minitest::Test
     app = MLC::Application.new
 
     to_core = app.build_to_core
-    assert_instance_of MLC::IRGen, to_core
+    assert_instance_of MLC::SemanticGen::Pipeline, to_core
 
-    lowering = app.build_cpp_lowering(type_registry: MLC::TypeRegistry.new)
+    lowering = app.build_cpp_lowering(type_registry: MLC::Core::TypeRegistry.new)
     assert_instance_of MLC::Backend::CodeGen, lowering
     assert_same app.event_bus, lowering.event_bus
   end

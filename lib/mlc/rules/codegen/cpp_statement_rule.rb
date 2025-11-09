@@ -9,8 +9,8 @@ module MLC
       # Delegates to statement lowering methods in CppLowering::StatementLowerer
       class CppStatementRule < DelegatingRule
         class << self
-          # Define a rule that handles specific HighIR statement node classes
-          # @param node_classes [Array<Class>] HighIR statement node classes to handle
+          # Define a rule that handles specific SemanticIR statement node classes
+          # @param node_classes [Array<Class>] SemanticIR statement node classes to handle
           # @param method [Symbol] Name of the lowering method in StatementLowerer
           def handles_cpp_stmt(node_classes, method:)
             handles(node_classes, method: method, via: :lowerer)

@@ -7,13 +7,13 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR record expressions to C++ struct initialization
+        # Rule for lowering SemanticIR record expressions to C++ struct initialization
         # Example: Point { x: 10, y: 20 } -> Point{10, 20}
         class RecordRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::RecordExpr)
+            node.is_a?(MLC::SemanticIR::RecordExpr)
           end
 
           def apply(node, context = {})

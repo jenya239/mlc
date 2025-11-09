@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "../semantic_ir/builder"
+
 module MLC
   module Services
     # TypeChecker - Type checking and validation service
-    # Phase 4: Extracted from IRGen BaseTransformer and TypeInference
+    # Phase 4: Extracted from the legacy transformer and TypeInference modules
     #
     # Responsibilities:
     # - Type validation (ensure_compatible, ensure_boolean, ensure_numeric)
@@ -34,11 +36,13 @@ module MLC
         "Numeric" => %w[i32 f32 i64 f64 u32 u64]
       }.freeze
 
-      def initialize(function_registry:, type_decl_table: nil, event_bus: nil, current_node_proc: nil)
+      def initialize(function_registry:, type_decl_table: nil, event_bus: nil, current_node_proc: nil, var_type_registry: nil, type_registry: nil)
         @function_registry = function_registry
         @type_decl_table = type_decl_table || {}
         @event_bus = event_bus
         @current_node_proc = current_node_proc
+        @var_type_registry = var_type_registry
+        @type_registry = type_registry
       end
 
       # Type name resolution
@@ -82,8 +86,9 @@ module MLC
         return if expected_name == "auto"
         return if generic_type_name?(expected_name)
         return if actual_name == "auto"
-        return if expected.is_a?(HighIR::TypeVariable)
+        return if expected.is_a?(SemanticIR::TypeVariable)
         return if actual_name == expected_name
+        return if unit_like?(actual_name, actual) && unit_like?(expected_name, expected)
 
         @event_bus&.publish(
           :type_mismatch,
@@ -111,7 +116,7 @@ module MLC
       # Type predicates
       def numeric_type?(type)
         # TypeVariable is assumed to be numeric-compatible
-        return true if type.is_a?(HighIR::TypeVariable)
+        return true if type.is_a?(SemanticIR::TypeVariable)
 
         type_str = normalized_type_name(type_name(type))
         NUMERIC_PRIMITIVES.include?(type_str)
@@ -122,17 +127,22 @@ module MLC
         name.empty? || name[0]&.match?(/[A-Z]/)
       end
 
+      def unit_like?(name, type)
+        return true if %w[unit void].include?(name)
+        type.is_a?(SemanticIR::UnitType)
+      end
+
       # IO functions
       def io_return_type(name)
         case IO_RETURN_TYPES[name]
         when "i32"
-          HighIR::Builder.primitive_type("i32")
+          SemanticIR::Builder.primitive_type("i32")
         when "string"
-          HighIR::Builder.primitive_type("string")
+          SemanticIR::Builder.primitive_type("string")
         when :array_of_string
-          HighIR::ArrayType.new(element_type: HighIR::Builder.primitive_type("string"))
+          SemanticIR::ArrayType.new(element_type: SemanticIR::Builder.primitive_type("string"))
         else
-          HighIR::Builder.primitive_type("i32")
+          SemanticIR::Builder.primitive_type("i32")
         end
       end
 
@@ -146,7 +156,9 @@ module MLC
         end
 
         expected.each_with_index do |type, index|
-          ensure_compatible_type(args[index].type, type, "argument #{index + 1} of '#{name}'")
+          arg_expr = args[index]
+          ensure_compatible_type(arg_expr.type, type, "argument #{index + 1} of '#{name}'")
+          assign_expression_type(arg_expr, type)
         end
       end
 
@@ -163,6 +175,43 @@ module MLC
         qualified = [container_name, member_name].join(".")
         entry = @function_registry.fetch_entry(qualified)
         entry&.info
+      end
+
+      def assign_expression_type(expr, type, update_registry: true)
+        return unless expr && type
+        set_expression_type(expr, type)
+        propagate_literal_types(expr, type)
+
+        if update_registry && expr.is_a?(MLC::SemanticIR::VarExpr) && @var_type_registry
+          @var_type_registry.update_type(expr.name, type)
+          if (initializer = @var_type_registry.initializer(expr.name))
+            assign_expression_type(initializer, type, update_registry: false)
+          end
+        end
+      end
+
+      def set_expression_type(expr, type)
+        if expr.respond_to?(:type=)
+          expr.type = type
+        else
+          expr.instance_variable_set(:@type, type)
+        end
+      end
+
+      def propagate_literal_types(expr, type)
+        case expr
+        when MLC::SemanticIR::ArrayLiteralExpr
+          return unless type.is_a?(MLC::SemanticIR::ArrayType)
+          expr.elements.each do |element|
+            assign_expression_type(element, type.element_type, update_registry: false)
+          end
+        when MLC::SemanticIR::RecordExpr
+          field_map = record_field_type_map(type)
+          return unless field_map
+          expr.fields.each do |field_name, field_expr|
+            assign_expression_type(field_expr, field_map[field_name], update_registry: false)
+          end
+        end
       end
 
       # Type constraint validation
@@ -190,12 +239,66 @@ module MLC
         end
       end
 
+      def record_field_type_map(type)
+        case type
+        when MLC::SemanticIR::RecordType
+          type.fields.each_with_object({}) { |field, memo| memo[field[:name].to_s] = field[:type] }
+        when MLC::SemanticIR::GenericType
+          resolve_generic_record_field_map(type)
+        else
+          nil
+        end
+      end
+
+      def resolve_generic_record_field_map(type)
+        base_name = type.base_type&.name
+        return nil unless base_name && @type_registry
+
+        info = @type_registry.lookup(base_name)
+        return nil unless info&.fields
+
+        substitution = build_generic_substitution(info, type)
+
+        info.fields.each_with_object({}) do |field, memo|
+          memo[field[:name].to_s] = substitute_type_variables(field[:type], substitution)
+        end
+      end
+
+      def build_generic_substitution(type_info, generic_type)
+        params = type_info.ast_node&.type_params || []
+        substitution = {}
+
+        params.each_with_index do |param, index|
+          arg = generic_type.type_args[index]
+          substitution[param.name] = arg if arg
+        end
+
+        substitution
+      end
+
+      def substitute_type_variables(type, substitution)
+        case type
+        when MLC::SemanticIR::TypeVariable
+          substitution[type.name] || type
+        when MLC::SemanticIR::ArrayType
+          new_element = substitute_type_variables(type.element_type, substitution)
+          new_element == type.element_type ? type : MLC::SemanticIR::Builder.array_type(new_element)
+        when MLC::SemanticIR::RecordType
+          new_fields = type.fields.map do |field|
+            { name: field[:name], type: substitute_type_variables(field[:type], substitution) }
+          end
+          MLC::SemanticIR::Builder.record_type(type.name, new_fields)
+        else
+          type
+        end
+      end
+
       def normalize_type_params(params)
         params.map do |tp|
           name = tp.respond_to?(:name) ? tp.name : tp
           constraint = tp.respond_to?(:constraint) ? tp.constraint : nil
           validate_constraint_name(constraint)
-          HighIR::TypeParam.new(name: name, constraint: constraint)
+          SemanticIR::TypeParam.new(name: name, constraint: constraint)
         end
       end
 
@@ -216,29 +319,29 @@ module MLC
       end
 
       # Type kind inference
-      # Determines the kind of a type from AST and HighIR information
+      # Determines the kind of a type from AST and SemanticIR information
       #
       # @param ast_decl [AST::TypeDecl] AST type declaration
-      # @param core_ir_type [HighIR::Type] HighIR type
+      # @param core_ir_type [SemanticIR::Type] SemanticIR type
       # @return [Symbol] :primitive, :record, :sum, :opaque, or :unknown
       def infer_type_kind(ast_decl, core_ir_type)
         # Check if it's an opaque type (explicit AST::OpaqueType or old-style implicit)
-        if core_ir_type.is_a?(HighIR::OpaqueType) || ast_decl.type.is_a?(AST::OpaqueType)
+        if core_ir_type.is_a?(SemanticIR::OpaqueType) || ast_decl.type.is_a?(AST::OpaqueType)
           return :opaque
         end
 
         # Legacy: Check if it's an old-style opaque type (PrimType with same name as decl)
         # This handles types declared before AST::OpaqueType was introduced
-        if core_ir_type.is_a?(HighIR::Type) &&
+        if core_ir_type.is_a?(SemanticIR::Type) &&
            core_ir_type.primitive? &&
            ast_decl.type.is_a?(AST::PrimType) &&
            ast_decl.type.name == ast_decl.name
           return :opaque
         end
 
-        # Otherwise determine from HighIR type
-        return :record if core_ir_type.is_a?(HighIR::RecordType)
-        return :sum if core_ir_type.is_a?(HighIR::SumType)
+        # Otherwise determine from SemanticIR type
+        return :record if core_ir_type.is_a?(SemanticIR::RecordType)
+        return :sum if core_ir_type.is_a?(SemanticIR::SumType)
         return :primitive if core_ir_type.primitive?
 
         :unknown

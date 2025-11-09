@@ -7,7 +7,7 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR match expressions to C++ switch/if chains or std::visit
+        # Rule for lowering SemanticIR match expressions to C++ switch/if chains or std::visit
         # Handles two main strategies:
         # 1. Regex patterns -> if-else chain in IIFE
         # 2. Sum type patterns -> std::visit with overloaded lambdas
@@ -15,7 +15,7 @@ module MLC
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::MatchExpr)
+            node.is_a?(MLC::SemanticIR::MatchExpr)
           end
 
           def apply(node, context = {})

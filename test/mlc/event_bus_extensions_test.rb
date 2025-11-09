@@ -5,7 +5,7 @@ require_relative "../test_helper"
 class EventBusExtensionsTest < Minitest::Test
   # Test backward compatibility
   def test_backward_compatibility_publish_subscribe
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     payloads = []
     bus.subscribe(:demo) { |payload| payloads << payload }
 
@@ -17,7 +17,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test log levels
   def test_debug_event
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     events = []
     bus.subscribe(:test) { |payload| events << payload }
 
@@ -27,7 +27,7 @@ class EventBusExtensionsTest < Minitest::Test
   end
 
   def test_info_event
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     events = []
     bus.subscribe(:test) { |payload| events << payload }
 
@@ -37,7 +37,7 @@ class EventBusExtensionsTest < Minitest::Test
   end
 
   def test_warning_event
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     events = []
     bus.subscribe(:test) { |payload| events << payload }
 
@@ -47,7 +47,7 @@ class EventBusExtensionsTest < Minitest::Test
   end
 
   def test_error_event
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     events = []
     bus.subscribe(:test) { |payload| events << payload }
 
@@ -58,7 +58,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test bus-level filtering
   def test_bus_level_filtering_info
-    bus = MLC::EventBus.new(min_level: :info)
+    bus = MLC::Infrastructure::EventBus.new(min_level: :info)
     events = []
     bus.subscribe(:test) { |payload| events << payload }
 
@@ -71,7 +71,7 @@ class EventBusExtensionsTest < Minitest::Test
   end
 
   def test_bus_level_filtering_warning
-    bus = MLC::EventBus.new(min_level: :warning)
+    bus = MLC::Infrastructure::EventBus.new(min_level: :warning)
     events = []
     bus.subscribe(:test) { |payload| events << payload }
 
@@ -84,7 +84,7 @@ class EventBusExtensionsTest < Minitest::Test
   end
 
   def test_bus_level_filtering_error
-    bus = MLC::EventBus.new(min_level: :error)
+    bus = MLC::Infrastructure::EventBus.new(min_level: :error)
     events = []
     bus.subscribe(:test) { |payload| events << payload }
 
@@ -98,7 +98,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test handler-level filtering
   def test_handler_level_filtering
-    bus = MLC::EventBus.new(min_level: :debug)
+    bus = MLC::Infrastructure::EventBus.new(min_level: :debug)
     info_events = []
     error_events = []
 
@@ -120,7 +120,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test structured events
   def test_structured_event
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     events = []
     bus.subscribe(:test) { |event| events << event }
 
@@ -128,7 +128,7 @@ class EventBusExtensionsTest < Minitest::Test
 
     assert_equal 1, events.size
     event = events.first
-    assert_instance_of MLC::EventBus::Event, event
+    assert_instance_of MLC::Infrastructure::EventBus::Event, event
     assert_equal :test, event.name
     assert_equal({ value: 42 }, event.payload)
     assert_equal :info, event.level
@@ -137,7 +137,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test handler count
   def test_handler_count
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     assert_equal 0, bus.handler_count
 
     bus.subscribe(:test) { }
@@ -156,7 +156,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test clear handlers
   def test_clear_all_handlers
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     bus.subscribe(:test1) { }
     bus.subscribe(:test2) { }
 
@@ -167,7 +167,7 @@ class EventBusExtensionsTest < Minitest::Test
   end
 
   def test_clear_specific_handler
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     bus.subscribe(:test1) { }
     bus.subscribe(:test2) { }
 
@@ -181,7 +181,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test error handling in handlers
   def test_handler_errors_dont_break_bus
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     success_count = 0
 
     bus.subscribe(:test) { raise "error" }
@@ -197,7 +197,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test setting min_level
   def test_set_min_level
-    bus = MLC::EventBus.new(min_level: :debug)
+    bus = MLC::Infrastructure::EventBus.new(min_level: :debug)
     assert_equal :debug, bus.min_level
 
     bus.min_level = :warning
@@ -213,7 +213,7 @@ class EventBusExtensionsTest < Minitest::Test
   end
 
   def test_set_invalid_min_level
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
 
     error = assert_raises(ArgumentError) do
       bus.min_level = :invalid
@@ -224,7 +224,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test Event struct
   def test_event_structure
-    event = MLC::EventBus::Event.new(
+    event = MLC::Infrastructure::EventBus::Event.new(
       name: :test,
       payload: { value: 42 },
       level: :info,
@@ -239,7 +239,7 @@ class EventBusExtensionsTest < Minitest::Test
 
   # Test multiple subscribers with different filters
   def test_multiple_subscribers_with_filters
-    bus = MLC::EventBus.new(min_level: :debug)
+    bus = MLC::Infrastructure::EventBus.new(min_level: :debug)
 
     debug_events = []
     info_events = []

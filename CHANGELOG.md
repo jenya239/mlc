@@ -84,7 +84,7 @@ No more confusion! One name, one brand, one ecosystem.
 **Project renamed from Aurora to MLC (Multi-Level Compiler)**
 
 - **Namespace**: `Aurora::` → `MLC::`
-- **IR Naming**: `CoreIR::` → `HighIR::`
+- **IR Naming**: `CoreIR::` → `SemanticIR::`
 - **Directories**: `lib/aurora/` → `lib/mlc/`
 - **CLI Binary**: `bin/aurora` → `bin/mlc`
 
@@ -165,8 +165,8 @@ merge_3:
 
 ### Changed
 
-- **IR Naming**: `CoreIR` → `HighIR` for clarity
-  - High IR preserves source language semantics
+- **IR Naming**: `CoreIR` → `SemanticIR` for clarity
+  - Semantic IR preserves source language semantics
   - Mid IR represents control flow with basic blocks
   - Low IR will use SSA form (planned)
 
@@ -191,7 +191,7 @@ For users upgrading from v0.1.x to v0.2.0:
 
    # After
    MLC::Parser.new
-   MLC::HighIR::Module
+   MLC::SemanticIR::Module
    ```
 
 3. **Update CLI commands:**
@@ -249,4 +249,3 @@ For detailed migration instructions, see [docs/MLC_MIGRATION_PLAN.md](docs/MLC_M
 - 421 tests, 1622 assertions
 - 100% passing
 - Comprehensive integration tests
-

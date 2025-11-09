@@ -46,10 +46,10 @@ module MLC
 
       # Log a single event
       def log_event(event_name, payload_or_event)
-        event_obj = if payload_or_event.is_a?(EventBus::Event)
+        event_obj = if payload_or_event.is_a?(Infrastructure::EventBus::Event)
                       payload_or_event
                     else
-                      EventBus::Event.new(
+                      Infrastructure::EventBus::Event.new(
                         name: event_name,
                         payload: payload_or_event,
                         level: :info,

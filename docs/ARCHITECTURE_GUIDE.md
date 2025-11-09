@@ -72,21 +72,18 @@ end
 
 ### Интеграция
 
-Сервисы инициализируются в `MLC::IRGen` и передаются правилам через контекст:
+Сервисы инициализируются в `MLC::SemanticGen::Services::Container` и передаются правилам через контекст `context[:services]`:
 
 ```ruby
-@expression_transformer_service = MLC::Services::ExpressionTransformer.new(self)
-@type_checker_service = MLC::Services::TypeChecker.new(self)
-# ... остальные сервисы
+container = MLC::SemanticGen::Services::Container.new(
+  function_registry: MLC::FunctionRegistry.new,
+  type_registry: MLC::TypeRegistry.new
+)
 
 context = {
-  transformer: self,
-  expression_transformer: @expression_transformer_service,
-  type_checker: @type_checker_service,
-  type_inference: @type_inference_service,
-  context_manager: @context_manager_service,
-  record_builder: @record_builder_service,
-  predicates: @predicate_service
+  services: container,
+  expression_visitor: engine.expression_visitor,
+  statement_visitor: engine.statement_visitor
 }
 ```
 

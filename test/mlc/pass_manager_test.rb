@@ -6,7 +6,7 @@ class PassManagerTest < Minitest::Test
   # Basic functionality tests (backward compatibility)
 
   def test_runs_passes_in_order
-    manager = MLC::PassManager.new
+    manager = MLC::Infrastructure::PassManager.new
     trace = []
 
     manager.register(:first) do |context|
@@ -26,7 +26,7 @@ class PassManagerTest < Minitest::Test
   end
 
   def test_accepts_callable_objects
-    manager = MLC::PassManager.new
+    manager = MLC::Infrastructure::PassManager.new
     accumulator = Class.new do
       attr_reader :calls
       def initialize
@@ -46,7 +46,7 @@ class PassManagerTest < Minitest::Test
   end
 
   def test_bubbles_up_pass_errors_with_context
-    manager = MLC::PassManager.new
+    manager = MLC::Infrastructure::PassManager.new
     manager.register(:boom) { |_ctx| raise RuntimeError, "failure" }
 
     error = assert_raises(RuntimeError) { manager.run({}) }
@@ -56,7 +56,7 @@ class PassManagerTest < Minitest::Test
   # BasePass integration tests
 
   def test_accepts_base_pass_objects
-    manager = MLC::PassManager.new
+    manager = MLC::Infrastructure::PassManager.new
     pass = create_test_pass(:test_pass, [:input], [:output])
 
     manager.register(:my_pass, pass)
@@ -66,20 +66,20 @@ class PassManagerTest < Minitest::Test
   end
 
   def test_extracts_metadata_from_base_pass
-    manager = MLC::PassManager.new
+    manager = MLC::Infrastructure::PassManager.new
     pass = create_test_pass(:test_pass, [:input], [:output])
 
     manager.register(:my_pass, pass)
     metadata = manager.metadata(:my_pass)
 
-    assert_equal :high_ir, metadata[:input_level]
-    assert_equal :high_ir, metadata[:output_level]
+    assert_equal :semantic_ir, metadata[:input_level]
+    assert_equal :semantic_ir, metadata[:output_level]
     assert_equal [:input], metadata[:required_keys]
     assert_equal [:output], metadata[:produced_keys]
   end
 
   def test_validates_required_keys_for_base_pass
-    manager = MLC::PassManager.new(validate: true)
+    manager = MLC::Infrastructure::PassManager.new(validate: true)
     pass = create_test_pass(:test_pass, [:input, :config], [:output])
 
     manager.register(:my_pass, pass)
@@ -92,7 +92,7 @@ class PassManagerTest < Minitest::Test
   end
 
   def test_passes_with_all_required_keys
-    manager = MLC::PassManager.new(validate: true)
+    manager = MLC::Infrastructure::PassManager.new(validate: true)
     pass = create_test_pass(:test_pass, [:input], [:output])
 
     manager.register(:my_pass, pass)
@@ -102,7 +102,7 @@ class PassManagerTest < Minitest::Test
   end
 
   def test_validation_can_be_disabled
-    manager = MLC::PassManager.new(validate: false)
+    manager = MLC::Infrastructure::PassManager.new(validate: false)
     pass = create_test_pass(:test_pass, [:input], [:output])
 
     manager.register(:my_pass, pass)
@@ -115,14 +115,14 @@ class PassManagerTest < Minitest::Test
   # EventBus integration tests
 
   def test_publishes_events_to_event_bus
-    event_bus = MLC::EventBus.new
+    event_bus = MLC::Infrastructure::EventBus.new
     events = []
     event_bus.subscribe(:pipeline_start) { |payload| events << [:pipeline_start, payload] }
     event_bus.subscribe(:pass_start) { |payload| events << [:pass_start, payload] }
     event_bus.subscribe(:pass_end) { |payload| events << [:pass_end, payload] }
     event_bus.subscribe(:pipeline_end) { |payload| events << [:pipeline_end, payload] }
 
-    manager = MLC::PassManager.new(event_bus: event_bus)
+    manager = MLC::Infrastructure::PassManager.new(event_bus: event_bus)
     manager.register(:test) { |ctx| ctx[:done] = true }
     manager.run({})
 
@@ -134,11 +134,11 @@ class PassManagerTest < Minitest::Test
   end
 
   def test_includes_duration_in_pass_end_event
-    event_bus = MLC::EventBus.new
+    event_bus = MLC::Infrastructure::EventBus.new
     duration = nil
     event_bus.subscribe(:pass_end) { |payload| duration = payload[:duration] }
 
-    manager = MLC::PassManager.new(event_bus: event_bus)
+    manager = MLC::Infrastructure::PassManager.new(event_bus: event_bus)
     manager.register(:slow_pass) { |ctx| sleep 0.01 }
     manager.run({})
 
@@ -149,12 +149,12 @@ class PassManagerTest < Minitest::Test
   # Metadata tests
 
   def test_returns_nil_for_unknown_pass_metadata
-    manager = MLC::PassManager.new
+    manager = MLC::Infrastructure::PassManager.new
     assert_nil manager.metadata(:nonexistent)
   end
 
   def test_stores_custom_metadata_for_non_base_pass
-    manager = MLC::PassManager.new
+    manager = MLC::Infrastructure::PassManager.new
     manager.register(:custom, ->(_ctx) {}, metadata: { author: "test", version: "1.0" })
 
     metadata = manager.metadata(:custom)

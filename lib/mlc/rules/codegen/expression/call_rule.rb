@@ -7,7 +7,7 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR function call expressions to C++ function calls
+        # Rule for lowering SemanticIR function call expressions to C++ function calls
         # Handles multiple call types:
         # 1. IO functions (print, println, etc.)
         # 2. Stdlib function overrides (to_f32, etc.)
@@ -36,7 +36,7 @@ module MLC
           }.freeze
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::CallExpr)
+            node.is_a?(MLC::SemanticIR::CallExpr)
           end
 
           def apply(node, context = {})
@@ -44,12 +44,12 @@ module MLC
             function_registry = context[:function_registry]
 
             # Check for IO functions
-            if node.callee.is_a?(MLC::HighIR::VarExpr) && IO_FUNCTIONS.key?(node.callee.name)
+            if node.callee.is_a?(MLC::SemanticIR::VarExpr) && IO_FUNCTIONS.key?(node.callee.name)
               return lower_io_function(node, lowerer)
             end
 
             # Check for stdlib overrides
-            if node.callee.is_a?(MLC::HighIR::VarExpr)
+            if node.callee.is_a?(MLC::SemanticIR::VarExpr)
               name = node.callee.name
 
               if (override_expr = lower_stdlib_override(name, node, lowerer))
@@ -76,7 +76,7 @@ module MLC
             end
 
             # Check for array method calls
-            if node.callee.is_a?(MLC::HighIR::MemberExpr) && node.callee.object.type.is_a?(MLC::HighIR::ArrayType)
+            if node.callee.is_a?(MLC::SemanticIR::MemberExpr) && node.callee.object.type.is_a?(MLC::SemanticIR::ArrayType)
               return lower_array_method_call(node, lowerer)
             end
 

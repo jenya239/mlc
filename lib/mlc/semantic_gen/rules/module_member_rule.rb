@@ -31,7 +31,7 @@ module MLC
           entry = resolve_entry(node.object, node.member, svc)
 
           # Get canonical name and build type using factory
-          canonical_name = entry.name
+          canonical_name = entry.canonical_name || entry.name
           func_type = svc.ir_builder.func_type(
             name: canonical_name,
             origin: node

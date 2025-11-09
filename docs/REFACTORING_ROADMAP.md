@@ -133,21 +133,20 @@ end
 
 ---
 
-### Phase 24: Rename lib/mlc/irgen → lib/mlc/transformers (2h, Low)
-**Goal**: More descriptive directory name
+### Phase 24: Rename lib/mlc/irgen → lib/mlc/semantic_gen (2h, Low)
+**Goal**: Align naming with Semantic IR pipeline
 
 **Tasks**:
-1. Move `lib/mlc/irgen` → `lib/mlc/transformers`
-2. Move `lib/mlc/irgen.rb` → `lib/mlc/transformers.rb`
-3. Rename class `MLC::IRGen` → `MLC::Transformers::IRGen`
-4. Update all require_relative statements
-5. Update tests
-6. Update documentation
+1. Move `lib/mlc/irgen` → `lib/mlc/semantic_gen`
+2. Replace `MLC::IRGen` entry point with `MLC::SemanticGen::Pipeline`
+3. Update all require_relative statements
+4. Update tests
+5. Update documentation
 
 **Benefits**:
-- Clearer semantics (`transformers` vs `irgen`)
+- Clearer semantics (`SemanticGen` produces `SemanticIR`)
 - Better project organization
-- Matches Rails conventions
+- Matches new VSR (Visitor/Service/Rule) architecture
 
 ---
 
@@ -264,7 +263,7 @@ module MLC
       # Configure inflections
       loader.inflector.inflect(
         "irgen" => "IRGen",
-        "high_ir" => "HighIR",
+        "semantic_ir" => "SemanticIR",
         "ast" => "AST"
       )
 

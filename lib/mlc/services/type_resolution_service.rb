@@ -3,7 +3,7 @@
 module MLC
   module Services
     # TypeResolutionService - Type reference refresh after type resolution
-    # Phase 17-D: Extracted from IRGen FunctionTransformer
+    # Phase 17-D: Extracted from the legacy FunctionTransformer
     #
     # Responsibilities:
     # - Refresh type references in function signatures after type resolution
@@ -41,30 +41,30 @@ module MLC
       # Recursively refresh type references, preserving structure
       # Replaces type references that match resolved_name with resolved_type
       #
-      # @param type [HighIR::Type] The type to refresh
+      # @param type [SemanticIR::Type] The type to refresh
       # @param resolved_name [String] The type name to match
-      # @param resolved_type [HighIR::Type] The resolved type to use
-      # @return [HighIR::Type] Updated type or original if no match
+      # @param resolved_type [SemanticIR::Type] The resolved type to use
+      # @return [SemanticIR::Type] Updated type or original if no match
       def refresh_type_reference(type, resolved_name, resolved_type)
         case type
-        when HighIR::GenericType
+        when SemanticIR::GenericType
           # Don't replace the entire GenericType, just refresh its base_type
           base_type = refresh_type_reference(type.base_type, resolved_name, resolved_type)
           type_args = type.type_args.map { |arg| refresh_type_reference(arg, resolved_name, resolved_type) }
           if base_type != type.base_type || type_args != type.type_args
-            HighIR::Builder.generic_type(base_type, type_args)
+            SemanticIR::Builder.generic_type(base_type, type_args)
           else
             type
           end
-        when HighIR::ArrayType
+        when SemanticIR::ArrayType
           # Refresh element type
           element_type = refresh_type_reference(type.element_type, resolved_name, resolved_type)
-          element_type != type.element_type ? HighIR::Builder.array_type(element_type) : type
-        when HighIR::FunctionType
+          element_type != type.element_type ? SemanticIR::Builder.array_type(element_type) : type
+        when SemanticIR::FunctionType
           # Refresh params and return type
           params = type.params.map { |p| {name: p[:name], type: refresh_type_reference(p[:type], resolved_name, resolved_type)} }
           ret_type = refresh_type_reference(type.ret_type, resolved_name, resolved_type)
-          (params != type.params || ret_type != type.ret_type) ? HighIR::Builder.function_type(params, ret_type) : type
+          (params != type.params || ret_type != type.ret_type) ? SemanticIR::Builder.function_type(params, ret_type) : type
         else
           # For primitive types and others, replace if name matches
           @type_checker.type_name(type) == resolved_name ? resolved_type : type

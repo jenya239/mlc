@@ -7,11 +7,12 @@ module MLC
       class LambdaService
         DEFAULT_PARAM_TYPE = 'i32'
 
-        def initialize(ir_builder:, type_checker:, var_type_registry:, scope_context:)
+        def initialize(ir_builder:, type_checker:, var_type_registry:, scope_context:, type_builder:)
           @ir_builder = ir_builder
           @type_checker = type_checker
           @var_type_registry = var_type_registry
           @scope_context = scope_context
+          @type_builder = type_builder
         end
 
         def build(node, expression_visitor:)
@@ -54,7 +55,7 @@ module MLC
 
         def resolve_param_type(param_ast, expected_type, node:)
           if param_ast.respond_to?(:type) && param_ast.type
-            @type_checker.type_error('Explicit lambda parameter types are not supported in IRGen v2 yet', node: param_ast)
+            return @type_builder.transform(param_ast.type)
           end
 
           expected_type || default_param_type(node)

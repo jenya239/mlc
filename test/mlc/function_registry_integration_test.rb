@@ -56,12 +56,12 @@ module MLC
       ast = MLC.parse(source)
       core = transformer.transform(ast)
 
-      calc_func = core.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == "calc" }
+      calc_func = core.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == "calc" }
       refute_nil calc_func
       call = calc_func.body
 
-      assert_instance_of MLC::HighIR::CallExpr, call
-      assert_instance_of MLC::HighIR::VarExpr, call.callee
+      assert_instance_of MLC::SemanticIR::CallExpr, call
+      assert_instance_of MLC::SemanticIR::VarExpr, call.callee
       assert_equal "hypotenuse", call.callee.name
 
       alias_entry = transformer.function_registry.fetch_entry_for_member("Math", "hypotenuse")
@@ -88,12 +88,12 @@ module MLC
       MLCORA
 
       core = transformer.transform(MLC.parse(use_source))
-      sum_func = core.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == "sum" }
+      sum_func = core.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == "sum" }
       refute_nil sum_func
 
       call = sum_func.body
-      assert_instance_of MLC::HighIR::CallExpr, call
-      assert_instance_of MLC::HighIR::VarExpr, call.callee
+      assert_instance_of MLC::SemanticIR::CallExpr, call
+      assert_instance_of MLC::SemanticIR::VarExpr, call.callee
       assert_equal "add", call.callee.name
 
       alias_entry = transformer.function_registry.fetch_entry_for_member("Math", "add")
@@ -121,11 +121,11 @@ module MLC
       MLCORA
 
       core = transformer.transform(MLC.parse(use_source))
-      func = core.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == "square_area" }
+      func = core.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == "square_area" }
       refute_nil func
       call = func.body
 
-      assert_instance_of MLC::HighIR::CallExpr, call
+      assert_instance_of MLC::SemanticIR::CallExpr, call
       assert_equal "area", call.callee.name
 
       assert transformer.function_registry.registered?("area"), "area should remain registered"

@@ -6,10 +6,10 @@ module MLC
   module Rules
     module CodeGen
       module Statement
-        # Rule for lowering HighIR return statements to C++ return statements
+        # Rule for lowering SemanticIR return statements to C++ return statements
         class ReturnRule < BaseRule
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::Return)
+            node.is_a?(MLC::SemanticIR::Return)
           end
 
           def apply(node, context = {})

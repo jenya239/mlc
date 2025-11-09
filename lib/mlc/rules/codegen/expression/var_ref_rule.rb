@@ -7,13 +7,13 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR variable references to C++ identifiers
+        # Rule for lowering SemanticIR variable references to C++ identifiers
         # Pure function - all logic contained, no delegation
         class VarRefRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::VarExpr)
+            node.is_a?(MLC::SemanticIR::VarExpr)
           end
 
           def apply(node, _context = {})

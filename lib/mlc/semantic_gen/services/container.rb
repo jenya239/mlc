@@ -64,7 +64,13 @@ module MLC
           @type_checker = MLC::Services::TypeChecker.new(
             function_registry: @function_registry,
             type_decl_table: @type_decl_table,
-            current_node_proc: -> { nil }
+            current_node_proc: -> { nil },
+            var_type_registry: @var_type_registry,
+            type_registry: @type_registry
+          )
+          @type_builder = TypeBuilder.new(
+            ir_builder: @ir_builder,
+            type_checker: @type_checker
           )
           @scope_context = MLC::Services::TransformationContext.new(
             var_type_registry: @var_type_registry
@@ -123,7 +129,8 @@ module MLC
             infer_type_arguments: @type_inference_service.method(:infer_type_arguments),
             substitute_type: @type_inference_service.method(:substitute_type),
             ensure_compatible_type: @type_checker.method(:ensure_compatible_type),
-            type_error: ->(message) { @type_checker.type_error(message) }
+            type_error: ->(message) { @type_checker.type_error(message) },
+            assign_expression_type: @type_checker.method(:assign_expression_type)
           )
           @generic_call_resolver = MLC::TypeSystem::GenericCallResolver.new(
             constraint_solver: type_constraint_solver
@@ -153,7 +160,8 @@ module MLC
             ir_builder: @ir_builder,
             type_checker: @type_checker,
             var_type_registry: @var_type_registry,
-            scope_context: @scope_context
+            scope_context: @scope_context,
+            type_builder: @type_builder
           )
           @list_comprehension_service = ListComprehensionService.new(
             ir_builder: @ir_builder,
@@ -167,10 +175,6 @@ module MLC
             type_registry: @type_registry,
             type_decl_table: @type_decl_table,
             sum_type_constructor_service: @sum_type_constructor_service
-          )
-          @type_builder = TypeBuilder.new(
-            ir_builder: @ir_builder,
-            type_checker: @type_checker
           )
           @type_declaration_service = TypeDeclarationService.new(
             type_checker: @type_checker,

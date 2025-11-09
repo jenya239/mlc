@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 class EventBusTest < Minitest::Test
   def test_publish_notifies_subscribers
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     payloads = []
     bus.subscribe(:demo) { |payload| payloads << payload }
 
@@ -15,7 +15,7 @@ class EventBusTest < Minitest::Test
   end
 
   def test_subscribe_with_callable
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     collector = Class.new do
       attr_reader :payloads
       def initialize
@@ -33,7 +33,7 @@ class EventBusTest < Minitest::Test
   end
 
   def test_no_handler_raises
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     assert_raises(ArgumentError) { bus.subscribe(:demo) }
   end
 end

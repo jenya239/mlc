@@ -67,12 +67,12 @@ module MLC
 
       def statement_has_control_flow?(stmt)
         case stmt
-        when HighIR::IfStmt, HighIR::MatchStmt, HighIR::ForStmt, HighIR::WhileStmt
+        when SemanticIR::IfStmt, SemanticIR::MatchStmt, SemanticIR::ForStmt, SemanticIR::WhileStmt
           true
-        when HighIR::VariableDeclStmt
+        when SemanticIR::VariableDeclStmt
           stmt.value && expression_has_control_flow?(stmt.value)
-        when HighIR::ExprStmt
-          expression_has_control_flow?(stmt.expr)
+        when SemanticIR::ExprStatement
+          expression_has_control_flow?(stmt.expression)
         else
           false
         end
@@ -80,14 +80,14 @@ module MLC
 
       def expression_has_control_flow?(expr)
         case expr
-        when HighIR::IfExpr, HighIR::MatchExpr
+        when SemanticIR::IfExpr, SemanticIR::MatchExpr
           true
-        when HighIR::BlockExpr
+        when SemanticIR::BlockExpr
           true  # Вложенный блок считаем как control flow
-        when HighIR::CallExpr
+        when SemanticIR::CallExpr
           # Рекурсивно проверяем аргументы
           expr.args.any? { |arg| expression_has_control_flow?(arg) }
-        when HighIR::BinaryExpr
+        when SemanticIR::BinaryExpr
           expression_has_control_flow?(expr.left) || expression_has_control_flow?(expr.right)
         else
           false
@@ -102,13 +102,13 @@ module MLC
 
       def simple_statement?(stmt)
         case stmt
-        when HighIR::VariableDeclStmt
+        when SemanticIR::VariableDeclStmt
           # let без сложных инициализаторов
           !stmt.value || !expression_has_control_flow?(stmt.value)
-        when HighIR::ExprStmt
+        when SemanticIR::ExprStatement
           # Простой expression statement (call, assignment)
-          !expression_has_control_flow?(stmt.expr)
-        when HighIR::AssignmentStmt
+          !expression_has_control_flow?(stmt.expression)
+        when SemanticIR::AssignmentStmt
           true  # Assignments всегда простые
         else
           false
@@ -117,7 +117,7 @@ module MLC
 
       def has_nested_blocks?
         @block_expr.statements.any? do |stmt|
-          stmt.is_a?(HighIR::VariableDeclStmt) && stmt.value.is_a?(HighIR::BlockExpr)
+          stmt.is_a?(SemanticIR::VariableDeclStmt) && stmt.value.is_a?(SemanticIR::BlockExpr)
         end
       end
     end
@@ -155,12 +155,12 @@ module MLC
         return false unless branch
 
         case branch
-        when HighIR::LiteralExpr, HighIR::VarExpr
+        when SemanticIR::LiteralExpr, SemanticIR::VarExpr
           true
-        when HighIR::BinaryExpr
+        when SemanticIR::BinaryExpr
           # Простая арифметика
           simple_branch?(branch.left) && simple_branch?(branch.right)
-        when HighIR::CallExpr
+        when SemanticIR::CallExpr
           # Простой вызов функции
           branch.args.all? { |arg| simple_branch?(arg) }
         else
@@ -170,9 +170,9 @@ module MLC
 
       def has_nested_control_flow?
         [*@if_expr.then_branch, @if_expr.else_branch].compact.any? do |branch|
-          branch.is_a?(HighIR::IfExpr) ||
-            branch.is_a?(HighIR::MatchExpr) ||
-            branch.is_a?(HighIR::BlockExpr)
+          branch.is_a?(SemanticIR::IfExpr) ||
+            branch.is_a?(SemanticIR::MatchExpr) ||
+            branch.is_a?(SemanticIR::BlockExpr)
         end
       end
     end

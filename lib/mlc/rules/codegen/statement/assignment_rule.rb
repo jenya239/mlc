@@ -6,10 +6,10 @@ module MLC
   module Rules
     module CodeGen
       module Statement
-        # Rule for lowering HighIR assignment statements to C++ assignments
+        # Rule for lowering SemanticIR assignment statements to C++ assignments
         class AssignmentRule < BaseRule
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::AssignmentStmt)
+            node.is_a?(MLC::SemanticIR::AssignmentStmt)
           end
 
           def apply(node, context = {})

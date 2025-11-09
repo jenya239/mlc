@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "../core/function_signature"
+
 module MLC
   module Services
     # SumTypeConstructorService - Sum type constructor registration
-    # Phase 17-G: Extracted from IRGen FunctionTransformer
+    # Phase 17-G: Extracted from the legacy FunctionTransformer
     #
     # Responsibilities:
     # - Register constructors for sum type variants
@@ -24,10 +26,10 @@ module MLC
       end
 
       # Register constructors for sum type variants
-      # Creates FunctionInfo for each variant constructor
+      # Creates FunctionSignature for each variant constructor
       #
       # @param sum_type_name [String] Name of the sum type
-      # @param sum_type [HighIR::SumType] The sum type definition
+      # @param sum_type [SemanticIR::SumType] The sum type definition
       def register_sum_type_constructors(sum_type_name, sum_type)
         return unless sum_type.respond_to?(:variants)
 
@@ -36,12 +38,12 @@ module MLC
 
         # Build type variables for generic types
         type_param_vars = type_params.map do |tp|
-          HighIR::Builder.type_variable(tp.name, constraint: tp.constraint)
+          SemanticIR::Builder.type_variable(tp.name, constraint: tp.constraint)
         end
 
         # Constructor return type: either generic (if type params exist) or plain sum type
         generic_ret_type = if type_param_vars.any?
-          HighIR::Builder.generic_type(sum_type, type_param_vars)
+          SemanticIR::Builder.generic_type(sum_type, type_param_vars)
         else
           sum_type
         end
@@ -49,7 +51,7 @@ module MLC
         # Register each variant as a constructor function
         sum_type.variants.each do |variant|
           field_types = (variant[:fields] || []).map { |field| field[:type] }
-          constructor_info = MLC::IRGen::FunctionInfo.new(
+          constructor_info = MLC::Core::FunctionSignature.new(
             variant[:name],
             field_types,
             generic_ret_type,

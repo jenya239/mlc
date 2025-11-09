@@ -5,11 +5,12 @@ module MLC
     class TypeConstraintSolver
       Instantiation = Struct.new(:type_map, :param_types, :ret_type)
 
-      def initialize(infer_type_arguments:, substitute_type:, ensure_compatible_type:, type_error:)
+      def initialize(infer_type_arguments:, substitute_type:, ensure_compatible_type:, type_error:, assign_expression_type: nil)
         @infer_type_arguments = infer_type_arguments
         @substitute_type = substitute_type
         @ensure_compatible_type = ensure_compatible_type
         @type_error = type_error
+        @assign_expression_type = assign_expression_type || ->(_expr, _type) {}
       end
 
       def solve(info, args, name:)
@@ -29,6 +30,7 @@ module MLC
             type,
             "argument #{index + 1} of '#{name}'"
           )
+          @assign_expression_type.call(args[index], type)
         end
 
         ret_type = @substitute_type.call(info.ret_type, type_map)

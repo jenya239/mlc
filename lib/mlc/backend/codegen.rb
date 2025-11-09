@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require_relative "../../cpp_ast"
-require_relative "../high_ir/nodes"
+require_relative "../semantic_ir/nodes"
 require_relative "../rules/rule_engine"
-require_relative "../type_registry"
+require_relative "../core/type_registry"
 require_relative "codegen/base_lowerer"
 require_relative "codegen/expression_lowerer"
 require_relative "codegen/statement_lowerer"
@@ -39,6 +39,7 @@ require_relative "../rules/codegen/statement/if_rule"
 require_relative "../rules/codegen/statement/while_rule"
 require_relative "../rules/codegen/statement/for_rule"
 require_relative "../rules/codegen/statement/match_rule"
+require_relative "../rules/codegen/statement/block_rule"
 
 module MLC
   module Backend
@@ -103,7 +104,7 @@ module MLC
         @stdlib_scanner = stdlib_scanner
 
         @rule_engine = rule_engine || MLC::Rules::RuleEngine.new
-        @event_bus = event_bus || MLC::EventBus.new
+        @event_bus = event_bus || MLC::Infrastructure::EventBus.new
 
         # NEW: Runtime policy for lowering strategies
         @runtime_policy = runtime_policy || RuntimePolicy.new
@@ -117,14 +118,14 @@ module MLC
 
       def lower(core_ir)
         case core_ir
-        when HighIR::Module
+        when SemanticIR::Module
           lower_module(core_ir)
-        when HighIR::Func
+        when SemanticIR::Func
           lower_function(core_ir)
-        when HighIR::TypeDecl
+        when SemanticIR::TypeDecl
           lower_type_decl(core_ir)
         else
-          raise "Unknown HighIR node: #{core_ir.class}"
+          raise "Unknown SemanticIR node: #{core_ir.class}"
         end
       end
 
@@ -162,6 +163,7 @@ module MLC
         engine.register(:cpp_statement, MLC::Rules::CodeGen::Statement::WhileRule.new)
         engine.register(:cpp_statement, MLC::Rules::CodeGen::Statement::ForRule.new)
         engine.register(:cpp_statement, MLC::Rules::CodeGen::Statement::MatchRule.new)
+        engine.register(:cpp_statement, MLC::Rules::CodeGen::Statement::BlockRule.new)
       end
     end
   end

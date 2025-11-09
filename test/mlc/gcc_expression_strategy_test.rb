@@ -51,16 +51,16 @@ class GccExpressionStrategyTest < Minitest::Test
     # Test that BlockComplexityAnalyzer correctly identifies simple vs complex
 
     # Simple block
-    simple_block = MLC::HighIR::BlockExpr.new(
+    simple_block = MLC::SemanticIR::BlockExpr.new(
       statements: [
-        MLC::HighIR::VariableDeclStmt.new(
+        MLC::SemanticIR::VariableDeclStmt.new(
           name: "x",
           type: int_type,
-          value: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type),
+          value: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
           mutable: false
         )
       ],
-      result: MLC::HighIR::VarExpr.new(name: "x", type: int_type),
+      result: MLC::SemanticIR::VarExpr.new(name: "x", type: int_type),
       type: int_type
     )
 
@@ -110,6 +110,6 @@ class GccExpressionStrategyTest < Minitest::Test
   private
 
   def int_type
-    @int_type ||= MLC::HighIR::Type.new(kind: :prim, name: "i32")
+    @int_type ||= MLC::SemanticIR::Type.new(kind: :prim, name: "i32")
   end
 end

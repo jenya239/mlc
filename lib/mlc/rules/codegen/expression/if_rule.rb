@@ -7,13 +7,13 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR if expressions to C++ ternary operator
+        # Rule for lowering SemanticIR if expressions to C++ ternary operator
         # Unit-type ifs should be lowered as statements, not expressions
         class IfRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::IfExpr)
+            node.is_a?(MLC::SemanticIR::IfExpr)
           end
 
           def apply(node, context = {})

@@ -3,7 +3,7 @@
 module MLC
   module SemanticGen
     module Rules
-      # BaseRule - Declarative rule pattern for IRGen v2
+      # BaseRule - Declarative rule pattern for SemanticGen
       # Rules operate on AST nodes using data provided through context services
       class BaseRule
         def applies?(node, context)

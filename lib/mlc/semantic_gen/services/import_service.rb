@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require_relative '../../function_signature'
+require_relative '../../core/function_signature'
 require_relative '../../services/stdlib_signature_registry'
 
 module MLC
   module SemanticGen
     module Services
-      # ImportService - handles stdlib and user module imports for IRGen v2
+      # ImportService - handles stdlib and user module imports for SemanticGen
       class ImportService
         def initialize(stdlib_registry:, module_resolver:, type_builder:, type_declaration_service:, type_registration_service:, type_checker:)
           @stdlib_registry = stdlib_registry
@@ -59,18 +59,27 @@ module MLC
         end
 
         def register_function(metadata, module_info, function_registry, alias_name)
-          params = metadata.params.each_with_index.map do |param, index|
-            type_ir = transform_type(param[:type])
-            { name: param[:name] || "arg#{index}", type: type_ir }
+          decl = metadata.ast_node
+          type_params = decl ? @type_checker.normalize_type_params(decl.type_params) : []
+
+          params = nil
+          ret_type = nil
+
+          @type_builder.with_type_params(type_params) do
+            params = metadata.params.each_with_index.map do |param, index|
+              type_ir = transform_type(param[:type])
+              { name: param[:name] || "arg#{index}", type: type_ir }
+            end
+            ret_type = transform_type(metadata.return_type)
           end
-          ret_type = transform_type(metadata.return_type)
 
           canonical_name = metadata.qualified_name || [module_info.name, metadata.name].join('.')
 
-          info = MLC::FunctionSignature.new(
+          info = MLC::Core::FunctionSignature.new(
             metadata.name,
             params.map { |p| p[:type] },
-            ret_type
+            ret_type,
+            type_params
           )
 
           function_registry.register(

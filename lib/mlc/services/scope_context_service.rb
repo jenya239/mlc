@@ -2,7 +2,7 @@
 
 module MLC
   module Services
-    # TransformationContext manages all scoped state during AST → HighIR transformation
+    # TransformationContext manages all scoped state during AST → SemanticIR transformation
     # Phase 18-A: Renamed from ScopeContextService, added current_node and var_type_registry
     #
     # Responsibilities:

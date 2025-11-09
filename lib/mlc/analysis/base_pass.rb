@@ -8,15 +8,15 @@ module MLC
     # Usage:
     #   class MyPass < Analysis::BasePass
     #     def input_level
-    #       :high_ir  # or :mid_ir, :low_ir
+    #       :semantic_ir  # or :mid_ir, :low_ir
     #     end
     #
     #     def output_level
-    #       :high_ir  # same as input for analysis passes
+    #       :semantic_ir  # same as input for analysis passes
     #     end
     #
     #     def required_keys
-    #       [:high_ir, :type_registry]
+    #       [:semantic_ir, :type_registry]
     #     end
     #
     #     def produced_keys
@@ -42,13 +42,13 @@ module MLC
       end
 
       # IR level this pass expects as input
-      # @return [Symbol] :ast, :high_ir, :mid_ir, :low_ir, or :target
+      # @return [Symbol] :ast, :semantic_ir, :mid_ir, :low_ir, or :target
       def input_level
-        :high_ir  # default: operates on high-level IR (HighIR)
+        :semantic_ir  # default: operates on high-level IR (SemanticIR)
       end
 
       # IR level this pass produces as output
-      # @return [Symbol] :ast, :high_ir, :mid_ir, :low_ir, or :target
+      # @return [Symbol] :ast, :semantic_ir, :mid_ir, :low_ir, or :target
       def output_level
         input_level  # default: same as input (analysis pass)
       end

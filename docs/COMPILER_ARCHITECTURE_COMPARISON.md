@@ -281,7 +281,7 @@ class MyPass : public FunctionPass {
 | **Crystal** | Crystal | Visitor + Binding | AST, Normalized, LLVM | ❌ No | ⭐⭐⭐ |
 | **Swift** | Swift | Pass-based | AST, Raw SIL, Canonical SIL | ❌ No | ⭐⭐⭐⭐ |
 | **OCaml** | OCaml | Pass-based | Untyped AST, Typed AST, Lambda | ❌ No | ⭐⭐⭐⭐ |
-| **MLC** | Ruby | Rule-based | AST, HighIR | ❌ No | ⭐⭐ |
+| **MLC** | Ruby | Rule-based | AST, SemanticIR | ❌ No | ⭐⭐ |
 
 ---
 
@@ -376,7 +376,7 @@ end
 
 ### Phase 29: Multi-Level IR (Swift-inspired)
 
-**Goal**: Split HighIR into Raw/Canonical, add LowIR
+**Goal**: Split SemanticIR into Raw/Canonical, add LowIR
 
 **Structure**:
 

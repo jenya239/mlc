@@ -7,13 +7,13 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR lambda expressions to C++ lambda expressions
+        # Rule for lowering SemanticIR lambda expressions to C++ lambda expressions
         # Generates: [captures](params) { return body; }
         class LambdaRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::LambdaExpr)
+            node.is_a?(MLC::SemanticIR::LambdaExpr)
           end
 
           def apply(node, context = {})

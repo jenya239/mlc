@@ -24,6 +24,10 @@ module MLC
       def lower_expression(expr)
               return CppAst::Nodes::NumberLiteral.new(value: "0") if expr.nil?
 
+              if should_lower_as_statement?(expr)
+                return CppAst::Nodes::NumberLiteral.new(value: "0")
+              end
+
               # Apply rules - all expression types should be handled by rules now
               result = apply_cpp_expression_rules(expr)
               return result unless result.equal?(expr)
@@ -41,7 +45,7 @@ module MLC
 
               if block_expr.result
                 # Skip unit literals - they represent void/no value
-                unless block_expr.result.is_a?(HighIR::UnitLiteral)
+                unless block_expr.result.is_a?(SemanticIR::UnitLiteral)
                   result_expr = lower_expression(block_expr.result)
                   if emit_return
                     statements << CppAst::Nodes::ReturnStatement.new(expression: result_expr)

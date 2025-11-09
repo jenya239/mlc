@@ -13,11 +13,11 @@ class TypeInferenceGenericsTest < Minitest::Test
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
     # Find main function
-    main_func = core_ir.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == 'main' }
+    main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
 
     # Body should be a call to identity
-    assert_instance_of MLC::HighIR::CallExpr, main_func.body
+    assert_instance_of MLC::SemanticIR::CallExpr, main_func.body
 
     # Return type should be i32 (inferred from argument)
     assert_equal 'i32', main_func.body.type.name
@@ -35,12 +35,12 @@ class TypeInferenceGenericsTest < Minitest::Test
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
-    main_func = core_ir.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == 'main' }
+    main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
 
     # Return type of first(numbers) should be i32
     # (inferred from numbers: i32[])
-    assert main_func.body.is_a?(MLC::HighIR::BlockExpr)
+    assert main_func.body.is_a?(MLC::SemanticIR::BlockExpr)
   end
 
   def test_generic_function_multiple_type_params
@@ -52,12 +52,12 @@ class TypeInferenceGenericsTest < Minitest::Test
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
-    main_func = core_ir.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == 'main' }
+    main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
 
     # Should compile without errors
     # T inferred as i32, U inferred as f32
-    assert_instance_of MLC::HighIR::CallExpr, main_func.body
+    assert_instance_of MLC::SemanticIR::CallExpr, main_func.body
   end
 
   def test_generic_with_explicit_return_type
@@ -69,11 +69,11 @@ class TypeInferenceGenericsTest < Minitest::Test
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
-    main_func = core_ir.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == 'main' }
+    main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
 
     # Should work even though T cannot be inferred from arguments
-    assert_instance_of MLC::HighIR::CallExpr, main_func.body
+    assert_instance_of MLC::SemanticIR::CallExpr, main_func.body
     assert_equal 'i32', main_func.body.type.name
   end
 
@@ -89,11 +89,11 @@ class TypeInferenceGenericsTest < Minitest::Test
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
-    main_func = core_ir.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == 'main' }
+    main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
 
     # T should be inferred as i32[]
-    assert main_func.body.is_a?(MLC::HighIR::BlockExpr)
+    assert main_func.body.is_a?(MLC::SemanticIR::BlockExpr)
   end
 
   def test_generic_type_with_generic_function
@@ -110,11 +110,11 @@ class TypeInferenceGenericsTest < Minitest::Test
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
-    main_func = core_ir.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == 'main' }
+    main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
 
     # T should be inferred as i32 from both opt and default
-    assert main_func.body.is_a?(MLC::HighIR::BlockExpr)
+    assert main_func.body.is_a?(MLC::SemanticIR::BlockExpr)
   end
 
   def test_type_inference_consistency_check
@@ -139,11 +139,11 @@ class TypeInferenceGenericsTest < Minitest::Test
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
-    main_func = core_ir.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == 'main' }
+    main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
 
     # All identity calls should infer T as i32
-    assert_instance_of MLC::HighIR::CallExpr, main_func.body
+    assert_instance_of MLC::SemanticIR::CallExpr, main_func.body
     assert_equal 'i32', main_func.body.type.name
   end
 
@@ -159,10 +159,10 @@ class TypeInferenceGenericsTest < Minitest::Test
 
     core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
 
-    main_func = core_ir.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == 'main' }
+    main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
 
     # Extern generic function should work the same way
-    assert main_func.body.is_a?(MLC::HighIR::BlockExpr)
+    assert main_func.body.is_a?(MLC::SemanticIR::BlockExpr)
   end
 end

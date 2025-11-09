@@ -35,7 +35,7 @@ module MLC
         # Collect all top-level declarations
         core_ir.items.each do |item|
           case item
-          when HighIR::Func
+          when SemanticIR::Func
             if @symbol_table.key?(item.name)
               @errors << "Duplicate function declaration: #{item.name}"
             else
@@ -45,7 +45,7 @@ module MLC
                 type: item.ret_type
               }
             end
-          when HighIR::TypeDecl
+          when SemanticIR::TypeDecl
             name = item.name
             if @symbol_table.key?(name)
               @errors << "Name conflict: '#{name}' is already declared"

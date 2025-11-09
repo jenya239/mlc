@@ -6,11 +6,11 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR index access to C++ array subscript ([])
+        # Rule for lowering SemanticIR index access to C++ array subscript ([])
         # Contains logic, delegates recursion to lowerer for array and index expressions
         class IndexRule < BaseRule
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::IndexExpr)
+            node.is_a?(MLC::SemanticIR::IndexExpr)
           end
 
           def apply(node, context = {})

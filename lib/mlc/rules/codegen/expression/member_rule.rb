@@ -7,13 +7,13 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR member access to C++ member access (.)
+        # Rule for lowering SemanticIR member access to C++ member access (.)
         # Contains logic, delegates recursion to lowerer for object expression
         class MemberRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::MemberExpr)
+            node.is_a?(MLC::SemanticIR::MemberExpr)
           end
 
           def apply(node, context = {})

@@ -44,7 +44,7 @@ module MLC
                 else_statement: else_statement,
                 if_suffix: " ",
                 condition_lparen_suffix: "",
-                condition_rparen_suffix: " ",
+                condition_rparen_suffix: "",
                 else_prefix: " ",
                 else_suffix: " "
               )
@@ -54,11 +54,26 @@ module MLC
       # Used by IfRule, WhileRule, ForRule, and MatchRule for lowering statement blocks
 
       def lower_statement_block(body_ir)
-              if body_ir.is_a?(HighIR::BlockExpr)
+              case body_ir
+              when SemanticIR::BlockExpr
                 stmts = lower_block_expr_statements(body_ir, emit_return: false)
                 CppAst::Nodes::BlockStatement.new(
                   statements: stmts,
                   statement_trailings: Array.new(stmts.length, "\n"),
+                  lbrace_suffix: "\n",
+                  rbrace_prefix: ""
+                )
+              when SemanticIR::Block
+                lowered = []
+                body_ir.stmts.each do |stmt|
+                  if stmt.is_a?(SemanticIR::ExprStatement) && stmt.expression.is_a?(SemanticIR::UnitLiteral)
+                    next
+                  end
+                  lowered.concat(Array(lower_coreir_statement(stmt)))
+                end
+                CppAst::Nodes::BlockStatement.new(
+                  statements: lowered,
+                  statement_trailings: Array.new(lowered.length, "\n"),
                   lbrace_suffix: "\n",
                   rbrace_prefix: ""
                 )

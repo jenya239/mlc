@@ -7,9 +7,9 @@ require_relative "../../lib/mlc/backend/block_complexity_analyzer"
 class BlockComplexityAnalyzerTest < Minitest::Test
   def test_trivial_block_no_statements
     # Block with no statements, only result
-    block = MLC::HighIR::BlockExpr.new(
+    block = MLC::SemanticIR::BlockExpr.new(
       statements: [],
-      result: MLC::HighIR::LiteralExpr.new(value: 42, type: int_type),
+      result: MLC::SemanticIR::LiteralExpr.new(value: 42, type: int_type),
       type: int_type
     )
 
@@ -24,28 +24,28 @@ class BlockComplexityAnalyzerTest < Minitest::Test
 
   def test_simple_block_with_let_statements
     # Block with 2 let statements and simple result
-    let1 = MLC::HighIR::VariableDeclStmt.new(
+    let1 = MLC::SemanticIR::VariableDeclStmt.new(
       name: "x",
       type: int_type,
-      value: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type),
+      value: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
       mutable: false
     )
 
-    let2 = MLC::HighIR::VariableDeclStmt.new(
+    let2 = MLC::SemanticIR::VariableDeclStmt.new(
       name: "y",
       type: int_type,
-      value: MLC::HighIR::LiteralExpr.new(value: 2, type: int_type),
+      value: MLC::SemanticIR::LiteralExpr.new(value: 2, type: int_type),
       mutable: false
     )
 
-    result = MLC::HighIR::BinaryExpr.new(
+    result = MLC::SemanticIR::BinaryExpr.new(
       op: "+",
-      left: MLC::HighIR::VarExpr.new(name: "x", type: int_type),
-      right: MLC::HighIR::VarExpr.new(name: "y", type: int_type),
+      left: MLC::SemanticIR::VarExpr.new(name: "x", type: int_type),
+      right: MLC::SemanticIR::VarExpr.new(name: "y", type: int_type),
       type: int_type
     )
 
-    block = MLC::HighIR::BlockExpr.new(
+    block = MLC::SemanticIR::BlockExpr.new(
       statements: [let1, let2],
       result: result,
       type: int_type
@@ -61,21 +61,21 @@ class BlockComplexityAnalyzerTest < Minitest::Test
 
   def test_complex_block_with_if_expr
     # Block with if expression in result
-    let_stmt = MLC::HighIR::VariableDeclStmt.new(
+    let_stmt = MLC::SemanticIR::VariableDeclStmt.new(
       name: "x",
       type: int_type,
-      value: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type),
+      value: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
       mutable: false
     )
 
-    if_expr = MLC::HighIR::IfExpr.new(
-      condition: MLC::HighIR::VarExpr.new(name: "x", type: bool_type),
-      then_branch: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type),
-      else_branch: MLC::HighIR::LiteralExpr.new(value: 2, type: int_type),
+    if_expr = MLC::SemanticIR::IfExpr.new(
+      condition: MLC::SemanticIR::VarExpr.new(name: "x", type: bool_type),
+      then_branch: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
+      else_branch: MLC::SemanticIR::LiteralExpr.new(value: 2, type: int_type),
       type: int_type
     )
 
-    block = MLC::HighIR::BlockExpr.new(
+    block = MLC::SemanticIR::BlockExpr.new(
       statements: [let_stmt],
       result: if_expr,
       type: int_type
@@ -92,17 +92,17 @@ class BlockComplexityAnalyzerTest < Minitest::Test
   def test_complex_block_too_many_statements
     # Block with 4 statements (exceeds threshold of 3)
     statements = (1..4).map do |i|
-      MLC::HighIR::VariableDeclStmt.new(
+      MLC::SemanticIR::VariableDeclStmt.new(
         name: "x#{i}",
         type: int_type,
-        value: MLC::HighIR::LiteralExpr.new(value: i, type: int_type),
+        value: MLC::SemanticIR::LiteralExpr.new(value: i, type: int_type),
         mutable: false
       )
     end
 
-    block = MLC::HighIR::BlockExpr.new(
+    block = MLC::SemanticIR::BlockExpr.new(
       statements: statements,
-      result: MLC::HighIR::VarExpr.new(name: "x1", type: int_type),
+      result: MLC::SemanticIR::VarExpr.new(name: "x1", type: int_type),
       type: int_type
     )
 
@@ -115,26 +115,26 @@ class BlockComplexityAnalyzerTest < Minitest::Test
 
   def test_complexity_score_calculation
     # Simple block
-    simple_block = MLC::HighIR::BlockExpr.new(
+    simple_block = MLC::SemanticIR::BlockExpr.new(
       statements: [],
-      result: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type),
+      result: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
       type: int_type
     )
     simple_analyzer = MLC::Backend::BlockComplexityAnalyzer.new(simple_block)
 
     # Complex block with control flow
-    if_expr = MLC::HighIR::IfExpr.new(
-      condition: MLC::HighIR::VarExpr.new(name: "x", type: bool_type),
-      then_branch: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type),
-      else_branch: MLC::HighIR::LiteralExpr.new(value: 2, type: int_type),
+    if_expr = MLC::SemanticIR::IfExpr.new(
+      condition: MLC::SemanticIR::VarExpr.new(name: "x", type: bool_type),
+      then_branch: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
+      else_branch: MLC::SemanticIR::LiteralExpr.new(value: 2, type: int_type),
       type: int_type
     )
-    complex_block = MLC::HighIR::BlockExpr.new(
+    complex_block = MLC::SemanticIR::BlockExpr.new(
       statements: [
-        MLC::HighIR::VariableDeclStmt.new(
+        MLC::SemanticIR::VariableDeclStmt.new(
           name: "x",
           type: int_type,
-          value: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type),
+          value: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
           mutable: false
         )
       ],
@@ -151,21 +151,21 @@ class BlockComplexityAnalyzerTest < Minitest::Test
   private
 
   def int_type
-    @int_type ||= MLC::HighIR::Type.new(kind: :prim, name: "i32")
+    @int_type ||= MLC::SemanticIR::Type.new(kind: :prim, name: "i32")
   end
 
   def bool_type
-    @bool_type ||= MLC::HighIR::Type.new(kind: :prim, name: "bool")
+    @bool_type ||= MLC::SemanticIR::Type.new(kind: :prim, name: "bool")
   end
 end
 
 class IfComplexityAnalyzerTest < Minitest::Test
   def test_simple_ternary_candidate
     # if x { 1 } else { 2 }
-    if_expr = MLC::HighIR::IfExpr.new(
-      condition: MLC::HighIR::VarExpr.new(name: "x", type: bool_type),
-      then_branch: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type),
-      else_branch: MLC::HighIR::LiteralExpr.new(value: 2, type: int_type),
+    if_expr = MLC::SemanticIR::IfExpr.new(
+      condition: MLC::SemanticIR::VarExpr.new(name: "x", type: bool_type),
+      then_branch: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
+      else_branch: MLC::SemanticIR::LiteralExpr.new(value: 2, type: int_type),
       type: int_type
     )
 
@@ -177,17 +177,17 @@ class IfComplexityAnalyzerTest < Minitest::Test
 
   def test_complex_if_with_nested_control_flow
     # if x { if y { 1 } else { 2 } } else { 3 }
-    nested_if = MLC::HighIR::IfExpr.new(
-      condition: MLC::HighIR::VarExpr.new(name: "y", type: bool_type),
-      then_branch: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type),
-      else_branch: MLC::HighIR::LiteralExpr.new(value: 2, type: int_type),
+    nested_if = MLC::SemanticIR::IfExpr.new(
+      condition: MLC::SemanticIR::VarExpr.new(name: "y", type: bool_type),
+      then_branch: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
+      else_branch: MLC::SemanticIR::LiteralExpr.new(value: 2, type: int_type),
       type: int_type
     )
 
-    if_expr = MLC::HighIR::IfExpr.new(
-      condition: MLC::HighIR::VarExpr.new(name: "x", type: bool_type),
+    if_expr = MLC::SemanticIR::IfExpr.new(
+      condition: MLC::SemanticIR::VarExpr.new(name: "x", type: bool_type),
       then_branch: nested_if,
-      else_branch: MLC::HighIR::LiteralExpr.new(value: 3, type: int_type),
+      else_branch: MLC::SemanticIR::LiteralExpr.new(value: 3, type: int_type),
       type: int_type
     )
 
@@ -199,27 +199,27 @@ class IfComplexityAnalyzerTest < Minitest::Test
   private
 
   def int_type
-    @int_type ||= MLC::HighIR::Type.new(kind: :prim, name: "i32")
+    @int_type ||= MLC::SemanticIR::Type.new(kind: :prim, name: "i32")
   end
 
   def bool_type
-    @bool_type ||= MLC::HighIR::Type.new(kind: :prim, name: "bool")
+    @bool_type ||= MLC::SemanticIR::Type.new(kind: :prim, name: "bool")
   end
 end
 
 class MatchComplexityAnalyzerTest < Minitest::Test
   def test_simple_adt_match
     # match option { Some(x) => x, None => 0 }
-    match_expr = MLC::HighIR::MatchExpr.new(
-      scrutinee: MLC::HighIR::VarExpr.new(name: "option", type: option_type),
+    match_expr = MLC::SemanticIR::MatchExpr.new(
+      scrutinee: MLC::SemanticIR::VarExpr.new(name: "option", type: option_type),
       arms: [
         {
           pattern: { kind: :constructor, name: "Some", bindings: ["x"] },
-          body: MLC::HighIR::VarExpr.new(name: "x", type: int_type)
+          body: MLC::SemanticIR::VarExpr.new(name: "x", type: int_type)
         },
         {
           pattern: { kind: :constructor, name: "None", bindings: [] },
-          body: MLC::HighIR::LiteralExpr.new(value: 0, type: int_type)
+          body: MLC::SemanticIR::LiteralExpr.new(value: 0, type: int_type)
         }
       ],
       type: int_type
@@ -235,16 +235,16 @@ class MatchComplexityAnalyzerTest < Minitest::Test
 
   def test_match_with_regex_patterns
     # match text { /\d+/ => 1, _ => 0 }
-    match_expr = MLC::HighIR::MatchExpr.new(
-      scrutinee: MLC::HighIR::VarExpr.new(name: "text", type: string_type),
+    match_expr = MLC::SemanticIR::MatchExpr.new(
+      scrutinee: MLC::SemanticIR::VarExpr.new(name: "text", type: string_type),
       arms: [
         {
           pattern: { kind: :regex, pattern: "\\d+", flags: "" },
-          body: MLC::HighIR::LiteralExpr.new(value: 1, type: int_type)
+          body: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type)
         },
         {
           pattern: { kind: :wildcard },
-          body: MLC::HighIR::LiteralExpr.new(value: 0, type: int_type)
+          body: MLC::SemanticIR::LiteralExpr.new(value: 0, type: int_type)
         }
       ],
       type: int_type
@@ -261,12 +261,12 @@ class MatchComplexityAnalyzerTest < Minitest::Test
     arms = (1..10).map do |i|
       {
         pattern: { kind: :constructor, name: "Case#{i}", bindings: [] },
-        body: MLC::HighIR::LiteralExpr.new(value: i, type: int_type)
+        body: MLC::SemanticIR::LiteralExpr.new(value: i, type: int_type)
       }
     end
 
-    match_expr = MLC::HighIR::MatchExpr.new(
-      scrutinee: MLC::HighIR::VarExpr.new(name: "value", type: sum_type),
+    match_expr = MLC::SemanticIR::MatchExpr.new(
+      scrutinee: MLC::SemanticIR::VarExpr.new(name: "value", type: sum_type),
       arms: arms,
       type: int_type
     )
@@ -281,15 +281,15 @@ class MatchComplexityAnalyzerTest < Minitest::Test
   private
 
   def int_type
-    @int_type ||= MLC::HighIR::Type.new(kind: :prim, name: "i32")
+    @int_type ||= MLC::SemanticIR::Type.new(kind: :prim, name: "i32")
   end
 
   def string_type
-    @string_type ||= MLC::HighIR::Type.new(kind: :prim, name: "string")
+    @string_type ||= MLC::SemanticIR::Type.new(kind: :prim, name: "string")
   end
 
   def option_type
-    @option_type ||= MLC::HighIR::SumType.new(
+    @option_type ||= MLC::SemanticIR::SumType.new(
       name: "Option",
       variants: [
         { name: "Some", fields: [] },
@@ -299,7 +299,7 @@ class MatchComplexityAnalyzerTest < Minitest::Test
   end
 
   def sum_type
-    @sum_type ||= MLC::HighIR::SumType.new(
+    @sum_type ||= MLC::SemanticIR::SumType.new(
       name: "BigSum",
       variants: (1..10).map { |i| { name: "Case#{i}", fields: [] } }
     )

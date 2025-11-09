@@ -87,7 +87,7 @@ module MLC
         when String
           # "Option<T>" -> "Option"
           type.split("<").first&.split("::").last
-        when MLC::HighIR::GenericType
+        when MLC::SemanticIR::GenericType
           extract_type_name(type.base_type)
         else
           type.respond_to?(:name) ? type.name : nil

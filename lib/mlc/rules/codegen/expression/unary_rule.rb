@@ -6,11 +6,11 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR unary expressions to C++ unary operators
+        # Rule for lowering SemanticIR unary expressions to C++ unary operators
         # Contains logic, but delegates recursion to lowerer for operand
         class UnaryRule < BaseRule
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::UnaryExpr)
+            node.is_a?(MLC::SemanticIR::UnaryExpr)
           end
 
           def apply(node, context = {})

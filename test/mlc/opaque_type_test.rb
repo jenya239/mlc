@@ -39,8 +39,8 @@ class OpaqueTypeTest < Minitest::Test
     type_info = type_registry.lookup("MyOpaqueType")
     assert type_info.opaque?
 
-    # HighIR type should be OpaqueType
-    assert_instance_of MLC::HighIR::OpaqueType, type_info.core_ir_type
+    # SemanticIR type should be OpaqueType
+    assert_instance_of MLC::SemanticIR::OpaqueType, type_info.core_ir_type
   end
 
   def test_opaque_type_cpp_name_without_namespace
@@ -123,9 +123,9 @@ class OpaqueTypeTest < Minitest::Test
   end
 
   def test_opaque_type_builder
-    opaque = MLC::HighIR::Builder.opaque_type("MyType")
+    opaque = MLC::SemanticIR::Builder.opaque_type("MyType")
 
-    assert_instance_of MLC::HighIR::OpaqueType, opaque
+    assert_instance_of MLC::SemanticIR::OpaqueType, opaque
     assert_equal "MyType", opaque.name
     assert opaque.opaque?
     assert_equal :opaque, opaque.kind

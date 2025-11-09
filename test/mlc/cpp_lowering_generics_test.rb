@@ -3,7 +3,7 @@
 require_relative '../test_helper'
 
 class CppLoweringGenericsTest < Minitest::Test
-  include MLC::HighIR
+  include MLC::SemanticIR
 
   def setup
     @lowerer = MLC::Backend::CodeGen.new

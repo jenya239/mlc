@@ -4,13 +4,13 @@ require_relative "../test_helper"
 
 class TypeInferenceArchitectureTest < Minitest::Test
   def build_core_ir(source)
-    passes = MLC::IRGen.new
+    passes = MLC::SemanticGen::Pipeline.new
     ast = MLC.parse(source)
     passes.transform(ast)
   end
 
   def find_function(core_ir, name)
-    core_ir.items.find { |item| item.is_a?(MLC::HighIR::Func) && item.name == name }
+    core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == name }
   end
 
   def test_sum_constructor_instantiation_produces_generic_type
@@ -25,7 +25,7 @@ class TypeInferenceArchitectureTest < Minitest::Test
     func = find_function(core, "build")
     call = func.body
 
-    assert_instance_of MLC::HighIR::GenericType, call.type
+    assert_instance_of MLC::SemanticIR::GenericType, call.type
     assert_equal "Option", call.type.name
     assert_equal "i32", call.type.type_args.first.name
   end
@@ -47,7 +47,7 @@ class TypeInferenceArchitectureTest < Minitest::Test
     func = find_function(core, "use_unwrap")
     call = func.body
 
-    assert_instance_of MLC::HighIR::Type, call.type
+    assert_instance_of MLC::SemanticIR::Type, call.type
     assert_equal "i32", call.type.name
   end
 end

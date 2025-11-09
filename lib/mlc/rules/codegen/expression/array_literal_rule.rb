@@ -7,13 +7,13 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR array literals to C++ std::vector initializer
+        # Rule for lowering SemanticIR array literals to C++ std::vector initializer
         # Example: [1, 2, 3] -> std::vector<int>{1, 2, 3}
         class ArrayLiteralRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::ArrayLiteralExpr)
+            node.is_a?(MLC::SemanticIR::ArrayLiteralExpr)
           end
 
           def apply(node, context = {})

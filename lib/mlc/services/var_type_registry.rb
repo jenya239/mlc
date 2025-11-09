@@ -19,20 +19,28 @@ module MLC
     #   var_types.set("local", type)
     #   var_types.restore(snapshot)  # "local" больше не видна
     class VarTypeRegistry
+      Snapshot = Struct.new(:types, :initializers) do
+        def [](key)
+          types[key]
+        end
+      end
+
       def initialize
         @types = {}
+        @initializers = {}
       end
 
       # Установить тип переменной
       # @param name [String] имя переменной
-      # @param type [HighIR::Type] тип переменной
-      def set(name, type)
+      # @param type [SemanticIR::Type] тип переменной
+      def set(name, type, initializer: nil)
         @types[name] = type
+        @initializers[name] = initializer if initializer
       end
 
       # Получить тип переменной
       # @param name [String] имя переменной
-      # @return [HighIR::Type, nil] тип или nil если не найдена
+      # @return [SemanticIR::Type, nil] тип или nil если не найдена
       def get(name)
         @types[name]
       end
@@ -46,8 +54,9 @@ module MLC
 
       # Удалить переменную
       # @param name [String] имя переменной
-      # @return [HighIR::Type, nil] удалённый тип
+      # @return [SemanticIR::Type, nil] удалённый тип
       def delete(name)
+        @initializers.delete(name)
         @types.delete(name)
       end
 
@@ -65,14 +74,29 @@ module MLC
       # Создать snapshot текущего состояния (для scope management)
       # @return [Hash] копия текущего состояния
       def snapshot
-        @types.dup
+        Snapshot.new(@types.dup, @initializers.dup)
       end
 
       # Восстановить состояние из snapshot
       # @param snapshot [Hash] snapshot состояния
       def restore(snapshot)
         raise ArgumentError, "Cannot restore from nil snapshot" if snapshot.nil?
-        @types = snapshot
+        if snapshot.respond_to?(:types) && snapshot.respond_to?(:initializers)
+          @types = snapshot.types.dup
+          @initializers = snapshot.initializers.dup
+        else
+          @types = snapshot.dup
+          @initializers = {}
+        end
+      end
+
+      def update_type(name, type)
+        return unless name && type
+        @types[name] = type
+      end
+
+      def initializer(name)
+        @initializers[name]
       end
 
       # Количество переменных
@@ -95,6 +119,7 @@ module MLC
       def to_s
         inspect
       end
+
     end
   end
 end

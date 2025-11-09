@@ -19,7 +19,7 @@ IRGen:             2503 lines (6 files)
 Rules:             3315 lines (63 files)
 Services:           345 lines (7 files)
 AST nodes:          647 lines
-HighIR nodes:       539 lines
+SemanticIR nodes:       539 lines
 ```
 
 ### Распределение сложности
@@ -42,8 +42,8 @@ type_inference.rb:          474 lines  ⚠️  WARNING
 
 ### 1. **IR Boundaries - Отлично!**
 ✅ Чёткое разделение уровней IR:
-- IRGen работает с AST → HighIR (85 обращений к AST::)
-- Backend работает с HighIR → CppAst (95 обращений к HighIR::)
+- IRGen работает с AST → SemanticIR (85 обращений к AST::)
+- Backend работает с SemanticIR → CppAst (95 обращений к SemanticIR::)
 - **0 обращений к AST из Backend** ✅
 - **0 обращений к CppAst из IRGen** ✅
 
@@ -67,9 +67,9 @@ type_inference.rb:          474 lines  ⚠️  WARNING
 
 ### 3. **Rule Engine - Хорошо**
 ✅ 63 правила организованы по уровням:
-- `irgen/expression/*` - 19 правил (AST → HighIR)
+- `irgen/expression/*` - 19 правил (AST → SemanticIR)
 - `irgen/statement/*` - 9 правил
-- `codegen/expression/*` - 20 правил (HighIR → CppAst)
+- `codegen/expression/*` - 20 правил (SemanticIR → CppAst)
 - `codegen/statement/*` - 7 правил
 
 **Средний размер правила:** 53 строки - хороший показатель для SRP.
@@ -209,7 +209,7 @@ Create FunctionRegistryService:
 
 | Pattern | Status | Notes |
 |---------|--------|-------|
-| Layered IR | ✅ Excellent | AST → HighIR → CppAst чётко разделены |
+| Layered IR | ✅ Excellent | AST → SemanticIR → CppAst чётко разделены |
 | Pass Manager | ✅ Good | PassManager существует, но не полностью используется |
 | Pattern Rewriting | ✅ Good | Rule engine реализован |
 | Service Infrastructure | ✅ Excellent | 7 сервисов, DI через context |
@@ -259,7 +259,7 @@ class MyRuleTest < Minitest::Test
     rule = Rules::IRGen::MyRule.new
     node = AST::MyNode.new(...)
     result = rule.apply(node, @context)
-    assert_instance_of HighIR::MyIR, result
+    assert_instance_of SemanticIR::MyIR, result
   end
 
   def test_rejects_wrong_type

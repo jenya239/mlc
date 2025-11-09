@@ -7,13 +7,13 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR block expressions to C++ blocks
+        # Rule for lowering SemanticIR block expressions to C++ blocks
         # Supports multiple strategies: IIFE, GCC extensions, inline
         class BlockRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::BlockExpr)
+            node.is_a?(MLC::SemanticIR::BlockExpr)
           end
 
           def apply(node, context = {})
@@ -90,7 +90,7 @@ module MLC
             end
 
             # Add result expression as final statement (no return needed in GCC expr)
-            if block_expr.result && !block_expr.result.is_a?(MLC::HighIR::UnitLiteral)
+            if block_expr.result && !block_expr.result.is_a?(MLC::SemanticIR::UnitLiteral)
               result_expr = lowerer.send(:lower_expression, block_expr.result)
               statements << CppAst::Nodes::ExpressionStatement.new(expression: result_expr)
             end
@@ -112,7 +112,7 @@ module MLC
 
             if block_expr.result
               # Skip unit literals - they represent void/no value
-              unless block_expr.result.is_a?(MLC::HighIR::UnitLiteral)
+              unless block_expr.result.is_a?(MLC::SemanticIR::UnitLiteral)
                 result_expr = lowerer.send(:lower_expression, block_expr.result)
                 if emit_return
                   statements << CppAst::Nodes::ReturnStatement.new(expression: result_expr)

@@ -7,12 +7,12 @@ module MLC
   module Rules
     module CodeGen
       module Statement
-        # Rule for lowering HighIR for statements to C++ range-for loops
+        # Rule for lowering SemanticIR for statements to C++ range-for loops
         class ForRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::ForStmt)
+            node.is_a?(MLC::SemanticIR::ForStmt)
           end
 
           def apply(node, context = {})
@@ -42,7 +42,7 @@ module MLC
           end
 
           def lower_for_body(body_ir, lowerer)
-            if body_ir.is_a?(MLC::HighIR::BlockExpr)
+            if body_ir.is_a?(MLC::SemanticIR::BlockExpr)
               # Lower block statements without return
               stmts = lowerer.send(:lower_block_expr_statements, body_ir, emit_return: false)
               CppAst::Nodes::BlockStatement.new(

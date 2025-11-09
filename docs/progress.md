@@ -8,7 +8,7 @@
   - Declarative `MatchRule` delegates entirely to services; visitors stay free of node-class checks.
 
 - **Match statements (v2)**  
-  - `MatchService` promotes eligible expression matches (unit arms, no guards) into `HighIR::MatchStmt` wrapped in a block.  
+  - `MatchService` promotes eligible expression matches (unit arms, no guards) into `SemanticIR::MatchStmt` wrapped in a block.  
   - Statement arms reuse rule-engine visitors; builders gained explicit `match_stmt`.  
   - Regression test added to cover the statement-form lowering.
 
@@ -19,20 +19,20 @@
 - **Member access parity**  
   - New MemberAccessService resolves record, array, string, and numeric members without referencing AST classes.  
   - Declarative MemberRule covers non-module accesses; module detection stays in ModuleMemberRule.  
-  - Regression tests ensure record fields, array helpers, and string utilities return expected HighIR types.
+  - Regression tests ensure record fields, array helpers, and string utilities return expected SemanticIR types.
 
 - **Index access support**  
-  - `IndexAccessService` validates array index operations and produces `HighIR::IndexExpr`.  
+  - `IndexAccessService` validates array index operations and produces `SemanticIR::IndexExpr`.  
   - Rule/visitor wiring keeps array indexing declarative; new test covers typed element lookup.
 
 - **Higher-order constructs**  
-  - `LambdaService` scopes parameters with type defaults and emits `HighIR::LambdaExpr`.  
+  - `LambdaService` scopes parameters with type defaults and emits `SemanticIR::LambdaExpr`.  
   - `ListComprehensionService` leverages loop helpers to derive element types and build `ListCompExpr`.  
   - Engine now covers lambdas and list comprehensions with regression tests.
 
 - **Statement coverage**  
   - Added declarative statement rules for `if`/`for`, reusing loop helpers for scope management.  
-  - Statement visitor dispatch now routes these constructs through the rule engine; tests assert `HighIR::IfStmt` and `ForStmt` generation.
+  - Statement visitor dispatch now routes these constructs through the rule engine; tests assert `SemanticIR::IfStmt` and `ForStmt` generation.
 
 - **Import & type infrastructure**  
   - Container now exposes module import aliasing on `ModuleResolver` and a type-registration service that wires in sum-type constructors.  
@@ -46,7 +46,7 @@
 ## Tests
 
 ```
-bundle exec ruby -Ilib -Itest test/mlc/irgen_v2/engine_test.rb
+bundle exec ruby -Ilib -Itest test/mlc/semantic_gen/engine_test.rb
 ```
 
 ## Next Focus

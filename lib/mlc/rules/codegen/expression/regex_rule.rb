@@ -7,13 +7,13 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR regex expressions to C++ mlc::Regex objects
+        # Rule for lowering SemanticIR regex expressions to C++ mlc::Regex objects
         # Pure function - all logic contained, no delegation
         class RegexRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::RegexExpr)
+            node.is_a?(MLC::SemanticIR::RegexExpr)
           end
 
           def apply(node, _context = {})

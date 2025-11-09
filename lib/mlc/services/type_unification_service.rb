@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "../core/function_signature"
+
 module MLC
   module Services
     # TypeUnificationService - Type unification and substitution for generic type inference
-    # Phase 18-B: Extracted from IRGen
+    # Phase 18-B: Extracted during the legacy IR refactor
     #
     # Responsibilities:
     # - Unify type patterns with actual types (for generic type inference)
@@ -25,8 +27,8 @@ module MLC
       # Returns true if unification succeeds, false otherwise
       # Mutates type_map to record discovered substitutions
       #
-      # @param pattern [HighIR::Type] The pattern type (may contain type variables)
-      # @param actual [HighIR::Type] The actual type to unify against
+      # @param pattern [SemanticIR::Type] The pattern type (may contain type variables)
+      # @param actual [SemanticIR::Type] The actual type to unify against
       # @param type_map [Hash] Mutable map from type variable names to concrete types
       # @param context [Hash] Context for error reporting (currently unused)
       # @return [Boolean] Whether unification succeeded
@@ -34,7 +36,7 @@ module MLC
         return false unless pattern && actual
 
         case pattern
-        when HighIR::TypeVariable
+        when SemanticIR::TypeVariable
           existing = type_map[pattern.name]
           if existing
             type_equivalent?(existing, actual)
@@ -42,8 +44,8 @@ module MLC
             type_map[pattern.name] = actual
             true
           end
-        when HighIR::GenericType
-          return false unless actual.is_a?(HighIR::GenericType)
+        when SemanticIR::GenericType
+          return false unless actual.is_a?(SemanticIR::GenericType)
           pattern_base = type_name(pattern.base_type)
           actual_base = type_name(actual.base_type)
           return false unless pattern_base == actual_base
@@ -51,8 +53,8 @@ module MLC
           pattern.type_args.zip(actual.type_args).all? do |pattern_arg, actual_arg|
             unify_type(pattern_arg, actual_arg, type_map, context: context)
           end
-        when HighIR::ArrayType
-          return false unless actual.is_a?(HighIR::ArrayType)
+        when SemanticIR::ArrayType
+          return false unless actual.is_a?(SemanticIR::ArrayType)
           unify_type(pattern.element_type, actual.element_type, type_map, context: context)
         else
           type_equivalent?(pattern, actual)
@@ -62,18 +64,18 @@ module MLC
       # Check structural type equivalence (deep equality check)
       # Handles type variables, generic types, array types, and named types
       #
-      # @param left [HighIR::Type] First type
-      # @param right [HighIR::Type] Second type
+      # @param left [SemanticIR::Type] First type
+      # @param right [SemanticIR::Type] Second type
       # @return [Boolean] Whether the types are equivalent
       def type_equivalent?(left, right)
         return false if left.nil? || right.nil?
         return true if left.equal?(right)
 
-        if left.is_a?(HighIR::TypeVariable) && right.is_a?(HighIR::TypeVariable)
+        if left.is_a?(SemanticIR::TypeVariable) && right.is_a?(SemanticIR::TypeVariable)
           return left.name == right.name
         end
 
-        if left.is_a?(HighIR::GenericType) && right.is_a?(HighIR::GenericType)
+        if left.is_a?(SemanticIR::GenericType) && right.is_a?(SemanticIR::GenericType)
           left_base = type_name(left.base_type)
           right_base = type_name(right.base_type)
           return false unless left_base == right_base
@@ -82,7 +84,7 @@ module MLC
           return left.type_args.zip(right.type_args).all? { |l_arg, r_arg| type_equivalent?(l_arg, r_arg) }
         end
 
-        if left.is_a?(HighIR::ArrayType) && right.is_a?(HighIR::ArrayType)
+        if left.is_a?(SemanticIR::ArrayType) && right.is_a?(SemanticIR::ArrayType)
           return type_equivalent?(left.element_type, right.element_type)
         end
 
@@ -92,34 +94,34 @@ module MLC
       # Apply type variable substitutions recursively to a type
       # Replaces type variables with their concrete types from the substitutions map
       #
-      # @param type [HighIR::Type] The type to apply substitutions to
-      # @param substitutions [Hash<String, HighIR::Type>] Map from type variable names to concrete types
-      # @return [HighIR::Type] The type with substitutions applied
+      # @param type [SemanticIR::Type] The type to apply substitutions to
+      # @param substitutions [Hash<String, SemanticIR::Type>] Map from type variable names to concrete types
+      # @return [SemanticIR::Type] The type with substitutions applied
       def apply_type_substitutions(type, substitutions)
         case type
-        when HighIR::TypeVariable
+        when SemanticIR::TypeVariable
           substitutions[type.name] || type
-        when HighIR::GenericType
+        when SemanticIR::GenericType
           base = apply_type_substitutions(type.base_type, substitutions)
           args = type.type_args.map { |arg| apply_type_substitutions(arg, substitutions) }
-          HighIR::Builder.generic_type(base, args)
-        when HighIR::ArrayType
-          HighIR::Builder.array_type(apply_type_substitutions(type.element_type, substitutions))
-        when HighIR::FunctionType
+          SemanticIR::Builder.generic_type(base, args)
+        when SemanticIR::ArrayType
+          SemanticIR::Builder.array_type(apply_type_substitutions(type.element_type, substitutions))
+        when SemanticIR::FunctionType
           params = type.params.map { |param| {name: param[:name], type: apply_type_substitutions(param[:type], substitutions)} }
           ret_type = apply_type_substitutions(type.ret_type, substitutions)
-          HighIR::Builder.function_type(params, ret_type)
-        when HighIR::RecordType
+          SemanticIR::Builder.function_type(params, ret_type)
+        when SemanticIR::RecordType
           fields = type.fields.map { |field| {name: field[:name], type: apply_type_substitutions(field[:type], substitutions)} }
-          HighIR::Builder.record_type(type.name, fields)
-        when HighIR::SumType
+          SemanticIR::Builder.record_type(type.name, fields)
+        when SemanticIR::SumType
           variants = type.variants.map do |variant|
             fields = Array(variant[:fields]).map do |field|
               {name: field[:name], type: apply_type_substitutions(field[:type], substitutions)}
             end
             {name: variant[:name], fields: fields}
           end
-          HighIR::Builder.sum_type(type.name, variants)
+          SemanticIR::Builder.sum_type(type.name, variants)
         else
           type
         end
@@ -128,12 +130,12 @@ module MLC
       # Compute generic type variable substitutions from scrutinee type
       # Used in pattern matching to specialize generic constructor types
       #
-      # @param info [FunctionInfo] The constructor function info with type parameters
-      # @param scrutinee_type [HighIR::Type] The concrete type being matched on
-      # @return [Hash<String, HighIR::Type>] Map from type parameter names to concrete types
+      # @param info [FunctionSignature] The constructor function info with type parameters
+      # @param scrutinee_type [SemanticIR::Type] The concrete type being matched on
+      # @return [Hash<String, SemanticIR::Type>] Map from type parameter names to concrete types
       def generic_substitutions(info, scrutinee_type)
         return {} unless info.type_params&.any?
-        return {} unless scrutinee_type.is_a?(HighIR::GenericType)
+        return {} unless scrutinee_type.is_a?(SemanticIR::GenericType)
 
         base_match = @type_checker.type_name(info.ret_type) == @type_checker.type_name(scrutinee_type.base_type)
         return {} unless base_match
@@ -150,8 +152,8 @@ module MLC
       # Returns specialized constructor info for a concrete scrutinee type
       #
       # @param name [String] The constructor name
-      # @param scrutinee_type [HighIR::Type] The concrete type being matched on
-      # @return [FunctionInfo, nil] Specialized constructor info, or nil if not found
+      # @param scrutinee_type [SemanticIR::Type] The concrete type being matched on
+      # @return [FunctionSignature, nil] Specialized constructor info, or nil if not found
       def constructor_info_for(name, scrutinee_type)
         info = @sum_type_constructors[name]
         return unless info
@@ -164,8 +166,7 @@ module MLC
         end
         substituted_ret_type = apply_type_substitutions(info.ret_type, substitutions)
 
-        # FunctionInfo is defined in IRGen, need to reference it via MLC::IRGen
-        MLC::IRGen::FunctionInfo.new(info.name, substituted_params, substituted_ret_type, info.type_params)
+        MLC::Core::FunctionSignature.new(info.name, substituted_params, substituted_ret_type, info.type_params)
       end
 
       private

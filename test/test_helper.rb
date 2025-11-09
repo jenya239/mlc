@@ -7,6 +7,7 @@ else
   require "minitest/autorun"
 end
 require "minitest/pride"
+require "minitest/mock"
 require_relative "../lib/cpp_ast"
 require_relative "../lib/mlc"
 

@@ -7,12 +7,12 @@ module MLC
   module Rules
     module CodeGen
       module Statement
-        # Rule for lowering HighIR variable declarations to C++ variable declarations
+        # Rule for lowering SemanticIR variable declarations to C++ variable declarations
         class VariableDeclRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::VariableDeclStmt)
+            node.is_a?(MLC::SemanticIR::VariableDeclStmt)
           end
 
           def apply(node, context = {})

@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "../core/function_signature"
+
 module MLC
   module Services
     # FunctionRegistrationService - Function signature registration
-    # Phase 17-F: Extracted from IRGen FunctionTransformer
+    # Phase 17-F: Extracted from the legacy FunctionTransformer
     #
     # Responsibilities:
     # - Register function signatures with metadata
@@ -23,10 +25,10 @@ module MLC
       # Registers if not present, returns existing signature if already registered
       #
       # @param func_decl [AST::FuncDecl] Function declaration
-      # @param param_types [Array<HighIR::Type>] Transformed parameter types
-      # @param ret_type [HighIR::Type] Transformed return type
-      # @param type_params [Array<HighIR::TypeParam>] Type parameters
-      # @return [FunctionInfo] Function signature information
+      # @param param_types [Array<SemanticIR::Type>] Transformed parameter types
+      # @param ret_type [SemanticIR::Type] Transformed return type
+      # @param type_params [Array<SemanticIR::TypeParam>] Type parameters
+      # @return [FunctionSignature] Function signature information
       def ensure_function_signature(func_decl, param_types, ret_type, type_params)
         if @function_registry.registered?(func_decl.name)
           return @function_registry.fetch(func_decl.name)
@@ -41,19 +43,19 @@ module MLC
       end
 
       # Register function signature with metadata
-      # Creates FunctionInfo and registers in function registry
+      # Creates FunctionSignature and registers in function registry
       #
       # @param func_decl [AST::FuncDecl] Function declaration
-      # @param param_types [Array<HighIR::Type>] Transformed parameter types
-      # @param ret_type [HighIR::Type] Transformed return type
-      # @param type_params [Array<HighIR::TypeParam>] Type parameters
-      # @return [FunctionInfo] Registered function information
+      # @param param_types [Array<SemanticIR::Type>] Transformed parameter types
+      # @param ret_type [SemanticIR::Type] Transformed return type
+      # @param type_params [Array<SemanticIR::TypeParam>] Type parameters
+      # @return [FunctionSignature] Registered function information
       def register_function_signature(func_decl, param_types, ret_type, type_params)
         if @function_registry.registered?(func_decl.name)
           return @function_registry.fetch(func_decl.name)
         end
 
-        info = MLC::IRGen::FunctionInfo.new(func_decl.name, param_types, ret_type, type_params)
+        info = MLC::Core::FunctionSignature.new(func_decl.name, param_types, ret_type, type_params)
 
         @function_registry.register(
           func_decl.name,

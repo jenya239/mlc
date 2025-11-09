@@ -116,13 +116,13 @@ Output: math.hpp (C++ header)
 module MLC
   module CodeGen
     class MetadataGenerator
-      def generate(high_ir_module)
+      def generate(semantic_ir_module)
         {
-          module_name: high_ir_module.name,
+          module_name: semantic_ir_module.name,
           exports: {
-            functions: extract_exported_functions(high_ir_module),
-            types: extract_exported_types(high_ir_module),
-            sum_types: extract_exported_sum_types(high_ir_module)
+            functions: extract_exported_functions(semantic_ir_module),
+            types: extract_exported_types(semantic_ir_module),
+            sum_types: extract_exported_sum_types(semantic_ir_module)
           }
         }
       end
@@ -139,14 +139,14 @@ end
 
 ```ruby
 def self.to_hpp_cpp(source, output_path: nil)
-  high_ir_module = transform_to_core_with_registry(source)
+  semantic_ir_module = transform_to_core_with_registry(source)
 
   # Generate C++ files (existing)
-  hpp = CppCodeGen.generate_header(high_ir_module)
-  cpp = CppCodeGen.generate_implementation(high_ir_module)
+  hpp = CppCodeGen.generate_header(semantic_ir_module)
+  cpp = CppCodeGen.generate_implementation(semantic_ir_module)
 
   # NEW: Generate metadata
-  metadata = CodeGen::MetadataGenerator.new.generate(high_ir_module)
+  metadata = CodeGen::MetadataGenerator.new.generate(semantic_ir_module)
 
   if output_path
     File.write("#{output_path}.hpp", hpp)
@@ -317,7 +317,7 @@ end
 # Just generate #include, skip type-checking
 def pass_collect_imports(context)
   program.imports.each do |import_decl|
-    context[:imports] << HighIR::Import.new(
+    context[:imports] << SemanticIR::Import.new(
       path: import_decl.path,
       items: import_decl.items
     )

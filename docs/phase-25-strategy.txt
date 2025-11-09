@@ -13,14 +13,14 @@ Status: In Progress (70% Complete)
 
 ### Before (Legacy):
 ```
-AST → IRGen (monolithic transformer) → HighIR
+AST → IRGen (monolithic transformer) → SemanticIR
          ↓
     Rules (via transformer.send())
 ```
 
 ### Current (Transitional):
 ```
-AST → Visitors (traversal) + Rules (semantics) → HighIR
+AST → Visitors (traversal) + Rules (semantics) → SemanticIR
          ↓                      ↓
   ExpressionVisitor      StatementVisitor
          ↓                      ↓
@@ -29,7 +29,7 @@ AST → Visitors (traversal) + Rules (semantics) → HighIR
 
 ### Target (Clean):
 ```
-AST → Visitors (traversal) + Rules (semantics) + Services → HighIR
+AST → Visitors (traversal) + Rules (semantics) + Services → SemanticIR
          ↓                      ↓                    ↓
   ExpressionVisitor      StatementVisitor      FunctionRegistry
          ↓                      ↓                TypeRegistry
@@ -208,7 +208,7 @@ when AST::TypeRef
 when AST::GenericType
   # Handle generics
 else
-  param.type  # Already a HighIR type?
+  param.type  # Already a SemanticIR type?
 end
 
 # Option B: Add to TypeRegistry service
@@ -266,7 +266,7 @@ stmt_block = statement_visitor.visit_statement_block(node)
 **Current Implementation** (`lib/mlc/irgen.rb:428-442`):
 ```ruby
 def transform_for_statement(stmt)
-  # Transforms for loop to HighIR::ForStmt
+  # Transforms for loop to SemanticIR::ForStmt
   # Handles iterator, variable binding, body
 end
 ```
@@ -296,7 +296,7 @@ loop_stmt = transformer.transform_for_statement(node)
 **Current Implementation** (`lib/mlc/irgen.rb:510-515`):
 ```ruby
 def transform_while_statement(condition_node, body_node)
-  # Transforms while loop to HighIR::WhileStmt
+  # Transforms while loop to SemanticIR::WhileStmt
 end
 ```
 
@@ -314,7 +314,7 @@ end
 **Current Implementation** (`lib/mlc/irgen.rb:444-450`):
 ```ruby
 def transform_if_statement(condition_node, then_node, else_node)
-  # Transforms if expression to HighIR::IfStmt
+  # Transforms if expression to SemanticIR::IfStmt
 end
 ```
 
@@ -414,7 +414,7 @@ rule :if_expression do
     then_branch { visit node.then_branch }
     else_branch { visit node.else_branch if node.else_branch }
 
-    build HighIR::IfExpr,
+    build SemanticIR::IfExpr,
       condition: condition,
       then_branch: then_branch,
       else_branch: else_branch,

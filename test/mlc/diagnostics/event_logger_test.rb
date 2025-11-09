@@ -5,7 +5,7 @@ require "stringio"
 
 class EventLoggerTest < Minitest::Test
   def test_logs_payload_to_io
-    bus = MLC::EventBus.new
+    bus = MLC::Infrastructure::EventBus.new
     io = StringIO.new
 
     MLC::Diagnostics::EventLogger.attach(bus, io: io, events: [:custom])

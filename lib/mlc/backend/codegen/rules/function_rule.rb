@@ -9,7 +9,7 @@ module MLC
       module Rules
         class FunctionRule < MLC::Rules::BaseRule
           def applies?(node, context = {})
-            node.is_a?(CppAst::Nodes::FunctionDeclaration) && context[:core_func].is_a?(MLC::HighIR::Func)
+            node.is_a?(CppAst::Nodes::FunctionDeclaration) && context[:core_func].is_a?(MLC::SemanticIR::Func)
           end
 
           def apply(node, context = {})

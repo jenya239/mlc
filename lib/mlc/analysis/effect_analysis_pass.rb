@@ -4,8 +4,8 @@ require_relative "base_pass"
 
 module MLC
   module Analysis
-    # EffectAnalysisPass - analyzes HighIR functions for effects (constexpr, noexcept)
-    # This pass walks through all functions in a HighIR module and annotates them
+    # EffectAnalysisPass - analyzes SemanticIR functions for effects (constexpr, noexcept)
+    # This pass walks through all functions in a SemanticIR module and annotates them
     # with effects based on their body and return type.
     #
     # Results stored in context[:function_effects] = { function_name => [:constexpr, :noexcept] }
@@ -36,7 +36,7 @@ module MLC
 
         # Analyze each function in the module
         core_ir.items.each do |item|
-          next unless item.is_a?(HighIR::Func)
+          next unless item.is_a?(SemanticIR::Func)
 
           effects = @effect_analyzer.analyze(item.body, return_type: item.ret_type)
           function_effects[item.name] = effects

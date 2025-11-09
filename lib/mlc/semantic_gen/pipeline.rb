@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../function_registry'
-require_relative '../type_registry'
+require_relative '../core/function_registry'
+require_relative '../core/type_registry'
 require_relative '../services/function_registration_service'
 require_relative '../services/type_resolution_service'
 require_relative '../services/purity_analyzer'
@@ -18,8 +18,8 @@ module MLC
       attr_reader :type_registry, :function_registry, :services
 
       def initialize(function_registry: nil, type_registry: nil, rule_engine: nil)
-        @type_registry = type_registry || MLC::TypeRegistry.new
-        @function_registry = function_registry || MLC::FunctionRegistry.new
+        @type_registry = type_registry || MLC::Core::TypeRegistry.new
+        @function_registry = function_registry || MLC::Core::FunctionRegistry.new
         @services = Services::Container.new(
           function_registry: @function_registry,
           type_registry: @type_registry

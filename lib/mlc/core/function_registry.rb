@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  # FunctionRegistry provides a central repository for function metadata and
-  # signatures used throughout the Aurora compilation pipeline.
+  module Core
+    # FunctionRegistry provides a central repository for function metadata and
+    # signatures used throughout the Aurora compilation pipeline.
   #
   # Responsibilities:
   # - Track function signatures (param/return types) for inference and lowering
@@ -12,12 +13,13 @@ module MLC
   class FunctionRegistry
     # Rich metadata about a registered function.
     class Entry
-      attr_reader :name, :effects
+      attr_reader :name, :effects, :canonical_name
       attr_accessor :info, :namespace, :module_name, :ast_node, :origin
 
-      def initialize(name:, info:, namespace: nil, module_name: nil, exported: false, external: false,
+      def initialize(name:, info:, canonical_name: nil, namespace: nil, module_name: nil, exported: false, external: false,
                      ast_node: nil, origin: nil, effects: nil)
         @name = name
+        @canonical_name = canonical_name || name
         @info = info
         @namespace = namespace
         @module_name = module_name
@@ -27,6 +29,10 @@ module MLC
         @origin = origin
         @effects = normalize_effects(effects)
         @aliases = []
+      end
+
+      def name=(value)
+        @name = value
       end
 
       def exported?
@@ -94,9 +100,13 @@ module MLC
     def register(name, info, metadata = nil)
       metadata = normalize_metadata(metadata)
 
-      entry = @functions[name] || begin
-        @functions[name] = Entry.new(name: name, info: info)
+      entry = @functions[name]
+      unless entry
+        entry = Entry.new(name: info.name, canonical_name: name, info: info)
+        @functions[name] = entry
       end
+
+      entry.name = info.name
 
       previous_namespace = entry.namespace
       previous_module = entry.module_name
@@ -189,11 +199,11 @@ module MLC
       end
 
       old_target = @aliases[alias_name]
-      if old_target && old_target != entry.name
+      if old_target && old_target != entry.canonical_name
         @functions[old_target]&.remove_alias(alias_name)
       end
 
-      @aliases[alias_name] = entry.name
+      @aliases[alias_name] = entry.canonical_name
       entry.add_alias(alias_name)
       entry.info
     end
@@ -324,35 +334,42 @@ module MLC
     end
 
     def track_collection_changes(entry, previous_namespace, previous_module)
+      canonical = entry.canonical_name
+
       if previous_namespace && previous_namespace != entry.namespace
-        @namespaces[previous_namespace].delete(entry.name)
+        list = @namespaces[previous_namespace]
+        list&.delete(canonical)
       end
       if entry.namespace
         namespace_list = @namespaces[entry.namespace]
-        namespace_list << entry.name unless namespace_list.include?(entry.name)
+        namespace_list << canonical unless namespace_list.include?(canonical)
       end
 
       if previous_module && previous_module != entry.module_name
-        @modules[previous_module].delete(entry.name)
+        list = @modules[previous_module]
+        list&.delete(canonical)
       end
       if entry.module_name
         module_list = @modules[entry.module_name]
-        module_list << entry.name unless module_list.include?(entry.name)
+        module_list << canonical unless module_list.include?(canonical)
       end
     end
 
     def cleanup_collections(entry)
+      canonical = entry.canonical_name
+
       if entry.namespace
         list = @namespaces[entry.namespace]
-        list.delete(entry.name)
+        list.delete(canonical)
         @namespaces.delete(entry.namespace) if list.empty?
       end
 
       if entry.module_name
         list = @modules[entry.module_name]
-        list.delete(entry.name)
+        list.delete(canonical)
         @modules.delete(entry.module_name) if list.empty?
       end
     end
+  end
   end
 end

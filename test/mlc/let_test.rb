@@ -27,7 +27,7 @@ class MLCLetTest < Minitest::Test
 
     ast = MLC.parse(source)
     core_ir, = MLC.transform_to_core_with_registry(ast)
-    func = core_ir.items.grep(MLC::HighIR::Func).first
+    func = core_ir.items.grep(MLC::SemanticIR::Func).first
 
     refute_nil func
     assert_includes func.effects, :constexpr

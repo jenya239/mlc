@@ -6,11 +6,11 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR binary expressions to C++ binary operators
+        # Rule for lowering SemanticIR binary expressions to C++ binary operators
         # Contains logic, but delegates recursion to lowerer for child expressions
         class BinaryRule < BaseRule
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::BinaryExpr)
+            node.is_a?(MLC::SemanticIR::BinaryExpr)
           end
 
           def apply(node, context = {})

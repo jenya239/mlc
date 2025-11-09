@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../function_registry'
-require_relative '../type_registry'
+require_relative '../core/function_registry'
+require_relative '../core/type_registry'
 require_relative '../rules/rule_engine'
 require_relative 'services/container'
 require_relative 'rules/literal_rule'
@@ -37,7 +37,7 @@ require_relative 'visitors/statement_visitor'
 
 module MLC
   module SemanticGen
-    # Engine orchestrates IRGen v2 rule evaluation with shared services
+    # Engine orchestrates SemanticGen rule evaluation with shared services
     class Engine
       attr_reader :services, :rule_engine, :expression_visitor, :statement_visitor
 
@@ -75,8 +75,8 @@ module MLC
       end
 
       def build_services(function_registry:, type_registry:)
-        registry = function_registry || MLC::FunctionRegistry.new
-        types = type_registry || MLC::TypeRegistry.new
+        registry = function_registry || MLC::Core::FunctionRegistry.new
+        types = type_registry || MLC::Core::TypeRegistry.new
         Services::Container.new(function_registry: registry, type_registry: types)
       end
 

@@ -79,15 +79,15 @@ module MLC
           end
         end
 
-        # Map HighIR type to C++ type string
+        # Map SemanticIR type to C++ type string
         # Pure function - all dependencies passed as parameters
         def map_type(type, type_map:, type_registry: nil)
           case type
-          when HighIR::TypeVariable
+          when SemanticIR::TypeVariable
             # Type variables map directly to their name (T, U, E, etc.)
             type.name
 
-          when HighIR::GenericType
+          when SemanticIR::GenericType
             # Generic types: Base<Arg1, Arg2, ...>
             base_name = map_type(type.base_type, type_map: type_map, type_registry: type_registry)
             type_args = type.type_args.map { |arg|
@@ -95,11 +95,11 @@ module MLC
             }.join(", ")
             "#{base_name}<#{type_args}>"
 
-          when HighIR::ArrayType
+          when SemanticIR::ArrayType
             element_type = map_type(type.element_type, type_map: type_map, type_registry: type_registry)
             "std::vector<#{element_type}>"
 
-          when HighIR::FunctionType
+          when SemanticIR::FunctionType
             # Function types: std::function<ReturnType(Arg1, Arg2, ...)>
             param_types = type.params.map { |p|
               map_type(p[:type], type_map: type_map, type_registry: type_registry)
@@ -107,7 +107,7 @@ module MLC
             ret_type = map_type(type.ret_type, type_map: type_map, type_registry: type_registry)
             "std::function<#{ret_type}(#{param_types})>"
 
-          when HighIR::OpaqueType
+          when SemanticIR::OpaqueType
             # Check TypeRegistry first
             if type_registry && type_registry.has_type?(type.name)
               return type_registry.cpp_name(type.name)
@@ -115,7 +115,7 @@ module MLC
             # Fallback: opaque types are pointers
             "#{type.name}*"
 
-          when HighIR::RecordType, HighIR::SumType
+          when SemanticIR::RecordType, SemanticIR::SumType
             # Try TypeRegistry first
             if type_registry && type_registry.has_type?(type.name)
               return type_registry.cpp_name(type.name)
@@ -123,7 +123,7 @@ module MLC
             # Fallback to type_map
             type_map[type.name] || type.name
 
-          when HighIR::Type
+          when SemanticIR::Type
             # Try TypeRegistry first
             if type_registry && type.respond_to?(:name) && type_registry.has_type?(type.name)
               return type_registry.cpp_name(type.name)
@@ -153,15 +153,15 @@ module MLC
           return true if type_str.include?("auto")
 
           case type
-          when HighIR::ArrayType
+          when SemanticIR::ArrayType
             type_requires_auto?(type.element_type, type_map: type_map, type_registry: type_registry)
-          when HighIR::FunctionType
+          when SemanticIR::FunctionType
             true
-          when HighIR::RecordType
+          when SemanticIR::RecordType
             type.name.nil? || type.name.empty? || type.name == "record"
-          when HighIR::SumType
+          when SemanticIR::SumType
             type.name.nil? || type.name.empty?
-          when HighIR::Type
+          when SemanticIR::Type
             name = type.name
             return false if name && type_map.key?(name)
             name.nil? || name.empty? || name == "auto"
@@ -189,9 +189,9 @@ module MLC
 
       # Check if expression/type should be lowered as statement (not expression)
       def should_lower_as_statement?(expr_or_type)
-        return true if expr_or_type.is_a?(HighIR::UnitLiteral)
-        return true if expr_or_type.is_a?(HighIR::UnitType)
-        return true if expr_or_type.is_a?(HighIR::IfExpr) && expr_or_type.type.is_a?(HighIR::UnitType)
+        return true if expr_or_type.is_a?(SemanticIR::UnitLiteral)
+        return true if expr_or_type.is_a?(SemanticIR::UnitType)
+        return true if expr_or_type.is_a?(SemanticIR::IfExpr) && expr_or_type.type.is_a?(SemanticIR::UnitType)
         false
       end
     end

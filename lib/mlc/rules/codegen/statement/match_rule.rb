@@ -7,12 +7,12 @@ module MLC
   module Rules
     module CodeGen
       module Statement
-        # Rule for lowering HighIR match statements to C++ std::visit
+        # Rule for lowering SemanticIR match statements to C++ std::visit
         class MatchRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::MatchStmt)
+            node.is_a?(MLC::SemanticIR::MatchStmt)
           end
 
           def apply(node, context = {})

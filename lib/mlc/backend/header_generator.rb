@@ -4,7 +4,7 @@ require "set"
 
 module MLC
   module Backend
-    # Generates C++ header (.hpp) and implementation (.cpp) files from HighIR modules
+    # Generates C++ header (.hpp) and implementation (.cpp) files from SemanticIR modules
     class HeaderGenerator
       def initialize(lowering)
         @lowering = lowering
@@ -22,10 +22,10 @@ module MLC
 
         module_node.items.each do |item|
           case item
-          when HighIR::TypeDecl
+          when SemanticIR::TypeDecl
             # All type declarations go in header
             header_items << item
-          when HighIR::Func
+          when SemanticIR::Func
             # Function declarations go in header
             header_items << item
             # External functions don't need implementation
@@ -98,12 +98,12 @@ module MLC
         # Generate forward declarations and type definitions
         items.each do |item|
           case item
-          when HighIR::TypeDecl
+          when SemanticIR::TypeDecl
             # Full type definition goes in header
             cpp_ast = @lowering.lower(item)
             lines << cpp_ast.to_source
             lines << ""
-          when HighIR::Func
+          when SemanticIR::Func
             # Only function declaration (prototype) goes in header
             func_decl = generate_function_declaration(item)
             lines << func_decl
@@ -150,7 +150,7 @@ module MLC
         # Generate function implementations
         items.each do |item|
           case item
-          when HighIR::Func
+          when SemanticIR::Func
             func_impl = generate_function_implementation(item)
             lines << func_impl
             lines << ""
@@ -252,12 +252,12 @@ module MLC
 
         module_node.items.each do |item|
           case item
-          when MLC::HighIR::Func
+          when MLC::SemanticIR::Func
             next unless item.body
             collect_modules_from_type(item.ret_type, current_module, require_include: true)
             item.params.each { |param| collect_modules_from_type(param.type, current_module, require_include: true) }
             collect_modules_from_expr(item.body, registry, current_module)
-          when MLC::HighIR::TypeDecl
+          when MLC::SemanticIR::TypeDecl
             type_info = @lowering.type_registry&.lookup(item.name)
             if type_info
               type_info.referenced_type_names.each do |type_name|
@@ -288,7 +288,7 @@ module MLC
         seen = Set.new
 
         items.each do |item|
-          next unless item.is_a?(MLC::HighIR::TypeDecl)
+          next unless item.is_a?(MLC::SemanticIR::TypeDecl)
           info = type_registry.lookup(item.name)
           next unless info
 
@@ -326,46 +326,46 @@ module MLC
         return unless expr
 
         case expr
-        when MLC::HighIR::CallExpr
-          if expr.callee.is_a?(MLC::HighIR::VarExpr)
+        when MLC::SemanticIR::CallExpr
+          if expr.callee.is_a?(MLC::SemanticIR::VarExpr)
             entry = registry.fetch_entry(expr.callee.name)
             mark_module_dependency(entry&.module_name, current_module, require_include: true)
           else
             collect_modules_from_expr(expr.callee, registry, current_module)
           end
           expr.args.each { |arg| collect_modules_from_expr(arg, registry, current_module) }
-        when MLC::HighIR::BinaryExpr
+        when MLC::SemanticIR::BinaryExpr
           collect_modules_from_expr(expr.left, registry, current_module)
           collect_modules_from_expr(expr.right, registry, current_module)
-        when MLC::HighIR::UnaryExpr
+        when MLC::SemanticIR::UnaryExpr
           collect_modules_from_expr(expr.operand, registry, current_module)
-        when MLC::HighIR::MemberExpr
+        when MLC::SemanticIR::MemberExpr
           collect_modules_from_expr(expr.object, registry, current_module)
-        when MLC::HighIR::IndexExpr
+        when MLC::SemanticIR::IndexExpr
           collect_modules_from_expr(expr.object, registry, current_module)
           collect_modules_from_expr(expr.index, registry, current_module)
-        when MLC::HighIR::RecordExpr
+        when MLC::SemanticIR::RecordExpr
           expr.fields.each_value { |value| collect_modules_from_expr(value, registry, current_module) }
           collect_modules_from_type(expr.type, current_module, require_include: true)
-        when MLC::HighIR::IfExpr
+        when MLC::SemanticIR::IfExpr
           collect_modules_from_expr(expr.condition, registry, current_module)
           collect_modules_from_expr(expr.then_branch, registry, current_module)
           collect_modules_from_expr(expr.else_branch, registry, current_module) if expr.else_branch
-        when MLC::HighIR::MatchExpr
+        when MLC::SemanticIR::MatchExpr
           collect_modules_from_expr(expr.scrutinee, registry, current_module)
           expr.arms.each do |arm|
             collect_modules_from_expr(arm[:guard], registry, current_module) if arm[:guard]
             collect_modules_from_expr(arm[:body], registry, current_module)
           end
-        when MLC::HighIR::LambdaExpr
+        when MLC::SemanticIR::LambdaExpr
           collect_modules_from_expr(expr.body, registry, current_module)
-        when MLC::HighIR::BlockExpr
+        when MLC::SemanticIR::BlockExpr
           expr.statements.each { |stmt| collect_modules_from_statement(stmt, registry, current_module) }
           collect_modules_from_expr(expr.result, registry, current_module) if expr.result
-        when MLC::HighIR::ArrayLiteralExpr
+        when MLC::SemanticIR::ArrayLiteralExpr
           expr.elements.each { |element| collect_modules_from_expr(element, registry, current_module) }
           collect_modules_from_type(expr.type, current_module)
-        when MLC::HighIR::ListCompExpr
+        when MLC::SemanticIR::ListCompExpr
           Array(expr.generators).each do |gen|
             if gen.respond_to?(:[]) && gen[:iterable]
               collect_modules_from_expr(gen[:iterable], registry, current_module)
@@ -376,9 +376,9 @@ module MLC
           end
           Array(expr.filters).each { |filter| collect_modules_from_expr(filter, registry, current_module) }
           collect_modules_from_expr(expr.output_expr, registry, current_module)
-        when MLC::HighIR::Block
+        when MLC::SemanticIR::Block
           expr.stmts.each { |stmt| collect_modules_from_statement(stmt, registry, current_module) }
-        when MLC::HighIR::VarExpr, MLC::HighIR::LiteralExpr, MLC::HighIR::UnitLiteral, MLC::HighIR::RegexExpr
+        when MLC::SemanticIR::VarExpr, MLC::SemanticIR::LiteralExpr, MLC::SemanticIR::UnitLiteral, MLC::SemanticIR::RegexExpr
           # no-op
         else
           collect_modules_from_type(expr.type, current_module) if expr.respond_to?(:type)
@@ -389,32 +389,32 @@ module MLC
         return unless stmt
 
         case stmt
-        when MLC::HighIR::ExprStatement
+        when MLC::SemanticIR::ExprStatement
           collect_modules_from_expr(stmt.expression, registry, current_module)
-        when MLC::HighIR::Return
+        when MLC::SemanticIR::Return
           collect_modules_from_expr(stmt.expr, registry, current_module)
-        when MLC::HighIR::VariableDeclStmt
+        when MLC::SemanticIR::VariableDeclStmt
           collect_modules_from_expr(stmt.value, registry, current_module)
           collect_modules_from_type(stmt.type, current_module, require_include: true)
-        when MLC::HighIR::AssignmentStmt
+        when MLC::SemanticIR::AssignmentStmt
           collect_modules_from_expr(stmt.value, registry, current_module)
-        when MLC::HighIR::IfStmt
+        when MLC::SemanticIR::IfStmt
           collect_modules_from_expr(stmt.condition, registry, current_module)
           collect_modules_from_statement(stmt.then_body, registry, current_module)
           collect_modules_from_statement(stmt.else_body, registry, current_module)
-        when MLC::HighIR::ForStmt
+        when MLC::SemanticIR::ForStmt
           collect_modules_from_expr(stmt.iterable, registry, current_module)
           collect_modules_from_statement(stmt.body, registry, current_module)
-        when MLC::HighIR::WhileStmt
+        when MLC::SemanticIR::WhileStmt
           collect_modules_from_expr(stmt.condition, registry, current_module)
           collect_modules_from_statement(stmt.body, registry, current_module)
-        when MLC::HighIR::MatchStmt
+        when MLC::SemanticIR::MatchStmt
           collect_modules_from_expr(stmt.scrutinee, registry, current_module)
           stmt.arms.each do |arm|
             collect_modules_from_expr(arm[:guard], registry, current_module) if arm[:guard]
             collect_modules_from_expr(arm[:body], registry, current_module)
           end
-        when MLC::HighIR::Block
+        when MLC::SemanticIR::Block
           stmt.stmts.each { |inner| collect_modules_from_statement(inner, registry, current_module) }
         end
       end
@@ -423,18 +423,18 @@ module MLC
         return unless type
 
         case type
-        when MLC::HighIR::GenericType
+        when MLC::SemanticIR::GenericType
           collect_modules_from_type(type.base_type, current_module, require_include: require_include)
           type.type_args.each { |arg| collect_modules_from_type(arg, current_module, require_include: require_include) }
-        when MLC::HighIR::ArrayType
+        when MLC::SemanticIR::ArrayType
           collect_modules_from_type(type.element_type, current_module, require_include: require_include)
-        when MLC::HighIR::FunctionType
+        when MLC::SemanticIR::FunctionType
           type.params.each { |param| collect_modules_from_type(param[:type], current_module, require_include: true) }
           collect_modules_from_type(type.ret_type, current_module, require_include: true)
-        when MLC::HighIR::RecordType, MLC::HighIR::SumType
+        when MLC::SemanticIR::RecordType, MLC::SemanticIR::SumType
           module_name = module_name_for_type(type)
           mark_module_dependency(module_name, current_module, require_include: true)
-        when MLC::HighIR::Type
+        when MLC::SemanticIR::Type
           module_name = module_name_for_type(type)
           mark_module_dependency(module_name, current_module, require_include: require_include || requires_definition?(type))
         end

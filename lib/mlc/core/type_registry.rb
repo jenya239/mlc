@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 module MLC
-  # TypeRegistry - Unified type system management
+  module Core
+    # TypeRegistry - Unified type system management
   #
   # Single source of truth for all type information:
-  # - Type definitions (AST and HighIR)
+  # - Type definitions (AST and SemanticIR)
   # - C++ name mappings
   # - Namespace information
   # - Member access resolution
@@ -23,7 +24,7 @@ module MLC
 
     # @param name [String] Type name in Aurora (e.g., "Event", "Window")
     # @param ast_node [AST::TypeDecl, nil] Original AST node
-    # @param core_ir_type [HighIR::Type] Transformed HighIR type
+    # @param core_ir_type [SemanticIR::Type] Transformed SemanticIR type
     # @param namespace [String, nil] C++ namespace (e.g., "mlc::graphics")
     # @param kind [Symbol] :primitive, :record, :sum, :opaque, :function, :array
     # @param exported [Boolean] Is this type exported from module?
@@ -111,27 +112,27 @@ module MLC
       return unless type
 
       case type
-      when HighIR::GenericType
+      when SemanticIR::GenericType
         collect_type_names(type.base_type, names)
         type.type_args.each { |arg| collect_type_names(arg, names) }
-      when HighIR::ArrayType
+      when SemanticIR::ArrayType
         collect_type_names(type.element_type, names)
-      when HighIR::FunctionType
+      when SemanticIR::FunctionType
         type.params.each { |param| collect_type_names(param[:type], names) }
         collect_type_names(type.ret_type, names)
-      when HighIR::RecordType
+      when SemanticIR::RecordType
         type.fields.each do |field|
           collect_type_names(field[:type], names)
         end
-      when HighIR::SumType
+      when SemanticIR::SumType
         type.variants.each do |variant|
           Array(variant[:fields]).each do |field|
             collect_type_names(field[:type], names)
           end
         end
-      when HighIR::TypeVariable
+      when SemanticIR::TypeVariable
         # ignore
-      when HighIR::Type
+      when SemanticIR::Type
         names << type.name if type.name
       end
     end
@@ -190,7 +191,7 @@ module MLC
     # Register a type in the registry
     # @param name [String] Type name
     # @param ast_node [AST::TypeDecl, nil] Original AST
-    # @param core_ir_type [HighIR::Type] Transformed type
+    # @param core_ir_type [SemanticIR::Type] Transformed type
     # @param namespace [String, nil] C++ namespace
     # @param kind [Symbol] Type kind
     # @param exported [Boolean] Is exported?
@@ -240,7 +241,7 @@ module MLC
     # Resolve member access on a type
     # @param type_name [String] Type name
     # @param member [String] Member/field name
-    # @return [HighIR::Type, nil] Type of the member
+    # @return [SemanticIR::Type, nil] Type of the member
     def resolve_member(type_name, member)
       type_info = lookup(type_name)
       return nil unless type_info
@@ -318,7 +319,7 @@ module MLC
     def register_primitives
       # Register built-in primitive types
       TypeInfo::PRIMITIVE_TYPE_MAP.each do |aurora_name, cpp_name|
-        prim_type = HighIR::Type.new(kind: :prim, name: aurora_name)
+        prim_type = SemanticIR::Type.new(kind: :prim, name: aurora_name)
         register(
           aurora_name,
           core_ir_type: prim_type,
@@ -342,5 +343,6 @@ module MLC
       members.delete(type_name)
       @modules.delete(module_name) if members.empty?
     end
+  end
   end
 end

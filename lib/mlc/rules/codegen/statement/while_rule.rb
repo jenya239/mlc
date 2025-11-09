@@ -6,10 +6,10 @@ module MLC
   module Rules
     module CodeGen
       module Statement
-        # Rule for lowering HighIR while statements to C++ while loops
+        # Rule for lowering SemanticIR while statements to C++ while loops
         class WhileRule < BaseRule
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::WhileStmt)
+            node.is_a?(MLC::SemanticIR::WhileStmt)
           end
 
           def apply(node, context = {})

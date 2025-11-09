@@ -8,8 +8,8 @@ module MLC
     module Services
       class ContainerIntegrationTest < Minitest::Test
         def setup
-          @function_registry = MLC::FunctionRegistry.new
-          @type_registry = MLC::TypeRegistry.new
+          @function_registry = MLC::Core::FunctionRegistry.new
+          @type_registry = MLC::Core::TypeRegistry.new
           @container = Container.new(
             function_registry: @function_registry,
             type_registry: @type_registry
@@ -86,7 +86,7 @@ module MLC
         end
 
         def test_user_import_registers_alias
-          info = MLC::FunctionSignature.new('bar', [], @container.ir_builder.prim_type(name: 'i32'))
+          info = MLC::Core::FunctionSignature.new('bar', [], @container.ir_builder.prim_type(name: 'i32'))
           @function_registry.register('Foo.bar', info, module_name: 'Foo')
 
           import_decl = MLC::AST::ImportDecl.new(path: 'Foo', items: ['bar'], import_all: false, alias_name: 'Alias')

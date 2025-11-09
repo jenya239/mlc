@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module MLC
-  class EventBus
+  module Infrastructure
+    class EventBus
     # Event metadata structure
     Event = Struct.new(:name, :payload, :level, :timestamp, keyword_init: true)
 
@@ -162,5 +163,6 @@ module MLC
         @handler.call(event_or_payload)
       end
     end
+  end
   end
 end

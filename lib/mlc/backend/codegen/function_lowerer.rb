@@ -8,7 +8,7 @@ module MLC
       # Auto-extracted from cpp_lowering.rb during refactoring
       module FunctionLowerer
       def lower_module(module_node)
-              @user_functions = module_node.items.grep(HighIR::Func).map(&:name)
+              @user_functions = module_node.items.grep(SemanticIR::Func).map(&:name)
               @identifier_map = {}
 
               include_stmt = CppAst::Nodes::IncludeDirective.new(
@@ -31,7 +31,7 @@ module MLC
               name = sanitize_identifier(func.name)
               parameters = func.params.map { |param| "#{map_type(param.type)} #{sanitize_identifier(param.name)}" }
 
-              block_body = if func.body.is_a?(HighIR::BlockExpr)
+              block_body = if func.body.is_a?(SemanticIR::BlockExpr)
                              stmts = lower_block_expr_statements(func.body, emit_return: true)
                              CppAst::Nodes::BlockStatement.new(
                                statements: stmts,

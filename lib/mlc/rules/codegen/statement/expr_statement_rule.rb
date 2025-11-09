@@ -7,12 +7,12 @@ module MLC
   module Rules
     module CodeGen
       module Statement
-        # Rule for lowering HighIR expression statements to C++ expression statements
+        # Rule for lowering SemanticIR expression statements to C++ expression statements
         class ExprStatementRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::ExprStatement)
+            node.is_a?(MLC::SemanticIR::ExprStatement)
           end
 
           def apply(node, context = {})
@@ -21,7 +21,7 @@ module MLC
             if should_lower_as_statement?(node.expression)
               # Expression with unit type should be lowered as statement
               # Currently only IfExpr with unit type
-              if node.expression.is_a?(MLC::HighIR::IfExpr)
+              if node.expression.is_a?(MLC::SemanticIR::IfExpr)
                 # Delegate to IfRule (statement version)
                 # This will be handled by calling lower_if_expr_as_statement through lowerer
                 lowerer.send(:lower_if_expr_as_statement, node.expression)

@@ -18,7 +18,7 @@ class MLCListComprehensionTest < Minitest::Test
     core = MLC.transform_to_core(ast)
     core_func = core.items.first
 
-    assert_instance_of MLC::HighIR::ListCompExpr, core_func.body
+    assert_instance_of MLC::SemanticIR::ListCompExpr, core_func.body
     assert_equal 1, core_func.body.generators.length
     assert_equal "x", core_func.body.generators.first[:var_name]
   end

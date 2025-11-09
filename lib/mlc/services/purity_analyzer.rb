@@ -20,23 +20,23 @@ module MLC
     #   end
     class PurityAnalyzer
       # Проверяет является ли выражение чистым (pure)
-      # @param expr [HighIR::*] HighIR выражение
+      # @param expr [SemanticIR::*] SemanticIR выражение
       # @return [Boolean] true если выражение чистое
       def is_pure_expression(expr)
         case expr
-        when MLC::HighIR::LiteralExpr, MLC::HighIR::VarExpr
+        when MLC::SemanticIR::LiteralExpr, MLC::SemanticIR::VarExpr
           true
-        when MLC::HighIR::BinaryExpr
+        when MLC::SemanticIR::BinaryExpr
           is_pure_expression(expr.left) && is_pure_expression(expr.right)
-        when MLC::HighIR::UnaryExpr
+        when MLC::SemanticIR::UnaryExpr
           is_pure_expression(expr.operand)
-        when MLC::HighIR::CallExpr
+        when MLC::SemanticIR::CallExpr
           is_pure_call?(expr)
-        when MLC::HighIR::MemberExpr
+        when MLC::SemanticIR::MemberExpr
           is_pure_expression(expr.object)
-        when MLC::HighIR::RecordExpr
+        when MLC::SemanticIR::RecordExpr
           expr.fields.values.all? { |field| is_pure_expression(field) }
-        when MLC::HighIR::BlockExpr
+        when MLC::SemanticIR::BlockExpr
           pure_block_expr?(expr)
         else
           false
@@ -44,11 +44,11 @@ module MLC
       end
 
       # Проверяет является ли вызов функции чистым
-      # @param call_expr [HighIR::CallExpr] вызов функции
+      # @param call_expr [SemanticIR::CallExpr] вызов функции
       # @return [Boolean] true если вызов чистый
       def is_pure_call?(call_expr)
         # Check if function name indicates non-pure operation
-        if call_expr.callee.is_a?(MLC::HighIR::VarExpr)
+        if call_expr.callee.is_a?(MLC::SemanticIR::VarExpr)
           func_name = call_expr.callee.name
           # IO functions are not constexpr-compatible
           return false if func_name =~ /^(println|print|read|write|open|close)/
@@ -64,7 +64,7 @@ module MLC
       end
 
       # Проверяет является ли тип non-literal (не может быть constexpr в C++20)
-      # @param type [HighIR::Type] тип для проверки
+      # @param type [SemanticIR::Type] тип для проверки
       # @return [Boolean] true если тип non-literal
       def non_literal_type?(type)
         return false if type.nil?
@@ -77,7 +77,7 @@ module MLC
       end
 
       # Проверяет является ли блок чистым
-      # @param block_expr [HighIR::BlockExpr] блок выражений
+      # @param block_expr [SemanticIR::BlockExpr] блок выражений
       # @return [Boolean] true если блок чистый
       def pure_block_expr?(block_expr)
         statements_pure = block_expr.statements.all? { |stmt| pure_statement?(stmt) }
@@ -86,17 +86,17 @@ module MLC
       end
 
       # Проверяет является ли statement чистым
-      # @param stmt [HighIR::*Stmt] statement для проверки
+      # @param stmt [SemanticIR::*Stmt] statement для проверки
       # @return [Boolean] true если statement чистый
       def pure_statement?(stmt)
         case stmt
-        when MLC::HighIR::VariableDeclStmt
+        when MLC::SemanticIR::VariableDeclStmt
           !stmt.mutable && is_pure_expression(stmt.value)
-        when MLC::HighIR::ExprStatement
+        when MLC::SemanticIR::ExprStatement
           is_pure_expression(stmt.expression)
-        when MLC::HighIR::Block
+        when MLC::SemanticIR::Block
           stmt.stmts.all? { |inner| pure_statement?(inner) }
-        when MLC::HighIR::MatchStmt
+        when MLC::SemanticIR::MatchStmt
           is_pure_expression(stmt.scrutinee) &&
             stmt.arms.all? do |arm|
               (arm[:guard].nil? || is_pure_expression(arm[:guard])) &&

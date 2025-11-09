@@ -2,8 +2,8 @@
 
 require_relative '../test_helper'
 
-class HighIRGenericsTest < Minitest::Test
-  include MLC::HighIR
+class SemanticIRGenericsTest < Minitest::Test
+  include MLC::SemanticIR
 
   def test_type_variable_creation
     type_var = Builder.type_variable('T')

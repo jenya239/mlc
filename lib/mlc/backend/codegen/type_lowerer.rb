@@ -9,9 +9,9 @@ module MLC
       module TypeLowerer
       def lower_type_decl(type_decl)
               result = case type_decl.type
-                       when HighIR::RecordType
+                       when SemanticIR::RecordType
                          lower_record_type(type_decl.name, type_decl.type)
-                       when HighIR::SumType
+                       when SemanticIR::SumType
                          lower_sum_type(type_decl.name, type_decl.type, type_decl.type_params)
                       else
                         # For primitive types, generate empty program (no direct C++ emission)

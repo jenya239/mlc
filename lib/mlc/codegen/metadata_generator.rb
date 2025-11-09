@@ -6,7 +6,7 @@ module MLC
     # Phase 24-A: Generate .mlcmeta files for module exports
     #
     # Responsibilities:
-    # - Extract exported functions from HighIR::Module
+    # - Extract exported functions from SemanticIR::Module
     # - Extract exported types (records, sum types)
     # - Generate JSON metadata for cross-module compilation
     #
@@ -20,16 +20,16 @@ module MLC
     #   }
     # }
     class MetadataGenerator
-      # Generate metadata hash from HighIR::Module
-      # @param high_ir_module [HighIR::Module] The compiled module
+      # Generate metadata hash from SemanticIR::Module
+      # @param semantic_ir_module [SemanticIR::Module] The compiled module
       # @return [Hash] Metadata structure
-      def generate(high_ir_module)
+      def generate(semantic_ir_module)
         {
-          module_name: high_ir_module.name,
+          module_name: semantic_ir_module.name,
           exports: {
-            functions: extract_exported_functions(high_ir_module),
-            types: extract_exported_types(high_ir_module),
-            sum_types: extract_exported_sum_types(high_ir_module)
+            functions: extract_exported_functions(semantic_ir_module),
+            types: extract_exported_types(semantic_ir_module),
+            sum_types: extract_exported_sum_types(semantic_ir_module)
           }
         }
       end
@@ -46,9 +46,9 @@ module MLC
 
       # Extract exported functions from module
       # Only includes functions marked with 'export' keyword
-      def extract_exported_functions(high_ir_module)
-        high_ir_module.items.filter_map do |item|
-          next unless item.is_a?(MLC::HighIR::Func)
+      def extract_exported_functions(semantic_ir_module)
+        semantic_ir_module.items.filter_map do |item|
+          next unless item.is_a?(MLC::SemanticIR::Func)
           next unless item.exported
 
           {
@@ -61,11 +61,11 @@ module MLC
       end
 
       # Extract exported record types
-      def extract_exported_types(high_ir_module)
-        high_ir_module.items.filter_map do |item|
-          next unless item.is_a?(MLC::HighIR::TypeDecl)
+      def extract_exported_types(semantic_ir_module)
+        semantic_ir_module.items.filter_map do |item|
+          next unless item.is_a?(MLC::SemanticIR::TypeDecl)
           next unless item.exported
-          next unless item.type.is_a?(MLC::HighIR::RecordType)
+          next unless item.type.is_a?(MLC::SemanticIR::RecordType)
 
           {
             name: item.name,
@@ -77,11 +77,11 @@ module MLC
       end
 
       # Extract exported sum types
-      def extract_exported_sum_types(high_ir_module)
-        high_ir_module.items.filter_map do |item|
-          next unless item.is_a?(MLC::HighIR::TypeDecl)
+      def extract_exported_sum_types(semantic_ir_module)
+        semantic_ir_module.items.filter_map do |item|
+          next unless item.is_a?(MLC::SemanticIR::TypeDecl)
           next unless item.exported
-          next unless item.type.is_a?(MLC::HighIR::SumType)
+          next unless item.type.is_a?(MLC::SemanticIR::SumType)
 
           {
             name: item.name,
@@ -109,24 +109,24 @@ module MLC
         }
       end
 
-      # Serialize HighIR type to string representation
+      # Serialize SemanticIR type to string representation
       # Handles primitives, generics, records, etc.
       def serialize_type(type)
         case type
-        when MLC::HighIR::RecordType
+        when MLC::SemanticIR::RecordType
           type.name
-        when MLC::HighIR::GenericType
+        when MLC::SemanticIR::GenericType
           # e.g., "Result<T, E>" or "List<i32>"
           type_args = type.type_args.map { |arg| serialize_type(arg) }.join(", ")
           "#{type.base_type.name}<#{type_args}>"
-        when MLC::HighIR::TypeVariable
+        when MLC::SemanticIR::TypeVariable
           type.name
-        when MLC::HighIR::FunctionType
+        when MLC::SemanticIR::FunctionType
           # e.g., "(i32, i32) -> i32"
           param_types = type.param_types.map { |pt| serialize_type(pt) }.join(", ")
           return_type = serialize_type(type.return_type)
           "(#{param_types}) -> #{return_type}"
-        when MLC::HighIR::Type
+        when MLC::SemanticIR::Type
           # Base type class - includes primitives (kind: :prim)
           type.name.to_s
         when String

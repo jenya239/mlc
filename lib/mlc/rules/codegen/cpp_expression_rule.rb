@@ -10,7 +10,7 @@ module MLC
       class CppExpressionRule < DelegatingRule
         class << self
           # Helper method for defining C++ expression rules
-          # @param node_classes [Array<Class>] HighIR expression classes to handle
+          # @param node_classes [Array<Class>] SemanticIR expression classes to handle
           # @param method [Symbol] Method name in ExpressionLowerer to delegate to
           def handles_cpp_expr(node_classes, method:)
             handles(node_classes, method: method, via: :lowerer)

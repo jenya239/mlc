@@ -7,14 +7,14 @@ module MLC
   module Rules
     module CodeGen
       module Expression
-        # Rule for lowering HighIR list comprehension expressions to C++ loops in IIFE
+        # Rule for lowering SemanticIR list comprehension expressions to C++ loops in IIFE
         # Example: [x * 2 for x in nums if x > 0] ->
         # [&]() { std::vector<int> result; for(auto x : nums) { if(!(x > 0)) continue; result.push_back(x * 2); } return result; }()
         class ListCompRule < BaseRule
           include MLC::Backend::CodeGenHelpers
 
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::ListCompExpr)
+            node.is_a?(MLC::SemanticIR::ListCompExpr)
           end
 
           def apply(node, context = {})

@@ -6,10 +6,10 @@ module MLC
   module Rules
     module CodeGen
       module Statement
-        # Rule for lowering HighIR if statements to C++ if statements
+        # Rule for lowering SemanticIR if statements to C++ if statements
         class IfRule < BaseRule
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::IfStmt)
+            node.is_a?(MLC::SemanticIR::IfStmt)
           end
 
           def apply(node, context = {})

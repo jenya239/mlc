@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../pass_manager'
+require_relative '../../infrastructure/pass_manager'
 
 module MLC
   module SemanticGen
@@ -42,7 +42,7 @@ module MLC
         private
 
         def build_pass_manager
-          MLC::PassManager.new.tap do |manager|
+          MLC::Infrastructure::PassManager.new.tap do |manager|
             manager.register(:collect_imports, method(:pass_collect_imports))
             manager.register(:preregister_types, method(:pass_preregister_types))
             manager.register(:preregister_functions, method(:pass_preregister_functions))

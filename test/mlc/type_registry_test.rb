@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 class TypeRegistryTest < Minitest::Test
   def setup
-    @registry = MLC::TypeRegistry.new
+    @registry = MLC::Core::TypeRegistry.new
   end
 
   def test_types_in_module_returns_registered_types
@@ -37,7 +37,7 @@ class TypeRegistryTest < Minitest::Test
   private
 
   def register_record(name, module_name:, exported:)
-    record = MLC::HighIR::RecordType.new(name: name, fields: [])
+    record = MLC::SemanticIR::RecordType.new(name: name, fields: [])
     @registry.register(
       name,
       core_ir_type: record,

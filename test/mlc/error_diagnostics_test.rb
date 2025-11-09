@@ -14,6 +14,6 @@ class MLCErrorDiagnosticsTest < Minitest::Test
       MLC.to_cpp(mlc_source)
     end
 
-    assert_match(/<input>:\d+:\d+: function 'main' should not return a value/, error.message)
+    assert_match(/Pass lower_declarations failed: <input>:\d+:\d+: function 'main' result expected void, got i32/, error.message)
   end
 end

@@ -9,8 +9,8 @@ module MLC
     module Passes
       class ModuleImportPassTest < Minitest::Test
         def setup
-          function_registry = MLC::FunctionRegistry.new
-          type_registry = MLC::TypeRegistry.new
+          function_registry = MLC::Core::FunctionRegistry.new
+          type_registry = MLC::Core::TypeRegistry.new
           container = Services::Container.new(
             function_registry: function_registry,
             type_registry: type_registry

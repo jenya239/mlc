@@ -16,19 +16,18 @@ module MLC
     # - function_registry: FunctionRegistry
     # - type_decl_table: Hash
     # - generic_call_resolver: GenericCallResolverService
-    # - transformer: IRGen (for helper methods like type_error, type_name)
+    # - transformer: SemanticGen::Pipeline (for helper methods like type_error, type_name)
     class TypeInferenceService
       attr_writer :generic_call_resolver  # Allow injection after initialization
 
       def initialize(var_type_registry:, type_registry:, function_registry:,
-                     type_decl_table:, generic_call_resolver:, type_checker:, transformer:, scope_context:)
+                     type_decl_table:, generic_call_resolver:, type_checker:, transformer: nil, scope_context:)
         @var_type_registry = var_type_registry
         @type_registry = type_registry
         @function_registry = function_registry
         @type_decl_table = type_decl_table
         @generic_call_resolver = generic_call_resolver  # TypeSystem::GenericCallResolver (set after construction)
         @type_checker = type_checker
-        @transformer = transformer  # Временно для методов, которые еще не перенесены
         @scope_context = scope_context
       end
 
@@ -43,10 +42,10 @@ module MLC
         # Check if this is an IO built-in function
         if @type_checker.class::IO_RETURN_TYPES.key?(name)
           return_type = @type_checker.io_return_type(name)
-          return HighIR::Builder.function_type([], return_type)
+          return SemanticIR::Builder.function_type([], return_type)
         end
 
-        return HighIR::Builder.primitive_type("bool") if %w[true false].include?(name)
+        return SemanticIR::Builder.primitive_type("bool") if %w[true false].include?(name)
 
         scope = @var_type_registry.keys.sort.join(", ")
         type_error("Unknown identifier '#{name}' (in scope: #{scope})")
@@ -55,14 +54,14 @@ module MLC
       # Infer return type of function call
       def infer_call_type(callee, args)
         case callee
-        when HighIR::VarExpr
+        when SemanticIR::VarExpr
           if @type_checker.class::IO_RETURN_TYPES.key?(callee.name)
             return @type_checker.io_return_type(callee.name)
           end
 
           info = @function_registry.fetch(callee.name)
           unless info
-            return HighIR::Builder.primitive_type("auto")
+            return SemanticIR::Builder.primitive_type("auto")
           end
 
           # Check if this is a generic function
@@ -75,7 +74,7 @@ module MLC
             info.ret_type
           end
 
-        when HighIR::LambdaExpr
+        when SemanticIR::LambdaExpr
           function_type = callee.function_type
           expected = function_type.params || []
 
@@ -89,10 +88,10 @@ module MLC
 
           function_type.ret_type
 
-        when HighIR::MemberExpr
+        when SemanticIR::MemberExpr
           member = callee.member
 
-          if callee.object.is_a?(HighIR::VarExpr)
+          if callee.object.is_a?(SemanticIR::VarExpr)
             if (info = @type_checker.module_member_info(callee.object.name, member))
               @type_checker.validate_function_call(info, args, member)
               return info.ret_type
@@ -118,7 +117,7 @@ module MLC
         when "+"
           # Support both numeric addition and string concatenation
           if string_type?(left_type) && string_type?(right_type)
-            HighIR::Builder.primitive_type("string")
+            SemanticIR::Builder.primitive_type("string")
           elsif numeric_type?(left_type) && numeric_type?(right_type)
             combine_numeric_type(left_type, right_type)
           else
@@ -132,21 +131,21 @@ module MLC
           @type_checker.ensure_numeric_type(left_type, "left operand of '/' ")
           @type_checker.ensure_numeric_type(right_type, "right operand of '/' ")
           if float_type?(left_type) || float_type?(right_type)
-            HighIR::Builder.primitive_type("f32")
+            SemanticIR::Builder.primitive_type("f32")
           else
-            HighIR::Builder.primitive_type("i32")
+            SemanticIR::Builder.primitive_type("i32")
           end
         when "==", "!="
           @type_checker.ensure_compatible_type(left_type, right_type, "comparison '#{op}'")
-          HighIR::Builder.primitive_type("bool")
+          SemanticIR::Builder.primitive_type("bool")
         when "<", ">", "<=", ">="
           @type_checker.ensure_numeric_type(left_type, "left operand of '#{op}'")
           @type_checker.ensure_numeric_type(right_type, "right operand of '#{op}'")
-          HighIR::Builder.primitive_type("bool")
+          SemanticIR::Builder.primitive_type("bool")
         when "&&", "||"
           @type_checker.ensure_boolean_type(left_type, "left operand of '#{op}'")
           @type_checker.ensure_boolean_type(right_type, "right operand of '#{op}'")
-          HighIR::Builder.primitive_type("bool")
+          SemanticIR::Builder.primitive_type("bool")
         else
           left_type
         end
@@ -159,7 +158,7 @@ module MLC
         case op
         when "!"
           @type_checker.ensure_boolean_type(operand_type, "operand of '!'")
-          HighIR::Builder.primitive_type("bool")
+          SemanticIR::Builder.primitive_type("bool")
         when "-", "+"
           @type_checker.ensure_numeric_type(operand_type, "operand of '#{op}'")
           operand_type
@@ -177,19 +176,19 @@ module MLC
 
         case member_name
         when "map"
-          if index.zero? && object_type.is_a?(HighIR::ArrayType)
+          if index.zero? && object_type.is_a?(SemanticIR::ArrayType)
             [object_type.element_type]
           else
             []
           end
         when "filter"
-          if index.zero? && object_type.is_a?(HighIR::ArrayType)
+          if index.zero? && object_type.is_a?(SemanticIR::ArrayType)
             [object_type.element_type]
           else
             []
           end
         when "fold"
-          if index == 1 && object_type.is_a?(HighIR::ArrayType)
+          if index == 1 && object_type.is_a?(SemanticIR::ArrayType)
             # fold(init, fn) - fn takes (accumulator, element)
             []
           else
@@ -202,7 +201,7 @@ module MLC
 
       # Infer element type from iterable (for loops)
       def infer_iterable_type(iterable_ir, node: nil)
-        if iterable_ir.type.is_a?(HighIR::ArrayType)
+        if iterable_ir.type.is_a?(SemanticIR::ArrayType)
           iterable_ir.type.element_type
         else
           type_error("Iterable expression must be an array, got #{describe_type(iterable_ir.type)}", node: node)
@@ -213,7 +212,7 @@ module MLC
       def infer_member_type(object_type, member, node: nil)
         type_error("Cannot access member '#{member}' on value without type", node: node) unless object_type
 
-        if object_type.is_a?(HighIR::GenericType)
+        if object_type.is_a?(SemanticIR::GenericType)
           base_name = type_name(object_type.base_type)
 
           if base_name && @type_registry.has_type?(base_name)
@@ -239,13 +238,13 @@ module MLC
           field = object_type.fields.find { |f| f[:name] == member }
           type_error("Unknown field '#{member}' for type #{object_type.name}", node: node) unless field
           field[:type]
-        elsif object_type.is_a?(HighIR::ArrayType)
+        elsif object_type.is_a?(SemanticIR::ArrayType)
           infer_array_member_type(member, node: node)
         elsif string_type?(object_type)
           infer_string_member_type(member, node: node)
         elsif numeric_type?(object_type) && member == "sqrt"
-          f32 = HighIR::Builder.primitive_type("f32")
-          HighIR::Builder.function_type([], f32)
+          f32 = SemanticIR::Builder.primitive_type("f32")
+          SemanticIR::Builder.function_type([], f32)
         else
           type_error("Unknown member '#{member}' for type #{describe_type(object_type)}", node: node)
         end
@@ -254,15 +253,15 @@ module MLC
       # Generic type unification
       def unify_types(pattern_type, concrete_type, type_map)
         case pattern_type
-        when HighIR::TypeVariable
+        when SemanticIR::TypeVariable
           # This is a type variable - bind it to the concrete type
           var_name = pattern_type.name
           if type_map.key?(var_name)
             # Already bound - verify consistency
             existing = type_map[var_name]
-            if existing.is_a?(HighIR::TypeVariable)
+            if existing.is_a?(SemanticIR::TypeVariable)
               type_map[var_name] = concrete_type
-            elsif concrete_type.is_a?(HighIR::TypeVariable)
+            elsif concrete_type.is_a?(SemanticIR::TypeVariable)
               # keep existing concrete binding
             elsif normalized_type_name(type_name(existing)) == normalized_type_name(type_name(concrete_type))
               type_map[var_name] = concrete_type
@@ -274,9 +273,9 @@ module MLC
             type_map[var_name] = concrete_type
           end
 
-        when HighIR::GenericType
+        when SemanticIR::GenericType
           # Both should be generic with same base and compatible args
-          if concrete_type.is_a?(HighIR::GenericType)
+          if concrete_type.is_a?(SemanticIR::GenericType)
             unify_types(pattern_type.base_type, concrete_type.base_type, type_map)
             pattern_type.type_args.each_with_index do |pattern_arg, index|
               concrete_arg = concrete_type.type_args[index]
@@ -284,18 +283,22 @@ module MLC
             end
           end
 
-        when HighIR::ArrayType
+        when SemanticIR::ArrayType
           # Array types - unify element types
-          if concrete_type.is_a?(HighIR::ArrayType)
+          if concrete_type.is_a?(SemanticIR::ArrayType)
             unify_types(pattern_type.element_type, concrete_type.element_type, type_map)
           end
 
-        when HighIR::FunctionType
+        when SemanticIR::FunctionType
           # Function types - unify parameters and return types
-          if concrete_type.is_a?(HighIR::FunctionType)
+          if concrete_type.is_a?(SemanticIR::FunctionType)
             pattern_type.params.each_with_index do |pattern_param, index|
               concrete_param = concrete_type.params[index]
-              unify_types(pattern_param[:type], concrete_param[:type], type_map) if concrete_param
+              next unless concrete_param
+
+              pattern_param_type = function_param_type(pattern_param)
+              concrete_param_type = function_param_type(concrete_param)
+              unify_types(pattern_param_type, concrete_param_type, type_map)
             end
             unify_types(pattern_type.ret_type, concrete_type.ret_type, type_map)
           end
@@ -309,33 +312,33 @@ module MLC
       # Substitute type variables with concrete types
       def substitute_type(type, type_map)
         case type
-        when HighIR::TypeVariable
+        when SemanticIR::TypeVariable
           # Replace type variable with its binding
           type_map[type.name] || type
 
-        when HighIR::GenericType
+        when SemanticIR::GenericType
           # Recursively substitute in base type and type arguments
           new_base = substitute_type(type.base_type, type_map)
           new_args = type.type_args.map { |arg| substitute_type(arg, type_map) }
           if new_base != type.base_type || new_args != type.type_args
-            HighIR::Builder.generic_type(new_base, new_args)
+            SemanticIR::Builder.generic_type(new_base, new_args)
           else
             type
           end
 
-        when HighIR::ArrayType
+        when SemanticIR::ArrayType
           # Substitute in element type
           new_element = substitute_type(type.element_type, type_map)
-          new_element != type.element_type ? HighIR::Builder.array_type(new_element) : type
+          new_element != type.element_type ? SemanticIR::Builder.array_type(new_element) : type
 
-        when HighIR::FunctionType
+        when SemanticIR::FunctionType
           # Substitute in parameters and return type
           new_params = type.params.map do |p|
             new_type = substitute_type(p[:type], type_map)
             new_type != p[:type] ? {name: p[:name], type: new_type} : p
           end
           new_ret = substitute_type(type.ret_type, type_map)
-          (new_params != type.params || new_ret != type.ret_type) ? HighIR::Builder.function_type(new_params, new_ret) : type
+          (new_params != type.params || new_ret != type.ret_type) ? SemanticIR::Builder.function_type(new_params, new_ret) : type
 
         else
           # Primitive types, record types, etc. - no substitution needed
@@ -377,10 +380,10 @@ module MLC
       # Type predicates
       def numeric_type?(type)
         # TypeVariable is assumed to be numeric-compatible (no constraints yet)
-        return true if type.is_a?(HighIR::TypeVariable)
+        return true if type.is_a?(SemanticIR::TypeVariable)
 
         type_str = normalized_type_name(type_name(type))
-        return true if @transformer.class::NUMERIC_PRIMITIVES.include?(type_str)
+        return true if MLC::Services::TypeChecker::NUMERIC_PRIMITIVES.include?(type_str)
 
         # Check if this is a generic type parameter with Numeric constraint
         type_param = current_type_params.find { |tp| tp.name == type_str }
@@ -392,7 +395,7 @@ module MLC
       end
 
       def void_type?(type)
-        return true if type.is_a?(HighIR::UnitType)
+        return true if type.is_a?(SemanticIR::UnitType)
         normalized_type_name(type_name(type)) == "void"
       end
 
@@ -400,24 +403,31 @@ module MLC
         normalized_type_name(type_name(type)) == "f32"
       end
 
+      def function_param_type(param)
+        return param[:type] if param.respond_to?(:[]) && param.key?(:type)
+        return param.type if param.respond_to?(:type)
+
+        param
+      end
+
       private
 
       # Combine numeric types (for arithmetic operations)
       def combine_numeric_type(left_type, right_type)
         # If both are type variables, preserve the shared variable when possible
-        if left_type.is_a?(HighIR::TypeVariable) && right_type.is_a?(HighIR::TypeVariable)
+        if left_type.is_a?(SemanticIR::TypeVariable) && right_type.is_a?(SemanticIR::TypeVariable)
           return left_type if left_type.name == right_type.name
-          return HighIR::Builder.primitive_type("i32")
+          return SemanticIR::Builder.primitive_type("i32")
         end
 
         # If one is a type variable, return the concrete type
-        return right_type if left_type.is_a?(HighIR::TypeVariable)
-        return left_type if right_type.is_a?(HighIR::TypeVariable)
+        return right_type if left_type.is_a?(SemanticIR::TypeVariable)
+        return left_type if right_type.is_a?(SemanticIR::TypeVariable)
 
         if type_name(left_type) == type_name(right_type)
           left_type
         elsif float_type?(left_type) || float_type?(right_type)
-          HighIR::Builder.primitive_type("f32")
+          SemanticIR::Builder.primitive_type("f32")
         else
           type_error("Numeric operands must have matching types, got #{describe_type(left_type)} and #{describe_type(right_type)}")
         end
@@ -425,22 +435,22 @@ module MLC
 
       # Infer member call type for arrays
       def infer_member_call_type(object_type, member, args)
-        if object_type.is_a?(HighIR::ArrayType)
+        if object_type.is_a?(SemanticIR::ArrayType)
           case member
           when "length", "size"
             @type_checker.ensure_argument_count(member, args, 0)
-            HighIR::Builder.primitive_type("i32")
+            SemanticIR::Builder.primitive_type("i32")
           when "is_empty"
             @type_checker.ensure_argument_count(member, args, 0)
-            HighIR::Builder.primitive_type("bool")
+            SemanticIR::Builder.primitive_type("bool")
           when "map"
             @type_checker.ensure_argument_count(member, args, 1)
             element_type = lambda_return_type(args.first)
             type_error("Unable to infer return type of map lambda") unless element_type
-            HighIR::ArrayType.new(element_type: element_type)
+            SemanticIR::ArrayType.new(element_type: element_type)
           when "filter"
             @type_checker.ensure_argument_count(member, args, 1)
-            HighIR::ArrayType.new(element_type: object_type.element_type)
+            SemanticIR::ArrayType.new(element_type: object_type.element_type)
           when "fold"
             @type_checker.ensure_argument_count(member, args, 2)
             accumulator_type = args.first&.type
@@ -453,22 +463,22 @@ module MLC
           case member
           when "split"
             @type_checker.ensure_argument_count(member, args, 1)
-            HighIR::ArrayType.new(element_type: HighIR::Builder.primitive_type("string"))
+            SemanticIR::ArrayType.new(element_type: SemanticIR::Builder.primitive_type("string"))
           when "trim", "trim_start", "trim_end", "upper", "lower"
             @type_checker.ensure_argument_count(member, args, 0)
-            HighIR::Builder.primitive_type("string")
+            SemanticIR::Builder.primitive_type("string")
           when "is_empty"
             @type_checker.ensure_argument_count(member, args, 0)
-            HighIR::Builder.primitive_type("bool")
+            SemanticIR::Builder.primitive_type("bool")
           when "length"
             @type_checker.ensure_argument_count(member, args, 0)
-            HighIR::Builder.primitive_type("i32")
+            SemanticIR::Builder.primitive_type("i32")
           else
             type_error("Unknown string method '#{member}'. Supported methods: split, trim, trim_start, trim_end, upper, lower, is_empty, length")
           end
         elsif numeric_type?(object_type) && member == "sqrt"
           @type_checker.ensure_argument_count(member, args, 0)
-          HighIR::Builder.primitive_type("f32")
+          SemanticIR::Builder.primitive_type("f32")
         else
           type_error("Unknown member '#{member}' for type #{describe_type(object_type)}")
         end
@@ -478,11 +488,11 @@ module MLC
       def infer_array_member_type(member, node: nil)
         case member
         when "length", "size"
-          HighIR::Builder.primitive_type("i32")
+          SemanticIR::Builder.primitive_type("i32")
         when "is_empty"
-          HighIR::Builder.primitive_type("bool")
+          SemanticIR::Builder.primitive_type("bool")
         when "map", "filter", "fold"
-          HighIR::Builder.function_type([], HighIR::Builder.primitive_type("auto"))
+          SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
         else
           type_error("Unknown array member '#{member}'. Known members: length, size, is_empty, map, filter, fold", node: node)
         end
@@ -492,13 +502,13 @@ module MLC
       def infer_string_member_type(member, node: nil)
         case member
         when "split"
-          HighIR::ArrayType.new(element_type: HighIR::Builder.primitive_type("string"))
+          SemanticIR::ArrayType.new(element_type: SemanticIR::Builder.primitive_type("string"))
         when "trim", "trim_start", "trim_end", "upper", "lower"
-          HighIR::Builder.primitive_type("string")
+          SemanticIR::Builder.primitive_type("string")
         when "is_empty"
-          HighIR::Builder.primitive_type("bool")
+          SemanticIR::Builder.primitive_type("bool")
         when "length"
-          HighIR::Builder.primitive_type("i32")
+          SemanticIR::Builder.primitive_type("i32")
         else
           type_error("Unknown string member '#{member}'. Known members: split, trim, trim_start, trim_end, upper, lower, is_empty, length", node: node)
         end
@@ -510,7 +520,7 @@ module MLC
 
         if arg.respond_to?(:function_type) && arg.function_type
           arg.function_type.ret_type
-        elsif arg.respond_to?(:type) && arg.type.is_a?(HighIR::FunctionType)
+        elsif arg.respond_to?(:type) && arg.type.is_a?(SemanticIR::FunctionType)
           arg.type.ret_type
         else
           nil
@@ -539,7 +549,7 @@ module MLC
         if (info = @function_registry.fetch(name))
           function_type_from_info(info)
         else
-          HighIR::Builder.function_type([], HighIR::Builder.primitive_type("auto"))
+          SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
         end
       end
 
@@ -548,7 +558,7 @@ module MLC
         params = info.param_types.each_with_index.map do |type, index|
           {name: "arg#{index}", type: type}
         end
-        HighIR::Builder.function_type(params, info.ret_type)
+        SemanticIR::Builder.function_type(params, info.ret_type)
       end
 
       # Delegate to transformer helper methods

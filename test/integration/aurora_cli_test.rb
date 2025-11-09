@@ -75,7 +75,7 @@ class MLCCLITest < Minitest::Test
       _stdout, stderr, status = Open3.capture3(CLI, source)
 
       refute status.success?, "Expected compilation failure"
-      assert_match(/#{Regexp.escape(source)}:\d+:\d+: function 'main' should not return a value/, stderr)
+      assert_match(/Pass lower_declarations failed: #{Regexp.escape(source)}:\d+:\d+: function 'main' result expected void, got i32/, stderr)
     end
   end
 

@@ -149,8 +149,8 @@ Rules do NOT delegate to transformer helper methods. Example:
 def apply(node, _context = {})
   case node
   when MLC::AST::IntLit
-    type = MLC::HighIR::Builder.primitive_type("i32")
-    MLC::HighIR::Builder.literal(node.value, type)
+    type = MLC::SemanticIR::Builder.primitive_type("i32")
+    MLC::SemanticIR::Builder.literal(node.value, type)
   # ... complete implementation
   end
 end

@@ -6,10 +6,10 @@ module MLC
   module Rules
     module CodeGen
       module Statement
-        # Rule for lowering HighIR break statements to C++ break statements
+        # Rule for lowering SemanticIR break statements to C++ break statements
         class BreakRule < BaseRule
           def applies?(node, _context = {})
-            node.is_a?(MLC::HighIR::BreakStmt)
+            node.is_a?(MLC::SemanticIR::BreakStmt)
           end
 
           def apply(node, context = {})

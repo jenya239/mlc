@@ -19,7 +19,7 @@ class AnalysisPassesTest < Minitest::Test
 
   def test_effect_analysis_pass
     analyzer = MLC::TypeSystem::EffectAnalyzer.new(
-      pure_expression: ->(body) { body.is_a?(MLC::HighIR::BinaryExpr) },
+      pure_expression: ->(body) { body.is_a?(MLC::SemanticIR::BinaryExpr) },
       non_literal_type: ->(type) { false }
     )
 
@@ -60,11 +60,11 @@ class AnalysisPassesTest < Minitest::Test
 
   def test_pass_integration_with_pass_manager
     analyzer = MLC::TypeSystem::EffectAnalyzer.new(
-      pure_expression: ->(body) { body.is_a?(MLC::HighIR::BinaryExpr) },
+      pure_expression: ->(body) { body.is_a?(MLC::SemanticIR::BinaryExpr) },
       non_literal_type: ->(type) { false }
     )
 
-    manager = MLC::PassManager.new
+    manager = MLC::Infrastructure::PassManager.new
     manager.register(:name_resolution, MLC::Analysis::NameResolutionPass.new.to_callable)
     manager.register(:type_check, MLC::Analysis::TypeCheckPass.new(type_registry: @type_registry).to_callable)
     manager.register(:effect_analysis, MLC::Analysis::EffectAnalysisPass.new(effect_analyzer: analyzer).to_callable)
