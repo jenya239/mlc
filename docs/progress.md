@@ -23,8 +23,6 @@ The MLC compiler follows a multi-phase architecture with SemanticGen as the prim
 - 10,963 net lines of code removed
 - 0 regressions
 
-**See**: `docs/REORGANIZATION_SUMMARY.md` for full details
-
 #### ✅ Phase 24: IRGen Elimination (Complete, 2025-11)
 **Result**: Legacy IRGen removed, SemanticGen established
 

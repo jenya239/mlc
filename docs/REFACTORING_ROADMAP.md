@@ -96,8 +96,6 @@ lib/mlc/
 └── ...
 ```
 
-See: `docs/REORGANIZATION_SUMMARY.md` for full details
-
 ---
 
 ## Current Architecture State (2025-11-10)
