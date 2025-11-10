@@ -303,8 +303,34 @@ module MLC
             unify_types(pattern_type.ret_type, concrete_type.ret_type, type_map)
           end
 
+        when SemanticIR::RecordType
+          # Record types - unify field types
+          if concrete_type.is_a?(SemanticIR::RecordType)
+            # Verify same number of fields
+            if pattern_type.fields.length != concrete_type.fields.length
+              return  # Can't unify - different structure
+            end
+
+            # Unify each field's type by matching field names
+            pattern_type.fields.each do |pattern_field|
+              pattern_field_name = pattern_field[:name] || pattern_field.name
+              pattern_field_type = pattern_field[:type] || pattern_field.type
+
+              # Find matching field in concrete type
+              concrete_field = concrete_type.fields.find do |cf|
+                cf_name = cf[:name] || cf.name
+                cf_name == pattern_field_name
+              end
+
+              if concrete_field
+                concrete_field_type = concrete_field[:type] || concrete_field.type
+                unify_types(pattern_field_type, concrete_field_type, type_map)
+              end
+            end
+          end
+
         else
-          # Primitive types, record types, etc. - just verify they match
+          # Primitive types, etc. - just verify they match
           # No unification needed
         end
       end
@@ -340,8 +366,28 @@ module MLC
           new_ret = substitute_type(type.ret_type, type_map)
           (new_params != type.params || new_ret != type.ret_type) ? SemanticIR::Builder.function_type(new_params, new_ret) : type
 
+        when SemanticIR::RecordType
+          # Substitute type variables in record fields
+          new_fields = type.fields.map do |field|
+            field_name = field[:name] || field.name
+            field_type = field[:type] || field.type
+            new_field_type = substitute_type(field_type, type_map)
+
+            if new_field_type != field_type
+              {name: field_name, type: new_field_type}
+            else
+              field
+            end
+          end
+
+          if new_fields != type.fields
+            SemanticIR::RecordType.new(name: type.name, fields: new_fields, origin: type.origin)
+          else
+            type
+          end
+
         else
-          # Primitive types, record types, etc. - no substitution needed
+          # Primitive types, etc. - no substitution needed
           type
         end
       end
