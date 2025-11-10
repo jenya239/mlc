@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module MLC
-  module CodeGen
+  module Backend
     # MetadataGenerator
     # Phase 24-A: Generate .mlcmeta files for module exports
     #

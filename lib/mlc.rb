@@ -17,7 +17,7 @@ require_relative "mlc/parser/lexer"
 require_relative "mlc/parser/parser"
 require_relative "mlc/backend/codegen"
 require_relative "mlc/backend/header_generator"
-require_relative "mlc/codegen/metadata_generator"
+require_relative "mlc/backend/metadata_generator"
 require_relative "mlc/compiler/stdlib/scanner"
 require_relative "mlc/compiler/stdlib/resolver"
 require_relative "mlc/compiler/stdlib/signature_registry"
@@ -155,7 +155,7 @@ module MLC
       cpp_result = generator.generate(core_ir)
 
       # Phase 24-A: Generate metadata for module exports
-      metadata_gen = CodeGen::MetadataGenerator.new
+      metadata_gen = Backend::MetadataGenerator.new
       metadata = metadata_gen.generate(core_ir)
 
       # Return header, implementation, and metadata
