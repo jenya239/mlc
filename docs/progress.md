@@ -202,6 +202,20 @@ lib/mlc/
 - Net: -10,963 lines
 - 0 regressions
 
+### Phase 27: Documentation Improvements
+- Deleted 24 obsolete documentation files
+  - Chat logs (3): cursor_cppastv3, rubydslchatgpt, runtime
+  - Completed migrations (11): expression_transformer_*, visitor_pattern_*, phase_23c, etc.
+  - Obsolete plans (8): GITHUB_RENAME_GUIDE, MIGRATION_MAPPING, PHASE_25*, etc.
+  - Obsolete architecture docs (2): ARCHITECTURE_GUIDE.md, ARCHITECTURE_REVIEW.md
+- Updated REFACTORING_ROADMAP.md with Phase 23-25 completion
+- Rewrote progress.md to reflect SemanticGen architecture
+
+**Statistics**:
+- 26 files changed
+- +427 insertions, -26,336 deletions (documentation only)
+- 0 regressions
+
 ### Phase 24: IRGen Elimination
 - Removed lib/mlc/irgen.rb, lib/mlc/irgen/, lib/mlc/irgen_v2/
 - ~3200 LOC deleted
@@ -221,13 +235,7 @@ lib/mlc/
 
 ## Next Steps
 
-### Phase 27: Documentation Improvements (IN PROGRESS)
-1. ✅ Cleanup obsolete docs (22 files removed)
-2. ✅ Update REFACTORING_ROADMAP.md
-3. ✅ Update progress.md (this file)
-4. 🔄 Update ARCHITECTURE_GUIDE.md
-5. 🔄 Update ARCHITECTURE_REVIEW.md
-6. ⏳ Create README files for major directories
+All major refactoring phases complete. Documentation modernized.
 
 ### Future Work (Deferred)
 - **Phase 28**: Autoloading Infrastructure (8h)
