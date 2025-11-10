@@ -14,7 +14,7 @@ module MLC
         def produce(node, context)
           svc = services(context)
           name = node.name
-          type = svc.identifier_type_resolver.type_for(name)
+          type = svc.type_inference_service.infer_variable_type(name)
           svc.ir_builder.var(name: name, type: type, origin: node)
         end
       end

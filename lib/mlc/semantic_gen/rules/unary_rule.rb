@@ -15,10 +15,9 @@ module MLC
           svc = services(context)
           operand_ir = context.fetch(:operand_ir)
 
-          result_type = svc.expression_type_resolver.unary_type(
+          result_type = svc.type_inference_service.infer_unary_type(
             node.op,
-            operand_ir.type,
-            node: node
+            operand_ir.type
           )
 
           svc.ir_builder.unary_op(

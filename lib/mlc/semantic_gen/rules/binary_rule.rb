@@ -17,11 +17,10 @@ module MLC
           left_ir = context.fetch(:left_ir)
           right_ir = context.fetch(:right_ir)
 
-          result_type = svc.expression_type_resolver.binary_type(
+          result_type = svc.type_inference_service.infer_binary_type(
             node.op,
             left_ir.type,
-            right_ir.type,
-            node: node
+            right_ir.type
           )
 
           svc.ir_builder.binary_op(

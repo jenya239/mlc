@@ -19,7 +19,7 @@ module MLC
           visitor = context.fetch(:expression_visitor)
 
           object_ir = visitor.visit(node.object)
-          member_type = svc.member_access_service.resolve(object_ir.type, node.member, node: node)
+          member_type = svc.type_inference_service.infer_member_type(object_ir.type, node.member, node: node)
 
           svc.ir_builder.member(
             object: object_ir,

@@ -12,14 +12,11 @@ require_relative 'imports/module_resolver'
 require_relative 'checkers/ast_type_checker'
 require_relative 'builders/ir_builder'
 require_relative 'literal_processor'
-require_relative 'expression_type_resolver'
-require_relative 'identifier_type_resolver'
 require_relative 'checkers/semantic_ir_classifier'
 require_relative 'builders/record_literal_builder'
 require_relative 'builders/array_literal_builder'
 require_relative 'features/loop_service'
 require_relative 'features/match_service'
-require_relative 'member_access_service'
 require_relative 'features/lambda_service'
 require_relative 'features/list_comprehension_service'
 require_relative 'features/index_access_service'
@@ -40,11 +37,11 @@ module MLC
       class Container
         attr_reader :module_resolver, :function_registry, :type_registry,
                     :ast_type_checker, :ir_builder, :literal_processor,
-                    :ast_factory, :var_type_registry, :identifier_type_resolver,
-                    :type_checker, :type_decl_table, :expression_type_resolver,
+                    :ast_factory, :var_type_registry,
+                    :type_checker, :type_decl_table,
                     :semantic_ir_classifier, :record_literal_builder, :array_literal_builder,
                     :scope_context, :loop_service, :type_unification_service,
-                    :match_analyzer, :match_service, :member_access_service,
+                    :match_analyzer, :match_service,
                     :lambda_service, :list_comprehension_service, :index_access_service,
                     :module_context_service, :sum_type_constructor_service,
                     :type_registration_service, :type_builder, :type_declaration_service,
@@ -73,15 +70,6 @@ module MLC
             type_checker: @type_checker
           )
           @scope_context = MLC::Services::TransformationContext.new(
-            var_type_registry: @var_type_registry
-          )
-          @expression_type_resolver = ExpressionTypeResolver.new(
-            type_checker: @type_checker,
-            ir_builder: @ir_builder
-          )
-          @identifier_type_resolver = IdentifierTypeResolver.new(
-            function_registry: @function_registry,
-            ir_builder: @ir_builder,
             var_type_registry: @var_type_registry
           )
           @semantic_ir_classifier = SemanticIRClassifier.new
@@ -149,12 +137,6 @@ module MLC
             ast_type_checker: @ast_type_checker,
             type_unification_service: @type_unification_service,
             match_analyzer: @match_analyzer
-          )
-          @member_access_service = MemberAccessService.new(
-            type_checker: @type_checker,
-            type_registry: @type_registry,
-            type_decl_table: @type_decl_table,
-            ir_builder: @ir_builder
           )
           @lambda_service = LambdaService.new(
             ir_builder: @ir_builder,
