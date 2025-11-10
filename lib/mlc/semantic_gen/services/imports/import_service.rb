@@ -8,13 +8,14 @@ module MLC
     module Services
       # ImportService - handles stdlib and user module imports for SemanticGen
       class ImportService
-        def initialize(stdlib_registry:, module_resolver:, type_builder:, type_declaration_service:, type_registration_service:, type_checker:)
+        def initialize(stdlib_registry:, module_resolver:, type_builder:, type_declaration_service:, type_registration_service:, type_checker:, metadata_loader:)
           @stdlib_registry = stdlib_registry
           @module_resolver = module_resolver
           @type_builder = type_builder
           @type_declaration_service = type_declaration_service
           @type_registration_service = type_registration_service
           @type_checker = type_checker
+          @metadata_loader = metadata_loader
         end
 
         def process(import_decl, function_registry:, type_registry:)
@@ -156,7 +157,34 @@ module MLC
         end
 
         def process_user_import(import_decl, function_registry:)
+          # Phase 24-C: Load metadata before registering aliases
+          # Simple path resolution: "MyModule" -> "./MyModule.mlcmeta"
+          # TODO: Support relative paths (../), nested paths, and source_file_path context
+          module_name = import_decl.path
+          metadata_path = resolve_metadata_path(module_name)
+
+          if File.exist?(metadata_path)
+            @metadata_loader.load(metadata_path)
+          end
+
+          # Register import aliases (existing behavior)
           @module_resolver.register_module_import(import_decl, function_registry)
+        end
+
+        # Simple metadata path resolution
+        # For first version, search in current directory
+        # Future: support relative paths, search paths, etc.
+        def resolve_metadata_path(module_name)
+          # Try exact case first: "MyModule" -> "./MyModule.mlcmeta"
+          exact_path = "./#{module_name}.mlcmeta"
+          return exact_path if File.exist?(exact_path)
+
+          # Try lowercase: "MyModule" -> "./mymodule.mlcmeta"
+          lower_path = "./#{module_name.downcase}.mlcmeta"
+          return lower_path if File.exist?(lower_path)
+
+          # Default to exact case for File.exist? check in caller
+          exact_path
         end
       end
     end

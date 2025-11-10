@@ -28,6 +28,7 @@ require_relative '../../type_system/match_analyzer'
 require_relative '../../type_system/type_constraint_solver'
 require_relative '../../type_system/generic_call_resolver'
 require_relative 'builders/ast_factory'
+require_relative '../../compiler/metadata_loader_service'
 
 module MLC
   module SemanticGen
@@ -45,7 +46,7 @@ module MLC
                     :lambda_service, :list_comprehension_service, :index_access_service,
                     :module_context_service, :sum_type_constructor_service,
                     :type_registration_service, :type_builder, :type_declaration_service,
-                    :stdlib_registry, :import_service,
+                    :stdlib_registry, :import_service, :metadata_loader,
                     :sum_type_constructors, :type_inference_service
 
         def initialize(function_registry:, type_registry:)
@@ -165,13 +166,18 @@ module MLC
             module_context_service: @module_context_service
           )
           @stdlib_registry = MLC::Compiler::StdlibSignatureRegistry.new
+          @metadata_loader = MLC::Compiler::MetadataLoaderService.new(
+            function_registry: @function_registry,
+            type_registry: @type_registry
+          )
           @import_service = ImportService.new(
             stdlib_registry: @stdlib_registry,
             module_resolver: @module_resolver,
             type_builder: @type_builder,
             type_declaration_service: @type_declaration_service,
             type_registration_service: @type_registration_service,
-            type_checker: @type_checker
+            type_checker: @type_checker,
+            metadata_loader: @metadata_loader
           )
         end
       end
