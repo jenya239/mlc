@@ -9,6 +9,7 @@ require_relative 'registration/sum_type_constructor_service'
 require_relative 'scope/module_context_service'
 require_relative '../../compiler/stdlib/signature_registry'
 require_relative 'imports/module_resolver'
+require_relative 'imports/module_path_resolver'
 require_relative 'checkers/ast_type_checker'
 require_relative 'builders/ir_builder'
 require_relative 'literal_processor'
@@ -36,7 +37,7 @@ module MLC
       # ServicesContainer - Container for all services
       # Services are ONLY state holders, no conversion logic
       class Container
-        attr_reader :module_resolver, :function_registry, :type_registry,
+        attr_reader :module_resolver, :module_path_resolver, :function_registry, :type_registry,
                     :ast_type_checker, :ir_builder, :literal_processor,
                     :ast_factory, :var_type_registry,
                     :type_checker, :type_decl_table,
@@ -51,6 +52,7 @@ module MLC
 
         def initialize(function_registry:, type_registry:)
           @module_resolver = ModuleResolver.new
+          @module_path_resolver = ModulePathResolver.new
           @function_registry = function_registry
           @type_registry = type_registry
           @ast_type_checker = ASTTypeChecker.new
@@ -173,6 +175,7 @@ module MLC
           @import_service = ImportService.new(
             stdlib_registry: @stdlib_registry,
             module_resolver: @module_resolver,
+            module_path_resolver: @module_path_resolver,
             type_builder: @type_builder,
             type_declaration_service: @type_declaration_service,
             type_registration_service: @type_registration_service,

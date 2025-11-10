@@ -31,6 +31,10 @@ module MLC
               name = sanitize_identifier(func.name)
               parameters = func.params.map { |param| "#{map_type(param.type)} #{sanitize_identifier(param.name)}" }
 
+              # Set flag for generic function context
+              is_generic = func.type_params.any?
+              @in_generic_function = is_generic
+
               block_body = if func.body.is_a?(SemanticIR::BlockExpr)
                              stmts = lower_block_expr_statements(func.body, emit_return: true)
                              CppAst::Nodes::BlockStatement.new(
@@ -48,6 +52,9 @@ module MLC
                                rbrace_prefix: ""
                              )
                            end
+
+              # Reset flag after processing function body
+              @in_generic_function = false
       
               func_decl = CppAst::Nodes::FunctionDeclaration.new(
                 return_type: return_type,

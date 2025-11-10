@@ -152,6 +152,9 @@ module MLC
           return true if type_str.nil? || type_str.empty?
           return true if type_str.include?("auto")
 
+          # If type contains unresolved type variables, use auto for C++20 type deduction
+          return true if contains_type_variables?(type)
+
           case type
           when SemanticIR::ArrayType
             type_requires_auto?(type.element_type, type_map: type_map, type_registry: type_registry)
@@ -167,6 +170,55 @@ module MLC
             name.nil? || name.empty? || name == "auto"
           else
             false
+          end
+        end
+
+        # Check if type contains unresolved type variables (T, U, etc.)
+        def contains_type_variables?(type)
+          case type
+          when SemanticIR::TypeVariable
+            true
+          when SemanticIR::GenericType
+            # Check if any type argument is a type variable
+            type.type_args.any? { |arg| contains_type_variables?(arg) }
+          when SemanticIR::ArrayType
+            contains_type_variables?(type.element_type)
+          when SemanticIR::FunctionType
+            type.params.any? { |p| contains_type_variables?(p[:type]) } ||
+              contains_type_variables?(type.ret_type)
+          when SemanticIR::RecordType
+            type.fields.any? do |field|
+              field_type = field[:type] || field.type
+              contains_type_variables?(field_type)
+            end
+          else
+            false
+          end
+        end
+
+        # Extract base type name without template parameters
+        # Example: Pair<T, U> -> "Pair", Pair<int, int> -> "Pair"
+        def extract_base_type_name(type, type_map: {}, type_registry: nil)
+          case type
+          when SemanticIR::GenericType
+            # Recursively extract base name
+            extract_base_type_name(type.base_type, type_map: type_map, type_registry: type_registry)
+          when SemanticIR::RecordType, SemanticIR::SumType
+            # Try TypeRegistry first
+            if type_registry && type_registry.has_type?(type.name)
+              return type_registry.cpp_name(type.name)
+            end
+            # Return the type name
+            type_map[type.name] || type.name
+          when SemanticIR::Type
+            # Try TypeRegistry first
+            if type_registry && type.respond_to?(:name) && type_registry.has_type?(type.name)
+              return type_registry.cpp_name(type.name)
+            end
+            type_map[type.name] || type.name
+          else
+            # Fallback
+            type.respond_to?(:name) ? type.name : "auto"
           end
         end
 

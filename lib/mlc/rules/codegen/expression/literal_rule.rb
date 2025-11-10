@@ -23,7 +23,7 @@ module MLC
               CppAst::Nodes::NumberLiteral.new(value: node.value.to_s)
             when "bool"
               CppAst::Nodes::BooleanLiteral.new(value: node.value)
-            when "string"
+            when "str", "string"
               build_aurora_string(node.value)
             else
               CppAst::Nodes::NumberLiteral.new(value: node.value.to_s)

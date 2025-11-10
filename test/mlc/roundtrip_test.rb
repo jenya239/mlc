@@ -4,10 +4,10 @@ require_relative "../test_helper"
 
 class MLCRoundtripTest < Minitest::Test
   def test_simple_function
-    aurora_code = "fn add(a: i32, b: i32) -> i32 = a + b"
+    mlc_code = "fn add(a: i32, b: i32) -> i32 = a + b"
     
     # 1. Parse MLC
-    ast = MLC.parse(aurora_code)
+    ast = MLC.parse(mlc_code)
     assert_instance_of MLC::AST::Program, ast
     assert_equal 1, ast.declarations.size
     
@@ -40,10 +40,10 @@ class MLCRoundtripTest < Minitest::Test
   end
   
   def test_full_pipeline
-    aurora_code = "fn add(a: i32, b: i32) -> i32 = a + b"
+    mlc_code = "fn add(a: i32, b: i32) -> i32 = a + b"
     
     # Full pipeline
-    cpp_code = MLC.to_cpp(aurora_code)
+    cpp_code = MLC.to_cpp(mlc_code)
     
     # Verify generated C++
     assert_includes cpp_code, "int add(int a, int b)"
@@ -51,10 +51,10 @@ class MLCRoundtripTest < Minitest::Test
   end
   
   def test_compile_and_run
-    aurora_code = "fn add(a: i32, b: i32) -> i32 = a + b"
+    mlc_code = "fn add(a: i32, b: i32) -> i32 = a + b"
     
     # Generate C++ code
-    cpp_code = MLC.to_cpp(aurora_code)
+    cpp_code = MLC.to_cpp(mlc_code)
     
     # Add main function for testing
     full_cpp = <<~CPP
@@ -66,39 +66,39 @@ class MLCRoundtripTest < Minitest::Test
     CPP
     
     # Write to temporary file
-    temp_file = "/tmp/aurora_test.cpp"
+    temp_file = "/tmp/mlc_test.cpp"
     File.write(temp_file, full_cpp)
     runtime_dir = File.expand_path("../../runtime", __dir__)
     
     # Compile
-    compile_result = system("g++ -std=c++20 -I #{runtime_dir} -o /tmp/aurora_test #{temp_file}")
+    compile_result = system("g++ -std=c++20 -I #{runtime_dir} -o /tmp/mlc_test #{temp_file}")
     assert compile_result, "Compilation failed"
     
     # Run and check result
-    run_result = system("/tmp/aurora_test")
+    run_result = system("/tmp/mlc_test")
     assert run_result, "Program should return 0 (success)"
     
     # Cleanup
     File.delete(temp_file) if File.exist?(temp_file)
-    File.delete("/tmp/aurora_test") if File.exist?("/tmp/aurora_test")
+    File.delete("/tmp/mlc_test") if File.exist?("/tmp/mlc_test")
   end
   
   def test_float_function
-    aurora_code = "fn square(x: f32) -> f32 = x * x"
+    mlc_code = "fn square(x: f32) -> f32 = x * x"
     
-    cpp_code = MLC.to_cpp(aurora_code)
+    cpp_code = MLC.to_cpp(mlc_code)
     
     assert_includes cpp_code, "float square(float x)"
     assert_includes cpp_code, "return x * x"
   end
   
   def test_record_type
-    aurora_code = <<~MLCORA
+    mlc_code = <<~MLCORA
       type Point = { x: f32, y: f32 }
       fn make_point(x: f32, y: f32) -> Point = { x: x, y: y }
     MLCORA
     
-    cpp_code = MLC.to_cpp(aurora_code)
+    cpp_code = MLC.to_cpp(mlc_code)
     
     assert_includes cpp_code, "struct Point"
     assert_includes cpp_code, "float x"

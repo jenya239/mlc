@@ -5,7 +5,7 @@ require "test_helper"
 class MLCFullTest < Minitest::Test
   include CppAst::Builder::DSL
 
-  def test_aurora_full_example
+  def test_mlc_full_example
     # Comprehensive example using all MLC DSL features
     ast = program(
       # Product type
@@ -103,7 +103,7 @@ class MLCFullTest < Minitest::Test
     assert_equal expected, cpp
   end
 
-  def test_aurora_with_nested_types
+  def test_mlc_with_nested_types
     # Example with nested Result/Option types
     ast = program(
       sum_type("Response",
@@ -150,7 +150,7 @@ class MLCFullTest < Minitest::Test
     assert_equal expected, cpp
   end
 
-  def test_aurora_roundtrip_compatibility
+  def test_mlc_roundtrip_compatibility
     # Test that generated C++ can be parsed back (where possible)
     ast = program(
       product_type("Simple",

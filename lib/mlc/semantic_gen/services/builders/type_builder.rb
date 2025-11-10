@@ -27,6 +27,12 @@ module MLC
           when MLC::AST::GenericType
             base = transform(node.base_type)
             args = node.type_params.map { |type| transform(type) }
+
+            # Validate type constraints if base type has constraints
+            if node.base_type.respond_to?(:name)
+              @type_checker.validate_type_constraints(node.base_type.name, node.type_params)
+            end
+
             @ir_builder.generic_type(base_type: base, type_args: args)
           when MLC::AST::FunctionType
             params = node.param_types.each_with_index.map do |type, index|

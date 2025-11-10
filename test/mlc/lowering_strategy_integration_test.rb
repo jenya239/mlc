@@ -166,7 +166,7 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
     cpp = MLC.to_cpp(source)
 
-    # Should use aurora::io runtime
+    # Should use mlc::io runtime
     assert_includes cpp, "mlc::io::println"
   end
 

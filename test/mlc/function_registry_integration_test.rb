@@ -62,7 +62,7 @@ module MLC
 
       assert_instance_of MLC::SemanticIR::CallExpr, call
       assert_instance_of MLC::SemanticIR::VarExpr, call.callee
-      assert_equal "hypotenuse", call.callee.name
+      assert_equal "Math.hypotenuse", call.callee.name
 
       alias_entry = transformer.function_registry.fetch_entry_for_member("Math", "hypotenuse")
       refute_nil alias_entry
@@ -94,7 +94,7 @@ module MLC
       call = sum_func.body
       assert_instance_of MLC::SemanticIR::CallExpr, call
       assert_instance_of MLC::SemanticIR::VarExpr, call.callee
-      assert_equal "add", call.callee.name
+      assert_equal "MyMath.add", call.callee.name
 
       alias_entry = transformer.function_registry.fetch_entry_for_member("Math", "add")
       refute_nil alias_entry

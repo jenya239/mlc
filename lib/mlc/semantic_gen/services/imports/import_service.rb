@@ -2,15 +2,17 @@
 
 require_relative '../../../core/function_signature'
 require_relative '../../../compiler/stdlib/signature_registry'
+require_relative 'module_path_resolver'
 
 module MLC
   module SemanticGen
     module Services
       # ImportService - handles stdlib and user module imports for SemanticGen
       class ImportService
-        def initialize(stdlib_registry:, module_resolver:, type_builder:, type_declaration_service:, type_registration_service:, type_checker:, metadata_loader:)
+        def initialize(stdlib_registry:, module_resolver:, module_path_resolver:, type_builder:, type_declaration_service:, type_registration_service:, type_checker:, metadata_loader:)
           @stdlib_registry = stdlib_registry
           @module_resolver = module_resolver
+          @module_path_resolver = module_path_resolver
           @type_builder = type_builder
           @type_declaration_service = type_declaration_service
           @type_registration_service = type_registration_service
@@ -157,11 +159,10 @@ module MLC
         end
 
         def process_user_import(import_decl, function_registry:)
-          # Phase 24-C: Load metadata before registering aliases
-          # Simple path resolution: "MyModule" -> "./MyModule.mlcmeta"
-          # TODO: Support relative paths (../), nested paths, and source_file_path context
+          # Phase 24-C/24-D: Load metadata before registering aliases
+          # Uses ModulePathResolver for proper path resolution (relative paths, etc.)
           module_name = import_decl.path
-          metadata_path = resolve_metadata_path(module_name)
+          metadata_path = @module_path_resolver.resolve(module_name)
 
           if File.exist?(metadata_path)
             @metadata_loader.load(metadata_path)
@@ -169,22 +170,6 @@ module MLC
 
           # Register import aliases (existing behavior)
           @module_resolver.register_module_import(import_decl, function_registry)
-        end
-
-        # Simple metadata path resolution
-        # For first version, search in current directory
-        # Future: support relative paths, search paths, etc.
-        def resolve_metadata_path(module_name)
-          # Try exact case first: "MyModule" -> "./MyModule.mlcmeta"
-          exact_path = "./#{module_name}.mlcmeta"
-          return exact_path if File.exist?(exact_path)
-
-          # Try lowercase: "MyModule" -> "./mymodule.mlcmeta"
-          lower_path = "./#{module_name.downcase}.mlcmeta"
-          return lower_path if File.exist?(lower_path)
-
-          # Default to exact case for File.exist? check in caller
-          exact_path
         end
       end
     end

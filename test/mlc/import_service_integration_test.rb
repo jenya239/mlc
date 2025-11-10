@@ -41,7 +41,7 @@ module MLC
 
       File.write("./MyMath.mlcmeta", JSON.pretty_generate(metadata))
 
-      # Import the module in Aurora source
+      # Import the module in MLC source
       source = <<~MLCORA
         import MyMath::{add}
 

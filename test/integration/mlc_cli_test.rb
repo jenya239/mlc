@@ -8,7 +8,6 @@ class MLCCLITest < Minitest::Test
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
   def test_run_simple_program
-    skip_unless_compiler_available
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "main.mlc")
@@ -25,7 +24,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_run_from_stdin
-    skip_unless_compiler_available
 
     source = <<~MLC
       fn main() -> i32 = println("from-stdin")
@@ -38,7 +36,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_program_reads_runtime_stdin
-    skip_unless_compiler_available
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "stdin.mlc")
@@ -80,7 +77,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_pass_arguments
-    skip_unless_compiler_available
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "args.mlc")
@@ -96,7 +92,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_let_binding_result_is_exit_code
-    skip_unless_compiler_available
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "let.mlc")
@@ -114,7 +109,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_array_literal_and_methods
-    skip_unless_compiler_available
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "array.mlc")
@@ -134,7 +128,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_map_filter_fold_pipeline
-    skip_unless_compiler_available
 
     Dir.mktmpdir do |dir|
       source = File.join(dir, "stats.mlc")
@@ -187,14 +180,4 @@ class MLCCLITest < Minitest::Test
     end
   end
 
-  private
-
-  def skip_unless_compiler_available
-    return if @compiler_checked
-
-    @compiler_checked = true
-    compiler = ENV.fetch("CXX", "g++")
-    available = system("#{compiler} --version > /dev/null 2>&1")
-    skip "C++ compiler (#{compiler}) not available" unless available
-  end
 end

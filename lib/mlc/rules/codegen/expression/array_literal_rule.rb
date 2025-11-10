@@ -29,7 +29,9 @@ module MLC
             )
 
             # Recursively lower each element
-            elements = node.elements.map { |elem| lowerer.send(:lower_expression, elem) }
+            elements = node.elements.map { |elem|
+              lowerer.send(:lower_expression, elem)
+            }
 
             # Generate brace initializer: std::vector<int>{1, 2, 3}
             CppAst::Nodes::BraceInitializerExpression.new(

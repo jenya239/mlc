@@ -16,7 +16,8 @@ module MLC
           type_map: @type_map,
           rule_engine: @rule_engine,
           runtime_policy: @runtime_policy,
-          event_bus: @event_bus
+          event_bus: @event_bus,
+          in_generic_function: @in_generic_function || false
         }
         @rule_engine.apply(:cpp_expression, expr, context: context)
       end

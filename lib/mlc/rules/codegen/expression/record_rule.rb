@@ -20,13 +20,23 @@ module MLC
             lowerer = context[:lowerer]
             type_map = context[:type_map] || {}
             type_registry = context[:type_registry]
+            in_generic_function = context[:in_generic_function] || false
 
-            # Map the record type to C++
-            type_str = map_type(
-              node.type,
-              type_map: type_map,
-              type_registry: type_registry
-            )
+            # Check if type contains unresolved type variables
+            # For nested RecordExpr inside generic functions, use full type (TypeVariables are in scope)
+            # For top-level RecordExpr outside generic functions, use CTAD or auto
+            type_str = if contains_type_variables?(node.type)
+              if in_generic_function
+                # Inside generic function: TypeVariables are in scope, use full type
+                map_type(node.type, type_map: type_map, type_registry: type_registry)
+              else
+                # Outside generic function: TypeVariables not in scope, use CTAD
+                extract_base_type_name(node.type, type_map: type_map, type_registry: type_registry)
+              end
+            else
+              # Fully resolved type - use explicit template arguments
+              map_type(node.type, type_map: type_map, type_registry: type_registry)
+            end
 
             # Recursively lower each field value
             args = node.fields.values.map { |value| lowerer.send(:lower_expression, value) }

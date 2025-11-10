@@ -94,7 +94,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
 
     cpp = MLC.compile(source).to_source
 
-    # Conv functions should use aurora namespace (not aurora::conv)
+    # Conv functions should use mlc namespace (not mlc::conv)
     assert_includes cpp, "mlc::to_string_i32"
   end
 

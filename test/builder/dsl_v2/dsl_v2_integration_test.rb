@@ -307,9 +307,9 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
     assert modern_ast.statements.size > 0
   end
 
-  def test_aurora_syntax_integration
+  def test_mlc_syntax_integration
     # Test MLC syntax integration
-    aurora_ast = program do
+    mlc_ast = program do
       # MLC-style type definitions
       type_alias :Vec2, t.tuple(t.f32, t.f32)
 
@@ -351,9 +351,9 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
       end
     end
 
-    assert_not_nil aurora_ast
-    assert_kind_of CppAst::Builder::DSLv2Improved::ProgramBuilder, aurora_ast
-    assert aurora_ast.statements.size > 0
+    assert_not_nil mlc_ast
+    assert_kind_of CppAst::Builder::DSLv2Improved::ProgramBuilder, mlc_ast
+    assert mlc_ast.statements.size > 0
   end
 
   def test_error_handling_integration

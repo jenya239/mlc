@@ -123,13 +123,39 @@ module MLC
               end
             end
 
+      # Check if type contains unresolved type variables (T, U, etc.)
+      def contains_type_variables?(type)
+        case type
+        when SemanticIR::TypeVariable
+          true
+        when SemanticIR::GenericType
+          # Check if any type argument is a type variable
+          type.type_args.any? { |arg| contains_type_variables?(arg) }
+        when SemanticIR::ArrayType
+          contains_type_variables?(type.element_type)
+        when SemanticIR::FunctionType
+          type.params.any? { |p| contains_type_variables?(p[:type]) } ||
+            contains_type_variables?(type.ret_type)
+        when SemanticIR::RecordType
+          type.fields.any? do |field|
+            field_type = field[:type] || field.type
+            contains_type_variables?(field_type)
+          end
+        else
+          false
+        end
+      end
+
       def type_requires_auto?(type, type_str = nil)
               return true if type.nil?
-      
+
               type_str ||= map_type(type)
               return true if type_str.nil? || type_str.empty?
               return true if type_str.include?("auto")
-      
+
+              # If type contains unresolved type variables, use auto for C++20 type deduction
+              return true if contains_type_variables?(type)
+
               case type
               when SemanticIR::ArrayType
                 type_requires_auto?(type.element_type)

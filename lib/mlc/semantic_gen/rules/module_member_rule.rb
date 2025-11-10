@@ -30,16 +30,22 @@ module MLC
           # Resolve module member function entry
           entry = resolve_entry(node.object, node.member, svc)
 
-          # Get canonical name and build type using factory
+          # Build qualified name from AST (e.g., "Math.sqrt")
+          object_name = node.object.respond_to?(:name) ? node.object.name : node.object.to_s
+          # Resolve import alias to canonical module name
+          resolved_module_name = svc.module_resolver.resolve_alias(object_name)
+          qualified_name = "#{resolved_module_name}.#{node.member}"
+
+          # Get canonical name for type lookup
           canonical_name = entry.canonical_name || entry.name
           func_type = svc.ir_builder.func_type(
             name: canonical_name,
             origin: node
           )
 
-          # Build variable reference using factory
+          # Build variable reference with qualified name from AST
           svc.ir_builder.var(
-            name: canonical_name,
+            name: qualified_name,
             type: func_type,
             origin: node
           )
