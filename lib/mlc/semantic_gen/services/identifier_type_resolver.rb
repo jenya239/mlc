@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../../services/var_type_registry'
-require_relative '../../services/type_checker'
+require_relative 'scope/var_type_registry'
+require_relative 'checkers/type_checker'
 
 module MLC
   module SemanticGen

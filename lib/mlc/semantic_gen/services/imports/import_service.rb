@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../../core/function_signature'
-require_relative '../../compiler/stdlib/signature_registry'
+require_relative '../../../core/function_signature'
+require_relative '../../../compiler/stdlib/signature_registry'
 
 module MLC
   module SemanticGen

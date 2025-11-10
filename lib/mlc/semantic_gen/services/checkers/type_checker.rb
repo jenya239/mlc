@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../semantic_ir/builder"
+require_relative "../../../semantic_ir/builder"
 
 module MLC
   module Services

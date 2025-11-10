@@ -2,9 +2,9 @@
 
 require_relative '../core/function_registry'
 require_relative '../core/type_registry'
-require_relative '../services/function_registration_service'
-require_relative '../services/type_resolution_service'
-require_relative '../services/purity_analyzer'
+require_relative 'services/registration/function_registration_service'
+require_relative 'services/utils/type_resolution_service'
+require_relative 'services/utils/purity_analyzer'
 require_relative '../type_system/type_constraint_solver'
 require_relative '../type_system/generic_call_resolver'
 require_relative '../type_system/match_analyzer'

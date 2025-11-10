@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../../type_system/match_analyzer'
-require_relative '../../services/type_unification_service'
+require_relative '../../../type_system/match_analyzer'
+require_relative '../utils/type_unification_service'
 
 module MLC
   module SemanticGen

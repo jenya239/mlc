@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../core/function_signature"
+require_relative "../../../core/function_signature"
 
 module MLC
   module Services
