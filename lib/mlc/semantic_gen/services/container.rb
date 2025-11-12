@@ -13,7 +13,7 @@ require_relative 'imports/module_path_resolver'
 require_relative 'checkers/ast_type_checker'
 require_relative 'builders/ir_builder'
 require_relative 'literal_processor'
-require_relative 'checkers/semantic_ir_classifier'
+require_relative '../../services/semantic_ir_type_checker'
 require_relative 'builders/record_literal_builder'
 require_relative 'builders/array_literal_builder'
 require_relative 'features/loop_service'
@@ -75,7 +75,7 @@ module MLC
           @scope_context = MLC::Services::TransformationContext.new(
             var_type_registry: @var_type_registry
           )
-          @semantic_ir_classifier = SemanticIRClassifier.new
+          @semantic_ir_classifier = MLC::Services::SemanticIRTypeChecker.new
           @record_literal_builder = RecordLiteralBuilder.new(
             ir_builder: @ir_builder,
             type_registry: @type_registry,
