@@ -86,11 +86,11 @@ module MLC
       end
 
       def var_decl?(node)
-        node.is_a?(MLC::SemanticIR::VarDecl)
+        node.is_a?(MLC::SemanticIR::VariableDeclStmt)
       end
 
       def assignment?(node)
-        node.is_a?(MLC::SemanticIR::Assignment)
+        node.is_a?(MLC::SemanticIR::AssignmentStmt)
       end
 
       def if_stmt?(node)
@@ -106,11 +106,11 @@ module MLC
       end
 
       def break_stmt?(node)
-        node.is_a?(MLC::SemanticIR::Break)
+        node.is_a?(MLC::SemanticIR::BreakStmt)
       end
 
       def continue_stmt?(node)
-        node.is_a?(MLC::SemanticIR::Continue)
+        node.is_a?(MLC::SemanticIR::ContinueStmt)
       end
 
       def match_stmt?(node)
