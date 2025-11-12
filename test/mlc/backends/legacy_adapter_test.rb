@@ -21,7 +21,6 @@ module MLC
           )
 
           assert_instance_of LegacyAdapter, adapter
-          refute_nil adapter.legacy_backend
           refute_nil adapter.container
           refute_nil adapter.context
         end
@@ -35,7 +34,6 @@ module MLC
           # Should expose same attributes as Backend::CodeGen
           assert_respond_to adapter, :type_registry
           assert_respond_to adapter, :function_registry
-          assert_respond_to adapter, :rule_engine
           assert_respond_to adapter, :event_bus
           assert_respond_to adapter, :runtime_policy
           assert_respond_to adapter, :type_map
@@ -51,17 +49,6 @@ module MLC
           )
 
           assert_respond_to adapter, :lower
-        end
-
-        def test_legacy_adapter_delegates_to_backend_codegen
-          adapter = LegacyAdapter.new(
-            type_registry: @type_registry,
-            function_registry: @function_registry
-          )
-
-          # Verify delegation structure
-          assert_instance_of MLC::Backend::CodeGen, adapter.legacy_backend
-          assert_same adapter.legacy_backend.type_registry, @type_registry
         end
 
         def test_legacy_adapter_initializes_new_architecture

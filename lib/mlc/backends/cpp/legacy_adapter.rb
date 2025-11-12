@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../backend/codegen"
 require_relative "bootstrap"
 require_relative "rules/function_rule"
 
@@ -19,19 +18,9 @@ module MLC
       # - Phase 2 (current): Replace expression/statement lowering with new rules
       # - Phase 3 (future): Replace function/module lowering with new implementation
       class LegacyAdapter
-        attr_reader :legacy_backend, :container, :context
+        attr_reader :container, :context
 
         def initialize(type_registry:, function_registry: nil, stdlib_scanner: nil, rule_engine: nil, event_bus: nil, runtime_policy: nil)
-          # Initialize legacy backend with all original parameters
-          @legacy_backend = Backend::CodeGen.new(
-            type_registry: type_registry,
-            function_registry: function_registry,
-            stdlib_scanner: stdlib_scanner,
-            rule_engine: rule_engine,
-            event_bus: event_bus,
-            runtime_policy: runtime_policy
-          )
-
           # Initialize new architecture
           backend = Bootstrap.create_backend(
             type_registry: type_registry,
@@ -55,8 +44,7 @@ module MLC
           when SemanticIR::Func
             lower_function(core_ir)
           when SemanticIR::TypeDecl
-            # Delegate type declarations to legacy (Phase 3 concern)
-            @legacy_backend.lower(core_ir)
+            lower_type_decl_internal(core_ir)
           else
             raise "Unknown SemanticIR node: #{core_ir.class}"
           end
@@ -193,19 +181,155 @@ module MLC
           )
         end
 
+        # Type declaration lowering (migrated from Backend::CodeGen::TypeLowerer)
+        def lower_type_decl_internal(type_decl)
+          result = case type_decl.type
+                   when SemanticIR::RecordType
+                     lower_record_type_internal(type_decl.name, type_decl.type)
+                   when SemanticIR::SumType
+                     lower_sum_type_internal(type_decl.name, type_decl.type, type_decl.type_params)
+                   else
+                     # For primitive types, generate empty program (no direct C++ emission)
+                     CppAst::Nodes::Program.new(statements: [], statement_trailings: [])
+                   end
+
+          if type_decl.type_params.any?
+            if result.is_a?(CppAst::Nodes::Program)
+              wrap_statements_with_template(type_decl.type_params, result)
+            else
+              template_params_str, params_suffix = @context.build_template_signature(type_decl.type_params)
+              CppAst::Nodes::TemplateDeclaration.new(
+                template_params: template_params_str,
+                declaration: result,
+                template_suffix: "",
+                less_suffix: "",
+                params_suffix: params_suffix
+              )
+            end
+          else
+            result
+          end
+        end
+
+        def lower_record_type_internal(name, record_type)
+          # Generate struct declaration
+          members = record_type.fields.map do |field|
+            field_type = @context.map_type(field[:type])
+            CppAst::Nodes::VariableDeclaration.new(
+              type: field_type,
+              declarators: [@context.sanitize_identifier(field[:name])],
+              declarator_separators: [],
+              type_suffix: " ",
+              prefix_modifiers: ""
+            )
+          end
+
+          CppAst::Nodes::StructDeclaration.new(
+            name: name,
+            members: members,
+            member_trailings: Array.new(members.size, ""),
+            struct_suffix: " ",
+            name_suffix: " ",
+            lbrace_suffix: "",
+            rbrace_suffix: "",
+            base_classes_text: ""
+          )
+        end
+
+        def lower_sum_type_internal(name, sum_type, type_params = [])
+          # Generate structs for each variant
+          variant_structs = sum_type.variants.map do |variant|
+            if variant[:fields].empty?
+              # Empty variant - generate empty struct
+              CppAst::Nodes::StructDeclaration.new(
+                name: variant[:name],
+                members: [],
+                member_trailings: [],
+                struct_suffix: " ",
+                name_suffix: " ",
+                lbrace_suffix: "",
+                rbrace_suffix: "",
+                base_classes_text: ""
+              )
+            else
+              # Variant with fields
+              members = variant[:fields].map do |field|
+                field_type = @context.map_type(field[:type])
+                CppAst::Nodes::VariableDeclaration.new(
+                  type: field_type,
+                  declarators: [field[:name]],
+                  declarator_separators: [],
+                  type_suffix: " ",
+                  prefix_modifiers: ""
+                )
+              end
+
+              CppAst::Nodes::StructDeclaration.new(
+                name: variant[:name],
+                members: members,
+                member_trailings: Array.new(members.size, ""),
+                struct_suffix: " ",
+                name_suffix: " ",
+                lbrace_suffix: "",
+                rbrace_suffix: "",
+                base_classes_text: ""
+              )
+            end
+          end
+
+          # Generate using declaration for std::variant
+          variant_type_names = if type_params.any?
+                                 type_params_str = type_params.map { |tp| tp.name }.join(", ")
+                                 sum_type.variants.map { |v| "#{v[:name]}<#{type_params_str}>" }.join(", ")
+                               else
+                                 sum_type.variants.map { |v| v[:name] }.join(", ")
+                               end
+          using_decl = CppAst::Nodes::UsingDeclaration.new(
+            kind: :alias,
+            name: name,
+            alias_target: "std::variant<#{variant_type_names}>",
+            using_suffix: " ",
+            equals_prefix: " ",
+            equals_suffix: " "
+          )
+
+          # Return program with all structs + using declaration
+          all_statements = variant_structs + [using_decl]
+          CppAst::Nodes::Program.new(
+            statements: all_statements,
+            statement_trailings: Array.new(all_statements.size, "")
+          )
+        end
+
+        def wrap_statements_with_template(type_params, program)
+          # Wrap each statement (struct declarations, using) with template
+          template_params_str, params_suffix = @context.build_template_signature(type_params)
+
+          wrapped_statements = program.statements.map do |stmt|
+            CppAst::Nodes::TemplateDeclaration.new(
+              template_params: template_params_str,
+              declaration: stmt,
+              template_suffix: "",
+              less_suffix: "",
+              params_suffix: params_suffix
+            )
+          end
+
+          CppAst::Nodes::Program.new(
+            statements: wrapped_statements,
+            statement_trailings: Array.new(wrapped_statements.size, "")
+          )
+        end
+
         public
 
-        # Expose legacy backend attributes for compatibility
+        # Expose container attributes for compatibility
         def type_registry
-          @legacy_backend.type_registry
+          @container.type_registry
         end
 
         def function_registry
-          @legacy_backend.function_registry
-        end
-
-        def rule_engine
-          @legacy_backend.rule_engine
+          @container.function_registry
         end
 
         def event_bus
@@ -213,12 +337,14 @@ module MLC
         end
 
         def runtime_policy
-          @legacy_backend.runtime_policy
+          @container.runtime_policy
         end
 
         def type_map
-          @legacy_backend.type_map
+          @container.type_map
         end
+
+        # rule_engine no longer exposed - v2 architecture handles rules internally
       end
     end
   end
