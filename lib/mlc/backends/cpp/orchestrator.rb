@@ -14,6 +14,8 @@ module MLC
             function_registry: function_registry
           )
           @context = Context.new(@container)
+          # Initialize RuleEngine after Context is created
+          @container.rule_engine = Services::RuleEngine.new(@context)
         end
 
         # Main entry point: SemanticIR → C++ source code

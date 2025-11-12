@@ -72,27 +72,32 @@ module MLC
           assert_same function_registry, context.function_registry
         end
 
-        def test_context_map_type_placeholder
+        def test_context_map_type
           container = Container.new(
             type_registry: MLC::Core::TypeRegistry.new,
             function_registry: MLC::Core::FunctionRegistry.new
           )
           context = Context.new(container)
 
-          # Placeholder implementation just returns string
-          result = context.map_type("i32")
-          assert_equal "i32", result
+          # Test primitive type mapping
+          type = SemanticIR::Type.new(name: "i32", kind: :primitive)
+          result = context.map_type(type)
+          assert_equal "int", result
         end
 
-        def test_context_escape_string_placeholder
+        def test_context_string_helpers
           container = Container.new(
             type_registry: MLC::Core::TypeRegistry.new,
             function_registry: MLC::Core::FunctionRegistry.new
           )
           context = Context.new(container)
 
-          # Placeholder uses Ruby's inspect
+          # Test escape_string (no quotes)
           result = context.escape_string("hello")
+          assert_equal "hello", result
+
+          # Test cpp_string_literal (with quotes)
+          result = context.cpp_string_literal("hello")
           assert_equal '"hello"', result
         end
 
