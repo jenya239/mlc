@@ -40,13 +40,14 @@ module MLC
       # Bootstrap module for initializing the new backend architecture
       module Bootstrap
         # Initialize complete backend with all rules registered
-        def self.create_backend(type_registry:, function_registry:, runtime_policy: nil, stdlib_scanner: nil)
+        def self.create_backend(type_registry:, function_registry:, runtime_policy: nil, stdlib_scanner: nil, event_bus: nil)
           # Create container
           container = Container.new(
             type_registry: type_registry,
             function_registry: function_registry,
             runtime_policy: runtime_policy,
-            stdlib_scanner: stdlib_scanner
+            stdlib_scanner: stdlib_scanner,
+            event_bus: event_bus
           )
 
           # Create context

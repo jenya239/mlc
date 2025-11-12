@@ -9,13 +9,14 @@ module MLC
     module Cpp
       # Dependency injection container for backend services
       class Container
-        attr_reader :type_registry, :function_registry, :type_map, :runtime_policy, :stdlib_scanner
+        attr_reader :type_registry, :function_registry, :type_map, :runtime_policy, :stdlib_scanner, :event_bus
         attr_accessor :rule_engine, :in_generic_function, :user_functions
 
-        def initialize(type_registry:, function_registry:, runtime_policy: nil, stdlib_scanner: nil)
+        def initialize(type_registry:, function_registry:, runtime_policy: nil, stdlib_scanner: nil, event_bus: nil)
           @type_registry = type_registry
           @function_registry = function_registry
           @stdlib_scanner = stdlib_scanner
+          @event_bus = event_bus
           @type_map = build_type_map
           @runtime_policy = runtime_policy || MLC::Backend::RuntimePolicy.new
           @services = {}

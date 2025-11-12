@@ -37,7 +37,8 @@ module MLC
             type_registry: type_registry,
             function_registry: function_registry,
             runtime_policy: runtime_policy,
-            stdlib_scanner: stdlib_scanner
+            stdlib_scanner: stdlib_scanner,
+            event_bus: event_bus
           )
           @container = backend[:container]
           @context = backend[:context]
@@ -143,10 +144,10 @@ module MLC
           func_decl = function_rule.apply(
             func_decl,
             semantic_func: func,
-            event_bus: @legacy_backend.event_bus
+            event_bus: @container.event_bus
           )
 
-          @legacy_backend.event_bus&.publish(
+          @container.event_bus&.publish(
             :cpp_function_lowered,
             name: func.name,
             effects: Array(func.effects)
@@ -208,7 +209,7 @@ module MLC
         end
 
         def event_bus
-          @legacy_backend.event_bus
+          @container.event_bus
         end
 
         def runtime_policy
