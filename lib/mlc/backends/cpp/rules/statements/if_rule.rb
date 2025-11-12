@@ -17,14 +17,14 @@ module MLC
               # Lower condition
               condition = context.lower_expression(node.condition)
 
-              # Lower then and else branches
-              then_statement = lower_statement_block(node.then_branch)
-              else_statement = node.else_branch ? lower_statement_block(node.else_branch) : nil
+              # Lower then and else bodies
+              then_stmt = lower_statement_block(node.then_body)
+              else_stmt = node.else_body ? lower_statement_block(node.else_body) : nil
 
               context.factory.if_statement(
                 condition: condition,
-                then_branch: then_statement,
-                else_branch: else_statement
+                then_statement: then_stmt,
+                else_statement: else_stmt
               )
             end
 

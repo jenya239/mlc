@@ -99,7 +99,10 @@ module MLC
           @container.instance_variable_set(:@in_generic_function, @in_generic_function)
 
           # Lower function body using new architecture
-          block_body = if func.body.is_a?(SemanticIR::BlockExpr)
+          block_body = if func.body.nil?
+                         # External/opaque functions have no body
+                         nil
+                       elsif func.body.is_a?(SemanticIR::BlockExpr)
                          stmts = lower_block_expr_statements(func.body, emit_return: true)
                          CppAst::Nodes::BlockStatement.new(
                            statements: stmts,

@@ -15,96 +15,96 @@ module MLC
 
             def apply(node)
               # Lower scrutinee expression
-              subject_expr = context.lower_expression(node.scrutinee)
+              scrutinee = context.lower_expression(node.scrutinee)
 
               # Lower match arms
               arms = node.arms.map { |arm| lower_match_arm(arm) }
 
               CppAst::Nodes::MatchExpression.new(
-                subject: subject_expr,
+                value: scrutinee,
                 arms: arms,
-                trailing_newline: true
+                arm_separators: Array.new([arms.size - 1, 0].max, ",\n")
               )
             end
 
             private
 
             def lower_match_arm(arm)
-              if context.checker.wildcard_pattern?(arm.pattern)
-                # Wildcard pattern (_)
-                body = context.lower_statement(arm.body)
-                CppAst::Nodes::WildcardMatchArmStatement.new(body: body)
-              else
-                # Constructor pattern
-                pattern_type = context.lower_type(arm.pattern.type)
-                body = lower_match_arm_body(arm)
+              pattern = arm[:pattern]
 
-                CppAst::Nodes::MatchArmStatement.new(
-                  pattern_type: pattern_type,
+              if pattern[:kind] == :wildcard
+                # Wildcard pattern (_)
+                body = lower_statement_block(arm[:body])
+                CppAst::Nodes::WildcardMatchArmStatement.new(
+                  var_name: "_unused",
                   body: body
                 )
+              else
+                # Constructor pattern
+                lower_constructor_arm(arm)
               end
             end
 
-            def lower_match_arm_body(arm)
-              case arm.pattern
-              when MLC::SemanticIR::ConstructorPattern
-                # Lower body statements
-                body_stmts = if context.checker.block_expr?(arm.body)
-                  arm.body.statements.map { |stmt| context.lower_statement(stmt) }
-                else
-                  [context.lower_statement(arm.body)]
-                end
+            def lower_constructor_arm(arm)
+              pattern = arm[:pattern]
+              case_name = pattern[:name]
+              var_name = context.sanitize_identifier(case_name.downcase)
+              bindings = Array(pattern[:bindings] || pattern[:fields]).compact.reject { |b| b == "_" }
+              sanitized_bindings = bindings.map { |name| context.sanitize_identifier(name) }
 
-                # Add structured binding if pattern has variable bindings
-                if arm.pattern.fields && !arm.pattern.fields.empty?
-                  body_stmts = add_structured_binding(arm.pattern, body_stmts)
-                end
+              body_block = lower_statement_block(arm[:body])
 
+              # Add structured binding if there are bindings
+              block_with_binding = if sanitized_bindings.any?
+                add_structured_binding(body_block, sanitized_bindings, var_name)
+              else
+                body_block
+              end
+
+              CppAst::Nodes::MatchArmStatement.new(
+                case_name: case_name,
+                var_name: var_name,
+                body: block_with_binding
+              )
+            end
+
+            def lower_statement_block(body_ir)
+              if context.checker.block_expr?(body_ir)
+                statements = body_ir.statements.map { |stmt| context.lower_statement(stmt) }
                 context.factory.block_statement(
-                  statements: body_stmts,
-                  statement_trailings: Array.new(body_stmts.length, "\n"),
-                  lbrace_suffix: "\n",
-                  rbrace_prefix: ""
-                )
-              when MLC::SemanticIR::VarPattern
-                # Variable pattern - bind the whole value
-                var_name = context.sanitize_identifier(arm.pattern.name)
-
-                # Lower body statements
-                body_stmts = if context.checker.block_expr?(arm.body)
-                  arm.body.statements.map { |stmt| context.lower_statement(stmt) }
-                else
-                  [context.lower_statement(arm.body)]
-                end
-
-                # Prepend variable binding
-                binding_decl = CppAst::Nodes::RawStatement.new(
-                  code: "auto& #{var_name} = arg;"
-                )
-
-                context.factory.block_statement(
-                  statements: [binding_decl] + body_stmts,
-                  statement_trailings: Array.new(body_stmts.length + 1, "\n"),
+                  statements: statements,
+                  statement_trailings: Array.new(statements.length, "\n"),
                   lbrace_suffix: "\n",
                   rbrace_prefix: ""
                 )
               else
-                raise "Unsupported pattern type: #{arm.pattern.class}"
+                stmt = context.lower_statement(body_ir)
+                context.factory.block_statement(
+                  statements: [stmt],
+                  statement_trailings: ["\n"],
+                  lbrace_suffix: "\n",
+                  rbrace_prefix: ""
+                )
               end
             end
 
-            def add_structured_binding(pattern, body_stmts)
-              # Extract field names from constructor pattern
-              field_names = pattern.fields.map { |f| context.sanitize_identifier(f.name) }
-              binding_list = "[#{field_names.join(', ')}]"
-
-              # Create structured binding declaration
-              binding_decl = CppAst::Nodes::RawStatement.new(
-                code: "auto #{binding_list} = arg;"
+            def add_structured_binding(body_block, bindings, var_name)
+              # Create structured binding declaration: auto [field1, field2, ...] = var_name;
+              binding_list = bindings.join(", ")
+              binding_stmt = CppAst::Nodes::RawStatement.new(
+                code: "auto [#{binding_list}] = #{var_name};"
               )
 
-              [binding_decl] + body_stmts
+              # Prepend binding to body statements
+              new_statements = [binding_stmt] + body_block.statements
+              new_trailings = ["\n"] + body_block.statement_trailings
+
+              context.factory.block_statement(
+                statements: new_statements,
+                statement_trailings: new_trailings,
+                lbrace_suffix: body_block.lbrace_suffix,
+                rbrace_prefix: body_block.rbrace_prefix
+              )
             end
           end
         end
