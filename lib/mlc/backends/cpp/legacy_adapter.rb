@@ -35,7 +35,8 @@ module MLC
           backend = Bootstrap.create_backend(
             type_registry: type_registry,
             function_registry: function_registry,
-            runtime_policy: runtime_policy
+            runtime_policy: runtime_policy,
+            stdlib_scanner: stdlib_scanner
           )
           @container = backend[:container]
           @context = backend[:context]
@@ -63,6 +64,12 @@ module MLC
 
         # Lower module using new architecture for expression/statement lowering
         def lower_module(module_node)
+          # Track user-defined functions for qualified name resolution
+          @container.user_functions = module_node.items
+                                                  .grep(SemanticIR::Func)
+                                                  .map(&:name)
+                                                  .to_set
+
           include_stmt = CppAst::Nodes::IncludeDirective.new(
             path: "mlc_match.hpp",
             system: false

@@ -44,6 +44,14 @@ module MLC
                 return override if override
               end
 
+              # Check for qualified function names (stdlib functions)
+              if context.checker.var_expr?(node.callee)
+                qualified = context.resolve_qualified_name(node.callee.name)
+                if qualified
+                  return lower_qualified_function(node, qualified)
+                end
+              end
+
               # Check for array method calls
               if context.checker.member_expr?(node.callee) && node.callee.object.type.is_a?(MLC::SemanticIR::ArrayType)
                 return lower_array_method(node)
@@ -91,6 +99,18 @@ module MLC
               else
                 nil
               end
+            end
+
+            # Lower qualified function calls (stdlib functions with namespace)
+            def lower_qualified_function(call, qualified_name)
+              callee = context.factory.identifier(name: qualified_name)
+              args = call.args.map { |arg| lower_expression(arg) }
+
+              context.factory.function_call(
+                callee: callee,
+                arguments: args,
+                argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+              )
             end
 
             # Lower array method calls
@@ -157,6 +177,26 @@ module MLC
                   callee: context.factory.identifier(name: "mlc::collections::filter"),
                   arguments: args,
                   argument_separators: predicate ? [", "] : []
+                )
+
+              when "fold"
+                # arr.fold(init, f) -> mlc::collections::fold(arr, init, f)
+                init_arg = call.args[0] ? lower_expression(call.args[0]) : nil
+                func_arg = call.args[1] ? lower_expression(call.args[1]) : nil
+                arguments = [array_obj]
+                separators = []
+                if init_arg
+                  arguments << init_arg
+                  separators << ", "
+                end
+                if func_arg
+                  arguments << func_arg
+                  separators << ", "
+                end
+                context.factory.function_call(
+                  callee: context.factory.identifier(name: "mlc::collections::fold"),
+                  arguments: arguments,
+                  argument_separators: separators
                 )
 
               else

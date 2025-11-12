@@ -114,6 +114,25 @@ module MLC
           )
         end
 
+        # Check if function is user-defined
+        def user_function?(name)
+          @container.user_functions.include?(name)
+        end
+
+        # Resolve qualified function name with stdlib fallback
+        # Returns qualified name (e.g., "mlc::collections::min_i32") or nil
+        def resolve_qualified_name(name)
+          # User-defined functions don't get qualified
+          return nil if user_function?(name)
+
+          # Try function registry first
+          qualified = qualified_function_name(name)
+          return qualified if qualified
+
+          # Fallback to stdlib scanner
+          @container.stdlib_scanner&.cpp_function_name(name)
+        end
+
         # Recursively lower an expression node via RuleEngine
         def lower_expression(node)
           raise "RuleEngine not initialized" unless @container.rule_engine

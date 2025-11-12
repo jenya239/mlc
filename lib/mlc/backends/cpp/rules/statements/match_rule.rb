@@ -14,8 +14,8 @@ module MLC
             end
 
             def apply(node)
-              # Lower subject expression
-              subject_expr = context.lower_expression(node.subject)
+              # Lower scrutinee expression
+              subject_expr = context.lower_expression(node.scrutinee)
 
               # Lower match arms
               arms = node.arms.map { |arm| lower_match_arm(arm) }
