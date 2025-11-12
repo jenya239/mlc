@@ -2,6 +2,7 @@
 
 require_relative "../../backend/codegen"
 require_relative "bootstrap"
+require_relative "rules/function_rule"
 
 module MLC
   module Backends
@@ -137,14 +138,12 @@ module MLC
             prefix_modifiers: ""
           )
 
-          # Apply legacy function-level rules (for effects, etc.)
-          func_decl = @legacy_backend.rule_engine.apply(
-            :cpp_function_declaration,
+          # Apply function-level rules (constexpr, noexcept modifiers)
+          function_rule = Rules::FunctionRule.new(@context)
+          func_decl = function_rule.apply(
             func_decl,
-            context: {
-              core_func: func,
-              event_bus: @legacy_backend.event_bus
-            }
+            semantic_func: func,
+            event_bus: @legacy_backend.event_bus
           )
 
           @legacy_backend.event_bus&.publish(
