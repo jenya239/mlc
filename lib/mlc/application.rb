@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "infrastructure/event_bus"
+require_relative "diagnostics/event_bus"
 require_relative "semantic_gen/services/rule_engine"
 require_relative "diagnostics/event_logger"
 require_relative "semantic_gen"
