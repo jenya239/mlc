@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../statement_rule"
+require_relative "../../for_loop_variable"
 
 module MLC
   module Backends
@@ -19,7 +20,7 @@ module MLC
 
               # Map variable type to C++
               var_type_str = context.map_type(node.var_type)
-              variable = MLC::Backend::ForLoopVariable.new(
+              variable = ForLoopVariable.new(
                 var_type_str,
                 context.sanitize_identifier(node.var_name)
               )

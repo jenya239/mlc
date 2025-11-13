@@ -6,18 +6,21 @@ require_relative "rules/function_rule"
 module MLC
   module Backends
     module Cpp
-      # LegacyAdapter - Strangler Fig Pattern adapter
+      # CodeGen - C++ Code Generator (v2 Architecture)
       #
-      # Purpose: Provides drop-in replacement for Backend::CodeGen while:
-      # 1. Using new architecture (Bootstrap, Container, Context, Rules) for lowering
-      # 2. Delegating high-level operations (lower_module, lower_function) to legacy
-      # 3. Enabling gradual migration of individual components
+      # Main entry point for lowering SemanticIR to C++ AST.
+      # Uses modular architecture with Container, Context, and Rules pattern.
       #
-      # Strategy:
-      # - Phase 1 (complete): Delegate all lowering to Backend::CodeGen
-      # - Phase 2 (current): Replace expression/statement lowering with new rules
-      # - Phase 3 (future): Replace function/module lowering with new implementation
-      class LegacyAdapter
+      # Architecture:
+      # - Bootstrap: Initializes Container with all services
+      # - Container: Dependency injection for type_registry, function_registry, etc.
+      # - Context: High-level API for lowering operations
+      # - Rules: Chain of Responsibility for expression/statement lowering
+      #
+      # Migration History:
+      # - Phase 1-3 (complete): Strangler Fig migration from legacy Backend::CodeGen
+      # - All legacy code removed, v2 architecture is production-ready
+      class CodeGen
         attr_reader :container, :context
 
         def initialize(type_registry:, function_registry: nil, stdlib_scanner: nil, rule_engine: nil, event_bus: nil, runtime_policy: nil)
@@ -50,33 +53,8 @@ module MLC
           end
         end
 
-        private
-
-        # Lower module using new architecture for expression/statement lowering
-        def lower_module(module_node)
-          # Track user-defined functions for qualified name resolution
-          @container.user_functions = module_node.items
-                                                  .grep(SemanticIR::Func)
-                                                  .map(&:name)
-                                                  .to_set
-
-          include_stmt = CppAst::Nodes::IncludeDirective.new(
-            path: "mlc_match.hpp",
-            system: false
-          )
-
-          items = module_node.items.flat_map do |item|
-            result = lower(item)
-            # If result is a Program (from sum types), extract its statements
-            result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
-          end
-
-          statements = [include_stmt] + items
-          trailings = ["\n"] + Array.new(items.size, "\n")
-          CppAst::Nodes::Program.new(statements: statements, statement_trailings: trailings)
-        end
-
         # Lower function using new architecture for expression/statement lowering
+        # Public for test compatibility
         def lower_function(func)
           return_type = @context.map_type(func.ret_type)
           name = @context.sanitize_identifier(func.name)
@@ -147,6 +125,32 @@ module MLC
           else
             func_decl
           end
+        end
+
+        private
+
+        # Lower module using new architecture for expression/statement lowering
+        def lower_module(module_node)
+          # Track user-defined functions for qualified name resolution
+          @container.user_functions = module_node.items
+                                                  .grep(SemanticIR::Func)
+                                                  .map(&:name)
+                                                  .to_set
+
+          include_stmt = CppAst::Nodes::IncludeDirective.new(
+            path: "mlc_match.hpp",
+            system: false
+          )
+
+          items = module_node.items.flat_map do |item|
+            result = lower(item)
+            # If result is a Program (from sum types), extract its statements
+            result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
+          end
+
+          statements = [include_stmt] + items
+          trailings = ["\n"] + Array.new(items.size, "\n")
+          CppAst::Nodes::Program.new(statements: statements, statement_trailings: trailings)
         end
 
         # Helper: Lower block expression statements with optional return
@@ -342,6 +346,16 @@ module MLC
 
         def type_map
           @container.type_map
+        end
+
+        # Expose map_type for compatibility with tests
+        def map_type(type)
+          @context.map_type(type)
+        end
+
+        # Expose sanitize_identifier for compatibility with header_generator
+        def sanitize_identifier(name)
+          @context.sanitize_identifier(name)
         end
 
         # rule_engine no longer exposed - v2 architecture handles rules internally

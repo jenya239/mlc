@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../expression_rule"
+require_relative "../../for_loop_variable"
 
 module MLC
   module Backends
@@ -48,7 +49,7 @@ module MLC
 
               node.generators.reverse_each do |generator|
                 var_type_str = context.map_type(generator[:var_type])
-                variable = MLC::Backend::ForLoopVariable.new(var_type_str, generator[:var_name])
+                variable = ForLoopVariable.new(var_type_str, generator[:var_name])
                 container_expr = context.lower_expression(generator[:iterable])
 
                 range_stmt = context.factory.range_for_statement(

@@ -10,9 +10,8 @@ class ApplicationTest < Minitest::Test
     assert_instance_of MLC::SemanticGen::Pipeline, to_core
 
     lowering = app.build_cpp_lowering(type_registry: MLC::Core::TypeRegistry.new)
-    # With MLC_CPP_BACKEND=v2, returns LegacyAdapter instead of Backend::CodeGen
-    expected_class = ENV['MLC_CPP_BACKEND'] == 'v2' ? MLC::Backends::Cpp::LegacyAdapter : MLC::Backend::CodeGen
-    assert_instance_of expected_class, lowering
+    # v2 architecture: Always returns CodeGen
+    assert_instance_of MLC::Backends::Cpp::CodeGen, lowering
     assert_same app.event_bus, lowering.event_bus
   end
 

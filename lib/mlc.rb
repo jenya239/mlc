@@ -15,7 +15,6 @@ require_relative "mlc/infrastructure/pass_manager"
 require_relative "mlc/application"
 require_relative "mlc/parser/lexer"
 require_relative "mlc/parser/parser"
-require_relative "mlc/backend/codegen"
 require_relative "mlc/backend/header_generator"
 require_relative "mlc/backend/metadata_generator"
 require_relative "mlc/backends/cpp"
@@ -113,7 +112,7 @@ module MLC
     # @param stdlib_scanner [Compiler::StdlibScanner] Scanner for automatic stdlib function resolution
     # @param runtime_policy [Backend::RuntimePolicy] Policy for choosing lowering strategies
     def lower_to_cpp(core_ir, type_registry: nil, function_registry: nil, stdlib_scanner: nil, event_bus: nil, runtime_policy: nil)
-      lowerer = Backend::CodeGen.new(
+      lowerer = Backends::Cpp::CodeGen.new(
         type_registry: type_registry,
         function_registry: function_registry,
         stdlib_scanner: stdlib_scanner,
@@ -146,7 +145,7 @@ module MLC
       stdlib_scanner = Compiler::StdlibScanner.new
 
       # Generate header and implementation
-      lowering = Backend::CodeGen.new(
+      lowering = Backends::Cpp::CodeGen.new(
         type_registry: type_registry,
         function_registry: function_registry,
         stdlib_scanner: stdlib_scanner,

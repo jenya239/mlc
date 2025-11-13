@@ -1,114 +1,82 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require_relative "../../../lib/mlc/backends/cpp/legacy_adapter"
+require_relative "../../../lib/mlc/backends/cpp/codegen"
 require_relative "../../../lib/mlc/core/type_registry"
 require_relative "../../../lib/mlc/core/function_registry"
 
 module MLC
   module Backends
     module Cpp
-      class LegacyAdapterTest < Minitest::Test
+      class CodeGenTest < Minitest::Test
         def setup
           @type_registry = MLC::Core::TypeRegistry.new
           @function_registry = MLC::Core::FunctionRegistry.new
         end
 
-        def test_legacy_adapter_initializes_successfully
-          adapter = LegacyAdapter.new(
+        def test_codegen_initializes_successfully
+          codegen = CodeGen.new(
             type_registry: @type_registry,
             function_registry: @function_registry
           )
 
-          assert_instance_of LegacyAdapter, adapter
-          refute_nil adapter.container
-          refute_nil adapter.context
+          assert_instance_of CodeGen, codegen
+          refute_nil codegen.container
+          refute_nil codegen.context
         end
 
-        def test_legacy_adapter_exposes_backend_attributes
-          adapter = LegacyAdapter.new(
+        def test_codegen_exposes_backend_attributes
+          codegen = CodeGen.new(
             type_registry: @type_registry,
             function_registry: @function_registry
           )
 
-          # Should expose same attributes as Backend::CodeGen
-          assert_respond_to adapter, :type_registry
-          assert_respond_to adapter, :function_registry
-          assert_respond_to adapter, :event_bus
-          assert_respond_to adapter, :runtime_policy
-          assert_respond_to adapter, :type_map
+          # Should expose expected attributes
+          assert_respond_to codegen, :type_registry
+          assert_respond_to codegen, :function_registry
+          assert_respond_to codegen, :event_bus
+          assert_respond_to codegen, :runtime_policy
+          assert_respond_to codegen, :type_map
 
-          assert_equal @type_registry, adapter.type_registry
-          assert_equal @function_registry, adapter.function_registry
+          assert_equal @type_registry, codegen.type_registry
+          assert_equal @function_registry, codegen.function_registry
         end
 
-        def test_legacy_adapter_has_lower_method
-          adapter = LegacyAdapter.new(
+        def test_codegen_has_lower_method
+          codegen = CodeGen.new(
             type_registry: @type_registry,
             function_registry: @function_registry
           )
 
-          assert_respond_to adapter, :lower
+          assert_respond_to codegen, :lower
         end
 
-        def test_legacy_adapter_initializes_new_architecture
-          adapter = LegacyAdapter.new(
+        def test_codegen_initializes_v2_architecture
+          codegen = CodeGen.new(
             type_registry: @type_registry,
             function_registry: @function_registry
           )
 
-          # Verify new architecture components are initialized
-          assert_instance_of Container, adapter.container
-          assert_instance_of Context, adapter.context
+          # Verify v2 architecture components are initialized
+          assert_instance_of Container, codegen.container
+          assert_instance_of Context, codegen.context
 
           # Context should have access to container services
-          assert_respond_to adapter.context, :factory
-          assert_respond_to adapter.context, :checker
-          assert_respond_to adapter.context, :lower_expression
-          assert_respond_to adapter.context, :lower_statement
+          assert_respond_to codegen.context, :factory
+          assert_respond_to codegen.context, :checker
+          assert_respond_to codegen.context, :lower_expression
+          assert_respond_to codegen.context, :lower_statement
         end
 
-        def test_application_uses_legacy_adapter_when_env_set
-          # Setup environment variable
-          original_env = ENV["MLC_CPP_BACKEND"]
-          ENV["MLC_CPP_BACKEND"] = "v2"
+        def test_application_uses_codegen
+          app = Application.new
+          lowering = app.build_cpp_lowering(
+            type_registry: @type_registry,
+            function_registry: @function_registry
+          )
 
-          begin
-            app = Application.new
-            lowering = app.build_cpp_lowering(
-              type_registry: @type_registry,
-              function_registry: @function_registry
-            )
-
-            assert_instance_of LegacyAdapter, lowering
-          ensure
-            # Restore original environment
-            if original_env
-              ENV["MLC_CPP_BACKEND"] = original_env
-            else
-              ENV.delete("MLC_CPP_BACKEND")
-            end
-          end
-        end
-
-        def test_application_uses_legacy_codegen_by_default
-          # Ensure env variable is not set
-          original_env = ENV["MLC_CPP_BACKEND"]
-          ENV.delete("MLC_CPP_BACKEND")
-
-          begin
-            app = Application.new
-            lowering = app.build_cpp_lowering(
-              type_registry: @type_registry,
-              function_registry: @function_registry
-            )
-
-            assert_instance_of Backend::CodeGen, lowering
-            refute_instance_of LegacyAdapter, lowering
-          ensure
-            # Restore original environment
-            ENV["MLC_CPP_BACKEND"] = original_env if original_env
-          end
+          # v2 architecture (CodeGen) is now default
+          assert_instance_of CodeGen, lowering
         end
       end
     end

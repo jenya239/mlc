@@ -154,7 +154,7 @@ module MLC
       transformer.transform(MLC.parse(geometry_source))
       core = transformer.transform(MLC.parse(demo_source))
 
-      lowerer = Backend::CodeGen.new(
+      lowerer = Backends::Cpp::CodeGen.new(
         type_registry: transformer.type_registry,
         function_registry: transformer.function_registry
       )
