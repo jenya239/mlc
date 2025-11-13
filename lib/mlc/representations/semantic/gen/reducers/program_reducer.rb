@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../common/analysis/pass_manager'
+require_relative '../../../../common/analysis/pass_manager'
 
 module MLC
   module SemanticGen

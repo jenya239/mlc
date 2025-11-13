@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../../common/typing/match_analyzer'
+require_relative '../../../../../common/typing/match_analyzer'
 require_relative '../utils/type_unification_service'
 
 module MLC
