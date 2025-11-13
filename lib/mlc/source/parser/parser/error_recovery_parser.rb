@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "parser"
-require_relative "../diagnostics/errors/enhanced_errors"
+require_relative "../common/diagnostics/errors/enhanced_errors"
 
 module MLC
   module Parser
