@@ -24,8 +24,7 @@ module MLC
     end
 
     def build_cpp_lowering(type_registry:, function_registry: nil, stdlib_scanner: Compiler::StdlibScanner.new, runtime_policy: nil)
-      # v2 architecture: CodeGen uses new Backends::Cpp infrastructure
-      # (Container, Context, Rules)
+      # CodeGen uses Backends::Cpp infrastructure (Container, Context, Rules)
       Backends::Cpp::CodeGen.new(
         type_registry: type_registry,
         function_registry: function_registry,

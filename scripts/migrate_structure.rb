@@ -289,8 +289,8 @@ class StructureMigrator
       system("cd #{@root_dir.parent.parent} && ruby -Ilib -rmlc -e 'puts \"OK\"' > /dev/null 2>&1")
       $?.success?
     else
-      puts "    Запуск: MLC_CPP_BACKEND=v2 rake test"
-      system("cd #{@root_dir.parent.parent} && MLC_CPP_BACKEND=v2 rake test > /dev/null 2>&1")
+      puts "    Запуск: rake test"
+      system("cd #{@root_dir.parent.parent} && rake test > /dev/null 2>&1")
       $?.success?
     end
   end
