@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc/analysis/base_pass"
-require_relative "../../lib/mlc/analysis/effect_analysis_pass"
-require_relative "../../lib/mlc/analysis/type_check_pass"
-require_relative "../../lib/mlc/analysis/name_resolution_pass"
+require_relative "../../lib/mlc/common/analysis/base_pass"
+require_relative "../../lib/mlc/common/analysis/effect_analysis_pass"
+require_relative "../../lib/mlc/common/analysis/type_check_pass"
+require_relative "../../lib/mlc/common/analysis/name_resolution_pass"
 
 class AnalysisPassesTest < Minitest::Test
   def setup
