@@ -9,7 +9,7 @@ require_relative "mlc/infrastructure/event_bus"
 require_relative "mlc/diagnostics/event_logger"
 require_relative "mlc/diagnostics/formatter"
 require_relative "mlc/diagnostics/structured_logger"
-require_relative "mlc/error_handling/enhanced_errors"
+require_relative "mlc/diagnostics/errors/enhanced_errors"
 require_relative "mlc/analysis/base_pass"
 require_relative "mlc/infrastructure/pass_manager"
 require_relative "mlc/application"
@@ -170,8 +170,4 @@ module MLC
   end
   
   IRGen = SemanticGen::Pipeline
-  MLCSyntaxError = AuroraSyntaxError
-  MLCTypeError = AuroraTypeError
-  MLCScopeError = AuroraScopeError
-  MLCImportError = AuroraImportError
 end

@@ -4,7 +4,7 @@ module MLC
   # Enhanced error handling with rich diagnostics
   class EnhancedError < StandardError
     attr_reader :location, :suggestion, :context, :error_type
-    
+
     def initialize(message, location: nil, suggestion: nil, context: nil, error_type: :general)
       super(message)
       @location = location
@@ -12,35 +12,35 @@ module MLC
       @context = context
       @error_type = error_type
     end
-    
+
     def formatted_message
       lines = []
-      
+
       # Add location if available
       if @location
         lines << "#{@location}: #{message}"
       else
         lines << message
       end
-      
+
       # Add suggestion if available
       if @suggestion
         lines << "  💡 Suggestion: #{@suggestion}"
       end
-      
+
       # Add context if available
       if @context
         lines << "  📍 Context: #{@context}"
       end
-      
+
       # Add error type specific help
       lines << error_type_help
-      
+
       lines.join("\n")
     end
-    
+
     private
-    
+
     def error_type_help
       case @error_type
       when :syntax
@@ -56,30 +56,30 @@ module MLC
       end
     end
   end
-  
+
   # Syntax error with enhanced diagnostics
-  class AuroraSyntaxError < EnhancedError
+  class MLCSyntaxError < EnhancedError
     def initialize(message, location: nil, suggestion: nil, context: nil)
       super(message, location: location, suggestion: suggestion, context: context, error_type: :syntax)
     end
   end
-  
+
   # Type error with enhanced diagnostics
-  class AuroraTypeError < EnhancedError
+  class MLCTypeError < EnhancedError
     def initialize(message, location: nil, suggestion: nil, context: nil)
       super(message, location: location, suggestion: suggestion, context: context, error_type: :type)
     end
   end
-  
+
   # Scope error with enhanced diagnostics
-  class AuroraScopeError < EnhancedError
+  class MLCScopeError < EnhancedError
     def initialize(message, location: nil, suggestion: nil, context: nil)
       super(message, location: location, suggestion: suggestion, context: context, error_type: :scope)
     end
   end
-  
+
   # Import error with enhanced diagnostics
-  class AuroraImportError < EnhancedError
+  class MLCImportError < EnhancedError
     def initialize(message, location: nil, suggestion: nil, context: nil)
       super(message, location: location, suggestion: suggestion, context: context, error_type: :import)
     end

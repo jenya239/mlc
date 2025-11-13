@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "parser"
-require_relative "../error_handling/enhanced_errors"
+require_relative "../diagnostics/errors/enhanced_errors"
 
 module MLC
   module Parser
@@ -112,15 +112,15 @@ module MLC
       
       def add_error(original_error, context)
         error = case original_error
-        when MLC::AuroraSyntaxError
-          MLC::AuroraSyntaxError.new(
+        when MLC::MLCSyntaxError
+          MLC::MLCSyntaxError.new(
             original_error.message,
             location: current_location,
             suggestion: suggest_fix(original_error),
             context: context
           )
-        when MLC::AuroraTypeError
-          MLC::AuroraTypeError.new(
+        when MLC::MLCTypeError
+          MLC::MLCTypeError.new(
             original_error.message,
             location: current_location,
             suggestion: suggest_type_fix(original_error),
@@ -139,7 +139,7 @@ module MLC
       end
       
       def add_syntax_error(message)
-        error = MLC::AuroraSyntaxError.new(
+        error = MLC::MLCSyntaxError.new(
           message,
           location: current_location,
           suggestion: suggest_syntax_fix,
