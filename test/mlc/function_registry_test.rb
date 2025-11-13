@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require_relative "../../lib/mlc/core/function_registry"
+require_relative "../../lib/mlc/common/registry/function_registry"
 
 module MLC
   class FunctionRegistryTest < Minitest::Test

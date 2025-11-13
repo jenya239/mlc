@@ -2,8 +2,8 @@
 
 require "test_helper"
 require_relative "../../../lib/mlc/backends/cpp/bootstrap"
-require_relative "../../../lib/mlc/core/type_registry"
-require_relative "../../../lib/mlc/core/function_registry"
+require_relative "../../../lib/mlc/common/registry/type_registry"
+require_relative "../../../lib/mlc/common/registry/function_registry"
 
 module MLC
   module Backends

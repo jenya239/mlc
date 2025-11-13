@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../core/function_registry'
-require_relative '../core/type_registry'
+require_relative '../common/registry/function_registry'
+require_relative '../common/registry/type_registry'
 require_relative 'services/rule_engine'
 require_relative 'services/container'
 require_relative 'rules/literal_rule'

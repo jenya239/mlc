@@ -4,8 +4,8 @@ require_relative "../../test_helper"
 require_relative "../../../lib/mlc/backends/cpp/orchestrator"
 require_relative "../../../lib/mlc/backends/cpp/rules/expressions/unary_rule"
 require_relative "../../../lib/mlc/backends/cpp/rules/expressions/literal_rule"
-require_relative "../../../lib/mlc/core/type_registry"
-require_relative "../../../lib/mlc/core/function_registry"
+require_relative "../../../lib/mlc/common/registry/type_registry"
+require_relative "../../../lib/mlc/common/registry/function_registry"
 
 module MLC
   module Backends

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../core/function_registry'
-require_relative '../core/type_registry'
+require_relative '../common/registry/function_registry'
+require_relative '../common/registry/type_registry'
 require_relative 'services/registration/function_registration_service'
 require_relative 'services/utils/type_resolution_service'
 require_relative 'services/utils/purity_analyzer'

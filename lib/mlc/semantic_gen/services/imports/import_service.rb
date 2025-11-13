@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../../core/function_signature'
+require_relative '../../../common/registry/function_signature'
 require_relative '../../../tools/compiler/stdlib/signature_registry'
 require_relative 'module_path_resolver'
 
