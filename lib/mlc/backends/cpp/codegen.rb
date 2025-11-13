@@ -2,6 +2,7 @@
 
 require_relative "bootstrap"
 require_relative "rules/function_rule"
+require_relative "../../../cpp_ast"
 
 module MLC
   module Backends
