@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "mlc/ast/nodes"
-require_relative "mlc/semantic_ir/nodes"
-require_relative "mlc/semantic_ir/builder"
+require_relative "mlc/representations/semantic/nodes/nodes"
+require_relative "mlc/representations/semantic/nodes/builder"
 require_relative "mlc/core/function_signature"
 require_relative "mlc/semantic_gen"
 require_relative "mlc/diagnostics/event_bus"
