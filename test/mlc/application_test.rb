@@ -27,8 +27,11 @@ class ApplicationTest < Minitest::Test
 
   def test_configure_rules_allows_custom_registration
     configure_called = false
-    custom_rule = Class.new(MLC::Rules::BaseRule) do
-      def applies?(_node, _context = {}) = false
+    custom_rule = Class.new(MLC::SemanticGen::Rules::BaseRule) do
+      private
+
+      def matches?(_node, _context = {}) = false
+      def produce(_node, _context = {}) = nil
     end
 
     app = MLC::Application.new(logger: nil, configure_rules: lambda do |engine|

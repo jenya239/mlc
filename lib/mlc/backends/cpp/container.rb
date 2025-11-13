@@ -3,7 +3,7 @@
 require_relative "services/rule_engine"
 require_relative "services/builders/cpp_ast_factory"
 require_relative "../../services/semantic_ir_type_checker"
-require_relative "../../backend/runtime_policy"
+require_relative "runtime_policy"
 
 module MLC
   module Backends

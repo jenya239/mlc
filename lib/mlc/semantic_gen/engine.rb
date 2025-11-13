@@ -2,7 +2,7 @@
 
 require_relative '../core/function_registry'
 require_relative '../core/type_registry'
-require_relative '../rules/rule_engine'
+require_relative 'services/rule_engine'
 require_relative 'services/container'
 require_relative 'rules/literal_rule'
 require_relative 'rules/var_ref_rule'

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc/backend/runtime_policy"
+require_relative "../../lib/mlc/backends/cpp/runtime_policy"
 
 class RuntimePolicyTest < Minitest::Test
   def test_default_policy

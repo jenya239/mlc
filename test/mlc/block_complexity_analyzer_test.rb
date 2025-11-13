@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
-require_relative "../../lib/mlc/backend/block_complexity_analyzer"
+require_relative "../../lib/mlc/backends/cpp/block_complexity_analyzer"
 
 class BlockComplexityAnalyzerTest < Minitest::Test
   def test_trivial_block_no_statements

@@ -3,16 +3,18 @@
 require_relative "../test_helper"
 
 class RulesRuleEngineTest < Minitest::Test
-  class CaptureRule < MLC::Rules::BaseRule
+  class CaptureRule < MLC::SemanticGen::Rules::BaseRule
     def initialize(bucket)
       @bucket = bucket
     end
 
-    def applies?(node, _context = {})
+    private
+
+    def matches?(node, _context = {})
       node.is_a?(MLC::SemanticIR::Func)
     end
 
-    def apply(node, _context = {})
+    def produce(node, _context = {})
       @bucket << node.name
     end
   end

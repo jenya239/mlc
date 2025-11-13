@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "infrastructure/event_bus"
-require_relative "rules/rule_engine"
+require_relative "semantic_gen/services/rule_engine"
 require_relative "diagnostics/event_logger"
 require_relative "semantic_gen"
 require_relative "backends/cpp/codegen"
