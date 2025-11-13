@@ -74,7 +74,7 @@ module MLC
   # Eliminates need for manual STDLIB_MODULES and STDLIB_FUNCTIONS registration
   class StdlibScanner
     def initialize(stdlib_dir = nil)
-      @stdlib_dir = stdlib_dir || File.expand_path('../../stdlib', __dir__)
+      @stdlib_dir = stdlib_dir || File.expand_path('../../../stdlib', __dir__)
       @modules = {}           # module_name => ModuleInfo
       @function_map = {}      # function_name => qualified_name
       @scanned = false
