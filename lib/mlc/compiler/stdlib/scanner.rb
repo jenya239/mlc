@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../parser/parser'
+require_relative '../../source/parser/parser'
 require_relative '../../ast/nodes'
 
 # Forward declare MLC module parse method if not already loaded

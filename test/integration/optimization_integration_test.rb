@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 require_relative "../../lib/mlc"
-require_relative "../../lib/mlc/parser/optimized_parser"
+require_relative "../../lib/mlc/source/parser/optimized_parser"
 require_relative "../../lib/cpp_ast/builder/optimized_generator"
 require "benchmark"
 
