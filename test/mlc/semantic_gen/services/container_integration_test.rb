@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
-require 'mlc/semantic_gen/engine'
+require 'mlc/representations/semantic/gen/engine'
 
 module MLC
   module SemanticGen

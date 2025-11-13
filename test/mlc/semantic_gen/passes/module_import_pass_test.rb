@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require 'test_helper'
-require 'mlc/semantic_gen/services/imports/import_service'
-require 'mlc/semantic_gen/passes/module_import_pass'
+require 'mlc/representations/semantic/gen/services/imports/import_service'
+require 'mlc/representations/semantic/gen/passes/module_import_pass'
 
 module MLC
   module SemanticGen
