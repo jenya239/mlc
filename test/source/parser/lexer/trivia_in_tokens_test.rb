@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "test_helper"
+require_relative "../../../test_helper"
 
 class TriviaInTokensTest < Minitest::Test
   def test_token_with_leading_trivia

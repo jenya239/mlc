@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../test_helper"
+require_relative "../../../test_helper"
 
 class TestParenthesizedExpression < Minitest::Test
   def test_simple_parenthesized_expression

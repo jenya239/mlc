@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../test_helper"
+require_relative "../../test_helper"
 
 class BlockParserTest < Minitest::Test
   def parse_block(source, leading_trivia = "")
