@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require_relative '../common/registry/function_registry'
-require_relative '../common/registry/type_registry'
+require_relative '../../../common/registry/function_registry'
+require_relative '../../../common/registry/type_registry'
 require_relative 'services/registration/function_registration_service'
 require_relative 'services/utils/type_resolution_service'
 require_relative 'services/utils/purity_analyzer'
-require_relative '../common/typing/type_constraint_solver'
-require_relative '../common/typing/generic_call_resolver'
-require_relative '../common/typing/match_analyzer'
-require_relative '../common/typing/effect_analyzer'
+require_relative '../../../common/typing/type_constraint_solver'
+require_relative '../../../common/typing/generic_call_resolver'
+require_relative '../../../common/typing/match_analyzer'
+require_relative '../../../common/typing/effect_analyzer'
 require_relative 'rules/function_effect_rule'
 
 module MLC
