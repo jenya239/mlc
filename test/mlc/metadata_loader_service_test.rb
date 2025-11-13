@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc/compiler/metadata_loader_service"
+require_relative "../../lib/mlc/tools/compiler/metadata_loader_service"
 
 module MLC
   module Compiler
