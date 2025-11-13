@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../source/parser/parser'
-require_relative '../../ast/nodes'
+require_relative '../../source/ast/nodes'
 
 # Forward declare MLC module parse method if not already loaded
 # This allows scanner to work in isolation

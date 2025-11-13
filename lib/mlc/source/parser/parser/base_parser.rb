@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "lexer"
-require_relative "../ast/nodes"
+require_relative "../source/ast/nodes"
 
 module MLC
   module Parser

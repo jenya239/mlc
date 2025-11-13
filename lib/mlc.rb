@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "mlc/ast/nodes"
+require_relative "mlc/source/ast/nodes"
 require_relative "mlc/representations/semantic/nodes/nodes"
 require_relative "mlc/representations/semantic/nodes/builder"
 require_relative "mlc/core/function_signature"

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "lexer"
-require_relative "../ast/nodes"
+require_relative "../source/ast/nodes"
 require_relative "base_parser"
 require_relative "expression_parser"
 require_relative "pattern_parser"
