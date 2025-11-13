@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require_relative "common/diagnostics/event_bus"
-require_relative "semantic_gen/services/rule_engine"
+require_relative "representations/semantic/gen/services/rule_engine"
 require_relative "common/diagnostics/event_logger"
-require_relative "semantic_gen"
+require_relative "representations/semantic/gen"
 require_relative "backends/cpp/codegen"
 require_relative "tools/compiler/stdlib/scanner"
 
