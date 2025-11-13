@@ -22,10 +22,10 @@ require_relative "mlc/tools/compiler/stdlib/scanner"
 require_relative "mlc/tools/compiler/stdlib/resolver"
 require_relative "mlc/tools/compiler/stdlib/signature_registry"
 require_relative "mlc/common/registry/function_registry"
-require_relative "mlc/type_system/type_constraint_solver"
-require_relative "mlc/type_system/generic_call_resolver"
-require_relative "mlc/type_system/match_analyzer"
-require_relative "mlc/type_system/effect_analyzer"
+require_relative "mlc/common/typing/type_constraint_solver"
+require_relative "mlc/common/typing/generic_call_resolver"
+require_relative "mlc/common/typing/match_analyzer"
+require_relative "mlc/common/typing/effect_analyzer"
 
 module MLC
   class ParseError < StandardError; end
