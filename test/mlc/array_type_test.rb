@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 
 class MLCArrayTypeTest < Minitest::Test
   def test_array_parameter_maps_to_std_vector

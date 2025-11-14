@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  module Backend
-    # BlockComplexityAnalyzer - анализ сложности block expressions
+  module Backends
+    module Cpp
+      # BlockComplexityAnalyzer - анализ сложности block expressions
     # Определяет можно ли использовать простую стратегию или нужен IIFE
     class BlockComplexityAnalyzer
       attr_reader :block_expr, :statement_count, :has_control_flow, :has_early_return
@@ -210,6 +211,7 @@ module MLC
           [:constructor, :wildcard, :var].include?(arm[:pattern][:kind])
         end
       end
+    end
     end
   end
 end

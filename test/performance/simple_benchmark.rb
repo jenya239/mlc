@@ -2,8 +2,8 @@
 
 require "benchmark"
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
-require_relative "../../lib/cpp_ast"
+require_relative "../../lib/mlc/common/index"
+require_relative "../../lib/cpp_ast/index"
 
 class SimpleBenchmark < Minitest::Test
   def test_string_builder_performance

@@ -80,7 +80,7 @@ class MLCIntegrationTest < Minitest::Test
       File.write(temp_file, cpp_code)
       
       # Compile
-      compile_result = system("g++ -std=c++20 -I #{runtime_dir} -o #{binary_file} #{temp_file}")
+      compile_result = system("g++ -std=c++20 -I #{runtime_dir}/include -o #{binary_file} #{temp_file}")
       assert compile_result, "Compilation failed for:\n#{cpp_code}"
       
       # Run

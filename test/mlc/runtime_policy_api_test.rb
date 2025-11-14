@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 
 class RuntimePolicyApiTest < Minitest::Test
   def test_to_cpp_accepts_runtime_policy

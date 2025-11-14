@@ -3,7 +3,7 @@
 
 # Run all DSL v2 tests
 require "test/unit"
-require_relative "../../../lib/cpp_ast"
+require_relative "../../../lib/cpp_ast/index"
 require_relative "../../../lib/cpp_ast/builder/dsl_v2_simple"
 
 # Load all test files

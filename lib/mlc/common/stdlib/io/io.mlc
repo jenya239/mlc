@@ -1,0 +1,40 @@
+//! @module std/io/io
+//! @category io
+//! @type extern
+//! @namespace mlc::io
+
+# Aurora Standard Library - IO Module
+# Input/Output utilities
+
+module IO
+
+# Basic console I/O functions (extern - implemented in C++)
+export extern fn print(s: str) -> void
+export extern fn println(s: str) -> void
+export extern fn eprint(s: str) -> void
+export extern fn eprintln(s: str) -> void
+
+# Input functions (extern - implemented in C++)
+export extern fn read_line() -> str
+export extern fn read_all() -> str
+
+# Exit function
+export extern fn exit(code: i32) -> void
+
+# Aurora helper functions (implemented in Aurora)
+export fn panic(message: str) -> void = do
+  eprintln("PANIC: " + message);
+  exit(1)
+end
+
+export fn debug_print(s: str) -> void =
+  eprintln("[DEBUG] " + s)
+
+export fn info_print(s: str) -> void =
+  eprintln("[INFO] " + s)
+
+export fn warn_print(s: str) -> void =
+  eprintln("[WARN] " + s)
+
+export fn error_print(s: str) -> void =
+  eprintln("[ERROR] " + s)

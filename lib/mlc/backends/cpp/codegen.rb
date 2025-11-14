@@ -2,7 +2,7 @@
 
 require_relative "bootstrap"
 require_relative "rules/function_rule"
-require_relative "../../../cpp_ast"
+require_relative "../../../cpp_ast/index"
 
 module MLC
   module Backends
@@ -139,7 +139,7 @@ module MLC
                                                   .to_set
 
           include_stmt = CppAst::Nodes::IncludeDirective.new(
-            path: "mlc_match.hpp",
+            path: "mlc/core/match.hpp",
             system: false
           )
 

@@ -3,7 +3,7 @@
 require "tmpdir"
 require "fileutils"
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 
 class MLCPatternMatchingTest < Minitest::Test
   def test_parse_simple_match
@@ -83,7 +83,7 @@ class MLCPatternMatchingTest < Minitest::Test
     cpp_code = MLC.to_cpp(mlc_source)
 
     # Should generate std::visit with lambda overload and helper include
-    assert_includes cpp_code, '#include "mlc_match.hpp"'
+    assert_includes cpp_code, '#include "mlc/core/match.hpp"'
     assert_includes cpp_code, "std::visit"
     assert_includes cpp_code, "overloaded"
     assert_includes cpp_code, "Ok"
@@ -161,7 +161,7 @@ def assert_cpp_compiles_and_runs(cpp_code)
     compile_cmd = [
       "g++",
       "-std=c++20",
-      "-I", runtime_dir,
+      "-I", "#{runtime_dir}/include",
       source_path,
       "-o", binary_path
     ]

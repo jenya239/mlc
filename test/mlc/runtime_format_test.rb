@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 
 class MLCRuntimeFormatTest < Minitest::Test
   def test_format_generates_runtime_call

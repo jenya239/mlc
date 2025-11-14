@@ -8,8 +8,8 @@ else
 end
 require "minitest/pride"
 require "minitest/mock"
-require_relative "../lib/cpp_ast"
-require_relative "../lib/mlc"
+require_relative "../lib/cpp_ast/index"
+require_relative "../lib/mlc/common/index"
 
 module TestHelpers
   # Helper method to test roundtrip accuracy

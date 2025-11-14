@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 require_relative "../../lib/mlc/backends/cpp/block_complexity_analyzer"
 
 class BlockComplexityAnalyzerTest < Minitest::Test
@@ -13,7 +13,7 @@ class BlockComplexityAnalyzerTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::BlockComplexityAnalyzer.new(block)
+    analyzer = MLC::Backends::Cpp::BlockComplexityAnalyzer.new(block)
 
     assert analyzer.trivial?
     assert analyzer.simple?
@@ -51,7 +51,7 @@ class BlockComplexityAnalyzerTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::BlockComplexityAnalyzer.new(block)
+    analyzer = MLC::Backends::Cpp::BlockComplexityAnalyzer.new(block)
 
     assert analyzer.simple?
     refute analyzer.complex?
@@ -81,7 +81,7 @@ class BlockComplexityAnalyzerTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::BlockComplexityAnalyzer.new(block)
+    analyzer = MLC::Backends::Cpp::BlockComplexityAnalyzer.new(block)
 
     refute analyzer.simple?
     assert analyzer.complex?
@@ -106,7 +106,7 @@ class BlockComplexityAnalyzerTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::BlockComplexityAnalyzer.new(block)
+    analyzer = MLC::Backends::Cpp::BlockComplexityAnalyzer.new(block)
 
     refute analyzer.simple?
     assert analyzer.complex?
@@ -120,7 +120,7 @@ class BlockComplexityAnalyzerTest < Minitest::Test
       result: MLC::SemanticIR::LiteralExpr.new(value: 1, type: int_type),
       type: int_type
     )
-    simple_analyzer = MLC::Backend::BlockComplexityAnalyzer.new(simple_block)
+    simple_analyzer = MLC::Backends::Cpp::BlockComplexityAnalyzer.new(simple_block)
 
     # Complex block with control flow
     if_expr = MLC::SemanticIR::IfExpr.new(
@@ -141,7 +141,7 @@ class BlockComplexityAnalyzerTest < Minitest::Test
       result: if_expr,
       type: int_type
     )
-    complex_analyzer = MLC::Backend::BlockComplexityAnalyzer.new(complex_block)
+    complex_analyzer = MLC::Backends::Cpp::BlockComplexityAnalyzer.new(complex_block)
 
     # Complex should have higher score
     assert simple_analyzer.complexity_score < complex_analyzer.complexity_score
@@ -169,7 +169,7 @@ class IfComplexityAnalyzerTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::IfComplexityAnalyzer.new(if_expr)
+    analyzer = MLC::Backends::Cpp::IfComplexityAnalyzer.new(if_expr)
 
     assert analyzer.simple_ternary_candidate?
     assert analyzer.same_types?
@@ -191,7 +191,7 @@ class IfComplexityAnalyzerTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::IfComplexityAnalyzer.new(if_expr)
+    analyzer = MLC::Backends::Cpp::IfComplexityAnalyzer.new(if_expr)
 
     refute analyzer.simple_ternary_candidate?
   end
@@ -225,7 +225,7 @@ class MatchComplexityAnalyzerTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::MatchComplexityAnalyzer.new(match_expr)
+    analyzer = MLC::Backends::Cpp::MatchComplexityAnalyzer.new(match_expr)
 
     assert_equal 2, analyzer.arm_count
     refute analyzer.has_regex?
@@ -250,7 +250,7 @@ class MatchComplexityAnalyzerTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::MatchComplexityAnalyzer.new(match_expr)
+    analyzer = MLC::Backends::Cpp::MatchComplexityAnalyzer.new(match_expr)
 
     assert analyzer.has_regex?
     refute analyzer.pure_adt_match?
@@ -271,7 +271,7 @@ class MatchComplexityAnalyzerTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::MatchComplexityAnalyzer.new(match_expr)
+    analyzer = MLC::Backends::Cpp::MatchComplexityAnalyzer.new(match_expr)
 
     assert_equal 10, analyzer.arm_count
     assert analyzer.pure_adt_match?

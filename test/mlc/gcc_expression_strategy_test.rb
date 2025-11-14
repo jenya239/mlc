@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 
 class GccExpressionStrategyTest < Minitest::Test
   def test_simple_block_with_gcc_policy
@@ -64,7 +64,7 @@ class GccExpressionStrategyTest < Minitest::Test
       type: int_type
     )
 
-    analyzer = MLC::Backend::BlockComplexityAnalyzer.new(simple_block)
+    analyzer = MLC::Backends::Cpp::BlockComplexityAnalyzer.new(simple_block)
     assert analyzer.simple?
     refute analyzer.complex?
 

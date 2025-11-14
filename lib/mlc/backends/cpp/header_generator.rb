@@ -71,7 +71,7 @@ module MLC
         # Standard includes
         lines << "#include <variant>"
         lines << "#include <string>"
-        lines << "#include \"mlc_match.hpp\""
+        lines << "#include \"mlc/core/match.hpp\""
         lines << ""
 
         # Module imports -> #include statements

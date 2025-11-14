@@ -1,0 +1,30 @@
+# frozen_string_literal: true
+
+# Entry point for MLC compiler library
+# Provides module-level API for compilation pipeline
+
+require_relative "errors"
+require_relative "compiler_api"
+require_relative "../source/ast/nodes"
+require_relative "../representations/semantic/nodes/nodes"
+require_relative "../representations/semantic/nodes/builder"
+require_relative "registry/function_signature"
+require_relative "../representations/semantic/semantic_gen"
+require_relative "diagnostics/event_bus"
+require_relative "diagnostics/event_logger"
+require_relative "diagnostics/formatter"
+require_relative "diagnostics/structured_logger"
+require_relative "diagnostics/errors/enhanced_errors"
+require_relative "analysis/base_pass"
+require_relative "analysis/pass_manager"
+require_relative "../backends/cpp/header_generator"
+require_relative "../backends/cpp/metadata_generator"
+require_relative "../backends/cpp"
+require_relative "stdlib/scanner"
+require_relative "stdlib/resolver"
+require_relative "stdlib/signature_registry"
+require_relative "registry/function_registry"
+require_relative "typing/type_constraint_solver"
+require_relative "typing/generic_call_resolver"
+require_relative "typing/match_analyzer"
+require_relative "typing/effect_analyzer"

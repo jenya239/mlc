@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 require_relative "../../lib/mlc/common/diagnostics/errors/enhanced_errors"
 require_relative "../../lib/mlc/source/parser/error_recovery_parser"
 

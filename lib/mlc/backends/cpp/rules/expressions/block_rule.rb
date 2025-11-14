@@ -17,7 +17,7 @@ module MLC
 
             def apply(node)
               # Analyze block complexity to choose lowering strategy
-              analyzer = MLC::Backend::BlockComplexityAnalyzer.new(node)
+              analyzer = MLC::Backends::Cpp::BlockComplexityAnalyzer.new(node)
               strategy = context.runtime_policy.strategy_for_block(analyzer)
 
               case strategy

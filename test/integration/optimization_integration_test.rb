@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 require_relative "../../lib/mlc/source/parser/optimized_parser"
 require_relative "../../lib/cpp_ast/builder/optimized_generator"
 require "benchmark"
@@ -18,28 +18,6 @@ class OptimizationIntegrationTest < Minitest::Test
     
     assert_equal ast.class, MLC::AST::Program
     assert_equal ast.declarations.length, 1
-  end
-  
-  def test_optimized_generator_integration
-    skip "OptimizedGenerator is experimental and uses different code generation strategy"
-
-    source = <<~MLCORA
-      fn add(a: i32, b: i32) -> i32 = a + b
-    MLCORA
-
-    ast = MLC.parse(source)
-
-    # Test that optimized generator produces same result as original
-    original_generator = CppAst::Builder::DSLGenerator.new
-    optimized_generator = CppAst::Builder::OptimizedGenerator.new
-
-    original_cpp = original_generator.generate(ast)
-    optimized_cpp = optimized_generator.generate(ast)
-
-    # Both should produce equivalent C++ code
-    assert_equal original_cpp, optimized_cpp, "Generators should produce identical output"
-    assert_includes optimized_cpp, "int add(int a, int b)"
-    assert_includes optimized_cpp, "return a + b"
   end
   
   def test_caching_consistency

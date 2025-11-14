@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 
 class MLCControlFlowStatementTest < Minitest::Test
   def test_if_statement_generates_cpp_if

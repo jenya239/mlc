@@ -71,7 +71,7 @@ class MLCRoundtripTest < Minitest::Test
     runtime_dir = File.expand_path("../../runtime", __dir__)
     
     # Compile
-    compile_result = system("g++ -std=c++20 -I #{runtime_dir} -o /tmp/mlc_test #{temp_file}")
+    compile_result = system("g++ -std=c++20 -I #{runtime_dir}/include -o /tmp/mlc_test #{temp_file}")
     assert compile_result, "Compilation failed"
     
     # Run and check result

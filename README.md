@@ -1,330 +1,674 @@
-# MLC - Multi-Level Compiler
+# MLC - экспериментальный компилятор статически-типизированного языка в C++20
 
----
+## Предупреждение об экспериментальном статусе
 
-## ⚠️ ЭКСПЕРИМЕНТАЛЬНЫЙ ПРОЕКТ / EXPERIMENTAL PROJECT
+Данный проект представляет собой исследование возможностей генерации компилятора с использованием инструментов на основе больших языковых моделей. Проект не предназначен для промышленного использования.
 
-**ВАЖНО / IMPORTANT:**
+**Код содержит:**
+- Экспериментальные решения и архитектурные упрощения
+- Отсутствие аудита безопасности
+- Возможные ошибки и недоработанные функции
 
-Этот проект является **экспериментальным исследованием** возможностей генерации прототипа транслятора (compiler/transpiler) с использованием AI-агентов (Claude, GitHub Copilot, Cursor).
+**Проект применим для:**
+- Исследовательских целей в области AI-assisted разработки
+- Образовательных задач по изучению архитектуры компиляторов
+- Экспериментов с дизайном языков программирования
 
-This project is an **experimental research** into the capabilities of AI agents (Claude, GitHub Copilot, Cursor) for generating compiler/transpiler prototypes.
+## Назначение проекта
 
-### Цели проекта / Project Goals
+MLC представляет собой экспериментальный компилятор, преобразующий исходный код на статически-типизированном языке высокого уровня в исходный код на C++20. Проект состоит из двух основных компонентов:
 
-- **Исследование**: Изучение возможностей современных LLM для разработки сложных систем (компиляторов)
-- **Прототипирование**: Быстрое создание прототипа nim-like транслятора в C++
-- **Обучение**: Понимание архитектуры компиляторов через AI-assisted разработку
+1. **Компилятор языка MLC** - полнофункциональный транслятор с многоуровневым промежуточным представлением
+2. **C++ AST DSL** - Ruby DSL для программной генерации и манипуляции синтаксическими деревьями C++
 
-- **Research**: Exploring modern LLM capabilities for complex system development (compilers)
-- **Prototyping**: Rapid creation of a nim-like to C++ transpiler prototype
-- **Education**: Understanding compiler architecture through AI-assisted development
+Основной целью проекта является изучение практических возможностей современных AI-систем при разработке сложных систем обработки языков программирования.
 
-### ⚠️ Ограничения / Limitations
+## Архитектура компилятора
 
-**НЕ ИСПОЛЬЗУЙТЕ В PRODUCTION / DO NOT USE IN PRODUCTION**
+Компилятор реализован по классической многопроходной схеме с промежуточным представлением.
 
-Этот код:
-- ❌ Не предназначен для промышленного использования
-- ❌ Содержит экспериментальные решения и упрощения
-- ❌ Не прошел полноценного security audit
-- ❌ Может содержать ошибки и недоработки
-- ✅ Подходит для исследований и обучения
-- ✅ Демонстрирует возможности AI в разработке
+### Входные данные
 
-This code:
-- ❌ Not intended for production use
-- ❌ Contains experimental solutions and simplifications
-- ❌ Has not undergone complete security audit
-- ❌ May contain bugs and incomplete features
-- ✅ Suitable for research and education
-- ✅ Demonstrates AI capabilities in development
+Исходный код на языке MLC.
 
-### Участие AI-агентов / AI Agent Involvement
+### Этап 1 - Лексический анализ
 
-Большая часть кода была сгенерирована с помощью:
-- **Claude (Anthropic)**: Архитектурные решения, рефакторинг, документация
-- **GitHub Copilot**: Автодополнение кода, тестов
-- **Cursor**: Интерактивная разработка и отладка
+**Модуль:** `lib/mlc/source/lexer`
 
-Most of the code was generated using:
-- **Claude (Anthropic)**: Architecture decisions, refactoring, documentation
-- **GitHub Copilot**: Code and test autocompletion
-- **Cursor**: Interactive development and debugging
+**Функция:** Преобразование текста в последовательность токенов
 
-### Контакт / Contact
+**Реализация:** Ручной лексер на Ruby с поддержкой всех синтаксических конструкций языка. Лексер распознает ключевые слова, идентификаторы, литералы, операторы и знаки пунктуации.
 
-Это персональный исследовательский проект. Вопросы и предложения приветствуются через GitHub Issues.
+### Этап 2 - Синтаксический анализ
 
-This is a personal research project. Questions and suggestions are welcome via GitHub Issues.
+**Модуль:** `lib/mlc/source/parser`
 
----
+**Функция:** Построение абстрактного синтаксического дерева (AST)
 
-## Overview
+**Структура:** AST представлен классом `MLC::AST::Program`, содержащим декларации функций, типов и модулей. Парсер реализует рекурсивный спуск с обработкой приоритетов операторов.
 
-MLC (Multi-Level Compiler) is a compiler framework that provides:
+### Этап 3 - Семантический анализ и трансформация
 
-1. **C++ AST DSL** - Ruby DSL for generating and manipulating C++ code
-2. **MLC Language** - Statically-typed language that compiles to C++
-3. **Multi-Level IR Architecture** - High IR → Mid IR → Low IR → Target
+**Модуль:** `lib/mlc/representations/semantic_ir`
 
-The project includes comprehensive test coverage with 1413 test runs and 3684 assertions.
+**Функция:** Проверка типов, разрешение имен, построение SemanticIR
 
----
+**Промежуточное представление:** Типизированное дерево с явными типами всех выражений. SemanticIR включает информацию о типах, разрешенных именах и проверенных конструкциях.
 
-## MLC Language
+### Этап 4 - Генерация кода
 
-MLC is a statically-typed programming language that compiles to C++. It provides sum types, pattern matching, generics, and a module system.
+**Модуль:** `lib/mlc/backends/cpp`
 
-### Example
+**Функция:** Преобразование SemanticIR в C++ AST, затем в исходный код C++
+
+**Стратегия:** Применяется Strangler Fig Pattern - постепенная миграция на новую архитектуру бэкенда. Существует два бэкенда:
+- Legacy backend - оригинальная реализация
+- Backends::Cpp v2 - новая модульная архитектура с улучшенной генерацией кода
+
+### Выходные данные
+
+Исходный код на C++20, готовый к компиляции системным компилятором.
+
+## Язык MLC
+
+Язык MLC представляет собой статически-типизированный функциональный язык с императивными элементами.
+
+### Система типов
+
+**Примитивные типы:**
+- Целочисленные: `i32`, `i64`
+- Числа с плавающей точкой: `f32`, `f64`
+- Логический тип: `bool`
+- Строковый тип: `str`
+- Тип без значения: `void`
+
+**Алгебраические типы данных:**
+
+Sum types (размеченные объединения) позволяют определять типы, которые могут принимать одно из нескольких заданных значений:
 
 ```mlc
 type Result<T, E> = Ok(T) | Err(E)
+type Option<T> = Some(T) | None
+```
 
+**Произведения типов:**
+
+Record types представляют структуры с именованными полями:
+
+```mlc
+type Point = { x: f32, y: f32 }
+type Person = { name: str, age: i32 }
+```
+
+**Параметрический полиморфизм:**
+
+Обобщенные типы с параметрами типов:
+
+```mlc
+type List<T> = Cons(T, List<T>) | Nil
+type Pair<A, B> = { first: A, second: B }
+```
+
+### Основные конструкции
+
+**Определение функции:**
+
+```mlc
 fn divide(a: i32, b: i32) -> Result<i32, str> =
   if b == 0 then
-    Err("Division by zero")
+    Err("division by zero")
   else
     Ok(a / b)
+```
 
-fn main() -> i32 =
-  match divide(10, 2)
+**Сопоставление с образцом:**
+
+```mlc
+fn process_result(result: Result<i32, str>) -> i32 =
+  match result
+    | Ok(value) => value * 2
+    | Err(error) => 0
+```
+
+**Определение типа:**
+
+```mlc
+type Shape =
+  | Circle(f32)
+  | Rectangle(f32, f32)
+  | Point
+```
+
+**Блоки с let-биндингами:**
+
+```mlc
+fn compute() -> i32 =
+  let x = 10;
+  let y = 20;
+  x + y
+```
+
+### Реализация pattern matching
+
+**Компиляция в C++:**
+- Sum types транслируются в `std::variant<...>`
+- Pattern matching реализуется через `std::visit` с lambda-overloads
+- Компилятор генерирует структуры для каждого варианта типа
+- Гарантируется полнота проверки всех вариантов на этапе компиляции
+
+**Пример генерации:**
+
+MLC код:
+```mlc
+type Result = Ok(i32) | Err
+
+fn unwrap(res: Result) -> i32 =
+  match res
     | Ok(value) => value
-    | Err(msg) => 0
+    | Err => 0
 ```
 
-This compiles to C++ using `std::variant` and `std::visit`.
+Генерируется в C++:
+```cpp
+#include "mlc/core/match.hpp"
 
-### Language Features
+struct Ok { int field0; };
+struct Err {};
+using Result = std::variant<Ok, Err>;
 
-#### Implemented
-- **Sum Types** - Type-safe unions with pattern matching
-- **Pattern Matching** - Exhaustive matching with `std::visit`
-- **Generic Types** - Parametric polymorphism with constraints
-- **Module System** - Header/implementation separation
-- **Lambdas** - First-class functions
-- **Pipe Operator** - Functional composition `|>`
-- **Product Types** - Structs with named fields
-- **Type Inference** - Let binding and loop variable inference
-- **For Loops** - Range-based iteration
-- **List Comprehensions** - Desugars to nested loops
-- **Array Operations** - Indexing, methods, literals
+int unwrap(Result res) noexcept {
+  return std::visit(overloaded{
+    [](const Ok& ok) { return ok.field0; },
+    [](const Err& err) { return 0; }
+  }, res);
+}
+```
 
-#### Test Coverage
-- 421 test runs, 1622 assertions
-- All tests passing
-- Sum types, pattern matching, generics, modules fully tested
+## Компилятор и инструментарий
 
-### MLC CLI
+### Исполняемый файл
 
-The `bin/mlc` compiler compiles MLC source to C++20, invokes the system compiler, and executes the resulting binary:
+**Расположение:** `bin/mlc`
 
+### Последовательность операций
+
+1. Чтение исходного кода из файла или stdin
+2. Лексический анализ - токенизация исходного текста
+3. Синтаксический анализ - построение AST
+4. Семантический анализ - проверка типов, построение SemanticIR
+5. Генерация C++ кода из SemanticIR
+6. Вызов системного компилятора C++ (g++ или clang++)
+7. Опционально - запуск скомпилированного бинарного файла
+
+### Режимы работы
+
+**Компиляция и запуск:**
 ```bash
-# Run a file
-bin/mlc examples/hello_world.mlc
-
-# Stream source from STDIN
-cat examples/hello_world.mlc | bin/mlc -
-
-# Pass arguments to the compiled program
-bin/mlc app.mlc -- arg1 arg2
-
-# Inspect the generated C++
-bin/mlc --emit-cpp app.mlc
-
-# Keep the temporary build directory
-bin/mlc --keep-tmp app.mlc
+bin/mlc examples/hello.mlc
 ```
 
-Runtime headers (`mlc_string.hpp`, `mlc_buffer.hpp`, `mlc_regex.hpp`) are linked automatically.
+**Вывод сгенерированного C++:**
+```bash
+bin/mlc --emit-cpp program.mlc
+```
 
----
+**Сохранение временных файлов:**
+```bash
+bin/mlc --keep-tmp program.mlc
+```
+
+**Чтение из stdin:**
+```bash
+echo 'fn main() -> i32 = 42' | bin/mlc -
+```
+
+**Передача аргументов программе:**
+```bash
+bin/mlc program.mlc -- arg1 arg2 arg3
+```
+
+### Опции компилятора
+
+- `--emit-cpp` - вывести сгенерированный C++ код вместо компиляции
+- `--keep-tmp` - сохранить временную директорию с промежуточными файлами
+- `-` - читать исходный код из stdin
+
+## Runtime библиотека
+
+**Расположение:** `runtime/include/mlc/`
+
+Runtime библиотека предоставляет набор модулей для работы с различными типами данных и операциями.
+
+### Модульная структура
+
+**core/** - Базовые типы и утилиты
+- `match.hpp` - Определение структуры `overloaded` для pattern matching через `std::visit`
+- `types.hpp` - Общие определения типов
+
+**text/** - Работа с текстом
+- `string.hpp` - Строковый тип с поддержкой UTF-8
+- `regex.hpp` - Регулярные выражения на основе std::regex
+
+**io/** - Ввод-вывод
+- `file.hpp` - Операции с файлами
+- `buffer.hpp` - Буферизованный ввод-вывод
+
+**math/** - Математические операции
+- `vector.hpp` - Векторная математика
+- `functions.hpp` - Математические функции
+
+**json/** - Работа с JSON
+- `parser.hpp` - Парсинг JSON
+- `serializer.hpp` - Сериализация в JSON
+
+**graphics/** - Графические примитивы
+- `color.hpp` - Представление цвета (RGBA)
+- `rect.hpp` - Прямоугольники и геометрические примитивы
+
+### Особенности реализации
+
+Все компоненты runtime написаны на современном C++20 с использованием:
+- Концептов для ограничения типов
+- Ranges для обработки последовательностей
+- constexpr функций для вычислений на этапе компиляции
+- noexcept спецификаций для оптимизации
 
 ## C++ AST DSL
 
-Ruby DSL for generating and manipulating C++ code with full roundtrip support.
+Ruby DSL для программной генерации синтаксических деревьев C++.
 
-### Test Coverage
-- 1022 test runs, 2255 assertions
-- 100% pass rate
-- DSL Builder: 98% coverage
-- DSL Generator: 100% coverage
+### Архитектура
 
-### Feature Implementation
+**Модуль:** `lib/cpp_ast`
 
-#### Phase 1: Core Features
-- Virtual methods: `virtual`, `override`, `final`, `pure_virtual`
-- Class inheritance: single, multiple, virtual
-- C++11 attributes: `[[nodiscard]]`, `[[maybe_unused]]`, `[[deprecated]]`
+**Компоненты:**
+- **Узлы AST:** `lib/cpp_ast/nodes/` - Классы, представляющие элементы синтаксического дерева C++
+- **Builder API:** `lib/cpp_ast/builder/dsl.rb` - DSL функции для построения AST
+- **Генератор:** `lib/cpp_ast/builder/dsl_generator.rb` - Преобразование AST в исходный код C++
+- **Лексер:** `lib/cpp_ast/lexer/` - Токенизация C++ кода
+- **Парсеры:** `lib/cpp_ast/parsers/` - Парсинг C++ в AST
 
-#### Phase 2: Syntax Features
-- Comments: inline `//`, block `/* */`, doxygen `///`
-- Preprocessor: `#define`, `#ifdef`, `#ifndef`
-- Stream operations: `operator<<` chains
+### Поддерживаемые конструкции C++
 
-#### Phase 3: Advanced Features
-- Friend declarations: `friend class`, `friend function`
-- Nested types: classes, structs, enums, namespaces
-- Static members: `static constexpr`, `static const`, `inline`
+**Объектно-ориентированное программирование:**
+- Классы и структуры
+- Одиночное наследование
+- Множественное наследование
+- Виртуальное наследование
+- Виртуальные методы
+- Спецификаторы: `virtual`, `override`, `final`, `pure virtual`
+- Секции доступа: `public`, `protected`, `private`
+- Friend-декларации
 
-#### Phase 4: Modern C++
-- Advanced templates: variadic, template template parameters
-- C++20 concepts: type constraints and requirements
-- C++20 modules: import/export declarations
-- C++20 coroutines: `co_await`, `co_yield`, `co_return`
-- Compilation caching with 75% hit rate
+**Шаблоны:**
+- Обычные шаблоны функций и классов
+- Вариадные шаблоны
+- Template template параметры
+- Специализации шаблонов
 
-## Usage Examples
+**C++20 возможности:**
+- Концепты (concepts) с требованиями
+- Модули (modules) с import/export
+- Корутины (coroutines) с co_await, co_yield, co_return
 
-### Virtual Methods & Inheritance
+**Прочее:**
+- Пространства имен
+- Статические члены
+- constexpr функции и переменные
+- Атрибуты: `[[nodiscard]]`, `[[maybe_unused]]`, `[[deprecated]]`
+- Комментарии: inline `//`, block `/* */`, doxygen `///`
+- Препроцессор: `#define`, `#ifdef`, `#ifndef`, `#include`
+
+### Пример использования DSL
+
 ```ruby
-class_with_inheritance("DemoScene", ["public IScene"]).tap do |klass|
+require 'cpp_ast'
+include CppAst::Builder::DSL
+
+# Создание класса с виртуальными методами
+my_class = class_with_inheritance("Shape", ["public Drawable"]).tap do |klass|
   klass.members = [
     public_section(
-      function_decl("void", "on_render", []).virtual().override(),
-      function_decl("void", "on_update", [param("float", "dt")]).virtual().override(),
-      function_decl("", "~DemoScene", []).virtual().defaulted()
+      function_decl("void", "draw", []).virtual().pure_virtual(),
+      function_decl("double", "area", []).const().virtual()
+    ),
+    protected_section(
+      var_decl("int", "id")
     )
   ]
 end
-```
-
-### C++20 Features
-```ruby
-# Concepts
-concept_decl("Drawable", ["typename T"], "requires(T t) { t.draw(); }")
-
-# Modules
-module_decl("graphics",
-  import_decl("std.core"),
-  var_decl("int", "screen_width", "1920")
-)
-
-# Coroutines
-coroutine_function("int", "generator", [param("int", "n")], block(
-  co_yield(int(0)),
-  co_yield(int(1)),
-  co_return(int(0))
-))
-```
-
-### Performance Optimization
-```ruby
-optimized_dsl = CppAst::Builder::OptimizedDSL.new
-
-# First compilation (cache miss)
-result1 = optimized_dsl.compile("int(42)")
-
-# Second compilation (cache hit)
-result2 = optimized_dsl.compile("int(42)")
-
-# Show performance stats
-stats = optimized_dsl.stats
-puts "Cache hit rate: #{(stats[:cache][:hit_rate] * 100).round(2)}%"
-```
-
-## Test Statistics
-
-### Test Distribution
-- Phase 1: 16 tests (virtual methods, inheritance, attributes)
-- Phase 2: 25 tests (comments, preprocessor, stream operations)
-- Phase 3: 16 tests (friend declarations, nested types, static members)
-- Phase 4: 31 tests (advanced templates, C++20 features, performance)
-
-### Total Statistics
-- 1022 test runs
-- 100% pass rate
-- ~98% coverage of C++ constructs
-
-## Technical Implementation
-
-### Files Modified
-- `lib/cpp_ast/builder/dsl.rb` - DSL functions
-- `lib/cpp_ast/builder/fluent.rb` - Fluent API extensions
-- `lib/cpp_ast/nodes/statements.rb` - AST nodes
-- `lib/cpp_ast/builder/dsl_generator.rb` - Generator improvements
-
-### New Files Created
-- 11 test files
-- 1 performance optimization library
-- 5 demo files
-- 5 completion reports
-
-## Performance Metrics
-
-### Compilation Performance
-```
-Total compilations: 100
-Cached compilations: 75
-Cache hit rate: 75.0%
-Average compilation time: 0.5ms (was 50ms without cache)
-Speed improvement: 100x
-```
-
-## Getting Started
-
-### Basic Usage
-```ruby
-require_relative "lib/cpp_ast"
-include CppAst::Builder::DSL
-
-# Create a simple class
-my_class = class_decl("MyClass",
-  public_section(
-    function_decl("void", "method", [], block(
-      return_stmt(int(42))
-    ))
-  )
-)
 
 puts my_class.to_source
 ```
 
-### Advanced Usage
-```ruby
-# Modern C++ with all features
-graphics_lib = program(
-  module_decl("graphics",
-    concept_decl("Drawable", ["typename T"], "requires(T t) { t.draw(); }"),
-    class_with_inheritance("Scene", ["public IDrawable"]).tap do |klass|
-      klass.members = [
-        public_section(
-          function_decl("void", "render", []).virtual().override()
-        )
-      ]
-    end
-  )
-)
+### Roundtrip capability
+
+DSL поддерживает двунаправленное преобразование:
+- **Ruby DSL → C++ код:** Генерация исходного кода из DSL структур
+- **C++ код → Ruby DSL:** Парсинг C++ кода обратно в DSL структуры
+
+Это позволяет:
+- Программно модифицировать существующий C++ код
+- Анализировать структуру C++ программ
+- Генерировать код по шаблонам
+
+## Процесс генерации кодовой базы с использованием AI
+
+Кодовая база проекта была сгенерирована с использованием следующих инструментов на основе больших языковых моделей.
+
+### Использованные инструменты
+
+**Claude (Anthropic):**
+- Разработка архитектурных решений компилятора
+- Реализация ключевых алгоритмов лексического и синтаксического анализа
+- Разработка системы типов и семантического анализа
+- Реализация генератора кода для C++
+- Рефакторинг кодовой базы
+- Написание технической документации
+- Диагностика и исправление ошибок
+- Оптимизация производительности
+
+**GitHub Copilot:**
+- Автодополнение реализаций функций
+- Генерация модульных тестов
+- Написание вспомогательных методов и утилит
+- Создание примеров использования
+
+**Cursor:**
+- Интерактивная разработка новых функций
+- Отладка проблем в коде
+- Рефакторинг существующих модулей
+- Интеграция компонентов
+
+### Процентное соотношение
+
+Более 85% кодовой базы было создано с использованием AI-инструментов.
+
+**Ручное вмешательство потребовалось для:**
+- Определения высокоуровневой архитектуры компилятора
+- Написания спецификаций языка MLC
+- Формулирования требований к компонентам
+- Проверки корректности сгенерированного кода
+- Интеграции разрозненных компонентов
+- Принятия архитектурных решений
+
+### Методология разработки
+
+Разработка велась итеративно:
+1. Формулирование требований к компоненту
+2. Генерация кода с использованием AI
+3. Проверка корректности через тесты
+4. Рефакторинг и оптимизация
+5. Интеграция с остальной системой
+
+Такой подход позволил создать работающий компилятор за существенно меньшее время по сравнению с традиционной разработкой.
+
+## Технические детали реализации
+
+### Используемые технологии
+
+**Язык реализации компилятора:** Ruby 3.x
+
+**Целевой язык:** C++20
+
+**Система сборки:** Rakefile
+
+**Тестовый фреймворк:** Minitest
+
+**Требования к системному компилятору:**
+- g++ >= 10.0 с поддержкой C++20
+- clang++ >= 11.0 с поддержкой C++20
+
+### Архитектурные паттерны
+
+**Visitor pattern:**
+Используется для обхода AST и SemanticIR. Каждый узел дерева принимает visitor, который выполняет специфичную для типа узла обработку.
+
+**Strategy pattern:**
+Применяется для выбора стратегии генерации кода в зависимости от типа конструкции и целевой платформы.
+
+**Strangler Fig pattern:**
+Используется для постепенной миграции с legacy бэкенда на новую архитектуру Backends::Cpp v2 без остановки разработки.
+
+**Builder pattern:**
+Применяется для построения сложных C++ AST структур через fluent API.
+
+### Структура каталогов
+
+```
+lib/
+├── cpp_ast/              # C++ AST DSL
+│   ├── builder/          # API для построения AST
+│   │   ├── dsl.rb        # Основной DSL
+│   │   ├── fluent.rb     # Fluent API extensions
+│   │   └── dsl_generator.rb  # Генератор C++ кода
+│   ├── nodes/            # Классы узлов AST
+│   │   ├── declarations.rb
+│   │   ├── statements.rb
+│   │   ├── expressions.rb
+│   │   └── types.rb
+│   ├── lexer/            # Лексер для C++
+│   │   └── lexer.rb
+│   └── parsers/          # Парсеры для C++
+│       ├── expression_parser.rb
+│       ├── statement_parser.rb
+│       └── declaration_parser.rb
+└── mlc/                  # Компилятор MLC
+    ├── source/           # Frontend
+    │   ├── lexer/        # Лексический анализ
+    │   └── parser/       # Синтаксический анализ
+    ├── representations/  # Промежуточные представления
+    │   └── semantic_ir/  # Семантическое IR
+    ├── backends/         # Code generation
+    │   └── cpp/          # C++ backend
+    └── common/           # Общие утилиты
+        ├── ast/          # Определения AST узлов
+        └── stdlib/       # Стандартная библиотека MLC
+
+runtime/
+└── include/mlc/          # Runtime библиотека C++
+    ├── core/             # Базовые компоненты
+    ├── text/             # Строки и регулярные выражения
+    ├── io/               # Ввод-вывод
+    ├── math/             # Математика
+    ├── json/             # JSON
+    └── graphics/         # Графика
+
+test/                     # Тесты
+├── cpp_ast/              # Тесты C++ AST DSL
+├── mlc/                  # Тесты компилятора MLC
+└── integration/          # Интеграционные тесты
 ```
 
-## Documentation
+### Ключевые модули
 
-### Demo Files
-- `examples/13_phase1_demo.rb` - Virtual methods, inheritance, attributes
-- `examples/14_dsl_generator_demo.rb` - C++ ↔ DSL roundtrip
-- `examples/15_phase2_demo.rb` - Comments, preprocessor, stream operations
-- `examples/16_phase3_demo.rb` - Friend declarations, nested types, static members
-- `examples/17_phase4_demo.rb` - Advanced templates, C++20 features, performance
-- `examples/18_final_comprehensive_demo.rb` - Complete feature demonstration
+**Лексер MLC:** `lib/mlc/source/lexer/lexer.rb`
+Преобразует исходный текст в поток токенов. Поддерживает все конструкции языка MLC.
 
-### Reports
-- `PHASE1_COMPLETION_REPORT.md` - Phase 1 achievements
-- `PHASE2_COMPLETION_REPORT.md` - Phase 2 achievements
-- `PHASE3_COMPLETION_REPORT.md` - Phase 3 achievements
-- `PHASE4_COMPLETION_REPORT.md` - Phase 4 achievements
-- `FINAL_AUDIT_REPORT.md` - Complete project status
-- `PROJECT_COMPLETION_SUMMARY.md` - Executive summary
+**Парсер MLC:** `lib/mlc/source/parser/parser.rb`
+Строит AST из потока токенов. Реализован методом рекурсивного спуска.
 
-### Core Documentation
-- `README.md` - Main project overview
-- `CHANGELOG.md` - Project changelog
-- `TODO.md` - Future work and improvements
+**Семантический анализ:** `lib/mlc/representations/semantic_ir/`
+Проверяет типы, разрешает имена, строит типизированное IR.
 
-### Technical Guides
-- `docs/ARCHITECTURE_GUIDE.md` - Architecture documentation
-- `docs/USER_GUIDE.md` - User guide
-- `docs/API_REFERENCE.md` - API reference
+**Генератор C++:** `lib/mlc/backends/cpp/`
+Преобразует SemanticIR в C++ AST, затем генерирует исходный код.
 
----
+## Установка и использование
 
-**Test Coverage**: 1413 runs, 3684 assertions, 0 failures
+### Системные требования
+
+**Обязательные компоненты:**
+- Ruby >= 3.0
+- Компилятор C++20:
+  - g++ >= 10.0 или
+  - clang++ >= 11.0
+- rake
+
+**Опциональные компоненты:**
+- git для клонирования репозитория
+
+### Установка
+
+```bash
+git clone <repository-url>
+cd mlc
+```
+
+### Запуск тестов
+
+```bash
+rake test
+```
+
+Все тесты должны пройти успешно.
+
+### Компиляция программы MLC
+
+**Простейшая программа:**
+
+Создайте файл `hello.mlc`:
+```mlc
+fn main() -> i32 =
+  42
+```
+
+Скомпилируйте и запустите:
+```bash
+bin/mlc hello.mlc
+echo $?  # Выведет: 42
+```
+
+**Программа с pattern matching:**
+
+Создайте файл `result.mlc`:
+```mlc
+type Result = Ok(i32) | Err
+
+fn divide(a: i32, b: i32) -> Result =
+  if b == 0 then Err else Ok(a / b)
+
+fn main() -> i32 =
+  match divide(10, 2)
+    | Ok(value) => value
+    | Err => 0
+```
+
+Скомпилируйте и запустите:
+```bash
+bin/mlc result.mlc
+echo $?  # Выведет: 5
+```
+
+### Генерация C++ кода
+
+```bash
+bin/mlc --emit-cpp program.mlc > output.cpp
+```
+
+Сгенерированный файл `output.cpp` будет содержать код на C++20.
+
+### Отладка
+
+Для сохранения временных файлов используйте:
+```bash
+bin/mlc --keep-tmp program.mlc
+```
+
+Временная директория будет выведена в консоль и не будет удалена после компиляции.
+
+## Результаты тестирования
+
+### Текущее состояние
+
+```
+1528 runs, 4028 assertions, 0 failures, 0 errors, 0 skips
+```
+
+Все тесты проходят успешно.
+
+### Покрытие компонентов
+
+**Лексер и парсер:**
+- Полное покрытие всех конструкций языка MLC
+- Тесты на корректность распознавания токенов
+- Тесты на построение корректного AST
+
+**Семантический анализ:**
+- Проверка корректности системы типов
+- Тесты на разрешение имен
+- Проверка обнаружения ошибок типизации
+
+**Генерация кода:**
+- Тесты на корректность сгенерированного C++
+- Проверка компиляции сгенерированного кода
+- Тесты на корректность исполнения
+
+**C++ AST DSL:**
+- Тесты на построение всех конструкций C++
+- Проверка генерации корректного синтаксиса
+- Roundtrip тесты (DSL → C++ → DSL)
+
+**Интеграционные тесты:**
+- Компиляция примеров программ
+- Запуск и проверка результатов
+- Тесты на корректность pattern matching
+- Проверка работы с sum types
+
+### Распределение тестов
+
+- Модуль C++ AST DSL: ~1000 тестов
+- Модуль компилятора MLC: ~400 тестов
+- Интеграционные тесты: ~128 тестов
+
+## Ограничения и область применения
+
+### Проект не предназначен для
+
+**Промышленное использование:**
+Код не прошел аудита безопасности и не тестировался на production-нагрузках.
+
+**Критичные по безопасности приложения:**
+Компилятор может содержать уязвимости и не предоставляет гарантий безопасности.
+
+**Высоконагруженные системы:**
+Отсутствует оптимизация производительности сгенерированного кода.
+
+### Проект предназначен для
+
+**Исследования возможностей AI:**
+Демонстрация применения AI-инструментов для создания компиляторов.
+
+**Образовательные цели:**
+Изучение архитектуры компиляторов, промежуточных представлений, генерации кода.
+
+**Эксперименты с языками:**
+Прототипирование идей дизайна языков программирования.
+
+**Исследования по компиляторам:**
+База для исследований в области трансляции и оптимизации кода.
+
+### Известные ограничения
+
+**Оптимизация:**
+Отсутствует оптимизация сгенерированного кода. Генерируется прямолинейный код без оптимизаций.
+
+**Сообщения об ошибках:**
+Диагностика ошибок требует улучшения. Сообщения могут быть недостаточно информативными.
+
+**Инкрементальная компиляция:**
+Отсутствует поддержка инкрементальной компиляции. Каждый запуск компилирует всю программу заново.
+
+**Система модулей:**
+Система модулей реализована частично. Не все возможности модульной системы доступны.
+
+**Стандартная библиотека:**
+Стандартная библиотека содержит ограниченный набор функций. Многие утилиты требуют реализации.
+
+### Перспективы развития
+
+Проект может служить основой для дальнейших исследований в области:
+- AI-assisted компиляторов
+- Автоматической генерации оптимизаций
+- Улучшения диагностики ошибок с помощью AI
+- Разработки DSL для специфичных доменов

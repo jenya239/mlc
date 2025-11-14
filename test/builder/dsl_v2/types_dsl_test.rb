@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "test/unit"
-require_relative "../../../lib/cpp_ast"
+require_relative "../../../lib/cpp_ast/index"
 require_relative "../../../lib/cpp_ast/builder/dsl_v2_simple"
 
 class TypesDSLTest < Test::Unit::TestCase

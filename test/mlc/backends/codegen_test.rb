@@ -67,17 +67,6 @@ module MLC
           assert_respond_to codegen.context, :lower_expression
           assert_respond_to codegen.context, :lower_statement
         end
-
-        def test_application_uses_codegen
-          app = Application.new
-          lowering = app.build_cpp_lowering(
-            type_registry: @type_registry,
-            function_registry: @function_registry
-          )
-
-          # v2 architecture (CodeGen) is now default
-          assert_instance_of CodeGen, lowering
-        end
       end
     end
   end

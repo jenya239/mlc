@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
+require_relative "../../lib/mlc/common/index"
 
 class MLCStdlibTest < Minitest::Test
   def test_builtin_functions
@@ -51,10 +51,10 @@ class MLCStdlibTest < Minitest::Test
     # Test that working stdlib files exist
     project_root = File.expand_path('../..', __dir__)
     stdlib_files = [
-      "lib/mlc/stdlib/math.mlc",
-      "lib/mlc/stdlib/io.mlc",
-      "lib/mlc/stdlib/string.mlc",
-      "lib/mlc/stdlib/conv.mlc"
+      "lib/mlc/common/stdlib/math/math.mlc",
+      "lib/mlc/common/stdlib/io/io.mlc",
+      "lib/mlc/common/stdlib/text/string.mlc",
+      "lib/mlc/common/stdlib/text/conv.mlc"
     ]
 
     stdlib_files.each do |file|

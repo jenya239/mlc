@@ -7,7 +7,7 @@ require_relative 'utils/type_unification_service'
 require_relative 'inference/type_inference_service'
 require_relative 'registration/sum_type_constructor_service'
 require_relative 'scope/module_context_service'
-require_relative '../../../../tools/compiler/stdlib/signature_registry'
+require_relative '../../../../common/stdlib/signature_registry'
 require_relative 'imports/module_resolver'
 require_relative 'imports/module_path_resolver'
 require_relative 'checkers/ast_type_checker'
@@ -29,7 +29,7 @@ require_relative '../../../../common/typing/match_analyzer'
 require_relative '../../../../common/typing/type_constraint_solver'
 require_relative '../../../../common/typing/generic_call_resolver'
 require_relative 'builders/ast_factory'
-require_relative '../../../../tools/compiler/metadata_loader_service'
+require_relative '../../../../common/stdlib/metadata_loader'
 
 module MLC
   module SemanticGen

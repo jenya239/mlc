@@ -3,8 +3,8 @@
 require "benchmark"
 require "memory_profiler"
 require_relative "../test_helper"
-require_relative "../../lib/mlc"
-require_relative "../../lib/cpp_ast"
+require_relative "../../lib/mlc/common/index"
+require_relative "../../lib/cpp_ast/index"
 require_relative "../../lib/mlc/source/parser/optimized_parser"
 require_relative "../../lib/cpp_ast/builder/optimized_generator"
 
