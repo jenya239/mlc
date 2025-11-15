@@ -192,9 +192,31 @@ lib/mlc/
 ### Phase 28: Autoloading Infrastructure (8h, Medium)
 **Goal**: Implement Zeitwerk-style autoloading for cleaner requires
 
-**Current State**:
-- Manual require_relative statements throughout codebase
+**Current State** (analyzed 2025-11-15):
+- Manual require_relative statements throughout codebase (293 total)
+- Entry point: lib/mlc/common/index.rb (31 requires)
+- Main loader: lib/mlc/representations/semantic/semantic_gen.rb (49 requires)
+- 154 Ruby files in lib/mlc/
 - Every new rule/service requires manual require
+
+**Blockers Found**:
+1. **Directory/namespace mismatch**:
+   - Files in lib/mlc/common/registry/ define MLC::Core::* classes
+   - lib/mlc/core/ directory does not exist
+   - Zeitwerk requires strict path→namespace mapping
+   - 8 references to MLC::Core:: across 6 files
+2. **Files requiring relocation**:
+   - lib/mlc/common/registry/function_registry.rb (defines MLC::Core::FunctionRegistry)
+   - lib/mlc/common/registry/function_signature.rb (defines MLC::Core::FunctionSignature)
+   - lib/mlc/common/registry/type_registry.rb (defines MLC::Core::TypeRegistry)
+
+**Prerequisites**:
+- **Phase 27.5: Fix Directory/Namespace Mismatches (2h)**
+  - Create lib/mlc/core/ directory
+  - Move 3 files from lib/mlc/common/registry/ to lib/mlc/core/
+  - Update 8 references in 6 files
+  - Update require paths in lib/mlc/common/index.rb and other loaders
+  - Run tests to verify no regressions
 
 **Benefits**:
 - Eliminate manual requires
@@ -202,7 +224,7 @@ lib/mlc/
 - Standard Ruby convention
 - Faster development iteration
 
-**Deferred**: Lower priority after reorganization complete
+**Deferred**: Blocked by namespace mismatches, requires Phase 27.5 first
 
 ---
 
