@@ -68,7 +68,7 @@ end
 # Usage
 queries = QuerySystem.new
 queries.define_query(:type_of) { |node| TypeInferenceService.infer_type(node) }
-queries.define_query(:transform_node) { |node| IRGen.transform(node) }
+queries.define_query(:transform_node) { |node| SemanticGen.transform(node) }
 
 # Automatic caching!
 ty = queries.type_of(node)  # Computed first time
@@ -325,7 +325,7 @@ module MLC
     class TransformNode < Query
       def self.execute(node)
         ty = TypeOf.call(node)  # Calls another query (cached!)
-        IRGen.transform(node, ty)
+        SemanticGen.transform(node, ty)
       end
     end
   end

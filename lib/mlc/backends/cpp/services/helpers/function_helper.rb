@@ -8,7 +8,6 @@ module MLC
       module Services
         module Helpers
           # Function name resolution and qualification
-          # Migrated from Backend::CodeGenHelpers
           module FunctionHelper
             module_function
 

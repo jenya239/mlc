@@ -6,7 +6,6 @@ module MLC
       module Services
         module Utils
           # Pure functions for string manipulation in C++ code generation
-          # Migrated from Backend::CodeGenHelpers
           module StringHelpers
             CPP_KEYWORDS = %w[
               alignas alignof and and_eq asm atomic_cancel atomic_commit atomic_noexcept auto bitand

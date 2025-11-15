@@ -6,7 +6,6 @@ module MLC
       module Services
         module Policies
           # Policy decisions for lowering strategies
-          # Migrated from Backend::CodeGenHelpers
           module LoweringPolicy
             module_function
 

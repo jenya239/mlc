@@ -6,7 +6,6 @@ module MLC
       module Services
         module Builders
           # Template/generic type handling for C++20
-          # Migrated from Backend::CodeGenHelpers
           module TemplateBuilder
             module_function
 

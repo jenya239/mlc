@@ -17,10 +17,6 @@ module MLC
       # - Container: Dependency injection for type_registry, function_registry, etc.
       # - Context: High-level API for lowering operations
       # - Rules: Chain of Responsibility for expression/statement lowering
-      #
-      # Migration History:
-      # - Phase 1-3 (complete): Strangler Fig migration from legacy Backend::CodeGen
-      # - All legacy code removed, v2 architecture is production-ready
       class CodeGen
         attr_reader :container, :context
 
@@ -186,7 +182,7 @@ module MLC
           )
         end
 
-        # Type declaration lowering (migrated from Backend::CodeGen::TypeLowerer)
+        # Type declaration lowering
         def lower_type_decl_internal(type_decl)
           result = case type_decl.type
                    when SemanticIR::RecordType

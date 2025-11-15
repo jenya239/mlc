@@ -6,7 +6,6 @@ module MLC
       module Services
         module Utils
           # Pure functions for type mapping from SemanticIR to C++
-          # Migrated from Backend::CodeGenHelpers
           module TypeMapper
             module_function
 

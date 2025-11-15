@@ -43,7 +43,7 @@ module MLC
 
         private
 
-        # Primitive type mapping (migrated from Backend::CodeGen)
+        # Primitive type mapping
         def build_type_map
           {
             "i8" => "int8_t",
