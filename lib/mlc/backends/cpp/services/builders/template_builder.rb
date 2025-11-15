@@ -28,6 +28,12 @@ module MLC
               end.compact
               clauses.join(" && ")
             end
+
+            # Build lambda/function type using std::function
+            # Example: "std::function<int(string, bool)>"
+            def build_lambda_type(params, return_type)
+              "std::function<#{return_type}(#{params.join(', ')})>"
+            end
           end
         end
       end

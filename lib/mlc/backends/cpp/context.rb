@@ -93,8 +93,7 @@ module MLC
 
         # Template methods - delegating to TemplateBuilder
         def generate_lambda_type(params, return_type)
-          # TODO: Delegate to template builder service
-          "std::function<#{return_type}(#{params.join(', ')})>"
+          Services::Builders::TemplateBuilder.build_lambda_type(params, return_type)
         end
 
         def build_template_signature(type_params)

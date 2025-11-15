@@ -236,6 +236,45 @@ lib/mlc/
 
 ---
 
+### Phase 31: Analysis Passes Implementation (TBD, High)
+**Goal**: Fully implement analysis passes for SemanticIR validation
+
+**Current State**:
+- `lib/mlc/common/analysis/type_check_pass.rb` - simplified initial version
+  - Only validates basic function structure (external vs body)
+  - TODO (line 13): "Fully implement type checking for all SemanticIR node types"
+- `lib/mlc/common/analysis/name_resolution_pass.rb` - simplified initial version
+  - Only collects top-level declarations (functions, types)
+  - TODO (line 14): "Fully implement name resolution with scoping and reference checking"
+
+**Required Work**:
+
+**TypeCheckPass**:
+- Type validation for all SemanticIR expressions
+- Type inference validation
+- Generic type parameter validation
+- Function call type checking
+- Match expression exhaustiveness
+- Type compatibility in assignments
+
+**NameResolutionPass**:
+- Nested scope tracking (function-local variables)
+- Reference resolution (variable usage → declaration)
+- Shadowing detection
+- Unused variable detection
+- Forward reference validation
+- Import/module name resolution
+
+**Benefits**:
+- Earlier error detection (before codegen)
+- Better error messages with source locations
+- Safer code generation
+- Foundation for advanced optimizations
+
+**Priority**: Deferred until basic compiler features are stable
+
+---
+
 ## Future Optimizations (Deferred)
 
 ### Query System (Rust rustc approach)
@@ -267,8 +306,11 @@ lib/mlc/
 **Current Priority** (Phase 27): 8 hours
 - Documentation improvements and cleanup
 
-**Deferred** (Phase 28-30): 28 hours
-- Autoloading, IoC Container, Type System improvements
+**Deferred** (Phase 28-31): TBD
+- Phase 28: Autoloading Infrastructure (8h)
+- Phase 29: IoC Container (12h)
+- Phase 30: Type System Improvements (TBD)
+- Phase 31: Analysis Passes Implementation (TBD)
 
 **Expected Benefits Achieved**:
 - ✅ Eliminated legacy IRGen (~3200 LOC)

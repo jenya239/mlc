@@ -194,12 +194,41 @@ module MLC
       end
 
       # Parse comma-separated type arguments
-      # @param args_str [String] "T, E" or "i32" or "i32, f32"
+      # Handles nested generics: "List<Result<T, E>>" splits correctly
+      # @param args_str [String] "T, E" or "i32" or "i32, f32" or "Result<T, E>, i32"
       # @return [Array<SemanticIR::Type>]
       def parse_type_args(args_str)
-        # Simple split - doesn't handle nested generics yet
-        # TODO: Proper parser for "List<Result<T, E>>" style nesting
-        args_str.split(',').map { |arg| parse_type(arg.strip) }
+        args = []
+        depth = 0
+        current = []
+
+        args_str.each_char do |ch|
+          case ch
+          when '<'
+            depth += 1
+            current << ch
+          when '>'
+            depth -= 1
+            current << ch
+          when ','
+            if depth == 0
+              # Top-level comma - split here
+              args << current.join.strip
+              current = []
+            else
+              # Nested comma - keep it
+              current << ch
+            end
+          else
+            current << ch
+          end
+        end
+
+        # Add last argument
+        args << current.join.strip unless current.empty?
+
+        # Parse each argument
+        args.map { |arg| parse_type(arg) }
       end
 
       # Determine if a type name is primitive

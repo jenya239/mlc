@@ -10,4 +10,3 @@ end
 
 require_relative "cpp/container"
 require_relative "cpp/context"
-require_relative "cpp/orchestrator"
