@@ -20,7 +20,7 @@ module MLC
       def initialize(function_registry: nil, type_registry: nil, rule_engine: nil)
         @type_registry = type_registry || MLC::Registries::TypeRegistry.new
         @function_registry = function_registry || MLC::Registries::FunctionRegistry.new
-        @services = Services::Container.new(
+        @services = MLC::Representations::Semantic::Gen::Services::Container.new(
           function_registry: @function_registry,
           type_registry: @type_registry
         )
