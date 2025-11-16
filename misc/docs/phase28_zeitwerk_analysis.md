@@ -135,6 +135,30 @@ lib/mlc/
    - Updated 9 usage files (12 files total, 39 references)
    - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
 
+5. **Commit 56c886c**: `MLC::TypeSystem` → `MLC::Common::Typing`
+   - Fixed 4 definition files in `lib/mlc/common/typing/`:
+     * `effect_analyzer.rb`, `generic_call_resolver.rb`, `match_analyzer.rb`, `type_constraint_solver.rb`
+   - Updated 19 references across 6 files
+   - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
+6. **Commit b8018a9**: `StdlibSignatureRegistry` → `SignatureRegistry`
+   - Fixed: `lib/mlc/common/stdlib/signature_registry.rb`
+   - Избыточный префикс "Stdlib" удалён
+   - Updated 2 references (container.rb, test file)
+   - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
+7. **Commit f69baf6**: `MetadataLoaderService` → `MetadataLoader`
+   - Fixed: `lib/mlc/common/stdlib/metadata_loader.rb`
+   - Избыточный суффикс "Service" удалён
+   - Updated 2 references (container.rb, test file)
+   - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
+8. **Commit a68f849**: `StdlibResolver` → `Resolver`
+   - Fixed: `lib/mlc/common/stdlib/resolver.rb`
+   - Избыточный префикс "Stdlib" удалён
+   - Updated 12 references in 2 test files
+   - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
 ### 🔄 Remaining High-Priority Namespace Mismatches
 
 Based on comprehensive codebase scan (2025-11-16):
@@ -165,7 +189,6 @@ Based on comprehensive codebase scan (2025-11-16):
 
 6. **MLC::Infrastructure** (80 usages)
 7. **MLC::Diagnostics** (40 usages)
-8. **MLC::TypeSystem** (20 usages)
 
 **Impact Analysis**:
 - **Total high-priority usages**: ~560+
@@ -177,9 +200,12 @@ Based on comprehensive codebase scan (2025-11-16):
 
 1. ✅ Document findings in REFACTORING_ROADMAP.md (DONE)
 2. ✅ Implement Phase 27.5 (DONE - commit 6d2a7ce)
-3. ✅ Fix low-priority namespace mismatches (DONE - commits 28bd2b4, 4adf7ff, 5212b50, a394d7b)
-4. 🔄 Defer high-priority namespace fixes until after critical development milestones
-5. ⏸️ Phase 28 (Zeitwerk) implementation deferred - requires high-priority namespace fixes first
+3. ✅ Fix low-priority namespace mismatches (DONE - 8 commits total):
+   - 28bd2b4, 4adf7ff, 5212b50, a394d7b (previous session)
+   - 56c886c, b8018a9, f69baf6, a68f849 (2025-11-16 continuation)
+4. 🔄 Continue with remaining low-priority namespace fixes
+5. 🔄 Defer high-priority namespace fixes until after critical development milestones
+6. ⏸️ Phase 28 (Zeitwerk) implementation deferred - requires high-priority namespace fixes first
 
 ## Notes
 
