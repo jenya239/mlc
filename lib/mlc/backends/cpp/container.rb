@@ -38,7 +38,7 @@ module MLC
 
         # Type checker for SemanticIR nodes
         def semantic_ir_checker
-          @services[:semantic_ir_checker] ||= MLC::Services::SemanticIRTypeChecker.new
+          @services[:semantic_ir_checker] ||= MLC::Representations::Semantic::Gen::Services::SemanticIRTypeChecker.new
         end
 
         private
@@ -71,7 +71,7 @@ module MLC
           when :cpp_ast_factory
             Services::Builders::CppAstFactory.new
           when :semantic_ir_checker
-            MLC::Services::SemanticIRTypeChecker.new
+            MLC::Representations::Semantic::Gen::Services::SemanticIRTypeChecker.new
           else
             raise "Unknown service: #{service_name}"
           end

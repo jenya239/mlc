@@ -25,18 +25,18 @@ module MLC
           type_registry: @type_registry
         )
 
-        @function_registration_service = MLC::Services::FunctionRegistrationService.new(
+        @function_registration_service = MLC::Representations::Semantic::Gen::Services::FunctionRegistrationService.new(
           function_registry: @function_registry,
           module_context_service: @services.module_context_service
         )
 
-        @type_resolution_service = MLC::Services::TypeResolutionService.new(
+        @type_resolution_service = MLC::Representations::Semantic::Gen::Services::TypeResolutionService.new(
           function_registry: @function_registry,
           type_registry: @type_registry,
           type_checker: @services.type_checker
         )
 
-        @purity_analyzer = MLC::Services::PurityAnalyzer.new
+        @purity_analyzer = MLC::Representations::Semantic::Gen::Services::PurityAnalyzer.new
         @effect_analyzer = MLC::Common::Typing::EffectAnalyzer.new(
           pure_expression: @purity_analyzer.method(:is_pure_expression),
           non_literal_type: @purity_analyzer.method(:non_literal_type?)

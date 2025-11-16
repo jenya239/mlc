@@ -89,7 +89,7 @@ module MLC
           context = backend[:context]
 
           assert_respond_to context, :checker
-          assert_instance_of MLC::Services::SemanticIRTypeChecker, context.checker
+          assert_instance_of MLC::Representations::Semantic::Gen::Services::SemanticIRTypeChecker, context.checker
         end
 
         def test_with_custom_runtime_policy
