@@ -67,7 +67,7 @@ module MLC
         token = consume(:OPERATOR)
         op = token.value
         right = parse_multiplication
-        node = AST::BinaryOp.new(op: op, left: left, right: right)
+        node = MLC::Source::AST::BinaryOp.new(op: op, left: left, right: right)
         left = attach_origin(node, token)
       end
 
@@ -96,7 +96,7 @@ module MLC
       # Empty array
       if current.type == :RBRACKET
         consume(:RBRACKET)
-        return with_origin(lbracket_token) { AST::ArrayLiteral.new(elements: []) }
+        return with_origin(lbracket_token) { MLC::Source::AST::ArrayLiteral.new(elements: []) }
       end
 
       # Parse first expression
@@ -115,7 +115,7 @@ module MLC
           iterable = parse_if_expression
 
           generators << with_origin(for_token) do
-            AST::Generator.new(
+            MLC::Source::AST::Generator.new(
               var_name: var_name,
               iterable: iterable
             )
@@ -131,7 +131,7 @@ module MLC
         consume(:RBRACKET)
 
         with_origin(lbracket_token) do
-          AST::ListComprehension.new(
+          MLC::Source::AST::ListComprehension.new(
             output_expr: first_expr,
             generators: generators,
             filters: filters
@@ -149,7 +149,7 @@ module MLC
 
         consume(:RBRACKET)
 
-        with_origin(lbracket_token) { AST::ArrayLiteral.new(elements: elements) }
+        with_origin(lbracket_token) { MLC::Source::AST::ArrayLiteral.new(elements: elements) }
       end
     end
 
@@ -160,7 +160,7 @@ module MLC
         token = consume(:OPERATOR)
         op = token.value
         right = parse_addition
-        node = AST::BinaryOp.new(op: op, left: left, right: right)
+        node = MLC::Source::AST::BinaryOp.new(op: op, left: left, right: right)
         left = attach_origin(node, token)
       end
 
@@ -194,38 +194,38 @@ module MLC
       # Process items: last expression becomes result, others become statements
       if all_items.empty?
         # Empty block returns unit type
-        result_expr = AST::UnitLit.new
+        result_expr = MLC::Source::AST::UnitLit.new
       else
         # Last item is the result expression
         *stmt_items, last_item = all_items
 
         # Convert all non-last items to statements
         stmt_items.each do |item|
-          if item.is_a?(AST::Stmt)
+          if item.is_a?(MLC::Source::AST::Stmt)
             # Already a statement (VariableDecl, Assignment)
             statements << item
           else
             # Wrap expression as statement
-            statements << AST::ExprStmt.new(expr: item)
+            statements << MLC::Source::AST::ExprStmt.new(expr: item)
           end
         end
 
         # Last item is the result
-        if last_item.is_a?(AST::Stmt) && !last_item.is_a?(AST::VariableDecl)
+        if last_item.is_a?(MLC::Source::AST::Stmt) && !last_item.is_a?(MLC::Source::AST::VariableDecl)
           # If last is a non-VariableDecl statement, add it and use unit result
           statements << last_item
-          result_expr = AST::UnitLit.new
-        elsif last_item.is_a?(AST::VariableDecl)
+          result_expr = MLC::Source::AST::UnitLit.new
+        elsif last_item.is_a?(MLC::Source::AST::VariableDecl)
           # VariableDecl is statement, not expression - add it and use unit result
           statements << last_item
-          result_expr = AST::UnitLit.new
+          result_expr = MLC::Source::AST::UnitLit.new
         else
           # Last is expression - use as result
           result_expr = last_item
         end
       end
 
-      with_origin(do_token) { AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
+      with_origin(do_token) { MLC::Source::AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
     end
 
     def parse_do_statement
@@ -241,10 +241,10 @@ module MLC
         parse_do_expression
       when :BREAK
         token = consume(:BREAK)
-        with_origin(token) { AST::Break.new }
+        with_origin(token) { MLC::Source::AST::Break.new }
       when :CONTINUE
         token = consume(:CONTINUE)
-        with_origin(token) { AST::Continue.new }
+        with_origin(token) { MLC::Source::AST::Continue.new }
       when :IDENTIFIER
         # Check for assignment: x = ...
         if peek && peek.type == :EQUAL
@@ -252,8 +252,8 @@ module MLC
           target_name = target_token.value
           consume(:EQUAL)
           value = parse_expression
-          target = attach_origin(AST::VarRef.new(name: target_name), target_token)
-          with_origin(target_token) { AST::Assignment.new(target: target, value: value) }
+          target = attach_origin(MLC::Source::AST::VarRef.new(name: target_name), target_token)
+          with_origin(target_token) { MLC::Source::AST::Assignment.new(target: target, value: value) }
         else
           # Otherwise it's an expression
           parse_if_expression
@@ -271,7 +271,7 @@ module MLC
         token = consume(:OPERATOR)
         op = token.value
         right = parse_pipe
-        node = AST::BinaryOp.new(op: op, left: left, right: right)
+        node = MLC::Source::AST::BinaryOp.new(op: op, left: left, right: right)
         left = attach_origin(node, token)
       end
 
@@ -322,41 +322,41 @@ module MLC
       # Process items: last expression becomes result, others become statements
       if all_items.empty?
         # Empty block returns void
-        result_expr = AST::UnitLit.new
+        result_expr = MLC::Source::AST::UnitLit.new
       else
         # Last item is the result expression
         *stmt_items, last_item = all_items
 
         # Convert all non-last items to statements
         stmt_items.each do |item|
-          if item.is_a?(AST::Stmt)
+          if item.is_a?(MLC::Source::AST::Stmt)
             # Already a statement (VariableDecl, Assignment)
             statements << item
           else
             # Wrap expression as statement
-            statements << AST::ExprStmt.new(expr: item)
+            statements << MLC::Source::AST::ExprStmt.new(expr: item)
           end
         end
 
         # Last item is the result
-        if last_item.is_a?(AST::Stmt) && !last_item.is_a?(AST::VariableDecl)
+        if last_item.is_a?(MLC::Source::AST::Stmt) && !last_item.is_a?(MLC::Source::AST::VariableDecl)
           # If last is a non-VariableDecl statement, add it and use void result
           statements << last_item
-          result_expr = AST::UnitLit.new
-        elsif last_item.is_a?(AST::VariableDecl)
+          result_expr = MLC::Source::AST::UnitLit.new
+        elsif last_item.is_a?(MLC::Source::AST::VariableDecl)
           # VariableDecl is statement, not expression - add it and use void result
           statements << last_item
-          result_expr = AST::UnitLit.new
+          result_expr = MLC::Source::AST::UnitLit.new
         else
           # Last is expression - use as result
           result_expr = last_item
         end
       end
 
-      body = with_origin(for_token) { AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
+      body = with_origin(for_token) { MLC::Source::AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
 
       with_origin(for_token) do
-        AST::ForLoop.new(
+        MLC::Source::AST::ForLoop.new(
           var_name: var_name,
           iterable: iterable,
           body: body
@@ -381,25 +381,25 @@ module MLC
 
     def wrap_block_like_expr(node)
       case node
-      when AST::BlockExpr
+      when MLC::Source::AST::BlockExpr
         node
-      when AST::Block
+      when MLC::Source::AST::Block
         origin = node.origin
-        AST::BlockExpr.new(
+        MLC::Source::AST::BlockExpr.new(
           statements: node.stmts,
-          result_expr: AST::UnitLit.new(origin: origin),
+          result_expr: MLC::Source::AST::UnitLit.new(origin: origin),
           origin: origin
         )
-      when AST::Stmt
+      when MLC::Source::AST::Stmt
         origin = node.origin
-        AST::BlockExpr.new(
+        MLC::Source::AST::BlockExpr.new(
           statements: [node],
-          result_expr: AST::UnitLit.new(origin: origin),
+          result_expr: MLC::Source::AST::UnitLit.new(origin: origin),
           origin: origin
         )
       else
         origin = node.respond_to?(:origin) ? node.origin : nil
-        AST::BlockExpr.new(
+        MLC::Source::AST::BlockExpr.new(
           statements: [],
           result_expr: node,
           origin: origin
@@ -420,7 +420,7 @@ module MLC
           else_branch = parse_if_branch_expression
         end
 
-        with_origin(if_token) { AST::IfExpr.new(condition: condition, then_branch: then_branch, else_branch: else_branch) }
+        with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: condition, then_branch: then_branch, else_branch: else_branch) }
       else
         parse_logical_or
       end
@@ -434,8 +434,8 @@ module MLC
         consume(:FAT_ARROW)
         body = parse_if_expression
 
-        param = with_origin(param_token) { AST::LambdaParam.new(name: param_name) }
-        with_origin(param_token) { AST::Lambda.new(params: [param], body: body) }
+        param = with_origin(param_token) { MLC::Source::AST::LambdaParam.new(name: param_name) }
+        with_origin(param_token) { MLC::Source::AST::Lambda.new(params: [param], body: body) }
 
       elsif current.type == :LPAREN
         # Multiple parameters: (x, y) => expr or (x: i32, y: i32) => expr
@@ -445,7 +445,7 @@ module MLC
         consume(:FAT_ARROW)
         body = parse_lambda_body
 
-        with_origin(lparen_token) { AST::Lambda.new(params: params, body: body) }
+        with_origin(lparen_token) { MLC::Source::AST::Lambda.new(params: params, body: body) }
       else
         raise "Expected lambda expression"
       end
@@ -477,7 +477,7 @@ module MLC
           param_type = parse_type
         end
 
-        params << with_origin(name_token) { AST::LambdaParam.new(name: name, type: param_type) }
+        params << with_origin(name_token) { MLC::Source::AST::LambdaParam.new(name: name, type: param_type) }
 
         break unless current.type == :COMMA
         consume(:COMMA)
@@ -511,11 +511,11 @@ module MLC
 
       unless current.type == :SEMICOLON
         body = parse_expression
-        return with_origin(name_token) { AST::Let.new(name: name, value: value, body: body, mutable: mutable, type: type_annotation) }
+        return with_origin(name_token) { MLC::Source::AST::Let.new(name: name, value: value, body: body, mutable: mutable, type: type_annotation) }
       end
 
       consume(:SEMICOLON)
-      statements = [with_origin(name_token) { AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }]
+      statements = [with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }]
       block = parse_statement_sequence(statements)
       ensure_block_has_result(block, require_value: false)
       block
@@ -551,7 +551,7 @@ module MLC
 
       # In do-blocks, let is a statement that doesn't need 'in'
       # It returns a special LetStmt expression
-      with_origin(let_token) { AST::Let.new(name: name, value: value, body: nil, mutable: mutable, type: type_annotation) }
+      with_origin(let_token) { MLC::Source::AST::Let.new(name: name, value: value, body: nil, mutable: mutable, type: type_annotation) }
     end
 
     def parse_logical_and
@@ -560,7 +560,7 @@ module MLC
       while current.type == :OPERATOR && current.value == "&&"
         token = consume(:OPERATOR)
         right = parse_equality
-        node = AST::BinaryOp.new(op: "&&", left: left, right: right)
+        node = MLC::Source::AST::BinaryOp.new(op: "&&", left: left, right: right)
         left = attach_origin(node, token)
       end
 
@@ -573,7 +573,7 @@ module MLC
       while current.type == :OPERATOR && current.value == "||"
         token = consume(:OPERATOR)
         right = parse_logical_and
-        node = AST::BinaryOp.new(op: "||", left: left, right: right)
+        node = MLC::Source::AST::BinaryOp.new(op: "||", left: left, right: right)
         left = attach_origin(node, token)
       end
 
@@ -663,7 +663,7 @@ module MLC
         end
       end
 
-      with_origin(match_token) { AST::MatchExpr.new(scrutinee: scrutinee, arms: arms) }
+      with_origin(match_token) { MLC::Source::AST::MatchExpr.new(scrutinee: scrutinee, arms: arms) }
     end
 
     def parse_match_scrutinee
@@ -685,7 +685,7 @@ module MLC
         token = consume(:OPERATOR)
         op = token.value
         right = parse_unary
-        node = AST::BinaryOp.new(op: op, left: left, right: right)
+        node = MLC::Source::AST::BinaryOp.new(op: op, left: left, right: right)
         left = attach_origin(node, token)
       end
 
@@ -698,7 +698,7 @@ module MLC
       while current.type == :PIPE || (current.type == :OPERATOR && current.value == "|>")
         token = consume(current.type)  # Consume PIPE or OPERATOR
         right = parse_comparison
-        node = AST::BinaryOp.new(op: "|>", left: left, right: right)
+        node = MLC::Source::AST::BinaryOp.new(op: "|>", left: left, right: right)
         left = attach_origin(node, token)
       end
 
@@ -726,11 +726,11 @@ module MLC
               args = parse_args
               consume(:RPAREN)
               # Create a call with member access as callee
-              member_access = attach_origin(AST::MemberAccess.new(object: expr, member: member), member_token)
-              expr = attach_origin(AST::Call.new(callee: member_access, args: args), member_token)
+              member_access = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
+              expr = attach_origin(MLC::Source::AST::Call.new(callee: member_access, args: args), member_token)
             else
               # Just member access: obj.field
-              expr = attach_origin(AST::MemberAccess.new(object: expr, member: member), member_token)
+              expr = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
             end
             expr_line = last_token&.line
           else
@@ -741,7 +741,7 @@ module MLC
           lbracket_token = consume(:LBRACKET)
           index = parse_expression
           consume(:RBRACKET)
-          expr = attach_origin(AST::IndexAccess.new(object: expr, index: index), lbracket_token)
+          expr = attach_origin(MLC::Source::AST::IndexAccess.new(object: expr, index: index), lbracket_token)
           expr_line = last_token&.line
         when :LPAREN
           paren_line = current.line
@@ -749,7 +749,7 @@ module MLC
           lparen_token = consume(:LPAREN)
           args = parse_args
           consume(:RPAREN)
-          expr = attach_origin(AST::Call.new(callee: expr, args: args), lparen_token)
+          expr = attach_origin(MLC::Source::AST::Call.new(callee: expr, args: args), lparen_token)
           expr_line = last_token&.line
         else
           break
@@ -768,19 +768,19 @@ module MLC
       when :INT_LITERAL
         token = consume(:INT_LITERAL)
         value = token.value
-        attach_origin(AST::IntLit.new(value: value), token)
+        attach_origin(MLC::Source::AST::IntLit.new(value: value), token)
       when :FLOAT_LITERAL
         token = consume(:FLOAT_LITERAL)
         value = token.value
-        attach_origin(AST::FloatLit.new(value: value), token)
+        attach_origin(MLC::Source::AST::FloatLit.new(value: value), token)
       when :STRING_LITERAL
         token = consume(:STRING_LITERAL)
         value = token.value
-        attach_origin(AST::StringLit.new(value: value), token)
+        attach_origin(MLC::Source::AST::StringLit.new(value: value), token)
       when :REGEX
         token = consume(:REGEX)
         regex_data = token.value
-        attach_origin(AST::RegexLit.new(pattern: regex_data[:pattern], flags: regex_data[:flags]), token)
+        attach_origin(MLC::Source::AST::RegexLit.new(pattern: regex_data[:pattern], flags: regex_data[:flags]), token)
       when :IDENTIFIER
         # Check for lambda: x => expr
         if peek && peek.type == :FAT_ARROW
@@ -794,17 +794,17 @@ module MLC
             lparen_token = consume(:LPAREN)
             args = parse_args
             consume(:RPAREN)
-            callee = attach_origin(AST::VarRef.new(name: name), name_token)
-            attach_origin(AST::Call.new(callee: callee, args: args), lparen_token)
+            callee = attach_origin(MLC::Source::AST::VarRef.new(name: name), name_token)
+            attach_origin(MLC::Source::AST::Call.new(callee: callee, args: args), lparen_token)
           elsif current.type == :LBRACE && !looks_like_match_arms?
             # Record literal (but not match arms)
             lbrace_token = consume(:LBRACE)
             fields = parse_record_fields
             consume(:RBRACE)
-            attach_origin(AST::RecordLit.new(type_name: name, fields: fields), lbrace_token)
+            attach_origin(MLC::Source::AST::RecordLit.new(type_name: name, fields: fields), lbrace_token)
           else
             # Variable reference
-            attach_origin(AST::VarRef.new(name: name), name_token)
+            attach_origin(MLC::Source::AST::VarRef.new(name: name), name_token)
           end
         end
       when :LPAREN
@@ -823,7 +823,7 @@ module MLC
         lbrace_token = consume(:LBRACE)
         fields = parse_record_fields
         consume(:RBRACE)
-        attach_origin(AST::RecordLit.new(type_name: "record", fields: fields), lbrace_token)
+        attach_origin(MLC::Source::AST::RecordLit.new(type_name: "record", fields: fields), lbrace_token)
       when :LBRACKET
         parse_array_literal_or_comprehension
       else
@@ -837,7 +837,7 @@ module MLC
         token = consume(:OPERATOR)
         op = token.value
         operand = parse_unary  # Right-associative
-        attach_origin(AST::UnaryOp.new(op: op, operand: operand), token)
+        attach_origin(MLC::Source::AST::UnaryOp.new(op: op, operand: operand), token)
       else
         parse_postfix
       end
@@ -876,41 +876,41 @@ module MLC
       # Same logic as parse_do_expression
       if all_items.empty?
         # Empty block returns void
-        result_expr = AST::UnitLit.new
+        result_expr = MLC::Source::AST::UnitLit.new
       else
         # Last item is the result expression
         *stmt_items, last_item = all_items
 
         # Convert all non-last items to statements
         stmt_items.each do |item|
-          if item.is_a?(AST::Stmt)
+          if item.is_a?(MLC::Source::AST::Stmt)
             # Already a statement (VariableDecl, Assignment)
             statements << item
           else
             # Wrap expression as statement
-            statements << AST::ExprStmt.new(expr: item)
+            statements << MLC::Source::AST::ExprStmt.new(expr: item)
           end
         end
 
         # Last item is the result
-        if last_item.is_a?(AST::Stmt) && !last_item.is_a?(AST::VariableDecl)
+        if last_item.is_a?(MLC::Source::AST::Stmt) && !last_item.is_a?(MLC::Source::AST::VariableDecl)
           # If last is a non-VariableDecl statement, add it and use void result
           statements << last_item
-          result_expr = AST::UnitLit.new
-        elsif last_item.is_a?(AST::VariableDecl)
+          result_expr = MLC::Source::AST::UnitLit.new
+        elsif last_item.is_a?(MLC::Source::AST::VariableDecl)
           # VariableDecl is statement, not expression - add it and use void result
           statements << last_item
-          result_expr = AST::UnitLit.new
+          result_expr = MLC::Source::AST::UnitLit.new
         else
           # Last is expression - use as result
           result_expr = last_item
         end
       end
 
-      body = with_origin(while_token) { AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
+      body = with_origin(while_token) { MLC::Source::AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
 
       with_origin(while_token) do
-        AST::WhileLoop.new(
+        MLC::Source::AST::WhileLoop.new(
           condition: condition,
           body: body
         )

@@ -31,7 +31,7 @@ module MLC
         if current.type == :UNDERSCORE || (current.type == :OPERATOR && current.value == "_")
           token = current
           consume(current.type)
-          return with_origin(token) { AST::Pattern.new(kind: :wildcard, data: {}) }
+          return with_origin(token) { MLC::Source::AST::Pattern.new(kind: :wildcard, data: {}) }
         end
         raise "Unexpected operator in pattern: #{current.value}"
       end
@@ -43,7 +43,7 @@ module MLC
         bindings = parse_regex_bindings if current.type == :AS
 
         with_origin(regex_token) do
-          AST::Pattern.new(
+          MLC::Source::AST::Pattern.new(
             kind: :regex,
             data: {
               pattern: regex_data[:pattern],
@@ -88,14 +88,14 @@ module MLC
       def parse_int_literal_pattern
         token = consume(:INT_LITERAL)
         value = token.value.to_i
-        with_origin(token) { AST::Pattern.new(kind: :literal, data: {value: value}) }
+        with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
       end
 
       # Parse float literal pattern: 3.14
       def parse_float_literal_pattern
         token = consume(:FLOAT_LITERAL)
         value = token.value.to_f
-        with_origin(token) { AST::Pattern.new(kind: :literal, data: {value: value}) }
+        with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
       end
 
       # Parse identifier pattern: can be variable, constructor, or constructor with fields
@@ -121,7 +121,7 @@ module MLC
         consume(:RPAREN)
 
         with_origin(constructor_token) do
-          AST::Pattern.new(
+          MLC::Source::AST::Pattern.new(
             kind: :constructor,
             data: {name: constructor, fields: fields}
           )
@@ -135,7 +135,7 @@ module MLC
         consume(:RBRACE)
 
         with_origin(constructor_token) do
-          AST::Pattern.new(
+          MLC::Source::AST::Pattern.new(
             kind: :constructor,
             data: {name: constructor, fields: bindings}
           )
@@ -180,16 +180,16 @@ module MLC
       def parse_simple_identifier_pattern(constructor_token, constructor)
         with_origin(constructor_token) do
           if constructor == "_"
-            AST::Pattern.new(kind: :wildcard, data: {})
+            MLC::Source::AST::Pattern.new(kind: :wildcard, data: {})
           elsif constructor[0] == constructor[0].upcase
             # Uppercase = constructor with no fields
-            AST::Pattern.new(
+            MLC::Source::AST::Pattern.new(
               kind: :constructor,
               data: {name: constructor, fields: []}
             )
           else
             # Lowercase = variable binding
-            AST::Pattern.new(kind: :var, data: {name: constructor})
+            MLC::Source::AST::Pattern.new(kind: :var, data: {name: constructor})
           end
         end
       end

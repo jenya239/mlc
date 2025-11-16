@@ -22,11 +22,11 @@ module MLC
 
             def transform(node)
               case node
-              when MLC::AST::PrimType
+              when MLC::Source::AST::PrimType
                 transform_prim(node)
-              when MLC::AST::OpaqueType
+              when MLC::Source::AST::OpaqueType
                 @ir_builder.opaque_type(name: node.name)
-              when MLC::AST::GenericType
+              when MLC::Source::AST::GenericType
                 base = transform(node.base_type)
                 args = node.type_params.map { |type| transform(type) }
 
@@ -36,16 +36,16 @@ module MLC
                 end
 
                 @ir_builder.generic_type(base_type: base, type_args: args)
-              when MLC::AST::FunctionType
+              when MLC::Source::AST::FunctionType
                 params = node.param_types.each_with_index.map do |type, index|
                   { name: "arg#{index}", type: transform(type) }
                 end
                 ret = transform(node.ret_type)
                 @ir_builder.function_type(params: params, return_type: ret)
-              when MLC::AST::RecordType
+              when MLC::Source::AST::RecordType
                 fields = node.fields.map { |field| { name: field[:name], type: transform(field[:type]) } }
                 @ir_builder.record_type(name: node.name, fields: fields)
-              when MLC::AST::SumType
+              when MLC::Source::AST::SumType
                 variants = node.variants.map do |variant|
                   fields = Array(variant[:fields]).map do |field|
                     { name: field[:name], type: transform(field[:type]) }
@@ -53,7 +53,7 @@ module MLC
                   { name: variant[:name], fields: fields }
                 end
                 @ir_builder.sum_type(name: node.name, variants: variants)
-              when MLC::AST::ArrayType
+              when MLC::Source::AST::ArrayType
                 element = transform(node.element_type)
                 @ir_builder.array_type(element_type: element)
               else

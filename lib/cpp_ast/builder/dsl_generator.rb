@@ -112,7 +112,7 @@ module CppAst
           generate_co_yield_expression(node)
         when Nodes::CoReturnStatement
           generate_co_return_statement(node)
-        when MLC::AST::Program
+        when MLC::Source::AST::Program
           generate_aurora_program(node)
         else
           raise "Unsupported node type: #{node.class}"
@@ -1046,9 +1046,9 @@ module CppAst
       
       def generate_aurora_declaration(decl)
         case decl
-        when MLC::AST::FuncDecl
+        when MLC::Source::AST::FuncDecl
           generate_aurora_function(decl)
-        when MLC::AST::TypeDecl
+        when MLC::Source::AST::TypeDecl
           generate_aurora_type(decl)
         else
           "// Unsupported declaration type: #{decl.class}"
@@ -1071,13 +1071,13 @@ module CppAst
       
       def generate_aurora_expression(expr)
         case expr
-        when MLC::AST::IntLit
+        when MLC::Source::AST::IntLit
           expr.value.to_s
-        when MLC::AST::FloatLit
+        when MLC::Source::AST::FloatLit
           expr.value.to_s
-        when MLC::AST::VarRef
+        when MLC::Source::AST::VarRef
           expr.name
-        when MLC::AST::BinaryOp
+        when MLC::Source::AST::BinaryOp
           left = generate_aurora_expression(expr.left)
           right = generate_aurora_expression(expr.right)
           if expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
@@ -1099,13 +1099,13 @@ module CppAst
       
       def is_string_expression(expr)
         case expr
-        when MLC::AST::StringLit
+        when MLC::Source::AST::StringLit
           true
-        when MLC::AST::VarRef
+        when MLC::Source::AST::VarRef
           # Without type context, we can't determine if a variable is a string
           # Conservative approach: assume it's not a string
           false
-        when MLC::AST::BinaryOp
+        when MLC::Source::AST::BinaryOp
           # Check if this is a string concatenation
           expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
         else
@@ -1143,9 +1143,9 @@ module CppAst
 
       def generate_aurora_declaration(decl)
         case decl
-        when MLC::AST::FuncDecl
+        when MLC::Source::AST::FuncDecl
           generate_aurora_function(decl)
-        when MLC::AST::TypeDecl
+        when MLC::Source::AST::TypeDecl
           generate_aurora_type(decl)
         else
           "#{decl.class} // TODO: implement"
@@ -1170,7 +1170,7 @@ module CppAst
 
       def generate_aurora_type(type)
         case type
-        when MLC::AST::PrimType
+        when MLC::Source::AST::PrimType
           case type.name
           when "i32" then "int"
           when "f32" then "float"
@@ -1179,9 +1179,9 @@ module CppAst
           when "void" then "void"
           else type.name
           end
-        when MLC::AST::ArrayType
+        when MLC::Source::AST::ArrayType
           "std::vector<#{generate_aurora_type(type.element_type)}>"
-        when MLC::AST::OptionType
+        when MLC::Source::AST::OptionType
           "std::optional<#{generate_aurora_type(type.inner_type)}>"
         else
           type.class.name # fallback
@@ -1190,15 +1190,15 @@ module CppAst
 
       def generate_aurora_expression(expr)
         case expr
-        when MLC::AST::IntLit
+        when MLC::Source::AST::IntLit
           expr.value.to_s
-        when MLC::AST::FloatLit
+        when MLC::Source::AST::FloatLit
           expr.value.to_s
-        when MLC::AST::StringLit
+        when MLC::Source::AST::StringLit
           "\"#{expr.value}\""
-        when MLC::AST::VarRef
+        when MLC::Source::AST::VarRef
           expr.name
-        when MLC::AST::BinaryOp
+        when MLC::Source::AST::BinaryOp
           left = generate_aurora_expression(expr.left)
           right = generate_aurora_expression(expr.right)
           if expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
@@ -1207,27 +1207,27 @@ module CppAst
           else
             "#{left} #{expr.op} #{right}"
           end
-        when MLC::AST::UnaryOp
+        when MLC::Source::AST::UnaryOp
           "#{expr.op}#{generate_aurora_expression(expr.operand)}"
-        when MLC::AST::IfExpr
+        when MLC::Source::AST::IfExpr
           condition = generate_aurora_expression(expr.condition)
           then_expr = generate_aurora_expression(expr.then_expr)
           else_expr = generate_aurora_expression(expr.else_expr)
           "#{condition} ? #{then_expr} : #{else_expr}"
-        when MLC::AST::FuncCall
+        when MLC::Source::AST::FuncCall
           args = expr.args.map { |arg| generate_aurora_expression(arg) }.join(", ")
           "#{expr.name}(#{args})"
-        when MLC::AST::ArrayLit
+        when MLC::Source::AST::ArrayLit
           elements = expr.elements.map { |elem| generate_aurora_expression(elem) }.join(", ")
           "{#{elements}}"
-        when MLC::AST::ArrayAccess
+        when MLC::Source::AST::ArrayAccess
           array = generate_aurora_expression(expr.array)
           index = generate_aurora_expression(expr.index)
           "#{array}[#{index}]"
-        when MLC::AST::MemberAccess
+        when MLC::Source::AST::MemberAccess
           object = generate_aurora_expression(expr.object)
           "#{object}.#{expr.member}"
-        when MLC::AST::Lambda
+        when MLC::Source::AST::Lambda
           params = expr.params.map { |param| "#{param.name}: #{generate_aurora_type(param.type)}" }.join(", ")
           body = generate_aurora_expression(expr.body)
           "(#{params}) => #{body}"

@@ -13,7 +13,7 @@ class MLCESMModulesTest < Minitest::Test
 
     assert_equal 1, ast.declarations.length
     func = ast.declarations[0]
-    assert_instance_of MLC::AST::FuncDecl, func
+    assert_instance_of MLC::Source::AST::FuncDecl, func
     assert_equal "add", func.name
     assert func.exported, "Function should be marked as exported"
   end
@@ -27,7 +27,7 @@ class MLCESMModulesTest < Minitest::Test
 
     assert_equal 1, ast.declarations.length
     type_decl = ast.declarations[0]
-    assert_instance_of MLC::AST::TypeDecl, type_decl
+    assert_instance_of MLC::Source::AST::TypeDecl, type_decl
     assert_equal "Point", type_decl.name
     assert type_decl.exported, "Type should be marked as exported"
   end
@@ -174,15 +174,15 @@ class MLCESMModulesTest < Minitest::Test
     assert_equal 3, ast.declarations.length
 
     # Type is exported
-    assert_instance_of MLC::AST::TypeDecl, ast.declarations[0]
+    assert_instance_of MLC::Source::AST::TypeDecl, ast.declarations[0]
     assert ast.declarations[0].exported
 
     # Function is exported
-    assert_instance_of MLC::AST::FuncDecl, ast.declarations[1]
+    assert_instance_of MLC::Source::AST::FuncDecl, ast.declarations[1]
     assert ast.declarations[1].exported
 
     # Helper is private
-    assert_instance_of MLC::AST::FuncDecl, ast.declarations[2]
+    assert_instance_of MLC::Source::AST::FuncDecl, ast.declarations[2]
     refute ast.declarations[2].exported
   end
 

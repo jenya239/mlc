@@ -70,7 +70,7 @@ module MLC
               program = context[:program]
 
               program.declarations.each do |decl|
-                next unless decl.is_a?(MLC::AST::TypeDecl)
+                next unless decl.is_a?(MLC::Source::AST::TypeDecl)
                 type_ir = @type_reducer.reduce(decl)
                 context[:type_items] << type_ir
           end
@@ -80,7 +80,7 @@ module MLC
               program = context[:program]
 
               program.declarations.each do |decl|
-                next unless decl.is_a?(MLC::AST::FuncDecl)
+                next unless decl.is_a?(MLC::Source::AST::FuncDecl)
                 @function_reducer.register_signature(decl)
           end
         end
@@ -94,9 +94,9 @@ module MLC
 
               program.declarations.each do |decl|
                 case decl
-                when MLC::AST::TypeDecl
+                when MLC::Source::AST::TypeDecl
                   @type_resolution_service&.refresh_function_signatures!(decl.name)
-                when MLC::AST::FuncDecl
+                when MLC::Source::AST::FuncDecl
                   context[:func_items] << @function_reducer.reduce(decl)
             end
           end

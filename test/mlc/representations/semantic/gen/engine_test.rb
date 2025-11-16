@@ -564,7 +564,7 @@ module MLC
         )
 
         factory = engine.services.ast_factory
-        if_ast = MLC::AST::IfExpr.new(
+        if_ast = MLC::Source::AST::IfExpr.new(
           condition: factory.var_ref(name: 'true'),
           then_branch: factory.int_literal(value: 1),
           else_branch: factory.int_literal(value: 2)
@@ -833,7 +833,7 @@ module MLC
         )
 
         factory = engine.services.ast_factory
-        body_block = MLC::AST::Block.new(
+        body_block = MLC::Source::AST::Block.new(
           stmts: [
             factory.assignment(
               target: factory.var_ref(name: 'x'),
@@ -842,7 +842,7 @@ module MLC
           ]
         )
 
-        while_stmt = MLC::AST::WhileStmt.new(
+        while_stmt = MLC::Source::AST::WhileStmt.new(
           condition: factory.var_ref(name: 'false'),
           body: body_block
         )

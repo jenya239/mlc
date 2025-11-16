@@ -15,15 +15,15 @@ class MLCLambdaTest < Minitest::Test
     func = ast.declarations.first
 
     # Body should be a block with variable declaration and usage
-    assert_instance_of MLC::AST::Block, func.body
+    assert_instance_of MLC::Source::AST::Block, func.body
     assert_equal 2, func.body.stmts.size
-    assert_instance_of MLC::AST::VariableDecl, func.body.stmts.first
+    assert_instance_of MLC::Source::AST::VariableDecl, func.body.stmts.first
 
     # Value should be a lambda
     lambda_expr = func.body.stmts.first.value
-    assert_instance_of MLC::AST::Lambda, lambda_expr
+    assert_instance_of MLC::Source::AST::Lambda, lambda_expr
     assert_equal 1, lambda_expr.params.length
-    assert_instance_of MLC::AST::LambdaParam, lambda_expr.params[0]
+    assert_instance_of MLC::Source::AST::LambdaParam, lambda_expr.params[0]
     assert_equal "x", lambda_expr.params[0].name
   end
 
@@ -37,10 +37,10 @@ class MLCLambdaTest < Minitest::Test
     ast = MLC.parse(mlc_source)
     func = ast.declarations.first
     block = func.body
-    assert_instance_of MLC::AST::Block, block
+    assert_instance_of MLC::Source::AST::Block, block
     lambda_expr = block.stmts.first.value
 
-    assert_instance_of MLC::AST::Lambda, lambda_expr
+    assert_instance_of MLC::Source::AST::Lambda, lambda_expr
     assert_equal 2, lambda_expr.params.length
     assert_equal ["x", "y"], lambda_expr.params.map(&:name)
   end

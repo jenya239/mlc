@@ -34,7 +34,7 @@ module MLC
       end
 
       with_origin(name_token) do
-        AST::FuncDecl.new(
+        MLC::Source::AST::FuncDecl.new(
           name: name,
           params: params,
           ret_type: ret_type,
@@ -100,7 +100,7 @@ module MLC
       end
 
       with_origin(import_token) do
-        AST::ImportDecl.new(
+        MLC::Source::AST::ImportDecl.new(
           path: path,
           items: items,
           import_all: import_all,
@@ -121,7 +121,7 @@ module MLC
     def parse_module_decl
       module_token = consume(:MODULE)
       path = parse_module_path
-      with_origin(module_token) { AST::ModuleDecl.new(name: path) }
+      with_origin(module_token) { MLC::Source::AST::ModuleDecl.new(name: path) }
     end
 
     def parse_module_path
@@ -155,7 +155,7 @@ module MLC
         consume(:COLON)
         type = parse_type
 
-        params << with_origin(name_token) { AST::Param.new(name: name, type: type) }
+        params << with_origin(name_token) { MLC::Source::AST::Param.new(name: name, type: type) }
 
         if current.type == :COMMA
           consume(:COMMA)
@@ -228,7 +228,7 @@ module MLC
         end
       end
 
-      AST::Program.new(
+      MLC::Source::AST::Program.new(
         module_decl: module_decl,
         imports: imports,
         declarations: declarations
@@ -294,10 +294,10 @@ module MLC
              else
                # Opaque type - explicit type declaration without definition
                # Represented as pointer in C++, used for extern/stdlib types
-               AST::OpaqueType.new(name: name)
+               MLC::Source::AST::OpaqueType.new(name: name)
              end
 
-      with_origin(name_token) { AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported) }
+      with_origin(name_token) { MLC::Source::AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported) }
     end
 
     end

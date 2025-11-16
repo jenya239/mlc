@@ -24,9 +24,9 @@ class MLCLogicalOpsTest < Minitest::Test
     func = ast.declarations.first
     condition = func.body.condition
 
-    assert_instance_of MLC::AST::BinaryOp, condition
+    assert_instance_of MLC::Source::AST::BinaryOp, condition
     assert_equal "||", condition.op
-    assert_instance_of MLC::AST::BinaryOp, condition.left
+    assert_instance_of MLC::Source::AST::BinaryOp, condition.left
     assert_equal "&&", condition.left.op
   end
 end

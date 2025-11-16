@@ -24,7 +24,7 @@ module MLC
               none_variant = { name: 'None', fields: [] }
               sum_type = builder.sum_type(name: 'Option', variants: [some_variant, none_variant])
 
-              type_decl = MLC::AST::TypeDecl.new(name: 'Option', type: nil)
+              type_decl = MLC::Source::AST::TypeDecl.new(name: 'Option', type: nil)
 
               @container.type_registration_service.register(
                 decl: type_decl,
@@ -40,15 +40,15 @@ module MLC
             end
 
             def test_type_declaration_service_registers_sum_type
-              sum_ast = MLC::AST::SumType.new(
+              sum_ast = MLC::Source::AST::SumType.new(
                 name: 'Maybe',
                 variants: [
-                  { name: 'Just', fields: [{ name: 'value', type: MLC::AST::PrimType.new(name: 'i32') }] },
+                  { name: 'Just', fields: [{ name: 'value', type: MLC::Source::AST::PrimType.new(name: 'i32') }] },
                   { name: 'Nothing', fields: [] }
                 ]
               )
 
-              decl = MLC::AST::TypeDecl.new(name: 'Maybe', type: sum_ast)
+              decl = MLC::Source::AST::TypeDecl.new(name: 'Maybe', type: sum_ast)
 
               type_decl_ir = @container.type_declaration_service.build(decl)
 
@@ -59,7 +59,7 @@ module MLC
             end
 
             def test_stdlib_import_registers_function_and_type
-              import_decl = MLC::AST::ImportDecl.new(path: 'Conv', items: ['to_string_i32'], import_all: false, alias_name: 'C')
+              import_decl = MLC::Source::AST::ImportDecl.new(path: 'Conv', items: ['to_string_i32'], import_all: false, alias_name: 'C')
 
               @container.import_service.process(
                 import_decl,
@@ -72,7 +72,7 @@ module MLC
             end
 
             def test_stdlib_import_registers_sum_type_constructors
-              import_decl = MLC::AST::ImportDecl.new(path: 'Option', items: ['Option'], import_all: false, alias_name: nil)
+              import_decl = MLC::Source::AST::ImportDecl.new(path: 'Option', items: ['Option'], import_all: false, alias_name: nil)
 
               @container.import_service.process(
                 import_decl,
@@ -91,7 +91,7 @@ module MLC
               info = MLC::Registries::FunctionSignature.new('bar', [], @container.ir_builder.prim_type(name: 'i32'))
               @function_registry.register('Foo.bar', info, module_name: 'Foo')
 
-              import_decl = MLC::AST::ImportDecl.new(path: 'Foo', items: ['bar'], import_all: false, alias_name: 'Alias')
+              import_decl = MLC::Source::AST::ImportDecl.new(path: 'Foo', items: ['bar'], import_all: false, alias_name: 'Alias')
 
               @container.import_service.process(
                 import_decl,

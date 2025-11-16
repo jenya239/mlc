@@ -16,7 +16,7 @@ class MLCPipeOperatorTest < Minitest::Test
     test_func = ast.declarations[1]
 
     # Body should be a pipe expression
-    assert_instance_of MLC::AST::BinaryOp, test_func.body
+    assert_instance_of MLC::Source::AST::BinaryOp, test_func.body
     assert_equal "|>", test_func.body.op
   end
 
@@ -30,7 +30,7 @@ class MLCPipeOperatorTest < Minitest::Test
     func = ast.declarations.first
 
     # Should be left-associative: ((x |> double) |> triple) |> square
-    assert_instance_of MLC::AST::BinaryOp, func.body
+    assert_instance_of MLC::Source::AST::BinaryOp, func.body
     assert_equal "|>", func.body.op
   end
 

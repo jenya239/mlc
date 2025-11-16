@@ -14,7 +14,7 @@ class StdlibSignatureRegistryTest < Minitest::Test
     metadata = info.functions["println"]
     refute_nil metadata
     assert_equal "mlc::io::println", metadata.qualified_name
-    assert_instance_of MLC::AST::FuncDecl, metadata.ast_node
+    assert_instance_of MLC::Source::AST::FuncDecl, metadata.ast_node
   end
 
   def test_fetches_type_metadata_with_ast_node
@@ -24,6 +24,6 @@ class StdlibSignatureRegistryTest < Minitest::Test
     metadata = info.types["Option"]
     refute_nil metadata
     assert_equal "mlc::option::Option", metadata.qualified_name
-    assert_instance_of MLC::AST::TypeDecl, metadata.ast_node
+    assert_instance_of MLC::Source::AST::TypeDecl, metadata.ast_node
   end
 end

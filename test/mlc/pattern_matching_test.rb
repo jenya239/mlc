@@ -19,10 +19,10 @@ class MLCPatternMatchingTest < Minitest::Test
     refute_nil ast
 
     func = ast.declarations.first
-    assert_instance_of MLC::AST::FuncDecl, func
+    assert_instance_of MLC::Source::AST::FuncDecl, func
 
     # Body should be MatchExpr
-    assert_instance_of MLC::AST::MatchExpr, func.body
+    assert_instance_of MLC::Source::AST::MatchExpr, func.body
     match_expr = func.body
 
     # Should have 3 arms
@@ -31,14 +31,14 @@ class MLCPatternMatchingTest < Minitest::Test
     # Check first arm (literal pattern)
     arm1 = match_expr.arms[0]
     assert_equal :literal, arm1[:pattern].kind
-    assert_instance_of MLC::AST::BlockExpr, arm1[:body]
+    assert_instance_of MLC::Source::AST::BlockExpr, arm1[:body]
     assert_empty arm1[:body].statements
     refute_nil arm1[:body].result_expr
 
     # Check third arm (wildcard pattern)
     arm3 = match_expr.arms[2]
     assert_equal :wildcard, arm3[:pattern].kind
-    assert_instance_of MLC::AST::BlockExpr, arm3[:body]
+    assert_instance_of MLC::Source::AST::BlockExpr, arm3[:body]
     assert_empty arm3[:body].statements
     refute_nil arm3[:body].result_expr
   end
@@ -59,7 +59,7 @@ class MLCPatternMatchingTest < Minitest::Test
     func = ast.declarations[1]
     match_expr = func.body
 
-    assert_instance_of MLC::AST::MatchExpr, match_expr
+    assert_instance_of MLC::Source::AST::MatchExpr, match_expr
     assert_equal 2, match_expr.arms.length
 
     # First arm should be constructor pattern
@@ -67,7 +67,7 @@ class MLCPatternMatchingTest < Minitest::Test
     assert_equal :constructor, arm1[:pattern].kind
     assert_equal "Circle", arm1[:pattern].data[:name]
     assert_equal 1, arm1[:pattern].data[:fields].length
-    assert_instance_of MLC::AST::BlockExpr, arm1[:body]
+    assert_instance_of MLC::Source::AST::BlockExpr, arm1[:body]
   end
 
   def test_match_lowering_to_cpp
@@ -124,7 +124,7 @@ class MLCPatternMatchingTest < Minitest::Test
     assert_equal 2, arm1[:pattern].data[:fields].length
     assert_equal "w", arm1[:pattern].data[:fields][0]
     assert_equal "h", arm1[:pattern].data[:fields][1]
-    assert_instance_of MLC::AST::BlockExpr, arm1[:body]
+    assert_instance_of MLC::Source::AST::BlockExpr, arm1[:body]
   end
 
   def test_match_statement_lowering_is_void_visit

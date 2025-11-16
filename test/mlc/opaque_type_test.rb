@@ -14,15 +14,15 @@ class OpaqueTypeTest < Minitest::Test
     assert_equal 2, ast.declarations.length
 
     window_decl = ast.declarations[0]
-    assert_instance_of MLC::AST::TypeDecl, window_decl
+    assert_instance_of MLC::Source::AST::TypeDecl, window_decl
     assert_equal "Window", window_decl.name
-    assert_instance_of MLC::AST::OpaqueType, window_decl.type
+    assert_instance_of MLC::Source::AST::OpaqueType, window_decl.type
     assert window_decl.exported
 
     ctx_decl = ast.declarations[1]
-    assert_instance_of MLC::AST::TypeDecl, ctx_decl
+    assert_instance_of MLC::Source::AST::TypeDecl, ctx_decl
     assert_equal "DrawContext", ctx_decl.name
-    assert_instance_of MLC::AST::OpaqueType, ctx_decl.type
+    assert_instance_of MLC::Source::AST::OpaqueType, ctx_decl.type
   end
 
   def test_opaque_type_core_ir_transformation

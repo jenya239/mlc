@@ -16,7 +16,7 @@ class OptimizationIntegrationTest < Minitest::Test
     parser = MLC::Parser::OptimizedParser.new(source)
     ast = parser.parse
     
-    assert_equal ast.class, MLC::AST::Program
+    assert_equal ast.class, MLC::Source::AST::Program
     assert_equal ast.declarations.length, 1
   end
   

@@ -16,7 +16,7 @@ class StdlibMathTest < Minitest::Test
     ast = MLC.parse(source)
 
     # Find sqrt_f function
-    sqrt_f = ast.declarations.find { |d| d.is_a?(MLC::AST::FuncDecl) && d.name == 'sqrt_f' }
+    sqrt_f = ast.declarations.find { |d| d.is_a?(MLC::Source::AST::FuncDecl) && d.name == 'sqrt_f' }
     refute_nil sqrt_f, "sqrt_f function should exist"
     assert sqrt_f.external, "sqrt_f should be marked as external"
     assert sqrt_f.exported, "sqrt_f should be marked as exported"
@@ -27,7 +27,7 @@ class StdlibMathTest < Minitest::Test
     ast = MLC.parse(source)
 
     # Find hypotenuse function
-    hypotenuse = ast.declarations.find { |d| d.is_a?(MLC::AST::FuncDecl) && d.name == 'hypotenuse' }
+    hypotenuse = ast.declarations.find { |d| d.is_a?(MLC::Source::AST::FuncDecl) && d.name == 'hypotenuse' }
     refute_nil hypotenuse, "hypotenuse function should exist"
     refute hypotenuse.external, "hypotenuse should not be external"
     assert hypotenuse.exported, "hypotenuse should be exported"
@@ -76,7 +76,7 @@ class StdlibMathTest < Minitest::Test
     ast = MLC.parse(source)
     func = ast.declarations.first
 
-    assert func.is_a?(MLC::AST::FuncDecl)
+    assert func.is_a?(MLC::Source::AST::FuncDecl)
     assert func.external, "Function should be external"
     assert func.exported, "Function should be exported"
   end

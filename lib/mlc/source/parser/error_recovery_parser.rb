@@ -92,7 +92,7 @@ module MLC
           end
         end
         
-        AST::Program.new(
+        MLC::Source::AST::Program.new(
           module_decl: module_decl,
           imports: imports,
           declarations: declarations

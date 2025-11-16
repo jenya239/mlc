@@ -13,7 +13,7 @@ class MLCGenericsTest < Minitest::Test
     refute_nil ast
 
     type_decl = ast.declarations.first
-    assert_instance_of MLC::AST::TypeDecl, type_decl
+    assert_instance_of MLC::Source::AST::TypeDecl, type_decl
     assert_equal "Result", type_decl.name
 
     # Should have type parameters
@@ -29,7 +29,7 @@ class MLCGenericsTest < Minitest::Test
     ast = MLC.parse(mlc_source)
     func = ast.declarations.first
 
-    assert_instance_of MLC::AST::FuncDecl, func
+    assert_instance_of MLC::Source::AST::FuncDecl, func
     assert_equal "identity", func.name
 
     # Should have type parameters
@@ -50,7 +50,7 @@ class MLCGenericsTest < Minitest::Test
     assert_equal ["T"], type_decl.type_params.map(&:name)
 
     # Type should be a sum type
-    assert_instance_of MLC::AST::SumType, type_decl.type
+    assert_instance_of MLC::Source::AST::SumType, type_decl.type
     assert_equal 2, type_decl.type.variants.length
   end
 

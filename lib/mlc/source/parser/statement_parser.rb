@@ -8,7 +8,7 @@ module MLC
     module StatementParser
     def ensure_block_has_result(block, require_value: true)
       return unless require_value
-      return if block.stmts.last.is_a?(AST::ExprStmt)
+      return if block.stmts.last.is_a?(MLC::Source::AST::ExprStmt)
 
       raise "Block must end with an expression"
     end
@@ -20,8 +20,8 @@ module MLC
       value = parse_expression
       consume(:SEMICOLON) if current.type == :SEMICOLON
 
-      target = attach_origin(AST::VarRef.new(name: target_name), target_token)
-      with_origin(target_token) { AST::Assignment.new(target: target, value: value) }
+      target = attach_origin(MLC::Source::AST::VarRef.new(name: target_name), target_token)
+      with_origin(target_token) { MLC::Source::AST::Assignment.new(target: target, value: value) }
     end
 
     def parse_block_expression
@@ -33,7 +33,7 @@ module MLC
       end
 
       consume(:RBRACE)
-      with_origin(lbrace_token) { AST::Block.new(stmts: statements) }
+      with_origin(lbrace_token) { MLC::Source::AST::Block.new(stmts: statements) }
     end
 
     def parse_return_statement
@@ -44,7 +44,7 @@ module MLC
       end
       consume(:SEMICOLON) if current.type == :SEMICOLON
 
-      with_origin(return_token) { AST::Return.new(expr: expr) }
+      with_origin(return_token) { MLC::Source::AST::Return.new(expr: expr) }
     end
 
     def parse_statement
@@ -56,25 +56,25 @@ module MLC
       when :BREAK
         break_token = consume(:BREAK)
         consume(:SEMICOLON) if current.type == :SEMICOLON
-        attach_origin(AST::Break.new, break_token)
+        attach_origin(MLC::Source::AST::Break.new, break_token)
       when :CONTINUE
         continue_token = consume(:CONTINUE)
         consume(:SEMICOLON) if current.type == :SEMICOLON
-        attach_origin(AST::Continue.new, continue_token)
+        attach_origin(MLC::Source::AST::Continue.new, continue_token)
       when :IDENTIFIER
         if peek && peek.type == :EQUAL
           parse_assignment_statement
         else
           expr = parse_expression
           consume(:SEMICOLON) if current.type == :SEMICOLON
-          attach_origin(AST::ExprStmt.new(expr: expr), expr.origin)
+          attach_origin(MLC::Source::AST::ExprStmt.new(expr: expr), expr.origin)
         end
       when :LBRACE
         parse_block_expression
       else
         expr = parse_expression
         consume(:SEMICOLON) if current.type == :SEMICOLON
-        attach_origin(AST::ExprStmt.new(expr: expr), expr.origin)
+        attach_origin(MLC::Source::AST::ExprStmt.new(expr: expr), expr.origin)
       end
     end
 
@@ -91,7 +91,7 @@ module MLC
         end
       end
 
-      block = AST::Block.new(stmts: statements)
+      block = MLC::Source::AST::Block.new(stmts: statements)
       first_origin = statements.first&.origin
       attach_origin(block, first_origin)
     end
@@ -118,7 +118,7 @@ module MLC
       value = parse_expression
       consume(:SEMICOLON) if current.type == :SEMICOLON
 
-      with_origin(name_token) { AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }
+      with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }
     end
 
     end

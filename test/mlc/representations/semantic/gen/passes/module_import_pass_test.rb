@@ -28,9 +28,9 @@ module MLC
             end
 
             def test_stdlib_imports_are_registered
-              ast = MLC::AST::Program.new(
+              ast = MLC::Source::AST::Program.new(
                 module_decl: nil,
-                imports: [MLC::AST::ImportDecl.new(path: 'Conv', items: ['to_string_i32'], import_all: false, alias_name: 'C')],
+                imports: [MLC::Source::AST::ImportDecl.new(path: 'Conv', items: ['to_string_i32'], import_all: false, alias_name: 'C')],
                 declarations: []
               )
 

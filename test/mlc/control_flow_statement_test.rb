@@ -19,15 +19,15 @@ class MLCControlFlowStatementTest < Minitest::Test
     ast = MLC.parse(source)
     block = ast.declarations.first.body
 
-    assert_instance_of MLC::AST::Block, block
+    assert_instance_of MLC::Source::AST::Block, block
     assert_equal 3, block.stmts.size
-    assert_instance_of MLC::AST::VariableDecl, block.stmts.first
+    assert_instance_of MLC::Source::AST::VariableDecl, block.stmts.first
 
     if_stmt = block.stmts[1]
-    assert_instance_of MLC::AST::ExprStmt, if_stmt
-    assert_instance_of MLC::AST::IfExpr, if_stmt.expr
-    assert_instance_of MLC::AST::BlockExpr, if_stmt.expr.then_branch
-    assert_instance_of MLC::AST::BlockExpr, if_stmt.expr.else_branch
+    assert_instance_of MLC::Source::AST::ExprStmt, if_stmt
+    assert_instance_of MLC::Source::AST::IfExpr, if_stmt.expr
+    assert_instance_of MLC::Source::AST::BlockExpr, if_stmt.expr.then_branch
+    assert_instance_of MLC::Source::AST::BlockExpr, if_stmt.expr.else_branch
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "if (total > 10)"

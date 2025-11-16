@@ -16,11 +16,11 @@ class MLCSumTypesTest < Minitest::Test
     # Should have type declaration
     assert_equal 1, ast.declarations.length
     type_decl = ast.declarations.first
-    assert_instance_of MLC::AST::TypeDecl, type_decl
+    assert_instance_of MLC::Source::AST::TypeDecl, type_decl
     assert_equal "Shape", type_decl.name
 
     # Type should be SumType
-    assert_instance_of MLC::AST::SumType, type_decl.type
+    assert_instance_of MLC::Source::AST::SumType, type_decl.type
     sum_type = type_decl.type
 
     # Should have 3 variants

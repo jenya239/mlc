@@ -75,7 +75,7 @@ module MLC
             right = parse_binary_expression(right, precedence(current.value))
           end
           
-          left = AST::BinaryOp.new(left: left, op: op, right: right)
+          left = MLC::Source::AST::BinaryOp.new(left: left, op: op, right: right)
         end
         
         left
@@ -122,19 +122,19 @@ module MLC
       def parse_integer_literal
         value = current.value
         consume(:INT_LITERAL)
-        MLC::AST::IntLit.new(value: value)
+        MLC::Source::MLC::Source::AST::IntLit.new(value: value)
       end
       
       def parse_float_literal
         value = current.value
         consume(:FLOAT_LITERAL)
-        MLC::AST::FloatLit.new(value: value)
+        MLC::Source::MLC::Source::AST::FloatLit.new(value: value)
       end
       
       def parse_identifier_expression
         name = current.value
         consume(:IDENTIFIER)
-        MLC::AST::VarRef.new(name: name)
+        MLC::Source::MLC::Source::AST::VarRef.new(name: name)
       end
     end
   end

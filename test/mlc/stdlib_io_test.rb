@@ -16,7 +16,7 @@ class StdlibIOTest < Minitest::Test
     ast = MLC.parse(source)
 
     # Find println function
-    println = ast.declarations.find { |d| d.is_a?(MLC::AST::FuncDecl) && d.name == 'println' }
+    println = ast.declarations.find { |d| d.is_a?(MLC::Source::AST::FuncDecl) && d.name == 'println' }
     refute_nil println, "println function should exist"
     assert println.external, "println should be marked as external"
   end
@@ -26,7 +26,7 @@ class StdlibIOTest < Minitest::Test
     ast = MLC.parse(source)
 
     # Find debug_print function
-    debug_print = ast.declarations.find { |d| d.is_a?(MLC::AST::FuncDecl) && d.name == 'debug_print' }
+    debug_print = ast.declarations.find { |d| d.is_a?(MLC::Source::AST::FuncDecl) && d.name == 'debug_print' }
     refute_nil debug_print, "debug_print function should exist"
     refute debug_print.external, "debug_print should not be external"
     assert debug_print.exported, "debug_print should be exported"

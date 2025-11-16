@@ -23,7 +23,7 @@ module MLC
       end
 
       consume(:RBRACE)
-      with_origin(enum_token) { AST::EnumType.new(name: "enum", variants: variants) }
+      with_origin(enum_token) { MLC::Source::AST::EnumType.new(name: "enum", variants: variants) }
     end
 
     def parse_record_type
@@ -45,7 +45,7 @@ module MLC
       end
 
       consume(:RBRACE)
-      with_origin(lbrace_token) { AST::RecordType.new(name: "record", fields: fields) }
+      with_origin(lbrace_token) { MLC::Source::AST::RecordType.new(name: "record", fields: fields) }
     end
 
     def parse_sum_type
@@ -106,7 +106,7 @@ module MLC
         consume(:OPERATOR)  # consume |
       end
 
-      with_origin(sum_origin_token) { AST::SumType.new(name: "sum", variants: variants) }
+      with_origin(sum_origin_token) { MLC::Source::AST::SumType.new(name: "sum", variants: variants) }
     end
 
     def parse_type
@@ -114,23 +114,23 @@ module MLC
       base_type = case current.type
                   when :I32
                     base_token = consume(:I32)
-                    with_origin(base_token) { AST::PrimType.new(name: "i32") }
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "i32") }
                   when :F32
                     base_token = consume(:F32)
-                    with_origin(base_token) { AST::PrimType.new(name: "f32") }
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "f32") }
                   when :BOOL
                     base_token = consume(:BOOL)
-                    with_origin(base_token) { AST::PrimType.new(name: "bool") }
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "bool") }
                   when :VOID
                     base_token = consume(:VOID)
-                    with_origin(base_token) { AST::PrimType.new(name: "void") }
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "void") }
                   when :STR
                     base_token = consume(:STR)
-                    with_origin(base_token) { AST::PrimType.new(name: "str") }
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "str") }
                   when :IDENTIFIER
                     base_token = consume(:IDENTIFIER)
                     name = base_token.value
-                    with_origin(base_token) { AST::PrimType.new(name: name) }
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: name) }
                   when :LBRACE
                     base_type = parse_record_type
                     base_token = @last_token
@@ -155,7 +155,7 @@ module MLC
                     ret_type = parse_type
 
                     with_origin(base_token) do
-                      AST::FunctionType.new(
+                      MLC::Source::AST::FunctionType.new(
                         param_types: param_types,
                         ret_type: ret_type
                       )
@@ -178,7 +178,7 @@ module MLC
         consume_operator(">")
 
         base_type = with_origin(base_token) do
-          AST::GenericType.new(
+          MLC::Source::AST::GenericType.new(
             base_type: base_type,
             type_params: type_params
           )
@@ -189,7 +189,7 @@ module MLC
       if current.type == :LBRACKET
         lbracket_token = consume(:LBRACKET)
         consume(:RBRACKET)
-        with_origin(lbracket_token) { AST::ArrayType.new(element_type: base_type) }
+        with_origin(lbracket_token) { MLC::Source::AST::ArrayType.new(element_type: base_type) }
       else
         base_type
       end
@@ -235,7 +235,7 @@ module MLC
           end
         end
 
-        params << with_origin(name_token) { AST::TypeParam.new(name: name, constraint: constraint) }
+        params << with_origin(name_token) { MLC::Source::AST::TypeParam.new(name: name, constraint: constraint) }
 
         break unless current.type == :COMMA
         consume(:COMMA)

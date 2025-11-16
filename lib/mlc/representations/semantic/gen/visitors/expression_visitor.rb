@@ -19,7 +19,7 @@ module MLC
             def visit(node, extra_context = {})
               svc = @services.ast_type_checker
 
-              if node.is_a?(MLC::AST::Block)
+              if node.is_a?(MLC::Source::AST::Block)
                 return build_block_from_statements(node, extra_context)
           end
 
@@ -134,7 +134,7 @@ module MLC
 
               statements = Array(node.stmts).dup
               result_expr = nil
-              if statements.last.is_a?(MLC::AST::ExprStmt)
+              if statements.last.is_a?(MLC::Source::AST::ExprStmt)
                 result_expr = statements.pop.expr
           end
 

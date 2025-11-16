@@ -87,7 +87,7 @@ module MLC
       end
 
       def attach_origin(node, token)
-        return node unless node.is_a?(MLC::AST::Node)
+        return node unless node.is_a?(MLC::Source::MLC::Source::AST::Node)
         origin = case token
                  when SourceOrigin
                    token

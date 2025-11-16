@@ -8,11 +8,11 @@ class MLCRoundtripTest < Minitest::Test
     
     # 1. Parse MLC
     ast = MLC.parse(mlc_code)
-    assert_instance_of MLC::AST::Program, ast
+    assert_instance_of MLC::Source::AST::Program, ast
     assert_equal 1, ast.declarations.size
     
     func = ast.declarations.first
-    assert_instance_of MLC::AST::FuncDecl, func
+    assert_instance_of MLC::Source::AST::FuncDecl, func
     assert_equal "add", func.name
     assert_equal 2, func.params.size
     assert_equal "i32", func.ret_type.name

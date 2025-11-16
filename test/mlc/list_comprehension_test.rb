@@ -13,7 +13,7 @@ class MLCListComprehensionTest < Minitest::Test
     ast = MLC.parse(mlc_source)
     func = ast.declarations.first
 
-    assert_instance_of MLC::AST::ListComprehension, func.body
+    assert_instance_of MLC::Source::AST::ListComprehension, func.body
 
     core = MLC.transform_to_core(ast)
     core_func = core.items.first
