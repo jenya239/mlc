@@ -3,7 +3,7 @@
 require_relative "../test_helper"
 
 class RulesRuleEngineTest < Minitest::Test
-  class CaptureRule < MLC::SemanticGen::Rules::BaseRule
+  class CaptureRule < MLC::Representations::Semantic::Gen::Rules::BaseRule
     def initialize(bucket)
       @bucket = bucket
     end
@@ -79,7 +79,7 @@ class RulesRuleEngineTest < Minitest::Test
 
   def test_function_effect_rule_sets_effects
     engine = MLC::Rules::RuleEngine.new
-    engine.register(:core_ir_function, MLC::SemanticGen::Rules::FunctionEffectRule.new)
+    engine.register(:core_ir_function, MLC::Representations::Semantic::Gen::Rules::FunctionEffectRule.new)
 
     source = <<~MLCORA
       fn identity(x: i32) -> i32 = x

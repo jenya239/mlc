@@ -4,15 +4,17 @@ require 'test_helper'
 require 'mlc/representations/semantic/gen/engine'
 
 module MLC
-  module SemanticGen
-    class EngineTest < Minitest::Test
+  module Representations
+    module Semantic
+      module Gen
+        class EngineTest < Minitest::Test
       TestFunctionInfo = Struct.new(:name, :param_types, :ret_type, :type_params)
 
       def setup
         @function_registry = MLC::Registries::FunctionRegistry.new
         @type_registry = MLC::Registries::TypeRegistry.new
 
-        builder = MLC::SemanticGen::Services::IRBuilder.new
+        builder = MLC::Representations::Semantic::Gen::Services::IRBuilder.new
         float_type = builder.prim_type(name: 'f64')
 
         func_info = TestFunctionInfo.new(
@@ -876,7 +878,9 @@ module MLC
 
         ir = engine.run_expression(node)
         assert_equal 'Math.sqrt', ir.name
+        end
       end
     end
   end
+end
 end

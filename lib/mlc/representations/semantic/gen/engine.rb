@@ -47,8 +47,8 @@ module MLC
         @services = services || build_services(function_registry: function_registry, type_registry: type_registry)
         @rule_engine = rule_engine || build_rule_engine
         ensure_required_rules(@rule_engine)
-        @expression_visitor = Visitors::ExpressionVisitor.new(engine: self)
-        @statement_visitor = Visitors::StatementVisitor.new(
+        @expression_visitor = MLC::Representations::Semantic::Gen::Visitors::ExpressionVisitor.new(engine: self)
+        @statement_visitor = MLC::Representations::Semantic::Gen::Visitors::StatementVisitor.new(
           rule_engine: @rule_engine,
           services: @services,
           expression_visitor: @expression_visitor
