@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 class StdlibSignatureRegistryTest < Minitest::Test
   def setup
-    @registry = MLC::Common::Stdlib::StdlibSignatureRegistry.new
+    @registry = MLC::Common::Stdlib::SignatureRegistry.new
   end
 
   def test_fetches_function_metadata_with_ast_node
