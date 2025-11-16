@@ -159,6 +159,18 @@ lib/mlc/
    - Updated 12 references in 2 test files
    - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
 
+9. **Commit 3db8f2f**: `StdlibScanner` → `Scanner`
+   - Fixed: `lib/mlc/common/stdlib/scanner.rb`
+   - Избыточный префикс "Stdlib" удалён
+   - Updated 26 references across 6 files
+   - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
+10. **Commit dd6aef1**: `CodeGen` → `Codegen` (CamelCase fix)
+    - Fixed: `lib/mlc/backends/cpp/codegen.rb`
+    - Zeitwerk требует lowercase для filename → class name match
+    - Updated 11 references across 5 files
+    - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
 ### 🔄 Remaining High-Priority Namespace Mismatches
 
 Based on comprehensive codebase scan (2025-11-16):
@@ -200,9 +212,9 @@ Based on comprehensive codebase scan (2025-11-16):
 
 1. ✅ Document findings in REFACTORING_ROADMAP.md (DONE)
 2. ✅ Implement Phase 27.5 (DONE - commit 6d2a7ce)
-3. ✅ Fix low-priority namespace mismatches (DONE - 8 commits total):
-   - 28bd2b4, 4adf7ff, 5212b50, a394d7b (previous session)
-   - 56c886c, b8018a9, f69baf6, a68f849 (2025-11-16 continuation)
+3. ✅ Fix low-priority namespace mismatches (DONE - 10 commits total):
+   - 28bd2b4, 4adf7ff, 5212b50, a394d7b (previous session - 4 fixes)
+   - 56c886c, b8018a9, f69baf6, a68f849, 3db8f2f, dd6aef1 (2025-11-16 - 6 fixes)
 4. 🔄 Continue with remaining low-priority namespace fixes
 5. 🔄 Defer high-priority namespace fixes until after critical development milestones
 6. ⏸️ Phase 28 (Zeitwerk) implementation deferred - requires high-priority namespace fixes first
