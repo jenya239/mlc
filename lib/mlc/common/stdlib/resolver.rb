@@ -7,7 +7,7 @@ module MLC
     module Stdlib
     # Resolves stdlib module names to file paths
     # Now uses StdlibScanner for automatic discovery
-    class StdlibResolver
+    class Resolver
     # DEPRECATED: Legacy constant for backward compatibility
     # Use StdlibScanner for automatic module discovery
     STDLIB_MODULES = {
