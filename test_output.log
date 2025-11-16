@@ -1,0 +1,441 @@
+/home/jenya/.rbenv/versions/3.4.7/bin/ruby -w -I"lib:test:lib" /home/jenya/.rbenv/versions/3.4.7/lib/ruby/gems/3.4.0/gems/rake-13.2.1/lib/rake/rake_test_loader.rb "test/builder/100_percent_coverage_test.rb" "test/builder/access_specifiers_test.rb" "test/builder/advanced_templates_test.rb" "test/builder/combinations_test.rb" "test/builder/comments_test.rb" "test/builder/cpp20_features_test.rb" "test/builder/dsl_generator_test.rb" "test/builder/dsl_v2/class_builder_test.rb" "test/builder/dsl_v2/control_dsl_test.rb" "test/builder/dsl_v2/dsl_v2_integration_test.rb" "test/builder/dsl_v2/expr_builder_test.rb" "test/builder/dsl_v2/function_builder_test.rb" "test/builder/dsl_v2/ownership_dsl_test.rb" "test/builder/dsl_v2/types_dsl_test.rb" "test/builder/edge_cases_test.rb" "test/builder/enum_class_test.rb" "test/builder/error_handling_test.rb" "test/builder/formatting_modes_test.rb" "test/builder/friend_declarations_test.rb" "test/builder/full_feature_validation_test.rb" "test/builder/inheritance_test.rb" "test/builder/initializer_lists_test.rb" "test/builder/inline_methods_test.rb" "test/builder/match_test.rb" "test/builder/modifiers_test.rb" "test/builder/nested_types_test.rb" "test/builder/ownership_test.rb" "test/builder/performance_test.rb" "test/builder/preprocessor_test.rb" "test/builder/product_test.rb" "test/builder/production_fixes_test.rb" "test/builder/result_option_test.rb" "test/builder/roundtrip_test.rb" "test/builder/static_members_test.rb" "test/builder/stream_ops_test.rb" "test/builder/sum_type_test.rb" "test/builder/template_dsl_test.rb" "test/builder/using_aliases_test.rb" "test/builder/whitespace_policy_test.rb" "test/integration/anonymous_namespace_roundtrip_test.rb" "test/integration/array_subscript_roundtrip_test.rb" "test/integration/attributes_roundtrip_test.rb" "test/integration/class_inheritance_roundtrip_test.rb" "test/integration/complex_class_test.rb" "test/integration/constexpr_variable_roundtrip_test.rb" "test/integration/constructor_destructor_roundtrip_test.rb" "test/integration/control_flow_roundtrip_test.rb" "test/integration/edge_cases_test.rb" "test/integration/enum_roundtrip_test.rb" "test/integration/error_recovery_test.rb" "test/integration/function_call_roundtrip_test.rb" "test/integration/function_modifiers_roundtrip_test.rb" "test/integration/generics_e2e_test.rb" "test/integration/gtk_gl_sample_test.rb" "test/integration/lambda_roundtrip_test.rb" "test/integration/literals_roundtrip_test.rb" "test/integration/member_access_roundtrip_test.rb" "test/integration/mlc_cli_test.rb" "test/integration/mlc_full_test.rb" "test/integration/more_operators_roundtrip_test.rb" "test/integration/namespace_body_roundtrip_test.rb" "test/integration/nested_class_members_test.rb" "test/integration/opengl_coverage_test.rb" "test/integration/optimization_integration_test.rb" "test/integration/out_of_line_operators_test.rb" "test/integration/parenthesized_roundtrip_test.rb" "test/integration/roundtrip_test.rb" "test/integration/stdlib_simple_e2e_test.rb" "test/integration/structured_bindings_test.rb" "test/integration/template_roundtrip_test.rb" "test/integration/template_types_roundtrip_test.rb" "test/integration/ternary_roundtrip_test.rb" "test/integration/unary_roundtrip_test.rb" "test/integration/using_declaration_roundtrip_test.rb" "test/integration/variable_declaration_roundtrip_test.rb" "test/mlc/analysis_passes_test.rb" "test/mlc/array_type_test.rb" "test/mlc/backends/bootstrap_test.rb" "test/mlc/backends/codegen_test.rb" "test/mlc/backends/cpp_smoke_test.rb" "test/mlc/block_complexity_analyzer_test.rb" "test/mlc/block_expr_test.rb" "test/mlc/block_test.rb" "test/mlc/collections_test.rb" "test/mlc/comment_test.rb" "test/mlc/common/diagnostics/event_logger_test.rb" "test/mlc/common/diagnostics/formatter_test.rb" "test/mlc/common/diagnostics/structured_logger_test.rb" "test/mlc/control_flow_statement_test.rb" "test/mlc/core_ir_generics_test.rb" "test/mlc/cpp_lowering_generics_test.rb" "test/mlc/do_block_integration_test.rb" "test/mlc/do_block_test.rb" "test/mlc/effect_analyzer_test.rb" "test/mlc/enhanced_error_handling_test.rb" "test/mlc/error_diagnostics_test.rb" "test/mlc/esm_modules_test.rb" "test/mlc/event_bus_extensions_test.rb" "test/mlc/event_bus_test.rb" "test/mlc/function_registry_integration_test.rb" "test/mlc/function_registry_test.rb" "test/mlc/gcc_expression_strategy_test.rb" "test/mlc/generics_test.rb" "test/mlc/heredoc_test.rb" "test/mlc/import_service_integration_test.rb" "test/mlc/integration_test.rb" "test/mlc/io_test.rb" "test/mlc/lambda_test.rb" "test/mlc/let_test.rb" "test/mlc/list_comprehension_test.rb" "test/mlc/logical_ops_test.rb" "test/mlc/lowering_strategy_integration_test.rb" "test/mlc/match_analyzer_test.rb" "test/mlc/metadata_loader_service_test.rb" "test/mlc/module_system_test.rb" "test/mlc/multi_file_modules_test.rb" "test/mlc/opaque_type_test.rb" "test/mlc/pass_manager_test.rb" "test/mlc/pattern_matching_test.rb" "test/mlc/pipe_operator_test.rb" "test/mlc/representations/semantic/gen/engine_test.rb" "test/mlc/representations/semantic/gen/passes/module_import_pass_test.rb" "test/mlc/representations/semantic/gen/services/container_integration_test.rb" "test/mlc/roundtrip_test.rb" "test/mlc/rules_rule_engine_test.rb" "test/mlc/runtime_format_test.rb" "test/mlc/runtime_policy_api_test.rb" "test/mlc/runtime_policy_test.rb" "test/mlc/stdlib_array_test.rb" "test/mlc/stdlib_conv_test.rb" "test/mlc/stdlib_file_test.rb" "test/mlc/stdlib_io_test.rb" "test/mlc/stdlib_math_test.rb" "test/mlc/stdlib_option_test.rb" "test/mlc/stdlib_resolution_test.rb" "test/mlc/stdlib_result_test.rb" "test/mlc/stdlib_scanner_integration_test.rb" "test/mlc/stdlib_scanner_test.rb" "test/mlc/stdlib_signature_registry_test.rb" "test/mlc/stdlib_string_test.rb" "test/mlc/stdlib_test.rb" "test/mlc/string_operations_test.rb" "test/mlc/sum_types_test.rb" "test/mlc/to_core_generics_test.rb" "test/mlc/type_constraint_solver_test.rb" "test/mlc/type_inference_architecture_test.rb" "test/mlc/type_inference_generics_test.rb" "test/mlc/type_registry_test.rb" "test/mlc/while_loop_test.rb" "test/source/ast/nodes/array_subscript_test.rb" "test/source/ast/nodes/base_nodes_test.rb" "test/source/ast/nodes/block_statement_test.rb" "test/source/ast/nodes/expression_nodes_test.rb" "test/source/ast/nodes/function_call_test.rb" "test/source/ast/nodes/member_access_test.rb" "test/source/ast/nodes/parenthesized_expression_test.rb" "test/source/ast/nodes/statement_nodes_test.rb" "test/source/ast/nodes/ternary_test.rb" "test/source/ast/nodes/unary_expression_test.rb" "test/source/parser/array_subscript_parser_test.rb" "test/source/parser/base_parser_test.rb" "test/source/parser/block_parser_test.rb" "test/source/parser/expression_parser_test.rb" "test/source/parser/function_call_parser_test.rb" "test/source/parser/lexer/lexer_basic_test.rb" "test/source/parser/lexer/number_literals_test.rb" "test/source/parser/lexer/token_test.rb" "test/source/parser/lexer/trivia_in_tokens_test.rb" "test/source/parser/member_access_parser_test.rb" "test/source/parser/parenthesized_parser_test.rb" "test/source/parser/program_parser_test.rb" "test/source/parser/statement_parser_test.rb" "test/source/parser/unary_parser_test.rb" 
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1117: warning: method redefined; discarding old generate_aurora_program
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1015: warning: previous definition of generate_aurora_program was here
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1144: warning: method redefined; discarding old generate_aurora_declaration
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1047: warning: previous definition of generate_aurora_declaration was here
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1155: warning: method redefined; discarding old generate_aurora_function
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1058: warning: previous definition of generate_aurora_function was here
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1171: warning: method redefined; discarding old generate_aurora_type
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1094: warning: previous definition of generate_aurora_type was here
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1191: warning: method redefined; discarding old generate_aurora_expression
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_generator.rb:1072: warning: previous definition of generate_aurora_expression was here
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/expr_builder.rb:358: warning: mismatched indentations at 'end' with 'module' at 5
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/expr_builder.rb:359: warning: mismatched indentations at 'end' with 'module' at 4
+/home/jenya/workspaces/mlc/lib/cpp_ast/builder/function_builder.rb:33: warning: method redefined; discarding old body
+/home/jenya/workspaces/mlc/lib/mlc/source/parser/lexer.rb:315: warning: assigned but unused variable - content_start
+/home/jenya/workspaces/mlc/lib/mlc/source/parser/type_parser.rb:201: warning: assigned but unused variable - first_variant_name
+/home/jenya/workspaces/mlc/lib/mlc/common/stdlib/scanner.rb:37: warning: mismatched indentations at 'end' with 'class' at 22
+/home/jenya/workspaces/mlc/lib/mlc/common/stdlib/scanner.rb:266: warning: mismatched indentations at 'end' with 'class' at 77
+/home/jenya/workspaces/mlc/lib/mlc/common/stdlib/scanner.rb:267: warning: mismatched indentations at 'end' with 'module' at 20
+/home/jenya/workspaces/mlc/lib/mlc/representations/semantic/gen/reducers/function_reducer.rb:114: warning: mismatched indentations at 'ensure' with 'def' at 91
+/home/jenya/workspaces/mlc/lib/mlc/representations/semantic/gen/reducers/function_reducer.rb:116: warning: mismatched indentations at 'end' with 'def' at 91
+/home/jenya/workspaces/mlc/lib/mlc/representations/semantic/gen/reducers/function_reducer.rb:144: warning: mismatched indentations at 'end' with 'def' at 131
+/home/jenya/workspaces/mlc/lib/mlc/common/typing/effect_analyzer.rb:27: warning: mismatched indentations at 'end' with 'class' at 6
+/home/jenya/workspaces/mlc/lib/mlc/backends/cpp/header_generator.rb:476: warning: mismatched indentations at 'end' with 'class' at 9
+/home/jenya/workspaces/mlc/lib/mlc/common/compiler_api.rb:44: warning: method redefined; discarding old parse
+/home/jenya/workspaces/mlc/lib/mlc/common/stdlib/scanner.rb:11: warning: previous definition of parse was here
+/home/jenya/workspaces/mlc/lib/mlc/common/analysis/base_pass.rb:89: warning: mismatched indentations at 'end' with 'class' at 31
+/home/jenya/workspaces/mlc/test/builder/formatting_modes_test.rb:24: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/builder/formatting_modes_test.rb:33: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/builder/roundtrip_test.rb:377: warning: method redefined; discarding old test_array_subscript
+/home/jenya/workspaces/mlc/test/builder/roundtrip_test.rb:186: warning: previous definition of test_array_subscript was here
+/home/jenya/workspaces/mlc/test/integration/generics_e2e_test.rb:315: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/integration/stdlib_simple_e2e_test.rb:69: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/integration/stdlib_simple_e2e_test.rb:70: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/integration/stdlib_simple_e2e_test.rb:103: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/integration/stdlib_simple_e2e_test.rb:104: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/integration/stdlib_simple_e2e_test.rb:152: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/lib/mlc/common/analysis/effect_analysis_pass.rb:49: warning: mismatched indentations at 'end' with 'class' at 18
+/home/jenya/workspaces/mlc/lib/mlc/common/analysis/type_check_pass.rb:51: warning: mismatched indentations at 'end' with 'class' at 15
+/home/jenya/workspaces/mlc/lib/mlc/common/analysis/name_resolution_pass.rb:67: warning: mismatched indentations at 'end' with 'class' at 16
+/home/jenya/workspaces/mlc/test/mlc/enhanced_error_handling_test.rb:10: warning: assigned but unused variable - source
+/home/jenya/workspaces/mlc/test/mlc/enhanced_error_handling_test.rb:94: warning: assigned but unused variable - e
+/home/jenya/workspaces/mlc/test/mlc/enhanced_error_handling_test.rb:109: warning: assigned but unused variable - source
+/home/jenya/workspaces/mlc/test/mlc/gcc_expression_strategy_test.rb:9: warning: assigned but unused variable - source
+/home/jenya/workspaces/mlc/test/mlc/import_service_integration_test.rb:101: warning: assigned but unused variable - core_ir
+/home/jenya/workspaces/mlc/test/mlc/import_service_integration_test.rb:160: warning: assigned but unused variable - core_ir
+/home/jenya/workspaces/mlc/test/mlc/match_analyzer_test.rb:19: warning: assigned but unused variable - body_type
+/home/jenya/workspaces/mlc/test/mlc/opaque_type_test.rb:34: warning: assigned but unused variable - core_ir
+/home/jenya/workspaces/mlc/test/mlc/opaque_type_test.rb:52: warning: assigned but unused variable - core_ir
+/home/jenya/workspaces/mlc/test/mlc/opaque_type_test.rb:75: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/mlc/opaque_type_test.rb:76: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/mlc/opaque_type_test.rb:77: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/mlc/opaque_type_test.rb:78: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/mlc/opaque_type_test.rb:92: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/mlc/opaque_type_test.rb:93: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/mlc/opaque_type_test.rb:112: warning: assigned but unused variable - core_ir
+/home/jenya/workspaces/mlc/test/mlc/representations/semantic/gen/engine_test.rb:882: warning: mismatched indentations at 'end' with 'class' at 10
+/home/jenya/workspaces/mlc/test/mlc/representations/semantic/gen/engine_test.rb:883: warning: mismatched indentations at 'end' with 'module' at 9
+/home/jenya/workspaces/mlc/test/mlc/representations/semantic/gen/engine_test.rb:884: warning: mismatched indentations at 'end' with 'module' at 8
+/home/jenya/workspaces/mlc/test/mlc/representations/semantic/gen/engine_test.rb:885: warning: mismatched indentations at 'end' with 'module' at 7
+/home/jenya/workspaces/mlc/test/mlc/representations/semantic/gen/engine_test.rb:886: warning: mismatched indentations at 'end' with 'module' at 6
+/home/jenya/workspaces/mlc/test/source/parser/base_parser_test.rb:61: warning: ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator
+/home/jenya/workspaces/mlc/test/source/parser/statement_parser_test.rb:23: warning: assigned but unused variable - trailing
+/home/jenya/workspaces/mlc/test/source/parser/statement_parser_test.rb:30: warning: assigned but unused variable - stmt
+/home/jenya/workspaces/mlc/test/source/parser/statement_parser_test.rb:64: warning: assigned but unused variable - stmt
+/home/jenya/workspaces/mlc/test/source/parser/statement_parser_test.rb:86: warning: assigned but unused variable - stmt
+Loaded suite /home/jenya/.rbenv/versions/3.4.7/lib/ruby/gems/3.4.0/gems/rake-13.2.1/lib/rake/rake_test_loader
+Started/home/jenya/workspaces/mlc/test/builder/dsl_v2/class_builder_test.rb:401: warning: the block passed to 'CppAst::Builder::ClassBuilder::ClassBuilder#friend_' defined at /home/jenya/workspaces/mlc/lib/cpp_ast/builder/class_builder.rb:64 may be ignored
+/home/jenya/workspaces/mlc/test/builder/dsl_v2/dsl_v2_integration_test.rb:27: warning: the block passed to 'enum_' defined at /home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_v2_improved.rb:158 may be ignored
+/home/jenya/workspaces/mlc/test/builder/dsl_v2/dsl_v2_integration_test.rb:260: warning: the block passed to 'requires_' defined at /home/jenya/workspaces/mlc/lib/cpp_ast/builder/dsl_v2_improved.rb:503 may be ignored
+
+Finished in 0.024315177 seconds.
+-------------------------------------------------------------------------------
+153 tests, 530 assertions, 0 failures, 0 errors, 0 pendings, 0 omissions, 0 notifications
+100% passed
+-------------------------------------------------------------------------------
+6292.37 tests/s, 21797.09 assertions/s
+Run options: --seed 57257
+
+# Running:
+
+..................................................................................................................................................................................................................................................................................................................................................................✅ All 13 major OpenGL constructs supported
+.Generated buffer.hpp (50 lines):
+namespace gtkgl::gl  {class VertexArray {
+VertexArray() {
+}
+~VertexArray() {
+}
+VertexArray(const VertexArray& other) = delete;
+VertexArray& operator=(const VertexArray& other) = delete;
+VertexArray(VertexArray&& other) noexcept{
+}
+VertexArray& operator=(VertexArray&& other) noexcept{
+}
+void bind() const{
+}
+void unbind() const{
+}
+inline GLuint handle() const noexcept {
+return vao_;
+}
+inline bool is_valid() const noexcept {
+return vao_ != 0;
+}
+};
+class Buffer {
+enum class Type{Array = GL_ARRAY_BUFFER, ElementArray = GL_ELEMENT_ARRAY_BUFFER};
+enum class Usage{Static = GL_STATIC_DRAW, Dynamic = GL_DYNAMIC_DRAW, Stream = GL_STREAM_DRAW};
+explicit Buffer(Type type) {
+}
+~Buffer() {
+}
+Buffer(const Buffer& other) = delete;
+Buffer& operator=(const Buffer& other) = delete;
+Buffer(Buffer&& other) noexcept{
+}
+Buffer& operator=(Buffer&& other) noexcept{
+}
+void bind() const{
+}
+void unbind() const{
+}
+template <typename T>
+void data(std::span<const T> data, Usage usage = Usage::Static) {
+}
+inline GLuint handle() const noexcept {
+return buffer_;
+}
+inline bool is_valid() const noexcept {
+return buffer_ != 0;
+}
+};
+}
+.Generated shader.hpp (56 lines):
+namespace gtkgl::gl  {class Shader {
+enum class Type{Vertex = GL_VERTEX_SHADER, Fragment = GL_FRAGMENT_SHADER, Geometry = GL_GEOMETRY_SHADER};
+Shader(Type type, const std::string& source) {
+}
+~Shader() {
+}
+Shader(const Shader& other) = delete;
+Shader& operator=(const Shader& other) = delete;
+Shader(Shader&& other) noexcept{
+}
+Shader& operator=(Shader&& other) noexcept{
+}
+inline GLuint handle() const noexcept {
+return shader_;
+}
+inline bool is_valid() const noexcept {
+return shader_ != 0;
+}
+std::optional<std::string> compile_error() const{
+}
+};
+class ShaderProgram {
+ShaderProgram() {
+}
+~ShaderProgram() {
+}
+ShaderProgram(const ShaderProgram& other) = delete;
+ShaderProgram& operator=(const ShaderProgram& other) = delete;
+ShaderProgram(ShaderProgram&& other) noexcept{
+}
+ShaderProgram& operator=(ShaderProgram&& other) noexcept{
+}
+void attach(const Shader& shader) {
+}
+bool link() {
+}
+void use() const{
+}
+inline GLuint handle() const noexcept {
+return program_;
+}
+inline bool is_valid() const noexcept {
+return program_ != 0;
+}
+std::optional<std::string> link_error() const{
+}
+void set_uniform(const std::string& name, int value) const{
+}
+void set_uniform(const std::string& name, float value) const{
+}
+void set_uniform(const std::string& name, float x, float y, float z) const{
+}
+void set_uniform(const std::string& name, std::span<const float> values) const{
+}
+};
+}
+.Generated text_types.hpp (59 lines):
+namespace gtkgl::text  {using GlyphIndex = uint32_t;
+using FontFaceID = uint32_t;
+using AtlasPageID = uint32_t;
+using TextureID = uint32_t;
+struct Vec2 {
+x float{0.0f};
+y float{0.0f};
+Vec2() = default;
+constexpr Vec2(float x_, float y_) : x(x_), y(y_){
+}
+Vec2 operator+(const Vec2& other) const{
+}
+Vec2 operator-(const Vec2& other) const{
+}
+Vec2 operator*(float s) const{
+}
+Vec2& operator+=(const Vec2& other) {
+}
+};
+struct Rect {
+x float{0.0f};
+y float{0.0f};
+width float{0.0f};
+height float{0.0f};
+Rect() = default;
+constexpr Rect(float x_, float y_, float w_, float h_) : x(x_), y(y_), width(w_), height(h_){
+}
+bool contains(float px, float py) const{
+}
+float area() const{
+}
+};
+struct Color {
+r float{1.0f};
+g float{1.0f};
+b float{1.0f};
+a float{1.0f};
+Color() = default;
+constexpr Color(float r_, float g_, float b_, float a_) : r(r_), g(g_), b(b_), a(a_){
+}
+static constexpr inline Color white()  {
+return auto{1.0, 1.0, 1.0, 1.0};
+}
+static constexpr inline Color black()  {
+return auto{0.0, 0.0, 0.0, 1.0};
+}
+static constexpr inline Color red()  {
+return auto{1.0, 0.0, 0.0, 1.0};
+}
+static constexpr inline Color green()  {
+return auto{0.0, 1.0, 0.0, 1.0};
+}
+static constexpr inline Color blue()  {
+return auto{0.0, 0.0, 1.0, 1.0};
+}
+};
+enum class AtlasFormat : uint8_t{A8, RGB8, RGBA8};
+enum class RenderMode : uint8_t{BITMAP, MSDF, SDF};
+}
+........................................................................................................................EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE...................................................................................................................................................................................✅ All 11 major OpenGL constructs supported for 100% coverage
+................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................Generated C++:
+#include "mlc/core/match.hpp"
+constexpr mlc::String greet(mlc::String name) noexcept{return mlc::String("Hello, {name}!");}
+.Generated C++:
+#include "mlc/core/match.hpp"
+constexpr mlc::String greet(mlc::String name) noexcept{return mlc::String("Hello, ") + name + mlc::String("!");}
+.Generated C++:
+#include "mlc/core/match.hpp"
+constexpr mlc::String process(mlc::String text) noexcept{return text.trim().upper();}
+............................................................................................✅ All 12 major OpenGL features fully implemented without simplifications
+................E....................................................................
+
+Finished in 221.473562s, 6.8812 runs/s, 17.6545 assertions/s.
+
+  1) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_string_member_access:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+  2) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_for_statement:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+  3) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_match_regex_arm_provides_capture_bindings:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+  4) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_array_member_access:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+  5) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_array_literal:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+  6) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_do_expression:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+  7) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_array_index_access:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+  8) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_assignment_statement:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+  9) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_transforms_module_member_expression:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 10) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_pipe_operator_with_function_reference:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 11) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_unit_literal:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 12) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_lambda_expression:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 13) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_match_constructor_arm_populates_bindings:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 14) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_function_call:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 15) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_unary_operator:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 16) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_function_reference:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 17) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_lowers_match_expression_with_unit_branches_to_statement:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 18) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_respects_import_aliases:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 19) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_if_expression:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 20) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_while_statement:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 21) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_binary_operator:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 22) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_for_loop_expression:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 23) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_if_statement:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 24) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_literal_expression:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 25) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_variable_reference:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 26) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_pipe_operator_with_call:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 27) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_block_expression:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 28) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_function_call_argument_mismatch:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 29) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_named_record_literal:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 30) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_record_member_access:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 31) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_list_comprehension:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 32) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_match_expression:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 33) Error:
+MLC::Representations::Semantic::Gen::EngineTest#test_handles_let_expression:
+NameError: uninitialized constant MLC::SemanticGen::Services
+    test/mlc/representations/semantic/gen/engine_test.rb:17:in 'MLC::Representations::Semantic::Gen::EngineTest#setup'
+
+ 34) Error:
+MLC::SemanticGen::Passes::ModuleImportPassTest#test_stdlib_imports_are_registered:
+NameError: uninitialized constant MLC::SemanticGen::Passes::ModuleImportPassTest::Services
+    test/mlc/representations/semantic/gen/passes/module_import_pass_test.rb:14:in 'MLC::SemanticGen::Passes::ModuleImportPassTest#setup'
+
+1524 runs, 3910 assertions, 0 failures, 34 errors, 0 skips
+rake aborted!
+Command failed with status (1): [ruby -w -I"lib:test:lib" /home/jenya/.rbenv/versions/3.4.7/lib/ruby/gems/3.4.0/gems/rake-13.2.1/lib/rake/rake_test_loader.rb "test/builder/100_percent_coverage_test.rb" "test/builder/access_specifiers_test.rb" "test/builder/advanced_templates_test.rb" "test/builder/combinations_test.rb" "test/builder/comments_test.rb" "test/builder/cpp20_features_test.rb" "test/builder/dsl_generator_test.rb" "test/builder/dsl_v2/class_builder_test.rb" "test/builder/dsl_v2/control_dsl_test.rb" "test/builder/dsl_v2/dsl_v2_integration_test.rb" "test/builder/dsl_v2/expr_builder_test.rb" "test/builder/dsl_v2/function_builder_test.rb" "test/builder/dsl_v2/ownership_dsl_test.rb" "test/builder/dsl_v2/types_dsl_test.rb" "test/builder/edge_cases_test.rb" "test/builder/enum_class_test.rb" "test/builder/error_handling_test.rb" "test/builder/formatting_modes_test.rb" "test/builder/friend_declarations_test.rb" "test/builder/full_feature_validation_test.rb" "test/builder/inheritance_test.rb" "test/builder/initializer_lists_test.rb" "test/builder/inline_methods_test.rb" "test/builder/match_test.rb" "test/builder/modifiers_test.rb" "test/builder/nested_types_test.rb" "test/builder/ownership_test.rb" "test/builder/performance_test.rb" "test/builder/preprocessor_test.rb" "test/builder/product_test.rb" "test/builder/production_fixes_test.rb" "test/builder/result_option_test.rb" "test/builder/roundtrip_test.rb" "test/builder/static_members_test.rb" "test/builder/stream_ops_test.rb" "test/builder/sum_type_test.rb" "test/builder/template_dsl_test.rb" "test/builder/using_aliases_test.rb" "test/builder/whitespace_policy_test.rb" "test/integration/anonymous_namespace_roundtrip_test.rb" "test/integration/array_subscript_roundtrip_test.rb" "test/integration/attributes_roundtrip_test.rb" "test/integration/class_inheritance_roundtrip_test.rb" "test/integration/complex_class_test.rb" "test/integration/constexpr_variable_roundtrip_test.rb" "test/integration/constructor_destructor_roundtrip_test.rb" "test/integration/control_flow_roundtrip_test.rb" "test/integration/edge_cases_test.rb" "test/integration/enum_roundtrip_test.rb" "test/integration/error_recovery_test.rb" "test/integration/function_call_roundtrip_test.rb" "test/integration/function_modifiers_roundtrip_test.rb" "test/integration/generics_e2e_test.rb" "test/integration/gtk_gl_sample_test.rb" "test/integration/lambda_roundtrip_test.rb" "test/integration/literals_roundtrip_test.rb" "test/integration/member_access_roundtrip_test.rb" "test/integration/mlc_cli_test.rb" "test/integration/mlc_full_test.rb" "test/integration/more_operators_roundtrip_test.rb" "test/integration/namespace_body_roundtrip_test.rb" "test/integration/nested_class_members_test.rb" "test/integration/opengl_coverage_test.rb" "test/integration/optimization_integration_test.rb" "test/integration/out_of_line_operators_test.rb" "test/integration/parenthesized_roundtrip_test.rb" "test/integration/roundtrip_test.rb" "test/integration/stdlib_simple_e2e_test.rb" "test/integration/structured_bindings_test.rb" "test/integration/template_roundtrip_test.rb" "test/integration/template_types_roundtrip_test.rb" "test/integration/ternary_roundtrip_test.rb" "test/integration/unary_roundtrip_test.rb" "test/integration/using_declaration_roundtrip_test.rb" "test/integration/variable_declaration_roundtrip_test.rb" "test/mlc/analysis_passes_test.rb" "test/mlc/array_type_test.rb" "test/mlc/backends/bootstrap_test.rb" "test/mlc/backends/codegen_test.rb" "test/mlc/backends/cpp_smoke_test.rb" "test/mlc/block_complexity_analyzer_test.rb" "test/mlc/block_expr_test.rb" "test/mlc/block_test.rb" "test/mlc/collections_test.rb" "test/mlc/comment_test.rb" "test/mlc/common/diagnostics/event_logger_test.rb" "test/mlc/common/diagnostics/formatter_test.rb" "test/mlc/common/diagnostics/structured_logger_test.rb" "test/mlc/control_flow_statement_test.rb" "test/mlc/core_ir_generics_test.rb" "test/mlc/cpp_lowering_generics_test.rb" "test/mlc/do_block_integration_test.rb" "test/mlc/do_block_test.rb" "test/mlc/effect_analyzer_test.rb" "test/mlc/enhanced_error_handling_test.rb" "test/mlc/error_diagnostics_test.rb" "test/mlc/esm_modules_test.rb" "test/mlc/event_bus_extensions_test.rb" "test/mlc/event_bus_test.rb" "test/mlc/function_registry_integration_test.rb" "test/mlc/function_registry_test.rb" "test/mlc/gcc_expression_strategy_test.rb" "test/mlc/generics_test.rb" "test/mlc/heredoc_test.rb" "test/mlc/import_service_integration_test.rb" "test/mlc/integration_test.rb" "test/mlc/io_test.rb" "test/mlc/lambda_test.rb" "test/mlc/let_test.rb" "test/mlc/list_comprehension_test.rb" "test/mlc/logical_ops_test.rb" "test/mlc/lowering_strategy_integration_test.rb" "test/mlc/match_analyzer_test.rb" "test/mlc/metadata_loader_service_test.rb" "test/mlc/module_system_test.rb" "test/mlc/multi_file_modules_test.rb" "test/mlc/opaque_type_test.rb" "test/mlc/pass_manager_test.rb" "test/mlc/pattern_matching_test.rb" "test/mlc/pipe_operator_test.rb" "test/mlc/representations/semantic/gen/engine_test.rb" "test/mlc/representations/semantic/gen/passes/module_import_pass_test.rb" "test/mlc/representations/semantic/gen/services/container_integration_test.rb" "test/mlc/roundtrip_test.rb" "test/mlc/rules_rule_engine_test.rb" "test/mlc/runtime_format_test.rb" "test/mlc/runtime_policy_api_test.rb" "test/mlc/runtime_policy_test.rb" "test/mlc/stdlib_array_test.rb" "test/mlc/stdlib_conv_test.rb" "test/mlc/stdlib_file_test.rb" "test/mlc/stdlib_io_test.rb" "test/mlc/stdlib_math_test.rb" "test/mlc/stdlib_option_test.rb" "test/mlc/stdlib_resolution_test.rb" "test/mlc/stdlib_result_test.rb" "test/mlc/stdlib_scanner_integration_test.rb" "test/mlc/stdlib_scanner_test.rb" "test/mlc/stdlib_signature_registry_test.rb" "test/mlc/stdlib_string_test.rb" "test/mlc/stdlib_test.rb" "test/mlc/string_operations_test.rb" "test/mlc/sum_types_test.rb" "test/mlc/to_core_generics_test.rb" "test/mlc/type_constraint_solver_test.rb" "test/mlc/type_inference_architecture_test.rb" "test/mlc/type_inference_generics_test.rb" "test/mlc/type_registry_test.rb" "test/mlc/while_loop_test.rb" "test/source/ast/nodes/array_subscript_test.rb" "test/source/ast/nodes/base_nodes_test.rb" "test/source/ast/nodes/block_statement_test.rb" "test/source/ast/nodes/expression_nodes_test.rb" "test/source/ast/nodes/function_call_test.rb" "test/source/ast/nodes/member_access_test.rb" "test/source/ast/nodes/parenthesized_expression_test.rb" "test/source/ast/nodes/statement_nodes_test.rb" "test/source/ast/nodes/ternary_test.rb" "test/source/ast/nodes/unary_expression_test.rb" "test/source/parser/array_subscript_parser_test.rb" "test/source/parser/base_parser_test.rb" "test/source/parser/block_parser_test.rb" "test/source/parser/expression_parser_test.rb" "test/source/parser/function_call_parser_test.rb" "test/source/parser/lexer/lexer_basic_test.rb" "test/source/parser/lexer/number_literals_test.rb" "test/source/parser/lexer/token_test.rb" "test/source/parser/lexer/trivia_in_tokens_test.rb" "test/source/parser/member_access_parser_test.rb" "test/source/parser/parenthesized_parser_test.rb" "test/source/parser/program_parser_test.rb" "test/source/parser/statement_parser_test.rb" "test/source/parser/unary_parser_test.rb" ]
+
+Tasks: TOP => test
+(See full trace by running task with --trace)

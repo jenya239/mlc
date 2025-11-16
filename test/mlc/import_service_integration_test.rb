@@ -50,7 +50,7 @@ module MLC
 
       # Parse and transform
       ast = MLC.parse(source)
-      transformer = SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
       core_ir = transformer.transform(ast)
 
       # Verify function was loaded from metadata
@@ -97,7 +97,7 @@ module MLC
       MLCORA
 
       ast = MLC.parse(source)
-      transformer = SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
       core_ir = transformer.transform(ast)
 
       # Verify type was loaded from metadata
@@ -118,7 +118,7 @@ module MLC
       MLCORA
 
       ast = MLC.parse(source)
-      transformer = SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
 
       # Should not crash, just skip metadata loading
       core_ir = transformer.transform(ast)
@@ -156,7 +156,7 @@ module MLC
       MLCORA
 
       ast = MLC.parse(source)
-      transformer = SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
       core_ir = transformer.transform(ast)
 
       # Verify function was loaded (case-insensitive fallback)

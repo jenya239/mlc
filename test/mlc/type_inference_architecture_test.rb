@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 class TypeInferenceArchitectureTest < Minitest::Test
   def build_core_ir(source)
-    passes = MLC::SemanticGen::Pipeline.new
+    passes = MLC::Representations::Semantic::Gen::Pipeline.new
     ast = MLC.parse(source)
     passes.transform(ast)
   end

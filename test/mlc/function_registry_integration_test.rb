@@ -11,7 +11,7 @@ module MLC
         export fn add(a: i32, b: i32) -> i32 = a + b
       MLCORA
 
-      transformer = MLC::SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
       ast = MLC.parse(source)
       transformer.transform(ast)
 
@@ -32,7 +32,7 @@ module MLC
           hypotenuse(a, b)
       MLCORA
 
-      transformer = MLC::SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
       ast = MLC.parse(source)
       transformer.transform(ast)
 
@@ -52,7 +52,7 @@ module MLC
           Math.hypotenuse(a, b)
       MLCORA
 
-      transformer = MLC::SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
       ast = MLC.parse(source)
       core = transformer.transform(ast)
 
@@ -76,7 +76,7 @@ module MLC
         export fn add(a: i32, b: i32) -> i32 = a + b
       MLCORA
 
-      transformer = MLC::SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
       transformer.transform(MLC.parse(module_source))
 
       use_source = <<~MLCORA
@@ -109,7 +109,7 @@ module MLC
         export fn perimeter(a: f32, b: f32) -> f32 = 2.0 * (a + b)
       MLCORA
 
-      transformer = MLC::SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
       transformer.transform(MLC.parse(module_source))
 
       use_source = <<~MLCORA
@@ -150,7 +150,7 @@ module MLC
           area(a, b)
       MLCORA
 
-      transformer = MLC::SemanticGen::Pipeline.new
+      transformer = MLC::Representations::Semantic::Gen::Pipeline.new
       transformer.transform(MLC.parse(geometry_source))
       core = transformer.transform(MLC.parse(demo_source))
 

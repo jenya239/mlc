@@ -36,9 +36,11 @@ require_relative 'visitors/expression_visitor'
 require_relative 'visitors/statement_visitor'
 
 module MLC
-  module SemanticGen
-    # Engine orchestrates SemanticGen rule evaluation with shared services
-    class Engine
+  module Representations
+    module Semantic
+      module Gen
+        # Engine orchestrates SemanticGen rule evaluation with shared services
+        class Engine
       attr_reader :services, :rule_engine, :expression_visitor, :statement_visitor
 
       def initialize(function_registry: nil, type_registry: nil, services: nil, rule_engine: nil)
@@ -85,35 +87,35 @@ module MLC
       end
 
       def ensure_required_rules(engine)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::LiteralRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::VarRefRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::LetRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::RecordLiteralRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::ArrayLiteralRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::IfRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::MatchRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::ForLoopRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::WhileLoopRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::LambdaRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::ListComprehensionRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::IndexAccessRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::CallRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::UnaryRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::BinaryRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::BlockRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::DoRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::ModuleMemberRule)
-        register_rule(engine, :expression, MLC::SemanticGen::Rules::MemberRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::LiteralRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::VarRefRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::LetRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::RecordLiteralRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::ArrayLiteralRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::IfRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::MatchRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::ForLoopRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::WhileLoopRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::LambdaRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::ListComprehensionRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::IndexAccessRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::CallRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::UnaryRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::BinaryRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::BlockRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::DoRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::ModuleMemberRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::MemberRule)
 
-        register_rule(engine, :statement, MLC::SemanticGen::Rules::Statements::ExprStmtRule)
-        register_rule(engine, :statement, MLC::SemanticGen::Rules::Statements::VariableDeclRule)
-        register_rule(engine, :statement, MLC::SemanticGen::Rules::Statements::ReturnRule)
-        register_rule(engine, :statement, MLC::SemanticGen::Rules::Statements::AssignmentRule)
-        register_rule(engine, :statement, MLC::SemanticGen::Rules::Statements::BreakRule)
-        register_rule(engine, :statement, MLC::SemanticGen::Rules::Statements::ContinueRule)
-        register_rule(engine, :statement, MLC::SemanticGen::Rules::Statements::IfRule)
-        register_rule(engine, :statement, MLC::SemanticGen::Rules::Statements::ForRule)
-        register_rule(engine, :statement, MLC::SemanticGen::Rules::Statements::WhileRule)
+        register_rule(engine, :statement, MLC::Representations::Semantic::Gen::Rules::Statements::ExprStmtRule)
+        register_rule(engine, :statement, MLC::Representations::Semantic::Gen::Rules::Statements::VariableDeclRule)
+        register_rule(engine, :statement, MLC::Representations::Semantic::Gen::Rules::Statements::ReturnRule)
+        register_rule(engine, :statement, MLC::Representations::Semantic::Gen::Rules::Statements::AssignmentRule)
+        register_rule(engine, :statement, MLC::Representations::Semantic::Gen::Rules::Statements::BreakRule)
+        register_rule(engine, :statement, MLC::Representations::Semantic::Gen::Rules::Statements::ContinueRule)
+        register_rule(engine, :statement, MLC::Representations::Semantic::Gen::Rules::Statements::IfRule)
+        register_rule(engine, :statement, MLC::Representations::Semantic::Gen::Rules::Statements::ForRule)
+        register_rule(engine, :statement, MLC::Representations::Semantic::Gen::Rules::Statements::WhileRule)
       end
 
       def register_rule(engine, stage, rule_class)
@@ -123,6 +125,8 @@ module MLC
           rule.is_a?(rule_class) || rule == rule_class || rule.class == rule_class
         end
         engine.register(stage, rule_class.new) unless already_registered
+          end
+        end
       end
     end
   end

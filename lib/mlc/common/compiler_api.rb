@@ -21,7 +21,7 @@ module MLC
       ast = parse(source, filename: filename)
 
       # 2. Transform to SemanticIR (with type_registry)
-      transformer = SemanticGen::Pipeline.new
+      transformer = Representations::Semantic::Gen::Pipeline.new
       core_ir, type_registry, function_registry = transform_to_core_with_registry(ast, transformer: transformer)
 
       # 3. Lower to C++ AST (with shared type_registry and stdlib_scanner)
@@ -60,9 +60,9 @@ module MLC
 
     # Transform Aurora AST to SemanticIR (with TypeRegistry)
     # @param ast [AST::Program] Aurora AST
-    # @param transformer [SemanticGen::Pipeline] Optional custom transformer
+    # @param transformer [Representations::Semantic::Gen::Pipeline] Optional custom transformer
     # @return [Array<SemanticIR::Module, TypeRegistry, FunctionRegistry>]
-    def transform_to_core_with_registry(ast, transformer: SemanticGen::Pipeline.new)
+    def transform_to_core_with_registry(ast, transformer: Representations::Semantic::Gen::Pipeline.new)
       core_ir = transformer.transform(ast)
       [core_ir, transformer.type_registry, transformer.function_registry]
     rescue CompileError
@@ -114,7 +114,7 @@ module MLC
     def to_hpp_cpp(source, filename: nil, runtime_policy: nil)
       # Parse and transform to SemanticIR
       ast = parse(source, filename: filename)
-      transformer = SemanticGen::Pipeline.new
+      transformer = Representations::Semantic::Gen::Pipeline.new
       core_ir, type_registry, function_registry = transform_to_core_with_registry(ast, transformer: transformer)
 
       # Create Compiler::Scanner

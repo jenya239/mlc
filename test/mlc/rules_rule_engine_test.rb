@@ -39,7 +39,7 @@ class RulesRuleEngineTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    transformer = MLC::SemanticGen::Pipeline.new(rule_engine: engine)
+    transformer = MLC::Representations::Semantic::Gen::Pipeline.new(rule_engine: engine)
     transformer.transform(ast)
 
     assert_includes bucket, "id"
@@ -51,7 +51,7 @@ class RulesRuleEngineTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    transformer = MLC::SemanticGen::Pipeline.new
+    transformer = MLC::Representations::Semantic::Gen::Pipeline.new
     transformer.transform(ast)
 
     info = transformer.function_registry.fetch("Some")
@@ -70,7 +70,7 @@ class RulesRuleEngineTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    transformer = MLC::SemanticGen::Pipeline.new
+    transformer = MLC::Representations::Semantic::Gen::Pipeline.new
     core = transformer.transform(ast)
     func = core.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == "unwrap" }
 
@@ -86,7 +86,7 @@ class RulesRuleEngineTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    transformer = MLC::SemanticGen::Pipeline.new(rule_engine: engine)
+    transformer = MLC::Representations::Semantic::Gen::Pipeline.new(rule_engine: engine)
     core = transformer.transform(ast)
     func = core.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == "identity" }
 

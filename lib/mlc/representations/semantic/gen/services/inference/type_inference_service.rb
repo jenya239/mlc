@@ -19,7 +19,7 @@ module MLC
           # - function_registry: FunctionRegistry
           # - type_decl_table: Hash
           # - generic_call_resolver: GenericCallResolverService
-          # - transformer: SemanticGen::Pipeline (for helper methods like type_error, type_name)
+          # - transformer: MLC::Representations::Semantic::Gen::Pipeline (for helper methods like type_error, type_name)
           class TypeInferenceService
             attr_writer :generic_call_resolver  # Allow injection after initialization
 
