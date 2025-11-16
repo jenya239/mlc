@@ -99,7 +99,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_stdlib_resolver_uses_scanner
-    resolver = MLC::Common::StdlibResolver.new
+    resolver = MLC::Common::Stdlib::StdlibResolver.new
 
     # Should find all stdlib modules
     assert resolver.stdlib_module?('Math')
@@ -113,7 +113,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_stdlib_resolver_resolve_returns_paths
-    resolver = MLC::Common::StdlibResolver.new
+    resolver = MLC::Common::Stdlib::StdlibResolver.new
 
     math_path = resolver.resolve('Math')
     refute_nil math_path
@@ -122,7 +122,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_scanner_available_from_resolver
-    resolver = MLC::Common::StdlibResolver.new
+    resolver = MLC::Common::Stdlib::StdlibResolver.new
     scanner = resolver.scanner
 
     refute_nil scanner

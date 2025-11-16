@@ -3,7 +3,8 @@
 require_relative 'scanner'
 
 module MLC
-  module Compiler
+  module Common
+    module Stdlib
     # Resolves stdlib module names to file paths
     # Now uses StdlibScanner for automatic discovery
     class StdlibResolver
@@ -41,6 +42,7 @@ module MLC
     # Get the scanner instance (for accessing function/type metadata)
     def scanner
       @scanner
+    end
     end
     end
   end
