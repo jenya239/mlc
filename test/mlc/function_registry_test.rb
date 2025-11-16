@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require_relative "../../lib/mlc/common/registry/function_registry"
+require_relative "../../lib/mlc/registries/function_registry"
 
 module MLC
   class FunctionRegistryTest < Minitest::Test
@@ -9,7 +9,7 @@ module MLC
 
     def setup
       super
-      @registry = Core::FunctionRegistry.new
+      @registry = Registries::FunctionRegistry.new
     end
 
     def test_register_and_fetch_basic_info

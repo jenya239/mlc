@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module MLC
-  module Core
+  module Registries
     # TypeRegistry - Unified type system management
   #
   # Single source of truth for all type information:

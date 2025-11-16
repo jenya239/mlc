@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../../../../../common/registry/function_signature"
+require_relative "../../../../../registries/function_signature"
 
 module MLC
   module Services
@@ -55,7 +55,7 @@ module MLC
           return @function_registry.fetch(func_decl.name)
         end
 
-        info = MLC::Core::FunctionSignature.new(func_decl.name, param_types, ret_type, type_params)
+        info = MLC::Registries::FunctionSignature.new(func_decl.name, param_types, ret_type, type_params)
 
         @function_registry.register(
           func_decl.name,

@@ -9,8 +9,8 @@ module MLC
       TestFunctionInfo = Struct.new(:name, :param_types, :ret_type, :type_params)
 
       def setup
-        @function_registry = MLC::Core::FunctionRegistry.new
-        @type_registry = MLC::Core::TypeRegistry.new
+        @function_registry = MLC::Registries::FunctionRegistry.new
+        @type_registry = MLC::Registries::TypeRegistry.new
 
         builder = MLC::SemanticGen::Services::IRBuilder.new
         float_type = builder.prim_type(name: 'f64')

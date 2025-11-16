@@ -6,8 +6,8 @@ class CppLoweringGenericsTest < Minitest::Test
   include MLC::SemanticIR
 
   def setup
-    @type_registry = MLC::Core::TypeRegistry.new
-    @function_registry = MLC::Core::FunctionRegistry.new
+    @type_registry = MLC::Registries::TypeRegistry.new
+    @function_registry = MLC::Registries::FunctionRegistry.new
     @lowerer = MLC::Backends::Cpp::CodeGen.new(
       type_registry: @type_registry,
       function_registry: @function_registry

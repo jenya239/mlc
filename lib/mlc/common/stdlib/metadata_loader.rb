@@ -74,7 +74,7 @@ module MLC
         return_type = parse_type(func_meta["return_type"])
 
         # Create FunctionSignature
-        signature = Core::FunctionSignature.new(
+        signature = Registries::FunctionSignature.new(
           func_meta["name"],
           param_types,
           return_type,

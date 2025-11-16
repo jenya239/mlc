@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module MLC
-  module Core
+  module Registries
     # FunctionRegistry provides a central repository for function metadata and
     # signatures used throughout the Aurora compilation pipeline.
   #

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../../../../../common/registry/function_signature"
+require_relative "../../../../../registries/function_signature"
 
 module MLC
   module Services
@@ -166,7 +166,7 @@ module MLC
         end
         substituted_ret_type = apply_type_substitutions(info.ret_type, substitutions)
 
-        MLC::Core::FunctionSignature.new(info.name, substituted_params, substituted_ret_type, info.type_params)
+        MLC::Registries::FunctionSignature.new(info.name, substituted_params, substituted_ret_type, info.type_params)
       end
 
       private

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../../../../../common/registry/function_signature"
+require_relative "../../../../../registries/function_signature"
 
 module MLC
   module Services
@@ -51,7 +51,7 @@ module MLC
         # Register each variant as a constructor function
         sum_type.variants.each do |variant|
           field_types = (variant[:fields] || []).map { |field| field[:type] }
-          constructor_info = MLC::Core::FunctionSignature.new(
+          constructor_info = MLC::Registries::FunctionSignature.new(
             variant[:name],
             field_types,
             generic_ret_type,

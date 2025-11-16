@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 class TypeRegistryTest < Minitest::Test
   def setup
-    @registry = MLC::Core::TypeRegistry.new
+    @registry = MLC::Registries::TypeRegistry.new
   end
 
   def test_types_in_module_returns_registered_types

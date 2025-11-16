@@ -2,16 +2,16 @@
 
 require "test_helper"
 require_relative "../../../lib/mlc/backends/cpp/bootstrap"
-require_relative "../../../lib/mlc/common/registry/type_registry"
-require_relative "../../../lib/mlc/common/registry/function_registry"
+require_relative "../../../lib/mlc/registries/type_registry"
+require_relative "../../../lib/mlc/registries/function_registry"
 
 module MLC
   module Backends
     module Cpp
       class BootstrapTest < Minitest::Test
         def setup
-          @type_registry = MLC::Core::TypeRegistry.new
-          @function_registry = MLC::Core::FunctionRegistry.new
+          @type_registry = MLC::Registries::TypeRegistry.new
+          @function_registry = MLC::Registries::FunctionRegistry.new
         end
 
         def test_create_backend_returns_orchestrator_with_all_components

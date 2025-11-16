@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../../../../common/registry/function_signature'
+require_relative '../../../../../registries/function_signature'
 require_relative '../../../../../common/stdlib/signature_registry'
 require_relative 'module_path_resolver'
 
@@ -78,7 +78,7 @@ module MLC
 
           canonical_name = metadata.qualified_name || [module_info.name, metadata.name].join('.')
 
-          info = MLC::Core::FunctionSignature.new(
+          info = MLC::Registries::FunctionSignature.new(
             metadata.name,
             params.map { |p| p[:type] },
             ret_type,

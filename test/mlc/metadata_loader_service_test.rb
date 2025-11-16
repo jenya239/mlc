@@ -7,8 +7,8 @@ module MLC
   module Compiler
     class MetadataLoaderServiceTest < Minitest::Test
       def setup
-        @function_registry = Core::FunctionRegistry.new
-        @type_registry = Core::TypeRegistry.new
+        @function_registry = Registries::FunctionRegistry.new
+        @type_registry = Registries::TypeRegistry.new
         @loader = MetadataLoaderService.new(
           function_registry: @function_registry,
           type_registry: @type_registry

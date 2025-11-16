@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../../../common/registry/function_registry'
-require_relative '../../../common/registry/type_registry'
+require_relative '../../../registries/function_registry'
+require_relative '../../../registries/type_registry'
 require_relative 'services/rule_engine'
 require_relative 'services/container'
 require_relative 'rules/literal_rule'
@@ -75,8 +75,8 @@ module MLC
       end
 
       def build_services(function_registry:, type_registry:)
-        registry = function_registry || MLC::Core::FunctionRegistry.new
-        types = type_registry || MLC::Core::TypeRegistry.new
+        registry = function_registry || MLC::Registries::FunctionRegistry.new
+        types = type_registry || MLC::Registries::TypeRegistry.new
         Services::Container.new(function_registry: registry, type_registry: types)
       end
 

@@ -2,16 +2,16 @@
 
 require "test_helper"
 require_relative "../../../lib/mlc/backends/cpp/codegen"
-require_relative "../../../lib/mlc/common/registry/type_registry"
-require_relative "../../../lib/mlc/common/registry/function_registry"
+require_relative "../../../lib/mlc/registries/type_registry"
+require_relative "../../../lib/mlc/registries/function_registry"
 
 module MLC
   module Backends
     module Cpp
       class CodeGenTest < Minitest::Test
         def setup
-          @type_registry = MLC::Core::TypeRegistry.new
-          @function_registry = MLC::Core::FunctionRegistry.new
+          @type_registry = MLC::Registries::TypeRegistry.new
+          @function_registry = MLC::Registries::FunctionRegistry.new
         end
 
         def test_codegen_initializes_successfully
