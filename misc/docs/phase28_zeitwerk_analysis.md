@@ -171,6 +171,12 @@ lib/mlc/
     - Updated 11 references across 5 files
     - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
 
+11. **Commit be4e799**: `MLC::Analysis` → `MLC::Common::Analysis`
+    - Fixed 4 files in `lib/mlc/common/analysis/`:
+      * `base_pass.rb`, `effect_analysis_pass.rb`, `name_resolution_pass.rb`, `type_check_pass.rb`
+    - Updated 7 references in 2 test files
+    - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
 ### 🔄 Remaining High-Priority Namespace Mismatches
 
 Based on comprehensive codebase scan (2025-11-16):
@@ -212,9 +218,9 @@ Based on comprehensive codebase scan (2025-11-16):
 
 1. ✅ Document findings in REFACTORING_ROADMAP.md (DONE)
 2. ✅ Implement Phase 27.5 (DONE - commit 6d2a7ce)
-3. ✅ Fix low-priority namespace mismatches (DONE - 10 commits total):
+3. ✅ Fix low-priority namespace mismatches (DONE - 11 commits total):
    - 28bd2b4, 4adf7ff, 5212b50, a394d7b (previous session - 4 fixes)
-   - 56c886c, b8018a9, f69baf6, a68f849, 3db8f2f, dd6aef1 (2025-11-16 - 6 fixes)
+   - 56c886c, b8018a9, f69baf6, a68f849, 3db8f2f, dd6aef1, be4e799 (2025-11-16 - 7 fixes)
 4. 🔄 Continue with remaining low-priority namespace fixes
 5. 🔄 Defer high-priority namespace fixes until after critical development milestones
 6. ⏸️ Phase 28 (Zeitwerk) implementation deferred - requires high-priority namespace fixes first
