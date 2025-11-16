@@ -5,11 +5,11 @@ require_relative "scanner"
 module MLC
   module Common
     module Stdlib
-    # Provides cached access to stdlib function/type signatures backed by StdlibScanner metadata.
+    # Provides cached access to stdlib function/type signatures backed by Scanner metadata.
     class SignatureRegistry
     attr_reader :scanner
 
-    def initialize(scanner: StdlibScanner.new)
+    def initialize(scanner: Scanner.new)
       @scanner = scanner
     end
 

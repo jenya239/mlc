@@ -74,7 +74,7 @@ module MLC
 
   # Automatically scans stdlib directory and extracts module metadata
   # Eliminates need for manual STDLIB_MODULES and STDLIB_FUNCTIONS registration
-  class StdlibScanner
+  class Scanner
     def initialize(stdlib_dir = nil)
       # New location: lib/mlc/common/stdlib
       # Old location: lib/mlc/stdlib (backward compatibility)

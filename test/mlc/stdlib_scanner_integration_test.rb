@@ -2,7 +2,7 @@
 
 require_relative '../test_helper'
 
-class StdlibScannerIntegrationTest < Minitest::Test
+class ScannerIntegrationTest < Minitest::Test
   def test_compile_with_math_functions
     source = <<~MLCORA
       import Math::{ sqrt_f, sin_f }
@@ -126,7 +126,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
     scanner = resolver.scanner
 
     refute_nil scanner
-    assert_instance_of MLC::Common::Stdlib::StdlibScanner, scanner
+    assert_instance_of MLC::Common::Stdlib::Scanner, scanner
 
     # Can use scanner to look up functions
     assert_equal 'mlc::math::sqrt_f', scanner.cpp_function_name('sqrt_f')
@@ -174,7 +174,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
 
     cpp = MLC.compile(source).to_source
 
-    # Should use proper namespace provided by StdlibScanner
+    # Should use proper namespace provided by Scanner
     assert_includes cpp, "mlc::math::abs"
   end
 
@@ -192,7 +192,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_scanner_handles_extern_functions
-    scanner = MLC::Common::Stdlib::StdlibScanner.new
+    scanner = MLC::Common::Stdlib::Scanner.new
     scanner.scan_all
 
     graphics = scanner.module_info('Graphics')
@@ -205,7 +205,7 @@ class StdlibScannerIntegrationTest < Minitest::Test
   end
 
   def test_scanner_handles_export_functions
-    scanner = MLC::Common::Stdlib::StdlibScanner.new
+    scanner = MLC::Common::Stdlib::Scanner.new
     scanner.scan_all
 
     graphics = scanner.module_info('Graphics')

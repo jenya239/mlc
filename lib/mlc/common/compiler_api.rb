@@ -25,7 +25,7 @@ module MLC
       core_ir, type_registry, function_registry = transform_to_core_with_registry(ast, transformer: transformer)
 
       # 3. Lower to C++ AST (with shared type_registry and stdlib_scanner)
-      stdlib_scanner = MLC::Common::Stdlib::StdlibScanner.new
+      stdlib_scanner = MLC::Common::Stdlib::Scanner.new
       cpp_lowerer = Backends::Cpp::CodeGen.new(
         type_registry: type_registry,
         function_registry: function_registry,
@@ -76,7 +76,7 @@ module MLC
     # @param core_ir [SemanticIR::Module] SemanticIR module
     # @param type_registry [TypeRegistry] Shared type registry from ToCore
     # @param function_registry [FunctionRegistry] Function registry from ToCore
-    # @param stdlib_scanner [Common::Stdlib::StdlibScanner] Scanner for automatic stdlib function resolution
+    # @param stdlib_scanner [Common::Stdlib::Scanner] Scanner for automatic stdlib function resolution
     # @param event_bus [EventBus, nil] Optional event bus for diagnostics
     # @param runtime_policy [RuntimePolicy, nil] Policy for choosing lowering strategies
     # @return [Backends::Cpp::AST] C++ AST
@@ -118,7 +118,7 @@ module MLC
       core_ir, type_registry, function_registry = transform_to_core_with_registry(ast, transformer: transformer)
 
       # Create Compiler::Scanner
-      stdlib_scanner = MLC::Common::Stdlib::StdlibScanner.new
+      stdlib_scanner = MLC::Common::Stdlib::Scanner.new
 
       # Generate header and implementation
       lowering = Backends::Cpp::CodeGen.new(
