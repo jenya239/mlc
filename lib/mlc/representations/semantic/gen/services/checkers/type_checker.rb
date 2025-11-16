@@ -232,7 +232,7 @@ module MLC
 
             def extract_actual_type_name(type_node)
               case type_node
-              when AST::PrimType
+              when MLC::Source::AST::PrimType
                 name = type_node.name
                 return nil if name.nil?
                 return nil if name[0]&.match?(/[A-Z]/)
@@ -324,20 +324,20 @@ module MLC
             # Type kind inference
             # Determines the kind of a type from AST and SemanticIR information
             #
-            # @param ast_decl [AST::TypeDecl] AST type declaration
+            # @param ast_decl [MLC::Source::AST::TypeDecl] AST type declaration
             # @param core_ir_type [SemanticIR::Type] SemanticIR type
             # @return [Symbol] :primitive, :record, :sum, :opaque, or :unknown
             def infer_type_kind(ast_decl, core_ir_type)
-              # Check if it's an opaque type (explicit AST::OpaqueType or old-style implicit)
-              if core_ir_type.is_a?(SemanticIR::OpaqueType) || ast_decl.type.is_a?(AST::OpaqueType)
+              # Check if it's an opaque type (explicit MLC::Source::AST::OpaqueType or old-style implicit)
+              if core_ir_type.is_a?(SemanticIR::OpaqueType) || ast_decl.type.is_a?(MLC::Source::AST::OpaqueType)
                 return :opaque
               end
 
               # Legacy: Check if it's an old-style opaque type (PrimType with same name as decl)
-              # This handles types declared before AST::OpaqueType was introduced
+              # This handles types declared before MLC::Source::AST::OpaqueType was introduced
               if core_ir_type.is_a?(SemanticIR::Type) &&
                  core_ir_type.primitive? &&
-                 ast_decl.type.is_a?(AST::PrimType) &&
+                 ast_decl.type.is_a?(MLC::Source::AST::PrimType) &&
                  ast_decl.type.name == ast_decl.name
                 return :opaque
               end

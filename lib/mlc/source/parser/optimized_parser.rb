@@ -122,19 +122,19 @@ module MLC
       def parse_integer_literal
         value = current.value
         consume(:INT_LITERAL)
-        MLC::Source::MLC::Source::AST::IntLit.new(value: value)
+        MLC::Source::AST::IntLit.new(value: value)
       end
       
       def parse_float_literal
         value = current.value
         consume(:FLOAT_LITERAL)
-        MLC::Source::MLC::Source::AST::FloatLit.new(value: value)
+        MLC::Source::AST::FloatLit.new(value: value)
       end
       
       def parse_identifier_expression
         name = current.value
         consume(:IDENTIFIER)
-        MLC::Source::MLC::Source::AST::VarRef.new(name: name)
+        MLC::Source::AST::VarRef.new(name: name)
       end
     end
   end

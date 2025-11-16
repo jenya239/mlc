@@ -172,11 +172,11 @@ module MLC
       # Note: extern functions are implicitly available for import even without 'export'
       ast.declarations.each do |decl|
         case decl
-        when AST::FuncDecl
+        when MLC::Source::AST::FuncDecl
           if decl.exported || decl.external
             functions[decl.name] = create_function_metadata(decl, namespace)
           end
-        when AST::TypeDecl
+        when MLC::Source::AST::TypeDecl
           if decl.exported
             types[decl.name] = create_type_metadata(decl, namespace)
           end
@@ -206,7 +206,7 @@ module MLC
 
     # Create type metadata from AST declaration
     def create_type_metadata(decl, namespace)
-      opaque = decl.type.is_a?(AST::OpaqueType)
+      opaque = decl.type.is_a?(MLC::Source::AST::OpaqueType)
       fields = extract_fields(decl.type)
       variants = extract_variants(decl.type)
 
@@ -222,7 +222,7 @@ module MLC
 
     # Extract fields from record type
     def extract_fields(type)
-      return [] unless type.is_a?(AST::RecordType)
+      return [] unless type.is_a?(MLC::Source::AST::RecordType)
 
       type.fields.map do |field|
         {
@@ -235,7 +235,7 @@ module MLC
     # Extract variants from sum type
     # Returns array of {name:, fields:} hashes for each variant
     def extract_variants(type)
-      return [] unless type.is_a?(AST::SumType)
+      return [] unless type.is_a?(MLC::Source::AST::SumType)
 
       type.variants.map do |variant|
         {
