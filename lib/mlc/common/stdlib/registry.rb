@@ -3,7 +3,8 @@
 # DO NOT EDIT MANUALLY
 
 module MLC
-  module Stdlib
+  module Common
+    module Stdlib
     # Mapping of module names to module information
     REGISTRY = {
 "std/collections/array" => {
@@ -98,6 +99,7 @@ module MLC
 
     def self.all_modules
       REGISTRY.keys
+    end
     end
   end
 end

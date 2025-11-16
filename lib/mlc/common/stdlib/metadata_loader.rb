@@ -3,7 +3,8 @@
 require 'json'
 
 module MLC
-  module Compiler
+  module Common
+    module Stdlib
     # MetadataLoaderService
     # Phase 24-B: Load .mlcmeta files and register exported symbols
     #
@@ -251,6 +252,7 @@ module MLC
       def module_name_to_namespace(module_name)
         module_name.downcase.gsub("::", "::")
       end
+    end
     end
   end
 end
