@@ -9,7 +9,7 @@ module MLC
       def setup
         @function_registry = Registries::FunctionRegistry.new
         @type_registry = Registries::TypeRegistry.new
-        @loader = Common::Stdlib::MetadataLoaderService.new(
+        @loader = Common::Stdlib::MetadataLoader.new(
           function_registry: @function_registry,
           type_registry: @type_registry
         )

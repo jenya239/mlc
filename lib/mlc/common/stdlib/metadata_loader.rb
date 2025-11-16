@@ -5,7 +5,7 @@ require 'json'
 module MLC
   module Common
     module Stdlib
-    # MetadataLoaderService
+    # MetadataLoader
     # Phase 24-B: Load .mlcmeta files and register exported symbols
     #
     # Responsibilities:
@@ -15,12 +15,12 @@ module MLC
     # - Enable cross-module compilation without re-parsing source files
     #
     # Usage:
-    #   loader = MetadataLoaderService.new(
+    #   loader = MetadataLoader.new(
     #     function_registry: function_registry,
     #     type_registry: type_registry
     #   )
     #   loader.load("/path/to/module.mlcmeta")
-    class MetadataLoaderService
+    class MetadataLoader
       def initialize(function_registry:, type_registry:)
         @function_registry = function_registry
         @type_registry = type_registry
