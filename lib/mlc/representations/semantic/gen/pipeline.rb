@@ -10,6 +10,10 @@ require_relative '../../../common/typing/generic_call_resolver'
 require_relative '../../../common/typing/match_analyzer'
 require_relative '../../../common/typing/effect_analyzer'
 require_relative 'rules/function_effect_rule'
+require_relative 'reducers/function_reducer'
+require_relative 'reducers/type_reducer'
+require_relative 'reducers/program_reducer'
+require_relative 'passes/module_import_pass'
 
 module MLC
   module Representations
