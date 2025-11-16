@@ -23,7 +23,7 @@ class AnalysisPassesTest < Minitest::Test
       non_literal_type: ->(type) { false }
     )
 
-    pass = MLC::Analysis::EffectAnalysisPass.new(effect_analyzer: analyzer)
+    pass = MLC::Common::Analysis::EffectAnalysisPass.new(effect_analyzer: analyzer)
     context = { core_ir: @core_ir }
 
     pass.run(context)
@@ -34,7 +34,7 @@ class AnalysisPassesTest < Minitest::Test
   end
 
   def test_type_check_pass
-    pass = MLC::Analysis::TypeCheckPass.new(type_registry: @type_registry)
+    pass = MLC::Common::Analysis::TypeCheckPass.new(type_registry: @type_registry)
     context = { core_ir: @core_ir }
 
     pass.run(context)
@@ -44,7 +44,7 @@ class AnalysisPassesTest < Minitest::Test
   end
 
   def test_name_resolution_pass
-    pass = MLC::Analysis::NameResolutionPass.new
+    pass = MLC::Common::Analysis::NameResolutionPass.new
     context = { core_ir: @core_ir }
 
     pass.run(context)
@@ -65,9 +65,9 @@ class AnalysisPassesTest < Minitest::Test
     )
 
     manager = MLC::Infrastructure::PassManager.new
-    manager.register(:name_resolution, MLC::Analysis::NameResolutionPass.new.to_callable)
-    manager.register(:type_check, MLC::Analysis::TypeCheckPass.new(type_registry: @type_registry).to_callable)
-    manager.register(:effect_analysis, MLC::Analysis::EffectAnalysisPass.new(effect_analyzer: analyzer).to_callable)
+    manager.register(:name_resolution, MLC::Common::Analysis::NameResolutionPass.new.to_callable)
+    manager.register(:type_check, MLC::Common::Analysis::TypeCheckPass.new(type_registry: @type_registry).to_callable)
+    manager.register(:effect_analysis, MLC::Common::Analysis::EffectAnalysisPass.new(effect_analyzer: analyzer).to_callable)
 
     context = { core_ir: @core_ir }
     manager.run(context)

@@ -3,8 +3,9 @@
 require_relative "base_pass"
 
 module MLC
-  module Analysis
-    # TypeCheckPass - validates type consistency in SemanticIR
+  module Common
+    module Analysis
+      # TypeCheckPass - validates type consistency in SemanticIR
     # This pass walks through the SemanticIR and validates type consistency.
     # This is a simplified initial version that demonstrates the pass pattern.
     #
@@ -46,6 +47,7 @@ module MLC
         # Store results in context
         context[:type_errors] = @errors
         context[:type_check_passed] = @errors.empty?
+      end
       end
     end
   end

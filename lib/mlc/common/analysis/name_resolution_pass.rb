@@ -3,8 +3,9 @@
 require_relative "base_pass"
 
 module MLC
-  module Analysis
-    # NameResolutionPass - builds symbol table and resolves all names
+  module Common
+    module Analysis
+      # NameResolutionPass - builds symbol table and resolves all names
     # This is a simplified initial version that demonstrates the pass pattern.
     #
     # Results stored in:
@@ -62,6 +63,7 @@ module MLC
         context[:symbol_table] = @symbol_table
         context[:resolution_errors] = @errors
         context[:name_resolution_passed] = @errors.empty?
+      end
       end
     end
   end

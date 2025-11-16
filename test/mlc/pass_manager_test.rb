@@ -165,7 +165,7 @@ class PassManagerTest < Minitest::Test
   private
 
   def create_test_pass(name, required_keys, produced_keys)
-    Class.new(MLC::Analysis::BasePass) do
+    Class.new(MLC::Common::Analysis::BasePass) do
       define_method(:initialize) do
         super(name: name)
         @required = required_keys

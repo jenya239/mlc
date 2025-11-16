@@ -3,8 +3,9 @@
 require_relative "base_pass"
 
 module MLC
-  module Analysis
-    # EffectAnalysisPass - analyzes SemanticIR functions for effects (constexpr, noexcept)
+  module Common
+    module Analysis
+      # EffectAnalysisPass - analyzes SemanticIR functions for effects (constexpr, noexcept)
     # This pass walks through all functions in a SemanticIR module and annotates them
     # with effects based on their body and return type.
     #
@@ -44,6 +45,7 @@ module MLC
 
         # Store results in context for other passes or lowering
         context[:function_effects] = function_effects
+      end
       end
     end
   end

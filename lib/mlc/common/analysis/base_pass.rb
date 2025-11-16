@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  module Analysis
-    # Base class for analysis and transformation passes
+  module Common
+    module Analysis
+      # Base class for analysis and transformation passes
     # Supports multi-level IR architecture with pass metadata
     #
     # Usage:
@@ -84,6 +85,7 @@ module MLC
       # Convert pass to a callable for PassManager
       def to_callable
         method(:run)
+      end
       end
     end
   end
