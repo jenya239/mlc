@@ -8,7 +8,7 @@ class CppLoweringGenericsTest < Minitest::Test
   def setup
     @type_registry = MLC::Registries::TypeRegistry.new
     @function_registry = MLC::Registries::FunctionRegistry.new
-    @lowerer = MLC::Backends::Cpp::CodeGen.new(
+    @lowerer = MLC::Backends::Cpp::Codegen.new(
       type_registry: @type_registry,
       function_registry: @function_registry
     )

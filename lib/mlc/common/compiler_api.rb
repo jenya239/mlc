@@ -26,7 +26,7 @@ module MLC
 
       # 3. Lower to C++ AST (with shared type_registry and stdlib_scanner)
       stdlib_scanner = MLC::Common::Stdlib::Scanner.new
-      cpp_lowerer = Backends::Cpp::CodeGen.new(
+      cpp_lowerer = Backends::Cpp::Codegen.new(
         type_registry: type_registry,
         function_registry: function_registry,
         stdlib_scanner: stdlib_scanner,
@@ -81,7 +81,7 @@ module MLC
     # @param runtime_policy [RuntimePolicy, nil] Policy for choosing lowering strategies
     # @return [Backends::Cpp::AST] C++ AST
     def lower_to_cpp(core_ir, type_registry: nil, function_registry: nil, stdlib_scanner: nil, event_bus: nil, runtime_policy: nil)
-      lowerer = Backends::Cpp::CodeGen.new(
+      lowerer = Backends::Cpp::Codegen.new(
         type_registry: type_registry,
         function_registry: function_registry,
         stdlib_scanner: stdlib_scanner,
@@ -121,7 +121,7 @@ module MLC
       stdlib_scanner = MLC::Common::Stdlib::Scanner.new
 
       # Generate header and implementation
-      lowering = Backends::Cpp::CodeGen.new(
+      lowering = Backends::Cpp::Codegen.new(
         type_registry: type_registry,
         function_registry: function_registry,
         stdlib_scanner: stdlib_scanner,

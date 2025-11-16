@@ -7,7 +7,7 @@ require_relative "../../../cpp_ast/index"
 module MLC
   module Backends
     module Cpp
-      # CodeGen - C++ Code Generator (v2 Architecture)
+      # Codegen - C++ Code Generator (v2 Architecture)
       #
       # Main entry point for lowering SemanticIR to C++ AST.
       # Uses modular architecture with Container, Context, and Rules pattern.
@@ -17,7 +17,7 @@ module MLC
       # - Container: Dependency injection for type_registry, function_registry, etc.
       # - Context: High-level API for lowering operations
       # - Rules: Chain of Responsibility for expression/statement lowering
-      class CodeGen
+      class Codegen
         attr_reader :container, :context
 
         def initialize(type_registry:, function_registry: nil, stdlib_scanner: nil, rule_engine: nil, event_bus: nil, runtime_policy: nil)

@@ -8,25 +8,25 @@ require_relative "../../../lib/mlc/registries/function_registry"
 module MLC
   module Backends
     module Cpp
-      class CodeGenTest < Minitest::Test
+      class CodegenTest < Minitest::Test
         def setup
           @type_registry = MLC::Registries::TypeRegistry.new
           @function_registry = MLC::Registries::FunctionRegistry.new
         end
 
         def test_codegen_initializes_successfully
-          codegen = CodeGen.new(
+          codegen = Codegen.new(
             type_registry: @type_registry,
             function_registry: @function_registry
           )
 
-          assert_instance_of CodeGen, codegen
+          assert_instance_of Codegen, codegen
           refute_nil codegen.container
           refute_nil codegen.context
         end
 
         def test_codegen_exposes_backend_attributes
-          codegen = CodeGen.new(
+          codegen = Codegen.new(
             type_registry: @type_registry,
             function_registry: @function_registry
           )
@@ -43,7 +43,7 @@ module MLC
         end
 
         def test_codegen_has_lower_method
-          codegen = CodeGen.new(
+          codegen = Codegen.new(
             type_registry: @type_registry,
             function_registry: @function_registry
           )
@@ -52,7 +52,7 @@ module MLC
         end
 
         def test_codegen_initializes_v2_architecture
-          codegen = CodeGen.new(
+          codegen = Codegen.new(
             type_registry: @type_registry,
             function_registry: @function_registry
           )
