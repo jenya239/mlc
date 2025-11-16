@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 class EffectAnalyzerTest < Minitest::Test
   def test_pure_expression_marks_constexpr
-    analyzer = MLC::TypeSystem::EffectAnalyzer.new(
+    analyzer = MLC::Common::Typing::EffectAnalyzer.new(
       pure_expression: ->(_expr) { true },
       non_literal_type: ->(_type) { false }
     )
@@ -15,7 +15,7 @@ class EffectAnalyzerTest < Minitest::Test
   end
 
   def test_nil_body_returns_default_effects
-    analyzer = MLC::TypeSystem::EffectAnalyzer.new(
+    analyzer = MLC::Common::Typing::EffectAnalyzer.new(
       pure_expression: ->(_expr) { false },
       non_literal_type: ->(_type) { false }
     )
@@ -26,7 +26,7 @@ class EffectAnalyzerTest < Minitest::Test
   end
 
   def test_impure_expression_skips_constexpr
-    analyzer = MLC::TypeSystem::EffectAnalyzer.new(
+    analyzer = MLC::Common::Typing::EffectAnalyzer.new(
       pure_expression: ->(_expr) { false },
       non_literal_type: ->(_type) { false }
     )
@@ -37,7 +37,7 @@ class EffectAnalyzerTest < Minitest::Test
   end
 
   def test_non_literal_return_type_skips_constexpr
-    analyzer = MLC::TypeSystem::EffectAnalyzer.new(
+    analyzer = MLC::Common::Typing::EffectAnalyzer.new(
       pure_expression: ->(_expr) { true },
       non_literal_type: ->(_type) { true }
     )
@@ -49,7 +49,7 @@ class EffectAnalyzerTest < Minitest::Test
   end
 
   def test_pure_with_literal_type_marks_constexpr
-    analyzer = MLC::TypeSystem::EffectAnalyzer.new(
+    analyzer = MLC::Common::Typing::EffectAnalyzer.new(
       pure_expression: ->(_expr) { true },
       non_literal_type: ->(_type) { false }
     )

@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  module TypeSystem
-    class MatchAnalyzer
+  module Common
+    module Typing
+      class MatchAnalyzer
       Analysis = Struct.new(:arms, :result_type)
 
       def initialize(ensure_compatible_type:, type_registry: nil, check_exhaustiveness: true)
@@ -92,6 +93,7 @@ module MLC
         else
           type.respond_to?(:name) ? type.name : nil
         end
+      end
       end
     end
   end

@@ -116,18 +116,18 @@ module MLC
             type_checker: @type_checker,
             scope_context: @scope_context
           )
-          type_constraint_solver = MLC::TypeSystem::TypeConstraintSolver.new(
+          type_constraint_solver = MLC::Common::Typing::TypeConstraintSolver.new(
             infer_type_arguments: @type_inference_service.method(:infer_type_arguments),
             substitute_type: @type_inference_service.method(:substitute_type),
             ensure_compatible_type: @type_checker.method(:ensure_compatible_type),
             type_error: ->(message) { @type_checker.type_error(message) },
             assign_expression_type: @type_checker.method(:assign_expression_type)
           )
-          @generic_call_resolver = MLC::TypeSystem::GenericCallResolver.new(
+          @generic_call_resolver = MLC::Common::Typing::GenericCallResolver.new(
             constraint_solver: type_constraint_solver
           )
           @type_inference_service.generic_call_resolver = @generic_call_resolver
-          @match_analyzer = MLC::TypeSystem::MatchAnalyzer.new(
+          @match_analyzer = MLC::Common::Typing::MatchAnalyzer.new(
             ensure_compatible_type: @type_checker.method(:ensure_compatible_type),
             type_registry: @type_registry,
             check_exhaustiveness: true

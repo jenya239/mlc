@@ -37,7 +37,7 @@ module MLC
         )
 
         @purity_analyzer = MLC::Services::PurityAnalyzer.new
-        @effect_analyzer = MLC::TypeSystem::EffectAnalyzer.new(
+        @effect_analyzer = MLC::Common::Typing::EffectAnalyzer.new(
           pure_expression: @purity_analyzer.method(:is_pure_expression),
           non_literal_type: @purity_analyzer.method(:non_literal_type?)
         )

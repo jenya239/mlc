@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  module TypeSystem
-    class EffectAnalyzer
+  module Common
+    module Typing
+      class EffectAnalyzer
       DEFAULT_EFFECTS = [:noexcept].freeze
 
       def initialize(pure_expression:, non_literal_type:, default_effects: DEFAULT_EFFECTS)
@@ -23,6 +24,7 @@ module MLC
         effects.unshift(:constexpr) if body_pure && type_literal
         effects.uniq
       end
+    end
     end
   end
 end

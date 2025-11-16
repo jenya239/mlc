@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  module TypeSystem
-    class TypeConstraintSolver
+  module Common
+    module Typing
+      class TypeConstraintSolver
       Instantiation = Struct.new(:type_map, :param_types, :ret_type)
 
       def initialize(infer_type_arguments:, substitute_type:, ensure_compatible_type:, type_error:, assign_expression_type: nil)
@@ -36,6 +37,7 @@ module MLC
         ret_type = @substitute_type.call(info.ret_type, type_map)
 
         Instantiation.new(type_map, param_types, ret_type)
+      end
       end
     end
   end

@@ -18,7 +18,7 @@ class AnalysisPassesTest < Minitest::Test
   end
 
   def test_effect_analysis_pass
-    analyzer = MLC::TypeSystem::EffectAnalyzer.new(
+    analyzer = MLC::Common::Typing::EffectAnalyzer.new(
       pure_expression: ->(body) { body.is_a?(MLC::SemanticIR::BinaryExpr) },
       non_literal_type: ->(type) { false }
     )
@@ -59,7 +59,7 @@ class AnalysisPassesTest < Minitest::Test
   end
 
   def test_pass_integration_with_pass_manager
-    analyzer = MLC::TypeSystem::EffectAnalyzer.new(
+    analyzer = MLC::Common::Typing::EffectAnalyzer.new(
       pure_expression: ->(body) { body.is_a?(MLC::SemanticIR::BinaryExpr) },
       non_literal_type: ->(type) { false }
     )

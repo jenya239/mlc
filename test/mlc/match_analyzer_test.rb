@@ -7,7 +7,7 @@ class MatchAnalyzerTest < Minitest::Test
   Arm = Struct.new(:pattern, :guard, :body)
 
   def build_analyzer
-    MLC::TypeSystem::MatchAnalyzer.new(
+    MLC::Common::Typing::MatchAnalyzer.new(
       ensure_compatible_type: ->(actual, expected, _context) do
         raise "type mismatch" unless actual == expected
       end
@@ -62,7 +62,7 @@ class MatchAnalyzerTest < Minitest::Test
 
   def test_analyzer_propagates_type_mismatches
     ensure_calls = []
-    analyzer = MLC::TypeSystem::MatchAnalyzer.new(
+    analyzer = MLC::Common::Typing::MatchAnalyzer.new(
       ensure_compatible_type: lambda do |actual, expected, context|
         ensure_calls << [actual, expected, context]
         raise MLC::CompileError, "Mismatch" unless actual == expected
@@ -96,7 +96,7 @@ class MatchAnalyzerTest < Minitest::Test
 
     type_registry.expect(:lookup, sum_type_info, ["Option"])
 
-    analyzer = MLC::TypeSystem::MatchAnalyzer.new(
+    analyzer = MLC::Common::Typing::MatchAnalyzer.new(
       ensure_compatible_type: ->(_actual, _expected, _context) {},
       type_registry: type_registry,
       check_exhaustiveness: true
@@ -130,7 +130,7 @@ class MatchAnalyzerTest < Minitest::Test
 
     type_registry.expect(:lookup, sum_type_info, ["Result"])
 
-    analyzer = MLC::TypeSystem::MatchAnalyzer.new(
+    analyzer = MLC::Common::Typing::MatchAnalyzer.new(
       ensure_compatible_type: ->(_actual, _expected, _context) {},
       type_registry: type_registry,
       check_exhaustiveness: true
@@ -166,7 +166,7 @@ class MatchAnalyzerTest < Minitest::Test
 
     type_registry.expect(:lookup, sum_type_info, ["Option"])
 
-    analyzer = MLC::TypeSystem::MatchAnalyzer.new(
+    analyzer = MLC::Common::Typing::MatchAnalyzer.new(
       ensure_compatible_type: ->(_actual, _expected, _context) {},
       type_registry: type_registry,
       check_exhaustiveness: true
@@ -193,7 +193,7 @@ class MatchAnalyzerTest < Minitest::Test
     # Mock type registry (should not be called)
     type_registry = Minitest::Mock.new
 
-    analyzer = MLC::TypeSystem::MatchAnalyzer.new(
+    analyzer = MLC::Common::Typing::MatchAnalyzer.new(
       ensure_compatible_type: ->(_actual, _expected, _context) {},
       type_registry: type_registry,
       check_exhaustiveness: false  # Disabled
@@ -223,7 +223,7 @@ class MatchAnalyzerTest < Minitest::Test
 
     type_registry.expect(:lookup, record_type_info, ["Point"])
 
-    analyzer = MLC::TypeSystem::MatchAnalyzer.new(
+    analyzer = MLC::Common::Typing::MatchAnalyzer.new(
       ensure_compatible_type: ->(_actual, _expected, _context) {},
       type_registry: type_registry,
       check_exhaustiveness: true

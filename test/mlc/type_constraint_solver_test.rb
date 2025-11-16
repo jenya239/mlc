@@ -7,7 +7,7 @@ class TypeConstraintSolverTest < Minitest::Test
   Info = Struct.new(:type_params, :param_types, :ret_type)
 
   def build_solver(ensure_compatible_type: nil, type_error: nil, infer_type_arguments: nil)
-    MLC::TypeSystem::TypeConstraintSolver.new(
+    MLC::Common::Typing::TypeConstraintSolver.new(
       infer_type_arguments: infer_type_arguments || method(:mock_infer_type_arguments),
       substitute_type: ->(type, map) { substitute(type, map) },
       ensure_compatible_type: ensure_compatible_type || ->(_actual, _expected, _context = {}) {},
