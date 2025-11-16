@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  module Diagnostics
-    class EventLogger
+  module Common
+    module Diagnostics
+      class EventLogger
       DEFAULT_EVENTS = %i[
         stdlib_function_imported
         stdlib_type_imported
@@ -23,6 +24,7 @@ module MLC
       def self.format_message(event, payload)
         details = payload&.map { |key, value| "#{key}=#{value.inspect}" }&.join(" ")
         details && !details.empty? ? "[#{event}] #{details}" : "[#{event}]"
+      end
       end
     end
   end

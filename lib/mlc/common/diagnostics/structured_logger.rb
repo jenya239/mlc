@@ -3,9 +3,10 @@
 require "json"
 
 module MLC
-  module Diagnostics
-    # Structured logger for EventBus with JSON output support
-    class StructuredLogger
+  module Common
+    module Diagnostics
+      # Structured logger for EventBus with JSON output support
+      class StructuredLogger
       LEVEL_COLORS = {
         debug: "\e[36m",    # Cyan
         info: "\e[32m",     # Green
@@ -46,10 +47,10 @@ module MLC
 
       # Log a single event
       def log_event(event_name, payload_or_event)
-        event_obj = if payload_or_event.is_a?(Infrastructure::EventBus::Event)
+        event_obj = if payload_or_event.is_a?(EventBus::Event)
                       payload_or_event
                     else
-                      Infrastructure::EventBus::Event.new(
+                      EventBus::Event.new(
                         name: event_name,
                         payload: payload_or_event,
                         level: :info,
@@ -181,6 +182,7 @@ module MLC
         }.join
 
         "#{codes_str}#{text}#{RESET}"
+      end
       end
     end
   end

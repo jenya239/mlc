@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 module MLC
-  module Diagnostics
-    # Rich diagnostic formatter with color support and multi-line context
-    class Formatter
+  module Common
+    module Diagnostics
+      # Rich diagnostic formatter with color support and multi-line context
+      class Formatter
       SEVERITY_COLORS = {
         error: "\e[31m",    # Red
         warning: "\e[33m",  # Yellow
@@ -189,6 +190,7 @@ module MLC
             source: source
           )
         end
+      end
       end
     end
   end

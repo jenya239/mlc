@@ -64,7 +64,7 @@ class AnalysisPassesTest < Minitest::Test
       non_literal_type: ->(type) { false }
     )
 
-    manager = MLC::Infrastructure::PassManager.new
+    manager = MLC::Common::Analysis::PassManager.new
     manager.register(:name_resolution, MLC::Common::Analysis::NameResolutionPass.new.to_callable)
     manager.register(:type_check, MLC::Common::Analysis::TypeCheckPass.new(type_registry: @type_registry).to_callable)
     manager.register(:effect_analysis, MLC::Common::Analysis::EffectAnalysisPass.new(effect_analyzer: analyzer).to_callable)

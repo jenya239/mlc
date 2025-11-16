@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  module Infrastructure
-    class PassManager
+  module Common
+    module Analysis
+      class PassManager
     # Internal representation of a registered pass
     Pass = Struct.new(:name, :callable, :metadata, keyword_init: true) do
       def base_pass?
@@ -182,6 +183,7 @@ module MLC
         puts "[PassManager] #{payload[:message]}"
       end
     end
-  end
+      end
+    end
   end
 end

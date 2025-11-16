@@ -42,7 +42,7 @@ module MLC
         private
 
         def build_pass_manager
-          MLC::Infrastructure::PassManager.new.tap do |manager|
+          MLC::Common::Analysis::PassManager.new.tap do |manager|
             manager.register(:collect_imports, method(:pass_collect_imports))
             manager.register(:preregister_types, method(:pass_preregister_types))
             manager.register(:preregister_functions, method(:pass_preregister_functions))

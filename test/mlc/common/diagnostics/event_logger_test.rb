@@ -5,10 +5,10 @@ require "stringio"
 
 class EventLoggerTest < Minitest::Test
   def test_logs_payload_to_io
-    bus = MLC::Infrastructure::EventBus.new
+    bus = MLC::Common::Diagnostics::EventBus.new
     io = StringIO.new
 
-    MLC::Diagnostics::EventLogger.attach(bus, io: io, events: [:custom])
+    MLC::Common::Diagnostics::EventLogger.attach(bus, io: io, events: [:custom])
     bus.publish(:custom, foo: 42)
 
     io.rewind

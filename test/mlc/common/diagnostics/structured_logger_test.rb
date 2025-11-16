@@ -8,9 +8,9 @@ require "time"
 class StructuredLoggerTest < Minitest::Test
   def test_log_event_text_format
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test_event,
       payload: { key: "value" },
       level: :info,
@@ -28,9 +28,9 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_log_event_json_format
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :json)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :json)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test_event,
       payload: { key: "value" },
       level: :info,
@@ -50,9 +50,9 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_log_event_compact_format
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :compact, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :compact, color: :never)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test_event,
       payload: { key: "value" },
       level: :warning,
@@ -69,8 +69,8 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_attach_to_event_bus
     io = StringIO.new
-    bus = MLC::Infrastructure::EventBus.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :compact, color: :never)
+    bus = MLC::Common::Diagnostics::EventBus.new
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :compact, color: :never)
 
     logger.attach(bus, events: [:custom_event])
 
@@ -83,8 +83,8 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_attach_with_min_level_filtering
     io = StringIO.new
-    bus = MLC::Infrastructure::EventBus.new(min_level: :debug)
-    logger = MLC::Diagnostics::StructuredLogger.new(
+    bus = MLC::Common::Diagnostics::EventBus.new(min_level: :debug)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(
       io: io,
       format: :compact,
       color: :never,
@@ -104,9 +104,9 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_format_value_string
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test,
       payload: { str: "hello world" },
       level: :info,
@@ -121,9 +121,9 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_format_value_symbol
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test,
       payload: { sym: :value },
       level: :info,
@@ -138,9 +138,9 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_format_value_array
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test,
       payload: { arr: [1, 2, 3] },
       level: :info,
@@ -155,9 +155,9 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_format_value_hash
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test,
       payload: { obj: { key: "value" } },
       level: :info,
@@ -172,9 +172,9 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_compact_format_array_shows_size
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :compact, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :compact, color: :never)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test,
       payload: { arr: [1, 2, 3, 4, 5] },
       level: :info,
@@ -189,9 +189,9 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_compact_format_hash_shows_size
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :compact, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :compact, color: :never)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test,
       payload: { obj: { a: 1, b: 2, c: 3 } },
       level: :info,
@@ -206,9 +206,9 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_empty_payload
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
 
-    event = MLC::Infrastructure::EventBus::Event.new(
+    event = MLC::Common::Diagnostics::EventBus::Event.new(
       name: :test,
       payload: {},
       level: :info,
@@ -225,21 +225,21 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_color_enabled
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :always)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :always)
 
     assert logger.color_enabled
   end
 
   def test_color_disabled
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
 
     refute logger.color_enabled
   end
 
   def test_log_event_with_plain_payload
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
 
     # When passing a plain hash (not an Event object)
     logger.log_event(:test, { message: "plain" })
@@ -251,10 +251,10 @@ class StructuredLoggerTest < Minitest::Test
 
   def test_all_log_levels
     io = StringIO.new
-    logger = MLC::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
+    logger = MLC::Common::Diagnostics::StructuredLogger.new(io: io, format: :text, color: :never)
 
     [:debug, :info, :warning, :error].each do |level|
-      event = MLC::Infrastructure::EventBus::Event.new(
+      event = MLC::Common::Diagnostics::EventBus::Event.new(
         name: :test,
         payload: { level: level },
         level: level,

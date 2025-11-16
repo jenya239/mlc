@@ -21,7 +21,7 @@ class DiagnosticFormatterTest < Minitest::Test
       line_text: "  let y = x + 10"
     )
 
-    formatter = MLC::Diagnostics::Formatter.new(color: :never, context_lines: 1)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :never, context_lines: 1)
     result = formatter.format(
       severity: :error,
       message: "undefined variable 'z'",
@@ -44,7 +44,7 @@ class DiagnosticFormatterTest < Minitest::Test
       line_text: "  let y = x + 10"
     )
 
-    formatter = MLC::Diagnostics::Formatter.new(color: :never)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :never)
     result = formatter.format(
       severity: :error,
       message: "undefined variable 'z'",
@@ -63,7 +63,7 @@ class DiagnosticFormatterTest < Minitest::Test
       column: 7
     )
 
-    formatter = MLC::Diagnostics::Formatter.new(color: :never)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :never)
     result = formatter.format(
       severity: :warning,
       message: "unused variable 'x'",
@@ -74,7 +74,7 @@ class DiagnosticFormatterTest < Minitest::Test
   end
 
   def test_format_without_origin
-    formatter = MLC::Diagnostics::Formatter.new(color: :never)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :never)
     result = formatter.format(
       severity: :error,
       message: "compilation failed"
@@ -91,7 +91,7 @@ class DiagnosticFormatterTest < Minitest::Test
       column: 13
     )
 
-    formatter = MLC::Diagnostics::Formatter.new(color: :never, context_lines: 2)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :never, context_lines: 2)
     result = formatter.format(
       severity: :error,
       message: "type error",
@@ -115,7 +115,7 @@ class DiagnosticFormatterTest < Minitest::Test
       line_text: "  let x = 42"
     )
 
-    formatter = MLC::Diagnostics::Formatter.new(color: :never)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :never)
     result = formatter.format(
       severity: :error,
       message: "error",
@@ -129,12 +129,12 @@ class DiagnosticFormatterTest < Minitest::Test
   end
 
   def test_color_enabled_when_requested
-    formatter = MLC::Diagnostics::Formatter.new(color: :always)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :always)
     assert formatter.color_enabled
   end
 
   def test_color_disabled_when_requested
-    formatter = MLC::Diagnostics::Formatter.new(color: :never)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :never)
     refute formatter.color_enabled
   end
 
@@ -145,7 +145,7 @@ class DiagnosticFormatterTest < Minitest::Test
       column: 1
     )
 
-    result = MLC::Diagnostics::Formatter.format_error(
+    result = MLC::Common::Diagnostics::Formatter.format_error(
       "error message",
       origin: origin,
       color: :never
@@ -155,7 +155,7 @@ class DiagnosticFormatterTest < Minitest::Test
   end
 
   def test_class_method_format_warning
-    result = MLC::Diagnostics::Formatter.format_warning(
+    result = MLC::Common::Diagnostics::Formatter.format_warning(
       "warning message",
       color: :never
     )
@@ -164,7 +164,7 @@ class DiagnosticFormatterTest < Minitest::Test
   end
 
   def test_class_method_format_info
-    result = MLC::Diagnostics::Formatter.format_info(
+    result = MLC::Common::Diagnostics::Formatter.format_info(
       "info message",
       color: :never
     )
@@ -173,7 +173,7 @@ class DiagnosticFormatterTest < Minitest::Test
   end
 
   def test_class_method_format_note
-    result = MLC::Diagnostics::Formatter.format_note(
+    result = MLC::Common::Diagnostics::Formatter.format_note(
       "note message",
       color: :never
     )
@@ -189,7 +189,7 @@ class DiagnosticFormatterTest < Minitest::Test
       column: 1
     )
 
-    formatter = MLC::Diagnostics::Formatter.new(color: :never, context_lines: 2)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :never, context_lines: 2)
     result = formatter.format(
       severity: :error,
       message: "syntax error",
@@ -209,7 +209,7 @@ class DiagnosticFormatterTest < Minitest::Test
       column: 1
     )
 
-    formatter = MLC::Diagnostics::Formatter.new(color: :never, context_lines: 2)
+    formatter = MLC::Common::Diagnostics::Formatter.new(color: :never, context_lines: 2)
     result = formatter.format(
       severity: :error,
       message: "error at end",
