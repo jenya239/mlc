@@ -19,7 +19,7 @@ module MLC
           @stdlib_scanner = stdlib_scanner
           @event_bus = event_bus
           @type_map = build_type_map
-          @runtime_policy = runtime_policy || MLC::Backend::RuntimePolicy.new
+          @runtime_policy = runtime_policy || RuntimePolicy.new
           @services = {}
           @rule_engine = nil # Initialized after Context creation
           @in_generic_function = false # Mutable state for generic function lowering

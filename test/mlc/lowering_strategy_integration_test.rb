@@ -31,7 +31,7 @@ class LoweringStrategyIntegrationTest < Minitest::Test
     MLC
 
     # Use optimized policy
-    policy = MLC::Backend::RuntimePolicy.optimized
+    policy = MLC::Backends::Cpp::RuntimePolicy.optimized
 
     # Policy should be configured correctly
     assert_equal :scope_tmp, policy.block_expr_simple_strategy
@@ -174,8 +174,8 @@ class LoweringStrategyIntegrationTest < Minitest::Test
     # Test that different policies produce different behavior
     # (This will be more meaningful once scope_tmp is implemented)
 
-    conservative = MLC::Backend::RuntimePolicy.conservative
-    optimized = MLC::Backend::RuntimePolicy.optimized
+    conservative = MLC::Backends::Cpp::RuntimePolicy.conservative
+    optimized = MLC::Backends::Cpp::RuntimePolicy.optimized
 
     assert_equal :iife, conservative.block_expr_simple_strategy
     assert_equal :scope_tmp, optimized.block_expr_simple_strategy
@@ -183,7 +183,7 @@ class LoweringStrategyIntegrationTest < Minitest::Test
     assert_equal false, conservative.use_gcc_extensions
     assert_equal false, optimized.use_gcc_extensions
 
-    gcc_opt = MLC::Backend::RuntimePolicy.gcc_optimized
+    gcc_opt = MLC::Backends::Cpp::RuntimePolicy.gcc_optimized
     assert_equal :gcc_expr, gcc_opt.block_expr_simple_strategy
     assert_equal true, gcc_opt.use_gcc_extensions
   end

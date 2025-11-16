@@ -3,9 +3,10 @@
 require "set"
 
 module MLC
-  module Backend
-    # Generates C++ header (.hpp) and implementation (.cpp) files from SemanticIR modules
-    class HeaderGenerator
+  module Backends
+    module Cpp
+      # Generates C++ header (.hpp) and implementation (.cpp) files from SemanticIR modules
+      class HeaderGenerator
       def initialize(lowering)
         @lowering = lowering
       end
@@ -472,6 +473,7 @@ module MLC
       def module_name_for_type(type)
         lookup_type_info(type)&.module_name
       end
+    end
     end
   end
 end

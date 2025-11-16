@@ -165,7 +165,7 @@ module MLC
       assert_includes cpp_source, "geometry::area"
       refute_includes cpp_source, "geometry::perimeter"
 
-      header_generator = Backend::HeaderGenerator.new(lowerer)
+      header_generator = Backends::Cpp::HeaderGenerator.new(lowerer)
       header_result = header_generator.generate(core)
       header = header_result[:header]
 

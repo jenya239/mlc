@@ -14,7 +14,7 @@ class GccExpressionStrategyTest < Minitest::Test
     MLC
 
     # For now, test that the policy exists and can be created
-    policy = MLC::Backend::RuntimePolicy.gcc_optimized
+    policy = MLC::Backends::Cpp::RuntimePolicy.gcc_optimized
 
     assert_equal :gcc_expr, policy.block_expr_simple_strategy
     assert_equal true, policy.use_gcc_extensions
@@ -22,7 +22,7 @@ class GccExpressionStrategyTest < Minitest::Test
 
   def test_gcc_expression_syntax
     # Test that GCC policy configuration exists
-    policy = MLC::Backend::RuntimePolicy.gcc_optimized
+    policy = MLC::Backends::Cpp::RuntimePolicy.gcc_optimized
     assert_equal :gcc_expr, policy.block_expr_simple_strategy
   end
 
@@ -69,7 +69,7 @@ class GccExpressionStrategyTest < Minitest::Test
     refute analyzer.complex?
 
     # With GCC policy, simple blocks use gcc_expr
-    gcc_policy = MLC::Backend::RuntimePolicy.gcc_optimized
+    gcc_policy = MLC::Backends::Cpp::RuntimePolicy.gcc_optimized
     strategy = gcc_policy.strategy_for_block(analyzer)
     assert_equal :gcc_expr, strategy
   end
@@ -77,7 +77,7 @@ class GccExpressionStrategyTest < Minitest::Test
   def test_scope_tmp_falls_back_to_gcc_when_enabled
     # scope_tmp strategy should use GCC extension when enabled
 
-    policy_with_gcc = MLC::Backend::RuntimePolicy.new
+    policy_with_gcc = MLC::Backends::Cpp::RuntimePolicy.new
     policy_with_gcc.block_expr_simple_strategy = :scope_tmp
     policy_with_gcc.use_gcc_extensions = true
 

@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  module Backend
-    # MetadataGenerator
+  module Backends
+    module Cpp
+      # MetadataGenerator
     # Phase 24-A: Generate .mlcmeta files for module exports
     #
     # Responsibilities:
@@ -136,6 +137,7 @@ module MLC
           type.respond_to?(:name) ? type.name.to_s : type.to_s
         end
       end
+    end
     end
   end
 end

@@ -127,11 +127,11 @@ module MLC
         stdlib_scanner: stdlib_scanner,
         runtime_policy: runtime_policy
       )
-      generator = Backend::HeaderGenerator.new(lowering)
+      generator = Backends::Cpp::HeaderGenerator.new(lowering)
       cpp_result = generator.generate(core_ir)
 
       # Generate metadata for module exports
-      metadata_gen = Backend::MetadataGenerator.new
+      metadata_gen = Backends::Cpp::MetadataGenerator.new
       metadata = metadata_gen.generate(core_ir)
 
       # Return header, implementation, and metadata

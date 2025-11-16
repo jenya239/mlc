@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 module MLC
-  module Backend
-    # RuntimePolicy - конфигурация стратегий lowering
+  module Backends
+    module Cpp
+      # RuntimePolicy - конфигурация стратегий lowering
     # Определяет когда использовать IIFE, runtime helpers, или inline генерацию
     class RuntimePolicy
       # Стратегии для block expressions
@@ -98,6 +99,7 @@ module MLC
       def self.conservative
         new  # Defaults to IIFE everywhere
       end
+    end
     end
   end
 end

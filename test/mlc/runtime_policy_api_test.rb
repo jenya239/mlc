@@ -15,17 +15,17 @@ class RuntimePolicyApiTest < Minitest::Test
     assert_includes cpp, "42"
 
     # Should work with conservative policy
-    cpp = MLC.to_cpp(source, runtime_policy: MLC::Backend::RuntimePolicy.conservative)
+    cpp = MLC.to_cpp(source, runtime_policy: MLC::Backends::Cpp::RuntimePolicy.conservative)
     assert_includes cpp, "test"
     assert_includes cpp, "42"
 
     # Should work with optimized policy
-    cpp = MLC.to_cpp(source, runtime_policy: MLC::Backend::RuntimePolicy.optimized)
+    cpp = MLC.to_cpp(source, runtime_policy: MLC::Backends::Cpp::RuntimePolicy.optimized)
     assert_includes cpp, "test"
     assert_includes cpp, "42"
 
     # Should work with gcc_optimized policy
-    cpp = MLC.to_cpp(source, runtime_policy: MLC::Backend::RuntimePolicy.gcc_optimized)
+    cpp = MLC.to_cpp(source, runtime_policy: MLC::Backends::Cpp::RuntimePolicy.gcc_optimized)
     assert_includes cpp, "test"
     assert_includes cpp, "42"
   end
@@ -36,7 +36,7 @@ class RuntimePolicyApiTest < Minitest::Test
     MLC
 
     # Compile with custom policy
-    policy = MLC::Backend::RuntimePolicy.gcc_optimized
+    policy = MLC::Backends::Cpp::RuntimePolicy.gcc_optimized
     cpp_ast = MLC.compile(source, runtime_policy: policy)
 
     assert cpp_ast.is_a?(CppAst::Nodes::Program)
@@ -50,7 +50,7 @@ class RuntimePolicyApiTest < Minitest::Test
         if n <= 1 then 1 else n * factorial(n - 1)
     MLC
 
-    result = MLC.to_hpp_cpp(source, runtime_policy: MLC::Backend::RuntimePolicy.optimized)
+    result = MLC.to_hpp_cpp(source, runtime_policy: MLC::Backends::Cpp::RuntimePolicy.optimized)
 
     assert result.key?(:header)
     assert result.key?(:implementation)
@@ -67,7 +67,7 @@ class RuntimePolicyApiTest < Minitest::Test
     core_ir, type_registry, function_registry = MLC.transform_to_core_with_registry(ast)
 
     # Lower with custom policy
-    policy = MLC::Backend::RuntimePolicy.new
+    policy = MLC::Backends::Cpp::RuntimePolicy.new
     policy.block_expr_simple_strategy = :gcc_expr
     policy.use_gcc_extensions = true
 
@@ -79,7 +79,7 @@ class RuntimePolicyApiTest < Minitest::Test
 
   def test_custom_policy_configuration
     # Test that we can create and configure a custom policy
-    policy = MLC::Backend::RuntimePolicy.new
+    policy = MLC::Backends::Cpp::RuntimePolicy.new
 
     # Configure to use GCC extensions
     policy.block_expr_simple_strategy = :gcc_expr

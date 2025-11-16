@@ -5,7 +5,7 @@ require_relative "../../lib/mlc/backends/cpp/runtime_policy"
 
 class RuntimePolicyTest < Minitest::Test
   def test_default_policy
-    policy = MLC::Backend::RuntimePolicy.new
+    policy = MLC::Backends::Cpp::RuntimePolicy.new
 
     assert_equal :iife, policy.block_expr_simple_strategy
     assert_equal :iife, policy.block_expr_complex_strategy
@@ -18,7 +18,7 @@ class RuntimePolicyTest < Minitest::Test
   end
 
   def test_optimized_policy
-    policy = MLC::Backend::RuntimePolicy.optimized
+    policy = MLC::Backends::Cpp::RuntimePolicy.optimized
 
     assert_equal :scope_tmp, policy.block_expr_simple_strategy
     assert_equal :iife, policy.block_expr_complex_strategy
@@ -26,14 +26,14 @@ class RuntimePolicyTest < Minitest::Test
   end
 
   def test_gcc_optimized_policy
-    policy = MLC::Backend::RuntimePolicy.gcc_optimized
+    policy = MLC::Backends::Cpp::RuntimePolicy.gcc_optimized
 
     assert_equal :gcc_expr, policy.block_expr_simple_strategy
     assert_equal true, policy.use_gcc_extensions
   end
 
   def test_conservative_policy
-    policy = MLC::Backend::RuntimePolicy.conservative
+    policy = MLC::Backends::Cpp::RuntimePolicy.conservative
 
     # Conservative uses defaults (IIFE everywhere)
     assert_equal :iife, policy.block_expr_simple_strategy
@@ -41,7 +41,7 @@ class RuntimePolicyTest < Minitest::Test
   end
 
   def test_policy_with_overrides
-    policy = MLC::Backend::RuntimePolicy.new
+    policy = MLC::Backends::Cpp::RuntimePolicy.new
     modified = policy.with(
       block_expr_simple_strategy: :scope_tmp,
       match_threshold: 10
@@ -57,7 +57,7 @@ class RuntimePolicyTest < Minitest::Test
   end
 
   def test_block_strategies_constant
-    strategies = MLC::Backend::RuntimePolicy::BLOCK_STRATEGIES
+    strategies = MLC::Backends::Cpp::RuntimePolicy::BLOCK_STRATEGIES
 
     assert_includes strategies, :iife
     assert_includes strategies, :scope_tmp
@@ -66,7 +66,7 @@ class RuntimePolicyTest < Minitest::Test
   end
 
   def test_if_strategies_constant
-    strategies = MLC::Backend::RuntimePolicy::IF_STRATEGIES
+    strategies = MLC::Backends::Cpp::RuntimePolicy::IF_STRATEGIES
 
     assert_includes strategies, :ternary
     assert_includes strategies, :variant_tmp
@@ -74,7 +74,7 @@ class RuntimePolicyTest < Minitest::Test
   end
 
   def test_match_strategies_constant
-    strategies = MLC::Backend::RuntimePolicy::MATCH_STRATEGIES
+    strategies = MLC::Backends::Cpp::RuntimePolicy::MATCH_STRATEGIES
 
     assert_includes strategies, :std_visit
     assert_includes strategies, :iife
@@ -82,7 +82,7 @@ class RuntimePolicyTest < Minitest::Test
   end
 
   def test_policy_modification
-    policy = MLC::Backend::RuntimePolicy.new
+    policy = MLC::Backends::Cpp::RuntimePolicy.new
 
     policy.block_expr_simple_strategy = :scope_tmp
     policy.match_threshold = 10

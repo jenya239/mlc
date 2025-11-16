@@ -93,7 +93,7 @@ module MLC
         end
 
         def test_with_custom_runtime_policy
-          custom_policy = MLC::Backend::RuntimePolicy.new
+          custom_policy = MLC::Backends::Cpp::RuntimePolicy.new
 
           backend = Bootstrap.create_backend(
             type_registry: @type_registry,
