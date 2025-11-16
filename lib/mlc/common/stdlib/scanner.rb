@@ -16,7 +16,8 @@ unless MLC.respond_to?(:parse)
 end
 
 module MLC
-  module Compiler
+  module Common
+    module Stdlib
     # Metadata for a stdlib function
     class FunctionMetadata
     attr_reader :name, :qualified_name, :extern, :params, :return_type, :ast_node
@@ -261,6 +262,7 @@ module MLC
         # Default: lowercase the module name
         "mlc::#{module_name.downcase}"
       end
+    end
     end
   end
   end

@@ -167,7 +167,7 @@ module MLC
             type_registration_service: @type_registration_service,
             module_context_service: @module_context_service
           )
-          @stdlib_registry = MLC::Compiler::StdlibSignatureRegistry.new
+          @stdlib_registry = MLC::Common::Stdlib::StdlibSignatureRegistry.new
           @metadata_loader = MLC::Compiler::MetadataLoaderService.new(
             function_registry: @function_registry,
             type_registry: @type_registry

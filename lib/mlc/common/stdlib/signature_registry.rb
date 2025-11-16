@@ -3,7 +3,8 @@
 require_relative "scanner"
 
 module MLC
-  module Compiler
+  module Common
+    module Stdlib
     # Provides cached access to stdlib function/type signatures backed by StdlibScanner metadata.
     class StdlibSignatureRegistry
     attr_reader :scanner
@@ -36,6 +37,7 @@ module MLC
 
     def type_metadata(module_name, type_name)
       types_for(module_name)[type_name]
+    end
     end
     end
   end
