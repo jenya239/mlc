@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../../source/parser/parser'
-require_relative '../../source/ast/nodes'
-require_relative 'registry'
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::Source::Parser::Parser
+# - MLC::Source::AST::*
 
 # Forward declare MLC module parse method if not already loaded
 # This allows scanner to work in isolation
