@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "parser"
-require_relative "../../common/diagnostics/errors/enhanced_errors"
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::MLCSyntaxError (lines 116, 124, 143)
+# - MLC::MLCTypeError (line 124)
+# - MLC::EnhancedError (line 131)
+
+require_relative "parser"  # Inheritance: ErrorRecoveryParser < Parser
 
 module MLC
   module Source
