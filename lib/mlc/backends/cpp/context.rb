@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "services/utils/string_helpers"
-require_relative "services/utils/type_mapper"
-require_relative "services/policies/lowering_policy"
-require_relative "services/builders/template_builder"
-require_relative "services/helpers/function_helper"
+# All service classes autoloaded by Zeitwerk on-demand:
+# - Services::Utils::StringHelpers
+# - Services::Utils::TypeMapper
+# - Services::Policies::LoweringPolicy
+# - Services::Builders::TemplateBuilder
+# - Services::Helpers::FunctionHelper
 
 module MLC
   module Backends
