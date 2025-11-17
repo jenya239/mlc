@@ -177,23 +177,31 @@ lib/mlc/
     - Updated 7 references in 2 test files
     - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
 
+12. **Commit b777ff8 + 892fbfc**: `MLC::AST` → `MLC::Source::AST` (2025-11-17)
+    - Fixed: All files in `lib/mlc/source/ast/`
+    - Wrapped `module AST` in `module Source` in nodes.rb
+    - Fixed duplicated namespaces from sed automation: `MLC::Source::MLC::Source::AST::` → `MLC::Source::AST::`
+    - Fixed bare `AST::` references in:
+      * lib/mlc/source/parser/base_parser.rb:90
+      * lib/mlc/source/parser/optimized_parser.rb (3 locations)
+      * lib/mlc/representations/semantic/gen/services/checkers/type_checker.rb (3 locations)
+      * lib/mlc/common/stdlib/scanner.rb (5 locations)
+    - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
 ### 🔄 Remaining High-Priority Namespace Mismatches
 
-Based on comprehensive codebase scan (2025-11-16):
+Based on comprehensive codebase scan (updated 2025-11-17):
 
 **High-Impact Categories** (require significant refactoring):
 
-1. **MLC::AST** (256 usages)
-   - Files in `lib/mlc/source/ast/` define `MLC::AST::*`
-   - Expected by Zeitwerk: `MLC::Source::AST::*`
+1. ✅ **MLC::AST** (256 usages) → **COMPLETED** (commits b777ff8, 892fbfc)
+   - Migrated to `MLC::Source::AST::*`
 
-2. **MLC::SemanticGen** (54+ usages)
-   - Files in `lib/mlc/representations/semantic/gen/` define `MLC::SemanticGen::*`
-   - Expected: `MLC::Representations::Semantic::Gen::*`
+2. ✅ **MLC::SemanticGen** (54+ usages) → **COMPLETED**
+   - Migrated to `MLC::Representations::Semantic::Gen::*`
 
-3. **MLC::Services** (42 usages)
-   - Files in `lib/mlc/representations/semantic/gen/services/` define `MLC::Services::*`
-   - Expected: `MLC::Representations::Semantic::Gen::Services::*`
+3. ✅ **MLC::Services** (42 usages) → **COMPLETED**
+   - Migrated to `MLC::Representations::Semantic::Gen::Services::*`
 
 4. **MLC::Rules** (66 usages)
    - Files in `lib/mlc/backends/cpp/services/rules/` define `MLC::Rules::*`
