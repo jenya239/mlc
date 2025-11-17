@@ -21,7 +21,7 @@ class RulesRuleEngineTest < Minitest::Test
 
   def test_rule_engine_can_register_objects
     bucket = []
-    engine = MLC::Rules::RuleEngine.new
+    engine = MLC::Representations::Semantic::Gen::Services::RuleEngine.new
     engine.register(:stage, CaptureRule.new(bucket))
 
     engine.apply(:stage, :node)
@@ -31,7 +31,7 @@ class RulesRuleEngineTest < Minitest::Test
 
   def test_rule_engine_is_invoked_during_transform
     bucket = []
-    engine = MLC::Rules::RuleEngine.new
+    engine = MLC::Representations::Semantic::Gen::Services::RuleEngine.new
     engine.register(:core_ir_function, CaptureRule.new(bucket))
 
     source = <<~MLCORA
@@ -78,7 +78,7 @@ class RulesRuleEngineTest < Minitest::Test
   end
 
   def test_function_effect_rule_sets_effects
-    engine = MLC::Rules::RuleEngine.new
+    engine = MLC::Representations::Semantic::Gen::Services::RuleEngine.new
     engine.register(:core_ir_function, MLC::Representations::Semantic::Gen::Rules::FunctionEffectRule.new)
 
     source = <<~MLCORA

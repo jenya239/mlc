@@ -83,7 +83,7 @@ module MLC
       end
 
       def build_rule_engine
-        MLC::Rules::RuleEngine.new
+        Services::RuleEngine.new
       end
 
       def ensure_required_rules(engine)
