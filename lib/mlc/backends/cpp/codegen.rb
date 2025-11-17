@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "bootstrap"
-require_relative "rules/function_rule"
-require_relative "../../../cpp_ast/index"
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::Backends::Cpp::Bootstrap (line 25)
+# - MLC::Backends::Cpp::Rules::FunctionRule (line 106)
+
+require_relative "../../../cpp_ast/index"  # CppAst not using Zeitwerk, manual require needed
 
 module MLC
   module Backends
@@ -22,7 +24,7 @@ module MLC
 
         def initialize(type_registry:, function_registry: nil, stdlib_scanner: nil, rule_engine: nil, event_bus: nil, runtime_policy: nil)
           # Initialize new architecture
-          backend = Bootstrap.create_backend(
+          backend = MLC::Backends::Cpp::Bootstrap.create_backend(
             type_registry: type_registry,
             function_registry: function_registry,
             runtime_policy: runtime_policy,
@@ -103,7 +105,7 @@ module MLC
           )
 
           # Apply function-level rules (constexpr, noexcept modifiers)
-          function_rule = Rules::FunctionRule.new(@context)
+          function_rule = MLC::Backends::Cpp::Rules::FunctionRule.new(@context)
           func_decl = function_rule.apply(
             func_decl,
             semantic_func: func,
