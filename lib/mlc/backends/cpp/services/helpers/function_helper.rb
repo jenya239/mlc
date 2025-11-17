@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "../utils/string_helpers"
+# All classes autoloaded by Zeitwerk on-demand:
+# - Services::Utils::StringHelpers
 
 module MLC
   module Backends
@@ -20,7 +21,7 @@ module MLC
               entry = function_registry.fetch_entry(name)
               return nil unless entry
 
-              base_name = Utils::StringHelpers.sanitize_identifier(entry.name)
+              base_name = Services::Utils::StringHelpers.sanitize_identifier(entry.name)
               namespace = entry.namespace
 
               if namespace && !namespace.empty?
