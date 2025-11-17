@@ -1,39 +1,10 @@
 # frozen_string_literal: true
 
-require_relative '../../../registries/function_registry'
-require_relative '../../../registries/type_registry'
+# Core services loaded manually (needed immediately)
 require_relative 'services/rule_engine'
 require_relative 'services/container'
-require_relative 'rules/literal_rule'
-require_relative 'rules/var_ref_rule'
-require_relative 'rules/let_rule'
-require_relative 'rules/record_literal_rule'
-require_relative 'rules/array_literal_rule'
-require_relative 'rules/if_rule'
-require_relative 'rules/match_rule'
-require_relative 'rules/for_loop_rule'
-require_relative 'rules/while_loop_rule'
-require_relative 'rules/lambda_rule'
-require_relative 'rules/list_comprehension_rule'
-require_relative 'rules/index_access_rule'
-require_relative 'rules/call_rule'
-require_relative 'rules/unary_rule'
-require_relative 'rules/binary_rule'
-require_relative 'rules/block_rule'
-require_relative 'rules/do_rule'
-require_relative 'rules/module_member_rule'
-require_relative 'rules/member_rule'
-require_relative 'rules/statements/expr_stmt_rule'
-require_relative 'rules/statements/variable_decl_rule'
-require_relative 'rules/statements/return_rule'
-require_relative 'rules/statements/assignment_rule'
-require_relative 'rules/statements/break_rule'
-require_relative 'rules/statements/continue_rule'
-require_relative 'rules/statements/if_rule'
-require_relative 'rules/statements/for_rule'
-require_relative 'rules/statements/while_rule'
-require_relative 'visitors/expression_visitor'
-require_relative 'visitors/statement_visitor'
+
+# Rules, visitors, and other classes will be autoloaded by Zeitwerk when referenced
 
 module MLC
   module Representations
