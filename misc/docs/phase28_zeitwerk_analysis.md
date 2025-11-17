@@ -188,6 +188,20 @@ lib/mlc/
       * lib/mlc/common/stdlib/scanner.rb (5 locations)
     - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
 
+13. **Commit 0f7693c**: `MLC::Parser` → `MLC::Source::Parser` (2025-11-17)
+    - Fixed: All 10 parser files in `lib/mlc/source/parser/`
+    - Wrapped all `module Parser` in `module Source`:
+      * parser.rb, base_parser.rb, declaration_parser.rb
+      * expression_parser.rb, statement_parser.rb, type_parser.rb
+      * pattern_parser.rb, error_recovery_parser.rb
+      * lexer.rb, optimized_parser.rb
+    - Replaced all `MLC::Parser::` → `MLC::Source::Parser::`
+    - Fixed bare `Parser::Parser` references in:
+      * lib/mlc/common/compiler_api.rb
+      * lib/mlc/common/stdlib/scanner.rb
+    - Updated 4 test files with new namespace
+    - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
 ### 🔄 Remaining High-Priority Namespace Mismatches
 
 Based on comprehensive codebase scan (updated 2025-11-17):
@@ -203,13 +217,12 @@ Based on comprehensive codebase scan (updated 2025-11-17):
 3. ✅ **MLC::Services** (42 usages) → **COMPLETED**
    - Migrated to `MLC::Representations::Semantic::Gen::Services::*`
 
-4. **MLC::Rules** (66 usages)
+4. ✅ **MLC::Parser** (126 usages) → **COMPLETED** (commit 0f7693c)
+   - Migrated to `MLC::Source::Parser::*`
+
+5. **MLC::Rules** (66 usages)
    - Files in `lib/mlc/backends/cpp/services/rules/` define `MLC::Rules::*`
    - Expected: `MLC::Backends::Cpp::Services::Rules::*`
-
-5. **MLC::Parser** (126 usages)
-   - Files in `lib/mlc/source/parser/` define `MLC::Parser::*`
-   - Expected: `MLC::Source::Parser::*`
 
 **Medium-Impact Categories**:
 
