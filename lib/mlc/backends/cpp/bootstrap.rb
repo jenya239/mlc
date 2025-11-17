@@ -4,35 +4,7 @@ require_relative "container"
 require_relative "context"
 require_relative "services/rule_engine"
 
-# Auto-load all expression rules
-require_relative "rules/expressions/var_ref_rule"
-require_relative "rules/expressions/unary_rule"
-require_relative "rules/expressions/binary_rule"
-require_relative "rules/expressions/index_rule"
-require_relative "rules/expressions/member_rule"
-require_relative "rules/expressions/literal_rule"
-require_relative "rules/expressions/regex_rule"
-require_relative "rules/expressions/array_literal_rule"
-require_relative "rules/expressions/if_rule"
-require_relative "rules/expressions/record_rule"
-require_relative "rules/expressions/lambda_rule"
-require_relative "rules/expressions/call_rule"
-require_relative "rules/expressions/block_rule"
-require_relative "rules/expressions/list_comp_rule"
-require_relative "rules/expressions/match_rule"
-
-# Auto-load all statement rules
-require_relative "rules/statements/assignment_rule"
-require_relative "rules/statements/block_rule"
-require_relative "rules/statements/break_rule"
-require_relative "rules/statements/continue_rule"
-require_relative "rules/statements/expr_statement_rule"
-require_relative "rules/statements/for_rule"
-require_relative "rules/statements/if_rule"
-require_relative "rules/statements/match_rule"
-require_relative "rules/statements/return_rule"
-require_relative "rules/statements/variable_decl_rule"
-require_relative "rules/statements/while_rule"
+# All rules autoloaded by Zeitwerk on-demand via string-based resolution
 
 module MLC
   module Backends
@@ -72,49 +44,49 @@ module MLC
         # Register all expression rules in priority order
         def self.register_expression_rules(rule_engine, context)
           # Literals and references (highest priority)
-          rule_engine.register_expression_rule(Rules::Expressions::VarRefRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::LiteralRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::RegexRule.new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::VarRefRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::LiteralRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::RegexRule").new(context))
 
           # Simple operations
-          rule_engine.register_expression_rule(Rules::Expressions::UnaryRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::BinaryRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::IndexRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::MemberRule.new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::UnaryRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::BinaryRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::IndexRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::MemberRule").new(context))
 
           # Construction
-          rule_engine.register_expression_rule(Rules::Expressions::ArrayLiteralRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::RecordRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::LambdaRule.new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::ArrayLiteralRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::RecordRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::LambdaRule").new(context))
 
           # Control flow
-          rule_engine.register_expression_rule(Rules::Expressions::IfRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::BlockRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::MatchRule.new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::IfRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::BlockRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::MatchRule").new(context))
 
           # Complex operations
-          rule_engine.register_expression_rule(Rules::Expressions::CallRule.new(context))
-          rule_engine.register_expression_rule(Rules::Expressions::ListCompRule.new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::CallRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::ListCompRule").new(context))
         end
 
         # Register all statement rules in priority order
         def self.register_statement_rules(rule_engine, context)
           # Control flow statements
-          rule_engine.register_statement_rule(Rules::Statements::BreakRule.new(context))
-          rule_engine.register_statement_rule(Rules::Statements::ContinueRule.new(context))
-          rule_engine.register_statement_rule(Rules::Statements::ReturnRule.new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::BreakRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::ContinueRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::ReturnRule").new(context))
 
           # Simple statements
-          rule_engine.register_statement_rule(Rules::Statements::ExprStatementRule.new(context))
-          rule_engine.register_statement_rule(Rules::Statements::AssignmentRule.new(context))
-          rule_engine.register_statement_rule(Rules::Statements::VariableDeclRule.new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::ExprStatementRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::AssignmentRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::VariableDeclRule").new(context))
 
           # Compound statements
-          rule_engine.register_statement_rule(Rules::Statements::IfRule.new(context))
-          rule_engine.register_statement_rule(Rules::Statements::WhileRule.new(context))
-          rule_engine.register_statement_rule(Rules::Statements::ForRule.new(context))
-          rule_engine.register_statement_rule(Rules::Statements::MatchRule.new(context))
-          rule_engine.register_statement_rule(Rules::Statements::BlockRule.new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::IfRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::WhileRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::ForRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::MatchRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::BlockRule").new(context))
         end
       end
     end
