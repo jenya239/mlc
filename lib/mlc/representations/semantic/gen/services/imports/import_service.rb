@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../../../../../registries/function_signature'
-require_relative '../../../../../common/stdlib/signature_registry'
-require_relative 'module_path_resolver'
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::Registries::FunctionSignature (used at line 83)
+# - module_path_resolver provided via dependency injection
 
 module MLC
   module Representations
