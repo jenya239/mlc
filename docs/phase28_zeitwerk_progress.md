@@ -10,11 +10,15 @@
 2. **d09b601** - Rename type_checker.rb → semantic_ir_type_checker.rb (Zeitwerk compatibility)
 3. **ac10b2f** - Remove 79 manual requires (semantic_gen.rb, engine.rb)
 4. **78f13bc** - Remove 6 manual requires (compiler_api.rb)
+5. **f166b72** - Documentation: Phase 28 progress and blockers
+6. **a59311f** - Remove 2 manual requires (cpp.rb)
 
 ### Требования по Количеству
 - **Начальное**: ~398 requires (оценка)
 - **После ac10b2f**: 295 requires (-79)
-- **Текущее**: 192 requires (-103 от ac10b2f, **-206 от начала** или -52%)
+- **После 78f13bc**: ~186 requires (-6 - 1 legacy)
+- **Текущее**: 190 requires (+4 от измерения, пересчёт)
+- **Итого удалено**: **~208 requires (-52%)**
 
 ### Успешно Удалено
 | Файл | До | После | Удалено | Коммит |
@@ -22,7 +26,8 @@
 | semantic_gen.rb | 49 | 2 | -47 | ac10b2f |
 | engine.rb | 34 | 2 | -32 | ac10b2f |
 | compiler_api.rb | 8 | 1 | -6* | 78f13bc |
-| **Итого** | **91** | **5** | **-85** | |
+| cpp.rb | 2 | 0 | -2 | a59311f |
+| **Итого** | **93** | **5** | **-87** | |
 
 *Примечание: попытка удалить -7 из compiler_api.rb была успешной, но -1 (lexer) возможно был удалён где-то ещё.
 
