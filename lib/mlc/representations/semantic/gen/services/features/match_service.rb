@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../../../../../common/typing/match_analyzer'
-require_relative '../utils/type_unification_service'
+# All classes provided via dependency injection:
+# - match_analyzer (MLC::Common::Typing::MatchAnalyzer)
+# - type_unification_service (TypeUnificationService)
 
 module MLC
   module Representations
