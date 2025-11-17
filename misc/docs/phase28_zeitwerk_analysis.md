@@ -202,11 +202,20 @@ lib/mlc/
     - Updated 4 test files with new namespace
     - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
 
-### 🔄 Remaining High-Priority Namespace Mismatches
+14. **Commit f9843d1**: `MLC::Rules` → `MLC::Representations::Semantic::Gen::Services` (2025-11-17)
+    - Fixed: lib/mlc/representations/semantic/gen/services/rule_engine.rb
+    - Wrapped RuleEngine in proper hierarchy:
+      * Changed: module Rules → module Representations::Semantic::Gen::Services
+    - Updated reference in lib/mlc/representations/semantic/gen/engine.rb
+    - Updated 3 references in test/mlc/rules_rule_engine_test.rb
+    - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+    - **Milestone**: All 5 high-priority namespace migrations complete!
+
+### ✅ High-Priority Namespace Migrations - **COMPLETE!**
 
 Based on comprehensive codebase scan (updated 2025-11-17):
 
-**High-Impact Categories** (require significant refactoring):
+**All High-Impact Categories - COMPLETED** (2025-11-17):
 
 1. ✅ **MLC::AST** (256 usages) → **COMPLETED** (commits b777ff8, 892fbfc)
    - Migrated to `MLC::Source::AST::*`
@@ -220,9 +229,9 @@ Based on comprehensive codebase scan (updated 2025-11-17):
 4. ✅ **MLC::Parser** (126 usages) → **COMPLETED** (commit 0f7693c)
    - Migrated to `MLC::Source::Parser::*`
 
-5. **MLC::Rules** (66 usages)
-   - Files in `lib/mlc/backends/cpp/services/rules/` define `MLC::Rules::*`
-   - Expected: `MLC::Backends::Cpp::Services::Rules::*`
+5. ✅ **MLC::Rules** (4 usages) → **COMPLETED** (commit f9843d1)
+   - Migrated to `MLC::Representations::Semantic::Gen::Services::*`
+   - Note: lib/mlc/backends/cpp/rules/* already had correct namespace MLC::Backends::Cpp::Rules
 
 **Medium-Impact Categories**:
 
