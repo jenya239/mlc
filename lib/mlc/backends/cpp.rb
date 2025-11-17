@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Container and Context autoloaded by Zeitwerk on-demand
+
 module MLC
   module Backends
     module Cpp
@@ -7,6 +9,3 @@ module MLC
     end
   end
 end
-
-require_relative "cpp/container"
-require_relative "cpp/context"
