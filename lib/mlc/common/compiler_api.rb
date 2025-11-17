@@ -42,7 +42,7 @@ module MLC
     # @param filename [String, nil] Source filename for error reporting
     # @return [AST::Program] Parsed AST
     def parse(source, filename: nil)
-      parser = Parser::Parser.new(source, filename: filename)
+      parser = MLC::Source::Parser::Parser.new(source, filename: filename)
       parser.parse
     rescue => e
       raise ParseError, "Parse error: #{e.message}"

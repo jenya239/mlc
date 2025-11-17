@@ -4,6 +4,7 @@ require_relative "lexer"
 require_relative "../ast/nodes"
 
 module MLC
+  module Source
   module Parser
     # Base parser module with shared utilities for all parser components
     # Provides token navigation, consumption, and origin tracking
@@ -122,5 +123,6 @@ module MLC
         items
       end
     end
+  end
   end
 end

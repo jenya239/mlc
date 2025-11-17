@@ -24,7 +24,7 @@ class PerformanceBenchmark < Minitest::Test
     
     # Test optimized parser
     optimized_time = Benchmark.measure do
-      10.times { MLC::Parser::OptimizedParser.new(@large_mlc_source).parse }
+      10.times { MLC::Source::Parser::OptimizedParser.new(@large_mlc_source).parse }
     end
     
     puts "Original Parser: #{original_time.real.round(3)}s"
@@ -68,7 +68,7 @@ class PerformanceBenchmark < Minitest::Test
     
     # Test memory usage of optimized parser
     optimized_memory = MemoryProfiler.report do
-      MLC::Parser::OptimizedParser.new(@large_mlc_source).parse
+      MLC::Source::Parser::OptimizedParser.new(@large_mlc_source).parse
     end
     optimized_total = optimized_memory.total_allocated_memsize
     
@@ -89,7 +89,7 @@ class PerformanceBenchmark < Minitest::Test
     puts "\n=== Caching Effectiveness Test ==="
     
     # Test cache hit rate
-    parser = MLC::Parser::OptimizedParser.new(@large_mlc_source)
+    parser = MLC::Source::Parser::OptimizedParser.new(@large_mlc_source)
     
     # First parse (cache miss)
     first_time = Benchmark.measure { parser.parse }

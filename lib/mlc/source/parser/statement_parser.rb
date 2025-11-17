@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module MLC
+  module Source
   module Parser
     # StatementParser
     # Statement parsing - variable declarations, assignments, blocks
@@ -122,5 +123,6 @@ module MLC
     end
 
     end
+  end
   end
 end

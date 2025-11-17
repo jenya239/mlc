@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module MLC
+  module Source
   module Parser
     # DeclarationParser
     # Declaration parsing - modules, imports, functions, type declarations
@@ -301,5 +302,6 @@ module MLC
     end
 
     end
+  end
   end
 end

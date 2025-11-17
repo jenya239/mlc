@@ -14,7 +14,7 @@ END
       end
     MLC
 
-    lexer = MLC::Parser::Lexer.new(source)
+    lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
 
     # Find the STRING_LITERAL token
@@ -34,7 +34,7 @@ END
       end
     MLC
 
-    lexer = MLC::Parser::Lexer.new(source)
+    lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
 
     string_token = tokens.find { |t| t.type == :STRING_LITERAL }
@@ -56,7 +56,7 @@ END
       end
     MLC
 
-    lexer = MLC::Parser::Lexer.new(source)
+    lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
 
     string_token = tokens.find { |t| t.type == :STRING_LITERAL }
@@ -78,7 +78,7 @@ END
       end
     MLC
 
-    lexer = MLC::Parser::Lexer.new(source)
+    lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
 
     string_token = tokens.find { |t| t.type == :STRING_LITERAL }
@@ -100,7 +100,7 @@ END
       end
     MLC
 
-    lexer = MLC::Parser::Lexer.new(source)
+    lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
 
     string_token = tokens.find { |t| t.type == :STRING_LITERAL }
@@ -118,7 +118,7 @@ END
       end
     MLC
 
-    lexer = MLC::Parser::Lexer.new(source)
+    lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
 
     string_token = tokens.find { |t| t.type == :STRING_LITERAL }
@@ -139,7 +139,7 @@ END
       end
     MLC
 
-    lexer = MLC::Parser::Lexer.new(source)
+    lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
 
     string_tokens = tokens.select { |t| t.type == :STRING_LITERAL }

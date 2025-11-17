@@ -4,6 +4,7 @@ require_relative "parser"
 require_relative "../../common/diagnostics/errors/enhanced_errors"
 
 module MLC
+  module Source
   module Parser
     # Parser with error recovery and multiple error reporting
     class ErrorRecoveryParser < Parser
@@ -214,5 +215,6 @@ module MLC
         lines.join("\n")
       end
     end
+  end
   end
 end

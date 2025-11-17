@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module MLC
+  module Source
   module Parser
     # Pattern parsing module
     # Handles parsing of pattern matching patterns (match expressions, destructuring)
@@ -194,5 +195,6 @@ module MLC
         end
       end
     end
+  end
   end
 end

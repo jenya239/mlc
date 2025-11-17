@@ -9,7 +9,7 @@ require_relative 'registry'
 unless MLC.respond_to?(:parse)
   module MLC
     def self.parse(source, filename: nil)
-      parser = Parser::Parser.new(source, filename: filename)
+      parser = MLC::Source::Parser::Parser.new(source, filename: filename)
       parser.parse
     end
   end

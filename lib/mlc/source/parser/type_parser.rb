@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module MLC
+  module Source
   module Parser
     # TypeParser
     # Type parsing - primitives, sum types, record types, generics
@@ -271,5 +272,6 @@ module MLC
     end
 
     end
+  end
   end
 end

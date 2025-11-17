@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module MLC
+  module Source
   module Parser
     # ExpressionParser
     # Expression parsing - literals, operators, lambdas, control flow
@@ -918,5 +919,6 @@ module MLC
     end
 
     end
+  end
   end
 end

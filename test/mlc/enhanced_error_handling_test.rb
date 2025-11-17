@@ -36,11 +36,11 @@ class EnhancedErrorHandlingTest < Minitest::Test
         42
     MLCORA
     
-    parser = MLC::Parser::ErrorRecoveryParser.new(source)
+    parser = MLC::Source::Parser::ErrorRecoveryParser.new(source)
     
     begin
       parser.parse
-    rescue MLC::Parser::MultipleErrors => e
+    rescue MLC::Source::Parser::MultipleErrors => e
       assert e.errors.length >= 2, "Should have multiple errors"
       assert e.errors.any? { |err| err.is_a?(MLC::MLCSyntaxError) }, "Should have syntax errors"
     end
@@ -54,13 +54,13 @@ class EnhancedErrorHandlingTest < Minitest::Test
       fn working() -> i32 = 42
     MLCORA
     
-    parser = MLC::Parser::ErrorRecoveryParser.new(source)
+    parser = MLC::Source::Parser::ErrorRecoveryParser.new(source)
     
     begin
       result = parser.parse
       # Should still parse the working function despite the error
       assert result.declarations.any? { |decl| decl.name == "working" }
-    rescue MLC::Parser::MultipleErrors => e
+    rescue MLC::Source::Parser::MultipleErrors => e
       # Should have errors but still parse some declarations
       assert e.errors.length > 0
     end
@@ -72,11 +72,11 @@ class EnhancedErrorHandlingTest < Minitest::Test
         42
     MLCORA
     
-    parser = MLC::Parser::ErrorRecoveryParser.new(source)
+    parser = MLC::Source::Parser::ErrorRecoveryParser.new(source)
     
     begin
       parser.parse
-    rescue MLC::Parser::MultipleErrors => e
+    rescue MLC::Source::Parser::MultipleErrors => e
       error = e.errors.first
       assert_includes error.formatted_message, "💡 Suggestion:"
       assert_includes error.formatted_message, "🔧 This is a syntax error"
@@ -140,11 +140,11 @@ class EnhancedErrorHandlingTest < Minitest::Test
         42
     MLCORA
     
-    parser = MLC::Parser::ErrorRecoveryParser.new(source)
+    parser = MLC::Source::Parser::ErrorRecoveryParser.new(source)
     
     begin
       parser.parse
-    rescue MLC::Parser::MultipleErrors => e
+    rescue MLC::Source::Parser::MultipleErrors => e
       error = e.errors.first
       assert_includes error.formatted_message, "📍 Context:"
     end

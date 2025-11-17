@@ -3,6 +3,7 @@
 require_relative "parser"
 
 module MLC
+  module Source
   module Parser
     # Optimized parser with memoization and performance improvements
     class OptimizedParser < Parser
@@ -137,5 +138,6 @@ module MLC
         MLC::Source::AST::VarRef.new(name: name)
       end
     end
+  end
   end
 end

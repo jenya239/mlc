@@ -10,22 +10,24 @@ require_relative "statement_parser"
 require_relative "declaration_parser"
 
 module MLC
-  module Parser
-    class Parser
-      # Include all parser modules
-      include BaseParser
-      include ExpressionParser
-      include PatternParser
-      include TypeParser
-      include StatementParser
-      include DeclarationParser
+  module Source
+    module Parser
+      class Parser
+        # Include all parser modules
+        include BaseParser
+        include ExpressionParser
+        include PatternParser
+        include TypeParser
+        include StatementParser
+        include DeclarationParser
 
-      def initialize(source, filename: nil)
-        initialize_parser(source, filename: filename)
-      end
+        def initialize(source, filename: nil)
+          initialize_parser(source, filename: filename)
+        end
 
-      def parse
-        parse_program
+        def parse
+          parse_program
+        end
       end
     end
   end

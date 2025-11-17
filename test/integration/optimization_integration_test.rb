@@ -13,7 +13,7 @@ class OptimizationIntegrationTest < Minitest::Test
     MLCORA
     
     # Test that optimized parser works with simple code
-    parser = MLC::Parser::OptimizedParser.new(source)
+    parser = MLC::Source::Parser::OptimizedParser.new(source)
     ast = parser.parse
     
     assert_equal ast.class, MLC::Source::AST::Program
@@ -25,7 +25,7 @@ class OptimizationIntegrationTest < Minitest::Test
       fn test() -> i32 = 42
     MLCORA
     
-    parser = MLC::Parser::OptimizedParser.new(source)
+    parser = MLC::Source::Parser::OptimizedParser.new(source)
     
     # Parse multiple times - should get same result
     ast1 = parser.parse
@@ -75,7 +75,7 @@ class OptimizationIntegrationTest < Minitest::Test
     MLCORA
     
     # Test that optimized parser doesn't leak memory
-    parser = MLC::Parser::OptimizedParser.new(source)
+    parser = MLC::Source::Parser::OptimizedParser.new(source)
     
     # Measure memory before and after
     GC.start
@@ -97,7 +97,7 @@ class OptimizationIntegrationTest < Minitest::Test
     large_source = generate_large_mlc_source(500)
     
     # Test that optimized parser can handle large files
-    parser = MLC::Parser::OptimizedParser.new(large_source)
+    parser = MLC::Source::Parser::OptimizedParser.new(large_source)
     
     time = Benchmark.measure { parser.parse }
     

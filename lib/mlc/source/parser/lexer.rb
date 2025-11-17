@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module MLC
+  module Source
   module Parser
     class Token
       attr_reader :type, :value, :line, :column, :file,
@@ -516,5 +517,6 @@ module MLC
         @column += 1
       end
     end
+  end
   end
 end
