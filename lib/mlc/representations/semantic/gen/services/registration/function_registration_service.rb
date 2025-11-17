@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "../../../../../registries/function_signature"
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::Registries::FunctionSignature (used at line 61)
 
 module MLC
   module Representations
