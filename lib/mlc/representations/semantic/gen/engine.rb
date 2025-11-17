@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-# Core services loaded manually (needed immediately)
-require_relative 'services/rule_engine'
-require_relative 'services/container'
-
-# Rules, visitors, and other classes will be autoloaded by Zeitwerk when referenced
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::Representations::Semantic::Gen::Services::RuleEngine (line 57)
+# - MLC::Representations::Semantic::Gen::Services::Container (line 53)
+# - MLC::Representations::Semantic::Gen::Visitors::* (lines 21-22)
+# - MLC::Representations::Semantic::Gen::Rules::* (lines 61-89)
+# - MLC::Registries::* (lines 51-52)
 
 module MLC
   module Representations
@@ -50,11 +51,11 @@ module MLC
       def build_services(function_registry:, type_registry:)
         registry = function_registry || MLC::Registries::FunctionRegistry.new
         types = type_registry || MLC::Registries::TypeRegistry.new
-        Services::Container.new(function_registry: registry, type_registry: types)
+        MLC::Representations::Semantic::Gen::Services::Container.new(function_registry: registry, type_registry: types)
       end
 
       def build_rule_engine
-        Services::RuleEngine.new
+        MLC::Representations::Semantic::Gen::Services::RuleEngine.new
       end
 
       def ensure_required_rules(engine)
