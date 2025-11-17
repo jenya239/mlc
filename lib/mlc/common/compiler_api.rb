@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 require_relative "errors"
-require_relative "../source/parser/lexer"
-require_relative "../source/parser/parser"
-require_relative "../representations/semantic/semantic_gen"
-require_relative "../backends/cpp/codegen"
-require_relative "../backends/cpp/header_generator"
-require_relative "../backends/cpp/metadata_generator"
-require_relative "stdlib/scanner"
+
+# All other classes autoloaded by Zeitwerk on-demand:
+# - MLC::Source::Parser::Parser
+# - MLC::Representations::Semantic::Gen::Pipeline
+# - MLC::Backends::Cpp::Codegen
+# - MLC::Backends::Cpp::HeaderGenerator
+# - MLC::Backends::Cpp::MetadataGenerator
+# - MLC::Common::Stdlib::Scanner
 
 module MLC
   class << self
