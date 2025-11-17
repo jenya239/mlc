@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
-require_relative "../../../nodes/builder"
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::SemanticIR::Builder (lines 142, 144, 146, 148)
+# - MLC::SemanticIR::ArrayType (line 146)
+# - MLC::SemanticIR::TypeParam (line 304)
 
 module MLC
   module Representations
@@ -139,13 +142,13 @@ module MLC
             def io_return_type(name)
               case IO_RETURN_TYPES[name]
               when "i32"
-                SemanticIR::Builder.primitive_type("i32")
+                MLC::SemanticIR::Builder.primitive_type("i32")
               when "string"
-                SemanticIR::Builder.primitive_type("string")
+                MLC::SemanticIR::Builder.primitive_type("string")
               when :array_of_string
-                SemanticIR::ArrayType.new(element_type: SemanticIR::Builder.primitive_type("string"))
+                MLC::SemanticIR::ArrayType.new(element_type: MLC::SemanticIR::Builder.primitive_type("string"))
               else
-                SemanticIR::Builder.primitive_type("i32")
+                MLC::SemanticIR::Builder.primitive_type("i32")
               end
             end
 
@@ -301,7 +304,7 @@ module MLC
                 name = tp.respond_to?(:name) ? tp.name : tp
                 constraint = tp.respond_to?(:constraint) ? tp.constraint : nil
                 validate_constraint_name(constraint)
-                SemanticIR::TypeParam.new(name: name, constraint: constraint)
+                MLC::SemanticIR::TypeParam.new(name: name, constraint: constraint)
               end
             end
 
