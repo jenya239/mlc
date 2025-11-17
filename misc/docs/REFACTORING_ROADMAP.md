@@ -189,42 +189,92 @@ lib/mlc/
 
 ---
 
+### ✅ Phase 27.5: Fix Directory/Namespace Mismatches (8h)
+**Status**: COMPLETE (2025-11-16 to 2025-11-17)
+**Results**: All namespace mismatches resolved, codebase ready for Zeitwerk
+
+**Comprehensive namespace migrations completed in 16 commits**:
+
+**Initial Registry Migration** (commit 6d2a7ce, 2025-11-15):
+- Moved 3 registry files: `lib/mlc/common/registry/` → `lib/mlc/registries/`
+- Changed namespace: `MLC::Core::` → `MLC::Registries::`
+- Updated 22 files with new references
+- Test results: 1524 runs, 4014 assertions, 0 failures ✅
+
+**Low-Priority Namespace Fixes** (11 commits, 2025-11-16):
+1. `MLC::Compiler` → `MLC::Common::Stdlib` (scanner, signature_registry)
+2. `MLC::Compiler` → `MLC::Common::Stdlib` (resolver)
+3. `MLC::Compiler::MetadataLoader` → `MLC::Common::Stdlib::MetadataLoaderService`
+4. `MLC::Backend` → `MLC::Backends::Cpp` (39 references, 12 files)
+5. `MLC::TypeSystem` → `MLC::Common::Typing` (19 references, 6 files)
+6. `StdlibSignatureRegistry` → `SignatureRegistry` (redundant prefix removed)
+7. `MetadataLoaderService` → `MetadataLoader` (redundant suffix removed)
+8. `StdlibResolver` → `Resolver` (redundant prefix removed)
+9. `StdlibScanner` → `Scanner` (redundant prefix removed)
+10. `CodeGen` → `Codegen` (CamelCase fix for Zeitwerk)
+11. `MLC::Analysis` → `MLC::Common::Analysis`
+
+**Medium-Priority Namespace Fixes** (commit 2c8daf8, 2025-11-16):
+- `MLC::Infrastructure::EventBus` → `MLC::Common::Diagnostics::EventBus`
+- `MLC::Infrastructure::PassManager` → `MLC::Common::Analysis::PassManager`
+- `MLC::Diagnostics` → `MLC::Common::Diagnostics`
+- 13 files modified (7 production + 6 test)
+
+**High-Priority Namespace Fixes** (4 commits, 2025-11-17):
+1. `MLC::AST` → `MLC::Source::AST` (commits b777ff8, 892fbfc)
+   - 256 usages migrated
+2. `MLC::Parser` → `MLC::Source::Parser` (commit 0f7693c)
+   - 126 usages migrated, 10 parser files wrapped
+3. `MLC::Rules` → `MLC::Representations::Semantic::Gen::Services` (commit f9843d1)
+   - 4 usages migrated
+
+**Impact**:
+- **Total commits**: 16
+- **Files modified**: ~50+ files
+- **Test stability**: 1524 runs, 4014 assertions, 0 failures, 0 errors across all migrations ✅
+- **Namespace categories fixed**: Low (11), Medium (2), High (5)
+
+**Documentation** (commit 9adcc46, 2025-11-17):
+- Created `misc/docs/phase28_zeitwerk_analysis.md` with comprehensive migration tracking
+- Documented all 15 namespace migration commits with file counts and test results
+
+**Result**: Codebase now has strict file path → namespace correspondence, ready for Zeitwerk autoloading
+
+---
+
 ### Phase 28: Autoloading Infrastructure (8h, Medium)
 **Goal**: Implement Zeitwerk-style autoloading for cleaner requires
+**Status**: READY (Prerequisites completed in Phase 27.5)
 
-**Current State** (analyzed 2025-11-15):
+**Current State**:
 - Manual require_relative statements throughout codebase (293 total)
 - Entry point: lib/mlc/common/index.rb (31 requires)
 - Main loader: lib/mlc/representations/semantic/semantic_gen.rb (49 requires)
 - 154 Ruby files in lib/mlc/
 - Every new rule/service requires manual require
 
-**Blockers Found**:
-1. **Directory/namespace mismatch**:
-   - Files in lib/mlc/common/registry/ define MLC::Core::* classes
-   - lib/mlc/core/ directory does not exist
-   - Zeitwerk requires strict path→namespace mapping
-   - 8 references to MLC::Core:: across 6 files
-2. **Files requiring relocation**:
-   - lib/mlc/common/registry/function_registry.rb (defines MLC::Core::FunctionRegistry)
-   - lib/mlc/common/registry/function_signature.rb (defines MLC::Core::FunctionSignature)
-   - lib/mlc/common/registry/type_registry.rb (defines MLC::Core::TypeRegistry)
+**Prerequisites** ✅:
+- ✅ **Phase 27.5 COMPLETE**: All directory/namespace mismatches fixed
+- ✅ Strict file path → namespace correspondence established
+- ✅ Codebase ready for Zeitwerk autoloading
 
-**Prerequisites**:
-- **Phase 27.5: Fix Directory/Namespace Mismatches (2h)**
-  - Create lib/mlc/core/ directory
-  - Move 3 files from lib/mlc/common/registry/ to lib/mlc/core/
-  - Update 8 references in 6 files
-  - Update require paths in lib/mlc/common/index.rb and other loaders
-  - Run tests to verify no regressions
+**Implementation Tasks**:
+1. Add zeitwerk gem dependency
+2. Configure Zeitwerk loader in lib/mlc/common/index.rb
+3. Remove manual require_relative statements (293 total)
+4. Set up autoload paths for main directories
+5. Configure inflections if needed (e.g., IR → Ir, AST → Ast)
+6. Run full test suite to verify autoloading works
+7. Document autoloading setup
 
 **Benefits**:
 - Eliminate manual requires
 - Automatic loading of new components
 - Standard Ruby convention
 - Faster development iteration
+- Reduced maintenance burden
 
-**Deferred**: Blocked by namespace mismatches, requires Phase 27.5 first
+**Priority**: Medium - can proceed when time permits
 
 ---
 
@@ -318,18 +368,19 @@ lib/mlc/
 
 ## Summary
 
-**Completed** (Phase 21-25): ~89 hours
+**Completed** (Phase 21-27.5): ~101 hours
 - ✅ Phase 21: Service Consolidation (6h)
 - ✅ Phase 22: Eliminate Delegate Methods (3h)
 - ✅ Phase 23: Visitor Pattern Migration (20h)
 - ✅ Phase 24: IRGen Elimination (20h)
 - ✅ Phase 25: Codebase Reorganization (40h)
+- ✅ Phase 27: Documentation Improvements (4h)
+- ✅ Phase 27.5: Fix Directory/Namespace Mismatches (8h)
 
-**Current Priority** (Phase 27): 8 hours
-- Documentation improvements and cleanup
+**Ready to Implement**:
+- Phase 28: Autoloading Infrastructure (8h) - prerequisites complete ✅
 
-**Deferred** (Phase 28-31): TBD
-- Phase 28: Autoloading Infrastructure (8h)
+**Deferred** (Phase 29-31): TBD
 - Phase 29: IoC Container (12h)
 - Phase 30: Type System Improvements (TBD)
 - Phase 31: Analysis Passes Implementation (TBD)
@@ -339,8 +390,11 @@ lib/mlc/
 - ✅ Removed duplicate services (351 LOC)
 - ✅ Clean directory structure following best practices
 - ✅ Proper separation of concerns (phases, services, utilities)
+- ✅ Strict file path → namespace correspondence (Zeitwerk-ready)
+- ✅ 16 namespace migration commits (50+ files modified)
 - ✅ 0 regressions throughout all changes
-- ✅ 10,963 net lines of code removed
+- ✅ Test stability: 1524 runs, 4014 assertions, 0 failures, 0 errors
+- ✅ 10,963+ net lines of code removed
 - ✅ Scalable architecture ready for future development
 
-**Last Updated**: 2025-11-10 (after Phase 25 completion)
+**Last Updated**: 2025-11-17 (after Phase 27.5 completion)
