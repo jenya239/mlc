@@ -177,7 +177,22 @@ lib/mlc/
     - Updated 7 references in 2 test files
     - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
 
-12. **Commit b777ff8 + 892fbfc**: `MLC::AST` → `MLC::Source::AST` (2025-11-17)
+12. **Commit 2c8daf8**: `MLC::Infrastructure` and `MLC::Diagnostics` namespace fixes (2025-11-16)
+    - **EventBus**: `MLC::Infrastructure::EventBus` → `MLC::Common::Diagnostics::EventBus`
+    - **PassManager**: `MLC::Infrastructure::PassManager` → `MLC::Common::Analysis::PassManager`
+    - **Diagnostics**: All files in `lib/mlc/common/diagnostics/` updated to use `MLC::Common::Diagnostics`
+    - Files modified: 13 total (7 production + 6 test)
+      * lib/mlc/common/diagnostics/event_bus.rb
+      * lib/mlc/common/diagnostics/error_formatter.rb
+      * lib/mlc/common/diagnostics/severity.rb
+      * lib/mlc/common/diagnostics/issue.rb
+      * lib/mlc/common/diagnostics/diagnostic_store.rb
+      * lib/mlc/common/analysis/pass_manager.rb
+      * lib/mlc/common/index.rb
+      * 6 test files updated
+    - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+
+13. **Commit b777ff8 + 892fbfc**: `MLC::AST` → `MLC::Source::AST` (2025-11-17)
     - Fixed: All files in `lib/mlc/source/ast/`
     - Wrapped `module AST` in `module Source` in nodes.rb
     - Fixed duplicated namespaces from sed automation: `MLC::Source::MLC::Source::AST::` → `MLC::Source::AST::`
@@ -188,7 +203,7 @@ lib/mlc/
       * lib/mlc/common/stdlib/scanner.rb (5 locations)
     - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
 
-13. **Commit 0f7693c**: `MLC::Parser` → `MLC::Source::Parser` (2025-11-17)
+14. **Commit 0f7693c**: `MLC::Parser` → `MLC::Source::Parser` (2025-11-17)
     - Fixed: All 10 parser files in `lib/mlc/source/parser/`
     - Wrapped all `module Parser` in `module Source`:
       * parser.rb, base_parser.rb, declaration_parser.rb
@@ -202,7 +217,7 @@ lib/mlc/
     - Updated 4 test files with new namespace
     - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
 
-14. **Commit f9843d1**: `MLC::Rules` → `MLC::Representations::Semantic::Gen::Services` (2025-11-17)
+15. **Commit f9843d1**: `MLC::Rules` → `MLC::Representations::Semantic::Gen::Services` (2025-11-17)
     - Fixed: lib/mlc/representations/semantic/gen/services/rule_engine.rb
     - Wrapped RuleEngine in proper hierarchy:
       * Changed: module Rules → module Representations::Semantic::Gen::Services
@@ -233,10 +248,14 @@ Based on comprehensive codebase scan (updated 2025-11-17):
    - Migrated to `MLC::Representations::Semantic::Gen::Services::*`
    - Note: lib/mlc/backends/cpp/rules/* already had correct namespace MLC::Backends::Cpp::Rules
 
-**Medium-Impact Categories**:
+**All Medium-Impact Categories - COMPLETED** (2025-11-16):
 
-6. **MLC::Infrastructure** (80 usages)
-7. **MLC::Diagnostics** (40 usages)
+6. ✅ **MLC::Infrastructure** (80 usages) → **COMPLETED** (commit 2c8daf8)
+   - EventBus: `MLC::Infrastructure::EventBus` → `MLC::Common::Diagnostics::EventBus`
+   - PassManager: `MLC::Infrastructure::PassManager` → `MLC::Common::Analysis::PassManager`
+
+7. ✅ **MLC::Diagnostics** (40 usages) → **COMPLETED** (commit 2c8daf8)
+   - Migrated to `MLC::Common::Diagnostics::*`
 
 **Impact Analysis**:
 - **Total high-priority usages**: ~560+
@@ -251,9 +270,15 @@ Based on comprehensive codebase scan (updated 2025-11-17):
 3. ✅ Fix low-priority namespace mismatches (DONE - 11 commits total):
    - 28bd2b4, 4adf7ff, 5212b50, a394d7b (previous session - 4 fixes)
    - 56c886c, b8018a9, f69baf6, a68f849, 3db8f2f, dd6aef1, be4e799 (2025-11-16 - 7 fixes)
-4. 🔄 Continue with remaining low-priority namespace fixes
-5. 🔄 Defer high-priority namespace fixes until after critical development milestones
-6. ⏸️ Phase 28 (Zeitwerk) implementation deferred - requires high-priority namespace fixes first
+4. ✅ Fix medium-priority namespace mismatches (DONE - commit 2c8daf8, 2025-11-16):
+   - MLC::Infrastructure → MLC::Common::Diagnostics / MLC::Common::Analysis
+   - MLC::Diagnostics → MLC::Common::Diagnostics
+5. ✅ Fix high-priority namespace mismatches (DONE - 4 commits, 2025-11-17):
+   - b777ff8, 892fbfc (MLC::AST → MLC::Source::AST)
+   - 0f7693c (MLC::Parser → MLC::Source::Parser)
+   - f9843d1 (MLC::Rules → MLC::Representations::Semantic::Gen::Services)
+6. ✅ **Phase 27.5 Complete!** All namespace migrations finished (16 commits total)
+7. ⏸️ Phase 28 (Zeitwerk) implementation - ready to proceed when needed
 
 ## Notes
 
