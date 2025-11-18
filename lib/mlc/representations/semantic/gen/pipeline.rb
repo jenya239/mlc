@@ -5,9 +5,9 @@
 
 require_relative '../../../registries/function_registry'
 require_relative '../../../registries/type_registry'
-require_relative 'services/registration/function_registration_service'
-require_relative 'services/utils/type_resolution_service'
-require_relative 'services/utils/purity_analyzer'
+require_relative 'services/function_registration_service'
+require_relative 'services/type_resolution_service'
+require_relative 'services/purity_analyzer'
 require_relative '../../../common/typing/type_constraint_solver'
 require_relative '../../../common/typing/generic_call_resolver'
 require_relative '../../../common/typing/match_analyzer'
