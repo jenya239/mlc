@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::Representations::Semantic::Gen::Engine (line 51)
+
 require_relative '../../../registries/function_registry'
 require_relative '../../../registries/type_registry'
 require_relative 'services/registration/function_registration_service'
@@ -48,7 +51,7 @@ module MLC
               non_literal_type: @purity_analyzer.method(:non_literal_type?)
             )
 
-            @engine = Engine.new(
+            @engine = MLC::Representations::Semantic::Gen::Engine.new(
               function_registry: @function_registry,
               type_registry: @type_registry,
               services: @services,
