@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "errors"
-
-# All other classes autoloaded by Zeitwerk on-demand:
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::ParseError (line 49)
+# - MLC::CompileError (lines 69, 73, 93, 97, 140, 145)
 # - MLC::Source::Parser::Parser
 # - MLC::Representations::Semantic::Gen::Pipeline
 # - MLC::Backends::Cpp::Codegen
@@ -46,7 +46,7 @@ module MLC
       parser = MLC::Source::Parser::Parser.new(source, filename: filename)
       parser.parse
     rescue => e
-      raise ParseError, "Parse error: #{e.message}"
+      raise MLC::ParseError, "Parse error: #{e.message}"
     end
 
     # Transform Aurora AST to SemanticIR
@@ -66,11 +66,11 @@ module MLC
     def transform_to_core_with_registry(ast, transformer: Representations::Semantic::Gen::Pipeline.new)
       core_ir = transformer.transform(ast)
       [core_ir, transformer.type_registry, transformer.function_registry]
-    rescue CompileError
+    rescue MLC::CompileError
       raise
     rescue => e
       origin = e.respond_to?(:origin) ? e.origin : nil
-      raise CompileError.new("Transform error: #{e.message}", origin: origin)
+      raise MLC::CompileError.new("Transform error: #{e.message}", origin: origin)
     end
 
     # Lower SemanticIR to C++ AST
@@ -90,11 +90,11 @@ module MLC
         runtime_policy: runtime_policy
       )
       lowerer.lower(core_ir)
-    rescue CompileError
+    rescue MLC::CompileError
       raise
     rescue => e
       origin = e.respond_to?(:origin) ? e.origin : nil
-      raise CompileError.new("Lowering error: #{e.message}", origin: origin)
+      raise MLC::CompileError.new("Lowering error: #{e.message}", origin: origin)
     end
 
     # Full pipeline: Aurora source -> C++ source
@@ -137,12 +137,12 @@ module MLC
 
       # Return header, implementation, and metadata
       cpp_result.merge(metadata: metadata)
-    rescue CompileError
+    rescue MLC::CompileError
       raise
     rescue => e
       origin = e.respond_to?(:origin) ? e.origin : nil
       message = "Header generation error: #{e.message}\n#{e.backtrace.join("\n")}"
-      raise CompileError.new(message, origin: origin)
+      raise MLC::CompileError.new(message, origin: origin)
     end
   end
 end
