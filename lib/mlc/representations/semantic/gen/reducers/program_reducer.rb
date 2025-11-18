@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../../../../common/analysis/pass_manager'
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::Common::Analysis::PassManager (line 47)
 
 module MLC
   module Representations
