@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'scanner'
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::Common::Stdlib::Scanner (line 23)
 
 module MLC
   module Common
@@ -20,7 +21,7 @@ module MLC
 
     def initialize(stdlib_dir = nil, scanner: nil)
       @stdlib_dir = stdlib_dir || __dir__
-      @scanner = scanner || Scanner.new(@stdlib_dir)
+      @scanner = scanner || MLC::Common::Stdlib::Scanner.new(@stdlib_dir)
     end
 
     # Check if a module name is a stdlib module

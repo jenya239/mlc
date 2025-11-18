@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "scanner"
+# All classes autoloaded by Zeitwerk on-demand:
+# - MLC::Common::Stdlib::Scanner (line 12)
 
 module MLC
   module Common
@@ -9,7 +10,7 @@ module MLC
     class SignatureRegistry
     attr_reader :scanner
 
-    def initialize(scanner: Scanner.new)
+    def initialize(scanner: MLC::Common::Stdlib::Scanner.new)
       @scanner = scanner
     end
 
