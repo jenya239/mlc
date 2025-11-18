@@ -1,18 +1,15 @@
 # frozen_string_literal: true
 
 # All classes autoloaded by Zeitwerk on-demand:
-# - MLC::Representations::Semantic::Gen::Engine (line 51)
+# - MLC::Representations::Semantic::Gen::Engine (line 41)
+# - MLC::Registries::TypeRegistry (line 20)
+# - MLC::Registries::FunctionRegistry (line 21)
+# - MLC::Representations::Semantic::Gen::Services::FunctionRegistrationService (line 27)
+# - MLC::Representations::Semantic::Gen::Services::TypeResolutionService (line 32)
+# - MLC::Representations::Semantic::Gen::Services::PurityAnalyzer (line 38)
+# - MLC::Common::Typing::EffectAnalyzer (line 39)
+# - MLC::Representations::Semantic::Gen::Rules::FunctionEffectRule (lines 90, 92)
 
-require_relative '../../../registries/function_registry'
-require_relative '../../../registries/type_registry'
-require_relative 'services/function_registration_service'
-require_relative 'services/type_resolution_service'
-require_relative 'services/purity_analyzer'
-require_relative '../../../common/typing/type_constraint_solver'
-require_relative '../../../common/typing/generic_call_resolver'
-require_relative '../../../common/typing/match_analyzer'
-require_relative '../../../common/typing/effect_analyzer'
-require_relative 'rules/function_effect_rule'
 require_relative 'reducers/function_reducer'
 require_relative 'reducers/type_reducer'
 require_relative 'reducers/program_reducer'
