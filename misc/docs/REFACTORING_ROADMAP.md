@@ -244,22 +244,29 @@ lib/mlc/
 
 ### ✅ Phase 28: Autoloading Infrastructure (8h, Medium)
 **Status**: COMPLETE (2025-11-19)
-**Results**: Eliminated 52 manual requires using Zeitwerk
+**Results**: Eliminated 67 manual requires using Zeitwerk
 
-**Completed in 1 commit** (8075cf7):
-- **Commit**: refactor: eliminate 52 require_relative statements using Zeitwerk
+**Completed in 4 commits** (8075cf7, 3c5d2b8, f822434, 6a13435):
+- **Commit 8075cf7**: refactor: eliminate 52 require_relative statements using Zeitwerk
+- **Commit 3c5d2b8**: refactor: remove 9 missed base_rule requires from statement rules
+- **Commit f822434**: refactor: remove 5 cross-namespace requires from services container
+- **Commit 6a13435**: refactor: remove cross-namespace require from cpp container
 
 **Statistics**:
-- **Removed**: 52 require_relative statements
-- **Files modified**: 57 (52 require removals + 4 documentation + 3 analysis passes)
-- **Net change**: +10 insertions, -60 deletions
+- **Removed**: 67 require_relative statements (52 + 9 + 5 + 1)
+- **Files modified**: 68 total (57 initial + 11 follow-up)
+- **Net change**: +10 insertions, -75 deletions
 - **Test results**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+- **Requires remaining**: 51 (down from 118 before Phase 28)
 
 **Removals breakdown**:
 1. Pipeline & Reducers (4 requires): FunctionReducer, TypeReducer, ProgramReducer, ModuleImportPass
-2. Semantic rules (20 requires): BaseRule from all semantic/gen/rules files
+2. Semantic rules (29 requires): BaseRule from all semantic/gen/rules files (20 initial + 9 statement rules)
 3. C++ rules (29 requires): ExpressionRule, StatementRule, utilities (ForLoopVariable, BlockComplexityAnalyzer)
 4. Analysis passes (3 requires): BasePass from effect_analysis, name_resolution, type_check passes
+5. Cross-namespace requires (6 requires):
+   - Services container (5): SignatureRegistry, MetadataLoader, MatchAnalyzer, TypeConstraintSolver, GenericCallResolver
+   - C++ container (1): SemanticIRTypeChecker
 
 **Documentation added** (4 files):
 1. lib/mlc/source/parser/parser.rb - Ruby module include constraints
@@ -394,11 +401,11 @@ lib/mlc/
 - ✅ Proper separation of concerns (phases, services, utilities)
 - ✅ Strict file path → namespace correspondence (Zeitwerk-ready)
 - ✅ 16 namespace migration commits (50+ files modified)
-- ✅ **Zeitwerk autoloading integrated** - eliminated 52 manual requires
+- ✅ **Zeitwerk autoloading integrated** - eliminated 67 manual requires (51 remaining)
 - ✅ **Documented architecture** - remaining requires explained
 - ✅ 0 regressions throughout all changes
 - ✅ Test stability: 1524 runs, 4014 assertions, 0 failures, 0 errors
 - ✅ 10,963+ net lines of code removed
 - ✅ Scalable architecture ready for future development
 
-**Last Updated**: 2025-11-19 (after Phase 28 completion)
+**Last Updated**: 2025-11-19 (after Phase 28 completion + follow-up cleanups)
