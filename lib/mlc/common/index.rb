@@ -30,7 +30,9 @@ loader.ignore("#{__dir__}/../representations/semantic/semantic_gen.rb")
 loader.setup
 
 # Manually require files that don't follow Zeitwerk conventions
-require_relative "errors"
+# errors.rb and compiler_api.rb are in root MLC module (not MLC::Common)
+# They must be required manually before Zeitwerk setup since they define core classes/methods
+require_relative "../errors"
 require_relative "compiler_api"
 require_relative "../source/ast/nodes"
 require_relative "../representations/semantic/nodes/nodes"
