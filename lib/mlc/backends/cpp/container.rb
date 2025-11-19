@@ -2,7 +2,6 @@
 
 require_relative "services/rule_engine"
 require_relative "services/builders/cpp_ast_factory"
-require_relative "../../representations/semantic/gen/services/semantic_ir_type_checker"
 require_relative "runtime_policy"
 
 module MLC
