@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# BaseParser requires lexer and AST nodes for parsing operations
+# Cannot use Zeitwerk: modules included in parser.rb need these dependencies loaded first
 require_relative "lexer"
 require_relative "../ast/nodes"
 

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Builder requires nodes to create SemanticIR node instances
+# Circular dependency: nodes.rb ↔ builder.rb resolved by explicit loading order in index.rb
 require_relative "nodes"
 
 module MLC

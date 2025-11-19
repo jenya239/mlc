@@ -9,11 +9,8 @@
 # - MLC::Representations::Semantic::Gen::Services::PurityAnalyzer (line 38)
 # - MLC::Common::Typing::EffectAnalyzer (line 39)
 # - MLC::Representations::Semantic::Gen::Rules::FunctionEffectRule (lines 90, 92)
-
-require_relative 'reducers/function_reducer'
-require_relative 'reducers/type_reducer'
-require_relative 'reducers/program_reducer'
-require_relative 'passes/module_import_pass'
+# - MLC::Representations::Semantic::Gen::Reducers::* (FunctionReducer, TypeReducer, ProgramReducer)
+# - MLC::Representations::Semantic::Gen::Passes::ModuleImportPass
 
 module MLC
   module Representations

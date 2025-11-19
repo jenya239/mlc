@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# OptimizedParser inherits from Parser - must load parent class first
 require_relative "parser"
 
 module MLC

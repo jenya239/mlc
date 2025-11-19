@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../expression_rule"
-require_relative "../../for_loop_variable"
 
 module MLC
   module Backends

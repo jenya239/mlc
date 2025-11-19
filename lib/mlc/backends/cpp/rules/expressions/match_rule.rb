@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../expression_rule"
 
 module MLC
   module Backends
