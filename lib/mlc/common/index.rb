@@ -31,9 +31,11 @@ loader.setup
 
 # Manually require files that don't follow Zeitwerk conventions
 # errors.rb and compiler_api.rb are in root MLC module (not MLC::Common)
-# They must be required manually before Zeitwerk setup since they define core classes/methods
+# They must be required manually since they define core exception classes and module methods
 require_relative "../errors"
 require_relative "compiler_api"
+
+# Zeitwerk-ignored files must be loaded explicitly
 require_relative "../source/ast/nodes"
 require_relative "../representations/semantic/nodes/nodes"
 require_relative "../representations/semantic/nodes/builder"

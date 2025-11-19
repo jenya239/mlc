@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# Builder requires nodes to create SemanticIR node instances
-# Circular dependency: nodes.rb ↔ builder.rb resolved by explicit loading order in index.rb
-require_relative "nodes"
+# Builder uses SemanticIR node classes (Type, Func, etc.)
+# No circular dependency - nodes.rb doesn't reference Builder
+# Zeitwerk autoloads node classes when Builder methods are called
 
 module MLC
   module SemanticIR
