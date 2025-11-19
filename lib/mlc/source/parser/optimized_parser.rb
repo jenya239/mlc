@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# OptimizedParser inherits from Parser - must load parent class first
-require_relative "parser"
+# OptimizedParser inherits from Parser
+# Zeitwerk autoloads parent class when class definition is encountered
 
 module MLC
   module Source

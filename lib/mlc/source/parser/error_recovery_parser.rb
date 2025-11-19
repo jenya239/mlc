@@ -4,8 +4,7 @@
 # - MLC::MLCSyntaxError (lines 116, 124, 143)
 # - MLC::MLCTypeError (line 124)
 # - MLC::EnhancedError (line 131)
-
-require_relative "parser"  # Inheritance: ErrorRecoveryParser < Parser
+# - MLC::Source::Parser::Parser (parent class, line 13)
 
 module MLC
   module Source
