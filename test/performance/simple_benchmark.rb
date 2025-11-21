@@ -32,7 +32,7 @@ class SimpleBenchmark < Minitest::Test
     assert builder_time.real < regular_time.real, "StringBuilder should be faster"
   end
   
-  def test_aurora_parsing_performance
+  def test_MLC_parsing_performance
     puts "\n=== MLC Parsing Performance Test ==="
     
     source = <<~MLCORA

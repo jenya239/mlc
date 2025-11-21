@@ -75,6 +75,7 @@ module MLC
         register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::UnaryRule)
         register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::BinaryRule)
         register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::BlockRule)
+        register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::UnsafeBlockRule)
         register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::DoRule)
         register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::ModuleMemberRule)
         register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::MemberRule)

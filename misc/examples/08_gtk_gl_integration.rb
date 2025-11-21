@@ -1,15 +1,15 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# GTK-GL Integration Example - Aurora DSL
-# Demonstrates complete integration of Aurora DSL for OpenGL project
+# GTK-GL Integration Example - MLC DSL
+# Demonstrates complete integration of MLC DSL for OpenGL project
 
 require_relative "../lib/cpp_ast"
 
 include CppAst::Builder::DSL
 
 puts "=== GTK-GL Integration Example ==="
-puts "Complete integration example for OpenGL project using Aurora DSL"
+puts "Complete integration example for OpenGL project using MLC DSL"
 puts
 
 # Generate complete header file

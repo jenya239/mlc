@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 80
-puts "  AURORA LANGUAGE - ESM-Style Module System"
+puts "  MLC LANGUAGE - ESM-Style Module System"
 puts "=" * 80
 puts
 puts "JavaScript/TypeScript-like module syntax with export/import"
@@ -17,19 +17,19 @@ puts
 puts "Example 1: Export Named Functions"
 puts "-" * 80
 
-aurora_source_1 = <<~AURORA
-  // math.aurora
+mlc_source_1 = <<~MLC
+  // math.mlc
   export fn add(a: i32, b: i32) -> i32 = a + b
   export fn multiply(a: i32, b: i32) -> i32 = a * b
 
   fn helper() -> i32 = 42  // private function
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
-result = Aurora.to_hpp_cpp(aurora_source_1)
+result = MLC.to_hpp_cpp(mlc_source_1)
 
 puts "Generated math.hpp:"
 puts "-" * 40
@@ -47,18 +47,18 @@ puts
 puts "Example 2: Named Imports (ESM-style)"
 puts "-" * 80
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   import { add, multiply } from "./math"
 
   export fn calculate(x: i32, y: i32) -> i32 =
     add(x, y) |> multiply(2)
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
-result = Aurora.to_hpp_cpp(aurora_source_2)
+result = MLC.to_hpp_cpp(mlc_source_2)
 
 puts "Generated C++ header:"
 puts "-" * 40
@@ -71,18 +71,18 @@ puts
 puts "Example 3: Wildcard Imports (import * as ...)"
 puts "-" * 80
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   import * as Math from "./math"
 
   export fn process(x: i32) -> i32 =
     Math::add(x, 10)
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
-result = Aurora.to_hpp_cpp(aurora_source_3)
+result = MLC.to_hpp_cpp(mlc_source_3)
 
 puts "Generated C++ header snippet:"
 puts "-" * 40
@@ -95,8 +95,8 @@ puts
 puts "Example 4: Export Types and Functions"
 puts "-" * 80
 
-aurora_source_4 = <<~AURORA
-  // geometry.aurora
+mlc_source_4 = <<~MLC
+  // geometry.mlc
   export type Point = { x: f32, y: f32 }
   export type Shape = Circle(f32) | Rect(f32, f32)
 
@@ -106,13 +106,13 @@ aurora_source_4 = <<~AURORA
       | Rect(w, h) => w * h
 
   fn internal_helper() -> i32 = 0  // private
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_4
+puts "MLC Source:"
+puts mlc_source_4
 puts
 
-result = Aurora.to_hpp_cpp(aurora_source_4)
+result = MLC.to_hpp_cpp(mlc_source_4)
 
 puts "Generated geometry.hpp:"
 puts "-" * 40
@@ -126,7 +126,7 @@ puts
 puts "Example 5: Complete Module with Multiple Imports"
 puts "-" * 80
 
-aurora_source_5 = <<~AURORA
+mlc_source_5 = <<~MLC
   import { Point } from "./geometry"
   import { sqrt } from "./math"
   import * as Utils from "../utils"
@@ -136,13 +136,13 @@ aurora_source_5 = <<~AURORA
 
   export fn midpoint(p1: Point, p2: Point) -> Point =
     { x: (p1.x + p2.x) / 2.0, y: (p1.y + p2.y) / 2.0 }
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_5
+puts "MLC Source:"
+puts mlc_source_5
 puts
 
-result = Aurora.to_hpp_cpp(aurora_source_5)
+result = MLC.to_hpp_cpp(mlc_source_5)
 
 puts "Generated C++ header (excerpt):"
 puts "-" * 40

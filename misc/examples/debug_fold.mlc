@@ -13,7 +13,7 @@ fn bump(stats: Totals, status: str) -> Totals =
     stats
 
 fn show(stats: Totals) -> str =
-  "todo=" + stats.todo + ", doing=" + stats.doing + ", done=" + stats.done
+  "todo=" + to_string(stats.todo) + ", doing=" + to_string(stats.doing) + ", done=" + to_string(stats.done)
 
 fn main() -> i32 =
   let items = ["TODO", "DOING", "DONE"]

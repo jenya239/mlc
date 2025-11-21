@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-require_relative "services/rule_engine"
-require_relative "services/builders/cpp_ast_factory"
-require_relative "runtime_policy"
+# RuleEngine, CppAstFactory, RuntimePolicy autoloaded by Zeitwerk
+# - RuleEngine used only via attr_accessor
+# - CppAstFactory instantiated in lazy methods (cpp_ast_factory, create_service)
+# - RuntimePolicy instantiated in initialize, const resolved at runtime via const_missing
 
 module MLC
   module Backends

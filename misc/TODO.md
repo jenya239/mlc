@@ -3,9 +3,9 @@
 ## Current Status
 - **Tests:** 1022/1022 passing (0 failures, 4 skips) ✅
 - **C++ AST DSL:** Production ready
-- **Aurora Language:** **Feature Complete** - All core features implemented! 🎉
+- **MLC Language:** **Feature Complete** - All core features implemented! 🎉
 
-## Aurora Language - Implementation Status
+## MLC Language - Implementation Status
 
 ### ✅ COMPLETED Features (100% Working)
 
@@ -25,7 +25,7 @@
 
 #### 2. Sum Types (Algebraic Data Types) ✅
 **Status: FULLY IMPLEMENTED**
-```aurora
+```MLC
 type Shape = Circle(f32) | Rect(f32, f32) | Point
 type Result = Ok { value: i32 } | Err { code: i32 }
 ```
@@ -45,7 +45,7 @@ type Result = Ok { value: i32 } | Err { code: i32 }
 
 #### 3. Pattern Matching ✅
 **Status: FULLY IMPLEMENTED**
-```aurora
+```MLC
 fn area(s: Shape) -> f32 =
   match s
     | Circle(r) => 3.14 * r * r
@@ -67,7 +67,7 @@ fn area(s: Shape) -> f32 =
 
 #### 4. Generic Types (Templates) ✅
 **Status: FULLY IMPLEMENTED**
-```aurora
+```MLC
 fn identity<T>(x: T) -> T = x
 type Result<T, E> = Ok(T) | Err(E)
 type Option<T> = Some(T) | None
@@ -85,7 +85,7 @@ type Option<T> = Some(T) | None
 
 #### 5. Lambda Expressions ✅
 **Status: FULLY IMPLEMENTED (Basic Lambdas)**
-```aurora
+```MLC
 let double = x => x * 2
 let add = (x, y) => x + y
 fn apply() -> i32 = (x => x + 1)(5)  // Direct lambda call
@@ -105,7 +105,7 @@ fn apply() -> i32 = (x => x + 1)(5)  // Direct lambda call
 
 #### 6. Module System ✅
 **Status: FULLY IMPLEMENTED**
-```aurora
+```MLC
 module Math
 
 fn add(a: i32, b: i32) -> i32 = a + b
@@ -128,7 +128,7 @@ import Math::{add, subtract}
 
 #### 7. Pipe Operator ✅
 **Status: FULLY IMPLEMENTED**
-```aurora
+```MLC
 x |> double |> triple |> square
 data |> filter(pred) |> map(f)
 ```
@@ -144,7 +144,7 @@ data |> filter(pred) |> map(f)
 
 #### 8. Array Literals ✅
 **Status: FULLY IMPLEMENTED**
-```aurora
+```MLC
 [1, 2, 3, 4, 5]
 [1, 1 + 1, 2 + 1]
 [1, 2, 3] |> process
@@ -167,7 +167,7 @@ data |> filter(pred) |> map(f)
 
 #### 9. Array Indexing ✅
 **Status: FULLY IMPLEMENTED**
-```aurora
+```MLC
 arr[0]
 arr[i]
 arr[1 + 1]
@@ -188,11 +188,11 @@ arr[1 + 1]
 - `arr[i]` → `arr[i]`
 - `[1,2,3][0]` → `std::vector<int>{1, 2, 3}[0]`
 
-**Tests:** Manual testing completed, all Aurora tests passing (73/73)
+**Tests:** Manual testing completed, all MLC tests passing (73/73)
 
 #### 10. Array Methods ✅
 **Status: FULLY IMPLEMENTED (Basic Methods)**
-```aurora
+```MLC
 arr.length()    // Get size
 arr.push(elem)  // Add element
 arr.pop()       // Remove last
@@ -223,11 +223,11 @@ arr.pop()       // Remove last
 - `arr.push(4)` → `arr.push_back(4)`
 - `[1,2,3].length()` → `std::vector<int>{1, 2, 3}.size()`
 
-**Tests:** Manual testing completed, all Aurora tests passing (73/73)
+**Tests:** Manual testing completed, all MLC tests passing (73/73)
 
 #### 11. For Loops ✅
 **Status: FULLY IMPLEMENTED**
-```aurora
+```MLC
 for x in [1, 2, 3] do
   x + x
 for x in arr do
@@ -254,11 +254,11 @@ for x in arr do
 - `for x in arr do x` → `for (int x : arr) {x;}`
 - Uses C++11 range-based for syntax
 
-**Tests:** Manual testing completed, all Aurora tests passing (73/73)
+**Tests:** Manual testing completed, all MLC tests passing (73/73)
 
 #### 12. List Comprehensions ✅
 **Status: Fully implemented with code generation**
-```aurora
+```MLC
 [x * 2 for x in arr]
 [x for x in arr if x > 0]
 ```
@@ -267,7 +267,7 @@ for x in arr do
 - ✅ ListComprehension AST node (in nodes.rb)
 - ✅ Parser support (single and multi generator)
 - ✅ CoreIR lowering + C++ codegen (nested range-for with filters)
-- ✅ Regression coverage (`test/aurora/list_comprehension_test.rb`)
+- ✅ Regression coverage (`test/MLC/list_comprehension_test.rb`)
 
 ### 🚧 Partially Implemented
 
@@ -311,14 +311,14 @@ for x in arr do
 
 #### Low Priority
 1. **Traits/Type Classes**
-   ```aurora
+   ```MLC
    trait Show {
      fn show(self) -> str
    }
    ```
 
 2. **Ownership System** (Rust-inspired)
-   ```aurora
+   ```MLC
    fn consume(owned data: Vec2) -> void
    fn borrow(ref data: Vec2) -> void
    fn mutate(mut ref data: Vec2) -> void
@@ -334,12 +334,12 @@ for x in arr do
 
 ### High Priority
 - [x] Update TODO.md with actual status
-- [ ] Create AURORA_STATUS.md with detailed feature list
-- [ ] Update README.md with Aurora section
-- [ ] Add Aurora language reference documentation
+- [ ] Create MLC_STATUS.md with detailed feature list
+- [ ] Update README.md with MLC section
+- [ ] Add MLC language reference documentation
 
 ### Medium Priority
-- [ ] Create Aurora tutorial
+- [ ] Create MLC tutorial
 - [ ] Document standard library design
 - [ ] Add more examples
 
@@ -366,7 +366,7 @@ for x in arr do
 - [x] Fix override/final modifiers spacing (2025-10-17)
 - [x] All 1022 C++ AST tests passing (2025-10-17)
 
-### Aurora Language
+### MLC Language
 - [x] Sum types with named and tuple fields
 - [x] Pattern matching with std::visit
 - [x] Generic types and functions
@@ -378,9 +378,9 @@ for x in arr do
 
 ## Summary
 
-**Aurora Language Status: 🎉 Core Features Complete!**
+**MLC Language Status: 🎉 Core Features Complete!**
 
-- ✅ **1022/1022 total tests passing** (73 Aurora + 949 C++ AST)
+- ✅ **1022/1022 total tests passing** (73 MLC + 949 C++ AST)
 - ✅ **Only 2 skips** (down from 4!)
 - ✅ **Sum Types** - fully working ✅
 - ✅ **Pattern Matching** - fully working ✅

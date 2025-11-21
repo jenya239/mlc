@@ -13,13 +13,14 @@ module MLC
           # - Track function return types (for validating return statements)
           # - Track lambda parameter types (for type inference in lambdas)
           # - Track current AST node (for error reporting)
+          # - Track unsafe context (for reference type validation)
           # - Provide access to variable type registry
           #
           # Dependencies:
           # - var_type_registry: VarTypeRegistry (injected, for tracking variable types)
           class TransformationContext
             attr_reader :type_param_stack, :lambda_param_stack, :function_return_stack
-            attr_reader :var_type_registry, :loop_depth
+            attr_reader :var_type_registry, :loop_depth, :unsafe_depth
             attr_accessor :current_node
 
             def initialize(var_type_registry:)
@@ -29,6 +30,7 @@ module MLC
               @var_type_registry = var_type_registry
               @current_node = nil
               @loop_depth = 0
+              @unsafe_depth = 0
             end
 
             # Type parameters (e.g., <T> in fn foo<T>())
@@ -85,6 +87,19 @@ module MLC
 
             def inside_loop?
               @loop_depth.positive?
+            end
+
+            # Unsafe context tracking (for reference type validation)
+            # Reference types (&T, &mut T) are only allowed inside unsafe blocks
+            def with_unsafe_context
+              @unsafe_depth += 1
+              yield
+            ensure
+              @unsafe_depth -= 1
+            end
+
+            def inside_unsafe?
+              @unsafe_depth.positive?
             end
           end
 

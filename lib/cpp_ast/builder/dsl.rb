@@ -562,7 +562,7 @@ module CppAst
 
       # Helper for field definitions
       def field_def(name, type, default: nil)
-        # Aurora DSL convention: name comes first, then type
+        # MLC DSL convention: name comes first, then type
         Nodes::FieldDeclaration.new(
           type: type,
           name: name,

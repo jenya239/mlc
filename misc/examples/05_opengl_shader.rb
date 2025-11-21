@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# OpenGL Shader Example - Aurora DSL
+# OpenGL Shader Example - MLC DSL
 # Demonstrates generation of RAII OpenGL wrapper classes with modern C++ features
 
 require_relative "../lib/cpp_ast"
@@ -9,7 +9,7 @@ require_relative "../lib/cpp_ast"
 include CppAst::Builder::DSL
 
 puts "=== OpenGL Shader Example ==="
-puts "Generating RAII OpenGL wrapper classes with Aurora DSL"
+puts "Generating RAII OpenGL wrapper classes with MLC DSL"
 puts
 
 # Generate the complete shader.hpp file
@@ -254,7 +254,7 @@ puts "✅ Private member variables"
 puts "✅ Modern C++ best practices"
 
 puts
-puts "Benefits of using Aurora DSL:"
+puts "Benefits of using MLC DSL:"
 puts "• Automatic RAII pattern enforcement"
 puts "• Consistent move semantics across all classes"
 puts "• Type-safe error handling with std::optional"

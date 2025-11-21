@@ -97,7 +97,7 @@ module MLC
               bindings = pattern[:bindings] || []
 
               # Create regex object
-              pattern_string = build_aurora_string(regex_pattern)
+              pattern_string = build_MLC_string(regex_pattern)
               func_name = regex_flags.include?("i") ? "mlc::regex_i" : "mlc::regex"
               regex_obj = context.factory.function_call(
                 callee: context.factory.identifier(name: func_name),
@@ -205,7 +205,7 @@ module MLC
             end
 
             # Helper to build mlc::String(...) for regex patterns
-            def build_aurora_string(value)
+            def build_MLC_string(value)
               context.factory.function_call(
                 callee: context.factory.identifier(name: "mlc::String"),
                 arguments: [context.cpp_string_literal(value)],

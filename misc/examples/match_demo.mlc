@@ -1,0 +1,32 @@
+// Match and Sum Types Demo
+
+type Shape = Circle(i32) | Rectangle(i32, i32) | Square(i32)
+
+fn area(shape: Shape) -> i32 =
+  match shape {
+    Circle(r) => r * r * 3,
+    Rectangle(w, h) => w * h,
+    Square(s) => s * s
+  }
+
+fn describe(shape: Shape) -> str =
+  match shape {
+    Circle(r) => "Circle with radius " + to_string(r),
+    Rectangle(w, h) => "Rectangle " + to_string(w) + "x" + to_string(h),
+    Square(s) => "Square " + to_string(s) + "x" + to_string(s)
+  }
+
+fn main() -> i32 = do
+  println("=== Match and Sum Types Demo ===")
+  println("")
+
+  let c = Circle(5)
+  let r = Rectangle(4, 6)
+  let s = Square(3)
+
+  println(describe(c) + " -> area: " + to_string(area(c)))
+  println(describe(r) + " -> area: " + to_string(area(r)))
+  println(describe(s) + " -> area: " + to_string(area(s)))
+
+  0
+end

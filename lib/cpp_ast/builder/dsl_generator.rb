@@ -113,7 +113,7 @@ module CppAst
         when Nodes::CoReturnStatement
           generate_co_return_statement(node)
         when MLC::Source::AST::Program
-          generate_aurora_program(node)
+          generate_MLC_program(node)
         else
           raise "Unsupported node type: #{node.class}"
         end
@@ -1012,7 +1012,7 @@ module CppAst
         result
       end
       
-      def generate_aurora_program(program)
+      def generate_MLC_program(program)
         result = "#include <iostream>\n"
         result += "#include <memory>\n"
         result += "#include <vector>\n\n"
@@ -1033,7 +1033,7 @@ module CppAst
         
         # Generate declarations
         program.declarations.each do |decl|
-          result += generate_aurora_declaration(decl)
+          result += generate_MLC_declaration(decl)
           result += "\n"
         end
         
@@ -1044,24 +1044,24 @@ module CppAst
         result
       end
       
-      def generate_aurora_declaration(decl)
+      def generate_MLC_declaration(decl)
         case decl
         when MLC::Source::AST::FuncDecl
-          generate_aurora_function(decl)
+          generate_MLC_function(decl)
         when MLC::Source::AST::TypeDecl
-          generate_aurora_type(decl)
+          generate_MLC_type(decl)
         else
           "// Unsupported declaration type: #{decl.class}"
         end
       end
       
-      def generate_aurora_function(func)
+      def generate_MLC_function(func)
         result = ""
         result += "int #{func.name}("
         result += func.params.map { |p| "int #{p.name}" }.join(", ")
         result += ") {\n"
         if func.body
-          result += "  return #{generate_aurora_expression(func.body)};\n"
+          result += "  return #{generate_MLC_expression(func.body)};\n"
         else
           result += "  return 0;\n"
         end
@@ -1069,7 +1069,7 @@ module CppAst
         result
       end
       
-      def generate_aurora_expression(expr)
+      def generate_MLC_expression(expr)
         case expr
         when MLC::Source::AST::IntLit
           expr.value.to_s
@@ -1078,8 +1078,8 @@ module CppAst
         when MLC::Source::AST::VarRef
           expr.name
         when MLC::Source::AST::BinaryOp
-          left = generate_aurora_expression(expr.left)
-          right = generate_aurora_expression(expr.right)
+          left = generate_MLC_expression(expr.left)
+          right = generate_MLC_expression(expr.right)
           if expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
             # String concatenation
             "mlc::String(#{left}) + mlc::String(#{right})"
@@ -1091,7 +1091,7 @@ module CppAst
         end
       end
       
-      def generate_aurora_type(type)
+      def generate_MLC_type(type)
         "// Type declaration: #{type.name}"
       end
       
@@ -1113,8 +1113,8 @@ module CppAst
         end
       end
 
-      # Aurora-specific generation methods
-      def generate_aurora_program(program)
+      # MLC-specific generation methods
+      def generate_MLC_program(program)
         result = []
         
         # Add includes
@@ -1129,7 +1129,7 @@ module CppAst
         
         # Generate declarations
         program.declarations.each do |decl|
-          result << generate_aurora_declaration(decl)
+          result << generate_MLC_declaration(decl)
           result << ""
         end
         
@@ -1141,34 +1141,34 @@ module CppAst
         result.join("\n")
       end
 
-      def generate_aurora_declaration(decl)
+      def generate_MLC_declaration(decl)
         case decl
         when MLC::Source::AST::FuncDecl
-          generate_aurora_function(decl)
+          generate_MLC_function(decl)
         when MLC::Source::AST::TypeDecl
-          generate_aurora_type(decl)
+          generate_MLC_type(decl)
         else
           "#{decl.class} // TODO: implement"
         end
       end
 
-      def generate_aurora_function(func)
+      def generate_MLC_function(func)
         result = []
         
         # Function signature
         signature = "auto #{func.name}("
         if func.params && !func.params.empty?
-          signature += func.params.map { |param| "#{param.name}: #{generate_aurora_type(param.type)}" }.join(", ")
+          signature += func.params.map { |param| "#{param.name}: #{generate_MLC_type(param.type)}" }.join(", ")
         end
-        signature += ") -> #{generate_aurora_type(func.ret_type)}"
+        signature += ") -> #{generate_MLC_type(func.ret_type)}"
         
         result << signature
-        result << "  = #{generate_aurora_expression(func.body)}"
+        result << "  = #{generate_MLC_expression(func.body)}"
         
         result.join("\n")
       end
 
-      def generate_aurora_type(type)
+      def generate_MLC_type(type)
         case type
         when MLC::Source::AST::PrimType
           case type.name
@@ -1180,15 +1180,15 @@ module CppAst
           else type.name
           end
         when MLC::Source::AST::ArrayType
-          "std::vector<#{generate_aurora_type(type.element_type)}>"
+          "std::vector<#{generate_MLC_type(type.element_type)}>"
         when MLC::Source::AST::OptionType
-          "std::optional<#{generate_aurora_type(type.inner_type)}>"
+          "std::optional<#{generate_MLC_type(type.inner_type)}>"
         else
           type.class.name # fallback
         end
       end
 
-      def generate_aurora_expression(expr)
+      def generate_MLC_expression(expr)
         case expr
         when MLC::Source::AST::IntLit
           expr.value.to_s
@@ -1199,8 +1199,8 @@ module CppAst
         when MLC::Source::AST::VarRef
           expr.name
         when MLC::Source::AST::BinaryOp
-          left = generate_aurora_expression(expr.left)
-          right = generate_aurora_expression(expr.right)
+          left = generate_MLC_expression(expr.left)
+          right = generate_MLC_expression(expr.right)
           if expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
             # String concatenation
             "mlc::String(#{left}) + mlc::String(#{right})"
@@ -1208,28 +1208,28 @@ module CppAst
             "#{left} #{expr.op} #{right}"
           end
         when MLC::Source::AST::UnaryOp
-          "#{expr.op}#{generate_aurora_expression(expr.operand)}"
+          "#{expr.op}#{generate_MLC_expression(expr.operand)}"
         when MLC::Source::AST::IfExpr
-          condition = generate_aurora_expression(expr.condition)
-          then_expr = generate_aurora_expression(expr.then_expr)
-          else_expr = generate_aurora_expression(expr.else_expr)
+          condition = generate_MLC_expression(expr.condition)
+          then_expr = generate_MLC_expression(expr.then_expr)
+          else_expr = generate_MLC_expression(expr.else_expr)
           "#{condition} ? #{then_expr} : #{else_expr}"
         when MLC::Source::AST::FuncCall
-          args = expr.args.map { |arg| generate_aurora_expression(arg) }.join(", ")
+          args = expr.args.map { |arg| generate_MLC_expression(arg) }.join(", ")
           "#{expr.name}(#{args})"
         when MLC::Source::AST::ArrayLit
-          elements = expr.elements.map { |elem| generate_aurora_expression(elem) }.join(", ")
+          elements = expr.elements.map { |elem| generate_MLC_expression(elem) }.join(", ")
           "{#{elements}}"
         when MLC::Source::AST::ArrayAccess
-          array = generate_aurora_expression(expr.array)
-          index = generate_aurora_expression(expr.index)
+          array = generate_MLC_expression(expr.array)
+          index = generate_MLC_expression(expr.index)
           "#{array}[#{index}]"
         when MLC::Source::AST::MemberAccess
-          object = generate_aurora_expression(expr.object)
+          object = generate_MLC_expression(expr.object)
           "#{object}.#{expr.member}"
         when MLC::Source::AST::Lambda
-          params = expr.params.map { |param| "#{param.name}: #{generate_aurora_type(param.type)}" }.join(", ")
-          body = generate_aurora_expression(expr.body)
+          params = expr.params.map { |param| "#{param.name}: #{generate_MLC_type(param.type)}" }.join(", ")
+          body = generate_MLC_expression(expr.body)
           "(#{params}) => #{body}"
         else
           "0" # fallback

@@ -519,11 +519,14 @@ module MLC
                 when "is_empty"
                   @type_checker.ensure_argument_count(member, args, 0)
                   SemanticIR::Builder.primitive_type("bool")
+                when "contains", "starts_with", "ends_with"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("bool")
                 when "length"
                   @type_checker.ensure_argument_count(member, args, 0)
                   SemanticIR::Builder.primitive_type("i32")
                 else
-                  type_error("Unknown string method '#{member}'. Supported methods: split, trim, trim_start, trim_end, upper, lower, is_empty, length")
+                  type_error("Unknown string method '#{member}'. Supported methods: split, trim, trim_start, trim_end, upper, lower, is_empty, contains, starts_with, ends_with, length")
                 end
               elsif numeric_type?(object_type) && member == "sqrt"
                 @type_checker.ensure_argument_count(member, args, 0)
@@ -554,12 +557,12 @@ module MLC
                 SemanticIR::ArrayType.new(element_type: SemanticIR::Builder.primitive_type("string"))
               when "trim", "trim_start", "trim_end", "upper", "lower"
                 SemanticIR::Builder.primitive_type("string")
-              when "is_empty"
+              when "is_empty", "contains", "starts_with", "ends_with"
                 SemanticIR::Builder.primitive_type("bool")
               when "length"
                 SemanticIR::Builder.primitive_type("i32")
               else
-                type_error("Unknown string member '#{member}'. Known members: split, trim, trim_start, trim_end, upper, lower, is_empty, length", node: node)
+                type_error("Unknown string member '#{member}'. Known members: split, trim, trim_start, trim_end, upper, lower, is_empty, contains, starts_with, ends_with, length", node: node)
               end
             end
 

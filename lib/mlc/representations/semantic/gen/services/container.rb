@@ -65,12 +65,13 @@ module MLC
                 var_type_registry: @var_type_registry,
                 type_registry: @type_registry
               )
-              @type_builder = TypeBuilder.new(
-                ir_builder: @ir_builder,
-                type_checker: @type_checker
-              )
               @scope_context = MLC::Representations::Semantic::Gen::Services::TransformationContext.new(
                 var_type_registry: @var_type_registry
+              )
+              @type_builder = TypeBuilder.new(
+                ir_builder: @ir_builder,
+                type_checker: @type_checker,
+                scope_context: @scope_context
               )
               @semantic_ir_classifier = MLC::Representations::Semantic::Gen::Services::SemanticIRTypeChecker.new
               @record_literal_builder = RecordLiteralBuilder.new(

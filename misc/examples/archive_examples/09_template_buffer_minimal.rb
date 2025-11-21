@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Minimal Template Buffer Example - Aurora DSL
+# Minimal Template Buffer Example - MLC DSL
 # Demonstrates basic template_class functionality
 
 require_relative "../lib/cpp_ast"

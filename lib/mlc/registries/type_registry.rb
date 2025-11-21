@@ -22,7 +22,7 @@ module MLC
     attr_reader :name, :ast_node, :core_ir_type, :cpp_name, :namespace, :kind, :exported, :module_name
     attr_accessor :fields, :variants
 
-    # @param name [String] Type name in Aurora (e.g., "Event", "Window")
+    # @param name [String] Type name in MLC (e.g., "Event", "Window")
     # @param ast_node [AST::TypeDecl, nil] Original AST node
     # @param core_ir_type [SemanticIR::Type] Transformed SemanticIR type
     # @param namespace [String, nil] C++ namespace (e.g., "mlc::graphics")
@@ -230,7 +230,7 @@ module MLC
     end
 
     # Get C++ name for a type
-    # @param name [String] Aurora type name
+    # @param name [String] MLC type name
     # @return [String] C++ qualified name
     def cpp_name(name)
       type_info = lookup(name)
@@ -318,10 +318,10 @@ module MLC
 
     def register_primitives
       # Register built-in primitive types
-      TypeInfo::PRIMITIVE_TYPE_MAP.each do |aurora_name, cpp_name|
-        prim_type = SemanticIR::Type.new(kind: :prim, name: aurora_name)
+      TypeInfo::PRIMITIVE_TYPE_MAP.each do |mlc_name, cpp_name|
+        prim_type = SemanticIR::Type.new(kind: :prim, name: mlc_name)
         register(
-          aurora_name,
+          mlc_name,
           core_ir_type: prim_type,
           kind: :primitive,
           exported: false

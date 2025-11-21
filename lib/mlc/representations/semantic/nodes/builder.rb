@@ -44,6 +44,14 @@ module MLC
         ArrayType.new(element_type: element_type, origin: origin)
       end
 
+      def self.ref_type(inner_type, origin: nil)
+        RefType.new(inner_type: inner_type, origin: origin)
+      end
+
+      def self.mut_ref_type(inner_type, origin: nil)
+        MutRefType.new(inner_type: inner_type, origin: origin)
+      end
+
       def self.type_param(name, constraint: nil, origin: nil)
         TypeParam.new(name: name, constraint: constraint, origin: origin)
       end
@@ -173,6 +181,10 @@ module MLC
 
       def self.block_expr(statements, result, type, origin: nil)
         BlockExpr.new(statements: statements, result: result, type: type, origin: origin)
+      end
+
+      def self.unsafe_block_expr(body, type, origin: nil)
+        UnsafeBlockExpr.new(body: body, type: type, origin: origin)
       end
     end
   end

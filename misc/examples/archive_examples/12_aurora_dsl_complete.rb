@@ -1,14 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Complete Aurora DSL Example - All Features
+# Complete MLC DSL Example - All Features
 # Demonstrates all new features: Template DSL, Modern C++ Modifiers, Enum Class
 
 require_relative "../lib/cpp_ast"
 
 include CppAst::Builder::DSL
 
-puts "=== Complete Aurora DSL Example ==="
+puts "=== Complete MLC DSL Example ==="
 puts "Demonstrating all new features: Template DSL, Modern C++ Modifiers, Enum Class"
 puts
 
@@ -220,5 +220,5 @@ puts "- Optional return types for error handling"
 puts "- Span parameters for array data"
 puts
 
-puts "Aurora DSL 96% Coverage Achieved! 🎉"
+puts "MLC DSL 96% Coverage Achieved! 🎉"
 puts "Template DSL: ✅ | Modern C++ Modifiers: ✅ | Enum Class: ✅"

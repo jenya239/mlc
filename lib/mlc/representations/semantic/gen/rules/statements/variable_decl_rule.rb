@@ -31,7 +31,10 @@ module MLC
                   )
                   type_checker.assign_expression_type(value_ir, expected_type)
                   final_type = expected_type
-            end
+                end
+
+                # Track move semantics - if RHS is a variable with Owned<T> type, mark it as moved
+                mark_source_as_moved(svc, node.value, value_ir)
 
                 svc.var_type_registry.set(node.name, final_type, initializer: value_ir)
 
@@ -42,7 +45,17 @@ module MLC
                   mutable: node.mutable,
                   origin: node
                 )
-          end
+              end
+
+              private
+
+              def mark_source_as_moved(svc, ast_node, value_ir)
+                return unless svc.ast_type_checker.var_ref?(ast_node)
+                return unless Services::VarTypeRegistry.has_move_semantics?(value_ir.type)
+
+                source_name = ast_node.name
+                svc.var_type_registry.mark_moved(source_name)
+              end
             end
           end
             end

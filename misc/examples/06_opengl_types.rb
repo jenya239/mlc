@@ -1,18 +1,18 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# OpenGL Types Example - Aurora DSL
-# Demonstrates generation of mathematical types and data structures using Aurora DSL
+# OpenGL Types Example - MLC DSL
+# Demonstrates generation of mathematical types and data structures using MLC DSL
 
 require_relative "../lib/cpp_ast"
 
 include CppAst::Builder::DSL
 
 puts "=== OpenGL Types Example ==="
-puts "Generating mathematical types and data structures with Aurora DSL"
+puts "Generating mathematical types and data structures with MLC DSL"
 puts
 
-# Generate types from text_types.hpp using Aurora DSL
+# Generate types from text_types.hpp using MLC DSL
 ast = program(
   # Include directives
   expr_stmt(call(id("include"), string('"<cstdint>"'))),
@@ -320,7 +320,7 @@ puts "✅ Ternary operators"
 puts "✅ Member access patterns"
 
 puts
-puts "Benefits of using Aurora DSL for types:"
+puts "Benefits of using MLC DSL for types:"
 puts "• Automatic generation of consistent operator overloads"
 puts "• Type-safe mathematical operations"
 puts "• Constexpr optimization by default"

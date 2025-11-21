@@ -3,7 +3,7 @@
 module MLC
   module Registries
     # FunctionRegistry provides a central repository for function metadata and
-    # signatures used throughout the Aurora compilation pipeline.
+    # signatures used throughout the MLC compilation pipeline.
   #
   # Responsibilities:
   # - Track function signatures (param/return types) for inference and lowering

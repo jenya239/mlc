@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 80
-puts "  AURORA LANGUAGE - Module System Demonstration"
+puts "  MLC LANGUAGE - Module System Demonstration"
 puts "=" * 80
 puts
 puts "Generating traditional C++ header (.hpp) and implementation (.cpp) files"
@@ -17,18 +17,18 @@ puts
 puts "Example 1: Simple Module"
 puts "-" * 80
 
-aurora_source_1 = <<~AURORA
+mlc_source_1 = <<~MLC
   module Math
 
   fn add(a: i32, b: i32) -> i32 = a + b
   fn multiply(a: i32, b: i32) -> i32 = a * b
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
-result = Aurora.to_hpp_cpp(aurora_source_1)
+result = MLC.to_hpp_cpp(mlc_source_1)
 
 puts "Generated math.hpp:"
 puts "-" * 40
@@ -46,7 +46,7 @@ puts
 puts "Example 2: Module with Imports"
 puts "-" * 80
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   module Geometry
 
   import Math
@@ -55,13 +55,13 @@ aurora_source_2 = <<~AURORA
 
   fn distance(p1: Point, p2: Point) -> f32 =
     Math::sqrt((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y))
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
-result = Aurora.to_hpp_cpp(aurora_source_2)
+result = MLC.to_hpp_cpp(mlc_source_2)
 
 puts "Generated geometry.hpp:"
 puts "-" * 40
@@ -79,20 +79,20 @@ puts
 puts "Example 3: Nested Module Path"
 puts "-" * 80
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   module Math::Vector
 
   type Vec3 = { x: f32, y: f32, z: f32 }
 
   fn dot<T>(a: Vec3, b: Vec3) -> f32 =
     a.x * b.x + a.y * b.y + a.z * b.z
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
-result = Aurora.to_hpp_cpp(aurora_source_3)
+result = MLC.to_hpp_cpp(mlc_source_3)
 
 puts "Generated math/vector.hpp:"
 puts "-" * 40
@@ -110,7 +110,7 @@ puts
 puts "Example 4: Module with Sum Types"
 puts "-" * 80
 
-aurora_source_4 = <<~AURORA
+mlc_source_4 = <<~MLC
   module Shapes
 
   type Shape = Circle(f32) | Rect(f32, f32)
@@ -119,13 +119,13 @@ aurora_source_4 = <<~AURORA
     match s
       | Circle(r) => r * r
       | Rect(w, h) => w * h
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_4
+puts "MLC Source:"
+puts mlc_source_4
 puts
 
-result = Aurora.to_hpp_cpp(aurora_source_4)
+result = MLC.to_hpp_cpp(mlc_source_4)
 
 puts "Generated shapes.hpp:"
 puts "-" * 40

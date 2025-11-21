@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# OpenGL Shader Example - Simplified Aurora DSL
+# OpenGL Shader Example - Simplified MLC DSL
 # Demonstrates what can be generated with current DSL
 
 require_relative "../lib/cpp_ast"

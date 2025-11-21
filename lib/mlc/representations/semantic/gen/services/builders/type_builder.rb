@@ -7,11 +7,14 @@ module MLC
         module Services
           # TypeBuilder - lowers AST type syntax to SemanticIR types in v2 pipeline
           class TypeBuilder
-            def initialize(ir_builder:, type_checker:)
+            def initialize(ir_builder:, type_checker:, scope_context: nil)
               @ir_builder = ir_builder
               @type_checker = type_checker
+              @scope_context = scope_context
               @type_params_stack = []
             end
+
+            attr_writer :scope_context
 
             def with_type_params(params)
               @type_params_stack.push(Array(params))
@@ -56,6 +59,14 @@ module MLC
               when MLC::Source::AST::ArrayType
                 element = transform(node.element_type)
                 @ir_builder.array_type(element_type: element)
+              when MLC::Source::AST::RefType
+                validate_unsafe_context!(node, "ref T")
+                inner = transform(node.inner_type)
+                @ir_builder.ref_type(inner_type: inner)
+              when MLC::Source::AST::MutRefType
+                validate_unsafe_context!(node, "ref mut T")
+                inner = transform(node.inner_type)
+                @ir_builder.mut_ref_type(inner_type: inner)
               else
                 raise MLC::CompileError, "Unsupported type node #{node.class}"
               end
@@ -76,6 +87,14 @@ module MLC
                 return candidate if candidate
               end
               nil
+            end
+
+            # Validate that reference types are used only in unsafe context
+            def validate_unsafe_context!(node, type_desc)
+              return if @scope_context.nil?  # Skip if no scope context (e.g., tests)
+              return if @scope_context.inside_unsafe?
+
+              raise MLC::CompileError, "Reference type #{type_desc} can only be used in unsafe blocks"
             end
           end
         end

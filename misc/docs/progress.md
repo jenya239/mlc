@@ -7,7 +7,7 @@
 The MLC compiler follows a multi-phase architecture with SemanticGen as the primary AST → SemanticIR transformation pipeline.
 
 **Phases**:
-1. **Parsing** (lib/mlc/parser/) - Aurora source → AST
+1. **Parsing** (lib/mlc/parser/) - MLC source → AST
 2. **SemanticGen** (lib/mlc/semantic_gen/) - AST → SemanticIR
 3. **Analysis** (lib/mlc/analysis/) - SemanticIR transformation passes
 4. **Backend** (lib/mlc/backend/) - SemanticIR → C++ code generation

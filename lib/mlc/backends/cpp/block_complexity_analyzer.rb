@@ -15,7 +15,7 @@ module MLC
         @block_expr = block_expr
         @statement_count = block_expr.statements.size
         @has_control_flow = analyze_control_flow
-        @has_early_return = false  # В Aurora нет early return в блоках (пока)
+        @has_early_return = false  # В MLC нет early return в блоках (пока)
       end
 
       # Простой блок: ≤3 statements, без control flow

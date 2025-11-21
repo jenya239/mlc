@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Template Buffer Example - Aurora DSL
+# Template Buffer Example - MLC DSL
 # Demonstrates template_class and template_method for OpenGL buffer.hpp
 
 require_relative "../lib/cpp_ast"
@@ -9,7 +9,7 @@ require_relative "../lib/cpp_ast"
 include CppAst::Builder::DSL
 
 puts "=== Template Buffer Example ==="
-puts "Generating OpenGL Buffer class with template methods using Aurora DSL"
+puts "Generating OpenGL Buffer class with template methods using MLC DSL"
 puts
 
 # Generate the complete buffer.hpp file with template methods

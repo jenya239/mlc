@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Minimal Modern C++ Shader Example - Aurora DSL
+# Minimal Modern C++ Shader Example - MLC DSL
 # Demonstrates Modern C++ modifiers for OpenGL shader.hpp
 
 require_relative "../lib/cpp_ast"

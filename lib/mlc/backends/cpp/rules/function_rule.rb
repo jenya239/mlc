@@ -23,7 +23,8 @@ module MLC
           def apply(node, semantic_func:, event_bus: nil)
             effects = Array(semantic_func.effects)
 
-            if effects.include?(:constexpr)
+            # C++ standard forbids constexpr on main()
+            if effects.include?(:constexpr) && semantic_func.name != "main"
               node.prefix_modifiers = merge_prefix_modifier(node.prefix_modifiers, "constexpr")
             end
 

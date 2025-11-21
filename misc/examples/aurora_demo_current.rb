@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Aurora Language Demo - Current Working Features
-# Demonstrates what currently works in Aurora language (as of 2025-10-16)
+# MLC Language Demo - Current Working Features
+# Demonstrates what currently works in MLC language (as of 2025-10-16)
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 70
-puts "  AURORA LANGUAGE DEMO - Current Working Features"
+puts "  MLC LANGUAGE DEMO - Current Working Features"
 puts "=" * 70
 puts
 
@@ -15,20 +15,20 @@ puts
 puts "Example 1: Factorial with if expression"
 puts "-" * 70
 
-aurora_source_1 = <<~AURORA
+mlc_source_1 = <<~MLC
   fn factorial(n: i32) -> i32 =
     if n <= 1 then 1
     else n * factorial(n - 1)
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
 begin
-  ast = Aurora.parse(aurora_source_1)
-  core_ir = Aurora.transform_to_core(ast)
-  cpp_ast = Aurora.lower_to_cpp(core_ir)
+  ast = MLC.parse(mlc_source_1)
+  core_ir = MLC.transform_to_core(ast)
+  cpp_ast = MLC.lower_to_cpp(core_ir)
   cpp_code = cpp_ast.to_source
 
   puts "Generated C++:"
@@ -47,17 +47,17 @@ puts
 puts "Example 2: Simple arithmetic"
 puts "-" * 70
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   fn add(a: i32, b: i32) -> i32 =
     a + b
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_2)
+  cpp_code = MLC.to_cpp(mlc_source_2)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -74,19 +74,19 @@ puts
 puts "Example 3: Product type (struct)"
 puts "-" * 70
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   type Vec2 = { x: f32, y: f32 }
 
   fn scale(v: Vec2, k: f32) -> Vec2 =
     { x: v.x, y: v.y }
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_3)
+  cpp_code = MLC.to_cpp(mlc_source_3)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -103,18 +103,18 @@ puts
 puts "Example 4: Let binding"
 puts "-" * 70
 
-aurora_source_4 = <<~AURORA
+mlc_source_4 = <<~MLC
   fn double(x: i32) -> i32 =
     let y = x + x
     y
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_4
+puts "MLC Source:"
+puts mlc_source_4
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_4)
+  cpp_code = MLC.to_cpp(mlc_source_4)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -131,19 +131,19 @@ puts
 puts "Example 5: Nested if expressions"
 puts "-" * 70
 
-aurora_source_5 = <<~AURORA
+mlc_source_5 = <<~MLC
   fn classify(n: i32) -> i32 =
     if n < 0 then 0
     else if n == 0 then 1
     else 2
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_5
+puts "MLC Source:"
+puts mlc_source_5
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_5)
+  cpp_code = MLC.to_cpp(mlc_source_5)
   puts "Generated C++:"
   puts cpp_code
   puts

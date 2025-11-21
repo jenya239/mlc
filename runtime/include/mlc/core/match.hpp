@@ -2,6 +2,7 @@
 #define AURORA_MATCH_HPP
 
 #include <utility>
+#include <variant>
 
 namespace mlc {
 

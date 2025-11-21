@@ -583,7 +583,7 @@ bin/mlc --keep-tmp program.mlc
 ### Текущее состояние
 
 ```
-1528 runs, 4028 assertions, 0 failures, 0 errors, 0 skips
+1524 runs, 4014 assertions, 0 failures, 0 errors, 0 skips
 ```
 
 Все тесты проходят успешно.

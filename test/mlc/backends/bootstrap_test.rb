@@ -4,6 +4,7 @@ require "test_helper"
 require_relative "../../../lib/mlc/backends/cpp/bootstrap"
 require_relative "../../../lib/mlc/registries/type_registry"
 require_relative "../../../lib/mlc/registries/function_registry"
+require_relative "../../../lib/mlc/representations/semantic/gen/services/semantic_ir_type_checker"
 
 module MLC
   module Backends

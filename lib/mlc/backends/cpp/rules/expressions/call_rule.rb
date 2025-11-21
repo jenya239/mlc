@@ -56,6 +56,14 @@ module MLC
                 return lower_array_method(node)
               end
 
+              # Check for string method calls
+              if context.checker.member_expr?(node.callee) &&
+                 node.callee.object.type.respond_to?(:primitive?) &&
+                 node.callee.object.type.primitive? &&
+                 node.callee.object.type.name == "String"
+                return lower_string_method(node)
+              end
+
               # Regular function call
               callee = lower_expression(node.callee)
               args = node.args.map { |arg| lower_expression(arg) }
@@ -202,6 +210,86 @@ module MLC
                 # Fallback: call method directly
                 member = context.factory.member_access(
                   object: array_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: method_name)
+                )
+                args = call.args.map { |arg| lower_expression(arg) }
+                context.factory.function_call(
+                  callee: member,
+                  arguments: args,
+                  argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+                )
+              end
+            end
+
+            # Lower string method calls
+            def lower_string_method(call)
+              method_name = call.callee.member
+              string_obj = lower_expression(call.callee.object)
+
+              case method_name
+              when "upper", "lower", "trim"
+                # str.upper() -> str.upper()
+                # str.lower() -> str.lower()
+                # str.trim() -> str.trim()
+                member = context.factory.member_access(
+                  object: string_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: method_name)
+                )
+                context.factory.function_call(
+                  callee: member,
+                  arguments: [],
+                  argument_separators: []
+                )
+
+              when "split", "contains", "starts_with", "ends_with"
+                # str.split(delim) -> str.split(delim)
+                # str.contains(sub) -> str.contains(sub)
+                # str.starts_with(prefix) -> str.starts_with(prefix)
+                # str.ends_with(suffix) -> str.ends_with(suffix)
+                member = context.factory.member_access(
+                  object: string_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: method_name)
+                )
+                args = call.args.map { |arg| lower_expression(arg) }
+                context.factory.function_call(
+                  callee: member,
+                  arguments: args,
+                  argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+                )
+
+              when "length"
+                # str.length() -> str.length()
+                member = context.factory.member_access(
+                  object: string_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: "length")
+                )
+                context.factory.function_call(
+                  callee: member,
+                  arguments: [],
+                  argument_separators: []
+                )
+
+              when "is_empty"
+                # str.is_empty() -> str.is_empty()
+                member = context.factory.member_access(
+                  object: string_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: "is_empty")
+                )
+                context.factory.function_call(
+                  callee: member,
+                  arguments: [],
+                  argument_separators: []
+                )
+
+              else
+                # Fallback: call method directly
+                member = context.factory.member_access(
+                  object: string_obj,
                   operator: ".",
                   member: context.factory.identifier(name: method_name)
                 )

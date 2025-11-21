@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Aurora Language Demo - Array Indexing
-# Demonstrates array indexing support in Aurora (2025-10-17)
+# MLC Language Demo - Array Indexing
+# Demonstrates array indexing support in MLC (2025-10-17)
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 70
-puts "  AURORA LANGUAGE DEMO - Array Indexing"
+puts "  MLC LANGUAGE DEMO - Array Indexing"
 puts "=" * 70
 puts
 
@@ -15,18 +15,18 @@ puts
 puts "Example 1: Simple array indexing"
 puts "-" * 70
 
-aurora_source_1 = <<~AURORA
+mlc_source_1 = <<~MLC
   fn get_first() -> i32 =
     let arr = [1, 2, 3];
     arr[0]
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_1)
+  cpp_code = MLC.to_cpp(mlc_source_1)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -43,18 +43,18 @@ puts
 puts "Example 2: Index with parameter"
 puts "-" * 70
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   fn get_at(i: i32) -> i32 =
     let arr = [10, 20, 30, 40];
     arr[i]
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_2)
+  cpp_code = MLC.to_cpp(mlc_source_2)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -71,18 +71,18 @@ puts
 puts "Example 3: Index with computed expression"
 puts "-" * 70
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   fn get_computed() -> i32 =
     let arr = [5, 10, 15, 20];
     arr[1 + 1]
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_3)
+  cpp_code = MLC.to_cpp(mlc_source_3)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -99,17 +99,17 @@ puts
 puts "Example 4: Direct indexing on array literal"
 puts "-" * 70
 
-aurora_source_4 = <<~AURORA
+mlc_source_4 = <<~MLC
   fn get_direct() -> i32 =
     [100, 200, 300][1]
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_4
+puts "MLC Source:"
+puts mlc_source_4
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_4)
+  cpp_code = MLC.to_cpp(mlc_source_4)
   puts "Generated C++:"
   puts cpp_code
   puts

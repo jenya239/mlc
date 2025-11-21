@@ -136,10 +136,13 @@ module MLC
                                                   .map(&:name)
                                                   .to_set
 
-          include_stmt = CppAst::Nodes::IncludeDirective.new(
-            path: "mlc/core/match.hpp",
-            system: false
-          )
+          # Standard includes for runtime support
+          include_stmts = [
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/string.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/collections.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/io/io.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/match.hpp", system: false)
+          ]
 
           items = module_node.items.flat_map do |item|
             result = lower(item)
@@ -147,8 +150,8 @@ module MLC
             result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
           end
 
-          statements = [include_stmt] + items
-          trailings = ["\n"] + Array.new(items.size, "\n")
+          statements = include_stmts + items
+          trailings = Array.new(include_stmts.size, "\n") + Array.new(items.size, "\n")
           CppAst::Nodes::Program.new(statements: statements, statement_trailings: trailings)
         end
 

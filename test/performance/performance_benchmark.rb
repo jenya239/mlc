@@ -10,7 +10,7 @@ require_relative "../../lib/cpp_ast/builder/optimized_generator"
 
 class PerformanceBenchmark < Minitest::Test
   def setup
-    @large_mlc_source = generate_large_aurora_file(1000)
+    @large_mlc_source = generate_large_MLC_file(1000)
     @large_cpp_source = generate_large_cpp_file(1000)
   end
   
@@ -133,7 +133,7 @@ class PerformanceBenchmark < Minitest::Test
   
   private
   
-  def generate_large_aurora_file(size)
+  def generate_large_MLC_file(size)
     source = <<~MLCORA
       module PerformanceTest
       

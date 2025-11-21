@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Aurora Language Demo - Array Methods
-# Demonstrates array method support in Aurora (2025-10-17)
+# MLC Language Demo - Array Methods
+# Demonstrates array method support in MLC (2025-10-17)
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 70
-puts "  AURORA LANGUAGE DEMO - Array Methods"
+puts "  MLC LANGUAGE DEMO - Array Methods"
 puts "=" * 70
 puts
 
@@ -15,18 +15,18 @@ puts
 puts "Example 1: Getting array length with .length()"
 puts "-" * 70
 
-aurora_source_1 = <<~AURORA
+mlc_source_1 = <<~MLC
   fn get_length() -> i32 =
     let arr = [1, 2, 3, 4, 5];
     arr.length()
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_1)
+  cpp_code = MLC.to_cpp(mlc_source_1)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -44,18 +44,18 @@ puts
 puts "Example 2: Adding elements with .push()"
 puts "-" * 70
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   fn add_element() -> i32 =
     let arr = [1, 2, 3];
     arr.push(4)
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_2)
+  cpp_code = MLC.to_cpp(mlc_source_2)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -73,18 +73,18 @@ puts
 puts "Example 3: Removing elements with .pop()"
 puts "-" * 70
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   fn remove_last() -> i32 =
     let arr = [10, 20, 30];
     arr.pop()
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_3)
+  cpp_code = MLC.to_cpp(mlc_source_3)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -102,17 +102,17 @@ puts
 puts "Example 4: Direct method call on array literal"
 puts "-" * 70
 
-aurora_source_4 = <<~AURORA
+mlc_source_4 = <<~MLC
   fn direct_length() -> i32 =
     [100, 200, 300].length()
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_4
+puts "MLC Source:"
+puts mlc_source_4
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_4)
+  cpp_code = MLC.to_cpp(mlc_source_4)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -129,18 +129,18 @@ puts
 puts "Example 5: Combining methods with indexing"
 puts "-" * 70
 
-aurora_source_5 = <<~AURORA
+mlc_source_5 = <<~MLC
   fn combined() -> i32 =
     let arr = [5, 10, 15];
     arr[arr.length()]
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_5
+puts "MLC Source:"
+puts mlc_source_5
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_5)
+  cpp_code = MLC.to_cpp(mlc_source_5)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -157,7 +157,7 @@ puts "HOW IT WORKS:"
 puts "=" * 70
 puts
 puts "Array Method Translation:"
-puts "  Aurora          →  C++ std::vector"
+puts "  MLC          →  C++ std::vector"
 puts "  ───────────────────────────────────"
 puts "  .length()       →  .size()"
 puts "  .push(elem)     →  .push_back(elem)"
@@ -169,7 +169,7 @@ puts "2. Type Inference: Added @var_types tracking for let bindings"
 puts "3. CoreIR: Variable types preserved through let expressions"
 puts "4. C++ Lowering: Special case in lower_call() for array methods"
 puts "5. Detection: Checks if callee is MemberExpr on ArrayType"
-puts "6. Translation: Maps Aurora method names to C++ equivalents"
+puts "6. Translation: Maps MLC method names to C++ equivalents"
 puts
 puts "Type Tracking:"
 puts "- When processing 'let arr = [1,2,3]', type is saved"

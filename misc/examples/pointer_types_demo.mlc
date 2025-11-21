@@ -1,0 +1,259 @@
+// =============================================================================
+// MLC Pointer Types Demo
+// Демонстрация всех видов указателей и паттернов работы с ними
+// =============================================================================
+
+// =============================================================================
+// 1. SAFE POINTER TYPES (можно использовать везде)
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Shared<T> - Разделяемое владение (reference counting)
+// Используй когда: несколько владельцев, неизвестное время жизни
+// -----------------------------------------------------------------------------
+
+type Node = {
+  value: i32,
+  next: Shared<Node>   // Узел может иметь несколько ссылок
+}
+
+// Создание shared pointer
+fn create_node(val: i32) -> Shared<Node> =
+  Shared::new(Node { value: val, next: Shared::null() })
+
+// Передача по значению - увеличивает счётчик ссылок
+fn process_node(node: Shared<Node>) -> i32 = node.value
+
+// Несколько владельцев одного объекта
+fn shared_ownership_example() -> i32 = {
+  let node = create_node(42)
+  let alias1 = node          // +1 ref count
+  let alias2 = node          // +1 ref count
+  // node, alias1, alias2 все указывают на один объект
+  // Объект удалится когда все три выйдут из scope
+  alias1.value + alias2.value
+}
+
+// -----------------------------------------------------------------------------
+// Weak<T> - Слабая ссылка (не препятствует удалению)
+// Используй когда: кеши, наблюдатели, обратные ссылки в графах
+// -----------------------------------------------------------------------------
+
+type TreeNode = {
+  value: i32,
+  parent: Weak<TreeNode>,     // Слабая ссылка на родителя (избегаем циклов)
+  children: Shared<TreeNode>[]
+}
+
+// Weak не увеличивает счётчик - объект может быть удалён
+fn get_parent_value(node: Shared<TreeNode>) -> Option<i32> =
+  match node.parent.lock() {  // lock() -> Option<Shared<T>>
+    Some(parent) => Some(parent.value),
+    None => None              // Родитель уже удалён
+  }
+
+// Паттерн: Observer без утечек памяти
+type Observer = {
+  target: Weak<Subject>       // Наблюдатель не владеет субъектом
+}
+
+fn observer_check(obs: Observer) -> bool =
+  obs.target.is_valid()       // Проверка: жив ли ещё субъект?
+
+// -----------------------------------------------------------------------------
+// Owned<T> - Единоличное владение (move semantics)
+// Используй когда: один владелец, детерминированное время жизни
+// -----------------------------------------------------------------------------
+
+type Buffer = {
+  data: i32[],
+  size: i32
+}
+
+// Owned нельзя копировать - только перемещать
+fn create_buffer(size: i32) -> Owned<Buffer> =
+  Owned::new(Buffer { data: [], size: size })
+
+// После передачи в функцию - исходная переменная недействительна
+fn consume_buffer(buf: Owned<Buffer>) -> i32 = buf.size
+
+fn owned_example() -> i32 = {
+  let buf = create_buffer(1024)
+  consume_buffer(buf)         // buf перемещён
+  // buf.size                 // ОШИБКА: use after move
+  0
+}
+
+// =============================================================================
+// 2. UNSAFE POINTER TYPES (только в unsafe блоках)
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// ref T - Иммутабельная ссылка (borrow)
+// Используй когда: нужен read-only доступ без копирования
+// -----------------------------------------------------------------------------
+
+// ref позволяет избежать копирования больших структур
+fn sum_array(arr: ref i32[]) -> i32 = unsafe {
+  let mut total = 0
+  for x in arr {
+    total = total + x
+  }
+  total
+}
+
+// Множественные иммутабельные ссылки - OK
+fn compare(a: ref i32, b: ref i32) -> bool = unsafe {
+  a == b
+}
+
+// -----------------------------------------------------------------------------
+// ref mut T - Мутабельная ссылка
+// Используй когда: нужна in-place модификация
+// -----------------------------------------------------------------------------
+
+// Модификация на месте без возврата
+fn increment(x: ref mut i32) -> i32 = unsafe {
+  x = x + 1
+  x
+}
+
+// Только одна мутабельная ссылка в один момент времени
+fn swap(a: ref mut i32, b: ref mut i32) -> i32 = unsafe {
+  let temp = a
+  a = b
+  b = temp
+  0
+}
+
+// =============================================================================
+// 3. ПАТТЕРНЫ И ИДИОМЫ
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Паттерн: Builder с Owned
+// -----------------------------------------------------------------------------
+
+type Config = {
+  host: str,
+  port: i32,
+  timeout: i32
+}
+
+type ConfigBuilder = {
+  config: Config
+}
+
+fn new_builder() -> Owned<ConfigBuilder> =
+  Owned::new(ConfigBuilder {
+    config: Config { host: "localhost", port: 8080, timeout: 30 }
+  })
+
+fn with_host(builder: Owned<ConfigBuilder>, host: str) -> Owned<ConfigBuilder> = {
+  builder.config.host = host
+  builder  // Возвращаем владение
+}
+
+fn with_port(builder: Owned<ConfigBuilder>, port: i32) -> Owned<ConfigBuilder> = {
+  builder.config.port = port
+  builder
+}
+
+fn build(builder: Owned<ConfigBuilder>) -> Config = builder.config
+
+fn builder_example() -> Config =
+  new_builder()
+    |> with_host("example.com")
+    |> with_port(443)
+    |> build()
+
+// -----------------------------------------------------------------------------
+// Паттерн: Shared + Weak для графов (избегаем циклических ссылок)
+// -----------------------------------------------------------------------------
+
+type GraphNode = {
+  id: i32,
+  edges: Weak<GraphNode>[]    // Слабые ссылки на соседей
+}
+
+type Graph = {
+  nodes: Shared<GraphNode>[]  // Граф владеет всеми узлами
+}
+
+fn add_edge(from: Shared<GraphNode>, to: Shared<GraphNode>) -> i32 = {
+  // Добавляем weak ссылку - не создаём цикл владения
+  from.edges = from.edges ++ [Shared::downgrade(to)]
+  0
+}
+
+// -----------------------------------------------------------------------------
+// Паттерн: RAII с Owned
+// -----------------------------------------------------------------------------
+
+type FileHandle = {
+  fd: i32,
+  path: str
+}
+
+// Ресурс автоматически освобождается при выходе из scope
+fn with_file(path: str, action: fn(ref mut FileHandle) -> i32) -> i32 = {
+  let handle = Owned::new(FileHandle { fd: 0, path: path })
+  // ... open file ...
+  let result = unsafe { action(handle) }
+  // handle автоматически закрывается здесь (drop)
+  result
+}
+
+// -----------------------------------------------------------------------------
+// Паттерн: Option для nullable значений
+// -----------------------------------------------------------------------------
+
+type User = {
+  name: str,
+  email: Option<str>          // Email может отсутствовать
+}
+
+fn get_email_domain(user: User) -> Option<str> =
+  match user.email {
+    Some(email) => Some(email.split("@")[1]),
+    None => None
+  }
+
+// Safe chaining с Option
+fn notify_user(user: User) -> bool =
+  user.email
+    |> Option::map(send_email)
+    |> Option::unwrap_or(false)
+
+// =============================================================================
+// 4. ПРАВИЛА БЕЗОПАСНОСТИ
+// =============================================================================
+
+// SAFE CODE (без unsafe):
+// - Используй Shared<T> для разделяемого владения
+// - Используй Weak<T> для обратных ссылок и кешей
+// - Используй Owned<T> для единоличного владения
+// - Используй Option<T> вместо null
+// - Используй Result<T, E> для ошибок
+
+// UNSAFE CODE (только в unsafe блоках):
+// - ref T для read-only borrow без копирования
+// - ref mut T для in-place модификации
+// - Убедись что ссылка не переживёт владельца
+// - Не создавай aliasing (ref mut + другие ссылки)
+
+// =============================================================================
+// ЗАПУСК ПРИМЕРОВ
+// =============================================================================
+
+fn main() -> i32 = {
+  // Safe examples
+  let shared_result = shared_ownership_example()
+  let builder_result = builder_example()
+
+  // Unsafe example (wrapped in unsafe)
+  let arr = [1, 2, 3, 4, 5]
+  let sum = unsafe { sum_array(arr) }
+
+  sum
+}

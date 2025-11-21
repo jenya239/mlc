@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Aurora Language Demo - For Loops
-# Demonstrates for loop support in Aurora (2025-10-17)
+# MLC Language Demo - For Loops
+# Demonstrates for loop support in MLC (2025-10-17)
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 70
-puts "  AURORA LANGUAGE DEMO - For Loops"
+puts "  MLC LANGUAGE DEMO - For Loops"
 puts "=" * 70
 puts
 
@@ -15,18 +15,18 @@ puts
 puts "Example 1: Simple for loop over array literal"
 puts "-" * 70
 
-aurora_source_1 = <<~AURORA
+mlc_source_1 = <<~MLC
   fn test_simple() -> i32 =
     for x in [1, 2, 3] do
       x
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_1)
+  cpp_code = MLC.to_cpp(mlc_source_1)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -44,19 +44,19 @@ puts
 puts "Example 2: For loop with let-bound array"
 puts "-" * 70
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   fn test_with_var() -> i32 =
     let arr = [10, 20, 30];
     for x in arr do
       x
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_2)
+  cpp_code = MLC.to_cpp(mlc_source_2)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -73,18 +73,18 @@ puts
 puts "Example 3: For loop with expression in body"
 puts "-" * 70
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   fn test_expr() -> i32 =
     for i in [1, 2, 3, 4, 5] do
       i + i
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_3)
+  cpp_code = MLC.to_cpp(mlc_source_3)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -101,18 +101,18 @@ puts
 puts "Example 4: For loop with larger array"
 puts "-" * 70
 
-aurora_source_4 = <<~AURORA
+mlc_source_4 = <<~MLC
   fn process_array() -> i32 =
     for num in [5, 10, 15, 20, 25, 30] do
       num
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_4
+puts "MLC Source:"
+puts mlc_source_4
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_4)
+  cpp_code = MLC.to_cpp(mlc_source_4)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -127,8 +127,8 @@ puts
 puts "HOW IT WORKS:"
 puts "=" * 70
 puts
-puts "Aurora For Loop Translation:"
-puts "  Aurora:  for x in array do body"
+puts "MLC For Loop Translation:"
+puts "  MLC:  for x in array do body"
 puts "  C++:     for (type x : container) { body; }"
 puts
 puts "Implementation Details:"

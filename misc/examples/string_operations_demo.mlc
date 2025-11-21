@@ -1,0 +1,98 @@
+// String Operations Demo
+// Demonstrates string concatenation and methods
+
+fn demo_concatenation() -> String = do
+  let first = "Hello"
+  let last = "World"
+  let greeting = first + ", " + last + "!"
+  println("Concatenation: \"Hello\" + \", \" + \"World\" + \"!\" = \"" + greeting + "\"")
+  greeting
+end
+
+fn demo_upper_lower() -> String = do
+  let text = "MiXeD CaSe TeXt"
+  let upper_text = text.upper()
+  let lower_text = text.lower()
+  println("Original: \"" + text + "\"")
+  println("Upper: \"" + upper_text + "\"")
+  println("Lower: \"" + lower_text + "\"")
+  upper_text
+end
+
+fn demo_trim() -> String = do
+  let text = "   spaces around   "
+  let trimmed = text.trim()
+  println("Original: \"" + text + "\" (length: " + to_string(text.length()) + ")")
+  println("Trimmed: \"" + trimmed + "\" (length: " + to_string(trimmed.length()) + ")")
+  trimmed
+end
+
+fn demo_chaining() -> String = do
+  let messy_input = "  hello WORLD  "
+  let clean = messy_input.trim().lower()
+  println("Input: \"" + messy_input + "\"")
+  println("After .trim().lower(): \"" + clean + "\"")
+  clean
+end
+
+fn demo_contains() -> bool = do
+  let sentence = "The quick brown fox"
+  let has_fox = sentence.contains("fox")
+  let has_cat = sentence.contains("cat")
+  println("Sentence: \"" + sentence + "\"")
+  println("Contains \"fox\": " + to_string(has_fox))
+  println("Contains \"cat\": " + to_string(has_cat))
+  has_fox
+end
+
+fn demo_starts_ends() -> bool = do
+  let filename = "document.txt"
+  let starts = filename.starts_with("doc")
+  let ends = filename.ends_with(".txt")
+  println("Filename: \"" + filename + "\"")
+  println("Starts with \"doc\": " + to_string(starts))
+  println("Ends with \".txt\": " + to_string(ends))
+  starts && ends
+end
+
+fn demo_is_empty() -> bool = do
+  let empty_str = ""
+  let non_empty = "content"
+  println("Empty string is_empty: " + to_string(empty_str.is_empty()))
+  println("Non-empty string is_empty: " + to_string(non_empty.is_empty()))
+  empty_str.is_empty()
+end
+
+fn main() -> i32 = do
+  println("=== String Operations Demo ===")
+  println("")
+
+  println("--- Concatenation ---")
+  let _ = demo_concatenation()
+  println("")
+
+  println("--- Upper/Lower Case ---")
+  let _ = demo_upper_lower()
+  println("")
+
+  println("--- Trim ---")
+  let _ = demo_trim()
+  println("")
+
+  println("--- Method Chaining ---")
+  let _ = demo_chaining()
+  println("")
+
+  println("--- Contains ---")
+  let _ = demo_contains()
+  println("")
+
+  println("--- Starts/Ends With ---")
+  let _ = demo_starts_ends()
+  println("")
+
+  println("--- Is Empty ---")
+  let _ = demo_is_empty()
+
+  0
+end

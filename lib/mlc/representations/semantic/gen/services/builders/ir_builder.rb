@@ -77,6 +77,16 @@ module MLC
               MLC::SemanticIR::Builder.array_type(element_type, origin: origin)
             end
 
+            # Build a reference type (&T)
+            def ref_type(inner_type:, origin: nil)
+              MLC::SemanticIR::Builder.ref_type(inner_type, origin: origin)
+            end
+
+            # Build a mutable reference type (&mut T)
+            def mut_ref_type(inner_type:, origin: nil)
+              MLC::SemanticIR::Builder.mut_ref_type(inner_type, origin: origin)
+            end
+
             # Build a literal node
             def literal(value:, type:, origin: nil)
               MLC::SemanticIR::LiteralExpr.new(
@@ -289,6 +299,11 @@ module MLC
             # Build a unit value
             def unit_literal(origin: nil)
               MLC::SemanticIR::UnitLiteral.new(origin: origin)
+            end
+
+            # Build an unsafe block expression
+            def unsafe_block_expr(body:, type:, origin: nil)
+              MLC::SemanticIR::Builder.unsafe_block_expr(body, type, origin: origin)
             end
           end
         end

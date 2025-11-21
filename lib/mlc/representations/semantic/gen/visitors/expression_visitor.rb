@@ -32,6 +32,7 @@ module MLC
               return apply_rules(node, extra_context) if svc.let?(node)
               return apply_rules(node, extra_context) if svc.match_expr?(node)
               return apply_rules(node, extra_context) if svc.block_expr?(node)
+              return apply_rules(node, extra_context) if svc.unsafe_block?(node)
               return apply_rules(node, extra_context) if svc.do_expr?(node)
 
               if svc.for_loop?(node)

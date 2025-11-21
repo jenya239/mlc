@@ -116,7 +116,8 @@ module MLC
       end
 
       consume(:EQUAL)
-      value = parse_expression
+      # Use parse_expression_in_block to avoid stealing END from parent block
+      value = parse_expression_in_block
       consume(:SEMICOLON) if current.type == :SEMICOLON
 
       with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }

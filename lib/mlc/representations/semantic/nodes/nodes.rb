@@ -98,7 +98,7 @@ module MLC
       end
     end
 
-    # Opaque type - type without known structure in Aurora
+    # Opaque type - type without known structure in MLC
     # Represented as pointer in C++, can only come from extern/stdlib
     # Example: Window, DrawContext from Graphics module
     class OpaqueType < Type
@@ -107,6 +107,36 @@ module MLC
       end
 
       def opaque?
+        true
+      end
+    end
+
+    # Reference type - &T (immutable borrow)
+    # Only allowed in unsafe blocks, maps to const T& in C++
+    class RefType < Type
+      attr_reader :inner_type
+
+      def initialize(inner_type:, origin: nil)
+        super(kind: :ref, name: "ref", origin: origin)
+        @inner_type = inner_type
+      end
+
+      def ref?
+        true
+      end
+    end
+
+    # Mutable reference type - &mut T
+    # Only allowed in unsafe blocks, maps to T& in C++
+    class MutRefType < Type
+      attr_reader :inner_type
+
+      def initialize(inner_type:, origin: nil)
+        super(kind: :mut_ref, name: "mut_ref", origin: origin)
+        @inner_type = inner_type
+      end
+
+      def mut_ref?
         true
       end
     end
@@ -441,6 +471,17 @@ module MLC
         @statements = statements
         @result = result
         @desugared_expr = nil
+      end
+    end
+
+    # Unsafe block expression - allows reference types and raw pointers
+    # unsafe { body }
+    class UnsafeBlockExpr < Expr
+      attr_reader :body
+
+      def initialize(body:, type:, origin: nil)
+        super(kind: :unsafe_block, data: {}, type: type, origin: origin)
+        @body = body  # BlockExpr
       end
     end
 

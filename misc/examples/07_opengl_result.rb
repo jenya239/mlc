@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# OpenGL Result Example - Aurora DSL
+# OpenGL Result Example - MLC DSL
 # Demonstrates modern error handling with std::expected and pattern matching
 
 require_relative "../lib/cpp_ast"
@@ -9,7 +9,7 @@ require_relative "../lib/cpp_ast"
 include CppAst::Builder::DSL
 
 puts "=== OpenGL Result Example ==="
-puts "Demonstrating modern error handling with Aurora DSL"
+puts "Demonstrating modern error handling with MLC DSL"
 puts
 
 # Generate modern error handling patterns
@@ -308,7 +308,7 @@ puts "✅ Type-safe error messages"
 puts "✅ Modern C++23 error handling patterns"
 
 puts
-puts "Benefits of using Aurora DSL for error handling:"
+puts "Benefits of using MLC DSL for error handling:"
 puts "• Explicit error handling - no exceptions"
 puts "• Type-safe error propagation"
 puts "• Pattern matching for error cases"

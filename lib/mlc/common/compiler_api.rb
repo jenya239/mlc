@@ -12,13 +12,13 @@
 
 module MLC
   class << self
-    # Main entry point: Parse Aurora source and return C++ AST
-    # @param source [String] Aurora source code
+    # Main entry point: Parse MLC source and return C++ AST
+    # @param source [String] MLC source code
     # @param filename [String, nil] Source filename for error reporting
     # @param runtime_policy [RuntimePolicy, nil] Policy for runtime lowering strategies
     # @return [Backends::Cpp::AST] C++ AST
     def compile(source, filename: nil, runtime_policy: nil)
-      # 1. Parse Aurora source
+      # 1. Parse MLC source
       ast = parse(source, filename: filename)
 
       # 2. Transform to SemanticIR (with type_registry)
@@ -38,8 +38,8 @@ module MLC
       cpp_ast
     end
 
-    # Parse Aurora source to AST
-    # @param source [String] Aurora source code
+    # Parse MLC source to AST
+    # @param source [String] MLC source code
     # @param filename [String, nil] Source filename for error reporting
     # @return [AST::Program] Parsed AST
     def parse(source, filename: nil)
@@ -49,18 +49,18 @@ module MLC
       raise MLC::ParseError, "Parse error: #{e.message}"
     end
 
-    # Transform Aurora AST to SemanticIR
+    # Transform MLC AST to SemanticIR
     # For backward compatibility, returns just core_ir
     # Use transform_to_core_with_registry if you need the type_registry
-    # @param ast [AST::Program] Aurora AST
+    # @param ast [AST::Program] MLC AST
     # @return [SemanticIR::Module] SemanticIR module
     def transform_to_core(ast)
       core_ir, _type_registry = transform_to_core_with_registry(ast)
       core_ir
     end
 
-    # Transform Aurora AST to SemanticIR (with TypeRegistry)
-    # @param ast [AST::Program] Aurora AST
+    # Transform MLC AST to SemanticIR (with TypeRegistry)
+    # @param ast [AST::Program] MLC AST
     # @param transformer [Representations::Semantic::Gen::Pipeline] Optional custom transformer
     # @return [Array<SemanticIR::Module, TypeRegistry, FunctionRegistry>]
     def transform_to_core_with_registry(ast, transformer: Representations::Semantic::Gen::Pipeline.new)
@@ -97,8 +97,8 @@ module MLC
       raise MLC::CompileError.new("Lowering error: #{e.message}", origin: origin)
     end
 
-    # Full pipeline: Aurora source -> C++ source
-    # @param source [String] Aurora source code
+    # Full pipeline: MLC source -> C++ source
+    # @param source [String] MLC source code
     # @param filename [String, nil] Source filename for error reporting
     # @param runtime_policy [RuntimePolicy, nil] Policy for runtime lowering strategies
     # @return [String] Generated C++ source code
@@ -108,7 +108,7 @@ module MLC
     end
 
     # Generate header, implementation, and metadata files for a module
-    # @param source [String] Aurora source code
+    # @param source [String] MLC source code
     # @param filename [String, nil] Source filename for error reporting
     # @param runtime_policy [RuntimePolicy, nil] Policy for runtime lowering strategies
     # @return [Hash] { header: String, implementation: String, metadata: Hash }

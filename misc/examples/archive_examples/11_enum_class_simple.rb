@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Simple Enum Class Example - Aurora DSL
+# Simple Enum Class Example - MLC DSL
 # Demonstrates enum class support with underlying types
 
 require_relative "../lib/cpp_ast"

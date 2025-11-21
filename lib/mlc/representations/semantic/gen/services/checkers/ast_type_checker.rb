@@ -116,6 +116,10 @@ module MLC
               node.is_a?(MLC::Source::AST::ListComprehension)
             end
 
+            def unsafe_block?(node)
+              node.is_a?(MLC::Source::AST::UnsafeBlock)
+            end
+
             def block_statement?(node)
               node.is_a?(MLC::Source::AST::Block)
             end

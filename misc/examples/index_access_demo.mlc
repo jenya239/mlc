@@ -1,0 +1,47 @@
+// Index Access Demo - array indexing with []
+
+fn get_first(arr: i32[]) -> i32 = arr[0]
+
+fn get_last(arr: i32[], len: i32) -> i32 = arr[len - 1]
+
+fn demo_basic_indexing() -> i32 = do
+  let numbers = [10, 20, 30, 40, 50]
+  println("Array: [10, 20, 30, 40, 50]")
+  println("First element (arr[0]): " + to_string(numbers[0]))
+  println("Third element (arr[2]): " + to_string(numbers[2]))
+  println("Last element (arr[4]): " + to_string(numbers[4]))
+  numbers[2]
+end
+
+fn demo_computed_index() -> i32 = do
+  let items = [100, 200, 300]
+  let idx = 1
+  println("Using variable index: items[idx] where idx=1: " + to_string(items[idx]))
+  items[idx]
+end
+
+fn demo_string_indexing() -> str = do
+  let words = ["hello", "world", "mlc"]
+  println("String array indexing: words[1] = " + words[1])
+  words[1]
+end
+
+fn main() -> i32 = do
+  println("=== Index Access Demo ===")
+  println("")
+
+  let val1 = demo_basic_indexing()
+  println("")
+
+  let val2 = demo_computed_index()
+  println("")
+
+  let word = demo_string_indexing()
+  println("")
+
+  let arr = [5, 10, 15, 20]
+  println("get_first([5,10,15,20]): " + to_string(get_first(arr)))
+  println("get_last([5,10,15,20], 4): " + to_string(get_last(arr, 4)))
+
+  0
+end

@@ -111,6 +111,11 @@ module MLC
     end
 
     def parse_type
+      # Check for reference types: ref T or ref mut T
+      if current.type == :REF
+        return parse_reference_type
+      end
+
       base_token = nil
       base_type = case current.type
                   when :I32
@@ -269,6 +274,22 @@ module MLC
 
       @pos = saved_pos
       false
+    end
+
+    # Parse reference type: ref T or ref mut T
+    def parse_reference_type
+      ref_token = consume(:REF)
+
+      # Check for mutable reference: ref mut T
+      if current.type == :MUT
+        consume(:MUT)
+        inner_type = parse_type
+        with_origin(ref_token) { MLC::Source::AST::MutRefType.new(inner_type: inner_type) }
+      else
+        # Immutable reference: ref T
+        inner_type = parse_type
+        with_origin(ref_token) { MLC::Source::AST::RefType.new(inner_type: inner_type) }
+      end
     end
 
     end

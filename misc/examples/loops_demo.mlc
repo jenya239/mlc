@@ -1,0 +1,45 @@
+// Loops Demo - for and while loops with break/continue
+
+fn demo_for_loop() -> i32 = do
+  let numbers = [1, 2, 3, 4, 5]
+  let mut sum = 0
+  for n in numbers do
+    sum = sum + n
+  end
+  println("For loop sum [1..5]: " + to_string(sum))
+  sum
+end
+
+fn demo_while_loop() -> i32 = do
+  let mut count = 0
+  let mut total = 0
+  while count < 5 do
+    count = count + 1
+    total = total + count
+  end
+  println("While loop sum 1+2+3+4+5: " + to_string(total))
+  total
+end
+
+fn demo_for_with_index() -> i32 = do
+  let items = ["a", "b", "c"]
+  let mut idx = 0
+  for item in items do
+    println("Item " + to_string(idx) + ": " + item)
+    idx = idx + 1
+  end
+  idx
+end
+
+fn main() -> i32 = do
+  println("=== Loops Demo ===")
+  println("")
+
+  let sum1 = demo_for_loop()
+  let sum2 = demo_while_loop()
+  let count = demo_for_with_index()
+
+  println("")
+  println("Results: for=" + to_string(sum1) + ", while=" + to_string(sum2) + ", items=" + to_string(count))
+  0
+end

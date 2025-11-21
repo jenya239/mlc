@@ -9,21 +9,48 @@ module MLC
           module TypeMapper
             module_function
 
+            # Smart pointer type names that map to C++ smart pointers
+            SMART_POINTER_TYPES = {
+              "Shared" => "std::shared_ptr",
+              "Weak" => "std::weak_ptr",
+              "Owned" => "std::unique_ptr"
+            }.freeze
+
             # Map SemanticIR type to C++ type string
             # Pure function - all dependencies passed as parameters
             def map_type(type, type_map:, type_registry: nil)
               case type
+              when SemanticIR::RefType
+                # Reference type: &T -> const T&
+                inner = map_type(type.inner_type, type_map: type_map, type_registry: type_registry)
+                "const #{inner}&"
+
+              when SemanticIR::MutRefType
+                # Mutable reference type: &mut T -> T&
+                inner = map_type(type.inner_type, type_map: type_map, type_registry: type_registry)
+                "#{inner}&"
+
               when SemanticIR::TypeVariable
                 # Type variables map directly to their name (T, U, E, etc.)
                 type.name
 
               when SemanticIR::GenericType
+                # Check for smart pointer types: Shared<T>, Weak<T>, Owned<T>
+                base_name = extract_base_type_name(type.base_type, type_map: type_map, type_registry: type_registry)
+                if SMART_POINTER_TYPES.key?(base_name)
+                  cpp_ptr = SMART_POINTER_TYPES[base_name]
+                  type_args = type.type_args.map { |arg|
+                    map_type(arg, type_map: type_map, type_registry: type_registry)
+                  }.join(", ")
+                  return "#{cpp_ptr}<#{type_args}>"
+                end
+
                 # Generic types: Base<Arg1, Arg2, ...>
-                base_name = map_type(type.base_type, type_map: type_map, type_registry: type_registry)
+                mapped_base = map_type(type.base_type, type_map: type_map, type_registry: type_registry)
                 type_args = type.type_args.map { |arg|
                   map_type(arg, type_map: type_map, type_registry: type_registry)
                 }.join(", ")
-                "#{base_name}<#{type_args}>"
+                "#{mapped_base}<#{type_args}>"
 
               when SemanticIR::ArrayType
                 element_type = map_type(type.element_type, type_map: type_map, type_registry: type_registry)

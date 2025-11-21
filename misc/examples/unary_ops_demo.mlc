@@ -1,0 +1,64 @@
+// Unary Operators Demo - negation and logical not
+
+fn negate(x: i32) -> i32 = -x
+
+fn logical_not(b: bool) -> bool = !b
+
+fn demo_numeric_negation() -> i32 = do
+  let positive = 42
+  let negative = -positive
+  println("Numeric negation:")
+  println("  positive = " + to_string(positive))
+  println("  -positive = " + to_string(negative))
+  println("  -(-positive) = " + to_string(-negative))
+  negative
+end
+
+fn demo_logical_not() -> bool = do
+  let t = true
+  let f = false
+  println("Logical NOT:")
+  println("  !true = " + to_string(!t))
+  println("  !false = " + to_string(!f))
+  println("  !!true = " + to_string(!!t))
+  !f
+end
+
+fn demo_in_expressions() -> i32 = do
+  let a = 10
+  let b = 5
+  let result = -a + b
+  println("Expression with unary minus:")
+  println("  -10 + 5 = " + to_string(result))
+  result
+end
+
+fn demo_conditionals() -> i32 = do
+  let flag = false
+  println("Using !flag in conditional:")
+  // Using ternary-style if without complex blocks
+  if !flag then 1 else 0
+end
+
+fn main() -> i32 = do
+  println("=== Unary Operators Demo ===")
+  println("")
+
+  let neg = demo_numeric_negation()
+  println("")
+
+  let not_result = demo_logical_not()
+  println("")
+
+  let expr_result = demo_in_expressions()
+  println("")
+
+  let cond = demo_conditionals()
+  println("  Conditional result (should be 1): " + to_string(cond))
+  println("")
+
+  println("negate(100): " + to_string(negate(100)))
+  println("logical_not(true): " + to_string(logical_not(true)))
+
+  0
+end

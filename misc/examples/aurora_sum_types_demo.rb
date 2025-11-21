@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Aurora Language Demo - Sum Types (Algebraic Data Types)
-# Demonstrates the new sum types feature in Aurora (2025-10-17)
+# MLC Language Demo - Sum Types (Algebraic Data Types)
+# Demonstrates the new sum types feature in MLC (2025-10-17)
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 70
-puts "  AURORA LANGUAGE DEMO - Sum Types (Variants)"
+puts "  MLC LANGUAGE DEMO - Sum Types (Variants)"
 puts "=" * 70
 puts
 
@@ -15,16 +15,16 @@ puts
 puts "Example 1: Shape variants"
 puts "-" * 70
 
-aurora_source_1 = <<~AURORA
+mlc_source_1 = <<~MLC
   type Shape = Circle(f32) | Rect(f32, f32) | Point
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_1)
+  cpp_code = MLC.to_cpp(mlc_source_1)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -42,16 +42,16 @@ puts
 puts "Example 2: Result type with named fields"
 puts "-" * 70
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   type Result = Ok { value: i32 } | Err { code: i32 }
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_2)
+  cpp_code = MLC.to_cpp(mlc_source_2)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -68,16 +68,16 @@ puts
 puts "Example 3: Option type"
 puts "-" * 70
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   type Option = Some(i32) | None
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_3)
+  cpp_code = MLC.to_cpp(mlc_source_3)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -92,7 +92,7 @@ puts
 puts "HOW IT WORKS:"
 puts "=" * 70
 puts
-puts "1. Aurora sum types compile to C++ std::variant"
+puts "1. MLC sum types compile to C++ std::variant"
 puts "2. Each variant becomes a separate C++ struct"
 puts "3. The sum type is a type alias: using Shape = std::variant<Circle, Rect, Point>;"
 puts "4. Variants can have:"

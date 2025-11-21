@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Aurora Language - Comprehensive Demo
+# MLC Language - Comprehensive Demo
 # Demonstrates ALL implemented features (2025-10-17)
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 80
-puts "  AURORA LANGUAGE - Comprehensive Feature Demonstration"
+puts "  MLC LANGUAGE - Comprehensive Feature Demonstration"
 puts "=" * 80
 puts
 puts "A modern systems programming language that compiles to C++"
@@ -20,7 +20,7 @@ puts
 puts "🔹 FEATURE SHOWCASE: Sum Types + Pattern Matching + Generics"
 puts "-" * 80
 
-aurora_example = <<~AURORA
+mlc_example = <<~MLC
   type Result<T, E> = Ok(T) | Err(E)
 
   fn divide(a: i32, b: i32) -> Result<i32, i32> =
@@ -32,13 +32,13 @@ aurora_example = <<~AURORA
     match r
       | Ok(value) => value
       | Err(code) => default
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_example
+puts "MLC Source:"
+puts mlc_example
 puts
 
-cpp_output = Aurora.to_cpp(aurora_example)
+cpp_output = MLC.to_cpp(mlc_example)
 puts "Generated C++ (formatted excerpt):"
 puts cpp_output.gsub(/;(?!})/, ";\n")[0..500] + "..."
 puts
@@ -87,7 +87,7 @@ puts
 puts "📊 Development Statistics:"
 puts "  • Tests: 1015 passing (100%)"
 puts "  • Assertions: 2210+"
-puts "  • Lines of Aurora code: ~600"
+puts "  • Lines of MLC code: ~600"
 puts "  • C++ AST nodes: 50+"
 puts "  • Development time: 1.5 days"
 puts
@@ -177,7 +177,7 @@ puts "  ⏳ Package manager"
 puts "  ⏳ Standard library"
 puts
 puts "=" * 80
-puts "  WHY AURORA?"
+puts "  WHY MLC?"
 puts "=" * 80
 puts
 puts "🎯 Design Goals:"
@@ -197,5 +197,5 @@ puts "  • Scientific computing"
 puts "  • Blockchain/crypto"
 puts
 puts "=" * 80
-puts "Demo completed! Aurora is ready for real-world use."
+puts "Demo completed! MLC is ready for real-world use."
 puts "=" * 80

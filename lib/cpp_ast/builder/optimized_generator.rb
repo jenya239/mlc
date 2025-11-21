@@ -36,7 +36,7 @@ module CppAst
         when Nodes::NamespaceDeclaration
           generate_namespace_optimized(ast)
         when MLC::Source::AST::Program
-          generate_aurora_program_optimized(ast)
+          generate_MLC_program_optimized(ast)
         else
           super(ast)
         end
@@ -148,7 +148,7 @@ module CppAst
         @string_builder.to_s
       end
       
-      def generate_aurora_program_optimized(program)
+      def generate_MLC_program_optimized(program)
         @string_builder.clear
         @string_builder.append("#include <iostream>\n")
         @string_builder.append("#include <memory>\n")
@@ -171,7 +171,7 @@ module CppAst
         
         # Generate declarations
         program.declarations.each do |decl|
-          @string_builder.append(generate_aurora_declaration_optimized(decl))
+          @string_builder.append(generate_MLC_declaration_optimized(decl))
           @string_builder.append("\n")
         end
         
@@ -182,24 +182,24 @@ module CppAst
         @string_builder.to_s
       end
       
-      def generate_aurora_declaration_optimized(decl)
+      def generate_MLC_declaration_optimized(decl)
         case decl
         when MLC::Source::AST::FuncDecl
-          generate_aurora_function_optimized(decl)
+          generate_MLC_function_optimized(decl)
         when MLC::Source::AST::TypeDecl
-          generate_aurora_type_optimized(decl)
+          generate_MLC_type_optimized(decl)
         else
           "// Unsupported declaration type: #{decl.class}"
         end
       end
       
-      def generate_aurora_function_optimized(func)
+      def generate_MLC_function_optimized(func)
         result = ""
         result += "int #{func.name}("
         result += func.params.map { |p| "int #{p.name}" }.join(", ")
         result += ") {\n"
         if func.body
-          result += "  return #{generate_aurora_expression(func.body)};\n"
+          result += "  return #{generate_MLC_expression(func.body)};\n"
         else
           result += "  return 0;\n"
         end
@@ -207,7 +207,7 @@ module CppAst
         result
       end
       
-    def generate_aurora_expression(expr)
+    def generate_MLC_expression(expr)
       case expr
       when MLC::Source::AST::IntLit
         expr.value.to_s
@@ -216,8 +216,8 @@ module CppAst
       when MLC::Source::AST::VarRef
         expr.name
       when MLC::Source::AST::BinaryOp
-        left = generate_aurora_expression(expr.left)
-        right = generate_aurora_expression(expr.right)
+        left = generate_MLC_expression(expr.left)
+        right = generate_MLC_expression(expr.right)
         if expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
           # String concatenation
           "mlc::String(#{left}) + mlc::String(#{right})"
@@ -246,7 +246,7 @@ module CppAst
       end
     end
       
-      def generate_aurora_type_optimized(type)
+      def generate_MLC_type_optimized(type)
         "// Type declaration: #{type.name}"
       end
       

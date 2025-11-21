@@ -113,7 +113,8 @@ module MLC
           var_token = consume(:IDENTIFIER)
           var_name = var_token.value
           consume(:IN)
-          iterable = parse_if_expression
+          # Use parse_logical_or to avoid consuming IF as postfix (IF is filter keyword here)
+          iterable = parse_logical_or
 
           generators << with_origin(for_token) do
             MLC::Source::AST::Generator.new(
@@ -125,7 +126,8 @@ module MLC
           # Check for filter
           if current.type == :IF
             consume(:IF)
-            filters << parse_if_expression
+            # Use parse_logical_or for filter condition (avoid postfix if)
+            filters << parse_logical_or
           end
         end
 
@@ -234,8 +236,8 @@ module MLC
       case current.type
       when :LET
         parse_variable_decl_statement
-      when :IF
-        parse_if_expression
+      when :IF, :UNLESS
+        parse_if_expression_in_block
       when :MATCH
         parse_match_expression
       when :DO
@@ -256,12 +258,12 @@ module MLC
           target = attach_origin(MLC::Source::AST::VarRef.new(name: target_name), target_token)
           with_origin(target_token) { MLC::Source::AST::Assignment.new(target: target, value: value) }
         else
-          # Otherwise it's an expression
-          parse_if_expression
+          # Otherwise it's an expression (inside block, don't steal END)
+          parse_if_expression_in_block
         end
       else
-        # Parse any other expression
-        parse_if_expression
+        # Parse any other expression (inside block, don't steal END)
+        parse_if_expression_in_block
       end
     end
 
@@ -287,6 +289,52 @@ module MLC
       else
         parse_let_expression
       end
+    end
+
+    # Parse expression inside a block context (don't consume END for if)
+    def parse_expression_in_block
+      if current.type == :MATCH
+        parse_match_expression
+      elsif current.type == :DO
+        parse_do_expression
+      else
+        parse_let_expression_in_block
+      end
+    end
+
+    # Parse let expression inside a block context
+    def parse_let_expression_in_block
+      return parse_if_expression_in_block unless current.type == :LET
+
+      consume(:LET)
+      mutable = false
+      if current.type == :MUT
+        consume(:MUT)
+        mutable = true
+      end
+
+      name_token = consume(:IDENTIFIER)
+      name = name_token.value
+
+      type_annotation = nil
+      if current.type == :COLON
+        consume(:COLON)
+        type_annotation = parse_type
+      end
+
+      consume(:EQUAL)
+      value = parse_if_expression_in_block
+
+      unless current.type == :SEMICOLON
+        body = parse_expression_in_block
+        return with_origin(name_token) { MLC::Source::AST::Let.new(name: name, value: value, body: body, mutable: mutable, type: type_annotation) }
+      end
+
+      consume(:SEMICOLON)
+      statements = [with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }]
+      block = parse_statement_sequence(statements)
+      ensure_block_has_result(block, require_value: false)
+      block
     end
 
     def parse_for_loop
@@ -409,21 +457,89 @@ module MLC
     end
 
     def parse_if_expression
-      if current.type == :IF
-        if_token = consume(:IF)
-        condition = parse_logical_or
-        consume(:THEN) if current.type == :THEN
-        then_branch = parse_if_branch_expression
+      if current.type == :IF || current.type == :UNLESS
+        parse_if_or_unless_expression(inside_block: false)
+      else
+        # Parse primary expression, then check for postfix if/unless
+        expr = parse_logical_or
+        parse_postfix_conditional(expr)
+      end
+    end
 
-        else_branch = nil
-        if current.type == :ELSE
-          consume(:ELSE)
+    # Parse if expression when inside a block (do...end, while, etc.)
+    # Does not consume trailing END to avoid stealing parent's END
+    def parse_if_expression_in_block
+      if current.type == :IF || current.type == :UNLESS
+        parse_if_or_unless_expression(inside_block: true)
+      else
+        expr = parse_logical_or
+        parse_postfix_conditional(expr)
+      end
+    end
+
+    # Parse if/unless with then/else/end
+    # Compatible with both old syntax (no end) and new syntax (with end)
+    def parse_if_or_unless_expression(inside_block: false)
+      is_unless = current.type == :UNLESS
+      if_token = consume(current.type) # IF or UNLESS
+      condition = parse_logical_or
+
+      # Optional then keyword
+      consume(:THEN) if current.type == :THEN
+
+      # Parse then branch as single expression/statement (backward compatible)
+      then_branch = parse_if_branch_expression
+
+      # Parse else branch
+      else_branch = nil
+      if current.type == :ELSE
+        consume(:ELSE)
+        # Check for else-if chain
+        if current.type == :IF || current.type == :UNLESS
+          else_branch = wrap_block_like_expr(parse_if_or_unless_expression(inside_block: inside_block))
+        else
           else_branch = parse_if_branch_expression
         end
+      end
 
-        with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: condition, then_branch: then_branch, else_branch: else_branch) }
+      # Consume optional end (new syntax) - but NOT if we're inside a block
+      # to avoid stealing the parent block's END
+      consume(:END) if current.type == :END && !inside_block
+
+      # For unless, invert condition: unless x = if !x
+      final_condition = if is_unless
+        MLC::Source::AST::UnaryOp.new(op: "!", operand: condition)
       else
-        parse_logical_or
+        condition
+      end
+
+      with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: final_condition, then_branch: then_branch, else_branch: else_branch) }
+    end
+
+    # Parse postfix if/unless: expr if condition, expr unless condition
+    # Only applies when if/unless is on the same line as the expression
+    def parse_postfix_conditional(expr)
+      # Get expression's line (from origin or last token)
+      expr_line = expr.respond_to?(:origin) && expr.origin ? expr.origin.line : nil
+      expr_line ||= last_token&.line
+
+      # Postfix only if if/unless is on the same line as expression
+      if current.type == :IF && expr_line && current.line == expr_line
+        if_token = consume(:IF)
+        condition = parse_logical_or
+        then_branch = wrap_block_like_expr(expr)
+        else_branch = MLC::Source::AST::BlockExpr.new(statements: [], result_expr: MLC::Source::AST::UnitLit.new)
+        with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: condition, then_branch: then_branch, else_branch: else_branch) }
+      elsif current.type == :UNLESS && expr_line && current.line == expr_line
+        unless_token = consume(:UNLESS)
+        condition = parse_logical_or
+        # unless = if !condition
+        inverted = MLC::Source::AST::UnaryOp.new(op: "!", operand: condition)
+        then_branch = wrap_block_like_expr(expr)
+        else_branch = MLC::Source::AST::BlockExpr.new(statements: [], result_expr: MLC::Source::AST::UnitLit.new)
+        with_origin(unless_token) { MLC::Source::AST::IfExpr.new(condition: inverted, then_branch: then_branch, else_branch: else_branch) }
+      else
+        expr
       end
     end
 
@@ -454,11 +570,14 @@ module MLC
 
     def parse_lambda_body
       if current.type == :LBRACE
-        # Block body: { stmts }
+        # Legacy block body: { stmts }
         consume(:LBRACE)
         body = parse_expression
         consume(:RBRACE)
         body
+      elsif current.type == :DO
+        # New block body: do ... end
+        parse_do_expression
       else
         # Single expression
         parse_if_expression
@@ -614,7 +733,7 @@ module MLC
           body = if current.type == :DO
                     wrap_block_like_expr(parse_do_expression)
                   else
-                    wrap_block_like_expr(parse_if_expression)
+                    wrap_block_like_expr(parse_match_arm_body)
                   end
 
           arms << {pattern: pattern, guard: guard, body: body}
@@ -629,7 +748,7 @@ module MLC
 
         consume(:RBRACE)
       else
-        # Pipe style: match expr | pattern => body | ...
+        # Pipe style: match expr | pattern => body | ... end
         while current.type == :OPERATOR && current.value == "|"
           consume(:OPERATOR)  # consume |
 
@@ -653,18 +772,48 @@ module MLC
             raise "Expected => in match arm"
           end
 
-          # Parse body
+          # Parse body - stop at next | or end
           body = if current.type == :DO
                     wrap_block_like_expr(parse_do_expression)
                   else
-                    wrap_block_like_expr(parse_if_expression)
+                    wrap_block_like_expr(parse_match_arm_body)
                   end
 
           arms << {pattern: pattern, guard: guard, body: body}
         end
+
+        # Consume end for pipe-style match
+        consume(:END) if current.type == :END
       end
 
       with_origin(match_token) { MLC::Source::AST::MatchExpr.new(scrutinee: scrutinee, arms: arms) }
+    end
+
+    # Parse match arm body - expression that stops at | or end
+    def parse_match_arm_body
+      # Parse single expression, but be careful not to consume | as operator
+      parse_match_arm_expression
+    end
+
+    def parse_match_arm_expression
+      # Parse expression but stop before | (which starts next arm)
+      # This is a restricted version of parse_if_expression
+      left = parse_logical_or_no_pipe
+      parse_postfix_conditional(left)
+    end
+
+    def parse_logical_or_no_pipe
+      # Like parse_logical_or but doesn't consume | for pipe operator
+      left = parse_logical_and
+
+      while current.type == :OPERATOR && current.value == "||"
+        token = consume(:OPERATOR)
+        right = parse_logical_and
+        node = MLC::Source::AST::BinaryOp.new(op: "||", left: left, right: right)
+        left = attach_origin(node, token)
+      end
+
+      left
     end
 
     def parse_match_scrutinee
@@ -827,9 +976,62 @@ module MLC
         attach_origin(MLC::Source::AST::RecordLit.new(type_name: "record", fields: fields), lbrace_token)
       when :LBRACKET
         parse_array_literal_or_comprehension
+      when :UNSAFE
+        parse_unsafe_block
       else
         raise "Unexpected token: #{current}"
       end
+    end
+
+    # Parse unsafe block: unsafe ... end or unsafe { body } (legacy)
+    def parse_unsafe_block
+      unsafe_token = consume(:UNSAFE)
+
+      # Support both old brace syntax and new end syntax
+      if current.type == :LBRACE
+        # Legacy: unsafe { body }
+        consume(:LBRACE)
+        body = parse_unsafe_body_until(:RBRACE)
+        consume(:RBRACE)
+      else
+        # New: unsafe ... end
+        body = parse_unsafe_body_until(:END)
+        consume(:END)
+      end
+
+      attach_origin(MLC::Source::AST::UnsafeBlock.new(body: body), unsafe_token)
+    end
+
+    # Parse unsafe body until terminator token
+    def parse_unsafe_body_until(terminator)
+      statements = []
+      result_expr = nil
+      all_items = []
+
+      while current.type != terminator && !eof?
+        item = parse_do_statement
+        all_items << item
+        consume(:SEMICOLON) if current.type == :SEMICOLON
+      end
+
+      # Process: last item is result, others are statements
+      if all_items.empty?
+        result_expr = MLC::Source::AST::UnitLit.new
+      else
+        *stmt_items, last_item = all_items
+        statements = stmt_items.map do |item|
+          item.is_a?(MLC::Source::AST::Stmt) ? item : MLC::Source::AST::ExprStmt.new(expr: item)
+        end
+
+        if last_item.is_a?(MLC::Source::AST::Stmt)
+          statements << last_item
+          result_expr = MLC::Source::AST::UnitLit.new
+        else
+          result_expr = last_item
+        end
+      end
+
+      MLC::Source::AST::BlockExpr.new(statements: statements, result_expr: result_expr)
     end
 
     def parse_unary

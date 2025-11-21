@@ -1,15 +1,15 @@
-# Aurora Syntax (VS Code / Cursor)
+# MLC Syntax (VS Code / Cursor)
 
-Lightweight workspace extension that provides syntax highlighting for the Aurora `.aur` language.
+Lightweight workspace extension that provides syntax highlighting for the MLC `.aur` language.
 
 ## Install in VS Code
 
 1. Open VS Code (or Cursor).
 2. Run the command palette: `Developer: Install Extension from Location…`
-3. Point it to the folder `experimental/tools/aurora-syntax`.
+3. Point it to the folder `experimental/tools/mlc-syntax`.
 4. Reload the window.
 
-`.aur` files (and `failing.aur`) will now highlight Aurora keywords, operators, literals, and comments.
+`.aur` files (and `failing.aur`) will now highlight MLC keywords, operators, literals, and comments.
 
 ## Supported features
 
@@ -24,4 +24,4 @@ Lightweight workspace extension that provides syntax highlighting for the Aurora
 - **Operators**: `+`, `-`, `*`, `/`, `%`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `||`, `=`, `.`, `:`, `|>`
 - **Booleans**: `true`, `false`
 
-You can customise the grammar by editing `syntaxes/aurora.tmLanguage.json`. After changes, reload VS Code to apply.
+You can customise the grammar by editing `syntaxes/mlc.tmLanguage.json`. After changes, reload VS Code to apply.

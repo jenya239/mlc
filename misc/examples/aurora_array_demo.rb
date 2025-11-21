@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Aurora Language Demo - Array Literals
-# Demonstrates array literal support in Aurora (2025-10-17)
+# MLC Language Demo - Array Literals
+# Demonstrates array literal support in MLC (2025-10-17)
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 70
-puts "  AURORA LANGUAGE DEMO - Array Literals"
+puts "  MLC LANGUAGE DEMO - Array Literals"
 puts "=" * 70
 puts
 
@@ -15,17 +15,17 @@ puts
 puts "Example 1: Simple array literal"
 puts "-" * 70
 
-aurora_source_1 = <<~AURORA
+mlc_source_1 = <<~MLC
   fn numbers() -> i32 =
     [1, 2, 3, 4, 5]
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_1)
+  cpp_code = MLC.to_cpp(mlc_source_1)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -43,17 +43,17 @@ puts
 puts "Example 2: Array with expressions"
 puts "-" * 70
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   fn computed() -> i32 =
     [1, 1 + 1, 2 + 1, 3 + 1]
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_2)
+  cpp_code = MLC.to_cpp(mlc_source_2)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -70,19 +70,19 @@ puts
 puts "Example 3: Array with pipe operator"
 puts "-" * 70
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   fn double(x: i32) -> i32 = x + x
 
   fn test() -> i32 =
     [1, 2, 3] |> double
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_3)
+  cpp_code = MLC.to_cpp(mlc_source_3)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -97,7 +97,7 @@ puts
 puts "HOW IT WORKS:"
 puts "=" * 70
 puts
-puts "1. Aurora array literals compile to C++ std::vector"
+puts "1. MLC array literals compile to C++ std::vector"
 puts "2. Syntax: [1, 2, 3] becomes std::vector<int>{1, 2, 3}"
 puts "3. Element type is inferred from the first element"
 puts "4. Arrays can contain:"

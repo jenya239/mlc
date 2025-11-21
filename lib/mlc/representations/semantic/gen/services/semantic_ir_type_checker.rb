@@ -67,6 +67,10 @@ module MLC
               node.is_a?(MLC::SemanticIR::BlockExpr)
             end
 
+            def unsafe_block_expr?(node)
+              node.is_a?(MLC::SemanticIR::UnsafeBlockExpr)
+            end
+
             def list_comp_expr?(node)
               node.is_a?(MLC::SemanticIR::ListCompExpr)
             end

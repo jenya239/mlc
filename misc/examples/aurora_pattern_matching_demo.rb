@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Aurora Language Demo - Pattern Matching
+# MLC Language Demo - Pattern Matching
 # Demonstrates full pattern matching with sum types (2025-10-17)
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 70
-puts "  AURORA LANGUAGE DEMO - Pattern Matching"
+puts "  MLC LANGUAGE DEMO - Pattern Matching"
 puts "=" * 70
 puts
 
@@ -15,7 +15,7 @@ puts
 puts "Example 1: Shape area calculation"
 puts "-" * 70
 
-aurora_source_1 = <<~AURORA
+mlc_source_1 = <<~MLC
   type Shape = Circle(f32) | Rect(f32, f32) | Point
 
   fn area(s: Shape) -> f32 =
@@ -23,14 +23,14 @@ aurora_source_1 = <<~AURORA
       | Circle(r) => r
       | Rect(w, h) => w
       | Point => 0.0
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_1)
+  cpp_code = MLC.to_cpp(mlc_source_1)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -48,21 +48,21 @@ puts
 puts "Example 2: Result type error handling"
 puts "-" * 70
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   type Result = Ok(i32) | Err(i32)
 
   fn handle_result(r: Result) -> i32 =
     match r
       | Ok(value) => value
       | Err(code) => code
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_2)
+  cpp_code = MLC.to_cpp(mlc_source_2)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -79,21 +79,21 @@ puts
 puts "Example 3: Wildcard patterns"
 puts "-" * 70
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   type Option = Some(i32) | None
 
   fn get_or_default(opt: Option) -> i32 =
     match opt
       | Some(x) => x
       | None => 0
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
 begin
-  cpp_code = Aurora.to_cpp(aurora_source_3)
+  cpp_code = MLC.to_cpp(mlc_source_3)
   puts "Generated C++:"
   puts cpp_code
   puts
@@ -109,7 +109,7 @@ puts "HOW IT WORKS:"
 puts "=" * 70
 puts
 puts "Pattern Matching Compilation:"
-puts "1. Aurora match expression → CoreIR MatchExpr"
+puts "1. MLC match expression → CoreIR MatchExpr"
 puts "2. Each pattern arm → Lambda with type-based overloading"
 puts "3. Generates: std::visit(overloaded{lambda1, lambda2, ...}, variant)"
 puts

@@ -22,7 +22,7 @@ module MLC
           #   var_types.set("local", type)
           #   var_types.restore(snapshot)  # "local" больше не видна
           class VarTypeRegistry
-            Snapshot = Struct.new(:types, :initializers) do
+            Snapshot = Struct.new(:types, :initializers, :moved_vars) do
               def [](key)
                 types[key]
               end
@@ -31,6 +31,7 @@ module MLC
             def initialize
               @types = {}
               @initializers = {}
+              @moved_vars = Set.new  # Track moved variables for use-after-move detection
             end
 
             # Установить тип переменной
@@ -72,24 +73,27 @@ module MLC
             # Очистить все переменные
             def clear
               @types.clear
+              @moved_vars.clear
             end
 
             # Создать snapshot текущего состояния (для scope management)
-            # @return [Hash] копия текущего состояния
+            # @return [Snapshot] копия текущего состояния
             def snapshot
-              Snapshot.new(@types.dup, @initializers.dup)
+              Snapshot.new(@types.dup, @initializers.dup, @moved_vars.dup)
             end
 
             # Восстановить состояние из snapshot
-            # @param snapshot [Hash] snapshot состояния
+            # @param snapshot [Snapshot] snapshot состояния
             def restore(snapshot)
               raise ArgumentError, "Cannot restore from nil snapshot" if snapshot.nil?
               if snapshot.respond_to?(:types) && snapshot.respond_to?(:initializers)
                 @types = snapshot.types.dup
                 @initializers = snapshot.initializers.dup
+                @moved_vars = snapshot.respond_to?(:moved_vars) && snapshot.moved_vars ? snapshot.moved_vars.dup : Set.new
               else
                 @types = snapshot.dup
                 @initializers = {}
+                @moved_vars = Set.new
               end
             end
 
@@ -100,6 +104,39 @@ module MLC
 
             def initializer(name)
               @initializers[name]
+            end
+
+            # ===========================================
+            # Move Semantics Tracking
+            # ===========================================
+
+            # Mark a variable as moved (ownership transferred)
+            # @param name [String] variable name
+            def mark_moved(name)
+              @moved_vars.add(name)
+            end
+
+            # Check if a variable has been moved
+            # @param name [String] variable name
+            # @return [Boolean] true if variable was moved
+            def moved?(name)
+              @moved_vars.include?(name)
+            end
+
+            # Reset moved state (for testing or reassignment of mutable vars)
+            # @param name [String] variable name
+            def reset_moved(name)
+              @moved_vars.delete(name)
+            end
+
+            # Check if type has move semantics (Owned<T>)
+            # @param type [SemanticIR::Type] the type to check
+            # @return [Boolean] true if type requires move semantics
+            def self.has_move_semantics?(type)
+              return false unless type.is_a?(MLC::SemanticIR::GenericType)
+
+              base_name = type.base_type&.name
+              base_name == "Owned"
             end
 
             # Количество переменных

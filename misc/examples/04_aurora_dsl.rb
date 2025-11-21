@@ -1,14 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Aurora DSL Demo - Comprehensive example using all Aurora features
+# MLC DSL Demo - Comprehensive example using all MLC features
 # This demonstrates the extended Ruby DSL for C++ with ownership, ADT, and pattern matching
 
 require_relative "../lib/cpp_ast"
 
 include CppAst::Builder::DSL
 
-puts "=== Aurora DSL Demo ==="
+puts "=== MLC DSL Demo ==="
 puts "Generating C++ code with ownership, ADT, and pattern matching features"
 puts
 

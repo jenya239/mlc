@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 module MLC
-  class ParseError < StandardError; end
-
   class CompileError < StandardError
     attr_reader :origin
 

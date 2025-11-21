@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative "../lib/aurora"
+require_relative "../lib/mlc"
 
 puts "=" * 70
-puts "  AURORA LANGUAGE - Generic Types (Parametric Polymorphism)"
+puts "  MLC LANGUAGE - Generic Types (Parametric Polymorphism)"
 puts "=" * 70
 puts
 
@@ -12,20 +12,20 @@ puts
 puts "Example 1: Option<T> - Rust-style optional values"
 puts "-" * 70
 
-aurora_source_1 = <<~AURORA
+mlc_source_1 = <<~MLC
   type Option<T> = Some(T) | None
 
   fn unwrap_or<T>(opt: Option<T>, default: T) -> T =
     match opt
       | Some(x) => x
       | None => default
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_1
+puts "MLC Source:"
+puts mlc_source_1
 puts
 
-cpp_code = Aurora.to_cpp(aurora_source_1)
+cpp_code = MLC.to_cpp(mlc_source_1)
 puts "Generated C++:"
 puts cpp_code
 puts
@@ -39,20 +39,20 @@ puts
 puts "Example 2: Result<T, E> - Rust-style error handling"
 puts "-" * 70
 
-aurora_source_2 = <<~AURORA
+mlc_source_2 = <<~MLC
   type Result<T, E> = Ok(T) | Err(E)
 
   fn is_ok<T, E>(r: Result<T, E>) -> bool =
     match r
       | Ok(x) => true
       | Err(e) => false
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_2
+puts "MLC Source:"
+puts mlc_source_2
 puts
 
-cpp_code = Aurora.to_cpp(aurora_source_2)
+cpp_code = MLC.to_cpp(mlc_source_2)
 puts "Generated C++:"
 puts cpp_code
 puts
@@ -66,17 +66,17 @@ puts
 puts "Example 3: Generic functions"
 puts "-" * 70
 
-aurora_source_3 = <<~AURORA
+mlc_source_3 = <<~MLC
   fn identity<T>(x: T) -> T = x
 
   fn first<T>(a: T, b: T) -> T = a
-AURORA
+MLC
 
-puts "Aurora Source:"
-puts aurora_source_3
+puts "MLC Source:"
+puts mlc_source_3
 puts
 
-cpp_code = Aurora.to_cpp(aurora_source_3)
+cpp_code = MLC.to_cpp(mlc_source_3)
 puts "Generated C++:"
 puts cpp_code
 puts

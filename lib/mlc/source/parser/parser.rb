@@ -1,16 +1,8 @@
 # frozen_string_literal: true
 
-# Parser modules must be loaded before include (Ruby language requirement)
-# Zeitwerk cannot autoload modules before include statement executes
-# These requires ensure all parser modules and dependencies are available
-require_relative "lexer"
+# Zeitwerk autoloads parser modules and Lexer via const_missing
+# Only AST nodes require explicit loading (used throughout parser modules)
 require_relative "../ast/nodes"
-require_relative "base_parser"
-require_relative "expression_parser"
-require_relative "pattern_parser"
-require_relative "type_parser"
-require_relative "statement_parser"
-require_relative "declaration_parser"
 
 module MLC
   module Source

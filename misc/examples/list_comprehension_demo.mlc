@@ -1,0 +1,26 @@
+// List Comprehension Demo
+
+fn double_list(xs: i32[]) -> i32[] = [x * 2 for x in xs]
+
+fn filter_positive(xs: i32[]) -> i32[] = [x for x in xs if x > 0]
+
+fn main() -> i32 = do
+  println("=== List Comprehension Demo ===")
+  println("")
+
+  let nums = [1, 2, 3, 4, 5]
+  println("Original: [1, 2, 3, 4, 5]")
+
+  let doubled = double_list(nums)
+  println("Doubled [x * 2 for x in xs]: " + to_string(doubled[0]) + ", " + to_string(doubled[1]) + ", " + to_string(doubled[2]) + ", " + to_string(doubled[3]) + ", " + to_string(doubled[4]))
+
+  println("")
+
+  let mixed = [-2, -1, 0, 1, 2, 3]
+  println("Mixed: [-2, -1, 0, 1, 2, 3]")
+
+  let positives = filter_positive(mixed)
+  println("Positives [x for x in xs if x > 0]: " + to_string(positives[0]) + ", " + to_string(positives[1]) + ", " + to_string(positives[2]))
+
+  0
+end

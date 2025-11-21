@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "container"
-require_relative "context"
-require_relative "services/rule_engine"
+# Container, Context, Services::RuleEngine autoloaded by Zeitwerk
+# All classes used only in runtime method create_backend, loaded via const_missing
 
 # All rules autoloaded by Zeitwerk on-demand via string-based resolution
 
@@ -62,6 +61,7 @@ module MLC
           # Control flow
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::IfRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::BlockRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::UnsafeBlockRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::MatchRule").new(context))
 
           # Complex operations
