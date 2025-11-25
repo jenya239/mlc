@@ -64,11 +64,14 @@ module MLC
         return if has_wildcard
 
         # Collect all covered constructors
-        covered_constructors = arms.filter_map do |arm|
+        covered_constructors = Set.new
+        arms.each do |arm|
           pattern = arm[:pattern]
-          next unless pattern&.kind == :constructor
-          pattern.data[:name]
-        end.to_set
+          next unless pattern
+
+          # Extract covered constructors from pattern (handles or-patterns recursively)
+          extract_constructors(pattern, covered_constructors)
+        end
 
         # Get all required constructors
         required_constructors = all_variants.map { |v| v[:name] }.to_set
@@ -79,6 +82,20 @@ module MLC
         if missing.any?
           missing_list = missing.to_a.sort.join(", ")
           raise MLC::CompileError, "Non-exhaustive match: missing patterns for #{missing_list}"
+        end
+      end
+
+      # Recursively extract all covered constructors from a pattern
+      def extract_constructors(pattern, covered_set)
+        case pattern.kind
+        when :constructor
+          covered_set << pattern.data[:name]
+        when :or
+          # Or-pattern: recursively extract from all alternatives
+          alternatives = pattern.data[:alternatives] || []
+          alternatives.each do |alt|
+            extract_constructors(alt, covered_set)
+          end
         end
       end
 

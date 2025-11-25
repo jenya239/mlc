@@ -22,9 +22,27 @@ module MLC
               # Check if any arms have regex patterns
               has_regex = node.arms.any? { |arm| arm[:pattern][:kind] == :regex }
 
+              # Check if any arms have guard clauses
+              has_guards = node.arms.any? { |arm| arm[:guard] }
+
+              # Check if any arms have nested patterns
+              has_nested = node.arms.any? { |arm| has_nested_pattern?(arm[:pattern]) }
+
+              # Check if any arms have wildcard patterns
+              # Wildcard patterns generate auto&& which incorrectly matches all types in std::visit
+              has_wildcard = node.arms.any? { |arm| arm[:pattern][:kind] == :wildcard }
+
+              # Check if any arms have literal patterns
+              # Literal patterns need equality checks, not std::visit
+              has_literal = node.arms.any? { |arm| arm[:pattern][:kind] == :literal }
+
               if has_regex
                 # Generate if-else chain for regex matching
                 lower_match_with_regex(node, scrutinee)
+              elsif has_guards || has_nested || has_wildcard || has_literal
+                # Generate if-else chain for guard clauses, nested patterns, wildcards, or literals
+                # (std::visit doesn't support fallthrough, nested destructuring, proper wildcard semantics, or literal matching)
+                lower_match_with_guards(node, scrutinee)
               else
                 # Generate MatchExpression with std::visit
                 arms = node.arms.map { |arm| lower_match_arm(arm) }
@@ -34,6 +52,17 @@ module MLC
                   arms: arms,
                   arm_separators: Array.new([arms.size - 1, 0].max, ",\n")
                 )
+              end
+            end
+
+            # Check if pattern contains nested constructor patterns or or-patterns
+            def has_nested_pattern?(pattern)
+              return true if pattern[:kind] == :or
+
+              return false unless pattern[:kind] == :constructor
+
+              Array(pattern[:fields]).any? do |field|
+                field.is_a?(Hash) && field[:kind] == :constructor
               end
             end
 
@@ -211,6 +240,235 @@ module MLC
                 arguments: [context.cpp_string_literal(value)],
                 argument_separators: []
               )
+            end
+
+            # Lower match with guard clauses to IIFE with if-else chain
+            # std::visit doesn't support fallthrough, so we use if-else chain instead
+            #
+            # Example MLC:
+            #   match value
+            #     | Some(x) if x > 0 => x * 2
+            #     | Some(x) => 0
+            #     | None => -1
+            #
+            # Generated C++:
+            #   [&]() {
+            #     if (std::holds_alternative<Some>(value)) {
+            #       auto x = std::get<Some>(value).value;
+            #       if (x > 0) return x * 2;
+            #     }
+            #     if (std::holds_alternative<Some>(value)) {
+            #       auto x = std::get<Some>(value).value;
+            #       return 0;
+            #     }
+            #     if (std::holds_alternative<None>(value)) {
+            #       return -1;
+            #     }
+            #     throw std::runtime_error("non-exhaustive match");
+            #   }()
+            def lower_match_with_guards(match_expr, scrutinee)
+              statements = []
+              scrutinee_src = scrutinee.to_source
+
+              match_expr.arms.each do |arm|
+                pattern = arm[:pattern]
+                guard = arm[:guard]
+                body = context.lower_expression(arm[:body])
+                body_src = body.to_source
+
+                case pattern[:kind]
+                when :constructor
+                  statements << build_constructor_guard_arm(pattern, guard, body_src, scrutinee_src)
+
+                when :or
+                  # Or-pattern: generate (cond1 || cond2 || ...) condition
+                  statements << build_or_pattern_arm(pattern, guard, body_src, scrutinee_src)
+
+                when :literal
+                  # Literal pattern: check equality
+                  condition = build_pattern_condition(pattern, scrutinee_src)
+                  if guard
+                    guard_expr = context.lower_expression(guard)
+                    guard_src = guard_expr.to_source
+                    statements << context.factory.raw_statement(
+                      code: "if (#{condition} && #{guard_src}) { return #{body_src}; }"
+                    )
+                  else
+                    statements << context.factory.raw_statement(
+                      code: "if (#{condition}) { return #{body_src}; }"
+                    )
+                  end
+
+                when :wildcard, :var
+                  # Wildcard/var with optional guard
+                  if guard
+                    guard_expr = context.lower_expression(guard)
+                    guard_src = guard_expr.to_source
+                    statements << context.factory.raw_statement(
+                      code: "if (#{guard_src}) { return #{body_src}; }"
+                    )
+                  else
+                    # Final wildcard - just return
+                    statements << context.factory.return_statement(expression: body)
+                  end
+
+                else
+                  # Unknown pattern kind - treat as wildcard
+                  statements << context.factory.return_statement(expression: body)
+                end
+              end
+
+              # Build IIFE
+              body_str = statements.map(&:to_source).join(" ")
+              lambda_expr = context.factory.lambda(
+                capture: "&",
+                parameters: "",
+                specifiers: "",
+                body: body_str,
+                capture_suffix: "",
+                params_suffix: ""
+              )
+
+              context.factory.function_call(
+                callee: lambda_expr,
+                arguments: [],
+                argument_separators: []
+              )
+            end
+
+            # Build if statement for constructor pattern with optional guard
+            def build_constructor_guard_arm(pattern, guard, body_src, scrutinee_src)
+              case_name = pattern[:name]
+              bindings = pattern[:bindings] || pattern[:fields] || []
+
+              # Build std::holds_alternative check
+              holds_check = "std::holds_alternative<#{case_name}>(#{scrutinee_src})"
+
+              # Build binding declarations and nested pattern checks
+              binding_decls = []
+              nested_checks = []
+              temp_var_counter = 0
+
+              if bindings.any?
+                # First extract the variant to a temporary variable
+                temp_var = "_v_#{case_name.downcase}"
+                binding_decls << "auto #{temp_var} = std::get<#{case_name}>(#{scrutinee_src});"
+
+                # Use structured binding to extract all fields at once
+                non_wildcard_bindings = bindings.reject { |b| b == "_" || (b.is_a?(Hash) && b[:kind] == :constructor) }
+                if non_wildcard_bindings.any?
+                  binding_list = bindings.map { |b| b.is_a?(Hash) ? "_" : (b == "_" ? "_" : b) }.join(", ")
+                  binding_decls << "auto [#{binding_list}] = #{temp_var};"
+                end
+
+                # Handle nested patterns separately
+                bindings.each_with_index do |binding, idx|
+                  if binding.is_a?(Hash) && binding[:kind] == :constructor
+                    # Nested pattern - generate temp var and nested check
+                    nested_temp_var = "_nested_#{temp_var_counter}"
+                    temp_var_counter += 1
+
+                    # Extract nested value using structured binding access
+                    if bindings.length == 1
+                      # Single field - use .field0
+                      binding_decls << "auto #{nested_temp_var} = #{temp_var}.field0;"
+                    else
+                      # Multiple fields - use .fieldN
+                      binding_decls << "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
+                    end
+
+                    # Build nested pattern check
+                    nested_check = build_nested_pattern_check(binding, nested_temp_var)
+                    nested_checks << nested_check
+                  end
+                end
+              end
+
+              binding_str = binding_decls.join(" ")
+
+              # Build the inner body with nested checks
+              if nested_checks.any?
+                # Wrap body in nested if-statements for nested pattern checks
+                inner_return = guard ? "if (#{context.lower_expression(guard).to_source}) { return #{body_src}; }" : "return #{body_src};"
+                nested_body = nested_checks.reverse.reduce(inner_return) do |acc, check|
+                  "if (#{check[:condition]}) { #{check[:bindings]} #{acc} }"
+                end
+                inner_body = "#{binding_str} #{nested_body}"
+              elsif guard
+                guard_expr = context.lower_expression(guard)
+                guard_src = guard_expr.to_source
+                inner_body = "#{binding_str} if (#{guard_src}) { return #{body_src}; }"
+              else
+                inner_body = "#{binding_str} return #{body_src};"
+              end
+
+              context.factory.raw_statement(
+                code: "if (#{holds_check}) { #{inner_body} }"
+              )
+            end
+
+            # Build nested pattern check for nested constructor patterns
+            def build_nested_pattern_check(pattern, scrutinee_var)
+              case_name = pattern[:name]
+              bindings = pattern[:bindings] || pattern[:fields] || []
+
+              condition = "std::holds_alternative<#{case_name}>(#{scrutinee_var})"
+
+              binding_decls = []
+              # Extract variant to temp variable
+              temp_var = "_v_nested_#{case_name.downcase}"
+              binding_decls << "auto #{temp_var} = std::get<#{case_name}>(#{scrutinee_var});"
+
+              # Use structured binding
+              non_wildcard_bindings = bindings.reject { |b| b == "_" || b.is_a?(Hash) }
+              if non_wildcard_bindings.any?
+                binding_list = bindings.map { |b| b.is_a?(Hash) ? "_" : (b == "_" ? "_" : b) }.join(", ")
+                binding_decls << "auto [#{binding_list}] = #{temp_var};"
+              end
+
+              { condition: condition, bindings: binding_decls.join(" ") }
+            end
+
+            # Build or-pattern arm with (cond1 || cond2 || ...) condition
+            def build_or_pattern_arm(pattern, guard, body_src, scrutinee_src)
+              alternatives = pattern[:alternatives] || []
+
+              # Build OR condition from all alternatives
+              conditions = alternatives.map do |alt|
+                build_pattern_condition(alt, scrutinee_src)
+              end
+
+              or_condition = conditions.join(" || ")
+
+              if guard
+                guard_expr = context.lower_expression(guard)
+                guard_src = guard_expr.to_source
+                inner_body = "if (#{guard_src}) { return #{body_src}; }"
+              else
+                inner_body = "return #{body_src};"
+              end
+
+              context.factory.raw_statement(
+                code: "if (#{or_condition}) { #{inner_body} }"
+              )
+            end
+
+            # Build condition check for a single pattern
+            def build_pattern_condition(pattern, scrutinee_src)
+              case pattern[:kind]
+              when :constructor
+                case_name = pattern[:name]
+                "std::holds_alternative<#{case_name}>(#{scrutinee_src})"
+              when :literal
+                value = pattern[:value]
+                "#{scrutinee_src} == #{value}"
+              when :wildcard
+                "true"
+              when :var
+                "true"
+              else
+                "true"
+              end
             end
           end
         end
