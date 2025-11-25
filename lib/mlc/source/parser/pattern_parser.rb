@@ -7,7 +7,7 @@ module MLC
     # Handles parsing of pattern matching patterns (match expressions, destructuring)
     module PatternParser
       # Parse a pattern (entry point)
-      # Patterns can be: wildcard, regex, literal, variable, or constructor
+      # Patterns can be: wildcard, regex, literal, variable, constructor, or or-pattern
       def parse_pattern
         case current.type
         when :UNDERSCORE, :OPERATOR
@@ -18,10 +18,62 @@ module MLC
           parse_int_literal_pattern
         when :FLOAT_LITERAL
           parse_float_literal_pattern
+        when :STRING_LITERAL
+          parse_string_literal_pattern
+        when :TRUE, :FALSE
+          parse_bool_literal_pattern
         when :IDENTIFIER
           parse_identifier_pattern
         else
           raise "Unexpected token in pattern: #{current}"
+        end
+      end
+
+      # Parse or-pattern: pattern1 | pattern2 | ...
+      # Returns single pattern if no `|`, or OrPattern with alternatives
+      def parse_or_pattern
+        first_pattern = parse_pattern
+
+        # Check for or-patterns: | pattern | pattern ...
+        # But NOT | pattern => (that's a new match arm)
+        alternatives = [first_pattern]
+
+        while current.type == :OPERATOR && current.value == "|" && !or_pattern_ends_here?
+          consume(:OPERATOR)  # consume |
+          alternatives << parse_pattern
+        end
+
+        if alternatives.length == 1
+          first_pattern
+        else
+          # Create or-pattern with origin from first pattern
+          origin = first_pattern.respond_to?(:origin) ? first_pattern.origin : nil
+          MLC::Source::AST::Pattern.new(
+            kind: :or,
+            data: { alternatives: alternatives },
+            origin: origin
+          )
+        end
+      end
+
+      # Check if current position marks end of or-pattern (next is => or if)
+      def or_pattern_ends_here?
+        # Look ahead to see if | is followed by => or if (new arm) vs pattern (or-pattern)
+        return true if peek&.type == :FAT_ARROW
+        return true if peek&.type == :IF
+        false
+      end
+
+      # Check if token is start of a pattern
+      def pattern_start?(token)
+        return false unless token
+        case token.type
+        when :UNDERSCORE, :REGEX, :INT_LITERAL, :FLOAT_LITERAL, :STRING_LITERAL, :TRUE, :FALSE, :IDENTIFIER
+          true
+        when :OPERATOR
+          token.value == "_"
+        else
+          false
         end
       end
 
@@ -99,6 +151,21 @@ module MLC
         with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
       end
 
+      # Parse string literal pattern: "hello"
+      def parse_string_literal_pattern
+        token = consume(:STRING_LITERAL)
+        value = token.value
+        with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
+      end
+
+      # Parse boolean literal pattern: true | false
+      def parse_bool_literal_pattern
+        token = current
+        consume(token.type)  # consume TRUE or FALSE
+        value = (token.type == :TRUE)
+        with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
+      end
+
       # Parse identifier pattern: can be variable, constructor, or constructor with fields
       # Examples: x, Some(x), Point{x, y}
       def parse_identifier_pattern
@@ -144,11 +211,20 @@ module MLC
       end
 
       # Parse pattern fields (for constructor patterns)
+      # Returns array of Pattern objects for nested patterns, or strings for simple bindings
+      # Examples:
+      #   Some(x) -> fields: ["x"] (simple binding)
+      #   Ok(Some(v)) -> fields: [Pattern(kind: :constructor, name: "Some", fields: ["v"])]
       def parse_pattern_fields(end_token)
         fields = []
 
         while current.type != end_token
-          if current.type == :IDENTIFIER
+          # Check for nested constructor pattern (uppercase identifier followed by parentheses)
+          if current.type == :IDENTIFIER && peek_type == :LPAREN && current.value[0] == current.value[0].upcase
+            # Nested constructor pattern - recursively parse
+            fields << parse_pattern
+          elsif current.type == :IDENTIFIER
+            # Simple variable binding
             fields << consume(:IDENTIFIER).value
           elsif current.type == :UNDERSCORE || (current.type == :OPERATOR && current.value == "_")
             consume(current.type)
@@ -164,6 +240,11 @@ module MLC
         fields
       end
 
+      # Helper to peek at the next token type
+      def peek_type
+        peek&.type
+      end
+
       # Parse pattern bindings (for record-style patterns)
       def parse_pattern_bindings
         bindings = []
@@ -177,11 +258,17 @@ module MLC
         bindings
       end
 
-      # Parse simple identifier: determines if it's wildcard, constructor, or variable
+      # Parse simple identifier: determines if it's wildcard, constructor, variable, or boolean literal
       def parse_simple_identifier_pattern(constructor_token, constructor)
         with_origin(constructor_token) do
           if constructor == "_"
             MLC::Source::AST::Pattern.new(kind: :wildcard, data: {})
+          elsif constructor == "true"
+            # Boolean literal: true
+            MLC::Source::AST::Pattern.new(kind: :literal, data: {value: true})
+          elsif constructor == "false"
+            # Boolean literal: false
+            MLC::Source::AST::Pattern.new(kind: :literal, data: {value: false})
           elsif constructor[0] == constructor[0].upcase
             # Uppercase = constructor with no fields
             MLC::Source::AST::Pattern.new(

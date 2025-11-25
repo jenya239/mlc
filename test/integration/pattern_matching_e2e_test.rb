@@ -174,4 +174,51 @@ class PatternMatchingE2ETest < Minitest::Test
       assert_equal 10, status.exitstatus  # 1*10 + 0*10
     end
   end
+
+  def test_match_float_literals
+    run_mlc(<<~MLC) do |stdout, stderr, status|
+      fn classify(x: f32) -> i32 = match x
+        | 0.0 => 1
+        | 1.5 => 2
+        | 3.14 => 3
+        | _ => 0
+
+      fn main() -> i32 = classify(0.0) + classify(1.5) + classify(2.0)
+    MLC
+      assert_equal 3, status.exitstatus  # 1 + 2 + 0
+    end
+  end
+
+  def test_match_boolean_literals
+    run_mlc(<<~MLC) do |stdout, stderr, status|
+      fn classify(b: bool) -> i32 = match b
+        | true => 10
+        | false => 5
+
+      fn main() -> i32 = classify(true) + classify(false)
+    MLC
+      assert_equal 15, status.exitstatus  # 10 + 5
+    end
+  end
+
+  def test_match_mixed_literals
+    run_mlc(<<~MLC) do |stdout, stderr, status|
+      fn test_int(x: i32) -> i32 = match x
+        | 0 => 1
+        | 1 => 10
+        | _ => 0
+
+      fn test_float(x: f32) -> i32 = match x
+        | 0.0 => 100
+        | _ => 0
+
+      fn test_bool(b: bool) -> i32 = match b
+        | true => 1000
+        | false => 0
+
+      fn main() -> i32 = test_int(1) + test_float(0.0) + test_bool(true)
+    MLC
+      assert_equal 86, status.exitstatus  # 10 + 100 + 1000 = 1110, wraps to 86 (1110 % 256)
+    end
+  end
 end

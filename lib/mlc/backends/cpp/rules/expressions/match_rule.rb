@@ -34,7 +34,16 @@ module MLC
 
               # Check if any arms have literal patterns
               # Literal patterns need equality checks, not std::visit
-              has_literal = node.arms.any? { |arm| arm[:pattern][:kind] == :literal }
+              has_literal = node.arms.any? do |arm|
+                pattern = arm[:pattern]
+                if pattern.is_a?(Hash)
+                  pattern[:kind] == :literal
+                elsif pattern.respond_to?(:kind)
+                  pattern.kind == :literal
+                else
+                  false
+                end
+              end
 
               if has_regex
                 # Generate if-else chain for regex matching
@@ -461,13 +470,30 @@ module MLC
                 "std::holds_alternative<#{case_name}>(#{scrutinee_src})"
               when :literal
                 value = pattern[:value]
-                "#{scrutinee_src} == #{value}"
+                literal_src = format_literal_value(value)
+                "#{scrutinee_src} == #{literal_src}"
               when :wildcard
                 "true"
               when :var
                 "true"
               else
                 "true"
+              end
+            end
+
+            # Format literal value for C++ code generation
+            def format_literal_value(value)
+              case value
+              when String
+                # String literal: create mlc::String("...")
+                cpp_str = context.cpp_string_literal(value)
+                "mlc::String(#{cpp_str})"
+              when TrueClass, FalseClass
+                # Boolean: use C++ true/false
+                value.to_s
+              else
+                # Numeric literals: use as-is
+                value.to_s
               end
             end
           end
