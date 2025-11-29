@@ -66,8 +66,8 @@ class StdlibSimpleE2ETest < Minitest::Test
         0
       end
     MLC
-      assert_match /Min: 1/, stdout
-      assert_match /Max: 9/, stdout
+      assert_match(/Min: 1/, stdout)
+      assert_match(/Max: 9/, stdout)
     end
   end
 
@@ -100,8 +100,8 @@ class StdlibSimpleE2ETest < Minitest::Test
         0
       end
     MLC
-      assert_match /42/, stdout
-      assert_match /3.14/, stdout
+      assert_match(/42/, stdout)
+      assert_match(/3.14/, stdout)
     end
   end
 
@@ -149,7 +149,7 @@ class StdlibSimpleE2ETest < Minitest::Test
         0
       end
     MLC
-      assert_match /HELLO WORLD/, stdout
+      assert_match(/HELLO WORLD/, stdout)
     end
   end
 

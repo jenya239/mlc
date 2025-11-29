@@ -393,11 +393,11 @@ module CppAst
 
     # RawExpression - for custom C++ code (e.g., GCC statement expressions)
     class RawExpression < Expression
-      attr_accessor :code
+      attr_accessor :code, :leading_trivia
 
       def initialize(code:, leading_trivia: "")
-        super(leading_trivia: leading_trivia)
         @code = code
+        @leading_trivia = leading_trivia
       end
 
       def to_source

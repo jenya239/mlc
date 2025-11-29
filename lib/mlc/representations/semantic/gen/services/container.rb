@@ -18,13 +18,16 @@ require_relative 'builders/array_literal_builder'
 require_relative 'features/loop_service'
 require_relative 'features/match_service'
 require_relative 'features/lambda_service'
+require_relative 'features/capture_analyzer'
 require_relative 'features/list_comprehension_service'
 require_relative 'features/index_access_service'
+require_relative 'features/slice_access_service'
 require_relative 'type_registration_service'
 require_relative 'builders/type_builder'
 require_relative 'type_declaration_service'
 require_relative 'imports/import_service'
 require_relative 'builders/ast_factory'
+require_relative 'traits/trait_registry'
 
 module MLC
   module Representations
@@ -41,11 +44,11 @@ module MLC
                         :semantic_ir_classifier, :record_literal_builder, :array_literal_builder,
                         :scope_context, :loop_service, :type_unification_service,
                         :match_analyzer, :match_service,
-                        :lambda_service, :list_comprehension_service, :index_access_service,
+                        :lambda_service, :list_comprehension_service, :index_access_service, :slice_access_service, :capture_analyzer,
                         :module_context_service, :sum_type_constructor_service,
                         :type_registration_service, :type_builder, :type_declaration_service,
                         :stdlib_registry, :import_service, :metadata_loader,
-                        :sum_type_constructors, :type_inference_service
+                        :sum_type_constructors, :type_inference_service, :trait_registry
 
             def initialize(function_registry:, type_registry:)
               @module_resolver = ModuleResolver.new
@@ -58,6 +61,7 @@ module MLC
               @literal_processor = LiteralProcessor.new(ir_builder: @ir_builder)
               @type_decl_table = {}
               @sum_type_constructors = {}
+              @trait_registry = TraitRegistry.new
               @type_checker = MLC::Representations::Semantic::Gen::Services::TypeChecker.new(
                 function_registry: @function_registry,
                 type_decl_table: @type_decl_table,
@@ -139,12 +143,16 @@ module MLC
                 type_unification_service: @type_unification_service,
                 match_analyzer: @match_analyzer
               )
+              @capture_analyzer = CaptureAnalyzer.new(
+                var_type_registry: @var_type_registry
+              )
               @lambda_service = LambdaService.new(
                 ir_builder: @ir_builder,
                 type_checker: @type_checker,
                 var_type_registry: @var_type_registry,
                 scope_context: @scope_context,
-                type_builder: @type_builder
+                type_builder: @type_builder,
+                capture_analyzer: @capture_analyzer
               )
               @list_comprehension_service = ListComprehensionService.new(
                 ir_builder: @ir_builder,
@@ -152,6 +160,9 @@ module MLC
                 var_type_registry: @var_type_registry
               )
               @index_access_service = IndexAccessService.new(
+                type_checker: @type_checker
+              )
+              @slice_access_service = SliceAccessService.new(
                 type_checker: @type_checker
               )
               @type_registration_service = TypeRegistrationService.new(

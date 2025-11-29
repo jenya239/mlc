@@ -95,11 +95,11 @@ class MLCRoundtripTest < Minitest::Test
   def test_record_type
     mlc_code = <<~MLCORA
       type Point = { x: f32, y: f32 }
-      fn make_point(x: f32, y: f32) -> Point = { x: x, y: y }
+      fn make_point(x: f32, y: f32) -> Point = Point { x: x, y: y }
     MLCORA
-    
+
     cpp_code = MLC.to_cpp(mlc_code)
-    
+
     assert_includes cpp_code, "struct Point"
     assert_includes cpp_code, "float x"
     assert_includes cpp_code, "float y"

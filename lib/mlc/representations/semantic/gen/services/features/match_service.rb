@@ -120,10 +120,21 @@ module MLC
               when :literal
                 { kind: :literal, value: data[:value] }
               when :constructor
+                # Handle nested patterns: fields can be strings or Pattern AST nodes
+                transformed_fields = Array(data[:fields]).map do |field|
+                  if field.is_a?(MLC::Source::AST::Pattern)
+                    # Recursively transform nested pattern
+                    transform_pattern(field)
+                  else
+                    # Simple binding (string)
+                    field
+                  end
+                end
+
                 {
                   kind: :constructor,
                   name: data[:name],
-                  fields: Array(data[:fields])
+                  fields: transformed_fields
                 }
               when :var
                 { kind: :var, name: data[:name] }
@@ -133,6 +144,43 @@ module MLC
                   pattern: data[:pattern],
                   flags: data[:flags],
                   bindings: Array(data[:bindings])
+                }
+              when :or
+                # Or-pattern: alternatives list
+                transformed_alternatives = Array(data[:alternatives]).map do |alt|
+                  transform_pattern(alt)
+                end
+                {
+                  kind: :or,
+                  alternatives: transformed_alternatives
+                }
+              when :array
+                # Array pattern: elements list
+                transformed_elements = Array(data[:elements]).map do |elem|
+                  if elem.is_a?(MLC::Source::AST::Pattern)
+                    # Recursively transform nested pattern
+                    transform_pattern(elem)
+                  else
+                    # Unexpected non-pattern in array (shouldn't happen with proper parser)
+                    elem
+                  end
+                end
+                {
+                  kind: :array,
+                  elements: transformed_elements
+                }
+              when :tuple
+                # Tuple pattern: elements list
+                transformed_elements = Array(data[:elements]).map do |elem|
+                  if elem.is_a?(MLC::Source::AST::Pattern)
+                    transform_pattern(elem)
+                  else
+                    elem
+                  end
+                end
+                {
+                  kind: :tuple,
+                  elements: transformed_elements
                 }
               else
                 raise MLC::CompileError, "Unknown pattern kind: #{pattern_ast.kind}"
@@ -150,6 +198,37 @@ module MLC
                 Array(pattern[:bindings]).each do |name|
                   bind_variable(name, string_type) unless ignored_binding?(name)
                 end
+              when :or
+                # For or-patterns, bind variables from the first alternative
+                # All alternatives must have same bindings (verified at semantic level)
+                first_alt = pattern[:alternatives]&.first
+                bind_pattern_variables(first_alt, scrutinee_type) if first_alt
+              when :array
+                # Array pattern: bind variables from element patterns
+                # Get element type from scrutinee type (if it's an array type)
+                element_type = if scrutinee_type.respond_to?(:element_type)
+                                 scrutinee_type.element_type
+                               else
+                                 unknown_type
+                               end
+
+                Array(pattern[:elements]).each do |elem|
+                  # Recursively bind variables from each element pattern
+                  bind_pattern_variables(elem, element_type)
+                end
+              when :tuple
+                # Tuple pattern: bind variables from element patterns
+                # Get element types from scrutinee type (if it's a tuple type)
+                element_types = if scrutinee_type.respond_to?(:element_types)
+                                  scrutinee_type.element_types
+                                else
+                                  []
+                                end
+
+                Array(pattern[:elements]).each_with_index do |elem, index|
+                  elem_type = element_types[index] || unknown_type
+                  bind_pattern_variables(elem, elem_type)
+                end
               end
             end
 
@@ -159,11 +238,19 @@ module MLC
               bindings = []
 
               Array(pattern[:fields]).each_with_index do |field, index|
-                next if ignored_binding?(field)
-
                 field_type = field_types[index] || unknown_type
-                bind_variable(field, field_type)
-                bindings << field
+
+                if field.is_a?(Hash) && field[:kind]
+                  # Nested pattern - recursively bind its variables
+                  bind_pattern_variables(field, field_type)
+                  bindings << field
+                elsif ignored_binding?(field)
+                  next
+                else
+                  # Simple variable binding
+                  bind_variable(field, field_type)
+                  bindings << field
+                end
               end
 
               pattern[:bindings] = bindings unless bindings.empty?
@@ -203,7 +290,7 @@ module MLC
               kind = pattern&.kind
               return false unless kind
 
-              %i[constructor wildcard var].include?(kind)
+              %i[constructor wildcard var tuple].include?(kind)
             end
 
             def unit_branch?(body)

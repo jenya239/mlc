@@ -233,7 +233,7 @@ module CppAst
     
     def is_string_expression(expr)
       case expr
-      when MLC::Source::AST::StringLit
+      when MLC::Source::AST::StringLit, MLC::Source::AST::StringInterpolation
         true
       when MLC::Source::AST::VarRef
         # TODO: Check variable type from context

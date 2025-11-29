@@ -56,7 +56,7 @@ class StdlibResolutionTest < Minitest::Test
   def test_available_modules
     resolver = MLC::Common::Stdlib::Resolver.new
     modules = resolver.available_modules
-    expected = %w[Array Conv File Graphics IO Json Math Option Result String]
+    expected = %w[Array Conv Dynrecord File Future Graphics Http IO Json Map Math Memory Option Result String]
     expected.each do |mod|
       assert_includes modules, mod
     end

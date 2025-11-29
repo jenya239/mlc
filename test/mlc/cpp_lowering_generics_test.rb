@@ -23,14 +23,14 @@ class CppLoweringGenericsTest < Minitest::Test
   end
 
   def test_generic_type_single_param
-    # Option<i32> -> Option<int>
+    # Option<i32> -> std::optional<int> (stdlib Option maps to std::optional)
     option_base = Builder.primitive_type('Option')
     i32_type = Builder.primitive_type('i32')
     option_i32 = Builder.generic_type(option_base, [i32_type])
 
     cpp_type = @lowerer.map_type(option_i32)
 
-    assert_equal 'Option<int>', cpp_type
+    assert_equal 'std::optional<int>', cpp_type
   end
 
   def test_generic_type_multiple_params
@@ -46,18 +46,18 @@ class CppLoweringGenericsTest < Minitest::Test
   end
 
   def test_generic_type_with_type_variable
-    # Option<T> -> Option<T>
+    # Option<T> -> std::optional<T> (stdlib Option maps to std::optional)
     option_base = Builder.primitive_type('Option')
     t_var = Builder.type_variable('T')
     option_t = Builder.generic_type(option_base, [t_var])
 
     cpp_type = @lowerer.map_type(option_t)
 
-    assert_equal 'Option<T>', cpp_type
+    assert_equal 'std::optional<T>', cpp_type
   end
 
   def test_nested_generic_types
-    # Option<Result<i32, str>> -> Option<Result<int, mlc::String>>
+    # Option<Result<i32, str>> -> std::optional<Result<int, mlc::String>>
     option_base = Builder.primitive_type('Option')
     result_base = Builder.primitive_type('Result')
     i32_type = Builder.primitive_type('i32')
@@ -68,11 +68,11 @@ class CppLoweringGenericsTest < Minitest::Test
 
     cpp_type = @lowerer.map_type(option_result)
 
-    assert_equal 'Option<Result<int, mlc::String>>', cpp_type
+    assert_equal 'std::optional<Result<int, mlc::String>>', cpp_type
   end
 
   def test_array_of_generic_type
-    # Option<i32>[] -> std::vector<Option<int>>
+    # Option<i32>[] -> std::vector<std::optional<int>>
     option_base = Builder.primitive_type('Option')
     i32_type = Builder.primitive_type('i32')
     option_i32 = Builder.generic_type(option_base, [i32_type])
@@ -80,7 +80,7 @@ class CppLoweringGenericsTest < Minitest::Test
 
     cpp_type = @lowerer.map_type(array_type)
 
-    assert_equal 'std::vector<Option<int>>', cpp_type
+    assert_equal 'std::vector<std::optional<int>>', cpp_type
   end
 
   def test_function_type_simple
@@ -123,7 +123,7 @@ class CppLoweringGenericsTest < Minitest::Test
   end
 
   def test_function_type_with_generic_types
-    # fn(Option<i32>) -> Result<f32, str> -> std::function<Result<float, mlc::String>(Option<int>)>
+    # fn(Option<i32>) -> Result<f32, str> -> std::function<Result<float, mlc::String>(std::optional<int>)>
     option_base = Builder.primitive_type('Option')
     result_base = Builder.primitive_type('Result')
     i32_type = Builder.primitive_type('i32')
@@ -137,7 +137,7 @@ class CppLoweringGenericsTest < Minitest::Test
 
     cpp_type = @lowerer.map_type(fn_type)
 
-    assert_equal 'std::function<Result<float, mlc::String>(Option<int>)>', cpp_type
+    assert_equal 'std::function<Result<float, mlc::String>(std::optional<int>)>', cpp_type
   end
 
   def test_generic_function_lowering
@@ -230,6 +230,7 @@ class CppLoweringGenericsTest < Minitest::Test
 
   def test_function_with_generic_option_param
     # fn unwrap<T>(opt: Option<T>, default: T) -> T
+    # stdlib Option<T> maps to std::optional<T>
     option_base = Builder.primitive_type('Option')
     t_var = Builder.type_variable('T')
     option_t = Builder.generic_type(option_base, [t_var])
@@ -256,8 +257,8 @@ class CppLoweringGenericsTest < Minitest::Test
     assert_match(/template/, source)
     assert_match(/typename T/, source)
 
-    # First parameter should be Option<T>
-    assert_match(/Option<T>/, source)
+    # First parameter should be std::optional<T> (stdlib Option)
+    assert_match(/std::optional<T>/, source)
   end
 
   def test_function_effects_are_reflected_in_cpp_signature

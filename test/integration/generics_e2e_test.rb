@@ -67,10 +67,10 @@ class GenericsE2ETest < Minitest::Test
       type Pair<T, U> = {first: T, second: U}
 
       fn swap<T, U>(p: Pair<T, U>) -> Pair<U, T> =
-        {first: p.second, second: p.first}
+        Pair {first: p.second, second: p.first}
 
       fn main() -> i32 = do
-        let p1 = {first: 5, second: 10}
+        let p1: Pair<i32, i32> = Pair {first: 5, second: 10}
         let p2 = swap(p1)
         p2.first + p2.second
       end
@@ -141,7 +141,7 @@ class GenericsE2ETest < Minitest::Test
         pairs[0].first + pairs[0].second + pairs[1].first + pairs[1].second
 
       fn main() -> i32 = do
-        let pairs = [{first: 10, second: 20}, {first: 30, second: 40}]
+        let pairs: Pair<i32, i32>[] = [Pair {first: 10, second: 20}, Pair {first: 30, second: 40}]
         sum_pairs(pairs)
       end
     MLC
@@ -230,9 +230,9 @@ class GenericsE2ETest < Minitest::Test
 
       fn main() -> i32 = do
         let pairs: Pair<i32, i32>[] = [
-          {first: 1, second: 2},
-          {first: 3, second: 4},
-          {first: 5, second: 6}
+          Pair {first: 1, second: 2},
+          Pair {first: 3, second: 4},
+          Pair {first: 5, second: 6}
         ]
         pairs[0].first + pairs[1].second + pairs[2].first
       end
@@ -268,7 +268,7 @@ class GenericsE2ETest < Minitest::Test
         q.a + q.b + q.c + q.d
 
       fn main() -> i32 = do
-        let q = {a: 10, b: 20, c: 30, d: 40}
+        let q: Quad<i32> = Quad {a: 10, b: 20, c: 30, d: 40}
         sum_quad(q)
       end
     MLC
@@ -312,7 +312,7 @@ class GenericsE2ETest < Minitest::Test
         result
       end
     MLC
-      assert_match /Result: 99/, stdout
+      assert_match(/Result: 99/, stdout)
       assert_equal 99, status.exitstatus
     end
   end
@@ -328,9 +328,9 @@ class GenericsE2ETest < Minitest::Test
         o.left.value + o.right.value
 
       fn main() -> i32 = do
-        let o = {
-          left: {value: 25},
-          right: {value: 75}
+        let o: Outer<i32, i32> = Outer {
+          left: Inner {value: 25},
+          right: Inner {value: 75}
         }
         extract(o)
       end
@@ -364,9 +364,9 @@ class GenericsE2ETest < Minitest::Test
 
       fn main() -> i32 = do
         let boxes: Box<i32>[] = [
-          {value: 10},
-          {value: 20},
-          {value: 30}
+          Box {value: 10},
+          Box {value: 20},
+          Box {value: 30}
         ]
         boxes[0].value + boxes[1].value + boxes[2].value
       end

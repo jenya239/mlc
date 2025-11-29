@@ -4,6 +4,7 @@
 # - MLC::SemanticIR::Builder (lines 142, 144, 146, 148)
 # - MLC::SemanticIR::ArrayType (line 146)
 # - MLC::SemanticIR::TypeParam (line 304)
+# - MLC::Common::Typing::Predicates (type predicates delegation)
 
 module MLC
   module Representations
@@ -36,44 +37,69 @@ module MLC
               "format" => "string"
             }.freeze
 
-            NUMERIC_PRIMITIVES = %w[i32 f32 i64 f64 u32 u64].freeze
+            # Delegate to Predicates module for NUMERIC_PRIMITIVES
+            NUMERIC_PRIMITIVES = MLC::Common::Typing::Predicates::NUMERIC_PRIMITIVES
 
             BUILTIN_CONSTRAINTS = {
-              "Numeric" => %w[i32 f32 i64 f64 u32 u64]
+              "Numeric" => %w[i32 f32 i64 f64 u32 u64],
+              "Comparable" => %w[i32 f32 i64 f64 u32 u64 string str bool],
+              "Eq" => %w[i32 f32 i64 f64 u32 u64 string str bool],
+              "Default" => %w[i32 f32 i64 f64 u32 u64 string str bool],
+              "Copy" => %w[i32 f32 i64 f64 u32 u64 bool],
+              "Hashable" => %w[i32 i64 u32 u64 string str bool]
             }.freeze
 
-            def initialize(function_registry:, type_decl_table: nil, event_bus: nil, current_node_proc: nil, var_type_registry: nil, type_registry: nil)
+            def initialize(function_registry:, type_decl_table: nil, event_bus: nil, current_node_proc: nil, var_type_registry: nil, type_registry: nil, error_collector: nil)
               @function_registry = function_registry
               @type_decl_table = type_decl_table || {}
               @event_bus = event_bus
               @current_node_proc = current_node_proc
               @var_type_registry = var_type_registry
               @type_registry = type_registry
+              @error_collector = error_collector
             end
 
-            # Type name resolution
+            attr_reader :error_collector
+
+            # Enable error recovery mode
+            def error_recovery_mode?
+              !@error_collector.nil?
+            end
+
+            # Type name resolution - delegates to Predicates module
             def type_name(type)
-              type&.name
+              MLC::Common::Typing::Predicates.type_name(type)
             end
 
             def normalized_type_name(name)
-              case name
-              when "str"
-                "string"
-              else
-                name
-              end
+              MLC::Common::Typing::Predicates.normalized_type_name(name)
             end
 
             def describe_type(type)
-              normalized_type_name(type_name(type)) || "unknown"
+              MLC::Common::Typing::Predicates.describe_type(type)
             end
 
             # Error reporting
+            # In error recovery mode, collects errors and returns ErrorType
+            # In normal mode, raises CompileError immediately
             def type_error(message, node: nil, origin: nil)
               origin ||= node&.origin
               origin ||= @current_node_proc&.call&.origin
-              raise MLC::CompileError.new(message, origin: origin)
+
+              if error_recovery_mode?
+                @error_collector.add_error(message, origin: origin)
+                nil # Caller should handle nil return
+              else
+                raise MLC::CompileError.new(message, origin: origin)
+              end
+            end
+
+            # Returns ErrorType instead of raising, for use in type inference
+            # In recovery mode: collects error, returns ErrorType
+            # In normal mode: raises immediately
+            def type_error_with_recovery(message, node: nil, origin: nil)
+              type_error(message, node: node, origin: origin)
+              MLC::SemanticIR::ErrorType.new(error_message: message, origin: origin)
             end
 
             def ensure_type!(type, message, node: nil)
@@ -84,6 +110,9 @@ module MLC
             def ensure_compatible_type(actual, expected, context, node: nil)
               ensure_type!(actual, "#{context} has unknown type", node: node)
               ensure_type!(expected, "#{context} has unspecified expected type", node: node)
+
+              # Skip checking if either type is ErrorType (prevents cascading errors)
+              return if error_type?(actual) || error_type?(expected)
 
               actual_name = normalized_type_name(type_name(actual))
               expected_name = normalized_type_name(type_name(expected))
@@ -119,23 +148,31 @@ module MLC
               type_error("#{context} must be numeric, got #{describe_type(type)}", node: node) unless numeric_type?(type)
             end
 
-            # Type predicates
-            def numeric_type?(type)
-              # TypeVariable is assumed to be numeric-compatible
-              return true if type.is_a?(SemanticIR::TypeVariable)
+            def ensure_integer_type(type, context, node: nil)
+              name = normalized_type_name(type_name(type))
+              return if generic_type_name?(name)
+              type_error("#{context} must be integer, got #{describe_type(type)}", node: node) unless integer_type?(type)
+            end
 
-              type_str = normalized_type_name(type_name(type))
-              NUMERIC_PRIMITIVES.include?(type_str)
+            # Type predicates - delegates to Predicates module
+            def numeric_type?(type)
+              MLC::Common::Typing::Predicates.numeric_type?(type)
+            end
+
+            def integer_type?(type)
+              MLC::Common::Typing::Predicates.integer_type?(type)
+            end
+
+            def error_type?(type)
+              MLC::Common::Typing::Predicates.error_type?(type)
             end
 
             def generic_type_name?(name)
-              return false unless name.is_a?(String)
-              name.empty? || name[0]&.match?(/[A-Z]/)
+              MLC::Common::Typing::Predicates.generic_type_name?(name)
             end
 
             def unit_like?(name, type)
-              return true if %w[unit void].include?(name)
-              type.is_a?(SemanticIR::UnitType)
+              MLC::Common::Typing::Predicates.unit_like?(name, type)
             end
 
             # IO functions

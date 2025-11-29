@@ -11,7 +11,7 @@ module MLC
       # Dependency injection container for backend services
       class Container
         attr_reader :type_registry, :function_registry, :type_map, :runtime_policy, :stdlib_scanner, :event_bus
-        attr_accessor :rule_engine, :in_generic_function, :user_functions
+        attr_accessor :rule_engine, :in_generic_function, :user_functions, :declared_variables
 
         def initialize(type_registry:, function_registry:, runtime_policy: nil, stdlib_scanner: nil, event_bus: nil)
           @type_registry = type_registry
@@ -24,6 +24,30 @@ module MLC
           @rule_engine = nil # Initialized after Context creation
           @in_generic_function = false # Mutable state for generic function lowering
           @user_functions = Set.new # Track user-defined functions
+          @declared_variables = Set.new # Track declared variables for rebinding detection
+          @temp_counter = 0 # Counter for generating unique temp variable names
+        end
+
+        # Generate unique temporary variable name
+        def generate_temp_name
+          name = "__tmp_#{@temp_counter}"
+          @temp_counter += 1
+          name
+        end
+
+        # Reset declared variables (call when entering new function scope)
+        def reset_declared_variables
+          @declared_variables = Set.new
+        end
+
+        # Check if variable was already declared (for rebinding)
+        def variable_declared?(name)
+          @declared_variables.include?(name)
+        end
+
+        # Mark variable as declared
+        def declare_variable(name)
+          @declared_variables.add(name)
         end
 
         # Lazy service initialization

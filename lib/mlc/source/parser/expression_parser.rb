@@ -157,9 +157,44 @@ module MLC
     end
 
     def parse_comparison
-      left = parse_addition
+      left = parse_range
 
       while current.type == :OPERATOR && %w[< > <= >=].include?(current.value)
+        token = consume(:OPERATOR)
+        op = token.value
+        right = parse_range
+        node = MLC::Source::AST::BinaryOp.new(op: op, left: left, right: right)
+        left = attach_origin(node, token)
+      end
+
+      left
+    end
+
+    # Range expressions: a..b (inclusive) or a...b (exclusive)
+    # Lower precedence than shift, higher than comparison
+    def parse_range
+      left = parse_shift
+
+      # Check for range operator .. or spread/exclusive range ...
+      if current.type == :RANGE
+        range_token = consume(:RANGE)
+        right = parse_shift
+        attach_origin(MLC::Source::AST::RangeExpr.new(start: left, end_expr: right, inclusive: true), range_token)
+      elsif current.type == :SPREAD
+        spread_token = consume(:SPREAD)
+        right = parse_shift
+        # ... is exclusive range (does not include end)
+        attach_origin(MLC::Source::AST::RangeExpr.new(start: left, end_expr: right, inclusive: false), spread_token)
+      else
+        left
+      end
+    end
+
+    # Shift operators: a << b, a >> b (between addition and comparison)
+    def parse_shift
+      left = parse_addition
+
+      while current.type == :OPERATOR && %w[<< >>].include?(current.value)
         token = consume(:OPERATOR)
         op = token.value
         right = parse_addition
@@ -543,6 +578,29 @@ module MLC
       end
     end
 
+    # Parse string interpolation: "Hello, {name}!"
+    # Token value is array of {type: :text/:expr, value: String}
+    def parse_string_interpolation(token)
+      raw_parts = token.value
+
+      # Parse expression parts by creating sub-parsers
+      parsed_parts = raw_parts.map do |part|
+        if part[:type] == :text
+          { type: :text, value: part[:value] }
+        else
+          # Parse the expression string
+          expr_source = part[:value]
+          sub_lexer = MLC::Source::Parser::Lexer.new(expr_source)
+          sub_tokens = sub_lexer.tokenize
+          sub_parser = MLC::Source::Parser::Parser.new_from_tokens(sub_tokens)
+          expr = sub_parser.parse_single_expression
+          { type: :expr, value: expr }
+        end
+      end
+
+      attach_origin(MLC::Source::AST::StringInterpolation.new(parts: parsed_parts), token)
+    end
+
     def parse_lambda
       if current.type == :IDENTIFIER && peek && peek.type == :FAT_ARROW
         # Single parameter: x => expr
@@ -675,12 +733,54 @@ module MLC
     end
 
     def parse_logical_and
-      left = parse_equality
+      left = parse_bitwise_or
 
       while current.type == :OPERATOR && current.value == "&&"
         token = consume(:OPERATOR)
-        right = parse_equality
+        right = parse_bitwise_or
         node = MLC::Source::AST::BinaryOp.new(op: "&&", left: left, right: right)
+        left = attach_origin(node, token)
+      end
+
+      left
+    end
+
+    # Bitwise OR: a | b (lower precedence than XOR)
+    def parse_bitwise_or
+      left = parse_bitwise_xor
+
+      while current.type == :OPERATOR && current.value == "|"
+        token = consume(:OPERATOR)
+        right = parse_bitwise_xor
+        node = MLC::Source::AST::BinaryOp.new(op: "|", left: left, right: right)
+        left = attach_origin(node, token)
+      end
+
+      left
+    end
+
+    # Bitwise XOR: a ^ b (lower precedence than AND)
+    def parse_bitwise_xor
+      left = parse_bitwise_and
+
+      while current.type == :OPERATOR && current.value == "^"
+        token = consume(:OPERATOR)
+        right = parse_bitwise_and
+        node = MLC::Source::AST::BinaryOp.new(op: "^", left: left, right: right)
+        left = attach_origin(node, token)
+      end
+
+      left
+    end
+
+    # Bitwise AND: a & b (lower precedence than equality)
+    def parse_bitwise_and
+      left = parse_equality
+
+      while current.type == :OPERATOR && current.value == "&"
+        token = consume(:OPERATOR)
+        right = parse_equality
+        node = MLC::Source::AST::BinaryOp.new(op: "&", left: left, right: right)
         left = attach_origin(node, token)
       end
 
@@ -712,8 +812,8 @@ module MLC
         consume(:LBRACE)
 
         while current.type != :RBRACE
-          # Parse pattern
-          pattern = parse_pattern
+          # Parse pattern (with or-pattern support)
+          pattern = parse_or_pattern
 
           # Parse guard (optional: "if condition")
           guard = nil
@@ -754,6 +854,22 @@ module MLC
 
           # Parse pattern
           pattern = parse_pattern
+
+          # Check for or-patterns: | pattern | pattern (without => or if after |)
+          alternatives = [pattern]
+          while current.type == :OPERATOR && current.value == "|" && pattern_start?(peek)
+            consume(:OPERATOR)  # consume |
+            alternatives << parse_pattern
+          end
+
+          if alternatives.length > 1
+            origin = pattern.respond_to?(:origin) ? pattern.origin : nil
+            pattern = MLC::Source::AST::Pattern.new(
+              kind: :or,
+              data: { alternatives: alternatives },
+              origin: origin
+            )
+          end
 
           # Parse guard (optional: "if condition")
           guard = nil
@@ -803,13 +919,28 @@ module MLC
     end
 
     def parse_logical_or_no_pipe
-      # Like parse_logical_or but doesn't consume | for pipe operator
-      left = parse_logical_and
+      # Like parse_logical_or but doesn't consume | for bitwise or
+      # This is used in match arms where | separates arms, not bitwise or
+      left = parse_logical_and_no_pipe
 
       while current.type == :OPERATOR && current.value == "||"
         token = consume(:OPERATOR)
-        right = parse_logical_and
+        right = parse_logical_and_no_pipe
         node = MLC::Source::AST::BinaryOp.new(op: "||", left: left, right: right)
+        left = attach_origin(node, token)
+      end
+
+      left
+    end
+
+    # Logical AND that doesn't consume | for match arm bodies
+    def parse_logical_and_no_pipe
+      left = parse_bitwise_xor  # Skip parse_bitwise_or - don't consume |
+
+      while current.type == :OPERATOR && current.value == "&&"
+        token = consume(:OPERATOR)
+        right = parse_bitwise_xor
+        node = MLC::Source::AST::BinaryOp.new(op: "&&", left: left, right: right)
         left = attach_origin(node, token)
       end
 
@@ -862,36 +993,119 @@ module MLC
       # Handle member access, method calls, and array indexing
       loop do
         case current.type
+        when :SAFE_NAV
+          # Safe navigation operator: obj?.member or obj?.method()
+          safe_nav_token = consume(:SAFE_NAV) # consume '?.'
+
+          member_token = consume(:IDENTIFIER)
+          member = member_token.value
+          member_line = member_token.line
+
+          # Check if it's a safe method call: obj?.method()
+          if current.type == :LPAREN && current.line == member_line
+            consume(:LPAREN)
+            args = parse_args
+            consume(:RPAREN)
+            expr = attach_origin(MLC::Source::AST::SafeCall.new(object: expr, method_name: member, args: args), safe_nav_token)
+          else
+            # Safe member access: obj?.field
+            expr = attach_origin(MLC::Source::AST::SafeMemberAccess.new(object: expr, member: member), safe_nav_token)
+          end
+          expr_line = last_token&.line
+
         when :OPERATOR
           if current.value == "."
             consume(:OPERATOR) # consume '.'
-            member_token = consume(:IDENTIFIER)
-            member = member_token.value
-            member_line = member_token.line
 
-            # Check if it's a method call: obj.method()
-            # Only treat LPAREN as method call if it's on the same line as the member name
-            if current.type == :LPAREN && current.line == member_line
-              consume(:LPAREN)
-              args = parse_args
-              consume(:RPAREN)
-              # Create a call with member access as callee
-              member_access = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
-              expr = attach_origin(MLC::Source::AST::Call.new(callee: member_access, args: args), member_token)
+            # Check for tuple positional access: tuple.0, tuple.1
+            # Note: lexer may tokenize 0.1 as FLOAT_LITERAL, handle that case too
+            if current.type == :INT_LITERAL
+              index_token = consume(:INT_LITERAL)
+              index = index_token.value.to_i
+              expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: index), index_token)
+              expr_line = last_token&.line
+            elsif current.type == :FLOAT_LITERAL
+              # Handle chained access like tuple.0.1 where 0.1 is tokenized as float
+              # Split 0.1 into index 0 and .1 for further processing
+              float_token = consume(:FLOAT_LITERAL)
+              float_str = float_token.value.to_s
+              # Parse as "index.remaining_index"
+              parts = float_str.split('.')
+              if parts.size == 2 && parts[0] =~ /^\d+$/ && parts[1] =~ /^\d+$/
+                first_index = parts[0].to_i
+                second_index = parts[1].to_i
+                # Build nested tuple access: expr.first_index.second_index
+                inner_access = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: first_index), float_token)
+                expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: inner_access, index: second_index), float_token)
+                expr_line = last_token&.line
+              else
+                raise parse_error("Invalid tuple access syntax")
+              end
             else
-              # Just member access: obj.field
-              expr = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
+              member_token = consume(:IDENTIFIER)
+              member = member_token.value
+              member_line = member_token.line
+
+              # Check if it's a method call: obj.method()
+              # Only treat LPAREN as method call if it's on the same line as the member name
+              if current.type == :LPAREN && current.line == member_line
+                consume(:LPAREN)
+                args = parse_args
+                consume(:RPAREN)
+                # Create a call with member access as callee
+                member_access = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
+                expr = attach_origin(MLC::Source::AST::Call.new(callee: member_access, args: args), member_token)
+              else
+                # Just member access: obj.field
+                expr = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
+              end
+              expr_line = last_token&.line
             end
-            expr_line = last_token&.line
           else
             break
           end
         when :LBRACKET
-          # Array indexing: expr[index]
+          # Array indexing or slicing: expr[index] or expr[start..end]
           lbracket_token = consume(:LBRACKET)
-          index = parse_expression
-          consume(:RBRACKET)
-          expr = attach_origin(MLC::Source::AST::IndexAccess.new(object: expr, index: index), lbracket_token)
+
+          # Check for open-ended slice starting with .. (e.g., arr[..5] or arr[..])
+          if current.type == :RANGE
+            consume(:RANGE)
+            if current.type == :RBRACKET
+              # arr[..] - full slice (copy)
+              consume(:RBRACKET)
+              expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr), lbracket_token)
+            else
+              # arr[..end] - use parse_shift to not consume RANGE in end expression
+              end_index = parse_shift
+              consume(:RBRACKET)
+              expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, end_index: end_index), lbracket_token)
+            end
+          else
+            # Parse first expression - use parse_shift to not consume RANGE operator
+            # This allows us to check for RANGE after parsing and distinguish
+            # arr[1..3] (slice) from arr[idx] (index access)
+            first_expr = parse_shift
+
+            if current.type == :RANGE
+              # Slice syntax: arr[start..end] or arr[start..]
+              consume(:RANGE)
+              if current.type == :RBRACKET
+                # arr[start..] - open-ended slice to end
+                consume(:RBRACKET)
+                expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, start_index: first_expr), lbracket_token)
+              else
+                # arr[start..end] - use parse_shift for end expression
+                end_index = parse_shift
+                consume(:RBRACKET)
+                expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, start_index: first_expr, end_index: end_index), lbracket_token)
+              end
+            else
+              # Simple index access: arr[index]
+              consume(:RBRACKET)
+              expr = attach_origin(MLC::Source::AST::IndexAccess.new(object: expr, index: first_expr), lbracket_token)
+            end
+          end
           expr_line = last_token&.line
         when :LPAREN
           paren_line = current.line
@@ -900,6 +1114,14 @@ module MLC
           args = parse_args
           consume(:RPAREN)
           expr = attach_origin(MLC::Source::AST::Call.new(callee: expr, args: args), lparen_token)
+          expr_line = last_token&.line
+        when :QUESTION
+          # Try/propagation operator: expr?
+          # Must be on the same line as the expression (postfix operator)
+          question_line = current.line
+          break unless expr_line && question_line == expr_line
+          question_token = consume(:QUESTION)
+          expr = attach_origin(MLC::Source::AST::TryExpr.new(operand: expr), question_token)
           expr_line = last_token&.line
         else
           break
@@ -919,6 +1141,11 @@ module MLC
         token = consume(:INT_LITERAL)
         value = token.value
         attach_origin(MLC::Source::AST::IntLit.new(value: value), token)
+      when :CHAR_LITERAL
+        # Character literal 'a' -> integer value (e.g., 97)
+        token = consume(:CHAR_LITERAL)
+        value = token.value  # Already converted to integer in lexer
+        attach_origin(MLC::Source::AST::IntLit.new(value: value), token)
       when :FLOAT_LITERAL
         token = consume(:FLOAT_LITERAL)
         value = token.value
@@ -927,6 +1154,9 @@ module MLC
         token = consume(:STRING_LITERAL)
         value = token.value
         attach_origin(MLC::Source::AST::StringLit.new(value: value), token)
+      when :STRING_INTERP
+        token = consume(:STRING_INTERP)
+        parse_string_interpolation(token)
       when :REGEX
         token = consume(:REGEX)
         regex_data = token.value
@@ -949,35 +1179,48 @@ module MLC
           elsif current.type == :LBRACE && !looks_like_match_arms?
             # Record literal (but not match arms)
             lbrace_token = consume(:LBRACE)
-            fields = parse_record_fields
+            result = parse_record_fields
             consume(:RBRACE)
-            attach_origin(MLC::Source::AST::RecordLit.new(type_name: name, fields: fields), lbrace_token)
+            attach_origin(MLC::Source::AST::RecordLit.new(type_name: name, fields: result[:fields], spreads: result[:spreads]), lbrace_token)
           else
             # Variable reference
             attach_origin(MLC::Source::AST::VarRef.new(name: name), name_token)
           end
         end
       when :LPAREN
-        # Could be lambda or grouped expression
+        # Could be lambda, tuple literal, or grouped expression
         # Lookahead to determine
         if looks_like_lambda?
           parse_lambda
         else
-          consume(:LPAREN)
-          expr = parse_expression
-          consume(:RPAREN)
-          expr
+          parse_tuple_or_grouped
         end
+      when :SYMBOL
+        # Symbol literal: :foo
+        token = consume(:SYMBOL)
+        attach_origin(MLC::Source::AST::SymbolLit.new(name: token.value), token)
       when :LBRACE
         # Anonymous record literal
         lbrace_token = consume(:LBRACE)
-        fields = parse_record_fields
+        result = parse_record_fields
         consume(:RBRACE)
-        attach_origin(MLC::Source::AST::RecordLit.new(type_name: "record", fields: fields), lbrace_token)
+        attach_origin(MLC::Source::AST::RecordLit.new(type_name: "record", fields: result[:fields], spreads: result[:spreads]), lbrace_token)
       when :LBRACKET
         parse_array_literal_or_comprehension
+      when :STRING_ARRAY, :STRING_ARRAY_INTERP
+        # %w[] or %W[] - array of strings
+        parse_percent_string_array
+      when :SYMBOL_ARRAY, :SYMBOL_ARRAY_INTERP
+        # %i[] or %I[] - array of symbols
+        parse_percent_symbol_array
       when :UNSAFE
         parse_unsafe_block
+      when :SELF_ACCESS
+        # @field desugars to self.field
+        token = consume(:SELF_ACCESS)
+        field_name = token.value
+        self_ref = attach_origin(MLC::Source::AST::VarRef.new(name: "self"), token)
+        attach_origin(MLC::Source::AST::MemberAccess.new(object: self_ref, member: field_name), token)
       else
         raise "Unexpected token: #{current}"
       end
@@ -1035,14 +1278,62 @@ module MLC
     end
 
     def parse_unary
-      # Check for unary operators: !, -, +
-      if current.type == :OPERATOR && %w[! - +].include?(current.value)
+      # Check for await keyword (like a unary prefix operator)
+      if current.type == :AWAIT
+        token = consume(:AWAIT)
+        operand = parse_unary  # Right-associative
+        attach_origin(MLC::Source::AST::AwaitExpr.new(operand: operand), token)
+      # Check for unary operators: !, -, +, ~ (bitwise NOT)
+      elsif current.type == :OPERATOR && %w[! - + ~].include?(current.value)
         token = consume(:OPERATOR)
         op = token.value
         operand = parse_unary  # Right-associative
         attach_origin(MLC::Source::AST::UnaryOp.new(op: op, operand: operand), token)
       else
         parse_postfix
+      end
+    end
+
+    # Parse tuple literal or grouped expression
+    # (x) -> grouped expression (returns x)
+    # (x,) -> single-element tuple
+    # (x, y) -> two-element tuple
+    # (x, y, z) -> three-element tuple
+    def parse_tuple_or_grouped
+      lparen_token = consume(:LPAREN)
+
+      # Empty tuple ()
+      if current.type == :RPAREN
+        consume(:RPAREN)
+        return with_origin(lparen_token) { MLC::Source::AST::TupleLit.new(elements: []) }
+      end
+
+      # Parse first expression
+      first_expr = parse_expression
+
+      # Check what follows
+      if current.type == :COMMA
+        # It's a tuple
+        elements = [first_expr]
+        consume(:COMMA)
+
+        # Check for trailing comma (single element tuple)
+        unless current.type == :RPAREN
+          # More elements
+          elements << parse_expression
+          while current.type == :COMMA
+            consume(:COMMA)
+            break if current.type == :RPAREN  # Trailing comma
+            elements << parse_expression
+          end
+        end
+
+        consume(:RPAREN)
+        with_origin(lparen_token) { MLC::Source::AST::TupleLit.new(elements: elements) }
+      else
+        # It's a grouped expression (x)
+        consume(:RPAREN)
+        first_expr
       end
     end
 
@@ -1118,6 +1409,34 @@ module MLC
           body: body
         )
       end
+    end
+
+    # Parse %w[] or %W[] - array of strings
+    # Token value is already an array of strings from the lexer
+    def parse_percent_string_array
+      token = consume(current.type)  # Consume STRING_ARRAY or STRING_ARRAY_INTERP
+      words = token.value  # Array of strings
+
+      # Convert each word to a StringLit and wrap in ArrayLiteral
+      elements = words.map do |word|
+        attach_origin(MLC::Source::AST::StringLit.new(value: word), token)
+      end
+
+      attach_origin(MLC::Source::AST::ArrayLiteral.new(elements: elements), token)
+    end
+
+    # Parse %i[] or %I[] - array of symbols
+    # Token value is already an array of strings (symbol names) from the lexer
+    def parse_percent_symbol_array
+      token = consume(current.type)  # Consume SYMBOL_ARRAY or SYMBOL_ARRAY_INTERP
+      words = token.value  # Array of symbol names
+
+      # Convert each word to a SymbolLit and wrap in ArrayLiteral
+      elements = words.map do |word|
+        attach_origin(MLC::Source::AST::SymbolLit.new(name: word), token)
+      end
+
+      attach_origin(MLC::Source::AST::ArrayLiteral.new(elements: elements), token)
     end
 
     end

@@ -55,7 +55,8 @@ module MLC
             end
 
             # Infer return type of function call
-            def infer_call_type(callee, args)
+            # @param expected_type [SemanticIR::Type, nil] Expected return type for bidirectional inference
+            def infer_call_type(callee, args, expected_type: nil)
               case callee
               when SemanticIR::VarExpr
                 if @type_checker.class::IO_RETURN_TYPES.key?(callee.name)
@@ -69,7 +70,11 @@ module MLC
 
                 # Check if this is a generic function
                 if info.type_params && !info.type_params.empty?
-                  instantiation = @generic_call_resolver.instantiate(info, args, name: callee.name)
+                  instantiation = @generic_call_resolver.instantiate(
+                    info, args,
+                    name: callee.name,
+                    expected_ret_type: expected_type
+                  )
                   instantiation.ret_type
                 else
                   # Non-generic function - use original logic
@@ -149,6 +154,16 @@ module MLC
                 @type_checker.ensure_boolean_type(left_type, "left operand of '#{op}'")
                 @type_checker.ensure_boolean_type(right_type, "right operand of '#{op}'")
                 SemanticIR::Builder.primitive_type("bool")
+              when "&", "|", "^"
+                # Bitwise operators: require integer types, return integer
+                @type_checker.ensure_integer_type(left_type, "left operand of '#{op}'")
+                @type_checker.ensure_integer_type(right_type, "right operand of '#{op}'")
+                combine_numeric_type(left_type, right_type)
+              when "<<", ">>"
+                # Shift operators: left must be integer, right must be integer, returns left type
+                @type_checker.ensure_integer_type(left_type, "left operand of '#{op}'")
+                @type_checker.ensure_integer_type(right_type, "right operand of '#{op}'")
+                left_type
               else
                 left_type
               end
@@ -164,6 +179,10 @@ module MLC
                 SemanticIR::Builder.primitive_type("bool")
               when "-", "+"
                 @type_checker.ensure_numeric_type(operand_type, "operand of '#{op}'")
+                operand_type
+              when "~"
+                # Bitwise NOT: requires integer, returns integer
+                @type_checker.ensure_integer_type(operand_type, "operand of '~'")
                 operand_type
               else
                 operand_type
@@ -225,6 +244,17 @@ module MLC
                     return instantiated if instantiated
                   end
                 end
+
+                # Auto-deref for smart pointer types: Shared<T>, Weak<T>, Owned<T>
+                # When accessing a member on Shared<Node>, try to resolve it on Node
+                if %w[Shared Weak Owned].include?(base_name) && object_type.type_args&.any?
+                  inner_type = object_type.type_args.first
+                  begin
+                    return infer_member_type(inner_type, member, node: node)
+                  rescue MLC::Common::TypeError
+                    # Fall through to regular error handling
+                  end
+                end
               end
 
               if object_type.respond_to?(:name) && @type_registry.has_type?(object_type.name)
@@ -245,9 +275,8 @@ module MLC
                 infer_array_member_type(member, node: node)
               elsif string_type?(object_type)
                 infer_string_member_type(member, node: node)
-              elsif numeric_type?(object_type) && member == "sqrt"
-                f32 = SemanticIR::Builder.primitive_type("f32")
-                SemanticIR::Builder.function_type([], f32)
+              elsif numeric_type?(object_type)
+                infer_numeric_member_type(member, object_type, node: node)
               else
                 type_error("Unknown member '#{member}' for type #{describe_type(object_type)}", node: node)
               end
@@ -486,7 +515,7 @@ module MLC
             def infer_member_call_type(object_type, member, args)
               if object_type.is_a?(SemanticIR::ArrayType)
                 case member
-                when "length", "size"
+                when "length", "size", "len"
                   @type_checker.ensure_argument_count(member, args, 0)
                   SemanticIR::Builder.primitive_type("i32")
                 when "is_empty"
@@ -505,8 +534,110 @@ module MLC
                   accumulator_type = args.first&.type
                   ensure_type!(accumulator_type, "Unable to determine accumulator type for fold")
                   accumulator_type
+                when "first", "last"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  object_type.element_type
+                when "reverse"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "take", "drop"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "contains"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("bool")
+                when "join"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("string")
+                when "sum"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  object_type.element_type
+                when "any", "all", "none"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("bool")
+                when "find"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  # Returns element type (should be Option<T> but simplified)
+                  object_type.element_type
+                when "find_index", "index_of"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("i32")
+                when "concat", "append"
+                  # concat takes another array
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "flatten"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  # Assumes array of arrays, returns flattened array
+                  if object_type.element_type.is_a?(SemanticIR::ArrayType)
+                    object_type.element_type
+                  else
+                    object_type
+                  end
+                when "zip"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  # Returns array of tuples - simplified to auto
+                  SemanticIR::Builder.primitive_type("auto")
+                when "enumerate"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  # Returns array of (index, element) pairs - simplified to auto
+                  SemanticIR::Builder.primitive_type("auto")
+                when "min", "max"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  object_type.element_type
+                when "slice"
+                  # slice(start, end) - both args optional
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "sort"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "sort_by"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "uniq"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "uniq_by"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "group_by"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  # Returns Map<K, T[]> - simplified to auto for now
+                  SemanticIR::Builder.primitive_type("auto")
+                when "partition"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  # Returns tuple of two arrays - simplified to auto
+                  SemanticIR::Builder.primitive_type("auto")
+                when "take_while", "drop_while"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "first_n", "last_n"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "second", "third"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  object_type.element_type
+                when "count"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("i32")
+                when "compact"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "rotate"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                when "sample"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  object_type.element_type
+                when "product"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  object_type.element_type
+                when "flat_map"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  # Returns flattened result - simplified to auto
+                  SemanticIR::Builder.primitive_type("auto")
                 else
-                  type_error("Unknown array method '#{member}'. Supported methods: length, size, is_empty, map, filter, fold")
+                  type_error("Unknown array method '#{member}'. Supported methods: length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, zip, enumerate, min, max, slice, sort, sort_by, uniq, uniq_by, group_by, partition, take_while, drop_while, first_n, last_n, second, third, count, compact, rotate, sample, product, flat_map")
                 end
               elsif string_type?(object_type)
                 case member
@@ -516,37 +647,144 @@ module MLC
                 when "trim", "trim_start", "trim_end", "upper", "lower"
                   @type_checker.ensure_argument_count(member, args, 0)
                   SemanticIR::Builder.primitive_type("string")
+                when "substring"
+                  @type_checker.ensure_argument_count(member, args, 2)
+                  SemanticIR::Builder.primitive_type("string")
                 when "is_empty"
                   @type_checker.ensure_argument_count(member, args, 0)
                   SemanticIR::Builder.primitive_type("bool")
                 when "contains", "starts_with", "ends_with"
                   @type_checker.ensure_argument_count(member, args, 1)
                   SemanticIR::Builder.primitive_type("bool")
-                when "length"
+                when "length", "len"
                   @type_checker.ensure_argument_count(member, args, 0)
                   SemanticIR::Builder.primitive_type("i32")
+                when "index_of", "last_index_of"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("i32")
+                when "replace"
+                  @type_checker.ensure_argument_count(member, args, 2)
+                  SemanticIR::Builder.primitive_type("string")
+                when "char_at"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("string")
+                when "repeat"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("string")
+                when "reverse"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  SemanticIR::Builder.primitive_type("string")
+                when "to_lower", "to_upper"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  SemanticIR::Builder.primitive_type("string")
+                when "is_blank", "is_present"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  SemanticIR::Builder.primitive_type("bool")
+                when "squish"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  SemanticIR::Builder.primitive_type("string")
+                when "truncate"
+                  @type_checker.ensure_argument_count(member, args, 1)
+                  SemanticIR::Builder.primitive_type("string")
+                when "titleize", "camelize", "underscore"
+                  @type_checker.ensure_argument_count(member, args, 0)
+                  SemanticIR::Builder.primitive_type("string")
+                when "pad_start", "pad_end"
+                  @type_checker.ensure_argument_count(member, args, 2)
+                  SemanticIR::Builder.primitive_type("string")
                 else
-                  type_error("Unknown string method '#{member}'. Supported methods: split, trim, trim_start, trim_end, upper, lower, is_empty, contains, starts_with, ends_with, length")
+                  type_error("Unknown string method '#{member}'. Supported methods: split, substring, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse, is_blank, is_present, squish, truncate, titleize, camelize, underscore, pad_start, pad_end")
                 end
-              elsif numeric_type?(object_type) && member == "sqrt"
-                @type_checker.ensure_argument_count(member, args, 0)
-                SemanticIR::Builder.primitive_type("f32")
+              elsif numeric_type?(object_type)
+                infer_numeric_member_call_type(object_type, member, args)
               else
                 type_error("Unknown member '#{member}' for type #{describe_type(object_type)}")
+              end
+            end
+
+            # Infer numeric member call type (method call with args)
+            def infer_numeric_member_call_type(object_type, member, args)
+              case member
+              when "abs"
+                @type_checker.ensure_argument_count(member, args, 0)
+                object_type
+              when "sqrt", "floor", "ceil", "round", "sin", "cos", "tan", "exp", "log", "log10"
+                @type_checker.ensure_argument_count(member, args, 0)
+                SemanticIR::Builder.primitive_type("f32")
+              when "pow"
+                @type_checker.ensure_argument_count(member, args, 1)
+                object_type
+              when "min", "max"
+                @type_checker.ensure_argument_count(member, args, 1)
+                object_type
+              when "clamp"
+                @type_checker.ensure_argument_count(member, args, 2)
+                object_type
+              when "to_f32"
+                @type_checker.ensure_argument_count(member, args, 0)
+                SemanticIR::Builder.primitive_type("f32")
+              when "to_i32"
+                @type_checker.ensure_argument_count(member, args, 0)
+                SemanticIR::Builder.primitive_type("i32")
+              when "to_string"
+                @type_checker.ensure_argument_count(member, args, 0)
+                SemanticIR::Builder.primitive_type("string")
+              else
+                type_error("Unknown numeric method '#{member}'. Supported methods: abs, sqrt, floor, ceil, round, sin, cos, tan, exp, log, log10, pow, min, max, clamp, to_f32, to_i32, to_string")
               end
             end
 
             # Infer array member type (non-call)
             def infer_array_member_type(member, node: nil)
               case member
-              when "length", "size"
+              when "length", "size", "len"
                 SemanticIR::Builder.primitive_type("i32")
               when "is_empty"
                 SemanticIR::Builder.primitive_type("bool")
-              when "map", "filter", "fold"
+              when "first", "last"
+                # Returns element type - use auto for deferred resolution
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "reverse"
+                # Returns array of same type - use auto for deferred resolution
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "map", "filter", "fold", "take", "drop"
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "contains"
+                SemanticIR::Builder.primitive_type("bool")
+              when "join"
+                SemanticIR::Builder.primitive_type("string")
+              when "sum"
+                # Returns element type - use auto for deferred resolution
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "any", "all", "none"
+                # Returns bool - checks if predicate matches any/all/none elements
+                SemanticIR::Builder.primitive_type("bool")
+              when "find"
+                # Returns Option<T> - first element matching predicate
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "find_index", "index_of"
+                # Returns i32 (or -1 if not found)
+                SemanticIR::Builder.primitive_type("i32")
+              when "concat", "append"
+                # Returns new array with elements added
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "flatten"
+                # Flattens nested array one level
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "zip"
+                # Zips two arrays together
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "enumerate"
+                # Returns array of (index, element) pairs
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "min", "max"
+                # Returns element type
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "slice"
+                # Returns array slice
                 SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
               else
-                type_error("Unknown array member '#{member}'. Known members: length, size, is_empty, map, filter, fold", node: node)
+                type_error("Unknown array member '#{member}'. Known members: length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, zip, enumerate, min, max, slice", node: node)
               end
             end
 
@@ -559,10 +797,69 @@ module MLC
                 SemanticIR::Builder.primitive_type("string")
               when "is_empty", "contains", "starts_with", "ends_with"
                 SemanticIR::Builder.primitive_type("bool")
-              when "length"
+              when "length", "len"
                 SemanticIR::Builder.primitive_type("i32")
+              when "index_of", "last_index_of"
+                # Returns index or -1 if not found
+                SemanticIR::Builder.primitive_type("i32")
+              when "replace"
+                # replace(old, new) returns string
+                SemanticIR::Builder.primitive_type("string")
+              when "char_at"
+                # char_at(index) returns single-char string
+                SemanticIR::Builder.primitive_type("string")
+              when "repeat"
+                # repeat(n) returns string
+                SemanticIR::Builder.primitive_type("string")
+              when "reverse"
+                # reverse() returns reversed string
+                SemanticIR::Builder.primitive_type("string")
+              when "to_lower", "to_upper"
+                # Alias for lower/upper
+                SemanticIR::Builder.primitive_type("string")
               else
-                type_error("Unknown string member '#{member}'. Known members: split, trim, trim_start, trim_end, upper, lower, is_empty, contains, starts_with, ends_with, length", node: node)
+                type_error("Unknown string member '#{member}'. Known members: split, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse", node: node)
+              end
+            end
+
+            # Infer numeric member type (non-call)
+            # Methods available on i32, i64, f32, f64
+            def infer_numeric_member_type(member, object_type, node: nil)
+              type_name = object_type.respond_to?(:name) ? object_type.name : "i32"
+              is_float = %w[f32 f64 Float Double float double].include?(type_name)
+              is_integer = %w[i32 i64 i8 i16 u8 u16 u32 u64 Int Int32 Int64].include?(type_name)
+
+              case member
+              when "abs"
+                # abs() returns same type - available for both int and float
+                SemanticIR::Builder.function_type([], object_type)
+              when "sqrt", "floor", "ceil", "round", "sin", "cos", "tan", "exp", "log", "log10"
+                # Math functions return f32/f64 - primarily for floats but allow on int (will cast)
+                f32 = SemanticIR::Builder.primitive_type("f32")
+                SemanticIR::Builder.function_type([], f32)
+              when "pow"
+                # pow(exponent) returns same type
+                SemanticIR::Builder.function_type([object_type], object_type)
+              when "min", "max"
+                # min(other), max(other) return same type
+                SemanticIR::Builder.function_type([object_type], object_type)
+              when "clamp"
+                # clamp(min, max) returns same type
+                SemanticIR::Builder.function_type([object_type, object_type], object_type)
+              when "to_f32"
+                # Convert to f32
+                f32 = SemanticIR::Builder.primitive_type("f32")
+                SemanticIR::Builder.function_type([], f32)
+              when "to_i32"
+                # Convert to i32
+                i32 = SemanticIR::Builder.primitive_type("i32")
+                SemanticIR::Builder.function_type([], i32)
+              when "to_string"
+                # Convert to string
+                str = SemanticIR::Builder.primitive_type("string")
+                SemanticIR::Builder.function_type([], str)
+              else
+                type_error("Unknown numeric member '#{member}'. Known members: abs, sqrt, floor, ceil, round, sin, cos, tan, exp, log, log10, pow, min, max, clamp, to_f32, to_i32, to_string", node: node)
               end
             end
 

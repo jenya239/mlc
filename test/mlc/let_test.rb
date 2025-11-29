@@ -14,7 +14,7 @@ class MLCLetTest < Minitest::Test
     cpp = MLC.to_cpp(mlc_source)
 
     refute_includes cpp, "[&]()"
-    assert_includes cpp, "const int x = 1;"
+    assert_includes cpp, "int x = 1;"
     assert_includes cpp, "return x + 1;"
   end
 

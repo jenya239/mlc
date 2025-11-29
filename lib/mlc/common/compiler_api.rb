@@ -144,5 +144,47 @@ module MLC
       message = "Header generation error: #{e.message}\n#{e.backtrace.join("\n")}"
       raise MLC::CompileError.new(message, origin: origin)
     end
+
+    # Format a CompileError with enhanced diagnostics
+    # @param error [CompileError] The compile error to format
+    # @param use_color [Boolean] Whether to use ANSI colors
+    # @return [String] Formatted error message
+    def format_error(error, use_color: true)
+      require_relative "diagnostics/error_formatter"
+      formatter = Diagnostics::ErrorFormatter.new(use_color: use_color)
+
+      formatter.format_error(
+        message: error.message.sub(/^.*?: /, ""), # Remove prefix like "Transform error: "
+        origin: error.origin
+      )
+    end
+
+    # Compile with formatted error output
+    # Returns either { success: true, result: cpp_code } or { success: false, error: formatted_error }
+    # @param source [String] MLC source code
+    # @param filename [String, nil] Source filename
+    # @param use_color [Boolean] Whether to use ANSI colors
+    # @return [Hash] Result hash with :success, :result/:error keys
+    def compile_with_diagnostics(source, filename: nil, use_color: true)
+      cpp_code = to_cpp(source, filename: filename)
+      { success: true, result: cpp_code }
+    rescue MLC::CompileError, MLC::ParseError => e
+      formatted = if e.is_a?(MLC::CompileError)
+                    format_error(e, use_color: use_color)
+                  else
+                    require_relative "diagnostics/error_formatter"
+                    formatter = Diagnostics::ErrorFormatter.new(use_color: use_color)
+                    formatter.format_syntax_error(message: e.message.sub(/^Parse error: /, ""))
+                  end
+      { success: false, error: formatted }
+    end
+
+    # Create a new ErrorCollector for batch error collection
+    # @param max_errors [Integer] Maximum number of errors to collect
+    # @return [Diagnostics::ErrorCollector]
+    def create_error_collector(max_errors: 100)
+      require_relative "diagnostics/error_collector"
+      Diagnostics::ErrorCollector.new(max_errors: max_errors)
+    end
   end
 end

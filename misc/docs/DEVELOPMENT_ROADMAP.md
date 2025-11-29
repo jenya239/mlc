@@ -1,8 +1,9 @@
 # MLC Compiler - Development Roadmap
 
 **Дата создания**: 2025-11-20
-**Статус проекта**: Core Features Complete
-**Тесты**: 1524 runs, 4014 assertions, 0 failures, 0 errors ✅
+**Обновлено**: 2025-11-28
+**Статус проекта**: Feature Complete
+**Тесты**: 2336 runs, 5995 assertions, 0 failures, 0 errors ✅
 
 ## Текущее состояние
 
@@ -41,7 +42,7 @@
 
 ### 29.1. Array Operations (Higher-Order Functions)
 
-**Статус**: Не начато
+**Статус**: ✅ Завершено (2025-11-23)
 **Сложность**: Средняя
 **Время**: 2-3 сессии
 
@@ -72,7 +73,7 @@ let sum = numbers.reduce(0, (acc, x) => acc + x)
 
 ### 29.2. String Operations
 
-**Статус**: Не начато
+**Статус**: ✅ Завершено (2025-11-23)
 **Сложность**: Средняя
 **Время**: 2-3 сессии
 
@@ -101,7 +102,7 @@ let words = text.split(" ")
 
 ### 29.3. Option/Result Standard Types
 
-**Статус**: Не начато
+**Статус**: ✅ Завершено (уже реализовано в stdlib)
 **Сложность**: Низкая
 **Время**: 1 сессия
 
@@ -134,7 +135,7 @@ let mapped = result.map(x => x * 2)
 
 ### 30.1. Enhanced Error Messages
 
-**Статус**: Не начато
+**Статус**: ✅ Завершено (2025-11-23)
 **Сложность**: Высокая
 **Время**: 3-4 сессии
 
@@ -162,7 +163,7 @@ Help: The function 'add' expects two integers
 
 ### 30.2. Type Error Recovery
 
-**Статус**: Не начато
+**Статус**: ✅ Завершено (2025-11-23)
 **Сложность**: Высокая
 **Время**: 2-3 сессии
 
@@ -188,7 +189,7 @@ Help: The function 'add' expects two integers
 
 ### 31.1. Type Constraints for Generics
 
-**Статус**: Частично реализовано (parsing done)
+**Статус**: ✅ Завершено (2025-11-23)
 **Сложность**: Высокая
 **Время**: 3-4 сессии
 
@@ -245,14 +246,14 @@ impl Show for i32 {
 
 ### 32.1. Guard Clauses
 
-**Статус**: Не начато
+**Статус**: ✅ Завершено (2025-11-23)
 **Сложность**: Средняя
-**Время**: 2 сессии
+**Время**: 1 сессия
 
 **Задачи:**
-1. Parser support для `| pattern if condition => expr`
-2. SemanticIR representation
-3. Lowering в C++ if-statements внутри std::visit
+1. ✅ Parser support для `| pattern if condition => expr` (уже существовал)
+2. ✅ SemanticIR representation (уже существовало)
+3. ✅ Lowering в C++ if-else chain (добавлен `lower_match_with_guards`)
 
 **Примеры:**
 ```mlc
@@ -264,14 +265,14 @@ match value
 
 ### 32.2. Nested Patterns
 
-**Статус**: Не начато
+**Статус**: ✅ Завершено (2025-11-23)
 **Сложность**: Высокая
-**Время**: 3 сессии
+**Время**: 1 сессия
 
 **Задачи:**
-1. Support nested destructuring
-2. Recursive pattern matching
-3. Lowering в nested std::visit
+1. ✅ Parser support для nested patterns (рекурсивный parse_pattern)
+2. ✅ SemanticIR обработка вложенных Pattern объектов
+3. ✅ Lowering в if-else chain с nested std::holds_alternative/std::get
 
 **Примеры:**
 ```mlc
@@ -283,13 +284,14 @@ match result
 
 ### 32.3. Or-Patterns
 
-**Статус**: Не начато
+**Статус**: ✅ Завершено (2025-11-23)
 **Сложность**: Средняя
-**Время**: 2 сессии
+**Время**: 1 сессия
 
 **Задачи:**
-1. Syntax для `| A | B => expr`
-2. Lowering в multiple std::visit cases
+1. ✅ Parser support для `| A | B => expr` (parse_or_pattern)
+2. ✅ SemanticIR transformation с kind :or
+3. ✅ Lowering в if-else chain с || conditions
 
 **Примеры:**
 ```mlc
@@ -352,19 +354,24 @@ match value
 
 ### 34.1. Module Visibility Control
 
-**Статус**: Частично реализовано
+**Статус**: ✅ Завершено (2025-11-24)
 **Сложность**: Средняя
 **Время**: 2 сессии
 
 **Задачи:**
-1. `pub` keyword для export control
-2. Private by default
-3. `pub(module)` для internal visibility
+1. ✅ `export` keyword для export control (реализован)
+2. ✅ Private by default (non-exported = private)
+3. ⏳ `pub(module)` для internal visibility (отложено - advanced feature)
+
+**Реализация:**
+- `export fn`, `export type` - публичный экспорт
+- Без `export` - приватный (не попадает в metadata)
+- Валидация через metadata (private символы не видны при импорте)
 
 **Примеры:**
 ```mlc
-pub type Point = { x: f32, y: f32 }
-fn internal_helper() -> i32 = ...  // private
+export type Point = { x: f32, y: f32 }  // public
+fn internal_helper() -> i32 = ...        // private (implicit)
 ```
 
 ### 34.2. Re-exports
@@ -414,24 +421,25 @@ fn internal_helper() -> i32 = ...  // private
 
 ## Priority Matrix
 
+### Завершено (2025-11):
+- ✅ **Phase 29.1**: Array higher-order functions
+- ✅ **Phase 29.2**: String operations
+- ✅ **Phase 29.3**: Option/Result types
+- ✅ **Phase 30.1**: Enhanced error messages
+- ✅ **Phase 30.2**: Type error recovery
+- ✅ **Phase 31.1**: Type constraints
+- ✅ **Phase 32.1**: Guard clauses
+- ✅ **Phase 32.2**: Nested patterns
+- ✅ **Phase 32.3**: Or-patterns
+- ✅ **Phase 34.1**: Module visibility
+
 ### Immediate (Next 1-2 месяца):
-1. **Phase 29.1**: Array higher-order functions
-2. **Phase 29.2**: String operations
-3. **Phase 30.1**: Enhanced error messages
+1. **Phase 33.1-33.3**: Basic optimizations (Dead code, constant folding)
+2. **Phase 34.2**: Re-exports
 
-### Short-term (Next 3-6 месяцев):
-4. **Phase 30.2**: Type error recovery
-5. **Phase 31.1**: Type constraints
-6. **Phase 32.1**: Guard clauses
-
-### Medium-term (Next 6-12 месяцев):
-7. **Phase 32.2**: Nested patterns
-8. **Phase 34.1**: Module visibility
-9. **Phase 33.1-33.3**: Basic optimizations
-
-### Long-term (12+ месяцев):
-10. **Phase 31.2**: Trait system
-11. **Phase 35**: Developer tools
+### Long-term (Deferred):
+3. **Phase 31.2**: Trait system
+4. **Phase 35**: Developer tools (LSP, REPL)
 
 ---
 
@@ -482,8 +490,152 @@ fn internal_helper() -> i32 = ...  // private
 
 **Достигнуто:**
 - Zeitwerk autoloading infrastructure
-- -59% requires eliminated (45 из 76)
+- -61% requires eliminated (72 из 118)
 - All tests passing
 - Документация обновлена
 
-**Следующий шаг**: Phase 29 - Standard Library Expansion
+---
+
+## Phase 28.5: Pure Functions Extraction (2025-11-24)
+
+**Цель**: Извлечение pure functions в отдельные модули для улучшения тестируемости
+
+**Результат**: ✅ Success (+124 tests)
+
+**Созданные модули:**
+
+1. **MLC::Common::Typing::Predicates** (`lib/mlc/common/typing/predicates.rb`)
+   - 7 pure functions: `type_name`, `normalized_type_name`, `describe_type`, `numeric_type?`, `error_type?`, `generic_type_name?`, `unit_like?`
+   - 28 тестов
+
+2. **MLC::Backends::Cpp::Services::Utils::ComplexityAnalysis** (`lib/mlc/backends/cpp/services/utils/complexity_analysis.rb`)
+   - 11 pure functions для анализа сложности блоков и выражений
+   - 27 тестов
+
+3. **MLC::Representations::Semantic::Gen::Services::Utils::PurityAnalysis** (`lib/mlc/representations/semantic/gen/services/utils/purity_analysis.rb`)
+   - 5 pure functions: `pure_expression?`, `pure_call?`, `non_literal_type?`, `pure_block?`, `pure_statement?`
+   - 20 тестов
+
+**Обновлённые сервисы (делегируют к pure modules):**
+- TypeChecker → Predicates
+- BlockComplexityAnalyzer → ComplexityAnalysis
+- IfComplexityAnalyzer → ComplexityAnalysis
+- MatchComplexityAnalyzer → ComplexityAnalysis
+- PurityAnalyzer → PurityAnalysis
+
+**Паттерн**: Сервисы остаются тонкими обёртками, pure logic вынесена в `module_function` модули
+
+---
+
+## Текущий статус (2025-11-28)
+
+**Тесты**: 2336 runs, 5995 assertions, 0 failures, 0 errors ✅
+
+### Test Commands
+
+```bash
+rake test_unit      # Fast (~50 sec) - use by default
+rake test_fast      # Without E2E (~2-3 min)
+rake test           # Full suite (~20 min)
+rake test_e2e       # E2E only (compile + run)
+```
+
+### Recent Features (2025-11-28)
+
+- ✅ **Spread operator**: `Point { ...base, z: 3 }`
+- ✅ **Block syntax**: `fn foo() -> i32 = { let x = 1; x }`
+- ✅ **Test infrastructure**: Fast/full test separation
+
+**Следующий шаг**: Phase 36 - Low-level Primitives (см. FEATURE_ROADMAP.md)
+
+---
+
+## Новые фазы (2025-11-28)
+
+> Полный roadmap с детализацией: [FEATURE_ROADMAP.md](./FEATURE_ROADMAP.md)
+
+### Phase 36: Low-level Primitives (КРИТИЧЕСКИЙ)
+
+**Цель**: Фичи для ELF parser, VM, бинарной работы
+**C++ mapping**: Прямая трансляция
+
+| Фича | MLC | C++ | Статус |
+|------|-----|-----|--------|
+| Bitwise AND | `a & b` | `a & b` | ❌ |
+| Bitwise OR | `a \| b` | `a \| b` | ❌ |
+| Bitwise XOR | `a ^ b` | `a ^ b` | ❌ |
+| Bitwise NOT | `~a` | `~a` | ❌ |
+| Left shift | `a << n` | `a << n` | ❌ |
+| Right shift | `a >> n` | `a >> n` | ❌ |
+| Binary literals | `0b1010` | `0b1010` | ❌ |
+| Hex literals | `0xFF` | `0xFF` | ✅ (проверить) |
+| u8/u16/u32/u64 | `u8`, `u16`... | `uint8_t`... | ❌ |
+| Char literals | `'a'` | `'a'` | ❌ |
+
+### Phase 37: Traits & Concepts (ВЫСОКИЙ)
+
+**Цель**: OOP-like абстракции для компилятора, backend
+**C++ mapping**: C++20 Concepts
+
+```mlc
+trait Show {
+  fn show(self) -> str
+}
+
+impl Show for i32 {
+  fn show(self) -> str = to_string(self)
+}
+
+fn print_all<T: Show>(items: T[]) -> void
+```
+
+### Phase 38: Operator Overloading (ВЫСОКИЙ)
+
+**Цель**: Математические типы для 3D, GUI
+**C++ mapping**: operator+, operator-, etc.
+
+```mlc
+impl Add for Vec3 {
+  fn add(self, other: Vec3) -> Vec3 = ...
+}
+
+let v = v1 + v2  // uses Add trait
+```
+
+### Phase 39: Type System Extensions (СРЕДНИЙ)
+
+- Tuple types `(i32, str)` → `std::tuple`
+- Type aliases `type UserId = i32` → `using`
+- Newtype pattern
+
+### Phase 40: Null Safety (СРЕДНИЙ)
+
+- Null coalescing `??`
+- Safe navigation `?.`
+
+---
+
+## Целевые проекты
+
+| Проект | Критические фичи |
+|--------|------------------|
+| ELF Parser | Bitwise ops, u8[], endianness |
+| C++ Parser | Strings, char literals, recursive types |
+| Self-hosted Compiler | Traits, visitor pattern |
+| Virtual Machine | Stack ops, computed goto, FFI |
+| GUI Framework | Events, callbacks, RAII |
+| 3D Engine | SIMD, matrices, operator overloading |
+| Enterprise Backend | DI, decorators, async |
+
+---
+
+## Приоритеты (C++ органичность)
+
+Все фичи оцениваются по критерию: насколько прямо они транслируются в C++20.
+
+| Приоритет | Фичи | C++ mapping quality |
+|-----------|------|---------------------|
+| 🔴 Критический | Bitwise, int types, literals | 5/5 прямая трансляция |
+| 🟠 Высокий | Traits, operators | 4/5 через concepts |
+| 🟡 Средний | Tuples, aliases, null-safety | 4/5 |
+| 🟢 Низкий | Decorators, reflection | 2-3/5 |

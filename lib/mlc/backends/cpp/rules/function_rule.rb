@@ -23,8 +23,8 @@ module MLC
           def apply(node, semantic_func:, event_bus: nil)
             effects = Array(semantic_func.effects)
 
-            # C++ standard forbids constexpr on main()
-            if effects.include?(:constexpr) && semantic_func.name != "main"
+            # C++ standard forbids constexpr on main() and async functions (coroutines)
+            if effects.include?(:constexpr) && semantic_func.name != "main" && !semantic_func.is_async
               node.prefix_modifiers = merge_prefix_modifier(node.prefix_modifiers, "constexpr")
             end
 
@@ -32,10 +32,16 @@ module MLC
               node.modifiers_text = merge_suffix_modifier(node.modifiers_text, "noexcept")
             end
 
+            # Mark async functions as C++20 coroutines
+            if semantic_func.is_async
+              node = node.coroutine
+            end
+
             event_bus&.publish(
               :cpp_function_rule_applied,
               name: semantic_func.name,
-              effects: effects
+              effects: effects,
+              is_async: semantic_func.is_async
             )
 
             node

@@ -19,6 +19,21 @@ module MLC
               node.is_a?(MLC::Source::AST::MemberAccess)
             end
 
+            # Check if node is a safe member access (optional chaining)
+            def safe_member_access?(node)
+              node.is_a?(MLC::Source::AST::SafeMemberAccess)
+            end
+
+            # Check if node is a safe call (optional chaining)
+            def safe_call?(node)
+              node.is_a?(MLC::Source::AST::SafeCall)
+            end
+
+            # Check if node is a try expression (error propagation)
+            def try_expr?(node)
+              node.is_a?(MLC::Source::AST::TryExpr)
+            end
+
             # Check if node is a function call
             def call?(node)
               node.is_a?(MLC::Source::AST::Call)
@@ -39,6 +54,10 @@ module MLC
 
             def string_literal?(node)
               node.is_a?(MLC::Source::AST::StringLit)
+            end
+
+            def string_interpolation?(node)
+              node.is_a?(MLC::Source::AST::StringInterpolation)
             end
 
             def regex_literal?(node)
@@ -88,6 +107,14 @@ module MLC
               node.is_a?(MLC::Source::AST::ArrayLiteral)
             end
 
+            def tuple_literal?(node)
+              node.is_a?(MLC::Source::AST::TupleLit)
+            end
+
+            def symbol_literal?(node)
+              node.is_a?(MLC::Source::AST::SymbolLit)
+            end
+
             def block_expr?(node)
               node.is_a?(MLC::Source::AST::BlockExpr)
             end
@@ -106,6 +133,14 @@ module MLC
 
             def index_access?(node)
               node.is_a?(MLC::Source::AST::IndexAccess)
+            end
+
+            def slice_access?(node)
+              node.is_a?(MLC::Source::AST::SliceAccess)
+            end
+
+            def tuple_access?(node)
+              node.is_a?(MLC::Source::AST::TupleAccess)
             end
 
             def lambda?(node)
@@ -176,6 +211,16 @@ module MLC
             # Check if node is a class definition
             def class_def?(node)
               node.is_a?(MLC::Source::AST::ClassDef)
+            end
+
+            # Check if node is an await expression
+            def await_expr?(node)
+              node.is_a?(MLC::Source::AST::AwaitExpr)
+            end
+
+            # Check if node is a range expression
+            def range_expr?(node)
+              node.is_a?(MLC::Source::AST::RangeExpr)
             end
           end
         end

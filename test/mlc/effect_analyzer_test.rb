@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-class EffectAnalyzerTest < Minitest::Test
+class MLCEffectAnalyzerTest < Minitest::Test
   def test_pure_expression_marks_constexpr
     analyzer = MLC::Common::Typing::EffectAnalyzer.new(
       pure_expression: ->(_expr) { true },

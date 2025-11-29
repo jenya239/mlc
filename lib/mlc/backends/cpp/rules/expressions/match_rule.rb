@@ -45,12 +45,23 @@ module MLC
                 end
               end
 
+              # Check if any arms have array patterns
+              # Array patterns need size/element checks, not std::visit
+              has_array = node.arms.any? { |arm| arm[:pattern][:kind] == :array }
+
+              # Check if any arms have tuple patterns
+              # Tuple patterns need destructuring with std::get<N>
+              has_tuple = node.arms.any? { |arm| arm[:pattern][:kind] == :tuple }
+
+              # Check if scrutinee is an Option type (requires special handling)
+              is_option_type = option_type?(node.scrutinee&.type)
+
               if has_regex
                 # Generate if-else chain for regex matching
                 lower_match_with_regex(node, scrutinee)
-              elsif has_guards || has_nested || has_wildcard || has_literal
-                # Generate if-else chain for guard clauses, nested patterns, wildcards, or literals
-                # (std::visit doesn't support fallthrough, nested destructuring, proper wildcard semantics, or literal matching)
+              elsif has_guards || has_nested || has_wildcard || has_literal || has_array || has_tuple || is_option_type
+                # Generate if-else chain for guard clauses, nested patterns, wildcards, literals,
+                # array patterns, tuple patterns, or Option types (std::optional needs special handling)
                 lower_match_with_guards(node, scrutinee)
               else
                 # Generate MatchExpression with std::visit
@@ -72,6 +83,42 @@ module MLC
 
               Array(pattern[:fields]).any? do |field|
                 field.is_a?(Hash) && field[:kind] == :constructor
+              end
+            end
+
+            # Check if type is stdlib Option<T> (std::optional)
+            # Returns false if user defined their own Option sum type
+            def option_type?(type)
+              return false unless type
+
+              base_name = case type
+                          when MLC::SemanticIR::GenericType
+                            extract_type_name(type.base_type)
+                          when MLC::SemanticIR::Type
+                            type.name
+                          else
+                            nil
+                          end
+
+              return false unless base_name == "Option"
+
+              # If Option is defined in the type registry, it's a user-defined sum type
+              # User-defined sum types use std::variant, not std::optional
+              return false if type_registry&.has_type?("Option")
+
+              # Otherwise it's stdlib Option which maps to std::optional
+              true
+            end
+
+            # Extract type name from various type representations
+            def extract_type_name(type)
+              case type
+              when MLC::SemanticIR::Type
+                type.name
+              when MLC::SemanticIR::GenericType
+                extract_type_name(type.base_type)
+              else
+                type.to_s
               end
             end
 
@@ -278,6 +325,8 @@ module MLC
             def lower_match_with_guards(match_expr, scrutinee)
               statements = []
               scrutinee_src = scrutinee.to_source
+              # Get scrutinee type for determining Option<T> vs user-defined Option
+              scrutinee_type = match_expr.scrutinee&.type
 
               match_expr.arms.each do |arm|
                 pattern = arm[:pattern]
@@ -287,7 +336,7 @@ module MLC
 
                 case pattern[:kind]
                 when :constructor
-                  statements << build_constructor_guard_arm(pattern, guard, body_src, scrutinee_src)
+                  statements << build_constructor_guard_arm(pattern, guard, body_src, scrutinee_src, scrutinee_type)
 
                 when :or
                   # Or-pattern: generate (cond1 || cond2 || ...) condition
@@ -307,6 +356,14 @@ module MLC
                       code: "if (#{condition}) { return #{body_src}; }"
                     )
                   end
+
+                when :array
+                  # Array pattern: check size and elements
+                  statements << build_array_pattern_arm(pattern, guard, body_src, scrutinee_src)
+
+                when :tuple
+                  # Tuple pattern: destructure with std::get<N>
+                  statements << build_tuple_pattern_arm(pattern, guard, body_src, scrutinee_src)
 
                 when :wildcard, :var
                   # Wildcard/var with optional guard
@@ -346,11 +403,17 @@ module MLC
             end
 
             # Build if statement for constructor pattern with optional guard
-            def build_constructor_guard_arm(pattern, guard, body_src, scrutinee_src)
+            def build_constructor_guard_arm(pattern, guard, body_src, scrutinee_src, scrutinee_type = nil)
               case_name = pattern[:name]
               bindings = pattern[:bindings] || pattern[:fields] || []
 
-              # Build std::holds_alternative check
+              # Special handling for Option patterns (Some/None) only if scrutinee is Option<T> (generic)
+              # User-defined "type Option = Some(x) | None" should use std::variant handling
+              if (case_name == "Some" || case_name == "None") && option_type?(scrutinee_type)
+                return build_option_pattern_arm(case_name, bindings, guard, body_src, scrutinee_src)
+              end
+
+              # Build std::holds_alternative check for regular sum types
               holds_check = "std::holds_alternative<#{case_name}>(#{scrutinee_src})"
 
               # Build binding declarations and nested pattern checks
@@ -416,6 +479,57 @@ module MLC
               )
             end
 
+            # Build if statement for Option pattern (Some/None) with std::optional
+            # Some(x) -> if (opt.has_value()) { auto x = *opt; ... }
+            # None -> if (!opt.has_value()) { ... }
+            def build_option_pattern_arm(case_name, bindings, guard, body_src, scrutinee_src)
+              if case_name == "Some"
+                # Some(x) pattern: check has_value() and extract the value
+                holds_check = "#{scrutinee_src}.has_value()"
+
+                binding_decls = []
+                if bindings.any?
+                  # Extract value bindings (usually just one for Some)
+                  bindings.each do |binding|
+                    next if binding == "_"
+                    next if binding.is_a?(Hash) && binding[:kind] == :constructor
+
+                    # auto x = *scrutinee; or auto x = scrutinee.value();
+                    binding_decls << "auto #{binding} = *#{scrutinee_src};"
+                  end
+                end
+
+                binding_str = binding_decls.join(" ")
+
+                if guard
+                  guard_expr = context.lower_expression(guard)
+                  guard_src = guard_expr.to_source
+                  inner_body = "#{binding_str} if (#{guard_src}) { return #{body_src}; }"
+                else
+                  inner_body = "#{binding_str} return #{body_src};"
+                end
+
+                context.factory.raw_statement(
+                  code: "if (#{holds_check}) { #{inner_body} }"
+                )
+              else
+                # None pattern: check !has_value()
+                holds_check = "!#{scrutinee_src}.has_value()"
+
+                if guard
+                  guard_expr = context.lower_expression(guard)
+                  guard_src = guard_expr.to_source
+                  inner_body = "if (#{guard_src}) { return #{body_src}; }"
+                else
+                  inner_body = "return #{body_src};"
+                end
+
+                context.factory.raw_statement(
+                  code: "if (#{holds_check}) { #{inner_body} }"
+                )
+              end
+            end
+
             # Build nested pattern check for nested constructor patterns
             def build_nested_pattern_check(pattern, scrutinee_var)
               case_name = pattern[:name]
@@ -460,6 +574,119 @@ module MLC
               context.factory.raw_statement(
                 code: "if (#{or_condition}) { #{inner_body} }"
               )
+            end
+
+            # Build if statement for array pattern with optional guard
+            # Generates: if (array.size() == N) { auto e0 = array[0]; ... return body; }
+            def build_array_pattern_arm(pattern, guard, body_src, scrutinee_src)
+              elements = pattern[:elements] || []
+
+              # Build size check condition
+              size_check = "#{scrutinee_src}.size() == #{elements.length}"
+
+              # Build element bindings and checks
+              bindings = []
+              element_checks = []
+
+              elements.each_with_index do |elem_pattern, index|
+                case elem_pattern[:kind]
+                when :var
+                  # Variable binding: auto x = array[index];
+                  var_name = elem_pattern[:name]
+                  bindings << "auto #{var_name} = #{scrutinee_src}[#{index}];"
+                when :wildcard
+                  # Wildcard: no binding needed
+                  next
+                when :literal
+                  # Literal: check equality
+                  value = elem_pattern[:value]
+                  literal_src = format_literal_value(value)
+                  element_checks << "#{scrutinee_src}[#{index}] == #{literal_src}"
+                else
+                  # Other patterns: extract to temp var and recursively check
+                  temp_var = "_elem_#{index}"
+                  bindings << "auto #{temp_var} = #{scrutinee_src}[#{index}];"
+                  # For nested patterns, would need recursive handling
+                  # For now, treat as wildcard
+                end
+              end
+
+              # Combine all conditions
+              all_checks = [size_check] + element_checks
+              condition = all_checks.join(" && ")
+
+              # Build inner body with bindings
+              if guard
+                guard_expr = context.lower_expression(guard)
+                guard_src = guard_expr.to_source
+                inner_body = "#{bindings.join(' ')} if (#{guard_src}) { return #{body_src}; }"
+              else
+                inner_body = "#{bindings.join(' ')} return #{body_src};"
+              end
+
+              context.factory.raw_statement(
+                code: "if (#{condition}) { #{inner_body} }"
+              )
+            end
+
+            # Build if statement for tuple pattern with optional guard
+            # Generates: { auto x = std::get<0>(tuple); auto y = std::get<1>(tuple); ... return body; }
+            # For tuples, there's no runtime check needed - just extract elements
+            def build_tuple_pattern_arm(pattern, guard, body_src, scrutinee_src)
+              elements = pattern[:elements] || []
+
+              # Build element bindings using std::get<N>
+              bindings = []
+              element_checks = []
+
+              elements.each_with_index do |elem_pattern, index|
+                case elem_pattern[:kind]
+                when :var
+                  # Variable binding: auto x = std::get<N>(tuple);
+                  var_name = elem_pattern[:name]
+                  bindings << "auto #{var_name} = std::get<#{index}>(#{scrutinee_src});"
+                when :wildcard
+                  # Wildcard: no binding needed
+                  next
+                when :literal
+                  # Literal: check equality
+                  value = elem_pattern[:value]
+                  literal_src = format_literal_value(value)
+                  element_checks << "std::get<#{index}>(#{scrutinee_src}) == #{literal_src}"
+                else
+                  # Other patterns: extract to temp var
+                  temp_var = "_elem_#{index}"
+                  bindings << "auto #{temp_var} = std::get<#{index}>(#{scrutinee_src});"
+                end
+              end
+
+              # Build inner body with bindings
+              if element_checks.any?
+                # Has literal checks - wrap in if
+                condition = element_checks.join(" && ")
+                if guard
+                  guard_expr = context.lower_expression(guard)
+                  guard_src = guard_expr.to_source
+                  inner_body = "#{bindings.join(' ')} if (#{guard_src}) { return #{body_src}; }"
+                else
+                  inner_body = "#{bindings.join(' ')} return #{body_src};"
+                end
+                context.factory.raw_statement(
+                  code: "if (#{condition}) { #{inner_body} }"
+                )
+              elsif guard
+                guard_expr = context.lower_expression(guard)
+                guard_src = guard_expr.to_source
+                # Tuple always matches, just check guard
+                context.factory.raw_statement(
+                  code: "{ #{bindings.join(' ')} if (#{guard_src}) { return #{body_src}; } }"
+                )
+              else
+                # Tuple always matches and no guard - just return
+                context.factory.raw_statement(
+                  code: "{ #{bindings.join(' ')} return #{body_src}; }"
+                )
+              end
             end
 
             # Build condition check for a single pattern

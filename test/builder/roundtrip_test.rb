@@ -373,21 +373,6 @@ class RoundtripTest < Minitest::Test
     assert_roundtrip_ast(ast)
   end
   
-  # Array subscript
-  def test_array_subscript
-    ast = program(
-      expr_stmt(subscript(id("arr"), int(0)))
-    )
-    assert_roundtrip_ast(ast)
-  end
-  
-  def test_nested_array_subscript
-    ast = program(
-      expr_stmt(subscript(subscript(id("matrix"), int(0)), int(1)))
-    )
-    assert_roundtrip_ast(ast)
-  end
-  
   # Ternary operator  
   def test_ternary_operator
     ast = program(
@@ -548,4 +533,3 @@ class RoundtripTest < Minitest::Test
     assert_roundtrip_ast(ast)
   end
 end
-

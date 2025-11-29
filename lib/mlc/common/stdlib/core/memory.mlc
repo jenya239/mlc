@@ -1,0 +1,68 @@
+//! @module std/core/memory
+//! @category core
+//! @type pure
+
+// =============================================================================
+// Smart Pointer Types
+// =============================================================================
+
+// Shared<T> - Reference-counted shared ownership (std::shared_ptr)
+// Weak<T> - Non-owning reference (std::weak_ptr)
+// Owned<T> - Unique ownership (std::unique_ptr)
+
+// Opaque type declarations - mapped to C++ smart pointers
+export type Shared<T>
+export type Weak<T>
+export type Owned<T>
+
+// =============================================================================
+// Constructor Functions (use these instead of Type.method())
+// =============================================================================
+
+// Shared pointer constructors
+// Maps to: std::make_shared<T>(value)
+export extern fn make_shared<T>(value: T) -> Shared<T>
+
+// Maps to: std::shared_ptr<T>()
+export extern fn shared_null<T>() -> Shared<T>
+
+// Maps to: std::weak_ptr<T>(shared)
+export extern fn shared_downgrade<T>(shared: Shared<T>) -> Weak<T>
+
+// Weak pointer functions
+// Maps to: std::weak_ptr<T>()
+export extern fn weak_null<T>() -> Weak<T>
+
+// Maps to: weak.lock()
+export extern fn weak_lock<T>(weak: Weak<T>) -> Option<Shared<T>>
+
+// Maps to: !weak.expired()
+export extern fn weak_is_valid<T>(weak: Weak<T>) -> bool
+
+// Owned pointer constructors
+// Maps to: std::make_unique<T>(value)
+export extern fn make_owned<T>(value: T) -> Owned<T>
+
+// Maps to: std::unique_ptr<T>()
+export extern fn owned_null<T>() -> Owned<T>
+
+// =============================================================================
+// Static Method Syntax (Type.method())
+// =============================================================================
+
+extend Shared<T> {
+  extern fn new(value: T) -> Shared<T>
+  extern fn null() -> Shared<T>
+  extern fn downgrade(shared: Shared<T>) -> Weak<T>
+}
+
+extend Weak<T> {
+  extern fn null() -> Weak<T>
+  extern fn lock(weak: Weak<T>) -> Option<Shared<T>>
+  extern fn is_valid(weak: Weak<T>) -> bool
+}
+
+extend Owned<T> {
+  extern fn new(value: T) -> Owned<T>
+  extern fn null() -> Owned<T>
+}

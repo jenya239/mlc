@@ -146,6 +146,24 @@ module MLC
 
           @container.rule_engine.lower_statement(node)
         end
+
+        # Variable tracking for rebinding detection
+        def variable_declared?(name)
+          @container.variable_declared?(name)
+        end
+
+        def declare_variable(name)
+          @container.declare_variable(name)
+        end
+
+        def reset_declared_variables
+          @container.reset_declared_variables
+        end
+
+        # Generate unique temporary variable name
+        def generate_temp_name
+          @container.generate_temp_name
+        end
       end
     end
   end

@@ -59,6 +59,28 @@ module MLC
 
       def consume_operator(expected_value)
         token = current
+        # Handle >> as two > tokens for nested generic types like Map<K, Array<V>>
+        if expected_value == ">" && token.type == :OPERATOR && token.value == ">>"
+          # Split >> into > and > by creating a synthetic > token
+          # and modifying the current token to be just >
+          synthetic_token = MLC::Source::Parser::Token.new(
+            type: :OPERATOR,
+            value: ">",
+            line: token.line,
+            column: token.column,
+            file: token.file
+          )
+          # Replace current >> token with single > for next iteration
+          @tokens[@pos] = MLC::Source::Parser::Token.new(
+            type: :OPERATOR,
+            value: ">",
+            line: token.line,
+            column: token.column + 1,
+            file: token.file
+          )
+          @last_token = synthetic_token
+          return synthetic_token
+        end
         if token.type != :OPERATOR || token.value != expected_value
           raise "Expected operator '#{expected_value}', got #{token.type} '#{token.value}'"
         end

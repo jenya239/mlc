@@ -2,6 +2,7 @@
 
 require "minitest/autorun"
 require_relative "../../lib/mlc/common/index"
+require_relative "../../lib/mlc/representations/semantic/gen/services/scope/var_type_registry"
 
 class SafetyModelTest < Minitest::Test
   def setup
@@ -13,49 +14,53 @@ class SafetyModelTest < Minitest::Test
   # ===========================================
 
   def test_parse_immutable_reference_type
-    source = "fn foo(x: ref i32) -> i32 = 0"
+    source = "fn foo(x: Ref<i32>) -> i32 = 0"
     ast = @parser.new(source).parse
 
     func = ast.declarations.first
     param_type = func.params.first.type
 
-    assert_instance_of MLC::Source::AST::RefType, param_type
-    assert_instance_of MLC::Source::AST::PrimType, param_type.inner_type
-    assert_equal "i32", param_type.inner_type.name
+    assert_instance_of MLC::Source::AST::GenericType, param_type
+    assert_equal "Ref", param_type.base_type.name
+    assert_equal 1, param_type.type_params.length
+    assert_equal "i32", param_type.type_params.first.name
   end
 
   def test_parse_mutable_reference_type
-    source = "fn foo(x: ref mut i32) -> i32 = 0"
+    source = "fn foo(x: RefMut<i32>) -> i32 = 0"
     ast = @parser.new(source).parse
 
     func = ast.declarations.first
     param_type = func.params.first.type
 
-    assert_instance_of MLC::Source::AST::MutRefType, param_type
-    assert_instance_of MLC::Source::AST::PrimType, param_type.inner_type
-    assert_equal "i32", param_type.inner_type.name
+    assert_instance_of MLC::Source::AST::GenericType, param_type
+    assert_equal "RefMut", param_type.base_type.name
+    assert_equal 1, param_type.type_params.length
+    assert_equal "i32", param_type.type_params.first.name
   end
 
   def test_parse_reference_to_array
-    source = "fn foo(arr: ref i32[]) -> i32 = 0"
+    source = "fn foo(arr: Ref<i32[]>) -> i32 = 0"
     ast = @parser.new(source).parse
 
     func = ast.declarations.first
     param_type = func.params.first.type
 
-    assert_instance_of MLC::Source::AST::RefType, param_type
-    assert_instance_of MLC::Source::AST::ArrayType, param_type.inner_type
+    assert_instance_of MLC::Source::AST::GenericType, param_type
+    assert_equal "Ref", param_type.base_type.name
+    assert_instance_of MLC::Source::AST::ArrayType, param_type.type_params.first
   end
 
   def test_parse_mutable_reference_to_custom_type
-    source = "fn foo(buf: ref mut Buffer) -> i32 = 0"
+    source = "fn foo(buf: RefMut<Buffer>) -> i32 = 0"
     ast = @parser.new(source).parse
 
     func = ast.declarations.first
     param_type = func.params.first.type
 
-    assert_instance_of MLC::Source::AST::MutRefType, param_type
-    assert_equal "Buffer", param_type.inner_type.name
+    assert_instance_of MLC::Source::AST::GenericType, param_type
+    assert_equal "RefMut", param_type.base_type.name
+    assert_equal "Buffer", param_type.type_params.first.name
   end
 
   # ===========================================
@@ -96,7 +101,7 @@ class SafetyModelTest < Minitest::Test
 
   def test_parse_unsafe_block_with_reference_type
     source = <<~MLC
-      fn foo(data: ref i32) -> i32 = unsafe {
+      fn foo(data: Ref<i32>) -> i32 = unsafe {
         data
       }
     MLC
@@ -105,7 +110,8 @@ class SafetyModelTest < Minitest::Test
     func = ast.declarations.first
     param_type = func.params.first.type
 
-    assert_instance_of MLC::Source::AST::RefType, param_type
+    assert_instance_of MLC::Source::AST::GenericType, param_type
+    assert_equal "Ref", param_type.base_type.name
     assert_instance_of MLC::Source::AST::UnsafeBlock, func.body
   end
 
@@ -279,9 +285,9 @@ class SafetyModelTest < Minitest::Test
     assert_equal "unsafe_func", func.name
   end
 
-  def test_ref_is_keyword
+  def test_ref_not_keyword
     source = "fn ref_count() -> i32 = 0"
-    # 'ref' should be a keyword, but 'ref_count' is a valid identifier
+    # 'ref' is no longer a keyword, 'ref_count' and even 'ref' are valid identifiers
     ast = @parser.new(source).parse
 
     func = ast.declarations.first

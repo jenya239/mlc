@@ -51,10 +51,18 @@ module MLC
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::UnaryRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::BinaryRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::IndexRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::SliceRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::MemberRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::SafeMemberRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::SafeCallRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::TryRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::AwaitRule").new(context))
 
           # Construction
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::ArrayLiteralRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::TupleRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::TupleAccessRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::SymbolRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::RecordRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::LambdaRule").new(context))
 
@@ -80,6 +88,7 @@ module MLC
           rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::ExprStatementRule").new(context))
           rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::AssignmentRule").new(context))
           rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::VariableDeclRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::DestructuringDeclRule").new(context))
 
           # Compound statements
           rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::IfRule").new(context))

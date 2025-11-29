@@ -19,7 +19,7 @@ type Node = {
 
 // Создание shared pointer
 fn create_node(val: i32) -> Shared<Node> =
-  Shared::new(Node { value: val, next: Shared::null() })
+  Shared.new(Node { value: val, next: Shared.null() })
 
 // Передача по значению - увеличивает счётчик ссылок
 fn process_node(node: Shared<Node>) -> i32 = node.value
@@ -47,18 +47,20 @@ type TreeNode = {
 
 // Weak не увеличивает счётчик - объект может быть удалён
 fn get_parent_value(node: Shared<TreeNode>) -> Option<i32> =
-  match node.parent.lock() {  // lock() -> Option<Shared<T>>
+  match Weak.lock(node.parent) {  // lock() -> Option<Shared<T>>
     Some(parent) => Some(parent.value),
     None => None              // Родитель уже удалён
   }
 
 // Паттерн: Observer без утечек памяти
+type Subject = { id: i32 }
+
 type Observer = {
   target: Weak<Subject>       // Наблюдатель не владеет субъектом
 }
 
 fn observer_check(obs: Observer) -> bool =
-  obs.target.is_valid()       // Проверка: жив ли ещё субъект?
+  Weak.is_valid(obs.target)   // Проверка: жив ли ещё субъект?
 
 // -----------------------------------------------------------------------------
 // Owned<T> - Единоличное владение (move semantics)
@@ -72,7 +74,7 @@ type Buffer = {
 
 // Owned нельзя копировать - только перемещать
 fn create_buffer(size: i32) -> Owned<Buffer> =
-  Owned::new(Buffer { data: [], size: size })
+  Owned.new(Buffer { data: [], size: size })
 
 // После передачи в функцию - исходная переменная недействительна
 fn consume_buffer(buf: Owned<Buffer>) -> i32 = buf.size
@@ -89,12 +91,12 @@ fn owned_example() -> i32 = {
 // =============================================================================
 
 // -----------------------------------------------------------------------------
-// ref T - Иммутабельная ссылка (borrow)
+// Ref<T> - Иммутабельная ссылка (borrow)
 // Используй когда: нужен read-only доступ без копирования
 // -----------------------------------------------------------------------------
 
-// ref позволяет избежать копирования больших структур
-fn sum_array(arr: ref i32[]) -> i32 = unsafe {
+// Ref<T> позволяет избежать копирования больших структур
+fn sum_array(arr: Ref<i32[]>) -> i32 = unsafe {
   let mut total = 0
   for x in arr {
     total = total + x
@@ -103,23 +105,23 @@ fn sum_array(arr: ref i32[]) -> i32 = unsafe {
 }
 
 // Множественные иммутабельные ссылки - OK
-fn compare(a: ref i32, b: ref i32) -> bool = unsafe {
+fn compare(a: Ref<i32>, b: Ref<i32>) -> bool = unsafe {
   a == b
 }
 
 // -----------------------------------------------------------------------------
-// ref mut T - Мутабельная ссылка
+// RefMut<T> - Мутабельная ссылка
 // Используй когда: нужна in-place модификация
 // -----------------------------------------------------------------------------
 
 // Модификация на месте без возврата
-fn increment(x: ref mut i32) -> i32 = unsafe {
+fn increment(x: RefMut<i32>) -> i32 = unsafe {
   x = x + 1
   x
 }
 
 // Только одна мутабельная ссылка в один момент времени
-fn swap(a: ref mut i32, b: ref mut i32) -> i32 = unsafe {
+fn swap(a: RefMut<i32>, b: RefMut<i32>) -> i32 = unsafe {
   let temp = a
   a = b
   b = temp
@@ -145,7 +147,7 @@ type ConfigBuilder = {
 }
 
 fn new_builder() -> Owned<ConfigBuilder> =
-  Owned::new(ConfigBuilder {
+  Owned.new(ConfigBuilder {
     config: Config { host: "localhost", port: 8080, timeout: 30 }
   })
 
@@ -182,7 +184,7 @@ type Graph = {
 
 fn add_edge(from: Shared<GraphNode>, to: Shared<GraphNode>) -> i32 = {
   // Добавляем weak ссылку - не создаём цикл владения
-  from.edges = from.edges ++ [Shared::downgrade(to)]
+  from.edges = from.edges ++ [Shared.downgrade(to)]
   0
 }
 
@@ -196,8 +198,8 @@ type FileHandle = {
 }
 
 // Ресурс автоматически освобождается при выходе из scope
-fn with_file(path: str, action: fn(ref mut FileHandle) -> i32) -> i32 = {
-  let handle = Owned::new(FileHandle { fd: 0, path: path })
+fn with_file(path: str, action: fn(RefMut<FileHandle>) -> i32) -> i32 = {
+  let handle = Owned.new(FileHandle { fd: 0, path: path })
   // ... open file ...
   let result = unsafe { action(handle) }
   // handle автоматически закрывается здесь (drop)
@@ -220,10 +222,12 @@ fn get_email_domain(user: User) -> Option<str> =
   }
 
 // Safe chaining с Option
+extern fn send_email(email: str) -> bool
+
 fn notify_user(user: User) -> bool =
   user.email
-    |> Option::map(send_email)
-    |> Option::unwrap_or(false)
+    .map(send_email)
+    .unwrap_or(false)
 
 // =============================================================================
 // 4. ПРАВИЛА БЕЗОПАСНОСТИ
@@ -237,10 +241,10 @@ fn notify_user(user: User) -> bool =
 // - Используй Result<T, E> для ошибок
 
 // UNSAFE CODE (только в unsafe блоках):
-// - ref T для read-only borrow без копирования
-// - ref mut T для in-place модификации
+// - Ref<T> для read-only borrow без копирования
+// - RefMut<T> для in-place модификации
 // - Убедись что ссылка не переживёт владельца
-// - Не создавай aliasing (ref mut + другие ссылки)
+// - Не создавай aliasing (RefMut + другие ссылки)
 
 // =============================================================================
 // ЗАПУСК ПРИМЕРОВ

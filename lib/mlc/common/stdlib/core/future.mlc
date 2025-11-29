@@ -1,0 +1,19 @@
+//! @module std/core/future
+//! @category core
+//! @type async
+
+// Future<T> type - represents a value that will be available in the future
+// Used as return type for async functions
+// Awaitable with `await` expression
+
+// Future is an opaque type - its implementation is provided by the C++ runtime
+// In MLC, Future<T> represents a coroutine task that eventually produces T
+
+export type Future<T>
+
+// Check if future is ready (has a value available)
+export extern fn is_ready<T>(f: Future<T>) -> bool
+
+// Block and wait for the future to complete, returning its value
+// Note: This blocks the current thread - prefer await in async contexts
+export extern fn block_on<T>(f: Future<T>) -> T

@@ -118,12 +118,58 @@ module MLC
 
       base_token = nil
       base_type = case current.type
+                  when :LPAREN
+                    # Parse tuple type: (T1, T2, ...)
+                    # Supports trailing comma for single-element tuples: (i32,)
+                    base_token = consume(:LPAREN)
+                    types = []
+                    unless current.type == :RPAREN
+                      loop do
+                        types << parse_type
+                        break unless current.type == :COMMA
+                        consume(:COMMA)
+                        # Handle trailing comma: (i32,) - break if next token is RPAREN
+                        break if current.type == :RPAREN
+                      end
+                    end
+                    consume(:RPAREN)
+                    with_origin(base_token) { MLC::Source::AST::TupleType.new(types: types) }
+                  when :LBRACKET
+                    # Parse prefix array type: [Type]
+                    base_token = consume(:LBRACKET)
+                    element_type = parse_type
+                    consume(:RBRACKET)
+                    return with_origin(base_token) { MLC::Source::AST::ArrayType.new(element_type: element_type) }
+                  when :I8
+                    base_token = consume(:I8)
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "i8") }
+                  when :I16
+                    base_token = consume(:I16)
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "i16") }
                   when :I32
                     base_token = consume(:I32)
                     with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "i32") }
+                  when :I64
+                    base_token = consume(:I64)
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "i64") }
+                  when :U8
+                    base_token = consume(:U8)
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "u8") }
+                  when :U16
+                    base_token = consume(:U16)
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "u16") }
+                  when :U32
+                    base_token = consume(:U32)
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "u32") }
+                  when :U64
+                    base_token = consume(:U64)
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "u64") }
                   when :F32
                     base_token = consume(:F32)
                     with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "f32") }
+                  when :F64
+                    base_token = consume(:F64)
+                    with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "f64") }
                   when :BOOL
                     base_token = consume(:BOOL)
                     with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "bool") }

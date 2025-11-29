@@ -28,6 +28,7 @@ module MLC
                 type_params: func.type_params,
                 external: func.external,
                 exported: func.exported,
+                is_async: func.is_async,
                 origin: func.origin
               )
         end

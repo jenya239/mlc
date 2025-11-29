@@ -7,7 +7,7 @@ module MLC
       module Rules
         module Expressions
           # Rule for lowering SemanticIR::BinaryExpr to C++ binary operators
-          # Handles: +, -, *, /, %, ==, !=, <, >, <=, >=, &&, ||, etc.
+          # Handles: +, -, *, /, %, ==, !=, <, >, <=, >=, &&, ||, &, |, ^, <<, >>, etc.
           class BinaryRule < ExpressionRule
             def applies?(node)
               context.checker.binary_expr?(node)

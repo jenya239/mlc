@@ -77,15 +77,23 @@ module MLC
         end
 
             def build_external_func(func_decl, params, signature, type_params)
+              # Wrap return type in Future<T> for async functions
+              actual_ret_type = if func_decl.is_async
+                                  wrap_in_future(signature.ret_type)
+                                else
+                                  signature.ret_type
+                                end
+
               MLC::SemanticIR::Func.new(
                 name: func_decl.name,
                 params: params,
-                ret_type: signature.ret_type,
+                ret_type: actual_ret_type,
                 body: nil,
                 effects: [],
                 type_params: type_params,
                 external: true,
                 exported: func_decl.exported,
+                is_async: func_decl.is_async,
                 origin: func_decl.origin
               )
         end
@@ -102,15 +110,23 @@ module MLC
 
             ensure_return_type!(func_decl, body_ir, signature.ret_type)
 
+            # Wrap return type in Future<T> for async functions
+            actual_ret_type = if func_decl.is_async
+                                wrap_in_future(signature.ret_type)
+                              else
+                                signature.ret_type
+                              end
+
             MLC::SemanticIR::Func.new(
                 name: func_decl.name,
                 params: params,
-                ret_type: signature.ret_type,
+                ret_type: actual_ret_type,
                 body: body_ir,
                 effects: [],
                 type_params: type_params,
                 external: func_decl.external,
                 exported: func_decl.exported,
+                is_async: func_decl.is_async,
                 origin: func_decl.origin
               )
             ensure
@@ -243,6 +259,17 @@ module MLC
                 origin: origin
               )
         end
+
+            # Wrap a type in Future<T> for async function return types
+            # @param inner_type [SemanticIR::Type] The type to wrap
+            # @return [SemanticIR::GenericType] Future<inner_type>
+            def wrap_in_future(inner_type)
+              future_base = MLC::SemanticIR::Type.new(kind: :generic, name: "Future")
+              MLC::SemanticIR::GenericType.new(
+                base_type: future_base,
+                type_args: [inner_type]
+              )
+            end
           end
         end
           end

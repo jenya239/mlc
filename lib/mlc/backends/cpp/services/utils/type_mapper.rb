@@ -16,6 +16,25 @@ module MLC
               "Owned" => "std::unique_ptr"
             }.freeze
 
+            # Wrapper types that map to C++ standard library types
+            WRAPPER_TYPES = {
+              "Option" => "std::optional",
+              "Future" => "mlc::Task"
+            }.freeze
+
+            # Collection types that map to C++ standard library types
+            COLLECTION_TYPES = {
+              "Map" => "std::unordered_map"
+            }.freeze
+
+            # Reference types that map to C++ references
+            # Ref<T> -> const T&
+            # RefMut<T> -> T&
+            REFERENCE_TYPES = {
+              "Ref" => :immutable,
+              "RefMut" => :mutable
+            }.freeze
+
             # Map SemanticIR type to C++ type string
             # Pure function - all dependencies passed as parameters
             def map_type(type, type_map:, type_registry: nil)
@@ -35,14 +54,41 @@ module MLC
                 type.name
 
               when SemanticIR::GenericType
-                # Check for smart pointer types: Shared<T>, Weak<T>, Owned<T>
+                # Check for reference types: Ref<T>, RefMut<T>
                 base_name = extract_base_type_name(type.base_type, type_map: type_map, type_registry: type_registry)
+                if REFERENCE_TYPES.key?(base_name)
+                  # Ref<T> -> const T&, RefMut<T> -> T&
+                  inner = map_type(type.type_args.first, type_map: type_map, type_registry: type_registry)
+                  return REFERENCE_TYPES[base_name] == :immutable ? "const #{inner}&" : "#{inner}&"
+                end
+
+                # Check for smart pointer types: Shared<T>, Weak<T>, Owned<T>
                 if SMART_POINTER_TYPES.key?(base_name)
                   cpp_ptr = SMART_POINTER_TYPES[base_name]
                   type_args = type.type_args.map { |arg|
                     map_type(arg, type_map: type_map, type_registry: type_registry)
                   }.join(", ")
                   return "#{cpp_ptr}<#{type_args}>"
+                end
+
+                # Check for wrapper types: Option<T> -> std::optional<T>
+                # Only use std::optional if Option is NOT user-defined (i.e., it's the stdlib Option)
+                if WRAPPER_TYPES.key?(base_name) && !type_registry&.has_type?(base_name)
+                  cpp_wrapper = WRAPPER_TYPES[base_name]
+                  type_args = type.type_args.map { |arg|
+                    map_type(arg, type_map: type_map, type_registry: type_registry)
+                  }.join(", ")
+                  return "#{cpp_wrapper}<#{type_args}>"
+                end
+
+                # Check for collection types: Map<K, V> -> std::unordered_map<K, V>
+                # Only use std::unordered_map if Map is NOT user-defined
+                if COLLECTION_TYPES.key?(base_name) && !type_registry&.has_type?(base_name)
+                  cpp_collection = COLLECTION_TYPES[base_name]
+                  type_args = type.type_args.map { |arg|
+                    map_type(arg, type_map: type_map, type_registry: type_registry)
+                  }.join(", ")
+                  return "#{cpp_collection}<#{type_args}>"
                 end
 
                 # Generic types: Base<Arg1, Arg2, ...>
@@ -55,6 +101,23 @@ module MLC
               when SemanticIR::ArrayType
                 element_type = map_type(type.element_type, type_map: type_map, type_registry: type_registry)
                 "std::vector<#{element_type}>"
+
+              when SemanticIR::TupleType
+                # Tuple types: std::tuple<T1, T2, ...>
+                element_types = type.element_types.map { |t|
+                  map_type(t, type_map: type_map, type_registry: type_registry)
+                }.join(", ")
+                "std::tuple<#{element_types}>"
+
+              when SemanticIR::MapType
+                # Map types: Map<K, V> -> std::unordered_map<K, V>
+                key_type = map_type(type.key_type, type_map: type_map, type_registry: type_registry)
+                value_type = map_type(type.value_type, type_map: type_map, type_registry: type_registry)
+                "std::unordered_map<#{key_type}, #{value_type}>"
+
+              when SemanticIR::SymbolType
+                # Symbol type: interned string id
+                "mlc::Symbol"
 
               when SemanticIR::FunctionType
                 # Function types: std::function<ReturnType(Arg1, Arg2, ...)>
@@ -148,6 +211,11 @@ module MLC
                   field_type = field[:type] || field.type
                   contains_type_variables?(field_type)
                 end
+              when SemanticIR::MapType
+                contains_type_variables?(type.key_type) ||
+                  contains_type_variables?(type.value_type)
+              when SemanticIR::TupleType
+                type.element_types.any? { |t| contains_type_variables?(t) }
               else
                 false
               end

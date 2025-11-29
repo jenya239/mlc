@@ -132,10 +132,50 @@ module MLC
               MLC::SemanticIR::Builder.member(object, member, type, origin: origin)
             end
 
+            # Build a safe member access node (optional chaining)
+            def safe_member(object:, member:, type:, origin: nil)
+              MLC::SemanticIR::SafeMemberExpr.new(
+                object: object,
+                member: member,
+                type: type,
+                origin: origin
+              )
+            end
+
+            # Build a safe call node (optional chaining)
+            def safe_call(object:, method_name:, args:, type:, origin: nil)
+              MLC::SemanticIR::SafeCallExpr.new(
+                object: object,
+                method_name: method_name,
+                args: args,
+                type: type,
+                origin: origin
+              )
+            end
+
+            # Build a try expression node (error propagation)
+            def try_expr(operand:, type:, origin: nil)
+              MLC::SemanticIR::TryExpr.new(
+                operand: operand,
+                type: type,
+                origin: origin
+              )
+            end
+
             def index(object:, index:, type:, origin: nil)
               MLC::SemanticIR::IndexExpr.new(
                 object: object,
                 index: index,
+                type: type,
+                origin: origin
+              )
+            end
+
+            def slice(object:, start_index:, end_index:, type:, origin: nil)
+              MLC::SemanticIR::SliceExpr.new(
+                object: object,
+                start_index: start_index,
+                end_index: end_index,
                 type: type,
                 origin: origin
               )
@@ -157,6 +197,17 @@ module MLC
                 generators: generators,
                 filters: filters,
                 output_expr: output_expr,
+                type: type,
+                origin: origin
+              )
+            end
+
+            # Build a range expression node
+            def range_expr(start_expr:, end_expr:, inclusive: true, type:, origin: nil)
+              MLC::SemanticIR::RangeExpr.new(
+                start_expr: start_expr,
+                end_expr: end_expr,
+                inclusive: inclusive,
                 type: type,
                 origin: origin
               )
@@ -288,6 +339,30 @@ module MLC
               MLC::SemanticIR::ArrayLiteralExpr.new(elements: elements, type: type, origin: origin)
             end
 
+            def tuple_expr(elements:, type:, origin: nil)
+              MLC::SemanticIR::TupleExpr.new(elements: elements, type: type, origin: origin)
+            end
+
+            def tuple_type(element_types:, origin: nil)
+              MLC::SemanticIR::TupleType.new(element_types: element_types, origin: origin)
+            end
+
+            def tuple_access_expr(tuple:, index:, type:, origin: nil)
+              MLC::SemanticIR::TupleAccessExpr.new(tuple: tuple, index: index, type: type, origin: origin)
+            end
+
+            def symbol_expr(name:, type:, origin: nil)
+              MLC::SemanticIR::SymbolExpr.new(name: name, type: type, origin: origin)
+            end
+
+            def symbol_type(origin: nil)
+              MLC::SemanticIR::SymbolType.new(origin: origin)
+            end
+
+            def map_type(key_type:, value_type:, origin: nil)
+              MLC::SemanticIR::MapType.new(key_type: key_type, value_type: value_type, origin: origin)
+            end
+
             def match_expr(scrutinee:, arms:, type:, origin: nil)
               MLC::SemanticIR::Builder.match_expr(scrutinee, arms, type, origin: origin)
             end
@@ -304,6 +379,15 @@ module MLC
             # Build an unsafe block expression
             def unsafe_block_expr(body:, type:, origin: nil)
               MLC::SemanticIR::Builder.unsafe_block_expr(body, type, origin: origin)
+            end
+
+            # Build an await expression (async/await)
+            def await_expr(operand:, type:, origin: nil)
+              MLC::SemanticIR::AwaitExpr.new(
+                operand: operand,
+                type: type,
+                origin: origin
+              )
             end
           end
         end

@@ -110,9 +110,9 @@ module MLC
 
       # Function declarations
       class FuncDecl < Node
-        attr_reader :name, :params, :ret_type, :body, :type_params, :exported, :external
+        attr_reader :name, :params, :ret_type, :body, :type_params, :exported, :external, :is_async
 
-        def initialize(name:, params:, ret_type:, body: nil, type_params: [], exported: false, external: false, origin: nil)
+        def initialize(name:, params:, ret_type:, body: nil, type_params: [], exported: false, external: false, is_async: false, origin: nil)
           super(origin: origin)
           @name = name
           @params = params
@@ -121,6 +121,7 @@ module MLC
           @type_params = type_params  # Array of TypeParam
           @exported = exported        # Boolean - is this exported?
           @external = external        # Boolean - is this an external (C++) function?
+          @is_async = is_async        # Boolean - is this an async function (coroutine)?
         end
       end
 
@@ -202,6 +203,18 @@ module MLC
         end
       end
 
+      # Map type - Map<K, V> for key-value storage
+      # Used for dynamic records and dictionaries
+      class MapType < Type
+        attr_reader :key_type, :value_type
+
+        def initialize(key_type:, value_type:, origin: nil)
+          super(kind: :map, name: "map", origin: origin)
+          @key_type = key_type
+          @value_type = value_type
+        end
+      end
+
       # Opaque type - type without known structure in MLC
       # Represented as pointer in C++, can only come from extern/stdlib
       class OpaqueType < Type
@@ -279,6 +292,17 @@ module MLC
         end
       end
 
+      # String interpolation: "Hello, {name}!"
+      # parts is array of {type: :text/:expr, value: String/Expr}
+      class StringInterpolation < Expr
+        attr_reader :parts
+
+        def initialize(parts:, origin: nil)
+          super(kind: :string_interpolation, data: parts, origin: origin)
+          @parts = parts
+        end
+      end
+
       # Regex literal
       class RegexLit < Expr
         attr_reader :pattern, :flags
@@ -345,6 +369,56 @@ module MLC
         end
       end
 
+      # Safe member access (optional chaining): obj?.member
+      # Returns None if object is None, otherwise returns Some(obj.member)
+      class SafeMemberAccess < Expr
+        attr_reader :object, :member
+
+        def initialize(object:, member:, origin: nil)
+          super(kind: :safe_member, data: {object: object, member: member}, origin: origin)
+          @object = object
+          @member = member
+        end
+      end
+
+      # Safe call (optional chaining): obj?.method(args)
+      # Returns None if object is None, otherwise returns Some(obj.method(args))
+      class SafeCall < Expr
+        attr_reader :object, :method_name, :args
+
+        def initialize(object:, method_name:, args:, origin: nil)
+          super(kind: :safe_call, data: {object: object, method_name: method_name, args: args}, origin: origin)
+          @object = object
+          @method_name = method_name
+          @args = args
+        end
+      end
+
+      # Try expression (error propagation): expr?
+      # If expr is None/Err, returns early from enclosing function
+      # If expr is Some(v)/Ok(v), unwraps to v
+      # Like Rust's ? operator
+      class TryExpr < Expr
+        attr_reader :operand
+
+        def initialize(operand:, origin: nil)
+          super(kind: :try_expr, data: {operand: operand}, origin: origin)
+          @operand = operand
+        end
+      end
+
+      # Await expression: await expr
+      # Suspends execution until the awaited future/promise completes
+      # Can only be used inside async functions
+      class AwaitExpr < Expr
+        attr_reader :operand
+
+        def initialize(operand:, origin: nil)
+          super(kind: :await_expr, data: {operand: operand}, origin: origin)
+          @operand = operand
+        end
+      end
+
       # Index access (array indexing): arr[index]
       class IndexAccess < Expr
         attr_reader :object, :index
@@ -355,7 +429,31 @@ module MLC
           @index = index    # Expr - the index expression
         end
       end
-      
+
+      # Slice access (array slicing): arr[start..end], arr[start..], arr[..end]
+      class SliceAccess < Expr
+        attr_reader :object, :start_index, :end_index
+
+        def initialize(object:, start_index: nil, end_index: nil, origin: nil)
+          super(kind: :slice, data: {object: object, start_index: start_index, end_index: end_index}, origin: origin)
+          @object = object          # Expr - the array being sliced
+          @start_index = start_index # Expr or nil - start index (nil means from beginning)
+          @end_index = end_index     # Expr or nil - end index (nil means to end, exclusive)
+        end
+      end
+
+      # Tuple element access: tuple.0, tuple.1
+      # Distinct from MemberAccess because index is compile-time constant integer
+      class TupleAccess < Expr
+        attr_reader :tuple, :index
+
+        def initialize(tuple:, index:, origin: nil)
+          super(kind: :tuple_access, data: {tuple: tuple, index: index}, origin: origin)
+          @tuple = tuple  # Expr - the tuple being accessed
+          @index = index  # Integer - the positional index (0-based)
+        end
+      end
+
       # Let binding (sugar)
       class Let < Expr
         attr_reader :name, :value, :body, :mutable, :type
@@ -372,13 +470,27 @@ module MLC
 
 
       # Record literal
+      # Supports both regular fields and spread elements for JS-like syntax:
+      #   { x: 1, ...base, y: 2 }
       class RecordLit < Expr
-        attr_reader :type_name, :fields
-        
-        def initialize(type_name:, fields:, origin: nil)
-          super(kind: :record_lit, data: {type_name: type_name, fields: fields}, origin: origin)
+        attr_reader :type_name, :fields, :spreads
+
+        def initialize(type_name:, fields:, spreads: [], origin: nil)
+          super(kind: :record_lit, data: {type_name: type_name, fields: fields, spreads: spreads}, origin: origin)
           @type_name = type_name
-          @fields = fields  # Hash of {field_name => value}
+          @fields = fields    # Hash of {field_name => value} for regular fields
+          @spreads = spreads  # Array of {expr: Expr, position: Integer} for ...expr elements
+        end
+      end
+
+      # Spread expression: ...expr
+      # Used inside record literals and array literals for spreading
+      class SpreadExpr < Expr
+        attr_reader :operand
+
+        def initialize(operand:, origin: nil)
+          super(kind: :spread, data: {operand: operand}, origin: origin)
+          @operand = operand  # Expr - the expression being spread
         end
       end
       
@@ -439,12 +551,21 @@ module MLC
       end
 
       # Pattern for match arms
+      # Supported kinds:
+      #   :wildcard     - matches anything (_)
+      #   :literal      - matches literal values (42, "foo", true)
+      #   :var          - binds value to variable (x, name)
+      #   :constructor  - matches sum type variants (Some(x), None)
+      #   :or           - matches any of alternatives (Red | Green | Blue)
+      #   :regex        - matches regex patterns (r"[0-9]+")
+      #   :array        - matches array patterns ([], [x, y])
+      #   :tuple        - matches tuple patterns ((x, y), (a, b, c))
       class Pattern < Node
         attr_reader :kind, :data
 
         def initialize(kind:, data:, origin: nil)
           super(origin: origin)
-          @kind = kind  # :wildcard, :literal, :constructor, :var
+          @kind = kind
           @data = data
         end
       end
@@ -497,6 +618,20 @@ module MLC
           @value = value
           @mutable = mutable
           @type = type  # Optional type annotation
+        end
+      end
+
+      # Destructuring declaration statement
+      # let (a, b) = expr   -- tuple destructuring
+      # let { x, y } = expr -- record destructuring
+      class DestructuringDecl < Stmt
+        attr_reader :pattern, :value, :mutable
+
+        def initialize(pattern:, value:, mutable: false, origin: nil)
+          super(origin: origin)
+          @pattern = pattern  # Pattern AST node
+          @value = value
+          @mutable = mutable
         end
       end
 
@@ -635,6 +770,28 @@ module MLC
         end
       end
 
+      # Tuple literal - (a, b, c) or (x,) for single element
+      # Distinguished from grouping (x) by trailing comma for single element
+      class TupleLit < Expr
+        attr_reader :elements
+
+        def initialize(elements:, origin: nil)
+          super(kind: :tuple_lit, data: elements, origin: origin)
+          @elements = elements  # Array of Expr (at least 1 element)
+        end
+      end
+
+      # Symbol literal - :foo
+      # Interned string for fast comparison
+      class SymbolLit < Expr
+        attr_reader :name
+
+        def initialize(name:, origin: nil)
+          super(kind: :symbol_lit, data: name, origin: origin)
+          @name = name  # String - the symbol name without colon
+        end
+      end
+
       # Pipe operation
       class PipeOp < Expr
         attr_reader :left, :right
@@ -675,6 +832,50 @@ module MLC
           super(kind: :generic, name: base_type.name, origin: origin)
           @base_type = base_type    # Type (e.g., Result, Option)
           @type_params = type_params # Array of Type
+        end
+      end
+
+      # Trait declaration
+      # trait Name<T> { fn method(...) -> ... }
+      class TraitDecl < Node
+        attr_reader :name, :type_params, :methods, :exported
+
+        def initialize(name:, type_params: [], methods: [], exported: false, origin: nil)
+          super(origin: origin)
+          @name = name              # String - trait name
+          @type_params = type_params # Array of TypeParam
+          @methods = methods        # Array of TraitMethod
+          @exported = exported      # Boolean - is this exported?
+        end
+      end
+
+      # Trait method signature (may have default body)
+      # fn name(...) -> Type or fn name(...) -> Type = body
+      class TraitMethod < Node
+        attr_reader :name, :params, :ret_type, :body, :is_static
+
+        def initialize(name:, params:, ret_type:, body: nil, is_static: false, origin: nil)
+          super(origin: origin)
+          @name = name          # String
+          @params = params      # Array of Param
+          @ret_type = ret_type  # Type
+          @body = body          # Expr or nil (for required methods)
+          @is_static = is_static # Boolean - associated function (no self)
+        end
+      end
+
+      # Extend declaration - implement trait for type
+      # extend Type : Trait { fn ... }
+      class ExtendDecl < Node
+        attr_reader :target_type, :trait_name, :trait_params, :methods, :exported
+
+        def initialize(target_type:, trait_name: nil, trait_params: [], methods: [], exported: false, origin: nil)
+          super(origin: origin)
+          @target_type = target_type  # Type - the type being extended
+          @trait_name = trait_name    # String or nil - trait being implemented
+          @trait_params = trait_params # Array of Type - trait type params
+          @methods = methods          # Array of FuncDecl (implementations)
+          @exported = exported        # Boolean
         end
       end
     end

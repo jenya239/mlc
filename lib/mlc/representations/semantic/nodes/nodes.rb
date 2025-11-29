@@ -52,6 +52,14 @@ module MLC
       def array?
         @kind == :array
       end
+
+      def tuple?
+        @kind == :tuple
+      end
+
+      def symbol?
+        @kind == :symbol
+      end
     end
     
     # Record type with fields
@@ -94,6 +102,27 @@ module MLC
       end
 
       def unit?
+        true
+      end
+    end
+
+    # Error type - "poison" type for error recovery
+    # Used when type checking encounters an error but wants to continue
+    # Allows collecting multiple errors instead of stopping at first
+    class ErrorType < Type
+      attr_reader :error_message
+
+      def initialize(error_message: nil, origin: nil)
+        super(kind: :error, name: "<error>", origin: origin)
+        @error_message = error_message
+      end
+
+      def error?
+        true
+      end
+
+      # ErrorType is compatible with everything to prevent cascading errors
+      def compatible_with?(_other)
         true
       end
     end
@@ -169,9 +198,9 @@ module MLC
     
     # Function declaration
     class Func < Node
-      attr_reader :name, :params, :ret_type, :body, :effects, :type_params, :external, :exported
+      attr_reader :name, :params, :ret_type, :body, :effects, :type_params, :external, :exported, :is_async
 
-      def initialize(name:, params:, ret_type:, body: nil, effects: [], type_params: [], external: false, exported: false, origin: nil)
+      def initialize(name:, params:, ret_type:, body: nil, effects: [], type_params: [], external: false, exported: false, is_async: false, origin: nil)
         super(origin: origin)
         @name = name
         @params = params  # Array of Param
@@ -181,6 +210,7 @@ module MLC
         @type_params = type_params  # Array of TypeParam
         @external = external  # Boolean - is this an external (C++) function?
         @exported = exported  # Boolean - is this exported?
+        @is_async = is_async  # Boolean - is this an async function (coroutine)?
       end
     end
     
@@ -290,6 +320,57 @@ module MLC
       end
     end
 
+    # Safe member access (optional chaining): obj?.member
+    # When object is Option<T>, returns Option<U> where U is member's type
+    class SafeMemberExpr < Expr
+      attr_reader :object, :member
+
+      def initialize(object:, member:, type:, origin: nil)
+        super(kind: :safe_member, data: {object: object, member: member}, type: type, origin: origin)
+        @object = object
+        @member = member
+      end
+    end
+
+    # Safe call (optional chaining): obj?.method(args)
+    # When object is Option<T>, returns Option<U> where U is method's return type
+    class SafeCallExpr < Expr
+      attr_reader :object, :method_name, :args
+
+      def initialize(object:, method_name:, args:, type:, origin: nil)
+        super(kind: :safe_call, data: {object: object, method_name: method_name, args: args}, type: type, origin: origin)
+        @object = object
+        @method_name = method_name
+        @args = args
+      end
+    end
+
+    # Try expression (error propagation): expr?
+    # If expr is None/Err, returns early from enclosing function
+    # If expr is Some(v)/Ok(v), unwraps to v
+    # Like Rust's ? operator
+    class TryExpr < Expr
+      attr_reader :operand
+
+      def initialize(operand:, type:, origin: nil)
+        super(kind: :try_expr, data: {operand: operand}, type: type, origin: origin)
+        @operand = operand
+      end
+    end
+
+    # Await expression: await expr
+    # Suspends execution until the awaited future/promise completes
+    # Can only be used inside async functions
+    # Lowers to C++20 co_await
+    class AwaitExpr < Expr
+      attr_reader :operand
+
+      def initialize(operand:, type:, origin: nil)
+        super(kind: :await_expr, data: {operand: operand}, type: type, origin: origin)
+        @operand = operand
+      end
+    end
+
     # Index access (array indexing)
     class IndexExpr < Expr
       attr_reader :object, :index
@@ -298,6 +379,30 @@ module MLC
         super(kind: :index, data: {object: object, index: index}, type: type, origin: origin)
         @object = object  # Expr - array being indexed
         @index = index    # Expr - index expression
+      end
+    end
+
+    # Slice access (array slicing): arr[start..end], arr[start..], arr[..end], arr[..]
+    class SliceExpr < Expr
+      attr_reader :object, :start_index, :end_index
+
+      def initialize(object:, start_index: nil, end_index: nil, type:, origin: nil)
+        super(kind: :slice, data: {object: object, start_index: start_index, end_index: end_index}, type: type, origin: origin)
+        @object = object          # Expr - array being sliced
+        @start_index = start_index # Expr or nil - start index (nil = from beginning)
+        @end_index = end_index     # Expr or nil - end index (nil = to end, exclusive)
+      end
+    end
+
+    # Range expression: 1..10, 1..<10
+    class RangeExpr < Expr
+      attr_reader :start_expr, :end_expr, :inclusive
+
+      def initialize(start_expr:, end_expr:, inclusive: true, type:, origin: nil)
+        super(kind: :range, data: {start: start_expr, end: end_expr, inclusive: inclusive}, type: type, origin: origin)
+        @start_expr = start_expr  # Expr - start of range
+        @end_expr = end_expr      # Expr - end of range
+        @inclusive = inclusive    # true for .., false for ..<
       end
     end
 
@@ -408,6 +513,21 @@ module MLC
         super(origin: origin)
         @name = name
         @type = type
+        @value = value
+        @mutable = mutable
+      end
+    end
+
+    # Destructuring declaration statement
+    # Desugars to multiple VariableDeclStmt statements
+    # bindings: array of {name:, type:, accessor:} hashes
+    #   accessor is either TupleAccessExpr or MemberExpr for extracting values
+    class DestructuringDeclStmt < Stmt
+      attr_reader :bindings, :value, :mutable
+
+      def initialize(bindings:, value:, mutable:, origin: nil)
+        super(origin: origin)
+        @bindings = bindings  # Array of {name:, type:, accessor:}
         @value = value
         @mutable = mutable
       end
@@ -582,6 +702,79 @@ module MLC
       def initialize(element_type:, origin: nil)
         super(kind: :array, name: "array", origin: origin)
         @element_type = element_type
+      end
+    end
+
+    # Map type - Map<K, V> for key-value storage
+    # Used for dynamic records and dictionaries
+    class MapType < Type
+      attr_reader :key_type, :value_type
+
+      def initialize(key_type:, value_type:, origin: nil)
+        super(kind: :map, name: "map", origin: origin)
+        @key_type = key_type
+        @value_type = value_type
+      end
+
+      def map?
+        true
+      end
+    end
+
+    # Tuple type - (T1, T2, ...)
+    class TupleType < Type
+      attr_reader :element_types
+
+      def initialize(element_types:, origin: nil)
+        super(kind: :tuple, name: "tuple", origin: origin)
+        @element_types = element_types  # Array of Type
+      end
+
+      def tuple?
+        true
+      end
+    end
+
+    # Tuple literal expression
+    class TupleExpr < Expr
+      attr_reader :elements
+
+      def initialize(elements:, type:, origin: nil)
+        super(kind: :tuple, data: elements, type: type, origin: origin)
+        @elements = elements  # Array of Expr
+      end
+    end
+
+    # Tuple element access expression: tuple.0, tuple.1
+    # Compile-time indexed access into tuple
+    class TupleAccessExpr < Expr
+      attr_reader :tuple, :index
+
+      def initialize(tuple:, index:, type:, origin: nil)
+        super(kind: :tuple_access, data: {tuple: tuple, index: index}, type: type, origin: origin)
+        @tuple = tuple  # Expr - the tuple being accessed
+        @index = index  # Integer - the positional index (0-based)
+      end
+    end
+
+    # Symbol type - interned string for fast comparison
+    class SymbolType < Type
+      def initialize(origin: nil)
+        super(kind: :symbol, name: "Symbol", origin: origin)
+      end
+
+      def symbol?
+        true
+      end
+    end
+
+    # Symbol literal expression
+    class SymbolExpr < Expr
+      attr_reader :name
+
+      def initialize(name:, type:, origin: nil)
+        super(kind: :symbol, data: name, type: type, origin: origin)
+        @name = name  # String - symbol name without colon
       end
     end
   end

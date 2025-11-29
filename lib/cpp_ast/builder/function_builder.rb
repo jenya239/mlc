@@ -5,7 +5,7 @@ module CppAst
     module FunctionBuilder
       # Function builder with best practices
       class FunctionBuilder
-        attr_reader :name, :params, :ret_type, :body, :modifiers
+        attr_reader :name, :params, :ret_type, :modifiers
         attr_accessor :template_generics
         
         def initialize(name, params: [], ret: nil, **modifiers)

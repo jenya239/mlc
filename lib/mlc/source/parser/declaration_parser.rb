@@ -7,7 +7,7 @@ module MLC
     # Declaration parsing - modules, imports, functions, type declarations
     # Auto-extracted from parser.rb during refactoring
     module DeclarationParser
-    def parse_function(external: false, exported: false)
+    def parse_function(external: false, exported: false, is_async: false)
       consume(:FN)
       name_token = consume(:IDENTIFIER)
       name = name_token.value
@@ -42,7 +42,8 @@ module MLC
           body: body,
           type_params: type_params,
           external: external,
-          exported: exported
+          exported: exported,
+          is_async: is_async
         )
       end
     end
@@ -194,6 +195,15 @@ module MLC
           # Parse exported declaration
           consume(:EXPORT)
           case current.type
+          when :ASYNC
+            # export async fn ...
+            consume(:ASYNC)
+            if current.type == :FN
+              func = parse_function(exported: true, is_async: true)
+              declarations << func
+            else
+              raise "Expected FN after export async, got #{current.type}"
+            end
           when :EXTERN
             # export extern fn ...
             consume(:EXTERN)
@@ -208,8 +218,22 @@ module MLC
             declarations << func
           when :TYPE
             declarations << parse_type_decl(exported: true)
+          when :TRAIT
+            declarations << parse_trait_decl(exported: true)
+          when :EXTEND
+            declarations << parse_extend_decl(exported: true)
+          when :RECORD
+            declarations << parse_record_decl(exported: true)
           else
-            raise "Expected FN, TYPE, or EXTERN after export, got #{current.type}"
+            raise "Expected FN, TYPE, TRAIT, ASYNC, EXTEND, or RECORD after export, got #{current.type}"
+          end
+        when :ASYNC
+          # Parse async function: async fn ...
+          consume(:ASYNC)
+          if current.type == :FN
+            declarations << parse_function(is_async: true)
+          else
+            raise "Expected FN after async, got #{current.type}"
           end
         when :EXTERN
           # Parse external declaration
@@ -224,6 +248,12 @@ module MLC
           declarations << parse_function
         when :TYPE
           declarations << parse_type_decl
+        when :TRAIT
+          declarations << parse_trait_decl
+        when :EXTEND
+          declarations << parse_extend_decl
+        when :RECORD
+          declarations << parse_record_decl
         else
           break
         end
@@ -236,15 +266,42 @@ module MLC
       )
     end
 
+    # Parse record literal fields with spread and shorthand support
+    # Supports:
+    #   { x: 1, y: 2 }           - regular fields
+    #   { ...base, x: 1 }        - spread operator (JS-like)
+    #   { x, y }                 - shorthand (equivalent to { x: x, y: y })
+    # Returns: { fields: Hash, spreads: Array }
     def parse_record_fields
       fields = {}
+      spreads = []
+      position = 0
 
       while current.type != :RBRACE
-        field_name = consume(:IDENTIFIER).value
-        consume(:COLON)
-        value = parse_expression
+        if current.type == :SPREAD
+          # Spread operator: ...expr
+          spread_token = consume(:SPREAD)
+          spread_expr = parse_expression
+          spreads << { expr: spread_expr, position: position }
+        elsif current.type == :IDENTIFIER
+          field_name_token = consume(:IDENTIFIER)
+          field_name = field_name_token.value
 
-        fields[field_name] = value
+          if current.type == :COLON
+            # Regular field: name: value
+            consume(:COLON)
+            value = parse_expression
+            fields[field_name] = value
+          else
+            # Shorthand: just name (equivalent to name: name)
+            var_ref = with_origin(field_name_token) { MLC::Source::AST::VarRef.new(name: field_name) }
+            fields[field_name] = var_ref
+          end
+        else
+          raise "Unexpected token in record field: #{current}"
+        end
+
+        position += 1
 
         if current.type == :COMMA
           consume(:COMMA)
@@ -253,7 +310,7 @@ module MLC
         end
       end
 
-      fields
+      { fields: fields, spreads: spreads }
     end
 
     def parse_type_decl(exported: false)
@@ -299,6 +356,170 @@ module MLC
              end
 
       with_origin(name_token) { MLC::Source::AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported) }
+    end
+
+    # Parse record declaration - syntactic sugar for type Name = { fields }
+    # record Name { field1: Type1, field2: Type2 }
+    def parse_record_decl(exported: false)
+      consume(:RECORD)
+      name_token = consume(:IDENTIFIER)
+      name = name_token.value
+
+      # Parse optional type parameters: record Option<T> { ... }
+      type_params = []
+      if current.type == :OPERATOR && current.value == "<"
+        consume(:OPERATOR)  # <
+        type_params = parse_type_params
+        expect_operator(">")
+      end
+
+      # Parse record body { field: Type, ... }
+      type = parse_record_type
+
+      with_origin(name_token) { MLC::Source::AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported) }
+    end
+
+    # Parse trait declaration
+    # trait Name<T> { fn method(...) -> Type }
+    def parse_trait_decl(exported: false)
+      trait_token = consume(:TRAIT)
+      name = consume(:IDENTIFIER).value
+
+      # Parse optional type parameters
+      type_params = []
+      if current.type == :OPERATOR && current.value == "<"
+        consume(:OPERATOR)  # <
+        type_params = parse_type_params
+        expect_operator(">")
+      end
+
+      consume(:LBRACE)
+      methods = parse_trait_methods
+      consume(:RBRACE)
+
+      with_origin(trait_token) do
+        MLC::Source::AST::TraitDecl.new(
+          name: name,
+          type_params: type_params,
+          methods: methods,
+          exported: exported
+        )
+      end
+    end
+
+    # Parse methods inside a trait
+    def parse_trait_methods
+      methods = []
+
+      while current.type != :RBRACE
+        methods << parse_trait_method
+      end
+
+      methods
+    end
+
+    # Parse a single trait method signature
+    # fn name(...) -> Type  or  fn name(...) -> Type = default_body
+    def parse_trait_method
+      fn_token = consume(:FN)
+      name = consume(:IDENTIFIER).value
+
+      consume(:LPAREN)
+      params = parse_params
+      consume(:RPAREN)
+
+      consume(:ARROW)
+      ret_type = parse_type
+
+      # Optional default implementation
+      body = nil
+      if current.type == :EQUAL
+        consume(:EQUAL)
+        body = parse_expression
+      end
+
+      # Determine if static: no params or first param is not 'self'
+      # For now, all trait methods are considered static (associated functions)
+      # Instance methods would use @ syntax which we can add later
+      is_static = true
+
+      with_origin(fn_token) do
+        MLC::Source::AST::TraitMethod.new(
+          name: name,
+          params: params,
+          ret_type: ret_type,
+          body: body,
+          is_static: is_static
+        )
+      end
+    end
+
+    # Parse extend declaration
+    # extend Type : Trait<T> { fn ... }
+    # extend Type { fn ... }  (add methods without trait)
+    def parse_extend_decl(exported: false)
+      extend_token = consume(:EXTEND)
+      target_type = parse_type
+
+      trait_name = nil
+      trait_params = []
+
+      # Check for : Trait
+      if current.type == :COLON
+        consume(:COLON)
+        trait_name = consume(:IDENTIFIER).value
+
+        # Parse optional trait type parameters
+        if current.type == :OPERATOR && current.value == "<"
+          consume(:OPERATOR)  # <
+          trait_params = parse_type_list
+          expect_operator(">")
+        end
+      end
+
+      consume(:LBRACE)
+      methods = parse_extend_methods
+      consume(:RBRACE)
+
+      with_origin(extend_token) do
+        MLC::Source::AST::ExtendDecl.new(
+          target_type: target_type,
+          trait_name: trait_name,
+          trait_params: trait_params,
+          methods: methods,
+          exported: exported
+        )
+      end
+    end
+
+    # Parse methods inside extend block
+    # Supports: fn ..., extern fn ...
+    def parse_extend_methods
+      methods = []
+
+      while current.type != :RBRACE
+        external = false
+        if current.type == :EXTERN
+          consume(:EXTERN)
+          external = true
+        end
+        methods << parse_function(external: external)
+      end
+
+      methods
+    end
+
+    # Parse comma-separated list of types (for trait params)
+    def parse_type_list
+      types = []
+      types << parse_type
+
+      while current.type == :COMMA
+        consume(:COMMA)
+        types << parse_type
+      end
+
+      types
     end
 
     end

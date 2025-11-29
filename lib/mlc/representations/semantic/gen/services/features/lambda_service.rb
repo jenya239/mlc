@@ -9,16 +9,21 @@ module MLC
           class LambdaService
             DEFAULT_PARAM_TYPE = 'i32'
 
-            def initialize(ir_builder:, type_checker:, var_type_registry:, scope_context:, type_builder:)
+            def initialize(ir_builder:, type_checker:, var_type_registry:, scope_context:, type_builder:, capture_analyzer:)
               @ir_builder = ir_builder
               @type_checker = type_checker
               @var_type_registry = var_type_registry
               @scope_context = scope_context
               @type_builder = type_builder
+              @capture_analyzer = capture_analyzer
             end
 
             def build(node, expression_visitor:)
               snapshot = @var_type_registry.snapshot
+
+              # Analyze captures BEFORE processing lambda body
+              # At this point, var_type_registry contains outer scope variables
+              captures = @capture_analyzer.analyze(node)
 
               params_ir = build_params(node, node.params)
 
@@ -35,7 +40,7 @@ module MLC
                 params: params_ir,
                 body: body_ir,
                 function_type: function_type,
-                captures: [],
+                captures: captures,
                 origin: node
               )
             ensure

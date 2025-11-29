@@ -82,6 +82,185 @@ public:
                             suffix.byte_size(), suffix.data_) == 0;
     }
 
+    // Find index of substring (-1 if not found)
+    int32_t index_of(const String& substr) const {
+        size_t pos = data_.find(substr.data_);
+        if (pos == std::string::npos) return -1;
+        // Convert byte position to character position
+        return static_cast<int32_t>(utf8_length(data_.substr(0, pos)));
+    }
+
+    // Find last index of substring (-1 if not found)
+    int32_t last_index_of(const String& substr) const {
+        size_t pos = data_.rfind(substr.data_);
+        if (pos == std::string::npos) return -1;
+        return static_cast<int32_t>(utf8_length(data_.substr(0, pos)));
+    }
+
+    // Replace all occurrences of old_str with new_str
+    String replace(const String& old_str, const String& new_str) const {
+        std::string result = data_;
+        size_t pos = 0;
+        while ((pos = result.find(old_str.data_, pos)) != std::string::npos) {
+            result.replace(pos, old_str.data_.size(), new_str.data_);
+            pos += new_str.data_.size();
+        }
+        return String(result);
+    }
+
+    // Repeat string n times
+    String repeat(int32_t n) const {
+        if (n <= 0) return String("");
+        std::string result;
+        result.reserve(data_.size() * n);
+        for (int32_t i = 0; i < n; ++i) {
+            result += data_;
+        }
+        return String(result);
+    }
+
+    // Reverse string (UTF-8 aware)
+    String reverse() const {
+        std::string result;
+        result.reserve(data_.size());
+        size_t len = utf8_length(data_);
+        for (size_t i = len; i > 0; --i) {
+            result += utf8_char_at(data_, i - 1);
+        }
+        return String(result);
+    }
+
+    // Alias for lower() - for consistency with other APIs
+    String to_lower() const { return lower(); }
+
+    // Alias for upper() - for consistency with other APIs
+    String to_upper() const { return upper(); }
+
+    // Check if string is blank (empty or only whitespace)
+    bool is_blank() const {
+        for (char c : data_) {
+            if (!std::isspace(static_cast<unsigned char>(c))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Check if string is present (not blank)
+    bool is_present() const {
+        return !is_blank();
+    }
+
+    // Squish - trim and collapse whitespace
+    String squish() const {
+        std::string result;
+        bool in_space = true;  // Start true to trim leading space
+        for (char c : data_) {
+            if (std::isspace(static_cast<unsigned char>(c))) {
+                if (!in_space) {
+                    result += ' ';
+                    in_space = true;
+                }
+            } else {
+                result += c;
+                in_space = false;
+            }
+        }
+        // Trim trailing space
+        if (!result.empty() && result.back() == ' ') {
+            result.pop_back();
+        }
+        return String(result);
+    }
+
+    // Truncate string to max length with ellipsis
+    String truncate(int32_t max_len) const {
+        if (max_len <= 0) return String("");
+        size_t char_len = utf8_length(data_);
+        if (char_len <= static_cast<size_t>(max_len)) return *this;
+        if (max_len <= 3) return String("...");
+        return substring(0, max_len - 3) + String("...");
+    }
+
+    // Titleize - capitalize each word
+    String titleize() const {
+        std::string result;
+        bool cap_next = true;
+        for (char c : data_) {
+            if (std::isspace(static_cast<unsigned char>(c)) || c == '_' || c == '-') {
+                result += ' ';
+                cap_next = true;
+            } else if (cap_next) {
+                result += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+                cap_next = false;
+            } else {
+                result += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            }
+        }
+        return String(result);
+    }
+
+    // Camelize - convert to camelCase
+    String camelize() const {
+        std::string result;
+        bool cap_next = false;
+        for (char c : data_) {
+            if (c == '_' || c == '-' || c == ' ') {
+                cap_next = true;
+            } else if (cap_next) {
+                result += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+                cap_next = false;
+            } else {
+                result += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            }
+        }
+        return String(result);
+    }
+
+    // Underscore - convert to snake_case
+    String underscore() const {
+        std::string result;
+        for (size_t i = 0; i < data_.size(); ++i) {
+            char c = data_[i];
+            if (std::isupper(static_cast<unsigned char>(c))) {
+                if (i > 0) result += '_';
+                result += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            } else if (c == '-' || c == ' ') {
+                result += '_';
+            } else {
+                result += c;
+            }
+        }
+        return String(result);
+    }
+
+    // Pad start with character to reach length
+    String pad_start(int32_t len, const String& pad_char) const {
+        size_t char_len = utf8_length(data_);
+        if (char_len >= static_cast<size_t>(len)) return *this;
+        std::string pc = pad_char.data_.empty() ? " " : pad_char.data_.substr(0, 1);
+        std::string result;
+        size_t pad_count = static_cast<size_t>(len) - char_len;
+        for (size_t i = 0; i < pad_count; ++i) {
+            result += pc;
+        }
+        result += data_;
+        return String(result);
+    }
+
+    // Pad end with character to reach length
+    String pad_end(int32_t len, const String& pad_char) const {
+        size_t char_len = utf8_length(data_);
+        if (char_len >= static_cast<size_t>(len)) return *this;
+        std::string pc = pad_char.data_.empty() ? " " : pad_char.data_.substr(0, 1);
+        std::string result = data_;
+        size_t pad_count = static_cast<size_t>(len) - char_len;
+        for (size_t i = 0; i < pad_count; ++i) {
+            result += pc;
+        }
+        return String(result);
+    }
+
     // Concatenation
     String operator+(const String& other) const {
         return String(data_ + other.data_);

@@ -20,8 +20,22 @@ module MLC
           initialize_parser(source, filename: filename)
         end
 
+        # Alternative constructor from pre-tokenized tokens
+        def self.new_from_tokens(tokens)
+          parser = allocate
+          parser.instance_variable_set(:@tokens, tokens)
+          parser.instance_variable_set(:@pos, 0)
+          parser.instance_variable_set(:@last_token, nil)
+          parser
+        end
+
         def parse
           parse_program
+        end
+
+        # Parse a single expression (for string interpolation sub-parsing)
+        def parse_single_expression
+          parse_expression
         end
       end
     end

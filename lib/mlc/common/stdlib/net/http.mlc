@@ -1,0 +1,20 @@
+//! @module std/net/http
+//! @category net
+//! @type http
+
+// HTTP client module - node-fetch style API
+// Note: Full implementation pending - requires reference types, tuples, await
+
+// HTTP method enum
+export type HttpMethod = Get | Post | Put | Delete | Patch | Head | Options
+
+// Placeholder types - will be expanded when parser supports full syntax
+export type Headers
+export type RequestInit
+export type Response
+
+// Main fetch function - async HTTP request
+export extern fn fetch(url: str) -> i32
+
+// Fetch with options (stub)
+export extern fn fetch_with_options(url: str, method: i32) -> i32

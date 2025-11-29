@@ -221,6 +221,16 @@ module MLC
             def break_statement(leading_trivia: "")
               CppAst::Nodes::BreakStatement.new(leading_trivia: leading_trivia)
             end
+
+            # C++20 coroutine co_await expression
+            def co_await(expression:)
+              CppAst::Nodes::CoAwaitExpression.new(expression: expression)
+            end
+
+            # C++20 coroutine co_return statement
+            def co_return(expression: nil)
+              CppAst::Nodes::CoReturnStatement.new(expression: expression)
+            end
           end
         end
       end

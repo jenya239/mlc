@@ -1,0 +1,184 @@
+//! @module std/collections/dynrecord
+//! @category collections
+//! @type pure
+
+// =============================================================================
+// DynRecord - Dynamic Record Type (Open Form)
+// =============================================================================
+//
+// DynRecord is the "open form" mentioned in PHILOSOPHY.md:
+// - Accepts any fields at runtime
+// - Access via Symbol keys (externally) which are converted to Key (internally)
+// - Values are Variant type to hold any supported type
+// - Can be validated and converted to static types via shape_as/shape_try
+//
+// Usage Philosophy:
+// - Статика по умолчанию: Use static records { x: i32, y: i32 } for known shapes
+// - Динамика как оболочка: Use DynRecord for external data (JSON, configs, plugins)
+// - Мост обратно в статику: Use shape_as<T>(dyn) to validate and convert
+
+import std/collections/map::{Map, Key, symbol_to_key, map_new, map_get, map_set, map_has, map_keys}
+import std/core/option::{Option, Some, None}
+
+// =============================================================================
+// Variant Type - Union of possible field values
+// =============================================================================
+
+// Variant can hold any supported MLC value type
+export type Variant =
+  | VNull
+  | VBool(bool)
+  | VI32(i32)
+  | VF32(f32)
+  | VStr(str)
+  | VSymbol(Symbol)
+  | VArray(Variant[])
+  | VRecord(DynRecord)
+
+// =============================================================================
+// DynRecord Type
+// =============================================================================
+
+// DynRecord is a map from Key to Variant
+// Externally accessed via Symbol, internally stored with Key
+export type DynRecord = Map<Key, Variant>
+
+// =============================================================================
+// DynRecord Constructors
+// =============================================================================
+
+// Create an empty dynamic record
+export fn dyn_new() -> DynRecord = map_new()
+
+// Create DynRecord from symbol-value pairs
+// Usage: dyn_from([(:name, VStr("Alice")), (:age, VI32(30))])
+export fn dyn_from(pairs: (Symbol, Variant)[]) -> DynRecord = do
+  let m = map_new()
+  for pair in pairs do
+    let sym = pair.0
+    let val = pair.1
+    m = map_set(m, symbol_to_key(sym), val)
+  end
+  m
+end
+
+// =============================================================================
+// DynRecord Field Access
+// =============================================================================
+
+// Get field by symbol, returns Option<Variant>
+export fn dyn_get(r: DynRecord, field: Symbol) -> Option<Variant> =
+  map_get(r, symbol_to_key(field))
+
+// Set field by symbol, returns new record (immutable API)
+export fn dyn_set(r: DynRecord, field: Symbol, value: Variant) -> DynRecord =
+  map_set(r, symbol_to_key(field), value)
+
+// Check if field exists
+export fn dyn_has(r: DynRecord, field: Symbol) -> bool =
+  map_has(r, symbol_to_key(field))
+
+// Delete field by symbol, returns new record (immutable API)
+// Note: Requires map_delete to be implemented
+export extern fn dyn_delete(r: DynRecord, field: Symbol) -> DynRecord
+
+// Get number of fields
+export extern fn dyn_size(r: DynRecord) -> i32
+
+// Merge two records (right takes precedence on conflicts)
+// Equivalent to JavaScript { ...left, ...right }
+export extern fn dyn_merge(left: DynRecord, right: DynRecord) -> DynRecord
+
+// Check if record is empty
+export fn dyn_is_empty(r: DynRecord) -> bool = dyn_size(r) == 0
+
+// =============================================================================
+// Typed Field Access - Safe extraction with type narrowing
+// =============================================================================
+
+// Get string field
+export fn dyn_get_str(r: DynRecord, field: Symbol) -> Option<str> =
+  match dyn_get(r, field)
+    | Some(VStr(s)) => Some(s)
+    | _ => None
+
+// Get i32 field
+export fn dyn_get_i32(r: DynRecord, field: Symbol) -> Option<i32> =
+  match dyn_get(r, field)
+    | Some(VI32(n)) => Some(n)
+    | _ => None
+
+// Get f32 field
+export fn dyn_get_f32(r: DynRecord, field: Symbol) -> Option<f32> =
+  match dyn_get(r, field)
+    | Some(VF32(n)) => Some(n)
+    | _ => None
+
+// Get bool field
+export fn dyn_get_bool(r: DynRecord, field: Symbol) -> Option<bool> =
+  match dyn_get(r, field)
+    | Some(VBool(b)) => Some(b)
+    | _ => None
+
+// Get nested record field
+export fn dyn_get_record(r: DynRecord, field: Symbol) -> Option<DynRecord> =
+  match dyn_get(r, field)
+    | Some(VRecord(rec)) => Some(rec)
+    | _ => None
+
+// Get array field
+export fn dyn_get_array(r: DynRecord, field: Symbol) -> Option<Variant[]> =
+  match dyn_get(r, field)
+    | Some(VArray(arr)) => Some(arr)
+    | _ => None
+
+// =============================================================================
+// Variant Constructors - Convenience functions
+// =============================================================================
+
+export fn v_null() -> Variant = VNull
+export fn v_bool(b: bool) -> Variant = VBool(b)
+export fn v_i32(n: i32) -> Variant = VI32(n)
+export fn v_f32(n: f32) -> Variant = VF32(n)
+export fn v_str(s: str) -> Variant = VStr(s)
+export fn v_symbol(s: Symbol) -> Variant = VSymbol(s)
+export fn v_array(arr: Variant[]) -> Variant = VArray(arr)
+export fn v_record(r: DynRecord) -> Variant = VRecord(r)
+
+// =============================================================================
+// Shape Validation - Bridge back to static types
+// =============================================================================
+
+// Result type for shape validation
+export type ShapeResult<T> = Ok(T) | Err(str)
+
+// shape_as<T> - Validate DynRecord matches shape T, return Result
+// This is a compile-time macro that generates validation code based on T
+// Example: shape_as<User>(raw) where User = { name: str, age: i32 }
+//
+// NOTE: This requires compiler support for struct introspection
+// For now, users should write manual validation functions like:
+//
+// fn validate_user(r: DynRecord) -> ShapeResult<User> = do
+//   let name = dyn_get_str(r, :name)
+//   let age = dyn_get_i32(r, :age)
+//   if name.is_none() || age.is_none() then
+//     Err("Invalid User shape")
+//   else
+//     Ok(User { name: name.unwrap(), age: age.unwrap() })
+//   end
+// end
+
+// shape_try<T> - Like shape_as but returns Option<T>
+// For use with unwrap_or for fallback values
+
+// =============================================================================
+// DynRecord Query
+// =============================================================================
+
+// Get all field names as symbols
+// NOTE: Requires runtime Key->Symbol reverse lookup
+export extern fn dyn_keys(r: DynRecord) -> Symbol[]
+
+// Convert DynRecord to string (for debugging)
+export extern fn dyn_to_str(r: DynRecord) -> str

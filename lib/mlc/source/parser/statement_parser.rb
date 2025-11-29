@@ -98,11 +98,18 @@ module MLC
     end
 
     def parse_variable_decl_statement
-      consume(:LET)
+      let_token = consume(:LET)
       mutable = false
       if current.type == :MUT
         consume(:MUT)
         mutable = true
+      end
+
+      # Check for destructuring patterns: let (a, b) = ... or let { x, y } = ...
+      if current.type == :LPAREN
+        return parse_tuple_destructuring(let_token, mutable)
+      elsif current.type == :LBRACE
+        return parse_record_destructuring(let_token, mutable)
       end
 
       name_token = consume(:IDENTIFIER)
@@ -121,6 +128,53 @@ module MLC
       consume(:SEMICOLON) if current.type == :SEMICOLON
 
       with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }
+    end
+
+    # Parse tuple destructuring: let (a, b) = expr
+    def parse_tuple_destructuring(let_token, mutable)
+      pattern = parse_pattern  # Uses PatternParser which handles (a, b) as tuple pattern
+      consume(:EQUAL)
+      value = parse_expression_in_block
+      consume(:SEMICOLON) if current.type == :SEMICOLON
+
+      with_origin(let_token) { MLC::Source::AST::DestructuringDecl.new(pattern: pattern, value: value, mutable: mutable) }
+    end
+
+    # Parse record destructuring: let { x, y } = expr
+    # Supports rest pattern: let { x, ...rest } = expr
+    def parse_record_destructuring(let_token, mutable)
+      lbrace_token = consume(:LBRACE)
+      bindings = []
+      rest_binding = nil
+
+      while current.type != :RBRACE
+        if current.type == :SPREAD
+          # Rest pattern: ...rest
+          consume(:SPREAD)
+          rest_binding = consume(:IDENTIFIER).value
+          break  # Rest must be last
+        else
+          bindings << consume(:IDENTIFIER).value
+        end
+
+        break unless current.type == :COMMA
+        consume(:COMMA)
+      end
+
+      consume(:RBRACE)
+
+      pattern = with_origin(lbrace_token) do
+        MLC::Source::AST::Pattern.new(
+          kind: :record,
+          data: { bindings: bindings, rest: rest_binding }
+        )
+      end
+
+      consume(:EQUAL)
+      value = parse_expression_in_block
+      consume(:SEMICOLON) if current.type == :SEMICOLON
+
+      with_origin(let_token) { MLC::Source::AST::DestructuringDecl.new(pattern: pattern, value: value, mutable: mutable) }
     end
 
     end

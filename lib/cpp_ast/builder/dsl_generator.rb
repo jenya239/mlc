@@ -1011,109 +1011,7 @@ module CppAst
         
         result
       end
-      
-      def generate_MLC_program(program)
-        result = "#include <iostream>\n"
-        result += "#include <memory>\n"
-        result += "#include <vector>\n\n"
-        
-        # Generate imports
-        program.imports.each do |import|
-          result += "#include \"#{import.path}.hpp\"\n"
-        end
-        
-        if program.imports.any?
-          result += "\n"
-        end
-        
-        # Generate module declaration
-        if program.module_decl
-          result += "namespace #{program.module_decl.name} {\n"
-        end
-        
-        # Generate declarations
-        program.declarations.each do |decl|
-          result += generate_MLC_declaration(decl)
-          result += "\n"
-        end
-        
-        if program.module_decl
-          result += "}\n"
-        end
-        
-        result
-      end
-      
-      def generate_MLC_declaration(decl)
-        case decl
-        when MLC::Source::AST::FuncDecl
-          generate_MLC_function(decl)
-        when MLC::Source::AST::TypeDecl
-          generate_MLC_type(decl)
-        else
-          "// Unsupported declaration type: #{decl.class}"
-        end
-      end
-      
-      def generate_MLC_function(func)
-        result = ""
-        result += "int #{func.name}("
-        result += func.params.map { |p| "int #{p.name}" }.join(", ")
-        result += ") {\n"
-        if func.body
-          result += "  return #{generate_MLC_expression(func.body)};\n"
-        else
-          result += "  return 0;\n"
-        end
-        result += "}"
-        result
-      end
-      
-      def generate_MLC_expression(expr)
-        case expr
-        when MLC::Source::AST::IntLit
-          expr.value.to_s
-        when MLC::Source::AST::FloatLit
-          expr.value.to_s
-        when MLC::Source::AST::VarRef
-          expr.name
-        when MLC::Source::AST::BinaryOp
-          left = generate_MLC_expression(expr.left)
-          right = generate_MLC_expression(expr.right)
-          if expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
-            # String concatenation
-            "mlc::String(#{left}) + mlc::String(#{right})"
-          else
-            "#{left} #{expr.op} #{right}"
-          end
-        else
-          "0" # fallback
-        end
-      end
-      
-      def generate_MLC_type(type)
-        "// Type declaration: #{type.name}"
-      end
-      
-      private
-      
-      def is_string_expression(expr)
-        case expr
-        when MLC::Source::AST::StringLit
-          true
-        when MLC::Source::AST::VarRef
-          # Without type context, we can't determine if a variable is a string
-          # Conservative approach: assume it's not a string
-          false
-        when MLC::Source::AST::BinaryOp
-          # Check if this is a string concatenation
-          expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
-        else
-          false
-        end
-      end
 
-      # MLC-specific generation methods
       def generate_MLC_program(program)
         result = []
         
@@ -1188,6 +1086,29 @@ module CppAst
         end
       end
 
+      # Generate C++ code for string interpolation
+      # "Hello, {name}!" => mlc::String("Hello, ") + name + mlc::String("!")
+      def generate_string_interpolation(expr)
+        parts = expr.parts.map do |part|
+          if part[:type] == :text
+            "mlc::String(\"#{escape_string(part[:value])}\")"
+          else
+            # Expression part - generate the expression
+            generate_MLC_expression(part[:value])
+          end
+        end
+        parts.join(" + ")
+      end
+
+      # Escape special characters for C++ string literal
+      def escape_string(str)
+        str.gsub("\\", "\\\\")
+           .gsub("\"", "\\\"")
+           .gsub("\n", "\\n")
+           .gsub("\t", "\\t")
+           .gsub("\r", "\\r")
+      end
+
       def generate_MLC_expression(expr)
         case expr
         when MLC::Source::AST::IntLit
@@ -1196,6 +1117,8 @@ module CppAst
           expr.value.to_s
         when MLC::Source::AST::StringLit
           "\"#{expr.value}\""
+        when MLC::Source::AST::StringInterpolation
+          generate_string_interpolation(expr)
         when MLC::Source::AST::VarRef
           expr.name
         when MLC::Source::AST::BinaryOp

@@ -1,0 +1,92 @@
+//! @module std/collections/map
+//! @category collections
+//! @type pure
+
+// =============================================================================
+// Map<K, V> - Generic key-value dictionary
+// =============================================================================
+
+// Map type declaration - generic over key and value types
+// Mapped to std::unordered_map<K, V> in C++
+export type Map<K, V>
+
+// =============================================================================
+// Key Type - Internal interning type for Symbol keys
+// =============================================================================
+
+// Key is an opaque type representing an interned symbol
+// Symbol literals (:foo) are converted to Key at compile time
+// Allows O(1) hash lookup while maintaining Symbol semantics externally
+export type Key
+
+// Key conversion functions
+// Intern a string to get a Key (runtime)
+export extern fn key_from_str(s: str) -> Key
+
+// Get the string representation of a Key
+export extern fn key_to_str(k: Key) -> str
+
+// Symbol to Key conversion (compile-time when possible)
+export extern fn symbol_to_key(s: Symbol) -> Key
+
+// =============================================================================
+// Map Constructors
+// =============================================================================
+
+// Create an empty map
+export extern fn map_new<K, V>() -> Map<K, V>
+
+// Create a map from key-value pairs array
+export extern fn map_from_pairs<K, V>(pairs: (K, V)[]) -> Map<K, V>
+
+// =============================================================================
+// Map Operations - Immutable API (returns new map)
+// =============================================================================
+
+// Get value by key, returns Option
+export extern fn map_get<K, V>(m: Map<K, V>, key: K) -> Option<V>
+
+// Set key-value pair, returns new map
+export extern fn map_set<K, V>(m: Map<K, V>, key: K, value: V) -> Map<K, V>
+
+// Remove key, returns new map
+export extern fn map_remove<K, V>(m: Map<K, V>, key: K) -> Map<K, V>
+
+// Check if key exists
+export extern fn map_has<K, V>(m: Map<K, V>, key: K) -> bool
+
+// =============================================================================
+// Map Query Operations
+// =============================================================================
+
+// Get all keys
+export extern fn map_keys<K, V>(m: Map<K, V>) -> K[]
+
+// Get all values
+export extern fn map_values<K, V>(m: Map<K, V>) -> V[]
+
+// Get key-value pairs
+export extern fn map_entries<K, V>(m: Map<K, V>) -> (K, V)[]
+
+// Get map size
+export extern fn map_size<K, V>(m: Map<K, V>) -> i32
+
+// Check if map is empty
+export extern fn map_is_empty<K, V>(m: Map<K, V>) -> bool
+
+// =============================================================================
+// Map Higher-Order Functions
+// =============================================================================
+
+// Map over values
+export extern fn map_map_values<K, V, U>(m: Map<K, V>, f: fn(V) -> U) -> Map<K, U>
+
+// Filter entries
+export extern fn map_filter<K, V>(m: Map<K, V>, pred: fn(K, V) -> bool) -> Map<K, V>
+
+// Fold over entries
+export extern fn map_fold<K, V, A>(m: Map<K, V>, init: A, f: fn(A, K, V) -> A) -> A
+
+// Note: Symbol.to_key() method is not available yet because the parser
+// doesn't support 'self' parameter in extend blocks. Use symbol_to_key(s)
+// function instead.

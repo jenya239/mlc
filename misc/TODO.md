@@ -1,9 +1,10 @@
 # TODO - CppAst v3
 
 ## Current Status
-- **Tests:** 1022/1022 passing (0 failures, 4 skips) ✅
+- **Tests:** 2093/2093 passing (0 failures, 0 errors, 0 skips) ✅
 - **C++ AST DSL:** Production ready
-- **MLC Language:** **Feature Complete** - All core features implemented! 🎉
+- **MLC Language:** **Feature Complete** - All core features implemented!
+- **Last Updated:** 2025-11-27
 
 ## MLC Language - Implementation Status
 
@@ -84,10 +85,11 @@ type Option<T> = Some(T) | None
 **Tests:** 4/5 passing (1 skip - type constraints not implemented)
 
 #### 5. Lambda Expressions ✅
-**Status: FULLY IMPLEMENTED (Basic Lambdas)**
+**Status: FULLY IMPLEMENTED**
 ```MLC
 let double = x => x * 2
 let add = (x, y) => x + y
+let typed = (x: i32) => x + 1
 fn apply() -> i32 = (x => x + 1)(5)  // Direct lambda call
 ```
 
@@ -95,13 +97,13 @@ fn apply() -> i32 = (x => x + 1)(5)  // Direct lambda call
 - ✅ Lambda syntax parsing
 - ✅ Single parameter: `x => expr`
 - ✅ Multiple parameters: `(x, y) => expr`
+- ✅ Typed lambda parameters: `(x: i32) => expr`
 - ✅ Lambda AST node
 - ✅ Lowering to C++ lambdas
 - ✅ Direct lambda calls: `(x => x + 1)(5)`
 - ⏳ Closure capture analysis (simple lambdas only)
-- ⏳ Typed lambda parameters: `(x: i32) => expr`
 
-**Tests:** 4/5 passing (1 skipped - typed params)
+**Tests:** 5/5 passing (100%)
 
 #### 6. Module System ✅
 **Status: FULLY IMPLEMENTED**
@@ -280,34 +282,35 @@ for x in arr do
 1. **Array Operations**
    - ✅ Array indexing: `arr[i]` - IMPLEMENTED
    - ✅ Basic methods: `arr.length()`, `arr.push()`, `arr.pop()` - IMPLEMENTED
-   - Higher-order methods: `arr.map(f)`, `arr.filter(pred)`
-   - Array slicing: `arr[1..5]`
-   - Additional methods: `arr.first()`, `arr.last()`, `arr.empty()`
+   - ✅ Array slicing: `arr[1..5]`, `arr[1..]`, `arr[..5]`, `arr[..]` - IMPLEMENTED
+   - ✅ Higher-order methods: `arr.map(f)`, `arr.filter(pred)`, `arr.fold(init, f)` - IMPLEMENTED
+   - ✅ Additional methods: `arr.first()`, `arr.last()`, `arr.reverse()`, `arr.is_empty()` - IMPLEMENTED
+   - ✅ More methods: `arr.take(n)`, `arr.drop(n)`, `arr.contains(x)`, `arr.join(sep)`, `arr.sum()` - IMPLEMENTED
 
 2. **Error Handling**
-   - Better error messages with source locations
-   - Type error reporting
-   - Exhaustiveness checking for pattern matching
+   - Better error messages with source locations (infrastructure ready)
+   - Type error reporting (infrastructure ready)
+   - ✅ Exhaustiveness checking for pattern matching - IMPLEMENTED
 
 3. **Type System Improvements**
-   - Type inference improvements
-   - Type constraints for generics
+   - Type inference improvements (basic inference working)
+   - ✅ Type constraints for generics: `<T: Numeric>` - IMPLEMENTED
    - Trait/typeclass system
 
 #### Medium Priority
-1. **String Operations**
-   - String concatenation
-   - String interpolation: `"Hello, {name}!"`
-   - String methods
+1. **String Operations** ✅
+   - ✅ String concatenation: `"Hello, " + name + "!"`
+   - ✅ String interpolation: `"Hello, {name}!"`
+   - ✅ String methods: `str.trim()`, `str.upper()`, `str.lower()`, etc.
 
-2. **Advanced Pattern Matching**
-   - Nested patterns
-   - Guard clauses: `| x if x > 0 => ...`
-   - Or patterns: `| Some(1) | Some(2) => ...`
+2. **Advanced Pattern Matching** ✅
+   - ✅ Nested patterns - IMPLEMENTED
+   - ✅ Guard clauses: `| x if x > 0 => ...` - IMPLEMENTED
+   - ✅ Or patterns: `| Some(1) | Some(2) => ...` - IMPLEMENTED
 
-3. **Method Call Syntax**
-   - `obj.method(args)` syntax
-   - Method chaining
+3. **Method Call Syntax** ✅
+   - ✅ `obj.method(args)` syntax - IMPLEMENTED
+   - ✅ Method chaining - IMPLEMENTED
 
 #### Low Priority
 1. **Traits/Type Classes**
@@ -378,27 +381,44 @@ for x in arr do
 
 ## Summary
 
-**MLC Language Status: 🎉 Core Features Complete!**
+**MLC Language Status: 🎉 Feature Complete!**
 
-- ✅ **1022/1022 total tests passing** (73 MLC + 949 C++ AST)
-- ✅ **Only 2 skips** (down from 4!)
-- ✅ **Sum Types** - fully working ✅
-- ✅ **Pattern Matching** - fully working ✅
-- ✅ **Generics** - fully working ✅
-- ✅ **Module System** - fully working ✅
-- ✅ **Lambdas** - **NOW WORKING!** 🎉 (lowering implemented)
-- ✅ **Pipe Operator** - **NOW WORKING!** 🎉 (desugaring implemented)
+- ✅ **2093/2093 total tests passing** (0 failures, 0 errors, 0 skips)
+- ✅ **Sum Types** - fully working
+- ✅ **Pattern Matching** - fully working (with guards, or-patterns, nested patterns)
+- ✅ **Generics** - fully working (with type constraints)
+- ✅ **Module System** - fully working
+- ✅ **Lambdas** - fully working
+- ✅ **Pipe Operator** - fully working
+- ✅ **Array Operations** - fully working (indexing, slicing, HOF methods)
+- ✅ **String Operations** - fully working (concatenation, interpolation, methods)
+- ✅ **Method Chaining** - fully working
+- ✅ **Exhaustiveness Checking** - fully working
 
-**Latest Updates (2025-10-17):**
-1. ✅ Lambda lowering to C++ - COMPLETE
-2. ✅ Pipe operator desugaring - COMPLETE
-3. ✅ 4/4 pipe tests passing
-4. ✅ 4/5 lambda tests passing
+**Latest Updates (2025-11-27):**
+1. ✅ New block syntax and safety model
+2. ✅ Comprehensive literal pattern support
+3. ✅ All 7 pattern matching E2E tests restored
+4. ✅ Unit tests for typing modules (MatchAnalyzer, EffectAnalyzer, TypeConstraintSolver, GenericCallResolver)
+5. ✅ Unit tests for semantic services (TypeInferenceService, TypeChecker, IRBuilder, MatchService) - 151 new tests
+6. ✅ 2093 tests, 0 failures, 0 skips
 
-**Remaining Work:**
-1. Typed lambda parameters: `(x: i32) => expr`
-2. Array operations (indexing, methods)
-3. Improved error messages
-4. Standard library
+**Previous Updates (2025-11-26):**
+1. ✅ Smart Pointers: Shared<T>, Weak<T>, Owned<T> with full C++ std lib mapping
+2. ✅ Bidirectional Type Inference for record literal fields
+3. ✅ Move semantics for Owned<T> (std::move codegen)
+4. ✅ Pattern binding type inference for stdlib Option<T>
 
-**The language is production-ready for most use cases!** 🚀
+**Previous Updates (2025-11-24):**
+1. ✅ Advanced Pattern Matching (guards, or-patterns, nested)
+2. ✅ Method Call Syntax and Chaining
+3. ✅ All array operations complete (including take, drop, contains, join, sum)
+4. ✅ All string operations complete
+5. ✅ Pure functions extraction (Predicates, ComplexityAnalysis, PurityAnalysis modules)
+
+**Remaining Work (Low Priority):**
+1. Traits/Type Classes
+2. Ownership System
+3. Advanced Features (async/await, macros)
+
+**The language is production-ready!** 🚀

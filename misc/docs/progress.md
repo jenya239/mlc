@@ -1,6 +1,11 @@
 # MLC Compiler Progress Tracker
 
-## Current Status (2025-11-10)
+## Current Status (2025-11-28)
+
+### Test Results
+```
+2336 runs, 5995 assertions, 0 failures, 0 errors, 0 skips ✅
+```
 
 ### Architecture: SemanticGen Pipeline ✅ STABLE
 
@@ -169,17 +174,37 @@ lib/mlc/
 
 ## Test Status
 
-**Current** (2025-11-10):
+**Current** (2025-11-28):
 ```
-1500 runs, 3872 assertions, 7 failures, 0 errors, 7 skips
-```
-
-**Baseline** (before reorganization):
-```
-1500 runs, 3874 assertions, 8 failures, 0 errors
+2336 runs, 5995 assertions, 0 failures, 0 errors, 0 skips ✅
 ```
 
-**Result**: 1 fewer failure, 0 regressions through all reorganization phases
+**Progression**:
+- 2025-11-10: 1500 runs, 7 failures (Phase 25 complete)
+- 2025-11-19: 1524 runs, 0 failures (Phase 28 Zeitwerk complete)
+- 2025-11-24: 1780 runs, 0 failures (Phase 28.5 Pure Functions complete)
+- 2025-11-28: 2336 runs, 0 failures (Spread operator, block syntax complete)
+
+**Result**: +836 tests since Phase 25, 0 failures maintained
+
+### Test Commands
+
+```bash
+# Fast unit tests (~50 sec) - use by default
+rake test_unit
+
+# Fast tests excluding E2E (~2-3 min)
+rake test_fast
+
+# Full test suite (~20 min) - before commits
+rake test
+
+# Integration tests only
+rake test_integration
+
+# E2E tests only (compile + run binaries)
+rake test_e2e
+```
 
 ---
 
@@ -235,10 +260,15 @@ lib/mlc/
 
 All major refactoring phases complete. Documentation modernized.
 
+### Completed Since Phase 25
+- ✅ **Phase 27.5**: Namespace migrations (16 commits)
+- ✅ **Phase 28**: Zeitwerk autoloading (-61% requires)
+- ✅ **Phase 28.5**: Pure functions extraction (+124 tests)
+
 ### Future Work (Deferred)
-- **Phase 28**: Autoloading Infrastructure (8h)
 - **Phase 29**: IoC Container (12h)
 - **Phase 30**: Type System Improvements (TBD)
+- **Phase 31**: Analysis Passes Implementation (TBD)
 
 ---
 
@@ -254,4 +284,44 @@ All major refactoring phases complete. Documentation modernized.
 
 ---
 
-**Last Updated**: 2025-11-10 (after Phase 25 completion and docs cleanup)
+---
+
+## Recent Features (2025-11-28)
+
+### Spread Operator for Records
+
+```mlc
+type Point = { x: i32, y: i32, z: i32 }
+
+fn main() -> i32 = do
+  let base = Point { x: 1, y: 2, z: 0 }
+  let extended = Point { ...base, z: 3 }  // x=1, y=2, z=3
+  extended.z
+end
+```
+
+**Implementation:**
+- Parser: `...expr` syntax in record literals (`lib/mlc/source/parser/expression_parser.rb`)
+- AST: `RecordLit.spreads` array with `{expr:, position:}` entries
+- SemanticIR: Spread expansion in `ExpressionVisitor.build_record_fields` (`lib/mlc/representations/semantic/gen/visitors/expression_visitor.rb:210-282`)
+- C++ codegen: Direct member access expansion (`Point{base.x, base.y, 3}`)
+
+### New Block Syntax
+
+```mlc
+// Old style (still supported)
+fn foo() -> i32 = do
+  let x = 1
+  x + 1
+end
+
+// New block expression style
+fn bar() -> i32 = {
+  let x = 1
+  x + 1
+}
+```
+
+---
+
+**Last Updated**: 2025-11-28 (Spread operator, block syntax, test infrastructure)

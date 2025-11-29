@@ -21,7 +21,7 @@ class FormattingModesTest < Minitest::Test
     CppAst.formatting_mode = :lossless
     ast = template_decl("typename T", function_decl("void", "foo", [], block()))
     # В lossless режиме нет пробела после template
-    assert_match /template<typename T>/, ast.to_source
+    assert_match(/template<typename T>/, ast.to_source)
   end
   
   def test_with_formatting_mode_block
@@ -30,7 +30,7 @@ class FormattingModesTest < Minitest::Test
     CppAst.with_formatting_mode(:lossless) do
       assert_equal :lossless, CppAst.formatting_mode
       ast = template_decl("typename T", function_decl("void", "foo", [], block()))
-      assert_match /template<typename T>/, ast.to_source
+      assert_match(/template<typename T>/, ast.to_source)
     end
     
     # После блока режим восстанавливается

@@ -39,12 +39,44 @@ module MLC
               node.is_a?(MLC::SemanticIR::MemberExpr)
             end
 
+            def safe_member_expr?(node)
+              node.is_a?(MLC::SemanticIR::SafeMemberExpr)
+            end
+
+            def safe_call_expr?(node)
+              node.is_a?(MLC::SemanticIR::SafeCallExpr)
+            end
+
+            def try_expr?(node)
+              node.is_a?(MLC::SemanticIR::TryExpr)
+            end
+
             def index_expr?(node)
               node.is_a?(MLC::SemanticIR::IndexExpr)
             end
 
+            def slice_expr?(node)
+              node.is_a?(MLC::SemanticIR::SliceExpr)
+            end
+
+            def await_expr?(node)
+              node.is_a?(MLC::SemanticIR::AwaitExpr)
+            end
+
             def array_literal_expr?(node)
               node.is_a?(MLC::SemanticIR::ArrayLiteralExpr)
+            end
+
+            def tuple_expr?(node)
+              node.is_a?(MLC::SemanticIR::TupleExpr)
+            end
+
+            def tuple_access_expr?(node)
+              node.is_a?(MLC::SemanticIR::TupleAccessExpr)
+            end
+
+            def symbol_expr?(node)
+              node.is_a?(MLC::SemanticIR::SymbolExpr)
             end
 
             def record_expr?(node)

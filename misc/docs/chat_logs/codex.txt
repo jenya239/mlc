@@ -1,0 +1,500 @@
+     56 +
+     57 +  fn add_child(self, child: Shared<Node>) -> void = do
+     58 +    child.parent = downgrade(self)
+     59 +    @children.push(child)
+     60 +  end
+     61 +}
+     62 +
+     63 +fn new_node(payload) -> Shared<Node> =
+     64 +  make_shared(Node{ data: payload, children: [], parent: Weak::null() })
+     65 +
+     66 +let root = new_node({ kind: "root" })
+     67 +let leaf = new_node({ kind: "leaf", value: 3 })
+     68 +root.add_child(leaf)
+     69 +```
+     70 +
+     71 +## 8) События: динамический payload, слабые слушатели
+     72 +```mlc
+     73 +struct EventBus {
+     74 +  listeners: Weak<Fn(Map<string, Variant>) -> void>[]
+     75 +
+     76 +  fn emit(self, payload: Map<string, Variant>) -> void = do
+     77 +    for l in @listeners do
+     78 +      match l.upgrade() with
+     79 +        | Some(f) => f(payload)
+     80 +        | None    => ()
+     81 +      end
+     82 +    end
+     83 +  end
+     84 +}
+     85 +
+     86 +fn on_click(payload) -> void = do
+     87 +  let x = get<i32>(payload, "x").unwrap_or(0)
+     88 +  let y = get<i32>(payload, "y").unwrap_or(0)
+     89 +  log("click", x, y)
+     90 +end
+     91 +
+     92 +let bus = make_shared(EventBus{ listeners: [] })
+     93 +let h = make_shared(on_click)
+     94 +bus.listeners.push(downgrade(h))
+     95 +bus.emit({ x: 10, y: 20 })
+     96 +```
+     97 +
+     98 +## 9) Открытие через индексный доступ
+     99 +```mlc
+    100 +let cfg = { retries: 3 }    // закрытая
+    101 +cfg["timeout"] = 1000       // открытие формы (warning)
+    102 +let t = cfg.timeout         // Variant/Option
+    103 +```
+    104 +
+    105 +## 10) Контролируемый мост обратно в статик
+    106 +```mlc
+    107 +struct User { name: str, age: i32 }
+    108 +
+    109 +fn to_user(obj) -> Result<User, str> = do
+    110 +  let name = get<str>(obj, "name")
+    111 +  let age  = get<i32>(obj, "age")
+    112 +  if name.is_none() || age.is_none() then
+    113 +    Err("bad user")
+    114 +  else
+    115 +    Ok(User{ name: name.unwrap(), age: age.unwrap() })
+    116 +  end
+    117 +end
+    118 +
+    119 +let u = to_user(load_json("user.json"))?
+    120 +```
+    121 +
+    122 +## 11) Статика для горячих путей, динамика — точечно
+    123 +- Основные структуры (VDOM/компоненты/лейаут) — закрытые записи → struct в C++, быстрый доступ.
+    124 +- Динамический payload событий/конфигов — открытая форма, обработка через `get`/валидацию, затем приведение к статике.
+    125 +
+    126 +## 12) Безопасность сохраняется
+    127 +- Обратные ссылки — `Weak`, владение — `Shared/Unique`.
+    128 +- Динамические поля не ломают политику владения: вложенные объекты/указатели всё равно должны соблюдать `Shared/Weak`.
+    129 +- Сырые указатели — только в `unsafe`.
+
+─ Worked for 20s ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Добавил типовые сценарии в docs/PHILOSOPHY_EXAMPLES.md: показаны закрытая/открытая форма, JSON→статик через shape_as/shape_try, безопасный get, смешанная оболочка+динамический payload, дерево с Shared/Weak, события с динамическим payload, индексный доступ, мосты обратно в статик. Это иллюстрирует центральную идею “статический основной поток, динамика как
+  временный буфер”.
+
+
+› а как мы это всё с match будем сочетать и деструктуризацией, а также spread?
+
+
+• Как сочетать match/деструктуризацию/spread с нашей моделью:
+
+  - Закрытые записи:
+      - Match по фиксированным полям:
+        match p { {x, y} => x + y | _ => 0 } — компилится в доступ к struct, статические гарантии.
+      - Деструктуризация в let: let {x, y} = p — только для закрытых форм; отсутствие поля → ошибка типов.
+      - Spread в литералах/паттернах только для закрытых форм со статически известными полями: let q = { ...p, z: 3 } — обе стороны закрытые, результат закрытый.
+  - Открытые формы:
+      - Match/деструктуризация даёт Variant/Option для полей:
+        match u { {name} => do_something(name) | _ => () } — name: Option/Variant, линт напомнит про отсутствие гарантий.
+      - Частичный match с проверкой формы: сначала shape_as<T> внутри guard:
+        match u { _ if let Some(cfg) = shape_try<Config>(u) => use(cfg) | _ => handle_dynamic(u) }
+      - Деструктуризация открытой формы — только через get/shape_*: явное “приведи или обрабатывай как Option”.
+      - Spread с открытой формой делает результат открытым: let x = { ...u, extra: 1 } — форма открыта, доступ к полям → Variant/Option, линт предупредит.
+  - Смешанные случаи:
+      - Закрытая + открытая в match: можно матчить по известным полям, остальное игнорировать:
+        match u { {name} => ... } — если u открыт, name — Option; если закрыт и поле есть, это статически.
+      - Spread + статика + динамика: если хотя бы одна сторона открыта — результат открыт; чтобы вернуть статику, после spread сделать shape_as<T>.
+  - Рекомендации:
+      - Для гарантированного доступа к полям в match — либо работаем с закрытой формой, либо внутри ветки делаем shape_as/shape_try.
+      - Spread для “слепить рекорд и остаться статичным” — только между закрытыми рекордами; spread с открытыми → результат открыт.
+      - Если нужен частичный match по нескольким полям у динамики — использовать get/shape_as_partial (функция) или guard с shape_try.
+
+  Так сохраняем статические гарантии там, где форма фиксирована, и явные шаги (shape/get) там, где форма открыта.
+
+
+› а если бы мы писали наш компилятор, который сейчас на руби, но стали бы его писать на нашем языке, чтобы нам в самом языке нужно было бы в первую очередь?
+
+
+• I’m outlining the essential language features needed to implement the compiler in its own language—focusing on primitives like pattern matching, sum types, records, modules, file and IO handling, regex/lexer, parser combinators, and safe memory management. I’ll also consider minimal bootstrap necessities like strings, collections, option/result types, error
+  handling, concurrency, macros or AST builders, and the need for C++ code generation without external tool calls.
+
+─ Worked for 7s ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Для самописного компилятора на нашем языке нужны минимум эти опорные вещи:
+
+  - Строки/текст: нормальная работа с UTF‑8, срезы/substring, сравнения, интернировка (идентификаторы), плюсом — лёгкий регекс/сканер или хотя бы удобный char/категории для лексера.
+  - Коллекции: динамические массивы, ассоциативные карты (Map<K,V>), Set, итераторы/enumerate/map/filter/reduce.
+  - ADT + match: sum/record типы, pattern matching по вариантам — для AST и IR это ключевое.
+  - Option/Result: безопасные ошибки/отсутствие значения; удобные ?/unwrap_or/map/and_then.
+  - Модули/импорты: разбиение на файлы + явный экспорт/инкапсуляция.
+  - Трейты/интерфейсы: для фаз компилятора (Lexer, Parser, Pass, Backend) и подмены реализаций в тестах.
+  - Функции высшего порядка/замыкания: посетители, проходы, трансформации деревьев.
+  - Владение/ссылки: Unique/Shared/Weak, без сырых указателей; чтобы деревья/графы (AST, таблица символов) жили безопасно и без циклов.
+  - Деструктуризация и match по структурам: чтобы удобно писать правила трансформации (SemanticIR, C++ AST DSL).
+  - Файловый I/O: чтение/запись текстов, обход директорий.
+  - CLI/аргументы: парсер флагов, диагностика, логирование, форматтер сообщений об ошибках.
+  - Парсерный каркас: либо комбинаторы, либо удобные примитивы для рекурсивного спуска (peek/consume/expect), плюс лаконичные конструкции для сообщений об ошибках.
+  - Тесты: небольшой фреймворк (assert, fixtures), чтобы гонять юнит/интеграционные тесты фаз.
+  - Generate/emit C++: строковые билдеры или свой C++ AST DSL (желательно), чтобы backend был типобезопасным, а не строковым.
+
+  Если начинать по шагам: сперва строки+коллекции+Option/Result+ADT+match+IO+CLI; затем трейты/замыкания/модули; потом владение Shared/Weak, парсерный каркас и C++ AST DSL.
+
+
+› а чего сейчас не хватает?
+
+
+• Для переписи текущего Ruby-компилятора на наш язык сейчас не хватает (судя по обсуждениям и тому, что зафиксировано в доках):
+
+  - Базовая stdlib/коллекции: нормальный Map/Set (хеш), итераторы/enumerate/map/filter/reduce; работа с UTF‑8 строками (срезы, поиск), простые регекспы или удобный сканер для лексера.
+  - Чёткая модель динамики/статички: уже описана философия, но нет закреплённого синтаксиса и инструментов shape_as/shape_try/get в языке/stdlib (пока только концепт).
+  - Match/паттерны: нужно оформить полноценный паттерн-матч с деструктуризацией record/ADT, or-patterns/guards, и правила для открытых форм (в примерах — только общая идея).
+  - Владение: есть доки (Shared/Weak/Unique/Handle), но нет самой реализации в std/mem и линтов, которые enforce правила (двусторонний Shared, сырые ptr только unsafe).
+  - Замыкания/захваты: в коде есть лямбды, но не формализованы правила захвата (move/Shared-only для возвращаемых/сохраняемых), нет синтаксиса/проверок на этапе компиляции.
+  - Модули/видимость: нужны работающие pub/priv/export и модульные границы, чтобы спрятать внутренности и управлять API.
+  - Парсерный каркас: в языке нет удобных примитивов/комбинаторов для лексера/парсера, а они нужны для переписи компилятора (peek/consume/expect, хорошие ошибки).
+  - Диагностика/логирование/CLI: парсер аргументов, форматтер ошибок (с позициями), лог/trace — must-have для компилятора.
+  - C++ backend tooling: C++ AST DSL или строковый билдер в самом языке; сейчас это на Ruby.
+  - Тестовый фреймворк: минимальные assert/fixtures для юнит/интеграций фаз компилятора.
+  - Деструктуризация/spread: не сформализовано сочетание со статик/динамик (есть концепт, нет языка).
+  - Типовые алиасы/атрибуты для weak/shared: сейчас только в документах; нет языка/stdlib-части (ChildPtr/ParentPtr, @weak_ref и т.п.).
+
+  Если приоритет — “сделать компилятор на своём языке”, сперва нужен рабочий stdlib: строки/коллекции/Option/Result/ADT+match/IO+CLI, базовая модульная система и проверки владения. Потом — закрепить правила динамики (shape_as/get) и захваты в замыканиях. Без этого переписка будет слишком больной.
+
+
+› а вот относительно реализации gtk-gl-cpp-2025 но на нашем языке (уже где-то мы частично пробовали по-моему)  чего ещё не хватает?
+
+
+• Для переноса gtk-gl-cpp-2025 на наш язык пока не хватает/не оформлено:
+
+  - FFI/interop: стабильный ABI для C (строки UTF-8 ↔ C-строки, массивы/срезы, структуры без паддинга, enums/bitflags), pkg-config-сборка/линковка, ручной unsafe слой для GTK/Gdk/GL.
+  - Callbacks/замыкания в FFI: безопасный способ передать колбэк в C (сохранить thunk, userdata, освобождение), запрет захвата ссылок (только move/Shared), pin/no-move для userdata.
+  - Владение/жизненный цикл: обёртки над refcounted объектами GTK/GL (g_object_ref/unref), ручные destroy/free, алиасы типа Handle/Weak для сигналов/подписок; pin для GL-буферов/текстур.
+  - Сигналы/события: удобный API для подключения слотов (слабые ссылки на слушателей, авто-отписка), маршалинг аргументов в/из GTK.
+  - GL-биндинги: загрузка функций (glad/egl/glx/wgl), типы буферов/шейдеров, безопасные обёртки для vbo/vao/ubo, плюс математика (vec/mat) и формат пикселей.
+  - Система окон/циклов: главный цикл GTK + интеграция таймеров/idle, обработка ввода/событий, без блокировки.
+  - Память/буферы: безопасные Span/Slice для передачи данных в GL, управление pinned/immutable буферами при map/unmap.
+  - Модули/видимость: чтобы спрятать unsafe-слой GTK/GL за безопасным API (pub/priv/export).
+  - Нитевость/маркер потоков: Send/Sync-аналоги или минимум предупреждений для вызова GTK только из главного потока.
+  - Тесты/демо: минимальный harness для рендера/событий, smoke-тесты FFI (создание окна, цикл, GL clear).
+
+  Если кратко: нужен оформленный FFI+unsafe слой, обёртки владения для GTK/GL, сигналы/callbacks, pin/slices для буферов, и модульная система, чтобы это спрятать за безопасным API.
+
+
+› а мы же вроде хотели иметь возможность напрямую в нашем языке подключать сишные библиотеки, без доп. подготовки
+
+
+• Чтобы “подключать C-библиотеки без доп. подготовки” нам нужно зафиксировать в языке/ABI:
+
+  - Стабильный FFI ABI: соглашение о вызовах (cdecl), выравнивание/паддинг для struct, представление enum/bitflags, UTF‑8 строки ↔ char* (с длиной/нулём), срезы/массивы в стиле ptr+len.
+  - extern/import c синтаксис: объявление сигнатур C-функций/struct/enums прямо в коде (минимальный хедер-импорт или встройка сигнатуры).
+  - Автогенерация биндингов из .h: хотя бы базовый парсер, чтобы не писать руками; если не сразу — позволить “ручные шапки” в MLC.
+  - Безопасный слой: линт/аннотации unsafe на вызовы/сырье; конверторы типов (строки, slices).
+  - Жизненный цикл: для refcount/alloc/free — возможность повесить делитер (аналог custom deleter) на Unique/Shared или RAII-обёртки; для callback’ов — thunk+userdata, запрет захвата ссылок, только move/Shared.
+  - Линковка: флаги -l/pkg-config в сборке (CLI опции), поиск .so/.dylib/.dll.
+  - Pin/no-move и Span/Slice для передачи буферов в C/GL.
+  - Потоковые маркеры: хотя бы предупреждение для вызовов, требующих главный поток (GTK и т.п.).
+  - Диагностика: когда сигнатуры не совпадают — чёткие ошибки типов/выравнивания.
+
+  Идеальный DX: пишешь extern fn glClear(mask: u32) -> void, вызываешь, линковка через --link gl, строки и slices конвертятся утилитами, любой unsafe явно помечен.
+
+
+› ну хочется чтобы было как в си, просто подключаешь хедер и используешь функции, чтобы не писать байндинги для каждой версии и платформы
+
+
+• Чтобы «как в C: подключил хедер и зовёшь», нужен автоматический импорт заголовков, а не ручные биндинги под каждую версию/платформу:
+
+  - Импорт хедера: extern "C" import "/usr/include/gtk-3.0/gtk/gtk.h" (или import_c "gtk/gtk.h") — компилятор прогоняет минимальный C-парсер/Clang-frontend и генерит объявления функций/struct/enums/typedef’ов.
+  - Типы 1:1: функции (fn), struct/union (с выравниванием/паддингом), enum/bitflags, typedef → алиасы; строки — char*/const char* как сырой ptr, утилиты для UTF‑8 конвертации в stdlib; slices — ptr+len.
+  - Безопасность: всё, что из C, по умолчанию unsafe для вызова; для ресурсов — можно навесить deleter в MLC (например, with_deleter(Unique<T>, free_fn)).
+  - Макросы/inline: либо парсим простые #define с числами/флагами, либо оставляем как const; сложный препроцессинг — через cpp перед импортом.
+  - Conditional compile: #ifdef/#if из хедера — либо уважаем через препроцессор, либо параметром -D/-I (как в C), плюс cfg(platform)/cfg(version) для выбора сигнатур.
+  - Linking: --link gtk-3 или pkg-config --cflags --libs gtk+-3.0 пробрасываются в компилятор; никаких ручных биндингов.
+  - Платформенные различия: один и тот же хедер на разных платформах даёт разные сигнатуры — решается так же, как в C: нужные -D/-I и условные блоки; можно добавить тонкий слой “shim” в MLC, если нужно единообразие API.
+  - Callbacks: генерация extern "C" thunk + userdata слот; пользователь навешивает MLC-функцию, но должен соблюдать правила захвата (без ссылок, только move/Shared).
+
+  Итог: подключаем хедер (через import_c/extern), компилятор сам генерит декларации, линковка через флаги/pkg-config, без ручных биндингов под каждую версию/платформу.
+
+
+› а вот интересно,  работа с типами, дженериками, должна ли  быть в компиляторе выделена  в  подсистему  и  какую? какие  для этого есть передовые  подходы?
+
+
+• Лучше выделять типовую подсистему отдельно, с чёткими сервисами и данными. Что нужно:
+
+  - Представление типов: канонизация/интернирование типов (унификация строк), замена/субституция, вариативность (variance), алиасы/номинальные и структурные типы, ADT.
+  - Обобщение/моно: инстанцирование дженериков, мономорфизация (как в Rust/Swift) vs рефикация (как в Java); кэш/шэринг инстансов; детект дублирующих специализаций.
+  - Инференс: двунаправленная типизация (bidirectional typing) + набор локальных правил для лямбд, литералов, вызовов; constraint solving/унификация. Для контроля: аннотации на public границах, чтобы не раздувать инференс.
+  - Трейты/классы типов: резолвер обязательств (trait solver) с выборами/обязательствами; coherence/орфан-правила; ассоциированные типы/константы; специализация (опционально).
+  - Вывод для generics: partial inference, default/placeholder-тип для недоопределённого; ошибка/diagnostic, если не хватает контекста.
+  - Typed IR: слой SemanticIR должен быть типизированным (каждое выражение/узел несёт тип); типы на IR канонизированы.
+  - Инкрементальность: кеш результатов инференса по модулям/файлам, stable-id для узлов; пересборка только изменённого.
+  - Диагностики: хороший трейс конфликтов унификации, несоответствие трейтов, невыведенный тип, ambiguous call, несоответствие формы записи (статик/динамик).
+  - Безопасность владения: правила захватов лямбд/корутин (только move/Shared), запрет хранить ссылки/borrow; проверка обратных ссылок (weak).
+
+  Передовые подходы, на которые можно смотреть:
+
+  - Rust/Chalk: trait solver с обязательствами, мономорфизация, coherence.
+  - Swift/Kotlin: bidirectional typing, partial inference, констрейнты на generics, специализация при необходимости.
+  - Scala/Dotty: интернирование и канонизация типов, контекст для инференса.
+
+  Структура в компиляторе:
+
+  - Модуль types/: представление типов + interner/canonicalizer.
+  - Модуль constraints/: генерация и решение (унификация, obligations).
+  - Модуль traits/: резолвер обязательств/impl.
+  - Модуль generics/: инстанцирование/мономорфизация, кеш инстансов.
+  - Семантический проход: строит typed IR, опираясь на solver.
+  - Диагностики: отдельные форматы ошибок/подсказок.
+
+  Это отделяет типовую логику от парсера/бэкенда и даёт пространство для инкрементальности и хороших сообщений.
+
+
+› составь тогда анализ нашей реализации  и возможных улучшений
+
+
+• Explored
+  └ List mlc
+    List representations
+    Search find lib/mlc/representations/semantic -maxdepth 2 -type f
+    Search type_checker|inference|generic|type in semantic
+    Search type_checker in mlc
+    Search inference in semantic
+    Read type_inference_service.rb
+
+• I'm gathering a high-level analysis of the current type inference system, noting its simplicity and lack of trait solving or deeper features. I'll create a concise prioritized bullet list with references to relevant files and outline a plan for enhancements based on what I see in the repo and docs.
+
+─ Worked for 49s ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Коротко, что есть сейчас (по коду и диалогам):
+
+  - Типы и AST: есть базовые конструкторы типов (primitive/record/sum/function/generic/type_variable) в lib/mlc/representations/semantic/nodes/builder.rb. Типовая информация таскается в SemanticIR.
+  - Инференс: TypeInferenceService (lib/mlc/representations/semantic/gen/services/inference/type_inference_service.rb) делает простой двунаправленный вывод для вызовов, бинарных/унарных опов, частично для лямбд и массивов. Есть TypeUnificationService, но это скорее унификация паттернов для дженериков; никаких трейтов/обязательств нет.
+  - Дженерики: есть GenericCallResolver, инстанциирование функций с type_params, но без полноценных ограничений/trait bounds.
+  - Нет trait solver’а, нет канонизации типов (интернирование), нет явной системы модульной приватности/экспортов в типовой подсистеме.
+  - Динамика vs статика: пока лишь концепт в документах; в коде нет shape/check утилит и явной “открытой формы”.
+  - Владение/Shared/Weak: оформлено в документах, но не реализовано в stdlib и не проверяется типовой системой/линтом.
+  - Match/паттерны: базовая работа с ADT есть, но нет правил для смешения с “открытой” формой (то, что обсудили — только в доках).
+  - Замыкания: парсер и backend генерируют C++ лямбды, но правила захвата (move/Shared-only для возвращаемых/сохраняемых) не зафиксированы типовой проверкой.
+  - FFI/extern: отсутствует; нет автоматического импорта .h и проверки ABI.
+
+  Что стоит улучшить (приоритетно, если хотим на языке писать сам компилятор/GTK-GL):
+
+  1. Типовая подсистема:
+      - Ввести interner/канонизацию типов; отдельный модуль types/ с представлением, substitution, variance.
+      - Trait/интерфейсный solver (обязательства/impl), хотя бы упрощённый; bounds на дженерики.
+      - Чёткий pipeline inference: двунаправленный, constraints + унификация; диагностики (ambiguous, cannot infer).
+      - Инкрементальность: кэш инференса по узлам/модулям, stable-id.
+  2. Дженерики:
+      - Мономорфизация с кешем инстансов; проверка повторных специализаций.
+      - Partial inference + явные аннотации на public API.
+  3. Динамика ↔ статика:
+      - Реализовать open/closed формы и функции get/shape_as/shape_try; линт на переход в динамику и на небезопасный доступ.
+      - Правила для match/spread/деструктуризации с открытыми формами.
+  4. Владение/безопасность:
+      - std/mem: Unique/Shared/Weak/Handle/Observer/Span + фабрики; линт/проверки (двусторонний Shared запрещён, сырой ptr — только unsafe).
+      - Правила захвата в лямбдах/корутинах: запрет захвата обычных ссылок, только move/Shared; типовая проверка capture list при возвращении/сохранении.
+  5. FFI:
+      - extern/import_c хедеров (минимальный Clang-парсер или препроцессор) → автоматические объявления функций/struct/enums; linking через -l/pkg-config.
+      - Безопасные колбэки (thunk+userdata), pin/no-move для userdata, deleter для ресурсов.
+  6. Match/паттерны/спред:
+      - Формализовать паттерны для record/ADT, or-patterns/guards.
+      - Spread: закрытая+закрытая → закрытая; участие открытой формы → открытая (warning).
+  7. Парсерный каркас/stdlib для компилятора:
+      - Лексер/парсер-примитивы, строки UTF-8, Map/Set/Iterator API, диагностика/CLI.
+
+  Если нужен более детальный план, могу расписать по этапам (stdlib → типовая подсистема → динамика/shape → владение/линт → FFI).
+
+
+› а примерно организацию  по папкам и файлам какую ты бы  предложил? и какие  ещё ключевые подсистемы должны быть в нашем компиляторе?
+
+
+• Предлагаемая организация (для компилятора на нашем языке) и ключевые подсистемы:
+
+  Структура каталогов
+
+  - src/
+      - lexer/ — токенайзер, таблички ключевых слов, категория символов.
+      - parser/ — рекурсивный спуск/комбинаторы, AST-узлы (сырой AST), ошибки парсинга.
+      - types/ — представление типов, interner, substitution, variance, TypeId.
+      - traits/ — solver обязательств/impl, bounds, coherence.
+      - inference/ — constraints, унификация, двунаправленный вывод, generic instantiation.
+      - ir/ — SemanticIR (типизированный), билдеры IR, посетители.
+      - passes/ — семантический анализ (импорты/видимость, проверки, типизация), оптимизации IR.
+      - backend/
+          - cpp/ — C++ AST DSL или генератор, runtime policy, emitter.
+          - ffi/ — glue для внешних библиотек (если нужно).
+      - ffi/ — import_c, сигнатуры внешних функций, биндинг-генератор (если без Clang — свой простейший парсер).
+      - module/ — модульная система, резолвер имён, таблицы символов, видимость/export.
+      - ownership/ — правила владения (Shared/Weak/Unique/Handle), проверки захватов, линт циклов.
+      - diagnostics/ — форматтер ошибок, подсветка позиций, предупреждения.
+      - cli/ — парсер аргументов, команды (compile, emit-cpp, repl, test).
+      - repl/ — опционально, tree-walker/VM для интерактива.
+  - std/ — стандартная библиотека (MLC-файлы): mem, collections, string/regex, io, json, ffi.
+  - tests/ — юнит/интеграционные тесты по фазам; золотые эталоны вывода/ошибок.
+  - docs/ — спецификация языка, философия, политика указателей, паттерны.
+
+  Ключевые подсистемы компилятора
+
+  1. Лексер/Парсер: стабильный front-end, хорошие сообщения об ошибках, поддержка многофайловости/модулей.
+  2. Типовая система: interner, унификация, двунаправленный вывод, generics instantiation, trait solver (обязательства/impl), типизированный IR.
+  3. Модульная система: резолвер имён, видимость (pub/priv/export), импорт/циклические зависимости.
+  4. Семантический анализ: проверки типов, паттернов, match полноты (по возможности), захваты в лямбдах/корутинах, правила статика/динамика (shape/get).
+  5. Владение/безопасность: Shared/Weak/Unique/Handle, линты на циклы/двусторонние Shared, запрет сырых ptr вне unsafe.
+  6. Backend: C++ AST/эмиттер, управление runtime policy, опции (emit-cpp, keep-tmp, compiler selection).
+  7. FFI/import_c: автоматический импорт заголовков, объявление extern’ов, linking; безопасные колбэки/pin/slices.
+  8. Stdlib: строки/UTF-8, коллекции, Option/Result, ADT/match, io/json, mem (указатели), возможно минимальный regex/scan.
+  9. Diagnostics/CLI/Tooling: формат ошибок, подсказки, линты, CLI команды, maybe REPL/VM для dev experience.
+  10. Тесты: инфраструктура для фазовых тестов (lexer/parser/typecheck/backend), golden files, FFI smoke-тесты.
+
+  Такая раскладка отделяет типовую подсистему (types/traits/inference) от семантических проходов и backenda, оставляет место для политики владения и import_c, и даёт понятные точки расширения (REPL, VM).
+
+
+› ты проанализируй сначала какая у нас уже есть структура, чтобы слишком много не переделывать
+
+
+• Explored
+  └ Search find lib -maxdepth 2 -type d
+    Search find lib/mlc -maxdepth 2 -type f
+    Search find lib/mlc/representations -maxdepth 3 -type f
+    Search find lib/mlc/source -maxdepth 3 -type f
+
+─ Worked for 29s ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Текущая структура (в общих чертах):
+
+  - lib/mlc/source/ — lexer + parser (base/declaration/expression/pattern/statement/type), AST узлы.
+  - lib/mlc/representations/semantic/ — SemanticIR (узлы + builder) и gen/pipeline/engine (семантический пайплайн).
+  - lib/mlc/registries/ — function_registry, function_signature, type_registry.
+  - lib/mlc/backends/ — cpp.rb (бэкенд/эмиттер).
+  - lib/mlc/common/ — compiler_api и прочие общие штуки.
+  - lib/cpp_ast/ — отдельный C++ AST DSL (builder, parser, nodes).
+
+  Из очевидных пробелов:
+
+  - Нет выделенной директории для типовой системы (types/traits/inference) — логика вплетена в semantic/gen/services.
+  - Нет std/mem/указателей, нет FFI/import_c, нет модульной системы/видимости.
+  - Lint/ownership/dynamic-shape пока только в документах.
+  - Тестовый каркас/CLI/diagnostics находятся неявно или частично.
+
+  Чтобы не “переделывать всё”, можно накладывать новые подсистемы рядом:
+
+  Предложение по минимальному расширению структуры (не ломая существующее):
+
+  - lib/mlc/types/ — представление типов, interner, substitution (можно вынести из semantic/gen/services).
+  - lib/mlc/traits/ — (в будущем) solver для trait/obligations.
+  - lib/mlc/inference/ — общая часть инференса/унификации; сейчас TypeInferenceService лежит глубоко — можно оставить, но выделить util-слой.
+  - lib/mlc/ownership/ — правила владения/линт (Shared/Weak/Unique), если будем проверять статически.
+  - lib/mlc/ffi/ — import_c/extern/линковка (когда появится).
+  - lib/mlc/module/ — резолвер модулей/видимость/pub/priv (если будем формализовывать).
+  - lib/mlc/diagnostics/ — формат ошибок, подсказки (сейчас parse_error/compile_error на верхнем уровне).
+
+  И рядом в std/ (в языке) — mem, collections, string, json, io.
+
+  Ключевые подсистемы, которых сейчас нет или они спрятаны:
+
+  - Типовая система как отдельный модуль (interner, unify, constraints).
+  - Trait solver (если нужен).
+  - Ownership/линт (Shared/Weak/Handle).
+  - FFI/import_c.
+  - Модульная система/видимость.
+  - Diagnostics/CLI улучшения.
+
+  Такой план позволит добавлять новые части поэтапно, не ломая текущие каталоги.
+
+
+› наверное это должно быть в common? common/types? а registries не для этого? у нас же сейчас есть services и есть registries это плохая организация?
+
+
+• Registries сейчас — это больше таблицы/кэши (типы/функции), а не сама типовая система. Services — “склейка” пайплайна. Организация не катастрофа, но для ясности лучше слегка развести роли:
+
+  - Оставить registries как “хранилища” (type_registry, function_registry).
+  - Добавить слой common/types (или types/ рядом): представление типов, interner/канонизация, substitution, unify/constraints — то, что сейчас размазано по semantic services.
+  - Services оставить для фаз (pipeline, reductions), но опираться на common/types/inference вместо тащить логику внутрь.
+  - Не ломать всё: вынести общие типовые утилиты в common/types и подключить их из semantic/gen/services. Registries пусть останутся таблицами, но без бизнес-логики типов.
+
+  Так минимально упорядочим: таблицы отдельно, типовая логика отдельно, сервисы — обвязка.
+
+
+› то есть сервисы должны использовать то что будет в common/types? а по архитектурным паттернам что это будет? тоже сервисы?
+
+
+• Да: сервисы (пассайплайн) используют утилиты/модели из common/types вместо держать логику внутри. В common/types лучше держать чистые структуры и функции:
+
+  - Модель типов (structs для типов, interner, substitution).
+  - Унификация/constraints, utils для compare/pretty-print.
+  - Возможно небольшой “solver” модуль (не называя это сервисом), с чистыми функциями/классами без зависимости на пайплайн.
+
+  Архитектурно: common/types — это “core library” (чистая логика и структуры), services — orchestration/facade, которые дергают core. Таблицы (registries) — отдельный слой хранения/кэшей. Так сервисы остаются сервисами, а ядро типовой системы — не сервис, а набор моделей+функций.
+
+
+› какие ещё раз будут каталоги в types?
+
+
+• Для common/types (или types/), минимальный состав:
+
+  - model/ или types.rb: представление типов (primitive, func, record, sum/ADT, generic/apply, type var, alias), interner/canonicalizer.
+  - substitution/: apply_subst, compose_subst, замены типовых переменных.
+  - unify/: унификация типов, проверка совместимости, сравнение.
+  - constraints/: структуры для constraint’ов (если нужно), генерация/решение (может быть внутри unify, если не выделяем).
+  - printer/ или pretty/: форматирование типов для диагностик.
+  - (Позже) traits//obligations/: if/when вводим trait solver — сюда же (model obligations, impl lookup).
+  - util/: helpers для numeric/string/bool checks, etc. (чтобы не плодить в сервисах).
+
+  Можно упростить до нескольких файлов, если не хотим глубокой вложенности:
+  types/model.rb, types/interner.rb, types/subst.rb, types/unify.rb, types/pretty.rb. Key idea: чистый слой типов, без пайплайна.
+
+
+› нужна ли нам отдельная подсистема для паттерн матчинг. вроде  это сложная тема
+
+
+• Explored
+  └ Search match in source
+    Read pattern_parser.rb
+
+─ Worked for 18s ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Есть базовый парсер паттернов (wildcard, regex, литералы, идентификаторы, or-pattern), и match-узлы в IR. Подсистемы match как отдельного модуля нет — логика распылена между парсером и семантическим билдером. Улучшения:
+
+  - Семантическая проверка полноты/непересечения (хотя бы для ADT/enum) — отдельный шаг: “exhaustiveness” + “unreachable arm”.
+  - Поддержка деструктуризации record/ADT в паттернах (в том числе с именованными полями), or-patterns, guards, “spread” в паттерне (rest pattern).
+  - Правила для открытых форм: если матч по полю в открытой записи — трактовать как Option/Variant, возможно выдавать warning/требовать shape_*.
+  - Генерация IR для паттернов: выделить модуль match lowering, чтобы не лепить кейс-by-кейс в бэкенде.
+  - Оптимизации match (decision tree) пока можно отложить, но архитектурно выделить место.
+  - Согласовать синтаксис spread/деструктуризации с моделью закрытой/открытой формы.
+
+  Отдельная подсистема match имеет смысл, если хотим: проверять полноту, форматить ошибки по конфликтующим паттернам, поддерживать rest/spread/guards. Сейчас это “просто парсер + узел”, без анализа.
+
+  Итого: вынести “pattern checker” (exhaustiveness/overlap), расширить паттерны до record/ADT/arrays/or/guards/rest, и договориться, как работать с открытыми формами (либо запрет, либо Variant/Option + warning). Это можно сделать без тотальной перестройки каталогов: добавить lib/mlc/semantic/match/ или интегрировать в semantic pipeline отдельным шагом.
+
+
+› а сделай подробный  промпт для продвинутого генератора изображений для создания схемы наиболее интересных, нетривиальных элементов архитектуры нашего компилятора
+
+
+• Вот промпт для генератора изображений, чтобы получить техничную схему архитектуры компилятора:
+
+  Create a clean, technical architecture diagram (no 3D, no gradients) showing the main subsystems of an experimental statically-typed language compiler that targets C++20. Use a white background, thin lines, readable mono or semi-mono labels. Keep colors minimal (2–3 colors, mostly greys + one accent). Show data flow left-to-right.
+
+  Boxes to include (grouped, with subtle headers):
+  - Frontend: Lexer, Parser, AST
+  - Types & Inference: Type Model/Interner, Unify/Constraints, Trait Solver (future), Registries (Type/Function)
+  - Semantic IR: Typed IR Builder, Semantic Passes, Match/Pattern Checker
+  - Ownership & Safety: Shared/Weak/Unique/Handle policies, Capture rules for lambdas/coroutines, Lints (no double-Shared cycles)
+  - Dynamics Bridge: Static records (struct), Open records (map/variant), shape_as/shape_try/get helpers, Lints on opening forms
+  - Module System: Imports/Exports, Visibility, Symbol Resolver
+  - FFI: import C headers, extern declarations, callbacks (thunk+userdata), pin/slice for buffers
+  - Backend: C++ AST DSL, Codegen, Runtime Policy, Emitter (emit-cpp, keep-tmp)
+  - Stdlib: strings/UTF-8, collections/Map/Set, Option/Result/ADT, mem (Shared/Weak/Unique/Handle), io/json
+  - Tooling: CLI, Diagnostics (error formatting), Tests/Golden files, REPL/VM (optional)
+
+  Connections:
+  - Source → Lexer → Parser → AST → Types & Inference → Semantic IR → Backend → C++20 code
+  - Ownership/Safety and Dynamics Bridge tap into Semantic IR (checks/lints)
+  - FFI connects to Types/Backend
+  - Module System wraps around frontend/semantic
+  - Tooling/Diagnostics overlays errors across stages
+
+  Style:
+  - White background, thin solid lines, rounded rectangles for components.
+  - Use small icons or tiny glyphs only if needed; prefer clear text labels.
+  - Accent color for subsystem headers; greys for boxes/edges.
+  - Keep spacing balanced, avoid clutter; show arrows for data flow; group related boxes with light bounding boxes.
+
+ 
+› Summarize recent commits
+ 
+  63% context left · ? for shortcuts

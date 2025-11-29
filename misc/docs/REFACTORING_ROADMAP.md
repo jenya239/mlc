@@ -296,6 +296,44 @@ lib/mlc/
 
 ---
 
+### ✅ Phase 28.5: Pure Functions Extraction (4h)
+**Status**: COMPLETE (2025-11-24)
+**Results**: Extracted pure functions into reusable modules (+124 tests)
+
+**Goal**: Improve testability by extracting stateless pure functions from services
+
+**Pattern Applied**:
+- Services remain thin wrappers (delegation)
+- Pure logic moved to `module_function` modules in `utils/` subdirectories
+- Each module is independently testable
+- No state, no dependencies, no side effects
+
+**Modules Created**:
+
+1. **MLC::Common::Typing::Predicates** (7 functions, 28 tests)
+   - `type_name`, `normalized_type_name`, `describe_type`
+   - `numeric_type?`, `error_type?`, `generic_type_name?`, `unit_like?`
+   - Used by: TypeChecker
+
+2. **MLC::Backends::Cpp::Services::Utils::ComplexityAnalysis** (11 functions, 27 tests)
+   - `statement_has_control_flow?`, `expression_has_control_flow?`
+   - `simple_statement?`, `all_statements_simple?`, `has_nested_blocks?`
+   - `block_has_control_flow?`, `simple_branch?`, `branches_have_nested_control_flow?`
+   - `constructor_pattern?`, `regex_pattern?`
+   - Used by: BlockComplexityAnalyzer, IfComplexityAnalyzer, MatchComplexityAnalyzer
+
+3. **MLC::Representations::Semantic::Gen::Services::Utils::PurityAnalysis** (5 functions, 20 tests)
+   - `pure_expression?`, `pure_call?`, `non_literal_type?`, `pure_block?`, `pure_statement?`
+   - Used by: PurityAnalyzer
+
+**Statistics**:
+- **Tests added**: +124 (28 + 27 + 20 + 49 for TypeUnificationService)
+- **New test files**: 4
+- **Services updated**: 6 (TypeChecker, BlockComplexityAnalyzer, IfComplexityAnalyzer, MatchComplexityAnalyzer, PurityAnalyzer, TypeUnificationService)
+- **Test results**: 1780 runs, 4571 assertions, 0 failures, 0 errors ✅
+
+---
+
 ### Phase 29: Ruby IoC Container (12h, Medium)
 **Goal**: Replace manual dependency injection with Dry-container
 
@@ -386,7 +424,7 @@ lib/mlc/
 
 ## Summary
 
-**Completed** (Phase 21-28): ~109 hours
+**Completed** (Phase 21-28.5): ~113 hours
 - ✅ Phase 21: Service Consolidation (6h)
 - ✅ Phase 22: Eliminate Delegate Methods (3h)
 - ✅ Phase 23: Visitor Pattern Migration (20h)
@@ -394,7 +432,8 @@ lib/mlc/
 - ✅ Phase 25: Codebase Reorganization (40h)
 - ✅ Phase 27: Documentation Improvements (4h)
 - ✅ Phase 27.5: Fix Directory/Namespace Mismatches (8h)
-- ✅ Phase 28: Autoloading Infrastructure (8h) - **COMPLETE 2025-11-19**
+- ✅ Phase 28: Autoloading Infrastructure (8h) - COMPLETE 2025-11-19
+- ✅ Phase 28.5: Pure Functions Extraction (4h) - **COMPLETE 2025-11-24**
 
 **Deferred** (Phase 29-31): TBD
 - Phase 29: IoC Container (12h)
@@ -410,9 +449,10 @@ lib/mlc/
 - ✅ 16 namespace migration commits (50+ files modified)
 - ✅ **Zeitwerk autoloading integrated** - eliminated 72 manual requires (46 remaining, 61% reduction)
 - ✅ **Documented architecture** - remaining requires explained
+- ✅ **Pure functions extraction** - 3 utility modules, +124 tests
 - ✅ 0 regressions throughout all changes
-- ✅ Test stability: 1524 runs, 4014 assertions, 0 failures, 0 errors
+- ✅ Test stability: 1780 runs, 4571 assertions, 0 failures, 0 errors
 - ✅ 10,963+ net lines of code removed
 - ✅ Scalable architecture ready for future development
 
-**Last Updated**: 2025-11-19 (after Phase 28 completion + follow-up cleanups)
+**Last Updated**: 2025-11-24 (after Phase 28.5 completion)

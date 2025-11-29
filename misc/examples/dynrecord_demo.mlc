@@ -1,0 +1,136 @@
+//! Dynamic Record Demo
+//! Shows usage of DynRecord for working with untyped external data
+
+import std/collections/dynrecord::{
+  DynRecord, Variant,
+  dyn_new, dyn_get, dyn_set, dyn_has,
+  dyn_get_str, dyn_get_i32, dyn_get_bool, dyn_get_record,
+  v_null, v_str, v_i32, v_bool, v_record,
+  ShapeResult
+}
+import std/core/option::{Option, Some, None}
+
+// =============================================================================
+// Static Types - Our target types after validation
+// =============================================================================
+
+// User type - static record with known fields
+type User = {
+  name: str,
+  age: i32,
+  email: str,
+  verified: bool
+}
+
+// Address type - nested record
+type Address = {
+  street: str,
+  city: str,
+  zip: str
+}
+
+// =============================================================================
+// Manual Shape Validation (until compiler introspection is ready)
+// =============================================================================
+
+// Validate DynRecord matches User shape
+fn validate_user(r: DynRecord) -> ShapeResult<User> = do
+  let name = dyn_get_str(r, :name)
+  let age = dyn_get_i32(r, :age)
+  let email = dyn_get_str(r, :email)
+  let verified = dyn_get_bool(r, :verified)
+
+  match (name, age, email)
+    | (Some(n), Some(a), Some(e)) =>
+        let v = match verified
+          | Some(b) => b
+          | None => false  // default to unverified
+        Ok(User { name: n, age: a, email: e, verified: v })
+    | _ => Err("Invalid User: missing required fields name, age, or email")
+end
+
+// =============================================================================
+// Example: Parse JSON-like data
+// =============================================================================
+
+// Simulated "parse_json" that returns DynRecord
+// In reality this would be provided by a JSON library
+extern fn parse_json(json: str) -> DynRecord
+
+// Process user data from external source
+fn process_user_data(raw: DynRecord) -> Option<User> = do
+  match validate_user(raw)
+    | Ok(user) => do
+        // Now we have a fully typed User!
+        println("Got user: " + user.name)
+        Some(user)
+      end
+    | Err(msg) => do
+        println("Validation failed: " + msg)
+        None
+      end
+end
+
+// =============================================================================
+// Example: Build dynamic record
+// =============================================================================
+
+// Create a user record dynamically
+fn create_user_dyn(name: str, age: i32, email: str) -> DynRecord = do
+  let r = dyn_new()
+  r = dyn_set(r, :name, v_str(name))
+  r = dyn_set(r, :age, v_i32(age))
+  r = dyn_set(r, :email, v_str(email))
+  r = dyn_set(r, :verified, v_bool(false))
+  r
+end
+
+// =============================================================================
+// Example: Nested records
+// =============================================================================
+
+fn create_user_with_address(
+  name: str,
+  age: i32,
+  street: str,
+  city: str
+) -> DynRecord = do
+  let addr = dyn_new()
+  addr = dyn_set(addr, :street, v_str(street))
+  addr = dyn_set(addr, :city, v_str(city))
+  addr = dyn_set(addr, :zip, v_str(""))
+
+  let user = dyn_new()
+  user = dyn_set(user, :name, v_str(name))
+  user = dyn_set(user, :age, v_i32(age))
+  user = dyn_set(user, :address, v_record(addr))
+  user
+end
+
+// Access nested field
+fn get_user_city(user: DynRecord) -> Option<str> = do
+  match dyn_get_record(user, :address)
+    | Some(addr) => dyn_get_str(addr, :city)
+    | None => None
+end
+
+// =============================================================================
+// Main example
+// =============================================================================
+
+fn main() -> i32 = do
+  // Create dynamic record
+  let dyn_user = create_user_dyn("Alice", 30, "alice@example.com")
+
+  // Validate and convert to static type
+  match validate_user(dyn_user)
+    | Ok(user) => do
+        println("Name: " + user.name)
+        println("Age: " + to_str(user.age))
+        0
+      end
+    | Err(e) => do
+        println("Error: " + e)
+        1
+      end
+end

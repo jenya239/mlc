@@ -72,10 +72,10 @@ class OpaqueTypeTest < Minitest::Test
     cpp = MLC.compile(source).to_source
 
     # Function should use Handle* pointer type
-    assert_match /Handle\*/, cpp
-    assert_match /Handle\* h/, cpp
-    assert_match /create_handle\(\)/, cpp
-    assert_match /use_handle\(h\)/, cpp
+    assert_match(/Handle\*/, cpp)
+    assert_match(/Handle\* h/, cpp)
+    assert_match(/create_handle\(\)/, cpp)
+    assert_match(/use_handle\(h\)/, cpp)
   end
 
   def test_opaque_type_in_stdlib
@@ -89,8 +89,8 @@ class OpaqueTypeTest < Minitest::Test
     cpp = MLC.compile(source).to_source
 
     # Window should be opaque pointer type with namespace
-    assert_match /mlc::graphics::Window\*/, cpp
-    assert_match /mlc::graphics::create_window/, cpp
+    assert_match(/mlc::graphics::Window\*/, cpp)
+    assert_match(/mlc::graphics::create_window/, cpp)
   end
 
   def test_opaque_type_vs_record_type

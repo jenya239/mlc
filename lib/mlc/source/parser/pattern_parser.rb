@@ -7,7 +7,7 @@ module MLC
     # Handles parsing of pattern matching patterns (match expressions, destructuring)
     module PatternParser
       # Parse a pattern (entry point)
-      # Patterns can be: wildcard, regex, literal, variable, constructor, or or-pattern
+      # Patterns can be: wildcard, regex, literal, variable, constructor, tuple, array, or or-pattern
       def parse_pattern
         case current.type
         when :UNDERSCORE, :OPERATOR
@@ -22,6 +22,10 @@ module MLC
           parse_string_literal_pattern
         when :TRUE, :FALSE
           parse_bool_literal_pattern
+        when :LBRACKET
+          parse_array_pattern
+        when :LPAREN
+          parse_tuple_pattern
         when :IDENTIFIER
           parse_identifier_pattern
         else
@@ -68,7 +72,7 @@ module MLC
       def pattern_start?(token)
         return false unless token
         case token.type
-        when :UNDERSCORE, :REGEX, :INT_LITERAL, :FLOAT_LITERAL, :STRING_LITERAL, :TRUE, :FALSE, :IDENTIFIER
+        when :UNDERSCORE, :REGEX, :INT_LITERAL, :FLOAT_LITERAL, :STRING_LITERAL, :TRUE, :FALSE, :IDENTIFIER, :LBRACKET, :LPAREN
           true
         when :OPERATOR
           token.value == "_"
@@ -164,6 +168,87 @@ module MLC
         consume(token.type)  # consume TRUE or FALSE
         value = (token.type == :TRUE)
         with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
+      end
+
+      # Parse tuple pattern: (), (x,), (x, y), (x, y, z)
+      # Similar to tuple literal syntax:
+      #   () - empty tuple pattern
+      #   (x,) - single-element tuple pattern (trailing comma required)
+      #   (x, y) - two-element tuple pattern
+      # Examples: (x, y), (_, z), (Some(a), b)
+      def parse_tuple_pattern
+        lparen_token = consume(:LPAREN)
+
+        # Empty tuple pattern: ()
+        if current.type == :RPAREN
+          consume(:RPAREN)
+          return with_origin(lparen_token) do
+            MLC::Source::AST::Pattern.new(kind: :tuple, data: {elements: []})
+          end
+        end
+
+        # Parse first element
+        first_pattern = parse_pattern
+        elements = [first_pattern]
+
+        # Check for comma (required for tuple)
+        if current.type == :COMMA
+          consume(:COMMA)
+
+          # Check if this is single-element tuple: (x,)
+          if current.type == :RPAREN
+            consume(:RPAREN)
+            return with_origin(lparen_token) do
+              MLC::Source::AST::Pattern.new(kind: :tuple, data: {elements: elements})
+            end
+          end
+
+          # Parse remaining elements
+          while current.type != :RPAREN
+            elements << parse_pattern
+            break unless current.type == :COMMA
+            consume(:COMMA)
+            break if current.type == :RPAREN  # Allow trailing comma
+          end
+        else
+          # No comma - this is a grouped pattern, not a tuple
+          # Just return the inner pattern
+          consume(:RPAREN)
+          return first_pattern
+        end
+
+        consume(:RPAREN)
+        with_origin(lparen_token) do
+          MLC::Source::AST::Pattern.new(kind: :tuple, data: {elements: elements})
+        end
+      end
+
+      # Parse array pattern: [], [x], [x, y], [x, y, z]
+      # Handles empty arrays and arrays with pattern elements
+      # Examples: [], [_], [x, y], [1, 2, 3], [Some(x), None]
+      def parse_array_pattern
+        lbracket_token = consume(:LBRACKET)
+
+        # Empty array pattern: []
+        if current.type == :RBRACKET
+          consume(:RBRACKET)
+          return with_origin(lbracket_token) do
+            MLC::Source::AST::Pattern.new(kind: :array, data: {elements: []})
+          end
+        end
+
+        # Parse element patterns
+        elements = []
+        while current.type != :RBRACKET
+          elements << parse_pattern
+          break unless current.type == :COMMA
+          consume(:COMMA)
+        end
+
+        consume(:RBRACKET)
+        with_origin(lbracket_token) do
+          MLC::Source::AST::Pattern.new(kind: :array, data: {elements: elements})
+        end
       end
 
       # Parse identifier pattern: can be variable, constructor, or constructor with fields
