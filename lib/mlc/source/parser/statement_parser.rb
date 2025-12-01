@@ -176,7 +176,6 @@ module MLC
 
           with_origin(let_token) { MLC::Source::AST::DestructuringDecl.new(pattern: pattern, value: value, mutable: mutable) }
         end
-
       end
     end
   end

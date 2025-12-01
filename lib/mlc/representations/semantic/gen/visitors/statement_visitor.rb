@@ -81,7 +81,6 @@ module MLC
                 statement_visitor: self
               }
             end
-
           end
         end
       end

@@ -451,5 +451,4 @@ class GenericsE2ETest < Minitest::Test
       assert_equal 50, status.exitstatus
     end
   end
-
 end

@@ -152,5 +152,4 @@ class StdlibSimpleE2ETest < Minitest::Test
       assert_match(/HELLO WORLD/, stdout)
     end
   end
-
 end

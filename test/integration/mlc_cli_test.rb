@@ -179,5 +179,4 @@ class MLCCLITest < Minitest::Test
       assert(status.success?, "Expected execution success, stderr: #{stderr}")
     end
   end
-
 end

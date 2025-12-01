@@ -13,5 +13,4 @@ class MLCRuntimeFormatTest < Minitest::Test
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "mlc::format"
   end
-
 end

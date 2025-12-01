@@ -112,6 +112,5 @@ module CppAst
         result
       end
     end
-
   end
 end

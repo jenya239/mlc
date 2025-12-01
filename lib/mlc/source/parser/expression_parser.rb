@@ -1438,7 +1438,6 @@ module MLC
 
           attach_origin(MLC::Source::AST::ArrayLiteral.new(elements: elements), token)
         end
-
       end
     end
   end

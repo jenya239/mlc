@@ -627,7 +627,6 @@ module MLC
             MLC::Source::AST::WhereBound.new(type_param: type_param, traits: traits)
           end
         end
-
       end
     end
   end

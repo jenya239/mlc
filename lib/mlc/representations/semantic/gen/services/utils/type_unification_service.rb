@@ -147,7 +147,6 @@ module MLC
 
               type.type_args.first
             end
-
           end
         end
       end

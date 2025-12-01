@@ -337,7 +337,6 @@ module MLC
             with_origin(ref_token) { MLC::Source::AST::RefType.new(inner_type: inner_type) }
           end
         end
-
       end
     end
   end

@@ -4,7 +4,6 @@ require_relative "../test_helper"
 
 # Tests for Map<K, V> type and DynRecord functionality
 class MapTypeTest < Minitest::Test
-
   # ============================================================================
   # C++ Type Mapping Tests
   # ============================================================================

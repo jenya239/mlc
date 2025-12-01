@@ -159,7 +159,6 @@ module MLC
             def to_s
               inspect
             end
-
           end
         end
       end
