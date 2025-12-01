@@ -10,10 +10,10 @@ class OpenGLCoverageTest < Minitest::Test
     ast = namespace_decl("gtkgl::gl",
                          class_decl("Shader",
                                     enum_class("Type", [
-                                      ["Vertex", "GL_VERTEX_SHADER"],
+                                                 ["Vertex", "GL_VERTEX_SHADER"],
                                       ["Fragment", "GL_FRAGMENT_SHADER"],
                                       ["Geometry", "GL_GEOMETRY_SHADER"]
-                                    ]),
+                                               ]),
                                     function_decl("", "Shader", [param("Type", "type"), param("const std::string&", "source")], block()),
                                     function_decl("", "~Shader", [], block()),
                                     function_decl("", "Shader", [param("const Shader&", "other")], block())
@@ -119,14 +119,14 @@ class OpenGLCoverageTest < Minitest::Test
                          ),
                          class_decl("Buffer",
                                     enum_class("Type", [
-                                      ["Array", "GL_ARRAY_BUFFER"],
+                                                 ["Array", "GL_ARRAY_BUFFER"],
                                       ["ElementArray", "GL_ELEMENT_ARRAY_BUFFER"]
-                                    ]),
+                                               ]),
                                     enum_class("Usage", [
-                                      ["Static", "GL_STATIC_DRAW"],
+                                                 ["Static", "GL_STATIC_DRAW"],
                                       ["Dynamic", "GL_DYNAMIC_DRAW"],
                                       ["Stream", "GL_STREAM_DRAW"]
-                                    ]),
+                                               ]),
                                     function_decl("", "Buffer", [param("Type", "type")], block())
                                       .explicit(),
                                     function_decl("", "~Buffer", [], block()),
@@ -249,16 +249,16 @@ class OpenGLCoverageTest < Minitest::Test
                          ),
 
                          enum_class("AtlasFormat", [
-                           ["A8"],
+                                      ["A8"],
                            ["RGB8"],
                            ["RGBA8"]
-                         ], underlying_type: "uint8_t"),
+                                    ], underlying_type: "uint8_t"),
 
                          enum_class("RenderMode", [
-                           ["BITMAP"],
+                                      ["BITMAP"],
                            ["MSDF"],
                            ["SDF"]
-                         ], underlying_type: "uint8_t")
+                                    ], underlying_type: "uint8_t")
     )
 
     cpp_code = ast.to_source

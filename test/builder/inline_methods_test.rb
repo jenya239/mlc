@@ -39,9 +39,9 @@ class InlineMethodsTest < Minitest::Test
     ast = function_decl("void", "set_uniform", [param("const std::string&", "name"), param("int", "value")], block())
       .inline_body(block(
         expr_stmt(call(id("glUniform1i"), [
-          call(id("glGetUniformLocation"), [id("program_"), id("name")]),
+                         call(id("glGetUniformLocation"), [id("program_"), id("name")]),
           id("value")
-        ]))
+                       ]))
       ))
       .const()
     cpp_code = ast.to_source

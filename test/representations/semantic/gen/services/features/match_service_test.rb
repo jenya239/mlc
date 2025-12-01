@@ -78,10 +78,10 @@ class MatchServiceTest < Minitest::Test
 
   def test_transform_pattern_regex
     pattern = MockPattern.new(:regex, {
-      pattern: "\\d+",
+                                pattern: "\\d+",
       flags: "i",
       bindings: ["match", "group1"]
-    })
+                              })
 
     result = @service.send(:transform_pattern, pattern)
 

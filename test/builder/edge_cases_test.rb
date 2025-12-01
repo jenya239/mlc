@@ -50,11 +50,11 @@ class EdgeCasesTest < Minitest::Test
 
   def test_enum_class_with_mixed_values
     ast = enum_class("MixedEnum", [
-      ["FIRST"],
+                       ["FIRST"],
       ["SECOND", "10"],
       ["THIRD"],
       ["FOURTH", "100"]
-    ], underlying_type: "int")
+                     ], underlying_type: "int")
     cpp_code = ast.to_source
     assert_includes cpp_code, "enum class MixedEnum : int{FIRST, SECOND = 10, THIRD, FOURTH = 100};"
   end

@@ -17,10 +17,10 @@ class CombinationsTest < Minitest::Test
   def test_enum_class_with_underlying_type_in_namespace
     ast = namespace_decl("gtkgl::text",
                          enum_class("AtlasFormat", [
-                           ["A8"],
+                                      ["A8"],
                            ["RGB8"],
                            ["RGBA8"]
-                         ], underlying_type: "uint8_t")
+                                    ], underlying_type: "uint8_t")
     )
     cpp_code = ast.to_source
     assert_includes cpp_code, "namespace gtkgl::text"
@@ -63,9 +63,9 @@ class CombinationsTest < Minitest::Test
   def test_template_class_with_enum_and_friend
     ast = template_class("Buffer", ["typename T"],
                          enum_class("Type", [
-                           ["Array", "GL_ARRAY_BUFFER"],
+                                      ["Array", "GL_ARRAY_BUFFER"],
                            ["ElementArray", "GL_ELEMENT_ARRAY_BUFFER"]
-                         ]),
+                                    ]),
                          friend_decl("struct", "std::hash<Buffer<T>>"),
                          function_decl("void", "data", [param("std::span<const T>", "data")], block())
                            .template_method("void", "data", ["typename T"], [param("std::span<const T>", "data")], block())
@@ -157,10 +157,10 @@ class CombinationsTest < Minitest::Test
 
   def test_enum_class_with_values_and_underlying_type
     ast = enum_class("RenderMode", [
-      ["BITMAP", "0"],
+                       ["BITMAP", "0"],
       ["MSDF", "1"],
       ["SDF", "2"]
-    ], underlying_type: "uint8_t")
+                     ], underlying_type: "uint8_t")
     cpp_code = ast.to_source
     expected = "enum class RenderMode : uint8_t{BITMAP = 0, MSDF = 1, SDF = 2};"
     assert_equal expected, cpp_code

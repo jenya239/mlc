@@ -122,10 +122,10 @@ class FullFeatureValidationTest < Minitest::Test
   def test_enum_class_full_feature
     # Test enum class with underlying type
     ast1 = enum_class("AtlasFormat", [
-      ["A8"],
+                        ["A8"],
       ["RGB8"],
       ["RGBA8"]
-    ], underlying_type: "uint8_t")
+                      ], underlying_type: "uint8_t")
 
     cpp_code1 = ast1.to_source
     assert_includes cpp_code1, "enum class AtlasFormat : uint8_t"
@@ -133,10 +133,10 @@ class FullFeatureValidationTest < Minitest::Test
 
     # Test enum class with values and underlying type
     ast2 = enum_class("RenderMode", [
-      ["BITMAP", "0"],
+                        ["BITMAP", "0"],
       ["MSDF", "1"],
       ["SDF", "2"]
-    ], underlying_type: "uint8_t")
+                      ], underlying_type: "uint8_t")
 
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "enum class RenderMode : uint8_t"
@@ -149,10 +149,10 @@ class FullFeatureValidationTest < Minitest::Test
                      using_alias("ShaderID", "GLuint"),
                      friend_decl("struct", "std::hash<OpenGLShader>"),
                      enum_class("Type", [
-                       ["Vertex", "GL_VERTEX_SHADER"],
+                                  ["Vertex", "GL_VERTEX_SHADER"],
                        ["Fragment", "GL_FRAGMENT_SHADER"],
                        ["Geometry", "GL_GEOMETRY_SHADER"]
-                     ], underlying_type: "GLenum"),
+                                ], underlying_type: "GLenum"),
 
       # Constructor with initializer list
                      function_decl("", "OpenGLShader", [param("Type", "type"), param("const std::string&", "source")],

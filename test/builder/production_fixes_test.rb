@@ -88,10 +88,10 @@ class ProductionFixesTest < Minitest::Test
 
   def test_enum_class_with_underlying_type
     ast = enum_class("AtlasFormat", [
-      ["A8"],
+                       ["A8"],
       ["RGB8"],
       ["RGBA8"]
-    ], underlying_type: "uint8_t")
+                     ], underlying_type: "uint8_t")
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "enum class AtlasFormat : uint8_t"
@@ -135,10 +135,10 @@ class ProductionFixesTest < Minitest::Test
                      ),
 
                      enum_class("AtlasFormat", [
-                       ["A8"],
+                                  ["A8"],
                        ["RGB8"],
                        ["RGBA8"]
-                     ], underlying_type: "uint8_t"),
+                                ], underlying_type: "uint8_t"),
 
                      struct_decl("AtlasSlot",
                                  field_def("page_id", "uint32_t", default: "0"),

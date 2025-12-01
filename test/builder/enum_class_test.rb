@@ -8,10 +8,10 @@ class EnumClassTest < Minitest::Test
 
   def test_enum_class_basic
     ast = enum_class("Type", [
-      ["Vertex", "GL_VERTEX_SHADER"],
+                       ["Vertex", "GL_VERTEX_SHADER"],
       ["Fragment", "GL_FRAGMENT_SHADER"],
       ["Geometry", "GL_GEOMETRY_SHADER"]
-    ])
+                     ])
 
     cpp_code = ast.to_source
     expected = "enum class Type{Vertex = GL_VERTEX_SHADER, Fragment = GL_FRAGMENT_SHADER, Geometry = GL_GEOMETRY_SHADER};"
@@ -21,10 +21,10 @@ class EnumClassTest < Minitest::Test
 
   def test_enum_class_with_underlying_type
     ast = enum_class("Format", [
-      ["A8"],
+                       ["A8"],
       ["RGB8"],
       ["RGBA8"]
-    ], underlying_type: "uint8_t")
+                     ], underlying_type: "uint8_t")
 
     cpp_code = ast.to_source
     expected = "enum class Format : uint8_t{A8, RGB8, RGBA8};"
@@ -34,10 +34,10 @@ class EnumClassTest < Minitest::Test
 
   def test_enum_class_with_values_and_underlying_type
     ast = enum_class("Usage", [
-      ["Static", "GL_STATIC_DRAW"],
+                       ["Static", "GL_STATIC_DRAW"],
       ["Dynamic", "GL_DYNAMIC_DRAW"],
       ["Stream", "GL_STREAM_DRAW"]
-    ], underlying_type: "GLenum")
+                     ], underlying_type: "GLenum")
 
     cpp_code = ast.to_source
     expected = "enum class Usage : GLenum{Static = GL_STATIC_DRAW, Dynamic = GL_DYNAMIC_DRAW, Stream = GL_STREAM_DRAW};"
@@ -47,10 +47,10 @@ class EnumClassTest < Minitest::Test
 
   def test_enum_class_simple_values
     ast = enum_class("Color", [
-      ["Red"],
+                       ["Red"],
       ["Green"],
       ["Blue"]
-    ])
+                     ])
 
     cpp_code = ast.to_source
     expected = "enum class Color{Red, Green, Blue};"
@@ -60,11 +60,11 @@ class EnumClassTest < Minitest::Test
 
   def test_enum_class_mixed_values
     ast = enum_class("State", [
-      ["Idle"],
+                       ["Idle"],
       ["Running", "STATE_RUNNING"],
       ["Paused"],
       ["Stopped", "STATE_STOPPED"]
-    ])
+                     ])
 
     cpp_code = ast.to_source
     expected = "enum class State{Idle, Running = STATE_RUNNING, Paused, Stopped = STATE_STOPPED};"
@@ -76,9 +76,9 @@ class EnumClassTest < Minitest::Test
     ast = class_decl("Shader",
                      access_spec("public"),
                      enum_class("Type", [
-                       ["Vertex", "GL_VERTEX_SHADER"],
+                                  ["Vertex", "GL_VERTEX_SHADER"],
                        ["Fragment", "GL_FRAGMENT_SHADER"]
-                     ]),
+                                ]),
                      function_decl("", "Shader", [param("Type", "type")], block())
     )
 
@@ -91,9 +91,9 @@ class EnumClassTest < Minitest::Test
   def test_roundtrip_enum_class
     # Generate C++ code
     ast = enum_class("Type", [
-      ["Vertex", "GL_VERTEX_SHADER"],
+                       ["Vertex", "GL_VERTEX_SHADER"],
       ["Fragment", "GL_FRAGMENT_SHADER"]
-    ])
+                     ])
     cpp_code = ast.to_source
 
     # Basic validation - should contain expected elements
@@ -105,9 +105,9 @@ class EnumClassTest < Minitest::Test
   def test_roundtrip_enum_class_with_underlying_type
     # Generate C++ code
     ast = enum_class("Format", [
-      ["A8"],
+                       ["A8"],
       ["RGB8"]
-    ], underlying_type: "uint8_t")
+                     ], underlying_type: "uint8_t")
     cpp_code = ast.to_source
 
     # Basic validation - should contain expected elements

@@ -67,8 +67,8 @@ class AdvancedTemplatesTest < Minitest::Test
       # Simple template function
       template_decl(["typename T"],
                     function_decl("void", "draw_if_drawable", [
-                      param("T", "obj")
-                    ], block(
+                                    param("T", "obj")
+                                  ], block(
                       expr_stmt(call(id("obj"), "draw", []))
                     ))
       )
@@ -101,8 +101,8 @@ class AdvancedTemplatesTest < Minitest::Test
       # Variadic function with constraints
       template_decl(["typename... Args"],
                     function_decl("auto", "sum", [
-                      param("Args...", "args")
-                    ], block(
+                                    param("Args...", "args")
+                                  ], block(
                       return_stmt(call(id("std::reduce"), [id("args...")]))
                     ))
       )

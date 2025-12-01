@@ -95,9 +95,9 @@ module MLC
             def test_removes_code_after_return
               # { return 1; let x = 2; x }
               body = block([
-                return_stmt(lit(1)),
+                             return_stmt(lit(1)),
                 var_decl('x', lit(2))
-              ], var('x'))
+                           ], var('x'))
 
               f = func('test', body)
               prog = program([f])
@@ -117,10 +117,10 @@ module MLC
             def test_removes_multiple_statements_after_return
               # { return 1; let x = 2; let y = 3; }
               body = block([
-                return_stmt(lit(1)),
+                             return_stmt(lit(1)),
                 var_decl('x', lit(2)),
                 var_decl('y', lit(3))
-              ], nil)
+                           ], nil)
 
               f = func('test', body)
               prog = program([f])
@@ -138,9 +138,9 @@ module MLC
             def test_keeps_code_before_return
               # { let x = 1; return x; }
               body = block([
-                var_decl('x', lit(1)),
+                             var_decl('x', lit(1)),
                 return_stmt(var('x'))
-              ], nil)
+                           ], nil)
 
               f = func('test', body)
               prog = program([f])
@@ -161,8 +161,8 @@ module MLC
             def test_removes_unused_variable_without_side_effects
               # { let x = 1; 2 }
               body = block([
-                var_decl('x', lit(1))
-              ], lit(2))
+                             var_decl('x', lit(1))
+                           ], lit(2))
 
               f = func('test', body)
               prog = program([f])
@@ -181,8 +181,8 @@ module MLC
             def test_keeps_used_variable
               # { let x = 1; x }
               body = block([
-                var_decl('x', lit(1))
-              ], var('x'))
+                             var_decl('x', lit(1))
+                           ], var('x'))
 
               f = func('test', body)
               prog = program([f])
@@ -201,9 +201,9 @@ module MLC
             def test_keeps_variable_used_in_expression
               # { let x = 1; let y = x + 1; y }
               body = block([
-                var_decl('x', lit(1)),
+                             var_decl('x', lit(1)),
                 var_decl('y', binary('+', var('x'), lit(1)))
-              ], var('y'))
+                           ], var('y'))
 
               f = func('test', body)
               prog = program([f])
@@ -221,8 +221,8 @@ module MLC
             def test_keeps_variable_with_side_effect_value
               # { let x = call(); 1 } - call may have side effects
               body = block([
-                var_decl('x', call('side_effect_func'))
-              ], lit(1))
+                             var_decl('x', call('side_effect_func'))
+                           ], lit(1))
 
               f = func('test', body)
               prog = program([f])
@@ -242,8 +242,8 @@ module MLC
             def test_keeps_expression_statement_with_call
               # { call(); 1 }
               body = block([
-                expr_stmt(call('do_something'))
-              ], lit(1))
+                             expr_stmt(call('do_something'))
+                           ], lit(1))
 
               f = func('test', body)
               prog = program([f])
@@ -261,8 +261,8 @@ module MLC
             def test_removes_expression_statement_without_side_effects
               # { 1 + 2; 3 }
               body = block([
-                expr_stmt(binary('+', lit(1), lit(2)))
-              ], lit(3))
+                             expr_stmt(binary('+', lit(1), lit(2)))
+                           ], lit(3))
 
               f = func('test', body)
               prog = program([f])
@@ -281,9 +281,9 @@ module MLC
 
             def test_stats_increment_on_elimination
               body = block([
-                return_stmt(lit(1)),
+                             return_stmt(lit(1)),
                 var_decl('x', lit(2))
-              ], var('x'))
+                           ], var('x'))
 
               f = func('test', body)
               prog = program([f])
@@ -297,8 +297,8 @@ module MLC
 
             def test_stats_visited_count
               body = block([
-                var_decl('x', lit(1))
-              ], var('x'))
+                             var_decl('x', lit(1))
+                           ], var('x'))
 
               f = func('test', body)
               prog = program([f])
@@ -336,11 +336,11 @@ module MLC
               # Should keep: a, return a
               # Should eliminate: b (unused), c (after return)
               body = block([
-                var_decl('a', lit(1)),
+                             var_decl('a', lit(1)),
                 var_decl('b', lit(2)),
                 return_stmt(var('a')),
                 var_decl('c', lit(3))
-              ], var('c'))
+                           ], var('c'))
 
               f = func('test', body)
               prog = program([f])

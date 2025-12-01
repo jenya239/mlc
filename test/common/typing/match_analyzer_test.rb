@@ -221,8 +221,8 @@ class MatchAnalyzerTest < Minitest::Test
     red_pattern = MockPattern.new(:constructor, { name: "Red" })
     green_pattern = MockPattern.new(:constructor, { name: "Green" })
     or_pattern = MockPattern.new(:or, {
-      alternatives: [red_pattern, green_pattern]
-    })
+                                   alternatives: [red_pattern, green_pattern]
+                                 })
     blue_pattern = MockPattern.new(:constructor, { name: "Blue" })
 
     result = analyzer.analyze(

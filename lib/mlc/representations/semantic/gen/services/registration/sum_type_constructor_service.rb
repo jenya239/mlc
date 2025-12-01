@@ -65,9 +65,9 @@ module MLC
                 # Register in both storages
                 @sum_type_constructors[variant[:name]] = constructor_info
                 @function_registry.register(variant[:name], constructor_info, {
-                  exported: true,
+                                              exported: true,
                   external: true # Constructors are treated as external/builtin
-                })
+                                            })
               end
             end
           end

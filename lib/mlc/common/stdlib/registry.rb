@@ -7,12 +7,12 @@ module MLC
     module Stdlib
     # Mapping of module names to module information
       REGISTRY = {
-  "std/collections/array" => {
-    category: "collections",
-    type: :mixed,
-    namespace: "mlc::collections",
-    path: "collections/array.mlc"
-  },
+        "std/collections/array" => {
+          category: "collections",
+          type: :mixed,
+          namespace: "mlc::collections",
+          path: "collections/array.mlc"
+        },
   "std/core/option" => {
     category: "core",
     type: :pure,
@@ -67,7 +67,7 @@ module MLC
     namespace: "mlc",
     path: "text/string.mlc"
   },
-    }.freeze
+      }.freeze
 
     # Legacy module name aliases for backward compatibility
       LEGACY_ALIASES = {

@@ -7,10 +7,10 @@ class WhitespacePolicyTest < Minitest::Test
 
   def test_enum_without_spaces
     ast = enum_class("State", [
-      ["INIT"],
+                       ["INIT"],
       ["READY", "1"],
       ["ERROR", "2"]
-    ])
+                     ])
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "enum class State{INIT, READY = 1, ERROR = 2};"
@@ -19,9 +19,9 @@ class WhitespacePolicyTest < Minitest::Test
 
   def test_enum_with_underlying_type
     ast = enum_class("Format", [
-      ["A8"],
+                       ["A8"],
       ["RGB8"]
-    ], underlying_type: "uint8_t")
+                     ], underlying_type: "uint8_t")
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "enum class Format : uint8_t{A8, RGB8};"
@@ -72,9 +72,9 @@ class WhitespacePolicyTest < Minitest::Test
 
   def test_parameter_spacing
     ast = function_decl("void", "test", [
-      param("int", "x"),
+                          param("int", "x"),
       param("float", "y")
-    ], block())
+                        ], block())
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "void test(int x, float y) {"
