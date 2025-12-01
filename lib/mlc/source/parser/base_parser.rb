@@ -84,6 +84,7 @@ module MLC
           if token.type != :OPERATOR || token.value != expected_value
             raise "Expected operator '#{expected_value}', got #{token.type} '#{token.value}'"
           end
+
           @pos += 1
           @last_token = token
           token
@@ -93,6 +94,7 @@ module MLC
           if current.type != :OPERATOR || current.value != op
             raise "Expected operator '#{op}', got #{current.type}"
           end
+
           consume(:OPERATOR)
         end
 
@@ -110,6 +112,7 @@ module MLC
 
         def attach_origin(node, token)
           return node unless node.is_a?(MLC::Source::AST::Node)
+
           origin = case token
                    when SourceOrigin
                      token
@@ -117,6 +120,7 @@ module MLC
                      origin_from(token)
                    end
           return node unless origin
+
           node.instance_variable_set(:@origin, origin)
           node
         end
@@ -139,6 +143,7 @@ module MLC
           until eof? || current.type == end_token
             items << block.call
             break if current.type != :COMMA
+
             consume(:COMMA)
           end
           items

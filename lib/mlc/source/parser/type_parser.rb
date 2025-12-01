@@ -104,6 +104,7 @@ module MLC
 
             # Check for next variant
             break unless current.type == :OPERATOR && current.value == "|"
+
             consume(:OPERATOR) # consume |
           end
 
@@ -127,6 +128,7 @@ module MLC
                           loop do
                             types << parse_type
                             break unless current.type == :COMMA
+
                             consume(:COMMA)
                             # Handle trailing comma: (i32,) - break if next token is RPAREN
                             break if current.type == :RPAREN
@@ -198,6 +200,7 @@ module MLC
                           loop do
                             param_types << parse_type
                             break unless current.type == :COMMA
+
                             consume(:COMMA)
                           end
                         end
@@ -224,6 +227,7 @@ module MLC
             loop do
               type_params << parse_type
               break unless current.type == :COMMA
+
               consume(:COMMA)
             end
 
@@ -290,6 +294,7 @@ module MLC
             params << with_origin(name_token) { MLC::Source::AST::TypeParam.new(name: name, constraint: constraint) }
 
             break unless current.type == :COMMA
+
             consume(:COMMA)
           end
           params

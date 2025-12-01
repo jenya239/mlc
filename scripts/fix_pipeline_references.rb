@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 # Fix all references to SemanticGen::Pipeline
 
 files = [

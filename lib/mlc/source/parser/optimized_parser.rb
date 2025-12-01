@@ -110,6 +110,7 @@ module MLC
         # Optimized lookahead
         def lookahead(n = 1)
           return nil if @pos + n >= @tokens.length
+
           @tokens[@pos + n]
         end
 

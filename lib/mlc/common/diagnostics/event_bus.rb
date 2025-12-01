@@ -115,6 +115,7 @@ module MLC
     # Set minimum level for this bus
         def min_level=(level)
           raise ArgumentError, "Unknown level: #{level}" unless LEVELS.key?(level)
+
           @min_level = level
         end
 

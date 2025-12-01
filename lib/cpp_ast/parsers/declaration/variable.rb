@@ -139,6 +139,7 @@ module CppAst
         depth = 1
         loop do
           break if at_end?
+
           text << current_leading_trivia
           depth += 1 if current_token.kind == open_kind
           depth -= 1 if current_token.kind == close_kind

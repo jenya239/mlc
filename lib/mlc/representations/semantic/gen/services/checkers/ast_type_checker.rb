@@ -74,6 +74,7 @@ module MLC
               return :string if string_literal?(node)
               return :regex if regex_literal?(node)
               return :unit if unit_literal?(node)
+
               nil
             end
 

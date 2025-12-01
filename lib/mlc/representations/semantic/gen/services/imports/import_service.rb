@@ -108,6 +108,7 @@ module MLC
               prefixes.each do |prefix|
                 alias_key = [prefix, function_name].join('.')
                 next if alias_key == canonical_name
+
                 safe_register_alias(function_registry, alias_key, canonical_name)
               end
 

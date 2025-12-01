@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 # Fix engine.rb namespace: MLC::SemanticGen → MLC::Representations::Semantic::Gen
 
 file = "lib/mlc/representations/semantic/gen/engine.rb"

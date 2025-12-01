@@ -94,6 +94,7 @@ module MLC
           pattern.type_args.zip(actual.type_args).each do |pattern_arg, actual_arg|
             result = unify(pattern_arg, actual_arg, current_subst)
             return failure if result.failure?
+
             current_subst = result.substitutions
           end
 

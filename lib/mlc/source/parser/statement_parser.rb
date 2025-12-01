@@ -158,6 +158,7 @@ module MLC
             end
 
             break unless current.type == :COMMA
+
             consume(:COMMA)
           end
 

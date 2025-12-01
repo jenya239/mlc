@@ -80,6 +80,7 @@ module MLC
         # @return [Boolean] Whether the name is a generic type parameter
         def generic_type_name?(name)
           return false unless name.is_a?(String)
+
           name.empty? || name[0]&.match?(/[A-Z]/)
         end
 
@@ -90,6 +91,7 @@ module MLC
         # @return [Boolean] Whether the type is unit-like
         def unit_like?(name, type)
           return true if %w[unit void].include?(name)
+
           type.is_a?(SemanticIR::UnitType)
         end
       end

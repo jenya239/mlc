@@ -24,6 +24,7 @@ module MLC
             def build_requires_clause(type_params)
               clauses = type_params.map do |tp|
                 next unless tp.constraint && !tp.constraint.empty?
+
                 "#{tp.constraint}<#{tp.name}>"
               end.compact
               clauses.join(" && ")

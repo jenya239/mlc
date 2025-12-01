@@ -148,6 +148,7 @@ module MLC
 
                 alias_keys.each do |alias_key|
                   next if alias_key == entry.name
+
                   begin
                     @function_registry.register_alias(alias_key, entry.name)
                   rescue ArgumentError

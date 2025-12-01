@@ -366,10 +366,12 @@ module CppAst
           name << current_token.lexeme
           advance_raw
           raise ParseError, "Expected class name after ~" unless current_token.kind == :identifier
+
           name << current_token.lexeme
           advance_raw
         else
           raise ParseError, "Expected function name" unless current_token.kind == :identifier
+
           name << current_token.lexeme
           advance_raw
         end
@@ -476,6 +478,7 @@ module CppAst
 
           loop do
             break if at_end?
+
             param_text << current_leading_trivia
 
             if current_token.kind == :lparen
@@ -484,6 +487,7 @@ module CppAst
               advance_raw
             elsif current_token.kind == :rparen
               break if paren_depth.zero?
+
               paren_depth -= 1
               param_text << current_token.lexeme << current_token.trailing_trivia
               advance_raw

@@ -20,6 +20,7 @@ module MLC
 
     def label
       return nil unless line
+
       parts = []
       parts << (file || "<input>")
       parts << line.to_s
@@ -29,8 +30,10 @@ module MLC
 
     def highlight
       return nil unless line_text && start_column
+
       indicator = highlight_indicator
       return line_text if indicator.nil?
+
       "#{line_text}\n#{indicator}"
     end
 

@@ -474,6 +474,7 @@ module MLC
 
             def void_type?(type)
               return true if type.is_a?(SemanticIR::UnitType)
+
               normalized_type_name(type_name(type)) == "void"
             end
 
@@ -495,6 +496,7 @@ module MLC
               # If both are type variables, preserve the shared variable when possible
               if left_type.is_a?(SemanticIR::TypeVariable) && right_type.is_a?(SemanticIR::TypeVariable)
                 return left_type if left_type.name == right_type.name
+
                 return SemanticIR::Builder.primitive_type("i32")
               end
 
@@ -885,6 +887,7 @@ module MLC
               type_decl.type_params.each_with_index do |tp, index|
                 actual = type_args[index]
                 next unless actual
+
                 type_map[tp.name] = actual
               end
 

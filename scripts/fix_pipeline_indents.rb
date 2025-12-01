@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 # Add 4-space indentation to pipeline.rb after namespace change
 
 file = "lib/mlc/representations/semantic/gen/pipeline.rb"

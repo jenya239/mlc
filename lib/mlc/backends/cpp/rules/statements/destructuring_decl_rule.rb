@@ -37,6 +37,7 @@ module MLC
 
             def tuple_destructuring?(bindings)
               return false if bindings.empty?
+
               bindings.first[:accessor].is_a?(MLC::SemanticIR::TupleAccessExpr)
             end
 

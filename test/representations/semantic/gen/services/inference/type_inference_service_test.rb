@@ -405,6 +405,7 @@ class TypeInferenceServiceTest < Minitest::Test
 
     def type_name(type)
       return type.name if type.respond_to?(:name)
+
       type.to_s
     end
 
@@ -414,6 +415,7 @@ class TypeInferenceServiceTest < Minitest::Test
 
     def normalized_type_name(name)
       return nil if name.nil?
+
       case name
       when "str" then "string"
       else name

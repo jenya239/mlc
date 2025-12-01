@@ -65,6 +65,7 @@ module CppAst
         # Equality comparison
         def ==(other)
           return false unless other.is_a?(TypeBuilder)
+
           @name == other.name && @const == other.is_const && @ref == other.is_ref &&
             @mutable == other.is_mutable && @template_args == other.template_args
         end
@@ -192,6 +193,7 @@ module CppAst
         # Reference types
         def ref(type, const: false, mutable: false)
           raise ArgumentError, "Type cannot be nil" if type.nil?
+
           if type.is_a?(Symbol)
             type = TypeBuilder.new(type)
           end
@@ -208,6 +210,7 @@ module CppAst
         # Ownership types
         def owned(type)
           raise ArgumentError, "Type cannot be nil" if type.nil?
+
           require_relative "ownership_dsl"
           if type.is_a?(Symbol)
             type = TypeBuilder.new(type)
@@ -217,6 +220,7 @@ module CppAst
 
         def shared(type)
           raise ArgumentError, "Type cannot be nil" if type.nil?
+
           require_relative "ownership_dsl"
           if type.is_a?(Symbol)
             type = TypeBuilder.new(type)
@@ -226,6 +230,7 @@ module CppAst
 
         def weak(type)
           raise ArgumentError, "Type cannot be nil" if type.nil?
+
           require_relative "ownership_dsl"
           if type.is_a?(Symbol)
             type = TypeBuilder.new(type)
@@ -235,6 +240,7 @@ module CppAst
 
         def borrowed(type, const: true)
           raise ArgumentError, "Type cannot be nil" if type.nil?
+
           require_relative "ownership_dsl"
           if type.is_a?(Symbol)
             type = TypeBuilder.new(type)
@@ -244,6 +250,7 @@ module CppAst
 
         def mut_borrowed(type)
           raise ArgumentError, "Type cannot be nil" if type.nil?
+
           require_relative "ownership_dsl"
           if type.is_a?(Symbol)
             type = TypeBuilder.new(type)
@@ -254,6 +261,7 @@ module CppAst
         # Pointer types
         def raw_ptr(type)
           raise ArgumentError, "Type cannot be nil" if type.nil?
+
           require_relative "ownership_dsl"
           if type.is_a?(Symbol)
             type = TypeBuilder.new(type)
@@ -263,6 +271,7 @@ module CppAst
 
         def const_raw_ptr(type)
           raise ArgumentError, "Type cannot be nil" if type.nil?
+
           require_relative "ownership_dsl"
           if type.is_a?(Symbol)
             type = TypeBuilder.new(type)
@@ -273,6 +282,7 @@ module CppAst
         # Container types
         def vec(inner_type)
           raise ArgumentError, "Type cannot be nil" if inner_type.nil?
+
           if inner_type.is_a?(Symbol)
             inner_type = TypeBuilder.new(inner_type)
           end
@@ -281,6 +291,7 @@ module CppAst
 
         def span(inner_type)
           raise ArgumentError, "Type cannot be nil" if inner_type.nil?
+
           require_relative "ownership_dsl"
           if inner_type.is_a?(Symbol)
             inner_type = TypeBuilder.new(inner_type)
@@ -290,6 +301,7 @@ module CppAst
 
         def span_const(inner_type)
           raise ArgumentError, "Type cannot be nil" if inner_type.nil?
+
           require_relative "ownership_dsl"
           if inner_type.is_a?(Symbol)
             inner_type = TypeBuilder.new(inner_type)
@@ -312,6 +324,7 @@ module CppAst
         # Result/Option types
         def result(ok_type, err_type)
           raise ArgumentError, "Types cannot be nil" if ok_type.nil? || err_type.nil?
+
           require_relative "ownership_dsl"
           if ok_type.is_a?(Symbol)
             ok_type = TypeBuilder.new(ok_type)
@@ -324,6 +337,7 @@ module CppAst
 
         def option(inner_type)
           raise ArgumentError, "Type cannot be nil" if inner_type.nil?
+
           require_relative "ownership_dsl"
           if inner_type.is_a?(Symbol)
             inner_type = TypeBuilder.new(inner_type)
@@ -334,6 +348,7 @@ module CppAst
         # Variant and Tuple types
         def variant(*types)
           raise ArgumentError, "Types cannot be empty" if types.empty?
+
           require_relative "ownership_dsl"
           types = types.map do |type|
             if type.is_a?(Symbol)
@@ -347,6 +362,7 @@ module CppAst
 
         def tuple(*types)
           raise ArgumentError, "Types cannot be empty" if types.empty?
+
           require_relative "ownership_dsl"
           types = types.map do |type|
             if type.is_a?(Symbol)
@@ -361,6 +377,7 @@ module CppAst
         # Function type
         def function(return_type, *param_types)
           raise ArgumentError, "Return type cannot be nil" if return_type.nil?
+
           require_relative "ownership_dsl"
           if return_type.is_a?(Symbol)
             return_type = TypeBuilder.new(return_type)

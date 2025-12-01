@@ -29,6 +29,7 @@ module MLC
             # Sanitize identifier for C++ (add _ suffix if keyword)
             def sanitize_identifier(name)
               return name unless name.is_a?(String)
+
               cpp_keyword?(name) ? "#{name}_" : name
             end
 

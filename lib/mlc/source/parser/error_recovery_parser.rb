@@ -26,6 +26,7 @@ module MLC
             if @errors.any?
               raise MultipleErrors.new(@errors)
             end
+
             result
           rescue StandardError => e
             if @errors.any?

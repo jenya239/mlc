@@ -186,6 +186,7 @@ module CppAst
             depth += 1
           when :rparen
             break if depth == 0
+
             depth -= 1
           when :rbracket
             depth -= 1

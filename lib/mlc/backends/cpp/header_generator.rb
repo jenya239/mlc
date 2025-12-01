@@ -169,12 +169,14 @@ module MLC
 
         def filtered_imports(imports, required_imports)
           return imports if required_imports.nil? || required_imports.empty?
+
           imports.select { |import| include_import?(import, required_imports) }
         end
 
         def include_import?(import, required_imports)
           path = import.path
           return true if path.start_with?("./", "../", "/")
+
           required_imports.include?(path)
         end
 
@@ -237,6 +239,7 @@ module MLC
         def build_requires_clause(type_params)
           clauses = type_params.map do |tp|
             next unless tp.constraint && !tp.constraint.empty?
+
             "#{tp.constraint}<#{tp.name}>"
           end.compact
           clauses.join(" && ")
@@ -255,6 +258,7 @@ module MLC
             case item
             when MLC::SemanticIR::Func
               next unless item.body
+
               collect_modules_from_type(item.ret_type, current_module, require_include: true)
               item.params.each { |param| collect_modules_from_type(param.type, current_module, require_include: true) }
               collect_modules_from_expr(item.body, registry, current_module)
@@ -290,11 +294,13 @@ module MLC
 
           items.each do |item|
             next unless item.is_a?(MLC::SemanticIR::TypeDecl)
+
             info = type_registry.lookup(item.name)
             next unless info
 
             info.referenced_type_names.each do |type_name|
               next if seen.include?(type_name)
+
               referenced_module = type_registry.module_name_for(type_name)
               next unless referenced_module
               next if referenced_module == current_module
@@ -457,6 +463,7 @@ module MLC
         def requires_definition?(type)
           type_info = lookup_type_info(type)
           return false unless type_info
+
           type_info.record? || type_info.sum?
         end
 

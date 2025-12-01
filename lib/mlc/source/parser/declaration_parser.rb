@@ -76,6 +76,7 @@ module MLC
             loop do
               items << consume(:IDENTIFIER).value
               break if current.type != :COMMA
+
               consume(:COMMA)
             end
             consume(:RBRACE)
@@ -102,6 +103,7 @@ module MLC
               loop do
                 items << consume(:IDENTIFIER).value
                 break if current.type != :COMMA
+
                 consume(:COMMA)
               end
               consume(:RBRACE)
@@ -600,6 +602,7 @@ module MLC
           loop do
             bounds << parse_where_bound
             break unless current.type == :COMMA
+
             consume(:COMMA)
           end
 

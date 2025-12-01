@@ -14,6 +14,7 @@ module MLC
               return true if expr_or_type.is_a?(SemanticIR::UnitLiteral)
               return true if expr_or_type.is_a?(SemanticIR::UnitType)
               return true if expr_or_type.is_a?(SemanticIR::IfExpr) && expr_or_type.type.is_a?(SemanticIR::UnitType)
+
               false
             end
           end

@@ -86,6 +86,7 @@ module MLC
             # @param snapshot [Snapshot] snapshot состояния
             def restore(snapshot)
               raise ArgumentError, "Cannot restore from nil snapshot" if snapshot.nil?
+
               if snapshot.respond_to?(:types) && snapshot.respond_to?(:initializers)
                 @types = snapshot.types.dup
                 @initializers = snapshot.initializers.dup
@@ -99,6 +100,7 @@ module MLC
 
             def update_type(name, type)
               return unless name && type
+
               @types[name] = type
             end
 

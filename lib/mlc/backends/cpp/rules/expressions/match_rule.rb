@@ -223,6 +223,7 @@ module MLC
                 capture_decls = []
                 bindings.each_with_index do |binding, idx|
                   next if binding == "_" # Skip wildcards
+
                   # Generate: auto user = match.get(1).text();
                   capture_decls << "auto #{binding} = match.get(#{idx}).text();"
                 end

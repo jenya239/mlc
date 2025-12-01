@@ -10,6 +10,7 @@ module CppAst
 
       def ==(other)
         return false unless other.is_a?(self.class)
+
         instance_variables.all? do |var|
           instance_variable_get(var) == other.instance_variable_get(var)
         end

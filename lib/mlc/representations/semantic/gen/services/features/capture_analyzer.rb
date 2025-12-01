@@ -246,6 +246,7 @@ module MLC
             # Fallback method to visit children of unknown node types
             def visit_children(node, bound_vars, free_vars)
               return unless node.respond_to?(:each)
+
               node.each { |child| visit(child, bound_vars, free_vars) }
             rescue
               # Ignore errors for nodes that don't support iteration

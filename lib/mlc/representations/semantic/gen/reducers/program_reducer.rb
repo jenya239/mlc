@@ -73,6 +73,7 @@ module MLC
 
               program.declarations.each do |decl|
             next unless decl.is_a?(MLC::Source::AST::TypeDecl)
+
             type_ir = @type_reducer.reduce(decl)
             context[:type_items] << type_ir
           end
@@ -178,6 +179,7 @@ module MLC
                 method_name = trait_method[:name]
                 # Skip if method has default implementation
                 next if trait_method[:body]
+
                 # Check if implemented
                 unless impl_methods.key?(method_name)
                   missing_methods << method_name
@@ -229,6 +231,7 @@ module MLC
 
               program.declarations.each do |decl|
             next unless decl.is_a?(MLC::Source::AST::FuncDecl)
+
             @function_reducer.register_signature(decl)
           end
             end

@@ -16,6 +16,7 @@ module CppAst
         private def resolve_type(type)
           return type.to_cpp_type if type.respond_to?(:to_cpp_type)
           return resolve_symbol(type) if type.is_a?(Symbol)
+
           type.to_s
         end
 
@@ -134,6 +135,7 @@ module CppAst
         # Equality comparison
         def ==(other)
           return false unless other.is_a?(OwnershipTypeBuilder)
+
           @ownership_kind == other.ownership_kind && @inner_type == other.inner_type
         end
 

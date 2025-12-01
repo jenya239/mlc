@@ -258,6 +258,7 @@ module MLC
 
             def bind_variable(name, type)
               return if ignored_binding?(name)
+
               ensure_type!(type, "pattern binding '#{name}'")
               @var_type_registry.set(name, type)
             end

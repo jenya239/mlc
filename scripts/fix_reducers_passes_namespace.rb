@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 # Fix Reducers and Passes namespaces
 
 files = Dir.glob("lib/mlc/representations/semantic/gen/{reducers,passes}/**/*.rb")

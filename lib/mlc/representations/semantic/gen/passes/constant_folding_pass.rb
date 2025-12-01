@@ -266,20 +266,25 @@ module MLC
               case op
               when '+'
                 return :cannot_fold unless left.is_a?(Numeric) && right.is_a?(Numeric)
+
                 left + right
               when '-'
                 return :cannot_fold unless left.is_a?(Numeric) && right.is_a?(Numeric)
+
                 left - right
               when '*'
                 return :cannot_fold unless left.is_a?(Numeric) && right.is_a?(Numeric)
+
                 left * right
               when '/'
                 return :cannot_fold unless left.is_a?(Numeric) && right.is_a?(Numeric)
                 return :cannot_fold if right == 0
+
                 left.is_a?(Integer) && right.is_a?(Integer) ? left / right : left.to_f / right
               when '%'
                 return :cannot_fold unless left.is_a?(Integer) && right.is_a?(Integer)
                 return :cannot_fold if right == 0
+
                 left % right
               when '=='
                 left == right
@@ -287,36 +292,47 @@ module MLC
                 left != right
               when '<'
                 return :cannot_fold unless left.is_a?(Numeric) && right.is_a?(Numeric)
+
                 left < right
               when '>'
                 return :cannot_fold unless left.is_a?(Numeric) && right.is_a?(Numeric)
+
                 left > right
               when '<='
                 return :cannot_fold unless left.is_a?(Numeric) && right.is_a?(Numeric)
+
                 left <= right
               when '>='
                 return :cannot_fold unless left.is_a?(Numeric) && right.is_a?(Numeric)
+
                 left >= right
               when '&&'
                 return :cannot_fold unless boolean_value?(left) && boolean_value?(right)
+
                 left && right
               when '||'
                 return :cannot_fold unless boolean_value?(left) && boolean_value?(right)
+
                 left || right
               when '&'
                 return :cannot_fold unless left.is_a?(Integer) && right.is_a?(Integer)
+
                 left & right
               when '|'
                 return :cannot_fold unless left.is_a?(Integer) && right.is_a?(Integer)
+
                 left | right
               when '^'
                 return :cannot_fold unless left.is_a?(Integer) && right.is_a?(Integer)
+
                 left ^ right
               when '<<'
                 return :cannot_fold unless left.is_a?(Integer) && right.is_a?(Integer)
+
                 left << right
               when '>>'
                 return :cannot_fold unless left.is_a?(Integer) && right.is_a?(Integer)
+
                 left >> right
               else
                 :cannot_fold
@@ -327,15 +343,19 @@ module MLC
               case op
               when '-'
                 return :cannot_fold unless operand.is_a?(Numeric)
+
                 -operand
               when '+'
                 return :cannot_fold unless operand.is_a?(Numeric)
+
                 operand
               when '!'
                 return :cannot_fold unless boolean_value?(operand)
+
                 !operand
               when '~'
                 return :cannot_fold unless operand.is_a?(Integer)
+
                 ~operand
               else
                 :cannot_fold

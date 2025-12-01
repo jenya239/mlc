@@ -23,6 +23,7 @@ class TypeConstraintSolverTest < Minitest::Test
 
   def substitute(type, map)
     return map[type] if type.is_a?(String) && map.key?(type)
+
     type
   end
 

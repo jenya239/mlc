@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 # Complete fix for engine.rb: namespace + internal references
 
 file = "lib/mlc/representations/semantic/gen/engine.rb"

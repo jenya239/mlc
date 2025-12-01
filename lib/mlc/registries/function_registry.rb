@@ -70,6 +70,7 @@ module MLC
         def add_effect(effect)
           effect_sym = effect&.to_sym
           return unless effect_sym
+
           @effects << effect_sym unless @effects.include?(effect_sym)
         end
 
@@ -145,6 +146,7 @@ module MLC
       # @return [Object, nil]
       def fetch_member(container, member)
         return nil unless container && member
+
         fetch([container, member].join("."))
       end
 
@@ -154,6 +156,7 @@ module MLC
       # @return [Entry, nil]
       def fetch_entry_for_member(container, member)
         return nil unless container && member
+
         fetch_entry([container, member].join("."))
       end
 
@@ -162,6 +165,7 @@ module MLC
       # @return [String, nil]
       def canonical_name(name)
         return name if @functions.key?(name)
+
         @aliases[name]
       end
 
@@ -244,12 +248,14 @@ module MLC
       # Iterate over all registered function infos.
       def each
         return enum_for(:each) unless block_given?
+
         @functions.each_value { |entry| yield entry.info }
       end
 
       # Iterate over metadata entries.
       def each_entry
         return enum_for(:each_entry) unless block_given?
+
         @functions.each_value { |entry| yield entry }
       end
 
@@ -309,6 +315,7 @@ module MLC
         unless metadata.is_a?(Hash)
           raise ArgumentError, "metadata must be a Hash or nil"
         end
+
         metadata.each_with_object({}) do |(key, value), normalized|
           normalized[key.to_sym] = value
         end

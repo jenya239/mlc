@@ -40,12 +40,14 @@ module MLC
 
             def option_type?(type)
               return false unless type.is_a?(MLC::SemanticIR::GenericType)
+
               base_name = type.base_type.respond_to?(:name) ? type.base_type.name : nil
               base_name == "Option"
             end
 
             def result_type?(type)
               return false unless type.is_a?(MLC::SemanticIR::GenericType)
+
               base_name = type.base_type.respond_to?(:name) ? type.base_type.name : nil
               base_name == "Result"
             end

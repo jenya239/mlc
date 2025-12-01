@@ -65,12 +65,14 @@ module MLC
           # Look ahead to see if | is followed by => or if (new arm) vs pattern (or-pattern)
           return true if peek&.type == :FAT_ARROW
           return true if peek&.type == :IF
+
           false
         end
 
         # Check if token is start of a pattern
         def pattern_start?(token)
           return false unless token
+
           case token.type
           when :UNDERSCORE, :REGEX, :INT_LITERAL, :FLOAT_LITERAL, :STRING_LITERAL, :TRUE, :FALSE, :IDENTIFIER, :LBRACKET, :LPAREN
             true
@@ -122,6 +124,7 @@ module MLC
           while current.type != :RBRACKET
             bindings << parse_regex_binding
             break unless current.type == :COMMA
+
             consume(:COMMA)
           end
 
@@ -207,6 +210,7 @@ module MLC
             while current.type != :RPAREN
               elements << parse_pattern
               break unless current.type == :COMMA
+
               consume(:COMMA)
               break if current.type == :RPAREN # Allow trailing comma
             end
@@ -242,6 +246,7 @@ module MLC
           while current.type != :RBRACKET
             elements << parse_pattern
             break unless current.type == :COMMA
+
             consume(:COMMA)
           end
 
@@ -319,6 +324,7 @@ module MLC
             end
 
             break unless current.type == :COMMA
+
             consume(:COMMA)
           end
 
@@ -337,6 +343,7 @@ module MLC
           while current.type != :RBRACE
             bindings << consume(:IDENTIFIER).value
             break unless current.type == :COMMA
+
             consume(:COMMA)
           end
 

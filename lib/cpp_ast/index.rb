@@ -51,6 +51,7 @@ module CppAst
       unless [:pretty, :lossless].include?(mode)
         raise ArgumentError, "Invalid mode: #{mode}. Use :pretty or :lossless"
       end
+
       Thread.current[:cpp_ast_formatting_mode] = mode
     end
 

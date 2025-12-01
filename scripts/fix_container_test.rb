@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 # Fix container_integration_test.rb namespace and indentation
 
 file = "test/mlc/representations/semantic/gen/services/container_integration_test.rb"

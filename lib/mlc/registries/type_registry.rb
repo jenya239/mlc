@@ -83,8 +83,10 @@ module MLC
 
         referenced_type_names.each_with_object([]) do |type_name, acc|
           next if type_name == name && !include_self
+
           info = type_registry.lookup(type_name)
           next unless info
+
           acc << info.module_name if info.module_name && !info.module_name.empty?
         end.uniq
       end
@@ -93,11 +95,13 @@ module MLC
 
       def extract_fields(type)
         return nil unless type.respond_to?(:fields)
+
         type.fields
       end
 
       def extract_variants(type)
         return nil unless type.respond_to?(:variants)
+
         type.variants
       end
 
@@ -235,6 +239,7 @@ module MLC
       def cpp_name(name)
         type_info = lookup(name)
         return name unless type_info
+
         type_info.cpp_name
       end
 
@@ -275,6 +280,7 @@ module MLC
       # @return [Array<TypeInfo>]
       def types_in_module(module_name, exported_only: false)
         return [] if module_name.nil? || module_name.empty?
+
         names = @modules[module_name]
         return [] unless names
 

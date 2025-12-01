@@ -147,6 +147,7 @@ module MLC
             while current.type == :COMMA
               consume(:COMMA)
               break if current.type == :RBRACKET # Trailing comma
+
               elements << parse_if_expression
             end
 
@@ -658,6 +659,7 @@ module MLC
             params << with_origin(name_token) { MLC::Source::AST::LambdaParam.new(name: name, type: param_type) }
 
             break unless current.type == :COMMA
+
             consume(:COMMA)
           end
 
@@ -1110,6 +1112,7 @@ module MLC
             when :LPAREN
               paren_line = current.line
               break unless expr_line && paren_line == expr_line
+
               lparen_token = consume(:LPAREN)
               args = parse_args
               consume(:RPAREN)
@@ -1120,6 +1123,7 @@ module MLC
               # Must be on the same line as the expression (postfix operator)
               question_line = current.line
               break unless expr_line && question_line == expr_line
+
               question_token = consume(:QUESTION)
               expr = attach_origin(MLC::Source::AST::TryExpr.new(operand: expr), question_token)
               expr_line = last_token&.line
@@ -1324,6 +1328,7 @@ module MLC
               while current.type == :COMMA
                 consume(:COMMA)
                 break if current.type == :RPAREN # Trailing comma
+
                 elements << parse_expression
               end
             end

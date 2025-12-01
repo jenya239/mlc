@@ -34,6 +34,7 @@ module MLC
               )
 
               return type_ir unless rule_result
+
               rule_result.is_a?(MLC::SemanticIR::TypeDecl) ? rule_result : type_ir
             end
           end

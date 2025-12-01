@@ -40,6 +40,7 @@ module MLC
                   services.type_checker.type_name(type)
                 )
                 return true if %w[unit void].include?(name)
+
                 type.is_a?(MLC::SemanticIR::UnitType)
               end
 

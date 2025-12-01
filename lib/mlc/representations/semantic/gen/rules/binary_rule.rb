@@ -10,6 +10,7 @@ module MLC
           class BinaryRule < BaseRule
             def matches?(node, context)
               return false if node.respond_to?(:op) && node.op == '|>'
+
               services(context).ast_type_checker.binary_op?(node)
             end
 

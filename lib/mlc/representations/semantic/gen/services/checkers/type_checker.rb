@@ -139,18 +139,21 @@ module MLC
             def ensure_boolean_type(type, context, node: nil)
               name = normalized_type_name(type_name(type))
               return if generic_type_name?(name)
+
               type_error("#{context} must be bool, got #{describe_type(type)}", node: node) unless name == "bool"
             end
 
             def ensure_numeric_type(type, context, node: nil)
               name = normalized_type_name(type_name(type))
               return if generic_type_name?(name)
+
               type_error("#{context} must be numeric, got #{describe_type(type)}", node: node) unless numeric_type?(type)
             end
 
             def ensure_integer_type(type, context, node: nil)
               name = normalized_type_name(type_name(type))
               return if generic_type_name?(name)
+
               type_error("#{context} must be integer, got #{describe_type(type)}", node: node) unless integer_type?(type)
             end
 
@@ -222,6 +225,7 @@ module MLC
 
             def assign_expression_type(expr, type, update_registry: true)
               return unless expr && type
+
               set_expression_type(expr, type)
               propagate_literal_types(expr, type)
 
@@ -245,12 +249,14 @@ module MLC
               case expr
               when MLC::SemanticIR::ArrayLiteralExpr
                 return unless type.is_a?(MLC::SemanticIR::ArrayType)
+
                 expr.elements.each do |element|
                   assign_expression_type(element, type.element_type, update_registry: false)
                 end
               when MLC::SemanticIR::RecordExpr
                 field_map = record_field_type_map(type)
                 return unless field_map
+
                 expr.fields.each do |field_name, field_expr|
                   assign_expression_type(field_expr, field_map[field_name], update_registry: false)
                 end
@@ -276,6 +282,7 @@ module MLC
                 name = type_node.name
                 return nil if name.nil?
                 return nil if name[0]&.match?(/[A-Z]/)
+
                 name
               else
                 nil

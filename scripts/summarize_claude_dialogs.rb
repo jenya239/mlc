@@ -21,6 +21,7 @@ end
 
 def fmt_ts(ts)
   return '' unless ts
+
   Time.parse(ts).utc.iso8601 rescue ts
 end
 

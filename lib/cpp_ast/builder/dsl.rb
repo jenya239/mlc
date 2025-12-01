@@ -217,6 +217,7 @@ module CppAst
 
       def function_decl(return_type, name, parameters = [], body = nil)
         raise ArgumentError, "parameters cannot be nil" if parameters.nil?
+
         parameters = [] if parameters.nil?
 
         param_separators = parameters.size > 1 ? Array.new(parameters.size - 1, ", ") : []

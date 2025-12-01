@@ -123,6 +123,7 @@ module CppAst
       trivia = "".dup
       loop do
         break unless trivia_ahead?
+
         char = current_char
         trivia << scan_trivia_token
         break if char == "\n"
@@ -132,6 +133,7 @@ module CppAst
 
     def trivia_ahead?
       return false if at_end?
+
       char = current_char
 
       return true if char&.match?(/\s/)
@@ -278,6 +280,7 @@ module CppAst
     def scan_literal_token(char, start_line, start_column, is_number: false, is_string: false)
       return scan_number(char, start_line, start_column) if is_number
       return scan_string_literal(start_line, start_column) if is_string && char == '"'
+
       scan_char_literal(start_line, start_column) if is_string && char == "'"
     end
 
@@ -287,12 +290,14 @@ module CppAst
 
     def current_char
       return nil if at_end?
+
       @source[@position]
     end
 
     def peek(offset = 0)
       pos = @position + offset
       return nil if pos >= @source.length
+
       @source[pos]
     end
 

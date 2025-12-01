@@ -132,6 +132,7 @@ module MLC
                 if type_registry && type_registry.has_type?(type.name)
                   return type_registry.cpp_name(type.name)
                 end
+
                 # Fallback: opaque types are pointers
                 "#{type.name}*"
 
@@ -140,6 +141,7 @@ module MLC
                 if type_registry && type_registry.has_type?(type.name)
                   return type_registry.cpp_name(type.name)
                 end
+
                 # Fallback to type_map
                 type_map[type.name] || type.name
 
@@ -187,6 +189,7 @@ module MLC
               when SemanticIR::Type
                 name = type.name
                 return false if name && type_map.key?(name)
+
                 name.nil? || name.empty? || name == "auto"
               else
                 false
@@ -233,6 +236,7 @@ module MLC
                 if type_registry && type_registry.has_type?(type.name)
                   return type_registry.cpp_name(type.name)
                 end
+
                 # Return the type name
                 type_map[type.name] || type.name
               when SemanticIR::Type
@@ -240,6 +244,7 @@ module MLC
                 if type_registry && type.respond_to?(:name) && type_registry.has_type?(type.name)
                   return type_registry.cpp_name(type.name)
                 end
+
                 type_map[type.name] || type.name
               else
                 # Fallback

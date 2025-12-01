@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 # Fix Visitors namespace: MLC::SemanticGen → MLC::Representations::Semantic::Gen
 
 files = Dir.glob("lib/mlc/representations/semantic/gen/visitors/**/*.rb")

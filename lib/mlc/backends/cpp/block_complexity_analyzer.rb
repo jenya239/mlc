@@ -81,6 +81,7 @@ module MLC
           else_type = @if_expr.else_branch.type rescue nil
 
           return true unless then_type && else_type
+
           then_type == else_type
         end
       end
