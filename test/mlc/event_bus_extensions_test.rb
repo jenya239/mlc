@@ -140,15 +140,15 @@ class EventBusExtensionsTest < Minitest::Test
     bus = MLC::Common::Diagnostics::EventBus.new
     assert_equal 0, bus.handler_count
 
-    bus.subscribe(:test) { }
+    bus.subscribe(:test) {}
     assert_equal 1, bus.handler_count
     assert_equal 1, bus.handler_count(:test)
 
-    bus.subscribe(:test) { }
+    bus.subscribe(:test) {}
     assert_equal 2, bus.handler_count
     assert_equal 2, bus.handler_count(:test)
 
-    bus.subscribe(:other) { }
+    bus.subscribe(:other) {}
     assert_equal 3, bus.handler_count
     assert_equal 2, bus.handler_count(:test)
     assert_equal 1, bus.handler_count(:other)
@@ -157,8 +157,8 @@ class EventBusExtensionsTest < Minitest::Test
   # Test clear handlers
   def test_clear_all_handlers
     bus = MLC::Common::Diagnostics::EventBus.new
-    bus.subscribe(:test1) { }
-    bus.subscribe(:test2) { }
+    bus.subscribe(:test1) {}
+    bus.subscribe(:test2) {}
 
     assert_equal 2, bus.handler_count
 
@@ -168,8 +168,8 @@ class EventBusExtensionsTest < Minitest::Test
 
   def test_clear_specific_handler
     bus = MLC::Common::Diagnostics::EventBus.new
-    bus.subscribe(:test1) { }
-    bus.subscribe(:test2) { }
+    bus.subscribe(:test1) {}
+    bus.subscribe(:test2) {}
 
     assert_equal 2, bus.handler_count
 
