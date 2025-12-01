@@ -54,20 +54,20 @@ module MLC
       # Base node with origin tracking
       class Node
         attr_reader :origin
-        
+
         def initialize(origin: nil)
           @origin = origin
         end
       end
-      
+
       # Program root
       class Program < Node
         attr_reader :module_decl, :imports, :declarations
 
         def initialize(declarations:, module_decl: nil, imports: [], origin: nil)
           super(origin: origin)
-          @module_decl = module_decl  # ModuleDecl or nil
-          @imports = imports           # Array of ImportDecl
+          @module_decl = module_decl # ModuleDecl or nil
+          @imports = imports # Array of ImportDecl
           @declarations = declarations
         end
       end
@@ -78,7 +78,7 @@ module MLC
 
         def initialize(name:, origin: nil)
           super(origin: origin)
-          @name = name  # String (e.g., "Math::Vector")
+          @name = name # String (e.g., "Math::Vector")
         end
       end
 
@@ -90,11 +90,11 @@ module MLC
           super(origin: origin)
           @path = path           # String (e.g., "Math", "Math::Vector")
           @items = items         # Array of String (selective import) or nil
-          @import_all = import_all  # Boolean - import * as ...
-          @alias = alias_name    # String or nil - alias for import * as X
+          @import_all = import_all # Boolean - import * as ...
+          @alias = alias_name # String or nil - alias for import * as X
         end
       end
-      
+
       # Type declarations
       class TypeDecl < Node
         attr_reader :name, :type, :type_params, :exported
@@ -118,7 +118,7 @@ module MLC
           @params = params
           @ret_type = ret_type
           @body = body
-          @type_params = type_params  # Array of TypeParam
+          @type_params = type_params # Array of TypeParam
           @where_clause = where_clause # WhereClause or nil
           @exported = exported        # Boolean - is this exported?
           @external = external        # Boolean - is this an external (C++) function?
@@ -140,7 +140,7 @@ module MLC
       # Where clause for trait bounds
       # where T: Trait1 + Trait2, U: OtherTrait
       class WhereClause < Node
-        attr_reader :bounds  # Array of WhereBound
+        attr_reader :bounds # Array of WhereBound
 
         def initialize(bounds:, origin: nil)
           super(origin: origin)
@@ -151,7 +151,7 @@ module MLC
       # Single type bound in where clause
       # T: Trait1 + Trait2
       class WhereBound < Node
-        attr_reader :type_param, :traits  # type_param: String, traits: Array of String
+        attr_reader :type_param, :traits # type_param: String, traits: Array of String
 
         def initialize(type_param:, traits:, origin: nil)
           super(origin: origin)
@@ -159,37 +159,37 @@ module MLC
           @traits = traits
         end
       end
-      
+
       # Function parameter
       class Param < Node
         attr_reader :name, :type
-        
+
         def initialize(name:, type:, origin: nil)
           super(origin: origin)
           @name = name
           @type = type
         end
       end
-      
+
       # Types
       class Type < Node
         attr_reader :kind, :name, :fields
-        
+
         def initialize(kind:, name:, fields: nil, origin: nil)
           super(origin: origin)
-          @kind = kind  # :prim/:record
+          @kind = kind # :prim/:record
           @name = name
-          @fields = fields  # For record types: Array of {name: String, type: Type}
+          @fields = fields # For record types: Array of {name: String, type: Type}
         end
       end
-      
+
       # Primitive type
       class PrimType < Type
         def initialize(name:, origin: nil)
           super(kind: :prim, name: name, origin: origin)
         end
       end
-      
+
       # Record type
       class RecordType < Type
         def initialize(name:, fields:, origin: nil)
@@ -203,7 +203,7 @@ module MLC
 
         def initialize(name:, variants:, origin: nil)
           super(kind: :enum, name: name, origin: origin)
-          @variants = variants  # Array of String
+          @variants = variants # Array of String
         end
       end
 
@@ -213,7 +213,7 @@ module MLC
 
         def initialize(name:, variants:, origin: nil)
           super(kind: :sum, name: name, origin: origin)
-          @variants = variants  # Array of {name: String, fields: Array of {name:, type:}}
+          @variants = variants # Array of {name: String, fields: Array of {name:, type:}}
         end
       end
 
@@ -272,14 +272,14 @@ module MLC
       # Expressions (with sugar)
       class Expr < Node
         attr_reader :kind, :data
-        
+
         def initialize(kind:, data:, origin: nil)
           super(origin: origin)
           @kind = kind
           @data = data
         end
       end
-      
+
       # Literal expressions
       class IntLit < Expr
         attr_reader :value
@@ -341,13 +341,13 @@ module MLC
       # Variable reference
       class VarRef < Expr
         attr_reader :name
-        
+
         def initialize(name:, origin: nil)
           super(kind: :var_ref, data: name, origin: origin)
           @name = name
         end
       end
-      
+
       # Binary operation
       class BinaryOp < Expr
         attr_reader :op, :left, :right
@@ -374,14 +374,14 @@ module MLC
       # Function call
       class Call < Expr
         attr_reader :callee, :args
-        
+
         def initialize(callee:, args:, origin: nil)
           super(kind: :call, data: {callee: callee, args: args}, origin: origin)
           @callee = callee
           @args = args
         end
       end
-      
+
       # Member access
       class MemberAccess < Expr
         attr_reader :object, :member
@@ -460,7 +460,7 @@ module MLC
 
         def initialize(object:, start_index: nil, end_index: nil, origin: nil)
           super(kind: :slice, data: {object: object, start_index: start_index, end_index: end_index}, origin: origin)
-          @object = object          # Expr - the array being sliced
+          @object = object # Expr - the array being sliced
           @start_index = start_index # Expr or nil - start index (nil means from beginning)
           @end_index = end_index     # Expr or nil - end index (nil means to end, exclusive)
         end
@@ -488,7 +488,7 @@ module MLC
           @value = value
           @body = body
           @mutable = mutable
-          @type = type  # Optional type annotation
+          @type = type # Optional type annotation
         end
       end
 
@@ -514,10 +514,10 @@ module MLC
 
         def initialize(operand:, origin: nil)
           super(kind: :spread, data: {operand: operand}, origin: origin)
-          @operand = operand  # Expr - the expression being spread
+          @operand = operand # Expr - the expression being spread
         end
       end
-      
+
       # If expression
       class IfExpr < Expr
         attr_reader :condition, :then_branch, :else_branch
@@ -536,7 +536,7 @@ module MLC
 
         def initialize(body:, origin: nil)
           super(kind: :do, data: {body: body}, origin: origin)
-          @body = body  # Array of expressions
+          @body = body # Array of expressions
         end
       end
 
@@ -559,7 +559,7 @@ module MLC
 
         def initialize(body:, origin: nil)
           super(kind: :unsafe_block, data: {body: body}, origin: origin)
-          @body = body  # BlockExpr or single Expr
+          @body = body # BlockExpr or single Expr
         end
       end
 
@@ -569,8 +569,8 @@ module MLC
 
         def initialize(scrutinee:, arms:, origin: nil)
           super(kind: :match, data: {scrutinee: scrutinee, arms: arms}, origin: origin)
-          @scrutinee = scrutinee  # Expression to match against
-          @arms = arms  # Array of {pattern:, guard:, body:}
+          @scrutinee = scrutinee # Expression to match against
+          @arms = arms # Array of {pattern:, guard:, body:}
         end
       end
 
@@ -641,7 +641,7 @@ module MLC
           @name = name
           @value = value
           @mutable = mutable
-          @type = type  # Optional type annotation
+          @type = type # Optional type annotation
         end
       end
 
@@ -653,7 +653,7 @@ module MLC
 
         def initialize(pattern:, value:, mutable: false, origin: nil)
           super(origin: origin)
-          @pattern = pattern  # Pattern AST node
+          @pattern = pattern # Pattern AST node
           @value = value
           @mutable = mutable
         end
@@ -711,7 +711,7 @@ module MLC
           super(kind: :lambda, data: {params: params, body: body}, origin: origin)
           @params = params      # Array of LambdaParam or String (inferred)
           @body = body          # Expr
-          @return_type = return_type  # Optional Type
+          @return_type = return_type # Optional Type
         end
       end
 
@@ -722,7 +722,7 @@ module MLC
         def initialize(name:, type: nil, origin: nil)
           super(origin: origin)
           @name = name
-          @type = type  # nil for inference
+          @type = type # nil for inference
         end
       end
 
@@ -790,7 +790,7 @@ module MLC
 
         def initialize(elements:, origin: nil)
           super(kind: :array_lit, data: elements, origin: origin)
-          @elements = elements  # Array of Expr
+          @elements = elements # Array of Expr
         end
       end
 
@@ -801,7 +801,7 @@ module MLC
 
         def initialize(elements:, origin: nil)
           super(kind: :tuple_lit, data: elements, origin: origin)
-          @elements = elements  # Array of Expr (at least 1 element)
+          @elements = elements # Array of Expr (at least 1 element)
         end
       end
 
@@ -812,7 +812,7 @@ module MLC
 
         def initialize(name:, origin: nil)
           super(kind: :symbol_lit, data: name, origin: origin)
-          @name = name  # String - the symbol name without colon
+          @name = name # String - the symbol name without colon
         end
       end
 
@@ -833,7 +833,7 @@ module MLC
 
         def initialize(param_types:, ret_type:, origin: nil)
           super(kind: :func, name: "function", origin: origin)
-          @param_types = param_types  # Array of Type
+          @param_types = param_types # Array of Type
           @ret_type = ret_type
         end
       end
@@ -844,7 +844,7 @@ module MLC
 
         def initialize(types:, origin: nil)
           super(kind: :tuple, name: "tuple", origin: origin)
-          @types = types  # Array of Type
+          @types = types # Array of Type
         end
       end
 
@@ -854,7 +854,7 @@ module MLC
 
         def initialize(base_type:, type_params:, origin: nil)
           super(kind: :generic, name: base_type.name, origin: origin)
-          @base_type = base_type    # Type (e.g., Result, Option)
+          @base_type = base_type # Type (e.g., Result, Option)
           @type_params = type_params # Array of Type
         end
       end
@@ -866,11 +866,11 @@ module MLC
 
         def initialize(name:, type_params: [], methods: [], associated_types: [], exported: false, origin: nil)
           super(origin: origin)
-          @name = name              # String - trait name
+          @name = name # String - trait name
           @type_params = type_params # Array of TypeParam
-          @methods = methods        # Array of TraitMethod
+          @methods = methods # Array of TraitMethod
           @associated_types = associated_types # Array of AssociatedType
-          @exported = exported      # Boolean - is this exported?
+          @exported = exported # Boolean - is this exported?
         end
       end
 
@@ -896,9 +896,9 @@ module MLC
 
         def initialize(name:, default_type: nil, bounds: [], origin: nil)
           super(origin: origin)
-          @name = name          # String - type name (e.g., "Item")
-          @default_type = default_type  # Type or nil (optional default)
-          @bounds = bounds      # Array of String - trait bounds (e.g., ["Clone", "Debug"])
+          @name = name # String - type name (e.g., "Item")
+          @default_type = default_type # Type or nil (optional default)
+          @bounds = bounds # Array of String - trait bounds (e.g., ["Clone", "Debug"])
         end
       end
 
@@ -924,9 +924,9 @@ module MLC
           @target_type = target_type  # Type - the type being extended
           @trait_name = trait_name    # String or nil - trait being implemented
           @trait_params = trait_params # Array of Type - trait type params
-          @methods = methods          # Array of FuncDecl (implementations)
+          @methods = methods # Array of FuncDecl (implementations)
           @associated_type_bindings = associated_type_bindings # Array of AssociatedTypeBinding
-          @exported = exported        # Boolean
+          @exported = exported # Boolean
         end
       end
     end

@@ -9,7 +9,7 @@ module MLC
           class WhileLoopRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.while_loop_expr?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -35,10 +35,10 @@ module MLC
                 type: unit.type,
                 origin: node
               )
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

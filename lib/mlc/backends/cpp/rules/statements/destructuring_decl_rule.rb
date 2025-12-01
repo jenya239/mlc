@@ -80,7 +80,7 @@ module MLC
               # Then extract each field
               bindings.each do |binding|
                 identifier = context.sanitize_identifier(binding[:name])
-                field_name = binding[:name]  # Same as variable name for { x, y } pattern
+                field_name = binding[:name] # Same as variable name for { x, y } pattern
 
                 context.declare_variable(binding[:name])
 

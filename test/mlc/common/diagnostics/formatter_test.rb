@@ -100,10 +100,10 @@ class DiagnosticFormatterTest < Minitest::Test
     )
 
     # Should show 2 lines before and after
-    assert_match(/fn main/, result)  # line 1
-    assert_match(/let x = 42/, result)  # line 2
-    assert_match(/let y = x \+ 10/, result)  # line 3 (error)
-    assert_match(/x \+ y/, result)  # line 4
+    assert_match(/fn main/, result) # line 1
+    assert_match(/let x = 42/, result) # line 2
+    assert_match(/let y = x \+ 10/, result) # line 3 (error)
+    assert_match(/x \+ y/, result) # line 4
   end
 
   def test_indicator_width

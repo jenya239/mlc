@@ -16,11 +16,11 @@ module MLC
           @errors = []
           @recovery_points = []
         end
-        
+
         def parse
           @errors.clear
           @recovery_points.clear
-          
+
           begin
             result = parse_program_with_recovery
             if @errors.any?
@@ -35,14 +35,14 @@ module MLC
             end
           end
         end
-        
+
         private
-        
+
         def parse_program_with_recovery
           module_decl = nil
           imports = []
           declarations = []
-          
+
           # Parse optional module declaration
           if current.type == :MODULE
             begin
@@ -52,7 +52,7 @@ module MLC
               recover_to_next_declaration
             end
           end
-          
+
           # Parse imports with error recovery
           while current.type == :IMPORT
             begin
@@ -62,7 +62,7 @@ module MLC
               recover_to_next_declaration
             end
           end
-          
+
           # Parse declarations with error recovery
           while !eof?
             begin
@@ -95,53 +95,53 @@ module MLC
               recover_to_next_declaration
             end
           end
-          
+
           MLC::Source::AST::Program.new(
             module_decl: module_decl,
             imports: imports,
             declarations: declarations
           )
         end
-        
+
         def recover_to_next_declaration
           # Skip tokens until we find a declaration boundary
           while !eof? && !declaration_start?
             skip_token
           end
         end
-        
+
         def declaration_start?
           [:FN, :TYPE, :IMPORT, :EXPORT].include?(current.type)
         end
-        
+
         def add_error(original_error, context)
           error = case original_error
-          when MLC::MLCSyntaxError
+                  when MLC::MLCSyntaxError
             MLC::MLCSyntaxError.new(
               original_error.message,
               location: current_location,
               suggestion: suggest_fix(original_error),
               context: context
             )
-          when MLC::MLCTypeError
+                  when MLC::MLCTypeError
             MLC::MLCTypeError.new(
               original_error.message,
               location: current_location,
               suggestion: suggest_type_fix(original_error),
               context: context
             )
-          else
+                  else
             MLC::EnhancedError.new(
               original_error.message,
               location: current_location,
               suggestion: "Check your syntax and try again",
               context: context
             )
-          end
-          
+                  end
+
           @errors << error
         end
-        
+
         def add_syntax_error(message)
           error = MLC::MLCSyntaxError.new(
             message,
@@ -151,11 +151,11 @@ module MLC
           )
           @errors << error
         end
-        
+
         def current_location
           "line #{current.line || 'unknown'}, column #{current.column || 'unknown'}"
         end
-        
+
         def suggest_fix(error)
           case error.message
           when /unexpected token/
@@ -168,7 +168,7 @@ module MLC
             "Review the syntax rules for this construct"
           end
         end
-        
+
         def suggest_type_fix(error)
           case error.message
           when /type mismatch/
@@ -181,7 +181,7 @@ module MLC
             "Review the type system rules"
           end
         end
-        
+
         def suggest_syntax_fix
           case current.type
           when :IDENTIFIER
@@ -197,24 +197,24 @@ module MLC
           end
         end
       end
-      
+
       # Multiple errors container
       class MultipleErrors < StandardError
         attr_reader :errors
-        
+
         def initialize(errors)
           @errors = errors
           super("Found #{errors.length} error(s)")
         end
-        
+
         def formatted_message
           lines = ["Found #{@errors.length} error(s):", ""]
-          
+
           @errors.each_with_index do |error, index|
             lines << "#{index + 1}. #{error.formatted_message}"
             lines << ""
           end
-          
+
           lines.join("\n")
         end
       end

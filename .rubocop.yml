@@ -7,10 +7,6 @@ AllCops:
     - 'bin/**/*'
     - 'test/fixtures/**/*'
     - 'misc/**/*'
-Layout/IndentationConsistency:
-  Enabled: true
-Layout/IndentationWidth:
-  Enabled: true
 Layout/LineLength:
   Max: 140
 Style/FrozenStringLiteralComment:
@@ -29,3 +25,43 @@ Style/RedundantBegin:
   Enabled: false
 Style/RescueModifier:
   Enabled: false
+Style/StringLiterals:
+  Enabled: false
+Metrics/ClassLength:
+  Enabled: false
+Metrics/MethodLength:
+  Enabled: false
+Metrics/BlockLength:
+  Enabled: false
+Metrics/ModuleLength:
+  Enabled: false
+Metrics/AbcSize:
+  Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/PerceivedComplexity:
+  Enabled: false
+Lint/UselessAssignment:
+  Enabled: true
+Lint/AmbiguousOperator:
+  Enabled: true
+Lint/DeprecatedClassMethods:
+  Enabled: true
+Lint/EmptyWhen:
+  Enabled: true
+Lint/EmptyExpression:
+  Enabled: true
+Lint/EmptyInterpolation:
+  Enabled: true
+Lint/MultipleComparison:
+  Enabled: true
+Lint/RedundantCopDisableDirective:
+  Enabled: true
+Lint/RedundantCopEnableDirective:
+  Enabled: true
+Lint/SafeNavigationChain:
+  Enabled: true
+Lint/RescueException:
+  Enabled: true
+Lint/AmbiguousRegexpLiteral:
+  Enabled: true

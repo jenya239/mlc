@@ -10,7 +10,7 @@ module CppAst
         friend_suffix: "",
         type_suffix: ""
       }.freeze
-      
+
       PRETTY = {
         enum_name_suffix: " ",
         class_name_suffix: " ",
@@ -18,21 +18,21 @@ module CppAst
         friend_suffix: " ",
         type_suffix: " "
       }.freeze
-      
+
       @mode = :compact
-      
+
       def self.mode=(m)
         @mode = m
       end
-      
+
       def self.get(key)
         (@mode == :compact ? COMPACT : PRETTY)[key] || ""
       end
-      
+
       def self.compact!
         @mode = :compact
       end
-      
+
       def self.pretty!
         @mode = :pretty
       end

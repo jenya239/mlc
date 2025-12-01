@@ -14,7 +14,7 @@ class MLCStdlibTest < Minitest::Test
     MLC
 
     cpp = MLC.to_cpp(mlc_source)
-    
+
     assert_includes cpp, "print"
     # Note: println might not be generated if it's not used in the return value
     assert_includes cpp, "Hello"
@@ -28,10 +28,10 @@ class MLCStdlibTest < Minitest::Test
     MLC
 
     cpp = MLC.to_cpp(mlc_source)
-    
+
     assert_includes cpp, "map"
     assert_includes cpp, "filter"
-    assert_includes cpp, "size"  # MLC uses .size() instead of .length()
+    assert_includes cpp, "size" # MLC uses .size() instead of .length()
   end
 
   def test_string_operations
@@ -42,7 +42,7 @@ class MLCStdlibTest < Minitest::Test
     MLC
 
     cpp = MLC.to_cpp(mlc_source)
-    
+
     assert_includes cpp, "trim"
     assert_includes cpp, "upper"
   end
@@ -74,7 +74,7 @@ class MLCStdlibTest < Minitest::Test
     MLC
 
     cpp = MLC.to_cpp(mlc_source)
-    
+
     assert_includes cpp, "5 + 3 + 7"
   end
 
@@ -86,7 +86,7 @@ class MLCStdlibTest < Minitest::Test
     MLC
 
     cpp = MLC.to_cpp(mlc_source)
-    
+
     assert_includes cpp, "mlc::String"
     assert_includes cpp, "Hello"
     assert_includes cpp, "World"

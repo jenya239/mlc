@@ -43,15 +43,15 @@ class ResultOptionTest < Minitest::Test
 
   def test_function_returning_result
     ast = function_decl(result_of("int", "std::string"), "divide",
-      ["int a", "int b"],
-      block(
-        if_stmt(binary("==", id("b"), int(0)),
-          block(return_stmt(err(string('"division by zero"')))),
-          block(return_stmt(ok(binary("/", id("a"), id("b")))))
-        )
-      )
+                        ["int a", "int b"],
+                        block(
+                          if_stmt(binary("==", id("b"), int(0)),
+                                  block(return_stmt(err(string('"division by zero"')))),
+                                  block(return_stmt(ok(binary("/", id("a"), id("b")))))
+                          )
+                        )
     )
-    
+
     cpp = ast.to_source
     expected = <<~CPP.strip
       std::expected<int, std::string> divide(int a, int b) {
@@ -67,15 +67,15 @@ class ResultOptionTest < Minitest::Test
 
   def test_function_returning_option
     ast = function_decl(option_of("int"), "safe_divide",
-      ["int a", "int b"],
-      block(
-        if_stmt(binary("==", id("b"), int(0)),
-          block(return_stmt(none)),
-          block(return_stmt(some(binary("/", id("a"), id("b")))))
-        )
-      )
+                        ["int a", "int b"],
+                        block(
+                          if_stmt(binary("==", id("b"), int(0)),
+                                  block(return_stmt(none)),
+                                  block(return_stmt(some(binary("/", id("a"), id("b")))))
+                          )
+                        )
     )
-    
+
     cpp = ast.to_source
     expected = <<~CPP.strip
       std::optional<int> safe_divide(int a, int b) {
@@ -95,7 +95,7 @@ class ResultOptionTest < Minitest::Test
       var_decl(option_of("int"), "value"),
       var_decl(result_of("std::string", "int"), "text_result")
     )
-    
+
     cpp = ast.to_source
     expected = <<~CPP
       std::expected<int, std::string> result;
@@ -107,15 +107,15 @@ class ResultOptionTest < Minitest::Test
 
   def test_nested_result_option_types
     ast = function_decl("std::optional<std::expected<int, std::string>>", "complex_function",
-      ["int x"],
-      block(
-        if_stmt(binary(">", id("x"), int(0)),
-          block(return_stmt(some(ok(id("x"))))),
-          block(return_stmt(some(err(string('"negative value"')))))
-        )
-      )
+                        ["int x"],
+                        block(
+                          if_stmt(binary(">", id("x"), int(0)),
+                                  block(return_stmt(some(ok(id("x"))))),
+                                  block(return_stmt(some(err(string('"negative value"')))))
+                          )
+                        )
     )
-    
+
     cpp = ast.to_source
     expected = <<~CPP.strip
       std::optional<std::expected<int, std::string>> complex_function(int x) {
@@ -131,15 +131,15 @@ class ResultOptionTest < Minitest::Test
 
   def test_result_option_with_ownership
     ast = function_decl("std::expected<std::unique_ptr<Vec2>, std::string>", "create_vector",
-      ["float x", "float y"],
-      block(
-        if_stmt(binary("||", binary("<", id("x"), float(0)), binary("<", id("y"), float(0))),
-          block(return_stmt(err(string('"negative coordinates"')))),
-          block(return_stmt(ok(call(id("Vec2"), id("x"), id("y")))))
-        )
-      )
+                        ["float x", "float y"],
+                        block(
+                          if_stmt(binary("||", binary("<", id("x"), float(0)), binary("<", id("y"), float(0))),
+                                  block(return_stmt(err(string('"negative coordinates"')))),
+                                  block(return_stmt(ok(call(id("Vec2"), id("x"), id("y")))))
+                          )
+                        )
     )
-    
+
     cpp = ast.to_source
     expected = <<~CPP.strip
       std::expected<std::unique_ptr<Vec2>, std::string> create_vector(float x, float y) {
@@ -156,10 +156,10 @@ class ResultOptionTest < Minitest::Test
   def test_result_option_roundtrip
     # Test DSL → C++ (Result/Option types can't be parsed back, so just test generation)
     original_ast = function_decl(result_of("int", "str"), "test",
-      [],
-      block(return_stmt(ok(int(42))))
+                                 [],
+                                 block(return_stmt(ok(int(42))))
     )
-    
+
     cpp = original_ast.to_source
     expected = "std::expected<int, str> test() {\nreturn Ok(42);\n}"
     assert_equal expected, cpp

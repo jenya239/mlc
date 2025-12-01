@@ -10,7 +10,7 @@ module MLC
             class IfRule < BaseRule
               def matches?(node, context)
                 services(context).ast_type_checker.if_statement?(node)
-          end
+              end
 
               def produce(node, context)
                 svc = services(context)
@@ -29,18 +29,18 @@ module MLC
                   else_body: else_block,
                   origin: node
                 )
-          end
+              end
 
               private
 
               def build_block(body_ast, services, stmt_visitor)
                 statements = services.loop_service.normalize_loop_body(body_ast, stmt_visitor)
                 services.ir_builder.block(statements: statements, origin: body_ast)
-          end
-            end
-          end
+              end
             end
           end
         end
       end
     end
+  end
+end

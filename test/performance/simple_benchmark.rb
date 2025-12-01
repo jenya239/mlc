@@ -8,7 +8,7 @@ require_relative "../../lib/cpp_ast/index"
 class SimpleBenchmark < Minitest::Test
   def test_string_builder_performance
     puts "\n=== StringBuilder Performance Test ==="
-    
+
     # Test regular string concatenation
     regular_time = Benchmark.measure do
       result = ""
@@ -16,7 +16,7 @@ class SimpleBenchmark < Minitest::Test
         result += "Line #{i}\n"
       end
     end
-    
+
     # Test StringBuilder (simplified version)
     builder_time = Benchmark.measure do
       result = String.new
@@ -24,83 +24,83 @@ class SimpleBenchmark < Minitest::Test
         result << "Line #{i}\n"
       end
     end
-    
+
     puts "Regular String Concatenation: #{regular_time.real.round(4)}s"
     puts "StringBuilder (<< operator): #{builder_time.real.round(4)}s"
     puts "StringBuilder Speedup: #{(regular_time.real / builder_time.real).round(2)}x"
-    
+
     assert builder_time.real < regular_time.real, "StringBuilder should be faster"
   end
-  
+
   def test_MLC_parsing_performance
     puts "\n=== MLC Parsing Performance Test ==="
-    
+
     source = <<~MLCORA
       fn factorial(n: i32) -> i32 =
         if n <= 1 then 1
         else n * factorial(n - 1)
-      
+
       fn main() -> i32 = factorial(5)
     MLCORA
-    
+
     # Test parsing performance
     parse_time = Benchmark.measure do
       100.times { MLC.parse(source) }
     end
-    
+
     puts "Parse 100 times: #{parse_time.real.round(4)}s"
     puts "Average per parse: #{(parse_time.real / 100 * 1000).round(2)}ms"
-    
+
     # Report performance metrics instead of hard assertions
     threshold = ENV['PARSE_TIME_THRESHOLD']&.to_f || 5.0
     if parse_time.real > threshold
       puts "WARNING: Parse time #{parse_time.real.round(4)}s exceeds threshold #{threshold}s"
     end
   end
-  
+
   def test_cpp_generation_performance
     puts "\n=== C++ Generation Performance Test ==="
-    
+
     source = <<~MLCORA
       fn add(a: i32, b: i32) -> i32 = a + b
     MLCORA
-    
+
     # Test generation performance
     gen_time = Benchmark.measure do
       100.times { MLC.to_cpp(source) }
     end
-    
+
     puts "Generate 100 times: #{gen_time.real.round(4)}s"
     puts "Average per generation: #{(gen_time.real / 100 * 1000).round(2)}ms"
-    
+
     assert gen_time.real < 1.0, "Generation should be fast"
   end
-  
+
   def test_large_file_performance
     puts "\n=== Large File Performance Test ==="
-    
+
     # Generate a large MLC file
     large_source = generate_large_mlc_source(100)
-    
+
     # Test parsing large file
     parse_time = Benchmark.measure do
       MLC.parse(large_source)
     end
-    
+
     puts "Parse large file: #{parse_time.real.round(4)}s"
-    
+
     assert parse_time.real < 2.0, "Large file parsing should be reasonable"
   end
-  
+
   private
-  
+
   def generate_large_mlc_source(function_count)
     source = String.new(<<~MLCORA)
       module LargeTest
-      
+
       fn main() -> i32 = 0
     MLCORA
-    
+
     function_count.times do |i|
       source << <<~MLCORA
         fn function_#{i}(x: i32) -> i32 =
@@ -108,7 +108,7 @@ class SimpleBenchmark < Minitest::Test
           else 0
       MLCORA
     end
-    
+
     source
   end
 end

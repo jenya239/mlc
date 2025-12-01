@@ -14,12 +14,12 @@ module CppAst
 
       def to_source
         result = +"std::visit(overloaded{\n"
-        
+
         arms.each_with_index do |arm, i|
-          result << "  " << arm.to_source  # добавить отступ
+          result << "  " << arm.to_source # добавить отступ
           result << (i < arms.length - 1 ? ",\n" : "")
         end
-        
+
         result << "\n}, "
         value_str = value.respond_to?(:to_source) ? value.to_source : value.to_s
         result << value_str << ")"

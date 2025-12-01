@@ -23,7 +23,7 @@ loader.inflector.inflect(
 )
 
 # Ignore files that don't follow Zeitwerk conventions
-loader.ignore("#{__dir__}/../representations/semantic/nodes")  # Manual loading needed
+loader.ignore("#{__dir__}/../representations/semantic/nodes") # Manual loading needed
 
 # Setup the loader
 loader.setup

@@ -23,10 +23,10 @@ class TypesDSLTest < Test::Unit::TestCase
     # Test reference types
     ref_type = t.ref(:i32)
     assert_equal "int&", ref_type.to_cpp_type
-    
+
     const_ref_type = t.ref(:i32, const: true)
     assert_equal "const int&", const_ref_type.to_cpp_type
-    
+
     mut_ref_type = t.mut(:i32)
     assert_equal "int&", mut_ref_type.to_cpp_type
   end
@@ -35,16 +35,16 @@ class TypesDSLTest < Test::Unit::TestCase
     # Test ownership types
     owned_type = t.owned(:Buffer)
     assert_equal "std::unique_ptr<Buffer>", owned_type.to_cpp_type
-    
+
     borrowed_type = t.borrowed(:Config)
     assert_equal "const Config&", borrowed_type.to_cpp_type
-    
+
     mut_borrowed_type = t.mut_borrowed(:State)
     assert_equal "State&", mut_borrowed_type.to_cpp_type
-    
+
     span_type = t.span(:f32)
     assert_equal "std::span<float>", span_type.to_cpp_type
-    
+
     span_const_type = t.span_const(:f32)
     assert_equal "std::span<const float>", span_const_type.to_cpp_type
   end
@@ -53,10 +53,10 @@ class TypesDSLTest < Test::Unit::TestCase
     # Test container types
     vec_type = t.vec(:i32)
     assert_equal "std::vector<int>", vec_type.to_cpp_type
-    
+
     array_type = t.array(:i32, 10)
     assert_equal "std::array<int, 10>", array_type.to_cpp_type
-    
+
     array_dynamic_type = t.array(:i32)
     assert_equal "std::array<int>", array_dynamic_type.to_cpp_type
   end
@@ -65,13 +65,13 @@ class TypesDSLTest < Test::Unit::TestCase
     # Test Result/Option types
     result_type = t.result(:f32, :string)
     assert_equal "std::expected<float, std::string>", result_type.to_cpp_type
-    
+
     option_type = t.option(:i32)
     assert_equal "std::optional<int>", option_type.to_cpp_type
-    
+
     variant_type = t.variant(:Circle, :Rect, :Polygon)
     assert_equal "std::variant<Circle, Rect, Polygon>", variant_type.to_cpp_type
-    
+
     tuple_type = t.tuple(:i32, :f32, :string)
     assert_equal "std::tuple<int, float, std::string>", tuple_type.to_cpp_type
   end
@@ -93,19 +93,19 @@ class TypesDSLTest < Test::Unit::TestCase
   def test_type_builder_methods
     # Test type builder methods
     type = t.i32
-    
+
     # Test const
     const_type = type.const
     assert_equal "const int", const_type.to_cpp_type
-    
+
     # Test ref
     ref_type = type.ref
     assert_equal "const int&", ref_type.to_cpp_type
-    
+
     # Test mut
     mut_type = type.mut
     assert_equal "int&", mut_type.to_cpp_type
-    
+
     # Test template arguments
     template_type = type[:f32, :double]
     assert_equal "int<float, double>", template_type.to_cpp_type
@@ -115,7 +115,7 @@ class TypesDSLTest < Test::Unit::TestCase
     # Test conversion to AST nodes
     type = t.i32
     ast_node = type.to_ast_node
-    
+
     assert_not_nil ast_node
     assert_equal "int", ast_node.name
     assert_equal false, ast_node.is_const
@@ -127,7 +127,7 @@ class TypesDSLTest < Test::Unit::TestCase
     # Test ownership type builder
     inner_type = t.i32
     owned_type = t.owned(inner_type)
-    
+
     assert_equal "std::unique_ptr<int>", owned_type.to_cpp_type
     assert_equal :owned, owned_type.ownership_kind
     assert_equal inner_type, owned_type.inner_type
@@ -148,7 +148,7 @@ class TypesDSLTest < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       t.owned(nil)
     end
-    
+
     assert_raise(ArgumentError) do
       t.ref(nil)
     end
@@ -159,7 +159,7 @@ class TypesDSLTest < Test::Unit::TestCase
     type1 = t.i32
     type2 = t.i32
     type3 = t.f32
-    
+
     assert_equal type1.to_cpp_type, type2.to_cpp_type
     assert_not_equal type1.to_cpp_type, type3.to_cpp_type
   end
@@ -168,10 +168,10 @@ class TypesDSLTest < Test::Unit::TestCase
     # Test complex type combinations
     complex_type = t.vec(t.ref(:Point, const: true))
     assert_equal "std::vector<const Point&>", complex_type.to_cpp_type
-    
+
     nested_type = t.owned(t.vec(t.owned(:Buffer)))
     assert_equal "std::unique_ptr<std::vector<std::unique_ptr<Buffer>>>", nested_type.to_cpp_type
-    
+
     result_with_option = t.result(t.option(:i32), :string)
     assert_equal "std::expected<std::optional<int>, std::string>", result_with_option.to_cpp_type
   end

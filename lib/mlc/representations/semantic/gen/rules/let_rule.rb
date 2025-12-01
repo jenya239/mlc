@@ -10,7 +10,7 @@ module MLC
           class LetRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.let?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -42,16 +42,16 @@ module MLC
               )
             ensure
               var_registry.restore(saved) if saved
-        end
+            end
 
             private
 
             def ensure_type!(services, type, context, node)
               services.type_checker.ensure_type!(type, "#{context} has unknown type", node: node)
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

@@ -32,11 +32,11 @@ class ProductionFixesTest < Minitest::Test
 
   def test_namespace_multiple_members
     ast = namespace_decl("gtkgl::text",
-      using_alias("GlyphIndex", "uint32_t"),
-      struct_decl("Vec2", 
-        field_def("x", "float"),
-        field_def("y", "float")
-      )
+                         using_alias("GlyphIndex", "uint32_t"),
+                         struct_decl("Vec2",
+                                     field_def("x", "float"),
+                                     field_def("y", "float")
+                         )
     )
     cpp_code = ast.to_source
     assert_includes cpp_code, "namespace gtkgl::text"
@@ -50,15 +50,15 @@ class ProductionFixesTest < Minitest::Test
       include_directive("cstdint"),
       include_directive("vector"),
       namespace_decl("gtkgl::text",
-        using_alias("GlyphIndex", "uint32_t"),
-        struct_decl("Vec2",
-          field_def("x", "float", default: "0.0f"),
-          field_def("y", "float", default: "0.0f"),
-          function_decl("", "Vec2", [], block()).defaulted()
-        )
+                     using_alias("GlyphIndex", "uint32_t"),
+                     struct_decl("Vec2",
+                                 field_def("x", "float", default: "0.0f"),
+                                 field_def("y", "float", default: "0.0f"),
+                                 function_decl("", "Vec2", [], block()).defaulted()
+                     )
       )
     )
-    
+
     cpp_code = ast.to_source
     assert_includes cpp_code, "#pragma once"
     assert_includes cpp_code, "#include <cstdint>"
@@ -69,14 +69,14 @@ class ProductionFixesTest < Minitest::Test
 
   def test_struct_with_field_declarations
     ast = struct_decl("Vec2",
-      field_def("x", "float", default: "0.0f"),
-      field_def("y", "float", default: "0.0f"),
-      function_decl("", "Vec2", [], block()).defaulted(),
-      function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
-        .with_initializer_list("x(x_), y(y_)")
-        .constexpr()
+                      field_def("x", "float", default: "0.0f"),
+                      field_def("y", "float", default: "0.0f"),
+                      function_decl("", "Vec2", [], block()).defaulted(),
+                      function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
+                        .with_initializer_list("x(x_), y(y_)")
+                        .constexpr()
     )
-    
+
     cpp_code = ast.to_source
     assert_includes cpp_code, "struct Vec2"
     assert_includes cpp_code, "float x{0.0f};"
@@ -92,7 +92,7 @@ class ProductionFixesTest < Minitest::Test
       ["RGB8"],
       ["RGBA8"]
     ], underlying_type: "uint8_t")
-    
+
     cpp_code = ast.to_source
     assert_includes cpp_code, "enum class AtlasFormat : uint8_t"
     assert_includes cpp_code, "A8, RGB8, RGBA8"
@@ -100,11 +100,11 @@ class ProductionFixesTest < Minitest::Test
 
   def test_template_specialization
     ast = template_class("hash", ["typename T"],
-      function_decl("size_t", "operator()", [param("const T&", "k")], block())
-        .const()
-        .noexcept()
+                         function_decl("size_t", "operator()", [param("const T&", "k")], block())
+                           .const()
+                           .noexcept()
     ).specialized()
-    
+
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
     assert_includes cpp_code, "size_t operator()"
@@ -119,47 +119,47 @@ class ProductionFixesTest < Minitest::Test
       include_directive("vector"),
       include_directive("optional"),
       namespace_decl("gtkgl::text",
-        using_alias("GlyphIndex", "uint32_t"),
-        using_alias("FontFaceID", "uint32_t"),
-        
-        struct_decl("Vec2",
-          field_def("x", "float", default: "0.0f"),
-          field_def("y", "float", default: "0.0f"),
-          function_decl("", "Vec2", [], block()).defaulted(),
-          function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
-            .with_initializer_list("x(x_), y(y_)")
-            .constexpr(),
-          function_decl("Vec2", "operator+", [param("const Vec2&", "other")], block())
-            .inline_body(block(return_stmt(id("Vec2{x + other.x, y + other.y}"))))
-            .const()
-        ),
-        
-        enum_class("AtlasFormat", [
-          ["A8"],
-          ["RGB8"],
-          ["RGBA8"]
-        ], underlying_type: "uint8_t"),
-        
-        struct_decl("AtlasSlot",
-          field_def("page_id", "uint32_t", default: "0"),
-          field_def("texture_id", "uint32_t", default: "0"),
-          function_decl("bool", "is_valid", [], block())
-            .inline_body(block(return_stmt(binary("!=", id("texture_id"), int(0)))))
-            .const()
-        )
+                     using_alias("GlyphIndex", "uint32_t"),
+                     using_alias("FontFaceID", "uint32_t"),
+
+                     struct_decl("Vec2",
+                                 field_def("x", "float", default: "0.0f"),
+                                 field_def("y", "float", default: "0.0f"),
+                                 function_decl("", "Vec2", [], block()).defaulted(),
+                                 function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
+                                   .with_initializer_list("x(x_), y(y_)")
+                                   .constexpr(),
+                                 function_decl("Vec2", "operator+", [param("const Vec2&", "other")], block())
+                                   .inline_body(block(return_stmt(id("Vec2{x + other.x, y + other.y}"))))
+                                   .const()
+                     ),
+
+                     enum_class("AtlasFormat", [
+                       ["A8"],
+                       ["RGB8"],
+                       ["RGBA8"]
+                     ], underlying_type: "uint8_t"),
+
+                     struct_decl("AtlasSlot",
+                                 field_def("page_id", "uint32_t", default: "0"),
+                                 field_def("texture_id", "uint32_t", default: "0"),
+                                 function_decl("bool", "is_valid", [], block())
+                                   .inline_body(block(return_stmt(binary("!=", id("texture_id"), int(0)))))
+                                   .const()
+                     )
       ),
-      
+
       namespace_decl("std",
-        template_class("hash", ["typename T"],
-          function_decl("size_t", "operator()", [param("const T&", "k")], block())
-            .const()
-            .noexcept()
-        ).specialized()
+                     template_class("hash", ["typename T"],
+                                    function_decl("size_t", "operator()", [param("const T&", "k")], block())
+                                      .const()
+                                      .noexcept()
+                     ).specialized()
       )
     )
-    
+
     cpp_code = ast.to_source
-    
+
     # Verify all components are present
     assert_includes cpp_code, "#pragma once"
     assert_includes cpp_code, "#include <cstdint>"

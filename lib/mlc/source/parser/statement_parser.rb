@@ -132,7 +132,7 @@ module MLC
 
       # Parse tuple destructuring: let (a, b) = expr
         def parse_tuple_destructuring(let_token, mutable)
-          pattern = parse_pattern  # Uses PatternParser which handles (a, b) as tuple pattern
+          pattern = parse_pattern # Uses PatternParser which handles (a, b) as tuple pattern
           consume(:EQUAL)
           value = parse_expression_in_block
           consume(:SEMICOLON) if current.type == :SEMICOLON
@@ -152,7 +152,7 @@ module MLC
               # Rest pattern: ...rest
               consume(:SPREAD)
               rest_binding = consume(:IDENTIFIER).value
-              break  # Rest must be last
+              break # Rest must be last
             else
               bindings << consume(:IDENTIFIER).value
             end

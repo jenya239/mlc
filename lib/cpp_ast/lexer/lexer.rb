@@ -9,9 +9,9 @@ module CppAst
     include NumberLexer
     include StringLexer
     include TriviaLexer
-    
+
     attr_reader :source, :position, :line, :column
-    
+
     KEYWORDS = {
       'if' => :keyword_if,
       'else' => :keyword_else,
@@ -72,22 +72,22 @@ module CppAst
       'short' => :keyword_short,
       'long' => :keyword_long
     }.freeze
-    
+
     def initialize(source)
       @source = source
       @position = 0
       @line = 1
       @column = 0
     end
-    
+
     def tokenize
       tokens = []
       eof_leading_accumulator = "".dup
-      
+
       until at_end?
         leading = collect_trivia_as_string
         token = scan_non_trivia_token
-        
+
         if token
           token.leading_trivia = eof_leading_accumulator + leading
           eof_leading_accumulator = "".dup
@@ -98,19 +98,19 @@ module CppAst
           eof_leading_accumulator << leading
         end
       end
-      
+
       eof = Token.new(kind: :eof, lexeme: "", line: @line, column: @column)
       eof.leading_trivia = eof_leading_accumulator
       eof.trailing_trivia = ""
       tokens << eof
-      
+
       tokens
     end
-    
+
     def at_end?
       @position >= @source.length
     end
-    
+
     def collect_trivia_as_string
       trivia = "".dup
       while trivia_ahead?
@@ -118,7 +118,7 @@ module CppAst
       end
       trivia
     end
-    
+
     def collect_trailing_trivia
       trivia = "".dup
       loop do
@@ -129,22 +129,22 @@ module CppAst
       end
       trivia
     end
-    
+
     def trivia_ahead?
       return false if at_end?
       char = current_char
-      
+
       return true if char&.match?(/\s/)
       return true if char == '/' && (peek(1) == '/' || peek(1) == '*')
       return true if char == '#'
       return true if char == '[' && peek(1) == '['
-      
+
       false
     end
-    
+
     def scan_trivia_token
       char = current_char
-      
+
       case char
       when "\n"
         advance
@@ -175,15 +175,15 @@ module CppAst
         raise "Not a trivia token: #{char.inspect}"
       end
     end
-    
+
     def scan_non_trivia_token
       return nil if at_end?
       return nil if trivia_ahead?
-      
+
       start_line = @line
       start_column = @column
       char = advance
-      
+
       case char
       when /[a-zA-Z_]/
         scan_identifier_or_keyword(char, start_line, start_column)
@@ -199,7 +199,7 @@ module CppAst
         raise "Unexpected character: #{char.inspect} at #{start_line}:#{start_column}"
       end
     end
-    
+
     def scan_operator_token(char, start_line, start_column)
       case char
       when "="
@@ -258,7 +258,7 @@ module CppAst
         peek&.match?(/[0-9]/) ? scan_number(char, start_line, start_column) : Token.new(kind: :dot, lexeme: ".", line: start_line, column: start_column)
       end
     end
-    
+
     def scan_punctuation_token(char, start_line, start_column)
       case char
       when ";" then Token.new(kind: :semicolon, lexeme: ";", line: start_line, column: start_column)
@@ -274,51 +274,51 @@ module CppAst
       when "]" then Token.new(kind: :rbracket, lexeme: "]", line: start_line, column: start_column)
       end
     end
-    
+
     def scan_literal_token(char, start_line, start_column, is_number: false, is_string: false)
       return scan_number(char, start_line, start_column) if is_number
       return scan_string_literal(start_line, start_column) if is_string && char == '"'
       scan_char_literal(start_line, start_column) if is_string && char == "'"
     end
-    
+
     def scan_identifier_or_keyword(char, start_line, start_column)
       scan_identifier(char, start_line, start_column)
     end
-    
+
     def current_char
       return nil if at_end?
       @source[@position]
     end
-    
+
     def peek(offset = 0)
       pos = @position + offset
       return nil if pos >= @source.length
       @source[pos]
     end
-    
+
     def advance
       char = current_char
       @position += 1
-      
+
       if char == "\n"
         @line += 1
         @column = 0
       else
         @column += 1
       end
-      
+
       char
     end
-    
+
     def scan_identifier(first_char, line, column)
       lexeme = first_char
-      
+
       while current_char&.match?(/[a-zA-Z0-9_]/)
         lexeme << advance
       end
-      
+
       kind = KEYWORDS[lexeme] || :identifier
-      
+
       Token.new(kind: kind, lexeme: lexeme, line: line, column: column)
     end
   end

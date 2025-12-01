@@ -120,7 +120,7 @@ module CppAst
             raise ArgumentError, "Unknown ownership kind: #{@ownership_kind}"
           end
         end
-        
+
         # Convert to CppAst node
         def to_ast_node
           Nodes::TypeReference.new(
@@ -130,13 +130,13 @@ module CppAst
             is_mutable: @ownership_kind == :mut_borrowed
           )
         end
-        
+
         # Equality comparison
         def ==(other)
           return false unless other.is_a?(OwnershipTypeBuilder)
           @ownership_kind == other.ownership_kind && @inner_type == other.inner_type
         end
-        
+
         # Add call method for lambda
         def call(*args)
           if @ownership_kind == :lambda
@@ -146,54 +146,54 @@ module CppAst
           end
         end
       end
-      
+
       # Ownership DSL methods
       module Ownership
         # Owned type (unique_ptr)
         def owned(type)
           OwnershipTypeBuilder.new(type, :owned)
         end
-        
+
         # Shared ownership (shared_ptr)
         def shared(type)
           OwnershipTypeBuilder.new(type, :shared)
         end
-        
+
         # Weak reference (weak_ptr)
         def weak(type)
           OwnershipTypeBuilder.new(type, :weak)
         end
-        
+
         # Borrowed type (const T&)
         def borrowed(type)
           OwnershipTypeBuilder.new(type, :borrowed)
         end
-        
+
         # Mutable borrowed type (T&)
         def mut_borrowed(type)
           OwnershipTypeBuilder.new(type, :mut_borrowed)
         end
-        
+
         # Span type (std::span<T>)
         def span(type)
           OwnershipTypeBuilder.new(type, :span)
         end
-        
+
         # Const span type (std::span<const T>)
         def span_const(type)
           OwnershipTypeBuilder.new(type, :span_const)
         end
-        
+
         # Raw pointer (T*)
         def raw_ptr(type)
           OwnershipTypeBuilder.new(type, :raw_ptr)
         end
-        
+
         # Const raw pointer (const T*)
         def const_raw_ptr(type)
           OwnershipTypeBuilder.new(type, :const_raw_ptr)
         end
-        
+
         # Array type (T[])
         def array(type, size = nil)
           if size
@@ -202,103 +202,103 @@ module CppAst
             OwnershipTypeBuilder.new(type, :array)
           end
         end
-        
+
         # Result type (std::expected<T, E>)
         def result(ok_type, err_type)
           OwnershipTypeBuilder.new([ok_type, err_type], :result)
         end
-        
+
         # Option type (std::optional<T>)
         def option(type)
           OwnershipTypeBuilder.new(type, :option)
         end
-        
+
         # Variant type (std::variant<Ts...>)
         def variant(*types)
           OwnershipTypeBuilder.new(types, :variant)
         end
-        
+
         # Tuple type (std::tuple<Ts...>)
         def tuple(*types)
           OwnershipTypeBuilder.new(types, :tuple)
         end
-        
+
         # Function type (std::function<R(Args...)>)
         def function(ret_type, *param_types)
           OwnershipTypeBuilder.new([ret_type, *param_types], :function)
         end
-        
+
         # Lambda type (auto)
         def lambda_type
           OwnershipTypeBuilder.new(nil, :lambda)
         end
-        
+
         # Auto type (auto)
         def auto
           OwnershipTypeBuilder.new(nil, :auto)
         end
-        
+
         # Void type (void)
         def void
           OwnershipTypeBuilder.new(nil, :void)
         end
-        
+
         # Null type (nullptr_t)
         def null
           OwnershipTypeBuilder.new(nil, :null)
         end
-        
+
         # Size type (size_t)
         def size_t
           OwnershipTypeBuilder.new(nil, :size_t)
         end
-        
+
         # Index type (ptrdiff_t)
         def ptrdiff_t
           OwnershipTypeBuilder.new(nil, :ptrdiff_t)
         end
-        
+
         # Integer types
         def int8; OwnershipTypeBuilder.new(nil, :int8) end
         def int16; OwnershipTypeBuilder.new(nil, :int16) end
         def int32; OwnershipTypeBuilder.new(nil, :int32) end
         def int64; OwnershipTypeBuilder.new(nil, :int64) end
-        
+
         def uint8; OwnershipTypeBuilder.new(nil, :uint8) end
         def uint16; OwnershipTypeBuilder.new(nil, :uint16) end
         def uint32; OwnershipTypeBuilder.new(nil, :uint32) end
         def uint64; OwnershipTypeBuilder.new(nil, :uint64) end
-        
+
         # Float types
         def float32; OwnershipTypeBuilder.new(nil, :float32) end
         def float64; OwnershipTypeBuilder.new(nil, :float64) end
-        
+
         # Boolean type
         def bool_type; OwnershipTypeBuilder.new(nil, :bool) end
-        
+
         # Character types
         def char_type; OwnershipTypeBuilder.new(nil, :char) end
         def wchar; OwnershipTypeBuilder.new(nil, :wchar) end
         def char16; OwnershipTypeBuilder.new(nil, :char16) end
         def char32; OwnershipTypeBuilder.new(nil, :char32) end
-        
+
         # String types
         def string_type; OwnershipTypeBuilder.new(nil, :string) end
         def wstring; OwnershipTypeBuilder.new(nil, :wstring) end
         def u16string; OwnershipTypeBuilder.new(nil, :u16string) end
         def u32string; OwnershipTypeBuilder.new(nil, :u32string) end
-        
+
         # Custom type
         def of(type_name)
           OwnershipTypeBuilder.new(type_name, :custom)
         end
-        
+
         # Template type
         def template(name, *params)
           OwnershipTypeBuilder.new([name, *params], :template)
         end
       end
-      
+
       # Include Ownership module in DSL
       def self.included(base)
         base.include Ownership

@@ -11,11 +11,11 @@ class EnumRoundtripTest < Minitest::Test
           Blue
       };
     CPP
-    
+
     program = CppAst.parse(source)
     assert_equal source, program.to_source
   end
-  
+
   def test_enum_class
     source = <<~CPP
       enum class Status {
@@ -23,11 +23,11 @@ class EnumRoundtripTest < Minitest::Test
           Error
       };
     CPP
-    
+
     program = CppAst.parse(source)
     assert_equal source, program.to_source
   end
-  
+
   def test_enum_with_values
     source = <<~CPP
       enum Level {
@@ -36,11 +36,11 @@ class EnumRoundtripTest < Minitest::Test
           High = 10
       };
     CPP
-    
+
     program = CppAst.parse(source)
     assert_equal source, program.to_source
   end
-  
+
   def test_anonymous_enum
     source = <<~CPP
       enum {
@@ -48,18 +48,18 @@ class EnumRoundtripTest < Minitest::Test
           CONSTANT2
       };
     CPP
-    
+
     program = CppAst.parse(source)
     assert_equal source, program.to_source
   end
-  
+
   def test_enum_single_line
     source = "enum Color { Red, Green, Blue };\n"
-    
+
     program = CppAst.parse(source)
     assert_equal source, program.to_source
   end
-  
+
   def test_enum_with_trailing_comma
     source = <<~CPP
       enum Color {
@@ -68,11 +68,11 @@ class EnumRoundtripTest < Minitest::Test
           Blue,
       };
     CPP
-    
+
     program = CppAst.parse(source)
     assert_equal source, program.to_source
   end
-  
+
   def test_enum_class_with_type
     source = <<~CPP
       enum class Color : int {
@@ -80,11 +80,11 @@ class EnumRoundtripTest < Minitest::Test
           Green
       };
     CPP
-    
+
     program = CppAst.parse(source)
     assert_equal source, program.to_source
   end
-  
+
   def test_enum_in_namespace
     source = <<~CPP
       namespace MyNamespace {
@@ -94,9 +94,8 @@ class EnumRoundtripTest < Minitest::Test
           };
       }
     CPP
-    
+
     program = CppAst.parse(source)
     assert_equal source, program.to_source
   end
 end
-

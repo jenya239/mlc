@@ -473,7 +473,7 @@ module MLC
         def module_name_for_type(type)
           lookup_type_info(type)&.module_name
         end
-    end
+      end
     end
   end
 end

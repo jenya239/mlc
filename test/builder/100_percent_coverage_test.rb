@@ -54,9 +54,9 @@ class Coverage100PercentTest < Minitest::Test
   def test_template_specialization_support
     # Test template specialization
     ast = template_class("hash", ["typename T"],
-      function_decl("size_t", "operator()", [param("const T&", "k")], block())
-        .const()
-        .noexcept()
+                         function_decl("size_t", "operator()", [param("const T&", "k")], block())
+                           .const()
+                           .noexcept()
     ).specialized()
     cpp_code = ast.to_source
     assert_includes cpp_code, "template"
@@ -66,20 +66,20 @@ class Coverage100PercentTest < Minitest::Test
   def test_all_features_combined
     # Test all new features together
     ast = class_decl("MyClass",
-      using_alias("Index", "int"),
-      friend_decl("struct", "hash<MyClass>"),
-      enum_class("State", [["INIT"], ["READY", "1"], ["ERROR", "2"]]),
-      function_decl("", "MyClass", [param("Index", "index")], block())
-        .with_initializer_list("index_(index)")
-        .explicit(),
-      function_decl("Index", "get_index", [], block())
-        .inline_body(block(return_stmt(id("index_"))))
-        .const(),
-      function_decl("", "MyClass", [param("const MyClass&", "other")], block())
-        .deleted()
+                     using_alias("Index", "int"),
+                     friend_decl("struct", "hash<MyClass>"),
+                     enum_class("State", [["INIT"], ["READY", "1"], ["ERROR", "2"]]),
+                     function_decl("", "MyClass", [param("Index", "index")], block())
+                       .with_initializer_list("index_(index)")
+                       .explicit(),
+                     function_decl("Index", "get_index", [], block())
+                       .inline_body(block(return_stmt(id("index_"))))
+                       .const(),
+                     function_decl("", "MyClass", [param("const MyClass&", "other")], block())
+                       .deleted()
     )
     cpp_code = ast.to_source
-    
+
     # Check all features are present
     assert_includes cpp_code, "using Index = int"
     assert_includes cpp_code, "friend struct hash<MyClass>"
@@ -95,7 +95,7 @@ class Coverage100PercentTest < Minitest::Test
     # Test that we can generate all major OpenGL constructs
     constructs = [
       "inline methods",
-      "using aliases", 
+      "using aliases",
       "static constexpr",
       "initializer lists",
       "friend declarations",
@@ -106,12 +106,12 @@ class Coverage100PercentTest < Minitest::Test
       "template classes",
       "template methods"
     ]
-    
+
     # All constructs should be supported
     constructs.each do |construct|
       assert true, "#{construct} should be supported"
     end
-    
+
     puts "✅ All #{constructs.length} major OpenGL constructs supported for 100% coverage"
   end
 end

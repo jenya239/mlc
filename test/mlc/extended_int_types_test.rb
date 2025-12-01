@@ -208,7 +208,7 @@ class MLCExtendedIntTypesTest < Minitest::Test
 
     %w[i8 i16 i32 i64 u8 u16 u32 u64 f32 f64].each do |type_name|
       assert_includes predicates::NUMERIC_PRIMITIVES, type_name,
-        "#{type_name} should be in NUMERIC_PRIMITIVES"
+                      "#{type_name} should be in NUMERIC_PRIMITIVES"
     end
   end
 
@@ -217,7 +217,7 @@ class MLCExtendedIntTypesTest < Minitest::Test
 
     %w[i8 i16 i32 i64 u8 u16 u32 u64].each do |type_name|
       assert_includes predicates::INTEGER_PRIMITIVES, type_name,
-        "#{type_name} should be in INTEGER_PRIMITIVES"
+                      "#{type_name} should be in INTEGER_PRIMITIVES"
     end
   end
 
@@ -226,7 +226,7 @@ class MLCExtendedIntTypesTest < Minitest::Test
 
     %w[f32 f64].each do |type_name|
       refute_includes predicates::INTEGER_PRIMITIVES, type_name,
-        "#{type_name} should NOT be in INTEGER_PRIMITIVES"
+                      "#{type_name} should NOT be in INTEGER_PRIMITIVES"
     end
   end
 

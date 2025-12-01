@@ -10,7 +10,7 @@ module MLC
           class ListComprehensionRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.list_comprehension?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -18,10 +18,10 @@ module MLC
                 node,
                 expression_visitor: context.fetch(:expression_visitor)
               )
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

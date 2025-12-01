@@ -5,7 +5,7 @@ require 'open3'
 require 'tmpdir'
 
 class GenericsE2ETest < Minitest::Test
-  tag :slow  # Requires C++ compilation
+  tag :slow # Requires C++ compilation
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 

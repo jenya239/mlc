@@ -59,11 +59,11 @@ module MLC
       def self.param(name, type, origin: nil)
         Param.new(name: name, type: type, origin: origin)
       end
-      
+
       def self.func(name, params, ret_type, body, effects: [], origin: nil)
         Func.new(name: name, params: params, ret_type: ret_type, body: body, effects: effects, origin: origin)
       end
-      
+
       def self.literal(value, type, origin: nil)
         LiteralExpr.new(value: value, type: type, origin: origin)
       end
@@ -110,11 +110,11 @@ module MLC
       def self.call_expr(callee, args, type, origin: nil)
         call(callee, args, type, origin: origin)
       end
-      
+
       def self.member(object, member, type, origin: nil)
         MemberExpr.new(object: object, member: member, type: type, origin: origin)
       end
-      
+
       def self.record(type_name, fields, type, origin: nil)
         RecordExpr.new(type_name: type_name, fields: fields, type: type, origin: origin)
       end
@@ -134,7 +134,7 @@ module MLC
       def self.block(stmts, origin: nil)
         Block.new(stmts: stmts, origin: origin)
       end
-      
+
       def self.return_stmt(expr = nil, origin: nil)
         Return.new(expr: expr, origin: origin)
       end

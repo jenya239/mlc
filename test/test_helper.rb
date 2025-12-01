@@ -17,9 +17,9 @@ module TestHelpers
   def assert_roundtrip(source)
     program = CppAst.parse(source)
     result = program.to_source
-    
+
     assert_equal source, result,
-      "Roundtrip failed:\nExpected: #{source.inspect}\nGot:      #{result.inspect}"
+                 "Roundtrip failed:\nExpected: #{source.inspect}\nGot:      #{result.inspect}"
   end
 end
 

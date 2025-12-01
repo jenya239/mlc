@@ -219,7 +219,7 @@ class ASTTypeCheckerTest < Minitest::Test
     node = MLC::Source::AST::ForLoop.new(var_name: "x", iterable: iterable, body: body)
 
     assert @checker.for_loop?(node)
-    assert @checker.for_statement?(node)  # Same method, same class
+    assert @checker.for_statement?(node) # Same method, same class
   end
 
   # ========== Statement predicates ==========

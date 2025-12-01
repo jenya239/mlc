@@ -275,7 +275,7 @@ class MatchComplexityAnalyzerTest < Minitest::Test
 
     assert_equal 10, analyzer.arm_count
     assert analyzer.pure_adt_match?
-    assert analyzer.needs_named_visitor?(5)  # threshold = 5
+    assert analyzer.needs_named_visitor?(5) # threshold = 5
   end
 
   private

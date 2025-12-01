@@ -9,7 +9,7 @@ module MLC
           class ForLoopRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.for_loop?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -41,10 +41,10 @@ module MLC
           )
         end
           end
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

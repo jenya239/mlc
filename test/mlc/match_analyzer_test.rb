@@ -16,7 +16,7 @@ class MatchAnalyzerTest < Minitest::Test
 
   def test_analyzer_returns_result_type
     analyzer = build_analyzer
-    body_type = OpenStruct.new(type: "i32")
+    OpenStruct.new(type: "i32")
     arms = [
       { pattern: nil, guard: nil, body: OpenStruct.new(type: "i32") },
       { pattern: nil, guard: nil, body: OpenStruct.new(type: "i32") }
@@ -196,7 +196,7 @@ class MatchAnalyzerTest < Minitest::Test
     analyzer = MLC::Common::Typing::MatchAnalyzer.new(
       ensure_compatible_type: ->(_actual, _expected, _context) {},
       type_registry: type_registry,
-      check_exhaustiveness: false  # Disabled
+      check_exhaustiveness: false # Disabled
     )
 
     # Missing variant, but checking disabled

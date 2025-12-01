@@ -16,13 +16,13 @@ module MLC
   "std/core/option" => {
     category: "core",
     type: :pure,
-    
+
     path: "core/option.mlc"
   },
   "std/core/result" => {
     category: "core",
     type: :pure,
-    
+
     path: "core/result.mlc"
   },
   "std/data/json" => {

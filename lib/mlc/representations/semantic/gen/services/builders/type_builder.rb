@@ -100,7 +100,7 @@ module MLC
 
             # Validate that reference types are used only in unsafe context
             def validate_unsafe_context!(node, type_desc)
-              return if @scope_context.nil?  # Skip if no scope context (e.g., tests)
+              return if @scope_context.nil? # Skip if no scope context (e.g., tests)
               return if @scope_context.inside_unsafe?
 
               raise MLC::CompileError, "Reference type #{type_desc} can only be used in unsafe blocks"

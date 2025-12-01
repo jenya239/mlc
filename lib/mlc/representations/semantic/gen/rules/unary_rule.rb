@@ -10,7 +10,7 @@ module MLC
           class UnaryRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.unary_op?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -27,10 +27,10 @@ module MLC
                 type: result_type,
                 origin: node
               )
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

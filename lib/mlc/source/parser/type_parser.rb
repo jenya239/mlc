@@ -104,7 +104,7 @@ module MLC
 
             # Check for next variant
             break unless current.type == :OPERATOR && current.value == "|"
-            consume(:OPERATOR)  # consume |
+            consume(:OPERATOR) # consume |
           end
 
           with_origin(sum_origin_token) { MLC::Source::AST::SumType.new(name: "sum", variants: variants) }
@@ -250,7 +250,7 @@ module MLC
         def parse_type_or_sum
           # Try parsing as sum type first
           start_pos = @pos
-          first_variant_name = consume(:IDENTIFIER).value
+          consume(:IDENTIFIER).value
 
           # Check if this is a sum type variant
           # Patterns: Variant(...) or Variant {...} or Variant | ...

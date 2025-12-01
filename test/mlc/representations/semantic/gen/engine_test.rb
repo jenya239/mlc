@@ -878,9 +878,9 @@ module MLC
 
             ir = engine.run_expression(node)
             assert_equal 'Math.sqrt', ir.name
-            end
+          end
+        end
       end
     end
   end
-end
 end

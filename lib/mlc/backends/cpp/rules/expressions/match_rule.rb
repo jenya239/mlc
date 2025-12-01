@@ -222,7 +222,7 @@ module MLC
                 # Build capture variable declarations
                 capture_decls = []
                 bindings.each_with_index do |binding, idx|
-                  next if binding == "_"  # Skip wildcards
+                  next if binding == "_" # Skip wildcards
                   # Generate: auto user = match.get(1).text();
                   capture_decls << "auto #{binding} = match.get(#{idx}).text();"
                 end
@@ -255,7 +255,7 @@ module MLC
 
                 CppAst::Nodes::MatchArm.new(
                   case_name: case_name,
-                  bindings: bindings.reject { |f| f == "_" },  # Filter out wildcards
+                  bindings: bindings.reject { |f| f == "_" }, # Filter out wildcards
                   body: body
                 )
 

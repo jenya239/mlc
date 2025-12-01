@@ -5,7 +5,7 @@ require "open3"
 require "tmpdir"
 
 class StdlibSimpleE2ETest < Minitest::Test
-  tag :slow  # Mark as slow test (requires C++ compilation)
+  tag :slow # Mark as slow test (requires C++ compilation)
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
@@ -47,7 +47,7 @@ class StdlibSimpleE2ETest < Minitest::Test
         sum_i32(nums)
       end
     MLC
-      assert_equal 55, status.exitstatus  # 1+2+...+10 = 55
+      assert_equal 55, status.exitstatus # 1+2+...+10 = 55
     end
   end
 
@@ -132,7 +132,7 @@ class StdlibSimpleE2ETest < Minitest::Test
         a + b
       end
     MLC
-      assert_equal 30, status.exitstatus  # 10 + 20
+      assert_equal 30, status.exitstatus # 10 + 20
     end
   end
 

@@ -16,18 +16,18 @@ module CppAst
       include FunctionBuilder
       include ClassBuilder
       include OwnershipDSL
-      
+
       # Make t available as a method
       def t
-        @types_instance ||= DSLv2Improved.global_types
+        @t ||= DSLv2Improved.global_types
       end
-      
+
       # Global types instance for consistency
       @@global_types = nil
       def self.global_types
         @@global_types ||= TypesDSL::Types.new
       end
-      
+
       # Context helper for blocks
       def self.with_context(builder, &block)
         if block_given?
@@ -37,27 +37,27 @@ module CppAst
         end
         builder
       end
-      
+
       # Program builder
       class ProgramBuilder
         attr_reader :statements
-        
+
         def initialize
           @statements = []
         end
-        
+
         def add_statement(statement)
           @statements << statement
           self
         end
-        
+
         def fn(name, **options, &block)
           require_relative "function_builder"
           function_builder = FunctionBuilder::FunctionBuilder.new(name, **options)
           function_builder.body(&block) if block_given?
           add_statement(function_builder)
         end
-        
+
         def template_(params, &block)
           template_params = params.map do |param|
             if param.is_a?(Hash)
@@ -70,39 +70,39 @@ module CppAst
               Nodes::TemplateParameter.new(name: param.to_s)
             end
           end
-          
+
           body = nil
           if block_given?
             temp_builder = ProgramBuilder.new
             DSLv2Improved.with_context(temp_builder, &block)
             body = temp_builder
           end
-          
+
           template_decl = Nodes::TemplateDeclaration.new(
             template_params: template_params,
             declaration: body&.to_node
           )
           add_statement(template_decl)
         end
-        
+
         def to_node
           Nodes::Program.new(
             statements: @statements.map(&:to_node),
             statement_trailings: Array.new(@statements.size, "")
           )
         end
-        
+
         # Include all DSL methods
         include DSLv2Improved
       end
-      
+
       # Main program builder
       def program(&block)
         builder = ProgramBuilder.new
         DSLv2Improved.with_context(builder, &block)
         builder
       end
-      
+
       # Namespace builder
       def namespace(name, &block)
         statements = []
@@ -111,7 +111,7 @@ module CppAst
           DSLv2Improved.with_context(temp_builder, &block)
           statements = temp_builder.statements
         end
-        
+
         Nodes::NamespaceDeclaration.new(
           name: name.to_s,
           body: statements.map(&:to_node),
@@ -121,7 +121,7 @@ module CppAst
           rbrace_suffix: ""
         )
       end
-      
+
       # Include directive
       def include_(path, system: true)
         Nodes::IncludeDirective.new(
@@ -129,7 +129,7 @@ module CppAst
           system: system
         )
       end
-      
+
       # Using declaration
       def using_(namespace, *names)
         Nodes::UsingDeclaration.new(
@@ -138,14 +138,14 @@ module CppAst
           name: namespace.to_s
         )
       end
-      
+
       # Using namespace
       def using_namespace(namespace)
         Nodes::UsingNamespaceDirective.new(
           namespace: namespace.to_s
         )
       end
-      
+
       # Type alias
       def type_alias(name, type)
         Nodes::TypeAlias.new(
@@ -153,7 +153,7 @@ module CppAst
           type: type.to_cpp_type
         )
       end
-      
+
       # Enum declaration
       def enum_(name, *enumerators, **modifiers)
         enum_modifiers = {
@@ -161,12 +161,12 @@ module CppAst
           scoped: false,
           underlying_type: nil
         }.merge(modifiers)
-        
+
         # Handle class parameter for backward compatibility
         if modifiers.key?(:class)
           enum_modifiers[:class_enum] = modifiers[:class]
         end
-        
+
         Nodes::EnumDeclaration.new(
           name: name.to_s,
           enumerators: enumerators.map do |enumerator|
@@ -188,12 +188,12 @@ module CppAst
           underlying_type: enum_modifiers[:underlying_type]&.to_cpp_type
         )
       end
-      
+
       # Enum class
       def enum_class(name, underlying_type = nil, *enumerators)
         enum_(name, *enumerators, class_enum: true, scoped: true, underlying_type: underlying_type)
       end
-      
+
       # Template declaration
       def template_(params, &block)
         template_params = params.map do |param|
@@ -207,20 +207,20 @@ module CppAst
             Nodes::TemplateParameter.new(name: param.to_s)
           end
         end
-        
+
         body = nil
         if block_given?
           temp_builder = ProgramBuilder.new
           DSLv2Improved.with_context(temp_builder, &block)
           body = temp_builder
         end
-        
+
         Nodes::TemplateDeclaration.new(
           template_params: template_params,
           declaration: body&.to_node
         )
       end
-      
+
       # Concept declaration
       def concept_(name, params, &block)
         concept_params = params.map do |param|
@@ -233,21 +233,21 @@ module CppAst
             Nodes::ConceptParameter.new(name: param.to_s)
           end
         end
-        
+
         body = nil
         if block_given?
           temp_builder = ProgramBuilder.new
           DSLv2Improved.with_context(temp_builder, &block)
           body = temp_builder
         end
-        
+
         Nodes::ConceptDeclaration.new(
           name: name.to_s,
           template_params: concept_params,
           requirements: body&.to_node&.to_source || "true"
         )
       end
-      
+
       # Module declaration (C++20)
       def module_(name, &block)
         body = nil
@@ -256,13 +256,13 @@ module CppAst
           DSLv2Improved.with_context(temp_builder, &block)
           body = temp_builder
         end
-        
+
         Nodes::ModuleDeclaration.new(
           name: name.to_s,
           body: body&.to_node
         )
       end
-      
+
       # Export declaration (C++20)
       def export_(&block)
         body = nil
@@ -271,19 +271,19 @@ module CppAst
           DSLv2Improved.with_context(temp_builder, &block)
           body = temp_builder
         end
-        
+
         Nodes::ExportDeclaration.new(
           declarations: body&.to_node&.statements || []
         )
       end
-      
+
       # Import declaration (C++20)
       def import_(module_name)
         Nodes::ImportDeclaration.new(
           module_name: module_name.to_s
         )
       end
-      
+
       # Variable declaration
       def var_(name, type, value = nil, **modifiers)
         var_modifiers = {
@@ -293,7 +293,7 @@ module CppAst
           inline: false,
           extern: false
         }.merge(modifiers)
-        
+
         Nodes::VariableDeclaration.new(
           type: type.to_cpp_type,
           declarators: [name.to_s],
@@ -303,29 +303,29 @@ module CppAst
           default_value: value&.node
         )
       end
-      
+
       # Const declaration
       def const_(name, type, value, **modifiers)
         var_(name, type, value, const: true, **modifiers)
       end
-      
+
       # Static declaration
       def static_(name, type, value = nil, **modifiers)
         var_(name, type, value, static: true, **modifiers)
       end
-      
+
       # Extern declaration
       def extern_(name, type, **modifiers)
         var_(name, type, nil, extern: true, **modifiers)
       end
-      
+
       # Friend declaration
       def friend_(declaration)
         Nodes::FriendDeclaration.new(
           declaration: declaration.to_node
         )
       end
-      
+
       # Comment
       def comment_(text, style: :inline)
         case style
@@ -339,17 +339,17 @@ module CppAst
           raise ArgumentError, "Unknown comment style: #{style}"
         end
       end
-      
+
       # Block comment
       def block_comment(text)
         comment_(text, style: :block)
       end
-      
+
       # Doxygen comment
       def doxygen_comment(text)
         comment_(text, style: :doxygen)
       end
-      
+
       # Preprocessor directives
       def define_(name, value = nil)
         Nodes::DefineDirective.new(
@@ -357,7 +357,7 @@ module CppAst
           value: value&.to_s
         )
       end
-      
+
       def ifdef_(name, &block)
         body = nil
         if block_given?
@@ -370,7 +370,7 @@ module CppAst
           body: body&.to_node
         )
       end
-      
+
       def ifndef_(name, &block)
         body = nil
         if block_given?
@@ -383,18 +383,18 @@ module CppAst
           body: body&.to_node
         )
       end
-      
+
       def endif_
         Nodes::EndifDirective.new
       end
-      
+
       # Pragma directive
       def pragma_(directive)
         Nodes::PragmaDirective.new(
           directive: directive.to_s
         )
       end
-      
+
       # Line directive
       def line_(number, file = nil)
         Nodes::LineDirective.new(
@@ -402,23 +402,23 @@ module CppAst
           file: file&.to_s
         )
       end
-      
+
       # Error directive
       def error_(message)
         Nodes::ErrorDirective.new(
           message: message.to_s
         )
       end
-      
+
       # Warning directive
       def warning_(message)
         Nodes::WarningDirective.new(
           message: message.to_s
         )
       end
-      
+
       private
-      
+
       def build_prefix_modifiers(modifiers)
         result = []
         result << "static" if modifiers[:static]
@@ -428,34 +428,34 @@ module CppAst
         result << "extern" if modifiers[:extern]
         result.join(" ")
       end
-      
+
       # Additional DSL methods
       def let_(name, value)
         require_relative "expr_builder"
         ExprBuilder::ExprNode.new(Nodes::Identifier.new(name: name.to_s))
       end
-      
+
       def err(value)
         require_relative "expr_builder"
         ExprBuilder::ExprNode.new(Nodes::Identifier.new(name: "err"))
       end
-      
+
       def else_
         require_relative "control_dsl"
         ControlDSL::ElseBuilder.new
       end
-      
+
       def nullptr
         require_relative "expr_builder"
         ExprBuilder::ExprNode.new(Nodes::Identifier.new(name: "nullptr"))
       end
-      
+
       # Result type helpers
       def ok(value)
         require_relative "expr_builder"
         ExprBuilder::ExprNode.new(Nodes::Identifier.new(name: "ok"))
       end
-      
+
       # Concept helper
       def concept(name, *params, &block)
         require_relative "types_dsl"
@@ -467,38 +467,38 @@ module CppAst
           requirements: "true"
         )
       end
-      
+
       # Custom type helpers
       def Point
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Point)
       end
-      
+
       def Vector
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Vector)
       end
-      
+
       def Matrix
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Matrix)
       end
-      
+
       def Circle
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Circle)
       end
-      
+
       def Rectangle
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Rectangle)
       end
-      
+
       def Triangle
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Triangle)
       end
-      
+
       # C++ concepts helpers
       def requires_(*constraints)
         require_relative "types_dsl"

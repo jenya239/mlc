@@ -13,12 +13,12 @@ class FullFeatureValidationTest < Minitest::Test
       ))
       .const()
       .noexcept()
-    
+
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline GLuint handle"
     assert_includes cpp_code, "const noexcept"
     assert_includes cpp_code, "return shader_ + 1"
-    
+
     # Test static constexpr inline
     ast2 = function_decl("Color", "white", [], block())
       .inline_body(block(
@@ -26,7 +26,7 @@ class FullFeatureValidationTest < Minitest::Test
       ))
       .static()
       .constexpr()
-    
+
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "static constexpr inline Color white"
     assert_includes cpp_code2, "return r = 1.0"
@@ -36,13 +36,13 @@ class FullFeatureValidationTest < Minitest::Test
     # Test all types of using declarations
     ast1 = using_alias("GlyphIndex", "uint32_t")
     assert_includes ast1.to_source, "using GlyphIndex = uint32_t"
-    
+
     ast2 = using_alias("BufferPtr", "std::unique_ptr<Buffer>")
     assert_includes ast2.to_source, "using BufferPtr = std::unique_ptr<Buffer>"
-    
+
     ast3 = using_namespace("std")
     assert_includes ast3.to_source, "using namespace std"
-    
+
     ast4 = using_name("std::vector")
     assert_includes ast4.to_source, "using std::vector"
   end
@@ -52,18 +52,18 @@ class FullFeatureValidationTest < Minitest::Test
     ast = function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
       .with_initializer_list("x(x_), y(y_), computed_(x_ * y_), initialized_(true)")
       .constexpr()
-    
+
     cpp_code = ast.to_source
     assert_includes cpp_code, "constexpr"
     assert_includes cpp_code, ": x(x_), y(y_), computed_(x_ * y_), initialized_(true)"
-    
+
     # Test with body and initializer list
-    ast2 = function_decl("", "Buffer", [param("Type", "type")], 
-      block(
-        expr_stmt(call(id("glGenBuffers"), [int(1), id("&buffer_")]))
-      ))
+    ast2 = function_decl("", "Buffer", [param("Type", "type")],
+                         block(
+                           expr_stmt(call(id("glGenBuffers"), [int(1), id("&buffer_")]))
+                         ))
       .with_initializer_list("buffer_(0), type_(type)")
-    
+
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "Buffer"
     assert_includes cpp_code2, ": buffer_(0), type_(type)"
@@ -74,18 +74,18 @@ class FullFeatureValidationTest < Minitest::Test
     # Test all types of friend declarations
     ast1 = friend_decl("class", "MyClass")
     assert_includes ast1.to_source, "friend class MyClass"
-    
+
     ast2 = friend_decl("struct", "hash<MyClass>")
     assert_includes ast2.to_source, "friend struct hash<MyClass>"
-    
+
     ast3 = friend_decl("", "operator<<")
     assert_includes ast3.to_source, "friend"
     assert_includes ast3.to_source, "operator<<"
-    
+
     # Test friend in class
     ast4 = class_decl("MyClass",
-      friend_decl("struct", "std::hash<MyClass>"),
-      function_decl("void", "method", [], block())
+                      friend_decl("struct", "std::hash<MyClass>"),
+                      function_decl("void", "method", [], block())
     )
     cpp_code = ast4.to_source
     assert_includes cpp_code, "friend struct std::hash<MyClass>"
@@ -95,25 +95,25 @@ class FullFeatureValidationTest < Minitest::Test
   def test_template_specialization_full_feature
     # Test template specialization
     ast = template_class("hash", ["typename T"],
-      function_decl("size_t", "operator()", [param("const T&", "k")], block())
-        .const()
-        .noexcept()
+                         function_decl("size_t", "operator()", [param("const T&", "k")], block())
+                           .const()
+                           .noexcept()
     ).specialized()
-    
+
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
     assert_includes cpp_code, "size_t operator()"
     assert_includes cpp_code, "const noexcept"
-    
+
     # Test in namespace
     ast2 = namespace_decl("std",
-      template_class("hash", ["typename T"],
-        function_decl("size_t", "operator()", [param("const T&", "k")], block())
-          .const()
-          .noexcept()
-      ).specialized()
+                          template_class("hash", ["typename T"],
+                                         function_decl("size_t", "operator()", [param("const T&", "k")], block())
+                                           .const()
+                                           .noexcept()
+                          ).specialized()
     )
-    
+
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "namespace std"
     assert_includes cpp_code2, "template <>"
@@ -126,18 +126,18 @@ class FullFeatureValidationTest < Minitest::Test
       ["RGB8"],
       ["RGBA8"]
     ], underlying_type: "uint8_t")
-    
+
     cpp_code1 = ast1.to_source
     assert_includes cpp_code1, "enum class AtlasFormat : uint8_t"
     assert_includes cpp_code1, "A8, RGB8, RGBA8"
-    
+
     # Test enum class with values and underlying type
     ast2 = enum_class("RenderMode", [
       ["BITMAP", "0"],
       ["MSDF", "1"],
       ["SDF", "2"]
     ], underlying_type: "uint8_t")
-    
+
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "enum class RenderMode : uint8_t"
     assert_includes cpp_code2, "BITMAP = 0, MSDF = 1, SDF = 2"
@@ -146,81 +146,81 @@ class FullFeatureValidationTest < Minitest::Test
   def test_all_features_combined_full
     # Test all features together in a realistic class
     ast = class_decl("OpenGLShader",
-      using_alias("ShaderID", "GLuint"),
-      friend_decl("struct", "std::hash<OpenGLShader>"),
-      enum_class("Type", [
-        ["Vertex", "GL_VERTEX_SHADER"],
-        ["Fragment", "GL_FRAGMENT_SHADER"],
-        ["Geometry", "GL_GEOMETRY_SHADER"]
-      ], underlying_type: "GLenum"),
-      
+                     using_alias("ShaderID", "GLuint"),
+                     friend_decl("struct", "std::hash<OpenGLShader>"),
+                     enum_class("Type", [
+                       ["Vertex", "GL_VERTEX_SHADER"],
+                       ["Fragment", "GL_FRAGMENT_SHADER"],
+                       ["Geometry", "GL_GEOMETRY_SHADER"]
+                     ], underlying_type: "GLenum"),
+
       # Constructor with initializer list
-      function_decl("", "OpenGLShader", [param("Type", "type"), param("const std::string&", "source")], 
-        block(
-          expr_stmt(call(id("glCreateShader"), [id("type")])),
-          expr_stmt(call(id("glShaderSource"), [id("shader_"), int(1), id("source"), id("nullptr")])),
-          expr_stmt(call(id("glCompileShader"), [id("shader_")]))
-        ))
-        .with_initializer_list("shader_(0)")
-        .explicit(),
-      
+                     function_decl("", "OpenGLShader", [param("Type", "type"), param("const std::string&", "source")],
+                                   block(
+                                     expr_stmt(call(id("glCreateShader"), [id("type")])),
+                                     expr_stmt(call(id("glShaderSource"), [id("shader_"), int(1), id("source"), id("nullptr")])),
+                                     expr_stmt(call(id("glCompileShader"), [id("shader_")]))
+                                   ))
+                       .with_initializer_list("shader_(0)")
+                       .explicit(),
+
       # Destructor
-      function_decl("", "~OpenGLShader", [], 
-        block(
-          expr_stmt(call(id("glDeleteShader"), [id("shader_")]))
-        )),
-      
+                     function_decl("", "~OpenGLShader", [],
+                                   block(
+                                     expr_stmt(call(id("glDeleteShader"), [id("shader_")]))
+                                   )),
+
       # Deleted copy constructor
-      function_decl("", "OpenGLShader", [param("const OpenGLShader&", "other")], block())
-        .deleted(),
-      
+                     function_decl("", "OpenGLShader", [param("const OpenGLShader&", "other")], block())
+                       .deleted(),
+
       # Deleted copy assignment
-      function_decl("OpenGLShader&", "operator=", [param("const OpenGLShader&", "other")], block())
-        .deleted(),
-      
+                     function_decl("OpenGLShader&", "operator=", [param("const OpenGLShader&", "other")], block())
+                       .deleted(),
+
       # Move constructor
-      function_decl("", "OpenGLShader", [param("OpenGLShader&&", "other")], 
-        block(
-          expr_stmt(binary("=", id("shader_"), id("other.shader_"))),
-          expr_stmt(binary("=", id("other.shader_"), int(0)))
-        ))
-        .noexcept(),
-      
+                     function_decl("", "OpenGLShader", [param("OpenGLShader&&", "other")],
+                                   block(
+                                     expr_stmt(binary("=", id("shader_"), id("other.shader_"))),
+                                     expr_stmt(binary("=", id("other.shader_"), int(0)))
+                                   ))
+                       .noexcept(),
+
       # Move assignment
-      function_decl("OpenGLShader&", "operator=", [param("OpenGLShader&&", "other")], 
-        block(
-          expr_stmt(call(id("glDeleteShader"), [id("shader_")])),
-          expr_stmt(binary("=", id("shader_"), id("other.shader_"))),
-          expr_stmt(binary("=", id("other.shader_"), int(0))),
-          return_stmt(id("this"))
-        ))
-        .noexcept(),
-      
+                     function_decl("OpenGLShader&", "operator=", [param("OpenGLShader&&", "other")],
+                                   block(
+                                     expr_stmt(call(id("glDeleteShader"), [id("shader_")])),
+                                     expr_stmt(binary("=", id("shader_"), id("other.shader_"))),
+                                     expr_stmt(binary("=", id("other.shader_"), int(0))),
+                                     return_stmt(id("this"))
+                                   ))
+                       .noexcept(),
+
       # Inline getter methods
-      function_decl("ShaderID", "handle", [], block())
-        .inline_body(block(return_stmt(id("shader_"))))
-        .const()
-        .noexcept(),
-      
-      function_decl("bool", "is_valid", [], block())
-        .inline_body(block(return_stmt(binary("!=", id("shader_"), int(0)))))
-        .const()
-        .noexcept(),
-      
+                     function_decl("ShaderID", "handle", [], block())
+                       .inline_body(block(return_stmt(id("shader_"))))
+                       .const()
+                       .noexcept(),
+
+                     function_decl("bool", "is_valid", [], block())
+                       .inline_body(block(return_stmt(binary("!=", id("shader_"), int(0)))))
+                       .const()
+                       .noexcept(),
+
       # Static factory method
-      function_decl("OpenGLShader", "create_vertex", [param("const std::string&", "source")], block())
-        .inline_body(block(return_stmt(call(id("OpenGLShader"), [id("Type::Vertex"), id("source")]))))
-        .static()
-        .constexpr(),
-      
+                     function_decl("OpenGLShader", "create_vertex", [param("const std::string&", "source")], block())
+                       .inline_body(block(return_stmt(call(id("OpenGLShader"), [id("Type::Vertex"), id("source")]))))
+                       .static()
+                       .constexpr(),
+
       # Error handling method
-      function_decl("std::optional<std::string>", "compile_error", [], block())
-        .const()
-        .nodiscard()
+                     function_decl("std::optional<std::string>", "compile_error", [], block())
+                       .const()
+                       .nodiscard()
     )
-    
+
     cpp_code = ast.to_source
-    
+
     # Verify all features are present
     assert_includes cpp_code, "using ShaderID = GLuint"
     assert_includes cpp_code, "friend struct std::hash<OpenGLShader>"
@@ -241,7 +241,7 @@ class FullFeatureValidationTest < Minitest::Test
     # Verify all major OpenGL constructs are fully supported
     features = [
       "inline methods with complex bodies",
-      "using type aliases with complex types", 
+      "using type aliases with complex types",
       "static constexpr methods",
       "constructor initializer lists with multiple members",
       "friend declarations for template specialization",
@@ -253,11 +253,11 @@ class FullFeatureValidationTest < Minitest::Test
       "error handling with optional returns",
       "static factory methods"
     ]
-    
+
     features.each do |feature|
       assert true, "#{feature} should be fully supported"
     end
-    
+
     puts "✅ All #{features.length} major OpenGL features fully implemented without simplifications"
   end
 end

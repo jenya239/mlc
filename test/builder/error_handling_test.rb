@@ -9,15 +9,15 @@ class ErrorHandlingTest < Minitest::Test
     # Test that last modifier wins (DSL allows chaining)
     ast = function_decl("void", "test", [], block())
       .deleted()
-      .defaulted()  # Last one wins
+      .defaulted() # Last one wins
     cpp_code = ast.to_source
-    assert_includes cpp_code, "= default"  # defaulted wins
+    assert_includes cpp_code, "= default" # defaulted wins
   end
 
   def test_empty_template_parameters
     # Empty template parameters should be handled gracefully
-    ast = template_class("Empty", [], 
-      function_decl("void", "method", [], block())
+    ast = template_class("Empty", [],
+                         function_decl("void", "method", [], block())
     )
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
@@ -33,8 +33,8 @@ class ErrorHandlingTest < Minitest::Test
 
   def test_invalid_class_name
     # Empty class name should be handled
-    ast = class_decl("", 
-      function_decl("void", "method", [], block())
+    ast = class_decl("",
+                     function_decl("void", "method", [], block())
     )
     cpp_code = ast.to_source
     assert_includes cpp_code, "class "
@@ -72,8 +72,8 @@ class ErrorHandlingTest < Minitest::Test
 
   def test_invalid_template_specialization
     # Test handling of invalid template specialization
-    ast = template_class("Test", ["typename T"], 
-      function_decl("void", "method", [], block())
+    ast = template_class("Test", ["typename T"],
+                         function_decl("void", "method", [], block())
     ).specialized()
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
@@ -118,8 +118,8 @@ class ErrorHandlingTest < Minitest::Test
 
   def test_invalid_template_with_invalid_parameters
     # Test handling of invalid template parameters
-    ast = template_class("Test", [nil, ""], 
-      function_decl("void", "method", [], block())
+    ast = template_class("Test", [nil, ""],
+                         function_decl("void", "method", [], block())
     )
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <, >"
@@ -134,8 +134,8 @@ class ErrorHandlingTest < Minitest::Test
 
   def test_invalid_namespace_declaration
     # Test handling of invalid namespace
-    ast = namespace_decl("", 
-      function_decl("void", "test", [], block())
+    ast = namespace_decl("",
+                         function_decl("void", "test", [], block())
     )
     cpp_code = ast.to_source
     assert_includes cpp_code, "namespace "
@@ -145,9 +145,9 @@ class ErrorHandlingTest < Minitest::Test
     # Test that the DSL can recover from errors and continue
     begin
       ast = class_decl("TestClass",
-        function_decl("void", "valid_method", [], block()),
-        function_decl("void", "invalid_method", nil, block()),  # This should cause an error
-        function_decl("void", "another_valid_method", [], block())
+                       function_decl("void", "valid_method", [], block()),
+                       function_decl("void", "invalid_method", nil, block()), # This should cause an error
+                       function_decl("void", "another_valid_method", [], block())
       )
       # If we get here, error recovery worked
       cpp_code = ast.to_source

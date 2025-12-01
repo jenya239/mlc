@@ -206,8 +206,8 @@ class EventBusExtensionsTest < Minitest::Test
     events = []
     bus.subscribe(:test) { |payload| events << payload }
 
-    bus.info(:test, message: "info")  # Filtered out after level change
-    bus.warning(:test, message: "warn")  # Included
+    bus.info(:test, message: "info") # Filtered out after level change
+    bus.warning(:test, message: "warn") # Included
 
     assert_equal 1, events.size
   end

@@ -17,32 +17,32 @@ module CppAst
       include FunctionBuilder
       include ClassBuilder
       include OwnershipDSL
-      
+
       # Make t available as a method
       def t
         TypesDSL::Types
       end
-      
+
       # Program builder
       class ProgramBuilder
         attr_reader :statements
-        
+
         def initialize
           @statements = []
         end
-        
+
         def add_statement(statement)
           @statements << statement
           self
         end
-        
+
         def to_node
           Nodes::Program.new(
             statements: @statements.map(&:to_node),
             statement_trailings: Array.new(@statements.size, "")
           )
         end
-        
+
         # Delegate DSL methods to the module
         def method_missing(method_name, *args, &block)
           if DSLv2.respond_to?(method_name)
@@ -51,19 +51,19 @@ module CppAst
             super
           end
         end
-        
+
         def respond_to_missing?(method_name, include_private = false)
           DSLv2.respond_to?(method_name, include_private) || super
         end
       end
-      
+
       # Main program builder
       def program(&block)
         builder = ProgramBuilder.new
         builder.instance_eval(&block) if block_given?
         builder
       end
-      
+
       # Namespace builder
       def namespace(name, &block)
         statements = []
@@ -73,7 +73,7 @@ module CppAst
           temp_builder.instance_eval(&block)
           statements = temp_builder.statements
         end
-        
+
         Nodes::NamespaceDeclaration.new(
           name: name.to_s,
           body: statements.map(&:to_node),
@@ -83,7 +83,7 @@ module CppAst
           rbrace_suffix: ""
         )
       end
-      
+
       # Include directive
       def include_(path, system: true)
         Nodes::IncludeDirective.new(
@@ -91,7 +91,7 @@ module CppAst
           system: system
         )
       end
-      
+
       # Using declaration
       def using_(namespace, *names)
         Nodes::UsingDeclaration.new(
@@ -99,14 +99,14 @@ module CppAst
           names: names.map(&:to_s)
         )
       end
-      
+
       # Using namespace
       def using_namespace(namespace)
         Nodes::UsingNamespaceDirective.new(
           namespace: namespace.to_s
         )
       end
-      
+
       # Type alias
       def type_alias(name, type)
         Nodes::TypeAlias.new(
@@ -114,7 +114,7 @@ module CppAst
           type: type.to_cpp_type
         )
       end
-      
+
       # Enum declaration
       def enum_(name, *enumerators, **modifiers)
         enum_modifiers = {
@@ -122,7 +122,7 @@ module CppAst
           scoped: false,
           underlying_type: nil
         }.merge(modifiers)
-        
+
         Nodes::EnumDeclaration.new(
           name: name.to_s,
           enumerators: enumerators.map do |enumerator|
@@ -144,12 +144,12 @@ module CppAst
           underlying_type: enum_modifiers[:underlying_type]&.to_cpp_type
         )
       end
-      
+
       # Enum class
       def enum_class(name, underlying_type = nil, *enumerators)
         enum_(name, *enumerators, class_enum: true, scoped: true, underlying_type: underlying_type)
       end
-      
+
       # Template declaration
       def template_(params, &block)
         template_params = params.map do |param|
@@ -163,15 +163,15 @@ module CppAst
             Nodes::TemplateParameter.new(name: param.to_s)
           end
         end
-        
+
         body = block_given? ? block.call : nil
-        
+
         Nodes::TemplateDeclaration.new(
           parameters: template_params,
           body: body&.to_node
         )
       end
-      
+
       # Concept declaration
       def concept_(name, params, &block)
         concept_params = params.map do |param|
@@ -184,42 +184,42 @@ module CppAst
             Nodes::ConceptParameter.new(name: param.to_s)
           end
         end
-        
+
         body = block_given? ? block.call : nil
-        
+
         Nodes::ConceptDeclaration.new(
           name: name.to_s,
           parameters: concept_params,
           body: body&.to_node
         )
       end
-      
+
       # Module declaration (C++20)
       def module_(name, &block)
         body = block_given? ? block.call : nil
-        
+
         Nodes::ModuleDeclaration.new(
           name: name.to_s,
           body: body&.to_node
         )
       end
-      
+
       # Export declaration (C++20)
       def export_(&block)
         body = block_given? ? block.call : nil
-        
+
         Nodes::ExportDeclaration.new(
           body: body&.to_node
         )
       end
-      
+
       # Import declaration (C++20)
       def import_(module_name)
         Nodes::ImportDeclaration.new(
           module_name: module_name.to_s
         )
       end
-      
+
       # Variable declaration
       def var_(name, type, value = nil, **modifiers)
         var_modifiers = {
@@ -229,7 +229,7 @@ module CppAst
           inline: false,
           extern: false
         }.merge(modifiers)
-        
+
         Nodes::VariableDeclaration.new(
           type: type.to_cpp_type,
           declarators: [name.to_s],
@@ -239,29 +239,29 @@ module CppAst
           default_value: value&.node
         )
       end
-      
+
       # Const declaration
       def const_(name, type, value, **modifiers)
         var_(name, type, value, const: true, **modifiers)
       end
-      
+
       # Static declaration
       def static_(name, type, value = nil, **modifiers)
         var_(name, type, value, static: true, **modifiers)
       end
-      
+
       # Extern declaration
       def extern_(name, type, **modifiers)
         var_(name, type, nil, extern: true, **modifiers)
       end
-      
+
       # Friend declaration
       def friend_(declaration)
         Nodes::FriendDeclaration.new(
           declaration: declaration.to_node
         )
       end
-      
+
       # Comment
       def comment_(text, style: :inline)
         case style
@@ -275,17 +275,17 @@ module CppAst
           raise ArgumentError, "Unknown comment style: #{style}"
         end
       end
-      
+
       # Block comment
       def block_comment(text)
         comment_(text, style: :block)
       end
-      
+
       # Doxygen comment
       def doxygen_comment(text)
         comment_(text, style: :doxygen)
       end
-      
+
       # Preprocessor directives
       def define_(name, value = nil)
         Nodes::DefineDirective.new(
@@ -293,7 +293,7 @@ module CppAst
           value: value&.to_s
         )
       end
-      
+
       def ifdef_(name, &block)
         body = block_given? ? block.call : nil
         Nodes::IfdefDirective.new(
@@ -301,7 +301,7 @@ module CppAst
           body: body&.to_node
         )
       end
-      
+
       def ifndef_(name, &block)
         body = block_given? ? block.call : nil
         Nodes::IfndefDirective.new(
@@ -309,18 +309,18 @@ module CppAst
           body: body&.to_node
         )
       end
-      
+
       def endif_
         Nodes::EndifDirective.new
       end
-      
+
       # Pragma directive
       def pragma_(directive)
         Nodes::PragmaDirective.new(
           directive: directive.to_s
         )
       end
-      
+
       # Line directive
       def line_(number, file = nil)
         Nodes::LineDirective.new(
@@ -328,23 +328,23 @@ module CppAst
           file: file&.to_s
         )
       end
-      
+
       # Error directive
       def error_(message)
         Nodes::ErrorDirective.new(
           message: message.to_s
         )
       end
-      
+
       # Warning directive
       def warning_(message)
         Nodes::WarningDirective.new(
           message: message.to_s
         )
       end
-      
+
       private
-      
+
       def build_prefix_modifiers(modifiers)
         result = []
         result << "static" if modifiers[:static]

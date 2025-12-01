@@ -61,79 +61,79 @@ module CppAst
           end
         end
       end
-      
+
       private
-      
+
       # Parse expression statement: `expr;`
       # Returns (stmt, trailing) tuple
       def parse_expression_statement(leading_trivia)
         # Parse expression
         expr, expr_trailing = parse_expression
-        
+
         # Consume semicolon (with any trivia before it)
         _semicolon_prefix = expr_trailing + current_leading_trivia
         trailing = current_token.trailing_trivia
         expect(:semicolon)
-        
+
         # Create statement node
         stmt = Nodes::ExpressionStatement.new(
           leading_trivia: leading_trivia,
           expression: expr
         )
-        
+
         [stmt, trailing]
       end
-      
+
       # Parse return statement: `return expr;`
       # Returns (stmt, trailing) tuple
       def parse_return_statement(leading_trivia)
         # Consume 'return' keyword
         keyword_suffix = current_token.trailing_trivia
-        advance_raw  # skip 'return'
-        
+        advance_raw # skip 'return'
+
         # Parse expression
         expr, expr_trailing = parse_expression
-        
+
         # Consume semicolon (with any trivia before it)
         _semicolon_prefix = expr_trailing + current_leading_trivia
         trailing = current_token.trailing_trivia
         expect(:semicolon)
-        
+
         # Create statement node
         stmt = Nodes::ReturnStatement.new(
           leading_trivia: leading_trivia,
           expression: expr,
           keyword_suffix: keyword_suffix
         )
-        
+
         [stmt, trailing]
       end
-      
+
       # Parse block statement: `{ stmt1; stmt2; }`
       # Returns (BlockStatement, trailing) tuple
       def parse_block_statement(leading_trivia)
         # Consume '{'
         lbrace_suffix = current_token.trailing_trivia
         expect(:lbrace)
-        
+
         # Parse statements until '}'
         statements = []
         statement_trailings = []
-        
+
         until current_token.kind == :rbrace || at_end?
           stmt_leading = current_leading_trivia
           stmt, trailing = parse_statement(stmt_leading)
           statements << stmt
           statement_trailings << trailing
         end
-        
+
         # Collect trivia before '}'
         rbrace_prefix = current_leading_trivia
-        
+
         # Consume '}'
         trailing = current_token.trailing_trivia
         expect(:rbrace)
-        
+
         stmt = Nodes::BlockStatement.new(
           leading_trivia: leading_trivia,
           statements: statements,
@@ -141,7 +141,7 @@ module CppAst
           lbrace_suffix: lbrace_suffix,
           rbrace_prefix: rbrace_prefix
         )
-        
+
         [stmt, trailing]
       end
     end

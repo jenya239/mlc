@@ -10,7 +10,7 @@ module MLC
           class ArrayLiteralRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.array_literal?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -20,17 +20,17 @@ module MLC
                 node: node,
                 elements_ir: elements_ir
               )
-        end
+            end
 
             private
 
             def build_elements(node, context)
               visitor = context.fetch(:expression_visitor)
               node.elements.map { |element| visitor.visit(element) }
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

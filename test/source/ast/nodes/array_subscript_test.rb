@@ -10,10 +10,10 @@ class TestArraySubscript < Minitest::Test
       array: array,
       index: index
     )
-    
+
     assert_equal "arr[0]", node.to_source
   end
-  
+
   def test_with_lbracket_suffix
     array = CppAst::Nodes::Identifier.new(name: "arr")
     index = CppAst::Nodes::NumberLiteral.new(value: "0")
@@ -22,10 +22,10 @@ class TestArraySubscript < Minitest::Test
       index: index,
       lbracket_suffix: " "
     )
-    
+
     assert_equal "arr[ 0]", node.to_source
   end
-  
+
   def test_with_rbracket_prefix
     array = CppAst::Nodes::Identifier.new(name: "arr")
     index = CppAst::Nodes::NumberLiteral.new(value: "0")
@@ -34,10 +34,10 @@ class TestArraySubscript < Minitest::Test
       index: index,
       rbracket_prefix: " "
     )
-    
+
     assert_equal "arr[0 ]", node.to_source
   end
-  
+
   def test_with_expression_index
     array = CppAst::Nodes::Identifier.new(name: "arr")
     i = CppAst::Nodes::Identifier.new(name: "i")
@@ -53,10 +53,10 @@ class TestArraySubscript < Minitest::Test
       array: array,
       index: index
     )
-    
+
     assert_equal "arr[i + 1]", node.to_source
   end
-  
+
   def test_multidimensional
     arr = CppAst::Nodes::Identifier.new(name: "matrix")
     i = CppAst::Nodes::NumberLiteral.new(value: "0")
@@ -69,8 +69,7 @@ class TestArraySubscript < Minitest::Test
       array: first,
       index: j
     )
-    
+
     assert_equal "matrix[0][1]", second.to_source
   end
 end
-

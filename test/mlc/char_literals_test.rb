@@ -55,7 +55,7 @@ class MLCCharLiteralsTest < Minitest::Test
 
     char_tokens = tokens.select { |t| t.type == :CHAR_LITERAL }
     assert_equal 1, char_tokens.size
-    assert_equal 10, char_tokens.first.value  # '\n' = 10
+    assert_equal 10, char_tokens.first.value # '\n' = 10
   end
 
   def test_lexer_tab_escape
@@ -65,7 +65,7 @@ class MLCCharLiteralsTest < Minitest::Test
 
     char_tokens = tokens.select { |t| t.type == :CHAR_LITERAL }
     assert_equal 1, char_tokens.size
-    assert_equal 9, char_tokens.first.value  # '\t' = 9
+    assert_equal 9, char_tokens.first.value # '\t' = 9
   end
 
   def test_lexer_carriage_return_escape
@@ -75,7 +75,7 @@ class MLCCharLiteralsTest < Minitest::Test
 
     char_tokens = tokens.select { |t| t.type == :CHAR_LITERAL }
     assert_equal 1, char_tokens.size
-    assert_equal 13, char_tokens.first.value  # '\r' = 13
+    assert_equal 13, char_tokens.first.value # '\r' = 13
   end
 
   def test_lexer_null_escape
@@ -85,7 +85,7 @@ class MLCCharLiteralsTest < Minitest::Test
 
     char_tokens = tokens.select { |t| t.type == :CHAR_LITERAL }
     assert_equal 1, char_tokens.size
-    assert_equal 0, char_tokens.first.value  # '\0' = 0
+    assert_equal 0, char_tokens.first.value # '\0' = 0
   end
 
   def test_lexer_backslash_escape
@@ -214,13 +214,13 @@ class MLCCharLiteralsTest < Minitest::Test
   # ========== Unicode Support ==========
 
   def test_lexer_unicode_char
-    source = "'Ω'"  # Greek capital letter Omega
+    source = "'Ω'" # Greek capital letter Omega
     lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
 
     char_tokens = tokens.select { |t| t.type == :CHAR_LITERAL }
     assert_equal 1, char_tokens.size
-    assert_equal 937, char_tokens.first.value  # Ω = U+03A9 = 937
+    assert_equal 937, char_tokens.first.value # Ω = U+03A9 = 937
   end
 
   def test_lexer_emoji_becomes_string
@@ -233,6 +233,6 @@ class MLCCharLiteralsTest < Minitest::Test
     # Single Unicode code point should be CHAR_LITERAL
     char_tokens = tokens.select { |t| t.type == :CHAR_LITERAL }
     assert_equal 1, char_tokens.size
-    assert_equal 128512, char_tokens.first.value  # 😀 = U+1F600 = 128512
+    assert_equal 128512, char_tokens.first.value # 😀 = U+1F600 = 128512
   end
 end

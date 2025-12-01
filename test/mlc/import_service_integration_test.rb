@@ -98,7 +98,7 @@ module MLC
 
       ast = MLC.parse(source)
       transformer = MLC::Representations::Semantic::Gen::Pipeline.new
-      core_ir = transformer.transform(ast)
+      transformer.transform(ast)
 
       # Verify type was loaded from metadata
       type_info = transformer.type_registry.lookup("Point")
@@ -157,7 +157,7 @@ module MLC
 
       ast = MLC.parse(source)
       transformer = MLC::Representations::Semantic::Gen::Pipeline.new
-      core_ir = transformer.transform(ast)
+      transformer.transform(ast)
 
       # Verify function was loaded (case-insensitive fallback)
       entry = transformer.function_registry.fetch_entry("test")

@@ -146,7 +146,7 @@ module MLC
         # Opaque pointer types
         if kind == :opaque
           qualified = namespace ? "#{namespace}::#{name}" : name
-          return "#{qualified}*"  # Opaque types are always pointers
+          return "#{qualified}*" # Opaque types are always pointers
         end
 
         # Regular types with namespace
@@ -157,7 +157,7 @@ module MLC
       PRIMITIVE_TYPE_MAP = {
         'bool' => 'bool',
         'void' => 'void',
-        'unit' => 'void',          # Unit type maps to void in C++
+        'unit' => 'void', # Unit type maps to void in C++
         'i8' => 'int8_t',
         'u8' => 'uint8_t',
         'i16' => 'int16_t',
@@ -179,8 +179,8 @@ module MLC
       attr_reader :types
 
       def initialize
-        @types = {}  # name => TypeInfo
-        @namespaces = {}  # namespace => [type_names]
+        @types = {} # name => TypeInfo
+        @namespaces = {} # namespace => [type_names]
         # module_name => [type_names]
         @modules = Hash.new { |hash, key| hash[key] = [] }
 

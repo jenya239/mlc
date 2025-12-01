@@ -17,11 +17,11 @@ module MLC
             # Helper to create a literal expression
             def lit(value, type_name = nil)
               type_name ||= case value
-                           when Integer then 'i32'
-                           when Float then 'f32'
-                           when TrueClass, FalseClass then 'bool'
-                           else 'unknown'
-                           end
+                            when Integer then 'i32'
+                            when Float then 'f32'
+                            when TrueClass, FalseClass then 'bool'
+                            else 'unknown'
+                            end
               MLC::SemanticIR::LiteralExpr.new(
                 value: value,
                 type: MLC::SemanticIR::Type.new(kind: :prim, name: type_name)

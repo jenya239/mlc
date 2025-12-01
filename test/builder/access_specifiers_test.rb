@@ -10,7 +10,7 @@ class AccessSpecifiersTest < Minitest::Test
       function_decl("void", "public_method", [], block()),
       field_def("public_field", "int")
     )
-    
+
     cpp_code = ast.map(&:to_source).join("\n")
     assert_includes cpp_code, "public:"
     assert_includes cpp_code, "void public_method"
@@ -22,7 +22,7 @@ class AccessSpecifiersTest < Minitest::Test
       field_def("private_field", "int"),
       function_decl("void", "private_method", [], block())
     )
-    
+
     cpp_code = ast.map(&:to_source).join("\n")
     assert_includes cpp_code, "private:"
     assert_includes cpp_code, "int private_field;"
@@ -34,7 +34,7 @@ class AccessSpecifiersTest < Minitest::Test
       field_def("protected_field", "int"),
       function_decl("void", "protected_method", [], block())
     )
-    
+
     cpp_code = ast.map(&:to_source).join("\n")
     assert_includes cpp_code, "protected:"
     assert_includes cpp_code, "int protected_field;"
@@ -47,14 +47,14 @@ class AccessSpecifiersTest < Minitest::Test
         .defaulted(),
       function_decl("void", "public_method", [], block())
     )
-    
+
     private_members = private_section(
       field_def("private_field", "int", default: "0"),
       function_decl("void", "private_method", [], block())
     )
-    
+
     ast = class_decl("TestClass", *public_members, *private_members)
-    
+
     cpp_code = ast.to_source
     assert_includes cpp_code, "class TestClass"
     assert_includes cpp_code, "public:"
@@ -83,13 +83,13 @@ class AccessSpecifiersTest < Minitest::Test
         .const()
         .noexcept()
     )
-    
+
     private_members = private_section(
       field_def("handle_", "int", default: "0")
     )
-    
+
     ast = class_decl("RAIIClass", *public_members, *private_members)
-    
+
     cpp_code = ast.to_source
     assert_includes cpp_code, "class RAIIClass"
     assert_includes cpp_code, "public:"

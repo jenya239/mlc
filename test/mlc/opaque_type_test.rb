@@ -31,7 +31,7 @@ class OpaqueTypeTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, type_registry = MLC.transform_to_core_with_registry(ast)
+    _, type_registry = MLC.transform_to_core_with_registry(ast)
 
     # Type should be registered in TypeRegistry
     assert type_registry.has_type?("MyOpaqueType")
@@ -49,7 +49,7 @@ class OpaqueTypeTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, type_registry = MLC.transform_to_core_with_registry(ast)
+    _, type_registry = MLC.transform_to_core_with_registry(ast)
 
     # Without namespace, opaque type should be "Handle*"
     cpp_name = type_registry.cpp_name("Handle")
@@ -109,7 +109,7 @@ class OpaqueTypeTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, type_registry = MLC.transform_to_core_with_registry(ast)
+    _, type_registry = MLC.transform_to_core_with_registry(ast)
 
     # Handle should be opaque
     handle_info = type_registry.lookup("Handle")

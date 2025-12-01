@@ -31,7 +31,7 @@ module MLC
 
               free_vars.map do |name|
                 type = @var_type_registry.get(name)
-                next unless type  # Skip if variable not in scope
+                next unless type # Skip if variable not in scope
 
                 {
                   name: name,

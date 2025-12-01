@@ -5,7 +5,7 @@ require "open3"
 require "tmpdir"
 
 class BuiltinMethodsE2ETest < Minitest::Test
-  tag :slow  # Requires C++ compilation
+  tag :slow # Requires C++ compilation
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
@@ -331,7 +331,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
         c[0] + c[3] + c[5]
       end
     MLC
-      assert_equal 11, status.exitstatus  # 1 + 4 + 6
+      assert_equal 11, status.exitstatus # 1 + 4 + 6
     end
   end
 
@@ -345,7 +345,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
         sub[0] + sub[1] + sub[2]
       end
     MLC
-      assert_equal 90, status.exitstatus  # 20 + 30 + 40
+      assert_equal 90, status.exitstatus # 20 + 30 + 40
     end
   end
 
@@ -376,7 +376,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
         len + has_big + all_pos
       end
     MLC
-      assert_equal 7, status.exitstatus  # 5 + 1 + 1
+      assert_equal 7, status.exitstatus # 5 + 1 + 1
     end
   end
 end

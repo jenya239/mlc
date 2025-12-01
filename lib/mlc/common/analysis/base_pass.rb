@@ -45,13 +45,13 @@ module MLC
       # IR level this pass expects as input
       # @return [Symbol] :ast, :semantic_ir, :mid_ir, :low_ir, or :target
         def input_level
-          :semantic_ir  # default: operates on high-level IR (SemanticIR)
+          :semantic_ir # default: operates on high-level IR (SemanticIR)
         end
 
       # IR level this pass produces as output
       # @return [Symbol] :ast, :semantic_ir, :mid_ir, :low_ir, or :target
         def output_level
-          input_level  # default: same as input (analysis pass)
+          input_level # default: same as input (analysis pass)
         end
 
       # Context keys required by this pass

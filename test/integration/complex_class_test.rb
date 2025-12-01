@@ -21,13 +21,13 @@ class ComplexClassTest < Minitest::Test
           std::map<std::string, DemoInfo> demos_;
       };
     CPP
-    
+
     program = CppAst.parse(source)
     output = program.to_source
-    
+
     assert_equal source, output, "Complex class with nested struct and methods"
   end
-  
+
   # Simpler version
   def test_struct_with_template_types
     source = <<~CPP
@@ -36,13 +36,13 @@ class ComplexClassTest < Minitest::Test
           std::function<int()> factory;
       };
     CPP
-    
+
     program = CppAst.parse(source)
     output = program.to_source
-    
+
     assert_equal source, output, "Struct with template types"
   end
-  
+
   # Method with initializer in body
   def test_method_with_brace_initializer
     source = <<~CPP
@@ -52,11 +52,10 @@ class ComplexClassTest < Minitest::Test
           }
       };
     CPP
-    
+
     program = CppAst.parse(source)
     output = program.to_source
-    
+
     assert_equal source, output, "Method with brace initializer"
   end
 end
-

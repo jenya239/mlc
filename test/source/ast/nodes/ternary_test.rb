@@ -12,10 +12,10 @@ class TestTernary < Minitest::Test
       true_expression: true_expr,
       false_expression: false_expr
     )
-    
+
     assert_equal "flag?1:0", node.to_source
   end
-  
+
   def test_with_spacing
     condition = CppAst::Nodes::Identifier.new(name: "flag")
     true_expr = CppAst::Nodes::NumberLiteral.new(value: "1")
@@ -29,8 +29,7 @@ class TestTernary < Minitest::Test
       colon_prefix: " ",
       colon_suffix: " "
     )
-    
+
     assert_equal "flag ? 1 : 0", node.to_source
   end
 end
-

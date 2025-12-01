@@ -62,7 +62,7 @@ class StructuredLoggerTest < Minitest::Test
     logger.log_event(:test_event, event)
 
     output = io.string
-    assert_match(/W/, output)  # Short level indicator
+    assert_match(/W/, output) # Short level indicator
     assert_match(/test_event/, output)
     assert_match(/key="value"/, output)
   end

@@ -13,13 +13,13 @@ class NestedClassMembersTest < Minitest::Test
           };
       };
     CPP
-    
+
     program = CppAst.parse(source)
     output = program.to_source
-    
+
     assert_equal source, output, "Nested struct should preserve roundtrip"
   end
-  
+
   # Test method with body inside class
   def test_method_with_body_in_class
     source = <<~CPP
@@ -32,13 +32,13 @@ class NestedClassMembersTest < Minitest::Test
           int x;
       };
     CPP
-    
+
     program = CppAst.parse(source)
     output = program.to_source
-    
+
     assert_equal source, output, "Method body should preserve roundtrip"
   end
-  
+
   # Minimal failing case
   def test_minimal_nested_struct
     source = <<~CPP
@@ -48,13 +48,13 @@ class NestedClassMembersTest < Minitest::Test
           };
       };
     CPP
-    
+
     program = CppAst.parse(source)
     output = program.to_source
-    
+
     assert_equal source, output, "Minimal nested struct case"
   end
-  
+
   # Multiple nested types
   def test_multiple_nested_types
     source = <<~CPP
@@ -64,11 +64,10 @@ class NestedClassMembersTest < Minitest::Test
           enum E { A, B };
       };
     CPP
-    
+
     program = CppAst.parse(source)
     output = program.to_source
-    
+
     assert_equal source, output, "Multiple nested types"
   end
 end
-

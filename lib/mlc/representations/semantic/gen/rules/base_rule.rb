@@ -10,28 +10,28 @@ module MLC
           class BaseRule
             def applies?(node, context)
               matches?(node, context)
-        end
+            end
 
             def apply(node, context)
               produce(node, context)
-        end
+            end
 
             private
 
             def matches?(_node, _context)
               raise NotImplementedError, "#{self.class} must implement matches?"
-        end
+            end
 
             def produce(_node, _context)
               raise NotImplementedError, "#{self.class} must implement produce"
-        end
+            end
 
             def services(context)
               context.fetch(:services)
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

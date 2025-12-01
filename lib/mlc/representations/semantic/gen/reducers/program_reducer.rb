@@ -17,7 +17,7 @@ module MLC
               @module_import_pass = module_import_pass
               @type_resolution_service = type_resolution_service
               @pass_manager = build_pass_manager
-        end
+            end
 
             def reduce(program)
               context = {
@@ -40,7 +40,7 @@ module MLC
                 items: context[:type_items] + context[:func_items],
                 imports: context[:imports]
               )
-        end
+            end
 
             private
 
@@ -53,7 +53,7 @@ module MLC
             manager.register(:register_import_aliases, method(:pass_register_import_aliases))
             manager.register(:lower_declarations, method(:pass_lower_declarations))
           end
-        end
+            end
 
             def pass_collect_imports(context)
               program = context[:program]
@@ -66,7 +66,7 @@ module MLC
           end
 
               @module_import_pass.run(program)
-        end
+            end
 
             def pass_preregister_types(context)
               program = context[:program]
@@ -76,7 +76,7 @@ module MLC
             type_ir = @type_reducer.reduce(decl)
             context[:type_items] << type_ir
           end
-        end
+            end
 
             def pass_preregister_traits(context)
               program = context[:program]
@@ -132,7 +132,7 @@ module MLC
                         params: func.params,
                         ret_type: func.ret_type,
                         body: func.body,
-                        is_static: true  # Associated functions are static
+                        is_static: true # Associated functions are static
                       )
 
                       # Also register as regular function with mangled name for C++ backend
@@ -147,7 +147,7 @@ module MLC
                         body: func.body,
                         type_params: combined_type_params,
                         exported: decl.exported,
-                        external: func.external,  # Preserve extern flag
+                        external: func.external, # Preserve extern flag
                         origin: func.origin
                       )
                       @function_reducer.register_signature(synthetic_func)
@@ -171,7 +171,7 @@ module MLC
 
             def validate_trait_implementation(trait_registry, type_name, trait_name, impl_methods, decl)
               trait_info = trait_registry.get_trait(trait_name)
-              return unless trait_info  # Trait not found - will be caught elsewhere
+              return unless trait_info # Trait not found - will be caught elsewhere
 
               missing_methods = []
               trait_info.methods.each do |trait_method|
@@ -231,11 +231,11 @@ module MLC
             next unless decl.is_a?(MLC::Source::AST::FuncDecl)
             @function_reducer.register_signature(decl)
           end
-        end
+            end
 
             def pass_register_import_aliases(_context)
               # User module imports are handled eagerly in pass_collect_imports.
-        end
+            end
 
             def pass_lower_declarations(context)
               program = context[:program]
@@ -281,16 +281,16 @@ module MLC
               # Traits don't generate code directly - they're contract definitions
               # Methods with default implementations will be generated when used
               nil
-        end
+            end
           end
-        end
+            end
 
             def module_name_for(program)
               program.module_decl ? program.module_decl.name : "main"
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

@@ -5,19 +5,19 @@ module MLC
     # Base node with origin tracking
     class Node
       attr_reader :origin
-      
+
       def initialize(origin: nil)
         @origin = origin
       end
     end
-    
+
     # Types
     class Type < Node
       attr_reader :kind, :name
 
       def initialize(kind:, name:, origin: nil)
         super(origin: origin)
-        @kind = kind  # :prim/:record/:func/:unit
+        @kind = kind # :prim/:record/:func/:unit
         @name = name
       end
 
@@ -61,14 +61,14 @@ module MLC
         @kind == :symbol
       end
     end
-    
+
     # Record type with fields
     class RecordType < Type
       attr_reader :fields
 
       def initialize(name:, fields:, origin: nil)
         super(kind: :record, name: name, origin: origin)
-        @fields = fields  # Array of {name: String, type: Type}
+        @fields = fields # Array of {name: String, type: Type}
       end
     end
 
@@ -78,7 +78,7 @@ module MLC
 
       def initialize(name:, variants:, origin: nil)
         super(kind: :sum, name: name, origin: origin)
-        @variants = variants  # Array of {name: String, fields: Array of {name:, type:}}
+        @variants = variants # Array of {name: String, fields: Array of {name:, type:}}
       end
     end
 
@@ -88,7 +88,7 @@ module MLC
 
       def initialize(params:, ret_type:, origin: nil)
         super(kind: :func, name: "function", origin: origin)
-        @params = params  # Array of {name: String, type: Type}
+        @params = params # Array of {name: String, type: Type}
         @ret_type = ret_type
       end
     end
@@ -195,7 +195,7 @@ module MLC
 
     # Alias for compatibility
     Program = Module
-    
+
     # Function declaration
     class Func < Node
       attr_reader :name, :params, :ret_type, :body, :effects, :type_params, :external, :exported, :is_async
@@ -203,40 +203,40 @@ module MLC
       def initialize(name:, params:, ret_type:, body: nil, effects: [], type_params: [], external: false, exported: false, is_async: false, origin: nil)
         super(origin: origin)
         @name = name
-        @params = params  # Array of Param
+        @params = params # Array of Param
         @ret_type = ret_type
         @body = body
-        @effects = effects  # Array of :noexcept, :constexpr, etc.
-        @type_params = type_params  # Array of TypeParam
+        @effects = effects # Array of :noexcept, :constexpr, etc.
+        @type_params = type_params # Array of TypeParam
         @external = external  # Boolean - is this an external (C++) function?
         @exported = exported  # Boolean - is this exported?
         @is_async = is_async  # Boolean - is this an async function (coroutine)?
       end
     end
-    
+
     # Function parameter
     class Param < Node
       attr_reader :name, :type
-      
+
       def initialize(name:, type:, origin: nil)
         super(origin: origin)
         @name = name
         @type = type
       end
     end
-    
+
     # Expressions (normalized, no sugar)
     class Expr < Node
       attr_reader :kind, :data, :type
-      
+
       def initialize(kind:, data:, type: nil, origin: nil)
         super(origin: origin)
-        @kind = kind  # :lit/:var/:call/:binary/:let
+        @kind = kind # :lit/:var/:call/:binary/:let
         @data = data
         @type = type
       end
     end
-    
+
     # Literal expression
     class LiteralExpr < Expr
       attr_reader :value
@@ -268,13 +268,13 @@ module MLC
     # Variable reference
     class VarExpr < Expr
       attr_reader :name
-      
+
       def initialize(name:, type:, origin: nil)
         super(kind: :var, data: name, type: type, origin: origin)
         @name = name
       end
     end
-    
+
     # Binary operation
     class BinaryExpr < Expr
       attr_reader :op, :left, :right
@@ -317,18 +317,18 @@ module MLC
         @operand = operand
       end
     end
-    
+
     # Function call
     class CallExpr < Expr
       attr_reader :callee, :args
-      
+
       def initialize(callee:, args:, type:, origin: nil)
         super(kind: :call, data: {callee: callee, args: args}, type: type, origin: origin)
         @callee = callee
         @args = args
       end
     end
-    
+
     # Member access
     class MemberExpr < Expr
       attr_reader :object, :member
@@ -408,7 +408,7 @@ module MLC
 
       def initialize(object:, start_index: nil, end_index: nil, type:, origin: nil)
         super(kind: :slice, data: {object: object, start_index: start_index, end_index: end_index}, type: type, origin: origin)
-        @object = object          # Expr - array being sliced
+        @object = object # Expr - array being sliced
         @start_index = start_index # Expr or nil - start index (nil = from beginning)
         @end_index = end_index     # Expr or nil - end index (nil = to end, exclusive)
       end
@@ -433,7 +433,7 @@ module MLC
       def initialize(type_name:, fields:, type:, origin: nil)
         super(kind: :record, data: {type_name: type_name, fields: fields}, type: type, origin: origin)
         @type_name = type_name
-        @fields = fields  # Hash of {field_name => value}
+        @fields = fields # Hash of {field_name => value}
       end
     end
 
@@ -455,15 +455,15 @@ module MLC
 
       def initialize(scrutinee:, arms:, type:, origin: nil)
         super(kind: :match, data: {scrutinee: scrutinee, arms: arms}, type: type, origin: origin)
-        @scrutinee = scrutinee  # Expression being matched
-        @arms = arms  # Array of {pattern:, guard:, body:}
+        @scrutinee = scrutinee # Expression being matched
+        @arms = arms # Array of {pattern:, guard:, body:}
       end
     end
 
     # Statements
     class Stmt < Node
     end
-    
+
     # Block of statements
     class Block < Stmt
       attr_reader :stmts
@@ -490,7 +490,7 @@ module MLC
         @arms = arms
       end
     end
-    
+
     # Return statement
     class Return < Stmt
       attr_reader :expr
@@ -547,7 +547,7 @@ module MLC
 
       def initialize(bindings:, value:, mutable:, origin: nil)
         super(origin: origin)
-        @bindings = bindings  # Array of {name:, type:, accessor:}
+        @bindings = bindings # Array of {name:, type:, accessor:}
         @value = value
         @mutable = mutable
       end
@@ -563,7 +563,7 @@ module MLC
         @value = value
       end
     end
-    
+
     # Type declaration
     class TypeDecl < Node
       attr_reader :name, :type, :type_params, :exported
@@ -572,8 +572,8 @@ module MLC
         super(origin: origin)
         @name = name
         @type = type
-        @type_params = type_params  # Array of TypeParam
-        @exported = exported  # Boolean - is this exported?
+        @type_params = type_params # Array of TypeParam
+        @exported = exported # Boolean - is this exported?
       end
     end
 
@@ -597,7 +597,7 @@ module MLC
         @captures = captures      # Array of {name: String, type: Type, mode: :value/:ref}
         @params = params          # Array of Param (fully typed)
         @body = body              # Expr
-        @function_type = function_type  # FunctionType
+        @function_type = function_type # FunctionType
       end
     end
 
@@ -621,7 +621,7 @@ module MLC
 
       def initialize(body:, type:, origin: nil)
         super(kind: :unsafe_block, data: {}, type: type, origin: origin)
-        @body = body  # BlockExpr
+        @body = body # BlockExpr
       end
     end
 
@@ -680,7 +680,7 @@ module MLC
 
       def initialize(elements:, type:, origin: nil)
         super(kind: :array_lit, data: elements, type: type, origin: origin)
-        @elements = elements  # Array of Expr
+        @elements = elements # Array of Expr
       end
     end
 
@@ -707,7 +707,7 @@ module MLC
 
       def initialize(name:, constraint: nil, origin: nil)
         super(kind: :type_var, name: name, origin: origin)
-        @constraint = constraint  # Optional Type for constraints (e.g., T: Display)
+        @constraint = constraint # Optional Type for constraints (e.g., T: Display)
       end
 
       def type_variable?
@@ -747,7 +747,7 @@ module MLC
 
       def initialize(element_types:, origin: nil)
         super(kind: :tuple, name: "tuple", origin: origin)
-        @element_types = element_types  # Array of Type
+        @element_types = element_types # Array of Type
       end
 
       def tuple?
@@ -761,7 +761,7 @@ module MLC
 
       def initialize(elements:, type:, origin: nil)
         super(kind: :tuple, data: elements, type: type, origin: origin)
-        @elements = elements  # Array of Expr
+        @elements = elements # Array of Expr
       end
     end
 
@@ -794,7 +794,7 @@ module MLC
 
       def initialize(name:, type:, origin: nil)
         super(kind: :symbol, data: name, type: type, origin: origin)
-        @name = name  # String - symbol name without colon
+        @name = name # String - symbol name without colon
       end
     end
   end

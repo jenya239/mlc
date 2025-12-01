@@ -10,7 +10,7 @@ module MLC
             class ReturnRule < BaseRule
               def matches?(node, context)
                 services(context).ast_type_checker.return_statement?(node)
-          end
+              end
 
               def produce(node, context)
                 svc = services(context)
@@ -23,7 +23,7 @@ module MLC
                 if expected_type && !unit_type?(expected_type, svc)
                   unless value_ir
                     svc.type_checker.type_error('return statement requires a value', node: node)
-              end
+                  end
 
                   svc.type_checker.ensure_type!(value_ir.type, 'return expression', node: node)
                   svc.type_checker.ensure_compatible_type(
@@ -34,10 +34,10 @@ module MLC
                   )
                 elsif value_ir
                   svc.type_checker.type_error('return value not allowed in void context', node: node)
-            end
+                end
 
                 svc.ir_builder.return_node(value: value_ir, origin: node)
-          end
+              end
 
               private
 
@@ -47,11 +47,11 @@ module MLC
                 )
                 return true if %w[unit void].include?(name)
                 type.is_a?(MLC::SemanticIR::UnitType)
-          end
-            end
-          end
+              end
             end
           end
         end
       end
     end
+  end
+end

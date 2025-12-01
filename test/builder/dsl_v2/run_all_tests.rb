@@ -19,7 +19,7 @@ require_relative "dsl_v2_integration_test"
 if __FILE__ == $0
   puts "=== Running DSL v2 Test Suite ==="
   puts
-  
+
   # Run tests
   Test::Unit::AutoRunner.run
 end

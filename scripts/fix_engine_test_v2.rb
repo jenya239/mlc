@@ -16,7 +16,7 @@ lines.each_with_index do |line, idx|
       output << line
     elsif line.lstrip.start_with?("#")
       # Comment: add 2 spaces before the comment
-      leading = line[/^\s*/]
+      line[/^\s*/]
       output << ("  " + line)
     else
       # Regular code: add 2 spaces

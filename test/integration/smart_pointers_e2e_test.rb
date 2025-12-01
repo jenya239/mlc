@@ -5,7 +5,7 @@ require 'open3'
 require 'tmpdir'
 
 class SmartPointersE2ETest < Minitest::Test
-  tag :slow  # Requires C++ compilation
+  tag :slow # Requires C++ compilation
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
@@ -242,7 +242,7 @@ class SmartPointersE2ETest < Minitest::Test
         buf.size
       end
     MLC
-      assert_equal 0, status.exitstatus  # 1024 mod 256 = 0
+      assert_equal 0, status.exitstatus # 1024 mod 256 = 0
     end
   end
 

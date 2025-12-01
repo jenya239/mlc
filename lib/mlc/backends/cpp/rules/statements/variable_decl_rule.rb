@@ -43,7 +43,7 @@ module MLC
               # Don't add const for pointer types (they end with *)
               # Also don't add const if variable might be rebound (we don't know at this point)
               is_pointer = type_str.end_with?("*")
-              prefix = (node.mutable || is_pointer) ? "" : ""  # Remove const - variables may be rebound
+              prefix = (node.mutable || is_pointer) ? "" : "" # Remove const - variables may be rebound
 
               context.factory.variable_declaration(
                 type: decl_type,

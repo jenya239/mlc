@@ -14,19 +14,19 @@ module MLC
           @parse_cache = {}
           @expression_cache = {}
         end
-        
+
         # Memoized expression parsing
         def parse_expression
           key = "#{@pos}_expression"
           return @memo[key] if @memo[key]
-          
+
           result = parse_expression_impl
           @memo[key] = result
           result
         end
-        
+
         private
-        
+
         def parse_expression_impl
           # Original expression parsing logic
           case current.type
@@ -64,25 +64,25 @@ module MLC
             raise ParseError, "Unexpected token: #{current.type}"
           end
         end
-        
+
         # Binary operation parsing (caching removed due to left operand dependency)
         def parse_binary_expression(left, min_precedence = 0)
           while current.type == :OPERATOR && precedence(current.value) >= min_precedence
             op = current.value
             consume(:OPERATOR)
             right = parse_primary_expression
-            
-            while current.type == :OPERATOR && 
+
+            while current.type == :OPERATOR &&
                   precedence(current.value) > precedence(op)
               right = parse_binary_expression(right, precedence(current.value))
             end
-            
+
             left = MLC::Source::AST::BinaryOp.new(left: left, op: op, right: right)
           end
-          
+
           left
         end
-        
+
         # Optimized token consumption with lookahead
         def consume(expected_type)
           if current.type == expected_type
@@ -93,7 +93,7 @@ module MLC
             raise ParseError, "Expected #{expected_type}, got #{current.type}"
           end
         end
-        
+
         # Batch token processing for better performance
         def consume_multiple(*types)
           results = []
@@ -106,13 +106,13 @@ module MLC
           end
           results
         end
-        
+
         # Optimized lookahead
         def lookahead(n = 1)
           return nil if @pos + n >= @tokens.length
           @tokens[@pos + n]
         end
-        
+
         # Clear cache when position changes significantly
         def clear_cache_if_needed
           if @pos > 0 && @pos % 100 == 0
@@ -120,19 +120,19 @@ module MLC
             @expression_cache.clear
           end
         end
-        
+
         def parse_integer_literal
           value = current.value
           consume(:INT_LITERAL)
           MLC::Source::AST::IntLit.new(value: value)
         end
-        
+
         def parse_float_literal
           value = current.value
           consume(:FLOAT_LITERAL)
           MLC::Source::AST::FloatLit.new(value: value)
         end
-        
+
         def parse_identifier_expression
           name = current.value
           consume(:IDENTIFIER)

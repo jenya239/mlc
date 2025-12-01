@@ -10,7 +10,7 @@ module MLC
           class FunctionEffectRule < BaseRule
             def matches?(node, _context)
               node.is_a?(MLC::SemanticIR::Func) && !node.external
-        end
+            end
 
             def produce(func, context)
               analyzer = context[:effect_analyzer]
@@ -31,10 +31,10 @@ module MLC
                 is_async: func.is_async,
                 origin: func.origin
               )
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

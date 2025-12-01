@@ -68,11 +68,11 @@ module CppAst
           @name == other.name && @const == other.is_const && @ref == other.is_ref &&
           @mutable == other.is_mutable && @template_args == other.template_args
         end
-        
+
         # Convert to C++ type string
         def to_cpp_type
           result = @name.to_s
-          
+
           # Handle standard library types
           case @name
           when :string
@@ -104,7 +104,7 @@ module CppAst
           when :void
             result = "void"
           end
-          
+
           # Add template arguments
           if @template_args.any? && ![:raw_ptr, :const_raw_ptr].include?(@name)
             args = @template_args.map(&:to_cpp_type).join(", ")
@@ -130,7 +130,7 @@ module CppAst
           )
         end
       end
-      
+
       # Type system DSL methods
       class Types
         # Basic types
@@ -142,7 +142,7 @@ module CppAst
         def char; TypeBuilder.new(:char) end
         def string; @string ||= TypeBuilder.new(:string) end
         def byte; TypeBuilder.new(:byte) end
-        
+
         # Integer types
         def int8; TypeBuilder.new(:int8_t) end
         def int16; TypeBuilder.new(:int16_t) end
@@ -152,21 +152,21 @@ module CppAst
         def uint16; TypeBuilder.new(:uint16_t) end
         def uint32; TypeBuilder.new(:uint32_t) end
         def uint64; TypeBuilder.new(:uint64_t) end
-        
+
         # Float types
         def float32; TypeBuilder.new(:float) end
         def float64; TypeBuilder.new(:double) end
-        
+
         # Character types
         def wchar; TypeBuilder.new(:wchar_t) end
         def char16; TypeBuilder.new(:char16_t) end
         def char32; TypeBuilder.new(:char32_t) end
-        
+
         # String types
         def wstring; TypeBuilder.new(:wstring) end
         def u16string; TypeBuilder.new(:u16string) end
         def u32string; TypeBuilder.new(:u32string) end
-        
+
         # System types
         def size_t
           require_relative "ownership_dsl"
@@ -188,7 +188,7 @@ module CppAst
           require_relative "ownership_dsl"
           OwnershipDSL::OwnershipTypeBuilder.new(nil, :void)
         end
-        
+
         # Reference types
         def ref(type, const: false, mutable: false)
           raise ArgumentError, "Type cannot be nil" if type.nil?
@@ -197,14 +197,14 @@ module CppAst
           end
           type.ref(const: const, mutable: mutable)
         end
-        
+
         def mut(type)
           if type.is_a?(Symbol)
             type = TypeBuilder.new(type)
           end
           type.mut
         end
-        
+
         # Ownership types
         def owned(type)
           raise ArgumentError, "Type cannot be nil" if type.nil?
@@ -250,7 +250,7 @@ module CppAst
           end
           OwnershipDSL::OwnershipTypeBuilder.new(type, :mut_borrowed)
         end
-        
+
         # Pointer types
         def raw_ptr(type)
           raise ArgumentError, "Type cannot be nil" if type.nil?
@@ -296,7 +296,7 @@ module CppAst
           end
           OwnershipDSL::OwnershipTypeBuilder.new(inner_type, :span_const)
         end
-        
+
         def array(inner_type, size = nil)
           require_relative "ownership_dsl"
           if inner_type.is_a?(Symbol)
@@ -308,7 +308,7 @@ module CppAst
             OwnershipDSL::OwnershipTypeBuilder.new(inner_type, :array)
           end
         end
-        
+
         # Result/Option types
         def result(ok_type, err_type)
           raise ArgumentError, "Types cannot be nil" if ok_type.nil? || err_type.nil?
@@ -374,7 +374,7 @@ module CppAst
           end
           OwnershipDSL::OwnershipTypeBuilder.new([return_type, *param_types], :function)
         end
-        
+
         # Lambda type
         def lambda(*param_types)
           require_relative "ownership_dsl"
@@ -389,13 +389,13 @@ module CppAst
           require_relative "ownership_dsl"
           OwnershipDSL::OwnershipTypeBuilder.new(param_types, :lambda)
         end
-        
+
         # Custom type
         def of(type_name)
           require_relative "ownership_dsl"
           OwnershipDSL::OwnershipTypeBuilder.new(type_name, :custom)
         end
-        
+
         # Template type
         def template(name, *params)
           params = params.map do |param|
@@ -414,10 +414,10 @@ module CppAst
         def Rect; TypeBuilder.new(:Rect) end
         def Triangle; TypeBuilder.new(:Triangle) end
         def Point; TypeBuilder.new(:Point) end
-        
+
         # lambda method already defined above
       end
-      
+
       # Include Types module in DSL
       def self.included(base)
         base.include Types

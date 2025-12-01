@@ -36,7 +36,7 @@ module MLC
               when SemanticIR::IfExpr, SemanticIR::MatchExpr
                 true
               when SemanticIR::BlockExpr
-                true  # Nested block counts as control flow
+                true # Nested block counts as control flow
               when SemanticIR::CallExpr
                 expr.args.any? { |arg| expression_has_control_flow?(arg) }
               when SemanticIR::BinaryExpr

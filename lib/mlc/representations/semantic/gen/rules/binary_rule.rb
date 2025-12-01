@@ -11,7 +11,7 @@ module MLC
             def matches?(node, context)
               return false if node.respond_to?(:op) && node.op == '|>'
               services(context).ast_type_checker.binary_op?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -48,10 +48,10 @@ module MLC
                 type: result_type,
                 origin: node
               )
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

@@ -56,9 +56,9 @@ module MLC
               # Add structured binding if there are bindings
               block_with_binding = if sanitized_bindings.any?
                                      add_structured_binding(body_block, sanitized_bindings, var_name)
-              else
+                                   else
                 body_block
-              end
+                                   end
 
               CppAst::Nodes::MatchArmStatement.new(
                 case_name: case_name,

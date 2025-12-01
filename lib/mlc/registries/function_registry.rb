@@ -319,9 +319,9 @@ module MLC
 
         module_value = if metadata.key?(:module_name)
                          metadata[:module_name]
-        elsif metadata.key?(:module)
+                       elsif metadata.key?(:module)
           metadata[:module]
-        end
+                       end
         entry.module_name = module_value if module_value
 
         entry.ast_node = metadata[:ast_node] if metadata.key?(:ast_node)

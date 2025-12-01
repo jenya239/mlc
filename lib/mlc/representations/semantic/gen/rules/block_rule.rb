@@ -9,7 +9,7 @@ module MLC
           class BlockRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.block_expr?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -30,10 +30,10 @@ module MLC
               )
             ensure
               svc.var_type_registry.restore(snapshot)
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

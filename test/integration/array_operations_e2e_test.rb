@@ -5,7 +5,7 @@ require "open3"
 require "tmpdir"
 
 class ArrayOperationsE2ETest < Minitest::Test
-  tag :slow  # Requires C++ compilation
+  tag :slow # Requires C++ compilation
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
@@ -93,7 +93,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         first + last
       end
     MLC
-      assert_equal 35, status.exitstatus  # 7 + 28
+      assert_equal 35, status.exitstatus # 7 + 28
     end
   end
 
@@ -133,7 +133,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         evens[0] + evens[1] + evens[2]
       end
     MLC
-      assert_equal 12, status.exitstatus  # 2 + 4 + 6
+      assert_equal 12, status.exitstatus # 2 + 4 + 6
     end
   end
 
@@ -145,7 +145,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         big[0] + big[1] + big[2]
       end
     MLC
-      assert_equal 105, status.exitstatus  # 25 + 35 + 45
+      assert_equal 105, status.exitstatus # 25 + 35 + 45
     end
   end
 
@@ -169,7 +169,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         nums.fold(1, (acc, x) => acc * x)
       end
     MLC
-      assert_equal 24, status.exitstatus  # 1 * 2 * 3 * 4
+      assert_equal 24, status.exitstatus # 1 * 2 * 3 * 4
     end
   end
 
@@ -180,7 +180,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         nums.fold(100, (acc, x) => acc + x)
       end
     MLC
-      assert_equal 160, status.exitstatus  # 100 + 10 + 20 + 30
+      assert_equal 160, status.exitstatus # 100 + 10 + 20 + 30
     end
   end
 
@@ -194,7 +194,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         result[0] + result[1] + result[2]
       end
     MLC
-      assert_equal 120, status.exitstatus  # 20 + 40 + 60
+      assert_equal 120, status.exitstatus # 20 + 40 + 60
     end
   end
 
@@ -205,7 +205,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         nums.map(x => x * x).fold(0, (acc, y) => acc + y)
       end
     MLC
-      assert_equal 14, status.exitstatus  # 1 + 4 + 9
+      assert_equal 14, status.exitstatus # 1 + 4 + 9
     end
   end
 
@@ -234,7 +234,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         row[1]
       end
     MLC
-      assert_equal 5, status.exitstatus  # matrix[1][1]
+      assert_equal 5, status.exitstatus # matrix[1][1]
     end
   end
 
@@ -265,7 +265,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         doubled[0] + doubled[1] + doubled[2]
       end
     MLC
-      assert_equal 60, status.exitstatus  # 10 + 20 + 30
+      assert_equal 60, status.exitstatus # 10 + 20 + 30
     end
   end
 
@@ -282,7 +282,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         sum
       end
     MLC
-      assert_equal 50, status.exitstatus  # 5 + 10 + 15 + 20
+      assert_equal 50, status.exitstatus # 5 + 10 + 15 + 20
     end
   end
 
@@ -297,7 +297,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         count
       end
     MLC
-      assert_equal 5, status.exitstatus  # 5 even numbers
+      assert_equal 5, status.exitstatus # 5 even numbers
     end
   end
 
@@ -310,7 +310,7 @@ class ArrayOperationsE2ETest < Minitest::Test
         nums[0] + nums[1] + nums[2]
       end
     MLC
-      assert_equal 60, status.exitstatus  # 10 + 20 + 30
+      assert_equal 60, status.exitstatus # 10 + 20 + 30
     end
   end
 end

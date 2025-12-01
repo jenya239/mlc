@@ -11,109 +11,109 @@ class OptimizationIntegrationTest < Minitest::Test
     source = <<~MLCORA
       fn test() -> i32 = 42
     MLCORA
-    
+
     # Test that optimized parser works with simple code
     parser = MLC::Source::Parser::OptimizedParser.new(source)
     ast = parser.parse
-    
+
     assert_equal ast.class, MLC::Source::AST::Program
     assert_equal ast.declarations.length, 1
   end
-  
+
   def test_caching_consistency
     source = <<~MLCORA
       fn test() -> i32 = 42
     MLCORA
-    
+
     parser = MLC::Source::Parser::OptimizedParser.new(source)
-    
+
     # Parse multiple times - should get same result
     ast1 = parser.parse
     ast2 = parser.parse
-    
+
     assert_equal ast1.class, ast2.class
     # Both should be valid ASTs
     assert ast1.declarations.length >= 0
     assert ast2.declarations.length >= 0
-    
+
     # Check that caching infrastructure is in place
     assert parser.instance_variable_get(:@memo).is_a?(Hash)
     assert parser.instance_variable_get(:@expression_cache).is_a?(Hash)
-    
+
     # Cache may be empty due to clearing, but infrastructure should exist
     memo = parser.instance_variable_get(:@memo)
     expression_cache = parser.instance_variable_get(:@expression_cache)
-    
+
     # Just verify the caches are accessible and are Hash objects
     assert memo.is_a?(Hash)
     assert expression_cache.is_a?(Hash)
   end
-  
+
   def test_string_builder_functionality
     builder = CppAst::Builder::StringBuilder.new
-    
+
     builder.append("class Test {\n")
     builder.indent
     builder.append_indented("int value;\n")
     builder.unindent
     builder.append("};\n")
-    
+
     result = builder.to_s
-    
+
     expected = <<~CPP
       class Test {
         int value;
       };
     CPP
-    
+
     assert_equal expected, result
   end
-  
+
   def test_memory_efficiency
     source = <<~MLCORA
       fn test() -> i32 = 42
     MLCORA
-    
+
     # Test that optimized parser doesn't leak memory
     parser = MLC::Source::Parser::OptimizedParser.new(source)
-    
+
     # Measure memory before and after
     GC.start
     before = GC.stat(:total_allocated_objects)
-    
+
     # Parse multiple times
     100.times { parser.parse }
-    
+
     GC.start
     after = GC.stat(:total_allocated_objects)
-    
+
     # Assert reasonable memory growth
     growth = after - before
     assert growth < 100_000, "Memory allocation should be reasonable: #{growth} objects allocated"
   end
-  
+
   def test_large_file_performance
     # Generate a large MLC file
     large_source = generate_large_mlc_source(500)
-    
+
     # Test that optimized parser can handle large files
     parser = MLC::Source::Parser::OptimizedParser.new(large_source)
-    
+
     time = Benchmark.measure { parser.parse }
-    
+
     # Should parse large files in reasonable time
     assert time.real < 5.0, "Large file parsing should complete in under 5 seconds"
   end
-  
+
   private
-  
+
   def generate_large_mlc_source(function_count)
     source = <<~MLCORA
       module LargeTest
-      
+
       fn main() -> i32 = 0
     MLCORA
-    
+
     function_count.times do |i|
       source += <<~MLCORA
         fn function_#{i}(x: i32) -> i32 =
@@ -121,7 +121,7 @@ class OptimizationIntegrationTest < Minitest::Test
           else 0
       MLCORA
     end
-    
+
     source += "end\n"
     source
   end

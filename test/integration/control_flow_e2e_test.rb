@@ -5,7 +5,7 @@ require "open3"
 require "tmpdir"
 
 class ControlFlowE2ETest < Minitest::Test
-  tag :slow  # Requires C++ compilation
+  tag :slow # Requires C++ compilation
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
@@ -108,7 +108,7 @@ class ControlFlowE2ETest < Minitest::Test
         10 |> double |> add_one
       end
     MLC
-      assert_equal 21, status.exitstatus  # (10 * 2) + 1
+      assert_equal 21, status.exitstatus # (10 * 2) + 1
     end
   end
 
@@ -126,7 +126,7 @@ class ControlFlowE2ETest < Minitest::Test
         c
       end
     MLC
-      assert_equal 60, status.exitstatus  # (10 + 20) * 2
+      assert_equal 60, status.exitstatus # (10 + 20) * 2
     end
   end
 
@@ -178,7 +178,7 @@ class ControlFlowE2ETest < Minitest::Test
         sum
       end
     MLC
-      assert_equal 66, status.exitstatus  # (0+1+10) + (11+1+20) + (32+2+10) + (44+2+20) = 66
+      assert_equal 66, status.exitstatus # (0+1+10) + (11+1+20) + (32+2+10) + (44+2+20) = 66
     end
   end
 
@@ -214,7 +214,7 @@ class ControlFlowE2ETest < Minitest::Test
 
       fn main() -> i32 = negate(42)
     MLC
-      assert_equal 42, status.exitstatus  # -(-42) = 42
+      assert_equal 42, status.exitstatus # -(-42) = 42
     end
   end
 
@@ -226,7 +226,7 @@ class ControlFlowE2ETest < Minitest::Test
         if y then 1 else 0
       end
     MLC
-      assert_equal 1, status.exitstatus  # !false = true -> 1
+      assert_equal 1, status.exitstatus # !false = true -> 1
     end
   end
 

@@ -24,7 +24,7 @@ module MLC
           effects.unshift(:constexpr) if body_pure && type_literal
           effects.uniq
         end
-    end
+      end
     end
   end
 end

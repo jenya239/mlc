@@ -24,7 +24,7 @@ module MLC
               member_name = node.member
 
               !resolve_entry(object_ast, member_name, svc).nil?
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -50,7 +50,7 @@ module MLC
                 type: func_type,
                 origin: node
               )
-        end
+            end
 
             private
 
@@ -61,10 +61,10 @@ module MLC
                 services.function_registry,
                 services.ast_type_checker
               )
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

@@ -43,4 +43,3 @@ Rake::TestTask.new(:test_e2e) do |t|
 end
 
 task default: :test
-

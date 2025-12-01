@@ -43,7 +43,7 @@ module MLC
           alternatives = [first_pattern]
 
           while current.type == :OPERATOR && current.value == "|" && !or_pattern_ends_here?
-            consume(:OPERATOR)  # consume |
+            consume(:OPERATOR) # consume |
             alternatives << parse_pattern
           end
 
@@ -165,7 +165,7 @@ module MLC
         # Parse boolean literal pattern: true | false
         def parse_bool_literal_pattern
           token = current
-          consume(token.type)  # consume TRUE or FALSE
+          consume(token.type) # consume TRUE or FALSE
           value = (token.type == :TRUE)
           with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
         end
@@ -208,7 +208,7 @@ module MLC
               elements << parse_pattern
               break unless current.type == :COMMA
               consume(:COMMA)
-              break if current.type == :RPAREN  # Allow trailing comma
+              break if current.type == :RPAREN # Allow trailing comma
             end
           else
             # No comma - this is a grouped pattern, not a tuple

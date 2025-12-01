@@ -6,7 +6,7 @@ module MLC
       class Token
         attr_reader :type, :value, :line, :column, :file,
                     :end_line, :end_column, :text, :line_text
-        
+
         def initialize(type:, value:, line: 1, column: 1, file: nil,
                        end_line: line, end_column: column,
                        text: nil, line_text: nil)
@@ -20,24 +20,24 @@ module MLC
           @text = text
           @line_text = line_text
         end
-        
+
         def to_s
           "#{type}(#{value})"
         end
       end
-      
+
       class Lexer
         KEYWORDS = %w[
           fn type let mut return break continue if then else unless while for in do end match
           i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 bool void str module export import enum from as extern
           unsafe trait extend async await record where
         ].freeze
-        
+
         OPERATORS = %w[
           + - * / % = == != < > <= >= && || ! &
           . , ; : ( ) { } [ ]
         ].freeze
-        
+
         def initialize(source, filename: nil)
           @source = source
           @pos = 0
@@ -46,7 +46,7 @@ module MLC
           @tokens = []
           @filename = filename
         end
-        
+
         def tokenize
           while @pos < @source.length
             skip_whitespace
@@ -54,7 +54,7 @@ module MLC
             next if @pos >= @source.length
 
             char = @source[@pos]
-            
+
             case char
             when /[a-zA-Z_]/
               tokenize_identifier_or_keyword
@@ -152,13 +152,13 @@ module MLC
               advance # Skip unknown characters
             end
           end
-          
+
           add_token(:EOF, "")
           @tokens
         end
-        
+
         private
-        
+
         def skip_whitespace
           while @pos < @source.length && @source[@pos] =~ /\s/
             if @source[@pos] == "\n"
@@ -220,7 +220,7 @@ module MLC
           end
           @pos += 1
         end
-        
+
         def tokenize_identifier_or_keyword
           start_line = @line
           start_column = @column
@@ -228,14 +228,14 @@ module MLC
           while @pos < @source.length && @source[@pos] =~ /[a-zA-Z0-9_]/
             @pos += 1
           end
-          
+
           value = @source[start...@pos]
           @column += value.length
-          
+
           type = KEYWORDS.include?(value) ? value.upcase.to_sym : :IDENTIFIER
           add_token(type, value, line: start_line, column: start_column)
         end
-        
+
         def tokenize_number
           start_line = @line
           start_column = @column
@@ -283,7 +283,7 @@ module MLC
 
         def tokenize_binary_literal(start_line, start_column)
           start = @pos
-          @pos += 2  # Skip 0b
+          @pos += 2 # Skip 0b
 
           while @pos < @source.length && @source[@pos] =~ /[01_]/
             @pos += 1
@@ -304,7 +304,7 @@ module MLC
 
         def tokenize_octal_literal(start_line, start_column)
           start = @pos
-          @pos += 2  # Skip 0o
+          @pos += 2 # Skip 0o
 
           while @pos < @source.length && @source[@pos] =~ /[0-7_]/
             @pos += 1
@@ -325,7 +325,7 @@ module MLC
 
         def tokenize_hex_literal(start_line, start_column)
           start = @pos
-          @pos += 2  # Skip 0x
+          @pos += 2 # Skip 0x
 
           while @pos < @source.length && @source[@pos] =~ /[0-9a-fA-F_]/
             @pos += 1
@@ -343,14 +343,14 @@ module MLC
           int_value = hex_part.to_i(16)
           add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
         end
-        
+
         def tokenize_string
           start_line = @line
           start_column = @column
           @pos += 1 # Skip opening quote
           @column += 1
 
-          parts = []      # Array of {type: :text/:expr, value: ...}
+          parts = [] # Array of {type: :text/:expr, value: ...}
           current_text = []
           has_interpolation = false
 
@@ -391,8 +391,8 @@ module MLC
               @column += 1
             elsif @source[@pos] == '{'
               # Potential start of interpolation
-              brace_start_pos = @pos
-              brace_start_col = @column
+              @pos
+              @column
 
               @pos += 1 # Skip {
               @column += 1
@@ -524,7 +524,7 @@ module MLC
                 # Unlike Ruby, we keep the backslash for unknown escapes
                 value << '\\'
                 value << @source[@pos]
-                char_count += 1  # Count both backslash and char
+                char_count += 1 # Count both backslash and char
               end
               char_count += 1
               @pos += 1
@@ -601,7 +601,7 @@ module MLC
 
           # Collect heredoc body lines
           body_lines = []
-          content_start = @pos
+          @pos
 
           while @pos < @source.length
             line_start = @pos
@@ -636,9 +636,9 @@ module MLC
           # Process body based on strip_indent flag
           value = if strip_indent
                     strip_common_indent(body_lines)
-          else
+                  else
             body_lines.join("\n")
-          end
+                  end
 
           add_token(:STRING_LITERAL, value, line: start_line, column: start_column)
         end
@@ -694,7 +694,7 @@ module MLC
           symbol_after = [
             :EQUAL, :LPAREN, :LBRACKET, :LBRACE, :COMMA,
             :RETURN, :FAT_ARROW, :ARROW, :OPERATOR, :COLON,
-            :SYMBOL,  # :foo :bar is two symbols in a row
+            :SYMBOL, # :foo :bar is two symbols in a row
             # Keywords that can precede expressions
             :IF, :THEN, :ELSE, :UNLESS, :WHILE, :FOR, :IN, :DO, :LET, :MUT,
             :MATCH, :FN, :SEMICOLON, :PIPE
@@ -765,7 +765,7 @@ module MLC
           start_line = @line
           start_column = @column
 
-          @pos += 1  # Skip :
+          @pos += 1 # Skip :
           @column += 1
 
           # Read identifier
@@ -786,7 +786,7 @@ module MLC
           start_line = @line
           start_column = @column
 
-          @pos += 1  # Skip @
+          @pos += 1 # Skip @
           @column += 1
 
           # Check if followed by identifier
@@ -835,10 +835,10 @@ module MLC
                         when '{' then '}'
                         when '(' then ')'
                         when '<' then '>'
-                        else return  # Invalid delimiter, skip
+                        else return # Invalid delimiter, skip
                         end
 
-          @pos += 1  # Skip opening delimiter
+          @pos += 1 # Skip opening delimiter
           @column += 1
 
           # Parse whitespace-separated words
@@ -871,7 +871,7 @@ module MLC
                 when 'n' then current_word << "\n"
                 when 't' then current_word << "\t"
                 when 'r' then current_word << "\r"
-                when 's' then current_word << " "  # Escaped space
+                when 's' then current_word << " " # Escaped space
                 when '\\' then current_word << "\\"
                 when close_delim then current_word << close_delim
                 else
@@ -1029,7 +1029,7 @@ module MLC
           @column += 1
           add_token(:OPERATOR, char, line: start_line, column: start_column)
         end
-        
+
         def add_token(type, value, line: @line, column: @column)
           @tokens << Token.new(
             type: type,
@@ -1039,7 +1039,7 @@ module MLC
             file: @filename
           )
         end
-        
+
         def advance
           @pos += 1
           @column += 1

@@ -15,7 +15,7 @@ module MLC
           # Parse optional type parameters: fn identity<T>(x: T) -> T
           type_params = []
           if current.type == :OPERATOR && current.value == "<"
-            consume(:OPERATOR)  # <
+            consume(:OPERATOR) # <
             type_params = parse_type_params
             expect_operator(">")
           end
@@ -80,14 +80,14 @@ module MLC
             end
             consume(:RBRACE)
             consume(:FROM)
-            path = parse_import_path  # Can be string or identifier
+            path = parse_import_path # Can be string or identifier
           elsif current.type == :OPERATOR && current.value == "*"
             # Syntax 2: import * as Math from "./math"
-            consume(:OPERATOR)  # *
+            consume(:OPERATOR) # *
             consume(:AS)
             alias_name = consume(:IDENTIFIER).value
             consume(:FROM)
-            path = parse_import_path  # Can be string or identifier
+            path = parse_import_path # Can be string or identifier
             import_all = true
           else
             # Syntax 3-4 (backward compat): import Math or import Math::{...}
@@ -144,7 +144,7 @@ module MLC
               result << "::"
               result << consume(:IDENTIFIER).value
             elsif current.type == :OPERATOR && current.value == "/" && peek_ahead(1)&.type == :IDENTIFIER
-              consume(:OPERATOR)  # /
+              consume(:OPERATOR) # /
               result << "/"
               result << consume(:IDENTIFIER).value
             else
@@ -287,7 +287,7 @@ module MLC
           while current.type != :RBRACE
             if current.type == :SPREAD
               # Spread operator: ...expr
-              spread_token = consume(:SPREAD)
+              consume(:SPREAD)
               spread_expr = parse_expression
               spreads << { expr: spread_expr, position: position }
             elsif current.type == :IDENTIFIER
@@ -328,7 +328,7 @@ module MLC
           # Parse optional type parameters: type Option<T> = ...
           type_params = []
           if current.type == :OPERATOR && current.value == "<"
-            consume(:OPERATOR)  # <
+            consume(:OPERATOR) # <
             type_params = parse_type_params
             expect_operator(">")
           end
@@ -375,7 +375,7 @@ module MLC
           # Parse optional type parameters: record Option<T> { ... }
           type_params = []
           if current.type == :OPERATOR && current.value == "<"
-            consume(:OPERATOR)  # <
+            consume(:OPERATOR) # <
             type_params = parse_type_params
             expect_operator(">")
           end
@@ -395,7 +395,7 @@ module MLC
           # Parse optional type parameters
           type_params = []
           if current.type == :OPERATOR && current.value == "<"
-            consume(:OPERATOR)  # <
+            consume(:OPERATOR) # <
             type_params = parse_type_params
             expect_operator(">")
           end
@@ -446,7 +446,7 @@ module MLC
             consume(:COLON)
             bounds << consume(:IDENTIFIER).value
             while current.type == :OPERATOR && current.value == "+"
-              consume(:OPERATOR)  # +
+              consume(:OPERATOR) # +
               bounds << consume(:IDENTIFIER).value
             end
           end
@@ -519,7 +519,7 @@ module MLC
 
             # Parse optional trait type parameters
             if current.type == :OPERATOR && current.value == "<"
-              consume(:OPERATOR)  # <
+              consume(:OPERATOR) # <
               trait_params = parse_type_list
               expect_operator(">")
             end
@@ -619,7 +619,7 @@ module MLC
 
           # Parse additional traits: + Trait2 + Trait3
           while current.type == :OPERATOR && current.value == "+"
-            consume(:OPERATOR)  # +
+            consume(:OPERATOR) # +
             traits << consume(:IDENTIFIER).value
           end
 

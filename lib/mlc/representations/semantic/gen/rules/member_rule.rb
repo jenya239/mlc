@@ -13,7 +13,7 @@ module MLC
               return false unless svc.ast_type_checker.member_access?(node)
 
               !module_member?(node, svc)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -28,7 +28,7 @@ module MLC
                 type: member_type,
                 origin: node
               )
-        end
+            end
 
             private
 
@@ -39,10 +39,10 @@ module MLC
                 services.function_registry,
                 services.ast_type_checker
               )
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

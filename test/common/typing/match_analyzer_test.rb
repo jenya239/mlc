@@ -98,7 +98,7 @@ class MatchAnalyzerTest < Minitest::Test
     transform_calls = []
     mock_body = Struct.new(:type).new("bool")
 
-    result = analyzer.analyze(
+    analyzer.analyze(
       scrutinee_type: "Shape",
       arms: [{ pattern: :circle, body: mock_body }],
       transform_arm: ->(type, arm) {

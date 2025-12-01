@@ -65,4 +65,3 @@ class VariableDeclarationRoundtripTest < Minitest::Test
     assert_roundtrip "int  x  =  42 ;"
   end
 end
-

@@ -74,7 +74,7 @@ class ServicesNamespaceRefactor
         # Replace with new namespace
         PATTERN1_NEW.each { |l| result << "#{l}\n" }
         i += 2
-        indent_added = 6  # Added 3 extra module levels = 6 spaces
+        indent_added = 6 # Added 3 extra module levels = 6 spaces
       elsif line == "  end\n" && @lines[i + 1] == "end\n" && i + 1 == @lines.size - 1
         # This is the end for old module Services - skip it (we'll add proper ends at the last end)
         i += 1
@@ -111,8 +111,8 @@ class ServicesNamespaceRefactor
       if line == "module MLC\n" && @lines[i + 1] == "  module SemanticGen\n"
         # Replace with new namespace
         PATTERN2_NEW.each { |l| result << "#{l}\n" }
-        i += 3  # Skip MLC, SemanticGen, Services
-        indent_added = 4  # Added 2 extra module levels (Representations, Semantic) = 4 spaces
+        i += 3 # Skip MLC, SemanticGen, Services
+        indent_added = 4 # Added 2 extra module levels (Representations, Semantic) = 4 spaces
       elsif line == "    end\n" && @lines[i + 1] == "  end\n" && @lines[i + 2] == "end\n" && i + 2 == @lines.size - 1
         # These are closing ends for Services, SemanticGen - skip them (we'll add proper ends at last end)
         i += 1

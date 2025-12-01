@@ -11,7 +11,7 @@ module MLC
               @rule_engine = rule_engine
               @services = services
               @expression_visitor = expression_visitor
-        end
+            end
 
             attr_reader :expression_visitor
 
@@ -21,58 +21,58 @@ module MLC
               if svc.expr_stmt?(node)
                 expr_ir = @expression_visitor.visit(node.expr)
                 return apply_rule(node, expr_ir: expr_ir)
-          end
+              end
 
               if svc.variable_decl_statement?(node)
                 value_ir = @expression_visitor.visit(node.value)
                 return apply_rule(node, value_ir: value_ir)
-          end
+              end
 
               if svc.return_statement?(node)
                 value_ir = node.expr ? @expression_visitor.visit(node.expr) : nil
                 return apply_rule(node, value_ir: value_ir)
-          end
+              end
 
               if svc.assignment_statement?(node)
                 value_ir = @expression_visitor.visit(node.value)
                 return apply_rule(node, value_ir: value_ir)
-          end
+              end
 
               if svc.break_statement?(node) || svc.continue_statement?(node)
                 return apply_rule(node)
-          end
+              end
 
               if svc.while_statement?(node)
                 cond_ir = @expression_visitor.visit(node.condition)
                 return apply_rule(node, cond_ir: cond_ir)
-          end
+              end
 
               if svc.if_statement?(node)
                 cond_ir = @expression_visitor.visit(node.condition)
                 return apply_rule(node, cond_ir: cond_ir)
-          end
+              end
 
               if svc.for_statement?(node)
                 iterable_ir = @expression_visitor.visit(node.iterable)
                 return apply_rule(node, iterable_ir: iterable_ir)
-          end
+              end
 
               raise MLC::CompileError, "StatementVisitor cannot handle #{node.class}"
-        end
+            end
 
             def visit_statements(statements)
               statements.each_with_object([]) do |stmt, acc|
             result = visit(stmt)
             acc.concat(Array(result))
           end
-        end
+            end
 
             private
 
             def apply_rule(node, extra_context = {})
               context = base_context.merge(extra_context)
               @rule_engine.apply(:statement, node, context: context)
-        end
+            end
 
             def base_context
               {
@@ -80,11 +80,11 @@ module MLC
                 expression_visitor: @expression_visitor,
                 statement_visitor: self
               }
-        end
+            end
 
-          end
-        end
           end
         end
       end
     end
+  end
+end

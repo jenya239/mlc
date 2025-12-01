@@ -214,7 +214,7 @@ class OwnershipDSLTest < Test::Unit::TestCase
     assert_equal "int16_t", t.int16.to_cpp_type
     assert_equal "int32_t", t.int32.to_cpp_type
     assert_equal "int64_t", t.int64.to_cpp_type
-    
+
     assert_equal "uint8_t", t.uint8.to_cpp_type
     assert_equal "uint16_t", t.uint16.to_cpp_type
     assert_equal "uint32_t", t.uint32.to_cpp_type
@@ -272,7 +272,7 @@ class OwnershipDSLTest < Test::Unit::TestCase
     # Test ownership type builder methods
     inner_type = t.i32
     owned_type = t.owned(inner_type)
-    
+
     assert_equal "std::unique_ptr<int>", owned_type.to_cpp_type
     assert_equal :owned, owned_type.ownership_kind
     assert_equal inner_type, owned_type.inner_type
@@ -282,7 +282,7 @@ class OwnershipDSLTest < Test::Unit::TestCase
     # Test conversion to AST node
     owned_type = t.owned(:Buffer)
     ast_node = owned_type.to_ast_node
-    
+
     assert_not_nil ast_node
     assert_equal "std::unique_ptr<Buffer>", ast_node.name
     assert_equal false, ast_node.is_const
@@ -294,10 +294,10 @@ class OwnershipDSLTest < Test::Unit::TestCase
     # Test complex ownership types
     complex_type = t.owned(t.vec(t.ref(:Point, const: true)))
     assert_equal "std::unique_ptr<std::vector<const Point&>>", complex_type.to_cpp_type
-    
+
     nested_type = t.shared(t.option(t.owned(:Buffer)))
     assert_equal "std::shared_ptr<std::optional<std::unique_ptr<Buffer>>>", nested_type.to_cpp_type
-    
+
     result_with_option = t.result(t.option(:i32), :string)
     assert_equal "std::expected<std::optional<int>, std::string>", result_with_option.to_cpp_type
   end
@@ -307,7 +307,7 @@ class OwnershipDSLTest < Test::Unit::TestCase
     type1 = t.owned(:Buffer)
     type2 = t.owned(:Buffer)
     type3 = t.shared(:Buffer)
-    
+
     assert_equal type1.to_cpp_type, type2.to_cpp_type
     assert_not_equal type1.to_cpp_type, type3.to_cpp_type
   end
@@ -317,7 +317,7 @@ class OwnershipDSLTest < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       t.owned(nil)
     end
-    
+
     assert_raise(ArgumentError) do
       t.borrowed(nil)
     end
@@ -328,7 +328,7 @@ class OwnershipDSLTest < Test::Unit::TestCase
     base_type = t.i32
     owned_type = t.owned(base_type)
     shared_type = t.shared(owned_type)
-    
+
     assert_equal "std::shared_ptr<std::unique_ptr<int>>", shared_type.to_cpp_type
   end
 
@@ -344,7 +344,7 @@ class OwnershipDSLTest < Test::Unit::TestCase
     # Test ownership type with const qualifiers
     const_type = t.i32.const
     owned_const_type = t.owned(const_type)
-    
+
     assert_equal "std::unique_ptr<const int>", owned_const_type.to_cpp_type
   end
 
@@ -352,7 +352,7 @@ class OwnershipDSLTest < Test::Unit::TestCase
     # Test ownership type with reference qualifiers
     ref_type = t.i32.ref
     owned_ref_type = t.owned(ref_type)
-    
+
     assert_equal "std::unique_ptr<const int&>", owned_ref_type.to_cpp_type
   end
 end

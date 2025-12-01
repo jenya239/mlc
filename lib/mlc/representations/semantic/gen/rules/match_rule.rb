@@ -9,7 +9,7 @@ module MLC
           class MatchRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.match_expr?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -18,10 +18,10 @@ module MLC
                 expression_visitor: context.fetch(:expression_visitor),
                 statement_visitor: context[:statement_visitor]
               )
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

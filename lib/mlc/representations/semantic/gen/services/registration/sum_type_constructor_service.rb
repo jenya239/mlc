@@ -48,9 +48,9 @@ module MLC
               # Constructor return type: either generic (if type params exist) or plain sum type
               generic_ret_type = if type_param_vars.any?
                                    SemanticIR::Builder.generic_type(sum_type, type_param_vars)
-              else
+                                 else
                 sum_type
-              end
+                                 end
 
               # Register each variant as a constructor function
               sum_type.variants.each do |variant|
@@ -66,7 +66,7 @@ module MLC
                 @sum_type_constructors[variant[:name]] = constructor_info
                 @function_registry.register(variant[:name], constructor_info, {
                   exported: true,
-                  external: true  # Constructors are treated as external/builtin
+                  external: true # Constructors are treated as external/builtin
                 })
               end
             end

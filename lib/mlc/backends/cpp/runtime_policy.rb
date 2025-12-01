@@ -64,7 +64,7 @@ module MLC
           if match_analysis.has_regex?
             :iife
           elsif match_analysis.arm_count > @match_threshold
-            :named_visitor  # Пока не реализовано, fallback на iife
+            :named_visitor # Пока не реализовано, fallback на iife
           else
             :std_visit
           end
@@ -97,7 +97,7 @@ module MLC
 
         # Консервативная политика (совместимость)
         def self.conservative
-          new  # Defaults to IIFE everywhere
+          new # Defaults to IIFE everywhere
         end
       end
     end

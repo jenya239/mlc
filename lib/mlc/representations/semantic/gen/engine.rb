@@ -108,7 +108,7 @@ module MLC
               rule.is_a?(rule_class) || rule == rule_class || rule.class == rule_class
             end
             engine.register(stage, rule_class.new) unless already_registered
-              end
+          end
         end
       end
     end

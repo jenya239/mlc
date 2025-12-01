@@ -5,7 +5,7 @@ require "open3"
 require "tmpdir"
 
 class AsyncAwaitE2ETest < Minitest::Test
-  tag :slow  # Mark as slow test (requires C++ compilation)
+  tag :slow # Mark as slow test (requires C++ compilation)
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
@@ -26,7 +26,7 @@ class AsyncAwaitE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, "--emit-cpp", source)
+      _, stderr, status = Open3.capture3(CLI, "--emit-cpp", source)
 
       refute_includes stderr, "error:", msg || "Compilation failed: #{stderr}"
       assert status.success?, msg || "MLC compilation failed"

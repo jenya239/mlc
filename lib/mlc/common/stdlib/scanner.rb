@@ -34,7 +34,7 @@ module MLC
         def extern?
           @extern
         end
-    end
+      end
 
   # Metadata for a stdlib type
       class TypeMetadata
@@ -158,10 +158,10 @@ module MLC
           # Extract module name from declaration or filename
           module_name = if ast.respond_to?(:module_decl) && ast.module_decl
                           ast.module_decl.name
-          else
+                        else
             # Fallback: use filename (capitalize first letter)
             File.basename(file_path, '.mlc').capitalize
-          end
+                        end
 
           namespace = infer_namespace(module_name)
 
@@ -263,7 +263,7 @@ module MLC
             "mlc::#{module_name.downcase}"
           end
         end
-        end
-  end
+      end
+    end
   end
 end

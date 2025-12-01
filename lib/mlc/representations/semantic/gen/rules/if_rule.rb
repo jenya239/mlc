@@ -10,7 +10,7 @@ module MLC
           class IfRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.if_expr?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -24,7 +24,7 @@ module MLC
                           context[:else_ir]
                         elsif node.else_branch
                           visitor.visit(node.else_branch)
-                    end
+                        end
 
               result_type = determine_type(
                 type_checker: svc.type_checker,
@@ -41,7 +41,7 @@ module MLC
                 type: result_type,
                 origin: node
               )
-        end
+            end
 
             private
 
@@ -56,11 +56,11 @@ module MLC
                 then_ir.type
               else
                 ir_builder.prim_type(name: 'unit', origin: node)
-          end
-        end
-          end
-        end
+              end
+            end
           end
         end
       end
     end
+  end
+end

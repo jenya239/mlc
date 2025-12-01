@@ -10,7 +10,7 @@ module MLC
           class IndexAccessRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.index_access?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -25,10 +25,10 @@ module MLC
                 ir_builder: svc.ir_builder,
                 origin: node
               )
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

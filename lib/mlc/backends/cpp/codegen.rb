@@ -4,7 +4,7 @@
 # - MLC::Backends::Cpp::Bootstrap (line 25)
 # - MLC::Backends::Cpp::Rules::FunctionRule (line 106)
 
-require_relative "../../../cpp_ast/index"  # CppAst not using Zeitwerk, manual require needed
+require_relative "../../../cpp_ast/index" # CppAst not using Zeitwerk, manual require needed
 
 module MLC
   module Backends

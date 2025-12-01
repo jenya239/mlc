@@ -11,24 +11,24 @@ module CppAst
       def int(value)
         Nodes::NumberLiteral.new(value: value.to_s)
       end
-      
+
       def float(value)
         Nodes::NumberLiteral.new(value: value.to_s)
       end
-      
+
       def string(value)
         Nodes::StringLiteral.new(value: value)
       end
-      
+
       def char(value)
         Nodes::CharLiteral.new(value: value)
       end
-      
+
       # Identifiers
       def id(name)
         Nodes::Identifier.new(name: name)
       end
-      
+
       # Binary operators
       def binary(operator, left, right)
         Nodes::BinaryExpression.new(
@@ -39,27 +39,27 @@ module CppAst
           operator_suffix: " "
         )
       end
-      
+
       def assign(left, right)
         binary("=", left, right)
       end
-      
+
       def stream_output(left, right)
         binary("<<", left, right)
       end
-      
+
       def address_of(expression)
         unary("&", expression)
       end
-      
+
       def array(size)
         Nodes::ArrayExpression.new(size: size)
       end
-      
+
       def bool(value)
         Nodes::BooleanLiteral.new(value: value)
       end
-      
+
       # Unary operators (prefix)
       def unary(operator, operand)
         Nodes::UnaryExpression.new(
@@ -68,7 +68,7 @@ module CppAst
           prefix: true
         )
       end
-      
+
       # Unary operators (postfix)
       def unary_post(operator, operand)
         Nodes::UnaryExpression.new(
@@ -77,12 +77,12 @@ module CppAst
           prefix: false
         )
       end
-      
+
       # Parenthesized expression
       def paren(expression)
         Nodes::ParenthesizedExpression.new(expression: expression)
       end
-      
+
       # Function call
       def call(callee, *args)
         # Если передан один массив, развернуть его
@@ -94,7 +94,7 @@ module CppAst
           argument_separators: separators
         )
       end
-      
+
       # Member access
       def member(object, operator, member_name)
         Nodes::MemberAccessExpression.new(
@@ -103,7 +103,7 @@ module CppAst
           member: id(member_name)
         )
       end
-      
+
       # Array subscript
       def subscript(array, index)
         Nodes::ArraySubscriptExpression.new(
@@ -111,7 +111,7 @@ module CppAst
           index: index
         )
       end
-      
+
       # Ternary operator
       def ternary(condition, true_expr, false_expr)
         Nodes::TernaryExpression.new(
@@ -124,23 +124,23 @@ module CppAst
           colon_suffix: " "
         )
       end
-      
+
       # Statements
       def expr_stmt(expression)
         Nodes::ExpressionStatement.new(expression: expression)
       end
-      
+
       def return_stmt(expression)
         Nodes::ReturnStatement.new(expression: expression)
       end
-      
+
       def block(*statements)
         trailings = statements.map { "\n" }
         Nodes::BlockStatement.new(
           statements: statements,
           statement_trailings: trailings,
-          leading_trivia: "",  # Architecture: caller sets leading_trivia via with_leading_trivia()
-          lbrace_suffix: "\n",  # Default: newline after { (standard C++ formatting)
+          leading_trivia: "", # Architecture: caller sets leading_trivia via with_leading_trivia()
+          lbrace_suffix: "\n", # Default: newline after { (standard C++ formatting)
           rbrace_prefix: ""
         )
       end
@@ -190,22 +190,22 @@ module CppAst
           rparen_suffix: " "  # Space before body
         )
       end
-      
+
       def break_stmt
         Nodes::BreakStatement.new
       end
-      
+
       def continue_stmt
         Nodes::ContinueStatement.new
       end
-      
+
       # Declarations
       def var_decl(type, *declarators)
         # Handle single declarator case: var_decl("int", "name") -> var_decl("int", "name")
         if declarators.length == 1 && declarators[0].is_a?(String)
           declarators = [declarators[0]]
         end
-        
+
         separators = declarators.size > 1 ? Array.new(declarators.size - 1, ", ") : []
         Nodes::VariableDeclaration.new(
           type: type,
@@ -214,11 +214,11 @@ module CppAst
           type_suffix: " "
         )
       end
-      
+
       def function_decl(return_type, name, parameters = [], body = nil)
         raise ArgumentError, "parameters cannot be nil" if parameters.nil?
         parameters = [] if parameters.nil?
-        
+
         param_separators = parameters.size > 1 ? Array.new(parameters.size - 1, ", ") : []
         Nodes::FunctionDeclaration.new(
           return_type: return_type,
@@ -230,7 +230,7 @@ module CppAst
           rparen_suffix: FormattingContext.get(:rparen_suffix)
         )
       end
-      
+
       def namespace_decl(name, *members)
         body = members.length == 1 ? members[0] : program(*members)
         Nodes::NamespaceDeclaration.new(
@@ -240,7 +240,7 @@ module CppAst
           name_suffix: " "
         )
       end
-      
+
       def class_decl(name, *members)
         member_trailings = members.map { "\n" }
         lbrace_suffix = members.empty? ? "" : "\n"
@@ -253,7 +253,7 @@ module CppAst
           lbrace_suffix: lbrace_suffix
         )
       end
-      
+
       # Class inheritance helper - Phase 1
       def class_with_inheritance(name, base_classes, *members)
         # Build inheritance text
@@ -261,7 +261,7 @@ module CppAst
         if base_classes.any?
           inheritance_text = " : " + base_classes.join(", ")
         end
-        
+
         member_trailings = members.map { "\n" }
         Nodes::ClassDeclaration.new(
           name: name,
@@ -273,7 +273,7 @@ module CppAst
           base_classes_text: inheritance_text
         )
       end
-      
+
       def struct_decl(name, *members)
         member_trailings = members.map { "\n" }
         Nodes::StructDeclaration.new(
@@ -285,7 +285,7 @@ module CppAst
           lbrace_suffix: "\n"
         )
       end
-      
+
       def do_while_stmt(body, condition)
         Nodes::DoWhileStatement.new(
           body: body,
@@ -295,7 +295,7 @@ module CppAst
           while_suffix: " "
         )
       end
-      
+
       def switch_stmt(expression, *cases)
         Nodes::SwitchStatement.new(
           expression: expression,
@@ -308,7 +308,7 @@ module CppAst
           rbrace_prefix: ""
         )
       end
-      
+
       def case_clause(value, *statements)
         statement_trailings = statements.map { "\n" }
         Nodes::CaseClause.new(
@@ -319,7 +319,7 @@ module CppAst
           colon_suffix: "\n"
         )
       end
-      
+
       def default_clause(*statements)
         statement_trailings = statements.map { "\n" }
         Nodes::DefaultClause.new(
@@ -328,7 +328,7 @@ module CppAst
           colon_suffix: "\n"
         )
       end
-      
+
       def enum_decl(name, enumerators, class_keyword: "")
         Nodes::EnumDeclaration.new(
           name: name,
@@ -341,7 +341,7 @@ module CppAst
           rbrace_suffix: ""
         )
       end
-      
+
       # Enum Class DSL - Phase 3
       def enum_class(name, values, underlying_type: nil)
         name_suffix = underlying_type ? FormattingContext.get(:name_suffix_with_underlying) : ""
@@ -358,7 +358,7 @@ module CppAst
           colon_suffix: underlying_type ? " " : ""
         )
       end
-      
+
       def using_namespace(name)
         Nodes::UsingDeclaration.new(
           kind: :namespace,
@@ -367,7 +367,7 @@ module CppAst
           namespace_suffix: " "
         )
       end
-      
+
       def using_name(name)
         Nodes::UsingDeclaration.new(
           kind: :name,
@@ -375,7 +375,7 @@ module CppAst
           using_suffix: " "
         )
       end
-      
+
       def using_alias(name, alias_target)
         Nodes::UsingDeclaration.new(
           kind: :alias,
@@ -386,7 +386,7 @@ module CppAst
           equals_suffix: " "
         )
       end
-      
+
       def friend_decl(type, name = nil)
         Nodes::FriendDeclaration.new(
           type: type,
@@ -394,7 +394,7 @@ module CppAst
           friend_suffix: FormattingContext.get(:friend_suffix)
         )
       end
-      
+
       # Template DSL - Phase 1
       def template_class(name, template_params, *members)
         class_node = class_decl(name, *members)
@@ -406,7 +406,7 @@ module CppAst
           params_suffix: FormattingContext.get(:template_params_suffix)
         )
       end
-      
+
       def template_method(return_type, name, template_params, params, body)
         func_node = function_decl(return_type, name, params, body)
         Nodes::TemplateDeclaration.new(
@@ -417,14 +417,14 @@ module CppAst
           params_suffix: FormattingContext.get(:template_params_suffix)
         )
       end
-      
+
       def access_spec(keyword)
         Nodes::AccessSpecifier.new(
           access_type: keyword,
           colon_suffix: ""
         )
       end
-      
+
       def brace_init(type, *arguments)
         argument_separators = arguments.length > 1 ? Array.new(arguments.length - 1, ", ") : []
         Nodes::BraceInitializerExpression.new(
@@ -433,7 +433,7 @@ module CppAst
           argument_separators: argument_separators
         )
       end
-      
+
       def range_for_stmt(init_text, range, body)
         # Range-based for: for (auto x : vec)
         Nodes::ForStatement.new(
@@ -448,7 +448,7 @@ module CppAst
           rparen_suffix: ""
         )
       end
-      
+
       # Lambda expression
       def lambda_expr(capture, parameters, body, specifiers: "")
         Nodes::LambdaExpression.new(
@@ -460,7 +460,7 @@ module CppAst
           params_suffix: "  "
         )
       end
-      
+
       # Template declaration
       def template_decl(template_params, declaration)
         Nodes::TemplateDeclaration.new(
@@ -471,12 +471,12 @@ module CppAst
           params_suffix: FormattingContext.get(:template_params_suffix)
         )
       end
-      
+
       # Error statement (unparsed code)
       def error_stmt(text)
         Nodes::ErrorStatement.new(error_text: text)
       end
-      
+
       # Program
       def program(*statements)
         # All statements have "\n" trailing by default
@@ -556,7 +556,7 @@ module CppAst
             field.to_s.end_with?(';') ? field.to_s : "#{field};"
           end
         end
-        
+
         struct_decl(name, *field_declarations)
       end
 
@@ -569,7 +569,7 @@ module CppAst
           default_value: default
         )
       end
-      
+
       # Helper for const declarations
       def const_decl(type, name, value)
         Nodes::ConstDeclaration.new(
@@ -578,12 +578,12 @@ module CppAst
           value: value
         )
       end
-      
+
       # Helper for number literals
       def number(value)
         Nodes::NumberLiteral.new(value: value.to_s)
       end
-      
+
       # Helper for binary expressions
       def binary_expr(left, operator, right)
         Nodes::BinaryExpression.new(
@@ -594,7 +594,7 @@ module CppAst
           operator_suffix: " "
         )
       end
-      
+
       # Helper for brace initializer
       def brace_initializer(*values)
         Nodes::BraceInitializerExpression.new(
@@ -642,7 +642,7 @@ module CppAst
           body: body
         )
       end
-      
+
       # Include directive
       def include_directive(path, system: true)
         Nodes::IncludeDirective.new(
@@ -650,101 +650,101 @@ module CppAst
           system: system
         )
       end
-      
+
       # Pragma directive
       def pragma_once()
         Nodes::PragmaDirective.new(directive: "once")
       end
-      
+
       # Access specifiers
       def public_section(*members)
         [Nodes::AccessSpecifier.new(access_type: "public")] + members.flatten
       end
-      
+
       def private_section(*members)
         [Nodes::AccessSpecifier.new(access_type: "private")] + members.flatten
       end
-      
+
       def protected_section(*members)
         [Nodes::AccessSpecifier.new(access_type: "protected")] + members.flatten
       end
-      
+
       # Comment DSL - Phase 2
       def inline_comment(text)
         Nodes::InlineComment.new(text: text)
       end
-      
+
       def block_comment(text)
         Nodes::BlockComment.new(text: text)
       end
-      
+
       def doxygen_comment(text, style: :inline)
         Nodes::DoxygenComment.new(text: text, style: style)
       end
-      
+
       def doc_comment(text)
         doxygen_comment(text, style: :block)
       end
-      
+
       # Preprocessor DSL - Phase 2
       def define_directive(name, value = "")
         Nodes::DefineDirective.new(name: name, value: value)
       end
-      
+
       def ifdef_directive(name, *body)
         Nodes::IfdefDirective.new(name: name, body: body)
       end
-      
+
       def ifndef_directive(name, *body)
         Nodes::IfndefDirective.new(name: name, body: body)
       end
-      
+
       # Stream operations helper - Phase 2
       def stream_chain(stream, *args)
         # Start with the stream
         result = id(stream)
-        
+
         # Chain all arguments with << operator
         args.each do |arg|
           result = binary("<<", result, arg)
         end
-        
+
         result
       end
-      
+
       def cerr_chain(*args)
         stream_chain("std::cerr", *args)
       end
-      
+
       def cout_chain(*args)
         stream_chain("std::cout", *args)
       end
-      
+
       def endl
         id("std::endl")
       end
-      
+
       # Nested types helpers - Phase 3
       def nested_class(name, *members)
         class_decl(name, *members)
       end
-      
+
       def nested_struct(name, *members)
         struct_decl(name, *members)
       end
-      
+
       def nested_enum(name, *enumerators)
         enum_decl(name, enumerators)
       end
-      
+
       def nested_enum_class(name, *enumerators)
         enum_class(name, enumerators)
       end
-      
+
       def nested_namespace(name, *body)
         namespace_decl(name, *body)
       end
-      
+
       # Static members helpers - Phase 3
       def static_constexpr(type, name, value)
         Nodes::VariableDeclaration.new(
@@ -755,7 +755,7 @@ module CppAst
           prefix_modifiers: "constexpr static "
         )
       end
-      
+
       def static_const(type, name, value)
         Nodes::VariableDeclaration.new(
           type: type,
@@ -765,7 +765,7 @@ module CppAst
           prefix_modifiers: "const static "
         )
       end
-      
+
       def inline_var(type, name, value)
         Nodes::VariableDeclaration.new(
           type: type,
@@ -775,7 +775,7 @@ module CppAst
           prefix_modifiers: "inline "
         )
       end
-      
+
       def static_inline_var(type, name, value)
         Nodes::VariableDeclaration.new(
           type: type,
@@ -785,28 +785,28 @@ module CppAst
           prefix_modifiers: "inline static "
         )
       end
-      
+
       # Advanced templates helpers - Phase 4
       def variadic_template_class(name, *params)
         template_params = params.map { |p| "typename #{p}" }
         template_params << "typename... Args"
         template_decl(template_params, class_decl(name))
       end
-      
+
       def variadic_template_function(return_type, name, *params)
         template_params = params.map { |p| "typename #{p}" }
         template_params << "typename... Args"
         template_decl(template_params, function_decl(return_type, name))
       end
-      
+
       def template_template_param(name, template_params)
         "template <#{template_params.join(', ')}> class #{name}"
       end
-      
+
       def sfinae_requires(concept_name, *types)
         "requires #{concept_name}<#{types.join(', ')}>"
       end
-      
+
       def concept_decl(name, template_params, requirements)
         Nodes::ConceptDeclaration.new(
           name: name,
@@ -814,7 +814,7 @@ module CppAst
           requirements: requirements
         )
       end
-      
+
       # C++20 Modules - Phase 4
       def module_decl(name, *body)
         Nodes::ModuleDeclaration.new(
@@ -822,36 +822,36 @@ module CppAst
           body: body
         )
       end
-      
+
       def import_decl(module_name)
         Nodes::ImportDeclaration.new(
           module_name: module_name
         )
       end
-      
+
       def export_decl(*declarations)
         Nodes::ExportDeclaration.new(
           declarations: declarations
         )
       end
-      
+
       # C++20 Coroutines - Phase 4
       def coroutine_function(return_type, name, parameters = [], body = nil)
         function_decl(return_type, name, parameters, body).coroutine()
       end
-      
+
       def co_await(expression)
         Nodes::CoAwaitExpression.new(
           expression: expression
         )
       end
-      
+
       def co_yield(expression)
         Nodes::CoYieldExpression.new(
           expression: expression
         )
       end
-      
+
       def co_return(expression = nil)
         Nodes::CoReturnStatement.new(
           expression: expression

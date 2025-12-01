@@ -9,7 +9,7 @@ module MLC
           class DoRule < BaseRule
             def matches?(node, context)
               services(context).ast_type_checker.do_expr?(node)
-        end
+            end
 
             def produce(node, context)
               svc = services(context)
@@ -29,10 +29,10 @@ module MLC
               )
 
               visitor.visit(block_node)
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

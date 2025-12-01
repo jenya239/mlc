@@ -37,10 +37,10 @@ module CppAst
 
         params_suffix = current_token.trailing_trivia
         expect(:greater)
-        
+
         inner_leading = current_leading_trivia
         declaration, trailing = parse_statement(inner_leading)
-        
+
         stmt = Nodes::TemplateDeclaration.new(
           leading_trivia: leading_trivia,
           template_params: params,
@@ -49,10 +49,9 @@ module CppAst
           less_suffix: less_suffix,
           params_suffix: params_suffix
         )
-        
+
         [stmt, trailing]
       end
     end
   end
 end
-

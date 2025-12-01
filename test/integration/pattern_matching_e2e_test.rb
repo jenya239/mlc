@@ -15,7 +15,7 @@ require "tmpdir"
 #
 # These tests document expected behavior for future implementation.
 class PatternMatchingE2ETest < Minitest::Test
-  tag :slow  # Requires C++ compilation
+  tag :slow # Requires C++ compilation
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
@@ -98,7 +98,7 @@ class PatternMatchingE2ETest < Minitest::Test
         get_positive(a) + get_positive(b) + get_positive(c)
       end
     MLC
-      assert_equal 4, status.exitstatus  # 5 + 0 + (-1)
+      assert_equal 4, status.exitstatus # 5 + 0 + (-1)
     end
   end
 
@@ -119,7 +119,7 @@ class PatternMatchingE2ETest < Minitest::Test
         unwrap_nested(a) + unwrap_nested(b) + unwrap_nested(c)
       end
     MLC
-      assert_equal 41, status.exitstatus  # 42 + 0 + (-1)
+      assert_equal 41, status.exitstatus # 42 + 0 + (-1)
     end
   end
 
@@ -138,7 +138,7 @@ class PatternMatchingE2ETest < Minitest::Test
         is_warm(r) + is_warm(g) + is_warm(b)
       end
     MLC
-      assert_equal 2, status.exitstatus  # 1 + 1 + 0
+      assert_equal 2, status.exitstatus # 1 + 1 + 0
     end
   end
 
@@ -171,7 +171,7 @@ class PatternMatchingE2ETest < Minitest::Test
 
       fn main() -> i32 = check_status(Active) + check_status(Inactive)
     MLC
-      assert_equal 10, status.exitstatus  # 1*10 + 0*10
+      assert_equal 10, status.exitstatus # 1*10 + 0*10
     end
   end
 
@@ -185,7 +185,7 @@ class PatternMatchingE2ETest < Minitest::Test
 
       fn main() -> i32 = classify(0.0) + classify(1.5) + classify(2.0)
     MLC
-      assert_equal 3, status.exitstatus  # 1 + 2 + 0
+      assert_equal 3, status.exitstatus # 1 + 2 + 0
     end
   end
 

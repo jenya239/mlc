@@ -20,7 +20,7 @@ module MLC
               @type_builder = services.type_builder
               @scope_context = services.scope_context
               @var_type_registry = services.var_type_registry
-        end
+            end
 
             def register_signature(func_decl)
               return @function_registry.fetch(func_decl.name) if @function_registry.registered?(func_decl.name)
@@ -40,7 +40,7 @@ module MLC
           end
 
               signature
-        end
+            end
 
             def reduce(func_decl, signature: nil)
               @scope_context.with_current_node(func_decl) do
@@ -52,13 +52,13 @@ module MLC
                           build_external_func(func_decl, params, signature, type_params)
                         else
                           build_function(func_decl, params, signature, type_params)
-                    end
+                        end
           result_func = apply_function_rules(result_func)
           update_registry_metadata(func_decl, result_func)
           result_func
         end
           end
-        end
+            end
 
             private
 
@@ -68,13 +68,13 @@ module MLC
                   "Function '#{func_decl.name}' expects #{param_types.length} parameter(s), got #{func_decl.params.length}",
                   node: func_decl
                 )
-          end
+              end
 
               func_decl.params.each_with_index.map do |param, index|
             type = param_types[index]
             MLC::SemanticIR::Param.new(name: param.name, type: type, origin: param.origin)
           end
-        end
+            end
 
             def build_external_func(func_decl, params, signature, type_params)
               # Wrap return type in Future<T> for async functions
@@ -96,7 +96,7 @@ module MLC
                 is_async: func_decl.is_async,
                 origin: func_decl.origin
               )
-        end
+            end
 
             def build_function(func_decl, params, signature, type_params)
               saved_types = @var_type_registry.snapshot
@@ -131,7 +131,7 @@ module MLC
                 )
               ensure
                 @var_type_registry.restore(saved_types)
-          end
+            end
 
             def ensure_return_type!(func_decl, body_ir, expected_type)
               actual_type = body_ir&.type
@@ -144,7 +144,7 @@ module MLC
                 node: func_decl
               )
               @type_checker.assign_expression_type(body_ir, expected_type)
-        end
+            end
 
             def apply_function_rules(func_ir)
               return func_ir unless @rule_engine
@@ -159,7 +159,7 @@ module MLC
               )
 
               normalize_rule_result(func_ir, result)
-          end
+            end
 
             def normalize_rule_result(original, result)
               case result
@@ -171,8 +171,8 @@ module MLC
                 result.find { |node| node.is_a?(MLC::SemanticIR::Func) && node.name == original.name } || original
               else
                 original
-          end
-        end
+              end
+            end
 
             def update_registry_metadata(func_decl, func_ir)
               return unless @function_registry.registered?(func_decl.name)
@@ -183,32 +183,32 @@ module MLC
                 external: func_decl.external,
                 exported: func_decl.exported
               )
-        end
+            end
 
             def build_type_annotation(type_ast)
               return MLC::SemanticIR::Builder.unit_type unless type_ast
 
               @type_builder.transform(type_ast)
-        end
+            end
 
             def wrap_statement_like_expression(body)
               return body if body.is_a?(MLC::SemanticIR::BlockExpr)
 
               if unit_literal?(body)
                 return block_expr_from_statements([], body.origin)
-          end
+              end
 
               if statement_like_if?(body)
                 if_stmt = build_if_statement(body)
                 return block_expr_from_statements([if_stmt], body.origin)
-          end
+              end
 
               body
-        end
+            end
 
             def unit_literal?(expr)
               expr.is_a?(MLC::SemanticIR::UnitLiteral)
-        end
+            end
 
             def statement_like_if?(expr)
               return false unless expr.is_a?(MLC::SemanticIR::IfExpr)
@@ -216,7 +216,7 @@ module MLC
               type = expr.type
               name = @type_checker.normalized_type_name(@type_checker.type_name(type))
               %w[unit void].include?(name) || type.is_a?(MLC::SemanticIR::UnitType)
-        end
+            end
 
             def build_if_statement(expr_ir)
               then_block = block_from_expression(expr_ir.then_branch)
@@ -228,7 +228,7 @@ module MLC
                 else_body: else_block,
                 origin: expr_ir.origin
               )
-        end
+            end
 
             def block_from_expression(expr_ir)
               case expr_ir
@@ -236,7 +236,7 @@ module MLC
                 statements = expr_ir.statements.dup
                 if expr_ir.result && !expr_ir.result.is_a?(MLC::SemanticIR::UnitLiteral)
                   statements << @services.ir_builder.expr_statement(expression: expr_ir.result, origin: expr_ir.result.origin)
-            end
+                end
                 @services.ir_builder.block(statements: statements, origin: expr_ir.origin)
               when MLC::SemanticIR::Block
                 # Block (statement) - already has stmts, no need to transform
@@ -247,8 +247,8 @@ module MLC
               else
                 stmt = @services.ir_builder.expr_statement(expression: expr_ir, origin: expr_ir.origin)
                 @services.ir_builder.block(statements: [stmt], origin: expr_ir.origin)
-          end
-        end
+              end
+            end
 
             def block_expr_from_statements(statements, origin)
               unit = @services.ir_builder.unit_literal(origin: origin)
@@ -258,7 +258,7 @@ module MLC
                 type: unit.type,
                 origin: origin
               )
-        end
+            end
 
             # Wrap a type in Future<T> for async function return types
             # @param inner_type [SemanticIR::Type] The type to wrap
@@ -272,7 +272,7 @@ module MLC
             end
           end
         end
-          end
-        end
       end
     end
+  end
+end

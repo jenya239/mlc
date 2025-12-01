@@ -11,7 +11,7 @@ module MLC
             def initialize(services:, rule_engine:)
               @services = services
               @rule_engine = rule_engine
-        end
+            end
 
             def reduce(type_decl)
               result = nil
@@ -20,7 +20,7 @@ module MLC
             result = apply_rules(result)
           end
               result
-        end
+            end
 
             private
 
@@ -35,10 +35,10 @@ module MLC
 
               return type_ir unless rule_result
               rule_result.is_a?(MLC::SemanticIR::TypeDecl) ? rule_result : type_ir
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

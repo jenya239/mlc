@@ -21,7 +21,7 @@ module MLC
           # - generic_call_resolver: GenericCallResolverService
           # - transformer: MLC::Representations::Semantic::Gen::Pipeline (for helper methods like type_error, type_name)
           class TypeInferenceService
-            attr_writer :generic_call_resolver  # Allow injection after initialization
+            attr_writer :generic_call_resolver # Allow injection after initialization
 
             def initialize(var_type_registry:, type_registry:, function_registry:,
                            type_decl_table:, generic_call_resolver:, type_checker:, transformer: nil, scope_context:)
@@ -29,7 +29,7 @@ module MLC
               @type_registry = type_registry
               @function_registry = function_registry
               @type_decl_table = type_decl_table
-              @generic_call_resolver = generic_call_resolver  # TypeSystem::GenericCallResolver (set after construction)
+              @generic_call_resolver = generic_call_resolver # TypeSystem::GenericCallResolver (set after construction)
               @type_checker = type_checker
               @scope_context = scope_context
             end
@@ -340,7 +340,7 @@ module MLC
                 if concrete_type.is_a?(SemanticIR::RecordType)
                   # Verify same number of fields
                   if pattern_type.fields.length != concrete_type.fields.length
-                    return  # Can't unify - different structure
+                    return # Can't unify - different structure
                   end
 
                   # Unify each field's type by matching field names
@@ -826,8 +826,8 @@ module MLC
             # Methods available on i32, i64, f32, f64
             def infer_numeric_member_type(member, object_type, node: nil)
               type_name = object_type.respond_to?(:name) ? object_type.name : "i32"
-              is_float = %w[f32 f64 Float Double float double].include?(type_name)
-              is_integer = %w[i32 i64 i8 i16 u8 u16 u32 u64 Int Int32 Int64].include?(type_name)
+              %w[f32 f64 Float Double float double].include?(type_name)
+              %w[i32 i64 i8 i16 u8 u16 u32 u64 Int Int32 Int64].include?(type_name)
 
               case member
               when "abs"

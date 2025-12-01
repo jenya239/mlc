@@ -31,7 +31,7 @@ module MLC
             def initialize
               @types = {}
               @initializers = {}
-              @moved_vars = Set.new  # Track moved variables for use-after-move detection
+              @moved_vars = Set.new # Track moved variables for use-after-move detection
             end
 
             # Установить тип переменной

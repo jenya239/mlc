@@ -57,12 +57,12 @@ class InitializerListsTest < Minitest::Test
   end
 
   def test_constructor_with_initializer_and_body
-    ast = function_decl("", "Shader", [param("Type", "type"), param("const std::string&", "source")], 
-      block(
-        expr_stmt(call(id("glCreateShader"), [id("type")])),
-        expr_stmt(call(id("glShaderSource"), [id("shader_"), int(1), id("source"), id("nullptr")])),
-        expr_stmt(call(id("glCompileShader"), [id("shader_")]))
-      ))
+    ast = function_decl("", "Shader", [param("Type", "type"), param("const std::string&", "source")],
+                        block(
+                          expr_stmt(call(id("glCreateShader"), [id("type")])),
+                          expr_stmt(call(id("glShaderSource"), [id("shader_"), int(1), id("source"), id("nullptr")])),
+                          expr_stmt(call(id("glCompileShader"), [id("shader_")]))
+                        ))
       .with_initializer_list("shader_(0)")
     cpp_code = ast.to_source
     assert_includes cpp_code, "Shader"

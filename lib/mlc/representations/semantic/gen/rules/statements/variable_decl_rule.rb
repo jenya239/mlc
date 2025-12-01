@@ -10,7 +10,7 @@ module MLC
             class VariableDeclRule < BaseRule
               def matches?(node, context)
                 services(context).ast_type_checker.variable_decl_statement?(node)
-          end
+              end
 
               def produce(node, context)
                 svc = services(context)
@@ -58,8 +58,8 @@ module MLC
               end
             end
           end
-            end
-          end
         end
       end
     end
+  end
+end

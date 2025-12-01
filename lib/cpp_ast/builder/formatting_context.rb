@@ -8,9 +8,9 @@ module CppAst
         pretty: {
           template_suffix: " ",
           template_params_suffix: "\n",
-          rparen_suffix: " ",  # Architecture: space after ) before modifiers
+          rparen_suffix: " ", # Architecture: space after ) before modifiers
           lbrace_prefix: " ",
-          name_suffix_with_underlying: "",  # Empty because colon_prefix has the space
+          name_suffix_with_underlying: "", # Empty because colon_prefix has the space
           friend_suffix: " "
         },
         lossless: {
@@ -22,11 +22,11 @@ module CppAst
           friend_suffix: ""
         }
       }.freeze
-      
+
       def self.current_mode
         Thread.current[:cpp_ast_formatting_mode] || :pretty
       end
-      
+
       def self.get(key)
         DEFAULTS[current_mode][key]
       end

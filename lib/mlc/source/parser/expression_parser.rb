@@ -13,7 +13,7 @@ module MLC
 
           return false unless current.type == :LPAREN
 
-          @pos += 1  # Skip (
+          @pos += 1 # Skip (
 
           # Skip params
           while !eof? && current.type != :RPAREN && current.type != :FAT_ARROW
@@ -146,7 +146,7 @@ module MLC
 
             while current.type == :COMMA
               consume(:COMMA)
-              break if current.type == :RBRACKET  # Trailing comma
+              break if current.type == :RBRACKET # Trailing comma
               elements << parse_if_expression
             end
 
@@ -544,9 +544,9 @@ module MLC
           # For unless, invert condition: unless x = if !x
           final_condition = if is_unless
                               MLC::Source::AST::UnaryOp.new(op: "!", operand: condition)
-          else
+                            else
             condition
-          end
+                            end
 
           with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: final_condition, then_branch: then_branch, else_branch: else_branch) }
         end
@@ -723,9 +723,9 @@ module MLC
           # Value can be any expression including do-blocks
           value = if current.type == :DO
                     parse_do_expression
-          else
+                  else
             parse_if_expression
-          end
+                  end
 
           # In do-blocks, let is a statement that doesn't need 'in'
           # It returns a special LetStmt expression
@@ -832,9 +832,9 @@ module MLC
               # Parse body
               body = if current.type == :DO
                        wrap_block_like_expr(parse_do_expression)
-                      else
+                     else
                         wrap_block_like_expr(parse_match_arm_body)
-                      end
+                     end
 
               arms << {pattern: pattern, guard: guard, body: body}
 
@@ -850,7 +850,7 @@ module MLC
           else
             # Pipe style: match expr | pattern => body | ... end
             while current.type == :OPERATOR && current.value == "|"
-              consume(:OPERATOR)  # consume |
+              consume(:OPERATOR) # consume |
 
               # Parse pattern
               pattern = parse_pattern
@@ -858,7 +858,7 @@ module MLC
               # Check for or-patterns: | pattern | pattern (without => or if after |)
               alternatives = [pattern]
               while current.type == :OPERATOR && current.value == "|" && pattern_start?(peek)
-                consume(:OPERATOR)  # consume |
+                consume(:OPERATOR) # consume |
                 alternatives << parse_pattern
               end
 
@@ -891,9 +891,9 @@ module MLC
               # Parse body - stop at next | or end
               body = if current.type == :DO
                        wrap_block_like_expr(parse_do_expression)
-                      else
+                     else
                         wrap_block_like_expr(parse_match_arm_body)
-                      end
+                     end
 
               arms << {pattern: pattern, guard: guard, body: body}
             end
@@ -935,7 +935,7 @@ module MLC
 
       # Logical AND that doesn't consume | for match arm bodies
         def parse_logical_and_no_pipe
-          left = parse_bitwise_xor  # Skip parse_bitwise_or - don't consume |
+          left = parse_bitwise_xor # Skip parse_bitwise_or - don't consume |
 
           while current.type == :OPERATOR && current.value == "&&"
             token = consume(:OPERATOR)
@@ -977,7 +977,7 @@ module MLC
           left = parse_comparison
 
           while current.type == :PIPE || (current.type == :OPERATOR && current.value == "|>")
-            token = consume(current.type)  # Consume PIPE or OPERATOR
+            token = consume(current.type) # Consume PIPE or OPERATOR
             right = parse_comparison
             node = MLC::Source::AST::BinaryOp.new(op: "|>", left: left, right: right)
             left = attach_origin(node, token)
@@ -1144,7 +1144,7 @@ module MLC
           when :CHAR_LITERAL
             # Character literal 'a' -> integer value (e.g., 97)
             token = consume(:CHAR_LITERAL)
-            value = token.value  # Already converted to integer in lexer
+            value = token.value # Already converted to integer in lexer
             attach_origin(MLC::Source::AST::IntLit.new(value: value), token)
           when :FLOAT_LITERAL
             token = consume(:FLOAT_LITERAL)
@@ -1281,13 +1281,13 @@ module MLC
           # Check for await keyword (like a unary prefix operator)
           if current.type == :AWAIT
             token = consume(:AWAIT)
-            operand = parse_unary  # Right-associative
+            operand = parse_unary # Right-associative
             attach_origin(MLC::Source::AST::AwaitExpr.new(operand: operand), token)
           # Check for unary operators: !, -, +, ~ (bitwise NOT)
           elsif current.type == :OPERATOR && %w[! - + ~].include?(current.value)
             token = consume(:OPERATOR)
             op = token.value
-            operand = parse_unary  # Right-associative
+            operand = parse_unary # Right-associative
             attach_origin(MLC::Source::AST::UnaryOp.new(op: op, operand: operand), token)
           else
             parse_postfix
@@ -1323,7 +1323,7 @@ module MLC
               elements << parse_expression
               while current.type == :COMMA
                 consume(:COMMA)
-                break if current.type == :RPAREN  # Trailing comma
+                break if current.type == :RPAREN # Trailing comma
                 elements << parse_expression
               end
             end
@@ -1414,8 +1414,8 @@ module MLC
       # Parse %w[] or %W[] - array of strings
       # Token value is already an array of strings from the lexer
         def parse_percent_string_array
-          token = consume(current.type)  # Consume STRING_ARRAY or STRING_ARRAY_INTERP
-          words = token.value  # Array of strings
+          token = consume(current.type) # Consume STRING_ARRAY or STRING_ARRAY_INTERP
+          words = token.value # Array of strings
 
           # Convert each word to a StringLit and wrap in ArrayLiteral
           elements = words.map do |word|
@@ -1428,8 +1428,8 @@ module MLC
       # Parse %i[] or %I[] - array of symbols
       # Token value is already an array of strings (symbol names) from the lexer
         def parse_percent_symbol_array
-          token = consume(current.type)  # Consume SYMBOL_ARRAY or SYMBOL_ARRAY_INTERP
-          words = token.value  # Array of symbol names
+          token = consume(current.type) # Consume SYMBOL_ARRAY or SYMBOL_ARRAY_INTERP
+          words = token.value # Array of symbol names
 
           # Convert each word to a SymbolLit and wrap in ArrayLiteral
           elements = words.map do |word|

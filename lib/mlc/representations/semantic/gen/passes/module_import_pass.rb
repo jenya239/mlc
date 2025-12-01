@@ -11,7 +11,7 @@ module MLC
               @import_service = import_service
               @function_registry = function_registry
               @type_registry = type_registry
-        end
+            end
 
             def run(program)
               Array(program.imports).each do |import_decl|
@@ -21,10 +21,10 @@ module MLC
               type_registry: @type_registry
             )
           end
-        end
-          end
-        end
+            end
           end
         end
       end
     end
+  end
+end

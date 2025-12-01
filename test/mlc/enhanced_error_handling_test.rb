@@ -7,37 +7,37 @@ require_relative "../../lib/mlc/source/parser/error_recovery_parser"
 
 class EnhancedErrorHandlingTest < Minitest::Test
   def test_syntax_error_with_suggestion
-    source = <<~MLCORA
-      fn test() -> i32 = 
+    <<~MLCORA
+      fn test() -> i32 =#{' '}
         42
     MLCORA
-    
+
     # Test that we can create enhanced syntax errors
     error = MLC::MLCSyntaxError.new(
       "Syntax error: missing expression",
       location: "line 1, column 20",
       suggestion: "Add an expression after the equals sign"
     )
-    
+
     assert_includes error.formatted_message, "Syntax error"
     assert_includes error.formatted_message, "💡 Suggestion:"
     assert_includes error.formatted_message, "🔧 This is a syntax error"
   end
-  
+
   def test_multiple_errors_recovery
     source = <<~MLCORA
-      fn test1() -> i32 = 
+      fn test1() -> i32 =#{' '}
         42
-      
-      fn test2() -> i32 = 
+
+      fn test2() -> i32 =#{' '}
         undefined_variable
-      
-      fn test3() -> i32 = 
+
+      fn test3() -> i32 =#{' '}
         42
     MLCORA
-    
+
     parser = MLC::Source::Parser::ErrorRecoveryParser.new(source)
-    
+
     begin
       parser.parse
     rescue MLC::Source::Parser::MultipleErrors => e
@@ -45,17 +45,17 @@ class EnhancedErrorHandlingTest < Minitest::Test
       assert e.errors.any? { |err| err.is_a?(MLC::MLCSyntaxError) }, "Should have syntax errors"
     end
   end
-  
+
   def test_error_recovery_continues_parsing
     source = <<~MLCORA
-      fn broken() -> i32 = 
+      fn broken() -> i32 =#{' '}
         invalid_syntax
-      
+
       fn working() -> i32 = 42
     MLCORA
-    
+
     parser = MLC::Source::Parser::ErrorRecoveryParser.new(source)
-    
+
     begin
       result = parser.parse
       # Should still parse the working function despite the error
@@ -65,15 +65,15 @@ class EnhancedErrorHandlingTest < Minitest::Test
       assert e.errors.length > 0
     end
   end
-  
+
   def test_enhanced_error_messages
     source = <<~MLCORA
-      fn test() -> i32 = 
+      fn test() -> i32 =#{' '}
         42
     MLCORA
-    
+
     parser = MLC::Source::Parser::ErrorRecoveryParser.new(source)
-    
+
     begin
       parser.parse
     rescue MLC::Source::Parser::MultipleErrors => e
@@ -82,66 +82,66 @@ class EnhancedErrorHandlingTest < Minitest::Test
       assert_includes error.formatted_message, "🔧 This is a syntax error"
     end
   end
-  
+
   def test_type_error_suggestions
     source = <<~MLCORA
       fn test() -> i32 = "hello"
     MLCORA
-    
+
     # This should compile but we can test the error handling framework
     begin
       MLC.parse(source)
-    rescue => e
+    rescue
       # Test that we can create enhanced type errors
       error = MLC::MLCTypeError.new(
         "Type mismatch: expected i32, got string",
         location: "line 1, column 20",
         suggestion: "Use a number instead of a string"
       )
-      
+
       assert_includes error.formatted_message, "Type mismatch"
       assert_includes error.formatted_message, "💡 Suggestion:"
       assert_includes error.formatted_message, "🔍 This is a type error"
     end
   end
-  
+
   def test_scope_error_suggestions
-    source = <<~MLCORA
+    <<~MLCORA
       fn test() -> i32 = undefined_variable
     MLCORA
-    
+
     # Test scope error creation
     error = MLC::MLCScopeError.new(
       "Undefined variable: undefined_variable",
       location: "line 1, column 20",
       suggestion: "Declare the variable or check the spelling"
     )
-    
+
     assert_includes error.formatted_message, "Undefined variable"
     assert_includes error.formatted_message, "💡 Suggestion:"
     assert_includes error.formatted_message, "📦 This is a scope error"
   end
-  
+
   def test_import_error_suggestions
     error = MLC::MLCImportError.new(
       "Module 'nonexistent' not found",
       location: "line 1, column 8",
       suggestion: "Check the module name and file path"
     )
-    
+
     assert_includes error.formatted_message, "Module 'nonexistent' not found"
     assert_includes error.formatted_message, "💡 Suggestion:"
     assert_includes error.formatted_message, "📁 This is an import error"
   end
-  
+
   def test_error_context_provided
     source = <<~MLCORA
-      fn test() -> i32 = 
+      fn test() -> i32 =#{' '}
         42
     MLCORA
-    
+
     parser = MLC::Source::Parser::ErrorRecoveryParser.new(source)
-    
+
     begin
       parser.parse
     rescue MLC::Source::Parser::MultipleErrors => e

@@ -43,7 +43,7 @@ class SpreadOperatorTest < Minitest::Test
 
     ast = parse_mlc(code)
     func = ast.declarations.first
-    decl = func.body.statements[1]  # let extended = ...
+    decl = func.body.statements[1] # let extended = ...
 
     record_lit = decl.value
     assert_instance_of MLC::Source::AST::RecordLit, record_lit
@@ -67,7 +67,7 @@ class SpreadOperatorTest < Minitest::Test
     record_lit = decl.value
     assert_instance_of MLC::Source::AST::RecordLit, record_lit
     assert_equal 1, record_lit.spreads.size
-    assert_equal 1, record_lit.spreads.first[:position]  # After 'a: 1'
+    assert_equal 1, record_lit.spreads.first[:position] # After 'a: 1'
     assert record_lit.fields.key?("a")
     assert record_lit.fields.key?("b")
   end
@@ -125,7 +125,7 @@ class SpreadOperatorTest < Minitest::Test
 
     ast = parse_mlc(code)
     func = ast.declarations.first
-    decl = func.body.statements[2]  # let point = { x, y }
+    decl = func.body.statements[2] # let point = { x, y }
 
     record_lit = decl.value
     assert_instance_of MLC::Source::AST::RecordLit, record_lit
@@ -153,7 +153,7 @@ class SpreadOperatorTest < Minitest::Test
 
     ast = parse_mlc(code)
     func = ast.declarations.first
-    decl = func.body.statements[1]  # let point = ...
+    decl = func.body.statements[1] # let point = ...
 
     record_lit = decl.value
     assert_instance_of MLC::Source::AST::RecordLit, record_lit
@@ -205,8 +205,8 @@ class SpreadOperatorTest < Minitest::Test
     MLC
 
     ast = parse_mlc(code)
-    func = ast.declarations[1]  # Second declaration is the function
-    decl = func.body.statements[1]  # let extended = ...
+    func = ast.declarations[1] # Second declaration is the function
+    decl = func.body.statements[1] # let extended = ...
 
     record_lit = decl.value
     assert_instance_of MLC::Source::AST::RecordLit, record_lit

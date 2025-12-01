@@ -13,7 +13,7 @@ class MLCNumericLiteralsTest < Minitest::Test
 
     int_tokens = tokens.select { |t| t.type == :INT_LITERAL }
     assert_equal 1, int_tokens.size
-    assert_equal 10, int_tokens.first.value  # 0b1010 = 10
+    assert_equal 10, int_tokens.first.value # 0b1010 = 10
   end
 
   def test_lexer_binary_with_underscore
@@ -23,7 +23,7 @@ class MLCNumericLiteralsTest < Minitest::Test
 
     int_tokens = tokens.select { |t| t.type == :INT_LITERAL }
     assert_equal 1, int_tokens.size
-    assert_equal 240, int_tokens.first.value  # 0b11110000 = 240
+    assert_equal 240, int_tokens.first.value # 0b11110000 = 240
   end
 
   def test_lexer_binary_uppercase
@@ -33,7 +33,7 @@ class MLCNumericLiteralsTest < Minitest::Test
 
     int_tokens = tokens.select { |t| t.type == :INT_LITERAL }
     assert_equal 1, int_tokens.size
-    assert_equal 12, int_tokens.first.value  # 0B1100 = 12
+    assert_equal 12, int_tokens.first.value # 0B1100 = 12
   end
 
   # ========== Octal Literals (0o) ==========
@@ -97,7 +97,7 @@ class MLCNumericLiteralsTest < Minitest::Test
 
     int_tokens = tokens.select { |t| t.type == :INT_LITERAL }
     assert_equal 1, int_tokens.size
-    assert_equal 43981, int_tokens.first.value  # 0xABCD = 43981
+    assert_equal 43981, int_tokens.first.value # 0xABCD = 43981
   end
 
   def test_lexer_hex_lowercase
@@ -271,7 +271,7 @@ class MLCNumericLiteralsTest < Minitest::Test
   end
 
   def test_multiple_underscores
-    source = "1__000"  # Double underscore
+    source = "1__000" # Double underscore
     lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
 
