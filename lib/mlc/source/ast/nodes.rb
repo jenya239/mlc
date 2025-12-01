@@ -332,7 +332,7 @@ module MLC
         attr_reader :pattern, :flags
 
         def initialize(pattern:, flags: "", origin: nil)
-          super(kind: :regex_lit, data: {pattern: pattern, flags: flags}, origin: origin)
+          super(kind: :regex_lit, data: { pattern: pattern, flags: flags }, origin: origin)
           @pattern = pattern  # String - regex pattern
           @flags = flags      # String - flags like "i", "m", "im"
         end
@@ -353,7 +353,7 @@ module MLC
         attr_reader :op, :left, :right
 
         def initialize(op:, left:, right:, origin: nil)
-          super(kind: :binary, data: {op: op, left: left, right: right}, origin: origin)
+          super(kind: :binary, data: { op: op, left: left, right: right }, origin: origin)
           @op = op
           @left = left
           @right = right
@@ -365,7 +365,7 @@ module MLC
         attr_reader :op, :operand
 
         def initialize(op:, operand:, origin: nil)
-          super(kind: :unary, data: {op: op, operand: operand}, origin: origin)
+          super(kind: :unary, data: { op: op, operand: operand }, origin: origin)
           @op = op
           @operand = operand
         end
@@ -376,7 +376,7 @@ module MLC
         attr_reader :callee, :args
 
         def initialize(callee:, args:, origin: nil)
-          super(kind: :call, data: {callee: callee, args: args}, origin: origin)
+          super(kind: :call, data: { callee: callee, args: args }, origin: origin)
           @callee = callee
           @args = args
         end
@@ -387,7 +387,7 @@ module MLC
         attr_reader :object, :member
 
         def initialize(object:, member:, origin: nil)
-          super(kind: :member, data: {object: object, member: member}, origin: origin)
+          super(kind: :member, data: { object: object, member: member }, origin: origin)
           @object = object
           @member = member
         end
@@ -399,7 +399,7 @@ module MLC
         attr_reader :object, :member
 
         def initialize(object:, member:, origin: nil)
-          super(kind: :safe_member, data: {object: object, member: member}, origin: origin)
+          super(kind: :safe_member, data: { object: object, member: member }, origin: origin)
           @object = object
           @member = member
         end
@@ -411,7 +411,7 @@ module MLC
         attr_reader :object, :method_name, :args
 
         def initialize(object:, method_name:, args:, origin: nil)
-          super(kind: :safe_call, data: {object: object, method_name: method_name, args: args}, origin: origin)
+          super(kind: :safe_call, data: { object: object, method_name: method_name, args: args }, origin: origin)
           @object = object
           @method_name = method_name
           @args = args
@@ -426,7 +426,7 @@ module MLC
         attr_reader :operand
 
         def initialize(operand:, origin: nil)
-          super(kind: :try_expr, data: {operand: operand}, origin: origin)
+          super(kind: :try_expr, data: { operand: operand }, origin: origin)
           @operand = operand
         end
       end
@@ -438,7 +438,7 @@ module MLC
         attr_reader :operand
 
         def initialize(operand:, origin: nil)
-          super(kind: :await_expr, data: {operand: operand}, origin: origin)
+          super(kind: :await_expr, data: { operand: operand }, origin: origin)
           @operand = operand
         end
       end
@@ -448,7 +448,7 @@ module MLC
         attr_reader :object, :index
 
         def initialize(object:, index:, origin: nil)
-          super(kind: :index, data: {object: object, index: index}, origin: origin)
+          super(kind: :index, data: { object: object, index: index }, origin: origin)
           @object = object  # Expr - the array/object being indexed
           @index = index    # Expr - the index expression
         end
@@ -459,7 +459,7 @@ module MLC
         attr_reader :object, :start_index, :end_index
 
         def initialize(object:, start_index: nil, end_index: nil, origin: nil)
-          super(kind: :slice, data: {object: object, start_index: start_index, end_index: end_index}, origin: origin)
+          super(kind: :slice, data: { object: object, start_index: start_index, end_index: end_index }, origin: origin)
           @object = object # Expr - the array being sliced
           @start_index = start_index # Expr or nil - start index (nil means from beginning)
           @end_index = end_index     # Expr or nil - end index (nil means to end, exclusive)
@@ -472,7 +472,7 @@ module MLC
         attr_reader :tuple, :index
 
         def initialize(tuple:, index:, origin: nil)
-          super(kind: :tuple_access, data: {tuple: tuple, index: index}, origin: origin)
+          super(kind: :tuple_access, data: { tuple: tuple, index: index }, origin: origin)
           @tuple = tuple  # Expr - the tuple being accessed
           @index = index  # Integer - the positional index (0-based)
         end
@@ -483,7 +483,7 @@ module MLC
         attr_reader :name, :value, :body, :mutable, :type
 
         def initialize(name:, value:, body:, mutable: false, type: nil, origin: nil)
-          super(kind: :let, data: {name: name, value: value, body: body}, origin: origin)
+          super(kind: :let, data: { name: name, value: value, body: body }, origin: origin)
           @name = name
           @value = value
           @body = body
@@ -500,7 +500,7 @@ module MLC
         attr_reader :type_name, :fields, :spreads
 
         def initialize(type_name:, fields:, spreads: [], origin: nil)
-          super(kind: :record_lit, data: {type_name: type_name, fields: fields, spreads: spreads}, origin: origin)
+          super(kind: :record_lit, data: { type_name: type_name, fields: fields, spreads: spreads }, origin: origin)
           @type_name = type_name
           @fields = fields    # Hash of {field_name => value} for regular fields
           @spreads = spreads  # Array of {expr: Expr, position: Integer} for ...expr elements
@@ -513,7 +513,7 @@ module MLC
         attr_reader :operand
 
         def initialize(operand:, origin: nil)
-          super(kind: :spread, data: {operand: operand}, origin: origin)
+          super(kind: :spread, data: { operand: operand }, origin: origin)
           @operand = operand # Expr - the expression being spread
         end
       end
@@ -523,7 +523,7 @@ module MLC
         attr_reader :condition, :then_branch, :else_branch
 
         def initialize(condition:, then_branch:, else_branch:, origin: nil)
-          super(kind: :if, data: {condition: condition, then_branch: then_branch, else_branch: else_branch}, origin: origin)
+          super(kind: :if, data: { condition: condition, then_branch: then_branch, else_branch: else_branch }, origin: origin)
           @condition = condition
           @then_branch = then_branch
           @else_branch = else_branch
@@ -535,7 +535,7 @@ module MLC
         attr_reader :body
 
         def initialize(body:, origin: nil)
-          super(kind: :do, data: {body: body}, origin: origin)
+          super(kind: :do, data: { body: body }, origin: origin)
           @body = body # Array of expressions
         end
       end
@@ -546,7 +546,7 @@ module MLC
         attr_reader :statements, :result_expr
 
         def initialize(statements:, result_expr:, origin: nil)
-          super(kind: :block_expr, data: {statements: statements, result_expr: result_expr}, origin: origin)
+          super(kind: :block_expr, data: { statements: statements, result_expr: result_expr }, origin: origin)
           @statements = statements    # Array of Stmt nodes (VariableDecl, Assignment, ExprStmt)
           @result_expr = result_expr  # Single Expr node - the result value of the block
         end
@@ -558,7 +558,7 @@ module MLC
         attr_reader :body
 
         def initialize(body:, origin: nil)
-          super(kind: :unsafe_block, data: {body: body}, origin: origin)
+          super(kind: :unsafe_block, data: { body: body }, origin: origin)
           @body = body # BlockExpr or single Expr
         end
       end
@@ -568,7 +568,7 @@ module MLC
         attr_reader :scrutinee, :arms
 
         def initialize(scrutinee:, arms:, origin: nil)
-          super(kind: :match, data: {scrutinee: scrutinee, arms: arms}, origin: origin)
+          super(kind: :match, data: { scrutinee: scrutinee, arms: arms }, origin: origin)
           @scrutinee = scrutinee # Expression to match against
           @arms = arms # Array of {pattern:, guard:, body:}
         end
@@ -708,7 +708,7 @@ module MLC
         attr_reader :params, :body, :return_type
 
         def initialize(params:, body:, return_type: nil, origin: nil)
-          super(kind: :lambda, data: {params: params, body: body}, origin: origin)
+          super(kind: :lambda, data: { params: params, body: body }, origin: origin)
           @params = params      # Array of LambdaParam or String (inferred)
           @body = body          # Expr
           @return_type = return_type # Optional Type
@@ -731,7 +731,7 @@ module MLC
         attr_reader :var_name, :iterable, :body
 
         def initialize(var_name:, iterable:, body:, origin: nil)
-          super(kind: :for_loop, data: {var: var_name, iter: iterable, body: body}, origin: origin)
+          super(kind: :for_loop, data: { var: var_name, iter: iterable, body: body }, origin: origin)
           @var_name = var_name   # String
           @iterable = iterable   # Expr (array, range, etc.)
           @body = body           # Expr or Block
@@ -743,7 +743,7 @@ module MLC
         attr_reader :condition, :body
 
         def initialize(condition:, body:, origin: nil)
-          super(kind: :while_loop, data: {condition: condition, body: body}, origin: origin)
+          super(kind: :while_loop, data: { condition: condition, body: body }, origin: origin)
           @condition = condition  # Expr
           @body = body            # Expr or Block
         end
@@ -754,7 +754,7 @@ module MLC
         attr_reader :start, :end_expr, :inclusive
 
         def initialize(start:, end_expr:, inclusive: true, origin: nil)
-          super(kind: :range, data: {start: start, end: end_expr}, origin: origin)
+          super(kind: :range, data: { start: start, end: end_expr }, origin: origin)
           @start = start         # Expr
           @end_expr = end_expr   # Expr (renamed to avoid conflict with Ruby's 'end')
           @inclusive = inclusive # true for .., false for ..<
@@ -821,7 +821,7 @@ module MLC
         attr_reader :left, :right
 
         def initialize(left:, right:, origin: nil)
-          super(kind: :pipe, data: {left: left, right: right}, origin: origin)
+          super(kind: :pipe, data: { left: left, right: right }, origin: origin)
           @left = left    # Expr - value being piped
           @right = right  # Expr - usually Call, receives left as first arg
         end

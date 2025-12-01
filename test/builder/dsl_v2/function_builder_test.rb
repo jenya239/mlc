@@ -173,8 +173,8 @@ class FunctionBuilderTest < Test::Unit::TestCase
     end
 
     fn_builder2 = fn :test2, params: [
-      {type: t.i32, name: :x, default: int(0)},
-      {type: t.f32, name: :y}
+      { type: t.i32, name: :x, default: int(0) },
+      { type: t.f32, name: :y }
     ] do
       # Hash format
     end
@@ -342,8 +342,8 @@ class FunctionBuilderTest < Test::Unit::TestCase
     # Test function with default parameters
     fn_builder = fn :create_point,
                     params: [
-                      {type: t.f32, name: :x, default: float(0.0)},
-                      {type: t.f32, name: :y, default: float(0.0)}
+                      { type: t.f32, name: :x, default: float(0.0) },
+                      { type: t.f32, name: :y, default: float(0.0) }
                     ],
                     ret: t.Point do
       ret call(:Point, id(:x), id(:y))

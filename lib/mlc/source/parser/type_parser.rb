@@ -36,7 +36,7 @@ module MLC
             consume(:COLON)
             field_type = parse_type
 
-            fields << {name: field_name, type: field_type}
+            fields << { name: field_name, type: field_type }
 
             if current.type == :COMMA
               consume(:COMMA)
@@ -72,7 +72,7 @@ module MLC
               while current.type != :RPAREN
                 field_type = parse_type
                 # Generate field name for tuple-like variants
-                variant_fields << {name: "field#{field_index}", type: field_type}
+                variant_fields << { name: "field#{field_index}", type: field_type }
                 field_index += 1
 
                 if current.type == :COMMA
@@ -89,7 +89,7 @@ module MLC
                 field_name = consume(:IDENTIFIER).value
                 consume(:COLON)
                 field_type = parse_type
-                variant_fields << {name: field_name, type: field_type}
+                variant_fields << { name: field_name, type: field_type }
 
                 if current.type == :COMMA
                   consume(:COMMA)
@@ -100,7 +100,7 @@ module MLC
               consume(:RBRACE)
             end
 
-            variants << {name: variant_name, fields: variant_fields}
+            variants << { name: variant_name, fields: variant_fields }
 
             # Check for next variant
             break unless current.type == :OPERATOR && current.value == "|"

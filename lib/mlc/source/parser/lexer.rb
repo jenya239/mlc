@@ -756,7 +756,7 @@ module MLC
           end
 
           # Store both pattern and flags in the token value
-          add_token(:REGEX, {pattern: pattern, flags: flags}, line: start_line, column: start_column)
+          add_token(:REGEX, { pattern: pattern, flags: flags }, line: start_line, column: start_column)
         end
 
         # Tokenize :identifier -> SYMBOL token

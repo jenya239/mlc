@@ -11,7 +11,7 @@ class EventBusTest < Minitest::Test
     bus.publish(:demo, value: 1)
     bus.publish(:demo, value: 2)
 
-    assert_equal [{value: 1}, {value: 2}], payloads
+    assert_equal [{ value: 1 }, { value: 2 }], payloads
   end
 
   def test_subscribe_with_callable
@@ -29,7 +29,7 @@ class EventBusTest < Minitest::Test
     bus.subscribe(:demo, collector)
     bus.publish(:demo, foo: :bar)
 
-    assert_equal [{foo: :bar}], collector.payloads
+    assert_equal [{ foo: :bar }], collector.payloads
   end
 
   def test_no_handler_raises

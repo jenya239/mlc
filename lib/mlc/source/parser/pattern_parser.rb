@@ -145,21 +145,21 @@ module MLC
         def parse_int_literal_pattern
           token = consume(:INT_LITERAL)
           value = token.value.to_i
-          with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
+          with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: { value: value }) }
         end
 
         # Parse float literal pattern: 3.14
         def parse_float_literal_pattern
           token = consume(:FLOAT_LITERAL)
           value = token.value.to_f
-          with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
+          with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: { value: value }) }
         end
 
         # Parse string literal pattern: "hello"
         def parse_string_literal_pattern
           token = consume(:STRING_LITERAL)
           value = token.value
-          with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
+          with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: { value: value }) }
         end
 
         # Parse boolean literal pattern: true | false
@@ -167,7 +167,7 @@ module MLC
           token = current
           consume(token.type) # consume TRUE or FALSE
           value = (token.type == :TRUE)
-          with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: {value: value}) }
+          with_origin(token) { MLC::Source::AST::Pattern.new(kind: :literal, data: { value: value }) }
         end
 
         # Parse tuple pattern: (), (x,), (x, y), (x, y, z)
@@ -183,7 +183,7 @@ module MLC
           if current.type == :RPAREN
             consume(:RPAREN)
             return with_origin(lparen_token) do
-              MLC::Source::AST::Pattern.new(kind: :tuple, data: {elements: []})
+              MLC::Source::AST::Pattern.new(kind: :tuple, data: { elements: [] })
             end
           end
 
@@ -199,7 +199,7 @@ module MLC
             if current.type == :RPAREN
               consume(:RPAREN)
               return with_origin(lparen_token) do
-                MLC::Source::AST::Pattern.new(kind: :tuple, data: {elements: elements})
+                MLC::Source::AST::Pattern.new(kind: :tuple, data: { elements: elements })
               end
             end
 
@@ -219,7 +219,7 @@ module MLC
 
           consume(:RPAREN)
           with_origin(lparen_token) do
-            MLC::Source::AST::Pattern.new(kind: :tuple, data: {elements: elements})
+            MLC::Source::AST::Pattern.new(kind: :tuple, data: { elements: elements })
           end
         end
 
@@ -233,7 +233,7 @@ module MLC
           if current.type == :RBRACKET
             consume(:RBRACKET)
             return with_origin(lbracket_token) do
-              MLC::Source::AST::Pattern.new(kind: :array, data: {elements: []})
+              MLC::Source::AST::Pattern.new(kind: :array, data: { elements: [] })
             end
           end
 
@@ -247,7 +247,7 @@ module MLC
 
           consume(:RBRACKET)
           with_origin(lbracket_token) do
-            MLC::Source::AST::Pattern.new(kind: :array, data: {elements: elements})
+            MLC::Source::AST::Pattern.new(kind: :array, data: { elements: elements })
           end
         end
 
@@ -276,7 +276,7 @@ module MLC
           with_origin(constructor_token) do
             MLC::Source::AST::Pattern.new(
               kind: :constructor,
-              data: {name: constructor, fields: fields}
+              data: { name: constructor, fields: fields }
             )
           end
         end
@@ -290,7 +290,7 @@ module MLC
           with_origin(constructor_token) do
             MLC::Source::AST::Pattern.new(
               kind: :constructor,
-              data: {name: constructor, fields: bindings}
+              data: { name: constructor, fields: bindings }
             )
           end
         end
@@ -350,19 +350,19 @@ module MLC
               MLC::Source::AST::Pattern.new(kind: :wildcard, data: {})
             elsif constructor == "true"
               # Boolean literal: true
-              MLC::Source::AST::Pattern.new(kind: :literal, data: {value: true})
+              MLC::Source::AST::Pattern.new(kind: :literal, data: { value: true })
             elsif constructor == "false"
               # Boolean literal: false
-              MLC::Source::AST::Pattern.new(kind: :literal, data: {value: false})
+              MLC::Source::AST::Pattern.new(kind: :literal, data: { value: false })
             elsif constructor[0] == constructor[0].upcase
               # Uppercase = constructor with no fields
               MLC::Source::AST::Pattern.new(
                 kind: :constructor,
-                data: {name: constructor, fields: []}
+                data: { name: constructor, fields: [] }
               )
             else
               # Lowercase = variable binding
-              MLC::Source::AST::Pattern.new(kind: :var, data: {name: constructor})
+              MLC::Source::AST::Pattern.new(kind: :var, data: { name: constructor })
             end
           end
         end

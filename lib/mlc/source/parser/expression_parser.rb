@@ -836,7 +836,7 @@ module MLC
                        wrap_block_like_expr(parse_match_arm_body)
                      end
 
-              arms << {pattern: pattern, guard: guard, body: body}
+              arms << { pattern: pattern, guard: guard, body: body }
 
               # Expect comma or closing brace
               if current.type == :COMMA
@@ -895,7 +895,7 @@ module MLC
                        wrap_block_like_expr(parse_match_arm_body)
                      end
 
-              arms << {pattern: pattern, guard: guard, body: body}
+              arms << { pattern: pattern, guard: guard, body: body }
             end
 
             # Consume end for pipe-style match

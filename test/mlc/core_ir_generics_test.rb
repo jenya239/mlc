@@ -148,7 +148,7 @@ class SemanticIRGenericsTest < Minitest::Test
     t_var = Builder.type_variable('T')
     u_var = Builder.type_variable('U')
 
-    fn_type = Builder.function_type([{name: 'x', type: t_var}], u_var)
+    fn_type = Builder.function_type([{ name: 'x', type: t_var }], u_var)
 
     assert fn_type.function?
     assert_equal 1, fn_type.params.size
@@ -163,8 +163,8 @@ class SemanticIRGenericsTest < Minitest::Test
 
     # Sum type with variants
     variants = [
-      {name: 'Some', fields: [{name: 'value', type: t_var}]},
-      {name: 'None', fields: []}
+      { name: 'Some', fields: [{ name: 'value', type: t_var }] },
+      { name: 'None', fields: [] }
     ]
     sum_type = Builder.sum_type('Option', variants)
 

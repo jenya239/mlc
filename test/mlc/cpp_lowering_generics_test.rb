@@ -87,7 +87,7 @@ class CppLoweringGenericsTest < Minitest::Test
     # fn(i32) -> f32 -> std::function<float(int)>
     i32_type = Builder.primitive_type('i32')
     f32_type = Builder.primitive_type('f32')
-    fn_type = Builder.function_type([{name: 'x', type: i32_type}], f32_type)
+    fn_type = Builder.function_type([{ name: 'x', type: i32_type }], f32_type)
 
     cpp_type = @lowerer.map_type(fn_type)
 
@@ -102,7 +102,7 @@ class CppLoweringGenericsTest < Minitest::Test
     bool_type = Builder.primitive_type('bool')
 
     fn_type = Builder.function_type(
-      [{name: 'x', type: i32_type}, {name: 'y', type: f32_type}, {name: 'z', type: str_type}],
+      [{ name: 'x', type: i32_type }, { name: 'y', type: f32_type }, { name: 'z', type: str_type }],
       bool_type
     )
 
@@ -115,7 +115,7 @@ class CppLoweringGenericsTest < Minitest::Test
     # fn(T) -> U -> std::function<U(T)>
     t_var = Builder.type_variable('T')
     u_var = Builder.type_variable('U')
-    fn_type = Builder.function_type([{name: 'x', type: t_var}], u_var)
+    fn_type = Builder.function_type([{ name: 'x', type: t_var }], u_var)
 
     cpp_type = @lowerer.map_type(fn_type)
 
@@ -133,7 +133,7 @@ class CppLoweringGenericsTest < Minitest::Test
     option_i32 = Builder.generic_type(option_base, [i32_type])
     result_f32_str = Builder.generic_type(result_base, [f32_type, str_type])
 
-    fn_type = Builder.function_type([{name: 'x', type: option_i32}], result_f32_str)
+    fn_type = Builder.function_type([{ name: 'x', type: option_i32 }], result_f32_str)
 
     cpp_type = @lowerer.map_type(fn_type)
 
@@ -173,8 +173,8 @@ class CppLoweringGenericsTest < Minitest::Test
 
     # Return type is a record with T and U fields
     ret_type = Builder.record_type('pair', [
-      {name: 'first', type: t_var},
-      {name: 'second', type: u_var}
+      { name: 'first', type: t_var },
+      { name: 'second', type: u_var }
     ])
 
     body = Builder.block_expr([], Builder.unit_literal, ret_type)

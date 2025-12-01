@@ -393,7 +393,7 @@ module MLC
                 # Substitute in parameters and return type
                 new_params = type.params.map do |p|
                   new_type = substitute_type(p[:type], type_map)
-                  new_type != p[:type] ? {name: p[:name], type: new_type} : p
+                  new_type != p[:type] ? { name: p[:name], type: new_type } : p
                 end
                 new_ret = substitute_type(type.ret_type, type_map)
                 (new_params != type.params || new_ret != type.ret_type) ? SemanticIR::Builder.function_type(new_params, new_ret) : type
@@ -406,7 +406,7 @@ module MLC
                   new_field_type = substitute_type(field_type, type_map)
 
                   if new_field_type != field_type
-                    {name: field_name, type: new_field_type}
+                    { name: field_name, type: new_field_type }
                   else
                     field
                   end
@@ -905,7 +905,7 @@ module MLC
             # Build function type from function info
             def function_type_from_info(info)
               params = info.param_types.each_with_index.map do |type, index|
-                {name: "arg#{index}", type: type}
+                { name: "arg#{index}", type: type }
               end
               SemanticIR::Builder.function_type(params, info.ret_type)
             end
