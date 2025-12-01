@@ -160,7 +160,7 @@ module MLC
                           ast.module_decl.name
                         else
             # Fallback: use filename (capitalize first letter)
-            File.basename(file_path, '.mlc').capitalize
+                          File.basename(file_path, '.mlc').capitalize
                         end
 
           namespace = infer_namespace(module_name)

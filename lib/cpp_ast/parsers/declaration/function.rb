@@ -10,7 +10,7 @@ module CppAst
         return_type, trivia_after = if is_constructor
                                       ["", ""]
                                     else
-          parse_function_return_type
+                                      parse_function_return_type
                                     end
 
         name, return_type_suffix = parse_function_name(is_constructor, trivia_after)
@@ -31,7 +31,7 @@ module CppAst
         body, trailing = if current_token.kind == :lbrace
                            parse_block_statement(after_rparen)
                          else
-          _semicolon_prefix = after_rparen + current_leading_trivia
+                           _semicolon_prefix = after_rparen + current_leading_trivia
           trailing = current_token.trailing_trivia
           expect(:semicolon)
           [nil, trailing]

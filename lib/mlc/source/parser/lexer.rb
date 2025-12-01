@@ -637,7 +637,7 @@ module MLC
           value = if strip_indent
                     strip_common_indent(body_lines)
                   else
-            body_lines.join("\n")
+                    body_lines.join("\n")
                   end
 
           add_token(:STRING_LITERAL, value, line: start_line, column: start_column)

@@ -320,7 +320,7 @@ module MLC
         module_value = if metadata.key?(:module_name)
                          metadata[:module_name]
                        elsif metadata.key?(:module)
-          metadata[:module]
+                         metadata[:module]
                        end
         entry.module_name = module_value if module_value
 

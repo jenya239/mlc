@@ -379,7 +379,7 @@ module CppAst
 
         # Architecture: rparen_suffix contains space or code (e.g., " = 0"), add if there's content or if it contains code
         has_content_after_rparen = !modifiers_text.empty? || body || initializer_list ||
-                                    (@default_suffix && !@default_suffix.empty?)
+                                   (@default_suffix && !@default_suffix.empty?)
         has_code_in_suffix = rparen_suffix && rparen_suffix.include?("=")
         if (has_content_after_rparen || has_code_in_suffix) && rparen_suffix && !rparen_suffix.empty?
           result << rparen_suffix

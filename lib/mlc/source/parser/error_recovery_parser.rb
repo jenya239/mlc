@@ -117,26 +117,26 @@ module MLC
         def add_error(original_error, context)
           error = case original_error
                   when MLC::MLCSyntaxError
-            MLC::MLCSyntaxError.new(
-              original_error.message,
-              location: current_location,
-              suggestion: suggest_fix(original_error),
-              context: context
-            )
+                    MLC::MLCSyntaxError.new(
+                      original_error.message,
+                      location: current_location,
+                      suggestion: suggest_fix(original_error),
+                      context: context
+                    )
                   when MLC::MLCTypeError
-            MLC::MLCTypeError.new(
-              original_error.message,
-              location: current_location,
-              suggestion: suggest_type_fix(original_error),
-              context: context
-            )
+                    MLC::MLCTypeError.new(
+                      original_error.message,
+                      location: current_location,
+                      suggestion: suggest_type_fix(original_error),
+                      context: context
+                    )
                   else
-            MLC::EnhancedError.new(
-              original_error.message,
-              location: current_location,
-              suggestion: "Check your syntax and try again",
-              context: context
-            )
+                    MLC::EnhancedError.new(
+                      original_error.message,
+                      location: current_location,
+                      suggestion: "Check your syntax and try again",
+                      context: context
+                    )
                   end
 
           @errors << error

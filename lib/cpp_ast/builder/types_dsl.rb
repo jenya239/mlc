@@ -66,7 +66,7 @@ module CppAst
         def ==(other)
           return false unless other.is_a?(TypeBuilder)
           @name == other.name && @const == other.is_const && @ref == other.is_ref &&
-          @mutable == other.is_mutable && @template_args == other.template_args
+            @mutable == other.is_mutable && @template_args == other.template_args
         end
 
         # Convert to C++ type string

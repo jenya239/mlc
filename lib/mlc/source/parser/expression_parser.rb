@@ -545,7 +545,7 @@ module MLC
           final_condition = if is_unless
                               MLC::Source::AST::UnaryOp.new(op: "!", operand: condition)
                             else
-            condition
+                              condition
                             end
 
           with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: final_condition, then_branch: then_branch, else_branch: else_branch) }
@@ -724,7 +724,7 @@ module MLC
           value = if current.type == :DO
                     parse_do_expression
                   else
-            parse_if_expression
+                    parse_if_expression
                   end
 
           # In do-blocks, let is a statement that doesn't need 'in'
@@ -833,7 +833,7 @@ module MLC
               body = if current.type == :DO
                        wrap_block_like_expr(parse_do_expression)
                      else
-                        wrap_block_like_expr(parse_match_arm_body)
+                       wrap_block_like_expr(parse_match_arm_body)
                      end
 
               arms << {pattern: pattern, guard: guard, body: body}
@@ -892,7 +892,7 @@ module MLC
               body = if current.type == :DO
                        wrap_block_like_expr(parse_do_expression)
                      else
-                        wrap_block_like_expr(parse_match_arm_body)
+                       wrap_block_like_expr(parse_match_arm_body)
                      end
 
               arms << {pattern: pattern, guard: guard, body: body}

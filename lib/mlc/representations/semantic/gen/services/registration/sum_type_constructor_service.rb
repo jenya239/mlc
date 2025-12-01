@@ -49,7 +49,7 @@ module MLC
               generic_ret_type = if type_param_vars.any?
                                    SemanticIR::Builder.generic_type(sum_type, type_param_vars)
                                  else
-                sum_type
+                                   sum_type
                                  end
 
               # Register each variant as a constructor function
