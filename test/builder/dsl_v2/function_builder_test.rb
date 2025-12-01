@@ -84,8 +84,8 @@ class FunctionBuilderTest < Test::Unit::TestCase
     ctor_builder = ctor params: [[:f32, :x], [:f32, :y]], 
                        constexpr: true, 
                        noexcept: true do
-        id(:self).member(:x).assign(id(:x))
-        id(:self).member(:y).assign(id(:y))
+      id(:self).member(:x).assign(id(:x))
+      id(:self).member(:y).assign(id(:y))
     end
     
     assert_not_nil ctor_builder
@@ -130,7 +130,7 @@ class FunctionBuilderTest < Test::Unit::TestCase
                        ret: t.ref(:T, const: true) do
       if_ id(:a) > id(:b) do
         ret id(:a)
-      else_
+        else_
         ret id(:b)
       end
     end
@@ -228,8 +228,8 @@ class FunctionBuilderTest < Test::Unit::TestCase
     ctor_builder = ctor params: [[:f32, :x], [:f32, :y]], 
                        constexpr: true, 
                        noexcept: true do
-        id(:self).member(:x).assign(id(:x))
-        id(:self).member(:y).assign(id(:y))
+      id(:self).member(:x).assign(id(:x))
+      id(:self).member(:y).assign(id(:y))
     end
     
     node = ctor_builder.to_node
@@ -286,7 +286,7 @@ class FunctionBuilderTest < Test::Unit::TestCase
                    noexcept: true do
       let_ :sum, float(0.0)
       for_range :it, id(:data) do
-          id(:sum).assign(id(:sum) + deref(id(:it)))
+        id(:sum).assign(id(:sum) + deref(id(:it)))
       end
       ret id(:sum) / cast(t.f32, id(:data).call(:size))
     end
@@ -303,7 +303,7 @@ class FunctionBuilderTest < Test::Unit::TestCase
                    noexcept: true do
       if_ id(:b) == float(0.0) do
         ret err(string("Division by zero"))
-      else_
+        else_
         ret ok(id(:a) / id(:b))
       end
     end
@@ -319,8 +319,8 @@ class FunctionBuilderTest < Test::Unit::TestCase
                    ret: t.void,
                    noexcept: true do
       let_ :temp, id(:a)
-        id(:a).assign(id(:b))
-        id(:b).assign(id(:temp))
+      id(:a).assign(id(:b))
+      id(:b).assign(id(:temp))
     end
     
     assert_not_nil fn_builder

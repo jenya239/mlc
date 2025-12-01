@@ -1,0 +1,31 @@
+AllCops:
+  NewCops: disable
+  TargetRubyVersion: 3.4
+  Exclude:
+    - 'docs/**/*'
+    - 'runtime/**/*'
+    - 'bin/**/*'
+    - 'test/fixtures/**/*'
+    - 'misc/**/*'
+Layout/IndentationConsistency:
+  Enabled: true
+Layout/IndentationWidth:
+  Enabled: true
+Layout/LineLength:
+  Max: 140
+Style/FrozenStringLiteralComment:
+  Enabled: true
+Style/Documentation:
+  Enabled: false
+Style/ClassAndModuleChildren:
+  Enabled: false
+Style/SymbolArray:
+  Enabled: false
+Style/WordArray:
+  Enabled: false
+Style/DoubleNegation:
+  Enabled: false
+Style/RedundantBegin:
+  Enabled: false
+Style/RescueModifier:
+  Enabled: false

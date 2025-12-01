@@ -62,8 +62,8 @@ module MLC
 
             def visit_statements(statements)
               statements.each_with_object([]) do |stmt, acc|
-                result = visit(stmt)
-                acc.concat(Array(result))
+            result = visit(stmt)
+            acc.concat(Array(result))
           end
         end
 

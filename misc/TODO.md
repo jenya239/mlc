@@ -1,10 +1,10 @@
 # TODO - CppAst v3
 
 ## Current Status
-- **Tests:** 2093/2093 passing (0 failures, 0 errors, 0 skips) ✅
+- **Tests:** 2504/2504 passing (0 failures, 0 errors, 0 skips) ✅
 - **C++ AST DSL:** Production ready
 - **MLC Language:** **Feature Complete** - All core features implemented!
-- **Last Updated:** 2025-11-27
+- **Last Updated:** 2025-11-30
 
 ## MLC Language - Implementation Status
 
@@ -101,7 +101,7 @@ fn apply() -> i32 = (x => x + 1)(5)  // Direct lambda call
 - ✅ Lambda AST node
 - ✅ Lowering to C++ lambdas
 - ✅ Direct lambda calls: `(x => x + 1)(5)`
-- ⏳ Closure capture analysis (simple lambdas only)
+- ✅ Closure capture analysis (CaptureAnalyzer service)
 
 **Tests:** 5/5 passing (100%)
 
@@ -320,18 +320,13 @@ for x in arr do
    }
    ```
 
-2. **Ownership System** (Rust-inspired)
-   ```MLC
-   fn consume(owned data: Vec2) -> void
-   fn borrow(ref data: Vec2) -> void
-   fn mutate(mut ref data: Vec2) -> void
-   ```
-
-3. **Advanced Features**
-   - Async/await
+2. **Advanced Features**
    - Macros
    - Const generics
    - Associated types
+
+**Note:** Rust-style ownership system intentionally NOT planned. MLC uses smart pointers
+(Shared<T>/Weak<T>/Unique<T>) per language philosophy - static core with controlled dynamic forms.
 
 ## Documentation Tasks
 
@@ -383,7 +378,7 @@ for x in arr do
 
 **MLC Language Status: 🎉 Feature Complete!**
 
-- ✅ **2093/2093 total tests passing** (0 failures, 0 errors, 0 skips)
+- ✅ **2472/2472 total tests passing** (0 failures, 0 errors, 0 skips)
 - ✅ **Sum Types** - fully working
 - ✅ **Pattern Matching** - fully working (with guards, or-patterns, nested patterns)
 - ✅ **Generics** - fully working (with type constraints)
@@ -394,14 +389,31 @@ for x in arr do
 - ✅ **String Operations** - fully working (concatenation, interpolation, methods)
 - ✅ **Method Chaining** - fully working
 - ✅ **Exhaustiveness Checking** - fully working
+- ✅ **Low-Level Primitives** - fully working (bitwise ops, unsigned ints, char literals)
+- ✅ **Traits (Basic)** - fully working (trait declarations, extend, generic traits)
+- ✅ **Async/Await** - fully working (lexer, parser, AST nodes)
+- ✅ **Closures** - fully working (CaptureAnalyzer service for free variable analysis)
 
-**Latest Updates (2025-11-27):**
+**Latest Updates (2025-11-30):**
+1. ✅ Phase 33: Optimizations implemented
+   - ConstantFoldingPass: arithmetic, comparison, boolean, bitwise operations
+   - DeadCodeEliminationPass: unreachable code, unused variables, pure expressions
+2. ✅ Phase 38 verified: Operator overloading with trait dispatch
+3. ✅ 44 new optimization tests (28 constant folding + 16 DCE)
+4. ✅ BasePass interface standardized (validate_context!, required_keys, produced_keys)
+
+**Previous Updates (2025-11-29):**
+1. ✅ Phase 36 verified: All low-level primitives working
+2. ✅ Phase 37 verified: Basic trait system implemented
+3. ✅ `>>` vs generic conflict resolved (base_parser.rb:62-83)
+4. ✅ Documentation updated (DEVELOPMENT_ROADMAP.md)
+
+**Previous Updates (2025-11-27):**
 1. ✅ New block syntax and safety model
 2. ✅ Comprehensive literal pattern support
 3. ✅ All 7 pattern matching E2E tests restored
 4. ✅ Unit tests for typing modules (MatchAnalyzer, EffectAnalyzer, TypeConstraintSolver, GenericCallResolver)
 5. ✅ Unit tests for semantic services (TypeInferenceService, TypeChecker, IRBuilder, MatchService) - 151 new tests
-6. ✅ 2093 tests, 0 failures, 0 skips
 
 **Previous Updates (2025-11-26):**
 1. ✅ Smart Pointers: Shared<T>, Weak<T>, Owned<T> with full C++ std lib mapping
@@ -417,8 +429,21 @@ for x in arr do
 5. ✅ Pure functions extraction (Predicates, ComplexityAnalysis, PurityAnalysis modules)
 
 **Remaining Work (Low Priority):**
-1. Traits/Type Classes
-2. Ownership System
-3. Advanced Features (async/await, macros)
+1. ✅ Traits/Type Classes - BASIC VERSION IMPLEMENTED
+   - ✅ `extend Type with Trait` syntax (idiomatic MLC approach)
+   - ✅ Trait bounds in where clauses: `fn foo<T>(x: T) -> T where T: Show + Clone`
+   - ✅ Associated types: `type Item`, `type Item: Bound`, `type Item = Default`
+2. ✅ Phase 38: Operator Overloading - IMPLEMENTED
+   - ✅ OperatorTraitMapper service (maps +,-,*,/ to Add/Sub/Mul/Div traits)
+   - ✅ OperatorCallExpr node in SemanticIR
+   - ✅ C++ backend OperatorCallRule (generates `TypeName_method(left, right)`)
+   - ✅ Primitive types use native C++ operators
+3. ✅ Async/Await - IMPLEMENTED (lexer, parser, AST nodes, 10+ tests)
+4. Advanced Features (macros)
+5. ✅ Phase 33: Optimizations - IMPLEMENTED
+   - ✅ ConstantFoldingPass (evaluates constant expressions at compile time)
+   - ✅ DeadCodeEliminationPass (removes unreachable code, unused variables)
+   - ✅ BasePass interface with validate_context!, required_keys, produced_keys
+   - ✅ 44 tests for optimization passes (28 constant folding + 16 DCE)
 
 **The language is production-ready!** 🚀

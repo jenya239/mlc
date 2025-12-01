@@ -28,6 +28,7 @@ require_relative 'type_declaration_service'
 require_relative 'imports/import_service'
 require_relative 'builders/ast_factory'
 require_relative 'traits/trait_registry'
+require_relative 'operator_trait_mapper'
 
 module MLC
   module Representations
@@ -48,7 +49,8 @@ module MLC
                         :module_context_service, :sum_type_constructor_service,
                         :type_registration_service, :type_builder, :type_declaration_service,
                         :stdlib_registry, :import_service, :metadata_loader,
-                        :sum_type_constructors, :type_inference_service, :trait_registry
+                        :sum_type_constructors, :type_inference_service, :trait_registry,
+                        :operator_trait_mapper
 
             def initialize(function_registry:, type_registry:)
               @module_resolver = ModuleResolver.new
@@ -62,6 +64,7 @@ module MLC
               @type_decl_table = {}
               @sum_type_constructors = {}
               @trait_registry = TraitRegistry.new
+              @operator_trait_mapper = OperatorTraitMapper.new(@trait_registry)
               @type_checker = MLC::Representations::Semantic::Gen::Services::TypeChecker.new(
                 function_registry: @function_registry,
                 type_decl_table: @type_decl_table,

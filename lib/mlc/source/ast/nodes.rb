@@ -110,15 +110,16 @@ module MLC
 
       # Function declarations
       class FuncDecl < Node
-        attr_reader :name, :params, :ret_type, :body, :type_params, :exported, :external, :is_async
+        attr_reader :name, :params, :ret_type, :body, :type_params, :where_clause, :exported, :external, :is_async
 
-        def initialize(name:, params:, ret_type:, body: nil, type_params: [], exported: false, external: false, is_async: false, origin: nil)
+        def initialize(name:, params:, ret_type:, body: nil, type_params: [], where_clause: nil, exported: false, external: false, is_async: false, origin: nil)
           super(origin: origin)
           @name = name
           @params = params
           @ret_type = ret_type
           @body = body
           @type_params = type_params  # Array of TypeParam
+          @where_clause = where_clause # WhereClause or nil
           @exported = exported        # Boolean - is this exported?
           @external = external        # Boolean - is this an external (C++) function?
           @is_async = is_async        # Boolean - is this an async function (coroutine)?
@@ -133,6 +134,29 @@ module MLC
           super(origin: origin)
           @name = name
           @constraint = constraint
+        end
+      end
+
+      # Where clause for trait bounds
+      # where T: Trait1 + Trait2, U: OtherTrait
+      class WhereClause < Node
+        attr_reader :bounds  # Array of WhereBound
+
+        def initialize(bounds:, origin: nil)
+          super(origin: origin)
+          @bounds = bounds
+        end
+      end
+
+      # Single type bound in where clause
+      # T: Trait1 + Trait2
+      class WhereBound < Node
+        attr_reader :type_param, :traits  # type_param: String, traits: Array of String
+
+        def initialize(type_param:, traits:, origin: nil)
+          super(origin: origin)
+          @type_param = type_param
+          @traits = traits
         end
       end
       
@@ -836,15 +860,16 @@ module MLC
       end
 
       # Trait declaration
-      # trait Name<T> { fn method(...) -> ... }
+      # trait Name<T> { type Item; fn method(...) -> ... }
       class TraitDecl < Node
-        attr_reader :name, :type_params, :methods, :exported
+        attr_reader :name, :type_params, :methods, :associated_types, :exported
 
-        def initialize(name:, type_params: [], methods: [], exported: false, origin: nil)
+        def initialize(name:, type_params: [], methods: [], associated_types: [], exported: false, origin: nil)
           super(origin: origin)
           @name = name              # String - trait name
           @type_params = type_params # Array of TypeParam
           @methods = methods        # Array of TraitMethod
+          @associated_types = associated_types # Array of AssociatedType
           @exported = exported      # Boolean - is this exported?
         end
       end
@@ -864,17 +889,43 @@ module MLC
         end
       end
 
+      # Associated type in trait declaration
+      # type Item  or  type Item = DefaultType
+      class AssociatedType < Node
+        attr_reader :name, :default_type, :bounds
+
+        def initialize(name:, default_type: nil, bounds: [], origin: nil)
+          super(origin: origin)
+          @name = name          # String - type name (e.g., "Item")
+          @default_type = default_type  # Type or nil (optional default)
+          @bounds = bounds      # Array of String - trait bounds (e.g., ["Clone", "Debug"])
+        end
+      end
+
+      # Associated type binding in extend declaration
+      # type Item = i32
+      class AssociatedTypeBinding < Node
+        attr_reader :name, :type
+
+        def initialize(name:, type:, origin: nil)
+          super(origin: origin)
+          @name = name   # String - type name (e.g., "Item")
+          @type = type   # Type - concrete type (e.g., i32)
+        end
+      end
+
       # Extend declaration - implement trait for type
       # extend Type : Trait { fn ... }
       class ExtendDecl < Node
-        attr_reader :target_type, :trait_name, :trait_params, :methods, :exported
+        attr_reader :target_type, :trait_name, :trait_params, :methods, :associated_type_bindings, :exported
 
-        def initialize(target_type:, trait_name: nil, trait_params: [], methods: [], exported: false, origin: nil)
+        def initialize(target_type:, trait_name: nil, trait_params: [], methods: [], associated_type_bindings: [], exported: false, origin: nil)
           super(origin: origin)
           @target_type = target_type  # Type - the type being extended
           @trait_name = trait_name    # String or nil - trait being implemented
           @trait_params = trait_params # Array of Type - trait type params
           @methods = methods          # Array of FuncDecl (implementations)
+          @associated_type_bindings = associated_type_bindings # Array of AssociatedTypeBinding
           @exported = exported        # Boolean
         end
       end

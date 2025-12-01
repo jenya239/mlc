@@ -207,44 +207,44 @@ module CppAst
         result
       end
       
-    def generate_MLC_expression(expr)
-      case expr
-      when MLC::Source::AST::IntLit
-        expr.value.to_s
-      when MLC::Source::AST::FloatLit
-        expr.value.to_s
-      when MLC::Source::AST::VarRef
-        expr.name
-      when MLC::Source::AST::BinaryOp
-        left = generate_MLC_expression(expr.left)
-        right = generate_MLC_expression(expr.right)
-        if expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
-          # String concatenation
-          "mlc::String(#{left}) + mlc::String(#{right})"
+      def generate_MLC_expression(expr)
+        case expr
+        when MLC::Source::AST::IntLit
+          expr.value.to_s
+        when MLC::Source::AST::FloatLit
+          expr.value.to_s
+        when MLC::Source::AST::VarRef
+          expr.name
+        when MLC::Source::AST::BinaryOp
+          left = generate_MLC_expression(expr.left)
+          right = generate_MLC_expression(expr.right)
+          if expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
+            # String concatenation
+            "mlc::String(#{left}) + mlc::String(#{right})"
+          else
+            "#{left} #{expr.op} #{right}"
+          end
         else
-          "#{left} #{expr.op} #{right}"
+          "0" # fallback
         end
-      else
-        "0" # fallback
       end
-    end
     
     private
     
-    def is_string_expression(expr)
-      case expr
-      when MLC::Source::AST::StringLit, MLC::Source::AST::StringInterpolation
-        true
-      when MLC::Source::AST::VarRef
-        # TODO: Check variable type from context
-        true # Assume string for now
-      when MLC::Source::AST::BinaryOp
-        # Check if this is a string concatenation
-        expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
-      else
-        false
+      def is_string_expression(expr)
+        case expr
+        when MLC::Source::AST::StringLit, MLC::Source::AST::StringInterpolation
+          true
+        when MLC::Source::AST::VarRef
+          # TODO: Check variable type from context
+          true # Assume string for now
+        when MLC::Source::AST::BinaryOp
+          # Check if this is a string concatenation
+          expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
+        else
+          false
+        end
       end
-    end
       
       def generate_MLC_type_optimized(type)
         "// Type declaration: #{type.name}"

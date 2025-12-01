@@ -47,7 +47,7 @@ module MLC
 
               # Constructor return type: either generic (if type params exist) or plain sum type
               generic_ret_type = if type_param_vars.any?
-                SemanticIR::Builder.generic_type(sum_type, type_param_vars)
+                                   SemanticIR::Builder.generic_type(sum_type, type_param_vars)
               else
                 sum_type
               end

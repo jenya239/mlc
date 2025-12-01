@@ -29,14 +29,14 @@ module MLC
               signature = nil
 
               @type_builder.with_type_params(type_params) do
-                param_types = func_decl.params.map { |param| build_type_annotation(param.type) }
-                ret_type = build_type_annotation(func_decl.ret_type)
-                signature = @function_registration_service.register_function_signature(
-                  func_decl,
-                  param_types,
-                  ret_type,
-                  type_params
-                )
+            param_types = func_decl.params.map { |param| build_type_annotation(param.type) }
+            ret_type = build_type_annotation(func_decl.ret_type)
+            signature = @function_registration_service.register_function_signature(
+              func_decl,
+              param_types,
+              ret_type,
+              type_params
+            )
           end
 
               signature
@@ -44,19 +44,19 @@ module MLC
 
             def reduce(func_decl, signature: nil)
               @scope_context.with_current_node(func_decl) do
-                type_params = @type_checker.normalize_type_params(func_decl.type_params)
-                @scope_context.with_type_params(type_params) do
-                  signature ||= register_signature(func_decl)
-                  params = build_params(func_decl, signature.param_types)
-                  result_func = if func_decl.external
-                                  build_external_func(func_decl, params, signature, type_params)
-                                else
-                                  build_function(func_decl, params, signature, type_params)
-                            end
-                  result_func = apply_function_rules(result_func)
-                  update_registry_metadata(func_decl, result_func)
-                  result_func
-            end
+            type_params = @type_checker.normalize_type_params(func_decl.type_params)
+            @scope_context.with_type_params(type_params) do
+          signature ||= register_signature(func_decl)
+          params = build_params(func_decl, signature.param_types)
+          result_func = if func_decl.external
+                          build_external_func(func_decl, params, signature, type_params)
+                        else
+                          build_function(func_decl, params, signature, type_params)
+                    end
+          result_func = apply_function_rules(result_func)
+          update_registry_metadata(func_decl, result_func)
+          result_func
+        end
           end
         end
 
@@ -71,8 +71,8 @@ module MLC
           end
 
               func_decl.params.each_with_index.map do |param, index|
-                type = param_types[index]
-                MLC::SemanticIR::Param.new(name: param.name, type: type, origin: param.origin)
+            type = param_types[index]
+            MLC::SemanticIR::Param.new(name: param.name, type: type, origin: param.origin)
           end
         end
 
@@ -98,40 +98,40 @@ module MLC
               )
         end
 
-          def build_function(func_decl, params, signature, type_params)
-            saved_types = @var_type_registry.snapshot
-            params.each { |param| @var_type_registry.set(param.name, param.type) }
+            def build_function(func_decl, params, signature, type_params)
+              saved_types = @var_type_registry.snapshot
+              params.each { |param| @var_type_registry.set(param.name, param.type) }
 
-            body_ir = nil
-            @scope_context.with_function_return(signature.ret_type) do
-              body_ir = @engine.run_expression(func_decl.body)
-              body_ir = wrap_statement_like_expression(body_ir)
-        end
+              body_ir = nil
+              @scope_context.with_function_return(signature.ret_type) do
+            body_ir = @engine.run_expression(func_decl.body)
+            body_ir = wrap_statement_like_expression(body_ir)
+          end
 
-            ensure_return_type!(func_decl, body_ir, signature.ret_type)
+              ensure_return_type!(func_decl, body_ir, signature.ret_type)
 
-            # Wrap return type in Future<T> for async functions
-            actual_ret_type = if func_decl.is_async
-                                wrap_in_future(signature.ret_type)
-                              else
-                                signature.ret_type
-                              end
+              # Wrap return type in Future<T> for async functions
+              actual_ret_type = if func_decl.is_async
+                                  wrap_in_future(signature.ret_type)
+                                else
+                                  signature.ret_type
+                                end
 
-            MLC::SemanticIR::Func.new(
-                name: func_decl.name,
-                params: params,
-                ret_type: actual_ret_type,
-                body: body_ir,
-                effects: [],
-                type_params: type_params,
-                external: func_decl.external,
-                exported: func_decl.exported,
-                is_async: func_decl.is_async,
-                origin: func_decl.origin
-              )
-            ensure
-              @var_type_registry.restore(saved_types)
-        end
+              MLC::SemanticIR::Func.new(
+                  name: func_decl.name,
+                  params: params,
+                  ret_type: actual_ret_type,
+                  body: body_ir,
+                  effects: [],
+                  type_params: type_params,
+                  external: func_decl.external,
+                  exported: func_decl.exported,
+                  is_async: func_decl.is_async,
+                  origin: func_decl.origin
+                )
+              ensure
+                @var_type_registry.restore(saved_types)
+          end
 
             def ensure_return_type!(func_decl, body_ir, expected_type)
               actual_type = body_ir&.type
@@ -146,7 +146,7 @@ module MLC
               @type_checker.assign_expression_type(body_ir, expected_type)
         end
 
-          def apply_function_rules(func_ir)
+            def apply_function_rules(func_ir)
               return func_ir unless @rule_engine
 
               result = @rule_engine.apply(
@@ -159,7 +159,7 @@ module MLC
               )
 
               normalize_rule_result(func_ir, result)
-        end
+          end
 
             def normalize_rule_result(original, result)
               case result

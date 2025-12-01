@@ -75,6 +75,15 @@ module MLC
             private
 
             def transform_prim(node)
+              # First check for associated type binding in current context
+              if @scope_context
+                assoc_type = @scope_context.resolve_associated_type(node.name)
+                if assoc_type
+                  # Recursively transform the bound type
+                  return transform(assoc_type)
+                end
+              end
+
               param = find_type_param(node.name)
               return @ir_builder.type_variable(name: node.name, constraint: param&.constraint) if param
 

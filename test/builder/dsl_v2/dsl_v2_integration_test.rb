@@ -39,7 +39,7 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
            noexcept: true do
           if_ id(:a) > id(:b) do
             ret id(:a)
-          else_
+            else_
             ret id(:b)
           end
         end
@@ -75,8 +75,8 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
           ctor params: [[:f32, :x], [:f32, :y]], 
                constexpr: true, 
                noexcept: true do
-        id(:self).member(:x).assign(id(:x))
-        id(:self).member(:y).assign(id(:y))
+            id(:self).member(:x).assign(id(:x))
+            id(:self).member(:y).assign(id(:y))
           end
           
           rule_of_five!
@@ -114,8 +114,8 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
       
       ctor params: [[:i32, :size]], 
            noexcept: true do
-          id(:self).member(:resource).assign(new(t.Resource, id(:size)))
-          id(:self).member(:is_valid).assign(bool(true))
+        id(:self).member(:resource).assign(new(t.Resource, id(:size)))
+        id(:self).member(:is_valid).assign(bool(true))
       end
       
       ctor params: [[t.ref(:ResourceManager, mutable: true), :other]], 
@@ -134,10 +134,10 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
           if_ id(:self).member(:is_valid) do
             delete id(:self).member(:resource)
           end
-            id(:self).member(:resource).assign(id(:other).member(:resource))
-            id(:self).member(:is_valid).assign(id(:other).member(:is_valid))
-            id(:other).member(:resource).assign(nullptr)
-            id(:other).member(:is_valid).assign(bool(false))
+          id(:self).member(:resource).assign(id(:other).member(:resource))
+          id(:self).member(:is_valid).assign(id(:other).member(:is_valid))
+          id(:other).member(:resource).assign(nullptr)
+          id(:other).member(:is_valid).assign(bool(false))
         end
         ret id(:self)
       end
@@ -169,7 +169,7 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
                       noexcept: true do
       if_ id(:b) == float(0.0) do
         ret err(string("Division by zero"))
-      else_
+        else_
         ret ok(id(:a) / id(:b))
       end
     end
@@ -191,14 +191,14 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
       
       for_range :it, id(:data) do
         if_ deref(id(:it)) > float(0.0) do
-            id(:sum).assign(id(:sum) + deref(id(:it)))
-            id(:count).assign(id(:count) + int(1))
+          id(:sum).assign(id(:sum) + deref(id(:it)))
+          id(:count).assign(id(:count) + int(1))
         end
       end
       
       if_ id(:count) > int(0) do
         ret id(:sum) / cast(t.f32, id(:count))
-      else_
+        else_
         ret float(0.0)
       end
     end
@@ -217,8 +217,8 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
       ctor params: [[t.span(t.ref(:T, mutable: true)), :data], [:i32, :size]], 
            constexpr: true, 
            noexcept: true do
-          id(:self).member(:data).assign(id(:data))
-          id(:self).member(:size).assign(id(:size))
+        id(:self).member(:data).assign(id(:data))
+        id(:self).member(:size).assign(id(:size))
       end
       
       def_ :at, 
@@ -270,15 +270,15 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
            requires: concept(:Sortable, :T),
            noexcept: true do
           # Simple bubble sort
-            for_ id(:i), int(0), id(:arr).call(:size) - int(1), id(:i).increment do
-            for_ id(:j), int(0), id(:arr).call(:size) - id(:i) - int(1), id(:j).increment do
-              if_ id(:arr)[id(:j)] > id(:arr)[id(:j) + int(1)] do
-                let_ :temp, id(:arr)[id(:j)]
-                id(:arr)[id(:j)].assign(id(:arr)[id(:j) + int(1)])
-                id(:arr)[id(:j) + int(1)].assign(id(:temp))
-              end
+          for_ id(:i), int(0), id(:arr).call(:size) - int(1), id(:i).increment do
+          for_ id(:j), int(0), id(:arr).call(:size) - id(:i) - int(1), id(:j).increment do
+            if_ id(:arr)[id(:j)] > id(:arr)[id(:j) + int(1)] do
+              let_ :temp, id(:arr)[id(:j)]
+              id(:arr)[id(:j)].assign(id(:arr)[id(:j) + int(1)])
+              id(:arr)[id(:j) + int(1)].assign(id(:temp))
             end
           end
+        end
         end
       end
       
@@ -362,20 +362,20 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
                    params: [[:f32, :x], [:f32, :y]], 
                    ret: t.result(t.f32, t.string),
                    noexcept: true do
-        if_ id(:y) == float(0.0) do
-          ret err(string("Division by zero"))
+      if_ id(:y) == float(0.0) do
+        ret err(string("Division by zero"))
         else_
-          if_ id(:x) < float(0.0) do
-            ret err(string("Negative value"))
+        if_ id(:x) < float(0.0) do
+          ret err(string("Negative value"))
           else_
-            let_ :result, id(:x) / id(:y)
-            if_ id(:result) > float(1000.0) do
-              ret err(string("Result too large"))
+          let_ :result, id(:x) / id(:y)
+          if_ id(:result) > float(1000.0) do
+            ret err(string("Result too large"))
             else_
-              ret ok(id(:result))
-            end
+            ret ok(id(:result))
           end
         end
+      end
     end
     
     assert_not_nil error_ast
@@ -394,9 +394,9 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
       let_ :sum, float(0.0)
       let_ :size, id(:data).call(:size)
       
-        for_ id(:i), int(0), id(:size), id(:i).increment do
-          id(:sum).assign(id(:sum) + id(:data)[id(:i)])
-      end
+      for_ id(:i), int(0), id(:size), id(:i).increment do
+      id(:sum).assign(id(:sum) + id(:data)[id(:i)])
+    end
       
       ret id(:sum)
     end

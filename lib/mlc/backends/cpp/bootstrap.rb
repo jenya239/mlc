@@ -49,6 +49,7 @@ module MLC
 
           # Simple operations
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::UnaryRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::OperatorCallRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::BinaryRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::IndexRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::SliceRule").new(context))

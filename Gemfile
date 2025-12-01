@@ -12,3 +12,4 @@ group :development do
   gem "memory_profiler"
 end
 
+gem 'rubocop', '~> 1.62'

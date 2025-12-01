@@ -393,4 +393,63 @@ class GenericsE2ETest < Minitest::Test
     end
   end
 
+  # Test 21: Associated types in trait implementations
+  def test_associated_types_basic
+
+    run_mlc(<<~MLC) do |stdout, stderr, status|
+      trait Container {
+        type Item
+        fn first(c: Self) -> Item
+      }
+
+      type IntBox = { value: i32 }
+
+      extend IntBox : Container {
+        type Item = i32
+        fn first(c: IntBox) -> Item = c.value
+      }
+
+      fn main() -> i32 = do
+        let box = IntBox { value: 42 }
+        IntBox.first(box)
+      end
+    MLC
+      assert_equal 42, status.exitstatus
+    end
+  end
+
+  # Test 22: Associated types with multiple implementations
+  def test_associated_types_multiple_impls
+
+    run_mlc(<<~MLC) do |stdout, stderr, status|
+      trait Container {
+        type Item
+        fn get(c: Self) -> Item
+      }
+
+      type IntHolder = { val: i32 }
+      type BoolHolder = { flag: bool }
+
+      extend IntHolder : Container {
+        type Item = i32
+        fn get(c: IntHolder) -> Item = c.val
+      }
+
+      extend BoolHolder : Container {
+        type Item = bool
+        fn get(c: BoolHolder) -> Item = c.flag
+      }
+
+      fn main() -> i32 = do
+        let ih = IntHolder { val: 50 }
+        let bh = BoolHolder { flag: true }
+        let n = IntHolder.get(ih)
+        let b = BoolHolder.get(bh)
+        if b then n else 0
+      end
+    MLC
+      assert_equal 50, status.exitstatus
+    end
+  end
+
 end

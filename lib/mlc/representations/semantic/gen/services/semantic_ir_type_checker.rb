@@ -27,6 +27,10 @@ module MLC
               node.is_a?(MLC::SemanticIR::BinaryExpr)
             end
 
+            def operator_call_expr?(node)
+              node.is_a?(MLC::SemanticIR::OperatorCallExpr)
+            end
+
             def unary_expr?(node)
               node.is_a?(MLC::SemanticIR::UnaryExpr)
             end

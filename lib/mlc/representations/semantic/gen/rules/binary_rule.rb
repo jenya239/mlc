@@ -24,6 +24,23 @@ module MLC
                 right_ir.type
               )
 
+              # Check for operator overloading via traits
+              if svc.operator_trait_mapper.overloadable?(node.op, left_ir.type)
+                resolution = svc.operator_trait_mapper.resolve(node.op, left_ir.type)
+                if resolution
+                  return svc.ir_builder.operator_call(
+                    op: node.op,
+                    left: left_ir,
+                    right: right_ir,
+                    method_name: resolution[:method_name],
+                    trait_name: resolution[:trait_name],
+                    type: result_type,
+                    origin: node
+                  )
+                end
+              end
+
+              # Default: native binary operation
               svc.ir_builder.binary_op(
                 op: node.op,
                 left: left_ir,

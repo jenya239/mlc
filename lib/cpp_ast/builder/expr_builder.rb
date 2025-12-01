@@ -225,136 +225,136 @@ module CppAst
       end
     
     # Expression DSL methods
-    module Expressions
-      # Identifier
-      def id(name)
-        ExprNode.new(Nodes::Identifier.new(name: name.to_s))
-      end
-      
-      # Literals
-      def int(value)
-        ExprNode.new(Nodes::NumberLiteral.new(value: value.to_s))
-      end
-      
-      def float(value)
-        ExprNode.new(Nodes::NumberLiteral.new(value: value.to_s))
-      end
-      
-      def string(value)
-        ExprNode.new(Nodes::StringLiteral.new(value: value))
-      end
-      
-      def bool(value)
-        ExprNode.new(Nodes::BooleanLiteral.new(value: value))
-      end
-      
-      def char(value)
-        ExprNode.new(Nodes::CharLiteral.new(value: value))
-      end
-      
-      # Function call
-      def call(callee, *args)
-        # Handle Symbol callee
-        callee_node = callee.is_a?(Symbol) ? Nodes::Identifier.new(name: callee.to_s) : callee.node
-        
-        ExprNode.new(Nodes::FunctionCallExpression.new(
-          callee: callee_node,
-          arguments: args.map { |arg| arg.respond_to?(:node) ? arg.node : arg },
-          argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
-        ))
-      end
-      
-      # Member access
-      def member(object, field_name)
-        ExprNode.new(Nodes::MemberAccessExpression.new(
-          object: object.node,
-          operator: ".",
-          member: field_name.to_s
-        ))
-      end
-      
-      # Array access
-      def array_access(array, index)
-        ExprNode.new(Nodes::ArrayAccessExpression.new(
-          array: array.node,
-          index: index.node
-        ))
-      end
-      
-      # Dereference
-      def deref(expr)
-        ExprNode.new(Nodes::UnaryExpression.new(
-          operator: "*",
-          operand: expr.node,
-          prefix: true
-        ))
-      end
-      
-      # Address of
-      def address_of(expr)
-        ExprNode.new(Nodes::UnaryExpression.new(
-          operator: "&",
-          operand: expr.node,
-          prefix: true
-        ))
-      end
-      
-      # Cast
-      def cast(type, expr)
-        ExprNode.new(Nodes::CastExpression.new(
-          type: type.to_cpp_type,
-          expression: expr.node
-        ))
-      end
-      
-      # Ternary operator
-      def ternary(condition, true_expr, false_expr)
-        ExprNode.new(Nodes::TernaryExpression.new(
-          condition: condition.node,
-          true_expression: true_expr.node,
-          false_expression: false_expr.node
-        ))
-      end
-      
-      # Sizeof
-      def sizeof(type_or_expr)
-        if type_or_expr.respond_to?(:to_cpp_type)
-          ExprNode.new(Nodes::SizeofExpression.new(expression: type_or_expr.to_cpp_type))
-        else
-          ExprNode.new(Nodes::SizeofExpression.new(expression: type_or_expr.node))
+      module Expressions
+        # Identifier
+        def id(name)
+          ExprNode.new(Nodes::Identifier.new(name: name.to_s))
         end
+        
+        # Literals
+        def int(value)
+          ExprNode.new(Nodes::NumberLiteral.new(value: value.to_s))
+        end
+        
+        def float(value)
+          ExprNode.new(Nodes::NumberLiteral.new(value: value.to_s))
+        end
+        
+        def string(value)
+          ExprNode.new(Nodes::StringLiteral.new(value: value))
+        end
+        
+        def bool(value)
+          ExprNode.new(Nodes::BooleanLiteral.new(value: value))
+        end
+        
+        def char(value)
+          ExprNode.new(Nodes::CharLiteral.new(value: value))
+        end
+        
+        # Function call
+        def call(callee, *args)
+          # Handle Symbol callee
+          callee_node = callee.is_a?(Symbol) ? Nodes::Identifier.new(name: callee.to_s) : callee.node
+          
+          ExprNode.new(Nodes::FunctionCallExpression.new(
+            callee: callee_node,
+            arguments: args.map { |arg| arg.respond_to?(:node) ? arg.node : arg },
+            argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+          ))
+        end
+        
+        # Member access
+        def member(object, field_name)
+          ExprNode.new(Nodes::MemberAccessExpression.new(
+            object: object.node,
+            operator: ".",
+            member: field_name.to_s
+          ))
+        end
+        
+        # Array access
+        def array_access(array, index)
+          ExprNode.new(Nodes::ArrayAccessExpression.new(
+            array: array.node,
+            index: index.node
+          ))
+        end
+        
+        # Dereference
+        def deref(expr)
+          ExprNode.new(Nodes::UnaryExpression.new(
+            operator: "*",
+            operand: expr.node,
+            prefix: true
+          ))
+        end
+        
+        # Address of
+        def address_of(expr)
+          ExprNode.new(Nodes::UnaryExpression.new(
+            operator: "&",
+            operand: expr.node,
+            prefix: true
+          ))
+        end
+        
+        # Cast
+        def cast(type, expr)
+          ExprNode.new(Nodes::CastExpression.new(
+            type: type.to_cpp_type,
+            expression: expr.node
+          ))
+        end
+        
+        # Ternary operator
+        def ternary(condition, true_expr, false_expr)
+          ExprNode.new(Nodes::TernaryExpression.new(
+            condition: condition.node,
+            true_expression: true_expr.node,
+            false_expression: false_expr.node
+          ))
+        end
+        
+        # Sizeof
+        def sizeof(type_or_expr)
+          if type_or_expr.respond_to?(:to_cpp_type)
+            ExprNode.new(Nodes::SizeofExpression.new(expression: type_or_expr.to_cpp_type))
+          else
+            ExprNode.new(Nodes::SizeofExpression.new(expression: type_or_expr.node))
+          end
+        end
+        
+        # New/Delete
+        def new(type, *args)
+          ExprNode.new(Nodes::NewExpression.new(
+            type: type.to_cpp_type,
+            arguments: args.map(&:node)
+          ))
+        end
+        
+        def delete(expr)
+          ExprNode.new(Nodes::DeleteExpression.new(expression: expr.node))
+        end
+        
+        # Lambda
+        def lambda_expr(params, body)
+          ExprNode.new(Nodes::LambdaExpression.new(
+            parameters: params,
+            body: body.node
+          ))
+        end
+        
+        # No alias to avoid conflict with TypesDSL::lambda
       end
-      
-      # New/Delete
-      def new(type, *args)
-        ExprNode.new(Nodes::NewExpression.new(
-          type: type.to_cpp_type,
-          arguments: args.map(&:node)
-        ))
-      end
-      
-      def delete(expr)
-        ExprNode.new(Nodes::DeleteExpression.new(expression: expr.node))
-      end
-      
-      # Lambda
-      def lambda_expr(params, body)
-        ExprNode.new(Nodes::LambdaExpression.new(
-          parameters: params,
-          body: body.node
-        ))
-      end
-      
-      # No alias to avoid conflict with TypesDSL::lambda
-    end
     
     # Include Expressions module in DSL
-    def self.included(base)
-      base.include Expressions
-    end
+      def self.included(base)
+        base.include Expressions
+      end
     
     # Also include Expressions when ExprBuilder is included
-    include Expressions
+      include Expressions
   end
 end
 end

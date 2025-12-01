@@ -55,7 +55,7 @@ module MLC
 
               # Add structured binding if there are bindings
               block_with_binding = if sanitized_bindings.any?
-                add_structured_binding(body_block, sanitized_bindings, var_name)
+                                     add_structured_binding(body_block, sanitized_bindings, var_name)
               else
                 body_block
               end

@@ -25,8 +25,8 @@ module MLC
 
                 result = nil
                 loops.with_loop_scope do
-                  body_block = svc.ir_builder.block(statements: body_ir, origin: context[:body_origin] || node.body)
-                  result = svc.ir_builder.while_stmt(condition: condition_ir, body: body_block, origin: node)
+              body_block = svc.ir_builder.block(statements: body_ir, origin: context[:body_origin] || node.body)
+              result = svc.ir_builder.while_stmt(condition: condition_ir, body: body_block, origin: node)
             end
 
                 result

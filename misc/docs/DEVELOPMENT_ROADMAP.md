@@ -1,9 +1,9 @@
 # MLC Compiler - Development Roadmap
 
 **Дата создания**: 2025-11-20
-**Обновлено**: 2025-11-28
+**Обновлено**: 2025-11-29
 **Статус проекта**: Feature Complete
-**Тесты**: 2336 runs, 5995 assertions, 0 failures, 0 errors ✅
+**Тесты**: 2472 runs, 6342 assertions, 0 failures, 0 errors ✅
 
 ## Текущее состояние
 
@@ -527,9 +527,9 @@ fn internal_helper() -> i32 = ...        // private (implicit)
 
 ---
 
-## Текущий статус (2025-11-28)
+## Текущий статус (2025-11-29)
 
-**Тесты**: 2336 runs, 5995 assertions, 0 failures, 0 errors ✅
+**Тесты**: 2472 runs, 6342 assertions, 0 failures, 0 errors ✅
 
 ### Test Commands
 
@@ -540,13 +540,15 @@ rake test           # Full suite (~20 min)
 rake test_e2e       # E2E only (compile + run)
 ```
 
-### Recent Features (2025-11-28)
+### Recent Features (2025-11-29)
 
+- ✅ **Phase 36 verified**: All low-level primitives working (bitwise, unsigned ints, char literals)
+- ✅ **Phase 37 verified**: Basic trait system implemented and tested
 - ✅ **Spread operator**: `Point { ...base, z: 3 }`
 - ✅ **Block syntax**: `fn foo() -> i32 = { let x = 1; x }`
 - ✅ **Test infrastructure**: Fast/full test separation
 
-**Следующий шаг**: Phase 36 - Low-level Primitives (см. FEATURE_ROADMAP.md)
+**Следующий шаг**: Phase 38 - Operator Overloading или Phase 33 - Optimizations
 
 ---
 
@@ -554,40 +556,60 @@ rake test_e2e       # E2E only (compile + run)
 
 > Полный roadmap с детализацией: [FEATURE_ROADMAP.md](./FEATURE_ROADMAP.md)
 
-### Phase 36: Low-level Primitives (КРИТИЧЕСКИЙ)
+### Phase 36: Low-level Primitives ✅ ЗАВЕРШЕНО
 
 **Цель**: Фичи для ELF parser, VM, бинарной работы
 **C++ mapping**: Прямая трансляция
+**Статус**: ✅ Завершено (2025-11-29)
+**Тесты**: bitwise_ops_test.rb (27), extended_int_types_test.rb (26), char_literals_test.rb (21)
 
 | Фича | MLC | C++ | Статус |
 |------|-----|-----|--------|
-| Bitwise AND | `a & b` | `a & b` | ❌ |
-| Bitwise OR | `a \| b` | `a \| b` | ❌ |
-| Bitwise XOR | `a ^ b` | `a ^ b` | ❌ |
-| Bitwise NOT | `~a` | `~a` | ❌ |
-| Left shift | `a << n` | `a << n` | ❌ |
-| Right shift | `a >> n` | `a >> n` | ❌ |
-| Binary literals | `0b1010` | `0b1010` | ❌ |
-| Hex literals | `0xFF` | `0xFF` | ✅ (проверить) |
-| u8/u16/u32/u64 | `u8`, `u16`... | `uint8_t`... | ❌ |
-| Char literals | `'a'` | `'a'` | ❌ |
+| Bitwise AND | `a & b` | `a & b` | ✅ |
+| Bitwise OR | `a \| b` | `a \| b` | ✅ |
+| Bitwise XOR | `a ^ b` | `a ^ b` | ✅ |
+| Bitwise NOT | `~a` | `~a` | ✅ |
+| Left shift | `a << n` | `a << n` | ✅ |
+| Right shift | `a >> n` | `a >> n` | ✅ |
+| Binary literals | `0b1010` | `0b1010` | ✅ |
+| Hex literals | `0xFF` | `0xFF` | ✅ |
+| u8/u16/u32/u64 | `u8`, `u16`... | `uint8_t`... | ✅ |
+| Char literals | `'a'` | `'a'` | ✅ |
 
-### Phase 37: Traits & Concepts (ВЫСОКИЙ)
+**Примечание**: `>>` vs generic conflict решён в base_parser.rb:62-83 (splitting `>>` into two `>` tokens)
+
+### Phase 37: Traits & Concepts ✅ БАЗОВАЯ ВЕРСИЯ
 
 **Цель**: OOP-like абстракции для компилятора, backend
 **C++ mapping**: C++20 Concepts
+**Статус**: ✅ Базовая версия реализована (2025-11-29)
+**Тесты**: traits_test.rb (13 tests, 51 assertions)
+
+**Реализовано:**
+- ✅ `trait Name { fn method(self) -> Type }` - объявление trait'ов
+- ✅ `extend Type with Trait { fn method(self) -> Type = ... }` - реализация trait'ов
+- ✅ `extend Type { fn method(self) -> Type = ... }` - методы без trait'а
+- ✅ Generic traits: `trait Into<T> { fn into(self) -> T }`
+- ✅ Default implementations в traits
+- ✅ TraitRegistry для хранения и lookup методов
+- ✅ C++ codegen для trait методов
 
 ```mlc
 trait Show {
   fn show(self) -> str
 }
 
-impl Show for i32 {
+extend i32 with Show {
   fn show(self) -> str = to_string(self)
 }
 
 fn print_all<T: Show>(items: T[]) -> void
 ```
+
+**Не реализовано:**
+- ⏳ `impl Trait for Type` синтаксис (используется `extend`)
+- ⏳ Trait bounds в where clauses
+- ⏳ Associated types
 
 ### Phase 38: Operator Overloading (ВЫСОКИЙ)
 

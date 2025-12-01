@@ -24,8 +24,8 @@ module MLC
 
               while_stmt_ir = nil
               loops.with_loop_scope do
-                body_block = svc.ir_builder.block(statements: body_statements, origin: node.body)
-                while_stmt_ir = svc.ir_builder.while_stmt(condition: condition_ir, body: body_block, origin: node)
+            body_block = svc.ir_builder.block(statements: body_statements, origin: node.body)
+            while_stmt_ir = svc.ir_builder.while_stmt(condition: condition_ir, body: body_block, origin: node)
           end
 
               unit = svc.ir_builder.unit_literal(origin: node)

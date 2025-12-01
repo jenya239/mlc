@@ -107,6 +107,20 @@ module MLC
               )
             end
 
+            # Build an overloaded operator call node
+            # For custom types with trait implementations: vec1 + vec2 -> Vec2_add(vec1, vec2)
+            def operator_call(op:, left:, right:, method_name:, trait_name:, type:, origin: nil)
+              MLC::SemanticIR::OperatorCallExpr.new(
+                origin: origin,
+                op: op,
+                left: left,
+                right: right,
+                method_name: method_name,
+                trait_name: trait_name,
+                type: type
+              )
+            end
+
             # Build a unary operation node
             def unary_op(op:, operand:, type:, origin: nil)
               MLC::SemanticIR::UnaryExpr.new(

@@ -8,7 +8,7 @@ module CppAst
         is_constructor, _constructor_class_name = detect_constructor_pattern
 
         return_type, trivia_after = if is_constructor
-          ["", ""]
+                                      ["", ""]
         else
           parse_function_return_type
         end
@@ -29,7 +29,7 @@ module CppAst
         end
 
         body, trailing = if current_token.kind == :lbrace
-          parse_block_statement(after_rparen)
+                           parse_block_statement(after_rparen)
         else
           _semicolon_prefix = after_rparen + current_leading_trivia
           trailing = current_token.trailing_trivia

@@ -278,12 +278,32 @@ module MLC
     # Binary operation
     class BinaryExpr < Expr
       attr_reader :op, :left, :right
-      
+
       def initialize(op:, left:, right:, type:, origin: nil)
         super(kind: :binary, data: {op: op, left: left, right: right}, type: type, origin: origin)
         @op = op
         @left = left
         @right = right
+      end
+    end
+
+    # Overloaded operator call (binary operator implemented via trait method)
+    # vec1 + vec2 -> Vec2_add(vec1, vec2)
+    class OperatorCallExpr < Expr
+      attr_reader :op, :left, :right, :method_name, :trait_name
+
+      def initialize(op:, left:, right:, method_name:, trait_name:, type:, origin: nil)
+        super(
+          kind: :operator_call,
+          data: {op: op, left: left, right: right, method_name: method_name, trait_name: trait_name},
+          type: type,
+          origin: origin
+        )
+        @op = op
+        @left = left
+        @right = right
+        @method_name = method_name
+        @trait_name = trait_name
       end
     end
 

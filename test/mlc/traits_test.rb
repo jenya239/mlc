@@ -156,6 +156,223 @@ class TraitsTest < Minitest::Test
   end
 
   # ==========================================================================
+  # Where Clause Tests
+  # ==========================================================================
+
+  def test_parse_function_with_single_where_bound
+    code = <<~MLC
+      fn print_value<T>(x: T) -> void where T: Show = show(x)
+    MLC
+
+    ast = parse(code)
+    func = ast.declarations.first
+
+    assert_instance_of MLC::Source::AST::FuncDecl, func
+    assert_equal "print_value", func.name
+    refute_nil func.where_clause
+    assert_instance_of MLC::Source::AST::WhereClause, func.where_clause
+    assert_equal 1, func.where_clause.bounds.size
+
+    bound = func.where_clause.bounds.first
+    assert_instance_of MLC::Source::AST::WhereBound, bound
+    assert_equal "T", bound.type_param
+    assert_equal ["Show"], bound.traits
+  end
+
+  def test_parse_function_with_multiple_traits
+    code = <<~MLC
+      fn process<T>(x: T) -> T where T: Show + Clone + Eq = x
+    MLC
+
+    ast = parse(code)
+    func = ast.declarations.first
+
+    refute_nil func.where_clause
+    bound = func.where_clause.bounds.first
+
+    assert_equal "T", bound.type_param
+    assert_equal ["Show", "Clone", "Eq"], bound.traits
+  end
+
+  def test_parse_function_with_multiple_bounds
+    code = <<~MLC
+      fn combine<T, U>(x: T, y: U) -> T where T: Show, U: Clone = x
+    MLC
+
+    ast = parse(code)
+    func = ast.declarations.first
+
+    refute_nil func.where_clause
+    assert_equal 2, func.where_clause.bounds.size
+
+    assert_equal "T", func.where_clause.bounds[0].type_param
+    assert_equal ["Show"], func.where_clause.bounds[0].traits
+
+    assert_equal "U", func.where_clause.bounds[1].type_param
+    assert_equal ["Clone"], func.where_clause.bounds[1].traits
+  end
+
+  def test_parse_function_with_complex_where_clause
+    code = <<~MLC
+      fn transform<A, B, C>(a: A, b: B) -> C where A: Into + Clone, B: From, C: Default + Eq = default()
+    MLC
+
+    ast = parse(code)
+    func = ast.declarations.first
+
+    refute_nil func.where_clause
+    assert_equal 3, func.where_clause.bounds.size
+
+    assert_equal "A", func.where_clause.bounds[0].type_param
+    assert_equal ["Into", "Clone"], func.where_clause.bounds[0].traits
+
+    assert_equal "B", func.where_clause.bounds[1].type_param
+    assert_equal ["From"], func.where_clause.bounds[1].traits
+
+    assert_equal "C", func.where_clause.bounds[2].type_param
+    assert_equal ["Default", "Eq"], func.where_clause.bounds[2].traits
+  end
+
+  def test_parse_function_without_where_clause
+    code = <<~MLC
+      fn identity<T>(x: T) -> T = x
+    MLC
+
+    ast = parse(code)
+    func = ast.declarations.first
+
+    assert_nil func.where_clause
+  end
+
+  # ==========================================================================
+  # Associated Types Tests
+  # ==========================================================================
+
+  def test_parse_trait_with_simple_associated_type
+    code = <<~MLC
+      trait Iterator {
+        type Item
+        fn next(self: Self) -> Item
+      }
+    MLC
+
+    ast = parse(code)
+    trait = ast.declarations.first
+
+    assert_instance_of MLC::Source::AST::TraitDecl, trait
+    assert_equal "Iterator", trait.name
+    assert_equal 1, trait.associated_types.size
+    assert_equal 1, trait.methods.size
+
+    assoc_type = trait.associated_types.first
+    assert_instance_of MLC::Source::AST::AssociatedType, assoc_type
+    assert_equal "Item", assoc_type.name
+    assert_empty assoc_type.bounds
+    assert_nil assoc_type.default_type
+  end
+
+  def test_parse_trait_with_bounded_associated_type
+    code = <<~MLC
+      trait Container {
+        type Item: Clone + Debug
+        fn get(self: Self) -> Item
+      }
+    MLC
+
+    ast = parse(code)
+    trait = ast.declarations.first
+
+    assoc_type = trait.associated_types.first
+    assert_equal "Item", assoc_type.name
+    assert_equal ["Clone", "Debug"], assoc_type.bounds
+    assert_nil assoc_type.default_type
+  end
+
+  def test_parse_trait_with_default_associated_type
+    code = <<~MLC
+      trait IntoIterator {
+        type Item = i32
+        fn into_iter(self: Self) -> Iterator
+      }
+    MLC
+
+    ast = parse(code)
+    trait = ast.declarations.first
+
+    assoc_type = trait.associated_types.first
+    assert_equal "Item", assoc_type.name
+    assert_empty assoc_type.bounds
+    refute_nil assoc_type.default_type
+    assert_equal "i32", assoc_type.default_type.name
+  end
+
+  def test_parse_trait_with_multiple_associated_types
+    code = <<~MLC
+      trait Mapping {
+        type Key
+        type Value
+        fn get(self: Self, key: Key) -> Value
+      }
+    MLC
+
+    ast = parse(code)
+    trait = ast.declarations.first
+
+    assert_equal 2, trait.associated_types.size
+    assert_equal "Key", trait.associated_types[0].name
+    assert_equal "Value", trait.associated_types[1].name
+  end
+
+  def test_parse_extend_with_associated_type_binding
+    code = <<~MLC
+      trait Iterator {
+        type Item
+        fn next(self: Self) -> Item
+      }
+
+      extend Vec<T> : Iterator {
+        type Item = T
+        fn next(self: Self) -> T = self.pop()
+      }
+    MLC
+
+    ast = parse(code)
+    extend_decl = ast.declarations[1]
+
+    assert_instance_of MLC::Source::AST::ExtendDecl, extend_decl
+    assert_equal 1, extend_decl.associated_type_bindings.size
+    assert_equal 1, extend_decl.methods.size
+
+    binding = extend_decl.associated_type_bindings.first
+    assert_instance_of MLC::Source::AST::AssociatedTypeBinding, binding
+    assert_equal "Item", binding.name
+    assert_equal "T", binding.type.name
+  end
+
+  def test_parse_extend_with_multiple_associated_type_bindings
+    code = <<~MLC
+      trait Mapping {
+        type Key
+        type Value
+      }
+
+      extend HashMap<K, V> : Mapping {
+        type Key = K
+        type Value = V
+      }
+    MLC
+
+    ast = parse(code)
+    extend_decl = ast.declarations[1]
+
+    assert_equal 2, extend_decl.associated_type_bindings.size
+    assert_equal "Key", extend_decl.associated_type_bindings[0].name
+    assert_equal "K", extend_decl.associated_type_bindings[0].type.name
+    assert_equal "Value", extend_decl.associated_type_bindings[1].name
+    assert_equal "V", extend_decl.associated_type_bindings[1].type.name
+  end
+
+  # ==========================================================================
   # SemanticIR + C++ Codegen Tests
   # ==========================================================================
 

@@ -29,8 +29,8 @@ class ClassBuilderTest < Test::Unit::TestCase
       ctor params: [[:f32, :x], [:f32, :y]], 
            constexpr: true, 
            noexcept: true do
-          id(:self).member(:x).assign(id(:x))
-          id(:self).member(:y).assign(id(:y))
+        id(:self).member(:x).assign(id(:x))
+        id(:self).member(:y).assign(id(:y))
       end
     end
     
@@ -69,8 +69,8 @@ class ClassBuilderTest < Test::Unit::TestCase
            params: [[:f32, :dx], [:f32, :dy]], 
            ret: t.void, 
            noexcept: true do
-          id(:self).member(:x).assign(id(:self).member(:x) + id(:dx))
-          id(:self).member(:y).assign(id(:self).member(:y) + id(:dy))
+        id(:self).member(:x).assign(id(:self).member(:x) + id(:dx))
+        id(:self).member(:y).assign(id(:self).member(:y) + id(:dy))
       end
     end
     
@@ -193,8 +193,8 @@ class ClassBuilderTest < Test::Unit::TestCase
       ctor params: [[t.span(t.ref(:T, mutable: true)), :data], [:i32, :size]], 
            constexpr: true, 
            noexcept: true do
-          id(:self).member(:data).assign(id(:data))
-          id(:self).member(:size).assign(id(:size))
+        id(:self).member(:data).assign(id(:data))
+        id(:self).member(:size).assign(id(:size))
       end
     end
     
@@ -332,8 +332,8 @@ class ClassBuilderTest < Test::Unit::TestCase
       ctor params: [[:f32, :x], [:f32, :y]], 
            constexpr: true, 
            noexcept: true do
-          id(:self).member(:x).assign(id(:x))
-          id(:self).member(:y).assign(id(:y))
+        id(:self).member(:x).assign(id(:x))
+        id(:self).member(:y).assign(id(:y))
       end
     end
     
@@ -378,13 +378,13 @@ class ClassBuilderTest < Test::Unit::TestCase
         field :ptr, t.raw_ptr(t.i32)
         field :end, t.raw_ptr(t.i32)
         
-          def_ :operator_not_equal, 
-               params: [[t.ref(:Iterator, const: true), :other]], 
-               ret: t.bool, 
-               const: true, 
-               noexcept: true do
-            ret id(:ptr) != id(:other).member(:ptr)
-          end
+        def_ :operator_not_equal, 
+             params: [[t.ref(:Iterator, const: true), :other]], 
+             ret: t.bool, 
+             const: true, 
+             noexcept: true do
+          ret id(:ptr) != id(:other).member(:ptr)
+        end
       end
     end
     
@@ -398,15 +398,15 @@ class ClassBuilderTest < Test::Unit::TestCase
       field :x, t.f32
       field :y, t.f32
       
-        friend_ fn(:distance, 
-                   params: [[t.ref(:Point, const: true), :p1], [t.ref(:Point, const: true), :p2]], 
-                   ret: t.f32,
-                   constexpr: true, 
-                   noexcept: true) do
-          let_ :dx, id(:p1).member(:x) - id(:p2).member(:x)
-          let_ :dy, id(:p1).member(:y) - id(:p2).member(:y)
-          ret (id(:dx) * id(:dx) + id(:dy) * id(:dy)).call(:sqrt)
-        end
+      friend_ fn(:distance, 
+                 params: [[t.ref(:Point, const: true), :p1], [t.ref(:Point, const: true), :p2]], 
+                 ret: t.f32,
+                 constexpr: true, 
+                 noexcept: true) do
+        let_ :dx, id(:p1).member(:x) - id(:p2).member(:x)
+        let_ :dy, id(:p1).member(:y) - id(:p2).member(:y)
+        ret (id(:dx) * id(:dx) + id(:dy) * id(:dy)).call(:sqrt)
+      end
     end
     
     assert_not_nil class_builder

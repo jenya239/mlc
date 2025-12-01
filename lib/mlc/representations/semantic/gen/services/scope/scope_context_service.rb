@@ -21,12 +21,14 @@ module MLC
           class TransformationContext
             attr_reader :type_param_stack, :lambda_param_stack, :function_return_stack
             attr_reader :var_type_registry, :loop_depth, :unsafe_depth
+            attr_reader :associated_type_bindings_stack
             attr_accessor :current_node
 
             def initialize(var_type_registry:)
               @type_param_stack = []
               @lambda_param_stack = []
               @function_return_stack = []
+              @associated_type_bindings_stack = []
               @var_type_registry = var_type_registry
               @current_node = nil
               @loop_depth = 0
@@ -100,6 +102,25 @@ module MLC
 
             def inside_unsafe?
               @unsafe_depth.positive?
+            end
+
+            # Associated type bindings (for trait implementations)
+            # @param bindings [Hash<String, AST::Type>] associated type name -> concrete type AST
+            def with_associated_type_bindings(bindings)
+              @associated_type_bindings_stack.push(bindings || {})
+              yield
+            ensure
+              @associated_type_bindings_stack.pop
+            end
+
+            # Resolve associated type name to its binding
+            # @param name [String] associated type name (e.g., "Item")
+            # @return [AST::Type, nil] concrete type AST or nil if not found
+            def resolve_associated_type(name)
+              @associated_type_bindings_stack.reverse_each do |bindings|
+                return bindings[name] if bindings.key?(name)
+              end
+              nil
             end
           end
 

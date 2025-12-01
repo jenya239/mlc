@@ -23,11 +23,13 @@ module MLC
             # @param name [String] trait name
             # @param type_params [Array<String>] generic params
             # @param methods [Array<Hash>] method signatures
-            def register_trait(name:, type_params:, methods:)
+            # @param associated_types [Array<Hash>] associated type declarations
+            def register_trait(name:, type_params:, methods:, associated_types: [])
               @traits[name] = TraitInfo.new(
                 name: name,
                 type_params: type_params,
-                methods: methods
+                methods: methods,
+                associated_types: associated_types
               )
             end
 
@@ -35,13 +37,15 @@ module MLC
             # @param type_name [String] implementing type
             # @param trait_name [String] trait being implemented (nil for standalone extend)
             # @param methods [Hash<String, MethodInfo>] implemented methods
-            def register_implementation(type_name:, trait_name: nil, methods:)
+            # @param associated_type_bindings [Hash<String, Type>] associated type bindings
+            def register_implementation(type_name:, trait_name: nil, methods:, associated_type_bindings: {})
               if trait_name
                 key = [type_name, trait_name]
                 @implementations[key] = ImplInfo.new(
                   type_name: type_name,
                   trait_name: trait_name,
-                  methods: methods
+                  methods: methods,
+                  associated_type_bindings: associated_type_bindings
                 )
               else
                 # Methods without trait - add to type_methods
@@ -98,10 +102,10 @@ module MLC
             end
 
             # TraitInfo - trait definition
-            TraitInfo = Struct.new(:name, :type_params, :methods, keyword_init: true)
+            TraitInfo = Struct.new(:name, :type_params, :methods, :associated_types, keyword_init: true)
 
             # ImplInfo - trait implementation
-            ImplInfo = Struct.new(:type_name, :trait_name, :methods, keyword_init: true)
+            ImplInfo = Struct.new(:type_name, :trait_name, :methods, :associated_type_bindings, keyword_init: true)
 
             # MethodInfo - method/function info
             MethodInfo = Struct.new(:name, :params, :ret_type, :body, :is_static, keyword_init: true)
