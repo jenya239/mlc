@@ -65,7 +65,6 @@ class MLCSumTypesTest < Minitest::Test
   end
 
   def test_sum_type_lowering_to_cpp
-
     mlc_source = <<~MLCORA
       type Shape = Circle(f32) | Rect(f32, f32) | Point
     MLCORA

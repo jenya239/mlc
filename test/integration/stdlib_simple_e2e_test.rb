@@ -24,7 +24,6 @@ class StdlibSimpleE2ETest < Minitest::Test
   # Array stdlib E2E tests
 
   def test_array_sum_i32
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       import { sum_i32 } from "Array"
 
@@ -38,7 +37,6 @@ class StdlibSimpleE2ETest < Minitest::Test
   end
 
   def test_array_range
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       import { range, sum_i32 } from "Array"
 
@@ -52,7 +50,6 @@ class StdlibSimpleE2ETest < Minitest::Test
   end
 
   def test_array_min_max
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       import { min_i32, max_i32 } from "Array"
       import { to_string_i32 } from "Conv"
@@ -74,7 +71,6 @@ class StdlibSimpleE2ETest < Minitest::Test
   # Conv stdlib E2E tests
 
   def test_conv_parse_i32
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       import { parse_i32 } from "Conv"
 
@@ -88,7 +84,6 @@ class StdlibSimpleE2ETest < Minitest::Test
   end
 
   def test_conv_to_string
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       import { to_string_i32, to_string_f32 } from "Conv"
 
@@ -108,7 +103,6 @@ class StdlibSimpleE2ETest < Minitest::Test
   # Math stdlib E2E tests
 
   def test_math_abs
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       import { abs } from "Math"
 
@@ -122,7 +116,6 @@ class StdlibSimpleE2ETest < Minitest::Test
   end
 
   def test_math_min_max
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       import { min, max } from "Math"
 
@@ -139,7 +132,6 @@ class StdlibSimpleE2ETest < Minitest::Test
   # String operations (using String methods, not stdlib)
 
   def test_string_operations
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn main() -> i32 = do
         let text = "  Hello World  "

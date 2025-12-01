@@ -8,7 +8,6 @@ class MLCCLITest < Minitest::Test
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
   def test_run_simple_program
-
     Dir.mktmpdir do |dir|
       source = File.join(dir, "main.mlc")
       File.write(source, <<~MLC)
@@ -24,7 +23,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_run_from_stdin
-
     source = <<~MLC
       fn main() -> i32 = println("from-stdin")
     MLC
@@ -36,7 +34,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_program_reads_runtime_stdin
-
     Dir.mktmpdir do |dir|
       source = File.join(dir, "stdin.mlc")
       File.write(source, <<~MLC)
@@ -77,7 +74,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_pass_arguments
-
     Dir.mktmpdir do |dir|
       source = File.join(dir, "args.mlc")
       File.write(source, <<~MLC)
@@ -92,7 +88,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_let_binding_result_is_exit_code
-
     Dir.mktmpdir do |dir|
       source = File.join(dir, "let.mlc")
       File.write(source, <<~MLC)
@@ -109,7 +104,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_array_literal_and_methods
-
     Dir.mktmpdir do |dir|
       source = File.join(dir, "array.mlc")
       File.write(source, <<~MLC)
@@ -128,7 +122,6 @@ class MLCCLITest < Minitest::Test
   end
 
   def test_map_filter_fold_pipeline
-
     Dir.mktmpdir do |dir|
       source = File.join(dir, "stats.mlc")
       File.write(source, <<~MLC)

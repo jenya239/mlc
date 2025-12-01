@@ -23,7 +23,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 1: Basic generic identity function
   def test_generic_identity_function
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn identity<T>(x: T) -> T = x
 
@@ -39,7 +38,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 2: Generic pair type with accessors
   def test_generic_pair_type
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Pair<T, U> = {first: T, second: U}
 
@@ -62,7 +60,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 3: Generic swap function
   def test_generic_swap
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Pair<T, U> = {first: T, second: U}
 
@@ -81,7 +78,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 4: Multiple type parameters
   def test_multiple_type_params
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn add_three<T, U, V>(a: T, b: U, c: V) -> i32 =
         a + b + c
@@ -96,7 +92,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 5: Generic array operations
   def test_generic_array_operations
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn first<T>(arr: T[]) -> T = arr[0]
       fn second<T>(arr: T[]) -> T = arr[1]
@@ -114,7 +109,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 6: Nested generic types
   def test_nested_generic_types
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Box<T> = {value: T}
       type Pair<T, U> = {first: T, second: U}
@@ -133,7 +127,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 7: Generic with arrays of pairs
   def test_generic_array_of_pairs
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Pair<T, U> = {first: T, second: U}
 
@@ -151,7 +144,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 8: Generic triple type
   def test_generic_triple
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Triple<T, U, V> = {first: T, second: U, third: V}
 
@@ -172,7 +164,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 9: Generic with conditionals
   def test_generic_with_conditionals
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn max<T>(a: T, b: T) -> T =
         if a > b then a else b
@@ -189,7 +180,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 10: Generic with let expressions
   def test_generic_with_let_expressions
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn compute<T>(x: T, y: T) -> T =
         let a = x + y
@@ -206,7 +196,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 11: Deeply nested generics
   def test_deeply_nested_generics
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Box<T> = {value: T}
 
@@ -224,7 +213,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 12: Generic with array construction
   def test_generic_array_construction
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Pair<T, U> = {first: T, second: U}
 
@@ -243,7 +231,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 13: Multiple generic functions chained
   def test_chained_generic_functions
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn double<T>(x: T) -> T = x + x
       fn triple<T>(x: T) -> T = x + x + x
@@ -260,7 +247,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 14: Generic with same type parameter used multiple times
   def test_same_type_param_multiple_uses
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Quad<T> = {a: T, b: T, c: T, d: T}
 
@@ -278,7 +264,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 15: Generic array sum
   def test_generic_array_sum
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn get_sum<T>(arr: T[]) -> T =
         arr[0] + arr[1] + arr[2]
@@ -294,7 +279,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 16: Generic wrapper type with println
   def test_generic_wrapper_with_output
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       import { to_string_i32 } from "Conv"
 
@@ -319,7 +303,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 17: Complex nested structure
   def test_complex_nested_structure
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Inner<T> = {value: T}
       type Outer<T, U> = {left: Inner<T>, right: Inner<U>}
@@ -341,7 +324,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 18: Generic with boolean conditions
   def test_generic_boolean_select
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn select<T>(flag: bool, a: T, b: T) -> T =
         if flag then a else b
@@ -358,7 +340,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 19: Array of generic boxes
   def test_array_of_boxes
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       type Box<T> = {value: T}
 
@@ -377,7 +358,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 20: Generic with comparison
   def test_generic_comparison
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       fn is_greater<T>(a: T, b: T) -> bool = a > b
 
@@ -395,7 +375,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 21: Associated types in trait implementations
   def test_associated_types_basic
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       trait Container {
         type Item
@@ -420,7 +399,6 @@ class GenericsE2ETest < Minitest::Test
 
   # Test 22: Associated types with multiple implementations
   def test_associated_types_multiple_impls
-
     run_mlc(<<~MLC) do |stdout, stderr, status|
       trait Container {
         type Item
