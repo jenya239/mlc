@@ -8,7 +8,7 @@ class StdlibMathTest < Minitest::Test
     ast = MLC.parse(source)
 
     assert_equal 'Math', ast.module_decl.name
-    assert ast.declarations.length > 0
+    assert ast.declarations.length.positive?
   end
 
   def test_math_extern_functions_are_marked_external

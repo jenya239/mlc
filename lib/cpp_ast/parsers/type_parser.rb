@@ -68,7 +68,7 @@ module CppAst
         advance_raw
 
         depth = 1
-        while depth > 0 && !at_end?
+        while depth.positive? && !at_end?
           if current_token.kind == :less
             depth += 1
           elsif current_token.kind == :greater
@@ -78,7 +78,7 @@ module CppAst
           result << current_token.lexeme
           advance_raw
 
-          break if depth == 0
+          break if depth.zero?
         end
 
         result

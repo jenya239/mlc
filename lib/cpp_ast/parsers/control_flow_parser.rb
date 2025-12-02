@@ -185,17 +185,17 @@ module CppAst
           when :lparen, :lbracket
             depth += 1
           when :rparen
-            break if depth == 0
+            break if depth.zero?
 
             depth -= 1
           when :rbracket
             depth -= 1
           when :colon
-            found_colon = true if depth == 0
-            break if depth == 0
+            found_colon = true if depth.zero?
+            break if depth.zero?
           when :semicolon
-            found_semicolon = true if depth == 0
-            break if depth == 0
+            found_semicolon = true if depth.zero?
+            break if depth.zero?
           end
           advance_raw
         end

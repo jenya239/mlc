@@ -45,7 +45,7 @@ module CppAst
           char = current_char
 
           if char == "\n"
-            break unless @position > 0 && @source[@position - 1] == '\\'
+            break unless @position.positive? && @source[@position - 1] == '\\'
               lexeme << advance
             
               

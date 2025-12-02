@@ -61,7 +61,7 @@ module MLC
 
           lines = source.lines
           target_line = origin.line - 1 # 0-indexed
-          return nil if target_line < 0 || target_line >= lines.size
+          return nil if target_line.negative? || target_line >= lines.size
 
           start_line = [target_line - @context_lines, 0].max
           end_line = [target_line + @context_lines, lines.size - 1].min

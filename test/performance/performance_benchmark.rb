@@ -75,10 +75,10 @@ class PerformanceBenchmark < Minitest::Test
     puts "Original Parser Memory: #{format_bytes(original_total)}"
     puts "Optimized Parser Memory: #{format_bytes(optimized_total)}"
 
-    reduction = original_total > 0 ? ((original_total - optimized_total) / original_total.to_f * 100).round(1) : 0
+    reduction = original_total.positive? ? ((original_total - optimized_total) / original_total.to_f * 100).round(1) : 0
     puts "Memory Reduction: #{reduction}%"
 
-    if original_total > 0
+    if original_total.positive?
       assert optimized_total < original_total, "Optimized parser should use less memory"
     else
       puts "Warning: Original parser allocated zero memory, skipping memory comparison"

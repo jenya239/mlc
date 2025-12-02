@@ -7,7 +7,7 @@ class EdgeCasesTest < Minitest::Test
 
   def test_empty_template_parameters
     ast = template_class("EmptyTemplate", [],
-                         function_decl("void", "method", [], block()))
+                         function_decl("void", "method", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
     assert_includes cpp_code, "class EmptyTemplate"
@@ -16,7 +16,7 @@ class EdgeCasesTest < Minitest::Test
   def test_nested_template_classes
     ast = template_class("Outer", ["typename T"],
                          template_class("Inner", ["typename U"],
-                                        function_decl("void", "method", [param("T", "t"), param("U", "u")], block())))
+                                        function_decl("void", "method", [param("T", "t"), param("U", "u")], block)))
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <typename T>"
     assert_includes cpp_code, "template <typename U>"
@@ -24,12 +24,12 @@ class EdgeCasesTest < Minitest::Test
   end
 
   def test_multiple_modifiers_combination
-    ast = function_decl("void", "complex_method", [param("const std::string&", "data")], block())
-          .inline()
-          .const()
-          .noexcept()
-          .nodiscard()
-          .static()
+    ast = function_decl("void", "complex_method", [param("const std::string&", "data")], block)
+          .inline
+          .const
+          .noexcept
+          .nodiscard
+          .static
     cpp_code = ast.to_source
     assert_includes cpp_code, "static inline [[nodiscard]] void complex_method(const std::string& data) const noexcept"
   end
@@ -37,9 +37,9 @@ class EdgeCasesTest < Minitest::Test
   def test_template_method_with_complex_parameters
     ast = template_method("void", "process", ["typename T", "typename U"],
                           [param("std::span<const T>", "data"), param("std::function<U(T)>", "transform")],
-                          block())
-          .const()
-          .noexcept()
+                          block)
+          .const
+          .noexcept
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <typename T, typename U>"
     assert_includes cpp_code, "void process(std::span<const T> data, std::function<U(T)> transform) const noexcept"
@@ -59,10 +59,10 @@ class EdgeCasesTest < Minitest::Test
   def test_constructor_with_complex_initializer_list
     ast = function_decl("", "ComplexClass",
                         [param("int", "value"), param("const std::string&", "name"), param("float", "factor")],
-                        block())
+                        block)
           .with_initializer_list("member_(value), name_(name), factor_(factor), computed_(value * factor)")
-          .explicit()
-          .constexpr()
+          .explicit
+          .constexpr
     cpp_code = ast.to_source
     assert_includes cpp_code, "constexpr explicit ComplexClass(int value, const std::string& name, float factor) : member_(value), name_(name), factor_(factor), computed_(value * factor)"
   end
@@ -71,7 +71,7 @@ class EdgeCasesTest < Minitest::Test
     ast = class_decl("MyClass",
                      friend_decl("struct", "std::hash<MyClass>"),
                      friend_decl("class", "std::equal_to<MyClass>"),
-                     function_decl("void", "method", [], block()))
+                     function_decl("void", "method", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "friend struct std::hash<MyClass>;"
     assert_includes cpp_code, "friend class std::equal_to<MyClass>;"
@@ -82,7 +82,7 @@ class EdgeCasesTest < Minitest::Test
                          using_alias("StringVector", "std::vector<std::string>"),
                          using_alias("FunctionPtr", "std::function<void(int)>"),
                          using_alias("TemplateType", "std::map<std::string, int>"),
-                         function_decl("void", "test", [], block()))
+                         function_decl("void", "test", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "using StringVector = std::vector<std::string>;"
     assert_includes cpp_code, "using FunctionPtr = std::function<void(int)>;"
@@ -90,7 +90,7 @@ class EdgeCasesTest < Minitest::Test
   end
 
   def test_inline_method_with_complex_body
-    ast = function_decl("std::optional<int>", "find_value", [param("const std::vector<int>&", "vec"), param("int", "target")], block())
+    ast = function_decl("std::optional<int>", "find_value", [param("const std::vector<int>&", "vec"), param("int", "target")], block)
           .inline_body(block(
                          if_stmt(
                            binary_expr(id("vec"), "==", id("vec")),
@@ -98,8 +98,8 @@ class EdgeCasesTest < Minitest::Test
                            block(return_stmt(id("target")))
                          )
       ))
-          .const()
-          .nodiscard()
+          .const
+          .nodiscard
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline [[nodiscard]] std::optional<int> find_value(const std::vector<int>& vec, int target) const"
   end
@@ -107,9 +107,9 @@ class EdgeCasesTest < Minitest::Test
   def test_template_specialization_with_complex_type
     ast = namespace_decl("std",
                          template_class("hash", ["typename T"],
-                                        function_decl("size_t", "operator()", [param("const T&", "k")], block())
-                                          .const()
-                                          .noexcept()).specialized())
+                                        function_decl("size_t", "operator()", [param("const T&", "k")], block)
+                                          .const
+                                          .noexcept).specialized)
     cpp_code = ast.to_source
     assert_includes cpp_code, "namespace std"
     assert_includes cpp_code, "template <>"
@@ -123,21 +123,21 @@ class EdgeCasesTest < Minitest::Test
                      enum_class("State", [["INIT"], ["READY", "1"], ["ERROR", "2"]]),
                      template_method("void", "process", ["typename T"],
                                      [param("std::span<const T>", "data")],
-                                     block()),
-                     function_decl("", "EdgeCaseClass", [param("Index", "index")], block())
+                                     block),
+                     function_decl("", "EdgeCaseClass", [param("Index", "index")], block)
                        .with_initializer_list("index_(index), computed_(index * 2)")
-                       .explicit(),
-                     function_decl("Index", "get_index", [], block())
+                       .explicit,
+                     function_decl("Index", "get_index", [], block)
                        .inline_body(block(return_stmt(id("index_"))))
-                       .const(),
-                     function_decl("", "EdgeCaseClass", [param("const EdgeCaseClass&", "other")], block())
-                       .deleted(),
-                     function_decl("EdgeCaseClass&", "operator=", [param("const EdgeCaseClass&", "other")], block())
-                       .deleted(),
-                     function_decl("", "EdgeCaseClass", [param("EdgeCaseClass&&", "other")], block())
-                       .noexcept(),
-                     function_decl("EdgeCaseClass&", "operator=", [param("EdgeCaseClass&&", "other")], block())
-                       .noexcept())
+                       .const,
+                     function_decl("", "EdgeCaseClass", [param("const EdgeCaseClass&", "other")], block)
+                       .deleted,
+                     function_decl("EdgeCaseClass&", "operator=", [param("const EdgeCaseClass&", "other")], block)
+                       .deleted,
+                     function_decl("", "EdgeCaseClass", [param("EdgeCaseClass&&", "other")], block)
+                       .noexcept,
+                     function_decl("EdgeCaseClass&", "operator=", [param("EdgeCaseClass&&", "other")], block)
+                       .noexcept)
     cpp_code = ast.to_source
 
     # Check all edge cases are present
@@ -193,7 +193,7 @@ class EdgeCasesTest < Minitest::Test
                          using_alias("Type", "int"),
                          friend_decl("struct", "std::hash<MixedNamespace>"),
                          enum_class("Value", [["A"], ["B", "1"]]),
-                         function_decl("void", "method", [], block()))
+                         function_decl("void", "method", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "namespace MixedNamespace"
     assert_includes cpp_code, "using Type = int;"

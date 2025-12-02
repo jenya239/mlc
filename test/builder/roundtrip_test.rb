@@ -243,7 +243,7 @@ class RoundtripTest < Minitest::Test
   # Block statement
   def test_block_empty
     ast = program(
-      block()
+      block
     )
     assert_roundtrip_ast(ast)
   end

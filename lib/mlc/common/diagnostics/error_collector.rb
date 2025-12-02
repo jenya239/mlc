@@ -84,7 +84,7 @@ module MLC
       end
 
       def has_errors?
-        @error_count > 0
+        @error_count.positive?
       end
 
       def error_count
@@ -127,8 +127,8 @@ module MLC
         warning_word = warning_count == 1 ? "warning" : "warnings"
 
         parts = []
-        parts << "#{@error_count} #{error_word}" if @error_count > 0
-        parts << "#{warning_count} #{warning_word}" if warning_count > 0
+        parts << "#{@error_count} #{error_word}" if @error_count.positive?
+        parts << "#{warning_count} #{warning_word}" if warning_count.positive?
 
         parts.empty? ? "no errors" : parts.join(", ")
       end

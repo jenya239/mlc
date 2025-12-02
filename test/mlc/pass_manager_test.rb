@@ -143,7 +143,7 @@ class PassManagerTest < Minitest::Test
     manager.run({})
 
     assert duration
-    assert duration > 0
+    assert duration.positive?
   end
 
   # Metadata tests

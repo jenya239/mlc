@@ -30,7 +30,7 @@ module MLC
               end
 
               element_types = tuple_type.element_types
-              if index < 0 || index >= element_types.size
+              if index.negative? || index >= element_types.size
                 raise MLC::CompileError.new(
                   "Tuple index #{index} out of bounds for tuple with #{element_types.size} elements",
                   origin: node.origin

@@ -308,7 +308,7 @@ module MLC
               depth += 1
             when :RBRACE
               depth -= 1
-              if depth == 0
+              if depth.zero?
                 @pos += 1
                 # After closing brace, check for | indicating another variant
                 result = current.type == :OPERATOR && current.value == "|"

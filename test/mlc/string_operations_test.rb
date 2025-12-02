@@ -81,7 +81,7 @@ class MLCStringOperationsTest < Minitest::Test
       puts "Generated C++:"
       puts cpp
       assert_includes cpp, "Hello"
-    rescue => e
+    rescue StandardError => e
       puts "Error: #{e.message}"
       # For now, just test that we get an error
       assert e.message.include?("left operand of '+' must be numeric")
@@ -100,7 +100,7 @@ class MLCStringOperationsTest < Minitest::Test
       puts "Generated C++:"
       puts cpp
       assert_includes cpp, "Hello"
-    rescue => e
+    rescue StandardError => e
       puts "Error: #{e.message}"
       # For now, just test that we get an error
       assert e.message.include?("Unknown identifier")
@@ -119,7 +119,7 @@ class MLCStringOperationsTest < Minitest::Test
       puts cpp
       assert_includes cpp, "trim"
       assert_includes cpp, "upper"
-    rescue => e
+    rescue StandardError => e
       puts "Error: #{e.message}"
       # For now, just test that we get an error
       assert e.message.include?("Unknown member")

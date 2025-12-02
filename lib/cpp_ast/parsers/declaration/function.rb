@@ -166,7 +166,7 @@ if !modifiers_text.empty? && modifiers_text.start_with?(" ")
         if current_token.kind == :less
           depth = 1
           advance_raw
-          while depth > 0 && !at_end?
+          while depth.positive? && !at_end?
             depth += 1 if current_token.kind == :less
             depth -= 1 if current_token.kind == :greater
             advance_raw
@@ -325,15 +325,15 @@ if !modifiers_text.empty? && modifiers_text.start_with?(" ")
           advance_raw
 
           depth = 1
-          while depth > 0 && !at_end?
+          while depth.positive? && !at_end?
             depth += 1 if current_token.kind == :less
             depth -= 1 if current_token.kind == :greater
 
             return_type << current_leading_trivia << current_token.lexeme
-            trivia_after = current_token.trailing_trivia if depth == 0
-            return_type << current_token.trailing_trivia unless depth == 0
+            trivia_after = current_token.trailing_trivia if depth.zero?
+            return_type << current_token.trailing_trivia unless depth.zero?
             advance_raw
-            break if depth == 0
+            break if depth.zero?
           end
         end
 
@@ -388,7 +388,7 @@ if !modifiers_text.empty? && modifiers_text.start_with?(" ")
           name << current_leading_trivia << current_token.lexeme
           advance_raw
         else
-          return_type_suffix << scope_trivia if scope_trivia.length > 0
+          return_type_suffix << scope_trivia if scope_trivia.length.positive?
         end
       end
 

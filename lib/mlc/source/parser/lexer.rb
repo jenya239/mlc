@@ -392,14 +392,14 @@ module MLC
               # Read expression until matching }
               expr_chars = []
               brace_depth = 1
-              while @pos < @source.length && brace_depth > 0
+              while @pos < @source.length && brace_depth.positive?
                 char = @source[@pos]
                 if char == '{'
                   brace_depth += 1
                   expr_chars << char
                 elsif char == '}'
                   brace_depth -= 1
-                  expr_chars << char if brace_depth > 0
+                  expr_chars << char if brace_depth.positive?
                 elsif char == '"'
                   # Skip nested strings
                   expr_chars << char
@@ -492,22 +492,22 @@ module MLC
               case @source[@pos]
               when '\\'
                 value << "\\"
-                escaped_char = "\\" if char_count == 0
+                escaped_char = "\\" if char_count.zero?
               when "'"
                 value << "'"
-                escaped_char = "'" if char_count == 0
+                escaped_char = "'" if char_count.zero?
               when 'n'
                 value << "\n"
-                escaped_char = "\n" if char_count == 0
+                escaped_char = "\n" if char_count.zero?
               when 't'
                 value << "\t"
-                escaped_char = "\t" if char_count == 0
+                escaped_char = "\t" if char_count.zero?
               when 'r'
                 value << "\r"
-                escaped_char = "\r" if char_count == 0
+                escaped_char = "\r" if char_count.zero?
               when '0'
                 value << "\0"
-                escaped_char = "\0" if char_count == 0
+                escaped_char = "\0" if char_count.zero?
               else
                 # Unlike Ruby, we keep the backslash for unknown escapes
                 value << '\\'

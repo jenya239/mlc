@@ -36,7 +36,7 @@ module MLC
 
         # Блок с единственным expression (можно inline)
         def trivial?
-          @statement_count == 0
+          @statement_count.zero?
         end
 
         # Есть ли вложенные if/match/loop

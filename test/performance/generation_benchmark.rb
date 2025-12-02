@@ -12,9 +12,9 @@ class GenerationBenchmarkTest < Minitest::Test
     classes = []
     100.times do |i|
       classes << template_class("TemplateClass#{i}", ["typename T"],
-                                function_decl("void", "method", [param("T", "value")], block())
-                                  .const()
-                                  .noexcept())
+                                function_decl("void", "method", [param("T", "value")], block)
+                                  .const
+                                  .noexcept)
     end
 
     generation_time = Time.now - start_time
@@ -62,10 +62,10 @@ class GenerationBenchmarkTest < Minitest::Test
 
     methods = []
     100.times do |i|
-      methods << function_decl("void", "method#{i}", [param("int", "value")], block())
+      methods << function_decl("void", "method#{i}", [param("int", "value")], block)
                  .inline_body(block(return_stmt(id("value"))))
-                 .const()
-                 .noexcept()
+                 .const
+                 .noexcept
     end
 
     ast = class_decl("LargeClass", *methods)
@@ -103,7 +103,7 @@ class GenerationBenchmarkTest < Minitest::Test
     # 50 template classes
     50.times do |i|
       elements << template_class("Template#{i}", ["typename T"],
-                                 function_decl("void", "method", [param("T", "value")], block()))
+                                 function_decl("void", "method", [param("T", "value")], block))
     end
 
     ast = namespace_decl("ComplexNamespace", *elements)
@@ -131,7 +131,7 @@ class GenerationBenchmarkTest < Minitest::Test
     # Generate many objects
     objects = []
     1000.times do |i|
-      objects << function_decl("void", "method#{i}", [], block())
+      objects << function_decl("void", "method#{i}", [], block)
       objects << enum_class("Enum#{i}", [["VALUE#{i}"]])
       objects << using_alias("Type#{i}", "int")
     end
@@ -153,7 +153,7 @@ class GenerationBenchmarkTest < Minitest::Test
     results[:template_class] = Benchmark.measure do
       100.times do |i|
         template_class("Class#{i}", ["typename T"],
-                       function_decl("void", "method", [], block()))
+                       function_decl("void", "method", [], block))
       end
     end
 
@@ -167,7 +167,7 @@ class GenerationBenchmarkTest < Minitest::Test
     # Benchmark function generation
     results[:function] = Benchmark.measure do
       100.times do |i|
-        function_decl("void", "method#{i}", [], block())
+        function_decl("void", "method#{i}", [], block)
       end
     end
 
@@ -190,7 +190,7 @@ class GenerationBenchmarkTest < Minitest::Test
     10.times do |i|
       threads << Thread.new do
         result = template_class("ConcurrentClass#{i}", ["typename T"],
-                                function_decl("void", "method", [], block()))
+                                function_decl("void", "method", [], block))
         results << result
       end
     end
@@ -219,9 +219,9 @@ class GenerationBenchmarkTest < Minitest::Test
     50.times do |i|
       methods = []
       20.times do |j|
-        methods << function_decl("void", "method#{j}", [param("int", "value")], block())
+        methods << function_decl("void", "method#{j}", [param("int", "value")], block)
                    .inline_body(block(return_stmt(id("value"))))
-                   .const()
+                   .const
       end
 
       classes << class_decl("Class#{i}", *methods)

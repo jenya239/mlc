@@ -13,13 +13,13 @@ class FormattingModesTest < Minitest::Test
 
   def test_template_pretty_mode
     CppAst.formatting_mode = :pretty
-    ast = template_decl("typename T", function_decl("void", "foo", [], block()))
+    ast = template_decl("typename T", function_decl("void", "foo", [], block))
     assert_includes ast.to_source, "template <typename T>"
   end
 
   def test_template_lossless_mode
     CppAst.formatting_mode = :lossless
-    ast = template_decl("typename T", function_decl("void", "foo", [], block()))
+    ast = template_decl("typename T", function_decl("void", "foo", [], block))
     # В lossless режиме нет пробела после template
     assert_match(/template<typename T>/, ast.to_source)
   end
@@ -29,7 +29,7 @@ class FormattingModesTest < Minitest::Test
 
     CppAst.with_formatting_mode(:lossless) do
       assert_equal :lossless, CppAst.formatting_mode
-      ast = template_decl("typename T", function_decl("void", "foo", [], block()))
+      ast = template_decl("typename T", function_decl("void", "foo", [], block))
       assert_match(/template<typename T>/, ast.to_source)
     end
 
@@ -70,13 +70,13 @@ class FormattingModesTest < Minitest::Test
 
   def test_function_rparen_suffix_pretty
     CppAst.formatting_mode = :pretty
-    ast = function_decl("void", "test", [], block())
+    ast = function_decl("void", "test", [], block)
     assert_includes ast.to_source, "void test() {"
   end
 
   def test_function_rparen_suffix_lossless
     CppAst.formatting_mode = :lossless
-    ast = function_decl("void", "test", [], block())
+    ast = function_decl("void", "test", [], block)
     assert_includes ast.to_source, "void test(){"
   end
 

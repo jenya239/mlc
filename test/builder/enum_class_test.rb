@@ -79,7 +79,7 @@ class EnumClassTest < Minitest::Test
                                   ["Vertex", "GL_VERTEX_SHADER"],
                                   ["Fragment", "GL_FRAGMENT_SHADER"]
                                 ]),
-                     function_decl("", "Shader", [param("Type", "type")], block()))
+                     function_decl("", "Shader", [param("Type", "type")], block))
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "enum class Type"

@@ -7,12 +7,12 @@ class FullFeatureValidationTest < Minitest::Test
 
   def test_inline_methods_full_feature
     # Test inline method with complex body and all modifiers
-    ast = function_decl("GLuint", "handle", [], block())
+    ast = function_decl("GLuint", "handle", [], block)
           .inline_body(block(
                          return_stmt(binary("+", id("shader_"), int(1)))
       ))
-          .const()
-          .noexcept()
+          .const
+          .noexcept
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline GLuint handle"
@@ -20,12 +20,12 @@ class FullFeatureValidationTest < Minitest::Test
     assert_includes cpp_code, "return shader_ + 1"
 
     # Test static constexpr inline
-    ast2 = function_decl("Color", "white", [], block())
+    ast2 = function_decl("Color", "white", [], block)
            .inline_body(block(
                           return_stmt(binary("=", id("r"), float(1.0)))
       ))
-           .static()
-           .constexpr()
+           .static
+           .constexpr
 
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "static constexpr inline Color white"
@@ -49,9 +49,9 @@ class FullFeatureValidationTest < Minitest::Test
 
   def test_initializer_lists_full_feature
     # Test complex initializer list with multiple members
-    ast = function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
+    ast = function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block)
           .with_initializer_list("x(x_), y(y_), computed_(x_ * y_), initialized_(true)")
-          .constexpr()
+          .constexpr
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "constexpr"
@@ -85,7 +85,7 @@ class FullFeatureValidationTest < Minitest::Test
     # Test friend in class
     ast4 = class_decl("MyClass",
                       friend_decl("struct", "std::hash<MyClass>"),
-                      function_decl("void", "method", [], block()))
+                      function_decl("void", "method", [], block))
     cpp_code = ast4.to_source
     assert_includes cpp_code, "friend struct std::hash<MyClass>"
     assert_includes cpp_code, "void method"
@@ -94,9 +94,9 @@ class FullFeatureValidationTest < Minitest::Test
   def test_template_specialization_full_feature
     # Test template specialization
     ast = template_class("hash", ["typename T"],
-                         function_decl("size_t", "operator()", [param("const T&", "k")], block())
-                           .const()
-                           .noexcept()).specialized()
+                         function_decl("size_t", "operator()", [param("const T&", "k")], block)
+                           .const
+                           .noexcept).specialized
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
@@ -106,9 +106,9 @@ class FullFeatureValidationTest < Minitest::Test
     # Test in namespace
     ast2 = namespace_decl("std",
                           template_class("hash", ["typename T"],
-                                         function_decl("size_t", "operator()", [param("const T&", "k")], block())
-                                           .const()
-                                           .noexcept()).specialized())
+                                         function_decl("size_t", "operator()", [param("const T&", "k")], block)
+                                           .const
+                                           .noexcept).specialized)
 
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "namespace std"
@@ -158,7 +158,7 @@ class FullFeatureValidationTest < Minitest::Test
                                      expr_stmt(call(id("glCompileShader"), [id("shader_")]))
                                    ))
                        .with_initializer_list("shader_(0)")
-                       .explicit(),
+                       .explicit,
 
                      # Destructor
                      function_decl("", "~OpenGLShader", [],
@@ -167,12 +167,12 @@ class FullFeatureValidationTest < Minitest::Test
                                    )),
 
                      # Deleted copy constructor
-                     function_decl("", "OpenGLShader", [param("const OpenGLShader&", "other")], block())
-                       .deleted(),
+                     function_decl("", "OpenGLShader", [param("const OpenGLShader&", "other")], block)
+                       .deleted,
 
                      # Deleted copy assignment
-                     function_decl("OpenGLShader&", "operator=", [param("const OpenGLShader&", "other")], block())
-                       .deleted(),
+                     function_decl("OpenGLShader&", "operator=", [param("const OpenGLShader&", "other")], block)
+                       .deleted,
 
                      # Move constructor
                      function_decl("", "OpenGLShader", [param("OpenGLShader&&", "other")],
@@ -180,7 +180,7 @@ class FullFeatureValidationTest < Minitest::Test
                                      expr_stmt(binary("=", id("shader_"), id("other.shader_"))),
                                      expr_stmt(binary("=", id("other.shader_"), int(0)))
                                    ))
-                       .noexcept(),
+                       .noexcept,
 
                      # Move assignment
                      function_decl("OpenGLShader&", "operator=", [param("OpenGLShader&&", "other")],
@@ -190,29 +190,29 @@ class FullFeatureValidationTest < Minitest::Test
                                      expr_stmt(binary("=", id("other.shader_"), int(0))),
                                      return_stmt(id("this"))
                                    ))
-                       .noexcept(),
+                       .noexcept,
 
                      # Inline getter methods
-                     function_decl("ShaderID", "handle", [], block())
+                     function_decl("ShaderID", "handle", [], block)
                        .inline_body(block(return_stmt(id("shader_"))))
-                       .const()
-                       .noexcept(),
+                       .const
+                       .noexcept,
 
-                     function_decl("bool", "is_valid", [], block())
+                     function_decl("bool", "is_valid", [], block)
                        .inline_body(block(return_stmt(binary("!=", id("shader_"), int(0)))))
-                       .const()
-                       .noexcept(),
+                       .const
+                       .noexcept,
 
                      # Static factory method
-                     function_decl("OpenGLShader", "create_vertex", [param("const std::string&", "source")], block())
+                     function_decl("OpenGLShader", "create_vertex", [param("const std::string&", "source")], block)
                        .inline_body(block(return_stmt(call(id("OpenGLShader"), [id("Type::Vertex"), id("source")]))))
-                       .static()
-                       .constexpr(),
+                       .static
+                       .constexpr,
 
                      # Error handling method
-                     function_decl("std::optional<std::string>", "compile_error", [], block())
-                       .const()
-                       .nodiscard())
+                     function_decl("std::optional<std::string>", "compile_error", [], block)
+                       .const
+                       .nodiscard)
 
     cpp_code = ast.to_source
 

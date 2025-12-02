@@ -9,7 +9,7 @@ class TemplateDslTest < Minitest::Test
   def test_template_class_basic
     ast = template_class("Buffer", ["typename T"],
                          access_spec("public"),
-                         function_decl("void", "data", [param("T", "value")], block()))
+                         function_decl("void", "data", [param("T", "value")], block))
 
     cpp_code = ast.to_source
     expected = "template <typename T>\nclass Buffer {\npublic:\nvoid data(T value) {\n}\n};"
@@ -31,7 +31,7 @@ class TemplateDslTest < Minitest::Test
   def test_template_class_with_enum
     ast = template_class("Buffer", ["typename T"],
                          access_spec("public"),
-                         function_decl("", "Buffer", [param("Type", "type")], block()).explicit())
+                         function_decl("", "Buffer", [param("Type", "type")], block).explicit)
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <typename T>"
@@ -62,7 +62,7 @@ class TemplateDslTest < Minitest::Test
     # Generate C++ code
     ast = template_class("Buffer", ["typename T"],
                          access_spec("public"),
-                         function_decl("void", "data", [param("T", "value")], block()))
+                         function_decl("void", "data", [param("T", "value")], block))
 
     cpp_code = ast.to_source
 

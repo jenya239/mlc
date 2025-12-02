@@ -7,7 +7,7 @@ class ModifiersTest < Minitest::Test
   include CppAst::Builder::DSL
 
   def test_deleted_function
-    ast = function_decl("", "Shader", [param(borrowed("Shader"), "other")], nil).deleted()
+    ast = function_decl("", "Shader", [param(borrowed("Shader"), "other")], nil).deleted
 
     cpp_code = ast.to_source
     expected = "Shader(const Shader& other) = delete;"
@@ -16,7 +16,7 @@ class ModifiersTest < Minitest::Test
   end
 
   def test_defaulted_function
-    ast = function_decl("", "Vec2", [], nil).defaulted()
+    ast = function_decl("", "Vec2", [], nil).defaulted
 
     cpp_code = ast.to_source
     expected = "Vec2() = default;"
@@ -25,28 +25,28 @@ class ModifiersTest < Minitest::Test
   end
 
   def test_noexcept_function
-    ast = function_decl("", "Shader", [param("Shader&&", "other")], block()).noexcept()
+    ast = function_decl("", "Shader", [param("Shader&&", "other")], block).noexcept
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "Shader(Shader&& other) noexcept"
   end
 
   def test_explicit_constructor
-    ast = function_decl("", "Buffer", [param("Type", "type")], block()).explicit()
+    ast = function_decl("", "Buffer", [param("Type", "type")], block).explicit
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "explicit Buffer(Type type)"
   end
 
   def test_constexpr_constructor
-    ast = function_decl("", "Vec2", [param("float", "x"), param("float", "y")], block()).constexpr()
+    ast = function_decl("", "Vec2", [param("float", "x"), param("float", "y")], block).constexpr
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "constexpr Vec2(float x, float y)"
   end
 
   def test_const_method
-    ast = function_decl("GLuint", "handle", [], block(return_stmt(id("shader_")))).const()
+    ast = function_decl("GLuint", "handle", [], block(return_stmt(id("shader_")))).const
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "GLuint handle() const"
@@ -54,31 +54,31 @@ class ModifiersTest < Minitest::Test
 
   def test_combined_modifiers
     ast = function_decl("GLuint", "handle", [], block(return_stmt(id("shader_"))))
-          .const()
-          .noexcept()
+          .const
+          .noexcept
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "GLuint handle() const noexcept"
   end
 
   def test_explicit_constexpr_combined
-    ast = function_decl("", "Vec2", [param("float", "x"), param("float", "y")], block())
-          .explicit()
-          .constexpr()
+    ast = function_decl("", "Vec2", [param("float", "x"), param("float", "y")], block)
+          .explicit
+          .constexpr
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "constexpr explicit Vec2(float x, float y)"
   end
 
   def test_inline_method
-    ast = function_decl("GLuint", "handle", [], block(return_stmt(id("shader_")))).inline()
+    ast = function_decl("GLuint", "handle", [], block(return_stmt(id("shader_")))).inline
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline GLuint handle()"
   end
 
   def test_nodiscard_attribute
-    ast = function_decl("bool", "compile", [], block()).nodiscard()
+    ast = function_decl("bool", "compile", [], block).nodiscard
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "[[nodiscard]] bool compile()"
@@ -86,9 +86,9 @@ class ModifiersTest < Minitest::Test
 
   def test_all_modifiers_combined
     ast = function_decl("GLuint", "handle", [], block(return_stmt(id("shader_"))))
-          .inline()
-          .const()
-          .noexcept()
+          .inline
+          .const
+          .noexcept
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline GLuint handle() const noexcept"
@@ -96,7 +96,7 @@ class ModifiersTest < Minitest::Test
 
   def test_roundtrip_deleted_function
     # Generate C++ code
-    ast = function_decl("", "Shader", [param(borrowed("Shader"), "other")], nil).deleted()
+    ast = function_decl("", "Shader", [param(borrowed("Shader"), "other")], nil).deleted
     cpp_code = ast.to_source
 
     # Basic validation - should contain expected elements
@@ -106,7 +106,7 @@ class ModifiersTest < Minitest::Test
 
   def test_roundtrip_noexcept_function
     # Generate C++ code
-    ast = function_decl("", "Shader", [param("Shader&&", "other")], block()).noexcept()
+    ast = function_decl("", "Shader", [param("Shader&&", "other")], block).noexcept
     cpp_code = ast.to_source
 
     # Basic validation - should contain expected elements
@@ -116,42 +116,42 @@ class ModifiersTest < Minitest::Test
 
   # Virtual methods tests - Phase 1
   def test_virtual_method
-    ast = function_decl("void", "on_render", [], block()).virtual()
+    ast = function_decl("void", "on_render", [], block).virtual
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "virtual void on_render()"
   end
 
   def test_override_method
-    ast = function_decl("void", "on_render", [], block()).override()
+    ast = function_decl("void", "on_render", [], block).override
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "void on_render() override"
   end
 
   def test_final_method
-    ast = function_decl("void", "on_render", [], block()).final()
+    ast = function_decl("void", "on_render", [], block).final
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "void on_render() final"
   end
 
   def test_pure_virtual_method
-    ast = function_decl("void", "on_render", [], nil).pure_virtual()
+    ast = function_decl("void", "on_render", [], nil).pure_virtual
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "virtual void on_render() = 0"
   end
 
   def test_virtual_override_combination
-    ast = function_decl("void", "on_render", [], block()).virtual().override()
+    ast = function_decl("void", "on_render", [], block).virtual.override
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "virtual void on_render() override"
   end
 
   def test_virtual_destructor
-    ast = function_decl("", "~DemoScene", [], block()).virtual()
+    ast = function_decl("", "~DemoScene", [], block).virtual
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "virtual ~DemoScene()"
@@ -159,35 +159,35 @@ class ModifiersTest < Minitest::Test
 
   # C++11 attributes tests - Phase 1
   def test_maybe_unused_attribute
-    ast = function_decl("void", "unused_function", [], block()).maybe_unused()
+    ast = function_decl("void", "unused_function", [], block).maybe_unused
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "[[maybe_unused]] void unused_function()"
   end
 
   def test_deprecated_attribute
-    ast = function_decl("void", "old_function", [], block()).deprecated()
+    ast = function_decl("void", "old_function", [], block).deprecated
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "[[deprecated]] void old_function()"
   end
 
   def test_deprecated_with_message
-    ast = function_decl("void", "old_function", [], block()).deprecated_with_message("Use new_function instead")
+    ast = function_decl("void", "old_function", [], block).deprecated_with_message("Use new_function instead")
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "[[deprecated(\"Use new_function instead\")]] void old_function()"
   end
 
   def test_custom_attribute
-    ast = function_decl("void", "test_function", [], block()).attribute("test")
+    ast = function_decl("void", "test_function", [], block).attribute("test")
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "[[test]] void test_function()"
   end
 
   def test_multiple_attributes
-    ast = function_decl("void", "test_function", [], block()).nodiscard().maybe_unused()
+    ast = function_decl("void", "test_function", [], block).nodiscard.maybe_unused
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "[[maybe_unused]] [[nodiscard]] void test_function()"

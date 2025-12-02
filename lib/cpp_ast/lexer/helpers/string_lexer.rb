@@ -6,7 +6,7 @@ module CppAst
       def scan_string_literal(line, column)
         lexeme = '"'.dup
 
-        return scan_raw_string_literal(line, column - 1) if @position > 0 && @source[@position - 2] == 'R'
+        return scan_raw_string_literal(line, column - 1) if @position.positive? && @source[@position - 2] == 'R'
 
         loop do
           break if at_end?

@@ -7,7 +7,7 @@ class AccessSpecifiersTest < Minitest::Test
 
   def test_public_section
     ast = public_section(
-      function_decl("void", "public_method", [], block()),
+      function_decl("void", "public_method", [], block),
       field_def("public_field", "int")
     )
 
@@ -20,7 +20,7 @@ class AccessSpecifiersTest < Minitest::Test
   def test_private_section
     ast = private_section(
       field_def("private_field", "int"),
-      function_decl("void", "private_method", [], block())
+      function_decl("void", "private_method", [], block)
     )
 
     cpp_code = ast.map(&:to_source).join("\n")
@@ -32,7 +32,7 @@ class AccessSpecifiersTest < Minitest::Test
   def test_protected_section
     ast = protected_section(
       field_def("protected_field", "int"),
-      function_decl("void", "protected_method", [], block())
+      function_decl("void", "protected_method", [], block)
     )
 
     cpp_code = ast.map(&:to_source).join("\n")
@@ -43,14 +43,14 @@ class AccessSpecifiersTest < Minitest::Test
 
   def test_class_with_access_specifiers
     public_members = public_section(
-      function_decl("", "TestClass", [], block())
-        .defaulted(),
-      function_decl("void", "public_method", [], block())
+      function_decl("", "TestClass", [], block)
+        .defaulted,
+      function_decl("void", "public_method", [], block)
     )
 
     private_members = private_section(
       field_def("private_field", "int", default: "0"),
-      function_decl("void", "private_method", [], block())
+      function_decl("void", "private_method", [], block)
     )
 
     ast = class_decl("TestClass", *public_members, *private_members)
@@ -67,21 +67,21 @@ class AccessSpecifiersTest < Minitest::Test
 
   def test_raii_class_with_access_specifiers
     public_members = public_section(
-      function_decl("", "RAIIClass", [], block())
-        .defaulted(),
-      function_decl("", "~RAIIClass", [], block()),
-      function_decl("", "RAIIClass", [param("const RAIIClass&", "other")], block())
-        .deleted(),
-      function_decl("RAIIClass&", "operator=", [param("const RAIIClass&", "other")], block())
-        .deleted(),
-      function_decl("", "RAIIClass", [param("RAIIClass&&", "other")], block())
-        .noexcept(),
-      function_decl("RAIIClass&", "operator=", [param("RAIIClass&&", "other")], block())
-        .noexcept(),
-      function_decl("bool", "is_valid", [], block())
+      function_decl("", "RAIIClass", [], block)
+        .defaulted,
+      function_decl("", "~RAIIClass", [], block),
+      function_decl("", "RAIIClass", [param("const RAIIClass&", "other")], block)
+        .deleted,
+      function_decl("RAIIClass&", "operator=", [param("const RAIIClass&", "other")], block)
+        .deleted,
+      function_decl("", "RAIIClass", [param("RAIIClass&&", "other")], block)
+        .noexcept,
+      function_decl("RAIIClass&", "operator=", [param("RAIIClass&&", "other")], block)
+        .noexcept,
+      function_decl("bool", "is_valid", [], block)
         .inline_body(block(return_stmt(binary("!=", id("handle_"), int(0)))))
-        .const()
-        .noexcept()
+        .const
+        .noexcept
     )
 
     private_members = private_section(

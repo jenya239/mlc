@@ -26,7 +26,7 @@ class ProductionFixesTest < Minitest::Test
   end
 
   def test_pragma_once
-    ast = pragma_once()
+    ast = pragma_once
     assert_equal "#pragma once", ast.to_source
   end
 
@@ -44,7 +44,7 @@ class ProductionFixesTest < Minitest::Test
 
   def test_complete_header_file
     ast = program(
-      pragma_once(),
+      pragma_once,
       include_directive("cstdint"),
       include_directive("vector"),
       namespace_decl("gtkgl::text",
@@ -52,7 +52,7 @@ class ProductionFixesTest < Minitest::Test
                      struct_decl("Vec2",
                                  field_def("x", "float", default: "0.0f"),
                                  field_def("y", "float", default: "0.0f"),
-                                 function_decl("", "Vec2", [], block()).defaulted()))
+                                 function_decl("", "Vec2", [], block).defaulted))
     )
 
     cpp_code = ast.to_source
@@ -67,10 +67,10 @@ class ProductionFixesTest < Minitest::Test
     ast = struct_decl("Vec2",
                       field_def("x", "float", default: "0.0f"),
                       field_def("y", "float", default: "0.0f"),
-                      function_decl("", "Vec2", [], block()).defaulted(),
-                      function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
+                      function_decl("", "Vec2", [], block).defaulted,
+                      function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block)
                         .with_initializer_list("x(x_), y(y_)")
-                        .constexpr())
+                        .constexpr)
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "struct Vec2"
@@ -95,9 +95,9 @@ class ProductionFixesTest < Minitest::Test
 
   def test_template_specialization
     ast = template_class("hash", ["typename T"],
-                         function_decl("size_t", "operator()", [param("const T&", "k")], block())
-                           .const()
-                           .noexcept()).specialized()
+                         function_decl("size_t", "operator()", [param("const T&", "k")], block)
+                           .const
+                           .noexcept).specialized
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
@@ -108,7 +108,7 @@ class ProductionFixesTest < Minitest::Test
   def test_complex_header_structure
     # Test realistic header file structure
     ast = program(
-      pragma_once(),
+      pragma_once,
       include_directive("cstdint"),
       include_directive("vector"),
       include_directive("optional"),
@@ -119,13 +119,13 @@ class ProductionFixesTest < Minitest::Test
                      struct_decl("Vec2",
                                  field_def("x", "float", default: "0.0f"),
                                  field_def("y", "float", default: "0.0f"),
-                                 function_decl("", "Vec2", [], block()).defaulted(),
-                                 function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
+                                 function_decl("", "Vec2", [], block).defaulted,
+                                 function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block)
                                    .with_initializer_list("x(x_), y(y_)")
-                                   .constexpr(),
-                                 function_decl("Vec2", "operator+", [param("const Vec2&", "other")], block())
+                                   .constexpr,
+                                 function_decl("Vec2", "operator+", [param("const Vec2&", "other")], block)
                                    .inline_body(block(return_stmt(id("Vec2{x + other.x, y + other.y}"))))
-                                   .const()),
+                                   .const),
 
                      enum_class("AtlasFormat", [
                                   ["A8"],
@@ -136,15 +136,15 @@ class ProductionFixesTest < Minitest::Test
                      struct_decl("AtlasSlot",
                                  field_def("page_id", "uint32_t", default: "0"),
                                  field_def("texture_id", "uint32_t", default: "0"),
-                                 function_decl("bool", "is_valid", [], block())
+                                 function_decl("bool", "is_valid", [], block)
                                    .inline_body(block(return_stmt(binary("!=", id("texture_id"), int(0)))))
-                                   .const())),
+                                   .const)),
 
       namespace_decl("std",
                      template_class("hash", ["typename T"],
-                                    function_decl("size_t", "operator()", [param("const T&", "k")], block())
-                                      .const()
-                                      .noexcept()).specialized())
+                                    function_decl("size_t", "operator()", [param("const T&", "k")], block)
+                                      .const
+                                      .noexcept).specialized)
     )
 
     cpp_code = ast.to_source

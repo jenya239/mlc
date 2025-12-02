@@ -110,8 +110,8 @@ class PerformanceTest < Minitest::Test
 
     # Test stats
     stats = optimized_dsl.stats
-    assert stats[:compilation][:total_compilations] > 0
-    assert stats[:compilation][:average_time] > 0
+    assert (stats[:compilation][:total_compilations]).positive?
+    assert (stats[:compilation][:average_time]).positive?
   end
 
   def test_optimized_dsl_caching
@@ -126,7 +126,7 @@ class PerformanceTest < Minitest::Test
     assert_equal result1, result2
 
     stats = optimized_dsl.stats
-    assert stats[:cache][:hit_count] > 0
+    assert (stats[:cache][:hit_count]).positive?
   end
 
   def test_optimized_dsl_clear_cache
@@ -154,7 +154,7 @@ class PerformanceTest < Minitest::Test
 
     # Test memory usage
     memory_usage = cache.memory_usage
-    assert memory_usage > 0
+    assert memory_usage.positive?
 
     # Clear cache
     cache.clear
@@ -183,6 +183,6 @@ class PerformanceTest < Minitest::Test
     assert_equal 3, stats[:compilation][:cached_compilations]
     assert_equal 3, stats[:cache][:hit_count]
     assert_equal 5, stats[:cache][:miss_count]
-    assert stats[:compilation][:average_time] > 0
+    assert (stats[:compilation][:average_time]).positive?
   end
 end

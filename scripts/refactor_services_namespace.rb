@@ -88,7 +88,7 @@ class ServicesNamespaceRefactor
         i += 1
       else
         # Regular line - add indent if needed
-        result << if indent_added > 0 && !line.strip.empty? && line !~ /^#/
+        result << if indent_added.positive? && !line.strip.empty? && line !~ /^#/
           (" " * indent_added + line)
         else
           line
@@ -129,7 +129,7 @@ class ServicesNamespaceRefactor
         i += 1
       else
         # Regular line - add indent if needed
-        result << if indent_added > 0 && !line.strip.empty? && line !~ /^#/
+        result << if indent_added.positive? && !line.strip.empty? && line !~ /^#/
           (" " * indent_added + line)
         else
           line

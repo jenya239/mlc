@@ -45,7 +45,7 @@ module MLC
     def parse(source, filename: nil)
       parser = MLC::Source::Parser::Parser.new(source, filename: filename)
       parser.parse
-    rescue => e
+    rescue StandardError => e
       raise MLC::ParseError, "Parse error: #{e.message}"
     end
 
@@ -68,7 +68,7 @@ module MLC
       [core_ir, transformer.type_registry, transformer.function_registry]
     rescue MLC::CompileError
       raise
-    rescue => e
+    rescue StandardError => e
       origin = e.respond_to?(:origin) ? e.origin : nil
       raise MLC::CompileError.new("Transform error: #{e.message}", origin: origin)
     end
@@ -92,7 +92,7 @@ module MLC
       lowerer.lower(core_ir)
     rescue MLC::CompileError
       raise
-    rescue => e
+    rescue StandardError => e
       origin = e.respond_to?(:origin) ? e.origin : nil
       raise MLC::CompileError.new("Lowering error: #{e.message}", origin: origin)
     end
@@ -139,7 +139,7 @@ module MLC
       cpp_result.merge(metadata: metadata)
     rescue MLC::CompileError
       raise
-    rescue => e
+    rescue StandardError => e
       origin = e.respond_to?(:origin) ? e.origin : nil
       message = "Header generation error: #{e.message}\n#{e.backtrace.join("\n")}"
       raise MLC::CompileError.new(message, origin: origin)

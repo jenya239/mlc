@@ -210,7 +210,7 @@ module MLC
               depth -= 1
               current << ch
             when ','
-              if depth == 0
+              if depth.zero?
                 # Top-level comma - split here
                 args << current.join.strip
                 current = []

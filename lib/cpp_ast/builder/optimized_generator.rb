@@ -324,7 +324,7 @@ module CppAst
       end
 
       def unindent
-        @indent_level -= 1 if @indent_level > 0
+        @indent_level -= 1 if @indent_level.positive?
         self
       end
 

@@ -51,7 +51,7 @@ module CppAst
           template_depth += 1 if current_token.kind == :less
           template_depth -= 1 if current_token.kind == :greater
 
-          break if current_token.kind == :comma && template_depth == 0
+          break if current_token.kind == :comma && template_depth.zero?
 
           type << current_token.lexeme
           trivia = current_token.trailing_trivia
@@ -64,7 +64,7 @@ module CppAst
           next if was_colon_colon && (current_token.kind == :identifier ||
                                       current_token.kind.to_s.start_with?("keyword_"))
 
-          next if template_depth > 0 && [:comma, :greater, :lparen, :rparen].include?(current_token.kind)
+          next if template_depth.positive? && [:comma, :greater, :lparen, :rparen].include?(current_token.kind)
 
           if current_token.kind == :identifier
             saved_pos = @position
@@ -175,7 +175,7 @@ module CppAst
           depth = 1
           advance_raw
 
-          while depth > 0 && !at_end?
+          while depth.positive? && !at_end?
             if current_token.kind == :less
               depth += 1
             elsif current_token.kind == :greater

@@ -28,7 +28,7 @@ class WhitespacePolicyTest < Minitest::Test
   end
 
   def test_function_with_proper_spacing
-    ast = function_decl("void", "test", [], block())
+    ast = function_decl("void", "test", [], block)
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "void test() {"
@@ -36,10 +36,10 @@ class WhitespacePolicyTest < Minitest::Test
   end
 
   def test_modifier_order
-    ast = function_decl("void", "test", [], block())
-          .static()
-          .inline()
-          .constexpr()
+    ast = function_decl("void", "test", [], block)
+          .static
+          .inline
+          .constexpr
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "static constexpr inline void test()"
@@ -47,7 +47,7 @@ class WhitespacePolicyTest < Minitest::Test
 
   def test_pure_virtual_method
     ast = function_decl("void", "pure_virtual", [], nil)
-          .pure_virtual()
+          .pure_virtual
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "virtual void pure_virtual() = 0"
@@ -74,7 +74,7 @@ class WhitespacePolicyTest < Minitest::Test
     ast = function_decl("void", "test", [
                           param("int", "x"),
                           param("float", "y")
-                        ], block())
+                        ], block)
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "void test(int x, float y) {"
@@ -82,9 +82,9 @@ class WhitespacePolicyTest < Minitest::Test
   end
 
   def test_inline_method_spacing
-    ast = function_decl("int", "get_value", [], block())
+    ast = function_decl("int", "get_value", [], block)
           .inline_body(block(return_stmt(id("value"))))
-          .const()
+          .const
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline int get_value() const {"
@@ -92,8 +92,8 @@ class WhitespacePolicyTest < Minitest::Test
   end
 
   def test_override_spacing
-    ast = function_decl("void", "method", [], block())
-          .override()
+    ast = function_decl("void", "method", [], block)
+          .override
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "void method() override"
@@ -101,9 +101,9 @@ class WhitespacePolicyTest < Minitest::Test
   end
 
   def test_attributes_order
-    ast = function_decl("void", "test", [], block())
-          .nodiscard()
-          .maybe_unused()
+    ast = function_decl("void", "test", [], block)
+          .nodiscard
+          .maybe_unused
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "[[maybe_unused]] [[nodiscard]] void test()"

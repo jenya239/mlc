@@ -65,7 +65,7 @@ class Cpp20FeaturesTest < Minitest::Test
     co_return_stmt = co_return(int(100))
     assert_equal "co_return 100;", co_return_stmt.to_source
 
-    co_return_empty = co_return()
+    co_return_empty = co_return
     assert_equal "co_return;", co_return_empty.to_source
   end
 

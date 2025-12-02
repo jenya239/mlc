@@ -107,7 +107,7 @@ module MLC
               module_info.functions.each do |func_name, metadata|
                 @function_map[func_name] = metadata.qualified_name
               end
-            rescue => e
+            rescue StandardError => e
               # Log error but continue scanning other modules
               warn "Failed to scan #{file_path}: #{e.message}"
             end

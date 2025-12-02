@@ -60,7 +60,7 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
 
     assert_not_nil program_ast
     assert_kind_of CppAst::Builder::DSLv2Improved::ProgramBuilder, program_ast
-    assert program_ast.statements.size > 0
+    assert program_ast.statements.size.positive?
   end
 
   def test_namespace_generation
@@ -304,7 +304,7 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
 
     assert_not_nil modern_ast
     assert_kind_of CppAst::Builder::DSLv2Improved::ProgramBuilder, modern_ast
-    assert modern_ast.statements.size > 0
+    assert modern_ast.statements.size.positive?
   end
 
   def test_mlc_syntax_integration
@@ -353,7 +353,7 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
 
     assert_not_nil mlc_ast
     assert_kind_of CppAst::Builder::DSLv2Improved::ProgramBuilder, mlc_ast
-    assert mlc_ast.statements.size > 0
+    assert mlc_ast.statements.size.positive?
   end
 
   def test_error_handling_integration

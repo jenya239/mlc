@@ -85,7 +85,7 @@ module MLC
                 # Backward compatibility: pass only payload by default
                 handler.call(final_structured ? event_obj : payload_hash)
               end
-            rescue => e
+            rescue StandardError => e
               # Don't let handler errors break the event bus
               warn "EventBus handler error for #{event}: #{e.message}"
             end

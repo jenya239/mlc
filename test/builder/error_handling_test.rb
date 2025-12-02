@@ -7,9 +7,9 @@ class ErrorHandlingTest < Minitest::Test
 
   def test_invalid_modifier_combinations
     # Test that last modifier wins (DSL allows chaining)
-    ast = function_decl("void", "test", [], block())
-          .deleted()
-          .defaulted() # Last one wins
+    ast = function_decl("void", "test", [], block)
+          .deleted
+          .defaulted # Last one wins
     cpp_code = ast.to_source
     assert_includes cpp_code, "= default" # defaulted wins
   end
@@ -17,7 +17,7 @@ class ErrorHandlingTest < Minitest::Test
   def test_empty_template_parameters
     # Empty template parameters should be handled gracefully
     ast = template_class("Empty", [],
-                         function_decl("void", "method", [], block()))
+                         function_decl("void", "method", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
     assert_includes cpp_code, "class Empty"
@@ -26,14 +26,14 @@ class ErrorHandlingTest < Minitest::Test
   def test_invalid_function_parameters
     # Test error handling for invalid parameters
     assert_raises(ArgumentError) do
-      function_decl("void", "test", nil, block())
+      function_decl("void", "test", nil, block)
     end
   end
 
   def test_invalid_class_name
     # Empty class name should be handled
     ast = class_decl("",
-                     function_decl("void", "method", [], block()))
+                     function_decl("void", "method", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "class "
     assert_includes cpp_code, "void method()"
@@ -48,7 +48,7 @@ class ErrorHandlingTest < Minitest::Test
 
   def test_invalid_initializer_list
     # Test handling of invalid initializer list
-    ast = function_decl("", "Test", [param("int", "value")], block())
+    ast = function_decl("", "Test", [param("int", "value")], block)
           .with_initializer_list("")
     cpp_code = ast.to_source
     assert_includes cpp_code, "Test(int value) :"
@@ -71,14 +71,14 @@ class ErrorHandlingTest < Minitest::Test
   def test_invalid_template_specialization
     # Test handling of invalid template specialization
     ast = template_class("Test", ["typename T"],
-                         function_decl("void", "method", [], block())).specialized()
+                         function_decl("void", "method", [], block)).specialized
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
   end
 
   def test_invalid_inline_body
     # Test handling of invalid inline body
-    ast = function_decl("void", "test", [], block())
+    ast = function_decl("void", "test", [], block)
           .inline_body(nil)
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline void test()"
@@ -86,18 +86,18 @@ class ErrorHandlingTest < Minitest::Test
 
   def test_invalid_static_constexpr_combination
     # Test that static and constexpr can be combined
-    ast = function_decl("int", "test", [], block())
-          .static()
-          .constexpr()
+    ast = function_decl("int", "test", [], block)
+          .static
+          .constexpr
     cpp_code = ast.to_source
     assert_includes cpp_code, "static constexpr int test()"
   end
 
   def test_invalid_noexcept_with_deleted
     # Test that noexcept cannot be used with deleted functions
-    ast = function_decl("void", "test", [], block())
-          .deleted()
-          .noexcept()
+    ast = function_decl("void", "test", [], block)
+          .deleted
+          .noexcept
     cpp_code = ast.to_source
     assert_includes cpp_code, "void test() = delete"
     # noexcept should be ignored for deleted functions
@@ -105,8 +105,8 @@ class ErrorHandlingTest < Minitest::Test
 
   def test_invalid_initializer_list_with_deleted
     # Test that initializer list cannot be used with deleted functions
-    ast = function_decl("", "Test", [param("int", "value")], block())
-          .deleted()
+    ast = function_decl("", "Test", [param("int", "value")], block)
+          .deleted
           .with_initializer_list("member(value)")
     cpp_code = ast.to_source
     assert_includes cpp_code, "Test(int value) = delete"
@@ -116,7 +116,7 @@ class ErrorHandlingTest < Minitest::Test
   def test_invalid_template_with_invalid_parameters
     # Test handling of invalid template parameters
     ast = template_class("Test", [nil, ""],
-                         function_decl("void", "method", [], block()))
+                         function_decl("void", "method", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <, >"
   end
@@ -131,7 +131,7 @@ class ErrorHandlingTest < Minitest::Test
   def test_invalid_namespace_declaration
     # Test handling of invalid namespace
     ast = namespace_decl("",
-                         function_decl("void", "test", [], block()))
+                         function_decl("void", "test", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "namespace "
   end
@@ -140,14 +140,14 @@ class ErrorHandlingTest < Minitest::Test
     # Test that the DSL can recover from errors and continue
     begin
       ast = class_decl("TestClass",
-                       function_decl("void", "valid_method", [], block()),
-                       function_decl("void", "invalid_method", nil, block()), # This should cause an error
-                       function_decl("void", "another_valid_method", [], block()))
+                       function_decl("void", "valid_method", [], block),
+                       function_decl("void", "invalid_method", nil, block), # This should cause an error
+                       function_decl("void", "another_valid_method", [], block))
       # If we get here, error recovery worked
       cpp_code = ast.to_source
       assert_includes cpp_code, "void valid_method()"
       assert_includes cpp_code, "void another_valid_method()"
-    rescue => e
+    rescue StandardError => e
       # Error recovery failed, which is also acceptable
       assert e.is_a?(ArgumentError), "Should raise ArgumentError for invalid parameters"
     end

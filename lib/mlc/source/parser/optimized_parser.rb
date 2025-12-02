@@ -116,7 +116,7 @@ module MLC
 
         # Clear cache when position changes significantly
         def clear_cache_if_needed
-          return unless @pos > 0 && @pos % 100 == 0
+          return unless @pos.positive? && (@pos % 100).zero?
             @memo.clear
             @expression_cache.clear
           

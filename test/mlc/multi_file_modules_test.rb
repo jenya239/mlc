@@ -246,8 +246,8 @@ class MLCMultiFileModulesTest < Minitest::Test
     # Verify files exist and have content
     assert File.exist?(hpp_file), "Header file should be created"
     assert File.exist?(cpp_file), "Implementation file should be created"
-    assert File.size(hpp_file) > 0, "Header should have content"
-    assert File.size(cpp_file) > 0, "Implementation should have content"
+    assert File.size(hpp_file).positive?, "Header should have content"
+    assert File.size(cpp_file).positive?, "Implementation should have content"
 
     # Verify content
     hpp_content = File.read(hpp_file)

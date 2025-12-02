@@ -58,7 +58,7 @@ class UsingAliasesTest < Minitest::Test
     # Test that using aliases can be used as class members
     ast = class_decl("MyClass",
                      using_alias("Index", "int"),
-                     function_decl("void", "method", [], block()))
+                     function_decl("void", "method", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "using Index = int;"
     assert_includes cpp_code, "void method"

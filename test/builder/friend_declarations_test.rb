@@ -37,7 +37,7 @@ class FriendDeclarationsTest < Minitest::Test
     # Test friend declaration as class member
     ast = class_decl("MyClass",
                      friend_decl("struct", "hash<MyClass>"),
-                     function_decl("void", "method", [], block()))
+                     function_decl("void", "method", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "friend struct hash<MyClass>;"
     assert_includes cpp_code, "void method"
@@ -47,7 +47,7 @@ class FriendDeclarationsTest < Minitest::Test
     ast = class_decl("MyClass",
                      friend_decl("class", "MyFriend"),
                      friend_decl("struct", "hash<MyClass>"),
-                     function_decl("void", "method", [], block()))
+                     function_decl("void", "method", [], block))
     cpp_code = ast.to_source
     assert_includes cpp_code, "friend class MyFriend;"
     assert_includes cpp_code, "friend struct hash<MyClass>;"

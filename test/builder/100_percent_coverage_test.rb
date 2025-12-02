@@ -7,10 +7,10 @@ class Coverage100PercentTest < Minitest::Test
 
   def test_inline_methods_support
     # Test inline methods in classes
-    ast = function_decl("GLuint", "handle", [], block())
+    ast = function_decl("GLuint", "handle", [], block)
           .inline_body(block(return_stmt(id("shader_"))))
-          .const()
-          .noexcept()
+          .const
+          .noexcept
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline GLuint handle"
     assert_includes cpp_code, "const noexcept"
@@ -26,19 +26,19 @@ class Coverage100PercentTest < Minitest::Test
 
   def test_static_constexpr_support
     # Test static constexpr methods
-    ast = function_decl("Color", "white", [], block())
+    ast = function_decl("Color", "white", [], block)
           .inline_body(block(return_stmt(binary("=", id("r"), float(1.0)))))
-          .static()
-          .constexpr()
+          .static
+          .constexpr
     cpp_code = ast.to_source
     assert_includes cpp_code, "static constexpr inline Color white"
   end
 
   def test_initializer_lists_support
     # Test constructor initializer lists
-    ast = function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
+    ast = function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block)
           .with_initializer_list("x(x_), y(y_)")
-          .constexpr()
+          .constexpr
     cpp_code = ast.to_source
     assert_includes cpp_code, "constexpr"
     assert_includes cpp_code, ": x(x_), y(y_)"
@@ -54,9 +54,9 @@ class Coverage100PercentTest < Minitest::Test
   def test_template_specialization_support
     # Test template specialization
     ast = template_class("hash", ["typename T"],
-                         function_decl("size_t", "operator()", [param("const T&", "k")], block())
-                           .const()
-                           .noexcept()).specialized()
+                         function_decl("size_t", "operator()", [param("const T&", "k")], block)
+                           .const
+                           .noexcept).specialized
     cpp_code = ast.to_source
     assert_includes cpp_code, "template"
     assert_includes cpp_code, "size_t operator()"
@@ -68,14 +68,14 @@ class Coverage100PercentTest < Minitest::Test
                      using_alias("Index", "int"),
                      friend_decl("struct", "hash<MyClass>"),
                      enum_class("State", [["INIT"], ["READY", "1"], ["ERROR", "2"]]),
-                     function_decl("", "MyClass", [param("Index", "index")], block())
+                     function_decl("", "MyClass", [param("Index", "index")], block)
                        .with_initializer_list("index_(index)")
-                       .explicit(),
-                     function_decl("Index", "get_index", [], block())
+                       .explicit,
+                     function_decl("Index", "get_index", [], block)
                        .inline_body(block(return_stmt(id("index_"))))
-                       .const(),
-                     function_decl("", "MyClass", [param("const MyClass&", "other")], block())
-                       .deleted())
+                       .const,
+                     function_decl("", "MyClass", [param("const MyClass&", "other")], block)
+                       .deleted)
     cpp_code = ast.to_source
 
     # Check all features are present

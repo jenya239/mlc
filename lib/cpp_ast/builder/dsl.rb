@@ -834,7 +834,7 @@ module CppAst
 
       # C++20 Coroutines - Phase 4
       def coroutine_function(return_type, name, parameters = [], body = nil)
-        function_decl(return_type, name, parameters, body).coroutine()
+        function_decl(return_type, name, parameters, body).coroutine
       end
 
       def co_await(expression)

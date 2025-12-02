@@ -62,7 +62,7 @@ class EnhancedErrorHandlingTest < Minitest::Test
       assert result.declarations.any? { |decl| decl.name == "working" }
     rescue MLC::Source::Parser::MultipleErrors => e
       # Should have errors but still parse some declarations
-      assert e.errors.length > 0
+      assert e.errors.length.positive?
     end
   end
 
@@ -91,7 +91,7 @@ class EnhancedErrorHandlingTest < Minitest::Test
     # This should compile but we can test the error handling framework
     begin
       MLC.parse(source)
-    rescue
+    rescue StandardError
       # Test that we can create enhanced type errors
       error = MLC::MLCTypeError.new(
         "Type mismatch: expected i32, got string",

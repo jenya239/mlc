@@ -246,7 +246,7 @@ module MLC
               return unless node.respond_to?(:each)
 
               node.each { |child| visit(child, bound_vars, free_vars) }
-            rescue
+            rescue StandardError
               # Ignore errors for nodes that don't support iteration
             end
 
