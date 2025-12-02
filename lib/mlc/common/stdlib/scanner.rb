@@ -18,7 +18,7 @@ end
 module MLC
   module Common
     module Stdlib
-    # Metadata for a stdlib function
+      # Metadata for a stdlib function
       class FunctionMetadata
         attr_reader :name, :qualified_name, :extern, :params, :return_type, :ast_node
 
@@ -36,7 +36,7 @@ module MLC
         end
       end
 
-  # Metadata for a stdlib type
+      # Metadata for a stdlib type
       class TypeMetadata
         attr_reader :name, :qualified_name, :opaque, :fields, :variants, :ast_node
 
@@ -59,7 +59,7 @@ module MLC
         end
       end
 
-  # Information about a stdlib module
+      # Information about a stdlib module
       class ModuleInfo
         attr_reader :name, :namespace, :file_path, :functions, :types
 
@@ -72,8 +72,8 @@ module MLC
         end
       end
 
-  # Automatically scans stdlib directory and extracts module metadata
-  # Eliminates need for manual STDLIB_MODULES and STDLIB_FUNCTIONS registration
+      # Automatically scans stdlib directory and extracts module metadata
+      # Eliminates need for manual STDLIB_MODULES and STDLIB_FUNCTIONS registration
       class Scanner
         def initialize(stdlib_dir = nil)
           # New location: lib/mlc/common/stdlib
@@ -159,7 +159,7 @@ module MLC
           module_name = if ast.respond_to?(:module_decl) && ast.module_decl
                           ast.module_decl.name
                         else
-            # Fallback: use filename (capitalize first letter)
+                          # Fallback: use filename (capitalize first letter)
                           File.basename(file_path, '.mlc').capitalize
                         end
 

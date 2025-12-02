@@ -35,52 +35,52 @@ module MLC
           @name = name || self.class.name.split('::').last
         end
 
-      # Main entry point for the pass
-      # @param context [Hash] Shared context with IR, type_registry, etc.
-      # @return [void]
+        # Main entry point for the pass
+        # @param context [Hash] Shared context with IR, type_registry, etc.
+        # @return [void]
         def run(context)
           raise NotImplementedError, "#{self.class} must implement #run"
         end
 
-      # IR level this pass expects as input
-      # @return [Symbol] :ast, :semantic_ir, :mid_ir, :low_ir, or :target
+        # IR level this pass expects as input
+        # @return [Symbol] :ast, :semantic_ir, :mid_ir, :low_ir, or :target
         def input_level
           :semantic_ir # default: operates on high-level IR (SemanticIR)
         end
 
-      # IR level this pass produces as output
-      # @return [Symbol] :ast, :semantic_ir, :mid_ir, :low_ir, or :target
+        # IR level this pass produces as output
+        # @return [Symbol] :ast, :semantic_ir, :mid_ir, :low_ir, or :target
         def output_level
           input_level # default: same as input (analysis pass)
         end
 
-      # Context keys required by this pass
-      # @return [Array<Symbol>]
+        # Context keys required by this pass
+        # @return [Array<Symbol>]
         def required_keys
           []
         end
 
-      # Context keys produced/modified by this pass
-      # @return [Array<Symbol>]
+        # Context keys produced/modified by this pass
+        # @return [Array<Symbol>]
         def produced_keys
           []
         end
 
-      # Is this a transformation pass (changes IR level)?
-      # @return [Boolean]
+        # Is this a transformation pass (changes IR level)?
+        # @return [Boolean]
         def transformation?
           input_level != output_level
         end
 
-      # Validate that required context keys are present
-      # @param context [Hash]
-      # @raise [ArgumentError] if required keys are missing
+        # Validate that required context keys are present
+        # @param context [Hash]
+        # @raise [ArgumentError] if required keys are missing
         def validate_context!(context)
           missing = required_keys - context.keys
           raise ArgumentError, "Pass #{name} missing required context keys: #{missing.inspect}" unless missing.empty?
         end
 
-      # Convert pass to a callable for PassManager
+        # Convert pass to a callable for PassManager
         def to_callable
           method(:run)
         end

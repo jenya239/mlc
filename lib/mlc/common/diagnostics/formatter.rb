@@ -23,13 +23,13 @@ module MLC
           @context_lines = context_lines
         end
 
-      # Format a diagnostic message with source location and context
-      #
-      # @param severity [Symbol] :error, :warning, :info, or :note
-      # @param message [String] The diagnostic message
-      # @param origin [SourceOrigin, nil] Source location information
-      # @param source [String, nil] Full source code for context display
-      # @return [String] Formatted diagnostic message
+        # Format a diagnostic message with source location and context
+        #
+        # @param severity [Symbol] :error, :warning, :info, or :note
+        # @param message [String] The diagnostic message
+        # @param origin [SourceOrigin, nil] Source location information
+        # @param source [String, nil] Full source code for context display
+        # @return [String] Formatted diagnostic message
         def format(severity:, message:, origin: nil, source: nil)
           parts = []
 
@@ -55,7 +55,7 @@ module MLC
           parts.join("\n")
         end
 
-      # Format source context with multiple lines around the error
+        # Format source context with multiple lines around the error
         def format_source_context(origin, source)
           return nil unless origin.line
 
@@ -98,7 +98,7 @@ module MLC
           output.join("\n")
         end
 
-      # Format single-line context (fallback when full source not available)
+        # Format single-line context (fallback when full source not available)
         def format_single_line_context(origin)
           return nil unless origin.line_text
 
@@ -153,7 +153,7 @@ module MLC
           " " * start_col + "^" * width
         end
 
-      # Convenience class methods for common use cases
+        # Convenience class methods for common use cases
         class << self
           def format_error(message, origin: nil, source: nil, color: :auto)
             new(color: color).format(

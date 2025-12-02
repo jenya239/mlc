@@ -171,8 +171,8 @@ module MLC
           left
         end
 
-      # Range expressions: a..b (inclusive) or a...b (exclusive)
-      # Lower precedence than shift, higher than comparison
+        # Range expressions: a..b (inclusive) or a...b (exclusive)
+        # Lower precedence than shift, higher than comparison
         def parse_range
           left = parse_shift
 
@@ -191,7 +191,7 @@ module MLC
           end
         end
 
-      # Shift operators: a << b, a >> b (between addition and comparison)
+        # Shift operators: a << b, a >> b (between addition and comparison)
         def parse_shift
           left = parse_addition
 
@@ -323,7 +323,7 @@ module MLC
           end
         end
 
-      # Parse expression inside a block context (don't consume END for if)
+        # Parse expression inside a block context (don't consume END for if)
         def parse_expression_in_block
           if current.type == :MATCH
             parse_match_expression
@@ -334,7 +334,7 @@ module MLC
           end
         end
 
-      # Parse let expression inside a block context
+        # Parse let expression inside a block context
         def parse_let_expression_in_block
           return parse_if_expression_in_block unless current.type == :LET
 
@@ -494,8 +494,8 @@ module MLC
           end
         end
 
-      # Parse if expression when inside a block (do...end, while, etc.)
-      # Does not consume trailing END to avoid stealing parent's END
+        # Parse if expression when inside a block (do...end, while, etc.)
+        # Does not consume trailing END to avoid stealing parent's END
         def parse_if_expression_in_block
           if current.type == :IF || current.type == :UNLESS
             parse_if_or_unless_expression(inside_block: true)
@@ -505,8 +505,8 @@ module MLC
           end
         end
 
-      # Parse if/unless with then/else/end
-      # Compatible with both old syntax (no end) and new syntax (with end)
+        # Parse if/unless with then/else/end
+        # Compatible with both old syntax (no end) and new syntax (with end)
         def parse_if_or_unless_expression(inside_block: false)
           is_unless = current.type == :UNLESS
           if_token = consume(current.type) # IF or UNLESS
@@ -544,8 +544,8 @@ module MLC
           with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: final_condition, then_branch: then_branch, else_branch: else_branch) }
         end
 
-      # Parse postfix if/unless: expr if condition, expr unless condition
-      # Only applies when if/unless is on the same line as the expression
+        # Parse postfix if/unless: expr if condition, expr unless condition
+        # Only applies when if/unless is on the same line as the expression
         def parse_postfix_conditional(expr)
           # Get expression's line (from origin or last token)
           expr_line = expr.respond_to?(:origin) && expr.origin ? expr.origin.line : nil
@@ -571,8 +571,8 @@ module MLC
           end
         end
 
-      # Parse string interpolation: "Hello, {name}!"
-      # Token value is array of {type: :text/:expr, value: String}
+        # Parse string interpolation: "Hello, {name}!"
+        # Token value is array of {type: :text/:expr, value: String}
         def parse_string_interpolation(token)
           raw_parts = token.value
 
@@ -739,7 +739,7 @@ module MLC
           left
         end
 
-      # Bitwise OR: a | b (lower precedence than XOR)
+        # Bitwise OR: a | b (lower precedence than XOR)
         def parse_bitwise_or
           left = parse_bitwise_xor
 
@@ -753,7 +753,7 @@ module MLC
           left
         end
 
-      # Bitwise XOR: a ^ b (lower precedence than AND)
+        # Bitwise XOR: a ^ b (lower precedence than AND)
         def parse_bitwise_xor
           left = parse_bitwise_and
 
@@ -767,7 +767,7 @@ module MLC
           left
         end
 
-      # Bitwise AND: a & b (lower precedence than equality)
+        # Bitwise AND: a & b (lower precedence than equality)
         def parse_bitwise_and
           left = parse_equality
 
@@ -899,7 +899,7 @@ module MLC
           with_origin(match_token) { MLC::Source::AST::MatchExpr.new(scrutinee: scrutinee, arms: arms) }
         end
 
-      # Parse match arm body - expression that stops at | or end
+        # Parse match arm body - expression that stops at | or end
         def parse_match_arm_body
           # Parse single expression, but be careful not to consume | as operator
           parse_match_arm_expression
@@ -927,7 +927,7 @@ module MLC
           left
         end
 
-      # Logical AND that doesn't consume | for match arm bodies
+        # Logical AND that doesn't consume | for match arm bodies
         def parse_logical_and_no_pipe
           left = parse_bitwise_xor # Skip parse_bitwise_or - don't consume |
 
@@ -1222,7 +1222,7 @@ module MLC
           end
         end
 
-      # Parse unsafe block: unsafe ... end or unsafe { body } (legacy)
+        # Parse unsafe block: unsafe ... end or unsafe { body } (legacy)
         def parse_unsafe_block
           unsafe_token = consume(:UNSAFE)
 
@@ -1241,7 +1241,7 @@ module MLC
           attach_origin(MLC::Source::AST::UnsafeBlock.new(body: body), unsafe_token)
         end
 
-      # Parse unsafe body until terminator token
+        # Parse unsafe body until terminator token
         def parse_unsafe_body_until(terminator)
           statements = []
           result_expr = nil
@@ -1290,11 +1290,11 @@ module MLC
           end
         end
 
-      # Parse tuple literal or grouped expression
-      # (x) -> grouped expression (returns x)
-      # (x,) -> single-element tuple
-      # (x, y) -> two-element tuple
-      # (x, y, z) -> three-element tuple
+        # Parse tuple literal or grouped expression
+        # (x) -> grouped expression (returns x)
+        # (x,) -> single-element tuple
+        # (x, y) -> two-element tuple
+        # (x, y, z) -> three-element tuple
         def parse_tuple_or_grouped
           lparen_token = consume(:LPAREN)
 
@@ -1404,8 +1404,8 @@ module MLC
           end
         end
 
-      # Parse %w[] or %W[] - array of strings
-      # Token value is already an array of strings from the lexer
+        # Parse %w[] or %W[] - array of strings
+        # Token value is already an array of strings from the lexer
         def parse_percent_string_array
           token = consume(current.type) # Consume STRING_ARRAY or STRING_ARRAY_INTERP
           words = token.value # Array of strings
@@ -1418,8 +1418,8 @@ module MLC
           attach_origin(MLC::Source::AST::ArrayLiteral.new(elements: elements), token)
         end
 
-      # Parse %i[] or %I[] - array of symbols
-      # Token value is already an array of strings (symbol names) from the lexer
+        # Parse %i[] or %I[] - array of symbols
+        # Token value is already an array of strings (symbol names) from the lexer
         def parse_percent_symbol_array
           token = consume(current.type) # Consume SYMBOL_ARRAY or SYMBOL_ARRAY_INTERP
           words = token.value # Array of symbol names

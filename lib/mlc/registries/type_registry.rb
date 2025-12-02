@@ -3,20 +3,20 @@
 module MLC
   module Registries
     # TypeRegistry - Unified type system management
-  #
-  # Single source of truth for all type information:
-  # - Type definitions (AST and SemanticIR)
-  # - C++ name mappings
-  # - Namespace information
-  # - Member access resolution
-  # - Type compatibility checking
-  #
-  # Goals:
-  # 1. Eliminate duplicate type storage (@type_table, @type_map, etc)
-  # 2. Automatic C++ namespace qualification
-  # 3. Consistent member access resolution
-  # 4. Support for opaque types
-  # 5. Stdlib type auto-registration
+    #
+    # Single source of truth for all type information:
+    # - Type definitions (AST and SemanticIR)
+    # - C++ name mappings
+    # - Namespace information
+    # - Member access resolution
+    # - Type compatibility checking
+    #
+    # Goals:
+    # 1. Eliminate duplicate type storage (@type_table, @type_map, etc)
+    # 2. Automatic C++ namespace qualification
+    # 3. Consistent member access resolution
+    # 4. Support for opaque types
+    # 5. Stdlib type auto-registration
 
     class TypeInfo
       attr_reader :name, :ast_node, :core_ir_type, :cpp_name, :namespace, :kind, :exported, :module_name

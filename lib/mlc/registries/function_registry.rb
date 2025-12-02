@@ -4,12 +4,12 @@ module MLC
   module Registries
     # FunctionRegistry provides a central repository for function metadata and
     # signatures used throughout the MLC compilation pipeline.
-  #
-  # Responsibilities:
-  # - Track function signatures (param/return types) for inference and lowering
-  # - Preserve metadata about module/namespace placement and exports
-  # - Maintain alias mapping introduced through imports (`import Foo::{bar as baz}`)
-  # - Surface simple queries used by later passes (exported functions, namespaces, etc.)
+    #
+    # Responsibilities:
+    # - Track function signatures (param/return types) for inference and lowering
+    # - Preserve metadata about module/namespace placement and exports
+    # - Maintain alias mapping introduced through imports (`import Foo::{bar as baz}`)
+    # - Surface simple queries used by later passes (exported functions, namespaces, etc.)
     class FunctionRegistry
       # Rich metadata about a registered function.
       class Entry

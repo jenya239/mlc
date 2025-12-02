@@ -41,7 +41,7 @@ module MLC
 
       private
 
-      # Check if all constructors of a sum type are covered by patterns
+        # Check if all constructors of a sum type are covered by patterns
         def check_exhaustiveness(scrutinee_type, arms)
           # Extract base type name from scrutinee_type
           type_name = extract_type_name(scrutinee_type)
@@ -81,7 +81,7 @@ module MLC
           end
         end
 
-      # Recursively extract all covered constructors from a pattern
+        # Recursively extract all covered constructors from a pattern
         def extract_constructors(pattern, covered_set)
           case pattern.kind
           when :constructor
@@ -95,7 +95,7 @@ module MLC
           end
         end
 
-      # Extract type name from various type representations
+        # Extract type name from various type representations
         def extract_type_name(type)
           case type
           when String

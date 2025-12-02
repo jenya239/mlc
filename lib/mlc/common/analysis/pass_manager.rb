@@ -4,7 +4,7 @@ module MLC
   module Common
     module Analysis
       class PassManager
-    # Internal representation of a registered pass
+        # Internal representation of a registered pass
         Pass = Struct.new(:name, :callable, :metadata, keyword_init: true) do
           def base_pass?
             metadata.key?(:input_level)
@@ -24,12 +24,12 @@ module MLC
           @verbose = verbose
         end
 
-    # Register a pass (supports both BasePass objects and callable/blocks)
-    #
-    # @param name [Symbol] Pass name
-    # @param callable [#call, Analysis::BasePass] Pass object or callable
-    # @param metadata [Hash] Optional metadata for non-BasePass callables
-    # @yield [context] Block to execute as pass
+        # Register a pass (supports both BasePass objects and callable/blocks)
+        #
+        # @param name [Symbol] Pass name
+        # @param callable [#call, Analysis::BasePass] Pass object or callable
+        # @param metadata [Hash] Optional metadata for non-BasePass callables
+        # @yield [context] Block to execute as pass
         def register(name, callable = nil, metadata: {}, &block)
           raise ArgumentError, "Provide a callable or a block" if callable.nil? && block.nil?
           raise ArgumentError, "Only one of callable or block is allowed" if callable && block
@@ -55,10 +55,10 @@ module MLC
           )
         end
 
-    # Run all registered passes in order
-    #
-    # @param context [Hash] Shared context for all passes
-    # @return [Hash] Updated context
+        # Run all registered passes in order
+        #
+        # @param context [Hash] Shared context for all passes
+        # @return [Hash] Updated context
         def run(context = {})
           log_pipeline_start(context)
 
@@ -70,17 +70,17 @@ module MLC
           context
         end
 
-    # Get list of registered pass names
-    #
-    # @return [Array<Symbol>] Pass names
+        # Get list of registered pass names
+        #
+        # @return [Array<Symbol>] Pass names
         def passes
           @passes.map(&:name)
         end
 
-    # Get pass metadata
-    #
-    # @param name [Symbol] Pass name
-    # @return [Hash, nil] Pass metadata
+        # Get pass metadata
+        #
+        # @param name [Symbol] Pass name
+        # @return [Hash, nil] Pass metadata
         def metadata(name)
           pass = @passes.find { |p| p.name == name.to_sym }
           pass&.metadata
@@ -135,7 +135,7 @@ module MLC
           end
         end
 
-    # Logging methods
+        # Logging methods
 
         def log_pipeline_start(context)
           return unless @event_bus || @verbose

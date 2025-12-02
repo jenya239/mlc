@@ -9,7 +9,7 @@ class FullFeatureValidationTest < Minitest::Test
     # Test inline method with complex body and all modifiers
     ast = function_decl("GLuint", "handle", [], block())
           .inline_body(block(
-        return_stmt(binary("+", id("shader_"), int(1)))
+                         return_stmt(binary("+", id("shader_"), int(1)))
       ))
           .const()
           .noexcept()
@@ -22,7 +22,7 @@ class FullFeatureValidationTest < Minitest::Test
     # Test static constexpr inline
     ast2 = function_decl("Color", "white", [], block())
            .inline_body(block(
-        return_stmt(binary("=", id("r"), float(1.0)))
+                          return_stmt(binary("=", id("r"), float(1.0)))
       ))
            .static()
            .constexpr()
@@ -150,7 +150,7 @@ class FullFeatureValidationTest < Minitest::Test
                                   ["Geometry", "GL_GEOMETRY_SHADER"]
                                 ], underlying_type: "GLenum"),
 
-      # Constructor with initializer list
+                     # Constructor with initializer list
                      function_decl("", "OpenGLShader", [param("Type", "type"), param("const std::string&", "source")],
                                    block(
                                      expr_stmt(call(id("glCreateShader"), [id("type")])),
@@ -160,21 +160,21 @@ class FullFeatureValidationTest < Minitest::Test
                        .with_initializer_list("shader_(0)")
                        .explicit(),
 
-      # Destructor
+                     # Destructor
                      function_decl("", "~OpenGLShader", [],
                                    block(
                                      expr_stmt(call(id("glDeleteShader"), [id("shader_")]))
                                    )),
 
-      # Deleted copy constructor
+                     # Deleted copy constructor
                      function_decl("", "OpenGLShader", [param("const OpenGLShader&", "other")], block())
                        .deleted(),
 
-      # Deleted copy assignment
+                     # Deleted copy assignment
                      function_decl("OpenGLShader&", "operator=", [param("const OpenGLShader&", "other")], block())
                        .deleted(),
 
-      # Move constructor
+                     # Move constructor
                      function_decl("", "OpenGLShader", [param("OpenGLShader&&", "other")],
                                    block(
                                      expr_stmt(binary("=", id("shader_"), id("other.shader_"))),
@@ -182,7 +182,7 @@ class FullFeatureValidationTest < Minitest::Test
                                    ))
                        .noexcept(),
 
-      # Move assignment
+                     # Move assignment
                      function_decl("OpenGLShader&", "operator=", [param("OpenGLShader&&", "other")],
                                    block(
                                      expr_stmt(call(id("glDeleteShader"), [id("shader_")])),
@@ -192,7 +192,7 @@ class FullFeatureValidationTest < Minitest::Test
                                    ))
                        .noexcept(),
 
-      # Inline getter methods
+                     # Inline getter methods
                      function_decl("ShaderID", "handle", [], block())
                        .inline_body(block(return_stmt(id("shader_"))))
                        .const()
@@ -203,13 +203,13 @@ class FullFeatureValidationTest < Minitest::Test
                        .const()
                        .noexcept(),
 
-      # Static factory method
+                     # Static factory method
                      function_decl("OpenGLShader", "create_vertex", [param("const std::string&", "source")], block())
                        .inline_body(block(return_stmt(call(id("OpenGLShader"), [id("Type::Vertex"), id("source")]))))
                        .static()
                        .constexpr(),
 
-      # Error handling method
+                     # Error handling method
                      function_decl("std::optional<std::string>", "compile_error", [], block())
                        .const()
                        .nodiscard())

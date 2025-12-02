@@ -92,11 +92,11 @@ class EdgeCasesTest < Minitest::Test
   def test_inline_method_with_complex_body
     ast = function_decl("std::optional<int>", "find_value", [param("const std::vector<int>&", "vec"), param("int", "target")], block())
           .inline_body(block(
-        if_stmt(
-          binary_expr(id("vec"), "==", id("vec")),
-          block(return_stmt(id("std::nullopt"))),
-          block(return_stmt(id("target")))
-        )
+                         if_stmt(
+                           binary_expr(id("vec"), "==", id("vec")),
+                           block(return_stmt(id("std::nullopt"))),
+                           block(return_stmt(id("target")))
+                         )
       ))
           .const()
           .nodiscard()

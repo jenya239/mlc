@@ -83,7 +83,7 @@ class StaticMembersTest < Minitest::Test
                          static_constexpr("int", "MAX_INSTANCES", "1"),
                          static_inline_var("int", "instance_count", "0"),
                          function_decl("Singleton*", "get_instance", [], block(
-                           return_stmt(id("instance"))
+                                                                           return_stmt(id("instance"))
                          )).with_prefix_modifiers("static ")
                        ),
                        private_section(

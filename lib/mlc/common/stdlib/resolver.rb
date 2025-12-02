@@ -6,11 +6,11 @@
 module MLC
   module Common
     module Stdlib
-    # Resolves stdlib module names to file paths
-    # Now uses Scanner for automatic discovery
+      # Resolves stdlib module names to file paths
+      # Now uses Scanner for automatic discovery
       class Resolver
-      # DEPRECATED: Legacy constant for backward compatibility
-      # Use Scanner for automatic module discovery
+        # DEPRECATED: Legacy constant for backward compatibility
+        # Use Scanner for automatic module discovery
         STDLIB_MODULES = {
           'Math' => 'math.mlc',
           'IO' => 'io.mlc',
@@ -24,23 +24,23 @@ module MLC
           @scanner = scanner || MLC::Common::Stdlib::Scanner.new(@stdlib_dir)
         end
 
-      # Check if a module name is a stdlib module
+        # Check if a module name is a stdlib module
         def stdlib_module?(name)
           @scanner.module_exists?(name)
         end
 
-      # Resolve a module name to a file path
-      # Returns nil if not a stdlib module
+        # Resolve a module name to a file path
+        # Returns nil if not a stdlib module
         def resolve(name)
           @scanner.module_file_path(name)
         end
 
-      # Get all available stdlib module names
+        # Get all available stdlib module names
         def available_modules
           @scanner.available_modules
         end
 
-      # Get the scanner instance (for accessing function/type metadata)
+        # Get the scanner instance (for accessing function/type metadata)
         def scanner
           @scanner
         end

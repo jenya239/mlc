@@ -26,11 +26,11 @@ module MLC
           @min_level = min_level
         end
 
-      # Attach this logger to an EventBus
-      #
-      # @param bus [EventBus] The event bus to attach to
-      # @param events [Array<Symbol>, :all] Events to log (:all for all events)
-      # @return [void]
+        # Attach this logger to an EventBus
+        #
+        # @param bus [EventBus] The event bus to attach to
+        # @param events [Array<Symbol>, :all] Events to log (:all for all events)
+        # @return [void]
         def attach(bus, events: :all)
           if events == :all
             # Subscribe to a wildcard (we'll need to manually track all published events)
@@ -45,7 +45,7 @@ module MLC
           end
         end
 
-      # Log a single event
+        # Log a single event
         def log_event(event_name, payload_or_event)
           event_obj = if payload_or_event.is_a?(EventBus::Event)
                         payload_or_event

@@ -323,7 +323,7 @@ module MLC
           false
         end
 
-      # Parse reference type: ref T or ref mut T
+        # Parse reference type: ref T or ref mut T
         def parse_reference_type
           ref_token = consume(:REF)
 

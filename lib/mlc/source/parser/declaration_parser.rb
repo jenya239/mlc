@@ -273,12 +273,12 @@ module MLC
           )
         end
 
-      # Parse record literal fields with spread and shorthand support
-      # Supports:
-      #   { x: 1, y: 2 }           - regular fields
-      #   { ...base, x: 1 }        - spread operator (JS-like)
-      #   { x, y }                 - shorthand (equivalent to { x: x, y: y })
-      # Returns: { fields: Hash, spreads: Array }
+        # Parse record literal fields with spread and shorthand support
+        # Supports:
+        #   { x: 1, y: 2 }           - regular fields
+        #   { ...base, x: 1 }        - spread operator (JS-like)
+        #   { x, y }                 - shorthand (equivalent to { x: x, y: y })
+        # Returns: { fields: Hash, spreads: Array }
         def parse_record_fields
           fields = {}
           spreads = []
@@ -365,8 +365,8 @@ module MLC
           with_origin(name_token) { MLC::Source::AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported) }
         end
 
-      # Parse record declaration - syntactic sugar for type Name = { fields }
-      # record Name { field1: Type1, field2: Type2 }
+        # Parse record declaration - syntactic sugar for type Name = { fields }
+        # record Name { field1: Type1, field2: Type2 }
         def parse_record_decl(exported: false)
           consume(:RECORD)
           name_token = consume(:IDENTIFIER)
@@ -386,8 +386,8 @@ module MLC
           with_origin(name_token) { MLC::Source::AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported) }
         end
 
-      # Parse trait declaration
-      # trait Name<T> { fn method(...) -> Type }
+        # Parse trait declaration
+        # trait Name<T> { fn method(...) -> Type }
         def parse_trait_decl(exported: false)
           trait_token = consume(:TRAIT)
           name = consume(:IDENTIFIER).value
@@ -415,8 +415,8 @@ module MLC
           end
         end
 
-      # Parse trait body (methods and associated types)
-      # Returns: { methods: [...], associated_types: [...] }
+        # Parse trait body (methods and associated types)
+        # Returns: { methods: [...], associated_types: [...] }
         def parse_trait_body
           methods = []
           associated_types = []
@@ -432,8 +432,8 @@ module MLC
           { methods: methods, associated_types: associated_types }
         end
 
-      # Parse associated type declaration
-      # type Item  or  type Item: Bound1 + Bound2  or  type Item = DefaultType
+        # Parse associated type declaration
+        # type Item  or  type Item: Bound1 + Bound2  or  type Item = DefaultType
         def parse_associated_type
           type_token = consume(:TYPE)
           name = consume(:IDENTIFIER).value
@@ -466,8 +466,8 @@ module MLC
           end
         end
 
-      # Parse a single trait method signature
-      # fn name(...) -> Type  or  fn name(...) -> Type = default_body
+        # Parse a single trait method signature
+        # fn name(...) -> Type  or  fn name(...) -> Type = default_body
         def parse_trait_method
           fn_token = consume(:FN)
           name = consume(:IDENTIFIER).value
@@ -502,9 +502,9 @@ module MLC
           end
         end
 
-      # Parse extend declaration
-      # extend Type : Trait<T> { fn ... }
-      # extend Type { fn ... }  (add methods without trait)
+        # Parse extend declaration
+        # extend Type : Trait<T> { fn ... }
+        # extend Type { fn ... }  (add methods without trait)
         def parse_extend_decl(exported: false)
           extend_token = consume(:EXTEND)
           target_type = parse_type
@@ -541,9 +541,9 @@ module MLC
           end
         end
 
-      # Parse extend body (methods and associated type bindings)
-      # Supports: fn ..., extern fn ..., type Item = ConcreteType
-      # Returns: { methods: [...], associated_type_bindings: [...] }
+        # Parse extend body (methods and associated type bindings)
+        # Supports: fn ..., extern fn ..., type Item = ConcreteType
+        # Returns: { methods: [...], associated_type_bindings: [...] }
         def parse_extend_body
           methods = []
           associated_type_bindings = []
@@ -564,7 +564,7 @@ module MLC
           { methods: methods, associated_type_bindings: associated_type_bindings }
         end
 
-      # Parse associated type binding: type Item = ConcreteType
+        # Parse associated type binding: type Item = ConcreteType
         def parse_associated_type_binding
           type_token = consume(:TYPE)
           name = consume(:IDENTIFIER).value
@@ -579,7 +579,7 @@ module MLC
           end
         end
 
-      # Parse comma-separated list of types (for trait params)
+        # Parse comma-separated list of types (for trait params)
         def parse_type_list
           types = []
           types << parse_type
@@ -592,7 +592,7 @@ module MLC
           types
         end
 
-      # Parse where clause: where T: Trait1 + Trait2, U: OtherTrait
+        # Parse where clause: where T: Trait1 + Trait2, U: OtherTrait
         def parse_where_clause
           where_token = consume(:WHERE)
           bounds = []
@@ -609,7 +609,7 @@ module MLC
           end
         end
 
-      # Parse single where bound: T: Trait1 + Trait2
+        # Parse single where bound: T: Trait1 + Trait2
         def parse_where_bound
           type_param_token = consume(:IDENTIFIER)
           type_param = type_param_token.value

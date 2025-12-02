@@ -128,7 +128,7 @@ module MLC
           with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }
         end
 
-      # Parse tuple destructuring: let (a, b) = expr
+        # Parse tuple destructuring: let (a, b) = expr
         def parse_tuple_destructuring(let_token, mutable)
           pattern = parse_pattern # Uses PatternParser which handles (a, b) as tuple pattern
           consume(:EQUAL)
@@ -138,8 +138,8 @@ module MLC
           with_origin(let_token) { MLC::Source::AST::DestructuringDecl.new(pattern: pattern, value: value, mutable: mutable) }
         end
 
-      # Parse record destructuring: let { x, y } = expr
-      # Supports rest pattern: let { x, ...rest } = expr
+        # Parse record destructuring: let { x, y } = expr
+        # Supports rest pattern: let { x, ...rest } = expr
         def parse_record_destructuring(let_token, mutable)
           lbrace_token = consume(:LBRACE)
           bindings = []

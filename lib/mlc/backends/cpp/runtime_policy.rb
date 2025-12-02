@@ -4,7 +4,7 @@ module MLC
   module Backends
     module Cpp
       # RuntimePolicy - конфигурация стратегий lowering
-    # Определяет когда использовать IIFE, runtime helpers, или inline генерацию
+      # Определяет когда использовать IIFE, runtime helpers, или inline генерацию
       class RuntimePolicy
         # Стратегии для block expressions
         BLOCK_STRATEGIES = %i[iife scope_tmp gcc_expr inline].freeze

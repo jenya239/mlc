@@ -14,8 +14,8 @@ module MLC
           @assign_expression_type = assign_expression_type || ->(_expr, _type) {}
         end
 
-      # Solve type constraints for a generic function call
-      # @param expected_ret_type [SemanticIR::Type, nil] Expected return type for bidirectional inference
+        # Solve type constraints for a generic function call
+        # @param expected_ret_type [SemanticIR::Type, nil] Expected return type for bidirectional inference
         def solve(info, args, name:, expected_ret_type: nil)
           type_params = info.type_params || []
           arg_types = args.map(&:type)
@@ -49,12 +49,12 @@ module MLC
 
       private
 
-      # Check if type_map is missing any type parameters
+        # Check if type_map is missing any type parameters
         def incomplete_type_map?(type_map, type_params)
           type_params.any? { |tp| !type_map.key?(tp.name) || type_map[tp.name].is_a?(MLC::SemanticIR::TypeVariable) }
         end
 
-      # Unify function return type with expected type to infer missing type variables
+        # Unify function return type with expected type to infer missing type variables
         def unify_with_expected(pattern_type, expected_type, type_map)
           case pattern_type
           when MLC::SemanticIR::TypeVariable

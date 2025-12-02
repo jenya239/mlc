@@ -67,7 +67,7 @@ class AdvancedTemplatesTest < Minitest::Test
                     function_decl("void", "draw_if_drawable", [
                                     param("T", "obj")
                                   ], block(
-                      expr_stmt(call(id("obj"), "draw", []))
+                                       expr_stmt(call(id("obj"), "draw", []))
                     )))
     )
 
@@ -100,7 +100,7 @@ class AdvancedTemplatesTest < Minitest::Test
                     function_decl("auto", "sum", [
                                     param("Args...", "args")
                                   ], block(
-                      return_stmt(call(id("std::reduce"), [id("args...")]))
+                                       return_stmt(call(id("std::reduce"), [id("args...")]))
                     )))
     )
 

@@ -6,7 +6,7 @@
 module MLC
   module Common
     module Stdlib
-    # Provides cached access to stdlib function/type signatures backed by Scanner metadata.
+      # Provides cached access to stdlib function/type signatures backed by Scanner metadata.
       class SignatureRegistry
         attr_reader :scanner
 

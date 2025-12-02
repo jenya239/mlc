@@ -38,10 +38,10 @@ class InlineMethodsTest < Minitest::Test
   def test_inline_method_with_parameters
     ast = function_decl("void", "set_uniform", [param("const std::string&", "name"), param("int", "value")], block())
           .inline_body(block(
-        expr_stmt(call(id("glUniform1i"), [
-                         call(id("glGetUniformLocation"), [id("program_"), id("name")]),
-                         id("value")
-                       ]))
+                         expr_stmt(call(id("glUniform1i"), [
+                                          call(id("glGetUniformLocation"), [id("program_"), id("name")]),
+                                          id("value")
+                                        ]))
       ))
           .const()
     cpp_code = ast.to_source
@@ -53,7 +53,7 @@ class InlineMethodsTest < Minitest::Test
   def test_inline_method_with_multiple_modifiers
     ast = function_decl("", "Vec2", [param("float", "x"), param("float", "y")], block())
           .inline_body(block(
-        expr_stmt(binary("=", id("x"), id("x_"))),
+                         expr_stmt(binary("=", id("x"), id("x_"))),
         expr_stmt(binary("=", id("y"), id("y_")))
       ))
           .explicit()

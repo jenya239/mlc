@@ -4,22 +4,22 @@ module MLC
   module Backends
     module Cpp
       # MetadataGenerator
-    # Phase 24-A: Generate .mlcmeta files for module exports
-    #
-    # Responsibilities:
-    # - Extract exported functions from SemanticIR::Module
-    # - Extract exported types (records, sum types)
-    # - Generate JSON metadata for cross-module compilation
-    #
-    # Output format (.mlcmeta):
-    # {
-    #   "module_name": "math",
-    #   "exports": {
-    #     "functions": [...],
-    #     "types": [...],
-    #     "sum_types": [...]
-    #   }
-    # }
+      # Phase 24-A: Generate .mlcmeta files for module exports
+      #
+      # Responsibilities:
+      # - Extract exported functions from SemanticIR::Module
+      # - Extract exported types (records, sum types)
+      # - Generate JSON metadata for cross-module compilation
+      #
+      # Output format (.mlcmeta):
+      # {
+      #   "module_name": "math",
+      #   "exports": {
+      #     "functions": [...],
+      #     "types": [...],
+      #     "sum_types": [...]
+      #   }
+      # }
       class MetadataGenerator
         # Generate metadata hash from SemanticIR::Module
         # @param semantic_ir_module [SemanticIR::Module] The compiled module

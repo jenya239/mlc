@@ -27,175 +27,175 @@ module CppAst
         # Binary operators
         def +(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: "+",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: "+",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def -(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: "-",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: "-",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def *(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: "*",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: "*",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def /(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: "/",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: "/",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def %(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: "%",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: "%",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def ==(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: "==",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: "==",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def !=(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: "!=",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: "!=",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def <(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: "<",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: "<",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def <=(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: "<=",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: "<=",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def >(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: ">",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: ">",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         def >=(other)
           ExprNode.new(Nodes::BinaryExpression.new(
-            left: @node,
-            operator: ">=",
-            right: other.node,
-            operator_prefix: " ",
-            operator_suffix: " "
+                         left: @node,
+                         operator: ">=",
+                         right: other.node,
+                         operator_prefix: " ",
+                         operator_suffix: " "
           ))
         end
 
         # Unary operators
         def -@
           ExprNode.new(Nodes::UnaryExpression.new(
-            operator: "-",
-            operand: @node,
-            prefix: true
+                         operator: "-",
+                         operand: @node,
+                         prefix: true
           ))
         end
 
         def !
           ExprNode.new(Nodes::UnaryExpression.new(
-            operator: "!",
-            operand: @node,
-            prefix: true
+                         operator: "!",
+                         operand: @node,
+                         prefix: true
           ))
         end
 
         # Postfix operators
         def increment
           ExprNode.new(Nodes::UnaryExpression.new(
-            operator: "++",
-            operand: @node,
-            prefix: false
+                         operator: "++",
+                         operand: @node,
+                         prefix: false
           ))
         end
 
         def decrement
           ExprNode.new(Nodes::UnaryExpression.new(
-            operator: "--",
-            operand: @node,
-            prefix: false
+                         operator: "--",
+                         operand: @node,
+                         prefix: false
           ))
         end
 
         # Method calls
         def call(method_name, *args)
           ExprNode.new(Nodes::FunctionCallExpression.new(
-            callee: Nodes::MemberAccessExpression.new(
-              object: @node,
-              operator: ".",
-              member: method_name.to_s
-            ),
-            arguments: args.map(&:node),
-            argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+                         callee: Nodes::MemberAccessExpression.new(
+                           object: @node,
+                           operator: ".",
+                           member: method_name.to_s
+                         ),
+                         arguments: args.map(&:node),
+                         argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
           ))
         end
 
         # Member access
         def [](index)
           ExprNode.new(Nodes::ArrayAccessExpression.new(
-            array: @node,
-            index: index.node
+                         array: @node,
+                         index: index.node
           ))
         end
 
         # Member access with dot
         def member(field_name)
           ExprNode.new(Nodes::MemberAccessExpression.new(
-            object: @node,
-            operator: ".",
-            member: field_name.to_s
+                         object: @node,
+                         operator: ".",
+                         member: field_name.to_s
           ))
         end
 
@@ -207,9 +207,9 @@ module CppAst
         # Assignment
         def assign(value)
           ExprNode.new(Nodes::AssignmentExpression.new(
-            left: @node,
-            operator: "=",
-            right: value.node
+                         left: @node,
+                         operator: "=",
+                         right: value.node
           ))
         end
 
@@ -224,7 +224,7 @@ module CppAst
         end
       end
 
-    # Expression DSL methods
+      # Expression DSL methods
       module Expressions
         # Identifier
         def id(name)
@@ -258,61 +258,61 @@ module CppAst
           callee_node = callee.is_a?(Symbol) ? Nodes::Identifier.new(name: callee.to_s) : callee.node
 
           ExprNode.new(Nodes::FunctionCallExpression.new(
-            callee: callee_node,
-            arguments: args.map { |arg| arg.respond_to?(:node) ? arg.node : arg },
-            argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+                         callee: callee_node,
+                         arguments: args.map { |arg| arg.respond_to?(:node) ? arg.node : arg },
+                         argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
           ))
         end
 
         # Member access
         def member(object, field_name)
           ExprNode.new(Nodes::MemberAccessExpression.new(
-            object: object.node,
-            operator: ".",
-            member: field_name.to_s
+                         object: object.node,
+                         operator: ".",
+                         member: field_name.to_s
           ))
         end
 
         # Array access
         def array_access(array, index)
           ExprNode.new(Nodes::ArrayAccessExpression.new(
-            array: array.node,
-            index: index.node
+                         array: array.node,
+                         index: index.node
           ))
         end
 
         # Dereference
         def deref(expr)
           ExprNode.new(Nodes::UnaryExpression.new(
-            operator: "*",
-            operand: expr.node,
-            prefix: true
+                         operator: "*",
+                         operand: expr.node,
+                         prefix: true
           ))
         end
 
         # Address of
         def address_of(expr)
           ExprNode.new(Nodes::UnaryExpression.new(
-            operator: "&",
-            operand: expr.node,
-            prefix: true
+                         operator: "&",
+                         operand: expr.node,
+                         prefix: true
           ))
         end
 
         # Cast
         def cast(type, expr)
           ExprNode.new(Nodes::CastExpression.new(
-            type: type.to_cpp_type,
-            expression: expr.node
+                         type: type.to_cpp_type,
+                         expression: expr.node
           ))
         end
 
         # Ternary operator
         def ternary(condition, true_expr, false_expr)
           ExprNode.new(Nodes::TernaryExpression.new(
-            condition: condition.node,
-            true_expression: true_expr.node,
-            false_expression: false_expr.node
+                         condition: condition.node,
+                         true_expression: true_expr.node,
+                         false_expression: false_expr.node
           ))
         end
 
@@ -328,8 +328,8 @@ module CppAst
         # New/Delete
         def new(type, *args)
           ExprNode.new(Nodes::NewExpression.new(
-            type: type.to_cpp_type,
-            arguments: args.map(&:node)
+                         type: type.to_cpp_type,
+                         arguments: args.map(&:node)
           ))
         end
 
@@ -340,20 +340,20 @@ module CppAst
         # Lambda
         def lambda_expr(params, body)
           ExprNode.new(Nodes::LambdaExpression.new(
-            parameters: params,
-            body: body.node
+                         parameters: params,
+                         body: body.node
           ))
         end
 
         # No alias to avoid conflict with TypesDSL::lambda
       end
 
-    # Include Expressions module in DSL
+      # Include Expressions module in DSL
       def self.included(base)
         base.include Expressions
       end
 
-    # Also include Expressions when ExprBuilder is included
+      # Also include Expressions when ExprBuilder is included
       include Expressions
     end
   end

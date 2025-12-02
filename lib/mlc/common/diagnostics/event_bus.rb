@@ -4,10 +4,10 @@ module MLC
   module Common
     module Diagnostics
       class EventBus
-    # Event metadata structure
+        # Event metadata structure
         Event = Struct.new(:name, :payload, :level, :timestamp, keyword_init: true)
 
-    # Log levels (ordered by severity)
+        # Log levels (ordered by severity)
         LEVELS = {
           debug: 0,
           info: 1,
@@ -22,12 +22,12 @@ module MLC
           @min_level = min_level
         end
 
-    # Subscribe to an event
-    #
-    # @param event [Symbol] Event name
-    # @param callable [#call, nil] Optional callable object
-    # @param min_level [Symbol, nil] Minimum level to receive (nil = receive all)
-    # @yield [payload or Event] Event payload or Event object
+        # Subscribe to an event
+        #
+        # @param event [Symbol] Event name
+        # @param callable [#call, nil] Optional callable object
+        # @param min_level [Symbol, nil] Minimum level to receive (nil = receive all)
+        # @yield [payload or Event] Event payload or Event object
         def subscribe(event, callable = nil, min_level: nil, &block)
           handler = callable || block
           raise ArgumentError, "Provide a callable or block" unless handler
@@ -41,12 +41,12 @@ module MLC
           @handlers[event.to_sym] << wrapped_handler
         end
 
-    # Publish an event
-    #
-    # @param event [Symbol] Event name
-    # @param payload [Hash] Event payload (can be passed as positional or via **kwargs)
-    # @param level [Symbol] Event level (:debug, :info, :warning, :error)
-    # @param structured [Boolean] If true, pass Event object to handlers
+        # Publish an event
+        #
+        # @param event [Symbol] Event name
+        # @param payload [Hash] Event payload (can be passed as positional or via **kwargs)
+        # @param level [Symbol] Event level (:debug, :info, :warning, :error)
+        # @param structured [Boolean] If true, pass Event object to handlers
         def publish(event, payload = nil, level: :info, structured: false, **kwargs)
           # Handle backward compatibility: if payload is nil and kwargs provided,
           # use kwargs as payload (old API: publish(:event, key: value))
@@ -92,34 +92,34 @@ module MLC
           end
         end
 
-    # Publish a debug event
+        # Publish a debug event
         def debug(event, payload = nil, **kwargs)
           publish(event, payload, level: :debug, **kwargs)
         end
 
-    # Publish an info event
+        # Publish an info event
         def info(event, payload = nil, **kwargs)
           publish(event, payload, level: :info, **kwargs)
         end
 
-    # Publish a warning event
+        # Publish a warning event
         def warning(event, payload = nil, **kwargs)
           publish(event, payload, level: :warning, **kwargs)
         end
 
-    # Publish an error event
+        # Publish an error event
         def error(event, payload = nil, **kwargs)
           publish(event, payload, level: :error, **kwargs)
         end
 
-    # Set minimum level for this bus
+        # Set minimum level for this bus
         def min_level=(level)
           raise ArgumentError, "Unknown level: #{level}" unless LEVELS.key?(level)
 
           @min_level = level
         end
 
-    # Get event count (for testing/metrics)
+        # Get event count (for testing/metrics)
         def handler_count(event = nil)
           if event
             @handlers[event.to_sym].size
@@ -128,7 +128,7 @@ module MLC
           end
         end
 
-    # Clear all handlers (useful for testing)
+        # Clear all handlers (useful for testing)
         def clear_handlers(event = nil)
           if event
             @handlers.delete(event.to_sym)
@@ -145,7 +145,7 @@ module MLC
           level_value < min_level_value
         end
 
-    # Internal wrapper for handlers with level filtering
+        # Internal wrapper for handlers with level filtering
         class FilteredHandler
           attr_reader :handler, :min_level
 

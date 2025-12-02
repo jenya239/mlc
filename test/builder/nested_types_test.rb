@@ -79,17 +79,17 @@ class NestedTypesTest < Minitest::Test
 
   def test_complex_nested_types
     outer = class_decl("Outer",
-      # Nested class
+                       # Nested class
                        nested_class("Inner",
                                     var_decl("int", "value"),
                                     function_decl("void", "method", [], block(
-                                      expr_stmt(cout_chain(string("Inner method called"), endl))
+                                                                          expr_stmt(cout_chain(string("Inner method called"), endl))
                                     ))),
 
-      # Nested enum
+                       # Nested enum
                        nested_enum("State", "IDLE", "RUNNING", "STOPPED"),
 
-      # Nested struct
+                       # Nested struct
                        nested_struct("Data",
                                      var_decl("double", "x"),
                                      var_decl("double", "y")))

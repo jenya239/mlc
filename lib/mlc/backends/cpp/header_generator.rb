@@ -11,8 +11,8 @@ module MLC
           @lowering = lowering
         end
 
-      # Generate header and implementation files
-      # Returns: { header: String, implementation: String }
+        # Generate header and implementation files
+        # Returns: { header: String, implementation: String }
         def generate(module_node)
           header_guard = generate_header_guard(module_node.name)
           dependencies = collect_required_import_paths(module_node)

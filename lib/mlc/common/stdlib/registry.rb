@@ -6,7 +6,7 @@
 module MLC
   module Common
     module Stdlib
-    # Mapping of module names to module information
+      # Mapping of module names to module information
       REGISTRY = {
         "std/collections/array" => {
           category: "collections",
@@ -70,7 +70,7 @@ module MLC
   },
       }.freeze
 
-    # Legacy module name aliases for backward compatibility
+      # Legacy module name aliases for backward compatibility
       LEGACY_ALIASES = {
         "Option" => "std/core/option",
         "Result" => "std/core/result",
