@@ -40,9 +40,11 @@ module CppAst
       def to_source
         result = +"[&](const #{case_name}& #{case_name.downcase}) { "
 
-        if bindings.any?
+        binding_items = Array(bindings).compact
+
+        if binding_items.any?
           # Generate structured binding: auto [binding1, binding2] = case;
-          binding_list = bindings.join(", ")
+          binding_list = binding_items.map { |b| b.respond_to?(:to_source) ? b.to_source : b.to_s }.join(", ")
           result << "auto [#{binding_list}] = #{case_name.downcase}; "
         end
 

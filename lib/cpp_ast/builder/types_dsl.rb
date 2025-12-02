@@ -34,6 +34,11 @@ module CppAst
         def ref?; @ref; end
         def mutable?; @mutable; end
 
+        # Backward-compatible predicate aliases
+        def is_const; const?; end
+        def is_ref; ref?; end
+        def is_mutable; mutable?; end
+
         # Chainable builder methods (return new TypeBuilder)
         # These are the primary interface for building types
         def const
@@ -392,25 +397,25 @@ module CppAst
         end
 
         # Custom types
-      def circle
-        TypeBuilder.new(:Circle)
-      end
+        def circle
+          TypeBuilder.new(:Circle)
+        end
 
-      def rectangle
-        TypeBuilder.new(:Rectangle)
-      end
+        def rectangle
+          TypeBuilder.new(:Rectangle)
+        end
 
-      def rect
-        TypeBuilder.new(:Rect)
-      end
+        def rect
+          TypeBuilder.new(:Rect)
+        end
 
-      def triangle
-        TypeBuilder.new(:Triangle)
-      end
+        def triangle
+          TypeBuilder.new(:Triangle)
+        end
 
-      def point
-        TypeBuilder.new(:Point)
-      end
+        def point
+          TypeBuilder.new(:Point)
+        end
 
         # lambda method already defined above
       end

@@ -632,12 +632,16 @@ module CppAst
       end
 
       # Helper for match arms
-      def arm(case_name, body, bindings = [])
-        Nodes::MatchArm.new(
-          case_name: case_name,
-          bindings: bindings,
-          body: body
-        )
+      def arm(case_name, bindings_or_body, body = nil)
+        # Support both arm(case, bindings, body) and legacy arm(case, body) calls
+        if body.nil?
+          bindings = []
+          body = bindings_or_body
+        else
+          bindings = bindings_or_body
+        end
+
+        Nodes::MatchArm.new(case_name: case_name, bindings: bindings, body: body)
       end
 
       # Include directive
