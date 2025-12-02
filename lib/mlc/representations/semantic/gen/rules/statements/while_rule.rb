@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module MLC
   module Representations
     module Semantic
@@ -27,7 +26,7 @@ module MLC
                 loops.with_loop_scope do
               body_block = svc.ir_builder.block(statements: body_ir, origin: context[:body_origin] || node.body)
               result = svc.ir_builder.while_stmt(condition: condition_ir, body: body_block, origin: node)
-            end
+                end
 
                 result
               end

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module MLC
   module Representations
     module Semantic
@@ -39,8 +38,8 @@ module MLC
             type: unit.type,
             origin: node
           )
-        end
-          end
+            end
+              end
             end
           end
         end

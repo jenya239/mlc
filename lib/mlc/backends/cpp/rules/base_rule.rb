@@ -37,7 +37,6 @@ module MLC
             context.lower_statement(node)
           end
 
-
           # Convenience methods delegating to context
           def type_registry
             context.type_registry

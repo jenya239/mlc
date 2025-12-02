@@ -39,7 +39,7 @@ module MLC
           Analysis.new(transformed_arms, result_type)
         end
 
-      private
+        private
 
         # Check if all constructors of a sum type are covered by patterns
         def check_exhaustiveness(scrutinee_type, arms)
@@ -79,7 +79,6 @@ module MLC
 
           missing_list = missing.to_a.sort.join(", ")
           raise MLC::CompileError, "Non-exhaustive match: missing patterns for #{missing_list}"
-
         end
 
         # Recursively extract all covered constructors from a pattern

@@ -495,7 +495,6 @@ module MLC
         end
       end
 
-
       # Record literal
       # Supports both regular fields and spread elements for JS-like syntax:
       #   { x: 1, ...base, y: 2 }

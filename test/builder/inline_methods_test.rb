@@ -54,7 +54,7 @@ class InlineMethodsTest < Minitest::Test
     ast = function_decl("", "Vec2", [param("float", "x"), param("float", "y")], block)
           .inline_body(block(
                          expr_stmt(binary("=", id("x"), id("x_"))),
-        expr_stmt(binary("=", id("y"), id("y_")))
+                         expr_stmt(binary("=", id("y"), id("y_")))
                        ))
           .explicit
           .constexpr

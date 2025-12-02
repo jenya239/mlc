@@ -90,9 +90,6 @@ module MLC
 
               @error_collector.add_error(message, origin: origin)
               nil # Caller should handle nil return
-
-
-
             end
 
             # Returns ErrorType instead of raising, for use in type inference
@@ -234,7 +231,6 @@ module MLC
               if (initializer = @var_type_registry.initializer(expr.name))
                 assign_expression_type(initializer, type, update_registry: false)
               end
-
             end
 
             def set_expression_type(expr, type)

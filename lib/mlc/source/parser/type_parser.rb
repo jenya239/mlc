@@ -20,8 +20,6 @@ module MLC
 
             consume(:COMMA)
 
-
-
           end
 
           consume(:RBRACE)
@@ -42,8 +40,6 @@ module MLC
             break unless current.type == :COMMA
 
             consume(:COMMA)
-
-
 
           end
 
@@ -79,8 +75,6 @@ module MLC
 
                 consume(:COMMA)
 
-
-
               end
               consume(:RPAREN)
             elsif current.type == :LBRACE
@@ -95,8 +89,6 @@ module MLC
                 break unless current.type == :COMMA
 
                 consume(:COMMA)
-
-
 
               end
               consume(:RBRACE)
@@ -287,8 +279,6 @@ module MLC
               raise "Expected constraint identifier, got #{current.type}(#{current.value})" unless current.type == :IDENTIFIER
 
               constraint = consume(:IDENTIFIER).value
-
-
 
             end
 

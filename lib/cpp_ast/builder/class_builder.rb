@@ -309,9 +309,6 @@ module CppAst
 
             type, name = param
             Nodes::Parameter.new(type: type.respond_to?(:to_cpp_type) ? type.to_cpp_type : type.to_s, name: name.to_s)
-
-
-
           end
 
           Nodes::FunctionDeclaration.new(
@@ -500,9 +497,6 @@ module CppAst
 
             type, name = param
             Nodes::Parameter.new(type: type.respond_to?(:to_cpp_type) ? type.to_cpp_type : type.to_s, name: name.to_s)
-
-
-
           end
 
           Nodes::FunctionDeclaration.new(

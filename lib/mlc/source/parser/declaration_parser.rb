@@ -170,8 +170,6 @@ module MLC
 
             consume(:COMMA)
 
-
-
           end
 
           params
@@ -211,8 +209,6 @@ module MLC
                 func = parse_function(exported: true, is_async: true)
                 declarations << func
 
-
-
               when :EXTERN
                 # export extern fn ...
                 consume(:EXTERN)
@@ -220,8 +216,6 @@ module MLC
 
                 func = parse_function(external: true, exported: true)
                 declarations << func
-
-
 
               when :FN
                 func = parse_function(exported: true)
@@ -243,8 +237,6 @@ module MLC
               raise "Expected FN after async, got #{current.type}" unless current.type == :FN
 
               declarations << parse_function(is_async: true)
-
-
 
             when :EXTERN
               # Parse external declaration
@@ -317,8 +309,6 @@ module MLC
             break unless current.type == :COMMA
 
             consume(:COMMA)
-
-
 
           end
 

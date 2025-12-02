@@ -70,7 +70,7 @@ module MLC
           end
         end
 
-      private
+        private
 
         def attach_to_common_events(bus)
           # Common compiler events

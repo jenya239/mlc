@@ -37,7 +37,7 @@ module MLC
             @expression_visitor.visit(node, extra_context)
           end
 
-      private
+          private
 
           def base_context
             {

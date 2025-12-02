@@ -178,18 +178,22 @@ module CppAst
           require_relative "ownership_dsl"
           OwnershipDSL::OwnershipTypeBuilder.new(nil, :size_t)
         end
+
         def ptrdiff_t
           require_relative "ownership_dsl"
           OwnershipDSL::OwnershipTypeBuilder.new(nil, :ptrdiff_t)
         end
+
         def null
           require_relative "ownership_dsl"
           OwnershipDSL::OwnershipTypeBuilder.new(nil, :null)
         end
+
         def auto
           require_relative "ownership_dsl"
           OwnershipDSL::OwnershipTypeBuilder.new(nil, :auto)
         end
+
         def void
           require_relative "ownership_dsl"
           OwnershipDSL::OwnershipTypeBuilder.new(nil, :void)

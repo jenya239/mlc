@@ -32,8 +32,8 @@ module MLC
               @services.module_context_service.with_current_module(context[:module_name]) do
             @services.module_context_service.with_import_aliases(context[:import_aliases]) do
           @pass_manager.run(context)
-        end
-          end
+            end
+              end
 
               MLC::SemanticIR::Module.new(
                 name: context[:module_name],
@@ -52,7 +52,7 @@ module MLC
             manager.register(:preregister_functions, method(:pass_preregister_functions))
             manager.register(:register_import_aliases, method(:pass_register_import_aliases))
             manager.register(:lower_declarations, method(:pass_lower_declarations))
-          end
+              end
             end
 
             def pass_collect_imports(context)
@@ -63,7 +63,7 @@ module MLC
               path: import_decl.path,
               items: import_decl.items
             )
-          end
+              end
 
               @module_import_pass.run(program)
             end
@@ -76,7 +76,7 @@ module MLC
 
             type_ir = @type_reducer.reduce(decl)
             context[:type_items] << type_ir
-          end
+              end
             end
 
             def pass_preregister_traits(context)
@@ -189,7 +189,6 @@ module MLC
               raise MLC::CompileError,
                     "Incomplete trait implementation: #{type_name} does not implement " \
                     "required method(s) #{missing_methods.join(', ')} from trait #{trait_name}#{location}"
-
             end
 
             def extract_type_name(type)
@@ -230,7 +229,7 @@ module MLC
             next unless decl.is_a?(MLC::Source::AST::FuncDecl)
 
             @function_reducer.register_signature(decl)
-          end
+              end
             end
 
             def pass_register_import_aliases(_context)
@@ -282,7 +281,7 @@ module MLC
               # Methods with default implementations will be generated when used
               nil
             end
-          end
+              end
             end
 
             def module_name_for(program)

@@ -763,7 +763,6 @@ module CppAst
       end
     end
 
-
     # ConstDeclaration: `constexpr type name = value;`
     class ConstDeclaration < Statement
       attr_accessor :type, :name, :value

@@ -113,7 +113,7 @@ module MLC
           output.join("\n")
         end
 
-      private
+        private
 
         def determine_color_support(color_option)
           case color_option

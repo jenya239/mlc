@@ -116,7 +116,6 @@ module CppAst
             then_statement: @then_block.node,
             else_statement: build_else_chain
           )
-
         end
 
         # Alias for backward compatibility

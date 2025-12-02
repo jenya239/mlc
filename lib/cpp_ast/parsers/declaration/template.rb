@@ -25,7 +25,6 @@ module CppAst
             depth -= 1
             break if depth.zero?
 
-
             params << current_token.lexeme << current_token.trailing_trivia
             advance_raw
 

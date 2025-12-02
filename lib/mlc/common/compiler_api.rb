@@ -34,8 +34,6 @@ module MLC
         runtime_policy: runtime_policy
       )
       cpp_lowerer.lower(core_ir)
-
-
     end
 
     # Parse MLC source to AST

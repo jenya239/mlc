@@ -172,8 +172,6 @@ module CppAst
 
         scan_attribute_lexeme
 
-
-
       else
         raise "Not a trivia token: #{char.inspect}"
       end

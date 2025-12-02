@@ -278,7 +278,7 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
               id(:arr)[id(:j) + int(1)].assign(id(:temp))
             end
           end
-        end
+          end
         end
       end
 
@@ -396,7 +396,7 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
 
       for_ id(:i), int(0), id(:size), id(:i).increment do
       id(:sum).assign(id(:sum) + id(:data)[id(:i)])
-    end
+      end
 
       ret id(:sum)
     end

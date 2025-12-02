@@ -61,7 +61,6 @@ class NamespaceRefactor
       File.write(file, new_content)
       puts "✅ Modified #{file} (#{replacements.size} replacements)"
     end
-
   end
 
   def visit_node(node, source, replacements)

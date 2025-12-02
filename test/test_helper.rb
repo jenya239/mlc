@@ -56,7 +56,6 @@ class Minitest::Test
     return if inclusion_tags.empty?
 
     skip "Skipped due to tag filter" unless (self.class.tags & inclusion_tags).any?
-
   end
 
   def teardown

@@ -49,8 +49,6 @@ module CppAst
 
             lexeme << advance
 
-
-
           else
             lexeme << advance
           end

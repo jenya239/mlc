@@ -37,7 +37,7 @@ module MLC
               ret_type,
               type_params
             )
-          end
+              end
 
               signature
             end
@@ -56,8 +56,8 @@ module MLC
           result_func = apply_function_rules(result_func)
           update_registry_metadata(func_decl, result_func)
           result_func
-        end
-          end
+            end
+              end
             end
 
             private
@@ -73,7 +73,7 @@ module MLC
               func_decl.params.each_with_index.map do |param, index|
             type = param_types[index]
             MLC::SemanticIR::Param.new(name: param.name, type: type, origin: param.origin)
-          end
+              end
             end
 
             def build_external_func(func_decl, params, signature, type_params)

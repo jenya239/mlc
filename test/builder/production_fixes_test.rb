@@ -115,7 +115,6 @@ class ProductionFixesTest < Minitest::Test
       namespace_decl("gtkgl::text",
                      using_alias("GlyphIndex", "uint32_t"),
                      using_alias("FontFaceID", "uint32_t"),
-
                      struct_decl("Vec2",
                                  field_def("x", "float", default: "0.0f"),
                                  field_def("y", "float", default: "0.0f"),
@@ -126,20 +125,17 @@ class ProductionFixesTest < Minitest::Test
                                  function_decl("Vec2", "operator+", [param("const Vec2&", "other")], block)
                                    .inline_body(block(return_stmt(id("Vec2{x + other.x, y + other.y}"))))
                                    .const),
-
                      enum_class("AtlasFormat", [
                                   ["A8"],
                                   ["RGB8"],
                                   ["RGBA8"]
                                 ], underlying_type: "uint8_t"),
-
                      struct_decl("AtlasSlot",
                                  field_def("page_id", "uint32_t", default: "0"),
                                  field_def("texture_id", "uint32_t", default: "0"),
                                  function_decl("bool", "is_valid", [], block)
                                    .inline_body(block(return_stmt(binary("!=", id("texture_id"), int(0)))))
                                    .const)),
-
       namespace_decl("std",
                      template_class("hash", ["typename T"],
                                     function_decl("size_t", "operator()", [param("const T&", "k")], block)

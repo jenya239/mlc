@@ -20,7 +20,7 @@ module MLC
               function_registry: @function_registry,
               type_registry: @type_registry
             )
-          end
+              end
             end
           end
         end

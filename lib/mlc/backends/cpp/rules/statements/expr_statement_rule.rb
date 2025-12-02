@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module MLC
   module Backends
     module Cpp
@@ -18,10 +17,8 @@ module MLC
                 # Currently only IfExpr with unit type
                 raise "Unknown statement-like expression: #{node.expression.class}" unless context.checker.if_expr?(node.expression)
 
-                  # Delegate to IfStmt handling - lower as statement
+                # Delegate to IfStmt handling - lower as statement
                 context.lower_statement(node.expression)
-
-
 
               else
                 # Regular expression statement

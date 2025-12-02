@@ -29,7 +29,6 @@ module MLC
           rescue StandardError => e
             raise MultipleErrors.new(@errors) if @errors.any?
 
-
             raise e
 
           end

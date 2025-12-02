@@ -137,7 +137,7 @@ module MLC
           end
         end
 
-    private
+        private
 
         def should_filter_level?(level)
           level_value = LEVELS[level] || LEVELS[:info]

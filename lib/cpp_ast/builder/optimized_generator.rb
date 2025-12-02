@@ -221,7 +221,7 @@ module CppAst
         end
       end
 
-    private
+      private
 
       def is_string_expression(expr)
         case expr

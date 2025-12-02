@@ -32,6 +32,7 @@ class PassManagerTest < Minitest::Test
       def initialize
         @calls = 0
       end
+
       def call(context)
         @calls += 1
         context[:calls] = @calls

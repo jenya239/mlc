@@ -54,7 +54,7 @@ module MLC
           { header: header, implementation: implementation }
         end
 
-      private
+        private
 
         def generate_header_guard(module_name)
           # Convert Math::Vector -> MATH_VECTOR_HPP

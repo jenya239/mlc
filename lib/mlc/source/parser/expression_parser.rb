@@ -85,8 +85,6 @@ module MLC
 
             consume(:COMMA)
 
-
-
           end
 
           args
@@ -238,10 +236,10 @@ module MLC
             # Convert all non-last items to statements
             stmt_items.each do |item|
               statements << if item.is_a?(MLC::Source::AST::Stmt)
-                # Already a statement (VariableDecl, Assignment)
+                              # Already a statement (VariableDecl, Assignment)
                               item
                             else
-                # Wrap expression as statement
+                              # Wrap expression as statement
                               MLC::Source::AST::ExprStmt.new(expr: item)
                             end
             end
@@ -408,10 +406,10 @@ module MLC
             # Convert all non-last items to statements
             stmt_items.each do |item|
               statements << if item.is_a?(MLC::Source::AST::Stmt)
-                # Already a statement (VariableDecl, Assignment)
+                              # Already a statement (VariableDecl, Assignment)
                               item
                             else
-                # Wrap expression as statement
+                              # Wrap expression as statement
                               MLC::Source::AST::ExprStmt.new(expr: item)
                             end
             end
@@ -822,9 +820,6 @@ module MLC
 
               consume(:FAT_ARROW)
 
-
-
-
               # Parse body
               body = if current.type == :DO
                        wrap_block_like_expr(parse_do_expression)
@@ -952,7 +947,6 @@ module MLC
 
           # Don't parse record literal here - that's handled by match arms
           # Just return the identifier/expression
-
         end
 
         def parse_multiplication
@@ -1014,8 +1008,8 @@ module MLC
 
               consume(:OPERATOR) # consume '.'
 
-                # Check for tuple positional access: tuple.0, tuple.1
-                # Note: lexer may tokenize 0.1 as FLOAT_LITERAL, handle that case too
+              # Check for tuple positional access: tuple.0, tuple.1
+              # Note: lexer may tokenize 0.1 as FLOAT_LITERAL, handle that case too
               if current.type == :INT_LITERAL
                 index_token = consume(:INT_LITERAL)
                 index = index_token.value.to_i
@@ -1032,12 +1026,10 @@ module MLC
 
                 first_index = parts[0].to_i
                 second_index = parts[1].to_i
-                  # Build nested tuple access: expr.first_index.second_index
+                # Build nested tuple access: expr.first_index.second_index
                 inner_access = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: first_index), float_token)
                 expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: inner_access, index: second_index), float_token)
                 expr_line = last_token&.line
-
-
 
               else
                 member_token = consume(:IDENTIFIER)
@@ -1059,8 +1051,6 @@ module MLC
                 end
                 expr_line = last_token&.line
               end
-
-
 
             when :LBRACKET
               # Array indexing or slicing: expr[index] or expr[start..end]
@@ -1375,10 +1365,10 @@ module MLC
             # Convert all non-last items to statements
             stmt_items.each do |item|
               statements << if item.is_a?(MLC::Source::AST::Stmt)
-                # Already a statement (VariableDecl, Assignment)
+                              # Already a statement (VariableDecl, Assignment)
                               item
                             else
-                # Wrap expression as statement
+                              # Wrap expression as statement
                               MLC::Source::AST::ExprStmt.new(expr: item)
                             end
             end

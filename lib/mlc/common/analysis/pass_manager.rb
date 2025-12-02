@@ -86,7 +86,7 @@ module MLC
           pass&.metadata
         end
 
-    private
+        private
 
         def run_pass(pass, context, index)
           log_pass_start(pass, context, index)

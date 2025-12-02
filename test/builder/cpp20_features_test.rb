@@ -41,8 +41,8 @@ class Cpp20FeaturesTest < Minitest::Test
   def test_coroutine_function
     coroutine = coroutine_function("int", "generator", [param("int", "max")], block(
                                                                                 co_yield(int(1)),
-      co_yield(int(2)),
-      co_return(int(3))
+                                                                                co_yield(int(2)),
+                                                                                co_return(int(3))
                                                                               ))
 
     assert_includes coroutine.to_source, "coroutine int generator"
@@ -83,8 +83,8 @@ class Cpp20FeaturesTest < Minitest::Test
                   # Coroutine function
                   coroutine_function("int", "async_generator", [param("int", "count")], block(
                                                                                           co_yield(int(1)),
-                    co_yield(int(2)),
-                    co_return(int(0))
+                                                                                          co_yield(int(2)),
+                                                                                          co_return(int(0))
                                                                                         )),
 
                   # Export declarations
@@ -130,7 +130,7 @@ class Cpp20FeaturesTest < Minitest::Test
   def test_coroutine_with_await
     coroutine = coroutine_function("int", "async_task", [], block(
                                                               co_await(call(id("async_operation"), "get", [])),
-      co_return(int(42))
+                                                              co_return(int(42))
                                                             ))
 
     assert_includes coroutine.to_source, "coroutine int async_task"

@@ -848,12 +848,12 @@ module MLC
               if @pos < @source.length
                 escaped = @source[@pos]
                 current_word << case escaped
-                when 'n' then "\n"
-                when 't' then "\t"
-                when 'r' then "\r"
-                when 's' then " " # Escaped space
-                when '\\' then "\\"
-                when close_delim then close_delim
+                                when 'n' then "\n"
+                                when 't' then "\t"
+                                when 'r' then "\r"
+                                when 's' then " " # Escaped space
+                                when '\\' then "\\"
+                                when close_delim then close_delim
                 else
                   escaped
                                 end

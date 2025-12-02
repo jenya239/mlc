@@ -176,7 +176,6 @@ class OpenGLCoverageTest < Minitest::Test
                          using_alias("FontFaceID", "uint32_t"),
                          using_alias("AtlasPageID", "uint32_t"),
                          using_alias("TextureID", "uint32_t"),
-
                          struct_decl("Vec2",
                                      field_def("float", "x", default: "0.0f"),
                                      field_def("float", "y", default: "0.0f"),
@@ -192,7 +191,6 @@ class OpenGLCoverageTest < Minitest::Test
                                      function_decl("Vec2", "operator*", [param("float", "s")], block)
                                        .const,
                                      function_decl("Vec2&", "operator+=", [param("const Vec2&", "other")], block)),
-
                          struct_decl("Rect",
                                      field_def("float", "x", default: "0.0f"),
                                      field_def("float", "y", default: "0.0f"),
@@ -207,7 +205,6 @@ class OpenGLCoverageTest < Minitest::Test
                                        .const,
                                      function_decl("float", "area", [], block)
                                        .const),
-
                          struct_decl("Color",
                                      field_def("float", "r", default: "1.0f"),
                                      field_def("float", "g", default: "1.0f"),
@@ -238,13 +235,11 @@ class OpenGLCoverageTest < Minitest::Test
                                        .inline_body(block(return_stmt(brace_initializer([number(0.0), number(0.0), number(1.0), number(1.0)]))))
                                        .static
                                        .constexpr),
-
                          enum_class("AtlasFormat", [
                                       ["A8"],
                                       ["RGB8"],
                                       ["RGBA8"]
                                     ], underlying_type: "uint8_t"),
-
                          enum_class("RenderMode", [
                                       ["BITMAP"],
                                       ["MSDF"],

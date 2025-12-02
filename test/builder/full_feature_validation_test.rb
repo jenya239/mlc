@@ -197,7 +197,6 @@ class FullFeatureValidationTest < Minitest::Test
                        .inline_body(block(return_stmt(id("shader_"))))
                        .const
                        .noexcept,
-
                      function_decl("bool", "is_valid", [], block)
                        .inline_body(block(return_stmt(binary("!=", id("shader_"), int(0)))))
                        .const

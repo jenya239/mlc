@@ -21,6 +21,7 @@ class EventBusTest < Minitest::Test
       def initialize
         @payloads = []
       end
+
       def call(payload)
         @payloads << payload
       end

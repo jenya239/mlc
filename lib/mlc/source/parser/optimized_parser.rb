@@ -90,9 +90,6 @@ module MLC
           @last_token = current
           @pos += 1
           @last_token
-
-
-
         end
 
         # Batch token processing for better performance
@@ -102,9 +99,6 @@ module MLC
             break unless current.type == type
 
             results << consume(type)
-
-
-
           end
           results
         end
@@ -122,7 +116,6 @@ module MLC
 
           @memo.clear
           @expression_cache.clear
-
         end
 
         def parse_integer_literal

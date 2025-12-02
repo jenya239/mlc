@@ -17,9 +17,6 @@ module CppAst
 
           declarator_separators << current_token.lexeme + current_token.trailing_trivia
           advance_raw
-
-
-
         end
 
         _semicolon_prefix = current_leading_trivia

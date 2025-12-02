@@ -47,7 +47,7 @@ module MLC
           Instantiation.new(type_map, param_types, ret_type)
         end
 
-      private
+        private
 
         # Check if type_map is missing any type parameters
         def incomplete_type_map?(type_map, type_params)

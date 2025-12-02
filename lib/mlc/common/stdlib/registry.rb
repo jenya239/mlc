@@ -15,59 +15,59 @@ module MLC
           path: "collections/array.mlc"
         },
         "std/core/option" => {
-    category: "core",
+          category: "core",
     type: :pure,
 
     path: "core/option.mlc"
-  },
+        },
         "std/core/result" => {
-    category: "core",
+          category: "core",
     type: :pure,
 
     path: "core/result.mlc"
-  },
+        },
         "std/data/json" => {
-    category: "data",
+          category: "data",
     type: :extern,
     namespace: "mlc::json",
     path: "data/json.mlc"
-  },
+        },
         "std/graphics/graphics" => {
-    category: "graphics",
+          category: "graphics",
     type: :extern,
     namespace: "mlc::graphics",
     path: "graphics/graphics.mlc"
-  },
+        },
         "std/io/file" => {
-    category: "io",
+          category: "io",
     type: :extern,
     namespace: "mlc::io",
     path: "io/file.mlc"
-  },
+        },
         "std/io/io" => {
-    category: "io",
+          category: "io",
     type: :extern,
     namespace: "mlc::io",
     path: "io/io.mlc"
-  },
+        },
         "std/math/math" => {
-    category: "math",
+          category: "math",
     type: :extern,
     namespace: "mlc::math",
     path: "math/math.mlc"
-  },
+        },
         "std/text/conv" => {
-    category: "text",
+          category: "text",
     type: :extern,
     namespace: "mlc",
     path: "text/conv.mlc"
-  },
+        },
         "std/text/string" => {
-    category: "text",
+          category: "text",
     type: :extern,
     namespace: "mlc",
     path: "text/string.mlc"
-  },
+        },
       }.freeze
 
       # Legacy module name aliases for backward compatibility

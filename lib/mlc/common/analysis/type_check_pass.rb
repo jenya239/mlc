@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 module MLC
   module Common
     module Analysis

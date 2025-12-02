@@ -62,7 +62,7 @@ module MLC
               statements.each_with_object([]) do |stmt, acc|
             result = visit(stmt)
             acc.concat(Array(result))
-          end
+              end
             end
 
             private

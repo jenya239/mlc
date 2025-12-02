@@ -101,7 +101,6 @@ class MLCFullTest < Minitest::Test
       sum_type("Response",
                case_struct("Success", field_def("data", "std::optional<int>")),
                case_struct("Error", field_def("message", "std::string"))),
-
       function_decl("int", "handle_response",
                     [param(borrowed("Response"), "response")],
                     block(
@@ -143,7 +142,6 @@ class MLCFullTest < Minitest::Test
     ast = program(
       product_type("Simple",
                    field_def("value", "int")),
-
       function_decl("int", "get_value",
                     [param(borrowed("Simple"), "s")],
                     block(
