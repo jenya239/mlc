@@ -24,9 +24,9 @@ lines.each_with_index do |line, idx|
   # Lines 8 to total-3: add 4 spaces
   elsif idx >= 8 && idx < total - 2
     output << if line.strip.empty? || line.start_with?("#")
-      line
-    else
-      ("    " + line)
+                line
+              else
+                ("    " + line)
               end
   # Last 2 lines: replace closing ends
   elsif idx == total - 2

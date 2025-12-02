@@ -51,16 +51,17 @@ class NamespaceRefactor
     end
 
     return unless new_content != content
-      @stats[:files_modified] += 1
-      @stats[:replacements] += replacements.size
 
-      if @dry_run
-        puts "📝 Would modify #{file} (#{replacements.size} replacements)"
-      else
-        File.write(file, new_content)
-        puts "✅ Modified #{file} (#{replacements.size} replacements)"
-      end
-    
+    @stats[:files_modified] += 1
+    @stats[:replacements] += replacements.size
+
+    if @dry_run
+      puts "📝 Would modify #{file} (#{replacements.size} replacements)"
+    else
+      File.write(file, new_content)
+      puts "✅ Modified #{file} (#{replacements.size} replacements)"
+    end
+
   end
 
   def visit_node(node, source, replacements)

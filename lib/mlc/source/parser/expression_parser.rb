@@ -82,10 +82,11 @@ module MLC
             args << parse_expression
 
             break unless current.type == :COMMA
-              consume(:COMMA)
-            
-              
-            
+
+            consume(:COMMA)
+
+
+
           end
 
           args
@@ -238,10 +239,10 @@ module MLC
             stmt_items.each do |item|
               statements << if item.is_a?(MLC::Source::AST::Stmt)
                 # Already a statement (VariableDecl, Assignment)
-                item
-              else
+                              item
+                            else
                 # Wrap expression as statement
-                MLC::Source::AST::ExprStmt.new(expr: item)
+                              MLC::Source::AST::ExprStmt.new(expr: item)
                             end
             end
 
@@ -408,10 +409,10 @@ module MLC
             stmt_items.each do |item|
               statements << if item.is_a?(MLC::Source::AST::Stmt)
                 # Already a statement (VariableDecl, Assignment)
-                item
-              else
+                              item
+                            else
                 # Wrap expression as statement
-                MLC::Source::AST::ExprStmt.new(expr: item)
+                              MLC::Source::AST::ExprStmt.new(expr: item)
                             end
             end
 
@@ -524,9 +525,9 @@ module MLC
             consume(:ELSE)
             # Check for else-if chain
             else_branch = if current.type == :IF || current.type == :UNLESS
-              wrap_block_like_expr(parse_if_or_unless_expression(inside_block: inside_block))
-            else
-              parse_if_branch_expression
+                            wrap_block_like_expr(parse_if_or_unless_expression(inside_block: inside_block))
+                          else
+                            parse_if_branch_expression
                           end
           end
 
@@ -818,10 +819,11 @@ module MLC
 
               # Expect =>
               raise "Expected => in match arm" unless current.type == :FAT_ARROW
-                consume(:FAT_ARROW)
-              
-                
-              
+
+              consume(:FAT_ARROW)
+
+
+
 
               # Parse body
               body = if current.type == :DO
@@ -950,7 +952,7 @@ module MLC
 
           # Don't parse record literal here - that's handled by match arms
           # Just return the identifier/expression
-          
+
         end
 
         def parse_multiplication
@@ -1009,55 +1011,57 @@ module MLC
 
             when :OPERATOR
               break unless current.value == "."
-                consume(:OPERATOR) # consume '.'
+
+              consume(:OPERATOR) # consume '.'
 
                 # Check for tuple positional access: tuple.0, tuple.1
                 # Note: lexer may tokenize 0.1 as FLOAT_LITERAL, handle that case too
-                if current.type == :INT_LITERAL
-                  index_token = consume(:INT_LITERAL)
-                  index = index_token.value.to_i
-                  expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: index), index_token)
-                  expr_line = last_token&.line
-                elsif current.type == :FLOAT_LITERAL
-                  # Handle chained access like tuple.0.1 where 0.1 is tokenized as float
-                  # Split 0.1 into index 0 and .1 for further processing
-                  float_token = consume(:FLOAT_LITERAL)
-                  float_str = float_token.value.to_s
-                  # Parse as "index.remaining_index"
-                  parts = float_str.split('.')
-                  raise parse_error("Invalid tuple access syntax") unless parts.size == 2 && parts[0] =~ /^\d+$/ && parts[1] =~ /^\d+$/
-                    first_index = parts[0].to_i
-                    second_index = parts[1].to_i
-                    # Build nested tuple access: expr.first_index.second_index
-                    inner_access = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: first_index), float_token)
-                    expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: inner_access, index: second_index), float_token)
-                    expr_line = last_token&.line
-                  
-                    
-                  
-                else
-                  member_token = consume(:IDENTIFIER)
-                  member = member_token.value
-                  member_line = member_token.line
+              if current.type == :INT_LITERAL
+                index_token = consume(:INT_LITERAL)
+                index = index_token.value.to_i
+                expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: index), index_token)
+                expr_line = last_token&.line
+              elsif current.type == :FLOAT_LITERAL
+                # Handle chained access like tuple.0.1 where 0.1 is tokenized as float
+                # Split 0.1 into index 0 and .1 for further processing
+                float_token = consume(:FLOAT_LITERAL)
+                float_str = float_token.value.to_s
+                # Parse as "index.remaining_index"
+                parts = float_str.split('.')
+                raise parse_error("Invalid tuple access syntax") unless parts.size == 2 && parts[0] =~ /^\d+$/ && parts[1] =~ /^\d+$/
 
-                  # Check if it's a method call: obj.method()
-                  # Only treat LPAREN as method call if it's on the same line as the member name
-                  if current.type == :LPAREN && current.line == member_line
-                    consume(:LPAREN)
-                    args = parse_args
-                    consume(:RPAREN)
-                    # Create a call with member access as callee
-                    member_access = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
-                    expr = attach_origin(MLC::Source::AST::Call.new(callee: member_access, args: args), member_token)
-                  else
-                    # Just member access: obj.field
-                    expr = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
-                  end
-                  expr_line = last_token&.line
+                first_index = parts[0].to_i
+                second_index = parts[1].to_i
+                  # Build nested tuple access: expr.first_index.second_index
+                inner_access = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: first_index), float_token)
+                expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: inner_access, index: second_index), float_token)
+                expr_line = last_token&.line
+
+
+
+              else
+                member_token = consume(:IDENTIFIER)
+                member = member_token.value
+                member_line = member_token.line
+
+                # Check if it's a method call: obj.method()
+                # Only treat LPAREN as method call if it's on the same line as the member name
+                if current.type == :LPAREN && current.line == member_line
+                  consume(:LPAREN)
+                  args = parse_args
+                  consume(:RPAREN)
+                  # Create a call with member access as callee
+                  member_access = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
+                  expr = attach_origin(MLC::Source::AST::Call.new(callee: member_access, args: args), member_token)
+                else
+                  # Just member access: obj.field
+                  expr = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
                 end
-              
-                
-              
+                expr_line = last_token&.line
+              end
+
+
+
             when :LBRACKET
               # Array indexing or slicing: expr[index] or expr[start..end]
               lbracket_token = consume(:LBRACKET)
@@ -1372,10 +1376,10 @@ module MLC
             stmt_items.each do |item|
               statements << if item.is_a?(MLC::Source::AST::Stmt)
                 # Already a statement (VariableDecl, Assignment)
-                item
-              else
+                              item
+                            else
                 # Wrap expression as statement
-                MLC::Source::AST::ExprStmt.new(expr: item)
+                              MLC::Source::AST::ExprStmt.new(expr: item)
                             end
             end
 

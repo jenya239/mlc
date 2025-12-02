@@ -24,13 +24,13 @@ lines.each_with_index do |line, idx|
   # Lines 40 to total-3: add 4 spaces indentation
   elsif idx >= 40 && idx < total - 2
     output << if line.strip.empty?
-      line
-    elsif line.lstrip.start_with?("#")
+                line
+              elsif line.lstrip.start_with?("#")
       # Comments: add 4 spaces
-      ("    " + line)
-    else
+                ("    " + line)
+              else
       # Regular code: add 4 spaces
-      ("    " + line)
+                ("    " + line)
               end
   # Last 2 lines: replace closing ends with 4
   elsif idx == total - 2

@@ -10,7 +10,7 @@ class FullFeatureValidationTest < Minitest::Test
     ast = function_decl("GLuint", "handle", [], block)
           .inline_body(block(
                          return_stmt(binary("+", id("shader_"), int(1)))
-      ))
+                       ))
           .const
           .noexcept
 
@@ -23,7 +23,7 @@ class FullFeatureValidationTest < Minitest::Test
     ast2 = function_decl("Color", "white", [], block)
            .inline_body(block(
                           return_stmt(binary("=", id("r"), float(1.0)))
-      ))
+                        ))
            .static
            .constexpr
 

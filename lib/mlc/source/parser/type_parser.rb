@@ -17,10 +17,11 @@ module MLC
             variants << variant_name
 
             break unless current.type == :COMMA
-              consume(:COMMA)
-            
-              
-            
+
+            consume(:COMMA)
+
+
+
           end
 
           consume(:RBRACE)
@@ -39,10 +40,11 @@ module MLC
             fields << { name: field_name, type: field_type }
 
             break unless current.type == :COMMA
-              consume(:COMMA)
-            
-              
-            
+
+            consume(:COMMA)
+
+
+
           end
 
           consume(:RBRACE)
@@ -74,10 +76,11 @@ module MLC
                 field_index += 1
 
                 break unless current.type == :COMMA
-                  consume(:COMMA)
-                
-                  
-                
+
+                consume(:COMMA)
+
+
+
               end
               consume(:RPAREN)
             elsif current.type == :LBRACE
@@ -90,10 +93,11 @@ module MLC
                 variant_fields << { name: field_name, type: field_type }
 
                 break unless current.type == :COMMA
-                  consume(:COMMA)
-                
-                  
-                
+
+                consume(:COMMA)
+
+
+
               end
               consume(:RBRACE)
             end
@@ -281,10 +285,11 @@ module MLC
               consume(:COLON)
 
               raise "Expected constraint identifier, got #{current.type}(#{current.value})" unless current.type == :IDENTIFIER
-                constraint = consume(:IDENTIFIER).value
-              
-                
-              
+
+              constraint = consume(:IDENTIFIER).value
+
+
+
             end
 
             params << with_origin(name_token) { MLC::Source::AST::TypeParam.new(name: name, constraint: constraint) }

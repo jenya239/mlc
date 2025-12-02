@@ -183,12 +183,13 @@ module MLC
               end
 
               return if missing_methods.empty?
-                origin = decl.origin
-                location = origin ? " at #{origin.label}" : ""
-                raise MLC::CompileError,
-                      "Incomplete trait implementation: #{type_name} does not implement " \
-                      "required method(s) #{missing_methods.join(', ')} from trait #{trait_name}#{location}"
-              
+
+              origin = decl.origin
+              location = origin ? " at #{origin.label}" : ""
+              raise MLC::CompileError,
+                    "Incomplete trait implementation: #{type_name} does not implement " \
+                    "required method(s) #{missing_methods.join(', ')} from trait #{trait_name}#{location}"
+
             end
 
             def extract_type_name(type)

@@ -14,9 +14,9 @@ lines.each_with_index do |line, idx|
   # Lines 11-102 need 4 additional spaces
   elsif idx >= 11 && idx < 103
     output << if line.strip.empty? || line.start_with?("#")
-      line
-    else
-      ("    " + line)
+                line
+              else
+                ("    " + line)
               end
   # Lines 103-106: replace closing ends
   elsif idx == 103

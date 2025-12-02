@@ -40,9 +40,9 @@ files.each do |file|
     elsif in_namespace && idx > namespace_line && !line.match?(/^\s{8,}end/)
       # Add 4 spaces if not already indented enough
       output << if line.strip.empty?
-        line
-      else
-        ("    " + line)
+                  line
+                else
+                  ("    " + line)
                 end
     else
       output << line

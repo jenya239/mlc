@@ -26,13 +26,15 @@ module CppAst
 
         # Binary operators
         def +(other)
-          ExprNode.new(Nodes::BinaryExpression.new(
-                         left: @node,
-                         operator: "+",
-                         right: other.node,
-                         operator_prefix: " ",
-                         operator_suffix: " "
-          ))
+          ExprNode.new(
+            Nodes::BinaryExpression.new(
+              left: @node,
+              operator: "+",
+              right: other.node,
+              operator_prefix: " ",
+              operator_suffix: " "
+            )
+          )
         end
 
         def -(other)
@@ -42,7 +44,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         def *(other)
@@ -52,7 +54,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         def /(other)
@@ -62,7 +64,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         def %(other)
@@ -72,7 +74,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         def ==(other)
@@ -82,7 +84,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         def !=(other)
@@ -92,7 +94,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         def <(other)
@@ -102,7 +104,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         def <=(other)
@@ -112,7 +114,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         def >(other)
@@ -122,7 +124,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         def >=(other)
@@ -132,7 +134,7 @@ module CppAst
                          right: other.node,
                          operator_prefix: " ",
                          operator_suffix: " "
-          ))
+                       ))
         end
 
         # Unary operators
@@ -141,7 +143,7 @@ module CppAst
                          operator: "-",
                          operand: @node,
                          prefix: true
-          ))
+                       ))
         end
 
         def !
@@ -149,7 +151,7 @@ module CppAst
                          operator: "!",
                          operand: @node,
                          prefix: true
-          ))
+                       ))
         end
 
         # Postfix operators
@@ -158,7 +160,7 @@ module CppAst
                          operator: "++",
                          operand: @node,
                          prefix: false
-          ))
+                       ))
         end
 
         def decrement
@@ -166,7 +168,7 @@ module CppAst
                          operator: "--",
                          operand: @node,
                          prefix: false
-          ))
+                       ))
         end
 
         # Method calls
@@ -179,7 +181,7 @@ module CppAst
                          ),
                          arguments: args.map(&:node),
                          argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
-          ))
+                       ))
         end
 
         # Member access
@@ -187,7 +189,7 @@ module CppAst
           ExprNode.new(Nodes::ArrayAccessExpression.new(
                          array: @node,
                          index: index.node
-          ))
+                       ))
         end
 
         # Member access with dot
@@ -196,7 +198,7 @@ module CppAst
                          object: @node,
                          operator: ".",
                          member: field_name.to_s
-          ))
+                       ))
         end
 
         # Pipe operator
@@ -210,7 +212,7 @@ module CppAst
                          left: @node,
                          operator: "=",
                          right: value.node
-          ))
+                       ))
         end
 
         # Convert to underlying node
@@ -261,7 +263,7 @@ module CppAst
                          callee: callee_node,
                          arguments: args.map { |arg| arg.respond_to?(:node) ? arg.node : arg },
                          argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
-          ))
+                       ))
         end
 
         # Member access
@@ -270,7 +272,7 @@ module CppAst
                          object: object.node,
                          operator: ".",
                          member: field_name.to_s
-          ))
+                       ))
         end
 
         # Array access
@@ -278,7 +280,7 @@ module CppAst
           ExprNode.new(Nodes::ArrayAccessExpression.new(
                          array: array.node,
                          index: index.node
-          ))
+                       ))
         end
 
         # Dereference
@@ -287,7 +289,7 @@ module CppAst
                          operator: "*",
                          operand: expr.node,
                          prefix: true
-          ))
+                       ))
         end
 
         # Address of
@@ -296,7 +298,7 @@ module CppAst
                          operator: "&",
                          operand: expr.node,
                          prefix: true
-          ))
+                       ))
         end
 
         # Cast
@@ -304,7 +306,7 @@ module CppAst
           ExprNode.new(Nodes::CastExpression.new(
                          type: type.to_cpp_type,
                          expression: expr.node
-          ))
+                       ))
         end
 
         # Ternary operator
@@ -313,7 +315,7 @@ module CppAst
                          condition: condition.node,
                          true_expression: true_expr.node,
                          false_expression: false_expr.node
-          ))
+                       ))
         end
 
         # Sizeof
@@ -330,7 +332,7 @@ module CppAst
           ExprNode.new(Nodes::NewExpression.new(
                          type: type.to_cpp_type,
                          arguments: args.map(&:node)
-          ))
+                       ))
         end
 
         def delete(expr)
@@ -342,7 +344,7 @@ module CppAst
           ExprNode.new(Nodes::LambdaExpression.new(
                          parameters: params,
                          body: body.node
-          ))
+                       ))
         end
 
         # No alias to avoid conflict with TypesDSL::lambda

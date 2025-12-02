@@ -97,7 +97,7 @@ class EdgeCasesTest < Minitest::Test
                            block(return_stmt(id("std::nullopt"))),
                            block(return_stmt(id("target")))
                          )
-      ))
+                       ))
           .const
           .nodiscard
     cpp_code = ast.to_source

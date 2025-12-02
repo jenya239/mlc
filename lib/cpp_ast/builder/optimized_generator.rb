@@ -191,9 +191,9 @@ module CppAst
         result += func.params.map { |p| "int #{p.name}" }.join(", ")
         result += ") {\n"
         result += if func.body
-          "  return #{generate_MLC_expression(func.body)};\n"
-        else
-          "  return 0;\n"
+                    "  return #{generate_MLC_expression(func.body)};\n"
+                  else
+                    "  return 0;\n"
                   end
         result += "}"
         result

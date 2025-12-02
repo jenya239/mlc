@@ -68,7 +68,7 @@ class AdvancedTemplatesTest < Minitest::Test
                                     param("T", "obj")
                                   ], block(
                                        expr_stmt(call(id("obj"), "draw", []))
-                    )))
+                                     )))
     )
 
     assert_includes program.to_source, "concept Drawable"
@@ -101,7 +101,7 @@ class AdvancedTemplatesTest < Minitest::Test
                                     param("Args...", "args")
                                   ], block(
                                        return_stmt(call(id("std::reduce"), [id("args...")]))
-                    )))
+                                     )))
     )
 
     assert_includes program.to_source, "concept Arithmetic"

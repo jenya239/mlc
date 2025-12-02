@@ -160,14 +160,14 @@ module MLC
           statements = block_expr.statements.map { |stmt| @context.lower_statement(stmt) }
 
           # Skip unit literals - they represent void/no value
-if block_expr.result && !block_expr.result.is_a?(SemanticIR::UnitLiteral)
-              result_expr = @context.lower_expression(block_expr.result)
-              statements << if emit_return
-                CppAst::Nodes::ReturnStatement.new(expression: result_expr)
-              else
-                CppAst::Nodes::ExpressionStatement.new(expression: result_expr)
-                            end
-            end
+          if block_expr.result && !block_expr.result.is_a?(SemanticIR::UnitLiteral)
+            result_expr = @context.lower_expression(block_expr.result)
+            statements << if emit_return
+                            CppAst::Nodes::ReturnStatement.new(expression: result_expr)
+                          else
+                            CppAst::Nodes::ExpressionStatement.new(expression: result_expr)
+                          end
+                      end
 
           statements
         end

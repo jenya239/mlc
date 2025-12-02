@@ -60,9 +60,9 @@ module CppAst
         fields.zip(field_trailings).each do |field, trailing|
           field_str = if field.is_a?(Array) && field.length == 2
             # Handle field_def format: [name, type]
-            "#{field[1]} #{field[0]};"
-          else
-            field.respond_to?(:to_source) ? field.to_source : field.to_s
+                        "#{field[1]} #{field[0]};"
+                      else
+                        field.respond_to?(:to_source) ? field.to_source : field.to_s
                       end
           result << field_str << trailing
         end

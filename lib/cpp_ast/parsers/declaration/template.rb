@@ -24,11 +24,11 @@ module CppAst
           when :greater
             depth -= 1
             break if depth.zero?
-              
-            
-              params << current_token.lexeme << current_token.trailing_trivia
-              advance_raw
-            
+
+
+            params << current_token.lexeme << current_token.trailing_trivia
+            advance_raw
+
           else
             params << current_token.lexeme << current_token.trailing_trivia
             advance_raw

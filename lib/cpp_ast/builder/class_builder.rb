@@ -102,16 +102,16 @@ module CppAst
           }.merge(modifiers)
 
           @members << if ctor_modifiers[:default]
-            DefaultConstructor.new(modifiers: ctor_modifiers)
-          elsif ctor_modifiers[:delete]
-            DeletedConstructor.new(modifiers: ctor_modifiers)
-          else
-            Constructor.new(
-              params: params,
-              modifiers: ctor_modifiers,
-              body: block
-            )
-                      end
+                        DefaultConstructor.new(modifiers: ctor_modifiers)
+                      elsif ctor_modifiers[:delete]
+                        DeletedConstructor.new(modifiers: ctor_modifiers)
+                      else
+                        Constructor.new(
+                          params: params,
+                          modifiers: ctor_modifiers,
+                          body: block
+                        )
+                       end
           self
         end
 
@@ -125,15 +125,15 @@ module CppAst
           }.merge(modifiers)
 
           @members << if dtor_modifiers[:default]
-            DefaultDestructor.new(modifiers: dtor_modifiers)
-          elsif dtor_modifiers[:delete]
-            DeletedDestructor.new(modifiers: dtor_modifiers)
-          else
-            Destructor.new(
-              modifiers: dtor_modifiers,
-              body: block
-            )
-                      end
+                        DefaultDestructor.new(modifiers: dtor_modifiers)
+                      elsif dtor_modifiers[:delete]
+                        DeletedDestructor.new(modifiers: dtor_modifiers)
+                      else
+                        Destructor.new(
+                          modifiers: dtor_modifiers,
+                          body: block
+                        )
+                       end
           self
         end
 
@@ -306,11 +306,12 @@ module CppAst
         def to_node
           param_nodes = @params.map do |param|
             raise ArgumentError, "Invalid parameter format: #{param}" unless param.is_a?(Array) && param.size == 2
-              type, name = param
-              Nodes::Parameter.new(type: type.respond_to?(:to_cpp_type) ? type.to_cpp_type : type.to_s, name: name.to_s)
-            
-              
-            
+
+            type, name = param
+            Nodes::Parameter.new(type: type.respond_to?(:to_cpp_type) ? type.to_cpp_type : type.to_s, name: name.to_s)
+
+
+
           end
 
           Nodes::FunctionDeclaration.new(
@@ -496,11 +497,12 @@ module CppAst
         def to_node
           param_nodes = @params.map do |param|
             raise ArgumentError, "Invalid parameter format: #{param}" unless param.is_a?(Array) && param.size == 2
-              type, name = param
-              Nodes::Parameter.new(type: type.respond_to?(:to_cpp_type) ? type.to_cpp_type : type.to_s, name: name.to_s)
-            
-              
-            
+
+            type, name = param
+            Nodes::Parameter.new(type: type.respond_to?(:to_cpp_type) ? type.to_cpp_type : type.to_s, name: name.to_s)
+
+
+
           end
 
           Nodes::FunctionDeclaration.new(

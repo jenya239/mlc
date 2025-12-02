@@ -17,11 +17,12 @@ module MLC
                 # Expression with unit type should be lowered as statement
                 # Currently only IfExpr with unit type
                 raise "Unknown statement-like expression: #{node.expression.class}" unless context.checker.if_expr?(node.expression)
+
                   # Delegate to IfStmt handling - lower as statement
-                  context.lower_statement(node.expression)
-                
-                  
-                
+                context.lower_statement(node.expression)
+
+
+
               else
                 # Regular expression statement
                 expr = context.lower_expression(node.expression)

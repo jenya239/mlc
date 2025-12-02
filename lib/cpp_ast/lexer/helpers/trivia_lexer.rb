@@ -46,10 +46,11 @@ module CppAst
 
           if char == "\n"
             break unless @position.positive? && @source[@position - 1] == '\\'
-              lexeme << advance
-            
-              
-            
+
+            lexeme << advance
+
+
+
           else
             lexeme << advance
           end

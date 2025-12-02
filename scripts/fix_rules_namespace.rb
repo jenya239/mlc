@@ -32,11 +32,11 @@ while i < lines.length
   elsif i >= 3 && i < lines.length - 2
     # Add 6 spaces to content lines (3 to 45)
     output_lines << if line.strip.empty?
-      line
-    elsif line.start_with?("#")
-      "      " + line
-    else
-      "      " + line
+                      line
+                    elsif line.start_with?("#")
+                      "      " + line
+                    else
+                      "      " + line
                     end
     i += 1
   elsif i == lines.length - 2

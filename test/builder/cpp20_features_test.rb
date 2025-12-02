@@ -15,7 +15,7 @@ class Cpp20FeaturesTest < Minitest::Test
                               var_decl("int", "pi", "3"),
                               function_decl("int", "add", [param("int", "a"), param("int", "b")], block(
                                                                                                     return_stmt(binary("+", id("a"), id("b")))
-                              )))
+                                                                                                  )))
 
     assert_includes module_decl.to_source, "export module math"
     assert_includes module_decl.to_source, "int pi"
@@ -43,7 +43,7 @@ class Cpp20FeaturesTest < Minitest::Test
                                                                                 co_yield(int(1)),
       co_yield(int(2)),
       co_return(int(3))
-    ))
+                                                                              ))
 
     assert_includes coroutine.to_source, "coroutine int generator"
     assert_includes coroutine.to_source, "co_yield"
@@ -85,7 +85,7 @@ class Cpp20FeaturesTest < Minitest::Test
                                                                                           co_yield(int(1)),
                     co_yield(int(2)),
                     co_return(int(0))
-                  )),
+                                                                                        )),
 
                   # Export declarations
                   export_decl(
@@ -131,7 +131,7 @@ class Cpp20FeaturesTest < Minitest::Test
     coroutine = coroutine_function("int", "async_task", [], block(
                                                               co_await(call(id("async_operation"), "get", [])),
       co_return(int(42))
-    ))
+                                                            ))
 
     assert_includes coroutine.to_source, "coroutine int async_task"
     assert_includes coroutine.to_source, "co_await"

@@ -167,10 +167,11 @@ module MLC
             params << with_origin(name_token) { MLC::Source::AST::Param.new(name: name, type: type) }
 
             break unless current.type == :COMMA
-              consume(:COMMA)
-            
-              
-            
+
+            consume(:COMMA)
+
+
+
           end
 
           params
@@ -206,20 +207,22 @@ module MLC
                 # export async fn ...
                 consume(:ASYNC)
                 raise "Expected FN after export async, got #{current.type}" unless current.type == :FN
-                  func = parse_function(exported: true, is_async: true)
-                  declarations << func
-                
-                  
-                
+
+                func = parse_function(exported: true, is_async: true)
+                declarations << func
+
+
+
               when :EXTERN
                 # export extern fn ...
                 consume(:EXTERN)
                 raise "Expected FN after export extern, got #{current.type}" unless current.type == :FN
-                  func = parse_function(external: true, exported: true)
-                  declarations << func
-                
-                  
-                
+
+                func = parse_function(external: true, exported: true)
+                declarations << func
+
+
+
               when :FN
                 func = parse_function(exported: true)
                 declarations << func
@@ -238,10 +241,11 @@ module MLC
               # Parse async function: async fn ...
               consume(:ASYNC)
               raise "Expected FN after async, got #{current.type}" unless current.type == :FN
-                declarations << parse_function(is_async: true)
-              
-                
-              
+
+              declarations << parse_function(is_async: true)
+
+
+
             when :EXTERN
               # Parse external declaration
               consume(:EXTERN)
@@ -311,10 +315,11 @@ module MLC
             position += 1
 
             break unless current.type == :COMMA
-              consume(:COMMA)
-            
-              
-            
+
+            consume(:COMMA)
+
+
+
           end
 
           { fields: fields, spreads: spreads }

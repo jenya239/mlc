@@ -54,8 +54,9 @@ class Minitest::Test
     # Check for inclusion tags (only run these)
     inclusion_tags = tags.reject { |t| t.start_with?('!') }.map(&:to_sym)
     return if inclusion_tags.empty?
-      skip "Skipped due to tag filter" unless (self.class.tags & inclusion_tags).any?
-    
+
+    skip "Skipped due to tag filter" unless (self.class.tags & inclusion_tags).any?
+
   end
 
   def teardown

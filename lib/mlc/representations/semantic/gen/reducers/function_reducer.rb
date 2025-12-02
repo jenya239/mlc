@@ -128,7 +128,7 @@ module MLC
                 exported: func_decl.exported,
                 is_async: func_decl.is_async,
                 origin: func_decl.origin
-                )
+              )
               ensure
                 @var_type_registry.restore(saved_types)
             end

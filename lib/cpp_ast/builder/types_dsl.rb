@@ -392,11 +392,11 @@ module CppAst
         end
 
         # Custom types
-      def circle; TypeBuilder.new(:Circle) end
-      def rectangle; TypeBuilder.new(:Rectangle) end
-      def rect; TypeBuilder.new(:Rect) end
-      def triangle; TypeBuilder.new(:Triangle) end
-      def point; TypeBuilder.new(:Point) end
+        def circle; TypeBuilder.new(:Circle) end
+        def rectangle; TypeBuilder.new(:Rectangle) end
+        def rect; TypeBuilder.new(:Rect) end
+        def triangle; TypeBuilder.new(:Triangle) end
+        def point; TypeBuilder.new(:Point) end
 
         # lambda method already defined above
       end

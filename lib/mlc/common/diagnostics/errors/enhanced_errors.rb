@@ -18,9 +18,9 @@ module MLC
 
       # Add location if available
       lines << if @location
-        "#{@location}: #{message}"
-      else
-        message
+                 "#{@location}: #{message}"
+               else
+                 message
                end
 
       # Add suggestion if available

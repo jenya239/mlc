@@ -94,8 +94,8 @@ module MLC
                 member = callee.member
 
                 if callee.object.is_a?(SemanticIR::VarExpr) && (info = @type_checker.module_member_info(callee.object.name, member))
-                    @type_checker.validate_function_call(info, args, member)
-                    return info.ret_type
+                  @type_checker.validate_function_call(info, args, member)
+                  return info.ret_type
                   end
 
                 object_type = callee.object&.type

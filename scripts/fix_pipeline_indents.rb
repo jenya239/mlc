@@ -14,9 +14,9 @@ lines.each_with_index do |line, idx|
   # Lines 19 to length-5: add 4 spaces to non-empty lines
   elsif idx < lines.length - 4
     output << if line.strip.empty?
-      line
-    else
-      ("    " + line)
+                line
+              else
+                ("    " + line)
               end
   # Last 4 lines: replace with 4 closing ends
   elsif idx == lines.length - 4

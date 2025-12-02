@@ -87,11 +87,12 @@ module MLC
               origin ||= @current_node_proc&.call&.origin
 
               raise MLC::CompileError.new(message, origin: origin) unless error_recovery_mode?
-                @error_collector.add_error(message, origin: origin)
-                nil # Caller should handle nil return
-              
-                
-              
+
+              @error_collector.add_error(message, origin: origin)
+              nil # Caller should handle nil return
+
+
+
             end
 
             # Returns ErrorType instead of raising, for use in type inference
@@ -228,11 +229,12 @@ module MLC
               propagate_literal_types(expr, type)
 
               return unless update_registry && expr.is_a?(MLC::SemanticIR::VarExpr) && @var_type_registry
-                @var_type_registry.update_type(expr.name, type)
-                if (initializer = @var_type_registry.initializer(expr.name))
-                  assign_expression_type(initializer, type, update_registry: false)
-                end
-              
+
+              @var_type_registry.update_type(expr.name, type)
+              if (initializer = @var_type_registry.initializer(expr.name))
+                assign_expression_type(initializer, type, update_registry: false)
+              end
+
             end
 
             def set_expression_type(expr, type)

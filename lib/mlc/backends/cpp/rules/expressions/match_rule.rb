@@ -444,10 +444,10 @@ module MLC
                     # Extract nested value using structured binding access
                     binding_decls << if bindings.length == 1
                       # Single field - use .field0
-                      "auto #{nested_temp_var} = #{temp_var}.field0;"
-                    else
+                                       "auto #{nested_temp_var} = #{temp_var}.field0;"
+                                     else
                       # Multiple fields - use .fieldN
-                      "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
+                                       "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
                                      end
 
                     # Build nested pattern check

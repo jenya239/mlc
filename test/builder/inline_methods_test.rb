@@ -42,7 +42,7 @@ class InlineMethodsTest < Minitest::Test
                                           call(id("glGetUniformLocation"), [id("program_"), id("name")]),
                                           id("value")
                                         ]))
-      ))
+                       ))
           .const
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline void set_uniform"
@@ -55,7 +55,7 @@ class InlineMethodsTest < Minitest::Test
           .inline_body(block(
                          expr_stmt(binary("=", id("x"), id("x_"))),
         expr_stmt(binary("=", id("y"), id("y_")))
-      ))
+                       ))
           .explicit
           .constexpr
     cpp_code = ast.to_source

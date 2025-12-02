@@ -167,9 +167,9 @@ module CppAst
       def generate_unary_expression(node)
         operand = generate(node.operand)
         result = if node.prefix
-          "unary(#{node.operator.inspect}, #{operand})"
-        else
-          "unary_post(#{node.operator.inspect}, #{operand})"
+                   "unary(#{node.operator.inspect}, #{operand})"
+                 else
+                   "unary_post(#{node.operator.inspect}, #{operand})"
                  end
 
         result += "\n#{current_indent}.with_operator_suffix(#{node.operator_suffix.inspect})" if node.operator_suffix != ""

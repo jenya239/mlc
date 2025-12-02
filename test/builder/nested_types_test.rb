@@ -84,7 +84,7 @@ class NestedTypesTest < Minitest::Test
                                     var_decl("int", "value"),
                                     function_decl("void", "method", [], block(
                                                                           expr_stmt(cout_chain(string("Inner method called"), endl))
-                                    ))),
+                                                                        ))),
 
                        # Nested enum
                        nested_enum("State", "IDLE", "RUNNING", "STOPPED"),

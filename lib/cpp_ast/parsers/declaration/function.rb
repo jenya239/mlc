@@ -21,18 +21,18 @@ module CppAst
         # Architecture: space after ) goes into rparen_suffix, not modifiers_text
         rparen_suffix = rparen_suffix_from_params
         # If modifiers exist, move leading space from modifiers_text to rparen_suffix
-if !modifiers_text.empty? && modifiers_text.start_with?(" ")
-            rparen_suffix += modifiers_text[0]
-            modifiers_text = modifiers_text[1..]
-          end
+        if !modifiers_text.empty? && modifiers_text.start_with?(" ")
+          rparen_suffix += modifiers_text[0]
+          modifiers_text = modifiers_text[1..]
+                  end
 
         body, trailing = if current_token.kind == :lbrace
                            parse_block_statement(after_rparen)
                          else
                            _semicolon_prefix = after_rparen + current_leading_trivia
-          trailing = current_token.trailing_trivia
-          expect(:semicolon)
-          [nil, trailing]
+                           trailing = current_token.trailing_trivia
+                           expect(:semicolon)
+                           [nil, trailing]
                          end
 
         stmt = Nodes::FunctionDeclaration.new(

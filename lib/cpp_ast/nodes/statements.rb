@@ -392,11 +392,11 @@ module CppAst
 
         # Only generate body if it's explicitly marked as inline
         result << if body && body.respond_to?(:inline?) && body.inline?
-          body.to_source
-        elsif body
-          body.to_source
-        else
-          ";"
+                    body.to_source
+                  elsif body
+                    body.to_source
+                  else
+                    ";"
                   end
         result
       end
@@ -560,19 +560,19 @@ module CppAst
 
         # Convert enumerators array to string
         enumerator_strings = if enumerators.is_a?(String)
-          [enumerators]
-        else
-          enumerators.map do |enumerator|
-            if enumerator.is_a?(Array)
-              if enumerator[1]
-                "#{enumerator[0]} = #{enumerator[1]}"
-              else
-                enumerator[0]
-              end
-            else
-              enumerator.to_s
-            end
-          end
+                               [enumerators]
+                             else
+                               enumerators.map do |enumerator|
+                                 if enumerator.is_a?(Array)
+                                   if enumerator[1]
+                                     "#{enumerator[0]} = #{enumerator[1]}"
+                                   else
+                                     enumerator[0]
+                                   end
+                                 else
+                                   enumerator.to_s
+                                 end
+                               end
                              end
         result << enumerator_strings.join(", ")
 
