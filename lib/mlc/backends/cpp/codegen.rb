@@ -167,7 +167,7 @@ module MLC
                           else
                             CppAst::Nodes::ExpressionStatement.new(expression: result_expr)
                           end
-                      end
+          end
 
           statements
         end

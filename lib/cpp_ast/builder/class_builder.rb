@@ -111,7 +111,7 @@ module CppAst
                           modifiers: ctor_modifiers,
                           body: block
                         )
-                       end
+                      end
           self
         end
 
@@ -133,7 +133,7 @@ module CppAst
                           modifiers: dtor_modifiers,
                           body: block
                         )
-                       end
+                      end
           self
         end
 

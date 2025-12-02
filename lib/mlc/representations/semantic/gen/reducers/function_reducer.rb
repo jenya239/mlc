@@ -104,9 +104,9 @@ module MLC
 
               body_ir = nil
               @scope_context.with_function_return(signature.ret_type) do
-            body_ir = @engine.run_expression(func_decl.body)
-            body_ir = wrap_statement_like_expression(body_ir)
-          end
+                body_ir = @engine.run_expression(func_decl.body)
+                body_ir = wrap_statement_like_expression(body_ir)
+              end
 
               ensure_return_type!(func_decl, body_ir, signature.ret_type)
 
@@ -129,8 +129,8 @@ module MLC
                 is_async: func_decl.is_async,
                 origin: func_decl.origin
               )
-              ensure
-                @var_type_registry.restore(saved_types)
+            ensure
+              @var_type_registry.restore(saved_types)
             end
 
             def ensure_return_type!(func_decl, body_ir, expected_type)

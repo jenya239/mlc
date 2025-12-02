@@ -7,7 +7,7 @@ require_relative "../../lib/mlc/source/parser/error_recovery_parser"
 
 class EnhancedErrorHandlingTest < Minitest::Test
   def test_syntax_error_with_suggestion
-    <<~MLCORA
+    _source = <<~MLCORA
       fn test() -> i32 =#{' '}
         42
     MLCORA
@@ -106,7 +106,7 @@ class EnhancedErrorHandlingTest < Minitest::Test
   end
 
   def test_scope_error_suggestions
-    <<~MLCORA
+    _source = <<~MLCORA
       fn test() -> i32 = undefined_variable
     MLCORA
 

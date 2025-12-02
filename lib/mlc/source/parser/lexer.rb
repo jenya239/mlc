@@ -383,9 +383,6 @@ module MLC
               @column += 1
             elsif @source[@pos] == '{'
               # Potential start of interpolation
-              @pos
-              @column
-
               @pos += 1 # Skip {
               @column += 1
 
@@ -585,7 +582,6 @@ module MLC
 
           # Collect heredoc body lines
           body_lines = []
-          @pos
 
           while @pos < @source.length
             line_start = @pos

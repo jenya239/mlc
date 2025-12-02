@@ -24,7 +24,7 @@ module CppAst
         if !modifiers_text.empty? && modifiers_text.start_with?(" ")
           rparen_suffix += modifiers_text[0]
           modifiers_text = modifiers_text[1..]
-                  end
+        end
 
         body, trailing = if current_token.kind == :lbrace
                            parse_block_statement(after_rparen)
@@ -525,7 +525,6 @@ module CppAst
         if is_constructor && current_token.kind == :colon
           modifiers_text << after_rparen unless after_rparen.empty?
           modifiers_text << current_leading_trivia # Add leading trivia before ':'
-          ""
 
           while ![:lbrace, :semicolon].include?(current_token.kind) && !at_end?
             modifiers_text << current_token.lexeme << current_token.trailing_trivia

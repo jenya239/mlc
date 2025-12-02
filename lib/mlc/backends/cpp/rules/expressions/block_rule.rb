@@ -112,7 +112,7 @@ module MLC
                               else
                                 context.factory.expression_statement(expression: result_expr)
                               end
-                              end
+              end
 
               statements
             end

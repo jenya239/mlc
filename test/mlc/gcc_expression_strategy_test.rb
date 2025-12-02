@@ -6,7 +6,7 @@ require_relative "../../lib/mlc/common/index"
 class GccExpressionStrategyTest < Minitest::Test
   def test_simple_block_with_gcc_policy
     # Test that gcc_optimized policy generates statement expressions
-    <<~MLC
+    _source = <<~MLC
       fn test() -> i32 =
         let mut x = 1;
         let mut y = 2;
