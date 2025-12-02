@@ -30,9 +30,9 @@ module CppAst
         public
 
         # Boolean attribute getters (return the actual boolean values)
-        def is_const; @const; end
-        def is_ref; @ref; end
-        def is_mutable; @mutable; end
+        def const?; @const; end
+        def ref?; @ref; end
+        def mutable?; @mutable; end
 
         # Chainable builder methods (return new TypeBuilder)
         # These are the primary interface for building types
@@ -392,11 +392,25 @@ module CppAst
         end
 
         # Custom types
-        def circle; TypeBuilder.new(:Circle) end
-        def rectangle; TypeBuilder.new(:Rectangle) end
-        def rect; TypeBuilder.new(:Rect) end
-        def triangle; TypeBuilder.new(:Triangle) end
-        def point; TypeBuilder.new(:Point) end
+      def circle
+        TypeBuilder.new(:Circle)
+      end
+
+      def rectangle
+        TypeBuilder.new(:Rectangle)
+      end
+
+      def rect
+        TypeBuilder.new(:Rect)
+      end
+
+      def triangle
+        TypeBuilder.new(:Triangle)
+      end
+
+      def point
+        TypeBuilder.new(:Point)
+      end
 
         # lambda method already defined above
       end

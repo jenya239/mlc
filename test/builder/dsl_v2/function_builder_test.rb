@@ -345,7 +345,7 @@ class FunctionBuilderTest < Test::Unit::TestCase
                       { type: t.f32, name: :x, default: float(0.0) },
                       { type: t.f32, name: :y, default: float(0.0) }
                     ],
-                    ret: t.Point do
+                    ret: t.point do
       ret call(:Point, id(:x), id(:y))
     end
 
