@@ -155,9 +155,7 @@ module MLC
           return unless @event_bus || @verbose
 
           message = "[#{index + 1}/#{@passes.size}] Running pass: #{pass.name}"
-          if pass.base_pass?
-            message += " (#{pass.metadata[:input_level]} → #{pass.metadata[:output_level]})"
-          end
+          message += " (#{pass.metadata[:input_level]} → #{pass.metadata[:output_level]})" if pass.base_pass?
 
           log(:pass_start, message: message, pass: pass.name, metadata: pass.metadata)
         end

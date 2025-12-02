@@ -31,13 +31,13 @@ while i < lines.length
     next
   elsif i >= 3 && i < lines.length - 2
     # Add 6 spaces to content lines (3 to 45)
-    if line.strip.empty?
-      output_lines << line
+    output_lines << if line.strip.empty?
+      line
     elsif line.start_with?("#")
-      output_lines << "      " + line
+      "      " + line
     else
-      output_lines << "      " + line
-    end
+      "      " + line
+                    end
     i += 1
   elsif i == lines.length - 2
     # Replace closing ends

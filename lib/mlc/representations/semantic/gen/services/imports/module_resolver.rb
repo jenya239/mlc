@@ -45,9 +45,7 @@ module MLC
                   register_alias_for(function_registry, alias_key, entry.canonical_name)
                 end
 
-                if selected_items && !selected_items.empty?
-                  register_alias_for(function_registry, entry.info.name, entry.canonical_name)
-                end
+                register_alias_for(function_registry, entry.info.name, entry.canonical_name) if selected_items && !selected_items.empty?
               end
             end
 

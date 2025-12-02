@@ -43,14 +43,10 @@ module MLC
         # Token consumption
 
         def consume(expected_type)
-          if eof?
-            raise "Unexpected EOF, expected #{expected_type}"
-          end
+          raise "Unexpected EOF, expected #{expected_type}" if eof?
 
           token = current
-          if token.type != expected_type
-            raise "Expected #{expected_type}, got #{token.type}"
-          end
+          raise "Expected #{expected_type}, got #{token.type}" if token.type != expected_type
 
           @pos += 1
           @last_token = token
@@ -91,9 +87,7 @@ module MLC
         end
 
         def expect_operator(op)
-          if current.type != :OPERATOR || current.value != op
-            raise "Expected operator '#{op}', got #{current.type}"
-          end
+          raise "Expected operator '#{op}', got #{current.type}" if current.type != :OPERATOR || current.value != op
 
           consume(:OPERATOR)
         end

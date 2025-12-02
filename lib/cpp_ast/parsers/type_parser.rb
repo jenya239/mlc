@@ -91,9 +91,7 @@ module CppAst
         trivia_after = ""
 
         loop do
-          unless current_token.kind == :identifier
-            break
-          end
+          break unless current_token.kind == :identifier
 
           name << current_token.lexeme
           trivia_before_colon = current_token.trailing_trivia

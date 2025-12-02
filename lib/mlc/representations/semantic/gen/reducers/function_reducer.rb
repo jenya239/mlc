@@ -194,9 +194,7 @@ module MLC
             def wrap_statement_like_expression(body)
               return body if body.is_a?(MLC::SemanticIR::BlockExpr)
 
-              if unit_literal?(body)
-                return block_expr_from_statements([], body.origin)
-              end
+              return block_expr_from_statements([], body.origin) if unit_literal?(body)
 
               if statement_like_if?(body)
                 if_stmt = build_if_statement(body)

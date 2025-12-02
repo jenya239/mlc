@@ -173,13 +173,9 @@ module MLC
           ast.declarations.each do |decl|
             case decl
             when MLC::Source::AST::FuncDecl
-              if decl.exported || decl.external
-                functions[decl.name] = create_function_metadata(decl, namespace)
-              end
+              functions[decl.name] = create_function_metadata(decl, namespace) if decl.exported || decl.external
             when MLC::Source::AST::TypeDecl
-              if decl.exported
-                types[decl.name] = create_type_metadata(decl, namespace)
-              end
+              types[decl.name] = create_type_metadata(decl, namespace) if decl.exported
             end
           end
 

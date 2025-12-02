@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 # Fix container_integration_test.rb namespace and indentation
 
 file = "test/mlc/representations/semantic/gen/services/container_integration_test.rb"
@@ -12,11 +13,11 @@ lines.each_with_index do |line, idx|
     output << line
   # Lines 11-102 need 4 additional spaces
   elsif idx >= 11 && idx < 103
-    if line.strip.empty? || line.start_with?("#")
-      output << line
+    output << if line.strip.empty? || line.start_with?("#")
+      line
     else
-      output << ("    " + line)
-    end
+      ("    " + line)
+              end
   # Lines 103-106: replace closing ends
   elsif idx == 103
     output << "          end\n"

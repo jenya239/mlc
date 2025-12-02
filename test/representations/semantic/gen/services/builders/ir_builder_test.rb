@@ -295,7 +295,7 @@ class IRBuilderServiceTest < Minitest::Test
     assert_equal array_type, result.type
   end
 
-  # Note: if_node uses deprecated MLC::SemanticIR::If which doesn't exist
+  # NOTE: if_node uses deprecated MLC::SemanticIR::If which doesn't exist
   # Use if_expr instead for IfExpr
 
   def test_if_expr_creates_if_expr
@@ -327,7 +327,7 @@ class IRBuilderServiceTest < Minitest::Test
     assert_equal else_body, result.else_body
   end
 
-  # Note: while_node uses deprecated MLC::SemanticIR::While which doesn't exist
+  # NOTE: while_node uses deprecated MLC::SemanticIR::While which doesn't exist
   # Use while_stmt instead for WhileStmt
 
   def test_while_stmt_creates_while_stmt
@@ -342,7 +342,7 @@ class IRBuilderServiceTest < Minitest::Test
     assert_equal body, result.body
   end
 
-  # Note: for_node uses deprecated MLC::SemanticIR::For which doesn't exist
+  # NOTE: for_node uses deprecated MLC::SemanticIR::For which doesn't exist
   # Use for_stmt instead for ForStmt
 
   def test_for_stmt_creates_for_stmt
@@ -449,10 +449,10 @@ class IRBuilderServiceTest < Minitest::Test
     assert_equal value, result.value
   end
 
-  # Note: var_decl uses deprecated MLC::SemanticIR::VarDecl which doesn't exist
+  # NOTE: var_decl uses deprecated MLC::SemanticIR::VarDecl which doesn't exist
   # Use variable_decl_stmt instead for VariableDeclStmt
 
-  # Note: function_def uses deprecated MLC::SemanticIR::FunctionDef which doesn't exist
+  # NOTE: function_def uses deprecated MLC::SemanticIR::FunctionDef which doesn't exist
   # Use MLC::SemanticIR::Func instead
 
   # ========== Miscellaneous Nodes ==========

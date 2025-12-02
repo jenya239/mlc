@@ -34,9 +34,7 @@ module MLC
             # @param type_params [Array<SemanticIR::TypeParam>] Type parameters
             # @return [FunctionSignature] Function signature information
             def ensure_function_signature(func_decl, param_types, ret_type, type_params)
-              if @function_registry.registered?(func_decl.name)
-                return @function_registry.fetch(func_decl.name)
-              end
+              return @function_registry.fetch(func_decl.name) if @function_registry.registered?(func_decl.name)
 
               register_function_signature(
                 func_decl,
@@ -55,9 +53,7 @@ module MLC
             # @param type_params [Array<SemanticIR::TypeParam>] Type parameters
             # @return [FunctionSignature] Registered function information
             def register_function_signature(func_decl, param_types, ret_type, type_params)
-              if @function_registry.registered?(func_decl.name)
-                return @function_registry.fetch(func_decl.name)
-              end
+              return @function_registry.fetch(func_decl.name) if @function_registry.registered?(func_decl.name)
 
               info = MLC::Registries::FunctionSignature.new(func_decl.name, param_types, ret_type, type_params)
 

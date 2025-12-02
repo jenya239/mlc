@@ -29,9 +29,7 @@ module MLC
 
           # Parse optional where clause: fn foo<T>(x: T) -> i32 where T: Show + Clone
           where_clause = nil
-          if current.type == :WHERE
-            where_clause = parse_where_clause
-          end
+          where_clause = parse_where_clause if current.type == :WHERE
 
           # Body is optional for extern functions
           body = nil

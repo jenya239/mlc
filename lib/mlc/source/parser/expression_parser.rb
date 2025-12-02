@@ -214,18 +214,14 @@ module MLC
 
           # Parse expressions until we hit END
           until current.type == :END
-            if eof?
-              raise "Unexpected EOF in do block, expected 'end'"
-            end
+            raise "Unexpected EOF in do block, expected 'end'" if eof?
 
             # Parse one expression
             expr = parse_do_statement
             all_items << expr
 
             # Skip optional semicolon between statements
-            if current.type == :SEMICOLON
-              consume(:SEMICOLON)
-            end
+            consume(:SEMICOLON) if current.type == :SEMICOLON
           end
 
           consume(:END)
@@ -240,13 +236,13 @@ module MLC
 
             # Convert all non-last items to statements
             stmt_items.each do |item|
-              if item.is_a?(MLC::Source::AST::Stmt)
+              statements << if item.is_a?(MLC::Source::AST::Stmt)
                 # Already a statement (VariableDecl, Assignment)
-                statements << item
+                item
               else
                 # Wrap expression as statement
-                statements << MLC::Source::AST::ExprStmt.new(expr: item)
-              end
+                MLC::Source::AST::ExprStmt.new(expr: item)
+                            end
             end
 
             # Last item is the result
@@ -388,18 +384,14 @@ module MLC
           all_items = []
 
           until current.type == :END
-            if eof?
-              raise "Unexpected EOF in for loop, expected 'end'"
-            end
+            raise "Unexpected EOF in for loop, expected 'end'" if eof?
 
             # Parse one statement/expression
             expr = parse_do_statement
             all_items << expr
 
             # Skip optional semicolon between statements
-            if current.type == :SEMICOLON
-              consume(:SEMICOLON)
-            end
+            consume(:SEMICOLON) if current.type == :SEMICOLON
           end
 
           consume(:END)
@@ -414,13 +406,13 @@ module MLC
 
             # Convert all non-last items to statements
             stmt_items.each do |item|
-              if item.is_a?(MLC::Source::AST::Stmt)
+              statements << if item.is_a?(MLC::Source::AST::Stmt)
                 # Already a statement (VariableDecl, Assignment)
-                statements << item
+                item
               else
                 # Wrap expression as statement
-                statements << MLC::Source::AST::ExprStmt.new(expr: item)
-              end
+                MLC::Source::AST::ExprStmt.new(expr: item)
+                            end
             end
 
             # Last item is the result
@@ -531,11 +523,11 @@ module MLC
           if current.type == :ELSE
             consume(:ELSE)
             # Check for else-if chain
-            if current.type == :IF || current.type == :UNLESS
-              else_branch = wrap_block_like_expr(parse_if_or_unless_expression(inside_block: inside_block))
+            else_branch = if current.type == :IF || current.type == :UNLESS
+              wrap_block_like_expr(parse_if_or_unless_expression(inside_block: inside_block))
             else
-              else_branch = parse_if_branch_expression
-            end
+              parse_if_branch_expression
+                          end
           end
 
           # Consume optional end (new syntax) - but NOT if we're inside a block
@@ -1355,18 +1347,14 @@ module MLC
           all_items = []
 
           until current.type == :END
-            if eof?
-              raise "Unexpected EOF in while block, expected 'end'"
-            end
+            raise "Unexpected EOF in while block, expected 'end'" if eof?
 
             # Parse one statement/expression
             expr = parse_do_statement
             all_items << expr
 
             # Skip optional semicolon between statements
-            if current.type == :SEMICOLON
-              consume(:SEMICOLON)
-            end
+            consume(:SEMICOLON) if current.type == :SEMICOLON
           end
 
           consume(:END)
@@ -1382,13 +1370,13 @@ module MLC
 
             # Convert all non-last items to statements
             stmt_items.each do |item|
-              if item.is_a?(MLC::Source::AST::Stmt)
+              statements << if item.is_a?(MLC::Source::AST::Stmt)
                 # Already a statement (VariableDecl, Assignment)
-                statements << item
+                item
               else
                 # Wrap expression as statement
-                statements << MLC::Source::AST::ExprStmt.new(expr: item)
-              end
+                MLC::Source::AST::ExprStmt.new(expr: item)
+                            end
             end
 
             # Last item is the result

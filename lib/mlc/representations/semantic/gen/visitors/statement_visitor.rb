@@ -38,9 +38,7 @@ module MLC
                 return apply_rule(node, value_ir: value_ir)
               end
 
-              if svc.break_statement?(node) || svc.continue_statement?(node)
-                return apply_rule(node)
-              end
+              return apply_rule(node) if svc.break_statement?(node) || svc.continue_statement?(node)
 
               if svc.while_statement?(node)
                 cond_ir = @expression_visitor.visit(node.condition)

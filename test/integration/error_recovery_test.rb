@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 class ErrorRecoveryTest < Minitest::Test
   def test_recovers_from_lexer_error
-    # Note: Error recovery currently not implemented for lexer errors
+    # NOTE: Error recovery currently not implemented for lexer errors
     # This test documents expected behavior
     source = <<~CPP
       int x = 5;

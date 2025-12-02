@@ -23,9 +23,7 @@ module MLC
 
           begin
             result = parse_program_with_recovery
-            if @errors.any?
-              raise MultipleErrors.new(@errors)
-            end
+            raise MultipleErrors.new(@errors) if @errors.any?
 
             result
           rescue StandardError => e

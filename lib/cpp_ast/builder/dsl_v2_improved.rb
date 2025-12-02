@@ -163,9 +163,7 @@ module CppAst
         }.merge(modifiers)
 
         # Handle class parameter for backward compatibility
-        if modifiers.key?(:class)
-          enum_modifiers[:class_enum] = modifiers[:class]
-        end
+        enum_modifiers[:class_enum] = modifiers[:class] if modifiers.key?(:class)
 
         Nodes::EnumDeclaration.new(
           name: name.to_s,

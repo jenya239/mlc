@@ -108,11 +108,11 @@ module MLC
                 # Skip unit literals - they represent void/no value
                 unless is_unit_literal?(block_expr.result)
                   result_expr = lower_expression(block_expr.result)
-                  if emit_return
-                    statements << context.factory.return_statement(expression: result_expr)
+                  statements << if emit_return
+                    context.factory.return_statement(expression: result_expr)
                   else
-                    statements << context.factory.expression_statement(expression: result_expr)
-                  end
+                    context.factory.expression_statement(expression: result_expr)
+                                end
                 end
               end
 

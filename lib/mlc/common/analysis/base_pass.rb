@@ -77,9 +77,7 @@ module MLC
       # @raise [ArgumentError] if required keys are missing
         def validate_context!(context)
           missing = required_keys - context.keys
-          unless missing.empty?
-            raise ArgumentError, "Pass #{name} missing required context keys: #{missing.inspect}"
-          end
+          raise ArgumentError, "Pass #{name} missing required context keys: #{missing.inspect}" unless missing.empty?
         end
 
       # Convert pass to a callable for PassManager

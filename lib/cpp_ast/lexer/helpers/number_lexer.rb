@@ -53,17 +53,13 @@ module CppAst
           lexeme << advance
         end
 
-        if current_char&.match?(/[eE]/)
-          scan_exponent(lexeme)
-        end
+        scan_exponent(lexeme) if current_char&.match?(/[eE]/)
       end
 
       def scan_exponent(lexeme)
         lexeme << advance
 
-        if current_char&.match?(/[+-]/)
-          lexeme << advance
-        end
+        lexeme << advance if current_char&.match?(/[+-]/)
 
         while current_char&.match?(/[0-9]/)
           lexeme << advance
@@ -71,20 +67,14 @@ module CppAst
       end
 
       def scan_number_suffix(lexeme)
-        if current_char&.match?(/[uU]/)
-          lexeme << advance
-        end
+        lexeme << advance if current_char&.match?(/[uU]/)
 
         if current_char&.match?(/[lL]/)
           lexeme << advance
-          if current_char&.match?(/[lL]/)
-            lexeme << advance
-          end
+          lexeme << advance if current_char&.match?(/[lL]/)
         end
 
-        if current_char&.match?(/[fF]/)
-          lexeme << advance
-        end
+        lexeme << advance if current_char&.match?(/[fF]/)
       end
     end
   end

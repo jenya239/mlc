@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 # Simple fix for engine.rb using text replacements
 
 file = "lib/mlc/representations/semantic/gen/engine.rb"

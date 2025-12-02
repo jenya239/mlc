@@ -89,9 +89,7 @@ module CppAst
         result << condition.to_source
         result << "#{condition_rparen_suffix})#{then_statement.to_source}"
 
-        if else_statement
-          result << "#{else_prefix}else#{else_suffix}#{else_statement.to_source}"
-        end
+        result << "#{else_prefix}else#{else_suffix}#{else_statement.to_source}" if else_statement
 
         result
       end
@@ -381,31 +379,25 @@ module CppAst
         has_content_after_rparen = !modifiers_text.empty? || body || initializer_list ||
                                    (@default_suffix && !@default_suffix.empty?)
         has_code_in_suffix = rparen_suffix && rparen_suffix.include?("=")
-        if (has_content_after_rparen || has_code_in_suffix) && rparen_suffix && !rparen_suffix.empty?
-          result << rparen_suffix
-        end
+        result << rparen_suffix if (has_content_after_rparen || has_code_in_suffix) && rparen_suffix && !rparen_suffix.empty?
 
         # Architecture: space is already in rparen_suffix, don't add it here
         result << modifiers_text unless modifiers_text.empty?
 
         # Add initializer list if present
-        if initializer_list
-          result << ": #{initializer_list}"
-        end
+        result << ": #{initializer_list}" if initializer_list
 
         # Add default suffix if present
-        if @default_suffix && !@default_suffix.empty?
-          result << @default_suffix
-        end
+        result << @default_suffix if @default_suffix && !@default_suffix.empty?
 
         # Only generate body if it's explicitly marked as inline
-        if body && body.respond_to?(:inline?) && body.inline?
-          result << body.to_source
+        result << if body && body.respond_to?(:inline?) && body.inline?
+          body.to_source
         elsif body
-          result << body.to_source
+          body.to_source
         else
-          result << ";"
-        end
+          ";"
+                  end
         result
       end
     end
@@ -567,10 +559,10 @@ module CppAst
         result << "{#{lbrace_suffix}"
 
         # Convert enumerators array to string
-        if enumerators.is_a?(String)
-          enumerator_strings = [enumerators]
+        enumerator_strings = if enumerators.is_a?(String)
+          [enumerators]
         else
-          enumerator_strings = enumerators.map do |enumerator|
+          enumerators.map do |enumerator|
             if enumerator.is_a?(Array)
               if enumerator[1]
                 "#{enumerator[0]} = #{enumerator[1]}"
@@ -581,7 +573,7 @@ module CppAst
               enumerator.to_s
             end
           end
-        end
+                             end
         result << enumerator_strings.join(", ")
 
         result << "#{rbrace_suffix}};"
@@ -614,9 +606,7 @@ module CppAst
 
       def inline_body(body)
         # Delegate to the underlying function declaration
-        if declaration.respond_to?(:inline_body)
-          declaration.inline_body(body)
-        end
+        declaration.inline_body(body) if declaration.respond_to?(:inline_body)
         self
       end
     end

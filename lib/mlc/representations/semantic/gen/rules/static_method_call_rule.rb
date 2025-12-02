@@ -50,9 +50,7 @@ module MLC
               # Get function info
               func_info = svc.function_registry.fetch(mangled_name)
 
-              unless func_info
-                raise MLC::CompileError, "Static method '#{method_name}' not found on type '#{type_name}'"
-              end
+              raise MLC::CompileError, "Static method '#{method_name}' not found on type '#{type_name}'" unless func_info
 
               # Infer return type (with expected_type for bidirectional inference)
               expected_type = context[:expected_type]

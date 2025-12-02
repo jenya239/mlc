@@ -265,9 +265,7 @@ module CppAst
             # Mark body as inline for proper spacing
             body.define_singleton_method(:inline?) { true } if body
             # Add leading space to body for inline methods
-            if body.respond_to?(:leading_trivia=)
-              body.leading_trivia = " " + (body.leading_trivia || "")
-            end
+            body.leading_trivia = " " + (body.leading_trivia || "") if body.respond_to?(:leading_trivia=)
           end
         end
 

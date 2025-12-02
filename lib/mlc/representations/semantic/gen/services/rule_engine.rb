@@ -22,14 +22,10 @@ module MLC
               rules.each do |rule|
                 if rule.respond_to?(:applies?)
                   # New interface (BaseRule pattern)
-                  if rule.applies?(node, context)
-                    return rule.apply(node, context)
-                  end
+                  return rule.apply(node, context) if rule.applies?(node, context)
                 elsif rule.respond_to?(:matches?)
                   # Direct interface
-                  if rule.matches?(node, context)
-                    return rule.produce(node, context)
-                  end
+                  return rule.produce(node, context) if rule.matches?(node, context)
                 end
               end
 

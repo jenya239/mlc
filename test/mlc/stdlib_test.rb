@@ -16,7 +16,7 @@ class MLCStdlibTest < Minitest::Test
     cpp = MLC.to_cpp(mlc_source)
 
     assert_includes cpp, "print"
-    # Note: println might not be generated if it's not used in the return value
+    # NOTE: println might not be generated if it's not used in the return value
     assert_includes cpp, "Hello"
   end
 

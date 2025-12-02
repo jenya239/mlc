@@ -195,9 +195,7 @@ module MLC
                   node.generators.each do |gen|
                     visit(gen.iterable, current_bound, free_vars)
                     current_bound.add(gen.var_name)
-                    if gen.respond_to?(:condition) && gen.condition
-                      visit(gen.condition, current_bound, free_vars)
-                    end
+                    visit(gen.condition, current_bound, free_vars) if gen.respond_to?(:condition) && gen.condition
                   end
                 end
                 visit(node.body, current_bound, free_vars)

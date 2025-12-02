@@ -85,9 +85,7 @@ def render_conv(path, conv)
   puts "- Updated: #{fmt_ts(meta[:updated])}"
   puts "- Messages: #{meta[:message_count]}"
   puts "- Senders: #{meta[:senders].map { |k, v| "#{k}: #{v}" }.join(', ')}"
-  unless meta[:content_types].empty?
-    puts "- Content types: #{meta[:content_types].map { |k, v| "#{k}: #{v}" }.join(', ')}"
-  end
+  puts "- Content types: #{meta[:content_types].map { |k, v| "#{k}: #{v}" }.join(', ')}" unless meta[:content_types].empty?
   unless meta[:attachments].empty?
     list = meta[:attachments].map { |a| a['file_name'] || 'attachment' }
     puts "- Attachments: #{list.join(', ')}"

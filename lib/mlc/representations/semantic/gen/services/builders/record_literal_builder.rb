@@ -28,9 +28,7 @@ module MLC
 
               # For truly anonymous records (no expected type), generate structural type
               # This allows `{x: 1, y: 2}` to work in contexts like function return
-              if type_name.empty? || type_name == 'record'
-                type_name = "__anon_record_#{normalized.keys.sort.join('_')}"
-              end
+              type_name = "__anon_record_#{normalized.keys.sort.join('_')}" if type_name.empty? || type_name == 'record'
 
               # Build record type and get ordered fields
               record_type, ordered_fields =

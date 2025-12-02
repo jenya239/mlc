@@ -192,9 +192,7 @@ module MLC
           lines = []
           type_params = func.type_params || []
 
-          unless type_params.empty?
-            lines.concat(build_template_lines(type_params))
-          end
+          lines.concat(build_template_lines(type_params)) unless type_params.empty?
 
           lines << "#{ret_type} #{name}(#{params});"
           lines.join("\n")
@@ -374,12 +372,8 @@ module MLC
             collect_modules_from_type(expr.type, current_module)
           when MLC::SemanticIR::ListCompExpr
             Array(expr.generators).each do |gen|
-              if gen.respond_to?(:[]) && gen[:iterable]
-                collect_modules_from_expr(gen[:iterable], registry, current_module)
-              end
-              if gen.respond_to?(:[]) && gen[:body]
-                collect_modules_from_expr(gen[:body], registry, current_module)
-              end
+              collect_modules_from_expr(gen[:iterable], registry, current_module) if gen.respond_to?(:[]) && gen[:iterable]
+              collect_modules_from_expr(gen[:body], registry, current_module) if gen.respond_to?(:[]) && gen[:body]
             end
             Array(expr.filters).each { |filter| collect_modules_from_expr(filter, registry, current_module) }
             collect_modules_from_expr(expr.output_expr, registry, current_module)

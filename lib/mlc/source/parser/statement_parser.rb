@@ -40,9 +40,7 @@ module MLC
         def parse_return_statement
           return_token = consume(:RETURN)
           expr = nil
-          unless current.type == :SEMICOLON || current.type == :RBRACE || current.type == :EOF
-            expr = parse_expression
-          end
+          expr = parse_expression unless current.type == :SEMICOLON || current.type == :RBRACE || current.type == :EOF
           consume(:SEMICOLON) if current.type == :SEMICOLON
 
           with_origin(return_token) { MLC::Source::AST::Return.new(expr: expr) }

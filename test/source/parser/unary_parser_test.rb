@@ -87,7 +87,7 @@ class TestUnaryParser < Minitest::Test
 
   # Chained unary
   def test_double_negative
-    # Note: "--x" is decrement, not double negative
+    # NOTE: "--x" is decrement, not double negative
     # For double negative, need space: "- -x"
     expr, _trailing = parse_expression("- -x")
 

@@ -57,7 +57,7 @@ module CppAst
           # Parse else statement
           else_stmt, then_trailing = parse_statement("")
         end
-        # Note: if no else, then_trailing stays as-is (don't add current_leading_trivia)
+        # NOTE: if no else, then_trailing stays as-is (don't add current_leading_trivia)
 
         stmt = Nodes::IfStatement.new(
           leading_trivia: leading_trivia,
@@ -256,9 +256,7 @@ module CppAst
         # Parse init (can be empty)
         init = nil
         init_trailing = ""
-        unless current_token.kind == :semicolon
-          init, init_trailing = parse_expression
-        end
+        init, init_trailing = parse_expression unless current_token.kind == :semicolon
 
         # Collect trivia before first ';'
         _semi1_prefix = init_trailing + current_leading_trivia
@@ -270,9 +268,7 @@ module CppAst
         # Parse condition (can be empty)
         condition = nil
         condition_trailing = ""
-        unless current_token.kind == :semicolon
-          condition, condition_trailing = parse_expression
-        end
+        condition, condition_trailing = parse_expression unless current_token.kind == :semicolon
 
         # Collect trivia before second ';'
         _semi2_prefix = condition_trailing + current_leading_trivia

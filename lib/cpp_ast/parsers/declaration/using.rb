@@ -14,9 +14,7 @@ module CppAst
           name = "".dup
           name_suffix = ""
           loop do
-            unless current_token.kind == :identifier
-              raise ParseError, "Expected namespace name"
-            end
+            raise ParseError, "Expected namespace name" unless current_token.kind == :identifier
 
             name << current_token.lexeme
             trivia_before_colon = current_token.trailing_trivia
@@ -49,9 +47,7 @@ module CppAst
         name = "".dup
         after_name = ""
         loop do
-          unless current_token.kind == :identifier
-            raise ParseError, "Expected identifier in using declaration"
-          end
+          raise ParseError, "Expected identifier in using declaration" unless current_token.kind == :identifier
 
           name << current_token.lexeme
           trivia_before_colon = current_token.trailing_trivia

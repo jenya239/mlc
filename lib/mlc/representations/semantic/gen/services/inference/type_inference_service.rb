@@ -59,14 +59,10 @@ module MLC
             def infer_call_type(callee, args, expected_type: nil)
               case callee
               when SemanticIR::VarExpr
-                if @type_checker.class::IO_RETURN_TYPES.key?(callee.name)
-                  return @type_checker.io_return_type(callee.name)
-                end
+                return @type_checker.io_return_type(callee.name) if @type_checker.class::IO_RETURN_TYPES.key?(callee.name)
 
                 info = @function_registry.fetch(callee.name)
-                unless info
-                  return SemanticIR::Builder.primitive_type("auto")
-                end
+                return SemanticIR::Builder.primitive_type("auto") unless info
 
                 # Check if this is a generic function
                 if info.type_params && !info.type_params.empty?
@@ -86,9 +82,7 @@ module MLC
                 function_type = callee.function_type
                 expected = function_type.params || []
 
-                if expected.length != args.length
-                  type_error("Lambda expects #{expected.length} argument(s), got #{args.length}")
-                end
+                type_error("Lambda expects #{expected.length} argument(s), got #{args.length}") if expected.length != args.length
 
                 expected.each_with_index do |param, index|
                   @type_checker.ensure_compatible_type(args[index].type, param[:type], "lambda argument #{index + 1}")
@@ -262,9 +256,7 @@ module MLC
                 return member_type if member_type
 
                 resolved_type = @type_registry.lookup(object_type.name)&.core_ir_type
-                if resolved_type && resolved_type != object_type
-                  return infer_member_type(resolved_type, member)
-                end
+                return infer_member_type(resolved_type, member) if resolved_type && resolved_type != object_type
               end
 
               if object_type.record?
@@ -317,9 +309,7 @@ module MLC
 
               when SemanticIR::ArrayType
                 # Array types - unify element types
-                if concrete_type.is_a?(SemanticIR::ArrayType)
-                  unify_types(pattern_type.element_type, concrete_type.element_type, type_map)
-                end
+                unify_types(pattern_type.element_type, concrete_type.element_type, type_map) if concrete_type.is_a?(SemanticIR::ArrayType)
 
               when SemanticIR::FunctionType
                 # Function types - unify parameters and return types
@@ -448,9 +438,7 @@ module MLC
               return true if name1 == name2
 
               # Allow some flexibility for numeric types
-              if numeric_type?(type1) && numeric_type?(type2)
-                return true
-              end
+              return true if numeric_type?(type1) && numeric_type?(type2)
 
               false
             end

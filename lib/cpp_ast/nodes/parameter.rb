@@ -19,9 +19,7 @@ module CppAst
       def to_source
         type_str = type.respond_to?(:to_source) ? type.to_source : type.to_s
         result = "#{type_str}#{type_suffix}#{name}"
-        if default_value
-          result << "#{equals_prefix}=#{equals_suffix}#{default_value}"
-        end
+        result << "#{equals_prefix}=#{equals_suffix}#{default_value}" if default_value
         result
       end
     end

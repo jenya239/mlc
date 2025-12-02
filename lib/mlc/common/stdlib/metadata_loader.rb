@@ -38,9 +38,7 @@ module MLC
           # Fallback: Use filename as module name if metadata contains default "main"
           # This allows modules without explicit module declarations to be imported by filename
           # Example: math.mlcmeta with module_name="main" -> module_name="math"
-          if module_name == "main"
-            module_name = File.basename(metadata_path, ".mlcmeta")
-          end
+          module_name = File.basename(metadata_path, ".mlcmeta") if module_name == "main"
 
           # Register exported functions
           metadata.dig("exports", "functions")&.each do |func_meta|

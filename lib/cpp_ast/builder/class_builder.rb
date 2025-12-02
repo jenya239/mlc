@@ -70,9 +70,7 @@ module CppAst
         def class_(name, **modifiers, &block)
           require_relative "class_builder"
           CppAst::Builder::ClassBuilder::ClassBuilder.new(name, **modifiers).tap do |builder|
-            if block_given?
-              DSLv2Improved.with_context(builder, &block)
-            end
+            DSLv2Improved.with_context(builder, &block) if block_given?
           end
         end
 
@@ -103,17 +101,17 @@ module CppAst
             delete: false
           }.merge(modifiers)
 
-          if ctor_modifiers[:default]
-            @members << DefaultConstructor.new(modifiers: ctor_modifiers)
+          @members << if ctor_modifiers[:default]
+            DefaultConstructor.new(modifiers: ctor_modifiers)
           elsif ctor_modifiers[:delete]
-            @members << DeletedConstructor.new(modifiers: ctor_modifiers)
+            DeletedConstructor.new(modifiers: ctor_modifiers)
           else
-            @members << Constructor.new(
+            Constructor.new(
               params: params,
               modifiers: ctor_modifiers,
               body: block
             )
-          end
+                      end
           self
         end
 
@@ -126,16 +124,16 @@ module CppAst
             delete: false
           }.merge(modifiers)
 
-          if dtor_modifiers[:default]
-            @members << DefaultDestructor.new(modifiers: dtor_modifiers)
+          @members << if dtor_modifiers[:default]
+            DefaultDestructor.new(modifiers: dtor_modifiers)
           elsif dtor_modifiers[:delete]
-            @members << DeletedDestructor.new(modifiers: dtor_modifiers)
+            DeletedDestructor.new(modifiers: dtor_modifiers)
           else
-            @members << Destructor.new(
+            Destructor.new(
               modifiers: dtor_modifiers,
               body: block
             )
-          end
+                      end
           self
         end
 

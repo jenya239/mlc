@@ -15,12 +15,8 @@ module MLC
               ensure_array!(object_ir.type, origin: origin)
 
               # Validate index types if present
-              if start_ir
-                @type_checker.ensure_numeric_type(start_ir.type, 'slice start index', node: nil)
-              end
-              if end_ir
-                @type_checker.ensure_numeric_type(end_ir.type, 'slice end index', node: nil)
-              end
+              @type_checker.ensure_numeric_type(start_ir.type, 'slice start index', node: nil) if start_ir
+              @type_checker.ensure_numeric_type(end_ir.type, 'slice end index', node: nil) if end_ir
 
               # Slice returns the same array type
               ir_builder.slice(

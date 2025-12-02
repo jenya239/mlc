@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 # Fix engine_test.rb namespace and indentation
 
 file = "test/mlc/representations/semantic/gen/engine_test.rb"
@@ -22,11 +23,11 @@ lines.each_with_index do |line, idx|
     next
   # Lines 8 to total-3: add 4 spaces
   elsif idx >= 8 && idx < total - 2
-    if line.strip.empty? || line.start_with?("#")
-      output << line
+    output << if line.strip.empty? || line.start_with?("#")
+      line
     else
-      output << ("    " + line)
-    end
+      ("    " + line)
+              end
   # Last 2 lines: replace closing ends
   elsif idx == total - 2
     output << "      end\n"

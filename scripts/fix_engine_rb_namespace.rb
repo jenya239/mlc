@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 # Fix engine.rb namespace: MLC::SemanticGen → MLC::Representations::Semantic::Gen
 
 file = "lib/mlc/representations/semantic/gen/engine.rb"
@@ -22,15 +23,15 @@ lines.each_with_index do |line, idx|
     next
   # Lines 40 to total-3: add 4 spaces indentation
   elsif idx >= 40 && idx < total - 2
-    if line.strip.empty?
-      output << line
+    output << if line.strip.empty?
+      line
     elsif line.lstrip.start_with?("#")
       # Comments: add 4 spaces
-      output << ("    " + line)
+      ("    " + line)
     else
       # Regular code: add 4 spaces
-      output << ("    " + line)
-    end
+      ("    " + line)
+              end
   # Last 2 lines: replace closing ends with 4
   elsif idx == total - 2
     output << "      end # module Gen\n"

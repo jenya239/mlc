@@ -20,7 +20,7 @@ class TestStatementParser < Minitest::Test
   end
 
   def test_parse_expression_statement_with_leading_trivia
-    stmt, _ = parse_statement("foo;", "  ")
+    stmt, = parse_statement("foo;", "  ")
 
     assert_equal "  ", stmt.leading_trivia
     assert_equal "  foo;", stmt.to_source
@@ -33,7 +33,7 @@ class TestStatementParser < Minitest::Test
   end
 
   def test_parse_expression_statement_binary_expr
-    stmt, _ = parse_statement("x = 42;")
+    stmt, = parse_statement("x = 42;")
 
     assert_instance_of CppAst::Nodes::BinaryExpression, stmt.expression
     assert_equal "=", stmt.expression.operator
@@ -41,21 +41,21 @@ class TestStatementParser < Minitest::Test
 
   def test_expression_statement_roundtrip
     source = "  x = 42;\n"
-    stmt, trailing = parse_statement(source[2..-1], "  ")
+    stmt, trailing = parse_statement(source[2..], "  ")
 
     assert_equal source, stmt.to_source + trailing
   end
 
   # ReturnStatement tests
   def test_parse_return_statement
-    stmt, _ = parse_statement("return 42;")
+    stmt, = parse_statement("return 42;")
 
     assert_instance_of CppAst::Nodes::ReturnStatement, stmt
     assert_equal "42", stmt.expression.value
   end
 
   def test_parse_return_statement_with_spacing
-    stmt, _ = parse_statement("return  x;")
+    stmt, = parse_statement("return  x;")
 
     assert_equal "  ", stmt.keyword_suffix
   end
@@ -68,7 +68,7 @@ class TestStatementParser < Minitest::Test
 
   def test_return_statement_roundtrip
     source = "  return x + 42;\n"
-    stmt, trailing = parse_statement(source[2..-1], "  ")
+    stmt, trailing = parse_statement(source[2..], "  ")
 
     assert_equal source, stmt.to_source + trailing
   end
@@ -76,7 +76,7 @@ class TestStatementParser < Minitest::Test
   # Edge cases
   def test_statement_with_complex_expression
     source = "result = x + y * 2;"
-    stmt, _ = parse_statement(source)
+    stmt, = parse_statement(source)
 
     assert_equal source, stmt.to_source
   end

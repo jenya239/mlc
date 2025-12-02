@@ -24,7 +24,7 @@ module CppAst
           # If modifiers exist, move leading space from modifiers_text to rparen_suffix
           if modifiers_text.start_with?(" ")
             rparen_suffix += modifiers_text[0]
-            modifiers_text = modifiers_text[1..-1]
+            modifiers_text = modifiers_text[1..]
           end
         end
 

@@ -198,14 +198,10 @@ module MLC
         entry = fetch_entry(target_name)
         raise KeyError, "Unknown function '#{target_name}'" unless entry
 
-        if @functions.key?(alias_name)
-          raise ArgumentError, "Alias '#{alias_name}' conflicts with existing function"
-        end
+        raise ArgumentError, "Alias '#{alias_name}' conflicts with existing function" if @functions.key?(alias_name)
 
         old_target = @aliases[alias_name]
-        if old_target && old_target != entry.canonical_name
-          @functions[old_target]&.remove_alias(alias_name)
-        end
+        @functions[old_target]&.remove_alias(alias_name) if old_target && old_target != entry.canonical_name
 
         @aliases[alias_name] = entry.canonical_name
         entry.add_alias(alias_name)
@@ -312,9 +308,7 @@ module MLC
 
       def normalize_metadata(metadata)
         return {} unless metadata
-        unless metadata.is_a?(Hash)
-          raise ArgumentError, "metadata must be a Hash or nil"
-        end
+        raise ArgumentError, "metadata must be a Hash or nil" unless metadata.is_a?(Hash)
 
         metadata.each_with_object({}) do |(key, value), normalized|
           normalized[key.to_sym] = value

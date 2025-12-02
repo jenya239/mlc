@@ -17,9 +17,7 @@ module MLC
             transform_arm.call(scrutinee_type, arm)
           end
 
-          if transformed_arms.empty?
-            raise ArgumentError, "match expression requires at least one arm"
-          end
+          raise ArgumentError, "match expression requires at least one arm" if transformed_arms.empty?
 
           first_body = transformed_arms.first[:body]
           result_type = first_body&.type
@@ -36,9 +34,7 @@ module MLC
           end
 
           # Check exhaustiveness if enabled and type registry available
-          if @check_exhaustiveness && @type_registry
-            check_exhaustiveness(scrutinee_type, arms)
-          end
+          check_exhaustiveness(scrutinee_type, arms) if @check_exhaustiveness && @type_registry
 
           Analysis.new(transformed_arms, result_type)
         end

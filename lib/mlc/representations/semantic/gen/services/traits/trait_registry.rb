@@ -75,17 +75,13 @@ module MLC
             # Returns MethodInfo or nil
             def resolve_static_method(type_name, method_name)
               # First check type's own methods (from extend without trait)
-              if @type_methods[type_name]&.key?(method_name)
-                return @type_methods[type_name][method_name]
-              end
+              return @type_methods[type_name][method_name] if @type_methods[type_name]&.key?(method_name)
 
               # Then check all implementations for this type
               @implementations.each do |(tn, _trait), impl|
                 next unless tn == type_name
 
-                if impl.methods.key?(method_name)
-                  return impl.methods[method_name]
-                end
+                return impl.methods[method_name] if impl.methods.key?(method_name)
               end
 
               nil

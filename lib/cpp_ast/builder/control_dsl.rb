@@ -131,7 +131,7 @@ module CppAst
           return nil if @elsif_clauses.empty?
 
           elsif_clause = @elsif_clauses.first
-          remaining = @elsif_clauses[1..-1]
+          remaining = @elsif_clauses[1..]
 
           if remaining.empty?
             Nodes::IfStatement.new(
@@ -155,7 +155,7 @@ module CppAst
           return nil if clauses.empty?
 
           clause = clauses.first
-          remaining = clauses[1..-1]
+          remaining = clauses[1..]
 
           if remaining.empty?
             Nodes::IfStatement.new(

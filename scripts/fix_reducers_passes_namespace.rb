@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 # Fix Reducers and Passes namespaces
 
 files = Dir.glob("lib/mlc/representations/semantic/gen/{reducers,passes}/**/*.rb")
@@ -38,11 +39,11 @@ files.each do |file|
       output << line
     elsif in_namespace && idx > namespace_line && !line.match?(/^\s{8,}end/)
       # Add 4 spaces if not already indented enough
-      if line.strip.empty?
-        output << line
+      output << if line.strip.empty?
+        line
       else
-        output << ("    " + line)
-      end
+        ("    " + line)
+                end
     else
       output << line
     end

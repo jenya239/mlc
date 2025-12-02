@@ -10,7 +10,7 @@ class TypeInferenceGenericsTest < Minitest::Test
       fn main() -> i32 = identity(42)
     MLCORA
 
-    core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
+    core_ir, = MLC.transform_to_core_with_registry(MLC.parse(source))
 
     # Find main function
     main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
@@ -33,7 +33,7 @@ class TypeInferenceGenericsTest < Minitest::Test
       end
     MLCORA
 
-    core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
+    core_ir, = MLC.transform_to_core_with_registry(MLC.parse(source))
 
     main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
@@ -50,7 +50,7 @@ class TypeInferenceGenericsTest < Minitest::Test
       fn main() -> i32 = pair(42, 3.14)
     MLCORA
 
-    core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
+    core_ir, = MLC.transform_to_core_with_registry(MLC.parse(source))
 
     main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
@@ -67,7 +67,7 @@ class TypeInferenceGenericsTest < Minitest::Test
       fn main() -> i32 = get_default()
     MLCORA
 
-    core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
+    core_ir, = MLC.transform_to_core_with_registry(MLC.parse(source))
 
     main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
@@ -87,7 +87,7 @@ class TypeInferenceGenericsTest < Minitest::Test
       end
     MLCORA
 
-    core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
+    core_ir, = MLC.transform_to_core_with_registry(MLC.parse(source))
 
     main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
@@ -108,7 +108,7 @@ class TypeInferenceGenericsTest < Minitest::Test
       end
     MLCORA
 
-    core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
+    core_ir, = MLC.transform_to_core_with_registry(MLC.parse(source))
 
     main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
@@ -137,7 +137,7 @@ class TypeInferenceGenericsTest < Minitest::Test
       fn main() -> i32 = identity(identity(identity(42)))
     MLCORA
 
-    core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
+    core_ir, = MLC.transform_to_core_with_registry(MLC.parse(source))
 
     main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func
@@ -157,7 +157,7 @@ class TypeInferenceGenericsTest < Minitest::Test
       end
     MLCORA
 
-    core_ir, _ = MLC.transform_to_core_with_registry(MLC.parse(source))
+    core_ir, = MLC.transform_to_core_with_registry(MLC.parse(source))
 
     main_func = core_ir.items.find { |item| item.is_a?(MLC::SemanticIR::Func) && item.name == 'main' }
     refute_nil main_func

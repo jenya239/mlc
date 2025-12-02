@@ -9,7 +9,7 @@ class ToCoreGenericsTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, _ = MLC.transform_to_core_with_registry(ast)
+    core_ir, = MLC.transform_to_core_with_registry(ast)
 
     func = core_ir.items.first
     assert_equal 'identity', func.name
@@ -31,7 +31,7 @@ class ToCoreGenericsTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, _ = MLC.transform_to_core_with_registry(ast)
+    core_ir, = MLC.transform_to_core_with_registry(ast)
 
     func = core_ir.items.first
     assert_equal 2, func.type_params.size
@@ -60,7 +60,7 @@ class ToCoreGenericsTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, _ = MLC.transform_to_core_with_registry(ast)
+    core_ir, = MLC.transform_to_core_with_registry(ast)
 
     type_decl = core_ir.items.first
     assert_equal 'Option', type_decl.name
@@ -91,7 +91,7 @@ class ToCoreGenericsTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, _ = MLC.transform_to_core_with_registry(ast)
+    core_ir, = MLC.transform_to_core_with_registry(ast)
 
     type_decl = core_ir.items.first
     assert_equal 'Result', type_decl.name
@@ -118,7 +118,7 @@ class ToCoreGenericsTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, _ = MLC.transform_to_core_with_registry(ast)
+    core_ir, = MLC.transform_to_core_with_registry(ast)
 
     func = core_ir.items.first
 
@@ -142,7 +142,7 @@ class ToCoreGenericsTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, _ = MLC.transform_to_core_with_registry(ast)
+    core_ir, = MLC.transform_to_core_with_registry(ast)
 
     func = core_ir.items.first
 
@@ -160,7 +160,7 @@ class ToCoreGenericsTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, _ = MLC.transform_to_core_with_registry(ast)
+    core_ir, = MLC.transform_to_core_with_registry(ast)
 
     func = core_ir.items.first
     assert_equal 'length', func.name
@@ -178,7 +178,7 @@ class ToCoreGenericsTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, _ = MLC.transform_to_core_with_registry(ast)
+    core_ir, = MLC.transform_to_core_with_registry(ast)
 
     func = core_ir.items.first
 
@@ -199,7 +199,7 @@ class ToCoreGenericsTest < Minitest::Test
     MLCORA
 
     ast = MLC.parse(source)
-    core_ir, _ = MLC.transform_to_core_with_registry(ast)
+    core_ir, = MLC.transform_to_core_with_registry(ast)
 
     # Second item is the unwrap function
     func = core_ir.items[1]

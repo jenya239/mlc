@@ -46,7 +46,7 @@ class Minitest::Test
     # Check for exclusion tags (starting with !)
     tags.each do |tag|
       if tag.start_with?('!')
-        excluded_tag = tag[1..-1].to_sym
+        excluded_tag = tag[1..].to_sym
         skip "Skipped due to tag exclusion: !#{excluded_tag}" if self.class.tags.include?(excluded_tag)
       end
     end
@@ -60,8 +60,6 @@ class Minitest::Test
 
   def teardown
     super
-    if defined?(CppAst) && CppAst.respond_to?(:formatting_mode=)
-      CppAst.formatting_mode = :pretty
-    end
+    CppAst.formatting_mode = :pretty if defined?(CppAst) && CppAst.respond_to?(:formatting_mode=)
   end
 end

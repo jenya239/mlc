@@ -294,9 +294,7 @@ module MLC
 
           # Extract binary digits (after 0b), remove underscores
           binary_part = raw_value[2..].delete('_')
-          if binary_part.empty?
-            raise "Invalid binary literal: #{raw_value}"
-          end
+          raise "Invalid binary literal: #{raw_value}" if binary_part.empty?
 
           int_value = binary_part.to_i(2)
           add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
@@ -315,9 +313,7 @@ module MLC
 
           # Extract octal digits (after 0o), remove underscores
           octal_part = raw_value[2..].delete('_')
-          if octal_part.empty?
-            raise "Invalid octal literal: #{raw_value}"
-          end
+          raise "Invalid octal literal: #{raw_value}" if octal_part.empty?
 
           int_value = octal_part.to_i(8)
           add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
@@ -336,9 +332,7 @@ module MLC
 
           # Extract hex digits (after 0x), remove underscores
           hex_part = raw_value[2..].delete('_')
-          if hex_part.empty?
-            raise "Invalid hex literal: #{raw_value}"
-          end
+          raise "Invalid hex literal: #{raw_value}" if hex_part.empty?
 
           int_value = hex_part.to_i(16)
           add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
@@ -359,9 +353,7 @@ module MLC
               # Handle escape sequence
               @pos += 1
               @column += 1
-              if @pos >= @source.length
-                raise "Unterminated escape sequence"
-              end
+              raise "Unterminated escape sequence" if @pos >= @source.length
 
               case @source[@pos]
               when 'n'
@@ -464,9 +456,7 @@ module MLC
           end
 
           # Add remaining text
-          if current_text.any?
-            parts << { type: :text, value: current_text.join }
-          end
+          parts << { type: :text, value: current_text.join } if current_text.any?
 
           @pos += 1 # Skip closing quote
           @column += 1
@@ -497,9 +487,7 @@ module MLC
               # Check for escape sequence
               @pos += 1
               @column += 1
-              if @pos >= @source.length
-                raise "Unterminated escape sequence in single-quoted string"
-              end
+              raise "Unterminated escape sequence in single-quoted string" if @pos >= @source.length
 
               case @source[@pos]
               when '\\'
@@ -542,9 +530,7 @@ module MLC
             end
           end
 
-          if @pos >= @source.length
-            raise "Unterminated single-quoted string"
-          end
+          raise "Unterminated single-quoted string" if @pos >= @source.length
 
           @pos += 1 # Skip closing quote
           @column += 1
@@ -583,9 +569,7 @@ module MLC
           end
 
           delimiter = @source[delimiter_start...@pos]
-          if delimiter.empty?
-            raise "Heredoc delimiter must be an uppercase identifier"
-          end
+          raise "Heredoc delimiter must be an uppercase identifier" if delimiter.empty?
 
           # Skip to end of line
           while @pos < @source.length && @source[@pos] != "\n"
@@ -657,7 +641,7 @@ module MLC
             if line.strip.empty?
               "" # Keep empty lines empty
             else
-              line[min_indent..-1] || ""
+              line[min_indent..] || ""
             end
           }
 
@@ -867,16 +851,16 @@ module MLC
               @column += 1
               if @pos < @source.length
                 escaped = @source[@pos]
-                case escaped
-                when 'n' then current_word << "\n"
-                when 't' then current_word << "\t"
-                when 'r' then current_word << "\r"
-                when 's' then current_word << " " # Escaped space
-                when '\\' then current_word << "\\"
-                when close_delim then current_word << close_delim
+                current_word << case escaped
+                when 'n' then "\n"
+                when 't' then "\t"
+                when 'r' then "\r"
+                when 's' then " " # Escaped space
+                when '\\' then "\\"
+                when close_delim then close_delim
                 else
-                  current_word << escaped
-                end
+                  escaped
+                                end
                 @pos += 1
                 @column += 1
               end
@@ -888,9 +872,7 @@ module MLC
           end
 
           # Add last word if present
-          if current_word.any?
-            words << current_word.join
-          end
+          words << current_word.join if current_word.any?
 
           # Skip closing delimiter
           if @pos < @source.length && @source[@pos] == close_delim

@@ -207,9 +207,7 @@ module CppAst
             advance_raw
 
             # Parse member name (identifier)
-            unless current_token.kind == :identifier
-              raise ParseError, "Expected identifier after #{operator}"
-            end
+            raise ParseError, "Expected identifier after #{operator}" unless current_token.kind == :identifier
 
             member = Nodes::Identifier.new(name: current_token.lexeme)
             trailing = current_token.trailing_trivia

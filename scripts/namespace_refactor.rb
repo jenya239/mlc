@@ -120,9 +120,7 @@ class NamespaceRefactor
 
   def check_definition(node, source, replacements)
     # For module/class definitions, check constant_path
-    if node.constant_path
-      check_constant_path(node.constant_path, source, replacements)
-    end
+    check_constant_path(node.constant_path, source, replacements) if node.constant_path
   end
 
   def extract_constant_path(node)
@@ -132,9 +130,7 @@ class NamespaceRefactor
     loop do
       case current
       when Prism::ConstantPathNode
-        if current.child.is_a?(Prism::ConstantReadNode)
-          parts.unshift(current.child.name.to_s)
-        end
+        parts.unshift(current.child.name.to_s) if current.child.is_a?(Prism::ConstantReadNode)
         current = current.parent
       when Prism::ConstantReadNode
         parts.unshift(current.name.to_s)

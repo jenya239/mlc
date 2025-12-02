@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 # Complete fix for engine.rb: namespace + internal references
 
 file = "lib/mlc/representations/semantic/gen/engine.rb"
@@ -54,9 +55,7 @@ lines.each_with_index do |line, idx|
   end
 
   # Detect end of class
-  if in_class && line.match(/^\s{8}end\s*$/) && !line.match(/^end/)
-    in_class = false
-  end
+  in_class = false if in_class && line.match(/^\s{8}end\s*$/) && !line.match(/^end/)
 end
 
 content = output.join("\n")

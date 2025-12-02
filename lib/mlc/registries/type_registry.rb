@@ -143,9 +143,7 @@ module MLC
 
       def compute_cpp_name(name, namespace, kind, type)
         # Primitive types have standard C++ mappings
-        if kind == :primitive
-          return PRIMITIVE_TYPE_MAP[name] || name
-        end
+        return PRIMITIVE_TYPE_MAP[name] || name if kind == :primitive
 
         # Opaque pointer types
         if kind == :opaque

@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 # Fix engine_test.rb - add indentation to content (v2, careful version)
 
 file = "test/mlc/representations/semantic/gen/engine_test.rb"

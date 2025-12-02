@@ -66,9 +66,7 @@ module CppAst
         end
 
         # Add EOF leading_trivia to trailing of last statement
-        if !statements.empty? && at_end?
-          statement_trailings[-1] = statement_trailings[-1] + current_leading_trivia
-        end
+        statement_trailings[-1] = statement_trailings[-1] + current_leading_trivia if !statements.empty? && at_end?
 
         # Create program node
         Nodes::Program.new(

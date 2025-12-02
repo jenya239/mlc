@@ -58,12 +58,12 @@ module CppAst
         result = "#{leading_trivia}struct#{struct_suffix}#{name}#{name_suffix}{#{lbrace_suffix}"
 
         fields.zip(field_trailings).each do |field, trailing|
-          if field.is_a?(Array) && field.length == 2
+          field_str = if field.is_a?(Array) && field.length == 2
             # Handle field_def format: [name, type]
-            field_str = "#{field[1]} #{field[0]};"
+            "#{field[1]} #{field[0]};"
           else
-            field_str = field.respond_to?(:to_source) ? field.to_source : field.to_s
-          end
+            field.respond_to?(:to_source) ? field.to_source : field.to_s
+                      end
           result << field_str << trailing
         end
 

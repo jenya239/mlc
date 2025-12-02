@@ -307,7 +307,7 @@ class MLCBitwiseOpsTest < Minitest::Test
   end
 
   def test_clear_bit_expression
-    # Note: ~1 << bit is equivalent to ~(1) << bit in C++ precedence
+    # NOTE: ~1 << bit is equivalent to ~(1) << bit in C++ precedence
     # For actual clear_bit, you need: value & (~(1 << bit))
     # But this test verifies that basic bitwise NOT and shift work
     source = <<~MLC

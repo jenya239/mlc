@@ -60,9 +60,7 @@ module CppAst
       def generate_class_optimized(klass)
         # Use template cache for common class patterns
         template_key = "#{klass.name}_#{klass.members.length}"
-        if @template_cache[template_key]
-          return @template_cache[template_key].gsub("CLASS_NAME", klass.name)
-        end
+        return @template_cache[template_key].gsub("CLASS_NAME", klass.name) if @template_cache[template_key]
 
         # Don't clear here - let the caller manage the buffer
         @string_builder.append("class CLASS_NAME")
@@ -160,14 +158,10 @@ module CppAst
           @string_builder.append("#include \"#{import.path}.hpp\"\n")
         end
 
-        if program.imports.any?
-          @string_builder.append("\n")
-        end
+        @string_builder.append("\n") if program.imports.any?
 
         # Generate module declaration
-        if program.module_decl
-          @string_builder.append("namespace #{program.module_decl.name} {\n")
-        end
+        @string_builder.append("namespace #{program.module_decl.name} {\n") if program.module_decl
 
         # Generate declarations
         program.declarations.each do |decl|
@@ -175,9 +169,7 @@ module CppAst
           @string_builder.append("\n")
         end
 
-        if program.module_decl
-          @string_builder.append("}\n")
-        end
+        @string_builder.append("}\n") if program.module_decl
 
         @string_builder.to_s
       end
@@ -198,11 +190,11 @@ module CppAst
         result += "int #{func.name}("
         result += func.params.map { |p| "int #{p.name}" }.join(", ")
         result += ") {\n"
-        if func.body
-          result += "  return #{generate_MLC_expression(func.body)};\n"
+        result += if func.body
+          "  return #{generate_MLC_expression(func.body)};\n"
         else
-          result += "  return 0;\n"
-        end
+          "  return 0;\n"
+                  end
         result += "}"
         result
       end

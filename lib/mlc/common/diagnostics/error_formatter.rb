@@ -50,9 +50,7 @@ module MLC
         end
 
         # Help suggestion
-        if help
-          lines << "      #{color(:help)}= help:#{color(:reset)} #{help}"
-        end
+        lines << "      #{color(:help)}= help:#{color(:reset)} #{help}" if help
 
         lines << ""
         lines.join("\n")

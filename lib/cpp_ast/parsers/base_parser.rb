@@ -101,9 +101,7 @@ module CppAst
 
         # Add code snippet (3 tokens before and after)
         snippet = get_code_snippet(token)
-        if snippet
-          lines << "  near: #{snippet}"
-        end
+        lines << "  near: #{snippet}" if snippet
 
         lines.join("\n")
       end
@@ -117,9 +115,7 @@ module CppAst
         snippet = snippet_tokens.map(&:lexeme).join("")
 
         # Trim long snippets
-        if snippet.length > 80
-          snippet = snippet[0..77] + "..."
-        end
+        snippet = snippet[0..77] + "..." if snippet.length > 80
 
         snippet.inspect
       end

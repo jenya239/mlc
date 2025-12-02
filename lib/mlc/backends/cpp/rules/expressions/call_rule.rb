@@ -58,9 +58,7 @@ module MLC
 
             def apply(node)
               # Check for IO functions
-              if context.checker.var_expr?(node.callee) && IO_FUNCTIONS.key?(node.callee.name)
-                return lower_io_function(node)
-              end
+              return lower_io_function(node) if context.checker.var_expr?(node.callee) && IO_FUNCTIONS.key?(node.callee.name)
 
               # Check for smart pointer functions
               if context.checker.var_expr?(node.callee) && SMART_POINTER_FUNCTIONS.key?(node.callee.name)
@@ -76,9 +74,7 @@ module MLC
               # Check for qualified function names (stdlib functions)
               if context.checker.var_expr?(node.callee)
                 qualified = context.resolve_qualified_name(node.callee.name)
-                if qualified
-                  return lower_qualified_function(node, qualified)
-                end
+                return lower_qualified_function(node, qualified) if qualified
               end
 
               # Check for array method calls

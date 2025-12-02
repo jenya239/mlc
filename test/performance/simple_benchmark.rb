@@ -53,9 +53,7 @@ class SimpleBenchmark < Minitest::Test
 
     # Report performance metrics instead of hard assertions
     threshold = ENV['PARSE_TIME_THRESHOLD']&.to_f || 5.0
-    if parse_time.real > threshold
-      puts "WARNING: Parse time #{parse_time.real.round(4)}s exceeds threshold #{threshold}s"
-    end
+    puts "WARNING: Parse time #{parse_time.real.round(4)}s exceeds threshold #{threshold}s" if parse_time.real > threshold
   end
 
   def test_cpp_generation_performance

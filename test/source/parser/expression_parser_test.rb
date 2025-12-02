@@ -43,7 +43,7 @@ class TestExpressionParser < Minitest::Test
 
   # Binary expressions
   def test_parse_binary_expression_no_spaces
-    expr, _ = parse_expression("x+42")
+    expr, = parse_expression("x+42")
 
     assert_instance_of CppAst::Nodes::BinaryExpression, expr
     assert_equal "x", expr.left.name
@@ -54,14 +54,14 @@ class TestExpressionParser < Minitest::Test
   end
 
   def test_parse_binary_expression_with_spaces
-    expr, _ = parse_expression("x + 42")
+    expr, = parse_expression("x + 42")
 
     assert_equal " ", expr.operator_prefix
     assert_equal " ", expr.operator_suffix
   end
 
   def test_parse_binary_expression_with_newlines
-    expr, _ = parse_expression("x\n+\n42")
+    expr, = parse_expression("x\n+\n42")
 
     assert_equal "\n", expr.operator_prefix
     assert_equal "\n", expr.operator_suffix
@@ -90,7 +90,7 @@ class TestExpressionParser < Minitest::Test
 
   # Operator precedence
   def test_addition_precedence
-    expr, _ = parse_expression("a+b+c")
+    expr, = parse_expression("a+b+c")
 
     # Should parse as (a+b)+c (left-to-right)
     assert_instance_of CppAst::Nodes::BinaryExpression, expr
@@ -100,7 +100,7 @@ class TestExpressionParser < Minitest::Test
   end
 
   def test_multiplication_precedence
-    expr, _ = parse_expression("a+b*c")
+    expr, = parse_expression("a+b*c")
 
     # Should parse as a+(b*c)
     assert_equal "+", expr.operator
@@ -110,7 +110,7 @@ class TestExpressionParser < Minitest::Test
   end
 
   def test_assignment_right_associative
-    expr, _ = parse_expression("a=b=c")
+    expr, = parse_expression("a=b=c")
 
     # Should parse as a=(b=c) (right-to-left)
     assert_equal "=", expr.operator

@@ -273,7 +273,7 @@ class MatchServiceTest < Minitest::Test
       ]
     }
 
-    # Note: This tests that nested patterns are recursively bound
+    # NOTE: This tests that nested patterns are recursively bound
     # The outer constructor gives us outer_type, then we bind the inner pattern
     @service.send(:bind_pattern_variables, pattern, outer_type)
 
@@ -358,7 +358,7 @@ class MatchServiceTest < Minitest::Test
     end
   end
 
-  # Note: We use MockPattern instead of MLC::Source::AST::Pattern
+  # NOTE: We use MockPattern instead of MLC::Source::AST::Pattern
   # to avoid namespace conflicts. The actual is_a? checks in match_service
   # test nested patterns which are covered by the MockPattern class.
 

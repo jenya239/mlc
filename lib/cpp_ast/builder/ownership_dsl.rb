@@ -79,7 +79,7 @@ module CppAst
             "std::tuple<#{types}>"
           when :function
             ret_type = resolve_type(@inner_type[0])
-            params = @inner_type[1..-1].map { |t| resolve_type(t) }.join(', ')
+            params = @inner_type[1..].map { |t| resolve_type(t) }.join(', ')
             "std::function<#{ret_type}(#{params})>"
           when :lambda, :auto
             "auto"

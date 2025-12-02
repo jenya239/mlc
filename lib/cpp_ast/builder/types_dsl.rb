@@ -194,16 +194,12 @@ module CppAst
         def ref(type, const: false, mutable: false)
           raise ArgumentError, "Type cannot be nil" if type.nil?
 
-          if type.is_a?(Symbol)
-            type = TypeBuilder.new(type)
-          end
+          type = TypeBuilder.new(type) if type.is_a?(Symbol)
           type.ref(const: const, mutable: mutable)
         end
 
         def mut(type)
-          if type.is_a?(Symbol)
-            type = TypeBuilder.new(type)
-          end
+          type = TypeBuilder.new(type) if type.is_a?(Symbol)
           type.mut
         end
 
@@ -212,9 +208,7 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if type.nil?
 
           require_relative "ownership_dsl"
-          if type.is_a?(Symbol)
-            type = TypeBuilder.new(type)
-          end
+          type = TypeBuilder.new(type) if type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(type, :owned)
         end
 
@@ -222,9 +216,7 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if type.nil?
 
           require_relative "ownership_dsl"
-          if type.is_a?(Symbol)
-            type = TypeBuilder.new(type)
-          end
+          type = TypeBuilder.new(type) if type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(type, :shared)
         end
 
@@ -232,9 +224,7 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if type.nil?
 
           require_relative "ownership_dsl"
-          if type.is_a?(Symbol)
-            type = TypeBuilder.new(type)
-          end
+          type = TypeBuilder.new(type) if type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(type, :weak)
         end
 
@@ -242,9 +232,7 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if type.nil?
 
           require_relative "ownership_dsl"
-          if type.is_a?(Symbol)
-            type = TypeBuilder.new(type)
-          end
+          type = TypeBuilder.new(type) if type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(type, const ? :borrowed : :mut_borrowed)
         end
 
@@ -252,9 +240,7 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if type.nil?
 
           require_relative "ownership_dsl"
-          if type.is_a?(Symbol)
-            type = TypeBuilder.new(type)
-          end
+          type = TypeBuilder.new(type) if type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(type, :mut_borrowed)
         end
 
@@ -263,9 +249,7 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if type.nil?
 
           require_relative "ownership_dsl"
-          if type.is_a?(Symbol)
-            type = TypeBuilder.new(type)
-          end
+          type = TypeBuilder.new(type) if type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(type, :raw_ptr)
         end
 
@@ -273,9 +257,7 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if type.nil?
 
           require_relative "ownership_dsl"
-          if type.is_a?(Symbol)
-            type = TypeBuilder.new(type)
-          end
+          type = TypeBuilder.new(type) if type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(type, :const_raw_ptr)
         end
 
@@ -283,9 +265,7 @@ module CppAst
         def vec(inner_type)
           raise ArgumentError, "Type cannot be nil" if inner_type.nil?
 
-          if inner_type.is_a?(Symbol)
-            inner_type = TypeBuilder.new(inner_type)
-          end
+          inner_type = TypeBuilder.new(inner_type) if inner_type.is_a?(Symbol)
           TypeBuilder.new(:vector, template_args: [inner_type])
         end
 
@@ -293,9 +273,7 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if inner_type.nil?
 
           require_relative "ownership_dsl"
-          if inner_type.is_a?(Symbol)
-            inner_type = TypeBuilder.new(inner_type)
-          end
+          inner_type = TypeBuilder.new(inner_type) if inner_type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(inner_type, :span)
         end
 
@@ -303,17 +281,13 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if inner_type.nil?
 
           require_relative "ownership_dsl"
-          if inner_type.is_a?(Symbol)
-            inner_type = TypeBuilder.new(inner_type)
-          end
+          inner_type = TypeBuilder.new(inner_type) if inner_type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(inner_type, :span_const)
         end
 
         def array(inner_type, size = nil)
           require_relative "ownership_dsl"
-          if inner_type.is_a?(Symbol)
-            inner_type = TypeBuilder.new(inner_type)
-          end
+          inner_type = TypeBuilder.new(inner_type) if inner_type.is_a?(Symbol)
           if size
             OwnershipDSL::OwnershipTypeBuilder.new([inner_type, size], :array)
           else
@@ -326,12 +300,8 @@ module CppAst
           raise ArgumentError, "Types cannot be nil" if ok_type.nil? || err_type.nil?
 
           require_relative "ownership_dsl"
-          if ok_type.is_a?(Symbol)
-            ok_type = TypeBuilder.new(ok_type)
-          end
-          if err_type.is_a?(Symbol)
-            err_type = TypeBuilder.new(err_type)
-          end
+          ok_type = TypeBuilder.new(ok_type) if ok_type.is_a?(Symbol)
+          err_type = TypeBuilder.new(err_type) if err_type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new([ok_type, err_type], :result)
         end
 
@@ -339,9 +309,7 @@ module CppAst
           raise ArgumentError, "Type cannot be nil" if inner_type.nil?
 
           require_relative "ownership_dsl"
-          if inner_type.is_a?(Symbol)
-            inner_type = TypeBuilder.new(inner_type)
-          end
+          inner_type = TypeBuilder.new(inner_type) if inner_type.is_a?(Symbol)
           OwnershipDSL::OwnershipTypeBuilder.new(inner_type, :option)
         end
 
@@ -379,9 +347,7 @@ module CppAst
           raise ArgumentError, "Return type cannot be nil" if return_type.nil?
 
           require_relative "ownership_dsl"
-          if return_type.is_a?(Symbol)
-            return_type = TypeBuilder.new(return_type)
-          end
+          return_type = TypeBuilder.new(return_type) if return_type.is_a?(Symbol)
           param_types = param_types.map do |type|
             if type.is_a?(Symbol)
               TypeBuilder.new(type)

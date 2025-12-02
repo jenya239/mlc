@@ -158,27 +158,21 @@ module CppAst
         result = "binary(#{node.operator.inspect}, #{left}, #{right})"
 
         # Add fluent calls if trivia is non-default
-        if node.operator_prefix != " "
-          result += "\n#{current_indent}.with_operator_prefix(#{node.operator_prefix.inspect})"
-        end
-        if node.operator_suffix != " "
-          result += "\n#{current_indent}.with_operator_suffix(#{node.operator_suffix.inspect})"
-        end
+        result += "\n#{current_indent}.with_operator_prefix(#{node.operator_prefix.inspect})" if node.operator_prefix != " "
+        result += "\n#{current_indent}.with_operator_suffix(#{node.operator_suffix.inspect})" if node.operator_suffix != " "
 
         result
       end
 
       def generate_unary_expression(node)
         operand = generate(node.operand)
-        if node.prefix
-          result = "unary(#{node.operator.inspect}, #{operand})"
+        result = if node.prefix
+          "unary(#{node.operator.inspect}, #{operand})"
         else
-          result = "unary_post(#{node.operator.inspect}, #{operand})"
-        end
+          "unary_post(#{node.operator.inspect}, #{operand})"
+                 end
 
-        if node.operator_suffix != ""
-          result += "\n#{current_indent}.with_operator_suffix(#{node.operator_suffix.inspect})"
-        end
+        result += "\n#{current_indent}.with_operator_suffix(#{node.operator_suffix.inspect})" if node.operator_suffix != ""
 
         result
       end
@@ -187,12 +181,8 @@ module CppAst
         expr = generate(node.expression)
         result = "paren(#{expr})"
 
-        if node.open_paren_suffix != ""
-          result += "\n#{current_indent}.with_open_paren_suffix(#{node.open_paren_suffix.inspect})"
-        end
-        if node.close_paren_prefix != ""
-          result += "\n#{current_indent}.with_close_paren_prefix(#{node.close_paren_prefix.inspect})"
-        end
+        result += "\n#{current_indent}.with_open_paren_suffix(#{node.open_paren_suffix.inspect})" if node.open_paren_suffix != ""
+        result += "\n#{current_indent}.with_close_paren_prefix(#{node.close_paren_prefix.inspect})" if node.close_paren_prefix != ""
 
         result
       end
@@ -221,12 +211,8 @@ module CppAst
           result += "\n#{current_indent}.with_argument_separators(#{node.argument_separators.inspect})"
         end
 
-        if node.lparen_suffix != ""
-          result += "\n#{current_indent}.with_lparen_suffix(#{node.lparen_suffix.inspect})"
-        end
-        if node.rparen_prefix != ""
-          result += "\n#{current_indent}.with_rparen_prefix(#{node.rparen_prefix.inspect})"
-        end
+        result += "\n#{current_indent}.with_lparen_suffix(#{node.lparen_suffix.inspect})" if node.lparen_suffix != ""
+        result += "\n#{current_indent}.with_rparen_prefix(#{node.rparen_prefix.inspect})" if node.rparen_prefix != ""
 
         result
       end
@@ -236,12 +222,8 @@ module CppAst
         member = node.member.name
         result = "member(#{obj}, #{node.operator.inspect}, #{member.inspect})"
 
-        if node.operator_prefix != ""
-          result += "\n#{current_indent}.with_operator_prefix(#{node.operator_prefix.inspect})"
-        end
-        if node.operator_suffix != ""
-          result += "\n#{current_indent}.with_operator_suffix(#{node.operator_suffix.inspect})"
-        end
+        result += "\n#{current_indent}.with_operator_prefix(#{node.operator_prefix.inspect})" if node.operator_prefix != ""
+        result += "\n#{current_indent}.with_operator_suffix(#{node.operator_suffix.inspect})" if node.operator_suffix != ""
 
         result
       end
@@ -251,9 +233,7 @@ module CppAst
         expr = generate(node.expression)
         result = "expr_stmt(#{expr})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -262,12 +242,8 @@ module CppAst
         expr = generate(node.expression)
         result = "return_stmt(#{expr})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
-        if node.keyword_suffix != " "
-          result += "\n#{current_indent}.with_keyword_suffix(#{node.keyword_suffix.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
+        result += "\n#{current_indent}.with_keyword_suffix(#{node.keyword_suffix.inspect})" if node.keyword_suffix != " "
 
         result
       end
@@ -277,12 +253,8 @@ module CppAst
           result = "block()"
 
           # Fluent calls for empty block
-          if node.lbrace_suffix != "\n"
-            result += "\n#{current_indent}.with_lbrace_suffix(#{node.lbrace_suffix.inspect})"
-          end
-          if node.rbrace_prefix != ""
-            result += "\n#{current_indent}.with_rbrace_prefix(#{node.rbrace_prefix.inspect})"
-          end
+          result += "\n#{current_indent}.with_lbrace_suffix(#{node.lbrace_suffix.inspect})" if node.lbrace_suffix != "\n"
+          result += "\n#{current_indent}.with_rbrace_prefix(#{node.rbrace_prefix.inspect})" if node.rbrace_prefix != ""
 
           return result
         end
@@ -296,9 +268,7 @@ module CppAst
         result += "#{current_indent})"
 
         # Add fluent calls for trivia
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         # Check if statement_trailings are non-default
         default_trailings = Array.new(node.statements.length, "\n")
@@ -306,12 +276,8 @@ module CppAst
           result += "\n#{current_indent}.with_statement_trailings(#{node.statement_trailings.inspect})"
         end
 
-        if node.lbrace_suffix != "\n"
-          result += "\n#{current_indent}.with_lbrace_suffix(#{node.lbrace_suffix.inspect})"
-        end
-        if node.rbrace_prefix != ""
-          result += "\n#{current_indent}.with_rbrace_prefix(#{node.rbrace_prefix.inspect})"
-        end
+        result += "\n#{current_indent}.with_lbrace_suffix(#{node.lbrace_suffix.inspect})" if node.lbrace_suffix != "\n"
+        result += "\n#{current_indent}.with_rbrace_prefix(#{node.rbrace_prefix.inspect})" if node.rbrace_prefix != ""
 
         result
       end
@@ -337,18 +303,10 @@ module CppAst
         end
 
         # Fluent calls for trivia
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
-        if node.if_suffix != " "
-          result += "\n#{current_indent}.with_if_suffix(#{node.if_suffix.inspect})"
-        end
-        if node.else_statement && node.else_prefix != " "
-          result += "\n#{current_indent}.with_else_prefix(#{node.else_prefix.inspect})"
-        end
-        if node.else_statement && node.else_suffix != " "
-          result += "\n#{current_indent}.with_else_suffix(#{node.else_suffix.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
+        result += "\n#{current_indent}.with_if_suffix(#{node.if_suffix.inspect})" if node.if_suffix != " "
+        result += "\n#{current_indent}.with_else_prefix(#{node.else_prefix.inspect})" if node.else_statement && node.else_prefix != " "
+        result += "\n#{current_indent}.with_else_suffix(#{node.else_suffix.inspect})" if node.else_statement && node.else_suffix != " "
 
         result
       end
@@ -361,12 +319,8 @@ module CppAst
         end
         result += ")"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
-        if node.type_suffix != " "
-          result += "\n#{current_indent}.with_type_suffix(#{node.type_suffix.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
+        result += "\n#{current_indent}.with_type_suffix(#{node.type_suffix.inspect})" if node.type_suffix != " "
 
         result
       end
@@ -386,21 +340,11 @@ module CppAst
         end
 
         # Fluent calls
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
-        if node.return_type_suffix != " "
-          result += "\n#{current_indent}.with_return_type_suffix(#{node.return_type_suffix.inspect})"
-        end
-        if node.body && node.rparen_suffix != " "
-          result += "\n#{current_indent}.with_rparen_suffix(#{node.rparen_suffix.inspect})"
-        end
-        if node.modifiers_text != ""
-          result += "\n#{current_indent}.with_modifiers_text(#{node.modifiers_text.inspect})"
-        end
-        if node.prefix_modifiers != ""
-          result += "\n#{current_indent}.with_prefix_modifiers(#{node.prefix_modifiers.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
+        result += "\n#{current_indent}.with_return_type_suffix(#{node.return_type_suffix.inspect})" if node.return_type_suffix != " "
+        result += "\n#{current_indent}.with_rparen_suffix(#{node.rparen_suffix.inspect})" if node.body && node.rparen_suffix != " "
+        result += "\n#{current_indent}.with_modifiers_text(#{node.modifiers_text.inspect})" if node.modifiers_text != ""
+        result += "\n#{current_indent}.with_prefix_modifiers(#{node.prefix_modifiers.inspect})" if node.prefix_modifiers != ""
 
         result
       end
@@ -415,12 +359,8 @@ module CppAst
         end
         result += "#{current_indent})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
-        if node.while_suffix != " "
-          result += "\n#{current_indent}.with_while_suffix(#{node.while_suffix.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
+        result += "\n#{current_indent}.with_while_suffix(#{node.while_suffix.inspect})" if node.while_suffix != " "
         if node.condition_lparen_suffix != ""
           result += "\n#{current_indent}.with_condition_lparen_suffix(#{node.condition_lparen_suffix.inspect})"
         end
@@ -440,9 +380,7 @@ module CppAst
         end
         result += "#{current_indent})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -470,9 +408,7 @@ module CppAst
           result += "#{current_indent})"
         end
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -495,9 +431,7 @@ module CppAst
           result += ")"
         end
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -546,9 +480,7 @@ module CppAst
       def generate_break_statement(node)
         result = "break_stmt"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -556,9 +488,7 @@ module CppAst
       def generate_continue_statement(node)
         result = "continue_stmt"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -583,12 +513,8 @@ module CppAst
         idx = generate(node.index)
         result = "subscript(#{arr}, #{idx})"
 
-        if node.lbracket_suffix != ""
-          result += "\n#{current_indent}.with_lbracket_suffix(#{node.lbracket_suffix.inspect})"
-        end
-        if node.rbracket_prefix != ""
-          result += "\n#{current_indent}.with_rbracket_prefix(#{node.rbracket_prefix.inspect})"
-        end
+        result += "\n#{current_indent}.with_lbracket_suffix(#{node.lbracket_suffix.inspect})" if node.lbracket_suffix != ""
+        result += "\n#{current_indent}.with_rbracket_prefix(#{node.rbracket_prefix.inspect})" if node.rbracket_prefix != ""
 
         result
       end
@@ -620,9 +546,7 @@ module CppAst
         result += ", class_keyword: #{node.class_keyword.inspect}" unless node.class_keyword.empty?
         result += ")"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -637,9 +561,7 @@ module CppAst
           result = "using_alias(#{node.name.inspect}, #{node.alias_target.inspect})"
         end
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -647,9 +569,7 @@ module CppAst
       def generate_access_specifier(node)
         result = "access_spec(#{node.keyword.inspect})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -662,9 +582,7 @@ module CppAst
         end
         result += "#{current_indent})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -688,13 +606,9 @@ module CppAst
         end
 
         # Add base_classes if present
-        unless node.base_classes_text.empty?
-          result += "\n#{current_indent}.with_base_classes(#{node.base_classes_text.inspect})"
-        end
+        result += "\n#{current_indent}.with_base_classes(#{node.base_classes_text.inspect})" unless node.base_classes_text.empty?
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -717,13 +631,9 @@ module CppAst
           result += ")"
         end
 
-        unless node.base_classes_text.empty?
-          result += "\n#{current_indent}.with_base_classes(#{node.base_classes_text.inspect})"
-        end
+        result += "\n#{current_indent}.with_base_classes(#{node.base_classes_text.inspect})" unless node.base_classes_text.empty?
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -733,12 +643,8 @@ module CppAst
         result += ", specifiers: #{node.specifiers.inspect}" unless node.specifiers.empty?
         result += ")"
 
-        if node.capture_suffix != ""
-          result += "\n#{current_indent}.with_capture_suffix(#{node.capture_suffix.inspect})"
-        end
-        if node.params_suffix != ""
-          result += "\n#{current_indent}.with_params_suffix(#{node.params_suffix.inspect})"
-        end
+        result += "\n#{current_indent}.with_capture_suffix(#{node.capture_suffix.inspect})" if node.capture_suffix != ""
+        result += "\n#{current_indent}.with_params_suffix(#{node.params_suffix.inspect})" if node.params_suffix != ""
 
         result
       end
@@ -751,18 +657,10 @@ module CppAst
         end
         result += "#{current_indent})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
-        if node.template_suffix != " "
-          result += "\n#{current_indent}.with_template_suffix(#{node.template_suffix.inspect})"
-        end
-        if node.less_suffix != ""
-          result += "\n#{current_indent}.with_less_suffix(#{node.less_suffix.inspect})"
-        end
-        if node.params_suffix != ""
-          result += "\n#{current_indent}.with_params_suffix(#{node.params_suffix.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
+        result += "\n#{current_indent}.with_template_suffix(#{node.template_suffix.inspect})" if node.template_suffix != " "
+        result += "\n#{current_indent}.with_less_suffix(#{node.less_suffix.inspect})" if node.less_suffix != ""
+        result += "\n#{current_indent}.with_params_suffix(#{node.params_suffix.inspect})" if node.params_suffix != ""
 
         result
       end
@@ -770,17 +668,13 @@ module CppAst
       def generate_error_statement(node)
         result = "error_stmt(#{node.error_text.inspect})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
 
       def generate_program(node)
-        if node.statements.empty?
-          return "program()"
-        end
+        return "program()" if node.statements.empty?
 
         result = "program(\n"
         with_indent do
@@ -792,9 +686,7 @@ module CppAst
 
         # Check statement_trailings
         default_trailings = Array.new(node.statements.length, "\n")
-        if node.statement_trailings != default_trailings
-          result += "\n.with_statement_trailings(#{node.statement_trailings.inspect})"
-        end
+        result += "\n.with_statement_trailings(#{node.statement_trailings.inspect})" if node.statement_trailings != default_trailings
 
         result
       end
@@ -803,9 +695,7 @@ module CppAst
       def generate_inline_comment(node)
         result = "inline_comment(#{node.text.inspect})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -813,9 +703,7 @@ module CppAst
       def generate_block_comment(node)
         result = "block_comment(#{node.text.inspect})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -823,9 +711,7 @@ module CppAst
       def generate_doxygen_comment(node)
         result = "doxygen_comment(#{node.text.inspect}, style: #{node.style.inspect})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -836,9 +722,7 @@ module CppAst
         result += ", #{node.value.inspect}" unless node.value.empty?
         result += ")"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -860,9 +744,7 @@ module CppAst
 
         result += ")"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -884,9 +766,7 @@ module CppAst
 
         result += ")"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -897,9 +777,7 @@ module CppAst
         result += ", #{node.name.inspect}" unless node.name.empty?
         result += ")"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -908,9 +786,7 @@ module CppAst
       def generate_concept_declaration(node)
         result = "concept_decl(#{node.name.inspect}, #{node.template_params.inspect}, #{node.requirements.inspect})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -933,9 +809,7 @@ module CppAst
 
         result += ")"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -943,9 +817,7 @@ module CppAst
       def generate_import_declaration(node)
         result = "import_decl(#{node.module_name.inspect})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -967,9 +839,7 @@ module CppAst
 
         result += ")"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -979,9 +849,7 @@ module CppAst
         expr = generate(node.expression)
         result = "co_await(#{expr})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -990,9 +858,7 @@ module CppAst
         expr = generate(node.expression)
         result = "co_yield(#{expr})"
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -1005,9 +871,7 @@ module CppAst
           result = "co_return()"
         end
 
-        if node.leading_trivia != ""
-          result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})"
-        end
+        result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 
         result
       end
@@ -1032,9 +896,7 @@ module CppAst
         end
 
         # Close module namespace if present
-        if program.module_decl
-          result << "} // namespace #{program.module_decl.name}"
-        end
+        result << "} // namespace #{program.module_decl.name}" if program.module_decl
 
         result.join("\n")
       end

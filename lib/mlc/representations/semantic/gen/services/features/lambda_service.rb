@@ -61,9 +61,7 @@ module MLC
             end
 
             def resolve_param_type(param_ast, expected_type, node:)
-              if param_ast.respond_to?(:type) && param_ast.type
-                return @type_builder.transform(param_ast.type)
-              end
+              return @type_builder.transform(param_ast.type) if param_ast.respond_to?(:type) && param_ast.type
 
               expected_type || default_param_type(node)
             end

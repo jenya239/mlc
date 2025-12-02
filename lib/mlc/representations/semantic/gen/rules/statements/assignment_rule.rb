@@ -17,15 +17,11 @@ module MLC
                 value_ir = context[:value_ir] || context.fetch(:expression_visitor).visit(node.value)
 
                 target = node.target
-                unless svc.ast_type_checker.var_ref?(target)
-                  svc.type_checker.type_error('assignment target must be a variable', node: node)
-                end
+                svc.type_checker.type_error('assignment target must be a variable', node: node) unless svc.ast_type_checker.var_ref?(target)
 
                 target_name = target.name
                 existing_type = svc.var_type_registry.get(target_name)
-                unless existing_type
-                  svc.type_checker.type_error("assignment to undefined variable '#{target_name}'", node: node)
-                end
+                svc.type_checker.type_error("assignment to undefined variable '#{target_name}'", node: node) unless existing_type
 
                 svc.type_checker.ensure_compatible_type(
                   value_ir.type,

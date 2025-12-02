@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 # Add 4-space indentation to engine.rb content after namespace change
 
 file = "lib/mlc/representations/semantic/gen/engine.rb"
@@ -12,11 +13,11 @@ lines.each_with_index do |line, idx|
     output << line
   # Lines 44 to length-3: add 4 spaces to non-empty lines
   elsif idx < lines.length - 2
-    if line.strip.empty?
-      output << line
+    output << if line.strip.empty?
+      line
     else
-      output << ("    " + line)
-    end
+      ("    " + line)
+              end
   # Last 2 lines: replace with 4 closing ends
   elsif idx == lines.length - 2
     output << "        end   # class Engine\n"

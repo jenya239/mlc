@@ -163,9 +163,7 @@ module MLC
                   )
 
                   # Validate completeness if implementing a trait
-                  if decl.trait_name
-                    validate_trait_implementation(trait_registry, type_name, decl.trait_name, methods, decl)
-                  end
+                  validate_trait_implementation(trait_registry, type_name, decl.trait_name, methods, decl) if decl.trait_name
                 end
               end
             end
@@ -181,9 +179,7 @@ module MLC
                 next if trait_method[:body]
 
                 # Check if implemented
-                unless impl_methods.key?(method_name)
-                  missing_methods << method_name
-                end
+                missing_methods << method_name unless impl_methods.key?(method_name)
               end
 
               unless missing_methods.empty?

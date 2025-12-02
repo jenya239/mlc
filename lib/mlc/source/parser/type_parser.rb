@@ -54,9 +54,7 @@ module MLC
           sum_origin_token = nil
 
           # Parse first variant (may or may not have leading |)
-          if current.type == :OPERATOR && current.value == "|"
-            consume(:OPERATOR)
-          end
+          consume(:OPERATOR) if current.type == :OPERATOR && current.value == "|"
 
           loop do
             name_token = consume(:IDENTIFIER)
@@ -113,9 +111,7 @@ module MLC
 
         def parse_type
           # Check for reference types: ref T or ref mut T
-          if current.type == :REF
-            return parse_reference_type
-          end
+          return parse_reference_type if current.type == :REF
 
           base_token = nil
           base_type = case current.type

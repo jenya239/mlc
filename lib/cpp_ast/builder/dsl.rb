@@ -202,9 +202,7 @@ module CppAst
       # Declarations
       def var_decl(type, *declarators)
         # Handle single declarator case: var_decl("int", "name") -> var_decl("int", "name")
-        if declarators.length == 1 && declarators[0].is_a?(String)
-          declarators = [declarators[0]]
-        end
+        declarators = [declarators[0]] if declarators.length == 1 && declarators[0].is_a?(String)
 
         separators = declarators.size > 1 ? Array.new(declarators.size - 1, ", ") : []
         Nodes::VariableDeclaration.new(
@@ -259,9 +257,7 @@ module CppAst
       def class_with_inheritance(name, base_classes, *members)
         # Build inheritance text
         inheritance_text = ""
-        if base_classes.any?
-          inheritance_text = " : " + base_classes.join(", ")
-        end
+        inheritance_text = " : " + base_classes.join(", ") if base_classes.any?
 
         member_trailings = members.map { "\n" }
         Nodes::ClassDeclaration.new(

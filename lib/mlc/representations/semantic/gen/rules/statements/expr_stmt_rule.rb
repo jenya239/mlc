@@ -18,13 +18,9 @@ module MLC
 
                 return [] if drop_noop_statement?(expr_ir)
 
-                if expr_ir.is_a?(MLC::SemanticIR::BlockExpr)
-                  return expr_ir.statements
-                end
+                return expr_ir.statements if expr_ir.is_a?(MLC::SemanticIR::BlockExpr)
 
-                if expr_ir.is_a?(MLC::SemanticIR::IfExpr) && unit_type?(expr_ir.type, svc)
-                  return build_if_statement(expr_ir, svc)
-                end
+                return build_if_statement(expr_ir, svc) if expr_ir.is_a?(MLC::SemanticIR::IfExpr) && unit_type?(expr_ir.type, svc)
 
                 svc.ir_builder.expr_statement(expression: expr_ir, origin: node)
               end

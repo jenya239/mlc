@@ -15,9 +15,7 @@ module MLC
               def produce(node, context)
                 svc = services(context)
                 loops = svc.loop_service
-                unless loops.inside_loop?
-                  svc.type_checker.type_error("'continue' used outside of loop", node: node)
-                end
+                svc.type_checker.type_error("'continue' used outside of loop", node: node) unless loops.inside_loop?
 
                 svc.ir_builder.continue_node(origin: node)
               end

@@ -17,21 +17,17 @@ module MLC
       lines = []
 
       # Add location if available
-      if @location
-        lines << "#{@location}: #{message}"
+      lines << if @location
+        "#{@location}: #{message}"
       else
-        lines << message
-      end
+        message
+               end
 
       # Add suggestion if available
-      if @suggestion
-        lines << "  💡 Suggestion: #{@suggestion}"
-      end
+      lines << "  💡 Suggestion: #{@suggestion}" if @suggestion
 
       # Add context if available
-      if @context
-        lines << "  📍 Context: #{@context}"
-      end
+      lines << "  📍 Context: #{@context}" if @context
 
       # Add error type specific help
       lines << error_type_help

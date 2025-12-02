@@ -19,9 +19,7 @@ module MLC
 
               # Prevent operator collision: -(-x) must generate -(-x), not --x
               # Same for +(+x) -> +(+x) and +(-x) -> +(-x), etc.
-              if needs_parentheses?(node.op, operand)
-                operand = context.factory.parenthesized(expression: operand)
-              end
+              operand = context.factory.parenthesized(expression: operand) if needs_parentheses?(node.op, operand)
 
               context.factory.unary_expression(
                 operator: node.op,

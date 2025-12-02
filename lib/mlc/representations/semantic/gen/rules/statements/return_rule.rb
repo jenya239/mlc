@@ -21,9 +21,7 @@ module MLC
 
                 value_ir = context[:value_ir]
                 if expected_type && !unit_type?(expected_type, svc)
-                  unless value_ir
-                    svc.type_checker.type_error('return statement requires a value', node: node)
-                  end
+                  svc.type_checker.type_error('return statement requires a value', node: node) unless value_ir
 
                   svc.type_checker.ensure_type!(value_ir.type, 'return expression', node: node)
                   svc.type_checker.ensure_compatible_type(

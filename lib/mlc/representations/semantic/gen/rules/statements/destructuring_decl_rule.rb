@@ -42,9 +42,7 @@ module MLC
                 elements = node.pattern.data[:elements]
                 value_type = value_ir.type
 
-                unless value_type.is_a?(MLC::SemanticIR::TupleType)
-                  raise "Cannot destructure non-tuple type: #{value_type.inspect}"
-                end
+                raise "Cannot destructure non-tuple type: #{value_type.inspect}" unless value_type.is_a?(MLC::SemanticIR::TupleType)
 
                 element_types = value_type.element_types
 
@@ -90,16 +88,12 @@ module MLC
                 field_names = node.pattern.data[:bindings]
                 value_type = value_ir.type
 
-                unless value_type.is_a?(MLC::SemanticIR::RecordType)
-                  raise "Cannot destructure non-record type: #{value_type.inspect}"
-                end
+                raise "Cannot destructure non-record type: #{value_type.inspect}" unless value_type.is_a?(MLC::SemanticIR::RecordType)
 
                 bindings = []
                 field_names.each do |field_name|
                   field_info = value_type.fields.find { |f| f[:name] == field_name }
-                  unless field_info
-                    raise "Record type #{value_type.name} has no field '#{field_name}'"
-                  end
+                  raise "Record type #{value_type.name} has no field '#{field_name}'" unless field_info
 
                   field_type = field_info[:type]
 

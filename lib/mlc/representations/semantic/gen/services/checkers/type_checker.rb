@@ -197,9 +197,7 @@ module MLC
               expected = info.param_types || []
               return if expected.empty?
 
-              if expected.length != args.length
-                type_error("Function '#{name}' expects #{expected.length} argument(s), got #{args.length}")
-              end
+              type_error("Function '#{name}' expects #{expected.length} argument(s), got #{args.length}") if expected.length != args.length
 
               expected.each_with_index do |type, index|
                 arg_expr = args[index]
@@ -376,9 +374,7 @@ module MLC
             # @return [Symbol] :primitive, :record, :sum, :opaque, or :unknown
             def infer_type_kind(ast_decl, core_ir_type)
               # Check if it's an opaque type (explicit MLC::Source::AST::OpaqueType or old-style implicit)
-              if core_ir_type.is_a?(SemanticIR::OpaqueType) || ast_decl.type.is_a?(MLC::Source::AST::OpaqueType)
-                return :opaque
-              end
+              return :opaque if core_ir_type.is_a?(SemanticIR::OpaqueType) || ast_decl.type.is_a?(MLC::Source::AST::OpaqueType)
 
               # Legacy: Check if it's an old-style opaque type (PrimType with same name as decl)
               # This handles types declared before MLC::Source::AST::OpaqueType was introduced

@@ -262,15 +262,11 @@ module MLC
             end
 
             def build_block_from_statements(node, extra_context)
-              unless @statement_visitor
-                raise NotImplementedError, "ExpressionVisitor cannot handle #{node.class} without statement visitor"
-              end
+              raise NotImplementedError, "ExpressionVisitor cannot handle #{node.class} without statement visitor" unless @statement_visitor
 
               statements = Array(node.stmts).dup
               result_expr = nil
-              if statements.last.is_a?(MLC::Source::AST::ExprStmt)
-                result_expr = statements.pop.expr
-              end
+              result_expr = statements.pop.expr if statements.last.is_a?(MLC::Source::AST::ExprStmt)
 
               statements_ir = @statement_visitor.visit_statements(statements)
               result_ir = result_expr ? visit(result_expr, extra_context) : @services.ir_builder.unit_literal(origin: node)

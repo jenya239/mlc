@@ -158,7 +158,7 @@ class MLCMultiFileModulesTest < Minitest::Test
       assert_includes variants, "Failure"
     end
 
-    # Note: Using the imported sum type constructors requires additional
+    # NOTE: Using the imported sum type constructors requires additional
     # sum type constructor registration which is beyond this test's scope
   end
 
@@ -255,7 +255,7 @@ class MLCMultiFileModulesTest < Minitest::Test
     assert_includes hpp_content, "int hello();"
 
     cpp_content = File.read(cpp_file)
-    # Note: module name defaults to "main" without explicit module declaration
+    # NOTE: module name defaults to "main" without explicit module declaration
     assert_includes cpp_content, '#include "main.hpp"'
     assert_includes cpp_content, "return 42"
   end

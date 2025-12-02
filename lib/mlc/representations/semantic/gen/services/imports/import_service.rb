@@ -112,9 +112,7 @@ module MLC
                 safe_register_alias(function_registry, alias_key, canonical_name)
               end
 
-              if alias_name.nil?
-                safe_register_alias(function_registry, function_name, canonical_name)
-              end
+              safe_register_alias(function_registry, function_name, canonical_name) if alias_name.nil?
             end
 
             def safe_register_alias(function_registry, alias_name, canonical_name)
@@ -167,9 +165,7 @@ module MLC
               module_name = import_decl.path
               metadata_path = @module_path_resolver.resolve(module_name)
 
-              if File.exist?(metadata_path)
-                @metadata_loader.load(metadata_path)
-              end
+              @metadata_loader.load(metadata_path) if File.exist?(metadata_path)
 
               # Register import aliases (existing behavior)
               @module_resolver.register_module_import(import_decl, function_registry)

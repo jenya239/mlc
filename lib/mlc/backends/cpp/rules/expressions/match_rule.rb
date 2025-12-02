@@ -442,13 +442,13 @@ module MLC
                     temp_var_counter += 1
 
                     # Extract nested value using structured binding access
-                    if bindings.length == 1
+                    binding_decls << if bindings.length == 1
                       # Single field - use .field0
-                      binding_decls << "auto #{nested_temp_var} = #{temp_var}.field0;"
+                      "auto #{nested_temp_var} = #{temp_var}.field0;"
                     else
                       # Multiple fields - use .fieldN
-                      binding_decls << "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
-                    end
+                      "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
+                                     end
 
                     # Build nested pattern check
                     nested_check = build_nested_pattern_check(binding, nested_temp_var)

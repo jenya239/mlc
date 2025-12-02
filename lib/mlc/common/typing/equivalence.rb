@@ -19,9 +19,7 @@ module MLC
           return true if left.equal?(right)
 
           # Type variables: compare by name
-          if left.is_a?(SemanticIR::TypeVariable) && right.is_a?(SemanticIR::TypeVariable)
-            return left.name == right.name
-          end
+          return left.name == right.name if left.is_a?(SemanticIR::TypeVariable) && right.is_a?(SemanticIR::TypeVariable)
 
           # Generic types: compare base and all type args recursively
           if left.is_a?(SemanticIR::GenericType) && right.is_a?(SemanticIR::GenericType)

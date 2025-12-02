@@ -72,9 +72,7 @@ module CppAst
             next_kind = current_token.kind
             @position = saved_pos
 
-            if [:equals, :semicolon, :comma, :lparen, :lbracket, :lbrace].include?(next_kind)
-              break
-            end
+            break if [:equals, :semicolon, :comma, :lparen, :lbracket, :lbrace].include?(next_kind)
           end
         end
 

@@ -28,14 +28,10 @@ module MLC
               node.prefix_modifiers = merge_prefix_modifier(node.prefix_modifiers, "constexpr")
             end
 
-            if effects.include?(:noexcept)
-              node.modifiers_text = merge_suffix_modifier(node.modifiers_text, "noexcept")
-            end
+            node.modifiers_text = merge_suffix_modifier(node.modifiers_text, "noexcept") if effects.include?(:noexcept)
 
             # Mark async functions as C++20 coroutines
-            if semantic_func.is_async
-              node = node.coroutine
-            end
+            node = node.coroutine if semantic_func.is_async
 
             event_bus&.publish(
               :cpp_function_rule_applied,
