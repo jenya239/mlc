@@ -11,8 +11,8 @@ class OpenGLCoverageTest < Minitest::Test
                          class_decl("Shader",
                                     enum_class("Type", [
                                                  ["Vertex", "GL_VERTEX_SHADER"],
-                                      ["Fragment", "GL_FRAGMENT_SHADER"],
-                                      ["Geometry", "GL_GEOMETRY_SHADER"]
+                                                 ["Fragment", "GL_FRAGMENT_SHADER"],
+                                                 ["Geometry", "GL_GEOMETRY_SHADER"]
                                                ]),
                                     function_decl("", "Shader", [param("Type", "type"), param("const std::string&", "source")], block()),
                                     function_decl("", "~Shader", [], block()),
@@ -33,8 +33,7 @@ class OpenGLCoverageTest < Minitest::Test
                                       .const()
                                       .noexcept(),
                                     function_decl("std::optional<std::string>", "compile_error", [], block())
-                                      .const()
-                         ),
+                                      .const()),
                          class_decl("ShaderProgram",
                                     function_decl("", "ShaderProgram", [], block()),
                                     function_decl("", "~ShaderProgram", [], block()),
@@ -67,9 +66,7 @@ class OpenGLCoverageTest < Minitest::Test
                                     function_decl("void", "set_uniform", [param("const std::string&", "name"), param("float", "x"), param("float", "y"), param("float", "z")], block())
                                       .const(),
                                     function_decl("void", "set_uniform", [param("const std::string&", "name"), param("std::span<const float>", "values")], block())
-                                      .const()
-                         )
-    )
+                                      .const()))
 
     cpp_code = ast.to_source
 
@@ -115,17 +112,16 @@ class OpenGLCoverageTest < Minitest::Test
                                     function_decl("bool", "is_valid", [], block())
                                       .inline_body(block(return_stmt(binary_expr(id("vao_"), "!=", number(0)))))
                                       .const()
-                                      .noexcept()
-                         ),
+                                      .noexcept()),
                          class_decl("Buffer",
                                     enum_class("Type", [
                                                  ["Array", "GL_ARRAY_BUFFER"],
-                                      ["ElementArray", "GL_ELEMENT_ARRAY_BUFFER"]
+                                                 ["ElementArray", "GL_ELEMENT_ARRAY_BUFFER"]
                                                ]),
                                     enum_class("Usage", [
                                                  ["Static", "GL_STATIC_DRAW"],
-                                      ["Dynamic", "GL_DYNAMIC_DRAW"],
-                                      ["Stream", "GL_STREAM_DRAW"]
+                                                 ["Dynamic", "GL_DYNAMIC_DRAW"],
+                                                 ["Stream", "GL_STREAM_DRAW"]
                                                ]),
                                     function_decl("", "Buffer", [param("Type", "type")], block())
                                       .explicit(),
@@ -152,9 +148,7 @@ class OpenGLCoverageTest < Minitest::Test
                                     function_decl("bool", "is_valid", [], block())
                                       .inline_body(block(return_stmt(binary_expr(id("buffer_"), "!=", number(0)))))
                                       .const()
-                                      .noexcept()
-                         )
-    )
+                                      .noexcept()))
 
     cpp_code = ast.to_source
 
@@ -197,8 +191,7 @@ class OpenGLCoverageTest < Minitest::Test
                                        .const(),
                                      function_decl("Vec2", "operator*", [param("float", "s")], block())
                                        .const(),
-                                     function_decl("Vec2&", "operator+=", [param("const Vec2&", "other")], block())
-                         ),
+                                     function_decl("Vec2&", "operator+=", [param("const Vec2&", "other")], block())),
 
                          struct_decl("Rect",
                                      field_def("float", "x", default: "0.0f"),
@@ -213,8 +206,7 @@ class OpenGLCoverageTest < Minitest::Test
                                      function_decl("bool", "contains", [param("float", "px"), param("float", "py")], block())
                                        .const(),
                                      function_decl("float", "area", [], block())
-                                       .const()
-                         ),
+                                       .const()),
 
                          struct_decl("Color",
                                      field_def("float", "r", default: "1.0f"),
@@ -245,21 +237,19 @@ class OpenGLCoverageTest < Minitest::Test
                                      function_decl("Color", "blue", [], block())
                                        .inline_body(block(return_stmt(brace_initializer([number(0.0), number(0.0), number(1.0), number(1.0)]))))
                                        .static()
-                                       .constexpr()
-                         ),
+                                       .constexpr()),
 
                          enum_class("AtlasFormat", [
                                       ["A8"],
-                           ["RGB8"],
-                           ["RGBA8"]
+                                      ["RGB8"],
+                                      ["RGBA8"]
                                     ], underlying_type: "uint8_t"),
 
                          enum_class("RenderMode", [
                                       ["BITMAP"],
-                           ["MSDF"],
-                           ["SDF"]
-                                    ], underlying_type: "uint8_t")
-    )
+                                      ["MSDF"],
+                                      ["SDF"]
+                                    ], underlying_type: "uint8_t"))
 
     cpp_code = ast.to_source
 

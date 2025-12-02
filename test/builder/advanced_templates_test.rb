@@ -39,8 +39,7 @@ class AdvancedTemplatesTest < Minitest::Test
   def test_complex_concept
     concept = concept_decl("Serializable",
                            ["typename T"],
-                           "requires(T t) { t.serialize(); t.deserialize(); }"
-    )
+                           "requires(T t) { t.serialize(); t.deserialize(); }")
 
     expected = "template <typename T>\nconcept Serializable = requires(T t) { t.serialize(); t.deserialize(); };"
     assert_equal expected, concept.to_source
@@ -49,8 +48,7 @@ class AdvancedTemplatesTest < Minitest::Test
   def test_concept_with_multiple_params
     concept = concept_decl("Comparable",
                            ["typename T", "typename U"],
-                           "requires(T t, U u) { t < u; t > u; t == u; }"
-    )
+                           "requires(T t, U u) { t < u; t > u; t == u; }")
 
     expected = "template <typename T, typename U>\nconcept Comparable = requires(T t, U u) { t < u; t > u; t == u; };"
     assert_equal expected, concept.to_source
@@ -70,8 +68,7 @@ class AdvancedTemplatesTest < Minitest::Test
                                     param("T", "obj")
                                   ], block(
                       expr_stmt(call(id("obj"), "draw", []))
-                    ))
-      )
+                    )))
     )
 
     assert_includes program.to_source, "concept Drawable"
@@ -104,8 +101,7 @@ class AdvancedTemplatesTest < Minitest::Test
                                     param("Args...", "args")
                                   ], block(
                       return_stmt(call(id("std::reduce"), [id("args...")]))
-                    ))
-      )
+                    )))
     )
 
     assert_includes program.to_source, "concept Arithmetic"

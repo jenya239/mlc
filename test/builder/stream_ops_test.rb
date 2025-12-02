@@ -15,8 +15,7 @@ class StreamOpsTest < Minitest::Test
                          string("Error: "),
                          id("error_code"),
                          string(" at line "),
-                         id("line_number")
-    )
+                         id("line_number"))
     assert_equal "std::cerr << Error:  << error_code <<  at line  << line_number", chain.to_source
   end
 

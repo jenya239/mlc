@@ -113,9 +113,9 @@ class GenericCallResolverTest < Minitest::Test
     def solve(info, args, name:, expected_ret_type: nil)
       @block.call({
                     info: info,
-        args: args,
-        name: name,
-        expected_ret_type: expected_ret_type
+                    args: args,
+                    name: name,
+                    expected_ret_type: expected_ret_type
                   })
     end
   end

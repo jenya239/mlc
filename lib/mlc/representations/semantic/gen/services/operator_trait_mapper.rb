@@ -28,20 +28,20 @@ module MLC
           class OperatorTraitMapper
             # Operator -> [trait_name, method_name]
             OPERATOR_TRAITS = {
-              "+"  => ["Add", "add"],
-              "-"  => ["Sub", "sub"],
-              "*"  => ["Mul", "mul"],
-              "/"  => ["Div", "div"],
-              "%"  => ["Rem", "rem"],
+              "+" => ["Add", "add"],
+              "-" => ["Sub", "sub"],
+              "*" => ["Mul", "mul"],
+              "/" => ["Div", "div"],
+              "%" => ["Rem", "rem"],
               "==" => ["Eq", "eq"],
               "!=" => ["Eq", "ne"],
-              "<"  => ["Ord", "lt"],
-              ">"  => ["Ord", "gt"],
+              "<" => ["Ord", "lt"],
+              ">" => ["Ord", "gt"],
               "<=" => ["Ord", "le"],
               ">=" => ["Ord", "ge"],
-              "&"  => ["BitAnd", "bitand"],
-              "|"  => ["BitOr", "bitor"],
-              "^"  => ["BitXor", "bitxor"],
+              "&" => ["BitAnd", "bitand"],
+              "|" => ["BitOr", "bitor"],
+              "^" => ["BitXor", "bitxor"],
               "<<" => ["Shl", "shl"],
               ">>" => ["Shr", "shr"]
             }.freeze

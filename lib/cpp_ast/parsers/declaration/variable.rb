@@ -149,10 +149,10 @@ module CppAst
 
       def looks_like_declaration?
         type_keywords = [:keyword_int, :keyword_float, :keyword_double, :keyword_char,
-                        :keyword_bool, :keyword_void, :keyword_auto,
-                        :keyword_const, :keyword_static, :keyword_extern,
-                        :keyword_unsigned, :keyword_signed, :keyword_long, :keyword_short,
-                        :keyword_constexpr, :keyword_inline, :keyword_volatile, :keyword_register]
+                         :keyword_bool, :keyword_void, :keyword_auto,
+                         :keyword_const, :keyword_static, :keyword_extern,
+                         :keyword_unsigned, :keyword_signed, :keyword_long, :keyword_short,
+                         :keyword_constexpr, :keyword_inline, :keyword_volatile, :keyword_register]
 
         return true if type_keywords.include?(current_token.kind)
 

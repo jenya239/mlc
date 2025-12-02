@@ -191,8 +191,8 @@ class DSLGeneratorTest < Minitest::Test
 
   def test_fluent_api_binary_operator_spacing
     expr = binary("+", int(1), int(2))
-      .with_operator_prefix("")
-      .with_operator_suffix("")
+           .with_operator_prefix("")
+           .with_operator_suffix("")
 
     ast = program(expr_stmt(expr))
     assert_equal "1+2;\n", ast.to_source

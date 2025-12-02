@@ -8,8 +8,7 @@ class MatchTest < Minitest::Test
   def test_simple_match_expression
     ast = match_expr(id("shape"),
                      arm("Circle", ["r"], binary("*", float(3.14), binary("*", id("r"), id("r")))),
-                     arm("Rect", ["w", "h"], binary("*", id("w"), id("h")))
-    )
+                     arm("Rect", ["w", "h"], binary("*", id("w"), id("h"))))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -24,8 +23,7 @@ class MatchTest < Minitest::Test
   def test_match_with_single_binding
     ast = match_expr(id("result"),
                      arm("Ok", ["value"], id("value")),
-                     arm("Err", ["error"], id("error"))
-    )
+                     arm("Err", ["error"], id("error")))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -40,8 +38,7 @@ class MatchTest < Minitest::Test
   def test_match_with_no_bindings
     ast = match_expr(id("option"),
                      arm("Some", [], int(1)),
-                     arm("None", [], int(0))
-    )
+                     arm("None", [], int(0)))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -58,9 +55,7 @@ class MatchTest < Minitest::Test
                      arm("Click", ["x", "y"],
                          call(id("process_click"), id("x"), id("y"))),
                      arm("KeyPress", ["key"],
-                         ternary(binary("==", id("key"), char('"q"')), int(0), int(1))
-                     )
-    )
+                         ternary(binary("==", id("key"), char('"q"')), int(0), int(1))))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -78,10 +73,8 @@ class MatchTest < Minitest::Test
                         block(
                           return_stmt(match_expr(id("shape"),
                                                  arm("Circle", ["r"], binary("*", float(3.14159), binary("*", id("r"), id("r")))),
-                                                 arm("Rect", ["w", "h"], binary("*", id("w"), id("h")))
-                          ))
-                        )
-    )
+                                                 arm("Rect", ["w", "h"], binary("*", id("w"), id("h")))))
+                        ))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -98,8 +91,7 @@ class MatchTest < Minitest::Test
   def test_match_with_ownership_types
     ast = match_expr(id("data"),
                      arm("Owned", ["ptr"], call(member(paren(deref(id("ptr"))), ".", "value"))),
-                     arm("Borrowed", ["ref"], call(member(id("ref"), ".", "size")))
-    )
+                     arm("Borrowed", ["ref"], call(member(id("ref"), ".", "size"))))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -116,10 +108,8 @@ class MatchTest < Minitest::Test
                      arm("Success", ["data"],
                          match_expr(id("data"),
                                     arm("Some", [], id("value")),
-                                    arm("None", [], int(-1))
-                         )),
-                     arm("Failure", ["error"], int(0))
-    )
+                                    arm("None", [], int(-1)))),
+                     arm("Failure", ["error"], int(0)))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -137,8 +127,7 @@ class MatchTest < Minitest::Test
   def test_match_roundtrip
     # Test DSL → C++ (pattern matching can't be parsed back, so just test generation)
     original_ast = match_expr(id("x"),
-                              arm("A", [], int(1))
-    )
+                              arm("A", [], int(1)))
 
     cpp = original_ast.to_source
     expected = "std::visit(overloaded{\n  [&](const A& a) { return 1; }\n}, x)"
@@ -150,12 +139,9 @@ class MatchTest < Minitest::Test
                      arm("Circle", ["r"],
                          binary("+",
                                 binary("*", float(2.0), float(3.14159)),
-                                binary("*", id("r"), id("r"))
-                         )),
+                                binary("*", id("r"), id("r")))),
                      arm("Rect", ["w", "h"],
-                         binary("*", id("w"), id("h"))
-                     )
-    )
+                         binary("*", id("w"), id("h"))))
 
     cpp = ast.to_source
     expected = <<~CPP.strip

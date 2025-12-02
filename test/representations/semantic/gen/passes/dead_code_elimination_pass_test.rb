@@ -96,7 +96,7 @@ module MLC
               # { return 1; let x = 2; x }
               body = block([
                              return_stmt(lit(1)),
-                var_decl('x', lit(2))
+                             var_decl('x', lit(2))
                            ], var('x'))
 
               f = func('test', body)
@@ -118,8 +118,8 @@ module MLC
               # { return 1; let x = 2; let y = 3; }
               body = block([
                              return_stmt(lit(1)),
-                var_decl('x', lit(2)),
-                var_decl('y', lit(3))
+                             var_decl('x', lit(2)),
+                             var_decl('y', lit(3))
                            ], nil)
 
               f = func('test', body)
@@ -139,7 +139,7 @@ module MLC
               # { let x = 1; return x; }
               body = block([
                              var_decl('x', lit(1)),
-                return_stmt(var('x'))
+                             return_stmt(var('x'))
                            ], nil)
 
               f = func('test', body)
@@ -202,7 +202,7 @@ module MLC
               # { let x = 1; let y = x + 1; y }
               body = block([
                              var_decl('x', lit(1)),
-                var_decl('y', binary('+', var('x'), lit(1)))
+                             var_decl('y', binary('+', var('x'), lit(1)))
                            ], var('y'))
 
               f = func('test', body)
@@ -282,7 +282,7 @@ module MLC
             def test_stats_increment_on_elimination
               body = block([
                              return_stmt(lit(1)),
-                var_decl('x', lit(2))
+                             var_decl('x', lit(2))
                            ], var('x'))
 
               f = func('test', body)
@@ -337,9 +337,9 @@ module MLC
               # Should eliminate: b (unused), c (after return)
               body = block([
                              var_decl('a', lit(1)),
-                var_decl('b', lit(2)),
-                return_stmt(var('a')),
-                var_decl('c', lit(3))
+                             var_decl('b', lit(2)),
+                             return_stmt(var('a')),
+                             var_decl('c', lit(3))
                            ], var('c'))
 
               f = func('test', body)

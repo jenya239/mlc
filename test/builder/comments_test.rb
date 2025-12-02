@@ -59,8 +59,7 @@ class CommentsTest < Minitest::Test
                  public_section(
                    var_decl("double", "x"),
                    var_decl("double", "y")
-                 )
-      )
+                 ))
     )
 
     <<~CPP.strip

@@ -15,8 +15,7 @@ class Cpp20FeaturesTest < Minitest::Test
                               var_decl("int", "pi", "3"),
                               function_decl("int", "add", [param("int", "a"), param("int", "b")], block(
                                 return_stmt(binary("+", id("a"), id("b")))
-                              ))
-    )
+                              )))
 
     assert_includes module_decl.to_source, "export module math"
     assert_includes module_decl.to_source, "int pi"
@@ -91,8 +90,7 @@ class Cpp20FeaturesTest < Minitest::Test
         # Export declarations
                   export_decl(
                     function_decl("int", "async_generator", [param("int", "count")], nil)
-                  )
-      )
+                  ))
     )
 
     assert_includes program.to_source, "export module async_utils"
@@ -107,8 +105,7 @@ class Cpp20FeaturesTest < Minitest::Test
   def test_concept_with_template_constraints
     concept = concept_decl("Serializable",
                            ["typename T"],
-                           "requires(T t) { t.serialize(); t.deserialize(); }"
-    )
+                           "requires(T t) { t.serialize(); t.deserialize(); }")
 
     expected = "template <typename T>\nconcept Serializable = requires(T t) { t.serialize(); t.deserialize(); };"
     assert_equal expected, concept.to_source
@@ -120,8 +117,7 @@ class Cpp20FeaturesTest < Minitest::Test
                               import_decl("std.memory"),
                               import_decl("math"),
                               var_decl("int", "screen_width", "1920"),
-                              var_decl("int", "screen_height", "1080")
-    )
+                              var_decl("int", "screen_height", "1080"))
 
     assert_includes module_decl.to_source, "export module graphics"
     assert_includes module_decl.to_source, "import std.core"

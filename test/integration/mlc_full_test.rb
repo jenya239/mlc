@@ -11,14 +11,12 @@ class MLCFullTest < Minitest::Test
       # Product type
       product_type("Point",
                    field_def("x", "float"),
-                   field_def("y", "float")
-      ),
+                   field_def("y", "float")),
 
       # Sum type
       sum_type("Shape",
                case_struct("Circle", field_def("center", "Point"), field_def("radius", "float")),
-               case_struct("Rect", field_def("top_left", "Point"), field_def("width", "float"), field_def("height", "float"))
-      ),
+               case_struct("Rect", field_def("top_left", "Point"), field_def("width", "float"), field_def("height", "float"))),
 
       # Function with ownership and Result types
       function_decl(result_of("float", "std::string"), "calculate_area",
@@ -28,10 +26,8 @@ class MLCFullTest < Minitest::Test
                                              arm("Circle", ["center", "radius"],
                                                  binary("*", float(3.14159), binary("*", id("radius"), id("radius")))),
                                              arm("Rect", ["top_left", "width", "height"],
-                                                 binary("*", id("width"), id("height")))
-                      ))
-                    )
-      ),
+                                                 binary("*", id("width"), id("height")))))
+                    )),
 
       # Function with Option type
       function_decl(option_of("Point"), "find_center",
@@ -42,11 +38,8 @@ class MLCFullTest < Minitest::Test
                                              arm("Rect", ["top_left", "width", "height"],
                                                  some(call(id("Point"),
                                                            binary("+", member(id("top_left"), ".", "x"), binary("/", id("width"), float(2.0))),
-                                                           binary("+", member(id("top_left"), ".", "y"), binary("/", id("height"), float(2.0)))
-                                                 )))
-                      ))
-                    )
-      ),
+                                                           binary("+", member(id("top_left"), ".", "y"), binary("/", id("height"), float(2.0))))))))
+                    )),
 
       # Function with ownership types
       function_decl("void", "process_shapes",
@@ -60,8 +53,7 @@ class MLCFullTest < Minitest::Test
                           expr_stmt(call(id("process_shape"), deref(id("it"))))
                         )
                       )
-                    )
-      )
+                    ))
     )
 
     cpp = ast.to_source
@@ -108,8 +100,7 @@ class MLCFullTest < Minitest::Test
     ast = program(
       sum_type("Response",
                case_struct("Success", field_def("data", "std::optional<int>")),
-               case_struct("Error", field_def("message", "std::string"))
-      ),
+               case_struct("Error", field_def("message", "std::string"))),
 
       function_decl("int", "handle_response",
                     [param(borrowed("Response"), "response")],
@@ -118,12 +109,9 @@ class MLCFullTest < Minitest::Test
                                              arm("Success", ["data"],
                                                  match_expr(id("data"),
                                                             arm("Some", [], id("value")),
-                                                            arm("None", [], int(-1))
-                                                 )),
-                                             arm("Error", ["message"], int(0))
-                      ))
-                    )
-      )
+                                                            arm("None", [], int(-1)))),
+                                             arm("Error", ["message"], int(0))))
+                    ))
     )
 
     cpp = ast.to_source
@@ -154,15 +142,13 @@ class MLCFullTest < Minitest::Test
     # Test that generated C++ can be parsed back (where possible)
     ast = program(
       product_type("Simple",
-                   field_def("value", "int")
-      ),
+                   field_def("value", "int")),
 
       function_decl("int", "get_value",
                     [param(borrowed("Simple"), "s")],
                     block(
                       return_stmt(member(id("s"), ".", "value"))
-                    )
-      )
+                    ))
     )
 
     cpp = ast.to_source

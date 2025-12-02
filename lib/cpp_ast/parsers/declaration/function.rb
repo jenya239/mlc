@@ -150,7 +150,7 @@ module CppAst
         end
 
         declaration_keywords = [:keyword_class, :keyword_struct, :keyword_enum,
-                               :keyword_namespace, :keyword_using, :keyword_template, :keyword_typedef]
+                                :keyword_namespace, :keyword_using, :keyword_template, :keyword_typedef]
         !declaration_keywords.include?(current_token.kind)
       end
 
@@ -239,11 +239,11 @@ module CppAst
         current_leading_trivia
 
         operator_symbols = [:plus, :minus, :asterisk, :slash, :percent, :equals,
-                           :equals_equals, :exclamation_equals, :less, :greater,
-                           :less_equals, :greater_equals, :plus_plus, :minus_minus,
-                           :ampersand, :pipe, :caret, :tilde, :exclamation,
-                           :ampersand_ampersand, :pipe_pipe, :less_less, :greater_greater,
-                           :comma, :arrow, :arrow_asterisk]
+                            :equals_equals, :exclamation_equals, :less, :greater,
+                            :less_equals, :greater_equals, :plus_plus, :minus_minus,
+                            :ampersand, :pipe, :caret, :tilde, :exclamation,
+                            :ampersand_ampersand, :pipe_pipe, :less_less, :greater_greater,
+                            :comma, :arrow, :arrow_asterisk]
 
         if operator_symbols.include?(current_token.kind)
           advance_raw
@@ -429,11 +429,11 @@ module CppAst
 
       def parse_operator_symbol(name)
         operator_symbols = [:plus, :minus, :asterisk, :slash, :percent, :equals,
-                           :equals_equals, :exclamation_equals, :less, :greater,
-                           :less_equals, :greater_equals, :plus_plus, :minus_minus,
-                           :ampersand, :pipe, :caret, :tilde, :exclamation,
-                           :ampersand_ampersand, :pipe_pipe, :less_less, :greater_greater,
-                           :comma, :arrow, :arrow_asterisk]
+                            :equals_equals, :exclamation_equals, :less, :greater,
+                            :less_equals, :greater_equals, :plus_plus, :minus_minus,
+                            :ampersand, :pipe, :caret, :tilde, :exclamation,
+                            :ampersand_ampersand, :pipe_pipe, :less_less, :greater_greater,
+                            :comma, :arrow, :arrow_asterisk]
 
         if operator_symbols.include?(current_token.kind)
           name << current_token.lexeme

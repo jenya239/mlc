@@ -174,7 +174,7 @@ class CppLoweringGenericsTest < Minitest::Test
     # Return type is a record with T and U fields
     ret_type = Builder.record_type('pair', [
                                      { name: 'first', type: t_var },
-      { name: 'second', type: u_var }
+                                     { name: 'second', type: u_var }
                                    ])
 
     body = Builder.block_expr([], Builder.unit_literal, ret_type)

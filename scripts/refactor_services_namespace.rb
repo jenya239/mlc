@@ -19,7 +19,7 @@ class ServicesNamespaceRefactor
     "module MLC",
     "  module Representations",
     "    module Semantic",
-      "      module Gen",
+    "      module Gen",
     "        module Services"
   ]
 

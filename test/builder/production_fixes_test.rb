@@ -35,9 +35,7 @@ class ProductionFixesTest < Minitest::Test
                          using_alias("GlyphIndex", "uint32_t"),
                          struct_decl("Vec2",
                                      field_def("x", "float"),
-                                     field_def("y", "float")
-                         )
-    )
+                                     field_def("y", "float")))
     cpp_code = ast.to_source
     assert_includes cpp_code, "namespace gtkgl::text"
     assert_includes cpp_code, "using GlyphIndex"
@@ -54,9 +52,7 @@ class ProductionFixesTest < Minitest::Test
                      struct_decl("Vec2",
                                  field_def("x", "float", default: "0.0f"),
                                  field_def("y", "float", default: "0.0f"),
-                                 function_decl("", "Vec2", [], block()).defaulted()
-                     )
-      )
+                                 function_decl("", "Vec2", [], block()).defaulted()))
     )
 
     cpp_code = ast.to_source
@@ -74,8 +70,7 @@ class ProductionFixesTest < Minitest::Test
                       function_decl("", "Vec2", [], block()).defaulted(),
                       function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
                         .with_initializer_list("x(x_), y(y_)")
-                        .constexpr()
-    )
+                        .constexpr())
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "struct Vec2"
@@ -89,8 +84,8 @@ class ProductionFixesTest < Minitest::Test
   def test_enum_class_with_underlying_type
     ast = enum_class("AtlasFormat", [
                        ["A8"],
-      ["RGB8"],
-      ["RGBA8"]
+                       ["RGB8"],
+                       ["RGBA8"]
                      ], underlying_type: "uint8_t")
 
     cpp_code = ast.to_source
@@ -102,8 +97,7 @@ class ProductionFixesTest < Minitest::Test
     ast = template_class("hash", ["typename T"],
                          function_decl("size_t", "operator()", [param("const T&", "k")], block())
                            .const()
-                           .noexcept()
-    ).specialized()
+                           .noexcept()).specialized()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
@@ -131,13 +125,12 @@ class ProductionFixesTest < Minitest::Test
                                    .constexpr(),
                                  function_decl("Vec2", "operator+", [param("const Vec2&", "other")], block())
                                    .inline_body(block(return_stmt(id("Vec2{x + other.x, y + other.y}"))))
-                                   .const()
-                     ),
+                                   .const()),
 
                      enum_class("AtlasFormat", [
                                   ["A8"],
-                       ["RGB8"],
-                       ["RGBA8"]
+                                  ["RGB8"],
+                                  ["RGBA8"]
                                 ], underlying_type: "uint8_t"),
 
                      struct_decl("AtlasSlot",
@@ -145,17 +138,13 @@ class ProductionFixesTest < Minitest::Test
                                  field_def("texture_id", "uint32_t", default: "0"),
                                  function_decl("bool", "is_valid", [], block())
                                    .inline_body(block(return_stmt(binary("!=", id("texture_id"), int(0)))))
-                                   .const()
-                     )
-      ),
+                                   .const())),
 
       namespace_decl("std",
                      template_class("hash", ["typename T"],
                                     function_decl("size_t", "operator()", [param("const T&", "k")], block())
                                       .const()
-                                      .noexcept()
-                     ).specialized()
-      )
+                                      .noexcept()).specialized())
     )
 
     cpp_code = ast.to_source

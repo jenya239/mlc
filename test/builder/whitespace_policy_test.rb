@@ -8,8 +8,8 @@ class WhitespacePolicyTest < Minitest::Test
   def test_enum_without_spaces
     ast = enum_class("State", [
                        ["INIT"],
-      ["READY", "1"],
-      ["ERROR", "2"]
+                       ["READY", "1"],
+                       ["ERROR", "2"]
                      ])
 
     cpp_code = ast.to_source
@@ -20,7 +20,7 @@ class WhitespacePolicyTest < Minitest::Test
   def test_enum_with_underlying_type
     ast = enum_class("Format", [
                        ["A8"],
-      ["RGB8"]
+                       ["RGB8"]
                      ], underlying_type: "uint8_t")
 
     cpp_code = ast.to_source
@@ -37,9 +37,9 @@ class WhitespacePolicyTest < Minitest::Test
 
   def test_modifier_order
     ast = function_decl("void", "test", [], block())
-      .static()
-      .inline()
-      .constexpr()
+          .static()
+          .inline()
+          .constexpr()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "static constexpr inline void test()"
@@ -47,7 +47,7 @@ class WhitespacePolicyTest < Minitest::Test
 
   def test_pure_virtual_method
     ast = function_decl("void", "pure_virtual", [], nil)
-      .pure_virtual()
+          .pure_virtual()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "virtual void pure_virtual() = 0"
@@ -73,7 +73,7 @@ class WhitespacePolicyTest < Minitest::Test
   def test_parameter_spacing
     ast = function_decl("void", "test", [
                           param("int", "x"),
-      param("float", "y")
+                          param("float", "y")
                         ], block())
 
     cpp_code = ast.to_source
@@ -83,8 +83,8 @@ class WhitespacePolicyTest < Minitest::Test
 
   def test_inline_method_spacing
     ast = function_decl("int", "get_value", [], block())
-      .inline_body(block(return_stmt(id("value"))))
-      .const()
+          .inline_body(block(return_stmt(id("value"))))
+          .const()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline int get_value() const {"
@@ -93,7 +93,7 @@ class WhitespacePolicyTest < Minitest::Test
 
   def test_override_spacing
     ast = function_decl("void", "method", [], block())
-      .override()
+          .override()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "void method() override"
@@ -102,8 +102,8 @@ class WhitespacePolicyTest < Minitest::Test
 
   def test_attributes_order
     ast = function_decl("void", "test", [], block())
-      .nodiscard()
-      .maybe_unused()
+          .nodiscard()
+          .maybe_unused()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "[[maybe_unused]] [[nodiscard]] void test()"

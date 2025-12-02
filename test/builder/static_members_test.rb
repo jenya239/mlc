@@ -44,8 +44,7 @@ class StaticMembersTest < Minitest::Test
                        ),
                        private_section(
                          static_inline_var("int", "instance_count", "0")
-                       )
-    )
+                       ))
 
     assert_includes klass.to_source, "class MyClass"
     assert_includes klass.to_source, "constexpr static int VERSION"
@@ -65,8 +64,7 @@ class StaticMembersTest < Minitest::Test
                          inline_comment("Build configuration"),
                          static_constexpr("bool", "DEBUG_BUILD", "false"),
                          static_constexpr("const char*", "BUILD_DATE", "\"2024-01-01\"")
-                       )
-    )
+                       ))
 
     assert_includes klass.to_source, "class Config"
     assert_includes klass.to_source, "Configuration class with static constants"
@@ -90,8 +88,7 @@ class StaticMembersTest < Minitest::Test
                        ),
                        private_section(
                          static_inline_var("Singleton*", "instance", "nullptr")
-                       )
-    )
+                       ))
 
     assert_includes klass.to_source, "class Singleton"
     assert_includes klass.to_source, "constexpr static int MAX_INSTANCES"

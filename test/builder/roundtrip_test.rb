@@ -86,8 +86,7 @@ class RoundtripTest < Minitest::Test
       expr_stmt(
         binary("+",
                binary("*", int(2), int(3)),
-               int(4)
-        )
+               int(4))
       )
     )
     assert_roundtrip_ast(ast)
@@ -362,8 +361,7 @@ class RoundtripTest < Minitest::Test
               return_stmt(
                 binary("*",
                        id("n"),
-                       call(id("factorial"), binary("-", id("n"), int(1)))
-                )
+                       call(id("factorial"), binary("-", id("n"), int(1))))
               )
             )
           )
@@ -452,8 +450,7 @@ class RoundtripTest < Minitest::Test
     ast = program(
       class_decl("Foo",
                  access_spec("public"),
-                 var_decl("int", "x")
-      )
+                 var_decl("int", "x"))
     )
     assert_roundtrip_ast(ast)
   end
@@ -474,8 +471,7 @@ class RoundtripTest < Minitest::Test
       namespace_decl("test",
                      block(
                        function_decl("void", "foo", [], block(return_stmt(int(0))))
-                     )
-      )
+                     ))
     )
     assert_roundtrip_ast(ast)
   end
@@ -485,8 +481,7 @@ class RoundtripTest < Minitest::Test
     ast = program(
       class_decl("Point",
                  var_decl("int", "x"),
-                 var_decl("int", "y")
-      )
+                 var_decl("int", "y"))
     )
     assert_roundtrip_ast(ast)
   end
@@ -496,8 +491,7 @@ class RoundtripTest < Minitest::Test
     ast = program(
       struct_decl("Vec2",
                   var_decl("float", "x"),
-                  var_decl("float", "y")
-      )
+                  var_decl("float", "y"))
     )
     assert_roundtrip_ast(ast)
   end
@@ -515,9 +509,7 @@ class RoundtripTest < Minitest::Test
                                     return_stmt(
                                       ternary(binary(">", id("a"), id("b")), id("a"), id("b"))
                                     )
-                                  )
-                    )
-      )
+                                  )))
     )
     assert_roundtrip_ast(ast)
   end
@@ -526,9 +518,7 @@ class RoundtripTest < Minitest::Test
     ast = program(
       template_decl("typename T",
                     class_decl("Array",
-                               var_decl("T*", "data")
-                    )
-      )
+                               var_decl("T*", "data")))
     )
     assert_roundtrip_ast(ast)
   end

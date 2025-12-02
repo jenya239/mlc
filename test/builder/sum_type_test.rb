@@ -8,8 +8,7 @@ class SumTypeTest < Minitest::Test
   def test_simple_sum_type
     ast = sum_type("Shape",
                    case_struct("Circle", field_def("r", "float")),
-                   case_struct("Rect", field_def("w", "float"), field_def("h", "float"))
-    )
+                   case_struct("Rect", field_def("w", "float"), field_def("h", "float")))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -30,8 +29,7 @@ class SumTypeTest < Minitest::Test
   def test_sum_type_with_single_field_cases
     ast = sum_type("Result",
                    case_struct("Ok", field_def("value", "int")),
-                   case_struct("Err", field_def("msg", "std::string"))
-    )
+                   case_struct("Err", field_def("msg", "std::string")))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -52,8 +50,7 @@ class SumTypeTest < Minitest::Test
     ast = sum_type("Event",
                    case_struct("Click", field_def("x", "int"), field_def("y", "int")),
                    case_struct("KeyPress", field_def("key", "char")),
-                   case_struct("Resize", field_def("width", "int"), field_def("height", "int"))
-    )
+                   case_struct("Resize", field_def("width", "int"), field_def("height", "int")))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -79,8 +76,7 @@ class SumTypeTest < Minitest::Test
   def test_sum_type_with_ownership_types
     ast = sum_type("Data",
                    case_struct("Owned", field_def("ptr", "std::unique_ptr<int>")),
-                   case_struct("Borrowed", field_def("ref", "const std::string&"))
-    )
+                   case_struct("Borrowed", field_def("ref", "const std::string&")))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -100,8 +96,7 @@ class SumTypeTest < Minitest::Test
   def test_sum_type_with_result_option_types
     ast = sum_type("Response",
                    case_struct("Success", field_def("data", "std::optional<int>")),
-                   case_struct("Failure", field_def("error", "std::expected<std::string, int>"))
-    )
+                   case_struct("Failure", field_def("error", "std::expected<std::string, int>")))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -121,8 +116,7 @@ class SumTypeTest < Minitest::Test
   def test_sum_type_with_simple_fields
     ast = sum_type("Color",
                    case_struct("RGB", "int r;", "int g;", "int b;"),
-                   case_struct("HSV", "float h;", "float s;", "float v;")
-    )
+                   case_struct("HSV", "float h;", "float s;", "float v;"))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -146,8 +140,7 @@ class SumTypeTest < Minitest::Test
   def test_sum_type_roundtrip
     # Test DSL → C++ → Parser → AST
     original_ast = sum_type("Test",
-                            case_struct("A", field_def("x", "int"))
-    )
+                            case_struct("A", field_def("x", "int")))
 
     cpp = original_ast.to_source
     parsed_ast = CppAst.parse(cpp)
@@ -160,15 +153,13 @@ class SumTypeTest < Minitest::Test
     ast = program(
       sum_type("Shape",
                case_struct("Circle", field_def("r", "float")),
-               case_struct("Rect", field_def("w", "float"), field_def("h", "float"))
-      ),
+               case_struct("Rect", field_def("w", "float"), field_def("h", "float"))),
       function_decl("float", "area",
                     [param("const Shape&", "shape")],
                     block(
                       # This would need pattern matching to be complete
                       return_stmt(float(0.0))
-                    )
-      )
+                    ))
     )
 
     cpp = ast.to_source
@@ -193,8 +184,7 @@ class SumTypeTest < Minitest::Test
   def test_sum_type_with_nested_types
     ast = sum_type("ComplexShape",
                    case_struct("Circle", field_def("center", "std::pair<float, float>"), field_def("radius", "float")),
-                   case_struct("Polygon", field_def("points", "std::vector<std::pair<float, float>>"))
-    )
+                   case_struct("Polygon", field_def("points", "std::vector<std::pair<float, float>>")))
 
     cpp = ast.to_source
     expected = <<~CPP.strip

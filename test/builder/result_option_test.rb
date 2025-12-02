@@ -47,10 +47,8 @@ class ResultOptionTest < Minitest::Test
                         block(
                           if_stmt(binary("==", id("b"), int(0)),
                                   block(return_stmt(err(string('"division by zero"')))),
-                                  block(return_stmt(ok(binary("/", id("a"), id("b")))))
-                          )
-                        )
-    )
+                                  block(return_stmt(ok(binary("/", id("a"), id("b"))))))
+                        ))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -71,10 +69,8 @@ class ResultOptionTest < Minitest::Test
                         block(
                           if_stmt(binary("==", id("b"), int(0)),
                                   block(return_stmt(none)),
-                                  block(return_stmt(some(binary("/", id("a"), id("b")))))
-                          )
-                        )
-    )
+                                  block(return_stmt(some(binary("/", id("a"), id("b"))))))
+                        ))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -111,10 +107,8 @@ class ResultOptionTest < Minitest::Test
                         block(
                           if_stmt(binary(">", id("x"), int(0)),
                                   block(return_stmt(some(ok(id("x"))))),
-                                  block(return_stmt(some(err(string('"negative value"')))))
-                          )
-                        )
-    )
+                                  block(return_stmt(some(err(string('"negative value"'))))))
+                        ))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -135,10 +129,8 @@ class ResultOptionTest < Minitest::Test
                         block(
                           if_stmt(binary("||", binary("<", id("x"), float(0)), binary("<", id("y"), float(0))),
                                   block(return_stmt(err(string('"negative coordinates"')))),
-                                  block(return_stmt(ok(call(id("Vec2"), id("x"), id("y")))))
-                          )
-                        )
-    )
+                                  block(return_stmt(ok(call(id("Vec2"), id("x"), id("y"))))))
+                        ))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -157,8 +149,7 @@ class ResultOptionTest < Minitest::Test
     # Test DSL → C++ (Result/Option types can't be parsed back, so just test generation)
     original_ast = function_decl(result_of("int", "str"), "test",
                                  [],
-                                 block(return_stmt(ok(int(42))))
-    )
+                                 block(return_stmt(ok(int(42)))))
 
     cpp = original_ast.to_source
     expected = "std::expected<int, str> test() {\nreturn Ok(42);\n}"

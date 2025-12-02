@@ -8,11 +8,11 @@ class FullFeatureValidationTest < Minitest::Test
   def test_inline_methods_full_feature
     # Test inline method with complex body and all modifiers
     ast = function_decl("GLuint", "handle", [], block())
-      .inline_body(block(
+          .inline_body(block(
         return_stmt(binary("+", id("shader_"), int(1)))
       ))
-      .const()
-      .noexcept()
+          .const()
+          .noexcept()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline GLuint handle"
@@ -21,11 +21,11 @@ class FullFeatureValidationTest < Minitest::Test
 
     # Test static constexpr inline
     ast2 = function_decl("Color", "white", [], block())
-      .inline_body(block(
+           .inline_body(block(
         return_stmt(binary("=", id("r"), float(1.0)))
       ))
-      .static()
-      .constexpr()
+           .static()
+           .constexpr()
 
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "static constexpr inline Color white"
@@ -50,8 +50,8 @@ class FullFeatureValidationTest < Minitest::Test
   def test_initializer_lists_full_feature
     # Test complex initializer list with multiple members
     ast = function_decl("", "Vec2", [param("float", "x_"), param("float", "y_")], block())
-      .with_initializer_list("x(x_), y(y_), computed_(x_ * y_), initialized_(true)")
-      .constexpr()
+          .with_initializer_list("x(x_), y(y_), computed_(x_ * y_), initialized_(true)")
+          .constexpr()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "constexpr"
@@ -62,7 +62,7 @@ class FullFeatureValidationTest < Minitest::Test
                          block(
                            expr_stmt(call(id("glGenBuffers"), [int(1), id("&buffer_")]))
                          ))
-      .with_initializer_list("buffer_(0), type_(type)")
+           .with_initializer_list("buffer_(0), type_(type)")
 
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "Buffer"
@@ -85,8 +85,7 @@ class FullFeatureValidationTest < Minitest::Test
     # Test friend in class
     ast4 = class_decl("MyClass",
                       friend_decl("struct", "std::hash<MyClass>"),
-                      function_decl("void", "method", [], block())
-    )
+                      function_decl("void", "method", [], block()))
     cpp_code = ast4.to_source
     assert_includes cpp_code, "friend struct std::hash<MyClass>"
     assert_includes cpp_code, "void method"
@@ -97,8 +96,7 @@ class FullFeatureValidationTest < Minitest::Test
     ast = template_class("hash", ["typename T"],
                          function_decl("size_t", "operator()", [param("const T&", "k")], block())
                            .const()
-                           .noexcept()
-    ).specialized()
+                           .noexcept()).specialized()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <>"
@@ -110,9 +108,7 @@ class FullFeatureValidationTest < Minitest::Test
                           template_class("hash", ["typename T"],
                                          function_decl("size_t", "operator()", [param("const T&", "k")], block())
                                            .const()
-                                           .noexcept()
-                          ).specialized()
-    )
+                                           .noexcept()).specialized())
 
     cpp_code2 = ast2.to_source
     assert_includes cpp_code2, "namespace std"
@@ -123,8 +119,8 @@ class FullFeatureValidationTest < Minitest::Test
     # Test enum class with underlying type
     ast1 = enum_class("AtlasFormat", [
                         ["A8"],
-      ["RGB8"],
-      ["RGBA8"]
+                        ["RGB8"],
+                        ["RGBA8"]
                       ], underlying_type: "uint8_t")
 
     cpp_code1 = ast1.to_source
@@ -134,8 +130,8 @@ class FullFeatureValidationTest < Minitest::Test
     # Test enum class with values and underlying type
     ast2 = enum_class("RenderMode", [
                         ["BITMAP", "0"],
-      ["MSDF", "1"],
-      ["SDF", "2"]
+                        ["MSDF", "1"],
+                        ["SDF", "2"]
                       ], underlying_type: "uint8_t")
 
     cpp_code2 = ast2.to_source
@@ -150,8 +146,8 @@ class FullFeatureValidationTest < Minitest::Test
                      friend_decl("struct", "std::hash<OpenGLShader>"),
                      enum_class("Type", [
                                   ["Vertex", "GL_VERTEX_SHADER"],
-                       ["Fragment", "GL_FRAGMENT_SHADER"],
-                       ["Geometry", "GL_GEOMETRY_SHADER"]
+                                  ["Fragment", "GL_FRAGMENT_SHADER"],
+                                  ["Geometry", "GL_GEOMETRY_SHADER"]
                                 ], underlying_type: "GLenum"),
 
       # Constructor with initializer list
@@ -216,8 +212,7 @@ class FullFeatureValidationTest < Minitest::Test
       # Error handling method
                      function_decl("std::optional<std::string>", "compile_error", [], block())
                        .const()
-                       .nodiscard()
-    )
+                       .nodiscard())
 
     cpp_code = ast.to_source
 

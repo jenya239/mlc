@@ -14,55 +14,55 @@ module MLC
           namespace: "mlc::collections",
           path: "collections/array.mlc"
         },
-  "std/core/option" => {
+        "std/core/option" => {
     category: "core",
     type: :pure,
 
     path: "core/option.mlc"
   },
-  "std/core/result" => {
+        "std/core/result" => {
     category: "core",
     type: :pure,
 
     path: "core/result.mlc"
   },
-  "std/data/json" => {
+        "std/data/json" => {
     category: "data",
     type: :extern,
     namespace: "mlc::json",
     path: "data/json.mlc"
   },
-  "std/graphics/graphics" => {
+        "std/graphics/graphics" => {
     category: "graphics",
     type: :extern,
     namespace: "mlc::graphics",
     path: "graphics/graphics.mlc"
   },
-  "std/io/file" => {
+        "std/io/file" => {
     category: "io",
     type: :extern,
     namespace: "mlc::io",
     path: "io/file.mlc"
   },
-  "std/io/io" => {
+        "std/io/io" => {
     category: "io",
     type: :extern,
     namespace: "mlc::io",
     path: "io/io.mlc"
   },
-  "std/math/math" => {
+        "std/math/math" => {
     category: "math",
     type: :extern,
     namespace: "mlc::math",
     path: "math/math.mlc"
   },
-  "std/text/conv" => {
+        "std/text/conv" => {
     category: "text",
     type: :extern,
     namespace: "mlc",
     path: "text/conv.mlc"
   },
-  "std/text/string" => {
+        "std/text/string" => {
     category: "text",
     type: :extern,
     namespace: "mlc",

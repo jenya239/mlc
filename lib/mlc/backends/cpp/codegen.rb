@@ -132,9 +132,9 @@ module MLC
         def lower_module(module_node)
           # Track user-defined functions for qualified name resolution
           @container.user_functions = module_node.items
-                                                  .grep(SemanticIR::Func)
-                                                  .map(&:name)
-                                                  .to_set
+                                                 .grep(SemanticIR::Func)
+                                                 .map(&:name)
+                                                 .to_set
 
           # Standard includes for runtime support
           include_stmts = [

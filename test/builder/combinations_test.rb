@@ -18,10 +18,9 @@ class CombinationsTest < Minitest::Test
     ast = namespace_decl("gtkgl::text",
                          enum_class("AtlasFormat", [
                                       ["A8"],
-                           ["RGB8"],
-                           ["RGBA8"]
-                                    ], underlying_type: "uint8_t")
-    )
+                                      ["RGB8"],
+                                      ["RGBA8"]
+                                    ], underlying_type: "uint8_t"))
     cpp_code = ast.to_source
     assert_includes cpp_code, "namespace gtkgl::text"
     assert_includes cpp_code, "enum class AtlasFormat : uint8_t{A8, RGB8, RGBA8};"
@@ -36,8 +35,7 @@ class CombinationsTest < Minitest::Test
                      function_decl("bool", "is_valid", [], block())
                        .inline_body(block(return_stmt(binary("!=", id("shader_"), int(0)))))
                        .const()
-                       .noexcept()
-    )
+                       .noexcept())
     cpp_code = ast.to_source
     assert_includes cpp_code, "class Shader"
     assert_includes cpp_code, "inline GLuint handle"
@@ -53,8 +51,7 @@ class CombinationsTest < Minitest::Test
                      function_decl("Color", "black", [], block())
                        .inline_body(block(return_stmt(binary("=", id("r"), float(0.0)))))
                        .static()
-                       .constexpr()
-    )
+                       .constexpr())
     cpp_code = ast.to_source
     assert_includes cpp_code, "static constexpr inline Color white"
     assert_includes cpp_code, "static constexpr inline Color black"
@@ -64,12 +61,11 @@ class CombinationsTest < Minitest::Test
     ast = template_class("Buffer", ["typename T"],
                          enum_class("Type", [
                                       ["Array", "GL_ARRAY_BUFFER"],
-                           ["ElementArray", "GL_ELEMENT_ARRAY_BUFFER"]
+                                      ["ElementArray", "GL_ELEMENT_ARRAY_BUFFER"]
                                     ]),
                          friend_decl("struct", "std::hash<Buffer<T>>"),
                          function_decl("void", "data", [param("std::span<const T>", "data")], block())
-                           .template_method("void", "data", ["typename T"], [param("std::span<const T>", "data")], block())
-    )
+                           .template_method("void", "data", ["typename T"], [param("std::span<const T>", "data")], block()))
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <typename T>"
     assert_includes cpp_code, "enum class Type{Array = GL_ARRAY_BUFFER, ElementArray = GL_ELEMENT_ARRAY_BUFFER};"
@@ -84,8 +80,7 @@ class CombinationsTest < Minitest::Test
                        .constexpr(),
                      function_decl("", "Vec2", [], inline_block())
                        .with_initializer_list("x(0.0f), y(0.0f)")
-                       .defaulted()
-    )
+                       .defaulted())
     cpp_code = ast.to_source
     assert_includes cpp_code, "constexpr explicit Vec2(float x_, float y_) : x(x_), y(y_){}"
     assert_includes cpp_code, "Vec2(): x(0.0f), y(0.0f) = default"
@@ -96,9 +91,7 @@ class CombinationsTest < Minitest::Test
                          using_alias("GlyphIndex", "uint32_t"),
                          using_alias("FontFaceID", "uint32_t"),
                          template_class("GlyphCache", ["typename T"],
-                                        function_decl("void", "insert", [param("GlyphIndex", "index"), param("T", "value")], block())
-                         )
-    )
+                                        function_decl("void", "insert", [param("GlyphIndex", "index"), param("T", "value")], block())))
     cpp_code = ast.to_source
     assert_includes cpp_code, "using GlyphIndex = uint32_t;"
     assert_includes cpp_code, "using FontFaceID = uint32_t;"
@@ -114,8 +107,7 @@ class CombinationsTest < Minitest::Test
                      function_decl("", "Shader", [param("Shader&&", "other")], block())
                        .noexcept(),
                      function_decl("Shader&", "operator=", [param("Shader&&", "other")], block())
-                       .noexcept()
-    )
+                       .noexcept())
     cpp_code = ast.to_source
     assert_includes cpp_code, "Shader(const Shader& other) = delete"
     assert_includes cpp_code, "Shader& operator=(const Shader& other) = delete"
@@ -125,8 +117,8 @@ class CombinationsTest < Minitest::Test
 
   def test_nodiscard_with_constexpr
     ast = function_decl("std::optional<std::string>", "compile_error", [], block())
-      .nodiscard()
-      .const()
+          .nodiscard()
+          .const()
     cpp_code = ast.to_source
     assert_includes cpp_code, "[[nodiscard]] std::optional<std::string> compile_error() const"
   end
@@ -136,9 +128,7 @@ class CombinationsTest < Minitest::Test
                          template_class("hash", ["typename T"],
                                         function_decl("size_t", "operator()", [param("const T&", "k")], block())
                                           .const()
-                                          .noexcept()
-                         ).specialized()
-    )
+                                          .noexcept()).specialized())
     cpp_code = ast.to_source
     assert_includes cpp_code, "namespace std"
     assert_includes cpp_code, "template <>"
@@ -147,10 +137,10 @@ class CombinationsTest < Minitest::Test
 
   def test_multiple_modifiers_combination
     ast = function_decl("void", "process", [param("const std::string&", "data")], block())
-      .inline()
-      .const()
-      .noexcept()
-      .nodiscard()
+          .inline()
+          .const()
+          .noexcept()
+          .nodiscard()
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline [[nodiscard]] void process(const std::string& data) const noexcept"
   end
@@ -158,8 +148,8 @@ class CombinationsTest < Minitest::Test
   def test_enum_class_with_values_and_underlying_type
     ast = enum_class("RenderMode", [
                        ["BITMAP", "0"],
-      ["MSDF", "1"],
-      ["SDF", "2"]
+                       ["MSDF", "1"],
+                       ["SDF", "2"]
                      ], underlying_type: "uint8_t")
     cpp_code = ast.to_source
     expected = "enum class RenderMode : uint8_t{BITMAP = 0, MSDF = 1, SDF = 2};"
@@ -170,7 +160,7 @@ class CombinationsTest < Minitest::Test
     ast = template_method("void", "set_uniform", ["typename T"],
                           [param("const std::string&", "name"), param("std::span<const T>", "values")],
                           block())
-      .const()
+          .const()
     cpp_code = ast.to_source
     assert_includes cpp_code, "template <typename T>"
     assert_includes cpp_code, "void set_uniform(const std::string& name, std::span<const T> values) const"
@@ -188,8 +178,7 @@ class CombinationsTest < Minitest::Test
                        .inline_body(block(return_stmt(id("index_"))))
                        .const(),
                      function_decl("", "MyClass", [param("const MyClass&", "other")], block())
-                       .deleted()
-    )
+                       .deleted())
     cpp_code = ast.to_source
     assert_includes cpp_code, "using Index = int;"
     assert_includes cpp_code, "friend struct hash<MyClass>;"

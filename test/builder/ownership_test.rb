@@ -32,8 +32,7 @@ class OwnershipTest < Minitest::Test
   def test_function_with_ownership_parameters
     ast = function_decl("void", "process",
                         [param(borrowed("Vec2"), "v")],
-                        block(expr_stmt(call(member(id("v"), ".", "method"))))
-    )
+                        block(expr_stmt(call(member(id("v"), ".", "method")))))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -57,8 +56,7 @@ class OwnershipTest < Minitest::Test
                           expr_stmt(call(member(id("borrowed_vec"), ".", "method"))),
                           expr_stmt(call(member(id("mut_vec"), ".", "method"))),
                           expr_stmt(call(member(id("numbers"), ".", "size")))
-                        )
-    )
+                        ))
 
     cpp = ast.to_source
     expected = <<~CPP.strip
@@ -94,8 +92,7 @@ class OwnershipTest < Minitest::Test
     # Test DSL → C++ (ownership types can't be parsed back, so just test generation)
     original_ast = function_decl("void", "test",
                                  [param(borrowed("int"), "x")],
-                                 block(return_stmt(id("x")))
-    )
+                                 block(return_stmt(id("x"))))
 
     cpp = original_ast.to_source
     expected = "void test(const int& x) {\nreturn x;\n}"
@@ -114,8 +111,7 @@ class OwnershipTest < Minitest::Test
                               expr_stmt(call(member(paren(deref(id("it"))), ".", "method")))
                             )
                           )
-                        )
-    )
+                        ))
 
     cpp = ast.to_source
     expected = <<~CPP.strip

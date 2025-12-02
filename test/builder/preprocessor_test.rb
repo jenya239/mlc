@@ -18,8 +18,7 @@ class PreprocessorTest < Minitest::Test
   def test_ifdef_directive
     directive = ifdef_directive("DEBUG",
                                 var_decl("int", "debug_level"),
-                                inline_comment("Debug mode enabled")
-    )
+                                inline_comment("Debug mode enabled"))
 
     expected = <<~CPP.strip
       #ifdef DEBUG
@@ -34,8 +33,7 @@ class PreprocessorTest < Minitest::Test
   def test_ifndef_directive
     directive = ifndef_directive("NDEBUG",
                                  var_decl("bool", "debug_enabled"),
-                                 inline_comment("Debug mode disabled")
-    )
+                                 inline_comment("Debug mode disabled"))
 
     expected = <<~CPP.strip
       #ifndef NDEBUG
@@ -59,12 +57,10 @@ class PreprocessorTest < Minitest::Test
       define_directive("GL_VERSION_MINOR", "3"),
       ifdef_directive("DEBUG",
                       define_directive("GL_CHECK_ERRORS"),
-                      inline_comment("Enable OpenGL error checking")
-      ),
+                      inline_comment("Enable OpenGL error checking")),
       ifndef_directive("NDEBUG",
                        var_decl("bool", "debug_mode"),
-                       inline_comment("Debug mode is enabled")
-      )
+                       inline_comment("Debug mode is enabled"))
     )
 
     expected = <<~CPP.strip + "\n"

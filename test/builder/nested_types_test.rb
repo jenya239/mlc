@@ -8,9 +8,7 @@ class NestedTypesTest < Minitest::Test
   def test_nested_class
     outer = class_decl("Outer",
                        nested_class("Inner",
-                                    var_decl("int", "value")
-                       )
-    )
+                                    var_decl("int", "value")))
 
     expected = <<~CPP.strip
       class Outer {
@@ -27,9 +25,7 @@ class NestedTypesTest < Minitest::Test
     outer = struct_decl("Outer",
                         nested_struct("Inner",
                                       var_decl("double", "x"),
-                                      var_decl("double", "y")
-                        )
-    )
+                                      var_decl("double", "y")))
 
     expected = <<~CPP.strip
       struct Outer {
@@ -45,8 +41,7 @@ class NestedTypesTest < Minitest::Test
 
   def test_nested_enum
     outer = class_decl("Outer",
-                       nested_enum("State", "IDLE", "RUNNING", "STOPPED")
-    )
+                       nested_enum("State", "IDLE", "RUNNING", "STOPPED"))
 
     expected = <<~CPP.strip
       class Outer {
@@ -59,8 +54,7 @@ class NestedTypesTest < Minitest::Test
 
   def test_nested_enum_class
     outer = class_decl("Outer",
-                       nested_enum_class("State", "IDLE", "RUNNING", "STOPPED")
-    )
+                       nested_enum_class("State", "IDLE", "RUNNING", "STOPPED"))
 
     expected = <<~CPP.strip
       class Outer {
@@ -74,9 +68,7 @@ class NestedTypesTest < Minitest::Test
   def test_nested_namespace
     outer = namespace_decl("Outer",
                            nested_namespace("Inner",
-                                            var_decl("int", "value")
-                           )
-    )
+                                            var_decl("int", "value")))
 
     expected = <<~CPP.strip
       namespace Outer  {namespace Inner  {int value;}}
@@ -92,8 +84,7 @@ class NestedTypesTest < Minitest::Test
                                     var_decl("int", "value"),
                                     function_decl("void", "method", [], block(
                                       expr_stmt(cout_chain(string("Inner method called"), endl))
-                                    ))
-                       ),
+                                    ))),
 
       # Nested enum
                        nested_enum("State", "IDLE", "RUNNING", "STOPPED"),
@@ -101,9 +92,7 @@ class NestedTypesTest < Minitest::Test
       # Nested struct
                        nested_struct("Data",
                                      var_decl("double", "x"),
-                                     var_decl("double", "y")
-                       )
-    )
+                                     var_decl("double", "y")))
 
     expected = <<~CPP.strip
       class Outer {
@@ -128,15 +117,12 @@ class NestedTypesTest < Minitest::Test
     outer = class_decl("Outer",
                        public_section(
                          nested_class("PublicInner",
-                                      var_decl("int", "public_value")
-                         )
+                                      var_decl("int", "public_value"))
                        ),
                        private_section(
                          nested_class("PrivateInner",
-                                      var_decl("int", "private_value")
-                         )
-                       )
-    )
+                                      var_decl("int", "private_value"))
+                       ))
 
     expected = <<~CPP.strip
       class Outer {

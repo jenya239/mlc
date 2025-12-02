@@ -9,8 +9,8 @@ class EnumClassTest < Minitest::Test
   def test_enum_class_basic
     ast = enum_class("Type", [
                        ["Vertex", "GL_VERTEX_SHADER"],
-      ["Fragment", "GL_FRAGMENT_SHADER"],
-      ["Geometry", "GL_GEOMETRY_SHADER"]
+                       ["Fragment", "GL_FRAGMENT_SHADER"],
+                       ["Geometry", "GL_GEOMETRY_SHADER"]
                      ])
 
     cpp_code = ast.to_source
@@ -22,8 +22,8 @@ class EnumClassTest < Minitest::Test
   def test_enum_class_with_underlying_type
     ast = enum_class("Format", [
                        ["A8"],
-      ["RGB8"],
-      ["RGBA8"]
+                       ["RGB8"],
+                       ["RGBA8"]
                      ], underlying_type: "uint8_t")
 
     cpp_code = ast.to_source
@@ -35,8 +35,8 @@ class EnumClassTest < Minitest::Test
   def test_enum_class_with_values_and_underlying_type
     ast = enum_class("Usage", [
                        ["Static", "GL_STATIC_DRAW"],
-      ["Dynamic", "GL_DYNAMIC_DRAW"],
-      ["Stream", "GL_STREAM_DRAW"]
+                       ["Dynamic", "GL_DYNAMIC_DRAW"],
+                       ["Stream", "GL_STREAM_DRAW"]
                      ], underlying_type: "GLenum")
 
     cpp_code = ast.to_source
@@ -48,8 +48,8 @@ class EnumClassTest < Minitest::Test
   def test_enum_class_simple_values
     ast = enum_class("Color", [
                        ["Red"],
-      ["Green"],
-      ["Blue"]
+                       ["Green"],
+                       ["Blue"]
                      ])
 
     cpp_code = ast.to_source
@@ -61,9 +61,9 @@ class EnumClassTest < Minitest::Test
   def test_enum_class_mixed_values
     ast = enum_class("State", [
                        ["Idle"],
-      ["Running", "STATE_RUNNING"],
-      ["Paused"],
-      ["Stopped", "STATE_STOPPED"]
+                       ["Running", "STATE_RUNNING"],
+                       ["Paused"],
+                       ["Stopped", "STATE_STOPPED"]
                      ])
 
     cpp_code = ast.to_source
@@ -77,10 +77,9 @@ class EnumClassTest < Minitest::Test
                      access_spec("public"),
                      enum_class("Type", [
                                   ["Vertex", "GL_VERTEX_SHADER"],
-                       ["Fragment", "GL_FRAGMENT_SHADER"]
+                                  ["Fragment", "GL_FRAGMENT_SHADER"]
                                 ]),
-                     function_decl("", "Shader", [param("Type", "type")], block())
-    )
+                     function_decl("", "Shader", [param("Type", "type")], block()))
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "enum class Type"
@@ -92,7 +91,7 @@ class EnumClassTest < Minitest::Test
     # Generate C++ code
     ast = enum_class("Type", [
                        ["Vertex", "GL_VERTEX_SHADER"],
-      ["Fragment", "GL_FRAGMENT_SHADER"]
+                       ["Fragment", "GL_FRAGMENT_SHADER"]
                      ])
     cpp_code = ast.to_source
 
@@ -106,7 +105,7 @@ class EnumClassTest < Minitest::Test
     # Generate C++ code
     ast = enum_class("Format", [
                        ["A8"],
-      ["RGB8"]
+                       ["RGB8"]
                      ], underlying_type: "uint8_t")
     cpp_code = ast.to_source
 

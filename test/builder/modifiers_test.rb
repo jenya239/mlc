@@ -54,8 +54,8 @@ class ModifiersTest < Minitest::Test
 
   def test_combined_modifiers
     ast = function_decl("GLuint", "handle", [], block(return_stmt(id("shader_"))))
-      .const()
-      .noexcept()
+          .const()
+          .noexcept()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "GLuint handle() const noexcept"
@@ -63,8 +63,8 @@ class ModifiersTest < Minitest::Test
 
   def test_explicit_constexpr_combined
     ast = function_decl("", "Vec2", [param("float", "x"), param("float", "y")], block())
-      .explicit()
-      .constexpr()
+          .explicit()
+          .constexpr()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "constexpr explicit Vec2(float x, float y)"
@@ -86,9 +86,9 @@ class ModifiersTest < Minitest::Test
 
   def test_all_modifiers_combined
     ast = function_decl("GLuint", "handle", [], block(return_stmt(id("shader_"))))
-      .inline()
-      .const()
-      .noexcept()
+          .inline()
+          .const()
+          .noexcept()
 
     cpp_code = ast.to_source
     assert_includes cpp_code, "inline GLuint handle() const noexcept"
