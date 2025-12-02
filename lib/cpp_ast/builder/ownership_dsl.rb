@@ -140,7 +140,7 @@ module CppAst
         end
 
         # Add call method for lambda
-        def call(*args)
+        def call(*_args)
           if @ownership_kind == :lambda
             "auto"
           else

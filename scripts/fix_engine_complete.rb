@@ -26,7 +26,7 @@ output = []
 in_class = false
 class_indent_added = false
 
-lines.each_with_index do |line, idx|
+lines.each_with_index do |line, _idx|
   # Detect when we enter the class Engine
   if line.match(/^\s{8}class Engine/)
     in_class = true

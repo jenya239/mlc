@@ -36,7 +36,7 @@ module MLC
               @stdlib_registry.module_info(name)
             end
 
-            def process_stdlib_import(import_decl, function_registry:, type_registry:)
+            def process_stdlib_import(import_decl, function_registry:, type_registry:) # rubocop:disable Lint/UnusedMethodArgument
               module_info = @stdlib_registry.module_info(import_decl.path)
               return unless module_info
 

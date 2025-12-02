@@ -129,7 +129,7 @@ module MLC
             # Examples:
             #   import Math as M { sin, cos }
             #   Registers: M.sin -> Math.sin, M.cos -> Math.cos, sin -> Math.sin, cos -> Math.cos
-            def register_module_import(import_decl, current_module = nil)
+            def register_module_import(import_decl, _current_module = nil)
               return unless @function_registry
 
               module_name = import_decl.path

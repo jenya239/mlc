@@ -19,7 +19,7 @@ class MatchAnalyzerTest < Minitest::Test
       analyzer.analyze(
         scrutinee_type: "i32",
         arms: [],
-        transform_arm: ->(type, arm) { arm }
+        transform_arm: ->(_type, arm) { arm }
       )
     end
 
@@ -37,7 +37,7 @@ class MatchAnalyzerTest < Minitest::Test
       analyzer.analyze(
         scrutinee_type: "i32",
         arms: [{ pattern: nil, body: mock_body }],
-        transform_arm: ->(type, arm) { arm }
+        transform_arm: ->(_type, arm) { arm }
       )
     end
 
@@ -54,7 +54,7 @@ class MatchAnalyzerTest < Minitest::Test
     result = analyzer.analyze(
       scrutinee_type: "i32",
       arms: [{ pattern: nil, body: mock_body }],
-      transform_arm: ->(type, arm) { arm }
+      transform_arm: ->(_type, arm) { arm }
     )
 
     assert_instance_of MLC::Common::Typing::MatchAnalyzer::Analysis, result
@@ -78,7 +78,7 @@ class MatchAnalyzerTest < Minitest::Test
         { pattern: nil, body: mock_body2 },
         { pattern: nil, body: mock_body3 }
       ],
-      transform_arm: ->(type, arm) { arm }
+      transform_arm: ->(_type, arm) { arm }
     )
 
     assert_equal 3, result.arms.size
@@ -135,7 +135,7 @@ class MatchAnalyzerTest < Minitest::Test
       analyzer.analyze(
         scrutinee_type: "Option",
         arms: [{ pattern: some_pattern, body: mock_body }],
-        transform_arm: ->(type, arm) { arm }
+        transform_arm: ->(_type, arm) { arm }
       )
     end
 
@@ -167,7 +167,7 @@ class MatchAnalyzerTest < Minitest::Test
         { pattern: some_pattern, body: mock_body },
         { pattern: none_pattern, body: mock_body }
       ],
-      transform_arm: ->(type, arm) { arm }
+      transform_arm: ->(_type, arm) { arm }
     )
 
     assert_equal 2, result.arms.size
@@ -197,7 +197,7 @@ class MatchAnalyzerTest < Minitest::Test
         { pattern: some_pattern, body: mock_body },
         { pattern: wildcard_pattern, body: mock_body }
       ],
-      transform_arm: ->(type, arm) { arm }
+      transform_arm: ->(_type, arm) { arm }
     )
 
     assert_equal 2, result.arms.size
@@ -231,7 +231,7 @@ class MatchAnalyzerTest < Minitest::Test
         { pattern: or_pattern, body: mock_body },
         { pattern: blue_pattern, body: mock_body }
       ],
-      transform_arm: ->(type, arm) { arm }
+      transform_arm: ->(_type, arm) { arm }
     )
 
     assert_equal 2, result.arms.size
@@ -276,7 +276,7 @@ class MatchAnalyzerTest < Minitest::Test
     result = analyzer.analyze(
       scrutinee_type: "Option",
       arms: [{ pattern: some_pattern, body: mock_body }],
-      transform_arm: ->(type, arm) { arm }
+      transform_arm: ->(_type, arm) { arm }
     )
 
     assert_equal 1, result.arms.size

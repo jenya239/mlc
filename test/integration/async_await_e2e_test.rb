@@ -10,7 +10,7 @@ class AsyncAwaitE2ETest < Minitest::Test
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
   # Helper to run MLC program and check result
-  def run_mlc(source_code, expected_exit: nil, &block)
+  def run_mlc(source_code, expected_exit: nil)
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)

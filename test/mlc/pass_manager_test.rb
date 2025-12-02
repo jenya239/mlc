@@ -139,7 +139,7 @@ class PassManagerTest < Minitest::Test
     event_bus.subscribe(:pass_end) { |payload| duration = payload[:duration] }
 
     manager = MLC::Common::Analysis::PassManager.new(event_bus: event_bus)
-    manager.register(:slow_pass) { |ctx| sleep 0.01 }
+    manager.register(:slow_pass) { |_ctx| sleep 0.01 }
     manager.run({})
 
     assert duration

@@ -33,7 +33,7 @@ module MLC
             private
 
             # Extract T from Option<T> or Ok type from Result<T, E>
-            def unwrap_option_or_result_type(type, services)
+            def unwrap_option_or_result_type(type, _services)
               return type unless type.is_a?(MLC::SemanticIR::GenericType)
 
               base_name = type.base_type.respond_to?(:name) ? type.base_type.name : nil

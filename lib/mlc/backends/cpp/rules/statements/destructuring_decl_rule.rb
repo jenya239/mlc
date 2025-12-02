@@ -42,7 +42,7 @@ module MLC
             end
 
             # Generate C++17 structured bindings: auto [a, b] = expr;
-            def generate_tuple_destructuring(bindings, value_expr, node)
+            def generate_tuple_destructuring(bindings, value_expr, _node)
               binding_names = bindings.map { |b| context.sanitize_identifier(b[:name]) }
 
               # Track all variables as declared

@@ -25,7 +25,7 @@ module MLC
 
             private
 
-            def check_use_after_move!(svc, name, node)
+            def check_use_after_move!(svc, name, _node)
               return unless svc.var_type_registry.moved?(name)
 
               type = svc.var_type_registry.get(name)

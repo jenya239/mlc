@@ -9,7 +9,7 @@ class ControlFlowE2ETest < Minitest::Test
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
-  def run_mlc(source_code, &block)
+  def run_mlc(source_code)
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
@@ -23,7 +23,7 @@ class ControlFlowE2ETest < Minitest::Test
   # === For Loops (using fold instead of mutation) ===
 
   def test_for_loop_with_println
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |stdout, _stderr, _status|
       import { to_string_i32 } from "Conv"
 
       fn main() -> i32 = do
@@ -42,7 +42,7 @@ class ControlFlowE2ETest < Minitest::Test
   # === If/Else Expressions ===
 
   def test_if_expression_simple
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let x = 10
         if x > 5 then 1 else 0
@@ -53,7 +53,7 @@ class ControlFlowE2ETest < Minitest::Test
   end
 
   def test_if_expression_false_branch
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let x = 3
         if x > 5 then 100 else 50
@@ -66,7 +66,7 @@ class ControlFlowE2ETest < Minitest::Test
   # === Lambdas ===
 
   def test_lambda_simple
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let double = x => x * 2
         double(21)
@@ -77,7 +77,7 @@ class ControlFlowE2ETest < Minitest::Test
   end
 
   def test_lambda_with_types
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let add = (x: i32, y: i32) => x + y
         add(30, 12)
@@ -88,7 +88,7 @@ class ControlFlowE2ETest < Minitest::Test
   end
 
   def test_lambda_immediate_call
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         (x => x + 1)(41)
       end
@@ -100,7 +100,7 @@ class ControlFlowE2ETest < Minitest::Test
   # === Pipe Operator ===
 
   def test_pipe_operator
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn double(x: i32) -> i32 = x * 2
       fn add_one(x: i32) -> i32 = x + 1
 
@@ -115,7 +115,7 @@ class ControlFlowE2ETest < Minitest::Test
   # === Blocks ===
 
   def test_do_block
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let a = 10
         let b = 20
@@ -133,7 +133,7 @@ class ControlFlowE2ETest < Minitest::Test
   # === Binary Operations ===
 
   def test_arithmetic_operations
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let a = 10 + 5
         let b = 20 - 8
@@ -152,7 +152,7 @@ class ControlFlowE2ETest < Minitest::Test
   # === Known Limitations (skipped) ===
 
   def test_for_loop_sum
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5]
         let sum = 0
@@ -167,7 +167,7 @@ class ControlFlowE2ETest < Minitest::Test
   end
 
   def test_for_loop_nested
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let sum = 0
         for i in [1, 2] do
@@ -183,7 +183,7 @@ class ControlFlowE2ETest < Minitest::Test
   end
 
   def test_if_expression_nested
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let x = 10
         if x > 5 then
@@ -197,7 +197,7 @@ class ControlFlowE2ETest < Minitest::Test
   end
 
   def test_if_with_complex_condition
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let x = 10
         let y = 5
@@ -209,7 +209,7 @@ class ControlFlowE2ETest < Minitest::Test
   end
 
   def test_unary_negation
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn negate(x: i32) -> i32 = -(-x)
 
       fn main() -> i32 = negate(42)
@@ -219,7 +219,7 @@ class ControlFlowE2ETest < Minitest::Test
   end
 
   def test_logical_not
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let x = false
         let y = !x
@@ -231,7 +231,7 @@ class ControlFlowE2ETest < Minitest::Test
   end
 
   def test_comparison_operations
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn to_int(b: bool) -> i32 = if b then 1 else 0
 
       fn main() -> i32 = do

@@ -37,7 +37,7 @@ module MLC
             # @param type_map [Hash] Mutable map from type variable names to concrete types
             # @param context [Hash] Context for error reporting (currently unused)
             # @return [Boolean] Whether unification succeeded
-            def unify_type(pattern, actual, type_map, context:)
+            def unify_type(pattern, actual, type_map, context:) # rubocop:disable Lint/UnusedMethodArgument
               result = MLC::Common::Typing::Unify.unify(pattern, actual, type_map)
               if result.success?
                 type_map.merge!(result.substitutions)

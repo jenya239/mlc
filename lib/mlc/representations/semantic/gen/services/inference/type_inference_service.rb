@@ -24,7 +24,7 @@ module MLC
             attr_writer :generic_call_resolver # Allow injection after initialization
 
             def initialize(var_type_registry:, type_registry:, function_registry:,
-                           type_decl_table:, generic_call_resolver:, type_checker:, transformer: nil, scope_context:)
+                           type_decl_table:, generic_call_resolver:, type_checker:, _transformer: nil, scope_context:)
               @var_type_registry = var_type_registry
               @type_registry = type_registry
               @function_registry = function_registry
@@ -413,7 +413,7 @@ module MLC
             end
 
             # Infer generic type arguments from function call
-            def infer_type_arguments(type_params, param_types, arg_types)
+            def infer_type_arguments(_type_params, param_types, arg_types)
               type_map = {}
 
               param_types.each_with_index do |param_type, index|

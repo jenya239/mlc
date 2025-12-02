@@ -10,7 +10,7 @@ class SmartPointersE2ETest < Minitest::Test
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
   # Helper to run MLC program and check result
-  def run_mlc(source_code, &block)
+  def run_mlc(source_code)
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
@@ -27,7 +27,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 1: Basic Shared.new
   def test_shared_new_basic
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Shared<T> {
@@ -45,7 +45,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 2: Shared.null returns null pointer
   def test_shared_null
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Shared<T> {
@@ -67,7 +67,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 3: Shared pointer passed as function argument
   def test_shared_as_argument
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Shared<T> {
@@ -87,7 +87,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 4: Multiple shared references to same object
   def test_shared_multiple_references
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Shared<T> {
@@ -108,7 +108,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 5: Shared with generic type containing i32
   def test_shared_with_different_types
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type IntBox = { value: i32 }
       type Pair = { first: i32, second: i32 }
 
@@ -132,7 +132,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 6: Shared.downgrade to Weak
   def test_shared_downgrade_to_weak
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Shared<T> {
@@ -157,7 +157,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 7: Weak.null
   def test_weak_null
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Weak<T> {
@@ -177,7 +177,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 8: Weak.lock returns Option
   def test_weak_lock_some
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Shared<T> {
@@ -204,7 +204,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 9: Weak.lock on null returns None
   def test_weak_lock_none
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Weak<T> {
@@ -230,7 +230,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 10: Basic Owned.new
   def test_owned_new_basic
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Buffer = { size: i32 }
 
       extend Owned<T> {
@@ -248,7 +248,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 11: Owned.null
   def test_owned_null
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Buffer = { size: i32 }
 
       extend Owned<T> {
@@ -268,7 +268,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 12: Owned passed to function (move semantics)
   def test_owned_move_to_function
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Data = { value: i32 }
 
       extend Owned<T> {
@@ -293,7 +293,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 13: Shared containing Shared (nested)
   def test_nested_shared_pointers
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Inner = { value: i32 }
       type Outer = { inner: Shared<Inner> }
 
@@ -313,7 +313,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 14: Array of Shared pointers
   def test_array_of_shared_pointers
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Shared<T> {
@@ -339,7 +339,7 @@ class SmartPointersE2ETest < Minitest::Test
   # Test 15: Tree-like structure with Shared and Weak (avoiding cycles)
   # Bidirectional type inference: Weak.null() infers T from record field context
   def test_tree_structure_with_weak_parent
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type TreeNode = {
         value: i32,
         parent: Weak<TreeNode>
@@ -372,7 +372,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 16: Factory function returning Shared
   def test_factory_function_returning_shared
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Point = { x: i32, y: i32 }
 
       extend Shared<T> {
@@ -393,7 +393,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 17: Generic function with Shared parameter
   def test_generic_function_with_shared
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Box<T> = { value: T }
 
       extend Shared<T> {
@@ -414,7 +414,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 18: Chain of Shared dereferences
   def test_chain_of_shared_dereferences
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type A = { value: i32 }
       type B = { a: Shared<A> }
       type C = { b: Shared<B> }
@@ -436,7 +436,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 19: Conditional with Shared types
   def test_conditional_with_shared
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Node = { value: i32 }
 
       extend Shared<T> {
@@ -457,7 +457,7 @@ class SmartPointersE2ETest < Minitest::Test
 
   # Test 20: Multiple smart pointer types in same program
   def test_all_smart_pointer_types_together
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Data = { value: i32 }
 
       extend Shared<T> {

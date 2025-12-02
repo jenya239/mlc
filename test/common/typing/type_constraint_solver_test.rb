@@ -19,7 +19,7 @@ class TypeConstraintSolverTest < Minitest::Test
 
   def test_solve_returns_instantiation_struct
     solver = create_solver(
-      infer: ->(type_params, param_types, arg_types) { { "T" => "i32" } },
+      infer: ->(_type_params, _param_types, _arg_types) { { "T" => "i32" } },
       substitute: ->(type, map) { map[type] || type }
     )
 
@@ -84,7 +84,7 @@ class TypeConstraintSolverTest < Minitest::Test
 
   def test_solve_substitutes_generic_types
     solver = create_solver(
-      infer: ->(type_params, param_types, arg_types) { { "T" => "f32" } },
+      infer: ->(_type_params, _param_types, _arg_types) { { "T" => "f32" } },
       substitute: ->(type, map) { map[type] || type }
     )
 
@@ -106,7 +106,7 @@ class TypeConstraintSolverTest < Minitest::Test
     type_variable = MLC::SemanticIR::TypeVariable.new(name: "T")
 
     solver = create_solver(
-      infer: ->(type_params, param_types, arg_types) { {} }, # Returns empty - can't infer from args
+      infer: ->(_type_params, _param_types, _arg_types) { {} }, # Returns empty - can't infer from args
       substitute: ->(type, map) {
         if type.is_a?(MLC::SemanticIR::TypeVariable)
           map[type.name] || type
@@ -156,7 +156,7 @@ class TypeConstraintSolverTest < Minitest::Test
     type_variable = MLC::SemanticIR::TypeVariable.new(name: "T")
 
     solver = create_solver(
-      infer: ->(type_params, param_types, arg_types) {
+      infer: ->(_type_params, _param_types, _arg_types) {
         # Only partial inference - T remains a TypeVariable
         { "T" => type_variable }
       },

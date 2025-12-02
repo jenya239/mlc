@@ -97,7 +97,7 @@ module MLC
             end
 
             # Validate that reference types are used only in unsafe context
-            def validate_unsafe_context!(node, type_desc)
+            def validate_unsafe_context!(_node, type_desc)
               return if @scope_context.nil? # Skip if no scope context (e.g., tests)
               return if @scope_context.inside_unsafe?
 

@@ -392,7 +392,7 @@ module CppAst
         end
       end
 
-      def parse_identifier_function_name_into(name, trivia_after)
+      def parse_identifier_function_name_into(name, _trivia_after)
         saved_pos = @position
         class_name = current_token.lexeme
         scope_trivia = current_token.trailing_trivia

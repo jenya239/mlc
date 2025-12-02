@@ -298,7 +298,7 @@ module MLC
             # Determine capture mode based on type
             # @param type [SemanticIR::Type] the type of the variable
             # @return [Symbol] :value or :ref
-            def determine_capture_mode(type)
+            def determine_capture_mode(_type)
               # For now, capture everything by value
               # Smart pointers like Shared<T> work correctly with value capture
               # because copying a shared_ptr increments the reference count

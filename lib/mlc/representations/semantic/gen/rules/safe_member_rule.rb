@@ -35,7 +35,7 @@ module MLC
             private
 
             # Extract T from Option<T>, or return the type as-is if not Option
-            def unwrap_option_type(type, services)
+            def unwrap_option_type(type, _services)
               return type unless type.is_a?(MLC::SemanticIR::GenericType)
               return type unless type.base_type.respond_to?(:name) && type.base_type.name == "Option"
               return type unless type.type_args.size == 1
@@ -44,7 +44,7 @@ module MLC
             end
 
             # Wrap type in Option<T>
-            def wrap_in_option(inner_type, services)
+            def wrap_in_option(inner_type, _services)
               option_base = MLC::SemanticIR::Builder.primitive_type("Option")
               MLC::SemanticIR::GenericType.new(base_type: option_base, type_args: [inner_type])
             end

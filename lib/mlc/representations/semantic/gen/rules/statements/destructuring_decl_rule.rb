@@ -38,7 +38,7 @@ module MLC
               #   let __tmp = expr
               #   let a = __tmp.0
               #   let b = __tmp.1
-              def produce_tuple_destructuring(node, value_ir, svc, context)
+              def produce_tuple_destructuring(node, value_ir, svc, _context)
                 elements = node.pattern.data[:elements]
                 value_type = value_ir.type
 

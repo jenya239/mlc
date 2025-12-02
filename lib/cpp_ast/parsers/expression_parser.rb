@@ -240,7 +240,7 @@ module CppAst
 
       # Parse array subscript: array[index]
       # Returns (ArraySubscriptExpression, trailing) tuple
-      def parse_array_subscript(array, lbracket_prefix)
+      def parse_array_subscript(array, _lbracket_prefix)
         # Consume '['
         expect(:lbracket)
 
@@ -326,7 +326,7 @@ module CppAst
 
       # Parse function call: callee(arg1, arg2, ...)
       # Returns (FunctionCallExpression, trailing) tuple
-      def parse_function_call(callee, lparen_prefix)
+      def parse_function_call(callee, _lparen_prefix)
         # Consume '('
         lparen_suffix = current_token.trailing_trivia
         expect(:lparen)

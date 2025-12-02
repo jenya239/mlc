@@ -10,7 +10,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
   # Helper to run MLC program and check result
-  def run_mlc(source_code, &block)
+  def run_mlc(source_code)
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
@@ -24,7 +24,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   # Array stdlib E2E tests
 
   def test_array_sum_i32
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       import { sum_i32 } from "Array"
 
       fn main() -> i32 = do
@@ -37,7 +37,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   end
 
   def test_array_range
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       import { range, sum_i32 } from "Array"
 
       fn main() -> i32 = do
@@ -50,7 +50,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   end
 
   def test_array_min_max
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |stdout, _stderr, _status|
       import { min_i32, max_i32 } from "Array"
       import { to_string_i32 } from "Conv"
 
@@ -71,7 +71,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   # Conv stdlib E2E tests
 
   def test_conv_parse_i32
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       import { parse_i32 } from "Conv"
 
       fn main() -> i32 = do
@@ -84,7 +84,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   end
 
   def test_conv_to_string
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |stdout, _stderr, _status|
       import { to_string_i32, to_string_f32 } from "Conv"
 
       fn main() -> i32 = do
@@ -103,7 +103,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   # Math stdlib E2E tests
 
   def test_math_abs
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       import { abs } from "Math"
 
       fn main() -> i32 = do
@@ -116,7 +116,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   end
 
   def test_math_min_max
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       import { min, max } from "Math"
 
       fn main() -> i32 = do
@@ -132,7 +132,7 @@ class StdlibSimpleE2ETest < Minitest::Test
   # String operations (using String methods, not stdlib)
 
   def test_string_operations
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |stdout, _stderr, _status|
       fn main() -> i32 = do
         let text = "  Hello World  "
         let trimmed = text.trim()

@@ -9,7 +9,7 @@ class ArrayOperationsE2ETest < Minitest::Test
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
-  def run_mlc(source_code, &block)
+  def run_mlc(source_code)
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
@@ -23,7 +23,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   # === Array Literals ===
 
   def test_array_literal_creation
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [10, 20, 30]
         nums[0] + nums[1] + nums[2]
@@ -34,7 +34,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_empty_array_with_type
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let empty: i32[] = []
         0
@@ -47,7 +47,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   # === Array Indexing ===
 
   def test_array_index_access
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [10, 20, 30, 40, 50]
         arr[2]
@@ -58,7 +58,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_index_with_variable
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [5, 10, 15, 20]
         let idx = 3
@@ -70,7 +70,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_index_with_expression
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 3, 4, 5]
         let base = 2
@@ -82,7 +82,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_first_and_last
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn get_first(arr: i32[]) -> i32 = arr[0]
       fn get_at(arr: i32[], idx: i32) -> i32 = arr[idx]
 
@@ -100,7 +100,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   # === Array Map ===
 
   def test_array_map_simple
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3]
         let doubled = nums.map(x => x * 2)
@@ -112,7 +112,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_map_with_addition
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [10, 20, 30]
         let incremented = nums.map(x => x + 5)
@@ -126,7 +126,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   # === Array Filter ===
 
   def test_array_filter_evens
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5, 6]
         let evens = nums.filter(x => x % 2 == 0)
@@ -138,7 +138,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_filter_greater_than
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [5, 15, 25, 35, 45]
         let big = nums.filter(x => x > 20)
@@ -152,7 +152,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   # === Array Fold ===
 
   def test_array_fold_sum
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5]
         nums.fold(0, (acc, x) => acc + x)
@@ -163,7 +163,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_fold_product
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4]
         nums.fold(1, (acc, x) => acc * x)
@@ -174,7 +174,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_fold_with_initial
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [10, 20, 30]
         nums.fold(100, (acc, x) => acc + x)
@@ -187,7 +187,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   # === Method Chaining ===
 
   def test_array_filter_then_map
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5, 6]
         let result = nums.filter(x => x % 2 == 0).map(y => y * 10)
@@ -199,7 +199,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_map_then_fold
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3]
         nums.map(x => x * x).fold(0, (acc, y) => acc + y)
@@ -210,7 +210,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_full_chain
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         nums
@@ -227,7 +227,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   # === Nested Arrays ===
 
   def test_array_of_arrays_access
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
         let row = matrix[1]
@@ -241,7 +241,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   # === Array with Functions ===
 
   def test_array_passed_to_function
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn sum_array(arr: i32[]) -> i32 =
         arr.fold(0, (acc, x) => acc + x)
 
@@ -255,7 +255,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_transform_function
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn double_all(arr: i32[]) -> i32[] =
         arr.map(x => x * 2)
 
@@ -272,7 +272,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   # === Known Limitations (skipped) ===
 
   def test_array_iteration_sum
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [5, 10, 15, 20]
         let sum = 0
@@ -287,7 +287,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_iteration_count
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         let count = 0
@@ -302,7 +302,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   end
 
   def test_array_returned_from_function
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn get_nums() -> i32[] = [10, 20, 30]
 
       fn main() -> i32 = do

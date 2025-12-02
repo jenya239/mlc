@@ -19,7 +19,7 @@ class PatternMatchingE2ETest < Minitest::Test
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
-  def run_mlc(source_code, &block)
+  def run_mlc(source_code)
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
@@ -33,7 +33,7 @@ class PatternMatchingE2ETest < Minitest::Test
   # === All tests skipped - pattern matching needs compiler fixes ===
 
   def test_match_simple_variant_with_data
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Shape = Circle(i32) | Square(i32)
 
       fn area(s: Shape) -> i32 = match s
@@ -51,7 +51,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_with_wildcard
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Option = Some(i32) | None
 
       fn get_value(opt: Option) -> i32 = match opt
@@ -69,7 +69,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_literal_integers
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn classify(x: i32) -> i32 = match x
         | 0 => 10
         | 1 => 20
@@ -83,7 +83,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_with_guard
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Option = Some(i32) | None
 
       fn get_positive(opt: Option) -> i32 = match opt
@@ -103,7 +103,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_nested_option
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Option = Some(i32) | None
       type NestedOption = Nested(Option) | Empty
 
@@ -124,7 +124,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_or_pattern
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Color = Red | Green | Blue
 
       fn is_warm(c: Color) -> i32 = match c
@@ -143,7 +143,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_nullary_variants
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Color = Red | Green | Blue
 
       fn to_code(c: Color) -> i32 = match c
@@ -158,7 +158,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_expression_result
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       type Status = Active | Inactive | Pending
 
       fn check_status(s: Status) -> i32 = do
@@ -176,7 +176,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_float_literals
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn classify(x: f32) -> i32 = match x
         | 0.0 => 1
         | 1.5 => 2
@@ -190,7 +190,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_boolean_literals
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn classify(b: bool) -> i32 = match b
         | true => 10
         | false => 5
@@ -202,7 +202,7 @@ class PatternMatchingE2ETest < Minitest::Test
   end
 
   def test_match_mixed_literals
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn test_int(x: i32) -> i32 = match x
         | 0 => 1
         | 1 => 10

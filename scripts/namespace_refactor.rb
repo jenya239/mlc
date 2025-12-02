@@ -85,7 +85,7 @@ class NamespaceRefactor
     end
   end
 
-  def check_constant_read(node, source, replacements)
+  def check_constant_read(node, _source, _replacements)
     # Check if this is the first part of our old namespace
     return unless node.name.to_s == @old_parts.first
 
@@ -93,7 +93,7 @@ class NamespaceRefactor
     # This is conservative - only match if it's exactly our namespace
   end
 
-  def check_constant_path(node, source, replacements)
+  def check_constant_path(node, _source, replacements)
     # Extract the full constant path
     path = extract_constant_path(node)
     return unless path

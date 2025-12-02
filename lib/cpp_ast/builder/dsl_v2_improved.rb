@@ -131,7 +131,7 @@ module CppAst
       end
 
       # Using declaration
-      def using_(namespace, *names)
+      def using_(namespace, *_names)
         Nodes::UsingDeclaration.new(
           leading_trivia: "",
           kind: "namespace",
@@ -428,12 +428,12 @@ module CppAst
       end
 
       # Additional DSL methods
-      def let_(name, value)
+      def let_(name, _value)
         require_relative "expr_builder"
         ExprBuilder::ExprNode.new(Nodes::Identifier.new(name: name.to_s))
       end
 
-      def err(value)
+      def err(_value)
         require_relative "expr_builder"
         ExprBuilder::ExprNode.new(Nodes::Identifier.new(name: "err"))
       end
@@ -449,13 +449,13 @@ module CppAst
       end
 
       # Result type helpers
-      def ok(value)
+      def ok(_value)
         require_relative "expr_builder"
         ExprBuilder::ExprNode.new(Nodes::Identifier.new(name: "ok"))
       end
 
       # Concept helper
-      def concept(name, *params, &block)
+      def concept(name, *params)
         require_relative "types_dsl"
         # For now, return a simple concept declaration
         Nodes::ConceptDeclaration.new(

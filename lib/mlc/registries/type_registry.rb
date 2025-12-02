@@ -141,7 +141,7 @@ module MLC
         end
       end
 
-      def compute_cpp_name(name, namespace, kind, type)
+      def compute_cpp_name(name, namespace, kind, _type)
         # Primitive types have standard C++ mappings
         return PRIMITIVE_TYPE_MAP[name] || name if kind == :primitive
 
@@ -322,7 +322,7 @@ module MLC
 
       def register_primitives
         # Register built-in primitive types
-        TypeInfo::PRIMITIVE_TYPE_MAP.each do |mlc_name, cpp_name|
+        TypeInfo::PRIMITIVE_TYPE_MAP.each do |mlc_name, _cpp_name|
           prim_type = SemanticIR::Type.new(kind: :prim, name: mlc_name)
           register(
             mlc_name,

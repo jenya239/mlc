@@ -12,7 +12,7 @@ module MLC
               context.checker.break_stmt?(node)
             end
 
-            def apply(node)
+            def apply(_node)
               context.factory.break_statement
             end
           end

@@ -98,7 +98,7 @@ module MLC
     # Example: if without else, statements, etc.
     class UnitType < Type
       def initialize(origin: nil)
-        super(kind: :unit, name: "unit", origin: nil)
+        super(kind: :unit, name: "unit", origin: origin)
       end
 
       def unit?

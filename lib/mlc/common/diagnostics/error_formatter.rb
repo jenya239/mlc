@@ -57,7 +57,7 @@ module MLC
       end
 
       # Format a type error with expected/found
-      def format_type_error(expected:, found:, origin: nil, context: nil)
+      def format_type_error(expected:, found:, origin: nil, _context: nil)
         message = "Type mismatch: expected `#{expected}`, found `#{found}`"
         help = suggest_type_fix(expected, found)
 

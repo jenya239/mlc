@@ -22,7 +22,7 @@ module MLC
       class Codegen
         attr_reader :container, :context
 
-        def initialize(type_registry:, function_registry: nil, stdlib_scanner: nil, rule_engine: nil, event_bus: nil, runtime_policy: nil)
+        def initialize(type_registry:, function_registry: nil, stdlib_scanner: nil, _rule_engine: nil, event_bus: nil, runtime_policy: nil)
           # Initialize new architecture
           backend = MLC::Backends::Cpp::Bootstrap.create_backend(
             type_registry: type_registry,

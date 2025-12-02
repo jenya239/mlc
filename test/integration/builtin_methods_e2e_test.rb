@@ -9,7 +9,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
-  def run_mlc(source_code, &block)
+  def run_mlc(source_code)
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
@@ -23,7 +23,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   # === Numeric Methods ===
 
   def test_numeric_abs_positive
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let x = 42
         x.abs()
@@ -34,7 +34,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_numeric_abs_negative
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let x = -42
         x.abs()
@@ -47,7 +47,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   # === String Methods ===
 
   def test_string_length
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let s = "hello"
         s.length()
@@ -58,7 +58,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_string_is_empty_false
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let s = "hello"
         if s.is_empty() then 1 else 0
@@ -69,7 +69,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_string_is_empty_true
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let s = ""
         if s.is_empty() then 1 else 0
@@ -80,7 +80,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_string_contains_true
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let s = "hello world"
         if s.contains("world") then 1 else 0
@@ -91,7 +91,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_string_contains_false
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let s = "hello world"
         if s.contains("foo") then 1 else 0
@@ -102,7 +102,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_string_starts_with_true
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let s = "hello world"
         if s.starts_with("hello") then 1 else 0
@@ -113,7 +113,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_string_ends_with_true
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let s = "hello world"
         if s.ends_with("world") then 1 else 0
@@ -124,7 +124,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_string_index_of_found
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let s = "hello world"
         s.index_of("world") + 1
@@ -135,7 +135,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_string_index_of_not_found
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let s = "hello world"
         let idx = s.index_of("foo")
@@ -149,7 +149,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   # === Array Methods - length/is_empty ===
 
   def test_array_length
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 3, 4, 5]
         arr.length()
@@ -160,7 +160,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_is_empty_false
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 3]
         if arr.is_empty() then 1 else 0
@@ -171,7 +171,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_is_empty_true
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr: i32[] = []
         if arr.is_empty() then 1 else 0
@@ -184,7 +184,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   # === Array Methods - any/all/none ===
 
   def test_array_any_true
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 3, 4, 5]
         if arr.any(x => x > 3) then 1 else 0
@@ -195,7 +195,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_any_false
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 3]
         if arr.any(x => x > 10) then 1 else 0
@@ -206,7 +206,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_all_true
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [2, 4, 6, 8]
         if arr.all(x => x % 2 == 0) then 1 else 0
@@ -217,7 +217,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_all_false
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [2, 4, 5, 8]
         if arr.all(x => x % 2 == 0) then 1 else 0
@@ -228,7 +228,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_none_true
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 3]
         if arr.none(x => x > 10) then 1 else 0
@@ -239,7 +239,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_none_false
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 30]
         if arr.none(x => x > 10) then 1 else 0
@@ -252,7 +252,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   # === Array Methods - find/find_index/index_of ===
 
   def test_array_find
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 30, 4, 5]
         arr.find(x => x > 10)
@@ -263,7 +263,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_find_index
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [10, 20, 30, 40]
         arr.find_index(x => x > 25)
@@ -274,7 +274,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_index_of
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [10, 20, 30, 40]
         arr.index_of(30)
@@ -285,7 +285,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_index_of_not_found
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [10, 20, 30]
         let idx = arr.index_of(100)
@@ -299,7 +299,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   # === Array Methods - min/max ===
 
   def test_array_min
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [50, 20, 80, 10, 30]
         arr.min()
@@ -310,7 +310,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_max
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [50, 20, 80, 10, 30]
         arr.max()
@@ -323,7 +323,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   # === Array Methods - concat ===
 
   def test_array_concat
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let a = [1, 2, 3]
         let b = [4, 5, 6]
@@ -338,7 +338,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   # === Array Methods - slice ===
 
   def test_array_slice
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [10, 20, 30, 40, 50]
         let sub = arr.slice(1, 4)
@@ -352,7 +352,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   # === Combined Tests ===
 
   def test_chained_array_methods
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         let result = nums
@@ -367,7 +367,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
   end
 
   def test_array_operations_combined
-    run_mlc(<<~MLC) do |stdout, stderr, status|
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [5, 10, 15, 20, 25]
         let len = arr.length()

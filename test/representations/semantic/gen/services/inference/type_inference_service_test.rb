@@ -361,7 +361,7 @@ class TypeInferenceServiceTest < Minitest::Test
       @types[name]
     end
 
-    def resolve_member(type_name, member)
+    def resolve_member(_type_name, _member)
       nil
     end
   end
@@ -381,7 +381,7 @@ class TypeInferenceServiceTest < Minitest::Test
   end
 
   class MockGenericCallResolver
-    def instantiate(info, args, name:, expected_ret_type: nil)
+    def instantiate(info, _args, name:, expected_ret_type: nil) # rubocop:disable Lint/UnusedMethodArgument
       MLC::Common::Typing::TypeConstraintSolver::Instantiation.new(
         type_map: {},
         param_types: info.param_types,
@@ -399,7 +399,7 @@ class TypeInferenceServiceTest < Minitest::Test
       @expect_type_error = false
     end
 
-    def type_error(message, node: nil)
+    def type_error(message, node: nil) # rubocop:disable Lint/UnusedMethodArgument
       raise MLC::CompileError, message
     end
 
@@ -442,7 +442,7 @@ class TypeInferenceServiceTest < Minitest::Test
       # Accept any count in mock
     end
 
-    def io_return_type(name)
+    def io_return_type(_name)
       MLC::SemanticIR::Builder.primitive_type("void")
     end
 
@@ -450,7 +450,7 @@ class TypeInferenceServiceTest < Minitest::Test
       # Accept any call in mock
     end
 
-    def module_member_info(module_name, member)
+    def module_member_info(_module_name, _member)
       nil
     end
   end

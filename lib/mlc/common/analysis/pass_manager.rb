@@ -151,7 +151,7 @@ module MLC
           log(:pipeline_end, message: message, context_keys: context.keys)
         end
 
-        def log_pass_start(pass, context, index)
+        def log_pass_start(pass, _context, index)
           return unless @event_bus || @verbose
 
           message = "[#{index + 1}/#{@passes.size}] Running pass: #{pass.name}"
@@ -160,7 +160,7 @@ module MLC
           log(:pass_start, message: message, pass: pass.name, metadata: pass.metadata)
         end
 
-        def log_pass_end(pass, context, duration)
+        def log_pass_end(pass, _context, duration)
           return unless @event_bus || @verbose
 
           message = "Completed pass: #{pass.name} (#{(duration * 1000).round(2)}ms)"

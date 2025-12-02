@@ -12,7 +12,7 @@ module MLC
               context.checker.continue_stmt?(node)
             end
 
-            def apply(node)
+            def apply(_node)
               context.factory.continue_statement
             end
           end

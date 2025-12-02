@@ -185,7 +185,7 @@ module CppAst
           end
         end
 
-        def template_method(*args)
+        def template_method(*_args)
           self # просто возвращаем себя, это маркер для DSL
         end
 

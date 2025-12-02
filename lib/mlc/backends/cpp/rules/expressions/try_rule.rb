@@ -56,7 +56,7 @@ module MLC
             # Option uses std::optional which has value() with exception on empty
             # For ? operator, we use: expr.value() with the assumption that the
             # control flow has been checked, or use custom TRY macro
-            def generate_option_try(operand, node)
+            def generate_option_try(operand, _node)
               # Simple version: just call .value()
               # In practice, MLC should generate code with proper checks
               # For now: expr.value()
@@ -72,7 +72,7 @@ module MLC
 
             # Generate C++ for Result?
             # Result uses std::expected (C++23) which has value() with exception
-            def generate_result_try(operand, node)
+            def generate_result_try(operand, _node)
               # Simple version: just call .value()
               context.factory.function_call(
                 callee: context.factory.member_access(

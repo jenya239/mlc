@@ -349,7 +349,7 @@ class TypeCheckerServiceTest < Minitest::Test
       @functions[name]
     end
 
-    def fetch_entry(name)
+    def fetch_entry(_name)
       nil
     end
 

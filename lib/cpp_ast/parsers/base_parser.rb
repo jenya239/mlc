@@ -107,7 +107,7 @@ module CppAst
       end
 
       # Get code snippet around token
-      def get_code_snippet(token)
+      def get_code_snippet(_token)
         start_pos = [@position - 3, 0].max
         end_pos = [@position + 3, @tokens.size - 1].min
 
