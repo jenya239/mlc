@@ -133,27 +133,27 @@ module CppAst
 
         # Modern C++ modifiers - Phase 2
         def deleted
-          dup.tap { |n|
+          dup.tap do |n|
             n.rparen_suffix = ""
             n.modifiers_text = " = delete"
             n.body = nil # deleted functions have no body
-          }
+          end
         end
 
         def defaulted
-          dup.tap { |n|
+          dup.tap do |n|
             n.rparen_suffix = ""
             n.body = nil
             n.default_suffix = " = default"
-          }
+          end
         end
 
         def noexcept
-          dup.tap { |n|
+          dup.tap do |n|
             # Architecture: space separator between modifiers (not before first one)
             n.modifiers_text += " " unless n.modifiers_text.empty?
             n.modifiers_text += "noexcept"
-          }
+          end
         end
 
         def explicit
@@ -171,11 +171,11 @@ module CppAst
         end
 
         def const
-          dup.tap { |n|
+          dup.tap do |n|
             # Architecture: space separator between modifiers (not before first one)
             n.modifiers_text += " " unless n.modifiers_text.empty?
             n.modifiers_text += "const"
-          }
+          end
         end
 
         def inline
@@ -233,27 +233,27 @@ module CppAst
         end
 
         def override
-          dup.tap { |n|
+          dup.tap do |n|
             # Architecture: space separator between modifiers (not before first one)
             n.modifiers_text += " " unless n.modifiers_text.empty?
             n.modifiers_text += "override"
-          }
+          end
         end
 
         def final
-          dup.tap { |n|
+          dup.tap do |n|
             # Architecture: space separator between modifiers (not before first one)
             n.modifiers_text += " " unless n.modifiers_text.empty?
             n.modifiers_text += "final"
-          }
+          end
         end
 
         def pure_virtual
-          dup.tap { |n|
+          dup.tap do |n|
             n.prefix_modifiers = "virtual " + n.prefix_modifiers
             n.rparen_suffix = " = 0"
             n.body = nil # pure virtual functions have no body
-          }
+          end
         end
 
         # Inline method body for class methods

@@ -16,9 +16,7 @@ module MLC
           @pos += 1 # Skip (
 
           # Skip params
-          while !eof? && current.type != :RPAREN && current.type != :FAT_ARROW
-            @pos += 1
-          end
+          @pos += 1 while !eof? && current.type != :RPAREN && current.type != :FAT_ARROW
 
           # Check if we find =>
           found_arrow = false

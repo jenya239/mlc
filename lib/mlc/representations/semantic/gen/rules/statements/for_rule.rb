@@ -21,18 +21,18 @@ module MLC
                 element_type = loops.infer_iterable_element(iterable_ir, node: node.iterable)
 
                 loops.with_loop_variable(node.var_name, element_type) do
-              loops.with_loop_scope do
-            body_statements = loops.normalize_loop_body(node.body, stmt_visitor)
-            body_block = svc.ir_builder.block(statements: body_statements, origin: node.body)
+                  loops.with_loop_scope do
+                    body_statements = loops.normalize_loop_body(node.body, stmt_visitor)
+                body_block = svc.ir_builder.block(statements: body_statements, origin: node.body)
 
-            svc.ir_builder.for_stmt(
-              var_name: node.var_name,
-              var_type: element_type,
-              iterable: iterable_ir,
-              body: body_block,
-              origin: node
-            )
-              end
+                svc.ir_builder.for_stmt(
+                  var_name: node.var_name,
+                  var_type: element_type,
+                  iterable: iterable_ir,
+                  body: body_block,
+                  origin: node
+                )
+                  end
                 end
               end
             end

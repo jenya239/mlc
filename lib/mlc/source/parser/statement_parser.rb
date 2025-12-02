@@ -29,9 +29,7 @@ module MLC
           lbrace_token = consume(:LBRACE)
           statements = []
 
-          until current.type == :RBRACE
-            statements << parse_statement
-          end
+          statements << parse_statement until current.type == :RBRACE
 
           consume(:RBRACE)
           with_origin(lbrace_token) { MLC::Source::AST::Block.new(stmts: statements) }

@@ -99,9 +99,9 @@ module MLC
 
             # Helper to lower block statements with optional return
             def lower_statements(block_expr, emit_return: true)
-              statements = block_expr.statements.map { |stmt|
+              statements = block_expr.statements.map do |stmt|
                 lower_statement(stmt)
-              }
+              end
 
               # Skip unit literals - they represent void/no value
               if block_expr.result && !is_unit_literal?(block_expr.result)

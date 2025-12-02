@@ -103,9 +103,7 @@ module MLC
 
         def recover_to_next_declaration
           # Skip tokens until we find a declaration boundary
-          while !eof? && !declaration_start?
-            skip_token
-          end
+          skip_token while !eof? && !declaration_start?
         end
 
         def declaration_start?

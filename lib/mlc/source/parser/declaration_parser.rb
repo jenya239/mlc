@@ -190,9 +190,7 @@ module MLC
           end
 
           # Parse imports
-          while current.type == :IMPORT
-            imports << parse_import_decl
-          end
+          imports << parse_import_decl while current.type == :IMPORT
 
           # Parse declarations
           while !eof?

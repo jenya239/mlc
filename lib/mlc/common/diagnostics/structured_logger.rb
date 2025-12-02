@@ -177,9 +177,9 @@ module MLC
         def colorize(text, *codes)
           return text unless @color_enabled
 
-          codes_str = codes.map { |code|
+          codes_str = codes.map do |code|
             code.is_a?(Symbol) ? const_get(code.upcase) : code
-          }.join
+          end.join
 
           "#{codes_str}#{text}#{RESET}"
         end

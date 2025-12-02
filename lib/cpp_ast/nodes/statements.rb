@@ -679,9 +679,9 @@ module CppAst
       end
 
       def to_source
-        statements.zip(statement_trailings).map { |stmt, trailing|
+        statements.zip(statement_trailings).map do |stmt, trailing|
           stmt.to_source + trailing
-        }.join
+        end.join
       end
     end
 

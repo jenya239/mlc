@@ -33,9 +33,7 @@ module CppAst
         lexeme = 'R"'.dup
 
         delimiter = "".dup
-        while current_char && current_char != '('
-          delimiter << advance
-        end
+        delimiter << advance while current_char && current_char != '('
 
         return Token.new(kind: :string, lexeme: 'R"', line: line, column: column) if at_end?
 

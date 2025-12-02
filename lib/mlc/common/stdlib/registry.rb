@@ -16,57 +16,57 @@ module MLC
         },
         "std/core/option" => {
           category: "core",
-    type: :pure,
+          type: :pure,
 
-    path: "core/option.mlc"
+          path: "core/option.mlc"
         },
         "std/core/result" => {
           category: "core",
-    type: :pure,
+          type: :pure,
 
-    path: "core/result.mlc"
+          path: "core/result.mlc"
         },
         "std/data/json" => {
           category: "data",
-    type: :extern,
-    namespace: "mlc::json",
-    path: "data/json.mlc"
+          type: :extern,
+          namespace: "mlc::json",
+          path: "data/json.mlc"
         },
         "std/graphics/graphics" => {
           category: "graphics",
-    type: :extern,
-    namespace: "mlc::graphics",
-    path: "graphics/graphics.mlc"
+          type: :extern,
+          namespace: "mlc::graphics",
+          path: "graphics/graphics.mlc"
         },
         "std/io/file" => {
           category: "io",
-    type: :extern,
-    namespace: "mlc::io",
-    path: "io/file.mlc"
+          type: :extern,
+          namespace: "mlc::io",
+          path: "io/file.mlc"
         },
         "std/io/io" => {
           category: "io",
-    type: :extern,
-    namespace: "mlc::io",
-    path: "io/io.mlc"
+          type: :extern,
+          namespace: "mlc::io",
+          path: "io/io.mlc"
         },
         "std/math/math" => {
           category: "math",
-    type: :extern,
-    namespace: "mlc::math",
-    path: "math/math.mlc"
+          type: :extern,
+          namespace: "mlc::math",
+          path: "math/math.mlc"
         },
         "std/text/conv" => {
           category: "text",
-    type: :extern,
-    namespace: "mlc",
-    path: "text/conv.mlc"
+          type: :extern,
+          namespace: "mlc",
+          path: "text/conv.mlc"
         },
         "std/text/string" => {
           category: "text",
-    type: :extern,
-    namespace: "mlc",
-    path: "text/string.mlc"
+          type: :extern,
+          namespace: "mlc",
+          path: "text/string.mlc"
         },
       }.freeze
 

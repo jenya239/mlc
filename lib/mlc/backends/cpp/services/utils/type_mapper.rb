@@ -65,9 +65,9 @@ module MLC
                 # Check for smart pointer types: Shared<T>, Weak<T>, Owned<T>
                 if SMART_POINTER_TYPES.key?(base_name)
                   cpp_ptr = SMART_POINTER_TYPES[base_name]
-                  type_args = type.type_args.map { |arg|
+                  type_args = type.type_args.map do |arg|
                     map_type(arg, type_map: type_map, type_registry: type_registry)
-                  }.join(", ")
+                  end.join(", ")
                   return "#{cpp_ptr}<#{type_args}>"
                 end
 
@@ -75,9 +75,9 @@ module MLC
                 # Only use std::optional if Option is NOT user-defined (i.e., it's the stdlib Option)
                 if WRAPPER_TYPES.key?(base_name) && !type_registry&.has_type?(base_name)
                   cpp_wrapper = WRAPPER_TYPES[base_name]
-                  type_args = type.type_args.map { |arg|
+                  type_args = type.type_args.map do |arg|
                     map_type(arg, type_map: type_map, type_registry: type_registry)
-                  }.join(", ")
+                  end.join(", ")
                   return "#{cpp_wrapper}<#{type_args}>"
                 end
 
@@ -85,17 +85,17 @@ module MLC
                 # Only use std::unordered_map if Map is NOT user-defined
                 if COLLECTION_TYPES.key?(base_name) && !type_registry&.has_type?(base_name)
                   cpp_collection = COLLECTION_TYPES[base_name]
-                  type_args = type.type_args.map { |arg|
+                  type_args = type.type_args.map do |arg|
                     map_type(arg, type_map: type_map, type_registry: type_registry)
-                  }.join(", ")
+                  end.join(", ")
                   return "#{cpp_collection}<#{type_args}>"
                 end
 
                 # Generic types: Base<Arg1, Arg2, ...>
                 mapped_base = map_type(type.base_type, type_map: type_map, type_registry: type_registry)
-                type_args = type.type_args.map { |arg|
+                type_args = type.type_args.map do |arg|
                   map_type(arg, type_map: type_map, type_registry: type_registry)
-                }.join(", ")
+                end.join(", ")
                 "#{mapped_base}<#{type_args}>"
 
               when SemanticIR::ArrayType
@@ -104,9 +104,9 @@ module MLC
 
               when SemanticIR::TupleType
                 # Tuple types: std::tuple<T1, T2, ...>
-                element_types = type.element_types.map { |t|
+                element_types = type.element_types.map do |t|
                   map_type(t, type_map: type_map, type_registry: type_registry)
-                }.join(", ")
+                end.join(", ")
                 "std::tuple<#{element_types}>"
 
               when SemanticIR::MapType
@@ -121,9 +121,9 @@ module MLC
 
               when SemanticIR::FunctionType
                 # Function types: std::function<ReturnType(Arg1, Arg2, ...)>
-                param_types = type.params.map { |p|
+                param_types = type.params.map do |p|
                   map_type(p[:type], type_map: type_map, type_registry: type_registry)
-                }.join(", ")
+                end.join(", ")
                 ret_type = map_type(type.ret_type, type_map: type_map, type_registry: type_registry)
                 "std::function<#{ret_type}(#{param_types})>"
 

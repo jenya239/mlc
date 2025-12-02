@@ -8,9 +8,7 @@ module CppAst
         advance
         advance
 
-        while current_char && current_char != "\n"
-          lexeme << advance
-        end
+        lexeme << advance while current_char && current_char != "\n"
 
         lexeme
       end

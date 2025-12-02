@@ -271,13 +271,13 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
            noexcept: true do
           # Simple bubble sort
           for_ id(:i), int(0), id(:arr).call(:size) - int(1), id(:i).increment do
-          for_ id(:j), int(0), id(:arr).call(:size) - id(:i) - int(1), id(:j).increment do
-            if_ id(:arr)[id(:j)] > id(:arr)[id(:j) + int(1)] do
-              let_ :temp, id(:arr)[id(:j)]
-              id(:arr)[id(:j)].assign(id(:arr)[id(:j) + int(1)])
-              id(:arr)[id(:j) + int(1)].assign(id(:temp))
+            for_ id(:j), int(0), id(:arr).call(:size) - id(:i) - int(1), id(:j).increment do
+              if_ id(:arr)[id(:j)] > id(:arr)[id(:j) + int(1)] do
+                let_ :temp, id(:arr)[id(:j)]
+                id(:arr)[id(:j)].assign(id(:arr)[id(:j) + int(1)])
+                id(:arr)[id(:j) + int(1)].assign(id(:temp))
+              end
             end
-          end
           end
         end
       end
@@ -395,7 +395,7 @@ class DSLv2IntegrationTest < Test::Unit::TestCase
       let_ :size, id(:data).call(:size)
 
       for_ id(:i), int(0), id(:size), id(:i).increment do
-      id(:sum).assign(id(:sum) + id(:data)[id(:i)])
+        id(:sum).assign(id(:sum) + id(:data)[id(:i)])
       end
 
       ret id(:sum)

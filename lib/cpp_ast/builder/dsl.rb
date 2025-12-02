@@ -653,7 +653,7 @@ module CppAst
       end
 
       # Pragma directive
-      def pragma_once()
+      def pragma_once
         Nodes::PragmaDirective.new(directive: "once")
       end
 

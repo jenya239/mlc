@@ -127,9 +127,7 @@ module MLC
         # Utility methods for common patterns
 
         def skip_until(*types)
-          until eof? || types.include?(current.type)
-            @pos += 1
-          end
+          @pos += 1 until eof? || types.include?(current.type)
         end
 
         def parse_comma_separated(end_token, &block)

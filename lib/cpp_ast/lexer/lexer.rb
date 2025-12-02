@@ -113,9 +113,7 @@ module CppAst
 
     def collect_trivia_as_string
       trivia = "".dup
-      while trivia_ahead?
-        trivia << scan_trivia_token
-      end
+      trivia << scan_trivia_token while trivia_ahead?
       trivia
     end
 
@@ -153,9 +151,7 @@ module CppAst
         "\n"
       when /\s/
         lexeme = advance.dup
-        while current_char&.match?(/\s/) && current_char != "\n"
-          lexeme << advance
-        end
+        lexeme << advance while current_char&.match?(/\s/) && current_char != "\n"
         lexeme
       when "/"
         if peek(1) == "/"
@@ -362,9 +358,7 @@ module CppAst
     def scan_identifier(first_char, line, column)
       lexeme = first_char
 
-      while current_char&.match?(/[a-zA-Z0-9_]/)
-        lexeme << advance
-      end
+      lexeme << advance while current_char&.match?(/[a-zA-Z0-9_]/)
 
       kind = KEYWORDS[lexeme] || :identifier
 

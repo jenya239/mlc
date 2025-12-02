@@ -225,9 +225,7 @@ module MLC
           start_line = @line
           start_column = @column
           start = @pos
-          while @pos < @source.length && @source[@pos] =~ /[a-zA-Z0-9_]/
-            @pos += 1
-          end
+          @pos += 1 while @pos < @source.length && @source[@pos] =~ /[a-zA-Z0-9_]/
 
           value = @source[start...@pos]
           @column += value.length
@@ -255,18 +253,14 @@ module MLC
           end
 
           # Decimal integer or float with optional underscore separators
-          while @pos < @source.length && @source[@pos] =~ /[0-9_]/
-            @pos += 1
-          end
+          @pos += 1 while @pos < @source.length && @source[@pos] =~ /[0-9_]/
 
           # Check for decimal point (but not range operator ..)
           # Only consume '.' if followed by a digit, not another '.'
           if @pos < @source.length && @source[@pos] == '.' &&
              @pos + 1 < @source.length && @source[@pos + 1] =~ /[0-9]/
             @pos += 1
-            while @pos < @source.length && @source[@pos] =~ /[0-9_]/
-              @pos += 1
-            end
+            @pos += 1 while @pos < @source.length && @source[@pos] =~ /[0-9_]/
             raw_value = @source[start...@pos]
             @column += raw_value.length
             # Remove underscores before conversion
@@ -285,9 +279,7 @@ module MLC
           start = @pos
           @pos += 2 # Skip 0b
 
-          while @pos < @source.length && @source[@pos] =~ /[01_]/
-            @pos += 1
-          end
+          @pos += 1 while @pos < @source.length && @source[@pos] =~ /[01_]/
 
           raw_value = @source[start...@pos]
           @column += raw_value.length
@@ -304,9 +296,7 @@ module MLC
           start = @pos
           @pos += 2 # Skip 0o
 
-          while @pos < @source.length && @source[@pos] =~ /[0-7_]/
-            @pos += 1
-          end
+          @pos += 1 while @pos < @source.length && @source[@pos] =~ /[0-7_]/
 
           raw_value = @source[start...@pos]
           @column += raw_value.length
@@ -323,9 +313,7 @@ module MLC
           start = @pos
           @pos += 2 # Skip 0x
 
-          while @pos < @source.length && @source[@pos] =~ /[0-9a-fA-F_]/
-            @pos += 1
-          end
+          @pos += 1 while @pos < @source.length && @source[@pos] =~ /[0-9a-fA-F_]/
 
           raw_value = @source[start...@pos]
           @column += raw_value.length
@@ -587,9 +575,7 @@ module MLC
             line_start = @pos
 
             # Read current line
-            while @pos < @source.length && @source[@pos] != "\n"
-              @pos += 1
-            end
+            @pos += 1 while @pos < @source.length && @source[@pos] != "\n"
 
             line = @source[line_start...@pos]
 
@@ -628,18 +614,18 @@ module MLC
           non_empty_lines = lines.reject { |line| line.strip.empty? }
           return "" if non_empty_lines.empty?
 
-          min_indent = non_empty_lines.map { |line|
+          min_indent = non_empty_lines.map do |line|
             line.match(/^(\s*)/)[1].length
-          }.min
+          end.min
 
           # Strip min_indent from all lines
-          stripped_lines = lines.map { |line|
+          stripped_lines = lines.map do |line|
             if line.strip.empty?
               "" # Keep empty lines empty
             else
               line[min_indent..] || ""
             end
-          }
+          end
 
           stripped_lines.join("\n")
         end
@@ -750,9 +736,7 @@ module MLC
 
           # Read identifier
           start = @pos
-          while @pos < @source.length && @source[@pos] =~ /[a-zA-Z0-9_]/
-            @pos += 1
-          end
+          @pos += 1 while @pos < @source.length && @source[@pos] =~ /[a-zA-Z0-9_]/
 
           symbol_name = @source[start...@pos]
           @column += symbol_name.length
@@ -772,9 +756,7 @@ module MLC
           # Check if followed by identifier
           if @pos < @source.length && @source[@pos] =~ /[a-zA-Z_]/
             start = @pos
-            while @pos < @source.length && @source[@pos] =~ /[a-zA-Z0-9_]/
-              @pos += 1
-            end
+            @pos += 1 while @pos < @source.length && @source[@pos] =~ /[a-zA-Z0-9_]/
 
             field_name = @source[start...@pos]
             @column += field_name.length
@@ -855,7 +837,7 @@ module MLC
                                 when '\\' then "\\"
                                 when close_delim then close_delim
                 else
-                  escaped
+                                  escaped
                                 end
                 @pos += 1
                 @column += 1

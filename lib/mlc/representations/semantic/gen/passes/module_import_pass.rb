@@ -15,11 +15,11 @@ module MLC
 
             def run(program)
               Array(program.imports).each do |import_decl|
-            @import_service.process(
-              import_decl,
-              function_registry: @function_registry,
-              type_registry: @type_registry
-            )
+                @import_service.process(
+                  import_decl,
+                  function_registry: @function_registry,
+                  type_registry: @type_registry
+                )
               end
             end
           end

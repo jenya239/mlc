@@ -30,14 +30,14 @@ module CppAst
         public
 
         # Boolean attribute getters (return the actual boolean values)
-        def const?() = @const
-        def ref?() = @ref
-        def mutable?() = @mutable
+        def const? = @const
+        def ref? = @ref
+        def mutable? = @mutable
 
         # Backward-compatible predicate aliases
-        def is_const() = const?
-        def is_ref() = ref?
-        def is_mutable() = mutable?
+        def is_const = const?
+        def is_ref = ref?
+        def is_mutable = mutable?
 
         # Chainable builder methods (return new TypeBuilder)
         # These are the primary interface for building types
@@ -140,38 +140,38 @@ module CppAst
       # Type system DSL methods
       class Types
         # Basic types
-        def i32() = @i32 ||= TypeBuilder.new(:int)
-        def i64() = TypeBuilder.new(:long)
-        def f32() = @f32 ||= TypeBuilder.new(:float)
-        def f64() = TypeBuilder.new(:double)
-        def bool() = TypeBuilder.new(:bool)
-        def char() = TypeBuilder.new(:char)
-        def string() = @string ||= TypeBuilder.new(:string)
-        def byte() = TypeBuilder.new(:byte)
+        def i32 = @i32 ||= TypeBuilder.new(:int)
+        def i64 = TypeBuilder.new(:long)
+        def f32 = @f32 ||= TypeBuilder.new(:float)
+        def f64 = TypeBuilder.new(:double)
+        def bool = TypeBuilder.new(:bool)
+        def char = TypeBuilder.new(:char)
+        def string = @string ||= TypeBuilder.new(:string)
+        def byte = TypeBuilder.new(:byte)
 
         # Integer types
-        def int8() = TypeBuilder.new(:int8_t)
-        def int16() = TypeBuilder.new(:int16_t)
-        def int32() = TypeBuilder.new(:int32_t)
-        def int64() = TypeBuilder.new(:int64_t)
-        def uint8() = TypeBuilder.new(:uint8_t)
-        def uint16() = TypeBuilder.new(:uint16_t)
-        def uint32() = TypeBuilder.new(:uint32_t)
-        def uint64() = TypeBuilder.new(:uint64_t)
+        def int8 = TypeBuilder.new(:int8_t)
+        def int16 = TypeBuilder.new(:int16_t)
+        def int32 = TypeBuilder.new(:int32_t)
+        def int64 = TypeBuilder.new(:int64_t)
+        def uint8 = TypeBuilder.new(:uint8_t)
+        def uint16 = TypeBuilder.new(:uint16_t)
+        def uint32 = TypeBuilder.new(:uint32_t)
+        def uint64 = TypeBuilder.new(:uint64_t)
 
         # Float types
-        def float32() = TypeBuilder.new(:float)
-        def float64() = TypeBuilder.new(:double)
+        def float32 = TypeBuilder.new(:float)
+        def float64 = TypeBuilder.new(:double)
 
         # Character types
-        def wchar() = TypeBuilder.new(:wchar_t)
-        def char16() = TypeBuilder.new(:char16_t)
-        def char32() = TypeBuilder.new(:char32_t)
+        def wchar = TypeBuilder.new(:wchar_t)
+        def char16 = TypeBuilder.new(:char16_t)
+        def char32 = TypeBuilder.new(:char32_t)
 
         # String types
-        def wstring() = TypeBuilder.new(:wstring)
-        def u16string() = TypeBuilder.new(:u16string)
-        def u32string() = TypeBuilder.new(:u32string)
+        def wstring = TypeBuilder.new(:wstring)
+        def u16string = TypeBuilder.new(:u16string)
+        def u32string = TypeBuilder.new(:u32string)
 
         # System types
         def size_t

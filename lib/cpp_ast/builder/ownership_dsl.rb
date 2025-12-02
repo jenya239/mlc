@@ -261,34 +261,34 @@ module CppAst
         end
 
         # Integer types
-        def int8() = OwnershipTypeBuilder.new(nil, :int8)
-        def int16() = OwnershipTypeBuilder.new(nil, :int16)
-        def int32() = OwnershipTypeBuilder.new(nil, :int32)
-        def int64() = OwnershipTypeBuilder.new(nil, :int64)
+        def int8 = OwnershipTypeBuilder.new(nil, :int8)
+        def int16 = OwnershipTypeBuilder.new(nil, :int16)
+        def int32 = OwnershipTypeBuilder.new(nil, :int32)
+        def int64 = OwnershipTypeBuilder.new(nil, :int64)
 
-        def uint8() = OwnershipTypeBuilder.new(nil, :uint8)
-        def uint16() = OwnershipTypeBuilder.new(nil, :uint16)
-        def uint32() = OwnershipTypeBuilder.new(nil, :uint32)
-        def uint64() = OwnershipTypeBuilder.new(nil, :uint64)
+        def uint8 = OwnershipTypeBuilder.new(nil, :uint8)
+        def uint16 = OwnershipTypeBuilder.new(nil, :uint16)
+        def uint32 = OwnershipTypeBuilder.new(nil, :uint32)
+        def uint64 = OwnershipTypeBuilder.new(nil, :uint64)
 
         # Float types
-        def float32() = OwnershipTypeBuilder.new(nil, :float32)
-        def float64() = OwnershipTypeBuilder.new(nil, :float64)
+        def float32 = OwnershipTypeBuilder.new(nil, :float32)
+        def float64 = OwnershipTypeBuilder.new(nil, :float64)
 
         # Boolean type
-        def bool_type() = OwnershipTypeBuilder.new(nil, :bool)
+        def bool_type = OwnershipTypeBuilder.new(nil, :bool)
 
         # Character types
-        def char_type() = OwnershipTypeBuilder.new(nil, :char)
-        def wchar() = OwnershipTypeBuilder.new(nil, :wchar)
-        def char16() = OwnershipTypeBuilder.new(nil, :char16)
-        def char32() = OwnershipTypeBuilder.new(nil, :char32)
+        def char_type = OwnershipTypeBuilder.new(nil, :char)
+        def wchar = OwnershipTypeBuilder.new(nil, :wchar)
+        def char16 = OwnershipTypeBuilder.new(nil, :char16)
+        def char32 = OwnershipTypeBuilder.new(nil, :char32)
 
         # String types
-        def string_type() = OwnershipTypeBuilder.new(nil, :string)
-        def wstring() = OwnershipTypeBuilder.new(nil, :wstring)
-        def u16string() = OwnershipTypeBuilder.new(nil, :u16string)
-        def u32string() = OwnershipTypeBuilder.new(nil, :u32string)
+        def string_type = OwnershipTypeBuilder.new(nil, :string)
+        def wstring = OwnershipTypeBuilder.new(nil, :wstring)
+        def u16string = OwnershipTypeBuilder.new(nil, :u16string)
+        def u32string = OwnershipTypeBuilder.new(nil, :u32string)
 
         # Custom type
         def of(type_name)

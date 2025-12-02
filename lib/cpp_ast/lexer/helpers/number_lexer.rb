@@ -9,18 +9,12 @@ module CppAst
         if first_char == "0" && current_char
           if current_char.match?(/[xX]/)
             lexeme << advance
-            while current_char&.match?(/[0-9a-fA-F]/)
-              lexeme << advance
-            end
+            lexeme << advance while current_char&.match?(/[0-9a-fA-F]/)
           elsif current_char.match?(/[bB]/)
             lexeme << advance
-            while current_char&.match?(/[01]/)
-              lexeme << advance
-            end
+            lexeme << advance while current_char&.match?(/[01]/)
           elsif current_char.match?(/[0-7]/)
-            while current_char&.match?(/[0-7]/)
-              lexeme << advance
-            end
+            lexeme << advance while current_char&.match?(/[0-7]/)
           elsif current_char == "."
             lexeme << advance
             scan_float_fraction(lexeme)
@@ -28,9 +22,7 @@ module CppAst
         elsif first_char == "."
           scan_float_fraction(lexeme)
         else
-          while current_char&.match?(/[0-9]/)
-            lexeme << advance
-          end
+          lexeme << advance while current_char&.match?(/[0-9]/)
 
           if current_char == "."
             next_char = peek(1)
@@ -49,9 +41,7 @@ module CppAst
       end
 
       def scan_float_fraction(lexeme)
-        while current_char&.match?(/[0-9]/)
-          lexeme << advance
-        end
+        lexeme << advance while current_char&.match?(/[0-9]/)
 
         scan_exponent(lexeme) if current_char&.match?(/[eE]/)
       end
@@ -61,9 +51,7 @@ module CppAst
 
         lexeme << advance if current_char&.match?(/[+-]/)
 
-        while current_char&.match?(/[0-9]/)
-          lexeme << advance
-        end
+        lexeme << advance while current_char&.match?(/[0-9]/)
       end
 
       def scan_number_suffix(lexeme)
