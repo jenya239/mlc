@@ -85,24 +85,24 @@ module MLC
 
         # Optimized token consumption with lookahead
         def consume(expected_type)
-          if current.type == expected_type
+          raise ParseError, "Expected #{expected_type}, got #{current.type}" unless current.type == expected_type
             @last_token = current
             @pos += 1
             @last_token
-          else
-            raise ParseError, "Expected #{expected_type}, got #{current.type}"
-          end
+          
+            
+          
         end
 
         # Batch token processing for better performance
         def consume_multiple(*types)
           results = []
           types.each do |type|
-            if current.type == type
+            break unless current.type == type
               results << consume(type)
-            else
-              break
-            end
+            
+              
+            
           end
           results
         end
@@ -116,10 +116,10 @@ module MLC
 
         # Clear cache when position changes significantly
         def clear_cache_if_needed
-          if @pos > 0 && @pos % 100 == 0
+          return unless @pos > 0 && @pos % 100 == 0
             @memo.clear
             @expression_cache.clear
-          end
+          
         end
 
         def parse_integer_literal

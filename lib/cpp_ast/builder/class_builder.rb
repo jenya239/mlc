@@ -305,12 +305,12 @@ module CppAst
 
         def to_node
           param_nodes = @params.map do |param|
-            if param.is_a?(Array) && param.size == 2
+            raise ArgumentError, "Invalid parameter format: #{param}" unless param.is_a?(Array) && param.size == 2
               type, name = param
               Nodes::Parameter.new(type: type.respond_to?(:to_cpp_type) ? type.to_cpp_type : type.to_s, name: name.to_s)
-            else
-              raise ArgumentError, "Invalid parameter format: #{param}"
-            end
+            
+              
+            
           end
 
           Nodes::FunctionDeclaration.new(
@@ -495,12 +495,12 @@ module CppAst
 
         def to_node
           param_nodes = @params.map do |param|
-            if param.is_a?(Array) && param.size == 2
+            raise ArgumentError, "Invalid parameter format: #{param}" unless param.is_a?(Array) && param.size == 2
               type, name = param
               Nodes::Parameter.new(type: type.respond_to?(:to_cpp_type) ? type.to_cpp_type : type.to_s, name: name.to_s)
-            else
-              raise ArgumentError, "Invalid parameter format: #{param}"
-            end
+            
+              
+            
           end
 
           Nodes::FunctionDeclaration.new(

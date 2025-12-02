@@ -75,10 +75,10 @@ module MLC
           # Check if all constructors are covered
           missing = required_constructors - covered_constructors
 
-          if missing.any?
+          return unless missing.any?
             missing_list = missing.to_a.sort.join(", ")
             raise MLC::CompileError, "Non-exhaustive match: missing patterns for #{missing_list}"
-          end
+          
         end
 
         # Recursively extract all covered constructors from a pattern

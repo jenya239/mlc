@@ -13,12 +13,12 @@ module CppAst
         loop do
           declarators << parse_variable_declarator
 
-          if current_token.kind == :comma
+          break unless current_token.kind == :comma
             declarator_separators << current_token.lexeme + current_token.trailing_trivia
             advance_raw
-          else
-            break
-          end
+          
+            
+          
         end
 
         _semicolon_prefix = current_leading_trivia

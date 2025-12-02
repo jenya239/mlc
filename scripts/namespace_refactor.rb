@@ -50,7 +50,7 @@ class NamespaceRefactor
       new_content[repl[:offset], repl[:length]] = repl[:new_text]
     end
 
-    if new_content != content
+    return unless new_content != content
       @stats[:files_modified] += 1
       @stats[:replacements] += replacements.size
 
@@ -60,7 +60,7 @@ class NamespaceRefactor
         File.write(file, new_content)
         puts "✅ Modified #{file} (#{replacements.size} replacements)"
       end
-    end
+    
   end
 
   def visit_node(node, source, replacements)

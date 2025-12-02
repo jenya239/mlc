@@ -33,9 +33,9 @@ module MLC
         stdlib_scanner: stdlib_scanner,
         runtime_policy: runtime_policy
       )
-      cpp_ast = cpp_lowerer.lower(core_ir)
+      cpp_lowerer.lower(core_ir)
 
-      cpp_ast
+      
     end
 
     # Parse MLC source to AST

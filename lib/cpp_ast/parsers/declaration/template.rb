@@ -23,12 +23,12 @@ module CppAst
             advance_raw
           when :greater
             depth -= 1
-            if depth == 0
-              break
-            else
+            break if depth == 0
+              
+            
               params << current_token.lexeme << current_token.trailing_trivia
               advance_raw
-            end
+            
           else
             params << current_token.lexeme << current_token.trailing_trivia
             advance_raw

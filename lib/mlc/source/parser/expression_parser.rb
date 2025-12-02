@@ -81,11 +81,11 @@ module MLC
           while current.type != :RPAREN
             args << parse_expression
 
-            if current.type == :COMMA
+            break unless current.type == :COMMA
               consume(:COMMA)
-            else
-              break
-            end
+            
+              
+            
           end
 
           args
@@ -817,11 +817,11 @@ module MLC
               end
 
               # Expect =>
-              if current.type == :FAT_ARROW
+              raise "Expected => in match arm" unless current.type == :FAT_ARROW
                 consume(:FAT_ARROW)
-              else
-                raise "Expected => in match arm"
-              end
+              
+                
+              
 
               # Parse body
               body = if current.type == :DO
@@ -946,11 +946,11 @@ module MLC
           # consuming { as record literal when it's actually the start of match arms
           # We parse at comparison level to get most operators but stop before
           # consuming record literals
-          left = parse_comparison
+          parse_comparison
 
           # Don't parse record literal here - that's handled by match arms
           # Just return the identifier/expression
-          left
+          
         end
 
         def parse_multiplication
@@ -1008,7 +1008,7 @@ module MLC
               expr_line = last_token&.line
 
             when :OPERATOR
-              if current.value == "."
+              break unless current.value == "."
                 consume(:OPERATOR) # consume '.'
 
                 # Check for tuple positional access: tuple.0, tuple.1
@@ -1025,16 +1025,16 @@ module MLC
                   float_str = float_token.value.to_s
                   # Parse as "index.remaining_index"
                   parts = float_str.split('.')
-                  if parts.size == 2 && parts[0] =~ /^\d+$/ && parts[1] =~ /^\d+$/
+                  raise parse_error("Invalid tuple access syntax") unless parts.size == 2 && parts[0] =~ /^\d+$/ && parts[1] =~ /^\d+$/
                     first_index = parts[0].to_i
                     second_index = parts[1].to_i
                     # Build nested tuple access: expr.first_index.second_index
                     inner_access = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: first_index), float_token)
                     expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: inner_access, index: second_index), float_token)
                     expr_line = last_token&.line
-                  else
-                    raise parse_error("Invalid tuple access syntax")
-                  end
+                  
+                    
+                  
                 else
                   member_token = consume(:IDENTIFIER)
                   member = member_token.value
@@ -1055,9 +1055,9 @@ module MLC
                   end
                   expr_line = last_token&.line
                 end
-              else
-                break
-              end
+              
+                
+              
             when :LBRACKET
               # Array indexing or slicing: expr[index] or expr[start..end]
               lbracket_token = consume(:LBRACKET)

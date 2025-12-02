@@ -111,12 +111,12 @@ module CppAst
 
         def to_node
           # Build nested if statements for elsif
-          result = Nodes::IfStatement.new(
+          Nodes::IfStatement.new(
             condition: @condition.node,
             then_statement: @then_block.node,
             else_statement: build_else_chain
           )
-          result
+          
         end
 
         # Alias for backward compatibility
@@ -328,8 +328,7 @@ module CppAst
 
       # Else builder
       class ElseBuilder
-        def initialize
-        end
+        def initialize; end
 
         def to_node
           Nodes::ElseClause.new

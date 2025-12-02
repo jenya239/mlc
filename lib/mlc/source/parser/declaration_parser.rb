@@ -166,11 +166,11 @@ module MLC
 
             params << with_origin(name_token) { MLC::Source::AST::Param.new(name: name, type: type) }
 
-            if current.type == :COMMA
+            break unless current.type == :COMMA
               consume(:COMMA)
-            else
-              break
-            end
+            
+              
+            
           end
 
           params
@@ -205,21 +205,21 @@ module MLC
               when :ASYNC
                 # export async fn ...
                 consume(:ASYNC)
-                if current.type == :FN
+                raise "Expected FN after export async, got #{current.type}" unless current.type == :FN
                   func = parse_function(exported: true, is_async: true)
                   declarations << func
-                else
-                  raise "Expected FN after export async, got #{current.type}"
-                end
+                
+                  
+                
               when :EXTERN
                 # export extern fn ...
                 consume(:EXTERN)
-                if current.type == :FN
+                raise "Expected FN after export extern, got #{current.type}" unless current.type == :FN
                   func = parse_function(external: true, exported: true)
                   declarations << func
-                else
-                  raise "Expected FN after export extern, got #{current.type}"
-                end
+                
+                  
+                
               when :FN
                 func = parse_function(exported: true)
                 declarations << func
@@ -237,11 +237,11 @@ module MLC
             when :ASYNC
               # Parse async function: async fn ...
               consume(:ASYNC)
-              if current.type == :FN
+              raise "Expected FN after async, got #{current.type}" unless current.type == :FN
                 declarations << parse_function(is_async: true)
-              else
-                raise "Expected FN after async, got #{current.type}"
-              end
+              
+                
+              
             when :EXTERN
               # Parse external declaration
               consume(:EXTERN)
@@ -310,11 +310,11 @@ module MLC
 
             position += 1
 
-            if current.type == :COMMA
+            break unless current.type == :COMMA
               consume(:COMMA)
-            else
-              break
-            end
+            
+              
+            
           end
 
           { fields: fields, spreads: spreads }

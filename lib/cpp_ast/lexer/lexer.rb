@@ -168,11 +168,11 @@ module CppAst
       when "#"
         scan_preprocessor_lexeme
       when "["
-        if peek(1) == "["
+        raise "Unexpected [" unless peek(1) == "["
           scan_attribute_lexeme
-        else
-          raise "Unexpected ["
-        end
+        
+          
+        
       else
         raise "Not a trivia token: #{char.inspect}"
       end

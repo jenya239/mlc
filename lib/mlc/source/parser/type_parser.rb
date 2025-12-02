@@ -16,11 +16,11 @@ module MLC
             variant_name = consume(:IDENTIFIER).value
             variants << variant_name
 
-            if current.type == :COMMA
+            break unless current.type == :COMMA
               consume(:COMMA)
-            else
-              break
-            end
+            
+              
+            
           end
 
           consume(:RBRACE)
@@ -38,11 +38,11 @@ module MLC
 
             fields << { name: field_name, type: field_type }
 
-            if current.type == :COMMA
+            break unless current.type == :COMMA
               consume(:COMMA)
-            else
-              break
-            end
+            
+              
+            
           end
 
           consume(:RBRACE)
@@ -73,11 +73,11 @@ module MLC
                 variant_fields << { name: "field#{field_index}", type: field_type }
                 field_index += 1
 
-                if current.type == :COMMA
+                break unless current.type == :COMMA
                   consume(:COMMA)
-                else
-                  break
-                end
+                
+                  
+                
               end
               consume(:RPAREN)
             elsif current.type == :LBRACE
@@ -89,11 +89,11 @@ module MLC
                 field_type = parse_type
                 variant_fields << { name: field_name, type: field_type }
 
-                if current.type == :COMMA
+                break unless current.type == :COMMA
                   consume(:COMMA)
-                else
-                  break
-                end
+                
+                  
+                
               end
               consume(:RBRACE)
             end
@@ -280,11 +280,11 @@ module MLC
             if current.type == :COLON
               consume(:COLON)
 
-              if current.type == :IDENTIFIER
+              raise "Expected constraint identifier, got #{current.type}(#{current.value})" unless current.type == :IDENTIFIER
                 constraint = consume(:IDENTIFIER).value
-              else
-                raise "Expected constraint identifier, got #{current.type}(#{current.value})"
-              end
+              
+                
+              
             end
 
             params << with_origin(name_token) { MLC::Source::AST::TypeParam.new(name: name, constraint: constraint) }

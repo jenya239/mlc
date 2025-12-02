@@ -350,10 +350,10 @@ module MLC
           list = @modules[previous_module]
           list&.delete(canonical)
         end
-        if entry.module_name
+        return unless entry.module_name
           module_list = @modules[entry.module_name]
           module_list << canonical unless module_list.include?(canonical)
-        end
+        
       end
 
       def cleanup_collections(entry)
@@ -365,11 +365,11 @@ module MLC
           @namespaces.delete(entry.namespace) if list.empty?
         end
 
-        if entry.module_name
+        return unless entry.module_name
           list = @modules[entry.module_name]
           list.delete(canonical)
           @modules.delete(entry.module_name) if list.empty?
-        end
+        
       end
     end
   end
