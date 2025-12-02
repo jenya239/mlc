@@ -31,7 +31,7 @@ module CppAst
     class MatchArm < Node
       attr_accessor :case_name, :bindings, :body
 
-      def initialize(case_name:, bindings: [], body:)
+      def initialize(case_name:, body:, bindings: [])
         @case_name = case_name
         @bindings = bindings
         @body = body

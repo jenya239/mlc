@@ -118,8 +118,7 @@ module CppAst
 
     # LambdaExpression - lambda: [capture](params) { body }
     class LambdaExpression < Expression
-      attr_accessor :capture, :parameters, :specifiers, :body
-      attr_accessor :capture_suffix, :params_suffix
+      attr_accessor :capture, :parameters, :specifiers, :body, :capture_suffix, :params_suffix
 
       def initialize(capture: "", parameters: "", specifiers: "", body: "",
                      capture_suffix: "", params_suffix: "")
@@ -217,8 +216,7 @@ module CppAst
 
     # BraceInitializerExpression - brace initialization: Type{arg1, arg2}
     class BraceInitializerExpression < Expression
-      attr_accessor :type, :arguments, :argument_separators
-      attr_accessor :lbrace_prefix, :lbrace_suffix, :rbrace_prefix
+      attr_accessor :type, :arguments, :argument_separators, :lbrace_prefix, :lbrace_suffix, :rbrace_prefix
 
       def initialize(type:, arguments:, argument_separators: [],
                      lbrace_prefix: "", lbrace_suffix: "", rbrace_prefix: "")
@@ -251,8 +249,7 @@ module CppAst
 
     # TernaryExpression - ternary operator: condition ? true : false
     class TernaryExpression < Expression
-      attr_accessor :condition, :true_expression, :false_expression
-      attr_accessor :question_prefix, :question_suffix, :colon_prefix, :colon_suffix
+      attr_accessor :condition, :true_expression, :false_expression, :question_prefix, :question_suffix, :colon_prefix, :colon_suffix
 
       def initialize(condition:, true_expression:, false_expression:,
                      question_prefix: "", question_suffix: "",
@@ -303,7 +300,7 @@ module CppAst
     class AssignmentExpression < Expression
       attr_accessor :left, :operator, :right
 
-      def initialize(left:, operator: "=", right:)
+      def initialize(left:, right:, operator: "=")
         @left = left
         @operator = operator
         @right = right

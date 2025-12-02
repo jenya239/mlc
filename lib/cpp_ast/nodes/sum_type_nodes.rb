@@ -4,10 +4,9 @@ module CppAst
   module Nodes
     # Sum type declaration - generates struct + variant
     class SumTypeDeclaration < Statement
-      attr_accessor :name, :cases, :case_trailings
-      attr_accessor :sum_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix
+      attr_accessor :name, :cases, :case_trailings, :sum_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix
 
-      def initialize(leading_trivia: "", name:, cases:, case_trailings: [],
+      def initialize(name:, cases:, leading_trivia: "", case_trailings: [],
                      sum_suffix: " ", name_suffix: " ", lbrace_suffix: "\n", rbrace_suffix: "\n")
         super(leading_trivia: leading_trivia)
         @name = name
@@ -39,10 +38,9 @@ module CppAst
 
     # Variant case - generates struct for one case
     class VariantCase < Statement
-      attr_accessor :name, :fields, :field_trailings
-      attr_accessor :struct_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix
+      attr_accessor :name, :fields, :field_trailings, :struct_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix
 
-      def initialize(leading_trivia: "", name:, fields:, field_trailings: [],
+      def initialize(name:, fields:, leading_trivia: "", field_trailings: [],
                      struct_suffix: " ", name_suffix: " ", lbrace_suffix: "\n", rbrace_suffix: "\n")
         super(leading_trivia: leading_trivia)
         @name = name

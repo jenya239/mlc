@@ -24,7 +24,7 @@ module MLC
             attr_writer :generic_call_resolver # Allow injection after initialization
 
             def initialize(var_type_registry:, type_registry:, function_registry:,
-                           type_decl_table:, generic_call_resolver:, type_checker:, _transformer: nil, scope_context:)
+                           type_decl_table:, generic_call_resolver:, type_checker:, scope_context:, _transformer: nil)
               @var_type_registry = var_type_registry
               @type_registry = type_registry
               @function_registry = function_registry

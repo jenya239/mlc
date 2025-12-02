@@ -38,7 +38,7 @@ module MLC
             # @param trait_name [String] trait being implemented (nil for standalone extend)
             # @param methods [Hash<String, MethodInfo>] implemented methods
             # @param associated_type_bindings [Hash<String, Type>] associated type bindings
-            def register_implementation(type_name:, trait_name: nil, methods:, associated_type_bindings: {})
+            def register_implementation(type_name:, methods:, trait_name: nil, associated_type_bindings: {})
               if trait_name
                 key = [type_name, trait_name]
                 @implementations[key] = ImplInfo.new(

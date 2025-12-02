@@ -13,7 +13,7 @@ module MLC
               @sum_type_constructor_service = sum_type_constructor_service
             end
 
-            def register(decl:, core_type:, namespace: nil, kind:, exported: false, module_name: nil)
+            def register(decl:, core_type:, kind:, namespace: nil, exported: false, module_name: nil)
               @type_registry.register(
                 decl.name,
                 ast_node: decl,

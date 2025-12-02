@@ -258,7 +258,7 @@ module MLC
     class RegexExpr < Expr
       attr_reader :pattern, :flags
 
-      def initialize(pattern:, flags: "", type:, origin: nil)
+      def initialize(pattern:, type:, flags: "", origin: nil)
         super(kind: :regex, data: { pattern: pattern, flags: flags }, type: type, origin: origin)
         @pattern = pattern
         @flags = flags
@@ -406,7 +406,7 @@ module MLC
     class SliceExpr < Expr
       attr_reader :object, :start_index, :end_index
 
-      def initialize(object:, start_index: nil, end_index: nil, type:, origin: nil)
+      def initialize(object:, type:, start_index: nil, end_index: nil, origin: nil)
         super(kind: :slice, data: { object: object, start_index: start_index, end_index: end_index }, type: type, origin: origin)
         @object = object # Expr - array being sliced
         @start_index = start_index # Expr or nil - start index (nil = from beginning)
@@ -418,7 +418,7 @@ module MLC
     class RangeExpr < Expr
       attr_reader :start_expr, :end_expr, :inclusive
 
-      def initialize(start_expr:, end_expr:, inclusive: true, type:, origin: nil)
+      def initialize(start_expr:, end_expr:, type:, inclusive: true, origin: nil)
         super(kind: :range, data: { start: start_expr, end: end_expr, inclusive: inclusive }, type: type, origin: origin)
         @start_expr = start_expr  # Expr - start of range
         @end_expr = end_expr      # Expr - end of range

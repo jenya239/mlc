@@ -3,8 +3,7 @@
 module CppAst
   module Nodes
     class Parameter < Statement
-      attr_accessor :type, :name, :default_value
-      attr_accessor :type_suffix, :equals_prefix, :equals_suffix
+      attr_accessor :type, :name, :default_value, :type_suffix, :equals_prefix, :equals_suffix
 
       def initialize(type:, name:, default_value: nil,
                      type_suffix: " ", equals_prefix: " ", equals_suffix: " ")

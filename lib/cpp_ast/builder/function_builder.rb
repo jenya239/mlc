@@ -6,7 +6,7 @@ module CppAst
       # Function builder with best practices
       class FunctionBuilder
         attr_reader :name, :params, :ret_type, :modifiers
-        attr_accessor :template_generics
+        attr_accessor :template_generics, :requires_clause
 
         def initialize(name, params: [], ret: nil, **modifiers)
           @name = name
@@ -27,8 +27,6 @@ module CppAst
           @body = nil
           @requires_clause = nil
         end
-
-        attr_accessor :requires_clause
 
         def body(&block)
           @body = block.call if block_given?

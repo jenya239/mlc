@@ -15,14 +15,7 @@ module MLC
         # Стратегии для match expressions
         MATCH_STRATEGIES = %i[std_visit iife named_visitor].freeze
 
-        attr_accessor :block_expr_simple_strategy    # Для простых блоков (≤3 stmts, no ctrl flow)
-        attr_accessor :block_expr_complex_strategy   # Для сложных блоков
-        attr_accessor :if_join_strategy              # Для if expressions
-        attr_accessor :match_threshold               # Порог для named visitor (кол-во веток)
-        attr_accessor :loop_capture_strategy         # :lambda или :fn_ptr
-        attr_accessor :use_gcc_extensions            # Использовать ли ({ }) expressions
-        attr_accessor :error_model                   # :expected или :exceptions
-        attr_accessor :always_use_runtime            # Всегда использовать runtime для collections
+        attr_accessor :block_expr_simple_strategy, :block_expr_complex_strategy, :if_join_strategy, :match_threshold, :loop_capture_strategy, :use_gcc_extensions, :error_model, :always_use_runtime    # Для простых блоков (≤3 stmts, no ctrl flow)   # Для сложных блоков              # Для if expressions               # Порог для named visitor (кол-во веток)         # :lambda или :fn_ptr            # Использовать ли ({ }) expressions                   # :expected или :exceptions            # Всегда использовать runtime для collections
 
         def initialize
           # По умолчанию: консервативная стратегия (используем IIFE везде)

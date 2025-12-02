@@ -28,7 +28,7 @@ module MLC
       # @param namespace [String, nil] C++ namespace (e.g., "mlc::graphics")
       # @param kind [Symbol] :primitive, :record, :sum, :opaque, :function, :array
       # @param exported [Boolean] Is this type exported from module?
-      def initialize(name:, ast_node: nil, core_ir_type:, namespace: nil, kind:, exported: false, module_name: nil)
+      def initialize(name:, core_ir_type:, kind:, ast_node: nil, namespace: nil, exported: false, module_name: nil)
         @name = name
         @ast_node = ast_node
         @core_ir_type = core_ir_type
@@ -197,7 +197,7 @@ module MLC
       # @param namespace [String, nil] C++ namespace
       # @param kind [Symbol] Type kind
       # @param exported [Boolean] Is exported?
-      def register(name, ast_node: nil, core_ir_type:, namespace: nil, kind:, exported: false, module_name: nil)
+      def register(name, core_ir_type:, kind:, ast_node: nil, namespace: nil, exported: false, module_name: nil)
         type_info = TypeInfo.new(
           name: name,
           ast_node: ast_node,

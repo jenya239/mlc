@@ -40,7 +40,7 @@ module MLC
       class TypeMetadata
         attr_reader :name, :qualified_name, :opaque, :fields, :variants, :ast_node
 
-        def initialize(name:, qualified_name:, opaque:, fields: [], variants: [], ast_node:)
+        def initialize(name:, qualified_name:, opaque:, ast_node:, fields: [], variants: [])
           @name = name
           @qualified_name = qualified_name
           @opaque = opaque

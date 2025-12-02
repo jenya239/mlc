@@ -6,7 +6,7 @@ module CppAst
     class ExpressionStatement < Statement
       attr_accessor :expression
 
-      def initialize(leading_trivia: "", expression:)
+      def initialize(expression:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @expression = expression
       end
@@ -37,10 +37,9 @@ module CppAst
 
     # BlockStatement: `{ stmt1; stmt2; }`
     class BlockStatement < Statement
-      attr_accessor :statements, :statement_trailings
-      attr_accessor :lbrace_suffix, :rbrace_prefix
+      attr_accessor :statements, :statement_trailings, :lbrace_suffix, :rbrace_prefix
 
-      def initialize(leading_trivia: "", statements:, statement_trailings:, lbrace_suffix: "", rbrace_prefix: "")
+      def initialize(statements:, statement_trailings:, leading_trivia: "", lbrace_suffix: "", rbrace_prefix: "")
         super(leading_trivia: leading_trivia)
         @statements = statements
         @statement_trailings = statement_trailings
@@ -66,11 +65,9 @@ module CppAst
 
     # IfStatement: `if (cond) { ... } else { ... }`
     class IfStatement < Statement
-      attr_accessor :condition, :then_statement, :else_statement
-      attr_accessor :if_suffix, :condition_lparen_suffix, :condition_rparen_suffix
-      attr_accessor :else_prefix, :else_suffix
+      attr_accessor :condition, :then_statement, :else_statement, :if_suffix, :condition_lparen_suffix, :condition_rparen_suffix, :else_prefix, :else_suffix
 
-      def initialize(leading_trivia: "", condition:, then_statement:, else_statement: nil,
+      def initialize(condition:, then_statement:, leading_trivia: "", else_statement: nil,
                      if_suffix: "", condition_lparen_suffix: "", condition_rparen_suffix: "",
                      else_prefix: "", else_suffix: "")
         super(leading_trivia: leading_trivia)
@@ -97,10 +94,9 @@ module CppAst
 
     # WhileStatement: `while (cond) { ... }`
     class WhileStatement < Statement
-      attr_accessor :condition, :body
-      attr_accessor :while_suffix, :condition_lparen_suffix, :condition_rparen_suffix
+      attr_accessor :condition, :body, :while_suffix, :condition_lparen_suffix, :condition_rparen_suffix
 
-      def initialize(leading_trivia: "", condition:, body:,
+      def initialize(condition:, body:, leading_trivia: "",
                      while_suffix: "", condition_lparen_suffix: "", condition_rparen_suffix: "")
         super(leading_trivia: leading_trivia)
         @condition = condition
@@ -118,11 +114,9 @@ module CppAst
 
     # DoWhileStatement: `do { ... } while (cond);`
     class DoWhileStatement < Statement
-      attr_accessor :body, :condition
-      attr_accessor :do_suffix, :while_prefix, :while_suffix
-      attr_accessor :condition_lparen_suffix, :condition_rparen_suffix
+      attr_accessor :body, :condition, :do_suffix, :while_prefix, :while_suffix, :condition_lparen_suffix, :condition_rparen_suffix
 
-      def initialize(leading_trivia: "", body:, condition:,
+      def initialize(body:, condition:, leading_trivia: "",
                      do_suffix: "", while_prefix: "", while_suffix: "",
                      condition_lparen_suffix: "", condition_rparen_suffix: "")
         super(leading_trivia: leading_trivia)
@@ -143,11 +137,9 @@ module CppAst
 
     # ForStatement: `for (init; cond; inc) { ... }`
     class ForStatement < Statement
-      attr_accessor :init, :condition, :increment, :body
-      attr_accessor :for_suffix, :lparen_suffix
-      attr_accessor :init_trailing, :condition_trailing, :rparen_suffix
+      attr_accessor :init, :condition, :increment, :body, :for_suffix, :lparen_suffix, :init_trailing, :condition_trailing, :rparen_suffix
 
-      def initialize(leading_trivia: "", init:, condition:, increment:, body:,
+      def initialize(init:, condition:, increment:, body:, leading_trivia: "",
                      for_suffix: "", lparen_suffix: "",
                      init_trailing: "", condition_trailing: "", rparen_suffix: "")
         super(leading_trivia: leading_trivia)
@@ -190,11 +182,9 @@ module CppAst
 
     # SwitchStatement: `switch (expr) { case 1: ...; default: ...; }`
     class SwitchStatement < Statement
-      attr_accessor :expression, :cases
-      attr_accessor :switch_suffix, :lparen_suffix, :rparen_suffix
-      attr_accessor :lbrace_prefix, :lbrace_suffix, :rbrace_prefix
+      attr_accessor :expression, :cases, :switch_suffix, :lparen_suffix, :rparen_suffix, :lbrace_prefix, :lbrace_suffix, :rbrace_prefix
 
-      def initialize(leading_trivia: "", expression:, cases:,
+      def initialize(expression:, cases:, leading_trivia: "",
                      switch_suffix: "", lparen_suffix: "", rparen_suffix: "",
                      lbrace_prefix: "", lbrace_suffix: "", rbrace_prefix: "")
         super(leading_trivia: leading_trivia)
@@ -219,10 +209,9 @@ module CppAst
 
     # CaseClause: `case value: statements`
     class CaseClause < Node
-      attr_accessor :value, :statements, :statement_trailings
-      attr_accessor :leading_trivia, :case_suffix, :colon_suffix
+      attr_accessor :value, :statements, :statement_trailings, :leading_trivia, :case_suffix, :colon_suffix
 
-      def initialize(leading_trivia: "", value:, statements:, statement_trailings:,
+      def initialize(value:, statements:, statement_trailings:, leading_trivia: "",
                      case_suffix: "", colon_suffix: "")
         @leading_trivia = leading_trivia
         @value = value
@@ -248,10 +237,9 @@ module CppAst
 
     # DefaultClause: `default: statements`
     class DefaultClause < Node
-      attr_accessor :statements, :statement_trailings
-      attr_accessor :leading_trivia, :colon_suffix
+      attr_accessor :statements, :statement_trailings, :leading_trivia, :colon_suffix
 
-      def initialize(leading_trivia: "", statements:, statement_trailings:, colon_suffix: "")
+      def initialize(statements:, statement_trailings:, leading_trivia: "", colon_suffix: "")
         @leading_trivia = leading_trivia
         @statements = statements
         @statement_trailings = statement_trailings
@@ -296,10 +284,9 @@ module CppAst
 
     # NamespaceDeclaration: `namespace name { ... }`
     class NamespaceDeclaration < Statement
-      attr_accessor :name, :body
-      attr_accessor :namespace_suffix, :name_suffix
+      attr_accessor :name, :body, :namespace_suffix, :name_suffix
 
-      def initialize(leading_trivia: "", name:, body:,
+      def initialize(name:, body:, leading_trivia: "",
                      namespace_suffix: "", name_suffix: "", lbrace_suffix: "", rbrace_suffix: "")
         super(leading_trivia: leading_trivia)
         @name = name
@@ -334,12 +321,9 @@ module CppAst
 
     # FunctionDeclaration: `type name(params);` or `type name(params) override { ... }`
     class FunctionDeclaration < Statement
-      attr_accessor :return_type, :name, :parameters, :body, :initializer_list
-      attr_accessor :return_type_suffix, :lparen_suffix, :rparen_suffix
-      attr_accessor :param_separators, :modifiers_text, :prefix_modifiers, :modifier_set
-      attr_accessor :default_suffix
+      attr_accessor :return_type, :name, :parameters, :body, :initializer_list, :return_type_suffix, :lparen_suffix, :rparen_suffix, :param_separators, :modifiers_text, :prefix_modifiers, :modifier_set, :default_suffix
 
-      def initialize(leading_trivia: "", return_type:, name:, parameters:, body: nil,
+      def initialize(return_type:, name:, parameters:, leading_trivia: "", body: nil,
                      return_type_suffix: "", lparen_suffix: "", rparen_suffix: "",
                      param_separators: [], modifiers_text: "", prefix_modifiers: "",
                      initializer_list: nil, default_suffix: "")
@@ -404,11 +388,9 @@ module CppAst
 
     # ClassDeclaration: `class Name { ... };` or `class Name : public Base { ... };`
     class ClassDeclaration < Statement
-      attr_accessor :name, :members, :member_trailings
-      attr_accessor :class_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix
-      attr_accessor :base_classes_text
+      attr_accessor :name, :members, :member_trailings, :class_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix, :base_classes_text
 
-      def initialize(leading_trivia: "", name:, members:, member_trailings:,
+      def initialize(name:, members:, member_trailings:, leading_trivia: "",
                      class_suffix: "", name_suffix: "", lbrace_suffix: "", rbrace_suffix: "",
                      base_classes_text: "", final: false, abstract: false)
         super(leading_trivia: leading_trivia)
@@ -444,11 +426,9 @@ module CppAst
 
     # StructDeclaration: `struct Name { ... };` or `struct Name : public Base { ... };`
     class StructDeclaration < Statement
-      attr_accessor :name, :members, :member_trailings
-      attr_accessor :struct_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix
-      attr_accessor :base_classes_text
+      attr_accessor :name, :members, :member_trailings, :struct_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix, :base_classes_text
 
-      def initialize(leading_trivia: "", name:, members:, member_trailings:,
+      def initialize(name:, members:, member_trailings:, leading_trivia: "",
                      struct_suffix: "", name_suffix: "", lbrace_suffix: "", rbrace_suffix: "",
                      base_classes_text: "")
         super(leading_trivia: leading_trivia)
@@ -498,10 +478,9 @@ module CppAst
 
     # VariableDeclaration: `int x = 42;` or `const int* ptr = nullptr;`
     class VariableDeclaration < Statement
-      attr_accessor :type, :declarators, :declarator_separators
-      attr_accessor :type_suffix, :prefix_modifiers
+      attr_accessor :type, :declarators, :declarator_separators, :type_suffix, :prefix_modifiers
 
-      def initialize(leading_trivia: "", type:, declarators:, declarator_separators: [], type_suffix: "", prefix_modifiers: "")
+      def initialize(type:, declarators:, leading_trivia: "", declarator_separators: [], type_suffix: "", prefix_modifiers: "")
         super(leading_trivia: leading_trivia)
         @type = type
         @declarators = declarators
@@ -526,12 +505,9 @@ module CppAst
 
     # EnumDeclaration: `enum Color { Red, Green };` or `enum class Color { Red, Green };`
     class EnumDeclaration < Statement
-      attr_accessor :name, :enumerators
-      attr_accessor :enum_suffix, :class_keyword, :class_suffix, :name_suffix
-      attr_accessor :lbrace_suffix, :rbrace_suffix, :underlying_type
-      attr_accessor :colon_prefix, :colon_suffix
+      attr_accessor :name, :enumerators, :enum_suffix, :class_keyword, :class_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix, :underlying_type, :colon_prefix, :colon_suffix
 
-      def initialize(leading_trivia: "", name:, enumerators:,
+      def initialize(name:, enumerators:, leading_trivia: "",
                      enum_suffix: "", class_keyword: "", class_suffix: "", name_suffix: "",
                      lbrace_suffix: "", rbrace_suffix: "", underlying_type: nil,
                      colon_prefix: " ", colon_suffix: "", class_enum: false, scoped: false)
@@ -583,10 +559,9 @@ module CppAst
 
     # TemplateDeclaration: `template<typename T> class Foo { ... };`
     class TemplateDeclaration < Statement
-      attr_accessor :template_params, :declaration
-      attr_accessor :template_suffix, :less_suffix, :params_suffix
+      attr_accessor :template_params, :declaration, :template_suffix, :less_suffix, :params_suffix
 
-      def initialize(leading_trivia: "", template_params:, declaration:,
+      def initialize(template_params:, declaration:, leading_trivia: "",
                      template_suffix: "", less_suffix: "", params_suffix: "")
         super(leading_trivia: leading_trivia)
         @template_params = template_params
@@ -615,7 +590,7 @@ module CppAst
     class ErrorStatement < Statement
       attr_accessor :error_text
 
-      def initialize(leading_trivia: "", error_text:)
+      def initialize(error_text:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @error_text = error_text
       end
@@ -627,11 +602,10 @@ module CppAst
 
     # UsingDeclaration: `using namespace std;` or `using MyType = int;`
     class UsingDeclaration < Statement
-      attr_accessor :kind, :name, :alias_target
-      attr_accessor :using_suffix, :namespace_suffix, :equals_prefix, :equals_suffix
+      attr_accessor :kind, :name, :alias_target, :using_suffix, :namespace_suffix, :equals_prefix, :equals_suffix
 
       # kind: :namespace, :name, :alias
-      def initialize(leading_trivia: "", kind:, name:, alias_target: nil,
+      def initialize(kind:, name:, leading_trivia: "", alias_target: nil,
                      using_suffix: "", namespace_suffix: "", equals_prefix: "", equals_suffix: "")
         super(leading_trivia: leading_trivia)
         @kind = kind
@@ -663,7 +637,7 @@ module CppAst
     class UsingNamespaceDirective < Statement
       attr_accessor :namespace
 
-      def initialize(leading_trivia: "", namespace:)
+      def initialize(namespace:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @namespace = namespace
       end
@@ -677,7 +651,7 @@ module CppAst
     class FriendDeclaration < Statement
       attr_accessor :type, :name, :friend_suffix
 
-      def initialize(leading_trivia: "", type:, name: nil, friend_suffix: " ")
+      def initialize(type:, leading_trivia: "", name: nil, friend_suffix: " ")
         super(leading_trivia: leading_trivia)
         @type = type
         @name = name
@@ -715,7 +689,7 @@ module CppAst
     class FieldDeclaration < Statement
       attr_accessor :type, :name, :default_value
 
-      def initialize(leading_trivia: "", type:, name:, default_value: nil)
+      def initialize(type:, name:, leading_trivia: "", default_value: nil)
         super(leading_trivia: leading_trivia)
         @type = type
         @name = name
@@ -734,7 +708,7 @@ module CppAst
     class IncludeDirective < Statement
       attr_accessor :path, :system
 
-      def initialize(leading_trivia: "", path:, system: true)
+      def initialize(path:, leading_trivia: "", system: true)
         super(leading_trivia: leading_trivia)
         @path = path
         @system = system
@@ -753,7 +727,7 @@ module CppAst
     class PragmaDirective < Statement
       attr_accessor :directive
 
-      def initialize(leading_trivia: "", directive:)
+      def initialize(directive:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @directive = directive
       end
@@ -767,7 +741,7 @@ module CppAst
     class ConstDeclaration < Statement
       attr_accessor :type, :name, :value
 
-      def initialize(leading_trivia: "", type:, name:, value:)
+      def initialize(type:, name:, value:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @type = type
         @name = name
@@ -783,7 +757,7 @@ module CppAst
     class InlineComment < Statement
       attr_accessor :text
 
-      def initialize(leading_trivia: "", text:)
+      def initialize(text:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @text = text
       end
@@ -796,7 +770,7 @@ module CppAst
     class BlockComment < Statement
       attr_accessor :text
 
-      def initialize(leading_trivia: "", text:)
+      def initialize(text:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @text = text
       end
@@ -809,7 +783,7 @@ module CppAst
     class DoxygenComment < Statement
       attr_accessor :text, :style
 
-      def initialize(leading_trivia: "", text:, style: :inline)
+      def initialize(text:, leading_trivia: "", style: :inline)
         super(leading_trivia: leading_trivia)
         @text = text
         @style = style
@@ -831,7 +805,7 @@ module CppAst
     class DefineDirective < Statement
       attr_accessor :name, :value
 
-      def initialize(leading_trivia: "", name:, value: "")
+      def initialize(name:, leading_trivia: "", value: "")
         super(leading_trivia: leading_trivia)
         @name = name
         @value = value
@@ -849,7 +823,7 @@ module CppAst
     class IfdefDirective < Statement
       attr_accessor :name, :body
 
-      def initialize(leading_trivia: "", name:, body: [])
+      def initialize(name:, leading_trivia: "", body: [])
         super(leading_trivia: leading_trivia)
         @name = name
         @body = body
@@ -868,7 +842,7 @@ module CppAst
     class IfndefDirective < Statement
       attr_accessor :name, :body
 
-      def initialize(leading_trivia: "", name:, body: [])
+      def initialize(name:, leading_trivia: "", body: [])
         super(leading_trivia: leading_trivia)
         @name = name
         @body = body
@@ -888,7 +862,7 @@ module CppAst
     class ConceptDeclaration < Statement
       attr_accessor :name, :template_params, :requirements
 
-      def initialize(leading_trivia: "", name:, template_params:, requirements:)
+      def initialize(name:, template_params:, requirements:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @name = name
         @template_params = template_params
@@ -906,7 +880,7 @@ module CppAst
     class ModuleDeclaration < Statement
       attr_accessor :name, :body
 
-      def initialize(leading_trivia: "", name:, body: [])
+      def initialize(name:, leading_trivia: "", body: [])
         super(leading_trivia: leading_trivia)
         @name = name
         @body = body
@@ -924,7 +898,7 @@ module CppAst
     class ImportDeclaration < Statement
       attr_accessor :module_name
 
-      def initialize(leading_trivia: "", module_name:)
+      def initialize(module_name:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @module_name = module_name
       end
@@ -956,7 +930,7 @@ module CppAst
     class CoAwaitExpression < Statement
       attr_accessor :expression
 
-      def initialize(leading_trivia: "", expression:)
+      def initialize(expression:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @expression = expression
       end
@@ -969,7 +943,7 @@ module CppAst
     class CoYieldExpression < Statement
       attr_accessor :expression
 
-      def initialize(leading_trivia: "", expression:)
+      def initialize(expression:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @expression = expression
       end
@@ -1000,7 +974,7 @@ module CppAst
     class CatchClause < Statement
       attr_accessor :type, :variable, :body
 
-      def initialize(leading_trivia: "", type:, variable:, body:)
+      def initialize(type:, variable:, body:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @type = type
         @variable = variable
@@ -1034,7 +1008,7 @@ module CppAst
     class ThrowStatement < Statement
       attr_accessor :expression
 
-      def initialize(leading_trivia: "", expression:)
+      def initialize(expression:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @expression = expression
       end
@@ -1048,7 +1022,7 @@ module CppAst
     class TryStatement < Statement
       attr_accessor :try_block, :catch_clauses
 
-      def initialize(leading_trivia: "", try_block:, catch_clauses: [])
+      def initialize(try_block:, leading_trivia: "", catch_clauses: [])
         super(leading_trivia: leading_trivia)
         @try_block = try_block
         @catch_clauses = catch_clauses
@@ -1072,7 +1046,7 @@ module CppAst
     class RangeForStatement < Statement
       attr_accessor :variable, :container, :body
 
-      def initialize(leading_trivia: "", variable:, container:, body:)
+      def initialize(variable:, container:, body:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @variable = variable
         @container = container
@@ -1093,7 +1067,7 @@ module CppAst
     class RawStatement < Statement
       attr_accessor :code
 
-      def initialize(leading_trivia: "", code:)
+      def initialize(code:, leading_trivia: "")
         super(leading_trivia: leading_trivia)
         @code = code
       end

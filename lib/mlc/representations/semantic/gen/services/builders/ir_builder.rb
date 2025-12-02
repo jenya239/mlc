@@ -217,7 +217,7 @@ module MLC
             end
 
             # Build a range expression node
-            def range_expr(start_expr:, end_expr:, inclusive: true, type:, origin: nil)
+            def range_expr(start_expr:, end_expr:, type:, inclusive: true, origin: nil)
               MLC::SemanticIR::RangeExpr.new(
                 start_expr: start_expr,
                 end_expr: end_expr,
