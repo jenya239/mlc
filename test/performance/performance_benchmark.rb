@@ -133,7 +133,7 @@ class PerformanceBenchmark < Minitest::Test
 
   private
 
-  def generate_large_MLC_file(size)
+  def generate_large_mlc_file(size)
     source = <<~MLCORA
       module PerformanceTest
 

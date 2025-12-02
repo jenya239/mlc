@@ -146,7 +146,7 @@ module CppAst
         @string_builder.to_s
       end
 
-      def generate_MLC_program_optimized(program)
+      def generate_mlc_program_optimized(program)
         @string_builder.clear
         @string_builder.append("#include <iostream>\n")
         @string_builder.append("#include <memory>\n")
@@ -174,7 +174,7 @@ module CppAst
         @string_builder.to_s
       end
 
-      def generate_MLC_declaration_optimized(decl)
+      def generate_mlc_declaration_optimized(decl)
         case decl
         when MLC::Source::AST::FuncDecl
           generate_MLC_function_optimized(decl)
@@ -185,7 +185,7 @@ module CppAst
         end
       end
 
-      def generate_MLC_function_optimized(func)
+      def generate_mlc_function_optimized(func)
         result = ""
         result += "int #{func.name}("
         result += func.params.map { |p| "int #{p.name}" }.join(", ")
@@ -199,7 +199,7 @@ module CppAst
         result
       end
 
-      def generate_MLC_expression(expr)
+      def generate_mlc_expression(expr)
         case expr
         when MLC::Source::AST::IntLit
           expr.value.to_s
@@ -238,7 +238,7 @@ module CppAst
         end
       end
 
-      def generate_MLC_type_optimized(type)
+      def generate_mlc_type_optimized(type)
         "// Type declaration: #{type.name}"
       end
 

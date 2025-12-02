@@ -23,9 +23,9 @@ module CppAst
       end
 
       # Global types instance for consistency
-      @@global_types = nil
+      @global_types = nil
       def self.global_types
-        @@global_types ||= TypesDSL::Types.new
+        @global_types ||= TypesDSL::Types.new
       end
 
       # Context helper for blocks
@@ -467,32 +467,32 @@ module CppAst
       end
 
       # Custom type helpers
-      def Point
+      def point
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Point)
       end
 
-      def Vector
+      def vector
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Vector)
       end
 
-      def Matrix
+      def matrix
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Matrix)
       end
 
-      def Circle
+      def circle
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Circle)
       end
 
-      def Rectangle
+      def rectangle
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Rectangle)
       end
 
-      def Triangle
+      def triangle
         require_relative "types_dsl"
         TypesDSL::TypeBuilder.new(:Triangle)
       end

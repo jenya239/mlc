@@ -632,7 +632,7 @@ module CppAst
       end
 
       # Helper for match arms
-      def arm(case_name, bindings = [], body)
+      def arm(case_name, body, bindings = [])
         Nodes::MatchArm.new(
           case_name: case_name,
           bindings: bindings,

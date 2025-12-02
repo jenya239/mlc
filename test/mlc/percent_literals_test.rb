@@ -91,7 +91,7 @@ class MLCPercentLiteralsTest < Minitest::Test
 
   # ========== Lexer Tests for %W[] and %I[] ==========
 
-  def test_lexer_percent_W_interpolated
+  def test_lexer_percent_w_interpolated
     source = "%W[foo bar baz]"
     lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize
@@ -101,7 +101,7 @@ class MLCPercentLiteralsTest < Minitest::Test
     assert_equal %w[foo bar baz], interp_tokens.first.value
   end
 
-  def test_lexer_percent_I_interpolated
+  def test_lexer_percent_i_interpolated
     source = "%I[foo bar baz]"
     lexer = MLC::Source::Parser::Lexer.new(source)
     tokens = lexer.tokenize

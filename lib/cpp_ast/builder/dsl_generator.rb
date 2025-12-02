@@ -876,7 +876,7 @@ module CppAst
         result
       end
 
-      def generate_MLC_program(program)
+      def generate_mlc_program(program)
         result = []
 
         # Add includes
@@ -901,7 +901,7 @@ module CppAst
         result.join("\n")
       end
 
-      def generate_MLC_declaration(decl)
+      def generate_mlc_declaration(decl)
         case decl
         when MLC::Source::AST::FuncDecl
           generate_MLC_function(decl)
@@ -912,7 +912,7 @@ module CppAst
         end
       end
 
-      def generate_MLC_function(func)
+      def generate_mlc_function(func)
         result = []
 
         # Function signature
@@ -928,7 +928,7 @@ module CppAst
         result.join("\n")
       end
 
-      def generate_MLC_type(type)
+      def generate_mlc_type(type)
         case type
         when MLC::Source::AST::PrimType
           case type.name
@@ -971,7 +971,7 @@ module CppAst
            .gsub("\r", "\\r")
       end
 
-      def generate_MLC_expression(expr)
+      def generate_mlc_expression(expr)
         case expr
         when MLC::Source::AST::IntLit
           expr.value.to_s

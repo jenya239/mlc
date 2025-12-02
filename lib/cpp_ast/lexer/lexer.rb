@@ -205,7 +205,12 @@ module CppAst
     def scan_operator_token(char, start_line, start_column)
       case char
       when "="
-        peek == "=" ? (advance; Token.new(kind: :equals_equals, lexeme: "==", line: start_line, column: start_column)) : Token.new(kind: :equals, lexeme: "=", line: start_line, column: start_column)
+        peek == "=" ? (advance; Token.new(kind: :equals_equals, lexeme: "==", line: start_line, column: start_column)) : Token.new(
+          kind: :equals,
+          lexeme: "=",
+          line: start_line,
+          column: start_column
+        )
       when "+"
         if peek == "+"
           advance; Token.new(kind: :plus_plus, lexeme: "++", line: start_line, column: start_column)
@@ -225,19 +230,49 @@ module CppAst
           Token.new(kind: :minus, lexeme: "-", line: start_line, column: start_column)
         end
       when "*"
-        peek == "=" ? (advance; Token.new(kind: :asterisk_equals, lexeme: "*=", line: start_line, column: start_column)) : Token.new(kind: :asterisk, lexeme: "*", line: start_line, column: start_column)
+        peek == "=" ? (advance; Token.new(kind: :asterisk_equals, lexeme: "*=", line: start_line, column: start_column)) : Token.new(
+          kind: :asterisk,
+          lexeme: "*",
+          line: start_line,
+          column: start_column
+        )
       when "/"
-        peek == "=" ? (advance; Token.new(kind: :slash_equals, lexeme: "/=", line: start_line, column: start_column)) : Token.new(kind: :slash, lexeme: "/", line: start_line, column: start_column)
+        peek == "=" ? (advance; Token.new(kind: :slash_equals, lexeme: "/=", line: start_line, column: start_column)) : Token.new(
+          kind: :slash,
+          lexeme: "/",
+          line: start_line,
+          column: start_column
+        )
       when "!"
-        peek == "=" ? (advance; Token.new(kind: :exclamation_equals, lexeme: "!=", line: start_line, column: start_column)) : Token.new(kind: :exclamation, lexeme: "!", line: start_line, column: start_column)
+        peek == "=" ? (advance; Token.new(kind: :exclamation_equals, lexeme: "!=", line: start_line, column: start_column)) : Token.new(
+          kind: :exclamation,
+          lexeme: "!",
+          line: start_line,
+          column: start_column
+        )
       when "%"
-        peek == "=" ? (advance; Token.new(kind: :percent_equals, lexeme: "%=", line: start_line, column: start_column)) : Token.new(kind: :percent, lexeme: "%", line: start_line, column: start_column)
+        peek == "=" ? (advance; Token.new(kind: :percent_equals, lexeme: "%=", line: start_line, column: start_column)) : Token.new(
+          kind: :percent,
+          lexeme: "%",
+          line: start_line,
+          column: start_column
+        )
       when "~"
         Token.new(kind: :tilde, lexeme: "~", line: start_line, column: start_column)
       when "&"
-        peek == "&" ? (advance; Token.new(kind: :ampersand_ampersand, lexeme: "&&", line: start_line, column: start_column)) : Token.new(kind: :ampersand, lexeme: "&", line: start_line, column: start_column)
+        peek == "&" ? (advance; Token.new(kind: :ampersand_ampersand, lexeme: "&&", line: start_line, column: start_column)) : Token.new(
+          kind: :ampersand,
+          lexeme: "&",
+          line: start_line,
+          column: start_column
+        )
       when "|"
-        peek == "|" ? (advance; Token.new(kind: :pipe_pipe, lexeme: "||", line: start_line, column: start_column)) : Token.new(kind: :pipe, lexeme: "|", line: start_line, column: start_column)
+        peek == "|" ? (advance; Token.new(kind: :pipe_pipe, lexeme: "||", line: start_line, column: start_column)) : Token.new(
+          kind: :pipe,
+          lexeme: "|",
+          line: start_line,
+          column: start_column
+        )
       when "^"
         Token.new(kind: :caret, lexeme: "^", line: start_line, column: start_column)
       when "<"
@@ -257,7 +292,12 @@ module CppAst
           Token.new(kind: :greater, lexeme: ">", line: start_line, column: start_column)
         end
       when "."
-        peek&.match?(/[0-9]/) ? scan_number(char, start_line, start_column) : Token.new(kind: :dot, lexeme: ".", line: start_line, column: start_column)
+        peek&.match?(/[0-9]/) ? scan_number(char, start_line, start_column) : Token.new(
+          kind: :dot,
+          lexeme: ".",
+          line: start_line,
+          column: start_column
+        )
       end
     end
 
@@ -266,7 +306,12 @@ module CppAst
       when ";" then Token.new(kind: :semicolon, lexeme: ";", line: start_line, column: start_column)
       when "," then Token.new(kind: :comma, lexeme: ",", line: start_line, column: start_column)
       when ":"
-        peek == ":" ? (advance; Token.new(kind: :colon_colon, lexeme: "::", line: start_line, column: start_column)) : Token.new(kind: :colon, lexeme: ":", line: start_line, column: start_column)
+        peek == ":" ? (advance; Token.new(kind: :colon_colon, lexeme: "::", line: start_line, column: start_column)) : Token.new(
+          kind: :colon,
+          lexeme: ":",
+          line: start_line,
+          column: start_column
+        )
       when "?" then Token.new(kind: :question, lexeme: "?", line: start_line, column: start_column)
       when "(" then Token.new(kind: :lparen, lexeme: "(", line: start_line, column: start_column)
       when ")" then Token.new(kind: :rparen, lexeme: ")", line: start_line, column: start_column)
