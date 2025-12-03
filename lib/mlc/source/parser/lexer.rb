@@ -836,7 +836,7 @@ module MLC
                                 when 's' then " " # Escaped space
                                 when '\\' then "\\"
                                 when close_delim then close_delim
-                else
+                                else
                                   escaped
                                 end
                 @pos += 1

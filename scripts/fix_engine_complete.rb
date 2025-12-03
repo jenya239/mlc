@@ -8,11 +8,11 @@ content = File.read(file)
 
 # Step 1: Replace namespace declaration (lines 38-39)
 content.gsub!(/^module MLC\n  module SemanticGen\n    # Engine/, <<~MODULES.chomp
-module MLC
-  module Representations
-    module Semantic
-      module Gen
-        # Engine
+  module MLC
+    module Representations
+      module Semantic
+        module Gen
+          # Engine
 MODULES
 )
 

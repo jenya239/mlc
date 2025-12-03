@@ -67,7 +67,7 @@ module MLC
           type: :extern,
           namespace: "mlc",
           path: "text/string.mlc"
-        },
+        }
       }.freeze
 
       # Legacy module name aliases for backward compatibility

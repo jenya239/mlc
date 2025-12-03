@@ -30,7 +30,6 @@ module MLC
             raise MultipleErrors.new(@errors) if @errors.any?
 
             raise e
-
           end
         end
 

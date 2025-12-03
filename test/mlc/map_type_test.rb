@@ -124,7 +124,6 @@ class MapTypeTest < Minitest::Test
   # ============================================================================
 
   def test_contains_type_variables_map_no_variables
-    {}
     key_type = MLC::SemanticIR::Type.new(kind: :primitive, name: "str")
     value_type = MLC::SemanticIR::Type.new(kind: :primitive, name: "i32")
 

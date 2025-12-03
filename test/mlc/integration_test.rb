@@ -86,7 +86,6 @@ class MLCIntegrationTest < Minitest::Test
       # Run
       run_result = system(binary_file)
       assert run_result, "Program execution failed for:\n#{cpp_code}"
-
     ensure
       # Cleanup
       File.delete(temp_file) if File.exist?(temp_file)

@@ -5,13 +5,13 @@ require_relative "../test_helper"
 class HeredocTest < Minitest::Test
   def test_heredoc_basic
     source = <<~'MLC'
-      fn main() -> i32 = do
-        let text = <<END
-Hello
-World
-END
-        0
-      end
+            fn main() -> i32 = do
+              let text = <<END
+      Hello
+      World
+      END
+              0
+            end
     MLC
 
     lexer = MLC::Source::Parser::Lexer.new(source)
@@ -68,14 +68,14 @@ END
 
   def test_heredoc_without_tilde_preserves_all_indentation
     source = <<~'MLC'
-      fn main() -> i32 = do
-        let text = <<END
-    Indented
-  Less indent
-      More indent
-        END
-        0
-      end
+          fn main() -> i32 = do
+            let text = <<END
+        Indented
+      Less indent
+          More indent
+            END
+            0
+          end
     MLC
 
     lexer = MLC::Source::Parser::Lexer.new(source)
