@@ -22,22 +22,22 @@ module MLC
               loops.with_loop_variable(node.var_name, element_type) do
                 loops.with_loop_scope do
                   body_statements = loops.normalize_loop_body(node.body, stmt_visitor)
-              body_block = svc.ir_builder.block(statements: body_statements, origin: node.body)
-              for_stmt_ir = svc.ir_builder.for_stmt(
-                var_name: node.var_name,
-                var_type: element_type,
-                iterable: iterable_ir,
-                body: body_block,
-                origin: node
-              )
+                  body_block = svc.ir_builder.block(statements: body_statements, origin: node.body)
+                  for_stmt_ir = svc.ir_builder.for_stmt(
+                    var_name: node.var_name,
+                    var_type: element_type,
+                    iterable: iterable_ir,
+                    body: body_block,
+                    origin: node
+                  )
 
-              unit = svc.ir_builder.unit_literal(origin: node)
-              return svc.ir_builder.block_expr(
-                statements: [for_stmt_ir],
-                result: unit,
-                type: unit.type,
-                origin: node
-              )
+                  unit = svc.ir_builder.unit_literal(origin: node)
+                  return svc.ir_builder.block_expr(
+                    statements: [for_stmt_ir],
+                    result: unit,
+                    type: unit.type,
+                    origin: node
+                  )
                 end
               end
             end

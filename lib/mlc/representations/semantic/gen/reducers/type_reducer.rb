@@ -17,7 +17,7 @@ module MLC
               result = nil
               @services.scope_context.with_current_node(type_decl) do
                 result = @services.type_declaration_service.build(type_decl)
-            result = apply_rules(result)
+                result = apply_rules(result)
               end
               result
             end

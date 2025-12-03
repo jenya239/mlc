@@ -30,13 +30,13 @@ module MLC
 
               @type_builder.with_type_params(type_params) do
                 param_types = func_decl.params.map { |param| build_type_annotation(param.type) }
-            ret_type = build_type_annotation(func_decl.ret_type)
-            signature = @function_registration_service.register_function_signature(
-              func_decl,
-              param_types,
-              ret_type,
-              type_params
-            )
+                ret_type = build_type_annotation(func_decl.ret_type)
+                signature = @function_registration_service.register_function_signature(
+                  func_decl,
+                  param_types,
+                  ret_type,
+                  type_params
+                )
               end
 
               signature
@@ -45,18 +45,18 @@ module MLC
             def reduce(func_decl, signature: nil)
               @scope_context.with_current_node(func_decl) do
                 type_params = @type_checker.normalize_type_params(func_decl.type_params)
-            @scope_context.with_type_params(type_params) do
-              signature ||= register_signature(func_decl)
-          params = build_params(func_decl, signature.param_types)
-          result_func = if func_decl.external
-                          build_external_func(func_decl, params, signature, type_params)
-                        else
-                          build_function(func_decl, params, signature, type_params)
-                        end
-          result_func = apply_function_rules(result_func)
-          update_registry_metadata(func_decl, result_func)
-          result_func
-            end
+                @scope_context.with_type_params(type_params) do
+                  signature ||= register_signature(func_decl)
+                  params = build_params(func_decl, signature.param_types)
+                  result_func = if func_decl.external
+                                  build_external_func(func_decl, params, signature, type_params)
+                                else
+                                  build_function(func_decl, params, signature, type_params)
+                                end
+                  result_func = apply_function_rules(result_func)
+                  update_registry_metadata(func_decl, result_func)
+                  result_func
+                end
               end
             end
 
@@ -72,7 +72,7 @@ module MLC
 
               func_decl.params.each_with_index.map do |param, index|
                 type = param_types[index]
-            MLC::SemanticIR::Param.new(name: param.name, type: type, origin: param.origin)
+                MLC::SemanticIR::Param.new(name: param.name, type: type, origin: param.origin)
               end
             end
 

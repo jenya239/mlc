@@ -47,11 +47,11 @@ module MLC
             def build_pass_manager
               MLC::Common::Analysis::PassManager.new.tap do |manager|
                 manager.register(:collect_imports, method(:pass_collect_imports))
-            manager.register(:preregister_types, method(:pass_preregister_types))
-            manager.register(:preregister_traits, method(:pass_preregister_traits))
-            manager.register(:preregister_functions, method(:pass_preregister_functions))
-            manager.register(:register_import_aliases, method(:pass_register_import_aliases))
-            manager.register(:lower_declarations, method(:pass_lower_declarations))
+                manager.register(:preregister_types, method(:pass_preregister_types))
+                manager.register(:preregister_traits, method(:pass_preregister_traits))
+                manager.register(:preregister_functions, method(:pass_preregister_functions))
+                manager.register(:register_import_aliases, method(:pass_register_import_aliases))
+                manager.register(:lower_declarations, method(:pass_lower_declarations))
               end
             end
 
@@ -74,8 +74,8 @@ module MLC
               program.declarations.each do |decl|
                 next unless decl.is_a?(MLC::Source::AST::TypeDecl)
 
-            type_ir = @type_reducer.reduce(decl)
-            context[:type_items] << type_ir
+                type_ir = @type_reducer.reduce(decl)
+                context[:type_items] << type_ir
               end
             end
 
@@ -228,7 +228,7 @@ module MLC
               program.declarations.each do |decl|
                 next unless decl.is_a?(MLC::Source::AST::FuncDecl)
 
-            @function_reducer.register_signature(decl)
+                @function_reducer.register_signature(decl)
               end
             end
 
