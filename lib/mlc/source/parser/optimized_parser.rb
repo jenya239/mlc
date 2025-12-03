@@ -104,10 +104,10 @@ module MLC
         end
 
         # Optimized lookahead
-        def lookahead(n = 1)
-          return nil if @pos + n >= @tokens.length
+        def lookahead(count = 1)
+          return nil if @pos + count >= @tokens.length
 
-          @tokens[@pos + n]
+          @tokens[@pos + count]
         end
 
         # Clear cache when position changes significantly

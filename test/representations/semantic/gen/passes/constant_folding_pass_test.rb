@@ -35,7 +35,7 @@ module MLC
               )
             end
 
-            def binary(op, left, right, type_name = nil)
+            def binary(op, left, right, type_name = nil) # rubocop:disable Naming/MethodParameterName
               type_name ||= case op
                             when '+', '-', '*', '/', '%' then 'i32'
                             when '==', '!=', '<', '>', '<=', '>=' then 'bool'
@@ -50,7 +50,7 @@ module MLC
               )
             end
 
-            def unary(op, operand, type_name = nil)
+            def unary(op, operand, type_name = nil) # rubocop:disable Naming/MethodParameterName
               type_name ||= case op
                             when '!' then 'bool'
                             else 'i32'

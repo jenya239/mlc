@@ -97,7 +97,7 @@ module MLC
             end
 
             # Build a binary operation node
-            def binary_op(op:, left:, right:, type:, origin: nil)
+            def binary_op(op:, left:, right:, type:, origin: nil) # rubocop:disable Naming/MethodParameterName
               MLC::SemanticIR::BinaryExpr.new(
                 origin: origin,
                 op: op,
@@ -109,7 +109,7 @@ module MLC
 
             # Build an overloaded operator call node
             # For custom types with trait implementations: vec1 + vec2 -> Vec2_add(vec1, vec2)
-            def operator_call(op:, left:, right:, method_name:, trait_name:, type:, origin: nil)
+            def operator_call(op:, left:, right:, method_name:, trait_name:, type:, origin: nil) # rubocop:disable Naming/MethodParameterName
               MLC::SemanticIR::OperatorCallExpr.new(
                 origin: origin,
                 op: op,
@@ -122,7 +122,7 @@ module MLC
             end
 
             # Build a unary operation node
-            def unary_op(op:, operand:, type:, origin: nil)
+            def unary_op(op:, operand:, type:, origin: nil) # rubocop:disable Naming/MethodParameterName
               MLC::SemanticIR::UnaryExpr.new(
                 origin: origin,
                 op: op,

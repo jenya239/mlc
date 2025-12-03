@@ -19,10 +19,10 @@ rescue JSON::ParserError => e
   exit 1
 end
 
-def fmt_ts(ts)
-  return '' unless ts
+def fmt_ts(timestamp)
+  return '' unless timestamp
 
-  Time.parse(ts).utc.iso8601 rescue ts
+  Time.parse(timestamp).utc.iso8601 rescue timestamp
 end
 
 def collect_text_chunks(msg)

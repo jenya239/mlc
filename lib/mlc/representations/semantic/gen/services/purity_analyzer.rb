@@ -18,14 +18,17 @@ module MLC
           # Delegates pure analysis functions to Utils::PurityAnalysis module
           class PurityAnalyzer
             # Проверяет является ли выражение чистым (pure)
-            def is_pure_expression(expr)
+            def pure_expression?(expr)
               Utils::PurityAnalysis.pure_expression?(expr)
             end
 
             # Проверяет является ли вызов функции чистым
-            def is_pure_call?(call_expr)
+            def pure_call?(call_expr)
               Utils::PurityAnalysis.pure_call?(call_expr)
             end
+
+            alias is_pure_expression pure_expression?
+            alias is_pure_call? pure_call?
 
             # Проверяет является ли тип non-literal (не может быть constexpr в C++20)
             def non_literal_type?(type)

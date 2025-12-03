@@ -35,9 +35,9 @@ module CppAst
         def mutable? = @mutable
 
         # Backward-compatible predicate aliases
-        def is_const = const?
-        def is_ref = ref?
-        def is_mutable = mutable?
+        def is_const = const? # rubocop:disable Naming/PredicatePrefix
+        def is_ref = ref? # rubocop:disable Naming/PredicatePrefix
+        def is_mutable = mutable? # rubocop:disable Naming/PredicatePrefix
 
         # Chainable builder methods (return new TypeBuilder)
         # These are the primary interface for building types

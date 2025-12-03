@@ -25,7 +25,7 @@ module MLC
               has_guards = node.arms.any? { |arm| arm[:guard] }
 
               # Check if any arms have nested patterns
-              has_nested = node.arms.any? { |arm| has_nested_pattern?(arm[:pattern]) }
+              has_nested = node.arms.any? { |arm| nested_pattern?(arm[:pattern]) }
 
               # Check if any arms have wildcard patterns
               # Wildcard patterns generate auto&& which incorrectly matches all types in std::visit
@@ -75,7 +75,7 @@ module MLC
             end
 
             # Check if pattern contains nested constructor patterns or or-patterns
-            def has_nested_pattern?(pattern)
+            def nested_pattern?(pattern)
               return true if pattern[:kind] == :or
 
               return false unless pattern[:kind] == :constructor

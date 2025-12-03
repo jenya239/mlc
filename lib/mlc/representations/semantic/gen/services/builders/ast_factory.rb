@@ -43,11 +43,11 @@ module MLC
               MLC::Source::AST::Call.new(callee: callee, args: args, origin: origin)
             end
 
-            def unary(op:, operand:, origin: nil)
+            def unary(op:, operand:, origin: nil) # rubocop:disable Naming/MethodParameterName
               MLC::Source::AST::UnaryOp.new(op: op, operand: operand, origin: origin)
             end
 
-            def binary(op:, left:, right:, origin: nil)
+            def binary(op:, left:, right:, origin: nil) # rubocop:disable Naming/MethodParameterName
               MLC::Source::AST::BinaryOp.new(op: op, left: left, right: right, origin: origin)
             end
 

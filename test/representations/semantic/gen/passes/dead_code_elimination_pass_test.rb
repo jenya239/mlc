@@ -35,7 +35,7 @@ module MLC
               )
             end
 
-            def binary(op, left, right, type_name = 'i32')
+            def binary(op, left, right, type_name = 'i32') # rubocop:disable Naming/MethodParameterName
               MLC::SemanticIR::BinaryExpr.new(
                 op: op,
                 left: left,

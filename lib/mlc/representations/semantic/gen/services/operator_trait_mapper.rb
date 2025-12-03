@@ -63,7 +63,7 @@ module MLC
             # @param op [String] operator
             # @param type [SemanticIR::Type] left operand type
             # @return [Boolean]
-            def overloadable?(op, type)
+            def overloadable?(op, type) # rubocop:disable Naming/MethodParameterName
               return false unless OPERATOR_TRAITS.key?(op)
               return false if primitive_type?(type)
 
@@ -81,7 +81,7 @@ module MLC
             # @param op [String] operator
             # @param type [SemanticIR::Type] left operand type
             # @return [Hash, nil] { trait_name:, method_name:, mangled_name: }
-            def resolve(op, type)
+            def resolve(op, type) # rubocop:disable Naming/MethodParameterName
               return nil unless OPERATOR_TRAITS.key?(op)
 
               type_name = extract_type_name(type)
@@ -110,12 +110,12 @@ module MLC
             end
 
             # Get trait name for operator
-            def trait_for(op)
+            def trait_for(op) # rubocop:disable Naming/MethodParameterName
               OPERATOR_TRAITS.dig(op, 0)
             end
 
             # Get method name for operator
-            def method_for(op)
+            def method_for(op) # rubocop:disable Naming/MethodParameterName
               OPERATOR_TRAITS.dig(op, 1)
             end
 
@@ -139,10 +139,12 @@ module MLC
               end
             end
 
-            def has_method_directly?(type_name, method_name)
+            def method_directly?(type_name, method_name)
               method_info = @trait_registry.resolve_static_method(type_name, method_name)
               !method_info.nil?
             end
+
+            alias has_method_directly? method_directly?
           end
         end
       end

@@ -75,7 +75,7 @@ module MLC
             #
             # @param statements [Array<SemanticIR::Statement>] The statements to check
             # @return [Boolean] Whether any statement has nested blocks
-            def has_nested_blocks?(statements)
+            def nested_blocks?(statements)
               statements.any? do |stmt|
                 stmt.is_a?(SemanticIR::VariableDeclStmt) && stmt.value.is_a?(SemanticIR::BlockExpr)
               end

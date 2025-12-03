@@ -210,7 +210,7 @@ module CppAst
         when MLC::Source::AST::BinaryOp
           left = generate_MLC_expression(expr.left)
           right = generate_MLC_expression(expr.right)
-          if expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
+          if expr.op == "+" && string_expression?(expr.left) && string_expression?(expr.right)
             # String concatenation
             "mlc::String(#{left}) + mlc::String(#{right})"
           else
@@ -223,7 +223,7 @@ module CppAst
 
       private
 
-      def is_string_expression(expr)
+      def string_expression?(expr)
         case expr
         when MLC::Source::AST::StringLit, MLC::Source::AST::StringInterpolation
           true
@@ -232,11 +232,13 @@ module CppAst
           true # Assume string for now
         when MLC::Source::AST::BinaryOp
           # Check if this is a string concatenation
-          expr.op == "+" && is_string_expression(expr.left) && is_string_expression(expr.right)
+          expr.op == "+" && string_expression?(expr.left) && string_expression?(expr.right)
         else
           false
         end
       end
+
+      alias is_string_expression string_expression?
 
       def generate_mlc_type_optimized(type)
         "// Type declaration: #{type.name}"

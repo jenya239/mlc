@@ -137,7 +137,7 @@ class ComplexityAnalysisTest < Minitest::Test
     assert @analysis.all_statements_simple?([stmt])
   end
 
-  # === has_nested_blocks? ===
+  # === nested_blocks? ===
 
   def test_no_nested_blocks
     stmt = MLC::SemanticIR::VariableDeclStmt.new(
@@ -146,7 +146,7 @@ class ComplexityAnalysisTest < Minitest::Test
       type: @int_type,
       mutable: false
     )
-    refute @analysis.has_nested_blocks?([stmt])
+    refute @analysis.nested_blocks?([stmt])
   end
 
   def test_has_nested_block
@@ -161,7 +161,7 @@ class ComplexityAnalysisTest < Minitest::Test
       type: @int_type,
       mutable: false
     )
-    assert @analysis.has_nested_blocks?([stmt])
+    assert @analysis.nested_blocks?([stmt])
   end
 
   # === simple_branch? ===

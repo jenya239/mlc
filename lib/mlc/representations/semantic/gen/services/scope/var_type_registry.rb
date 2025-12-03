@@ -134,11 +134,15 @@ module MLC
             # Check if type has move semantics (Owned<T>)
             # @param type [SemanticIR::Type] the type to check
             # @return [Boolean] true if type requires move semantics
-            def self.has_move_semantics?(type)
+            def self.move_semantics?(type)
               return false unless type.is_a?(MLC::SemanticIR::GenericType)
 
               base_name = type.base_type&.name
               base_name == "Owned"
+            end
+
+            class << self
+              alias has_move_semantics? move_semantics?
             end
 
             # Количество переменных

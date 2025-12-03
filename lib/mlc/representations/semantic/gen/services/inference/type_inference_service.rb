@@ -109,7 +109,7 @@ module MLC
             end
 
             # Infer type of binary operation
-            def infer_binary_type(op, left_type, right_type)
+            def infer_binary_type(op, left_type, right_type) # rubocop:disable Naming/MethodParameterName
               ensure_type!(left_type, "Left operand of '#{op}' has no type")
               ensure_type!(right_type, "Right operand of '#{op}' has no type")
 
@@ -162,7 +162,7 @@ module MLC
             end
 
             # Infer type of unary operation
-            def infer_unary_type(op, operand_type)
+            def infer_unary_type(op, operand_type) # rubocop:disable Naming/MethodParameterName
               ensure_type!(operand_type, "Unary operand for '#{op}' has no type")
 
               case op

@@ -21,8 +21,8 @@ module CppAst
 
       @mode = :compact
 
-      def self.mode=(m)
-        @mode = m
+      def self.mode=(mode_value)
+        @mode = mode_value
       end
 
       def self.get(key)

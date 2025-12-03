@@ -54,7 +54,7 @@ module MLC
 
         # Выбрать стратегию для match expression
         def strategy_for_match(match_analysis)
-          if match_analysis.has_regex?
+          if match_analysis.regex?
             :iife
           elsif match_analysis.arm_count > @match_threshold
             :named_visitor # Пока не реализовано, fallback на iife

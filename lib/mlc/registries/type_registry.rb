@@ -62,7 +62,7 @@ module MLC
         kind == :primitive
       end
 
-      def has_field?(field_name)
+      def field?(field_name)
         @fields&.any? { |f| f[:name] == field_name }
       end
 
@@ -70,9 +70,12 @@ module MLC
         @fields&.find { |f| f[:name] == field_name }
       end
 
-      def has_variant?(variant_name)
+      def variant?(variant_name)
         @variants&.any? { |v| v[:name] == variant_name }
       end
+
+      alias has_field? field?
+      alias has_variant? variant?
 
       def referenced_type_names
         @referenced_type_names
@@ -261,9 +264,11 @@ module MLC
       # Check if a type exists
       # @param name [String] Type name
       # @return [Boolean]
-      def has_type?(name)
+      def type?(name)
         @types.key?(name)
       end
+
+      alias has_type? type?
 
       # Get all types in a namespace
       # @param namespace [String] Namespace name

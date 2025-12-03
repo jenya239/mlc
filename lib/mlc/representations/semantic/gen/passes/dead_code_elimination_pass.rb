@@ -312,30 +312,32 @@ module MLC
               end
             end
 
-            def has_side_effects?(expr)
+            def side_effects?(expr)
               case expr
               when MLC::SemanticIR::LiteralExpr, MLC::SemanticIR::VarExpr
                 false
               when MLC::SemanticIR::BinaryExpr
-                has_side_effects?(expr.left) || has_side_effects?(expr.right)
+                side_effects?(expr.left) || side_effects?(expr.right)
               when MLC::SemanticIR::UnaryExpr
-                has_side_effects?(expr.operand)
+                side_effects?(expr.operand)
               when MLC::SemanticIR::CallExpr
                 # Assume all calls have side effects (conservative)
                 true
               when MLC::SemanticIR::MemberExpr
-                has_side_effects?(expr.object)
+                side_effects?(expr.object)
               when MLC::SemanticIR::RecordExpr
-                expr.fields.values.any? { |field| has_side_effects?(field) }
+                expr.fields.values.any? { |field| side_effects?(field) }
               when MLC::SemanticIR::ArrayLiteralExpr
-                expr.elements.any? { |elem| has_side_effects?(elem) }
+                expr.elements.any? { |elem| side_effects?(elem) }
               when MLC::SemanticIR::BlockExpr
                 expr.statements.any? { |stmt| statement_has_side_effects?(stmt) } ||
-                  (expr.result && has_side_effects?(expr.result))
+                  (expr.result && side_effects?(expr.result))
               else
                 true # Conservative: assume unknown nodes have side effects
               end
             end
+
+            alias has_side_effects? side_effects?
 
             def statement_has_side_effects?(stmt)
               case stmt

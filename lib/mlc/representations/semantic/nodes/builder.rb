@@ -85,20 +85,20 @@ module MLC
         var(name, type, origin: origin)
       end
 
-      def self.binary(op, left, right, type, origin: nil)
+      def self.binary(op, left, right, type, origin: nil) # rubocop:disable Naming/MethodParameterName
         BinaryExpr.new(op: op, left: left, right: right, type: type, origin: origin)
       end
 
       # Alias for binary
-      def self.binary_expr(op, left, right, type, origin: nil)
+      def self.binary_expr(op, left, right, type, origin: nil) # rubocop:disable Naming/MethodParameterName
         binary(op, left, right, type, origin: origin)
       end
 
-      def self.unary(op, operand, type, origin: nil)
+      def self.unary(op, operand, type, origin: nil) # rubocop:disable Naming/MethodParameterName
         UnaryExpr.new(op: op, operand: operand, type: type, origin: origin)
       end
 
-      def self.unary_expr(op, operand, type, origin: nil)
+      def self.unary_expr(op, operand, type, origin: nil) # rubocop:disable Naming/MethodParameterName
         unary(op, operand, type, origin: origin)
       end
 

@@ -228,7 +228,7 @@ class MatchComplexityAnalyzerTest < Minitest::Test
     analyzer = MLC::Backends::Cpp::MatchComplexityAnalyzer.new(match_expr)
 
     assert_equal 2, analyzer.arm_count
-    refute analyzer.has_regex?
+    refute analyzer.regex?
     assert analyzer.pure_adt_match?
     refute analyzer.needs_named_visitor?
   end
@@ -252,7 +252,7 @@ class MatchComplexityAnalyzerTest < Minitest::Test
 
     analyzer = MLC::Backends::Cpp::MatchComplexityAnalyzer.new(match_expr)
 
-    assert analyzer.has_regex?
+    assert analyzer.regex?
     refute analyzer.pure_adt_match?
   end
 

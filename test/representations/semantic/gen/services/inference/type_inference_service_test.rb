@@ -353,9 +353,11 @@ class TypeInferenceServiceTest < Minitest::Test
       @types = {}
     end
 
-    def has_type?(name)
+    def type?(name)
       @types.key?(name)
     end
+
+    alias has_type? type?
 
     def lookup(name)
       @types[name]

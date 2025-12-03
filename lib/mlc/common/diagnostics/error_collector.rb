@@ -83,9 +83,11 @@ module MLC
         @diagnostics.select(&:warning?)
       end
 
-      def has_errors?
+      def errors?
         @error_count.positive?
       end
+
+      alias has_errors? errors?
 
       def error_count
         @error_count

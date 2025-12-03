@@ -355,7 +355,7 @@ module MLC
       class BinaryOp < Expr
         attr_reader :op, :left, :right
 
-        def initialize(op:, left:, right:, origin: nil)
+        def initialize(op:, left:, right:, origin: nil) # rubocop:disable Naming/MethodParameterName
           super(kind: :binary, data: { op: op, left: left, right: right }, origin: origin)
           @op = op
           @left = left
@@ -367,7 +367,7 @@ module MLC
       class UnaryOp < Expr
         attr_reader :op, :operand
 
-        def initialize(op:, operand:, origin: nil)
+        def initialize(op:, operand:, origin: nil) # rubocop:disable Naming/MethodParameterName
           super(kind: :unary, data: { op: op, operand: operand }, origin: origin)
           @op = op
           @operand = operand

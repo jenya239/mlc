@@ -262,7 +262,7 @@ module MLC
               value == true
             end
 
-            def evaluate_binary(op, left, right, _left_type, _right_type)
+            def evaluate_binary(op, left, right, _left_type, _right_type) # rubocop:disable Naming/MethodParameterName
               case op
               when '+'
                 return :cannot_fold unless left.is_a?(Numeric) && right.is_a?(Numeric)
@@ -339,7 +339,7 @@ module MLC
               end
             end
 
-            def evaluate_unary(op, operand, _type)
+            def evaluate_unary(op, operand, _type) # rubocop:disable Naming/MethodParameterName
               case op
               when '-'
                 return :cannot_fold unless operand.is_a?(Numeric)

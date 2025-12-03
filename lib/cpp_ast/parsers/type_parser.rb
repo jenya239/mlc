@@ -33,18 +33,18 @@ module CppAst
       end
 
       def can_continue_type_parsing?
-        is_type_keyword? || current_token.kind == :identifier || is_type_modifier?
+        type_keyword? || current_token.kind == :identifier || type_modifier?
       end
 
-      def is_type_keyword?
+      def type_keyword?
         current_token.kind.to_s.start_with?("keyword_")
       end
 
-      def is_type_modifier?
+      def type_modifier?
         [:asterisk, :ampersand, :less, :greater, :colon_colon].include?(current_token.kind)
       end
 
-      def is_end_of_type?
+      def end_of_type?
         return false unless current_token.kind == :identifier
 
         saved_pos = @position

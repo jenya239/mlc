@@ -40,16 +40,18 @@ module MLC
         end
 
         # Есть ли вложенные if/match/loop
-        def has_nested_constructs?
+        def nested_constructs?
           @has_control_flow
         end
+
+        alias has_nested_constructs? nested_constructs?
 
         # Оценка стоимости генерации (для метрик)
         def complexity_score
           score = @statement_count
           score += 5 if @has_control_flow
           score += 3 if @has_early_return
-          score += 2 if Services::Utils::ComplexityAnalysis.has_nested_blocks?(@block_expr.statements)
+          score += 2 if Services::Utils::ComplexityAnalysis.nested_blocks?(@block_expr.statements)
           score
         end
       end
@@ -99,14 +101,16 @@ module MLC
           @match_expr.arms.size
         end
 
-        def has_regex?
+        def regex?
           @match_expr.arms.any? do |arm|
             Services::Utils::ComplexityAnalysis.regex_pattern?(arm[:pattern])
           end
         end
 
+        alias has_regex? regex?
+
         def pure_adt_match?
-          !has_regex? && all_constructor_patterns?
+          !regex? && all_constructor_patterns?
         end
 
         def needs_named_visitor?(threshold = 5)

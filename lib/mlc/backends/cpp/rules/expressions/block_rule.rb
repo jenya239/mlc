@@ -83,7 +83,7 @@ module MLC
               end
 
               # Add result expression as final statement (no return needed in GCC expr)
-              if block_expr.result && !is_unit_literal?(block_expr.result)
+              if block_expr.result && !unit_literal?(block_expr.result)
                 result_expr = lower_expression(block_expr.result)
                 statements << context.factory.expression_statement(expression: result_expr)
               end
@@ -104,7 +104,7 @@ module MLC
               end
 
               # Skip unit literals - they represent void/no value
-              if block_expr.result && !is_unit_literal?(block_expr.result)
+              if block_expr.result && !unit_literal?(block_expr.result)
                 result_expr = lower_expression(block_expr.result)
                 statements << if emit_return
                                 context.factory.return_statement(expression: result_expr)
@@ -117,7 +117,7 @@ module MLC
             end
 
             # Check if expression is a unit literal (void)
-            def is_unit_literal?(expr)
+            def unit_literal?(expr)
               # UnitLiteral check - need to verify SemanticIR has this type
               expr.is_a?(MLC::SemanticIR::LiteralExpr) && expr.value == :unit
             end

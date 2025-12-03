@@ -32,7 +32,7 @@ module MLC
 
             # Check if operand needs parentheses to prevent operator collision
             # e.g., -(-x) would become --x without parentheses
-            def needs_parentheses?(op, operand)
+            def needs_parentheses?(op, operand) # rubocop:disable Naming/MethodParameterName
               return false unless operand.is_a?(CppAst::Nodes::UnaryExpression)
               return false unless operand.prefix
 
