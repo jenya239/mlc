@@ -592,11 +592,10 @@ module MLC
 
             body_lines << line
 
-            if @pos < @source.length
-              @pos += 1 # Skip newline
-              @line += 1
-              @column = 1
-            end
+            next unless @pos < @source.length
+            @pos += 1 # Skip newline
+            @line += 1
+            @column = 1
           end
 
           # Process body based on strip_indent flag

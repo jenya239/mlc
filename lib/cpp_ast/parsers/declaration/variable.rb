@@ -64,14 +64,13 @@ module CppAst
 
           next if template_depth.positive? && [:comma, :greater, :lparen, :rparen].include?(current_token.kind)
 
-          if current_token.kind == :identifier
-            saved_pos = @position
-            advance_raw
-            next_kind = current_token.kind
-            @position = saved_pos
+          next unless current_token.kind == :identifier
+          saved_pos = @position
+          advance_raw
+          next_kind = current_token.kind
+          @position = saved_pos
 
-            break if [:equals, :semicolon, :comma, :lparen, :lbracket, :lbrace].include?(next_kind)
-          end
+          break if [:equals, :semicolon, :comma, :lparen, :lbracket, :lbrace].include?(next_kind)
         end
 
         # Extract final trailing whitespace as type_suffix

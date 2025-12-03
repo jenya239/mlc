@@ -54,7 +54,7 @@ module MLC
               analysis = @match_analyzer.analyze(
                 scrutinee_type: scrutinee_ir.type,
                 arms: node.arms,
-                transform_arm: ->(scrutinee_type, arm) do
+                transform_arm: lambda do |scrutinee_type, arm|
                   transform_expression_arm(scrutinee_type, arm, expression_visitor)
                 end
               )

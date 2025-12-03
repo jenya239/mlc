@@ -7,11 +7,11 @@ class TypeConstraintSolverTest < Minitest::Test
     @compatible_calls = []
     @type_errors = []
 
-    @ensure_compatible = ->(actual, expected, context) {
+    @ensure_compatible = lambda { |actual, expected, context|
       @compatible_calls << { actual: actual, expected: expected, context: context }
     }
 
-    @type_error = ->(message) {
+    @type_error = lambda { |message|
       @type_errors << message
       raise MLC::CompileError, message
     }
@@ -107,7 +107,7 @@ class TypeConstraintSolverTest < Minitest::Test
 
     solver = create_solver(
       infer: ->(_type_params, _param_types, _arg_types) { {} }, # Returns empty - can't infer from args
-      substitute: ->(type, map) {
+      substitute: lambda { |type, map|
         if type.is_a?(MLC::SemanticIR::TypeVariable)
           map[type.name] || type
         else
@@ -156,11 +156,11 @@ class TypeConstraintSolverTest < Minitest::Test
     type_variable = MLC::SemanticIR::TypeVariable.new(name: "T")
 
     solver = create_solver(
-      infer: ->(_type_params, _param_types, _arg_types) {
+      infer: lambda { |_type_params, _param_types, _arg_types|
         # Only partial inference - T remains a TypeVariable
         { "T" => type_variable }
       },
-      substitute: ->(type, map) {
+      substitute: lambda { |type, map|
         if type.is_a?(MLC::SemanticIR::TypeVariable)
           map[type.name] || type
         else

@@ -8,7 +8,7 @@ class MatchAnalyzerTest < Minitest::Test
 
   def build_analyzer
     MLC::Common::Typing::MatchAnalyzer.new(
-      ensure_compatible_type: ->(actual, expected, _context) do
+      ensure_compatible_type: lambda do |actual, expected, _context|
         raise "type mismatch" unless actual == expected
       end
     )

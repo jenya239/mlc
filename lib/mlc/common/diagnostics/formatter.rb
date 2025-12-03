@@ -119,7 +119,7 @@ module MLC
           case color_option
           when :auto
             # Check if stdout/stderr is a TTY and supports colors
-            $stderr.tty? && (ENV["TERM"] && ENV["TERM"] != "dumb")
+            $stderr.tty? && ENV["TERM"] && ENV["TERM"] != "dumb"
           when true, :always
             true
           when false, :never

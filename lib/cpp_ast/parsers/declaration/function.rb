@@ -275,7 +275,7 @@ module CppAst
           advance_raw
           current_leading_trivia
 
-          if current_token.kind == :lparen || current_token.kind == :colon_colon
+          if [:lparen, :colon_colon].include?(current_token.kind)
             @position = saved_pos
             return [true, current_class_name]
           end
@@ -313,11 +313,10 @@ module CppAst
           trivia_after = current_token.trailing_trivia
           advance_raw
 
-          if current_token.kind == :identifier
-            return_type << trivia_after << current_token.lexeme
-            trivia_after = current_token.trailing_trivia
-            advance_raw
-          end
+          next unless current_token.kind == :identifier
+          return_type << trivia_after << current_token.lexeme
+          trivia_after = current_token.trailing_trivia
+          advance_raw
         end
 
         if current_token.kind == :less
@@ -446,7 +445,7 @@ module CppAst
           advance_raw
           name << current_token.lexeme
           advance_raw
-        elsif current_token.kind == :keyword_new || current_token.kind == :keyword_delete
+        elsif [:keyword_new, :keyword_delete].include?(current_token.kind)
           name << " " << current_token.lexeme
           advance_raw
           if current_token.kind == :lbracket

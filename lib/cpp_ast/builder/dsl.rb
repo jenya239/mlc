@@ -86,7 +86,7 @@ module CppAst
       # Function call
       def call(callee, *args)
         # Если передан один массив, развернуть его
-        arguments = (args.size == 1 && args.first.is_a?(Array)) ? args.first : args
+        arguments = args.size == 1 && args.first.is_a?(Array) ? args.first : args
         separators = arguments.size > 1 ? Array.new(arguments.size - 1, ", ") : []
         Nodes::FunctionCallExpression.new(
           callee: callee,

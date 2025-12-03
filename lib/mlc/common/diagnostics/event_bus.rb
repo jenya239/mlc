@@ -58,7 +58,7 @@ module MLC
             final_level = kwargs[:level] || level
             final_structured = kwargs[:structured] || structured
             # Extract payload from kwargs (excluding :level and :structured)
-            payload_hash = kwargs.reject { |k, _| k == :level || k == :structured }
+            payload_hash = kwargs.reject { |k, _| [:level, :structured].include?(k) }
           else
             # New API: publish(:event, {key: value}, level: :info)
             payload_hash = payload || {}

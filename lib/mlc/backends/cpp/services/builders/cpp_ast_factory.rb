@@ -192,8 +192,8 @@ module MLC
 
             # If statement
             def if_statement(condition:, then_statement:, else_statement: nil, if_suffix: " ",
-                            condition_lparen_suffix: "", condition_rparen_suffix: "",
-                            else_prefix: " ", else_suffix: " ", leading_trivia: "")
+                             condition_lparen_suffix: "", condition_rparen_suffix: "",
+                             else_prefix: " ", else_suffix: " ", leading_trivia: "")
               CppAst::Nodes::IfStatement.new(
                 condition: condition,
                 then_statement: then_statement,

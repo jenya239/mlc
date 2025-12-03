@@ -111,7 +111,7 @@ class EffectAnalyzerTest < Minitest::Test
   def test_pure_expression_callback_receives_body
     received_body = nil
     analyzer = MLC::Common::Typing::EffectAnalyzer.new(
-      pure_expression: ->(body) {
+      pure_expression: lambda { |body|
         received_body = body
         true
       },
@@ -128,7 +128,7 @@ class EffectAnalyzerTest < Minitest::Test
     received_type = nil
     analyzer = MLC::Common::Typing::EffectAnalyzer.new(
       pure_expression: ->(_) { true },
-      non_literal_type: ->(type) {
+      non_literal_type: lambda { |type|
         received_type = type
         false
       }

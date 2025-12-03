@@ -121,11 +121,10 @@ module MLC
               end
 
               # Check for filter
-              if current.type == :IF
-                consume(:IF)
-                # Use parse_logical_or for filter condition (avoid postfix if)
-                filters << parse_logical_or
-              end
+              next unless current.type == :IF
+              consume(:IF)
+              # Use parse_logical_or for filter condition (avoid postfix if)
+              filters << parse_logical_or
             end
 
             consume(:RBRACKET)
@@ -482,7 +481,7 @@ module MLC
         end
 
         def parse_if_expression
-          if current.type == :IF || current.type == :UNLESS
+          if [:IF, :UNLESS].include?(current.type)
             parse_if_or_unless_expression(inside_block: false)
           else
             # Parse primary expression, then check for postfix if/unless
@@ -494,7 +493,7 @@ module MLC
         # Parse if expression when inside a block (do...end, while, etc.)
         # Does not consume trailing END to avoid stealing parent's END
         def parse_if_expression_in_block
-          if current.type == :IF || current.type == :UNLESS
+          if [:IF, :UNLESS].include?(current.type)
             parse_if_or_unless_expression(inside_block: true)
           else
             expr = parse_logical_or
@@ -520,7 +519,7 @@ module MLC
           if current.type == :ELSE
             consume(:ELSE)
             # Check for else-if chain
-            else_branch = if current.type == :IF || current.type == :UNLESS
+            else_branch = if [:IF, :UNLESS].include?(current.type)
                             wrap_block_like_expr(parse_if_or_unless_expression(inside_block: inside_block))
                           else
                             parse_if_branch_expression

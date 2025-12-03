@@ -255,7 +255,7 @@ module MLC
             end
 
             def boolean_value?(value)
-              value == true || value == false
+              [true, false].include?(value)
             end
 
             def truthy?(value)

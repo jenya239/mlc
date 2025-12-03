@@ -5,7 +5,7 @@ require_relative "../../test_helper"
 class MatchAnalyzerTest < Minitest::Test
   def setup
     @compatible_calls = []
-    @ensure_compatible = ->(actual, expected, context) {
+    @ensure_compatible = lambda { |actual, expected, context|
       @compatible_calls << { actual: actual, expected: expected, context: context }
     }
   end
@@ -101,7 +101,7 @@ class MatchAnalyzerTest < Minitest::Test
     analyzer.analyze(
       scrutinee_type: "Shape",
       arms: [{ pattern: :circle, body: mock_body }],
-      transform_arm: ->(type, arm) {
+      transform_arm: lambda { |type, arm|
         transform_calls << { type: type, arm: arm }
         arm
       }

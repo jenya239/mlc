@@ -29,6 +29,7 @@ class PassManagerTest < Minitest::Test
     manager = MLC::Common::Analysis::PassManager.new
     accumulator = Class.new do
       attr_reader :calls
+
       def initialize
         @calls = 0
       end

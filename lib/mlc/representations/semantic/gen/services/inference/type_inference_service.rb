@@ -384,7 +384,7 @@ module MLC
                   new_type != p[:type] ? { name: p[:name], type: new_type } : p
                 end
                 new_ret = substitute_type(type.ret_type, type_map)
-                (new_params != type.params || new_ret != type.ret_type) ? SemanticIR::Builder.function_type(new_params, new_ret) : type
+                new_params != type.params || new_ret != type.ret_type ? SemanticIR::Builder.function_type(new_params, new_ret) : type
 
               when SemanticIR::RecordType
                 # Substitute type variables in record fields

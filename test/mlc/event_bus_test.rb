@@ -18,6 +18,7 @@ class EventBusTest < Minitest::Test
     bus = MLC::Common::Diagnostics::EventBus.new
     collector = Class.new do
       attr_reader :payloads
+
       def initialize
         @payloads = []
       end

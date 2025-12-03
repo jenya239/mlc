@@ -409,7 +409,7 @@ module MLC
 
               # Special handling for Option patterns (Some/None) only if scrutinee is Option<T> (generic)
               # User-defined "type Option = Some(x) | None" should use std::variant handling
-              if (case_name == "Some" || case_name == "None") && option_type?(scrutinee_type)
+              if ["Some", "None"].include?(case_name) && option_type?(scrutinee_type)
                 return build_option_pattern_arm(case_name, bindings, guard, body_src, scrutinee_src)
               end
 
@@ -435,24 +435,23 @@ module MLC
 
                 # Handle nested patterns separately
                 bindings.each_with_index do |binding, idx|
-                  if binding.is_a?(Hash) && binding[:kind] == :constructor
-                    # Nested pattern - generate temp var and nested check
-                    nested_temp_var = "_nested_#{temp_var_counter}"
-                    temp_var_counter += 1
+                  next unless binding.is_a?(Hash) && binding[:kind] == :constructor
+                  # Nested pattern - generate temp var and nested check
+                  nested_temp_var = "_nested_#{temp_var_counter}"
+                  temp_var_counter += 1
 
-                    # Extract nested value using structured binding access
-                    binding_decls << if bindings.length == 1
-                                       # Single field - use .field0
-                                       "auto #{nested_temp_var} = #{temp_var}.field0;"
-                                     else
-                                       # Multiple fields - use .fieldN
-                                       "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
-                                     end
+                  # Extract nested value using structured binding access
+                  binding_decls << if bindings.length == 1
+                                     # Single field - use .field0
+                                     "auto #{nested_temp_var} = #{temp_var}.field0;"
+                                   else
+                                     # Multiple fields - use .fieldN
+                                     "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
+                                   end
 
-                    # Build nested pattern check
-                    nested_check = build_nested_pattern_check(binding, nested_temp_var)
-                    nested_checks << nested_check
-                  end
+                  # Build nested pattern check
+                  nested_check = build_nested_pattern_check(binding, nested_temp_var)
+                  nested_checks << nested_check
                 end
               end
 

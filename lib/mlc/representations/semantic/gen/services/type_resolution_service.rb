@@ -67,7 +67,7 @@ module MLC
                 # Refresh params and return type
                 params = type.params.map { |p| { name: p[:name], type: refresh_type_reference(p[:type], resolved_name, resolved_type) } }
                 ret_type = refresh_type_reference(type.ret_type, resolved_name, resolved_type)
-                (params != type.params || ret_type != type.ret_type) ? SemanticIR::Builder.function_type(params, ret_type) : type
+                params != type.params || ret_type != type.ret_type ? SemanticIR::Builder.function_type(params, ret_type) : type
               else
                 # For primitive types and others, replace if name matches
                 @type_checker.type_name(type) == resolved_name ? resolved_type : type

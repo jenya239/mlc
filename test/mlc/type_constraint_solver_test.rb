@@ -42,7 +42,8 @@ class TypeConstraintSolverTest < Minitest::Test
   def test_solver_checks_argument_count
     captured = []
     solver = build_solver(
-      type_error: ->(message) { captured << message; raise ArgumentError, message }
+      type_error: lambda { |message| captured << message
+ raise ArgumentError, message }
     )
 
     info = Info.new([], ["i32"], "i32")

@@ -102,7 +102,7 @@ module MLC
         def determine_color_support(color_option)
           case color_option
           when :auto
-            @io.tty? && (ENV["TERM"] && ENV["TERM"] != "dumb")
+            @io.tty? && ENV["TERM"] && ENV["TERM"] != "dumb"
           when true, :always
             true
           when false, :never
