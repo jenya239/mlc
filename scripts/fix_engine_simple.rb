@@ -11,7 +11,7 @@ puts "Original namespace: #{content.scan(/^module MLC\n  module \w+/).first.insp
 # Step 1: Replace module namespace declaration
 content.gsub!(
   "module MLC\n  module SemanticGen\n    # Engine orchestrates SemanticGen rule evaluation with shared services\n    class Engine",
-  "module MLC\n  module Representations\n    module Semantic\n      module Gen\n        # Engine orchestrates SemanticGen rule evaluation with shared services\n        class Engine"
+  "module MLC\n  module Representations\n    module Semantic\n      module Gen\n        # Engine orchestrates SemanticGen rule evaluation with shared services\n        class Engine" # rubocop:disable Layout/LineLength
 )
 
 # Step 2: Replace all internal references to Rules

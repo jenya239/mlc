@@ -212,7 +212,7 @@ module MLC
                 [if_stmt]
               else
                 # Has capture groups - use match() and extract captures
-                # Generate: if (auto match_opt = regex.match(text)) { auto match = *match_opt; auto user = match.get(1).text(); ... return body; }
+                # Generate: if (auto match_opt = regex.match(text)) { auto match = *match_opt; ... return body; }
 
                 regex_src = regex_obj.to_source
                 scrutinee_src = scrutinee.to_source

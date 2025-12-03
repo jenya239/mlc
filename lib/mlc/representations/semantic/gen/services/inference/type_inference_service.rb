@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# rubocop:disable Layout/LineLength
 
 module MLC
   module Representations
@@ -933,3 +934,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Layout/LineLength

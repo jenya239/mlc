@@ -184,7 +184,8 @@ module MLC
           if current.type == :MODULE
             module_decl = parse_module_decl
             # Skip any remaining tokens on the module line (for malformed input like module app/geom)
-            while !eof? && current.type != :FN && current.type != :TYPE && current.type != :IMPORT && current.type != :EXTERN && current.type != :EXPORT
+            while !eof? && current.type != :FN && current.type != :TYPE &&
+                  current.type != :IMPORT && current.type != :EXTERN && current.type != :EXPORT
               @pos += 1
             end
           end

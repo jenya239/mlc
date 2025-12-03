@@ -14,7 +14,9 @@ class Cpp20FeaturesTest < Minitest::Test
     module_decl = module_decl("math",
                               var_decl("int", "pi", "3"),
                               function_decl("int", "add", [param("int", "a"), param("int", "b")], block(
-                                                                                                    return_stmt(binary("+", id("a"), id("b")))
+                                    return_stmt(
+                                      binary("+", id("a"), id("b"))
+                                    )
                                                                                                   )))
 
     assert_includes module_decl.to_source, "export module math"

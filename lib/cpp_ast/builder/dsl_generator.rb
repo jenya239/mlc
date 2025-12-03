@@ -502,7 +502,9 @@ module CppAst
 
         if node.question_prefix != " " || node.question_suffix != " " ||
            node.colon_prefix != " " || node.colon_suffix != " "
-          result += "\n#{current_indent}.with_trivia(#{node.question_prefix.inspect}, #{node.question_suffix.inspect}, #{node.colon_prefix.inspect}, #{node.colon_suffix.inspect})"
+          trivia_str = "#{node.question_prefix.inspect}, #{node.question_suffix.inspect}, " \
+                       "#{node.colon_prefix.inspect}, #{node.colon_suffix.inspect}"
+          result += "\n#{current_indent}.with_trivia(#{trivia_str})"
         end
 
         result

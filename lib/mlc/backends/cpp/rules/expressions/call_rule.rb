@@ -796,7 +796,9 @@ module MLC
                   argument_separators: []
                 )
 
+              # rubocop:disable Layout/LineLength
               when "split", "contains", "starts_with", "ends_with", "substring", "index_of", "last_index_of", "replace", "char_at", "repeat", "reverse", "to_lower", "to_upper", "is_blank", "is_present", "squish", "truncate", "titleize", "camelize", "underscore", "pad_start", "pad_end"
+              # rubocop:enable Layout/LineLength
                 # String methods that pass through to C++ mlc::String methods
                 member = context.factory.member_access(
                   object: string_obj,
