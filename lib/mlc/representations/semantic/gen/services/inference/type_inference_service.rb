@@ -351,9 +351,6 @@ module MLC
                   end
                 end
 
-              else
-                # Primitive types, etc. - just verify they match
-                # No unification needed
               end
             end
 

@@ -31,7 +31,7 @@ module MLC
     # Collects multiple diagnostics during compilation
     # Allows type checking to continue after errors
     class ErrorCollector
-      attr_reader :diagnostics
+      attr_reader :diagnostics, :error_count
 
       def initialize(max_errors: 100)
         @diagnostics = []
@@ -88,10 +88,6 @@ module MLC
       end
 
       alias has_errors? errors?
-
-      def error_count
-        @error_count
-      end
 
       def clear
         @diagnostics.clear

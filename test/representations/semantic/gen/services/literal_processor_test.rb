@@ -134,8 +134,6 @@ class LiteralProcessorTest < Minitest::Test
     assert_nil result
   end
 
-  private
-
   # ========== Mock Classes ==========
 
   class MockAstTypeChecker

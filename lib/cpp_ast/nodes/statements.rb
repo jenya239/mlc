@@ -167,24 +167,24 @@ module CppAst
         else
           # Classic for: for (init; cond; inc)
           init_str = if init
-init.respond_to?(:to_source) ? init.to_source : init.to_s
-else
-""
-end
+                       init.respond_to?(:to_source) ? init.to_source : init.to_s
+                     else
+                       ""
+                     end
           result << init_str
           result << ";#{init_trailing}"
           condition_str = if condition
-condition.respond_to?(:to_source) ? condition.to_source : condition.to_s
-else
-""
-end
+                            condition.respond_to?(:to_source) ? condition.to_source : condition.to_s
+                          else
+                            ""
+                          end
           result << condition_str
           result << ";#{condition_trailing}"
           increment_str = if increment
-increment.respond_to?(:to_source) ? increment.to_source : increment.to_s
-else
-""
-end
+                            increment.respond_to?(:to_source) ? increment.to_source : increment.to_s
+                          else
+                            ""
+                          end
           result << increment_str
           result << ")#{rparen_suffix}#{body.to_source}"
         end

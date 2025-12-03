@@ -49,7 +49,7 @@ class PassManagerTest < Minitest::Test
 
   def test_bubbles_up_pass_errors_with_context
     manager = MLC::Common::Analysis::PassManager.new
-    manager.register(:boom) { |_ctx| raise RuntimeError, "failure" }
+    manager.register(:boom) { |_ctx| raise "failure" }
 
     error = assert_raises(RuntimeError) { manager.run({}) }
     assert_match(/Pass boom failed: failure/, error.message)

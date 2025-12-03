@@ -389,8 +389,8 @@ module MLC
             end
 
             # Backwards compatibility aliases
-            alias_method :ensure_boolean, :ensure_boolean_type
-            alias_method :ensure_compatible, :ensure_compatible_type
+            alias ensure_boolean ensure_boolean_type
+            alias ensure_compatible ensure_compatible_type
           end
         end
       end

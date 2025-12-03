@@ -13,8 +13,8 @@ module MLC
     class FunctionRegistry
       # Rich metadata about a registered function.
       class Entry
-        attr_reader :name, :effects, :canonical_name
-        attr_accessor :info, :namespace, :module_name, :ast_node, :origin
+        attr_accessor :name, :info, :namespace, :module_name, :ast_node, :origin
+        attr_reader :effects, :canonical_name
 
         def initialize(name:, info:, canonical_name: nil, namespace: nil, module_name: nil, exported: false, external: false,
                        ast_node: nil, origin: nil, effects: nil)
@@ -29,10 +29,6 @@ module MLC
           @origin = origin
           @effects = normalize_effects(effects)
           @aliases = []
-        end
-
-        def name=(value)
-          @name = value
         end
 
         def exported?

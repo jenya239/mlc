@@ -100,7 +100,7 @@ module MLC
           case type
           when String
             # "Option<T>" -> "Option"
-            type.split("<").first&.split("::").last
+            type.split("<").first&.split("::")&.last
           when MLC::SemanticIR::GenericType
             extract_type_name(type.base_type)
           else

@@ -468,7 +468,7 @@ module MLC
     # Block of statements
     class Block < Stmt
       attr_reader :stmts
-      alias_method :statements, :stmts
+      alias statements stmts
 
       def initialize(stmts:, origin: nil)
         super(origin: origin)

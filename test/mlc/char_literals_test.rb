@@ -233,6 +233,6 @@ class MLCCharLiteralsTest < Minitest::Test
     # Single Unicode code point should be CHAR_LITERAL
     char_tokens = tokens.select { |t| t.type == :CHAR_LITERAL }
     assert_equal 1, char_tokens.size
-    assert_equal 128512, char_tokens.first.value # 😀 = U+1F600 = 128512
+    assert_equal 128_512, char_tokens.first.value # 😀 = U+1F600 = 128512
   end
 end

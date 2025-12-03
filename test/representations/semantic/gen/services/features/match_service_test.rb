@@ -345,8 +345,6 @@ class MatchServiceTest < Minitest::Test
     refute @service.send(:statement_safe_pattern?, nil)
   end
 
-  private
-
   # ========== Mock Classes ==========
 
   class MockPattern

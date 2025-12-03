@@ -87,9 +87,7 @@ module MLC
         end
 
         def expect_operator(operator_token)
-          if current.type != :OPERATOR || current.value != operator_token
-            raise "Expected operator '#{operator_token}', got #{current.type}"
-          end
+          raise "Expected operator '#{operator_token}', got #{current.type}" if current.type != :OPERATOR || current.value != operator_token
 
           consume(:OPERATOR)
         end

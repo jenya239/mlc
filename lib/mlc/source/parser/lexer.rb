@@ -754,18 +754,15 @@ module MLC
           @column += 1
 
           # Check if followed by identifier
-          if @pos < @source.length && @source[@pos] =~ /[a-zA-Z_]/
-            start = @pos
-            @pos += 1 while @pos < @source.length && @source[@pos] =~ /[a-zA-Z0-9_]/
+          return unless @pos < @source.length && @source[@pos] =~ /[a-zA-Z_]/
 
-            field_name = @source[start...@pos]
-            @column += field_name.length
+          start = @pos
+          @pos += 1 while @pos < @source.length && @source[@pos] =~ /[a-zA-Z0-9_]/
 
-            add_token(:SELF_ACCESS, field_name, line: start_line, column: start_column)
-          else
-            # Bare @ is an error - could skip or report
-            # For now, skip it silently (like unknown chars)
-          end
+          field_name = @source[start...@pos]
+          @column += field_name.length
+
+          add_token(:SELF_ACCESS, field_name, line: start_line, column: start_column)
         end
 
         # Tokenize percent literals: %w[], %i[], %W[], %I[]

@@ -148,8 +148,6 @@ class MLCPatternMatchingTest < Minitest::Test
   end
 end
 
-private
-
 def assert_cpp_compiles_and_runs(cpp_code)
   runtime_dir = File.expand_path("../../runtime", __dir__)
   Dir.mktmpdir("mlc_pattern") do |dir|

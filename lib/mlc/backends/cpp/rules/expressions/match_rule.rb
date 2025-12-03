@@ -427,11 +427,13 @@ module MLC
                 # Use structured binding to extract all fields at once
                 non_wildcard_bindings = bindings.reject { |b| b == "_" || (b.is_a?(Hash) && b[:kind] == :constructor) }
                 if non_wildcard_bindings.any?
-                  binding_list = bindings.map do |b| if b.is_a?(Hash)
-"_"
-else
-(b == "_" ? "_" : b)
-end end.join(", ")
+                  binding_list = bindings.map do |b|
+                    if b.is_a?(Hash)
+                      "_"
+                    else
+                      (b == "_" ? "_" : b)
+                    end
+                  end.join(", ")
                   binding_decls << "auto [#{binding_list}] = #{temp_var};"
                 end
 
@@ -547,11 +549,13 @@ end end.join(", ")
               # Use structured binding
               non_wildcard_bindings = bindings.reject { |b| b == "_" || b.is_a?(Hash) }
               if non_wildcard_bindings.any?
-                binding_list = bindings.map do |b| if b.is_a?(Hash)
-"_"
-else
-(b == "_" ? "_" : b)
-end end.join(", ")
+                binding_list = bindings.map do |b|
+                  if b.is_a?(Hash)
+                    "_"
+                  else
+                    (b == "_" ? "_" : b)
+                  end
+                end.join(", ")
                 binding_decls << "auto [#{binding_list}] = #{temp_var};"
               end
 

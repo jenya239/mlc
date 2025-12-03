@@ -201,16 +201,16 @@ module CppAst
       case char
       when "="
         if peek == "="
-  (advance
-   Token.new(kind: :equals_equals, lexeme: "==", line: start_line, column: start_column))
-else
-  Token.new(
-                         kind: :equals,
-                         lexeme: "=",
-                         line: start_line,
-                         column: start_column
-                       )
-end
+          (advance
+           Token.new(kind: :equals_equals, lexeme: "==", line: start_line, column: start_column))
+        else
+          Token.new(
+            kind: :equals,
+            lexeme: "=",
+            line: start_line,
+            column: start_column
+          )
+        end
       when "+"
         if peek == "+"
           advance
@@ -236,78 +236,78 @@ end
         end
       when "*"
         if peek == "="
-  (advance
-   Token.new(kind: :asterisk_equals, lexeme: "*=", line: start_line, column: start_column))
-else
-  Token.new(
-                         kind: :asterisk,
-                         lexeme: "*",
-                         line: start_line,
-                         column: start_column
-                       )
-end
+          (advance
+           Token.new(kind: :asterisk_equals, lexeme: "*=", line: start_line, column: start_column))
+        else
+          Token.new(
+            kind: :asterisk,
+            lexeme: "*",
+            line: start_line,
+            column: start_column
+          )
+        end
       when "/"
         if peek == "="
-  (advance
-   Token.new(kind: :slash_equals, lexeme: "/=", line: start_line, column: start_column))
-else
-  Token.new(
-                         kind: :slash,
-                         lexeme: "/",
-                         line: start_line,
-                         column: start_column
-                       )
-end
+          (advance
+           Token.new(kind: :slash_equals, lexeme: "/=", line: start_line, column: start_column))
+        else
+          Token.new(
+            kind: :slash,
+            lexeme: "/",
+            line: start_line,
+            column: start_column
+          )
+        end
       when "!"
         if peek == "="
-  (advance
-   Token.new(kind: :exclamation_equals, lexeme: "!=", line: start_line, column: start_column))
-else
-  Token.new(
-                         kind: :exclamation,
-                         lexeme: "!",
-                         line: start_line,
-                         column: start_column
-                       )
-end
+          (advance
+           Token.new(kind: :exclamation_equals, lexeme: "!=", line: start_line, column: start_column))
+        else
+          Token.new(
+            kind: :exclamation,
+            lexeme: "!",
+            line: start_line,
+            column: start_column
+          )
+        end
       when "%"
         if peek == "="
-  (advance
-   Token.new(kind: :percent_equals, lexeme: "%=", line: start_line, column: start_column))
-else
-  Token.new(
-                         kind: :percent,
-                         lexeme: "%",
-                         line: start_line,
-                         column: start_column
-                       )
-end
+          (advance
+           Token.new(kind: :percent_equals, lexeme: "%=", line: start_line, column: start_column))
+        else
+          Token.new(
+            kind: :percent,
+            lexeme: "%",
+            line: start_line,
+            column: start_column
+          )
+        end
       when "~"
         Token.new(kind: :tilde, lexeme: "~", line: start_line, column: start_column)
       when "&"
         if peek == "&"
-  (advance
-   Token.new(kind: :ampersand_ampersand, lexeme: "&&", line: start_line, column: start_column))
-else
-  Token.new(
-                         kind: :ampersand,
-                         lexeme: "&",
-                         line: start_line,
-                         column: start_column
-                       )
-end
+          (advance
+           Token.new(kind: :ampersand_ampersand, lexeme: "&&", line: start_line, column: start_column))
+        else
+          Token.new(
+            kind: :ampersand,
+            lexeme: "&",
+            line: start_line,
+            column: start_column
+          )
+        end
       when "|"
         if peek == "|"
-  (advance
-   Token.new(kind: :pipe_pipe, lexeme: "||", line: start_line, column: start_column))
-else
-  Token.new(
-                         kind: :pipe,
-                         lexeme: "|",
-                         line: start_line,
-                         column: start_column
-                       )
-end
+          (advance
+           Token.new(kind: :pipe_pipe, lexeme: "||", line: start_line, column: start_column))
+        else
+          Token.new(
+            kind: :pipe,
+            lexeme: "|",
+            line: start_line,
+            column: start_column
+          )
+        end
       when "^"
         Token.new(kind: :caret, lexeme: "^", line: start_line, column: start_column)
       when "<"
@@ -332,15 +332,15 @@ end
         end
       when "."
         if peek&.match?(/[0-9]/)
-  scan_number(char, start_line, start_column)
-else
-  Token.new(
-          kind: :dot,
-          lexeme: ".",
-          line: start_line,
-          column: start_column
-        )
-end
+          scan_number(char, start_line, start_column)
+        else
+          Token.new(
+            kind: :dot,
+            lexeme: ".",
+            line: start_line,
+            column: start_column
+          )
+        end
       end
     end
 
@@ -350,16 +350,16 @@ end
       when "," then Token.new(kind: :comma, lexeme: ",", line: start_line, column: start_column)
       when ":"
         if peek == ":"
-  (advance
-   Token.new(kind: :colon_colon, lexeme: "::", line: start_line, column: start_column))
-else
-  Token.new(
-                         kind: :colon,
-                         lexeme: ":",
-                         line: start_line,
-                         column: start_column
-                       )
-end
+          (advance
+           Token.new(kind: :colon_colon, lexeme: "::", line: start_line, column: start_column))
+        else
+          Token.new(
+            kind: :colon,
+            lexeme: ":",
+            line: start_line,
+            column: start_column
+          )
+        end
       when "?" then Token.new(kind: :question, lexeme: "?", line: start_line, column: start_column)
       when "(" then Token.new(kind: :lparen, lexeme: "(", line: start_line, column: start_column)
       when ")" then Token.new(kind: :rparen, lexeme: ")", line: start_line, column: start_column)

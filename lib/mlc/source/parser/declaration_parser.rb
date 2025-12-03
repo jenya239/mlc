@@ -194,7 +194,7 @@ module MLC
           imports << parse_import_decl while current.type == :IMPORT
 
           # Parse declarations
-          while !eof?
+          until eof?
             case current.type
             when :EXPORT
               # Parse exported declaration

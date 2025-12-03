@@ -158,8 +158,8 @@ end
 
 # CLI
 if ARGV.size < 2
-  puts "Usage: #{$0} OLD_NAMESPACE NEW_NAMESPACE [--dry-run]"
-  puts "Example: #{$0} 'MLC::AST' 'MLC::Source::AST'"
+  puts "Usage: #{$PROGRAM_NAME} OLD_NAMESPACE NEW_NAMESPACE [--dry-run]"
+  puts "Example: #{$PROGRAM_NAME} 'MLC::AST' 'MLC::Source::AST'"
   exit 1
 end
 

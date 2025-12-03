@@ -44,7 +44,7 @@ module CppAst
             end
 
             # Include the ; or } in error text
-            if !at_end?
+            unless at_end?
               error_text << current_token.lexeme
               advance_raw
             end

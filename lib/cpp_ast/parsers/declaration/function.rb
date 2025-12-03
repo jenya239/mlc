@@ -387,8 +387,8 @@ module CppAst
           advance_raw
           name << current_leading_trivia << current_token.lexeme
           advance_raw
-        else
-          return_type_suffix << scope_trivia if scope_trivia.length.positive?
+        elsif scope_trivia.length.positive?
+          return_type_suffix << scope_trivia
         end
       end
 

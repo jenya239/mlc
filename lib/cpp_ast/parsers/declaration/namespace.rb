@@ -25,7 +25,7 @@ module CppAst
             end
           end
 
-          name_suffix = name_suffix + current_leading_trivia
+          name_suffix += current_leading_trivia
         end
 
         lbrace_suffix = current_token.trailing_trivia

@@ -19,7 +19,6 @@ module MLC
     # 5. Stdlib type auto-registration
 
     class TypeInfo
-      attr_reader :name, :ast_node, :core_ir_type, :cpp_name, :namespace, :kind, :exported, :module_name
       attr_accessor :fields, :variants
 
       # @param name [String] Type name in MLC (e.g., "Event", "Window")
@@ -77,9 +76,7 @@ module MLC
       alias has_field? field?
       alias has_variant? variant?
 
-      def referenced_type_names
-        @referenced_type_names
-      end
+      attr_reader :name, :ast_node, :core_ir_type, :cpp_name, :namespace, :kind, :exported, :module_name, :referenced_type_names
 
       def referenced_module_names(type_registry, include_self: false)
         return [] unless type_registry

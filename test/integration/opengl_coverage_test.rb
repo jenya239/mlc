@@ -66,7 +66,10 @@ class OpenGLCoverageTest < Minitest::Test
                                                   block)
                                       .const,
                                     function_decl("void", "set_uniform",
-                                                  [param("const std::string&", "name"), param("float", "x"), param("float", "y"), param("float", "z")], block)
+                                                  [param("const std::string&", "name"),
+                                                   param("float", "x"),
+                                                   param("float", "y"),
+                                                   param("float", "z")], block)
                                       .const,
                                     function_decl("void", "set_uniform",
                                                   [param("const std::string&", "name"), param("std::span<const float>", "values")], block)
@@ -203,7 +206,10 @@ class OpenGLCoverageTest < Minitest::Test
                                      function_decl("", "Rect", [], block)
                                        .defaulted,
                                      function_decl("", "Rect",
-                                                   [param("float", "x_"), param("float", "y_"), param("float", "w_"), param("float", "h_")], block)
+                                                   [param("float", "x_"),
+                                                    param("float", "y_"),
+                                                    param("float", "w_"),
+                                                    param("float", "h_")], block)
                                        .with_initializer_list("x(x_), y(y_), width(w_), height(h_)")
                                        .constexpr,
                                      function_decl("bool", "contains", [param("float", "px"), param("float", "py")], block)
@@ -218,7 +224,10 @@ class OpenGLCoverageTest < Minitest::Test
                                      function_decl("", "Color", [], block)
                                        .defaulted,
                                      function_decl("", "Color",
-                                                   [param("float", "r_"), param("float", "g_"), param("float", "b_"), param("float", "a_")], block)
+                                                   [param("float", "r_"),
+                                                    param("float", "g_"),
+                                                    param("float", "b_"),
+                                                    param("float", "a_")], block)
                                        .with_initializer_list("r(r_), g(g_), b(b_), a(a_)")
                                        .constexpr,
                                      function_decl("Color", "white", [], block)

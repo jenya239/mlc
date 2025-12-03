@@ -59,7 +59,7 @@ class EnhancedErrorHandlingTest < Minitest::Test
     begin
       result = parser.parse
       # Should still parse the working function despite the error
-      assert result.declarations.any? { |decl| decl.name == "working" }
+      assert(result.declarations.any? { |decl| decl.name == "working" })
     rescue MLC::Source::Parser::MultipleErrors => e
       # Should have errors but still parse some declarations
       assert e.errors.length.positive?

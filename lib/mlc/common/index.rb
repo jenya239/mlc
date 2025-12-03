@@ -14,7 +14,7 @@ loader = Zeitwerk::Loader.new
 loader.tag = "mlc"
 
 # Push lib/mlc as the root namespace directory
-loader.push_dir(File.expand_path("../..", __FILE__), namespace: MLC)
+loader.push_dir(File.expand_path('..', __dir__), namespace: MLC)
 
 # Configure inflections for acronyms (keep them uppercase)
 loader.inflector.inflect(

@@ -196,10 +196,10 @@ module MLC
               end
 
               optimized_result = if found_return
-nil
-else
-(expr.result ? eliminate_expr(expr.result) : nil)
-end
+                                   nil
+                                 else
+                                   (expr.result ? eliminate_expr(expr.result) : nil)
+                                 end
 
               MLC::SemanticIR::BlockExpr.new(
                 statements: optimized_stmts,

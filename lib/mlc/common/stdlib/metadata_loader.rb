@@ -159,8 +159,8 @@ module MLC
         def parse_type(type_string)
           # Handle function types: "(i32, i32) -> i32"
           if type_string =~ /\((.+)\)\s*->\s*(.+)/
-            param_str = $1
-            return_str = $2
+            param_str = ::Regexp.last_match(1)
+            return_str = ::Regexp.last_match(2)
             param_types = param_str.split(',').map { |p| parse_type(p.strip) }
             return_type = parse_type(return_str.strip)
             # FunctionType constructor: params: (array of {name:, type:}), ret_type:
@@ -173,8 +173,8 @@ module MLC
 
           # Handle generic types: "Result<T, E>" or "List<i32>"
           if type_string =~ /^(\w+)<(.+)>$/
-            base_name = $1
-            type_args_str = $2
+            base_name = ::Regexp.last_match(1)
+            type_args_str = ::Regexp.last_match(2)
             type_args = parse_type_args(type_args_str)
 
             base_type = SemanticIR::Type.new(kind: :generic, name: base_name)

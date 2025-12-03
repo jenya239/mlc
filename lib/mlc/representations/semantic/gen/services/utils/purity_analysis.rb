@@ -15,14 +15,14 @@ module MLC
             # - Non-literal type detection (String, collections)
             module PurityAnalysis
               # IO functions that are never pure
-              IO_FUNCTION_PATTERN = /^(println|print|read|write|open|close)/.freeze
+              IO_FUNCTION_PATTERN = /^(println|print|read|write|open|close)/
 
               # Functions returning non-literal types
-              NON_LITERAL_FUNCTION_PATTERN = /^(to_string|format|String)/.freeze
+              NON_LITERAL_FUNCTION_PATTERN = /^(to_string|format|String)/
 
               # Non-literal type names
               NON_LITERAL_TYPES = %w[string String].freeze
-              NON_LITERAL_TYPE_PATTERN = /^(Array|Vec|HashMap|HashSet)$/.freeze
+              NON_LITERAL_TYPE_PATTERN = /^(Array|Vec|HashMap|HashSet)$/
 
               module_function
 

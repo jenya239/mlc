@@ -76,7 +76,7 @@ module MLC
             # Format line number
             if idx == target_line
               # Error line - bold and colored
-              prefix = colorize(sprintf("%#{line_num_width}d", line_num), :bold)
+              prefix = colorize(Kernel.format("%#{line_num_width}d", line_num), :bold)
               prefix += colorize(" | ", :bold)
               output << "#{prefix}#{line_content}"
 
@@ -89,7 +89,7 @@ module MLC
               end
             else
               # Context line - dimmed
-              prefix = colorize(sprintf("%#{line_num_width}d", line_num), :dim)
+              prefix = colorize(Kernel.format("%#{line_num_width}d", line_num), :dim)
               prefix += colorize(" | ", :dim)
               output << "#{prefix}#{line_content}"
             end

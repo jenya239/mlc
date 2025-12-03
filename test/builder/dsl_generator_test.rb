@@ -14,7 +14,7 @@ class DSLGeneratorTest < Minitest::Test
     dsl_code = CppAst.to_dsl(ast1)
 
     # Eval DSL code to get new AST
-    ast2 = eval(dsl_code)
+    ast2 = eval(dsl_code) # rubocop:disable Security/Eval
 
     # Compare C++ outputs (normalize whitespace for comparison)
     cpp_output1 = ast1.to_source

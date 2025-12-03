@@ -103,8 +103,6 @@ class GenericCallResolverTest < Minitest::Test
     assert_nil solve_calls.first[:expected_ret_type]
   end
 
-  private
-
   class MockConstraintSolver
     def initialize(&block)
       @block = block

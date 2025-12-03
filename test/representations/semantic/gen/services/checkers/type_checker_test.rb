@@ -336,8 +336,6 @@ class TypeCheckerServiceTest < Minitest::Test
     assert_equal :primitive, result
   end
 
-  private
-
   # ========== Mock Classes ==========
 
   class MockFunctionRegistry

@@ -282,8 +282,6 @@ class MatchAnalyzerTest < Minitest::Test
     assert_equal 1, result.arms.size
   end
 
-  private
-
   # Mock helpers
   MockPattern = Struct.new(:kind, :data)
 

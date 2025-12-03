@@ -45,8 +45,6 @@ def collect_text_chunks(msg)
       chunks << "[tool_result: #{c['name']}]#{joined}"
     when 'token_budget'
       chunks << '[token_budget]'
-    else
-      # ignore unknown types silently
     end
   end
 

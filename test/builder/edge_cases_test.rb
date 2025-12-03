@@ -64,7 +64,10 @@ class EdgeCasesTest < Minitest::Test
           .explicit
           .constexpr
     cpp_code = ast.to_source
-    expected_ctor = "constexpr explicit ComplexClass(int value, const std::string& name, float factor) : member_(value), name_(name), factor_(factor), computed_(value * factor)"
+    expected_ctor = [
+      "constexpr explicit ComplexClass(int value, const std::string& name, float factor) :",
+      "member_(value), name_(name), factor_(factor), computed_(value * factor)"
+    ].join(" ")
     assert_includes cpp_code, expected_ctor
   end
 

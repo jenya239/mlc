@@ -76,7 +76,7 @@ module MLC
 
         # Клонировать с изменениями
         def with(**overrides)
-          copy = self.dup
+          copy = dup
           overrides.each { |key, value| copy.send("#{key}=", value) }
           copy
         end

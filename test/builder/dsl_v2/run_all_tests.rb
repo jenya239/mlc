@@ -16,7 +16,7 @@ require_relative "ownership_dsl_test"
 require_relative "dsl_v2_integration_test"
 
 # Run all tests
-if __FILE__ == $0
+if __FILE__ == $PROGRAM_NAME
   puts "=== Running DSL v2 Test Suite ==="
   puts
 

@@ -87,7 +87,7 @@ class MLCNumericLiteralsTest < Minitest::Test
 
     int_tokens = tokens.select { |t| t.type == :INT_LITERAL }
     assert_equal 1, int_tokens.size
-    assert_equal 65535, int_tokens.first.value
+    assert_equal 65_535, int_tokens.first.value
   end
 
   def test_lexer_hex_uppercase
@@ -97,7 +97,7 @@ class MLCNumericLiteralsTest < Minitest::Test
 
     int_tokens = tokens.select { |t| t.type == :INT_LITERAL }
     assert_equal 1, int_tokens.size
-    assert_equal 43981, int_tokens.first.value # 0xABCD = 43981
+    assert_equal 43_981, int_tokens.first.value # 0xABCD = 43981
   end
 
   def test_lexer_hex_lowercase
@@ -107,7 +107,7 @@ class MLCNumericLiteralsTest < Minitest::Test
 
     int_tokens = tokens.select { |t| t.type == :INT_LITERAL }
     assert_equal 1, int_tokens.size
-    assert_equal 3735928559, int_tokens.first.value
+    assert_equal 3_735_928_559, int_tokens.first.value
   end
 
   # ========== Decimal with Underscore ==========
@@ -119,7 +119,7 @@ class MLCNumericLiteralsTest < Minitest::Test
 
     int_tokens = tokens.select { |t| t.type == :INT_LITERAL }
     assert_equal 1, int_tokens.size
-    assert_equal 1000000, int_tokens.first.value
+    assert_equal 1_000_000, int_tokens.first.value
   end
 
   def test_lexer_float_with_underscore
@@ -183,7 +183,7 @@ class MLCNumericLiteralsTest < Minitest::Test
     body = func.body
 
     assert_instance_of MLC::Source::AST::IntLit, body
-    assert_equal 1000000, body.value
+    assert_equal 1_000_000, body.value
   end
 
   # ========== C++ Codegen ==========

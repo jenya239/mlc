@@ -322,8 +322,6 @@ class TypeInferenceServiceTest < Minitest::Test
     assert_equal [], result
   end
 
-  private
-
   # ========== Mock Classes ==========
 
   class MockVarTypeRegistry

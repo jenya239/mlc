@@ -61,7 +61,7 @@ module MLC
           end
 
           # Parse declarations with error recovery
-          while !eof?
+          until eof?
             begin
               case current.type
               when :EXPORT

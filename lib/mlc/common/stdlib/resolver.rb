@@ -41,9 +41,7 @@ module MLC
         end
 
         # Get the scanner instance (for accessing function/type metadata)
-        def scanner
-          @scanner
-        end
+        attr_reader :scanner
       end
     end
   end

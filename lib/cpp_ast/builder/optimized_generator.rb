@@ -221,8 +221,6 @@ module CppAst
         end
       end
 
-      private
-
       def string_expression?(expr)
         case expr
         when MLC::Source::AST::StringLit, MLC::Source::AST::StringInterpolation
@@ -299,7 +297,7 @@ module CppAst
       def generate_call_optimized(call)
         callee = generate_expression_optimized(call.callee)
         args = call.arguments.map { |arg| generate_expression_optimized(arg) }
-        "#{callee}(#{args.join(", ")})"
+        "#{callee}(#{args.join(', ')})"
       end
     end
 
