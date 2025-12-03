@@ -18,6 +18,7 @@ module MLC
         attr_accessor :block_expr_simple_strategy, :block_expr_complex_strategy,
                       :if_join_strategy, :match_threshold, :loop_capture_strategy,
                       :use_gcc_extensions, :error_model, :always_use_runtime
+
         # block_expr_simple_strategy: Для простых блоков (≤3 stmts, no ctrl flow)
         # block_expr_complex_strategy: Для сложных блоков
         # if_join_strategy: Для if expressions

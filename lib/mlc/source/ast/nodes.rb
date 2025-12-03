@@ -115,8 +115,8 @@ module MLC
       class FuncDecl < Node
         attr_reader :name, :params, :ret_type, :body, :type_params, :where_clause, :exported, :external, :is_async
 
-        def initialize(name:, params:, ret_type:, body: nil, type_params: [], where_clause: nil, exported: false, external: false, 
-is_async: false, origin: nil)
+        def initialize(name:, params:, ret_type:, body: nil, type_params: [], where_clause: nil, exported: false, external: false,
+                       is_async: false, origin: nil)
           super(origin: origin)
           @name = name
           @params = params
@@ -922,8 +922,8 @@ is_async: false, origin: nil)
       class ExtendDecl < Node
         attr_reader :target_type, :trait_name, :trait_params, :methods, :associated_type_bindings, :exported
 
-        def initialize(target_type:, trait_name: nil, trait_params: [], methods: [], associated_type_bindings: [], exported: false, 
-origin: nil)
+        def initialize(target_type:, trait_name: nil, trait_params: [], methods: [], associated_type_bindings: [], exported: false,
+                       origin: nil)
           super(origin: origin)
           @target_type = target_type  # Type - the type being extended
           @trait_name = trait_name    # String or nil - trait being implemented

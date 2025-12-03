@@ -19,8 +19,8 @@ module MLC
           # Dependencies:
           # - var_type_registry: VarTypeRegistry (injected, for tracking variable types)
           class TransformationContext
-            attr_reader :type_param_stack, :lambda_param_stack, :function_return_stack, :var_type_registry, :loop_depth, :unsafe_depth, 
-:associated_type_bindings_stack
+            attr_reader :type_param_stack, :lambda_param_stack, :function_return_stack, :var_type_registry, :loop_depth, :unsafe_depth,
+                        :associated_type_bindings_stack
             attr_accessor :current_node
 
             def initialize(var_type_registry:)

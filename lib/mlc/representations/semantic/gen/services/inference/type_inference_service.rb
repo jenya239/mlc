@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 # rubocop:disable Layout/LineLength
 
 module MLC
@@ -774,7 +775,8 @@ module MLC
                 SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
               else
                 type_error(
-"Unknown array member '#{member}'. Known members: length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, zip, enumerate, min, max, slice", node: node)
+                  "Unknown array member '#{member}'. Known members: length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, zip, enumerate, min, max, slice", node: node
+                )
               end
             end
 
@@ -809,7 +811,8 @@ module MLC
                 SemanticIR::Builder.primitive_type("string")
               else
                 type_error(
-"Unknown string member '#{member}'. Known members: split, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse", node: node)
+                  "Unknown string member '#{member}'. Known members: split, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse", node: node
+                )
               end
             end
 
@@ -851,7 +854,8 @@ module MLC
                 SemanticIR::Builder.function_type([], str)
               else
                 type_error(
-"Unknown numeric member '#{member}'. Known members: abs, sqrt, floor, ceil, round, sin, cos, tan, exp, log, log10, pow, min, max, clamp, to_f32, to_i32, to_string", node: node)
+                  "Unknown numeric member '#{member}'. Known members: abs, sqrt, floor, ceil, round, sin, cos, tan, exp, log, log10, pow, min, max, clamp, to_f32, to_i32, to_string", node: node
+                )
               end
             end
 

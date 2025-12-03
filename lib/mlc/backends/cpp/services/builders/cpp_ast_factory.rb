@@ -158,8 +158,8 @@ module MLC
             end
 
             # Variable declaration
-            def variable_declaration(type:, declarators:, declarator_separators: [], type_suffix: " ", prefix_modifiers: "", 
-leading_trivia: "")
+            def variable_declaration(type:, declarators:, declarator_separators: [], type_suffix: " ", prefix_modifiers: "",
+                                     leading_trivia: "")
               CppAst::Nodes::VariableDeclaration.new(
                 type: type,
                 declarators: declarators,

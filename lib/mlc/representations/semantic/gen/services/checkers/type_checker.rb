@@ -49,8 +49,8 @@ module MLC
               "Hashable" => %w[i32 i64 u32 u64 string str bool]
             }.freeze
 
-            def initialize(function_registry:, type_decl_table: nil, event_bus: nil, current_node_proc: nil, var_type_registry: nil, 
-type_registry: nil, error_collector: nil)
+            def initialize(function_registry:, type_decl_table: nil, event_bus: nil, current_node_proc: nil, var_type_registry: nil,
+                           type_registry: nil, error_collector: nil)
               @function_registry = function_registry
               @type_decl_table = type_decl_table || {}
               @event_bus = event_bus
