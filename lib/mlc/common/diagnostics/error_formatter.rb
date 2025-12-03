@@ -172,8 +172,6 @@ module MLC
           "Use `parse()` to convert strings to integers"
         when ["bool", "i32"], ["bool", "int"]
           "Use a comparison operator (==, !=) to get a boolean"
-        else
-          nil
         end
       end
     end

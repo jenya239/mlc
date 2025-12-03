@@ -195,7 +195,11 @@ module MLC
                 found_return = unconditional_return?(optimized_stmt)
               end
 
-              optimized_result = found_return ? nil : (expr.result ? eliminate_expr(expr.result) : nil)
+              optimized_result = if found_return
+nil
+else
+(expr.result ? eliminate_expr(expr.result) : nil)
+end
 
               MLC::SemanticIR::BlockExpr.new(
                 statements: optimized_stmts,

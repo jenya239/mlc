@@ -867,8 +867,6 @@ module MLC
                 arg.function_type.ret_type
               elsif arg.respond_to?(:type) && arg.type.is_a?(SemanticIR::FunctionType)
                 arg.type.ret_type
-              else
-                nil
               end
             end
 

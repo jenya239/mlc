@@ -88,7 +88,7 @@ module CppAst
             equals_suffix: equals_suffix
           )
 
-          return [stmt, trailing]
+          [stmt, trailing]
         else
           _semicolon_prefix = after_name + after_name_extra + current_leading_trivia
           trailing = current_token.trailing_trivia
@@ -101,7 +101,7 @@ module CppAst
             using_suffix: using_suffix
           )
 
-          return [stmt, trailing]
+          [stmt, trailing]
         end
       end
     end

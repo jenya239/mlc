@@ -322,8 +322,6 @@ module MLC
           case type_info.kind
           when :record, :sum
             "struct #{type_info.name};"
-          else
-            nil
           end
         end
 

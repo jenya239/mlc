@@ -46,10 +46,8 @@ module MLC
               statement_visitor.visit_statements(statements)
             end
 
-            def with_loop_scope
-              @scope_context.with_loop_scope do
-                yield
-              end
+            def with_loop_scope(&block)
+              @scope_context.with_loop_scope(&block)
             end
 
             def inside_loop?

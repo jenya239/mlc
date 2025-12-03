@@ -281,8 +281,6 @@ module MLC
                 return nil if name[0]&.match?(/[A-Z]/)
 
                 name
-              else
-                nil
               end
             end
 
@@ -292,8 +290,6 @@ module MLC
                 type.fields.each_with_object({}) { |field, memo| memo[field[:name].to_s] = field[:type] }
               when MLC::SemanticIR::GenericType
                 resolve_generic_record_field_map(type)
-              else
-                nil
               end
             end
 

@@ -382,12 +382,12 @@ module CppAst
         end
 
         def specialized
-          dup.tap { |n|
+          dup.tap do |n|
             n.template_params = ""
             n.less_suffix = ""
             n.params_suffix = " "
             n.template_suffix = FormattingContext.get(:template_suffix)
-          }
+          end
         end
 
         def const

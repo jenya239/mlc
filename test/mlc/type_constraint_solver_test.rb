@@ -44,7 +44,7 @@ class TypeConstraintSolverTest < Minitest::Test
     solver = build_solver(
       type_error: lambda { |message|
         captured << message
-                    raise ArgumentError, message
+        raise ArgumentError, message
       }
     )
 

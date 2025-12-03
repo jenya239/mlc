@@ -249,10 +249,10 @@ module MLC
       end
 
       # Iterate over metadata entries.
-      def each_entry
+      def each_entry(&block)
         return enum_for(:each_entry) unless block_given?
 
-        @functions.each_value { |entry| yield entry }
+        @functions.each_value(&block)
       end
 
       # Map of canonical names to function info (copies values for safety).

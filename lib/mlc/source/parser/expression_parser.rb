@@ -360,9 +360,9 @@ module MLC
           end
 
           consume(:SEMICOLON)
-          statements = [with_origin(name_token) {
+          statements = [with_origin(name_token) do
             MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation)
-          }]
+          end]
           block = parse_statement_sequence(statements)
           ensure_block_has_result(block, require_value: false)
           block
@@ -686,9 +686,9 @@ module MLC
           end
 
           consume(:SEMICOLON)
-          statements = [with_origin(name_token) {
+          statements = [with_origin(name_token) do
             MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation)
-          }]
+          end]
           block = parse_statement_sequence(statements)
           ensure_block_has_result(block, require_value: false)
           block

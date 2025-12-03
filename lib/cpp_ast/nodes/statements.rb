@@ -166,13 +166,25 @@ module CppAst
           result << ")#{rparen_suffix}#{body.to_source}"
         else
           # Classic for: for (init; cond; inc)
-          init_str = init ? (init.respond_to?(:to_source) ? init.to_source : init.to_s) : ""
+          init_str = if init
+init.respond_to?(:to_source) ? init.to_source : init.to_s
+else
+""
+end
           result << init_str
           result << ";#{init_trailing}"
-          condition_str = condition ? (condition.respond_to?(:to_source) ? condition.to_source : condition.to_s) : ""
+          condition_str = if condition
+condition.respond_to?(:to_source) ? condition.to_source : condition.to_s
+else
+""
+end
           result << condition_str
           result << ";#{condition_trailing}"
-          increment_str = increment ? (increment.respond_to?(:to_source) ? increment.to_source : increment.to_s) : ""
+          increment_str = if increment
+increment.respond_to?(:to_source) ? increment.to_source : increment.to_s
+else
+""
+end
           result << increment_str
           result << ")#{rparen_suffix}#{body.to_source}"
         end

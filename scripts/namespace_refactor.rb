@@ -86,7 +86,7 @@ class NamespaceRefactor
 
   def check_constant_read(node, _source, _replacements)
     # Check if this is the first part of our old namespace
-    return unless node.name.to_s == @old_parts.first
+    nil unless node.name.to_s == @old_parts.first
 
     # Need to check if this is actually our namespace
     # This is conservative - only match if it's exactly our namespace

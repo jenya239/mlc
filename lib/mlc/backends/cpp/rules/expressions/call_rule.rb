@@ -258,8 +258,6 @@ module MLC
                   arguments: [arg],
                   argument_separators: []
                 )
-              else
-                nil
               end
             end
 
