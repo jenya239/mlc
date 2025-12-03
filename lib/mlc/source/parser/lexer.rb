@@ -593,6 +593,7 @@ module MLC
             body_lines << line
 
             next unless @pos < @source.length
+
             @pos += 1 # Skip newline
             @line += 1
             @column = 1

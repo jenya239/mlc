@@ -436,6 +436,7 @@ module MLC
                 # Handle nested patterns separately
                 bindings.each_with_index do |binding, idx|
                   next unless binding.is_a?(Hash) && binding[:kind] == :constructor
+
                   # Nested pattern - generate temp var and nested check
                   nested_temp_var = "_nested_#{temp_var_counter}"
                   temp_var_counter += 1

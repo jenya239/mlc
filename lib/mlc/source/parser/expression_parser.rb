@@ -122,6 +122,7 @@ module MLC
 
               # Check for filter
               next unless current.type == :IF
+
               consume(:IF)
               # Use parse_logical_or for filter condition (avoid postfix if)
               filters << parse_logical_or

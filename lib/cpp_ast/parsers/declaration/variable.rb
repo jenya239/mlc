@@ -65,6 +65,7 @@ module CppAst
           next if template_depth.positive? && [:comma, :greater, :lparen, :rparen].include?(current_token.kind)
 
           next unless current_token.kind == :identifier
+
           saved_pos = @position
           advance_raw
           next_kind = current_token.kind

@@ -314,6 +314,7 @@ module CppAst
           advance_raw
 
           next unless current_token.kind == :identifier
+
           return_type << trivia_after << current_token.lexeme
           trivia_after = current_token.trailing_trivia
           advance_raw
