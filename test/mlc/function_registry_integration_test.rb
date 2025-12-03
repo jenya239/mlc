@@ -130,7 +130,8 @@ module MLC
 
       assert transformer.function_registry.registered?("area"), "area should remain registered"
       refute_includes transformer.function_registry.aliases_for("perimeter"), "Geometry.perimeter"
-      assert_nil transformer.function_registry.fetch_member("Geometry", "perimeter"), "Member alias for non-imported function should be absent"
+      assert_nil transformer.function_registry.fetch_member("Geometry", "perimeter"), 
+"Member alias for non-imported function should be absent"
     end
 
     def test_selective_user_module_import_lowering_uses_namespace

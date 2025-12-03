@@ -65,7 +65,8 @@ module CppAst
 
     # IfStatement: `if (cond) { ... } else { ... }`
     class IfStatement < Statement
-      attr_accessor :condition, :then_statement, :else_statement, :if_suffix, :condition_lparen_suffix, :condition_rparen_suffix, :else_prefix, :else_suffix
+      attr_accessor :condition, :then_statement, :else_statement, :if_suffix, :condition_lparen_suffix, :condition_rparen_suffix, 
+:else_prefix, :else_suffix
 
       def initialize(condition:, then_statement:, leading_trivia: "", else_statement: nil,
                      if_suffix: "", condition_lparen_suffix: "", condition_rparen_suffix: "",
@@ -321,7 +322,8 @@ module CppAst
 
     # FunctionDeclaration: `type name(params);` or `type name(params) override { ... }`
     class FunctionDeclaration < Statement
-      attr_accessor :return_type, :name, :parameters, :body, :initializer_list, :return_type_suffix, :lparen_suffix, :rparen_suffix, :param_separators, :modifiers_text, :prefix_modifiers, :modifier_set, :default_suffix
+      attr_accessor :return_type, :name, :parameters, :body, :initializer_list, :return_type_suffix, :lparen_suffix, :rparen_suffix, 
+:param_separators, :modifiers_text, :prefix_modifiers, :modifier_set, :default_suffix
 
       def initialize(return_type:, name:, parameters:, leading_trivia: "", body: nil,
                      return_type_suffix: "", lparen_suffix: "", rparen_suffix: "",
@@ -505,7 +507,8 @@ module CppAst
 
     # EnumDeclaration: `enum Color { Red, Green };` or `enum class Color { Red, Green };`
     class EnumDeclaration < Statement
-      attr_accessor :name, :enumerators, :enum_suffix, :class_keyword, :class_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix, :underlying_type, :colon_prefix, :colon_suffix
+      attr_accessor :name, :enumerators, :enum_suffix, :class_keyword, :class_suffix, :name_suffix, :lbrace_suffix, :rbrace_suffix, 
+:underlying_type, :colon_prefix, :colon_suffix
 
       def initialize(name:, enumerators:, leading_trivia: "",
                      enum_suffix: "", class_keyword: "", class_suffix: "", name_suffix: "",

@@ -37,8 +37,10 @@ class MLCFullTest < Minitest::Test
                                              arm("Circle", ["center"], some(id("center"))),
                                              arm("Rect", ["top_left", "width", "height"],
                                                  some(call(id("Point"),
-                                                           binary("+", member(id("top_left"), ".", "x"), binary("/", id("width"), float(2.0))),
-                                                           binary("+", member(id("top_left"), ".", "y"), binary("/", id("height"), float(2.0))))))))
+                                                           binary("+", member(id("top_left"), ".", "x"), 
+binary("/", id("width"), float(2.0))),
+                                                           binary("+", member(id("top_left"), ".", "y"), 
+binary("/", id("height"), float(2.0))))))))
                     )),
 
       # Function with ownership types

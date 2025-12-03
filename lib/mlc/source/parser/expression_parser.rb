@@ -360,7 +360,8 @@ module MLC
           end
 
           consume(:SEMICOLON)
-          statements = [with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }]
+          statements = [with_origin(name_token) {
+ MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }]
           block = parse_statement_sequence(statements)
           ensure_block_has_result(block, require_value: false)
           block
@@ -684,7 +685,8 @@ module MLC
           end
 
           consume(:SEMICOLON)
-          statements = [with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }]
+          statements = [with_origin(name_token) {
+ MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }]
           block = parse_statement_sequence(statements)
           ensure_block_has_result(block, require_value: false)
           block
@@ -1084,7 +1086,8 @@ module MLC
                     # arr[start..end] - use parse_shift for end expression
                     end_index = parse_shift
                     consume(:RBRACKET)
-                    expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, start_index: first_expr, end_index: end_index), lbracket_token)
+                    expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, start_index: first_expr, end_index: end_index), 
+lbracket_token)
                   end
                 else
                   # Simple index access: arr[index]
@@ -1169,7 +1172,8 @@ module MLC
                 lbrace_token = consume(:LBRACE)
                 result = parse_record_fields
                 consume(:RBRACE)
-                attach_origin(MLC::Source::AST::RecordLit.new(type_name: name, fields: result[:fields], spreads: result[:spreads]), lbrace_token)
+                attach_origin(MLC::Source::AST::RecordLit.new(type_name: name, fields: result[:fields], spreads: result[:spreads]), 
+lbrace_token)
               else
                 # Variable reference
                 attach_origin(MLC::Source::AST::VarRef.new(name: name), name_token)
@@ -1192,7 +1196,8 @@ module MLC
             lbrace_token = consume(:LBRACE)
             result = parse_record_fields
             consume(:RBRACE)
-            attach_origin(MLC::Source::AST::RecordLit.new(type_name: "record", fields: result[:fields], spreads: result[:spreads]), lbrace_token)
+            attach_origin(MLC::Source::AST::RecordLit.new(type_name: "record", fields: result[:fields], spreads: result[:spreads]), 
+lbrace_token)
           when :LBRACKET
             parse_array_literal_or_comprehension
           when :STRING_ARRAY, :STRING_ARRAY_INTERP

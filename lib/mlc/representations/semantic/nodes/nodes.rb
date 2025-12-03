@@ -200,7 +200,8 @@ module MLC
     class Func < Node
       attr_reader :name, :params, :ret_type, :body, :effects, :type_params, :external, :exported, :is_async
 
-      def initialize(name:, params:, ret_type:, body: nil, effects: [], type_params: [], external: false, exported: false, is_async: false, origin: nil)
+      def initialize(name:, params:, ret_type:, body: nil, effects: [], type_params: [], external: false, exported: false, is_async: false, 
+origin: nil)
         super(origin: origin)
         @name = name
         @params = params # Array of Param

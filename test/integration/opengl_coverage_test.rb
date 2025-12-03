@@ -59,13 +59,17 @@ class OpenGLCoverageTest < Minitest::Test
                                       .noexcept,
                                     function_decl("std::optional<std::string>", "link_error", [], block)
                                       .const,
-                                    function_decl("void", "set_uniform", [param("const std::string&", "name"), param("int", "value")], block)
+                                    function_decl("void", "set_uniform", [param("const std::string&", "name"), param("int", "value")], 
+block)
                                       .const,
-                                    function_decl("void", "set_uniform", [param("const std::string&", "name"), param("float", "value")], block)
+                                    function_decl("void", "set_uniform", [param("const std::string&", "name"), param("float", "value")], 
+block)
                                       .const,
-                                    function_decl("void", "set_uniform", [param("const std::string&", "name"), param("float", "x"), param("float", "y"), param("float", "z")], block)
+                                    function_decl("void", "set_uniform", 
+[param("const std::string&", "name"), param("float", "x"), param("float", "y"), param("float", "z")], block)
                                       .const,
-                                    function_decl("void", "set_uniform", [param("const std::string&", "name"), param("std::span<const float>", "values")], block)
+                                    function_decl("void", "set_uniform", 
+[param("const std::string&", "name"), param("std::span<const float>", "values")], block)
                                       .const))
 
     cpp_code = ast.to_source
@@ -198,7 +202,8 @@ class OpenGLCoverageTest < Minitest::Test
                                      field_def("float", "height", default: "0.0f"),
                                      function_decl("", "Rect", [], block)
                                        .defaulted,
-                                     function_decl("", "Rect", [param("float", "x_"), param("float", "y_"), param("float", "w_"), param("float", "h_")], block)
+                                     function_decl("", "Rect", 
+[param("float", "x_"), param("float", "y_"), param("float", "w_"), param("float", "h_")], block)
                                        .with_initializer_list("x(x_), y(y_), width(w_), height(h_)")
                                        .constexpr,
                                      function_decl("bool", "contains", [param("float", "px"), param("float", "py")], block)
@@ -212,27 +217,33 @@ class OpenGLCoverageTest < Minitest::Test
                                      field_def("float", "a", default: "1.0f"),
                                      function_decl("", "Color", [], block)
                                        .defaulted,
-                                     function_decl("", "Color", [param("float", "r_"), param("float", "g_"), param("float", "b_"), param("float", "a_")], block)
+                                     function_decl("", "Color", 
+[param("float", "r_"), param("float", "g_"), param("float", "b_"), param("float", "a_")], block)
                                        .with_initializer_list("r(r_), g(g_), b(b_), a(a_)")
                                        .constexpr,
                                      function_decl("Color", "white", [], block)
-                                       .inline_body(block(return_stmt(brace_initializer([number(1.0), number(1.0), number(1.0), number(1.0)]))))
+                                       .inline_body(block(return_stmt(brace_initializer([number(1.0), number(1.0), number(1.0), 
+number(1.0)]))))
                                        .static
                                        .constexpr,
                                      function_decl("Color", "black", [], block)
-                                       .inline_body(block(return_stmt(brace_initializer([number(0.0), number(0.0), number(0.0), number(1.0)]))))
+                                       .inline_body(block(return_stmt(brace_initializer([number(0.0), number(0.0), number(0.0), 
+number(1.0)]))))
                                        .static
                                        .constexpr,
                                      function_decl("Color", "red", [], block)
-                                       .inline_body(block(return_stmt(brace_initializer([number(1.0), number(0.0), number(0.0), number(1.0)]))))
+                                       .inline_body(block(return_stmt(brace_initializer([number(1.0), number(0.0), number(0.0), 
+number(1.0)]))))
                                        .static
                                        .constexpr,
                                      function_decl("Color", "green", [], block)
-                                       .inline_body(block(return_stmt(brace_initializer([number(0.0), number(1.0), number(0.0), number(1.0)]))))
+                                       .inline_body(block(return_stmt(brace_initializer([number(0.0), number(1.0), number(0.0), 
+number(1.0)]))))
                                        .static
                                        .constexpr,
                                      function_decl("Color", "blue", [], block)
-                                       .inline_body(block(return_stmt(brace_initializer([number(0.0), number(0.0), number(1.0), number(1.0)]))))
+                                       .inline_body(block(return_stmt(brace_initializer([number(0.0), number(0.0), number(1.0), 
+number(1.0)]))))
                                        .static
                                        .constexpr),
                          enum_class("AtlasFormat", [

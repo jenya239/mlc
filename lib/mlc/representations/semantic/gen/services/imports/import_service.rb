@@ -11,7 +11,8 @@ module MLC
         module Services
           # ImportService - handles stdlib and user module imports for SemanticGen
           class ImportService
-            def initialize(stdlib_registry:, module_resolver:, module_path_resolver:, type_builder:, type_declaration_service:, type_registration_service:, type_checker:, metadata_loader:)
+            def initialize(stdlib_registry:, module_resolver:, module_path_resolver:, type_builder:, type_declaration_service:, 
+type_registration_service:, type_checker:, metadata_loader:)
               @stdlib_registry = stdlib_registry
               @module_resolver = module_resolver
               @module_path_resolver = module_path_resolver
