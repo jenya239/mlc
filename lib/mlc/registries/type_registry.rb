@@ -324,7 +324,7 @@ module MLC
 
       def register_primitives
         # Register built-in primitive types
-        TypeInfo::PRIMITIVE_TYPE_MAP.each do |mlc_name, _cpp_name|
+        TypeInfo::PRIMITIVE_TYPE_MAP.each_key do |mlc_name|
           prim_type = SemanticIR::Type.new(kind: :prim, name: mlc_name)
           register(
             mlc_name,

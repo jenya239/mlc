@@ -14,7 +14,7 @@ module MLC
 
             def apply(node)
               # Generate: mlc::regex(String("pattern")) or mlc::regex_i(String("pattern"))
-              pattern_string = build_MLC_string(node.pattern)
+              pattern_string = build_mlc_string(node.pattern)
 
               # Choose function based on flags (case-insensitive if 'i' flag present)
               func_name = if node.flags.include?("i")
@@ -33,7 +33,7 @@ module MLC
             private
 
             # Build mlc::String(...) call for MLC string literals
-            def build_MLC_string(value)
+            def build_mlc_string(value)
               context.factory.function_call(
                 callee: context.factory.identifier(name: "mlc::String"),
                 arguments: [context.cpp_string_literal(value)],

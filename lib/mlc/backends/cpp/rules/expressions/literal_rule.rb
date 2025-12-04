@@ -19,7 +19,7 @@ module MLC
               when "bool"
                 context.factory.boolean_literal(value: node.value)
               when "str", "string"
-                build_MLC_string(node.value)
+                build_mlc_string(node.value)
               else
                 # Default: treat as numeric literal
                 context.factory.number_literal(value: node.value.to_s)
@@ -29,7 +29,7 @@ module MLC
             private
 
             # Build mlc::String(...) call for MLC string literals
-            def build_MLC_string(value)
+            def build_mlc_string(value)
               context.factory.function_call(
                 callee: context.factory.identifier(name: "mlc::String"),
                 arguments: [context.cpp_string_literal(value)],

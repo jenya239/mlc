@@ -47,9 +47,7 @@ module MLC
             private
 
             def normalize_fields(fields_ir)
-              fields_ir.each_with_object({}) do |(name, expr), acc|
-                acc[name.to_s] = expr
-              end
+              fields_ir.transform_keys { |name| name.to_s }
             end
 
             # Returns [record_type, ordered_fields_ir]

@@ -138,15 +138,15 @@ class LiteralProcessorTest < Minitest::Test
 
   class MockAstTypeChecker
     def initialize
-      @kinds = {}
+      @kinds = {}.compare_by_identity
     end
 
     def set_literal_kind(node, kind)
-      @kinds[node.object_id] = kind
+      @kinds[node] = kind
     end
 
     def literal_kind(node)
-      @kinds[node.object_id]
+      @kinds[node]
     end
   end
 

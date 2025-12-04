@@ -28,7 +28,7 @@ module MLC
               @traits[name] = TraitInfo.new(
                 name: name,
                 type_params: type_params,
-                methods: methods,
+                trait_methods: methods,
                 associated_types: associated_types
               )
             end
@@ -44,7 +44,7 @@ module MLC
                 @implementations[key] = ImplInfo.new(
                   type_name: type_name,
                   trait_name: trait_name,
-                  methods: methods,
+                  impl_methods: methods,
                   associated_type_bindings: associated_type_bindings
                 )
               else
@@ -81,7 +81,7 @@ module MLC
               @implementations.each do |(tn, _trait), impl|
                 next unless tn == type_name
 
-                return impl.methods[method_name] if impl.methods.key?(method_name)
+                return impl.impl_methods[method_name] if impl.impl_methods.key?(method_name)
               end
 
               nil
@@ -98,10 +98,10 @@ module MLC
             end
 
             # TraitInfo - trait definition
-            TraitInfo = Struct.new(:name, :type_params, :methods, :associated_types, keyword_init: true)
+            TraitInfo = Struct.new(:name, :type_params, :trait_methods, :associated_types, keyword_init: true)
 
             # ImplInfo - trait implementation
-            ImplInfo = Struct.new(:type_name, :trait_name, :methods, :associated_type_bindings, keyword_init: true)
+            ImplInfo = Struct.new(:type_name, :trait_name, :impl_methods, :associated_type_bindings, keyword_init: true)
 
             # MethodInfo - method/function info
             MethodInfo = Struct.new(:name, :params, :ret_type, :body, :is_static, keyword_init: true)

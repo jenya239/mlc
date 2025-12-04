@@ -105,7 +105,7 @@ module MLC
             stage = stage.to_sym
             rules = engine.registry[stage]
             already_registered = rules.any? do |rule|
-              rule.is_a?(rule_class) || rule == rule_class || rule.class == rule_class
+              rule.is_a?(rule_class) || rule == rule_class
             end
             engine.register(stage, rule_class.new) unless already_registered
           end

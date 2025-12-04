@@ -92,7 +92,7 @@ module MLC
               # Try trait implementation first
               if @trait_registry.implements?(type_name, trait_name)
                 impl = @trait_registry.get_implementation(type_name, trait_name)
-                return nil unless impl&.methods&.key?(method_name)
+                return nil unless impl&.impl_methods&.key?(method_name)
 
                 {
                   trait_name: trait_name,

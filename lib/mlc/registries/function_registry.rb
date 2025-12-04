@@ -306,9 +306,7 @@ module MLC
         return {} unless metadata
         raise ArgumentError, "metadata must be a Hash or nil" unless metadata.is_a?(Hash)
 
-        metadata.each_with_object({}) do |(key, value), normalized|
-          normalized[key.to_sym] = value
-        end
+        metadata.transform_keys { |key| key.to_sym }
       end
 
       def apply_metadata(entry, metadata)

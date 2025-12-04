@@ -13,14 +13,16 @@ module CppAst
         end
 
         # Resolve symbol to C++ type string
-        private def resolve_type(type)
+        private
+
+        def resolve_type(type)
           return type.to_cpp_type if type.respond_to?(:to_cpp_type)
           return resolve_symbol(type) if type.is_a?(Symbol)
 
           type.to_s
         end
 
-        private def resolve_symbol(sym)
+        def resolve_symbol(sym)
           case sym
           when :i32, :int then "int"
           when :i64, :long then "long long"
@@ -43,6 +45,8 @@ module CppAst
           else sym.to_s
           end
         end
+
+        public
 
         # Convert to C++ type string
         def to_cpp_type

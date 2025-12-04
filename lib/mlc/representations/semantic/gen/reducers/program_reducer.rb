@@ -173,7 +173,7 @@ module MLC
               return unless trait_info # Trait not found - will be caught elsewhere
 
               missing_methods = []
-              trait_info.methods.each do |trait_method|
+              trait_info.trait_methods.each do |trait_method|
                 method_name = trait_method[:name]
                 # Skip if method has default implementation
                 next if trait_method[:body]

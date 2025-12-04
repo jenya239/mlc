@@ -5,23 +5,23 @@
 # Корректно обрабатывает отступы для всех patterns
 
 class ServicesNamespaceRefactor
-  PATTERN1_OLD = ["module MLC", "  module Services"]
+  PATTERN1_OLD = ["module MLC", "  module Services"].freeze
   PATTERN1_NEW = [
     "module MLC",
     "  module Representations",
     "    module Semantic",
     "      module Gen",
     "        module Services"
-  ]
+  ].freeze
 
-  PATTERN2_OLD = ["module MLC", "  module SemanticGen", "    module Services"]
+  PATTERN2_OLD = ["module MLC", "  module SemanticGen", "    module Services"].freeze
   PATTERN2_NEW = [
     "module MLC",
     "  module Representations",
     "    module Semantic",
     "      module Gen",
     "        module Services"
-  ]
+  ].freeze
 
   def initialize(file_path, dry_run: false)
     @file_path = file_path
