@@ -74,7 +74,7 @@ module CppAst
           operator_prefix = left_trailing + current_leading_trivia
 
           # Check for ternary operator (special case)
-          if current_token&.kind == :question && 2 >= min_precedence
+          if current_token&.kind == :question && min_precedence <= 2
             left, left_trailing = parse_ternary(left, operator_prefix)
             next
           end

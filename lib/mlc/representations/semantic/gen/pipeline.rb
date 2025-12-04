@@ -95,8 +95,8 @@ module MLC
 
             engine.register(:core_ir_function, MLC::Representations::Semantic::Gen::Rules::FunctionEffectRule.new)
           end
-        end # class Pipeline
-      end   # module Gen
-    end     # module Semantic
-  end       # module Representations
-end         # module MLC
+        end
+      end
+    end
+  end
+end

@@ -7,15 +7,16 @@ module CppAst
         lexeme = first_char.dup
 
         if first_char == "0" && current_char
-          if current_char.match?(/[xX]/)
+          case current_char
+          when /[xX]/
             lexeme << advance
             lexeme << advance while current_char&.match?(/[0-9a-fA-F]/)
-          elsif current_char.match?(/[bB]/)
+          when /[bB]/
             lexeme << advance
             lexeme << advance while current_char&.match?(/[01]/)
-          elsif current_char.match?(/[0-7]/)
+          when /[0-7]/
             lexeme << advance while current_char&.match?(/[0-7]/)
-          elsif current_char == "."
+          when "."
             lexeme << advance
             scan_float_fraction(lexeme)
           end

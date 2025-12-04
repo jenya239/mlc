@@ -379,13 +379,14 @@ module MLC
               brace_depth = 1
               while @pos < @source.length && brace_depth.positive?
                 char = @source[@pos]
-                if char == '{'
+                case char
+                when '{'
                   brace_depth += 1
                   expr_chars << char
-                elsif char == '}'
+                when '}'
                   brace_depth -= 1
                   expr_chars << char if brace_depth.positive?
-                elsif char == '"'
+                when '"'
                   # Skip nested strings
                   expr_chars << char
                   @pos += 1
@@ -684,12 +685,13 @@ module MLC
           while @pos < @source.length
             char = @source[@pos]
 
-            if char == '/'
+            case char
+            when '/'
               # Found closing /
               @pos += 1
               @column += 1
               break
-            elsif char == '\\'
+            when '\\'
               # Escape sequence
               pattern += char
               @pos += 1
@@ -700,7 +702,7 @@ module MLC
                 @pos += 1
                 @column += 1
               end
-            elsif char == "\n"
+            when "\n"
               # Newline in regex pattern is an error, but we'll be permissive
               @line += 1
               @column = 1

@@ -47,7 +47,7 @@ module MLC
             private
 
             def normalize_fields(fields_ir)
-              fields_ir.transform_keys { |name| name.to_s }
+              fields_ir.transform_keys(&:to_s)
             end
 
             # Returns [record_type, ordered_fields_ir]

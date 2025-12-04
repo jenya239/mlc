@@ -222,13 +222,14 @@ module CppAst
           Token.new(kind: :plus, lexeme: "+", line: start_line, column: start_column)
         end
       when "-"
-        if peek == "-"
+        case peek
+        when "-"
           advance
           Token.new(kind: :minus_minus, lexeme: "--", line: start_line, column: start_column)
-        elsif peek == ">"
+        when ">"
           advance
           Token.new(kind: :arrow, lexeme: "->", line: start_line, column: start_column)
-        elsif peek == "="
+        when "="
           advance
           Token.new(kind: :minus_equals, lexeme: "-=", line: start_line, column: start_column)
         else

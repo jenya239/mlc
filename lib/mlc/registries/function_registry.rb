@@ -210,8 +210,10 @@ module MLC
       def delete(name)
         if (entry = @functions.delete(name))
           cleanup_collections(entry)
-          entry.aliases.each { |alias_name| @aliases.delete(alias_name) }
-          entry.aliases.each { |alias_name| entry.remove_alias(alias_name) }
+          entry.aliases.each do |alias_name|
+            @aliases.delete(alias_name)
+            entry.remove_alias(alias_name)
+          end
           return entry.info
         end
 
@@ -306,7 +308,7 @@ module MLC
         return {} unless metadata
         raise ArgumentError, "metadata must be a Hash or nil" unless metadata.is_a?(Hash)
 
-        metadata.transform_keys { |key| key.to_sym }
+        metadata.transform_keys(&:to_sym)
       end
 
       def apply_metadata(entry, metadata)

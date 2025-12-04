@@ -19,7 +19,7 @@ module CppAst
       end
 
       def to_source
-        result = "#{leading_trivia}"
+        result = leading_trivia.to_s.dup
 
         # Generate struct declarations for each case
         cases.each_with_index do |case_node, i|

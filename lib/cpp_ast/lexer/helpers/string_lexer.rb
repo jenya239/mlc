@@ -13,13 +13,14 @@ module CppAst
 
           char = current_char
 
-          if char == '"'
+          case char
+          when '"'
             lexeme << advance
             break
-          elsif char == '\\'
+          when '\\'
             lexeme << advance
             lexeme << advance unless at_end?
-          elsif char == "\n"
+          when "\n"
             raise "Unterminated string literal at #{line}:#{column}"
           else
             lexeme << advance
@@ -64,13 +65,14 @@ module CppAst
 
           char = current_char
 
-          if char == "'"
+          case char
+          when "'"
             lexeme << advance
             break
-          elsif char == '\\'
+          when '\\'
             lexeme << advance
             lexeme << advance unless at_end?
-          elsif char == "\n"
+          when "\n"
             raise "Unterminated character literal at #{line}:#{column}"
           else
             lexeme << advance
