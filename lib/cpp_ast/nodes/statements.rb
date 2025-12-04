@@ -163,7 +163,6 @@ module CppAst
           result << (init ? init.to_source : "")
           result << init_trailing
           result << (condition ? condition.to_source : "")
-          result << ")#{rparen_suffix}#{body.to_source}"
         else
           # Classic for: for (init; cond; inc)
           init_str = if init
@@ -186,8 +185,9 @@ module CppAst
                             ""
                           end
           result << increment_str
-          result << ")#{rparen_suffix}#{body.to_source}"
         end
+
+        result << ")#{rparen_suffix}#{body.to_source}"
 
         result
       end
@@ -362,21 +362,19 @@ module CppAst
         prefix = @modifier_set ? @modifier_set.to_s : prefix_modifiers
         result = "#{leading_trivia}#{prefix}#{return_type_str}#{suffix}#{name}(#{lparen_suffix}"
 
-        if parameters.empty?
-          result << ")"
-        else
+        unless parameters.empty?
           parameters.each_with_index do |param, i|
             param_str = param.respond_to?(:to_source) ? param.to_source : param.to_s
             result << param_str
             result << param_separators[i] if i < parameters.size - 1
           end
-          result << ")"
         end
+        result << ")"
 
         # Architecture: rparen_suffix contains space or code (e.g., " = 0"), add if there's content or if it contains code
         has_content_after_rparen = !modifiers_text.empty? || body || initializer_list ||
                                    (@default_suffix && !@default_suffix.empty?)
-        has_code_in_suffix = rparen_suffix && rparen_suffix.include?("=")
+        has_code_in_suffix = rparen_suffix&.include?("=")
         result << rparen_suffix if (has_content_after_rparen || has_code_in_suffix) && rparen_suffix && !rparen_suffix.empty?
 
         # Architecture: space is already in rparen_suffix, don't add it here

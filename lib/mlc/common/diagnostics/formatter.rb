@@ -47,7 +47,7 @@ module MLC
           if origin && source
             context = format_source_context(origin, source)
             parts << context if context
-          elsif origin && origin.line_text
+          elsif origin&.line_text
             # Fallback to line_text in origin
             parts << format_single_line_context(origin)
           end

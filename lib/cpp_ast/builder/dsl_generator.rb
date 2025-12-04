@@ -286,21 +286,17 @@ module CppAst
         cond = generate(node.condition)
         then_stmt = generate(node.then_statement)
 
-        if node.else_statement
-          else_stmt = generate(node.else_statement)
-          result = "if_stmt(#{cond},\n"
-          with_indent do
-            result += "#{current_indent}#{then_stmt},\n"
-            result += "#{current_indent}#{else_stmt}\n"
+        result = "if_stmt(#{cond},\n"
+        with_indent do
+          result += "#{current_indent}#{then_stmt}"
+          if node.else_statement
+            else_stmt = generate(node.else_statement)
+            result += ",\n#{current_indent}#{else_stmt}\n"
+          else
+            result += "\n"
           end
-          result += "#{current_indent})"
-        else
-          result = "if_stmt(#{cond},\n"
-          with_indent do
-            result += "#{current_indent}#{then_stmt}\n"
-          end
-          result += "#{current_indent})"
         end
+        result += "#{current_indent})"
 
         # Fluent calls for trivia
         result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
@@ -387,26 +383,24 @@ module CppAst
 
       def generate_for_statement(node)
         # Handle both classic and range-based for
-        if node.init_trailing.start_with?(":")
-          # Range-based for: for (auto x : vec)
-          init_text = node.init ? node.init.to_source : ""
-          range = node.condition ? generate(node.condition) : "nil"
-          result = "range_for_stmt(#{init_text.inspect}, #{range},\n"
-          with_indent do
-            result += "#{current_indent}#{generate(node.body)}\n"
+        result =
+          if node.init_trailing.start_with?(":")
+            # Range-based for: for (auto x : vec)
+            init_text = node.init ? node.init.to_source : ""
+            range = node.condition ? generate(node.condition) : "nil"
+            "range_for_stmt(#{init_text.inspect}, #{range},\n"
+          else
+            # Classic for: for (init; cond; inc)
+            init = node.init ? generate(node.init) : "nil"
+            cond = node.condition ? generate(node.condition) : "nil"
+            inc = node.increment ? generate(node.increment) : "nil"
+            "for_stmt(#{init}, #{cond}, #{inc},\n"
           end
-          result += "#{current_indent})"
-        else
-          # Classic for: for (init; cond; inc)
-          init = node.init ? generate(node.init) : "nil"
-          cond = node.condition ? generate(node.condition) : "nil"
-          inc = node.increment ? generate(node.increment) : "nil"
-          result = "for_stmt(#{init}, #{cond}, #{inc},\n"
-          with_indent do
-            result += "#{current_indent}#{generate(node.body)}\n"
-          end
-          result += "#{current_indent})"
+
+        with_indent do
+          result += "#{current_indent}#{generate(node.body)}\n"
         end
+        result += "#{current_indent})"
 
         result += "\n#{current_indent}.with_leading(#{node.leading_trivia.inspect})" if node.leading_trivia != ""
 

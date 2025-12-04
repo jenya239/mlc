@@ -51,8 +51,6 @@ files.each do |file|
         output << line
       end
     end
-    content = output.join("\n")
-
   else
     # For regular rule files (3 modules deep)
     # Replace namespace
@@ -89,8 +87,9 @@ files.each do |file|
         output << line
       end
     end
-    content = output.join("\n")
   end
+
+  content = output.join("\n")
 
   if content != original
     File.write(file, content)

@@ -129,21 +129,21 @@ module MLC
 
               when SemanticIR::OpaqueType
                 # Check TypeRegistry first
-                return type_registry.cpp_name(type.name) if type_registry && type_registry.has_type?(type.name)
+                return type_registry.cpp_name(type.name) if type_registry&.has_type?(type.name)
 
                 # Fallback: opaque types are pointers
                 "#{type.name}*"
 
               when SemanticIR::RecordType, SemanticIR::SumType
                 # Try TypeRegistry first
-                return type_registry.cpp_name(type.name) if type_registry && type_registry.has_type?(type.name)
+                return type_registry.cpp_name(type.name) if type_registry&.has_type?(type.name)
 
                 # Fallback to type_map
                 type_map[type.name] || type.name
 
               when SemanticIR::Type
                 # Try TypeRegistry first
-                return type_registry.cpp_name(type.name) if type_registry && type.respond_to?(:name) && type_registry.has_type?(type.name)
+                return type_registry.cpp_name(type.name) if type_registry&.has_type?(type.name) && type.respond_to?(:name)
 
                 # Check if it's a known primitive type
                 mapped = type_map[type.name]
@@ -227,13 +227,13 @@ module MLC
                 extract_base_type_name(type.base_type, type_map: type_map, type_registry: type_registry)
               when SemanticIR::RecordType, SemanticIR::SumType
                 # Try TypeRegistry first
-                return type_registry.cpp_name(type.name) if type_registry && type_registry.has_type?(type.name)
+                return type_registry.cpp_name(type.name) if type_registry&.has_type?(type.name)
 
                 # Return the type name
                 type_map[type.name] || type.name
               when SemanticIR::Type
                 # Try TypeRegistry first
-                return type_registry.cpp_name(type.name) if type_registry && type.respond_to?(:name) && type_registry.has_type?(type.name)
+                return type_registry.cpp_name(type.name) if type_registry&.has_type?(type.name) && type.respond_to?(:name)
 
                 type_map[type.name] || type.name
               else

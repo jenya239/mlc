@@ -18,8 +18,7 @@ module MLC
     def full_message(highlight: true, order: :top, trace: nil)
       origin_label = origin&.label
       base = super(highlight: highlight, order: order, trace: trace)
-      text = origin_label ? "#{origin_label}: #{base}" : base
-      highlight ? text : text
+      origin_label ? "#{origin_label}: #{base}" : base
     end
   end
 end

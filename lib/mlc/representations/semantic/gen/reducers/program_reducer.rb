@@ -192,14 +192,7 @@ module MLC
             end
 
             def extract_type_name(type)
-              case type
-              when MLC::Source::AST::PrimType
-                type.name
-              when MLC::Source::AST::GenericType
-                type.name
-              else
-                type.name
-              end
+              type.name
             end
 
             # Extract type parameters from extend target type

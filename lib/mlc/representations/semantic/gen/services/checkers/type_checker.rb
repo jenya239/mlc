@@ -270,7 +270,7 @@ module MLC
 
             def type_satisfies_constraint?(constraint, type_name)
               allowed = BUILTIN_CONSTRAINTS[constraint]
-              allowed && allowed.include?(type_name)
+              allowed&.include?(type_name)
             end
 
             def extract_actual_type_name(type_node)
@@ -347,7 +347,7 @@ module MLC
 
             def validate_type_constraints(base_name, actual_type_nodes)
               decl = @type_decl_table[base_name]
-              return unless decl && decl.type_params.any?
+              return unless decl&.type_params&.any?
 
               decl.type_params.zip(actual_type_nodes).each do |param_info, actual_node|
                 next unless param_info.respond_to?(:constraint) && param_info.constraint && !param_info.constraint.empty?

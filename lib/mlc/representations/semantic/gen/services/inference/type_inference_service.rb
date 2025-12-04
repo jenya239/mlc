@@ -204,12 +204,7 @@ module MLC
                   []
                 end
               when "fold"
-                if index == 1 && object_type.is_a?(SemanticIR::ArrayType)
-                  # fold(init, fn) - fn takes (accumulator, element)
-                  []
-                else
-                  []
-                end
+                []
               else
                 []
               end
@@ -870,7 +865,7 @@ module MLC
             # Instantiate generic member type
             def instantiate_generic_member_type(base_name, member_type, type_args)
               type_decl = @type_decl_table[base_name]
-              return member_type unless type_decl && type_decl.type_params.any?
+              return member_type unless type_decl&.type_params&.any?
 
               type_map = {}
               type_decl.type_params.each_with_index do |tp, index|

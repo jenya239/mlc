@@ -263,7 +263,7 @@ module CppAst
             n.modifier_set ||= CppAst::Nodes::ModifierSet.new
             n.modifier_set.add(:inline)
             # Mark body as inline for proper spacing
-            body.define_singleton_method(:inline?) { true } if body
+            body&.define_singleton_method(:inline?) { true }
             # Add leading space to body for inline methods
             body.leading_trivia = " " + (body.leading_trivia || "") if body.respond_to?(:leading_trivia=)
           end

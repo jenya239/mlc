@@ -260,11 +260,9 @@ module MLC
               collect_modules_from_expr(item.body, registry, current_module)
             when MLC::SemanticIR::TypeDecl
               type_info = @lowering.type_registry&.lookup(item.name)
-              if type_info
-                type_info.referenced_type_names.each do |type_name|
-                  module_name = @lowering.type_registry.module_name_for(type_name)
-                  mark_module_dependency(module_name, current_module, require_include: true)
-                end
+              type_info&.referenced_type_names&.each do |type_name|
+                module_name = @lowering.type_registry&.module_name_for(type_name)
+                mark_module_dependency(module_name, current_module, require_include: true)
               end
             end
           end

@@ -487,51 +487,34 @@ module MLC
             # Some(x) -> if (opt.has_value()) { auto x = *opt; ... }
             # None -> if (!opt.has_value()) { ... }
             def build_option_pattern_arm(case_name, bindings, guard, body_src, scrutinee_src)
-              if case_name == "Some"
-                # Some(x) pattern: check has_value() and extract the value
-                holds_check = "#{scrutinee_src}.has_value()"
+              holds_check = case_name == "Some" ? "#{scrutinee_src}.has_value()" : "!#{scrutinee_src}.has_value()"
 
-                binding_decls = []
-                if bindings.any?
-                  # Extract value bindings (usually just one for Some)
-                  bindings.each do |binding|
-                    next if binding == "_"
-                    next if binding.is_a?(Hash) && binding[:kind] == :constructor
+              binding_decls = []
+              if case_name == "Some" && bindings.any?
+                # Extract value bindings (usually just one for Some)
+                bindings.each do |binding|
+                  next if binding == "_"
+                  next if binding.is_a?(Hash) && binding[:kind] == :constructor
 
-                    # auto x = *scrutinee; or auto x = scrutinee.value();
-                    binding_decls << "auto #{binding} = *#{scrutinee_src};"
-                  end
+                  # auto x = *scrutinee; or auto x = scrutinee.value();
+                  binding_decls << "auto #{binding} = *#{scrutinee_src};"
                 end
-
-                binding_str = binding_decls.join(" ")
-
-                if guard
-                  guard_expr = context.lower_expression(guard)
-                  guard_src = guard_expr.to_source
-                  inner_body = "#{binding_str} if (#{guard_src}) { return #{body_src}; }"
-                else
-                  inner_body = "#{binding_str} return #{body_src};"
-                end
-
-                context.factory.raw_statement(
-                  code: "if (#{holds_check}) { #{inner_body} }"
-                )
-              else
-                # None pattern: check !has_value()
-                holds_check = "!#{scrutinee_src}.has_value()"
-
-                if guard
-                  guard_expr = context.lower_expression(guard)
-                  guard_src = guard_expr.to_source
-                  inner_body = "if (#{guard_src}) { return #{body_src}; }"
-                else
-                  inner_body = "return #{body_src};"
-                end
-
-                context.factory.raw_statement(
-                  code: "if (#{holds_check}) { #{inner_body} }"
-                )
               end
+
+              binding_str = binding_decls.join(" ")
+
+              guard_src = (context.lower_expression(guard).to_source if guard)
+
+              inner_body =
+                if guard_src
+                  "#{binding_str} if (#{guard_src}) { return #{body_src}; }"
+                else
+                  "#{binding_str} return #{body_src};"
+                end
+
+              context.factory.raw_statement(
+                code: "if (#{holds_check}) { #{inner_body} }"
+              )
             end
 
             # Build nested pattern check for nested constructor patterns

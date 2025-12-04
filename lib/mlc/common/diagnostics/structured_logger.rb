@@ -162,7 +162,7 @@ module MLC
         def format_value(value, compact: false)
           case value
           when String
-            compact ? value.inspect : value.inspect
+            value.inspect
           when Symbol
             ":#{value}"
           when Array

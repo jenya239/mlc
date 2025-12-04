@@ -42,14 +42,9 @@ module CppAst
 
           char = current_char
 
-          if char == "\n"
-            break unless @position.positive? && @source[@position - 1] == '\\'
+          break if (char == "\n") && !(@position.positive? && @source[@position - 1] == '\\')
 
-            lexeme << advance
-
-          else
-            lexeme << advance
-          end
+          lexeme << advance
         end
 
         lexeme

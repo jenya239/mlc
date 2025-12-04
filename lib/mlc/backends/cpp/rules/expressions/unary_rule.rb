@@ -23,7 +23,7 @@ module MLC
               context.factory.unary_expression(
                 operator: node.op,
                 operand: operand,
-                operator_suffix: node.op == "!" ? "" : "",
+                operator_suffix: "",
                 prefix: true
               )
             end

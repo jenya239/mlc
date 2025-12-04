@@ -78,17 +78,6 @@ module CppAst
           trailing = current_token.trailing_trivia
           expect(:semicolon)
 
-          stmt = Nodes::UsingDeclaration.new(
-            leading_trivia: leading_trivia,
-            kind: :alias,
-            name: name,
-            alias_target: alias_target,
-            using_suffix: using_suffix,
-            equals_prefix: equals_prefix,
-            equals_suffix: equals_suffix
-          )
-
-          [stmt, trailing]
         else
           _semicolon_prefix = after_name + after_name_extra + current_leading_trivia
           trailing = current_token.trailing_trivia
@@ -100,9 +89,19 @@ module CppAst
             name: name,
             using_suffix: using_suffix
           )
-
-          [stmt, trailing]
         end
+
+        stmt ||= Nodes::UsingDeclaration.new(
+          leading_trivia: leading_trivia,
+          kind: :alias,
+          name: name,
+          alias_target: alias_target,
+          using_suffix: using_suffix,
+          equals_prefix: equals_prefix,
+          equals_suffix: equals_suffix
+        )
+
+        [stmt, trailing]
       end
     end
   end

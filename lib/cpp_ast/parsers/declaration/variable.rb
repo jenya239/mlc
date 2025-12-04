@@ -86,23 +86,20 @@ module CppAst
           break if at_end? || [:semicolon, :comma].include?(current_token.kind)
 
           decl_text << current_leading_trivia
+          decl_text << current_token.lexeme << current_token.trailing_trivia
 
           case current_token.kind
           when :equals
-            decl_text << current_token.lexeme << current_token.trailing_trivia
             advance_raw
             parse_variable_initializer(decl_text)
             break
           when :lparen
-            decl_text << current_token.lexeme << current_token.trailing_trivia
             advance_raw
             collect_balanced_tokens(decl_text, :lparen, :rparen)
           when :lbrace
-            decl_text << current_token.lexeme << current_token.trailing_trivia
             advance_raw
             collect_balanced_tokens(decl_text, :lbrace, :rbrace)
           else
-            decl_text << current_token.lexeme << current_token.trailing_trivia
             advance_raw
           end
         end
@@ -115,17 +112,15 @@ module CppAst
           break if at_end? || [:semicolon, :comma].include?(current_token.kind)
 
           decl_text << current_leading_trivia
+          decl_text << current_token.lexeme << current_token.trailing_trivia
 
           if current_token.kind == :lparen
-            decl_text << current_token.lexeme << current_token.trailing_trivia
             advance_raw
             collect_balanced_tokens(decl_text, :lparen, :rparen)
           elsif current_token.kind == :lbrace
-            decl_text << current_token.lexeme << current_token.trailing_trivia
             advance_raw
             collect_balanced_tokens(decl_text, :lbrace, :rbrace)
           else
-            decl_text << current_token.lexeme << current_token.trailing_trivia
             advance_raw
           end
         end

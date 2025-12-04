@@ -1003,8 +1003,6 @@ module MLC
                 # Safe member access: obj?.field
                 expr = attach_origin(MLC::Source::AST::SafeMemberAccess.new(object: expr, member: member), safe_nav_token)
               end
-              expr_line = last_token&.line
-
             when :OPERATOR
               break unless current.value == "."
 
@@ -1016,7 +1014,6 @@ module MLC
                 index_token = consume(:INT_LITERAL)
                 index = index_token.value.to_i
                 expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: index), index_token)
-                expr_line = last_token&.line
               elsif current.type == :FLOAT_LITERAL
                 # Handle chained access like tuple.0.1 where 0.1 is tokenized as float
                 # Split 0.1 into index 0 and .1 for further processing
@@ -1031,8 +1028,6 @@ module MLC
                 # Build nested tuple access: expr.first_index.second_index
                 inner_access = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: first_index), float_token)
                 expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: inner_access, index: second_index), float_token)
-                expr_line = last_token&.line
-
               else
                 member_token = consume(:IDENTIFIER)
                 member = member_token.value
@@ -1051,8 +1046,9 @@ module MLC
                   # Just member access: obj.field
                   expr = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
                 end
-                expr_line = last_token&.line
               end
+
+              expr_line = last_token&.line
 
             when :LBRACKET
               # Array indexing or slicing: expr[index] or expr[start..end]

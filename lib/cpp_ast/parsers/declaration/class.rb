@@ -51,13 +51,13 @@ module CppAst
               colon_suffix: colon_suffix
             )
             member_trailings << ""
-            member_leading = ""
           else
             member, trailing = parse_statement(member_leading)
             members << member
             member_trailings << trailing
-            member_leading = ""
           end
+
+          member_leading = ""
         end
 
         pop_context

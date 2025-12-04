@@ -16,22 +16,21 @@ module CppAst
         loop do
           break if at_end?
 
+          token_text = current_token.lexeme + current_token.trailing_trivia
+          consume_token = true
           case current_token.kind
           when :less
             depth += 1
-            params << current_token.lexeme << current_token.trailing_trivia
-            advance_raw
           when :greater
             depth -= 1
-            break if depth.zero?
-
-            params << current_token.lexeme << current_token.trailing_trivia
-            advance_raw
-
-          else
-            params << current_token.lexeme << current_token.trailing_trivia
-            advance_raw
+            if depth.zero?
+              consume_token = false
+              break
+            end
           end
+
+          params << token_text if consume_token
+          advance_raw if consume_token
         end
 
         params_suffix = current_token.trailing_trivia
