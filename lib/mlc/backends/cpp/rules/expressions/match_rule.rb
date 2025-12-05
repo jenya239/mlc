@@ -490,34 +490,38 @@ module MLC
             # Some(x) -> if (opt.has_value()) { auto x = *opt; ... }
             # None -> if (!opt.has_value()) { ... }
             def build_option_pattern_arm(case_name, bindings, guard, body_src, scrutinee_src)
-              holds_check = case_name == "Some" ? "#{scrutinee_src}.has_value()" : "!#{scrutinee_src}.has_value()"
-
-              binding_decls = []
-              if case_name == "Some" && bindings.any?
-                # Extract value bindings (usually just one for Some)
-                bindings.each do |binding|
-                  next if binding == "_"
-                  next if binding.is_a?(Hash) && binding[:kind] == :constructor
-
-                  # auto x = *scrutinee; or auto x = scrutinee.value();
-                  binding_decls << "auto #{binding} = *#{scrutinee_src};"
-                end
-              end
-
-              binding_str = binding_decls.join(" ")
-
-              guard_src = (context.lower_expression(guard).to_source if guard)
-
-              inner_body =
-                if guard_src
-                  "#{binding_str} if (#{guard_src}) { return #{body_src}; }"
-                else
-                  "#{binding_str} return #{body_src};"
-                end
+              holds_check = option_holds_check(case_name, scrutinee_src)
+              binding_str = option_bindings(case_name, bindings, scrutinee_src)
+              inner_body = option_inner_body(binding_str, guard, body_src)
 
               context.factory.raw_statement(
                 code: "if (#{holds_check}) { #{inner_body} }"
               )
+            end
+
+            def option_holds_check(case_name, scrutinee_src)
+              case_name == "Some" ? "#{scrutinee_src}.has_value()" : "!#{scrutinee_src}.has_value()"
+            end
+
+            def option_bindings(case_name, bindings, scrutinee_src)
+              return "" unless case_name == "Some" && bindings.any?
+
+              binding_decls = bindings.filter_map do |binding|
+                next if binding == "_"
+                next if binding.is_a?(Hash) && binding[:kind] == :constructor
+
+                "auto #{binding} = *#{scrutinee_src};"
+              end
+
+              binding_decls.join(" ")
+            end
+
+            def option_inner_body(binding_str, guard, body_src)
+              guard_src = context.lower_expression(guard).to_source if guard
+
+              return "#{binding_str} return #{body_src};" unless guard_src
+
+              "#{binding_str} if (#{guard_src}) { return #{body_src}; }"
             end
 
             # Build nested pattern check for nested constructor patterns
@@ -527,25 +531,27 @@ module MLC
 
               condition = "std::holds_alternative<#{case_name}>(#{scrutinee_var})"
 
-              binding_decls = []
-              # Extract variant to temp variable
-              temp_var = "_v_nested_#{case_name.downcase}"
-              binding_decls << "auto #{temp_var} = std::get<#{case_name}>(#{scrutinee_var});"
-
-              # Use structured binding
-              non_wildcard_bindings = bindings.reject { |b| b == "_" || b.is_a?(Hash) }
-              if non_wildcard_bindings.any?
-                binding_list = bindings.map do |b|
-                  if b.is_a?(Hash)
-                    "_"
-                  else
-                    (b == "_" ? "_" : b)
-                  end
-                end.join(", ")
-                binding_decls << "auto [#{binding_list}] = #{temp_var};"
-              end
+              binding_decls = nested_binding_decls(case_name, bindings, scrutinee_var)
 
               { condition: condition, bindings: binding_decls.join(" ") }
+            end
+
+            def nested_binding_decls(case_name, bindings, scrutinee_var)
+              decls = []
+              temp_var = "_v_nested_#{case_name.downcase}"
+              decls << "auto #{temp_var} = std::get<#{case_name}>(#{scrutinee_var});"
+
+              non_wildcard_bindings = bindings.reject { |b| b == "_" || b.is_a?(Hash) }
+              if non_wildcard_bindings.any?
+                binding_list = bindings.map do |binding|
+                  next "_" if binding.is_a?(Hash)
+
+                  binding == "_" ? "_" : binding
+                end.join(", ")
+                decls << "auto [#{binding_list}] = #{temp_var};"
+              end
+
+              decls
             end
 
             # Build or-pattern arm with (cond1 || cond2 || ...) condition
