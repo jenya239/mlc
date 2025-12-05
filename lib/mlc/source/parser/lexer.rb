@@ -681,7 +681,22 @@ module MLC
           @pos += 1
           @column += 1
 
-          pattern = ""
+          pattern = read_regex_pattern
+
+          # Read flags (optional)
+          flags = ""
+          while @pos < @source.length && @source[@pos] =~ /[gimsuvy]/
+            flags += @source[@pos]
+            @pos += 1
+            @column += 1
+          end
+
+          # Store both pattern and flags in the token value
+          add_token(:REGEX, { pattern: pattern, flags: flags }, line: start_line, column: start_column)
+        end
+
+        def read_regex_pattern
+          pattern = +""
 
           # Read pattern until closing /
           while @pos < @source.length
@@ -694,39 +709,32 @@ module MLC
               @column += 1
               break
             when '\\'
-              # Escape sequence
-              pattern += char
-              @pos += 1
-              @column += 1
-
-              if @pos < @source.length
-                pattern += @source[@pos]
-                @pos += 1
-                @column += 1
-              end
+              pattern << escape_sequence
             when "\n"
               # Newline in regex pattern is an error, but we'll be permissive
               @line += 1
               @column = 1
-              pattern += char
+              pattern << char
               @pos += 1
             else
-              pattern += char
+              pattern << char
               @pos += 1
               @column += 1
             end
           end
 
-          # Read flags (optional)
-          flags = ""
-          while @pos < @source.length && @source[@pos] =~ /[gimsuvy]/
-            flags += @source[@pos]
+          pattern
+        end
+
+        def escape_sequence
+          escaped = @source[@pos, 2]
+          @pos += 1
+          @column += 1
+          if @pos < @source.length
             @pos += 1
             @column += 1
           end
-
-          # Store both pattern and flags in the token value
-          add_token(:REGEX, { pattern: pattern, flags: flags }, line: start_line, column: start_column)
+          escaped
         end
 
         # Tokenize :identifier -> SYMBOL token
