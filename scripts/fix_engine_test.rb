@@ -26,7 +26,7 @@ lines.each_with_index do |line, idx|
     output << if line.strip.empty? || line.start_with?("#")
                 line
               else
-                ("    " + line)
+                "    #{line}"
               end
   # Last 2 lines: replace closing ends
   elsif idx == total - 2

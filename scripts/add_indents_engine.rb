@@ -16,7 +16,7 @@ lines.each_with_index do |line, idx|
     output << if line.strip.empty?
                 line
               else
-                ("    " + line)
+                "    #{line}"
               end
   # Last 2 lines: replace with 4 closing ends
   elsif idx == lines.length - 2

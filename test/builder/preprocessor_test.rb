@@ -63,7 +63,7 @@ class PreprocessorTest < Minitest::Test
                        inline_comment("Debug mode is enabled"))
     )
 
-    expected = <<~CPP.strip + "\n"
+    expected = "#{<<~CPP.strip}\n"
       #define GL_VERSION_MAJOR 3
       #define GL_VERSION_MINOR 3
       #ifdef DEBUG

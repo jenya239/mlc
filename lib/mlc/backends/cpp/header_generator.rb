@@ -56,7 +56,7 @@ module MLC
 
         def generate_header_guard(module_name)
           # Convert Math::Vector -> MATH_VECTOR_HPP
-          module_name.upcase.gsub("::", "_").gsub("/", "_") + "_HPP"
+          "#{module_name.upcase.gsub('::', '_').gsub('/', '_')}_HPP"
         end
 
         def generate_header(module_name:, guard:, imports:, items:, dependencies:)
@@ -209,13 +209,13 @@ module MLC
 
           if path.start_with?("./", "../", "/")
             # It's a file path - just add .hpp if needed
-            path.end_with?(".hpp") ? path : path + ".hpp"
+            path.end_with?(".hpp") ? path : "#{path}.hpp"
           elsif path.include?("::")
             # Module path: Math::Vector -> math/vector.hpp
-            path.split("::").map(&:downcase).join("/") + ".hpp"
+            "#{path.split('::').map(&:downcase).join('/')}.hpp"
           else
             # Simple name: Math -> math.hpp
-            path.downcase + ".hpp"
+            "#{path.downcase}.hpp"
           end
         end
 

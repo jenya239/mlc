@@ -115,7 +115,7 @@ module CppAst
         snippet = snippet_tokens.map(&:lexeme).join("")
 
         # Trim long snippets
-        snippet = snippet[0..77] + "..." if snippet.length > 80
+        snippet = "#{snippet[0..77]}..." if snippet.length > 80
 
         snippet.inspect
       end

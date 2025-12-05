@@ -43,7 +43,7 @@ class CommentsTest < Minitest::Test
       block_comment("End of program")
     )
 
-    expected = <<~CPP.strip + "\n"
+    expected = "#{<<~CPP.strip}\n"
       // Start of program
       int x;
       /* End of program */

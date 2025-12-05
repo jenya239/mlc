@@ -198,7 +198,7 @@ module CppAst
 
         # C++11 attributes support - Phase 1
         def attribute(name)
-          dup.tap { |n| n.prefix_modifiers = "[[#{name}]] " + n.prefix_modifiers }
+          dup.tap { |n| n.prefix_modifiers = "[[#{name}]] #{n.prefix_modifiers}" }
         end
 
         def maybe_unused
@@ -209,11 +209,11 @@ module CppAst
         end
 
         def deprecated
-          dup.tap { |n| n.prefix_modifiers = "[[deprecated]] " + n.prefix_modifiers }
+          dup.tap { |n| n.prefix_modifiers = "[[deprecated]] #{n.prefix_modifiers}" }
         end
 
         def deprecated_with_message(message)
-          dup.tap { |n| n.prefix_modifiers = "[[deprecated(\"#{message}\")]] " + n.prefix_modifiers }
+          dup.tap { |n| n.prefix_modifiers = "[[deprecated(\"#{message}\")]] #{n.prefix_modifiers}" }
         end
 
         def scoped_name(class_name)
@@ -229,7 +229,7 @@ module CppAst
 
         # Virtual methods support - Phase 1
         def virtual
-          dup.tap { |n| n.prefix_modifiers = "virtual " + n.prefix_modifiers }
+          dup.tap { |n| n.prefix_modifiers = "virtual #{n.prefix_modifiers}" }
         end
 
         def override
@@ -250,7 +250,7 @@ module CppAst
 
         def pure_virtual
           dup.tap do |n|
-            n.prefix_modifiers = "virtual " + n.prefix_modifiers
+            n.prefix_modifiers = "virtual #{n.prefix_modifiers}"
             n.rparen_suffix = " = 0"
             n.body = nil # pure virtual functions have no body
           end
@@ -265,7 +265,7 @@ module CppAst
             # Mark body as inline for proper spacing
             body&.define_singleton_method(:inline?) { true }
             # Add leading space to body for inline methods
-            body.leading_trivia = " " + (body.leading_trivia || "") if body.respond_to?(:leading_trivia=)
+            body.leading_trivia = " #{body.leading_trivia || ''}" if body.respond_to?(:leading_trivia=)
           end
         end
 
@@ -288,11 +288,11 @@ module CppAst
 
         # Static and inline modifiers for variables - Phase 3
         def static
-          dup.tap { |n| n.prefix_modifiers = "static " + n.prefix_modifiers }
+          dup.tap { |n| n.prefix_modifiers = "static #{n.prefix_modifiers}" }
         end
 
         def inline
-          dup.tap { |n| n.prefix_modifiers = "inline " + n.prefix_modifiers }
+          dup.tap { |n| n.prefix_modifiers = "inline #{n.prefix_modifiers}" }
         end
 
         def constexpr
@@ -303,7 +303,7 @@ module CppAst
         end
 
         def const
-          dup.tap { |n| n.prefix_modifiers = "const " + n.prefix_modifiers }
+          dup.tap { |n| n.prefix_modifiers = "const #{n.prefix_modifiers}" }
         end
       end
 
@@ -312,7 +312,7 @@ module CppAst
         include Statement
 
         def coroutine
-          dup.tap { |n| n.prefix_modifiers = "coroutine " + n.prefix_modifiers }
+          dup.tap { |n| n.prefix_modifiers = "coroutine #{n.prefix_modifiers}" }
         end
       end
 

@@ -463,19 +463,20 @@ module MLC
               binding_str = binding_decls.join(" ")
 
               # Build the inner body with nested checks
+              inner_return = if guard
+                               guard_src = context.lower_expression(guard).to_source
+                               "if (#{guard_src}) { return #{body_src}; }"
+                             else
+                               "return #{body_src};"
+                             end
+
               if nested_checks.any?
-                # Wrap body in nested if-statements for nested pattern checks
-                inner_return = guard ? "if (#{context.lower_expression(guard).to_source}) { return #{body_src}; }" : "return #{body_src};"
                 nested_body = nested_checks.reverse.reduce(inner_return) do |acc, check|
                   "if (#{check[:condition]}) { #{check[:bindings]} #{acc} }"
                 end
                 inner_body = "#{binding_str} #{nested_body}"
-              elsif guard
-                guard_expr = context.lower_expression(guard)
-                guard_src = guard_expr.to_source
-                inner_body = "#{binding_str} if (#{guard_src}) { return #{body_src}; }"
               else
-                inner_body = "#{binding_str} return #{body_src};"
+                inner_body = "#{binding_str} #{inner_return}"
               end
 
               context.factory.raw_statement(

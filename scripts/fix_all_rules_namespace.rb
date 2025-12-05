@@ -45,7 +45,7 @@ files.each do |file|
         output << if line.strip.empty?
                     line
                   else
-                    ("    " + line)
+                    "    #{line}"
                   end
       else
         output << line
@@ -81,7 +81,7 @@ files.each do |file|
         output << if line.strip.empty?
                     line
                   else
-                    ("    " + line)
+                    "    #{line}"
                   end
       else
         output << line

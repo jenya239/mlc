@@ -34,9 +34,9 @@ while i < lines.length
     output_lines << if line.strip.empty?
                       line
                     elsif line.start_with?("#")
-                      "      " + line
+                      "      #{line}"
                     else
-                      "      " + line
+                      "      #{line}"
                     end
     i += 1
   elsif i == lines.length - 2

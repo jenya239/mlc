@@ -27,10 +27,10 @@ lines.each_with_index do |line, idx|
                 line
               elsif line.lstrip.start_with?("#")
                 # Comments: add 4 spaces
-                ("    " + line)
+                "    #{line}"
               else
                 # Regular code: add 4 spaces
-                ("    " + line)
+                "    #{line}"
               end
   # Last 3 lines (127, 128, 129): replace with 5 closing ends
   elsif idx == total - 3

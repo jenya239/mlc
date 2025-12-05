@@ -257,7 +257,7 @@ module CppAst
       def class_with_inheritance(name, base_classes, *members)
         # Build inheritance text
         inheritance_text = ""
-        inheritance_text = " : " + base_classes.join(", ") if base_classes.any?
+        inheritance_text = " : #{base_classes.join(', ')}" if base_classes.any?
 
         member_trailings = members.map { "\n" }
         Nodes::ClassDeclaration.new(

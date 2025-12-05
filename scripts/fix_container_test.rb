@@ -16,7 +16,7 @@ lines.each_with_index do |line, idx|
     output << if line.strip.empty? || line.start_with?("#")
                 line
               else
-                ("    " + line)
+                "    #{line}"
               end
   # Lines 103-106: replace closing ends
   elsif idx == 103

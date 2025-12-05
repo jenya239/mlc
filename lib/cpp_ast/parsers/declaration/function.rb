@@ -194,10 +194,7 @@ module CppAst
 
           if current_token.kind == :keyword_operator
             skip_operator_symbol
-            if current_token.kind == :lparen
-              @position = saved_pos
-              return true
-            end
+            return true if current_token.kind == :lparen
           end
 
           if current_token.kind == :identifier
@@ -207,10 +204,7 @@ module CppAst
             if current_token.kind == :colon_colon
               advance_raw
               current_leading_trivia
-              if current_token.kind == :keyword_operator
-                @position = saved_pos
-                return true
-              end
+              return true if current_token.kind == :keyword_operator
             end
             @position = saved_after_ptr
           end
@@ -221,10 +215,7 @@ module CppAst
           if current_token.kind == :colon_colon
             advance_raw
             current_leading_trivia
-            if current_token.kind == :keyword_operator
-              @position = saved_pos
-              return true
-            end
+            return true if current_token.kind == :keyword_operator
           end
           @position = saved_op
         end

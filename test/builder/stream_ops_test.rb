@@ -61,7 +61,7 @@ class StreamOpsTest < Minitest::Test
       expr_stmt(cout_chain(string("Application finished"), endl))
     )
 
-    expected = <<~CPP.strip + "\n"
+    expected = "#{<<~CPP.strip}\n"
       std::cout << Application started << std::endl;
       std::cerr << Warning:  << warning_msg << std::endl;
       std::cout << Application finished << std::endl;

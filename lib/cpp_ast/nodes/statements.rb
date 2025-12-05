@@ -847,7 +847,7 @@ module CppAst
       def to_source
         result = "#{leading_trivia}#ifdef #{name}\n"
         body.each do |stmt|
-          result += stmt.to_source + "\n"
+          result += "#{stmt.to_source}\n"
         end
         result += "#endif"
         result
@@ -866,7 +866,7 @@ module CppAst
       def to_source
         result = "#{leading_trivia}#ifndef #{name}\n"
         body.each do |stmt|
-          result += stmt.to_source + "\n"
+          result += "#{stmt.to_source}\n"
         end
         result += "#endif"
         result
@@ -904,7 +904,7 @@ module CppAst
       def to_source
         result = "#{leading_trivia}export module #{name};\n"
         body.each do |stmt|
-          result += stmt.to_source + "\n"
+          result += "#{stmt.to_source}\n"
         end
         result
       end
@@ -934,7 +934,7 @@ module CppAst
       def to_source
         result = "#{leading_trivia}export {\n"
         declarations.each do |decl|
-          result += "  " + decl.to_source + "\n"
+          result += "  #{decl.to_source}\n"
         end
         result += "}"
         result

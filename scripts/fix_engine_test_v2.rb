@@ -19,10 +19,10 @@ lines.each_with_index do |line, idx|
     elsif line.lstrip.start_with?("#")
       # Comment: add 2 spaces before the comment
       line[/^\s*/]
-      output << ("  " + line)
+      output << "  #{line}"
     else
       # Regular code: add 2 spaces
-      output << ("  " + line)
+      output << "  #{line}"
     end
   # Last 2 lines: replace with 4 closing ends
   elsif idx == total - 2

@@ -106,7 +106,7 @@ class NamespaceRefactor
         length: location.length,
         new_text: @new_namespace
       }
-    elsif path.start_with?(@old_namespace + '::')
+    elsif path.start_with?("#{@old_namespace}::")
       # Path starts with old namespace - replace prefix
       rest = path[@old_namespace.length..]
       location = node.location
@@ -144,7 +144,7 @@ class NamespaceRefactor
   end
 
   def print_stats
-    puts "\n" + "=" * 60
+    puts "\n#{'=' * 60}"
     puts "📊 Refactoring Statistics"
     puts "=" * 60
     puts "Old namespace: #{@old_namespace}"

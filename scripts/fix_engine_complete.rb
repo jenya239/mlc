@@ -70,7 +70,7 @@ lines << "    end   # module Gen"
 lines << "  end     # module Semantic"
 lines << "end       # module Representations"
 
-content = lines.join("\n") + "\n"
+content = "#{lines.join("\n")}\n"
 
 # Write back
 File.write(file, content)

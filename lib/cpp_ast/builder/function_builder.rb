@@ -144,7 +144,7 @@ module CppAst
           modifiers << "final" if @modifiers[:final]
           modifiers << "= 0" if @modifiers[:pure_virtual]
 
-          modifiers.empty? ? "" : " " + modifiers.join(" ")
+          modifiers.empty? ? "" : " #{modifiers.join(' ')}"
         end
 
         def build_prefix_modifiers
