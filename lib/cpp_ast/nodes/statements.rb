@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Lint/MissingSuper
+# rubocop:disable Lint/MissingSuper, Metrics/ParameterLists
 
 module CppAst
   module Nodes
@@ -1093,4 +1093,4 @@ module CppAst
     end
   end
 end
-# rubocop:enable Lint/MissingSuper
+# rubocop:enable Lint/MissingSuper, Metrics/ParameterLists

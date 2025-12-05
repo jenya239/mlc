@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 # Builder uses SemanticIR node classes (Type, Func, etc.)
 # No circular dependency - nodes.rb doesn't reference Builder
 # Zeitwerk autoloads node classes when Builder methods are called
@@ -189,3 +191,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

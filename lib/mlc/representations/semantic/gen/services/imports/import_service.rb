@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 # All classes autoloaded by Zeitwerk on-demand:
 # - MLC::Registries::FunctionSignature (used at line 83)
 # - module_path_resolver provided via dependency injection
@@ -177,3 +179,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

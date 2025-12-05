@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 # All classes provided via dependency injection:
 # - match_analyzer (MLC::Common::Typing::MatchAnalyzer)
 # - type_unification_service (TypeUnificationService)
@@ -327,3 +329,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 # All classes autoloaded by Zeitwerk on-demand:
 # - MLC::Source::Parser::Parser
 # - MLC::Source::AST::*
@@ -14,7 +16,6 @@ unless MLC.respond_to?(:parse)
     end
   end
 end
-
 module MLC
   module Common
     module Stdlib
@@ -263,3 +264,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

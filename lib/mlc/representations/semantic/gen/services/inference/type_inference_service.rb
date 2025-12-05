@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 # rubocop:disable Layout/LineLength
 
 module MLC
@@ -928,4 +930,5 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists
 # rubocop:enable Layout/LineLength

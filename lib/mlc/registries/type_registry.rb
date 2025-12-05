@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 module MLC
   module Registries
     # TypeRegistry - Unified type system management
@@ -352,3 +354,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

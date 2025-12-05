@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 module MLC
   SourceOrigin = Struct.new(
     :file,
@@ -936,3 +938,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

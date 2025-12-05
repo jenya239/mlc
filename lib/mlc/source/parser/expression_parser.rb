@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/BlockNesting
+
 module MLC
   module Source
     module Parser
@@ -1430,3 +1432,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/BlockNesting

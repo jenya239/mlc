@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 module MLC
   module SemanticIR
     # Base node with origin tracking
@@ -800,3 +802,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

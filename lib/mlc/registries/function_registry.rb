@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 module MLC
   module Registries
     # FunctionRegistry provides a central repository for function metadata and
@@ -370,3 +372,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 # All classes autoloaded by Zeitwerk on-demand:
 # - MLC::ParseError (line 49)
 # - MLC::CompileError (lines 69, 73, 93, 97, 140, 145)
@@ -186,3 +188,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

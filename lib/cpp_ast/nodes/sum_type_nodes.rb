@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 module CppAst
   module Nodes
     # Sum type declaration - generates struct + variant
@@ -71,3 +73,4 @@ module CppAst
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

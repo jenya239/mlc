@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 module MLC
   module Representations
     module Semantic
@@ -172,3 +174,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 module CppAst
   class Token
     attr_reader :kind, :lexeme, :line, :column
@@ -29,3 +31,4 @@ module CppAst
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

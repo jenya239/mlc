@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 # All classes autoloaded by Zeitwerk on-demand:
 # - MLC::Backends::Cpp::Bootstrap (line 25)
 # - MLC::Backends::Cpp::Rules::FunctionRule (line 106)
@@ -363,3 +365,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

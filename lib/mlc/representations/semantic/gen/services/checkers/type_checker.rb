@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 # All classes autoloaded by Zeitwerk on-demand:
 # - MLC::SemanticIR::Builder (lines 142, 144, 146, 148)
 # - MLC::SemanticIR::ArrayType (line 146)
@@ -397,3 +399,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists

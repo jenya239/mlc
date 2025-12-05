@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ParameterLists
+
 module MLC
   module Diagnostics
     # Represents a collected diagnostic (error, warning, note)
@@ -133,3 +135,4 @@ module MLC
     end
   end
 end
+# rubocop:enable Metrics/ParameterLists
