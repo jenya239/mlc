@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Lint/MissingSuper
+
 module CppAst
   module Nodes
     # Identifier - простейший expression
@@ -403,3 +405,4 @@ module CppAst
     end
   end
 end
+# rubocop:enable Lint/MissingSuper

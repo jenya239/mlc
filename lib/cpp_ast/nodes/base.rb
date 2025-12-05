@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Lint/MissingSuper
+
 module CppAst
   module Nodes
     # Base node - все nodes наследуются от него
@@ -115,3 +117,4 @@ module CppAst
     end
   end
 end
+# rubocop:enable Lint/MissingSuper

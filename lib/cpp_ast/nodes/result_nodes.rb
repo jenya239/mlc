@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Lint/MissingSuper
+
 module CppAst
   module Nodes
     # Base class for Result/Option type wrappers
@@ -86,3 +88,4 @@ module CppAst
     end
   end
 end
+# rubocop:enable Lint/MissingSuper

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Lint/MissingSuper
+
 require_relative "../test_helper"
 
 class RulesRuleEngineTest < Minitest::Test
@@ -93,3 +95,4 @@ class RulesRuleEngineTest < Minitest::Test
     assert_equal [:constexpr, :noexcept], func.effects
   end
 end
+# rubocop:enable Lint/MissingSuper

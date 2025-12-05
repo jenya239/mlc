@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Lint/MissingSuper
+
 module CppAst
   module Nodes
     # Match expression - generates std::visit with overloaded
@@ -121,3 +123,4 @@ module CppAst
     end
   end
 end
+# rubocop:enable Lint/MissingSuper
