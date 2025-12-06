@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/BlockNesting
-
 module MLC
   module Source
     module Parser
@@ -207,59 +205,8 @@ module MLC
 
         def parse_do_expression
           do_token = consume(:DO)
-          statements = []
-          result_expr = nil
-          all_items = []
-
-          # Parse expressions until we hit END
-          until current.type == :END
-            raise "Unexpected EOF in do block, expected 'end'" if eof?
-
-            # Parse one expression
-            expr = parse_do_statement
-            all_items << expr
-
-            # Skip optional semicolon between statements
-            consume(:SEMICOLON) if current.type == :SEMICOLON
-          end
-
-          consume(:END)
-
-          # Process items: last expression becomes result, others become statements
-          if all_items.empty?
-            # Empty block returns unit type
-            result_expr = MLC::Source::AST::UnitLit.new
-          else
-            # Last item is the result expression
-            *stmt_items, last_item = all_items
-
-            # Convert all non-last items to statements
-            stmt_items.each do |item|
-              statements << if item.is_a?(MLC::Source::AST::Stmt)
-                              # Already a statement (VariableDecl, Assignment)
-                              item
-                            else
-                              # Wrap expression as statement
-                              MLC::Source::AST::ExprStmt.new(expr: item)
-                            end
-            end
-
-            # Last item is the result
-            if last_item.is_a?(MLC::Source::AST::Stmt) && !last_item.is_a?(MLC::Source::AST::VariableDecl)
-              # If last is a non-VariableDecl statement, add it and use unit result
-              statements << last_item
-              result_expr = MLC::Source::AST::UnitLit.new
-            elsif last_item.is_a?(MLC::Source::AST::VariableDecl)
-              # VariableDecl is statement, not expression - add it and use unit result
-              statements << last_item
-              result_expr = MLC::Source::AST::UnitLit.new
-            else
-              # Last is expression - use as result
-              result_expr = last_item
-            end
-          end
-
-          with_origin(do_token) { MLC::Source::AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
+          items = parse_block_items_until_end
+          build_block_expr(items, do_token)
         end
 
         def parse_do_statement
@@ -378,60 +325,8 @@ module MLC
           iterable = parse_if_expression
           consume(:DO)
 
-          # After 'do', parse the block directly as BlockExpr
-          # Same unified approach as while loop
-          statements = []
-          result_expr = nil
-          all_items = []
-
-          until current.type == :END
-            raise "Unexpected EOF in for loop, expected 'end'" if eof?
-
-            # Parse one statement/expression
-            expr = parse_do_statement
-            all_items << expr
-
-            # Skip optional semicolon between statements
-            consume(:SEMICOLON) if current.type == :SEMICOLON
-          end
-
-          consume(:END)
-
-          # Process items: last expression becomes result, others become statements
-          if all_items.empty?
-            # Empty block returns void
-            result_expr = MLC::Source::AST::UnitLit.new
-          else
-            # Last item is the result expression
-            *stmt_items, last_item = all_items
-
-            # Convert all non-last items to statements
-            stmt_items.each do |item|
-              statements << if item.is_a?(MLC::Source::AST::Stmt)
-                              # Already a statement (VariableDecl, Assignment)
-                              item
-                            else
-                              # Wrap expression as statement
-                              MLC::Source::AST::ExprStmt.new(expr: item)
-                            end
-            end
-
-            # Last item is the result
-            if last_item.is_a?(MLC::Source::AST::Stmt) && !last_item.is_a?(MLC::Source::AST::VariableDecl)
-              # If last is a non-VariableDecl statement, add it and use void result
-              statements << last_item
-              result_expr = MLC::Source::AST::UnitLit.new
-            elsif last_item.is_a?(MLC::Source::AST::VariableDecl)
-              # VariableDecl is statement, not expression - add it and use void result
-              statements << last_item
-              result_expr = MLC::Source::AST::UnitLit.new
-            else
-              # Last is expression - use as result
-              result_expr = last_item
-            end
-          end
-
-          body = with_origin(for_token) { MLC::Source::AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
+          items = parse_block_items_until_end
+          body = build_block_expr(items, for_token)
 
           with_origin(for_token) do
             MLC::Source::AST::ForLoop.new(
@@ -504,6 +399,51 @@ module MLC
             expr = parse_logical_or
             parse_postfix_conditional(expr)
           end
+        end
+
+        def parse_block_items_until_end
+          items = []
+
+          until current.type == :END
+            raise "Unexpected EOF in block, expected 'end'" if eof?
+
+            items << parse_do_statement
+            consume(:SEMICOLON) if current.type == :SEMICOLON
+          end
+
+          consume(:END)
+          items
+        end
+
+        def build_block_expr(items, origin_token)
+          statements = []
+          result_expr = nil
+
+          if items.empty?
+            result_expr = MLC::Source::AST::UnitLit.new
+          else
+            *stmt_items, last_item = items
+
+            stmt_items.each do |item|
+              statements << if item.is_a?(MLC::Source::AST::Stmt)
+                              item
+                            else
+                              MLC::Source::AST::ExprStmt.new(expr: item)
+                            end
+            end
+
+            if last_item.is_a?(MLC::Source::AST::Stmt) && !last_item.is_a?(MLC::Source::AST::VariableDecl)
+              statements << last_item
+              result_expr = MLC::Source::AST::UnitLit.new
+            elsif last_item.is_a?(MLC::Source::AST::VariableDecl)
+              statements << last_item
+              result_expr = MLC::Source::AST::UnitLit.new
+            else
+              result_expr = last_item
+            end
+          end
+
+          with_origin(origin_token) { MLC::Source::AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
         end
 
         # Parse if/unless with then/else/end
@@ -813,11 +753,7 @@ module MLC
               pattern = parse_or_pattern
 
               # Parse guard (optional: "if condition")
-              guard = nil
-              if current.type == :IF
-                consume(:IF)
-                guard = parse_equality
-              end
+              guard = parse_optional_match_guard
 
               # Expect =>
               raise "Expected => in match arm" unless current.type == :FAT_ARROW
@@ -825,11 +761,7 @@ module MLC
               consume(:FAT_ARROW)
 
               # Parse body
-              body = if current.type == :DO
-                       wrap_block_like_expr(parse_do_expression)
-                     else
-                       wrap_block_like_expr(parse_match_arm_body)
-                     end
+              body = parse_match_arm_body_node
 
               arms << { pattern: pattern, guard: guard, body: body }
 
@@ -843,61 +775,72 @@ module MLC
 
             consume(:RBRACE)
           else
-            # Pipe style: match expr | pattern => body | ... end
-            while current.type == :OPERATOR && current.value == "|"
-              consume(:OPERATOR) # consume |
-
-              # Parse pattern
-              pattern = parse_pattern
-
-              # Check for or-patterns: | pattern | pattern (without => or if after |)
-              alternatives = [pattern]
-              while current.type == :OPERATOR && current.value == "|" && pattern_start?(peek)
-                consume(:OPERATOR) # consume |
-                alternatives << parse_pattern
-              end
-
-              if alternatives.length > 1
-                origin = pattern.respond_to?(:origin) ? pattern.origin : nil
-                pattern = MLC::Source::AST::Pattern.new(
-                  kind: :or,
-                  data: { alternatives: alternatives },
-                  origin: origin
-                )
-              end
-
-              # Parse guard (optional: "if condition")
-              guard = nil
-              if current.type == :IF
-                consume(:IF)
-                guard = parse_equality
-              end
-
-              # Expect =>
-              if current.type == :FAT_ARROW
-                consume(:FAT_ARROW)
-              elsif current.type == :OPERATOR && current.value == "=>"
-                # Fallback for old lexer compatibility
-                consume(:OPERATOR)
-              else
-                raise "Expected => in match arm"
-              end
-
-              # Parse body - stop at next | or end
-              body = if current.type == :DO
-                       wrap_block_like_expr(parse_do_expression)
-                     else
-                       wrap_block_like_expr(parse_match_arm_body)
-                     end
-
-              arms << { pattern: pattern, guard: guard, body: body }
-            end
-
-            # Consume end for pipe-style match
-            consume(:END) if current.type == :END
+            parse_pipe_style_match_arms(arms)
           end
 
           with_origin(match_token) { MLC::Source::AST::MatchExpr.new(scrutinee: scrutinee, arms: arms) }
+        end
+
+        def parse_pipe_style_match_arms(arms)
+          # Pipe style: match expr | pattern => body | ... end
+          while current.type == :OPERATOR && current.value == "|"
+            consume(:OPERATOR) # consume |
+
+            pattern = parse_pattern
+            pattern = build_or_pattern_if_needed(pattern)
+
+            guard = parse_optional_match_guard
+            consume_fat_arrow!
+
+            body = parse_match_arm_body_node
+            arms << { pattern: pattern, guard: guard, body: body }
+          end
+
+          consume(:END) if current.type == :END
+        end
+
+        def build_or_pattern_if_needed(pattern)
+          alternatives = gather_or_pattern_alternatives(pattern)
+          return pattern if alternatives.length <= 1
+
+          origin = pattern.respond_to?(:origin) ? pattern.origin : nil
+          MLC::Source::AST::Pattern.new(
+            kind: :or,
+            data: { alternatives: alternatives },
+            origin: origin
+          )
+        end
+
+        def gather_or_pattern_alternatives(first_pattern)
+          alternatives = [first_pattern]
+          while current.type == :OPERATOR && current.value == "|" && pattern_start?(peek)
+            consume(:OPERATOR) # consume |
+            alternatives << parse_pattern
+          end
+          alternatives
+        end
+
+        def parse_optional_match_guard
+          return unless current.type == :IF
+
+          consume(:IF)
+          parse_equality
+        end
+
+        def consume_fat_arrow!
+          return consume(:FAT_ARROW) if current.type == :FAT_ARROW
+
+          return consume(:OPERATOR) if current.type == :OPERATOR && current.value == "=>"
+
+          raise "Expected => in match arm"
+        end
+
+        def parse_match_arm_body_node
+          if current.type == :DO
+            wrap_block_like_expr(parse_do_expression)
+          else
+            wrap_block_like_expr(parse_match_arm_body)
+          end
         end
 
         # Parse match arm body - expression that stops at | or end
@@ -1056,45 +999,7 @@ module MLC
               # Array indexing or slicing: expr[index] or expr[start..end]
               lbracket_token = consume(:LBRACKET)
 
-              # Check for open-ended slice starting with .. (e.g., arr[..5] or arr[..])
-              if current.type == :RANGE
-                consume(:RANGE)
-                if current.type == :RBRACKET
-                  # arr[..] - full slice (copy)
-                  consume(:RBRACKET)
-                  expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr), lbracket_token)
-                else
-                  # arr[..end] - use parse_shift to not consume RANGE in end expression
-                  end_index = parse_shift
-                  consume(:RBRACKET)
-                  expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, end_index: end_index), lbracket_token)
-                end
-              else
-                # Parse first expression - use parse_shift to not consume RANGE operator
-                # This allows us to check for RANGE after parsing and distinguish
-                # arr[1..3] (slice) from arr[idx] (index access)
-                first_expr = parse_shift
-
-                if current.type == :RANGE
-                  # Slice syntax: arr[start..end] or arr[start..]
-                  consume(:RANGE)
-                  if current.type == :RBRACKET
-                    # arr[start..] - open-ended slice to end
-                    consume(:RBRACKET)
-                    expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, start_index: first_expr), lbracket_token)
-                  else
-                    # arr[start..end] - use parse_shift for end expression
-                    end_index = parse_shift
-                    consume(:RBRACKET)
-                    expr = attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, start_index: first_expr, end_index: end_index),
-                                         lbracket_token)
-                  end
-                else
-                  # Simple index access: arr[index]
-                  consume(:RBRACKET)
-                  expr = attach_origin(MLC::Source::AST::IndexAccess.new(object: expr, index: first_expr), lbracket_token)
-                end
-              end
+              expr = parse_bracket_access(expr, lbracket_token)
               expr_line = last_token&.line
             when :LPAREN
               paren_line = current.line
@@ -1120,6 +1025,41 @@ module MLC
           end
 
           expr
+        end
+
+        def parse_bracket_access(expr, lbracket_token)
+          return parse_open_start_slice(expr, lbracket_token) if current.type == :RANGE
+
+          # Parse first expression - use parse_shift to not consume RANGE operator
+          first_expr = parse_shift
+          return parse_slice_after_start(expr, lbracket_token, first_expr) if current.type == :RANGE
+
+          consume(:RBRACKET)
+          attach_origin(MLC::Source::AST::IndexAccess.new(object: expr, index: first_expr), lbracket_token)
+        end
+
+        def parse_open_start_slice(expr, lbracket_token)
+          consume(:RANGE)
+          if current.type == :RBRACKET
+            consume(:RBRACKET)
+            attach_origin(MLC::Source::AST::SliceAccess.new(object: expr), lbracket_token)
+          else
+            end_index = parse_shift
+            consume(:RBRACKET)
+            attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, end_index: end_index), lbracket_token)
+          end
+        end
+
+        def parse_slice_after_start(expr, lbracket_token, start_expr)
+          consume(:RANGE)
+          if current.type == :RBRACKET
+            consume(:RBRACKET)
+            attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, start_index: start_expr), lbracket_token)
+          else
+            end_index = parse_shift
+            consume(:RBRACKET)
+            attach_origin(MLC::Source::AST::SliceAccess.new(object: expr, start_index: start_expr, end_index: end_index), lbracket_token)
+          end
         end
 
         def parse_primary
@@ -1432,4 +1372,3 @@ module MLC
     end
   end
 end
-# rubocop:enable Metrics/BlockNesting

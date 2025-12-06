@@ -181,55 +181,16 @@ module CppAst
       end
 
       def check_operator_overload_pattern(saved_pos)
-        if current_token.kind == :keyword_operator
-          @position = saved_pos
-          return true
+        return reset_and_true(saved_pos) if keyword_operator?
+
+        if pointer_token?(current_token.kind)
+          consume_pointer_tokens
+          return true if operator_function_after_pointer?(saved_pos)
+
+          return scoped_operator_after_identifier?(saved_pos)
         end
 
-        if [:asterisk, :ampersand, :ampersand_ampersand].include?(current_token.kind)
-          while [:asterisk, :ampersand, :ampersand_ampersand].include?(current_token.kind)
-            advance_raw
-            current_leading_trivia
-          end
-
-          if current_token.kind == :keyword_operator
-            skip_operator_symbol
-            if current_token.kind == :lparen
-              @position = saved_pos
-              return true
-            end
-          end
-
-          if current_token.kind == :identifier
-            saved_after_ptr = @position
-            advance_raw
-            current_leading_trivia
-            if current_token.kind == :colon_colon
-              advance_raw
-              current_leading_trivia
-              if current_token.kind == :keyword_operator
-                @position = saved_pos
-                return true
-              end
-            end
-            @position = saved_after_ptr
-          end
-        elsif current_token.kind == :identifier
-          saved_op = @position
-          advance_raw
-          current_leading_trivia
-          if current_token.kind == :colon_colon
-            advance_raw
-            current_leading_trivia
-            if current_token.kind == :keyword_operator
-              @position = saved_pos
-              return true
-            end
-          end
-          @position = saved_op
-        end
-
-        false
+        scoped_operator_after_identifier?(saved_pos)
       end
 
       def skip_operator_symbol
@@ -255,6 +216,51 @@ module CppAst
           advance_raw if current_token.kind == :rbracket
           current_leading_trivia
         end
+      end
+
+      def pointer_token?(kind)
+        [:asterisk, :ampersand, :ampersand_ampersand].include?(kind)
+      end
+
+      def keyword_operator?
+        current_token.kind == :keyword_operator
+      end
+
+      def consume_pointer_tokens
+        while pointer_token?(current_token.kind)
+          advance_raw
+          current_leading_trivia
+        end
+      end
+
+      def operator_function_after_pointer?(saved_pos)
+        return false unless current_token.kind == :keyword_operator
+
+        skip_operator_symbol
+        return false unless current_token.kind == :lparen
+
+        @position = saved_pos
+        true
+      end
+
+      def scoped_operator_after_identifier?(saved_pos)
+        return false unless current_token.kind == :identifier
+
+        saved_after_ptr = @position
+        advance_raw
+        current_leading_trivia
+        if current_token.kind == :colon_colon
+          advance_raw
+          current_leading_trivia
+          return reset_and_true(saved_pos) if current_token.kind == :keyword_operator
+        end
+        @position = saved_after_ptr
+        false
+      end
+
+      def reset_and_true(saved_pos)
+        @position = saved_pos
+        true
       end
 
       def parse_function_prefix_modifiers

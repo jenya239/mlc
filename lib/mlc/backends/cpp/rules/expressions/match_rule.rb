@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/BlockNesting
-
 module MLC
   module Backends
     module Cpp
@@ -417,50 +415,7 @@ module MLC
               holds_check = "std::holds_alternative<#{case_name}>(#{scrutinee_src})"
 
               # Build binding declarations and nested pattern checks
-              binding_decls = []
-              nested_checks = []
-              temp_var_counter = 0
-
-              if bindings.any?
-                # First extract the variant to a temporary variable
-                temp_var = "_v_#{case_name.downcase}"
-                binding_decls << "auto #{temp_var} = std::get<#{case_name}>(#{scrutinee_src});"
-
-                # Use structured binding to extract all fields at once
-                non_wildcard_bindings = bindings.reject { |b| b == "_" || (b.is_a?(Hash) && b[:kind] == :constructor) }
-                if non_wildcard_bindings.any?
-                  binding_list = bindings.map do |b|
-                    if b.is_a?(Hash)
-                      "_"
-                    else
-                      (b == "_" ? "_" : b)
-                    end
-                  end.join(", ")
-                  binding_decls << "auto [#{binding_list}] = #{temp_var};"
-                end
-
-                # Handle nested patterns separately
-                bindings.each_with_index do |binding, idx|
-                  next unless binding.is_a?(Hash) && binding[:kind] == :constructor
-
-                  # Nested pattern - generate temp var and nested check
-                  nested_temp_var = "_nested_#{temp_var_counter}"
-                  temp_var_counter += 1
-
-                  # Extract nested value using structured binding access
-                  binding_decls << if bindings.length == 1
-                                     # Single field - use .field0
-                                     "auto #{nested_temp_var} = #{temp_var}.field0;"
-                                   else
-                                     # Multiple fields - use .fieldN
-                                     "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
-                                   end
-
-                  # Build nested pattern check
-                  nested_check = build_nested_pattern_check(binding, nested_temp_var)
-                  nested_checks << nested_check
-                end
-              end
+              binding_decls, nested_checks = build_binding_extractions(case_name, bindings, scrutinee_src)
 
               binding_str = binding_decls.join(" ")
 
@@ -484,6 +439,53 @@ module MLC
               context.factory.raw_statement(
                 code: "if (#{holds_check}) { #{inner_body} }"
               )
+            end
+
+            def build_binding_extractions(case_name, bindings, scrutinee_src)
+              return [[], []] if bindings.empty?
+
+              binding_decls = []
+              nested_checks = []
+              temp_var_counter = 0
+
+              temp_var = "_v_#{case_name.downcase}"
+              binding_decls << "auto #{temp_var} = std::get<#{case_name}>(#{scrutinee_src});"
+
+              non_wildcard_bindings = bindings.reject { |b| b == "_" || (b.is_a?(Hash) && b[:kind] == :constructor) }
+              binding_decls << structured_binding_decl(bindings, temp_var) if non_wildcard_bindings.any?
+
+              bindings.each_with_index do |binding, idx|
+                next unless binding.is_a?(Hash) && binding[:kind] == :constructor
+
+                nested_temp_var = "_nested_#{temp_var_counter}"
+                temp_var_counter += 1
+
+                binding_decls << nested_binding_extract(bindings, temp_var, nested_temp_var, idx)
+                nested_checks << build_nested_pattern_check(binding, nested_temp_var)
+              end
+
+              [binding_decls, nested_checks]
+            end
+
+            def structured_binding_decl(bindings, temp_var)
+              binding_list = bindings.map do |b|
+                if b.is_a?(Hash)
+                  "_"
+                else
+                  (b == "_" ? "_" : b)
+                end
+              end.join(", ")
+              "auto [#{binding_list}] = #{temp_var};"
+            end
+
+            def nested_binding_extract(bindings, temp_var, nested_temp_var, idx)
+              if bindings.length == 1
+                # Single field - use .field0
+                "auto #{nested_temp_var} = #{temp_var}.field0;"
+              else
+                # Multiple fields - use .fieldN
+                "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
+              end
             end
 
             # Build if statement for Option pattern (Some/None) with std::optional
@@ -731,4 +733,3 @@ module MLC
     end
   end
 end
-# rubocop:enable Metrics/BlockNesting

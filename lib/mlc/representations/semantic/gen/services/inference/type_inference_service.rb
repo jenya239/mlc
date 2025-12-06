@@ -273,81 +273,121 @@ module MLC
 
             # Generic type unification
             def unify_types(pattern_type, concrete_type, type_map)
-              case pattern_type
-              when SemanticIR::TypeVariable
-                # This is a type variable - bind it to the concrete type
+              Unifier.new(self, type_map).unify(pattern_type, concrete_type)
+            end
+
+            class Unifier
+              def initialize(context, type_map)
+                @context = context
+                @type_map = type_map
+              end
+
+              def unify(pattern_type, concrete_type)
+                case pattern_type
+                when SemanticIR::TypeVariable
+                  unify_type_variable(pattern_type, concrete_type)
+                when SemanticIR::GenericType
+                  unify_generic(pattern_type, concrete_type)
+                when SemanticIR::ArrayType
+                  unify_array(pattern_type, concrete_type)
+                when SemanticIR::FunctionType
+                  unify_function(pattern_type, concrete_type)
+                when SemanticIR::RecordType
+                  unify_record(pattern_type, concrete_type)
+                end
+              end
+
+              private
+
+              def unify_type_variable(pattern_type, concrete_type)
                 var_name = pattern_type.name
-                if type_map.key?(var_name)
-                  # Already bound - verify consistency
-                  existing = type_map[var_name]
-                  if existing.is_a?(SemanticIR::TypeVariable)
-                    type_map[var_name] = concrete_type
-                  elsif concrete_type.is_a?(SemanticIR::TypeVariable)
-                    # keep existing concrete binding
-                  elsif normalized_type_name(type_name(existing)) == normalized_type_name(type_name(concrete_type))
-                    type_map[var_name] = concrete_type
-                  elsif !types_compatible?(existing, concrete_type)
-                    type_error("Type variable #{var_name} bound to both #{describe_type(existing)} and #{describe_type(concrete_type)}")
-                  end
-                else
-                  # New binding
-                  type_map[var_name] = concrete_type
+                return bind_new(var_name, concrete_type) unless @type_map.key?(var_name)
+
+                existing = @type_map[var_name]
+                if existing.is_a?(SemanticIR::TypeVariable)
+                  @type_map[var_name] = concrete_type
+                elsif concrete_type.is_a?(SemanticIR::TypeVariable)
+                  # keep existing concrete binding
+                elsif normalized(existing) == normalized(concrete_type)
+                  @type_map[var_name] = concrete_type
+                elsif !types_compatible?(existing, concrete_type)
+                  type_error("Type variable #{var_name} bound to both #{describe_type(existing)} and #{describe_type(concrete_type)}")
                 end
+              end
 
-              when SemanticIR::GenericType
-                # Both should be generic with same base and compatible args
-                if concrete_type.is_a?(SemanticIR::GenericType)
-                  unify_types(pattern_type.base_type, concrete_type.base_type, type_map)
-                  pattern_type.type_args.each_with_index do |pattern_arg, index|
-                    concrete_arg = concrete_type.type_args[index]
-                    unify_types(pattern_arg, concrete_arg, type_map) if concrete_arg
-                  end
+              def bind_new(var_name, concrete_type)
+                @type_map[var_name] = concrete_type
+              end
+
+              def unify_generic(pattern_type, concrete_type)
+                return unless concrete_type.is_a?(SemanticIR::GenericType)
+
+                unify(pattern_type.base_type, concrete_type.base_type)
+                pattern_type.type_args.each_with_index do |pattern_arg, index|
+                  concrete_arg = concrete_type.type_args[index]
+                  unify(pattern_arg, concrete_arg) if concrete_arg
                 end
+              end
 
-              when SemanticIR::ArrayType
-                # Array types - unify element types
-                unify_types(pattern_type.element_type, concrete_type.element_type, type_map) if concrete_type.is_a?(SemanticIR::ArrayType)
+              def unify_array(pattern_type, concrete_type)
+                return unless concrete_type.is_a?(SemanticIR::ArrayType)
 
-              when SemanticIR::FunctionType
-                # Function types - unify parameters and return types
-                if concrete_type.is_a?(SemanticIR::FunctionType)
-                  pattern_type.params.each_with_index do |pattern_param, index|
-                    concrete_param = concrete_type.params[index]
-                    next unless concrete_param
+                unify(pattern_type.element_type, concrete_type.element_type)
+              end
 
-                    pattern_param_type = function_param_type(pattern_param)
-                    concrete_param_type = function_param_type(concrete_param)
-                    unify_types(pattern_param_type, concrete_param_type, type_map)
-                  end
-                  unify_types(pattern_type.ret_type, concrete_type.ret_type, type_map)
+              def unify_function(pattern_type, concrete_type)
+                return unless concrete_type.is_a?(SemanticIR::FunctionType)
+
+                pattern_type.params.each_with_index do |pattern_param, index|
+                  concrete_param = concrete_type.params[index]
+                  next unless concrete_param
+
+                  pattern_param_type = function_param_type(pattern_param)
+                  concrete_param_type = function_param_type(concrete_param)
+                  unify(pattern_param_type, concrete_param_type)
                 end
+                unify(pattern_type.ret_type, concrete_type.ret_type)
+              end
 
-              when SemanticIR::RecordType
-                # Record types - unify field types
-                if concrete_type.is_a?(SemanticIR::RecordType)
-                  # Verify same number of fields
-                  if pattern_type.fields.length != concrete_type.fields.length
-                    return # Can't unify - different structure
+              def unify_record(pattern_type, concrete_type)
+                return unless concrete_type.is_a?(SemanticIR::RecordType)
+                return if pattern_type.fields.length != concrete_type.fields.length
+
+                pattern_type.fields.each do |pattern_field|
+                  pattern_field_name = pattern_field[:name] || pattern_field.name
+                  pattern_field_type = pattern_field[:type] || pattern_field.type
+
+                  concrete_field = concrete_type.fields.find do |cf|
+                    cf_name = cf[:name] || cf.name
+                    cf_name == pattern_field_name
                   end
 
-                  # Unify each field's type by matching field names
-                  pattern_type.fields.each do |pattern_field|
-                    pattern_field_name = pattern_field[:name] || pattern_field.name
-                    pattern_field_type = pattern_field[:type] || pattern_field.type
+                  next unless concrete_field
 
-                    # Find matching field in concrete type
-                    concrete_field = concrete_type.fields.find do |cf|
-                      cf_name = cf[:name] || cf.name
-                      cf_name == pattern_field_name
-                    end
-
-                    if concrete_field
-                      concrete_field_type = concrete_field[:type] || concrete_field.type
-                      unify_types(pattern_field_type, concrete_field_type, type_map)
-                    end
-                  end
+                  concrete_field_type = concrete_field[:type] || concrete_field.type
+                  unify(pattern_field_type, concrete_field_type)
                 end
+              end
 
+              # delegate helpers
+              def function_param_type(param)
+                @context.function_param_type(param)
+              end
+
+              def types_compatible?(type1, type2)
+                @context.types_compatible?(type1, type2)
+              end
+
+              def normalized(type)
+                @context.normalized_type_name(@context.type_name(type))
+              end
+
+              def type_error(msg)
+                @context.type_error(msg)
+              end
+
+              def describe_type(type)
+                @context.describe_type(type)
               end
             end
 
@@ -495,195 +535,243 @@ module MLC
               end
             end
 
-            # Infer member call type for arrays
-            def infer_member_call_type(object_type, member, args)
-              if object_type.is_a?(SemanticIR::ArrayType)
+            class MemberResolver
+              def initialize(context, type_checker)
+                @context = context
+                @type_checker = type_checker
+              end
+
+              def infer(object_type, member, args)
+                return resolve_array_member(object_type, member, args) if object_type.is_a?(SemanticIR::ArrayType)
+                return resolve_string_member(member, args) if string?(object_type)
+                return resolve_numeric_member(object_type, member, args) if numeric?(object_type)
+
+                type_error("Unknown member '#{member}' for type #{describe(object_type)}")
+              end
+
+              private
+
+              def resolve_array_member(object_type, member, args)
                 case member
                 when "length", "size", "len"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("i32")
+                  ensure_args(member, args, 0)
+                  prim("i32")
                 when "is_empty"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("bool")
+                  ensure_args(member, args, 0)
+                  prim("bool")
                 when "map"
-                  @type_checker.ensure_argument_count(member, args, 1)
+                  ensure_args(member, args, 1)
                   element_type = lambda_return_type(args.first)
                   type_error("Unable to infer return type of map lambda") unless element_type
                   SemanticIR::ArrayType.new(element_type: element_type)
                 when "filter"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 1)
+                  array_of(object_type)
                 when "fold"
-                  @type_checker.ensure_argument_count(member, args, 2)
+                  ensure_args(member, args, 2)
                   accumulator_type = args.first&.type
-                  ensure_type!(accumulator_type, "Unable to determine accumulator type for fold")
+                  @context.ensure_type!(accumulator_type, "Unable to determine accumulator type for fold")
                   accumulator_type
                 when "first", "last"
-                  @type_checker.ensure_argument_count(member, args, 0)
+                  ensure_args(member, args, 0)
                   object_type.element_type
                 when "reverse"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 0)
+                  array_of(object_type)
                 when "take", "drop"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 1)
+                  array_of(object_type)
                 when "contains"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("bool")
+                  ensure_args(member, args, 1)
+                  prim("bool")
                 when "join"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 1)
+                  prim("string")
                 when "sum"
-                  @type_checker.ensure_argument_count(member, args, 0)
+                  ensure_args(member, args, 0)
                   object_type.element_type
                 when "any", "all", "none"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("bool")
+                  ensure_args(member, args, 1)
+                  prim("bool")
                 when "find"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  # Returns element type (should be Option<T> but simplified)
+                  ensure_args(member, args, 1)
                   object_type.element_type
                 when "find_index", "index_of"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("i32")
+                  ensure_args(member, args, 1)
+                  prim("i32")
                 when "concat", "append"
-                  # concat takes another array
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 1)
+                  array_of(object_type)
                 when "flatten"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  # Assumes array of arrays, returns flattened array
+                  ensure_args(member, args, 0)
                   if object_type.element_type.is_a?(SemanticIR::ArrayType)
                     object_type.element_type
                   else
                     object_type
                   end
                 when "zip"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  # Returns array of tuples - simplified to auto
-                  SemanticIR::Builder.primitive_type("auto")
+                  ensure_args(member, args, 1)
+                  prim("auto")
                 when "enumerate"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  # Returns array of (index, element) pairs - simplified to auto
-                  SemanticIR::Builder.primitive_type("auto")
+                  ensure_args(member, args, 0)
+                  prim("auto")
                 when "min", "max"
-                  @type_checker.ensure_argument_count(member, args, 0)
+                  ensure_args(member, args, 0)
                   object_type.element_type
                 when "slice"
-                  # slice(start, end) - both args optional
                   SemanticIR::ArrayType.new(element_type: object_type.element_type)
                 when "sort"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 0)
+                  array_of(object_type)
                 when "sort_by"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 1)
+                  array_of(object_type)
                 when "uniq"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 0)
+                  array_of(object_type)
                 when "uniq_by"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 1)
+                  array_of(object_type)
                 when "group_by"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  # Returns Map<K, T[]> - simplified to auto for now
-                  SemanticIR::Builder.primitive_type("auto")
+                  ensure_args(member, args, 1)
+                  prim("auto")
                 when "partition"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  # Returns tuple of two arrays - simplified to auto
-                  SemanticIR::Builder.primitive_type("auto")
+                  ensure_args(member, args, 1)
+                  prim("auto")
                 when "take_while", "drop_while"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 1)
+                  array_of(object_type)
                 when "first_n", "last_n"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 1)
+                  array_of(object_type)
                 when "second", "third"
-                  @type_checker.ensure_argument_count(member, args, 0)
+                  ensure_args(member, args, 0)
                   object_type.element_type
                 when "count"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("i32")
+                  ensure_args(member, args, 1)
+                  prim("i32")
                 when "compact"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 0)
+                  array_of(object_type)
                 when "rotate"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
+                  ensure_args(member, args, 1)
+                  array_of(object_type)
                 when "sample"
-                  @type_checker.ensure_argument_count(member, args, 0)
+                  ensure_args(member, args, 0)
                   object_type.element_type
                 when "product"
-                  @type_checker.ensure_argument_count(member, args, 0)
+                  ensure_args(member, args, 0)
                   object_type.element_type
                 when "flat_map"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  # Returns flattened result - simplified to auto
-                  SemanticIR::Builder.primitive_type("auto")
+                  ensure_args(member, args, 1)
+                  prim("auto")
                 else
-                  type_error("Unknown array method '#{member}'. Supported methods: length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, zip, enumerate, min, max, slice, sort, sort_by, uniq, uniq_by, group_by, partition, take_while, drop_while, first_n, last_n, second, third, count, compact, rotate, sample, product, flat_map")
+                  type_error(
+                    "Unknown array method '#{member}'. Supported methods: length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, zip, enumerate, min, max, slice, sort, sort_by, uniq, uniq_by, group_by, partition, take_while, drop_while, first_n, last_n, second, third, count, compact, rotate, sample, product, flat_map"
+                  )
                 end
-              elsif string_type?(object_type)
+              end
+
+              def resolve_string_member(member, args)
                 case member
                 when "split"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::ArrayType.new(element_type: SemanticIR::Builder.primitive_type("string"))
+                  ensure_args(member, args, 1)
+                  SemanticIR::ArrayType.new(element_type: prim("string"))
                 when "trim", "trim_start", "trim_end", "upper", "lower"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 0)
+                  prim("string")
                 when "substring"
-                  @type_checker.ensure_argument_count(member, args, 2)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 2)
+                  prim("string")
                 when "is_empty"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("bool")
+                  ensure_args(member, args, 0)
+                  prim("bool")
                 when "contains", "starts_with", "ends_with"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("bool")
+                  ensure_args(member, args, 1)
+                  prim("bool")
                 when "length", "len"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("i32")
+                  ensure_args(member, args, 0)
+                  prim("i32")
                 when "index_of", "last_index_of"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("i32")
+                  ensure_args(member, args, 1)
+                  prim("i32")
                 when "replace"
-                  @type_checker.ensure_argument_count(member, args, 2)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 2)
+                  prim("string")
                 when "char_at"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 1)
+                  prim("string")
                 when "repeat"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 1)
+                  prim("string")
                 when "reverse"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 0)
+                  prim("string")
                 when "to_lower", "to_upper"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 0)
+                  prim("string")
                 when "is_blank", "is_present"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("bool")
+                  ensure_args(member, args, 0)
+                  prim("bool")
                 when "squish"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 0)
+                  prim("string")
                 when "truncate"
-                  @type_checker.ensure_argument_count(member, args, 1)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 1)
+                  prim("string")
                 when "titleize", "camelize", "underscore"
-                  @type_checker.ensure_argument_count(member, args, 0)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 0)
+                  prim("string")
                 when "pad_start", "pad_end"
-                  @type_checker.ensure_argument_count(member, args, 2)
-                  SemanticIR::Builder.primitive_type("string")
+                  ensure_args(member, args, 2)
+                  prim("string")
                 else
-                  type_error("Unknown string method '#{member}'. Supported methods: split, substring, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse, is_blank, is_present, squish, truncate, titleize, camelize, underscore, pad_start, pad_end")
+                  type_error(
+                    "Unknown string method '#{member}'. Supported methods: split, substring, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse, is_blank, is_present, squish, truncate, titleize, camelize, underscore, pad_start, pad_end"
+                  )
                 end
-              elsif numeric_type?(object_type)
-                infer_numeric_member_call_type(object_type, member, args)
-              else
-                type_error("Unknown member '#{member}' for type #{describe_type(object_type)}")
               end
+
+              def resolve_numeric_member(object_type, member, args)
+                @context.send(:infer_numeric_member_call_type, object_type, member, args)
+              end
+
+              def ensure_args(member, args, count)
+                @type_checker.ensure_argument_count(member, args, count)
+              end
+
+              def numeric?(type)
+                @context.numeric_type?(type)
+              end
+
+              def string?(type)
+                @context.string_type?(type)
+              end
+
+              def prim(name)
+                SemanticIR::Builder.primitive_type(name)
+              end
+
+              def array_of(array_type)
+                SemanticIR::ArrayType.new(element_type: array_type.element_type)
+              end
+
+              def describe(type)
+                @context.describe_type(type)
+              end
+
+              def lambda_return_type(arg)
+                @context.send(:lambda_return_type, arg)
+              end
+
+              def type_error(message)
+                @context.type_error(message)
+              end
+            end
+
+            # Infer member call type for arrays
+            def infer_member_call_type(object_type, member, args)
+              MemberResolver.new(self, @type_checker).infer(object_type, member, args)
             end
 
             # Infer numeric member call type (method call with args)

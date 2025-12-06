@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/ParameterLists, Metrics/BlockNesting
+# rubocop:disable Metrics/ParameterLists
 
 module MLC
   module Source
@@ -67,35 +67,12 @@ module MLC
             when "'"
               tokenize_raw_string
             when '<'
-              # Check for heredoc syntax << or <<~
-              # Heredoc requires uppercase identifier after << or <<~
-              if @pos + 1 < @source.length && @source[@pos + 1] == '<'
-                # Look ahead to see if this is a heredoc (<<UPPER or <<~UPPER) or left shift (<<)
-                heredoc_lookahead = @pos + 2
-                heredoc_lookahead += 1 if heredoc_lookahead < @source.length && @source[heredoc_lookahead] == '~'
-
-                if heredoc_lookahead < @source.length && @source[heredoc_lookahead] =~ /[A-Z]/
-                  tokenize_heredoc
-                else
-                  tokenize_operator
-                end
-              else
-                tokenize_operator
-              end
+              handle_left_angle
             when '/'
               # Distinguish between division operator and regex literal
-              if regex_context?
-                tokenize_regex
-              else
-                tokenize_operator
-              end
+              handle_slash
             when '%'
-              # Check for percent literals: %w[], %i[], %W[], %I[]
-              if @pos + 1 < @source.length && %w[w i W I].include?(@source[@pos + 1])
-                tokenize_percent_literal
-              else
-                tokenize_operator
-              end
+              handle_percent
             when /[=+\-*>!&|.?^~]/
               tokenize_operator
             when '('
@@ -123,30 +100,7 @@ module MLC
               add_token(:SEMICOLON, char)
               advance
             when ':'
-              # Check for :: (path separator) vs :identifier (symbol literal)
-              if @pos + 1 < @source.length && @source[@pos + 1] == ':'
-                # This is :: (path separator) - emit two COLON tokens
-                add_token(:COLON, char)
-                advance
-              elsif @pos + 1 < @source.length && @source[@pos + 1] =~ /[a-zA-Z_]/
-                # This is :X - could be symbol literal or path continuation after ::
-                # Check if previous token is COLON (meaning we're in Math::X pattern)
-                last_type = @tokens.last&.type
-                if last_type == :COLON
-                  # This is ::X - emit COLON, then identifier will be parsed next
-                  add_token(:COLON, char)
-                  advance
-                elsif symbol_context?
-                  # Symbol context: = :sym, (:sym, etc.
-                  tokenize_symbol
-                else
-                  add_token(:COLON, char)
-                  advance
-                end
-              else
-                add_token(:COLON, char)
-                advance
-              end
+              handle_colon
             when '@'
               # Self-access: @field -> self.field
               tokenize_self_access
@@ -160,6 +114,64 @@ module MLC
         end
 
         private
+
+        def handle_left_angle
+          return tokenize_operator unless heredoc_start?
+
+          tokenize_heredoc
+        end
+
+        def heredoc_start?
+          return false unless @pos + 1 < @source.length && @source[@pos + 1] == '<'
+
+          heredoc_lookahead = @pos + 2
+          heredoc_lookahead += 1 if heredoc_lookahead < @source.length && @source[heredoc_lookahead] == '~'
+          heredoc_lookahead < @source.length && @source[heredoc_lookahead] =~ /[A-Z]/
+        end
+
+        def handle_slash
+          return tokenize_regex if regex_context?
+
+          tokenize_operator
+        end
+
+        def handle_percent
+          return tokenize_percent_literal if @pos + 1 < @source.length && %w[w i W I].include?(@source[@pos + 1])
+
+          tokenize_operator
+        end
+
+        def handle_colon
+          return emit_colon_and_advance if next_char?(':')
+
+          return emit_symbol_or_colon if next_char_identifier?
+
+          emit_colon_and_advance
+        end
+
+        def next_char?(expected)
+          @pos + 1 < @source.length && @source[@pos + 1] == expected
+        end
+
+        def next_char_identifier?
+          @pos + 1 < @source.length && @source[@pos + 1] =~ /[a-zA-Z_]/
+        end
+
+        def emit_colon_and_advance
+          add_token(:COLON, ':')
+          advance
+        end
+
+        def emit_symbol_or_colon
+          last_type = @tokens.last&.type
+          if last_type == :COLON
+            emit_colon_and_advance
+          elsif symbol_context?
+            tokenize_symbol
+          else
+            emit_colon_and_advance
+          end
+        end
 
         def skip_whitespace
           while @pos < @source.length && @source[@pos] =~ /\s/
@@ -177,39 +189,52 @@ module MLC
           loop do
             break if @pos >= @source.length
 
-            if @source[@pos] == '#'
-              # Skip # comment
-              @pos += 1
-              @column += 1
-              while @pos < @source.length && @source[@pos] != "\n"
-                @pos += 1
-                @column += 1
-              end
-            elsif @pos < @source.length - 1 && @source[@pos] == '/' && @source[@pos + 1] == '/'
-              # Skip single-line comment (// or ///)
-              @pos += 2
-              @column += 2
-              while @pos < @source.length && @source[@pos] != "\n"
-                @pos += 1
-                @column += 1
-              end
-            elsif @pos < @source.length - 1 && @source[@pos] == '/' && @source[@pos + 1] == '*'
-              # Skip block comment /* ... */
-              @pos += 2
-              @column += 2
-              while @pos < @source.length - 1
-                if @source[@pos] == '*' && @source[@pos + 1] == '/'
-                  @pos += 2
-                  @column += 2
-                  break
-                else
-                  advance_char
-                end
-              end
-            else
-              break
-            end
+            break unless skip_single_comment || skip_slash_comment || skip_block_comment
+
             skip_whitespace
+          end
+        end
+
+        def skip_single_comment
+          return false unless @source[@pos] == '#'
+
+          @pos += 1
+          @column += 1
+          advance_until_newline
+          true
+        end
+
+        def skip_slash_comment
+          return false unless @pos < @source.length - 1 && @source[@pos] == '/' && @source[@pos + 1] == '/'
+
+          @pos += 2
+          @column += 2
+          advance_until_newline
+          true
+        end
+
+        def skip_block_comment
+          return false unless @pos < @source.length - 1 && @source[@pos] == '/' && @source[@pos + 1] == '*'
+
+          @pos += 2
+          @column += 2
+          while @pos < @source.length - 1
+            if @source[@pos] == '*' && @source[@pos + 1] == '/'
+              @pos += 2
+              @column += 2
+              return true
+            end
+
+            advance_char
+          end
+
+          true
+        end
+
+        def advance_until_newline
+          while @pos < @source.length && @source[@pos] != "\n"
+            @pos += 1
+            @column += 1
           end
         end
 
@@ -340,107 +365,16 @@ module MLC
 
           while @pos < @source.length && @source[@pos] != '"'
             if @source[@pos] == '\\'
-              # Handle escape sequence
-              @pos += 1
-              @column += 1
-              raise "Unterminated escape sequence" if @pos >= @source.length
-
-              case @source[@pos]
-              when 'n'
-                current_text << "\n"
-              when 't'
-                current_text << "\t"
-              when 'r'
-                current_text << "\r"
-              when '\\'
-                current_text << "\\"
-              when '"'
-                current_text << '"'
-              when '0'
-                current_text << "\0"
-              when '{'
-                # Escaped brace - literal {
-                current_text << '{'
-              when '}'
-                # Escaped brace - literal }
-                current_text << '}'
-              else
-                # Unknown escape - keep backslash
-                current_text << '\\'
-                current_text << @source[@pos]
-              end
-              @pos += 1
-              @column += 1
-            elsif @source[@pos] == '{'
-              # Potential start of interpolation
-              @pos += 1 # Skip {
-              @column += 1
-
-              # Read expression until matching }
-              expr_chars = []
-              brace_depth = 1
-              while @pos < @source.length && brace_depth.positive?
-                char = @source[@pos]
-                case char
-                when '{'
-                  brace_depth += 1
-                  expr_chars << char
-                when '}'
-                  brace_depth -= 1
-                  expr_chars << char if brace_depth.positive?
-                when '"'
-                  # Skip nested strings
-                  expr_chars << char
-                  @pos += 1
-                  @column += 1
-                  while @pos < @source.length && @source[@pos] != '"'
-                    if @source[@pos] == '\\'
-                      expr_chars << @source[@pos]
-                      @pos += 1
-                      @column += 1
-                    end
-                    expr_chars << @source[@pos] if @pos < @source.length
-                    @pos += 1
-                    @column += 1
-                  end
-                  expr_chars << @source[@pos] if @pos < @source.length && @source[@pos] == '"'
-                else
-                  expr_chars << char
-                end
-
-                if @source[@pos] == "\n"
-                  @line += 1
-                  @column = 1
-                else
-                  @column += 1
-                end
-                @pos += 1
-              end
-
-              expr_value = expr_chars.join.strip
-              if expr_value.empty?
-                # Empty {} - treat as literal text, not interpolation
-                current_text << '{'
-                current_text << '}'
-              else
-                # Real interpolation - save current text first
-                if current_text.any?
-                  parts << { type: :text, value: current_text.join }
-                  current_text = []
-                end
-                has_interpolation = true
-                parts << { type: :expr, value: expr_value }
-              end
-            else
-              if @source[@pos] == "\n"
-                @line += 1
-                @column = 1
-              else
-                @column += 1
-              end
-              current_text << @source[@pos]
-              @pos += 1
+              consume_string_escape(current_text)
+              next
             end
+
+            if @source[@pos] == '{'
+              has_interpolation ||= handle_interpolation(parts, current_text)
+              next
+            end
+
+            append_string_char(current_text)
           end
 
           # Add remaining text
@@ -456,6 +390,152 @@ module MLC
             value = parts.empty? ? "" : parts.first[:value]
             add_token(:STRING_LITERAL, value, line: start_line, column: start_column)
           end
+        end
+
+        def consume_string_escape(current_text)
+          @pos += 1
+          @column += 1
+          raise "Unterminated escape sequence" if @pos >= @source.length
+
+          escaped = @source[@pos]
+          current_text << case escaped
+                          when 'n' then "\n"
+                          when 't' then "\t"
+                          when 'r' then "\r"
+                          when '\\' then "\\"
+                          when '"' then '"'
+                          when '0' then "\0"
+                          when '{' then '{'
+                          when '}' then '}'
+                          else
+                            "\\#{escaped}"
+                          end
+          @pos += 1
+          @column += 1
+        end
+
+        def handle_interpolation(parts, current_text)
+          @pos += 1 # Skip {
+          @column += 1
+
+          expr_value = read_interpolation_expression
+          if expr_value.nil?
+            current_text << '{'
+            current_text << '}'
+            return false
+          end
+
+          parts << { type: :text, value: current_text.join } if current_text.any?
+          current_text.clear
+          parts << { type: :expr, value: expr_value }
+          true
+        end
+
+        def read_interpolation_expression
+          expr_chars = []
+          brace_depth = 1
+          while @pos < @source.length && brace_depth.positive?
+            char = @source[@pos]
+            case char
+            when '{'
+              brace_depth += 1
+              expr_chars << char
+            when '}'
+              brace_depth -= 1
+              expr_chars << char if brace_depth.positive?
+            when '"'
+              expr_chars << char
+              skip_nested_string(expr_chars)
+            else
+              expr_chars << char
+            end
+
+            update_position_for_char
+          end
+
+          expr_value = expr_chars.join.strip
+          return nil if expr_value.empty?
+
+          expr_value
+        end
+
+        def skip_nested_string(expr_chars)
+          @pos += 1
+          @column += 1
+          while @pos < @source.length && @source[@pos] != '"'
+            expr_chars << @source[@pos]
+            if @source[@pos] == '\\'
+              @pos += 1
+              @column += 1
+              expr_chars << @source[@pos] if @pos < @source.length
+            end
+            if @source[@pos] == "\n"
+              @line += 1
+              @column = 1
+            else
+              @column += 1
+            end
+            @pos += 1
+          end
+          expr_chars << @source[@pos] if @pos < @source.length && @source[@pos] == '"'
+        end
+
+        def update_position_for_char
+          if @source[@pos] == "\n"
+            @line += 1
+            @column = 1
+          else
+            @column += 1
+          end
+          @pos += 1
+        end
+
+        def append_string_char(current_text)
+          if @source[@pos] == "\n"
+            @line += 1
+            @column = 1
+          else
+            @column += 1
+          end
+          current_text << @source[@pos]
+          @pos += 1
+        end
+
+        def finalize_percent_word(words, current_word)
+          return if current_word.empty?
+
+          words << current_word.join
+          current_word.clear
+        end
+
+        def advance_whitespace_char(char)
+          if char == "\n"
+            @line += 1
+            @column = 1
+          else
+            @column += 1
+          end
+          @pos += 1
+        end
+
+        def consume_percent_escape(current_word, close_delim)
+          @pos += 1
+          @column += 1
+          return unless @pos < @source.length
+
+          escaped = @source[@pos]
+          current_word << case escaped
+                          when 'n' then "\n"
+                          when 't' then "\t"
+                          when 'r' then "\r"
+                          when 's' then " "
+                          when '\\' then "\\"
+                          when close_delim then close_delim
+                          else
+                            escaped
+                          end
+          @pos += 1
+          @column += 1
         end
 
         # Single-quoted strings: no interpolation, minimal escape sequences
@@ -820,42 +900,19 @@ module MLC
             char = @source[@pos]
 
             if char =~ /\s/
-              # Whitespace separates words
-              if current_word.any?
-                words << current_word.join
-                current_word = []
-              end
-              if char == "\n"
-                @line += 1
-                @column = 1
-              else
-                @column += 1
-              end
-              @pos += 1
-            elsif char == '\\'
-              # Escape sequence
-              @pos += 1
-              @column += 1
-              if @pos < @source.length
-                escaped = @source[@pos]
-                current_word << case escaped
-                                when 'n' then "\n"
-                                when 't' then "\t"
-                                when 'r' then "\r"
-                                when 's' then " " # Escaped space
-                                when '\\' then "\\"
-                                when close_delim then close_delim
-                                else
-                                  escaped
-                                end
-                @pos += 1
-                @column += 1
-              end
-            else
-              current_word << char
-              @pos += 1
-              @column += 1
+              finalize_percent_word(words, current_word)
+              advance_whitespace_char(char)
+              next
             end
+
+            if char == '\\'
+              consume_percent_escape(current_word, close_delim)
+              next
+            end
+
+            current_word << char
+            @pos += 1
+            @column += 1
           end
 
           # Add last word if present
@@ -1017,4 +1074,4 @@ module MLC
     end
   end
 end
-# rubocop:enable Metrics/ParameterLists, Metrics/BlockNesting
+# rubocop:enable Metrics/ParameterLists
