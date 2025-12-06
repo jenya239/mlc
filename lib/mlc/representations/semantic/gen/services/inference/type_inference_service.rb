@@ -113,56 +113,75 @@ module MLC
             end
 
             # Infer type of binary operation
-            def infer_binary_type(op, left_type, right_type) # rubocop:disable Naming/MethodParameterName
-              ensure_type!(left_type, "Left operand of '#{op}' has no type")
-              ensure_type!(right_type, "Right operand of '#{op}' has no type")
+            def infer_binary_type(operator, left_type, right_type)
+              ensure_type!(left_type, "Left operand of '#{operator}' has no type")
+              ensure_type!(right_type, "Right operand of '#{operator}' has no type")
 
-              case op
-              when "+"
-                # Support both numeric addition and string concatenation
-                if string_type?(left_type) && string_type?(right_type)
-                  SemanticIR::Builder.primitive_type("string")
-                elsif numeric_type?(left_type) && numeric_type?(right_type)
-                  combine_numeric_type(left_type, right_type)
-                else
-                  type_error("Cannot add #{describe_type(left_type)} and #{describe_type(right_type)}")
-                end
-              when "-", "*", "%"
-                @type_checker.ensure_numeric_type(left_type, "left operand of '#{op}'")
-                @type_checker.ensure_numeric_type(right_type, "right operand of '#{op}'")
+              return handle_addition(left_type, right_type) if operator == "+"
+              return handle_arithmetic(operator, left_type, right_type) if ["-", "*", "%"].include?(operator)
+              return handle_division(left_type, right_type) if operator == "/"
+              return handle_equality(operator, left_type, right_type) if ["==", "!="].include?(operator)
+              return handle_comparison(operator, left_type, right_type) if ["<", ">", "<=", ">="].include?(operator)
+              return handle_logical(operator, left_type, right_type) if ["&&", "||"].include?(operator)
+              return handle_bitwise(operator, left_type, right_type) if ["&", "|", "^"].include?(operator)
+              return handle_shift(operator, left_type, right_type) if ["<<", ">>"].include?(operator)
+
+              left_type
+            end
+
+            def handle_addition(left_type, right_type)
+              if string_type?(left_type) && string_type?(right_type)
+                SemanticIR::Builder.primitive_type("string")
+              elsif numeric_type?(left_type) && numeric_type?(right_type)
                 combine_numeric_type(left_type, right_type)
-              when "/"
-                @type_checker.ensure_numeric_type(left_type, "left operand of '/' ")
-                @type_checker.ensure_numeric_type(right_type, "right operand of '/' ")
-                if float_type?(left_type) || float_type?(right_type)
-                  SemanticIR::Builder.primitive_type("f32")
-                else
-                  SemanticIR::Builder.primitive_type("i32")
-                end
-              when "==", "!="
-                @type_checker.ensure_compatible_type(left_type, right_type, "comparison '#{op}'")
-                SemanticIR::Builder.primitive_type("bool")
-              when "<", ">", "<=", ">="
-                @type_checker.ensure_numeric_type(left_type, "left operand of '#{op}'")
-                @type_checker.ensure_numeric_type(right_type, "right operand of '#{op}'")
-                SemanticIR::Builder.primitive_type("bool")
-              when "&&", "||"
-                @type_checker.ensure_boolean_type(left_type, "left operand of '#{op}'")
-                @type_checker.ensure_boolean_type(right_type, "right operand of '#{op}'")
-                SemanticIR::Builder.primitive_type("bool")
-              when "&", "|", "^"
-                # Bitwise operators: require integer types, return integer
-                @type_checker.ensure_integer_type(left_type, "left operand of '#{op}'")
-                @type_checker.ensure_integer_type(right_type, "right operand of '#{op}'")
-                combine_numeric_type(left_type, right_type)
-              when "<<", ">>"
-                # Shift operators: left must be integer, right must be integer, returns left type
-                @type_checker.ensure_integer_type(left_type, "left operand of '#{op}'")
-                @type_checker.ensure_integer_type(right_type, "right operand of '#{op}'")
-                left_type
               else
-                left_type
+                type_error("Cannot add #{describe_type(left_type)} and #{describe_type(right_type)}")
               end
+            end
+
+            def handle_arithmetic(operator, left_type, right_type)
+              @type_checker.ensure_numeric_type(left_type, "left operand of '#{operator}'")
+              @type_checker.ensure_numeric_type(right_type, "right operand of '#{operator}'")
+              combine_numeric_type(left_type, right_type)
+            end
+
+            def handle_division(left_type, right_type)
+              @type_checker.ensure_numeric_type(left_type, "left operand of '/' ")
+              @type_checker.ensure_numeric_type(right_type, "right operand of '/' ")
+              if float_type?(left_type) || float_type?(right_type)
+                SemanticIR::Builder.primitive_type("f32")
+              else
+                SemanticIR::Builder.primitive_type("i32")
+              end
+            end
+
+            def handle_equality(operator, left_type, right_type)
+              @type_checker.ensure_compatible_type(left_type, right_type, "comparison '#{operator}'")
+              SemanticIR::Builder.primitive_type("bool")
+            end
+
+            def handle_comparison(operator, left_type, right_type)
+              @type_checker.ensure_numeric_type(left_type, "left operand of '#{operator}'")
+              @type_checker.ensure_numeric_type(right_type, "right operand of '#{operator}'")
+              SemanticIR::Builder.primitive_type("bool")
+            end
+
+            def handle_logical(operator, left_type, right_type)
+              @type_checker.ensure_boolean_type(left_type, "left operand of '#{operator}'")
+              @type_checker.ensure_boolean_type(right_type, "right operand of '#{operator}'")
+              SemanticIR::Builder.primitive_type("bool")
+            end
+
+            def handle_bitwise(operator, left_type, right_type)
+              @type_checker.ensure_integer_type(left_type, "left operand of '#{operator}'")
+              @type_checker.ensure_integer_type(right_type, "right operand of '#{operator}'")
+              combine_numeric_type(left_type, right_type)
+            end
+
+            def handle_shift(operator, left_type, right_type)
+              @type_checker.ensure_integer_type(left_type, "left operand of '#{operator}'")
+              @type_checker.ensure_integer_type(right_type, "right operand of '#{operator}'")
+              left_type
             end
 
             # Infer type of unary operation
@@ -552,119 +571,28 @@ module MLC
               private
 
               def resolve_array_member(object_type, member, args)
+                if (handler = array_method_table[member])
+                  ensure_args(member, args, handler[:args])
+                  return instance_exec(object_type, &handler[:ret])
+                end
+
                 case member
-                when "length", "size", "len"
-                  ensure_args(member, args, 0)
-                  prim("i32")
-                when "is_empty"
-                  ensure_args(member, args, 0)
-                  prim("bool")
                 when "map"
                   ensure_args(member, args, 1)
                   element_type = lambda_return_type(args.first)
                   type_error("Unable to infer return type of map lambda") unless element_type
                   SemanticIR::ArrayType.new(element_type: element_type)
-                when "filter"
-                  ensure_args(member, args, 1)
-                  array_of(object_type)
                 when "fold"
                   ensure_args(member, args, 2)
                   accumulator_type = args.first&.type
                   @context.ensure_type!(accumulator_type, "Unable to determine accumulator type for fold")
                   accumulator_type
-                when "first", "last"
-                  ensure_args(member, args, 0)
-                  object_type.element_type
-                when "reverse"
-                  ensure_args(member, args, 0)
-                  array_of(object_type)
-                when "take", "drop"
-                  ensure_args(member, args, 1)
-                  array_of(object_type)
-                when "contains"
-                  ensure_args(member, args, 1)
-                  prim("bool")
-                when "join"
-                  ensure_args(member, args, 1)
-                  prim("string")
-                when "sum"
-                  ensure_args(member, args, 0)
-                  object_type.element_type
-                when "any", "all", "none"
-                  ensure_args(member, args, 1)
-                  prim("bool")
-                when "find"
-                  ensure_args(member, args, 1)
-                  object_type.element_type
-                when "find_index", "index_of"
-                  ensure_args(member, args, 1)
-                  prim("i32")
-                when "concat", "append"
-                  ensure_args(member, args, 1)
-                  array_of(object_type)
                 when "flatten"
-                  ensure_args(member, args, 0)
                   if object_type.element_type.is_a?(SemanticIR::ArrayType)
                     object_type.element_type
                   else
                     object_type
                   end
-                when "zip"
-                  ensure_args(member, args, 1)
-                  prim("auto")
-                when "enumerate"
-                  ensure_args(member, args, 0)
-                  prim("auto")
-                when "min", "max"
-                  ensure_args(member, args, 0)
-                  object_type.element_type
-                when "slice"
-                  SemanticIR::ArrayType.new(element_type: object_type.element_type)
-                when "sort"
-                  ensure_args(member, args, 0)
-                  array_of(object_type)
-                when "sort_by"
-                  ensure_args(member, args, 1)
-                  array_of(object_type)
-                when "uniq"
-                  ensure_args(member, args, 0)
-                  array_of(object_type)
-                when "uniq_by"
-                  ensure_args(member, args, 1)
-                  array_of(object_type)
-                when "group_by"
-                  ensure_args(member, args, 1)
-                  prim("auto")
-                when "partition"
-                  ensure_args(member, args, 1)
-                  prim("auto")
-                when "take_while", "drop_while"
-                  ensure_args(member, args, 1)
-                  array_of(object_type)
-                when "first_n", "last_n"
-                  ensure_args(member, args, 1)
-                  array_of(object_type)
-                when "second", "third"
-                  ensure_args(member, args, 0)
-                  object_type.element_type
-                when "count"
-                  ensure_args(member, args, 1)
-                  prim("i32")
-                when "compact"
-                  ensure_args(member, args, 0)
-                  array_of(object_type)
-                when "rotate"
-                  ensure_args(member, args, 1)
-                  array_of(object_type)
-                when "sample"
-                  ensure_args(member, args, 0)
-                  object_type.element_type
-                when "product"
-                  ensure_args(member, args, 0)
-                  object_type.element_type
-                when "flat_map"
-                  ensure_args(member, args, 1)
-                  prim("auto")
                 else
                   type_error(
                     "Unknown array method '#{member}'. Supported methods: length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, zip, enumerate, min, max, slice, sort, sort_by, uniq, uniq_by, group_by, partition, take_while, drop_while, first_n, last_n, second, third, count, compact, rotate, sample, product, flat_map"
@@ -736,8 +664,61 @@ module MLC
                 @context.send(:infer_numeric_member_call_type, object_type, member, args)
               end
 
+              def array_method_table
+                @array_method_table ||= {
+                  "length" => { args: 0, ret: ->(_t) { prim("i32") } },
+                  "size" => { args: 0, ret: ->(_t) { prim("i32") } },
+                  "len" => { args: 0, ret: ->(_t) { prim("i32") } },
+                  "is_empty" => { args: 0, ret: ->(_t) { prim("bool") } },
+                  "filter" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "first" => { args: 0, ret: ->(t) { element_type_of(t) } },
+                  "last" => { args: 0, ret: ->(t) { element_type_of(t) } },
+                  "reverse" => { args: 0, ret: ->(t) { array_of(t) } },
+                  "take" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "drop" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "contains" => { args: 1, ret: ->(_t) { prim("bool") } },
+                  "join" => { args: 1, ret: ->(_t) { prim("string") } },
+                  "sum" => { args: 0, ret: ->(t) { element_type_of(t) } },
+                  "any" => { args: 1, ret: ->(_t) { prim("bool") } },
+                  "all" => { args: 1, ret: ->(_t) { prim("bool") } },
+                  "none" => { args: 1, ret: ->(_t) { prim("bool") } },
+                  "find" => { args: 1, ret: ->(t) { element_type_of(t) } },
+                  "find_index" => { args: 1, ret: ->(_t) { prim("i32") } },
+                  "index_of" => { args: 1, ret: ->(_t) { prim("i32") } },
+                  "concat" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "append" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "zip" => { args: 1, ret: ->(_t) { prim("auto") } },
+                  "enumerate" => { args: 0, ret: ->(_t) { prim("auto") } },
+                  "min" => { args: 0, ret: ->(t) { element_type_of(t) } },
+                  "max" => { args: 0, ret: ->(t) { element_type_of(t) } },
+                  "slice" => { args: nil, ret: ->(t) { SemanticIR::ArrayType.new(element_type: t.element_type) } },
+                  "sort" => { args: 0, ret: ->(t) { array_of(t) } },
+                  "sort_by" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "uniq" => { args: 0, ret: ->(t) { array_of(t) } },
+                  "uniq_by" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "group_by" => { args: 1, ret: ->(_t) { prim("auto") } },
+                  "partition" => { args: 1, ret: ->(_t) { prim("auto") } },
+                  "take_while" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "drop_while" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "first_n" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "last_n" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "second" => { args: 0, ret: ->(t) { element_type_of(t) } },
+                  "third" => { args: 0, ret: ->(t) { element_type_of(t) } },
+                  "count" => { args: 1, ret: ->(_t) { prim("i32") } },
+                  "compact" => { args: 0, ret: ->(t) { array_of(t) } },
+                  "rotate" => { args: 1, ret: ->(t) { array_of(t) } },
+                  "sample" => { args: 0, ret: ->(t) { element_type_of(t) } },
+                  "product" => { args: 0, ret: ->(t) { element_type_of(t) } },
+                  "flat_map" => { args: 1, ret: ->(_t) { prim("auto") } }
+                }
+              end
+
               def ensure_args(member, args, count)
-                @type_checker.ensure_argument_count(member, args, count)
+                @type_checker.ensure_argument_count(member, args, count) if count
+              end
+
+              def element_type_of(array_type)
+                array_type.element_type
               end
 
               def numeric?(type)

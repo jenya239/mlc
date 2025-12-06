@@ -927,104 +927,104 @@ module MLC
           expr = parse_primary
           expr_line = last_token&.line
 
-          # Handle member access, method calls, and array indexing
           loop do
-            case current.type
-            when :SAFE_NAV
-              # Safe navigation operator: obj?.member or obj?.method()
-              safe_nav_token = consume(:SAFE_NAV) # consume '?.'
+            next_expr, next_line = next_postfix_expression(expr, expr_line)
+            break unless next_expr
 
-              member_token = consume(:IDENTIFIER)
-              member = member_token.value
-              member_line = member_token.line
-
-              # Check if it's a safe method call: obj?.method()
-              if current.type == :LPAREN && current.line == member_line
-                consume(:LPAREN)
-                args = parse_args
-                consume(:RPAREN)
-                expr = attach_origin(MLC::Source::AST::SafeCall.new(object: expr, method_name: member, args: args), safe_nav_token)
-              else
-                # Safe member access: obj?.field
-                expr = attach_origin(MLC::Source::AST::SafeMemberAccess.new(object: expr, member: member), safe_nav_token)
-              end
-            when :OPERATOR
-              break unless current.value == "."
-
-              consume(:OPERATOR) # consume '.'
-
-              # Check for tuple positional access: tuple.0, tuple.1
-              # Note: lexer may tokenize 0.1 as FLOAT_LITERAL, handle that case too
-              if current.type == :INT_LITERAL
-                index_token = consume(:INT_LITERAL)
-                index = index_token.value.to_i
-                expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: index), index_token)
-              elsif current.type == :FLOAT_LITERAL
-                # Handle chained access like tuple.0.1 where 0.1 is tokenized as float
-                # Split 0.1 into index 0 and .1 for further processing
-                float_token = consume(:FLOAT_LITERAL)
-                float_str = float_token.value.to_s
-                # Parse as "index.remaining_index"
-                parts = float_str.split('.')
-                raise parse_error("Invalid tuple access syntax") unless parts.size == 2 && parts[0] =~ /^\d+$/ && parts[1] =~ /^\d+$/
-
-                first_index = parts[0].to_i
-                second_index = parts[1].to_i
-                # Build nested tuple access: expr.first_index.second_index
-                inner_access = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: first_index), float_token)
-                expr = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: inner_access, index: second_index), float_token)
-              else
-                member_token = consume(:IDENTIFIER)
-                member = member_token.value
-                member_line = member_token.line
-
-                # Check if it's a method call: obj.method()
-                # Only treat LPAREN as method call if it's on the same line as the member name
-                if current.type == :LPAREN && current.line == member_line
-                  consume(:LPAREN)
-                  args = parse_args
-                  consume(:RPAREN)
-                  # Create a call with member access as callee
-                  member_access = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
-                  expr = attach_origin(MLC::Source::AST::Call.new(callee: member_access, args: args), member_token)
-                else
-                  # Just member access: obj.field
-                  expr = attach_origin(MLC::Source::AST::MemberAccess.new(object: expr, member: member), member_token)
-                end
-              end
-
-              expr_line = last_token&.line
-
-            when :LBRACKET
-              # Array indexing or slicing: expr[index] or expr[start..end]
-              lbracket_token = consume(:LBRACKET)
-
-              expr = parse_bracket_access(expr, lbracket_token)
-              expr_line = last_token&.line
-            when :LPAREN
-              paren_line = current.line
-              break unless expr_line && paren_line == expr_line
-
-              lparen_token = consume(:LPAREN)
-              args = parse_args
-              consume(:RPAREN)
-              expr = attach_origin(MLC::Source::AST::Call.new(callee: expr, args: args), lparen_token)
-              expr_line = last_token&.line
-            when :QUESTION
-              # Try/propagation operator: expr?
-              # Must be on the same line as the expression (postfix operator)
-              question_line = current.line
-              break unless expr_line && question_line == expr_line
-
-              question_token = consume(:QUESTION)
-              expr = attach_origin(MLC::Source::AST::TryExpr.new(operand: expr), question_token)
-              expr_line = last_token&.line
-            else
-              break
-            end
+            expr = next_expr
+            expr_line = next_line
           end
 
           expr
+        end
+
+        def next_postfix_expression(expr, expr_line)
+          case current.type
+          when :SAFE_NAV
+            expr = handle_safe_navigation(expr)
+            [expr, last_token&.line]
+          when :OPERATOR
+            return unless current.value == "."
+
+            expr = handle_dot_or_member(expr)
+            [expr, last_token&.line]
+          when :LBRACKET
+            lbracket_token = consume(:LBRACKET)
+            expr = parse_bracket_access(expr, lbracket_token)
+            [expr, last_token&.line]
+          when :LPAREN
+            return unless expr_line && current.line == expr_line
+
+            expr = handle_call(expr)
+            [expr, last_token&.line]
+          when :QUESTION
+            return unless expr_line && current.line == expr_line
+
+            question_token = consume(:QUESTION)
+            expr = attach_origin(MLC::Source::AST::TryExpr.new(operand: expr), question_token)
+            [expr, last_token&.line]
+          end
+        end
+
+        def handle_safe_navigation(expr)
+          safe_nav_token = consume(:SAFE_NAV)
+          member_token = consume(:IDENTIFIER)
+          member = member_token.value
+          member_line = member_token.line
+
+          if current.type == :LPAREN && current.line == member_line
+            consume(:LPAREN)
+            args = parse_args
+            consume(:RPAREN)
+            attach_origin(MLC::Source::AST::SafeCall.new(object: expr, method_name: member, args: args), safe_nav_token)
+          else
+            attach_origin(MLC::Source::AST::SafeMemberAccess.new(object: expr, member: member), safe_nav_token)
+          end
+        end
+
+        def handle_dot_or_member(expr)
+          consume(:OPERATOR) # consume '.'
+
+          if current.type == :INT_LITERAL
+            index_token = consume(:INT_LITERAL)
+            index = index_token.value.to_i
+            attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: index), index_token)
+          elsif current.type == :FLOAT_LITERAL
+            float_token = consume(:FLOAT_LITERAL)
+            float_str = float_token.value.to_s
+            parts = float_str.split('.')
+            raise parse_error("Invalid tuple access syntax") unless parts.size == 2 && parts[0] =~ /^\d+$/ && parts[1] =~ /^\d+$/
+
+            first_index = parts[0].to_i
+            second_index = parts[1].to_i
+            inner_access = attach_origin(MLC::Source::AST::TupleAccess.new(tuple: expr, index: first_index), float_token)
+            attach_origin(MLC::Source::AST::TupleAccess.new(tuple: inner_access, index: second_index), float_token)
+          else
+            member_token = consume(:IDENTIFIER)
+            member = member_token.value
+            member_line = member_token.line
+
+            if current.type == :LPAREN && current.line == member_line
+              consume(:LPAREN)
+              args = parse_args
+              consume(:RPAREN)
+              member_access = member_access_node(expr, member, member_token)
+              attach_origin(MLC::Source::AST::Call.new(callee: member_access, args: args), member_token)
+            else
+              member_access_node(expr, member, member_token)
+            end
+          end
+        end
+
+        def handle_call(expr)
+          lparen_token = consume(:LPAREN)
+          args = parse_args
+          consume(:RPAREN)
+          attach_origin(MLC::Source::AST::Call.new(callee: expr, args: args), lparen_token)
+        end
+
+        def member_access_node(object, member, token)
+          attach_origin(ast_factory.member_access(object: object, member: member, origin: token), token)
         end
 
         def parse_bracket_access(expr, lbracket_token)
@@ -1153,7 +1153,7 @@ module MLC
             token = consume(:SELF_ACCESS)
             field_name = token.value
             self_ref = attach_origin(MLC::Source::AST::VarRef.new(name: "self"), token)
-            attach_origin(MLC::Source::AST::MemberAccess.new(object: self_ref, member: field_name), token)
+            member_access_node(self_ref, field_name, token)
           else
             raise "Unexpected token: #{current}"
           end
