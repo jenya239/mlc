@@ -5,35 +5,35 @@
     "orchestrator": {
       "status": "idle",
       "last_action": "retry",
-      "last_message": "Не выполнена основная команда для тестов",
-      "updated_at": "2025-12-09T11:22:40+04:00"
+      "last_message": "Недостаточно информации о содержании изменений",
+      "updated_at": "2025-12-09T11:24:02+04:00"
     },
     "system": {
       "status": "idle",
       "last_action": "grace_period",
       "last_message": "Entered 30s grace period for retry",
-      "updated_at": "2025-12-09T11:22:40+04:00"
+      "updated_at": "2025-12-09T11:24:02+04:00"
     },
     "worker": {
       "status": "idle",
       "last_action": "result",
-      "last_message": "",
-      "updated_at": "2025-12-09T11:22:45+04:00"
+      "last_message": "{\"jsonrpc\":\"2.0\",\"method\":\"codex/event\",\"params\":{\"_meta\":{\"requestId\":10},\"id\":\"0\",\"msg\":{\"type\":\"ta",
+      "updated_at": "2025-12-09T11:24:07+04:00"
     },
     "codex": {
       "status": "idle",
       "last_action": "full_response",
-      "last_message": "",
-      "updated_at": "2025-12-09T11:22:45+04:00"
+      "last_message": "{\"jsonrpc\":\"2.0\",\"method\":\"codex/event\",\"params\":{\"_meta\":{\"requestId\":10},\"id\":\"0\",\"msg\":{\"type\":\"ta",
+      "updated_at": "2025-12-09T11:24:07+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
-      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Найдены тесты в spec/ или test/, есть изменения в git status\",\"next_action\"",
-      "updated_at": "2025-12-09T11:22:49+04:00"
+      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Обнаружены изменения в 2 файлах: flow/current_state.json и flow/flow_202512",
+      "updated_at": "2025-12-09T11:24:12+04:00"
     }
   },
   "current_task": "Continue mlc improvements: refactoring, tests, documentation",
   "status": "running",
-  "last_update": "2025-12-09T11:22:49+04:00"
+  "last_update": "2025-12-09T11:24:12+04:00"
 }
