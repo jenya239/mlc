@@ -5,35 +5,35 @@
     "orchestrator": {
       "status": "idle",
       "last_action": "retry",
-      "last_message": "Неясно что именно изменено в файлах",
-      "updated_at": "2025-12-09T12:11:37+04:00"
+      "last_message": "Недостаточно информации о прогрессе рефакторинга",
+      "updated_at": "2025-12-09T12:12:07+04:00"
     },
     "system": {
       "status": "idle",
       "last_action": "grace_period",
       "last_message": "Entered 30s grace period for retry",
-      "updated_at": "2025-12-09T12:11:37+04:00"
+      "updated_at": "2025-12-09T12:12:07+04:00"
     },
     "worker": {
       "status": "idle",
       "last_action": "result",
       "last_message": "{\"jsonrpc\":\"2.0\",\"method\":\"codex/event\",\"params\":{\"_meta\":{\"requestId\":3},\"id\":\"2\",\"msg\":{\"type\":\"tas",
-      "updated_at": "2025-12-09T12:11:42+04:00"
+      "updated_at": "2025-12-09T12:12:12+04:00"
     },
     "codex": {
       "status": "idle",
       "last_action": "full_response",
       "last_message": "{\"jsonrpc\":\"2.0\",\"method\":\"codex/event\",\"params\":{\"_meta\":{\"requestId\":3},\"id\":\"2\",\"msg\":{\"type\":\"tas",
-      "updated_at": "2025-12-09T12:11:42+04:00"
+      "updated_at": "2025-12-09T12:12:12+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
       "last_message": "{\"verdict\":\"ok\",\"reason\":\"Обнаружены изменения в файлах flow/current_state.json и flow/flow_20251209_",
-      "updated_at": "2025-12-09T12:11:47+04:00"
+      "updated_at": "2025-12-09T12:12:17+04:00"
     }
   },
   "current_task": "Continue mlc improvements: refactoring, tests, documentation",
   "status": "running",
-  "last_update": "2025-12-09T12:11:47+04:00"
+  "last_update": "2025-12-09T12:12:17+04:00"
 }
