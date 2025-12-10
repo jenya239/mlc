@@ -7,6 +7,8 @@ module MLC
       # Expression parsing - literals, operators, lambdas, control flow
       # Auto-extracted from parser.rb during refactoring
       module ExpressionParser
+        MAX_COMPLEX_NESTING = 128
+
         def looks_like_lambda?
           # Save position
           saved_pos = @pos
@@ -259,25 +261,72 @@ module MLC
           left
         end
 
-        def parse_expression
-          if current.type == :MATCH
+        def parse_complex_expression(inside_block: false)
+          @complex_expr_depth = (@complex_expr_depth || 0) + 1
+          raise parse_error("Expression nesting too deep") if @complex_expr_depth > MAX_COMPLEX_NESTING
+
+          parse_complex_expression_inner(inside_block: inside_block)
+        ensure
+          @complex_expr_depth = [(@complex_expr_depth || 1) - 1, 0].max
+        end
+
+        def parse_complex_expression_inner(inside_block:)
+          # Explicitly handle leading parentheses to support arbitrarily
+          # nested groupings without losing postfix conditionals.
+          return parse_nested_parenthesized_expression(inside_block: inside_block) if current.type == :LPAREN && !looks_like_lambda?
+
+          case current.type
+          when :MATCH
             parse_match_expression
-          elsif current.type == :DO
+          when :DO
             parse_do_expression
           else
-            parse_let_expression
+            inside_block ? parse_let_expression_in_block : parse_let_expression
           end
+        end
+
+        def parse_nested_parenthesized_expression(inside_block:)
+          lparen_token = consume(:LPAREN)
+
+          # Empty tuple ()
+          if current.type == :RPAREN
+            consume(:RPAREN)
+            return with_origin(lparen_token) { MLC::Source::AST::TupleLit.new(elements: []) }
+          end
+
+          first_expr = parse_complex_expression(inside_block: inside_block)
+
+          # Tuple detection: (a, b, ...)
+          if current.type == :COMMA
+            elements = [first_expr]
+            consume(:COMMA)
+
+            unless current.type == :RPAREN
+              elements << parse_complex_expression(inside_block: inside_block)
+              while current.type == :COMMA
+                consume(:COMMA)
+                break if current.type == :RPAREN # Trailing comma
+
+                elements << parse_complex_expression(inside_block: inside_block)
+              end
+            end
+
+            consume(:RPAREN)
+            return with_origin(lparen_token) { MLC::Source::AST::TupleLit.new(elements: elements) }
+          end
+
+          # Grouped expression (expr)
+          consume(:RPAREN)
+          parse_postfix_conditional(first_expr)
+        end
+
+        def parse_expression
+          parse_complex_expression
         end
 
         # Parse expression inside a block context (don't consume END for if)
         def parse_expression_in_block
-          if current.type == :MATCH
-            parse_match_expression
-          elsif current.type == :DO
-            parse_do_expression
-          else
-            parse_let_expression_in_block
-          end
+          parse_complex_expression(inside_block: true)
         end
 
         # Parse let expression inside a block context
@@ -1024,7 +1073,10 @@ module MLC
         end
 
         def member_access_node(object, member, token)
-          attach_origin(ast_factory.member_access(object: object, member: member, origin: token), token)
+          attach_origin(
+            MLC::Source::AST::MemberAccess.new(object: object, member: member, origin: origin_from(token)),
+            token
+          )
         end
 
         def parse_bracket_access(expr, lbracket_token)
