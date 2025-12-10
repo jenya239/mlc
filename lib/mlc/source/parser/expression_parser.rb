@@ -290,41 +290,8 @@ module MLC
           parse_complex_expression(inside_block: true)
         end
 
-        # Parse let expression inside a block context
         def parse_let_expression_in_block
-          return parse_if_expression_in_block unless current.type == :LET
-
-          consume(:LET)
-          mutable = false
-          if current.type == :MUT
-            consume(:MUT)
-            mutable = true
-          end
-
-          name_token = consume(:IDENTIFIER)
-          name = name_token.value
-
-          type_annotation = nil
-          if current.type == :COLON
-            consume(:COLON)
-            type_annotation = parse_type
-          end
-
-          consume(:EQUAL)
-          value = parse_if_expression_in_block
-
-          unless current.type == :SEMICOLON
-            body = parse_expression_in_block
-            return with_origin(name_token) { MLC::Source::AST::Let.new(name: name, value: value, body: body, mutable: mutable, type: type_annotation) }
-          end
-
-          consume(:SEMICOLON)
-          statements = [with_origin(name_token) do
-            MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation)
-          end]
-          block = parse_statement_sequence(statements)
-          ensure_block_has_result(block, require_value: false)
-          block
+          parse_let_expression_common(inside_block: true)
         end
 
         def parse_for_loop
@@ -610,9 +577,16 @@ module MLC
         end
 
         def parse_let_expression
-          return parse_if_expression unless current.type == :LET
+          parse_let_expression_common(inside_block: false)
+        end
 
-          consume(:LET)
+        def parse_let_expression_common(inside_block:)
+          parse_if_expr = inside_block ? :parse_if_expression_in_block : :parse_if_expression
+          parse_expr = inside_block ? :parse_expression_in_block : :parse_expression
+
+          return send(parse_if_expr) unless current.type == :LET
+
+          let_token = consume(:LET)
           mutable = false
           if current.type == :MUT
             consume(:MUT)
@@ -622,7 +596,6 @@ module MLC
           name_token = consume(:IDENTIFIER)
           name = name_token.value
 
-          # Optional type annotation: let x: Type = value
           type_annotation = nil
           if current.type == :COLON
             consume(:COLON)
@@ -630,10 +603,10 @@ module MLC
           end
 
           consume(:EQUAL)
-          value = parse_if_expression
+          value = send(parse_if_expr)
 
           unless current.type == :SEMICOLON
-            body = parse_expression
+            body = send(parse_expr)
             return with_origin(name_token) { MLC::Source::AST::Let.new(name: name, value: value, body: body, mutable: mutable, type: type_annotation) }
           end
 
@@ -948,6 +921,10 @@ module MLC
           expr
         end
 
+        def same_line?(line)
+          line && current.line == line
+        end
+
         def next_postfix_expression(expr, expr_line)
           case current.type
           when :SAFE_NAV
@@ -963,12 +940,12 @@ module MLC
             expr = parse_bracket_access(expr, lbracket_token)
             [expr, last_token&.line]
           when :LPAREN
-            return unless expr_line && current.line == expr_line
+            return unless same_line?(expr_line)
 
             expr = handle_call(expr)
             [expr, last_token&.line]
           when :QUESTION
-            return unless expr_line && current.line == expr_line
+            return unless same_line?(expr_line)
 
             question_token = consume(:QUESTION)
             expr = attach_origin(MLC::Source::AST::TryExpr.new(operand: expr), question_token)
