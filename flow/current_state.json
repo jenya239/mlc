@@ -4,36 +4,36 @@
   "agents": {
     "system": {
       "status": "idle",
-      "last_action": "waiting",
-      "last_message": "Waiting 5s for rate limit reset",
-      "updated_at": "2025-12-10T17:20:41+04:00"
+      "last_action": "grace_period",
+      "last_message": "Entered 30s grace period for retry",
+      "updated_at": "2025-12-10T17:21:50+04:00"
     },
     "orchestrator": {
       "status": "idle",
-      "last_action": "subtask",
-      "last_message": "4/5: Apply small improvements",
-      "updated_at": "2025-12-10T17:20:41+04:00"
+      "last_action": "retry",
+      "last_message": "json error: invalid ASCII control character in string: \n1. Исправить инициализацию парсера \n2. Добави",
+      "updated_at": "2025-12-10T17:21:50+04:00"
     },
     "worker": {
       "status": "idle",
       "last_action": "result",
       "last_message": "",
-      "updated_at": "2025-12-10T17:21:06+04:00"
+      "updated_at": "2025-12-10T17:21:55+04:00"
     },
     "codex": {
       "status": "idle",
       "last_action": "full_response",
       "last_message": "",
-      "updated_at": "2025-12-10T17:21:06+04:00"
+      "updated_at": "2025-12-10T17:21:55+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
-      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Codex внес изменения в два JSON-файла в директории flow/\",\"next_action\":\"Пр",
-      "updated_at": "2025-12-10T17:21:11+04:00"
+      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Частичные изменения в файлах flow/current_state.json и flow/flow_20251210_1",
+      "updated_at": "2025-12-10T17:22:00+04:00"
     }
   },
   "current_task": "MLC: verify cwd Show pwd",
   "status": "running",
-  "last_update": "2025-12-10T17:21:11+04:00"
+  "last_update": "2025-12-10T17:22:00+04:00"
 }
