@@ -4,9 +4,9 @@
   "agents": {
     "orchestrator": {
       "status": "idle",
-      "last_action": "retry",
-      "last_message": "Codex предложил рефакторинг, но НЕ реализовал конкретные изменения в коде",
-      "updated_at": "2025-12-10T23:54:52+04:00"
+      "last_action": "subtask",
+      "last_message": "4/5: Apply small improvements",
+      "updated_at": "2025-12-10T23:55:04+04:00"
     },
     "system": {
       "status": "idle",
@@ -17,23 +17,23 @@
     "worker": {
       "status": "idle",
       "last_action": "result",
-      "last_message": "Here are concrete refactor instructions with exact edits:\n\n- `lib/mlc/source/parser/expression_parser",
-      "updated_at": "2025-12-10T23:54:57+04:00"
+      "last_message": "",
+      "updated_at": "2025-12-10T23:55:10+04:00"
     },
     "codex": {
       "status": "idle",
       "last_action": "full_response",
-      "last_message": "Here are concrete refactor instructions with exact edits:\n\n- `lib/mlc/source/parser/expression_parser",
-      "updated_at": "2025-12-10T23:54:57+04:00"
+      "last_message": "",
+      "updated_at": "2025-12-10T23:55:10+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
-      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Найдены изменения в lib/mlc/source/parser/expression_parser.rb с рефакторин",
-      "updated_at": "2025-12-10T23:55:04+04:00"
+      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Codex внес правки в базовый парсер\",\"next_action\":\"Review changes in lib/ml",
+      "updated_at": "2025-12-10T23:55:14+04:00"
     }
   },
   "current_task": "MLC: Continue development Fix tests, refactor code, improve documentation",
   "status": "running",
-  "last_update": "2025-12-10T23:55:04+04:00"
+  "last_update": "2025-12-10T23:55:14+04:00"
 }

@@ -154,6 +154,10 @@ module MLC
           end
           items
         end
+
+        def expect!(condition, message)
+          raise parse_error(message) unless condition
+        end
       end
     end
   end
