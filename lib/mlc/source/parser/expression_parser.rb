@@ -586,21 +586,9 @@ module MLC
 
           return send(parse_if_expr) unless current.type == :LET
 
+          consume(:LET)
           mutable, name_token, type_annotation = parse_let_header
-          mutable = false
-          if current.type == :MUT
-            consume(:MUT)
-            mutable = true
-          end
-
-          name_token = consume(:IDENTIFIER)
           name = name_token.value
-
-          type_annotation = nil
-          if current.type == :COLON
-            consume(:COLON)
-            type_annotation = parse_type
-          end
 
           consume(:EQUAL)
           value = send(parse_if_expr)
@@ -650,6 +638,25 @@ module MLC
           # In do-blocks, let is a statement that doesn't need 'in'
           # It returns a special LetStmt expression
           with_origin(let_token) { MLC::Source::AST::Let.new(name: name, value: value, body: nil, mutable: mutable, type: type_annotation) }
+        end
+
+        def parse_let_header
+          mutable = false
+          if current.type == :MUT
+            consume(:MUT)
+            mutable = true
+          end
+
+          name_token = consume(:IDENTIFIER)
+          name = name_token.value
+
+          type_annotation = nil
+          if current.type == :COLON
+            consume(:COLON)
+            type_annotation = parse_type
+          end
+
+          [mutable, name_token, type_annotation]
         end
 
         def parse_logical_and
