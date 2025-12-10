@@ -586,7 +586,7 @@ module MLC
 
           return send(parse_if_expr) unless current.type == :LET
 
-          let_token = consume(:LET)
+          mutable, name_token, type_annotation = parse_let_header
           mutable = false
           if current.type == :MUT
             consume(:MUT)
