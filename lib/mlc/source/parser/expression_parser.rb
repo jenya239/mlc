@@ -588,19 +588,30 @@ module MLC
 
           consume(:LET)
           mutable, name_token, type_annotation = parse_let_header
-          name = name_token.value
-
           consume(:EQUAL)
-          value = send(parse_if_expr)
+          value = parse_let_value(parse_if_expr)
 
           unless current.type == :SEMICOLON
             body = send(parse_expr)
-            return with_origin(name_token) { MLC::Source::AST::Let.new(name: name, value: value, body: body, mutable: mutable, type: type_annotation) }
+            return with_origin(name_token) do
+              MLC::Source::AST::Let.new(
+                name: name_token.value,
+                value: value,
+                body: body,
+                mutable: mutable,
+                type: type_annotation
+              )
+            end
           end
 
           consume(:SEMICOLON)
           statements = [with_origin(name_token) do
-            MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation)
+            MLC::Source::AST::VariableDecl.new(
+              name: name_token.value,
+              value: value,
+              mutable: mutable,
+              type: type_annotation
+            )
           end]
           block = parse_statement_sequence(statements)
           ensure_block_has_result(block, require_value: false)
@@ -610,34 +621,20 @@ module MLC
         def parse_let_statement
           # Parse: let x = value or let mut x = value or let x: Type = value
           let_token = consume(:LET)
-          mutable = false
-          if current.type == :MUT
-            consume(:MUT)
-            mutable = true
-          end
-
-          name_token = consume(:IDENTIFIER)
-          name = name_token.value
-
-          # Optional type annotation: let x: Type = value
-          type_annotation = nil
-          if current.type == :COLON
-            consume(:COLON)
-            type_annotation = parse_type
-          end
-
-          consume(:EQUAL)
-
-          # Value can be any expression including do-blocks
-          value = if current.type == :DO
-                    parse_do_expression
-                  else
-                    parse_if_expression
-                  end
+          mutable, name_token, type_annotation = parse_let_header
+          value = parse_let_value(:parse_if_expression)
 
           # In do-blocks, let is a statement that doesn't need 'in'
           # It returns a special LetStmt expression
-          with_origin(let_token) { MLC::Source::AST::Let.new(name: name, value: value, body: nil, mutable: mutable, type: type_annotation) }
+          with_origin(let_token) do
+            MLC::Source::AST::Let.new(
+              name: name_token.value,
+              value: value,
+              body: nil,
+              mutable: mutable,
+              type: type_annotation
+            )
+          end
         end
 
         def parse_let_header
@@ -657,6 +654,12 @@ module MLC
           end
 
           [mutable, name_token, type_annotation]
+        end
+
+        def parse_let_value(parse_if_expr)
+          return parse_do_expression if current.type == :DO
+
+          send(parse_if_expr)
         end
 
         def parse_logical_and
@@ -935,29 +938,43 @@ module MLC
         def next_postfix_expression(expr, expr_line)
           case current.type
           when :SAFE_NAV
-            expr = handle_safe_navigation(expr)
-            [expr, last_token&.line]
+            handle_safe_nav_postfix(expr)
           when :OPERATOR
-            return unless current.value == "."
-
-            expr = handle_dot_or_member(expr)
-            [expr, last_token&.line]
+            current.value == "." ? handle_dot_postfix(expr) : nil
           when :LBRACKET
-            lbracket_token = consume(:LBRACKET)
-            expr = parse_bracket_access(expr, lbracket_token)
-            [expr, last_token&.line]
+            handle_bracket_postfix(expr)
           when :LPAREN
-            return unless same_line?(expr_line)
-
-            expr = handle_call(expr)
-            [expr, last_token&.line]
+            same_line?(expr_line) ? handle_call_postfix(expr) : nil
           when :QUESTION
-            return unless same_line?(expr_line)
-
-            question_token = consume(:QUESTION)
-            expr = attach_origin(MLC::Source::AST::TryExpr.new(operand: expr), question_token)
-            [expr, last_token&.line]
+            same_line?(expr_line) ? handle_try_postfix(expr) : nil
           end
+        end
+
+        def handle_safe_nav_postfix(expr)
+          expr = handle_safe_navigation(expr)
+          [expr, last_token&.line]
+        end
+
+        def handle_dot_postfix(expr)
+          expr = handle_dot_or_member(expr)
+          [expr, last_token&.line]
+        end
+
+        def handle_bracket_postfix(expr)
+          lbracket_token = consume(:LBRACKET)
+          expr = parse_bracket_access(expr, lbracket_token)
+          [expr, last_token&.line]
+        end
+
+        def handle_call_postfix(expr)
+          expr = handle_call(expr)
+          [expr, last_token&.line]
+        end
+
+        def handle_try_postfix(expr)
+          question_token = consume(:QUESTION)
+          expr = attach_origin(MLC::Source::AST::TryExpr.new(operand: expr), question_token)
+          [expr, last_token&.line]
         end
 
         def handle_safe_navigation(expr)
