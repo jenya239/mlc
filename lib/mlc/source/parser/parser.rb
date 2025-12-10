@@ -35,7 +35,7 @@ module MLC
 
         # Parse a single expression (for string interpolation sub-parsing)
         def parse_single_expression
-          parse_expression
+          parse_common_expression
         end
 
         # Unified entry point for expression parsing.
@@ -45,6 +45,10 @@ module MLC
         # without worrying about context-specific dispatch.
         def parse_common_expression(inside_block: false)
           parse_complex_expression(inside_block: inside_block)
+        rescue StandardError => e
+          # Wrap lower-level errors with context about the parsing entrypoint
+          # to make debugging sub-parser calls (like string interpolation) easier.
+          raise parse_error("Failed to parse expression: #{e.message}")
         end
       end
     end

@@ -124,6 +124,20 @@ module MLC
           attach_origin(node, token)
         end
 
+        # Build a parse error with helpful position context.
+        def parse_error(message)
+          token = current || last_token
+          location = if token&.respond_to?(:line) && token&.respond_to?(:column)
+                       loc = +"line #{token.line}, column #{token.column}"
+                       loc << " in #{token.file}" if token.respond_to?(:file) && token.file
+                       loc
+                     else
+                       "unknown location"
+                     end
+          full_message = "#{message} (#{location})"
+          MLC::ParseError.new(full_message)
+        end
+
         # Utility methods for common patterns
 
         def skip_until(*types)
