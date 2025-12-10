@@ -10,30 +10,30 @@
     },
     "orchestrator": {
       "status": "idle",
-      "last_action": "retry",
-      "last_message": "Частичные изменения без ясности по тестам",
-      "updated_at": "2025-12-10T17:19:51+04:00"
+      "last_action": "subtask",
+      "last_message": "3/5: Identify refactoring opportunities",
+      "updated_at": "2025-12-10T17:20:15+04:00"
     },
     "worker": {
       "status": "idle",
       "last_action": "result",
       "last_message": "",
-      "updated_at": "2025-12-10T17:20:11+04:00"
+      "updated_at": "2025-12-10T17:20:35+04:00"
     },
     "codex": {
       "status": "idle",
       "last_action": "full_response",
       "last_message": "",
-      "updated_at": "2025-12-10T17:20:11+04:00"
+      "updated_at": "2025-12-10T17:20:35+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
-      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Обнаружены изменения в файлах JSON, тесты найдены\",\"next_action\":\"Запустить",
-      "updated_at": "2025-12-10T17:20:15+04:00"
+      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Обнаружены изменения в файлах flow/current_state.json и flow/flow_20251210_",
+      "updated_at": "2025-12-10T17:20:40+04:00"
     }
   },
   "current_task": "MLC: verify cwd Show pwd",
   "status": "running",
-  "last_update": "2025-12-10T17:20:15+04:00"
+  "last_update": "2025-12-10T17:20:40+04:00"
 }
