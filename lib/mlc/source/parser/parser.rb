@@ -37,6 +37,15 @@ module MLC
         def parse_single_expression
           parse_expression
         end
+
+        # Unified entry point for expression parsing.
+        # Delegates to the expression parser while keeping shared handling
+        # (parentheses, tuples, nested expressions, depth limits) in one place.
+        # Other parser modules can call this when they need an expression
+        # without worrying about context-specific dispatch.
+        def parse_common_expression(inside_block: false)
+          parse_complex_expression(inside_block: inside_block)
+        end
       end
     end
   end
