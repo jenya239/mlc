@@ -1,0 +1,4 @@
+{"ts":"2025-12-10T14:07:29+04:00","agent":"orchestrator","action":"reuse_conversation","message":"Loaded conv_id: 019b07b3-1b99...","data":{}}
+{"ts":"2025-12-10T14:07:29+04:00","agent":"system","action":"task","message":"Test: show pwd Run pwd command","data":{}}
+{"ts":"2025-12-10T14:07:29+04:00","agent":"orchestrator","action":"start","message":"Task: Test: show pwd Run pwd command (continuous: )","data":{}}
+{"ts":"2025-12-10T14:07:29+04:00","agent":"orchestrator","action":"fresh_start","message":"Starting new conversation","data":{}}
