@@ -271,10 +271,6 @@ module MLC
         end
 
         def parse_complex_expression_inner(inside_block:)
-          # Explicitly handle leading parentheses to support arbitrarily
-          # nested groupings without losing postfix conditionals.
-          return parse_nested_parenthesized_expression(inside_block: inside_block) if current.type == :LPAREN && !looks_like_lambda?
-
           case current.type
           when :MATCH
             parse_match_expression
@@ -283,41 +279,6 @@ module MLC
           else
             inside_block ? parse_let_expression_in_block : parse_let_expression
           end
-        end
-
-        def parse_nested_parenthesized_expression(inside_block:)
-          lparen_token = consume(:LPAREN)
-
-          # Empty tuple ()
-          if current.type == :RPAREN
-            consume(:RPAREN)
-            return with_origin(lparen_token) { MLC::Source::AST::TupleLit.new(elements: []) }
-          end
-
-          first_expr = parse_complex_expression(inside_block: inside_block)
-
-          # Tuple detection: (a, b, ...)
-          if current.type == :COMMA
-            elements = [first_expr]
-            consume(:COMMA)
-
-            unless current.type == :RPAREN
-              elements << parse_complex_expression(inside_block: inside_block)
-              while current.type == :COMMA
-                consume(:COMMA)
-                break if current.type == :RPAREN # Trailing comma
-
-                elements << parse_complex_expression(inside_block: inside_block)
-              end
-            end
-
-            consume(:RPAREN)
-            return with_origin(lparen_token) { MLC::Source::AST::TupleLit.new(elements: elements) }
-          end
-
-          # Grouped expression (expr)
-          consume(:RPAREN)
-          parse_postfix_conditional(first_expr)
         end
 
         def parse_expression

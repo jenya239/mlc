@@ -12,4 +12,9 @@ group :development do
   gem "memory_profiler"
 end
 
+group :test do
+  gem "rspec"
+  gem "rspec-core"
+end
+
 gem 'rubocop', '~> 1.62'
