@@ -645,7 +645,6 @@ module MLC
           end
 
           name_token = consume(:IDENTIFIER)
-          name = name_token.value
 
           type_annotation = nil
           if current.type == :COLON
