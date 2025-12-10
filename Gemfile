@@ -14,6 +14,7 @@ end
 
 group :test do
   gem "rspec"
+  # rspec-core is pulled in by rspec; kept explicit for clarity with existing tooling
   gem "rspec-core"
 end
 

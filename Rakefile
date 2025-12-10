@@ -43,3 +43,14 @@ Rake::TestTask.new(:test_e2e) do |t|
 end
 
 task default: :test
+
+# Optional RSpec task (only works if rspec gem is available)
+begin
+  require "rspec/core/rake_task"
+  RSpec::Core::RakeTask.new(:spec)
+rescue LoadError
+  desc "Run RSpec examples (rspec gem not installed)"
+  task :spec do
+    abort "RSpec gem is not installed. Run `bundle install` to enable `rake spec`."
+  end
+end
