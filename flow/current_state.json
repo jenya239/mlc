@@ -4,36 +4,36 @@
   "agents": {
     "orchestrator": {
       "status": "idle",
-      "last_action": "subtask",
-      "last_message": "2/5: Fix any test failures",
-      "updated_at": "2025-12-10T14:00:26+04:00"
+      "last_action": "retry",
+      "last_message": "Частичный прогресс, но нет явного результата рефакторинга",
+      "updated_at": "2025-12-10T14:01:07+04:00"
     },
     "system": {
       "status": "idle",
-      "last_action": "task",
-      "last_message": "MLC: show structure and run tests List .rb files in lib/ with wc -l Run ruby -Ilib:spec spec/* or bun",
-      "updated_at": "2025-12-10T13:58:53+04:00"
+      "last_action": "grace_period",
+      "last_message": "Entered 30s grace period for retry",
+      "updated_at": "2025-12-10T14:01:07+04:00"
     },
     "worker": {
       "status": "idle",
       "last_action": "result",
-      "last_message": "- Repo status: only untracked log files in `logs/*.jsonl`; working tree otherwise clean.\n- Tests: `bu",
-      "updated_at": "2025-12-10T14:00:31+04:00"
+      "last_message": "{\"jsonrpc\":\"2.0\",\"method\":\"codex/event\",\"params\":{\"_meta\":{\"requestId\":4},\"id\":\"1\",\"msg\":{\"type\":\"exe",
+      "updated_at": "2025-12-10T14:01:12+04:00"
     },
     "codex": {
       "status": "idle",
       "last_action": "full_response",
-      "last_message": "- Repo status: only untracked log files in `logs/*.jsonl`; working tree otherwise clean.\n- Tests: `bu",
-      "updated_at": "2025-12-10T14:00:31+04:00"
+      "last_message": "{\"jsonrpc\":\"2.0\",\"method\":\"codex/event\",\"params\":{\"_meta\":{\"requestId\":4},\"id\":\"1\",\"msg\":{\"type\":\"exe",
+      "updated_at": "2025-12-10T14:01:12+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
-      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Все тесты пройдены успешно (161 примеров, 0 ошибок)\",\"next_action\":\"Можно у",
-      "updated_at": "2025-12-10T14:00:36+04:00"
+      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Частичный прогресс в рефакторинге orchestrator.rb\",\"next_action\":\"Попросить",
+      "updated_at": "2025-12-10T14:01:17+04:00"
     }
   },
   "current_task": "MLC: show structure and run tests List .rb files in lib/ with wc -l Run ruby -Ilib:spec spec/* or bundle exec rspec",
   "status": "running",
-  "last_update": "2025-12-10T14:00:36+04:00"
+  "last_update": "2025-12-10T14:01:17+04:00"
 }
