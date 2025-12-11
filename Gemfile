@@ -16,6 +16,7 @@ end
 group :test do
   gem "rspec"
   gem "simplecov", require: false
+  gem "simplecov-cobertura", require: false
 end
 
 gem 'rubocop', '~> 1.62'
