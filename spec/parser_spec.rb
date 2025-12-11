@@ -15,8 +15,8 @@ RSpec.describe Parser do
 
   it "raises on nil input" do
     parser = described_class.new
-    expect { parser.parse(nil) }.to raise_error(ArgumentError)
-    expect { parser.parse_complex_input(nil) }.to raise_error(ArgumentError)
+    expect { parser.parse(nil) }.to raise_error(Parser::InvalidInputError)
+    expect { parser.parse_complex_input(nil) }.to raise_error(Parser::InvalidInputError)
   end
 
   it "raises on non-stringable input" do
