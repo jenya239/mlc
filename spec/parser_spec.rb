@@ -7,5 +7,9 @@ RSpec.describe Parser do
     parser = described_class.new
     expect(parser.parse("hello")).to eq("hello")
   end
-end
 
+  it "splits complex input into tokens" do
+    parser = described_class.new
+    expect(parser.parse_complex_input("one two  three")).to eq(%w[one two three])
+  end
+end
