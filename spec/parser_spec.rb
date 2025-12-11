@@ -12,4 +12,10 @@ RSpec.describe Parser do
     parser = described_class.new
     expect(parser.parse_complex_input("one two  three")).to eq(%w[one two three])
   end
+
+  it "raises on nil input" do
+    parser = described_class.new
+    expect { parser.parse(nil) }.to raise_error(ArgumentError)
+    expect { parser.parse_complex_input(nil) }.to raise_error(ArgumentError)
+  end
 end

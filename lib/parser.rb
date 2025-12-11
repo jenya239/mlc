@@ -4,6 +4,8 @@
 class Parser
   # Normalizes input to a string so callers can pass anything string-like.
   def normalize_source(source)
+    raise ArgumentError, "source cannot be nil" if source.nil?
+
     source.to_s
   end
 
@@ -21,6 +23,8 @@ class Parser
   private
 
   def tokenize(str)
+    return [] if str.empty?
+
     str.split(/\s+/).reject(&:empty?)
   end
 end
