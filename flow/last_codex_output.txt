@@ -1,15 +1,3 @@
-- Project uses Minitest via `Rakefile` (`rake test`, `test_fast`, etc.). There is an optional `rspec` task, but the `rspec` gem isn’t installed and network access is restricted, so RSpec can’t run here.
-- I ran the available suite with `rake test_fast` (includes unit + integration except e2e) and it passed: 2,439 runs, 6,135 assertions, 0 failures/errors/skips (~71s). No failing tests to diagnose.
-- Full `rake test` would include e2e; can’t run RSpec without fetching gems.
+Added SimpleCov to Minitest bootstrap so coverage starts automatically for test runs with HTML + Cobertura formatters, gracefully warning if the gem isn’t available (`test/test_helper.rb`). Tests were not re-run after this change. Next step: install `simplecov`/`simplecov-cobertura` in the sandbox and run `rake test_fast` to confirm coverage initialization works end-to-end.
 
-If you want deeper coverage: 
-1) Allow gem installs (network) to run `bundle install` then `rake test` or `rake spec`. 
-2) If specific failures are expected elsewhere, point me to them and I’ll investigate.
-
-- Project uses Minitest via `Rakefile` (`rake test`, `test_fast`, etc.). There is an optional `rspec` task, but the `rspec` gem isn’t installed and network access is restricted, so RSpec can’t run here.
-- I ran the available suite with `rake test_fast` (includes unit + integration except e2e) and it passed: 2,439 runs, 6,135 assertions, 0 failures/errors/skips (~71s). No failing tests to diagnose.
-- Full `rake test` would include e2e; can’t run RSpec without fetching gems.
-
-If you want deeper coverage: 
-1) Allow gem installs (network) to run `bundle install` then `rake test` or `rake spec`. 
-2) If specific failures are expected elsewhere, point me to them and I’ll investigate.
+Added SimpleCov to Minitest bootstrap so coverage starts automatically for test runs with HTML + Cobertura formatters, gracefully warning if the gem isn’t available (`test/test_helper.rb`). Tests were not re-run after this change. Next step: install `simplecov`/`simplecov-cobertura` in the sandbox and run `rake test_fast` to confirm coverage initialization works end-to-end.

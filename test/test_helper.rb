@@ -1,5 +1,22 @@
 # frozen_string_literal: true
 
+begin
+  require "simplecov"
+  require "simplecov-cobertura"
+
+  SimpleCov.formatters = [
+    SimpleCov::Formatter::HTMLFormatter,
+    SimpleCov::Formatter::CoberturaFormatter
+  ]
+  SimpleCov.start do
+    enable_coverage :branch
+    add_filter "/test/"
+    add_filter "/spec/"
+  end
+rescue LoadError
+  warn "SimpleCov not available; coverage report will not be generated"
+end
+
 if ENV["TEST_AUDIT_NO_AUTORUN"] == "1"
   require "minitest"
   require "minitest/test"
