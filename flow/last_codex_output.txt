@@ -1,0 +1,15 @@
+- Tried to set up deps with `bundle install`, but writes to `~/.bundle/...` are blocked and network access to rubygems is restricted, so bundler couldn’t fetch `rspec`.
+- Ran tests without bundler: `rake test_unit` (unit + fast tests) in `/home/jenya/workspaces/mlc` succeeded with 0 failures/errors; duration ~33s.
+- Noted warnings about ignored blocks for `CppAst::Builder::ClassBuilder#friend_`, `enum_`, and `requires_` in `test/builder/dsl_v2/*`.
+
+Next steps: 
+1) If you want full coverage, run `rake test` once network/write access for bundler is available. 
+2) Resolve bundler cache path/permissions (e.g., set `BUNDLE_USER_HOME` inside the repo) and allow network to install missing gems like `rspec`.
+
+- Tried to set up deps with `bundle install`, but writes to `~/.bundle/...` are blocked and network access to rubygems is restricted, so bundler couldn’t fetch `rspec`.
+- Ran tests without bundler: `rake test_unit` (unit + fast tests) in `/home/jenya/workspaces/mlc` succeeded with 0 failures/errors; duration ~33s.
+- Noted warnings about ignored blocks for `CppAst::Builder::ClassBuilder#friend_`, `enum_`, and `requires_` in `test/builder/dsl_v2/*`.
+
+Next steps: 
+1) If you want full coverage, run `rake test` once network/write access for bundler is available. 
+2) Resolve bundler cache path/permissions (e.g., set `BUNDLE_USER_HOME` inside the repo) and allow network to install missing gems like `rspec`.
