@@ -960,29 +960,28 @@ module MLC
         end
 
         def handle_safe_nav_postfix(expr)
-          expr = handle_safe_navigation(expr)
-          [expr, last_token&.line]
+          wrap_postfix(handle_safe_navigation(expr))
         end
 
         def handle_dot_postfix(expr)
-          expr = handle_dot_or_member(expr)
-          [expr, last_token&.line]
+          wrap_postfix(handle_dot_or_member(expr))
         end
 
         def handle_bracket_postfix(expr)
           lbracket_token = consume(:LBRACKET)
-          expr = parse_bracket_access(expr, lbracket_token)
-          [expr, last_token&.line]
+          wrap_postfix(parse_bracket_access(expr, lbracket_token))
         end
 
         def handle_call_postfix(expr)
-          expr = handle_call(expr)
-          [expr, last_token&.line]
+          wrap_postfix(handle_call(expr))
         end
 
         def handle_try_postfix(expr)
           question_token = consume(:QUESTION)
-          expr = attach_origin(MLC::Source::AST::TryExpr.new(operand: expr), question_token)
+          wrap_postfix(attach_origin(MLC::Source::AST::TryExpr.new(operand: expr), question_token))
+        end
+
+        def wrap_postfix(expr)
           [expr, last_token&.line]
         end
 
