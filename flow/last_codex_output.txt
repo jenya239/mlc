@@ -1,3 +1,9 @@
-Added SimpleCov to Minitest bootstrap so coverage starts automatically for test runs with HTML + Cobertura formatters, gracefully warning if the gem isn’t available (`test/test_helper.rb`). Tests were not re-run after this change. Next step: install `simplecov`/`simplecov-cobertura` in the sandbox and run `rake test_fast` to confirm coverage initialization works end-to-end.
+- Ran `rake test_fast` in `/home/jenya/workspaces/mlc`: all 2,439 tests passed, 6,135 assertions, no failures/errors/skips (~52s). SimpleCov is still not installed, so it printed “SimpleCov not available; coverage report will not be generated.”
+- Usual warnings remain about ignored blocks in the DSL builder tests; otherwise clean.
 
-Added SimpleCov to Minitest bootstrap so coverage starts automatically for test runs with HTML + Cobertura formatters, gracefully warning if the gem isn’t available (`test/test_helper.rb`). Tests were not re-run after this change. Next step: install `simplecov`/`simplecov-cobertura` in the sandbox and run `rake test_fast` to confirm coverage initialization works end-to-end.
+If you want coverage artifacts, we’ll need `simplecov`/`simplecov-cobertura` available or vendored.
+
+- Ran `rake test_fast` in `/home/jenya/workspaces/mlc`: all 2,439 tests passed, 6,135 assertions, no failures/errors/skips (~52s). SimpleCov is still not installed, so it printed “SimpleCov not available; coverage report will not be generated.”
+- Usual warnings remain about ignored blocks in the DSL builder tests; otherwise clean.
+
+If you want coverage artifacts, we’ll need `simplecov`/`simplecov-cobertura` available or vendored.
