@@ -30,6 +30,7 @@ class Parser
   end
 
   def tokenize(str)
+    str = str.strip
     return [] if str.empty?
 
     str.split(/\s+/).reject(&:empty?)

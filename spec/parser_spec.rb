@@ -19,6 +19,15 @@ RSpec.describe Parser do
     expect { parser.parse_complex_input(nil) }.to raise_error(ArgumentError)
   end
 
+  it "raises on non-stringable input" do
+    parser = described_class.new
+    bad_obj = Object.new
+    def bad_obj.to_s; raise NoMethodError; end
+
+    expect { parser.parse(bad_obj) }.to raise_error(Parser::InvalidInputError)
+    expect { parser.parse_complex_input(bad_obj) }.to raise_error(Parser::InvalidInputError)
+  end
+
   it "returns empty array for empty complex input" do
     parser = described_class.new
     expect(parser.parse_complex_input("")).to eq([])
