@@ -465,27 +465,24 @@ module MLC
         # Parse postfix if/unless: expr if condition, expr unless condition
         # Only applies when if/unless is on the same line as the expression
         def parse_postfix_conditional(expr)
-          # Get expression's line (from origin or last token)
-          expr_line = expr.respond_to?(:origin) && expr.origin ? expr.origin.line : nil
-          expr_line ||= last_token&.line
+          expr_line = expression_line(expr)
+          return expr unless expr_line
+          return expr unless [:IF, :UNLESS].include?(current.type)
+          return expr unless current.line == expr_line
 
-          # Postfix only if if/unless is on the same line as expression
-          if current.type == :IF && expr_line && current.line == expr_line
-            if_token = consume(:IF)
-            condition = parse_logical_or
-            then_branch = wrap_block_like_expr(expr)
-            else_branch = MLC::Source::AST::BlockExpr.new(statements: [], result_expr: MLC::Source::AST::UnitLit.new)
-            with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: condition, then_branch: then_branch, else_branch: else_branch) }
-          elsif current.type == :UNLESS && expr_line && current.line == expr_line
-            unless_token = consume(:UNLESS)
-            condition = parse_logical_or
-            # unless = if !condition
-            inverted = MLC::Source::AST::UnaryOp.new(op: "!", operand: condition)
-            then_branch = wrap_block_like_expr(expr)
-            else_branch = MLC::Source::AST::BlockExpr.new(statements: [], result_expr: MLC::Source::AST::UnitLit.new)
-            with_origin(unless_token) { MLC::Source::AST::IfExpr.new(condition: inverted, then_branch: then_branch, else_branch: else_branch) }
-          else
-            expr
+          token = consume(current.type)
+          condition = parse_logical_or
+          condition = MLC::Source::AST::UnaryOp.new(op: "!", operand: condition) if token.type == :UNLESS
+
+          then_branch = wrap_block_like_expr(expr)
+          else_branch = MLC::Source::AST::BlockExpr.new(statements: [], result_expr: MLC::Source::AST::UnitLit.new)
+
+          with_origin(token) do
+            MLC::Source::AST::IfExpr.new(
+              condition: condition,
+              then_branch: then_branch,
+              else_branch: else_branch
+            )
           end
         end
 
@@ -942,6 +939,12 @@ module MLC
 
         def same_line?(line)
           line && current.line == line
+        end
+
+        def expression_line(expr)
+          return expr.origin.line if expr.respond_to?(:origin) && expr.origin
+
+          last_token&.line
         end
 
         def next_postfix_expression(expr, expr_line)

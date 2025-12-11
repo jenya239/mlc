@@ -8,16 +8,13 @@ gem "test-unit", "~> 3.6"
 gem "zeitwerk", "~> 2.6"
 gem "bundler"
 
-group :development, :test do
-  gem "rspec", "~> 3.12"
-end
-
 group :development do
   gem "debug"
   gem "memory_profiler"
 end
 
 group :test do
+  gem "rspec", "~> 3.12"
   gem "simplecov", require: false
   gem "simplecov-cobertura", require: false
 end
