@@ -1,9 +1,3 @@
-- Ran `rake test_fast` in `/home/jenya/workspaces/mlc`: all 2,439 tests passed, 6,135 assertions, no failures/errors/skips (~52s). SimpleCov is still not installed, so it printed “SimpleCov not available; coverage report will not be generated.”
-- Usual warnings remain about ignored blocks in the DSL builder tests; otherwise clean.
+- Ran `rake test_fast` in `/home/jenya/workspaces/mlc`: all 2,439 tests passed, 6,135 assertions, 0 failures/errors/skips (~52s). SimpleCov still not available in the environment, so coverage wasn’t generated. Only warnings are the existing DSL block warnings in the builder tests. No other issues observed.
 
-If you want coverage artifacts, we’ll need `simplecov`/`simplecov-cobertura` available or vendored.
-
-- Ran `rake test_fast` in `/home/jenya/workspaces/mlc`: all 2,439 tests passed, 6,135 assertions, no failures/errors/skips (~52s). SimpleCov is still not installed, so it printed “SimpleCov not available; coverage report will not be generated.”
-- Usual warnings remain about ignored blocks in the DSL builder tests; otherwise clean.
-
-If you want coverage artifacts, we’ll need `simplecov`/`simplecov-cobertura` available or vendored.
+- Ran `rake test_fast` in `/home/jenya/workspaces/mlc`: all 2,439 tests passed, 6,135 assertions, 0 failures/errors/skips (~52s). SimpleCov still not available in the environment, so coverage wasn’t generated. Only warnings are the existing DSL block warnings in the builder tests. No other issues observed.
