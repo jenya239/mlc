@@ -5,35 +5,35 @@
     "orchestrator": {
       "status": "idle",
       "last_action": "retry",
-      "last_message": "No actual code changes in project files, only flow logs detected",
-      "updated_at": "2025-12-11T17:03:44+04:00"
+      "last_message": "No actual code changes were made to resolve RSpec gem installation",
+      "updated_at": "2025-12-11T17:30:10+04:00"
     },
     "system": {
       "status": "idle",
       "last_action": "grace_period",
       "last_message": "Entered 30s grace period for retry",
-      "updated_at": "2025-12-11T17:03:48+04:00"
+      "updated_at": "2025-12-11T17:30:18+04:00"
     },
     "worker": {
       "status": "idle",
       "last_action": "result",
-      "last_message": "I can’t produce a full “final check” report because RSpec still won’t run here: `bundle exec rspec` a",
-      "updated_at": "2025-12-11T17:05:38+04:00"
+      "last_message": "I can’t identify RSpec failures here because `bundle exec rspec` aborts before running due to missing",
+      "updated_at": "2025-12-11T17:33:14+04:00"
     },
     "codex": {
       "status": "idle",
       "last_action": "full_response",
-      "last_message": "I can’t produce a full “final check” report because RSpec still won’t run here: `bundle exec rspec` a",
-      "updated_at": "2025-12-11T17:05:38+04:00"
+      "last_message": "I can’t identify RSpec failures here because `bundle exec rspec` aborts before running due to missing",
+      "updated_at": "2025-12-11T17:33:14+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
-      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Добавлена конфигурация покрытия тестов\",\"next_action\":\"Review coverage conf",
-      "updated_at": "2025-12-11T17:05:43+04:00"
+      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Добавлена конфигурация RSpec в Gemfile\",\"next_action\":\"Run bundle install t",
+      "updated_at": "2025-12-11T17:33:18+04:00"
     }
   },
   "current_task": "MLC: Continue development Fix tests, refactor code, improve documentation",
   "status": "running",
-  "last_update": "2025-12-11T17:05:43+04:00"
+  "last_update": "2025-12-11T17:33:18+04:00"
 }
