@@ -43,10 +43,10 @@ module MLC
         # Token consumption
 
         def consume(expected_type)
-          raise "Unexpected EOF, expected #{expected_type}" if eof?
+          expect!(!eof?, "Unexpected EOF, expected #{expected_type}")
 
           token = current
-          raise "Expected #{expected_type}, got #{token.type}" if token.type != expected_type
+          expect_token!(expected_type, token)
 
           @pos += 1
           @last_token = token
@@ -57,8 +57,6 @@ module MLC
           token = current
           # Handle >> as two > tokens for nested generic types like Map<K, Array<V>>
           if expected_value == ">" && token.type == :OPERATOR && token.value == ">>"
-            # Split >> into > and > by creating a synthetic > token
-            # and modifying the current token to be just >
             synthetic_token = MLC::Source::Parser::Token.new(
               type: :OPERATOR,
               value: ">",
@@ -66,7 +64,6 @@ module MLC
               column: token.column,
               file: token.file
             )
-            # Replace current >> token with single > for next iteration
             @tokens[@pos] = MLC::Source::Parser::Token.new(
               type: :OPERATOR,
               value: ">",
@@ -77,9 +74,9 @@ module MLC
             @last_token = synthetic_token
             return synthetic_token
           end
-          if token.type != :OPERATOR || token.value != expected_value
-            raise "Expected operator '#{expected_value}', got #{token.type} '#{token.value}'"
-          end
+
+          expect!(token.type == :OPERATOR && token.value == expected_value,
+                  "Expected operator '#{expected_value}', got #{token.type} '#{token.value}'")
 
           @pos += 1
           @last_token = token
@@ -87,8 +84,8 @@ module MLC
         end
 
         def expect_operator(operator_token)
-          raise "Expected operator '#{operator_token}', got #{current.type}" if current.type != :OPERATOR || current.value != operator_token
-
+          expect_token!(:OPERATOR, current)
+          expect!(current.value == operator_token, "Expected operator '#{operator_token}', got #{current.value}")
           consume(:OPERATOR)
         end
 

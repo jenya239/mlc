@@ -276,7 +276,7 @@ module MLC
             if current.type == :COLON
               consume(:COLON)
 
-              raise "Expected constraint identifier, got #{current.type}(#{current.value})" unless current.type == :IDENTIFIER
+              expect!(current.type == :IDENTIFIER, "Expected constraint identifier, got #{current.type}(#{current.value})")
 
               constraint = consume(:IDENTIFIER).value
 

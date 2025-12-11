@@ -203,7 +203,7 @@ module MLC
               when :ASYNC
                 # export async fn ...
                 consume(:ASYNC)
-                raise "Expected FN after export async, got #{current.type}" unless current.type == :FN
+                expect_token!(:FN, current)
 
                 func = parse_function(exported: true, is_async: true)
                 declarations << func
@@ -211,7 +211,7 @@ module MLC
               when :EXTERN
                 # export extern fn ...
                 consume(:EXTERN)
-                raise "Expected FN after export extern, got #{current.type}" unless current.type == :FN
+                expect_token!(:FN, current)
 
                 func = parse_function(external: true, exported: true)
                 declarations << func
@@ -228,12 +228,13 @@ module MLC
               when :RECORD
                 declarations << parse_record_decl(exported: true)
               else
-                raise "Expected FN, TYPE, TRAIT, ASYNC, EXTEND, or RECORD after export, got #{current.type}"
+                expect!(%i[FN TYPE TRAIT ASYNC EXTEND RECORD].include?(current.type),
+                        "Expected FN, TYPE, TRAIT, ASYNC, EXTEND, or RECORD after export, got #{current.type}")
               end
             when :ASYNC
               # Parse async function: async fn ...
               consume(:ASYNC)
-              raise "Expected FN after async, got #{current.type}" unless current.type == :FN
+              expect_token!(:FN, current)
 
               declarations << parse_function(is_async: true)
 
@@ -244,7 +245,7 @@ module MLC
               when :FN
                 declarations << parse_function(external: true)
               else
-                raise "Expected FN after extern, got #{current.type}"
+                expect_token!(:FN, current)
               end
             when :FN
               declarations << parse_function

@@ -533,7 +533,7 @@ module MLC
 
             with_origin(lparen_token) { MLC::Source::AST::Lambda.new(params: params, body: body) }
           else
-            raise "Expected lambda expression"
+            expect!(false, "Expected lambda expression")
           end
         end
 
@@ -758,7 +758,7 @@ module MLC
               guard = parse_optional_match_guard
 
               # Expect =>
-              raise "Expected => in match arm" unless current.type == :FAT_ARROW
+              expect_token!(:FAT_ARROW, current)
 
               consume(:FAT_ARROW)
 
@@ -771,7 +771,7 @@ module MLC
               if current.type == :COMMA
                 consume(:COMMA)
               elsif current.type != :RBRACE
-                raise "Expected , or } in match expression"
+                expect!(current.type == :COMMA || current.type == :RBRACE, "Expected , or } in match expression")
               end
             end
 
@@ -834,7 +834,7 @@ module MLC
 
           return consume(:OPERATOR) if current.type == :OPERATOR && current.value == "=>"
 
-          raise "Expected => in match arm"
+          expect_token!(:FAT_ARROW, current)
         end
 
         def parse_match_arm_body_node

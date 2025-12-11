@@ -140,7 +140,7 @@ module MLC
             consume(current.type)
             "_"
           else
-            raise "Expected identifier or _ in regex bindings"
+            expect!(false, "Expected identifier or _ in regex bindings")
           end
         end
 
@@ -320,7 +320,8 @@ module MLC
               consume(current.type)
               fields << "_"
             else
-              raise "Expected identifier or _ in pattern, got #{current.type}"
+              expect!(current.type == :IDENTIFIER || current.type == :UNDERSCORE,
+                      "Expected identifier or _ in pattern, got #{current.type}")
             end
 
             break unless current.type == :COMMA
