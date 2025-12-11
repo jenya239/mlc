@@ -11,6 +11,7 @@ gem "bundler"
 group :development do
   gem "debug"
   gem "memory_profiler"
+  gem "rspec"
 end
 
 group :test do
