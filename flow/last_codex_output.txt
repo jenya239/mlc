@@ -1,15 +1,15 @@
-- Tried to set up deps with `bundle install`, but writes to `~/.bundle/...` are blocked and network access to rubygems is restricted, so bundler couldn’t fetch `rspec`.
-- Ran tests without bundler: `rake test_unit` (unit + fast tests) in `/home/jenya/workspaces/mlc` succeeded with 0 failures/errors; duration ~33s.
-- Noted warnings about ignored blocks for `CppAst::Builder::ClassBuilder#friend_`, `enum_`, and `requires_` in `test/builder/dsl_v2/*`.
+- Project uses Minitest via `Rakefile` (`rake test`, `test_fast`, etc.). There is an optional `rspec` task, but the `rspec` gem isn’t installed and network access is restricted, so RSpec can’t run here.
+- I ran the available suite with `rake test_fast` (includes unit + integration except e2e) and it passed: 2,439 runs, 6,135 assertions, 0 failures/errors/skips (~71s). No failing tests to diagnose.
+- Full `rake test` would include e2e; can’t run RSpec without fetching gems.
 
-Next steps: 
-1) If you want full coverage, run `rake test` once network/write access for bundler is available. 
-2) Resolve bundler cache path/permissions (e.g., set `BUNDLE_USER_HOME` inside the repo) and allow network to install missing gems like `rspec`.
+If you want deeper coverage: 
+1) Allow gem installs (network) to run `bundle install` then `rake test` or `rake spec`. 
+2) If specific failures are expected elsewhere, point me to them and I’ll investigate.
 
-- Tried to set up deps with `bundle install`, but writes to `~/.bundle/...` are blocked and network access to rubygems is restricted, so bundler couldn’t fetch `rspec`.
-- Ran tests without bundler: `rake test_unit` (unit + fast tests) in `/home/jenya/workspaces/mlc` succeeded with 0 failures/errors; duration ~33s.
-- Noted warnings about ignored blocks for `CppAst::Builder::ClassBuilder#friend_`, `enum_`, and `requires_` in `test/builder/dsl_v2/*`.
+- Project uses Minitest via `Rakefile` (`rake test`, `test_fast`, etc.). There is an optional `rspec` task, but the `rspec` gem isn’t installed and network access is restricted, so RSpec can’t run here.
+- I ran the available suite with `rake test_fast` (includes unit + integration except e2e) and it passed: 2,439 runs, 6,135 assertions, 0 failures/errors/skips (~71s). No failing tests to diagnose.
+- Full `rake test` would include e2e; can’t run RSpec without fetching gems.
 
-Next steps: 
-1) If you want full coverage, run `rake test` once network/write access for bundler is available. 
-2) Resolve bundler cache path/permissions (e.g., set `BUNDLE_USER_HOME` inside the repo) and allow network to install missing gems like `rspec`.
+If you want deeper coverage: 
+1) Allow gem installs (network) to run `bundle install` then `rake test` or `rake spec`. 
+2) If specific failures are expected elsewhere, point me to them and I’ll investigate.
