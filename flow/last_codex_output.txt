@@ -1,3 +1,9 @@
-- Ran `rake test_fast` in `/home/jenya/workspaces/mlc`: all 2,439 tests passed, 6,135 assertions, 0 failures/errors/skips (~52s). SimpleCov still not available in the environment, so coverage wasn’t generated. Only warnings are the existing DSL block warnings in the builder tests. No other issues observed.
+- Git status: branch `main` ahead of origin, unstaged change in `flow/current_state.json`.
+- Tests: `rake test_fast` in `/home/jenya/workspaces/mlc` passed (2,439 tests, 6,135 assertions, 0 failures/errors/skips; ~52s). SimpleCov not installed, so coverage wasn’t produced. Usual DSL warnings still present in builder tests.
 
-- Ran `rake test_fast` in `/home/jenya/workspaces/mlc`: all 2,439 tests passed, 6,135 assertions, 0 failures/errors/skips (~52s). SimpleCov still not available in the environment, so coverage wasn’t generated. Only warnings are the existing DSL block warnings in the builder tests. No other issues observed.
+If you want full suite or coverage, we’ll need SimpleCov gems available (or adjust bundle) and optionally run `rake test`.
+
+- Git status: branch `main` ahead of origin, unstaged change in `flow/current_state.json`.
+- Tests: `rake test_fast` in `/home/jenya/workspaces/mlc` passed (2,439 tests, 6,135 assertions, 0 failures/errors/skips; ~52s). SimpleCov not installed, so coverage wasn’t produced. Usual DSL warnings still present in builder tests.
+
+If you want full suite or coverage, we’ll need SimpleCov gems available (or adjust bundle) and optionally run `rake test`.
