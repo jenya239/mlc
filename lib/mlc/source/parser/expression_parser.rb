@@ -587,7 +587,10 @@ module MLC
           return send(parse_if_expr) unless current.type == :LET
 
           consume(:LET)
-          mutable, name_token, type_annotation = parse_let_header
+          let_info = parse_let_header
+          mutable = let_info[:mutable]
+          name_token = let_info[:name_token]
+          type_annotation = let_info[:type_annotation]
           consume(:EQUAL)
           value = parse_let_value(parse_if_expr)
 
@@ -621,7 +624,10 @@ module MLC
         def parse_let_statement
           # Parse: let x = value or let mut x = value or let x: Type = value
           let_token = consume(:LET)
-          mutable, name_token, type_annotation = parse_let_header
+          let_info = parse_let_header
+          mutable = let_info[:mutable]
+          name_token = let_info[:name_token]
+          type_annotation = let_info[:type_annotation]
           value = parse_let_value(:parse_if_expression)
 
           # In do-blocks, let is a statement that doesn't need 'in'
@@ -652,7 +658,11 @@ module MLC
             type_annotation = parse_type
           end
 
-          [mutable, name_token, type_annotation]
+          {
+            mutable: mutable,
+            name_token: name_token,
+            type_annotation: type_annotation
+          }
         end
 
         def parse_let_value(parse_if_expr)

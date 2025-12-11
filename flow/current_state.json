@@ -4,36 +4,36 @@
   "agents": {
     "orchestrator": {
       "status": "idle",
-      "last_action": "subtask",
-      "last_message": "1/5: Analyze current state and run tests",
-      "updated_at": "2025-12-10T23:58:27+04:00"
+      "last_action": "retry",
+      "last_message": "Incomplete output and minimal git changes",
+      "updated_at": "2025-12-11T11:09:33+04:00"
     },
     "system": {
       "status": "idle",
-      "last_action": "task",
-      "last_message": "MLC: Continue development Fix tests, refactor code, improve documentation",
-      "updated_at": "2025-12-10T23:58:27+04:00"
+      "last_action": "grace_period",
+      "last_message": "Entered 30s grace period for retry",
+      "updated_at": "2025-12-11T11:09:34+04:00"
     },
     "worker": {
       "status": "idle",
       "last_action": "result",
-      "last_message": "- Ran final verification: `rake test_fast` now passes cleanly (2,439 tests, 6,135 assertions, 0 failu",
-      "updated_at": "2025-12-10T23:58:33+04:00"
+      "last_message": "",
+      "updated_at": "2025-12-11T11:10:20+04:00"
     },
     "codex": {
       "status": "idle",
       "last_action": "full_response",
-      "last_message": "- Ran final verification: `rake test_fast` now passes cleanly (2,439 tests, 6,135 assertions, 0 failu",
-      "updated_at": "2025-12-10T23:58:33+04:00"
+      "last_message": "",
+      "updated_at": "2025-12-11T11:10:20+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
-      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Codex выполнил рефакторинг парсера, исправил предупреждения и прогнал тесты",
-      "updated_at": "2025-12-10T23:58:39+04:00"
+      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Partial code refactoring detected in parser and Gemfile\",\"next_action\":\"Rev",
+      "updated_at": "2025-12-11T11:10:26+04:00"
     }
   },
   "current_task": "MLC: Continue development Fix tests, refactor code, improve documentation",
   "status": "running",
-  "last_update": "2025-12-10T23:58:39+04:00"
+  "last_update": "2025-12-11T11:10:26+04:00"
 }
