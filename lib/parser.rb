@@ -18,8 +18,16 @@ class Parser
 
   # Very small "complex" parse: split source into non-empty tokens.
   # This is intentionally minimal to act as a smoke-testable surface.
-  def parse_complex_input(source)
-    tokenize(normalize_source(source))
+  def parse_complex_input(source, downcase: false, reject_pattern: nil)
+    tokens = tokenize(normalize_source(source))
+    tokens.map!(&:downcase) if downcase
+
+    if reject_pattern
+      bad = tokens.find { |t| t.match?(reject_pattern) }
+      raise InvalidInputError, "token '#{bad}' rejected by pattern #{reject_pattern.inspect}" if bad
+    end
+
+    tokens
   end
 
   private

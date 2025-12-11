@@ -32,4 +32,16 @@ RSpec.describe Parser do
     parser = described_class.new
     expect(parser.parse_complex_input("")).to eq([])
   end
+
+  it "downcases tokens when requested" do
+    parser = described_class.new
+    expect(parser.parse_complex_input("One TWO", downcase: true)).to eq(%w[one two])
+  end
+
+  it "rejects tokens matching a pattern" do
+    parser = described_class.new
+    expect {
+      parser.parse_complex_input("ok BAD", reject_pattern: /BAD/)
+    }.to raise_error(Parser::InvalidInputError)
+  end
 end
