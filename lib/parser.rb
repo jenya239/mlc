@@ -5,6 +5,7 @@ class Parser
   # Normalizes input to a string so callers can pass anything string-like.
   def normalize_source(source)
     raise ArgumentError, "source cannot be nil" if source.nil?
+    raise ArgumentError, "source must respond to #to_s" unless source.respond_to?(:to_s)
 
     source.to_s
   end

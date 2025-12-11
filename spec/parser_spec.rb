@@ -18,4 +18,9 @@ RSpec.describe Parser do
     expect { parser.parse(nil) }.to raise_error(ArgumentError)
     expect { parser.parse_complex_input(nil) }.to raise_error(ArgumentError)
   end
+
+  it "returns empty array for empty complex input" do
+    parser = described_class.new
+    expect(parser.parse_complex_input("")).to eq([])
+  end
 end

@@ -158,6 +158,10 @@ module MLC
         def expect!(condition, message)
           raise parse_error(message) unless condition
         end
+
+        def expect_token!(expected_type, token = current)
+          expect!(token && token.type == expected_type, "Expected #{expected_type}, got #{token&.type || 'EOF'}")
+        end
       end
     end
   end
