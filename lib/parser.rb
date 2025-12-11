@@ -2,10 +2,11 @@
 
 # Minimal parser stub used by RSpec smoke test.
 class Parser
+  class InvalidInputError < StandardError; end
+
   # Normalizes input to a string so callers can pass anything string-like.
   def normalize_source(source)
-    raise ArgumentError, "source cannot be nil" if source.nil?
-    raise ArgumentError, "source must respond to #to_s" unless source.respond_to?(:to_s)
+    validate_input!(source)
 
     source.to_s
   end
@@ -22,6 +23,11 @@ class Parser
   end
 
   private
+
+  def validate_input!(source)
+    raise InvalidInputError, "source cannot be nil" if source.nil?
+    raise InvalidInputError, "source must respond to #to_s" unless source.respond_to?(:to_s)
+  end
 
   def tokenize(str)
     return [] if str.empty?
