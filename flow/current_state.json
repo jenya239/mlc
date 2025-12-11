@@ -6,34 +6,34 @@
       "status": "idle",
       "last_action": "subtask",
       "last_message": "1/5: Analyze current state and run tests",
-      "updated_at": "2025-12-11T18:54:46+04:00"
+      "updated_at": "2025-12-11T18:57:37+04:00"
     },
     "system": {
       "status": "idle",
       "last_action": "task",
       "last_message": "MLC: Continue development Fix failing tests Improve code structure",
-      "updated_at": "2025-12-11T18:54:45+04:00"
+      "updated_at": "2025-12-11T18:57:37+04:00"
     },
     "worker": {
       "status": "idle",
       "last_action": "result",
-      "last_message": "- Git status: branch `main` ahead of origin, unstaged change in `flow/current_state.json`.\n- Tests: `",
-      "updated_at": "2025-12-11T18:54:51+04:00"
+      "last_message": "- `git status`: `main` ahead of origin, one unstaged change in `flow/current_state.json`.\n- Tests: `r",
+      "updated_at": "2025-12-11T18:57:43+04:00"
     },
     "codex": {
       "status": "idle",
       "last_action": "full_response",
-      "last_message": "- Git status: branch `main` ahead of origin, unstaged change in `flow/current_state.json`.\n- Tests: `",
-      "updated_at": "2025-12-11T18:54:51+04:00"
+      "last_message": "- `git status`: `main` ahead of origin, one unstaged change in `flow/current_state.json`.\n- Tests: `r",
+      "updated_at": "2025-12-11T18:57:43+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
-      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Tests passed successfully, current project state analyzed\",\"next_action\":\"P",
-      "updated_at": "2025-12-11T18:54:56+04:00"
+      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Тесты прошли успешно, выполнен первичный анализ состояния проекта\",\"next_ac",
+      "updated_at": "2025-12-11T18:57:48+04:00"
     }
   },
   "current_task": "MLC: Continue development Fix failing tests Improve code structure",
   "status": "running",
-  "last_update": "2025-12-11T18:54:56+04:00"
+  "last_update": "2025-12-11T18:57:48+04:00"
 }
