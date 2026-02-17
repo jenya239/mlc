@@ -50,6 +50,12 @@ public:
         return utf8_char_at(data_, index);
     }
 
+    // Indexing operator - returns first byte of UTF-8 character
+    char operator[](size_t index) const {
+        size_t byte_index = utf8_char_index(data_, index);
+        return byte_index < data_.size() ? data_[byte_index] : '\0';
+    }
+
     // Substrings (by character positions, not bytes)
     String substring(size_t start) const;
     String substring(size_t start, size_t length) const;
