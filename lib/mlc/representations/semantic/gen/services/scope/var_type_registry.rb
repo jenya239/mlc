@@ -131,14 +131,58 @@ module MLC
               @moved_vars.delete(name)
             end
 
-            # Check if type has move semantics (Owned<T>)
+            # Types that are implicitly copied (no move semantics)
+            COPY_TYPES = %w[i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 bool char].freeze
+
+            # Smart pointer wrappers that are reference-counted (clone, not move)
+            RC_TYPES = %w[Shared Weak].freeze
+
+            # Check if type is Copy (i.e. implicitly copied, no ownership transfer)
             # @param type [SemanticIR::Type] the type to check
-            # @return [Boolean] true if type requires move semantics
-            def self.move_semantics?(type)
+            # @return [Boolean] true if type is Copy
+            def self.copy_type?(type)
+              return true if type.nil?
+              return true if type.is_a?(MLC::SemanticIR::TypeVariable)
+              return true if type.is_a?(MLC::SemanticIR::UnitType)
+              return true if type.is_a?(MLC::SemanticIR::ErrorType)
+
+              # Reference-counted smart pointers are not Copy, but they are Clone (no move)
+              if type.is_a?(MLC::SemanticIR::GenericType)
+                base_name = type.base_type&.name
+                return true if RC_TYPES.include?(base_name)
+                return false
+              end
+
+              name = type.name
+              return true if name && COPY_TYPES.include?(name)
+              return true if name && %w[void unit].include?(name)
+
+              false
+            end
+
+            # Check if type requires move on variable binding (let b = a)
+            # All non-Copy types are moved on binding.
+            # @param type [SemanticIR::Type] the type to check
+            # @return [Boolean] true if binding moves ownership
+            def self.move_on_bind?(type)
+              !copy_type?(type)
+            end
+
+            # Check if type requires explicit move on function argument passing.
+            # Only Owned<T> requires explicit move when passed to a function.
+            # Other non-Copy types (Array, String, Records) are passed by implicit copy
+            # in C++ (the C++ compiler handles copy/move optimization).
+            # @param type [SemanticIR::Type] the type to check
+            # @return [Boolean] true if passing as argument moves ownership
+            def self.move_on_pass?(type)
               return false unless type.is_a?(MLC::SemanticIR::GenericType)
 
-              base_name = type.base_type&.name
-              base_name == "Owned"
+              type.base_type&.name == "Owned"
+            end
+
+            # Backwards compatibility: move_semantics? checks move_on_bind?
+            def self.move_semantics?(type)
+              move_on_bind?(type)
             end
 
             class << self

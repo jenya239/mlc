@@ -17,8 +17,8 @@ module MLC
               elements = node.elements.map { |elem| lower_expression(elem) }
 
               # Generate: std::make_tuple(elem1, elem2, ...)
-              context.factory.call(
-                callee: context.factory.identifier("std::make_tuple"),
+              context.factory.function_call(
+                callee: context.factory.identifier(name: "std::make_tuple"),
                 arguments: elements,
                 argument_separators: elements.size > 1 ? Array.new(elements.size - 1, ", ") : []
               )

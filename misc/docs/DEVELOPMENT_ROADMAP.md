@@ -1,9 +1,9 @@
 # MLC Compiler - Development Roadmap
 
 **Дата создания**: 2025-11-20
-**Обновлено**: 2025-11-29
-**Статус проекта**: Feature Complete
-**Тесты**: 2472 runs, 6342 assertions, 0 failures, 0 errors ✅
+**Обновлено**: 2026-02-17
+**Статус проекта**: Core Features Implemented (ownership model and async lowering pending)
+**Тесты**: 2113 runs, 5735 assertions, 0 failures, 0 errors (unit tests)
 
 ## Текущее состояние
 
@@ -452,10 +452,10 @@ fn internal_helper() -> i32 = ...        // private (implicit)
 - ✅ Примеры работают
 
 **Для проекта в целом:**
-- Поддержка всех основных языковых фич
-- Понятные сообщения об ошибках
-- Production-ready stdlib
-- Стабильная кодовая база
+- Поддержка основных языковых фич (core done, ownership/async pending)
+- Понятные сообщения об ошибках (базовая инфраструктура есть)
+- Stdlib покрывает основные модули (15 .mlc файлов)
+- Стабильная кодовая база (0 test failures)
 
 ---
 
@@ -527,28 +527,30 @@ fn internal_helper() -> i32 = ...        // private (implicit)
 
 ---
 
-## Текущий статус (2025-11-29)
+## Текущий статус (2026-02-17)
 
-**Тесты**: 2472 runs, 6342 assertions, 0 failures, 0 errors ✅
+**Тесты**: 2577 runs, 6561 assertions, 0 failures, 0 errors, 2 skips (full suite)
+**Coverage**: Line 84.27%, Branch 58.82%
 
 ### Test Commands
 
 ```bash
-rake test_unit      # Fast (~50 sec) - use by default
-rake test_fast      # Without E2E (~2-3 min)
-rake test           # Full suite (~20 min)
+rake test_unit      # ~30 sec - unit tests only
+rake test_fast      # ~2-3 min - excludes E2E
+rake test           # ~20 min - full suite
 rake test_e2e       # E2E only (compile + run)
 ```
 
-### Recent Features (2025-11-29)
+### NOT YET IMPLEMENTED (despite being documented elsewhere)
 
-- ✅ **Phase 36 verified**: All low-level primitives working (bitwise, unsigned ints, char literals)
-- ✅ **Phase 37 verified**: Basic trait system implemented and tested
-- ✅ **Spread operator**: `Point { ...base, z: 3 }`
-- ✅ **Block syntax**: `fn foo() -> i32 = { let x = 1; x }`
-- ✅ **Test infrastructure**: Fast/full test separation
+- Ownership / move tracking / use-after-move detection
+- Async/await lowering to C++20 coroutines
+- FFI / extern declarations
+- Tuple types, type aliases, const/constexpr
+- Dynamic dispatch (dyn Trait)
+- CI/CD, LSP, REPL
 
-**Следующий шаг**: Phase 38 - Operator Overloading или Phase 33 - Optimizations
+**Следующий шаг**: Ownership Tier 1 (move semantics) или async lowering
 
 ---
 

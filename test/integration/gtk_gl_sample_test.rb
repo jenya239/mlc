@@ -3,21 +3,23 @@
 require_relative "../test_helper"
 
 class GtkGlSampleTest < Minitest::Test
-  def test_parse_buffer_hpp
-    source = File.read("/home/jenya/workspaces/experimental/gtk-gl-cpp-2025/include/gl/buffer.hpp")
+  GTK_GL_DIR = "/home/jenya/workspaces/experimental/gtk-gl-cpp-2025"
 
+  def test_parse_buffer_hpp
+    skip "gtk-gl-cpp-2025 not available" unless File.exist?("#{GTK_GL_DIR}/include/gl/buffer.hpp")
+
+    source = File.read("#{GTK_GL_DIR}/include/gl/buffer.hpp")
     program = CppAst.parse(source)
     output = program.to_source
-
     assert_equal source, output
   end
 
   def test_parse_texture_atlas_hpp
-    source = File.read("/home/jenya/workspaces/experimental/gtk-gl-cpp-2025/include/text/texture_atlas.hpp")
+    skip "gtk-gl-cpp-2025 not available" unless File.exist?("#{GTK_GL_DIR}/include/text/texture_atlas.hpp")
 
+    source = File.read("#{GTK_GL_DIR}/include/text/texture_atlas.hpp")
     program = CppAst.parse(source)
     output = program.to_source
-
     assert_equal source, output
   end
 

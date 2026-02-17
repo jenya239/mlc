@@ -35,9 +35,11 @@ module MLC
               type_str = context.map_type(node.type)
               use_auto = context.type_requires_auto?(node.type, type_str: type_str)
 
-              # Build declarator
+              # Build declarator with move semantics
               decl_type = use_auto ? "auto" : type_str
-              declarator = "#{identifier} = #{init_expr.to_source}"
+              init_source = init_expr.to_source
+              init_source = "std::move(#{init_source})" if needs_move?(node)
+              declarator = "#{identifier} = #{init_source}"
 
               # Don't add const for pointer types (they end with *)
               # Also don't add const if variable might be rebound (we don't know at this point)
@@ -50,6 +52,16 @@ module MLC
                 type_suffix: " ",
                 prefix_modifiers: prefix
               )
+            end
+            private
+
+            # Check if the initializer should be wrapped in std::move()
+            # Only when: RHS is a variable reference AND the type is a move type (non-Copy)
+            def needs_move?(node)
+              return false unless node.value.is_a?(MLC::SemanticIR::VarExpr)
+
+              vtr = MLC::Representations::Semantic::Gen::Services::VarTypeRegistry
+              vtr.move_on_bind?(node.value.type)
             end
           end
         end

@@ -7,6 +7,8 @@ gem "rake", "~> 13.0"
 gem "test-unit", "~> 3.6"
 gem "zeitwerk", "~> 2.6"
 gem "bundler"
+gem "ostruct"
+gem "benchmark"
 
 group :development do
   gem "debug"

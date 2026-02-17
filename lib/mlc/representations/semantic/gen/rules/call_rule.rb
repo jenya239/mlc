@@ -36,7 +36,7 @@ module MLC
                 next unless svc.ast_type_checker.var_ref?(ast_arg)
 
                 arg_ir = args_ir[index]
-                next unless arg_ir && Services::VarTypeRegistry.has_move_semantics?(arg_ir.type)
+                next unless arg_ir && Services::VarTypeRegistry.move_on_pass?(arg_ir.type)
 
                 svc.var_type_registry.mark_moved(ast_arg.name)
               end

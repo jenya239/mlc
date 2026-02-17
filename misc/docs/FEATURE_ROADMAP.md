@@ -1,7 +1,8 @@
 # MLC Feature Roadmap
 
 **Дата**: 2025-11-28
-**Версия**: 1.0
+**Обновлено**: 2026-02-17
+**Версия**: 1.1
 **Статус**: Активный
 
 ## Принцип приоритизации
@@ -70,12 +71,14 @@
 | `a << n` | `a << n` | Left shift |
 | `a >> n` | `a >> n` | Right shift |
 
+**Статус**: ЗАВЕРШЕНО (2025-11-29)
+
 **Задачи**:
-- [ ] Lexer: добавить токены `&`, `|`, `^`, `~`, `<<`, `>>`
-- [ ] Parser: приоритеты операторов (ниже сравнений, выше логических)
-- [ ] SemanticIR: Binary с :bitwise_* операциями
-- [ ] C++ codegen: прямая трансляция
-- [ ] Тесты
+- [x] Lexer: токены `&`, `|`, `^`, `~`, `<<`, `>>`
+- [x] Parser: приоритеты операторов
+- [x] SemanticIR: Binary с :bitwise_* операциями
+- [x] C++ codegen: прямая трансляция
+- [x] Тесты (27 tests)
 
 ### 1.2 Числовые литералы
 
@@ -87,11 +90,13 @@ let hex = 0xFF_00       // → 0xFF00
 let oct = 0o755         // → 0755
 ```
 
+**Статус**: ЗАВЕРШЕНО (2025-11-29)
+
 **Задачи**:
-- [ ] Lexer: распознавание `0b`, `0x`, `0o` префиксов
-- [ ] Lexer: поддержка `_` разделителей
-- [ ] Parser: Literal с соответствующими типами
-- [ ] C++ codegen: прямая трансляция литералов
+- [x] Lexer: распознавание `0b`, `0x`, `0o` префиксов
+- [x] Lexer: поддержка `_` разделителей
+- [x] Parser: Literal с соответствующими типами
+- [x] C++ codegen: прямая трансляция литералов
 
 ### 1.3 Расширенные целочисленные типы
 
@@ -106,11 +111,13 @@ let oct = 0o755         // → 0755
 | `i8` | `int8_t` |
 | `i16` | `int16_t` |
 
+**Статус**: ЗАВЕРШЕНО (2025-11-29)
+
 **Задачи**:
-- [ ] Lexer: keywords `u8`, `u16`, `u32`, `u64`, `i8`, `i16`
-- [ ] TypeRegistry: регистрация новых примитивов
-- [ ] TypeMapper: маппинг в `<cstdint>` типы
-- [ ] Тесты конверсии и переполнения
+- [x] Lexer: keywords `u8`, `u16`, `u32`, `u64`, `i8`, `i16`
+- [x] TypeRegistry: регистрация новых примитивов
+- [x] TypeMapper: маппинг в `<cstdint>` типы
+- [x] Тесты (26 tests)
 
 ### 1.4 Character literals
 
@@ -122,11 +129,14 @@ let newline = '\n' // → '\n'
 let tab = '\t'     // → '\t'
 ```
 
+**Статус**: ЗАВЕРШЕНО (2025-11-29)
+
 **Задачи**:
-- [ ] Lexer: распознавание `'...'`
-- [ ] AST: CharLiteral node
-- [ ] TypeChecker: тип `char` или `u8`
-- [ ] C++ codegen: прямая трансляция
+- [x] Lexer: распознавание `'...'`
+- [x] AST: CharLiteral node
+- [x] TypeChecker: тип `char`
+- [x] C++ codegen: прямая трансляция
+- [x] Тесты (21 tests)
 
 ---
 
@@ -164,13 +174,17 @@ inline mlc::String show(int32_t self) {
 }
 ```
 
+**Статус**: БАЗОВАЯ ВЕРСИЯ ЗАВЕРШЕНА (2025-11-29)
+
 **Задачи**:
-- [ ] Parser: `trait` и `impl` синтаксис
-- [ ] AST: TraitDecl, ImplDecl nodes
-- [ ] SemanticIR: TraitDef, TraitImpl
-- [ ] TypeChecker: проверка impl соответствия trait
-- [ ] C++ codegen: concepts + template specialization
-- [ ] Stdlib traits: Show, Eq, Ord, Clone, Default
+- [x] Parser: `trait` и `extend Type with Trait` синтаксис
+- [x] AST: TraitDecl nodes
+- [x] SemanticIR: TraitDef
+- [x] TraitRegistry для lookup методов
+- [x] C++ codegen для trait методов
+- [ ] Stdlib traits: Show, Eq, Ord, Clone, Default — не реализованы
+- [ ] Dynamic dispatch (dyn Trait) — не реализован
+- [ ] Orphan rules — не реализованы
 
 ### 2.2 Trait bounds
 
@@ -228,11 +242,14 @@ struct Vec3 {
 };
 ```
 
+**Статус**: БАЗОВАЯ ВЕРСИЯ ЗАВЕРШЕНА (2025-11-30)
+
 **Задачи**:
-- [ ] Stdlib traits: Add, Sub, Mul, Div, Neg
-- [ ] TypeChecker: разрешение операторов через traits
-- [ ] C++ codegen: генерация operator overloads
-- [ ] Stdlib: Vec2, Vec3, Vec4, Mat4
+- [x] OperatorTraitMapper (Add, Sub, Mul, Div)
+- [x] TypeChecker: разрешение операторов через traits
+- [x] C++ codegen: OperatorCallRule
+- [ ] Stdlib: Vec2, Vec3, Vec4, Mat4 — не реализованы
+- [ ] Neg trait — не реализован
 
 ### 3.2 Comparison операторы
 
@@ -551,4 +568,7 @@ fn fields_of<T>() -> str[] = @fields(T)
 
 ---
 
-*Последнее обновление: 2025-11-28*
+*Последнее обновление: 2026-02-17*
+
+**Примечание**: Фазы 1-3 реализованы в базовом варианте. Фазы 4-8 не начаты.
+Отдельно: ownership model (move semantics, borrow checking) и async lowering — описаны в LANGUAGE_STRATEGY.md, но не реализованы в семантическом анализаторе.

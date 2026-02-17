@@ -194,9 +194,12 @@ module MLC
                      lower_record_type_internal(type_decl.name, type_decl.type)
                    when SemanticIR::SumType
                      lower_sum_type_internal(type_decl.name, type_decl.type, type_decl.type_params)
-                   else
-                     # For primitive types, generate empty program (no direct C++ emission)
+                   when SemanticIR::OpaqueType
+                     # Opaque types: no C++ emission
                      CppAst::Nodes::Program.new(statements: [], statement_trailings: [])
+                   else
+                     # Type alias: using Name = CppType;
+                     lower_type_alias_internal(type_decl.name, type_decl.type)
                    end
 
           if type_decl.type_params.any?
@@ -215,6 +218,11 @@ module MLC
           else
             result
           end
+        end
+
+        def lower_type_alias_internal(name, aliased_type)
+          cpp_type = @context.map_type(aliased_type)
+          @context.factory.raw_statement(code: "using #{name} = #{cpp_type};")
         end
 
         def lower_record_type_internal(name, record_type)

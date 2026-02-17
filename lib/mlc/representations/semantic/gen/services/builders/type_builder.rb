@@ -54,6 +54,9 @@ module MLC
                   { name: variant[:name], fields: fields }
                 end
                 @ir_builder.sum_type(name: node.name, variants: variants)
+              when MLC::Source::AST::TupleType
+                element_types = node.types.map { |t| transform(t) }
+                @ir_builder.tuple_type(element_types: element_types)
               when MLC::Source::AST::ArrayType
                 element = transform(node.element_type)
                 @ir_builder.array_type(element_type: element)

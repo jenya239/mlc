@@ -18,8 +18,8 @@ module MLC
               index = node.index
 
               # Generate: std::get<N>(tuple)
-              context.factory.call(
-                callee: context.factory.identifier("std::get<#{index}>"),
+              context.factory.function_call(
+                callee: context.factory.identifier(name: "std::get<#{index}>"),
                 arguments: [tuple_cpp],
                 argument_separators: []
               )

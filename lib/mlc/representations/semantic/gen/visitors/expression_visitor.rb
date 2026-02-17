@@ -31,6 +31,7 @@ module MLC
               return apply_rules(node, extra_context) if svc.lambda?(node)
               return apply_rules(node, extra_context) if svc.list_comprehension?(node)
               return apply_rules(node, extra_context) if svc.index_access?(node)
+              return apply_rules(node, extra_context) if svc.tuple_access?(node)
 
               if svc.slice_access?(node)
                 object_ir = visit(node.object)
