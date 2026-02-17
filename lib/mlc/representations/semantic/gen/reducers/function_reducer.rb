@@ -100,6 +100,14 @@ module MLC
 
             def build_function(func_decl, params, signature, type_params)
               saved_types = @var_type_registry.snapshot
+
+              if func_decl.is_async
+                raise MLC::CompileError.new(
+                  "async functions are not yet supported (no C++ coroutine lowering implemented)",
+                  origin: func_decl.origin
+                )
+              end
+
               params.each { |param| @var_type_registry.set(param.name, param.type) }
 
               body_ir = nil
