@@ -168,6 +168,10 @@ module MLC
               node.is_a?(MLC::Source::AST::VariableDecl)
             end
 
+            def destructuring_decl_statement?(node)
+              node.is_a?(MLC::Source::AST::DestructuringDecl)
+            end
+
             def return_statement?(node)
               node.is_a?(MLC::Source::AST::Return)
             end

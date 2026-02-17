@@ -28,6 +28,11 @@ module MLC
                 return apply_rule(node, value_ir: value_ir)
               end
 
+              if svc.destructuring_decl_statement?(node)
+                value_ir = @expression_visitor.visit(node.value)
+                return apply_rule(node, value_ir: value_ir)
+              end
+
               if svc.return_statement?(node)
                 value_ir = node.expr ? @expression_visitor.visit(node.expr) : nil
                 return apply_rule(node, value_ir: value_ir)

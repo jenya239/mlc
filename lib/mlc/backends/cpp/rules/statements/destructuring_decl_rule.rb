@@ -95,8 +95,8 @@ module MLC
                 statements << field_decl
               end
 
-              # Return a compound of statements
-              context.factory.compound_statement(statements: statements)
+              # Return array of statements
+              statements
             end
           end
         end

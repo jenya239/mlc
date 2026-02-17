@@ -159,7 +159,7 @@ module MLC
 
         # Helper: Lower block expression statements with optional return
         def lower_block_expr_statements(block_expr, emit_return: true)
-          statements = block_expr.statements.map { |stmt| @context.lower_statement(stmt) }
+          statements = block_expr.statements.flat_map { |stmt| Array(@context.lower_statement(stmt)) }
 
           # Skip unit literals - they represent void/no value
           if block_expr.result && !block_expr.result.is_a?(SemanticIR::UnitLiteral)
