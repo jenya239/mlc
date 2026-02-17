@@ -1,0 +1,52 @@
+// Calculator in MLC
+// Demonstrates: sum types, pattern matching, string operations
+
+type Expr =
+  | Num(i32)
+  | Add(i32, i32)
+  | Sub(i32, i32)
+  | Mul(i32, i32)
+  | Div(i32, i32)
+
+fn eval(e: Expr) -> i32 = match e
+  | Num(n) => n
+  | Add(a, b) => a + b
+  | Sub(a, b) => a - b
+  | Mul(a, b) => a * b
+  | Div(a, b) => a / b
+end
+
+fn main() -> i32 = do
+  // Test suite of expressions
+  let e1 = Num(42)
+  let e2 = Add(10, 20)
+  let e3 = Mul(5, 6)
+  let e4 = Sub(100, 30)
+  let e5 = Div(50, 2)
+  let e6 = Add(100, 200)
+  let e7 = Mul(10, 10)
+  let e8 = Sub(1000, 500)
+  
+  let r1 = eval(e1)
+  let r2 = eval(e2)
+  let r3 = eval(e3)
+  let r4 = eval(e4)
+  let r5 = eval(e5)
+  let r6 = eval(e6)
+  let r7 = eval(e7)
+  let r8 = eval(e8)
+  
+  println(r1.to_string())
+  println(r2.to_string())
+  println(r3.to_string())
+  println(r4.to_string())
+  println(r5.to_string())
+  println(r6.to_string())
+  println(r7.to_string())
+  println(r8.to_string())
+  
+  let total = r1 + r2 + r3 + r4 + r5 + r6 + r7 + r8
+  println("Total: " + total.to_string())
+  
+  total
+end
