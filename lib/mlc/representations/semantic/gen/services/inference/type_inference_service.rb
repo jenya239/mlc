@@ -28,7 +28,8 @@ module MLC
             attr_writer :generic_call_resolver # Allow injection after initialization
 
             def initialize(var_type_registry:, type_registry:, function_registry:,
-                           type_decl_table:, generic_call_resolver:, type_checker:, scope_context:, _transformer: nil)
+                           type_decl_table:, generic_call_resolver:, type_checker:, scope_context:,
+                           trait_registry: nil, _transformer: nil)
               @var_type_registry = var_type_registry
               @type_registry = type_registry
               @function_registry = function_registry
@@ -36,7 +37,10 @@ module MLC
               @generic_call_resolver = generic_call_resolver # TypeSystem::GenericCallResolver (set after construction)
               @type_checker = type_checker
               @scope_context = scope_context
+              @trait_registry = trait_registry
             end
+
+            attr_writer :trait_registry
 
             # Infer type for variable or function reference
             def infer_variable_type(name)
@@ -105,7 +109,7 @@ module MLC
                 object_type = callee.object&.type
                 type_error("Cannot call member on value without type") unless object_type
 
-                infer_member_call_type(object_type, member, args)
+                infer_member_call_type(object_type, member, args, object_ir: callee.object)
 
               else
                 type_error("Cannot call value of type #{describe_type(callee.type)}")
@@ -277,15 +281,28 @@ module MLC
 
               if object_type.record?
                 field = object_type.fields.find { |f| f[:name] == member }
-                type_error("Unknown field '#{member}' for type #{object_type.name}", node: node) unless field
-                field[:type]
+                if field
+                  return field[:type]
+                else
+                  # Not a field — check extend blocks for instance methods before erroring
+                  instance_fn_type = resolve_extend_instance_method_type(object_type, member)
+                  return instance_fn_type if instance_fn_type
+
+                  type_error("Unknown field '#{member}' for type #{object_type.name}", node: node)
+                end
               elsif object_type.is_a?(SemanticIR::ArrayType)
                 infer_array_member_type(member, node: node)
+              elsif object_type.is_a?(SemanticIR::MapType)
+                infer_map_member_type(object_type, member, node: node)
               elsif string_type?(object_type)
                 infer_string_member_type(member, node: node)
               elsif numeric_type?(object_type)
                 infer_numeric_member_type(member, object_type, node: node)
               else
+                # Fallback: check extend blocks for instance methods
+                instance_fn_type = resolve_extend_instance_method_type(object_type, member)
+                return instance_fn_type if instance_fn_type
+
                 type_error("Unknown member '#{member}' for type #{describe_type(object_type)}", node: node)
               end
             end
@@ -562,8 +579,13 @@ module MLC
 
               def infer(object_type, member, args)
                 return resolve_array_member(object_type, member, args) if object_type.is_a?(SemanticIR::ArrayType)
+                return resolve_map_member(object_type, member, args) if object_type.is_a?(SemanticIR::MapType)
                 return resolve_string_member(member, args) if string?(object_type)
                 return resolve_numeric_member(object_type, member, args) if numeric?(object_type)
+
+                # Fallback: check extend blocks for instance methods
+                instance_ret = @context.resolve_instance_method_call_type(object_type, member, args)
+                return instance_ret if instance_ret
 
                 type_error("Unknown member '#{member}' for type #{describe(object_type)}")
               end
@@ -595,8 +617,44 @@ module MLC
                   end
                 else
                   type_error(
-                    "Unknown array method '#{member}'. Supported methods: length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, zip, enumerate, min, max, slice, sort, sort_by, uniq, uniq_by, group_by, partition, take_while, drop_while, first_n, last_n, second, third, count, compact, rotate, sample, product, flat_map"
+                    "Unknown array method '#{member}'. Supported methods: " \
+                    "length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, " \
+                    "map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, " \
+                    "zip, enumerate, min, max, slice, sort, sort_by, uniq, uniq_by, group_by, partition, " \
+                    "take_while, drop_while, first_n, last_n, second, third, count, compact, rotate, sample, " \
+                    "product, flat_map, push, pop, set, get"
                   )
+                end
+              end
+
+              def resolve_map_member(map_type, member, args)
+                case member
+                when "size", "length"
+                  ensure_args(member, args, 0)
+                  prim("i32")
+                when "is_empty"
+                  ensure_args(member, args, 0)
+                  prim("bool")
+                when "has"
+                  ensure_args(member, args, 1)
+                  prim("bool")
+                when "get"
+                  ensure_args(member, args, 1)
+                  map_type.value_type
+                when "set"
+                  ensure_args(member, args, 2)
+                  SemanticIR::UnitType.new
+                when "remove"
+                  ensure_args(member, args, 1)
+                  SemanticIR::UnitType.new
+                when "keys"
+                  ensure_args(member, args, 0)
+                  SemanticIR::ArrayType.new(element_type: map_type.key_type)
+                when "values"
+                  ensure_args(member, args, 0)
+                  SemanticIR::ArrayType.new(element_type: map_type.value_type)
+                else
+                  type_error("Unknown map method '#{member}'. Supported: size, length, is_empty, has, get, set, remove, keys, values")
                 end
               end
 
@@ -709,7 +767,12 @@ module MLC
                   "rotate" => { args: 1, ret: ->(t) { array_of(t) } },
                   "sample" => { args: 0, ret: ->(t) { element_type_of(t) } },
                   "product" => { args: 0, ret: ->(t) { element_type_of(t) } },
-                  "flat_map" => { args: 1, ret: ->(_t) { prim("auto") } }
+                  "flat_map" => { args: 1, ret: ->(_t) { prim("auto") } },
+                  # Mutating methods (require let mut)
+                  "push" => { args: 1, ret: ->(_t) { SemanticIR::UnitType.new } }, # rubocop:disable Lint/UnusedBlockArgument
+                  "pop" => { args: 0, ret: ->(_t) { SemanticIR::UnitType.new } }, # rubocop:disable Lint/UnusedBlockArgument
+                  "set" => { args: 2, ret: ->(_t) { SemanticIR::UnitType.new } }, # rubocop:disable Lint/UnusedBlockArgument
+                  "get" => { args: 1, ret: ->(t) { element_type_of(t) } }
                 }
               end
 
@@ -750,9 +813,26 @@ module MLC
               end
             end
 
-            # Infer member call type for arrays
-            def infer_member_call_type(object_type, member, args)
+            ARRAY_MUTATING_METHODS = %w[push pop set].freeze
+
+            # Infer member call type for arrays/maps
+            def infer_member_call_type(object_type, member, args, object_ir: nil)
+              if ARRAY_MUTATING_METHODS.include?(member) && object_type.is_a?(SemanticIR::ArrayType)
+                check_mutability(object_ir, member)
+              end
+              if HASHMAP_MUTATING_METHODS.include?(member) && object_type.is_a?(SemanticIR::MapType)
+                check_mutability(object_ir, member)
+              end
               MemberResolver.new(self, @type_checker).infer(object_type, member, args)
+            end
+
+            def check_mutability(object_ir, method_name)
+              return unless object_ir.is_a?(SemanticIR::VarExpr)
+
+              var_name = object_ir.name
+              unless @var_type_registry.mutable?(var_name)
+                type_error("Cannot call .#{method_name}() on immutable binding '#{var_name}'. Use 'let mut' to allow mutation")
+              end
             end
 
             # Infer numeric member call type (method call with args)
@@ -831,15 +911,61 @@ module MLC
                 # Returns array of (index, element) pairs
                 SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
               when "min", "max"
-                # Returns element type
                 SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
               when "slice"
-                # Returns array slice
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "sort", "sort_by", "uniq", "uniq_by", "take_while", "drop_while",
+                   "first_n", "last_n", "compact", "rotate"
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "group_by", "partition", "flat_map"
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "second", "third", "sample", "product"
+                SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
+              when "count"
+                SemanticIR::Builder.primitive_type("i32")
+              when "push"
+                SemanticIR::Builder.function_type([], SemanticIR::UnitType.new)
+              when "pop"
+                SemanticIR::Builder.function_type([], SemanticIR::UnitType.new)
+              when "set"
+                SemanticIR::Builder.function_type([], SemanticIR::UnitType.new)
+              when "get"
                 SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
               else
                 type_error(
-                  "Unknown array member '#{member}'. Known members: length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, zip, enumerate, min, max, slice", node: node
+                  "Unknown array member '#{member}'. Known members: " \
+                  "length, len, size, is_empty, first, last, reverse, take, drop, contains, join, sum, " \
+                  "map, filter, fold, any, all, none, find, find_index, index_of, concat, append, flatten, " \
+                  "zip, enumerate, min, max, slice, sort, sort_by, uniq, uniq_by, group_by, partition, " \
+                  "take_while, drop_while, first_n, last_n, second, third, count, compact, rotate, sample, " \
+                  "product, flat_map, push, pop, set, get", node: node
                 )
+              end
+            end
+
+            HASHMAP_MUTATING_METHODS = %w[set remove].freeze
+
+            # Infer map member type (non-call)
+            def infer_map_member_type(map_type, member, node: nil)
+              case member
+              when "size", "length"
+                SemanticIR::Builder.primitive_type("i32")
+              when "is_empty"
+                SemanticIR::Builder.primitive_type("bool")
+              when "has"
+                SemanticIR::Builder.primitive_type("bool")
+              when "get"
+                SemanticIR::Builder.function_type([], map_type.value_type)
+              when "set"
+                SemanticIR::Builder.function_type([], SemanticIR::UnitType.new)
+              when "remove"
+                SemanticIR::Builder.function_type([], SemanticIR::UnitType.new)
+              when "keys"
+                SemanticIR::ArrayType.new(element_type: map_type.key_type)
+              when "values"
+                SemanticIR::ArrayType.new(element_type: map_type.value_type)
+              else
+                type_error("Unknown map member '#{member}'. Known members: size, length, is_empty, has, get, set, remove, keys, values", node: node)
               end
             end
 
@@ -931,6 +1057,68 @@ module MLC
               elsif arg.respond_to?(:type) && arg.type.is_a?(SemanticIR::FunctionType)
                 arg.type.ret_type
               end
+            end
+
+            # Extract base type name from SemanticIR type for trait registry lookup
+            def extract_base_type_name(type)
+              case type
+              when SemanticIR::RecordType
+                type.name
+              when SemanticIR::GenericType
+                base = type.base_type
+                base.respond_to?(:name) ? base.name : nil
+              when SemanticIR::ArrayType
+                "Array"
+              when SemanticIR::MapType
+                "Map"
+              else
+                type.respond_to?(:name) ? type.name : nil
+              end
+            end
+
+            # Check if an extend block defines an instance method for this type+member.
+            # Returns FunctionType (without self param) or nil.
+            def resolve_extend_instance_method_type(object_type, member)
+              return nil unless @trait_registry
+
+              base_name = extract_base_type_name(object_type)
+              return nil unless base_name
+
+              mi = @trait_registry.resolve_instance_method(base_name, member)
+              return nil unless mi
+
+              mangled = "#{base_name}_#{member}"
+              func_info = @function_registry.fetch(mangled)
+              return nil unless func_info
+
+              # Build FunctionType excluding the first (self) param
+              params = func_info.param_types.drop(1).each_with_index.map do |t, i|
+                { name: "arg#{i}", type: t }
+              end
+              SemanticIR::Builder.function_type(params, func_info.ret_type)
+            end
+
+            # Resolve instance method call return type (used by MemberResolver).
+            # Returns the return type or nil.
+            def resolve_instance_method_call_type(object_type, member, args)
+              return nil unless @trait_registry
+
+              base_name = extract_base_type_name(object_type)
+              return nil unless base_name
+
+              mi = @trait_registry.resolve_instance_method(base_name, member)
+              return nil unless mi
+
+              mangled = "#{base_name}_#{member}"
+              func_info = @function_registry.fetch(mangled)
+              return nil unless func_info
+
+              # Validate arg count (excluding self)
+              expected = func_info.param_types.length - 1
+              actual = args.length
+              type_error("#{member}() expects #{expected} argument(s), got #{actual}") if expected != actual
+
+              func_info.ret_type
             end
 
             # Instantiate generic member type

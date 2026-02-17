@@ -31,7 +31,7 @@ class MLCListComprehensionTest < Minitest::Test
 
     cpp = MLC.to_cpp(mlc_source)
 
-    assert_includes cpp, "std::vector<int> result;"
+    assert_includes cpp, "mlc::Array<int> result;"
     assert_includes cpp, "for (int x : xs)"
     assert_includes cpp, "if (!(x > 0))"
     assert_includes cpp, "result.push_back(x);"

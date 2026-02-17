@@ -22,7 +22,7 @@ module MLC
           #   var_types.set("local", type)
           #   var_types.restore(snapshot)  # "local" больше не видна
           class VarTypeRegistry
-            Snapshot = Struct.new(:types, :initializers, :moved_vars) do
+            Snapshot = Struct.new(:types, :initializers, :moved_vars, :mutables) do
               def [](key)
                 types[key]
               end
@@ -32,14 +32,22 @@ module MLC
               @types = {}
               @initializers = {}
               @moved_vars = Set.new # Track moved variables for use-after-move detection
+              @mutables = Set.new   # Track mutable bindings (let mut)
             end
 
             # Установить тип переменной
             # @param name [String] имя переменной
             # @param type [SemanticIR::Type] тип переменной
-            def set(name, type, initializer: nil)
+            # @param mutable [Boolean] является ли binding мутабельным
+            def set(name, type, initializer: nil, mutable: false)
               @types[name] = type
               @initializers[name] = initializer if initializer
+              mutable ? @mutables.add(name) : @mutables.delete(name)
+            end
+
+            # Проверить мутабельность binding
+            def mutable?(name)
+              @mutables.include?(name)
             end
 
             # Получить тип переменной
@@ -61,6 +69,7 @@ module MLC
             # @return [SemanticIR::Type, nil] удалённый тип
             def delete(name)
               @initializers.delete(name)
+              @mutables.delete(name)
               @types.delete(name)
             end
 
@@ -74,12 +83,13 @@ module MLC
             def clear
               @types.clear
               @moved_vars.clear
+              @mutables.clear
             end
 
             # Создать snapshot текущего состояния (для scope management)
             # @return [Snapshot] копия текущего состояния
             def snapshot
-              Snapshot.new(@types.dup, @initializers.dup, @moved_vars.dup)
+              Snapshot.new(@types.dup, @initializers.dup, @moved_vars.dup, @mutables.dup)
             end
 
             # Восстановить состояние из snapshot
@@ -91,10 +101,12 @@ module MLC
                 @types = snapshot.types.dup
                 @initializers = snapshot.initializers.dup
                 @moved_vars = snapshot.respond_to?(:moved_vars) && snapshot.moved_vars ? snapshot.moved_vars.dup : Set.new
+                @mutables = snapshot.respond_to?(:mutables) && snapshot.mutables ? snapshot.mutables.dup : Set.new
               else
                 @types = snapshot.dup
                 @initializers = {}
                 @moved_vars = Set.new
+                @mutables = Set.new
               end
             end
 
@@ -146,6 +158,10 @@ module MLC
               return true if type.is_a?(MLC::SemanticIR::UnitType)
               return true if type.is_a?(MLC::SemanticIR::ErrorType)
 
+              # Arrays and Maps are COW — copy is O(1), no move needed
+              return true if type.is_a?(MLC::SemanticIR::ArrayType)
+              return true if type.is_a?(MLC::SemanticIR::MapType)
+
               # Reference-counted smart pointers are not Copy, but they are Clone (no move)
               if type.is_a?(MLC::SemanticIR::GenericType)
                 base_name = type.base_type&.name
@@ -156,6 +172,7 @@ module MLC
               name = type.name
               return true if name && COPY_TYPES.include?(name)
               return true if name && %w[void unit].include?(name)
+              return true if %w[string str].include?(name) # Strings are also COW
 
               false
             end

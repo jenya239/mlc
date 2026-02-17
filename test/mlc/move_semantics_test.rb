@@ -53,15 +53,16 @@ class MoveSemanticsTest < Minitest::Test
 
   def test_move_on_bind_array
     source = <<~MLC
-      fn foo() -> i32 = do
+      fn foo() -> i32[] = do
         let a = [1, 2, 3]
         let b = a
         a
       end
     MLC
 
-    error = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
-    assert_match(/moved.*'a'/, error.message)
+    # Array is COW (Copy-on-Write), no move error expected
+    cpp = MLC.to_cpp(source)
+    assert_includes cpp, "foo"
   end
 
   def test_move_on_bind_string
@@ -73,8 +74,9 @@ class MoveSemanticsTest < Minitest::Test
       end
     MLC
 
-    error = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
-    assert_match(/moved.*'a'/, error.message)
+    # String is COW (Copy-on-Write), no move error expected
+    cpp = MLC.to_cpp(source)
+    assert_includes cpp, "foo"
   end
 
   def test_move_on_bind_owned
@@ -203,8 +205,9 @@ class MoveSemanticsTest < Minitest::Test
       end
     MLC
 
+    # Array is COW, no std::move expected - simple copy
     cpp = MLC.to_cpp(source)
-    assert_includes cpp, "std::move(a)"
+    refute_includes cpp, "std::move(a)"
   end
 
   def test_codegen_no_move_on_copy_bind
@@ -229,8 +232,9 @@ class MoveSemanticsTest < Minitest::Test
       end
     MLC
 
+    # String is COW, no std::move expected - simple copy
     cpp = MLC.to_cpp(source)
-    assert_includes cpp, "std::move(a)"
+    refute_includes cpp, "std::move(a)"
   end
 
   # ===========================================
@@ -248,9 +252,9 @@ class MoveSemanticsTest < Minitest::Test
     assert vtr.copy_type?(prim("void"))
     assert vtr.copy_type?(nil)
 
-    refute vtr.copy_type?(prim("string"))
-    refute vtr.copy_type?(prim("str"))
-    refute vtr.copy_type?(MLC::SemanticIR::ArrayType.new(element_type: prim("i32")))
+    assert vtr.copy_type?(prim("string"))
+    assert vtr.copy_type?(prim("str"))
+    assert vtr.copy_type?(MLC::SemanticIR::ArrayType.new(element_type: prim("i32")))
     refute vtr.copy_type?(MLC::SemanticIR::RecordType.new(name: "Point", fields: []))
   end
 
@@ -260,8 +264,8 @@ class MoveSemanticsTest < Minitest::Test
     refute vtr.move_on_bind?(prim("i32"))
     refute vtr.move_on_bind?(prim("bool"))
 
-    assert vtr.move_on_bind?(prim("string"))
-    assert vtr.move_on_bind?(MLC::SemanticIR::ArrayType.new(element_type: prim("i32")))
+    refute vtr.move_on_bind?(prim("string"))
+    refute vtr.move_on_bind?(MLC::SemanticIR::ArrayType.new(element_type: prim("i32")))
     assert vtr.move_on_bind?(owned_type("i32"))
   end
 

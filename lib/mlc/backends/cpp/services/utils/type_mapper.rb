@@ -24,7 +24,8 @@ module MLC
 
             # Collection types that map to C++ standard library types
             COLLECTION_TYPES = {
-              "Map" => "std::unordered_map"
+              "Map" => "mlc::HashMap",
+              "HashMap" => "mlc::HashMap"
             }.freeze
 
             # Reference types that map to C++ references
@@ -100,7 +101,7 @@ module MLC
 
               when SemanticIR::ArrayType
                 element_type = map_type(type.element_type, type_map: type_map, type_registry: type_registry)
-                "std::vector<#{element_type}>"
+                "mlc::Array<#{element_type}>"
 
               when SemanticIR::TupleType
                 # Tuple types: std::tuple<T1, T2, ...>
@@ -110,10 +111,10 @@ module MLC
                 "std::tuple<#{element_types}>"
 
               when SemanticIR::MapType
-                # Map types: Map<K, V> -> std::unordered_map<K, V>
+                # Map types: Map<K, V> -> mlc::HashMap<K, V>
                 key_type = map_type(type.key_type, type_map: type_map, type_registry: type_registry)
                 value_type = map_type(type.value_type, type_map: type_map, type_registry: type_registry)
-                "std::unordered_map<#{key_type}, #{value_type}>"
+                "mlc::HashMap<#{key_type}, #{value_type}>"
 
               when SemanticIR::SymbolType
                 # Symbol type: interned string id

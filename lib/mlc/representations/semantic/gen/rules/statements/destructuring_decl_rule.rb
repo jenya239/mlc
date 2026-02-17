@@ -65,8 +65,8 @@ module MLC
                     origin: node
                   )
 
-                  # Register variable in scope
-                  svc.var_type_registry.set(name, elem_type, initializer: accessor)
+                  # Register variable in scope (propagate mutable flag)
+                  svc.var_type_registry.set(name, elem_type, initializer: accessor, mutable: node.mutable)
 
                   bindings << { name: name, type: elem_type, accessor: accessor }
                 end
@@ -105,8 +105,8 @@ module MLC
                     origin: node
                   )
 
-                  # Register variable in scope
-                  svc.var_type_registry.set(field_name, field_type, initializer: accessor)
+                  # Register variable in scope (propagate mutable flag)
+                  svc.var_type_registry.set(field_name, field_type, initializer: accessor, mutable: node.mutable)
 
                   bindings << { name: field_name, type: field_type, accessor: accessor }
                 end

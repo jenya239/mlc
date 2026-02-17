@@ -20,7 +20,7 @@ module MLC
 
               value_ir = visitor.visit(node.value)
               ensure_type!(svc, value_ir.type, "let binding '#{node.name}'", node)
-              var_registry.set(node.name, value_ir.type)
+              var_registry.set(node.name, value_ir.type, mutable: node.mutable)
 
               body_ir = visitor.visit(node.body)
               ensure_type!(svc, body_ir.type, "let body for '#{node.name}'", node)

@@ -80,7 +80,7 @@ class ArraySlicingTest < Minitest::Test
     cpp = MLC.to_cpp(source)
 
     # Should generate vector constructor with iterators
-    assert_includes cpp, "std::vector<int>"
+    assert_includes cpp, "mlc::Array<int>"
     assert_includes cpp, "begin()"
   end
 
@@ -92,7 +92,7 @@ class ArraySlicingTest < Minitest::Test
 
     cpp = MLC.to_cpp(source)
 
-    assert_includes cpp, "std::vector<int>"
+    assert_includes cpp, "mlc::Array<int>"
     assert_includes cpp, "begin()"
     assert_includes cpp, "end()"
   end
@@ -105,7 +105,7 @@ class ArraySlicingTest < Minitest::Test
 
     cpp = MLC.to_cpp(source)
 
-    assert_includes cpp, "std::vector<int>"
+    assert_includes cpp, "mlc::Array<int>"
     assert_includes cpp, "begin()"
   end
 
@@ -118,7 +118,7 @@ class ArraySlicingTest < Minitest::Test
     cpp = MLC.to_cpp(source)
 
     # Full copy should use simple vector construction
-    assert_includes cpp, "std::vector<int>"
+    assert_includes cpp, "mlc::Array<int>"
   end
 
   # Test 9: Slice with expressions as indices
@@ -129,7 +129,7 @@ class ArraySlicingTest < Minitest::Test
 
     cpp = MLC.to_cpp(source)
 
-    assert_includes cpp, "std::vector<int>"
+    assert_includes cpp, "mlc::Array<int>"
     assert_includes cpp, "begin()"
     # Should include the variable references
     assert_includes cpp, "start"

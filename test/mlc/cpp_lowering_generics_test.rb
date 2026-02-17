@@ -80,7 +80,7 @@ class CppLoweringGenericsTest < Minitest::Test
 
     cpp_type = @lowerer.map_type(array_type)
 
-    assert_equal 'std::vector<std::optional<int>>', cpp_type
+    assert_equal 'mlc::Array<std::optional<int>>', cpp_type
   end
 
   def test_function_type_simple
@@ -224,8 +224,8 @@ class CppLoweringGenericsTest < Minitest::Test
     assert_match(/template/, source)
     assert_match(/typename T/, source)
 
-    # Parameter should be std::vector<T>
-    assert_match(/std::vector<T>/, source)
+    # Parameter should be mlc::Array<T>
+    assert_match(/mlc::Array<T>/, source)
   end
 
   def test_function_with_generic_option_param

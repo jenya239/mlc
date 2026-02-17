@@ -38,7 +38,7 @@ module MLC
                 # arr[..] - full copy
                 # std::vector<T>(arr)
                 context.factory.function_call(
-                  callee: context.factory.identifier(name: "std::vector<#{element_type}>"),
+                  callee: context.factory.identifier(name: "mlc::Array<#{element_type}>"),
                   arguments: [array],
                   argument_separators: []
                 )
@@ -64,9 +64,9 @@ module MLC
             end
 
             def build_vector_from_iterators(element_type, start_iter, end_iter)
-              # Generate: std::vector<T>(start_iter, end_iter)
+              # Generate: mlc::Array<T>(start_iter, end_iter)
               context.factory.function_call(
-                callee: context.factory.identifier(name: "std::vector<#{element_type}>"),
+                callee: context.factory.identifier(name: "mlc::Array<#{element_type}>"),
                 arguments: [
                   context.factory.raw_expression(code: start_iter),
                   context.factory.raw_expression(code: end_iter)

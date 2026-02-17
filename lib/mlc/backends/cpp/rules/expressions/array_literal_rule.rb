@@ -19,9 +19,9 @@ module MLC
               # Recursively lower each element
               elements = node.elements.map { |elem| lower_expression(elem) }
 
-              # Generate brace initializer: std::vector<int>{1, 2, 3}
+              # Generate brace initializer: mlc::Array<int>{1, 2, 3}
               context.factory.brace_initializer(
-                type: "std::vector<#{element_type}>",
+                type: "mlc::Array<#{element_type}>",
                 arguments: elements,
                 argument_separators: elements.size > 1 ? Array.new(elements.size - 1, ", ") : []
               )

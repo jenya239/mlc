@@ -119,7 +119,8 @@ module MLC
                 type_decl_table: @type_decl_table,
                 generic_call_resolver: nil,
                 type_checker: @type_checker,
-                scope_context: @scope_context
+                scope_context: @scope_context,
+                trait_registry: @trait_registry
               )
               type_constraint_solver = MLC::Common::Typing::TypeConstraintSolver.new(
                 infer_type_arguments: @type_inference_service.method(:infer_type_arguments),

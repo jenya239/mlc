@@ -13,15 +13,18 @@ module MLC
 
               def produce(node, context)
                 svc = services(context)
-                value_ir = context[:value_ir] || context.fetch(:expression_visitor).visit(node.value)
+
+                # Compute expected_type first for bidirectional inference (Map.new(), etc.)
+                expected_type = node.type ? svc.type_builder.transform(node.type) : nil
+                visitor_context = expected_type ? { expected_type: expected_type } : {}
+                value_ir = context[:value_ir] || context.fetch(:expression_visitor).visit(node.value, visitor_context)
 
                 type_checker = svc.type_checker
                 type_checker.ensure_type!(value_ir.type, "initializer for '#{node.name}'", node: node)
 
                 final_type = value_ir.type
 
-                if node.type
-                  expected_type = svc.type_builder.transform(node.type)
+                if expected_type
                   type_checker.ensure_compatible_type(
                     value_ir.type,
                     expected_type,
@@ -35,7 +38,7 @@ module MLC
                 # Track move semantics - if RHS is a variable with Owned<T> type, mark it as moved
                 mark_source_as_moved(svc, node.value, value_ir)
 
-                svc.var_type_registry.set(node.name, final_type, initializer: value_ir)
+                svc.var_type_registry.set(node.name, final_type, initializer: value_ir, mutable: node.mutable)
 
                 svc.ir_builder.variable_decl_stmt(
                   name: node.name,

@@ -92,7 +92,7 @@ class TuplesAndAliasesTest < Minitest::Test
     MLC
 
     cpp = MLC.to_cpp(source)
-    assert_includes cpp, "using Numbers = std::vector<int>;"
+    assert_includes cpp, "using Numbers = mlc::Array<int>;"
   end
 
   def test_type_alias_tuple

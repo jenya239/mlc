@@ -4,22 +4,27 @@
 
 ## 1. Текущая реализация vs design documents
 
-### Реализация (факт)
+### Реализация (факт, обновлено 2026-02-17)
 
-| Свойство | Текущее состояние |
-|----------|------------------|
-| `T[]` lowering | `std::vector<T>` напрямую |
-| Ownership | Copy type (не move) |
-| `.push()` | Не реализовано |
-| RC/COW | Не реализовано |
-| `let mut arr` | Позволяет переприсвоить `arr = ...`, но не мутировать содержимое |
-| Конкатенация | `arr ++ [elem]` → новый массив O(n) |
+| Свойство | Состояние |
+|----------|-----------|
+| `T[]` lowering | `mlc::Array<T>` — COW wrapper над `std::vector<T>` |
+| `Map<K,V>` lowering | `mlc::HashMap<K,V>` — COW wrapper над `std::unordered_map<K,V>` |
+| Ownership | Copy type (COW, не move) |
+| `.push()/.pop()/.set()/.get()` | Реализовано, мутирующие методы требуют `let mut` |
+| RC/COW | Реализовано: `mlc::Array<T>`, `mlc::HashMap<K,V>` |
+| `let mut arr` | Позволяет мутировать содержимое через `.push()`, `.set()`, `.pop()` |
+| Конкатенация | `arr ++ [elem]` → новый массив; `.push()` → in-place (COW) |
+| Mutability check | Компилятор проверяет `let mut` для мутирующих методов |
 | impl blocks | Не реализованы |
-| borrow checker | Не реализован (есть только use-after-move для Owned<T>) |
+| borrow checker | Не реализован (COW делает его ненужным для value types) |
 
 Проверено:
-- `test/mlc/move_semantics_test.rb:144`: `test_array_arg_not_moved_on_pass` — массивы НЕ перемещаются
-- `runtime/include/mlc/core/collections.hpp`: свободные функции `map`, `filter`, `fold` над `std::vector<T>`
+- `test/mlc/array_mutation_test.rb`: 13 unit тестов для push/pop/set/get + mutability checks
+- `test/integration/array_cow_e2e_test.rb`: 8 E2E тестов COW семантики
+- `test/integration/hashmap_e2e_test.rb`: 8 E2E тестов HashMap
+- `runtime/include/mlc/core/array.hpp`: COW Array<T> с detach при мутации
+- `runtime/include/mlc/core/hashmap.hpp`: COW HashMap<K,V>
 
 ### LANGUAGE_STRATEGY.md (design)
 

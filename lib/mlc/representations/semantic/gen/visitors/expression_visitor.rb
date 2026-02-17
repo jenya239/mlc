@@ -152,6 +152,9 @@ module MLC
 
               return false unless type_name[0] =~ /[A-Z]/
 
+              # Built-in constructors
+              return true if %w[Map HashMap].include?(type_name) && method_name == "new"
+
               @services.trait_registry.resolve_static_method(type_name, method_name) ||
                 @services.function_registry.fetch("#{type_name}_#{method_name}")
             end

@@ -16,6 +16,12 @@ module MLC
               callee_ir = context.fetch(:callee_ir)
               args_ir = context.fetch(:args_ir)
 
+              # Check for instance method call from extend blocks (obj.method(args) -> Type_method(obj, args))
+              if callee_ir.is_a?(SemanticIR::MemberExpr)
+                instance_result = try_instance_method_call(svc, node, callee_ir, args_ir)
+                return instance_result if instance_result
+              end
+
               # Track move semantics - mark Owned<T> arguments as moved
               mark_moved_arguments(svc, node.args, args_ir)
 
@@ -30,6 +36,42 @@ module MLC
             end
 
             private
+
+            def try_instance_method_call(svc, node, callee_ir, args_ir)
+              trait_registry = svc.trait_registry
+              return nil unless trait_registry
+
+              object_type = callee_ir.object&.type
+              return nil unless object_type
+
+              type_name = svc.type_inference_service.send(:extract_base_type_name, object_type)
+              return nil unless type_name
+
+              method_name = callee_ir.member
+              return nil unless trait_registry.resolve_instance_method(type_name, method_name)
+
+              mangled_name = "#{type_name}_#{method_name}"
+              func_info = svc.function_registry.fetch(mangled_name)
+              return nil unless func_info
+
+              # Prepend object (self) to args
+              all_args = [callee_ir.object] + args_ir
+
+              mark_moved_arguments(svc, node.args, args_ir)
+
+              func_type = svc.type_inference_service.function_type_from_info(func_info)
+              ret_type = svc.type_inference_service.infer_call_type(
+                svc.ir_builder.var(name: mangled_name, type: func_type, origin: node),
+                all_args
+              )
+
+              svc.ir_builder.call(
+                func: svc.ir_builder.var(name: mangled_name, type: func_type, origin: node.callee),
+                args: all_args,
+                type: ret_type,
+                origin: node
+              )
+            end
 
             def mark_moved_arguments(svc, ast_args, args_ir)
               ast_args.each_with_index do |ast_arg, index|

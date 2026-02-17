@@ -8,6 +8,9 @@ module MLC
           # StaticMethodCallRule - handles Type.method() calls
           # Transforms Type.method(args) -> Type_method(args)
           class StaticMethodCallRule < BaseRule
+            # Built-in type constructors: Map.new(), HashMap.new()
+            BUILTIN_CONSTRUCTORS = %w[Map HashMap].freeze
+
             def matches?(node, context)
               svc = services(context)
 
@@ -30,6 +33,9 @@ module MLC
               # If it's a variable in scope, it's an instance method call, not static
               return false if svc.var_type_registry.has?(type_name)
 
+              # Built-in constructors (Map.new, HashMap.new)
+              return true if BUILTIN_CONSTRUCTORS.include?(type_name) && method_name == "new"
+
               # Check if this is a known type with static methods
               static_method_exists?(svc, type_name, method_name)
             end
@@ -40,6 +46,11 @@ module MLC
               callee = node.callee
               type_name = callee.object.name
               method_name = callee.member
+
+              # Handle built-in constructors
+              if BUILTIN_CONSTRUCTORS.include?(type_name) && method_name == "new"
+                return produce_builtin_constructor(node, context, svc, type_name)
+              end
 
               # Build mangled function name: Type_method
               mangled_name = "#{type_name}_#{method_name}"
@@ -69,6 +80,28 @@ module MLC
             end
 
             private
+
+            def produce_builtin_constructor(node, context, svc, type_name)
+              # Map.new() / HashMap.new() — returns MapType from expected type annotation
+              expected_type = context[:expected_type]
+
+              map_type = if expected_type.is_a?(SemanticIR::MapType)
+                           expected_type
+                         else
+                           # Default to Map<string, string> if no annotation
+                           svc.ir_builder.map_type(
+                             key_type: SemanticIR::Builder.primitive_type("string"),
+                             value_type: SemanticIR::Builder.primitive_type("string")
+                           )
+                         end
+
+              svc.ir_builder.call(
+                func: svc.ir_builder.var(name: "#{type_name}_new", type: SemanticIR::Builder.function_type([], map_type), origin: node),
+                args: context[:args_ir] || [],
+                type: map_type,
+                origin: node
+              )
+            end
 
             def static_method_exists?(svc, type_name, method_name)
               # Check trait registry first

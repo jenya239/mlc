@@ -87,6 +87,25 @@ module MLC
               nil
             end
 
+            # Resolve instance method call: obj.method() where first param is "self"
+            # Returns MethodInfo or nil
+            def resolve_instance_method(type_name, method_name)
+              if @type_methods[type_name]&.key?(method_name)
+                mi = @type_methods[type_name][method_name]
+                return mi if instance_method?(mi)
+              end
+
+              @implementations.each do |(tn, _trait), impl|
+                next unless tn == type_name
+                next unless impl.impl_methods.key?(method_name)
+
+                mi = impl.impl_methods[method_name]
+                return mi if instance_method?(mi)
+              end
+
+              nil
+            end
+
             # Get all traits
             def all_traits
               @traits.values
@@ -105,6 +124,15 @@ module MLC
 
             # MethodInfo - method/function info
             MethodInfo = Struct.new(:name, :params, :ret_type, :body, :is_static, keyword_init: true)
+
+            private
+
+            def instance_method?(method_info)
+              return false unless method_info.params&.any?
+
+              first = method_info.params.first
+              first.respond_to?(:name) && first.name == "self"
+            end
           end
         end
       end

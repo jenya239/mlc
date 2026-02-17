@@ -9,8 +9,11 @@
 #include <unordered_map>
 #include <cstdlib>
 #include "mlc/core/string.hpp"
+#include "mlc/core/array.hpp"
 
 namespace mlc::collections {
+
+// ---- std::vector overloads (legacy) ----
 
 template <typename T, typename Func>
 auto map(const std::vector<T>& items, Func&& func) {
@@ -44,6 +47,42 @@ Acc fold(const std::vector<T>& items, Acc acc, Func&& reducer) {
 
 template <typename T>
 bool is_empty(const std::vector<T>& items) {
+    return items.empty();
+}
+
+// ---- mlc::Array overloads ----
+
+template <typename T, typename Func>
+auto map(const mlc::Array<T>& items, Func&& func) {
+    using Result = std::decay_t<std::invoke_result_t<Func, const T&>>;
+    mlc::Array<Result> result;
+    for (const auto& item : items) {
+        result.push_back(func(item));
+    }
+    return result;
+}
+
+template <typename T, typename Func>
+auto filter(const mlc::Array<T>& items, Func&& predicate) {
+    mlc::Array<T> result;
+    for (const auto& item : items) {
+        if (predicate(item)) {
+            result.push_back(item);
+        }
+    }
+    return result;
+}
+
+template <typename T, typename Acc, typename Func>
+Acc fold(const mlc::Array<T>& items, Acc acc, Func&& reducer) {
+    for (const auto& item : items) {
+        acc = reducer(acc, item);
+    }
+    return acc;
+}
+
+template <typename T>
+bool is_empty(const mlc::Array<T>& items) {
     return items.empty();
 }
 
@@ -593,6 +632,217 @@ auto flat_map(const std::vector<T>& items, Func&& func) {
     for (const auto& item : items) {
         auto inner = func(item);
         result.insert(result.end(), inner.begin(), inner.end());
+    }
+    return result;
+}
+
+// ---- mlc::Array overloads for all collection functions ----
+
+template <typename T>
+mlc::String join(const mlc::Array<T>& items, const mlc::String& separator) {
+    if (items.empty()) return mlc::String("");
+    mlc::String result = mlc::to_string(items[0]);
+    for (size_t i = 1; i < items.size(); ++i) {
+        result += separator;
+        result += mlc::to_string(items[i]);
+    }
+    return result;
+}
+
+template <typename T>
+mlc::Array<T> reverse(const mlc::Array<T>& items) {
+    mlc::Array<T> result;
+    for (size_t i = items.size(); i > 0; --i) {
+        result.push_back(items[i - 1]);
+    }
+    return result;
+}
+
+template <typename T>
+mlc::Array<T> take(const mlc::Array<T>& items, int32_t n) {
+    mlc::Array<T> result;
+    size_t count = (n <= 0) ? 0 : std::min(static_cast<size_t>(n), items.size());
+    for (size_t i = 0; i < count; ++i) result.push_back(items[i]);
+    return result;
+}
+
+template <typename T>
+mlc::Array<T> drop(const mlc::Array<T>& items, int32_t n) {
+    mlc::Array<T> result;
+    size_t skip = (n <= 0) ? 0 : std::min(static_cast<size_t>(n), items.size());
+    for (size_t i = skip; i < items.size(); ++i) result.push_back(items[i]);
+    return result;
+}
+
+template <typename T>
+bool contains(const mlc::Array<T>& items, const T& element) {
+    for (const auto& item : items) {
+        if (item == element) return true;
+    }
+    return false;
+}
+
+template <typename T, typename Func>
+bool any(const mlc::Array<T>& items, Func&& predicate) {
+    for (const auto& item : items) { if (predicate(item)) return true; }
+    return false;
+}
+
+template <typename T, typename Func>
+bool all(const mlc::Array<T>& items, Func&& predicate) {
+    for (const auto& item : items) { if (!predicate(item)) return false; }
+    return true;
+}
+
+template <typename T, typename Func>
+bool none(const mlc::Array<T>& items, Func&& predicate) {
+    for (const auto& item : items) { if (predicate(item)) return false; }
+    return true;
+}
+
+template <typename T, typename Func>
+T find(const mlc::Array<T>& items, Func&& predicate) {
+    for (const auto& item : items) { if (predicate(item)) return item; }
+    return T{};
+}
+
+template <typename T, typename Func>
+int32_t find_index(const mlc::Array<T>& items, Func&& predicate) {
+    for (size_t i = 0; i < items.size(); ++i) {
+        if (predicate(items[i])) return static_cast<int32_t>(i);
+    }
+    return -1;
+}
+
+template <typename T>
+int32_t index_of(const mlc::Array<T>& items, const T& element) {
+    for (size_t i = 0; i < items.size(); ++i) {
+        if (items[i] == element) return static_cast<int32_t>(i);
+    }
+    return -1;
+}
+
+template <typename T>
+mlc::Array<T> concat(const mlc::Array<T>& a, const mlc::Array<T>& b) {
+    mlc::Array<T> result;
+    for (const auto& item : a) result.push_back(item);
+    for (const auto& item : b) result.push_back(item);
+    return result;
+}
+
+template <typename T>
+mlc::Array<T> sort(const mlc::Array<T>& items) {
+    std::vector<T> tmp(items.begin(), items.end());
+    std::sort(tmp.begin(), tmp.end());
+    return mlc::Array<T>(std::move(tmp));
+}
+
+template <typename T, typename Func>
+mlc::Array<T> sort_by(const mlc::Array<T>& items, Func&& key_fn) {
+    std::vector<T> tmp(items.begin(), items.end());
+    std::sort(tmp.begin(), tmp.end(), [&key_fn](const T& a, const T& b) {
+        return key_fn(a) < key_fn(b);
+    });
+    return mlc::Array<T>(std::move(tmp));
+}
+
+template <typename T>
+T min(const mlc::Array<T>& items) {
+    if (items.empty()) return T{};
+    T result = items[0];
+    for (const auto& item : items) { if (item < result) result = item; }
+    return result;
+}
+
+template <typename T>
+T max(const mlc::Array<T>& items) {
+    if (items.empty()) return T{};
+    T result = items[0];
+    for (const auto& item : items) { if (item > result) result = item; }
+    return result;
+}
+
+template <typename T>
+T second(const mlc::Array<T>& items) {
+    return items.size() < 2 ? T{} : items[1];
+}
+
+template <typename T>
+T third(const mlc::Array<T>& items) {
+    return items.size() < 3 ? T{} : items[2];
+}
+
+template <typename T, typename Func>
+int32_t count(const mlc::Array<T>& items, Func&& predicate) {
+    int32_t result = 0;
+    for (const auto& item : items) { if (predicate(item)) ++result; }
+    return result;
+}
+
+template <typename T>
+T product(const mlc::Array<T>& items) {
+    if (items.empty()) return T{1};
+    T result = items[0];
+    for (size_t i = 1; i < items.size(); ++i) result *= items[i];
+    return result;
+}
+
+template <typename T>
+T sample(const mlc::Array<T>& items) {
+    return items.empty() ? T{} : items[rand() % items.size()];
+}
+
+template <typename T, typename Func>
+mlc::Array<T> take_while(const mlc::Array<T>& items, Func&& predicate) {
+    mlc::Array<T> result;
+    for (const auto& item : items) {
+        if (!predicate(item)) break;
+        result.push_back(item);
+    }
+    return result;
+}
+
+template <typename T, typename Func>
+mlc::Array<T> drop_while(const mlc::Array<T>& items, Func&& predicate) {
+    mlc::Array<T> result;
+    bool taking = false;
+    for (const auto& item : items) {
+        if (!taking && !predicate(item)) taking = true;
+        if (taking) result.push_back(item);
+    }
+    return result;
+}
+
+template <typename T>
+mlc::Array<T> first_n(const mlc::Array<T>& items, int32_t n) { return take(items, n); }
+
+template <typename T>
+mlc::Array<T> last_n(const mlc::Array<T>& items, int32_t n) {
+    if (n <= 0) return mlc::Array<T>{};
+    size_t count = std::min(static_cast<size_t>(n), items.size());
+    mlc::Array<T> result;
+    for (size_t i = items.size() - count; i < items.size(); ++i) result.push_back(items[i]);
+    return result;
+}
+
+template <typename T>
+mlc::Array<T> rotate(const mlc::Array<T>& items, int32_t n) {
+    if (items.empty()) return items;
+    std::vector<T> tmp(items.begin(), items.end());
+    int32_t sz = static_cast<int32_t>(tmp.size());
+    n = ((n % sz) + sz) % sz;
+    std::rotate(tmp.begin(), tmp.begin() + n, tmp.end());
+    return mlc::Array<T>(std::move(tmp));
+}
+
+template <typename T, typename Func>
+auto flat_map(const mlc::Array<T>& items, Func&& func) {
+    using Inner = std::decay_t<decltype(func(items[0]))>;
+    using Element = typename Inner::value_type;
+    mlc::Array<Element> result;
+    for (const auto& item : items) {
+        auto inner = func(item);
+        for (const auto& elem : inner) result.push_back(elem);
     }
     return result;
 }

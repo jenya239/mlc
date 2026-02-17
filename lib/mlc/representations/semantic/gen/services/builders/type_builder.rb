@@ -36,6 +36,12 @@ module MLC
                 # Validate type constraints if base type has constraints
                 @type_checker.validate_type_constraints(node.base_type.name, node.type_params) if node.base_type.respond_to?(:name)
 
+                # Map<K,V> / HashMap<K,V> → MapType
+                base_name = node.base_type.respond_to?(:name) ? node.base_type.name : nil
+                if %w[Map HashMap].include?(base_name) && args.size == 2
+                  return @ir_builder.map_type(key_type: args[0], value_type: args[1])
+                end
+
                 @ir_builder.generic_type(base_type: base, type_args: args)
               when MLC::Source::AST::FunctionType
                 params = node.param_types.each_with_index.map do |type, index|

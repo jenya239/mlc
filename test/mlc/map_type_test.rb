@@ -11,7 +11,7 @@ class MapTypeTest < Minitest::Test
   def test_map_type_to_cpp_unordered_map
     # Map<K, V> should map to std::unordered_map<K, V>
     type_map = MLC::Backends::Cpp::Services::Utils::TypeMapper::COLLECTION_TYPES
-    assert_equal "std::unordered_map", type_map["Map"]
+    assert_equal "mlc::HashMap", type_map["Map"]
   end
 
   def test_map_type_mapper_generic
@@ -36,7 +36,7 @@ class MapTypeTest < Minitest::Test
       type_map: type_map
     )
 
-    assert_equal "std::unordered_map<std::string, int32_t>", result
+    assert_equal "mlc::HashMap<std::string, int32_t>", result
   end
 
   def test_map_type_node
@@ -74,7 +74,7 @@ class MapTypeTest < Minitest::Test
       type_map: type_map
     )
 
-    assert_equal "std::unordered_map<std::string, int32_t>", result
+    assert_equal "mlc::HashMap<std::string, int32_t>", result
   end
 
   # ============================================================================

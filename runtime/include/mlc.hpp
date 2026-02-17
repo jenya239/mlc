@@ -15,6 +15,8 @@
 
 // Core types
 #include "mlc/core/string.hpp"
+#include "mlc/core/array.hpp"
+#include "mlc/core/hashmap.hpp"
 #include "mlc/core/collections.hpp"
 #include "mlc/core/match.hpp"
 #include "mlc/core/option.hpp"

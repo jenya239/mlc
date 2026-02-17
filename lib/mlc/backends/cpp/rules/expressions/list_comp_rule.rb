@@ -16,7 +16,7 @@ module MLC
             def apply(node)
               # Map element type to C++
               element_cpp_type = context.map_type(node.element_type)
-              vector_type = "std::vector<#{element_cpp_type}>"
+              vector_type = "mlc::Array<#{element_cpp_type}>"
 
               # Create result vector declaration
               result_decl = context.factory.variable_declaration(

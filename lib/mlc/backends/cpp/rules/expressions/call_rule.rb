@@ -64,6 +64,11 @@ module MLC
                 return lower_smart_pointer_function(node)
               end
 
+              # Check for Map/HashMap constructor
+              if context.checker.var_expr?(node.callee) && %w[Map_new HashMap_new].include?(node.callee.name)
+                return lower_map_constructor(node)
+              end
+
               # Check for stdlib overrides
               if context.checker.var_expr?(node.callee)
                 override = lower_stdlib_override(node)
@@ -79,6 +84,11 @@ module MLC
               # Check for array method calls
               if context.checker.member_expr?(node.callee) && node.callee.object.type.is_a?(MLC::SemanticIR::ArrayType)
                 return lower_array_method(node)
+              end
+
+              # Check for map method calls
+              if context.checker.member_expr?(node.callee) && node.callee.object.type.is_a?(MLC::SemanticIR::MapType)
+                return lower_map_method(node)
               end
 
               # Check for string method calls
@@ -351,6 +361,41 @@ module MLC
                   callee: member,
                   arguments: args,
                   argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+                )
+
+              when "pop"
+                # arr.pop() -> arr.pop_back() (returns void in C++, but we handle it)
+                member = context.factory.member_access(
+                  object: array_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: "pop_back")
+                )
+                context.factory.function_call(
+                  callee: member,
+                  arguments: [],
+                  argument_separators: []
+                )
+
+              when "set"
+                # arr.set(i, v) -> arr.set(i, v) (COW-safe)
+                member = context.factory.member_access(
+                  object: array_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: "set")
+                )
+                args = call.args.map { |arg| lower_expression(arg) }
+                context.factory.function_call(
+                  callee: member,
+                  arguments: args,
+                  argument_separators: [", "]
+                )
+
+              when "get"
+                # arr.get(i) -> arr[i]
+                args = call.args.map { |arg| lower_expression(arg) }
+                CppAst::Nodes::ArraySubscriptExpression.new(
+                  array: array_obj,
+                  index: args[0]
                 )
 
               when "map"
@@ -768,6 +813,81 @@ module MLC
                   arguments: args,
                   argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
                 )
+              end
+            end
+
+            # Map.new() / HashMap.new() -> mlc::HashMap<K,V>()
+            def lower_map_constructor(node)
+              map_type = context.map_type(node.type)
+              context.factory.function_call(
+                callee: context.factory.identifier(name: map_type),
+                arguments: [],
+                argument_separators: []
+              )
+            end
+
+            # Lower map method calls: m.get(k), m.set(k,v), m.has(k), m.remove(k), m.keys(), m.values(), m.size()
+            def lower_map_method(call)
+              map_obj = lower_expression(call.callee.object)
+              method = call.callee.member
+
+              case method
+              when "get", "has", "remove"
+                # Direct member call: m.get(k) -> m.get(k), m.has(k) -> m.has(k), m.remove(k) -> m.remove(k)
+                member = context.factory.member_access(
+                  object: map_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: method)
+                )
+                args = call.args.map { |arg| lower_expression(arg) }
+                context.factory.function_call(
+                  callee: member,
+                  arguments: args,
+                  argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+                )
+              when "set"
+                # m.set(k, v) -> m.set(k, v)
+                member = context.factory.member_access(
+                  object: map_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: "set")
+                )
+                args = call.args.map { |arg| lower_expression(arg) }
+                context.factory.function_call(
+                  callee: member,
+                  arguments: args,
+                  argument_separators: [", "]
+                )
+              when "size", "length"
+                member = context.factory.member_access(
+                  object: map_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: "size")
+                )
+                context.factory.function_call(callee: member, arguments: [], argument_separators: [])
+              when "is_empty"
+                member = context.factory.member_access(
+                  object: map_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: "empty")
+                )
+                context.factory.function_call(callee: member, arguments: [], argument_separators: [])
+              when "keys"
+                member = context.factory.member_access(
+                  object: map_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: "keys")
+                )
+                context.factory.function_call(callee: member, arguments: [], argument_separators: [])
+              when "values"
+                member = context.factory.member_access(
+                  object: map_obj,
+                  operator: ".",
+                  member: context.factory.identifier(name: "values")
+                )
+                context.factory.function_call(callee: member, arguments: [], argument_separators: [])
+              else
+                raise "Unknown map method: #{method}"
               end
             end
 

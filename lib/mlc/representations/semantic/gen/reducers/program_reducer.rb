@@ -133,7 +133,7 @@ module MLC
                         params: func.params,
                         ret_type: func.ret_type,
                         body: func.body,
-                        is_static: true # Associated functions are static
+                        is_static: !self_receiver?(func)
                       )
 
                       # Also register as regular function with mangled name for C++ backend
@@ -193,6 +193,10 @@ module MLC
 
             def extract_type_name(type)
               type.name
+            end
+
+            def self_receiver?(func)
+              func.params.any? && func.params.first.name == "self"
             end
 
             # Extract type parameters from extend target type

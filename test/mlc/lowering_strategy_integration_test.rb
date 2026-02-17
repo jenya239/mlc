@@ -118,7 +118,7 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
     # List comprehension requires IIFE for local result vector
     assert_includes cpp, "[&]()"
-    assert_includes cpp, "std::vector"
+    assert_includes cpp, "mlc::Array"
     assert_includes cpp, "result"
   end
 
@@ -151,8 +151,8 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
     cpp = MLC.to_cpp(source)
 
-    # Should compile and use std::vector
-    assert_includes cpp, "std::vector"
+    # Should compile and use mlc::Array
+    assert_includes cpp, "mlc::Array"
     assert_includes cpp, "size"
   end
 
