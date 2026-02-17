@@ -1,0 +1,51 @@
+type Shape = Circle(i32) | Rect(i32, i32) | Triangle(i32, i32)
+
+fn area(s: Shape) -> i32 =
+  match s
+    | Circle(r) => r * r * 3
+    | Rect(w, h) => w * h
+    | Triangle(b, h) => b * h / 2
+
+fn describe(s: Shape) -> str =
+  match s
+    | Circle(_) => "circle"
+    | Rect(_, _) => "rectangle"
+    | Triangle(_, _) => "triangle"
+
+type Result = Ok(i32) | Err(str)
+
+fn unwrap_or(r: Result, default: i32) -> i32 =
+  match r
+    | Ok(v) => v
+    | Err(_) => default
+
+fn main() -> i32 = do
+  let c = Circle(5)
+  let r = Rect(4, 6)
+  let t = Triangle(10, 3)
+
+  println("=== MLC Demo ===")
+  println("")
+  println("Shape: " + describe(c) + ", area ~ " + to_string(area(c)))
+  println("Shape: " + describe(r) + ", area = " + to_string(area(r)))
+  println("Shape: " + describe(t) + ", area = " + to_string(area(t)))
+  println("")
+
+  let result = Ok(42)
+  let error = Err("something went wrong")
+
+  println("Ok(42) unwrapped = " + to_string(unwrap_or(result, 0)))
+  println("Err unwrapped = " + to_string(unwrap_or(error, -1)))
+  println("")
+
+  let nums = [10, 20, 30, 40, 50]
+  let doubled = nums.map(x => x * 2)
+  println("Original: " + nums.join(", "))
+  println("Doubled:  " + doubled.join(", "))
+  println("")
+
+  let pair = (99, 1)
+  println("Tuple: (" + to_string(pair.0) + ", " + to_string(pair.1) + ")")
+
+  0
+end
