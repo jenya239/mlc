@@ -4,36 +4,36 @@
   "agents": {
     "orchestrator": {
       "status": "idle",
-      "last_action": "subtask",
-      "last_message": "1/5: Analyze current state and run tests",
-      "updated_at": "2025-12-11T18:57:37+04:00"
+      "last_action": "continuous",
+      "last_message": "Cycle complete, restarting...",
+      "updated_at": "2025-12-11T19:11:27+04:00"
     },
     "system": {
       "status": "idle",
       "last_action": "task",
       "last_message": "MLC: Continue development Fix failing tests Improve code structure",
-      "updated_at": "2025-12-11T18:57:37+04:00"
+      "updated_at": "2025-12-11T19:11:23+04:00"
     },
     "worker": {
-      "status": "idle",
-      "last_action": "result",
-      "last_message": "- `git status`: `main` ahead of origin, one unstaged change in `flow/current_state.json`.\n- Tests: `r",
-      "updated_at": "2025-12-11T18:57:43+04:00"
+      "status": "working",
+      "last_action": "error",
+      "last_message": "Codex error: Hourly limit reached (30 requests). Wait for reset.\n/home/jenya/workspaces/active/tools/",
+      "updated_at": "2025-12-11T19:11:27+04:00"
     },
     "codex": {
       "status": "idle",
-      "last_action": "full_response",
-      "last_message": "- `git status`: `main` ahead of origin, one unstaged change in `flow/current_state.json`.\n- Tests: `r",
-      "updated_at": "2025-12-11T18:57:43+04:00"
+      "last_action": "error",
+      "last_message": "RateLimiter::RateLimitError: Hourly limit reached (30 requests). Wait for reset.",
+      "updated_at": "2025-12-11T19:11:27+04:00"
     },
     "supervisor": {
       "status": "idle",
       "last_action": "review",
-      "last_message": "{\"verdict\":\"ok\",\"reason\":\"Тесты прошли успешно, выполнен первичный анализ состояния проекта\",\"next_ac",
-      "updated_at": "2025-12-11T18:57:48+04:00"
+      "last_message": "{\"verdict\":\"need_more\",\"reason\":\"Codex выполнил анализ текущего состояния, но не произвел никаких реа",
+      "updated_at": "2025-12-11T19:11:07+04:00"
     }
   },
   "current_task": "MLC: Continue development Fix failing tests Improve code structure",
   "status": "running",
-  "last_update": "2025-12-11T18:57:48+04:00"
+  "last_update": "2025-12-11T19:11:27+04:00"
 }

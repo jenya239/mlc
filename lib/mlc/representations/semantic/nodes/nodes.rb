@@ -530,14 +530,15 @@ module MLC
 
     # Variable declaration statement
     class VariableDeclStmt < Stmt
-      attr_reader :name, :type, :value, :mutable
+      attr_reader :name, :type, :value, :mutable, :constant
 
-      def initialize(name:, type:, value:, mutable:, origin: nil)
+      def initialize(name:, type:, value:, mutable:, constant: false, origin: nil)
         super(origin: origin)
         @name = name
         @type = type
         @value = value
         @mutable = mutable
+        @constant = constant
       end
     end
 

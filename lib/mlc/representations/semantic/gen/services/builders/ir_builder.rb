@@ -305,8 +305,8 @@ module MLC
               MLC::SemanticIR::Builder.block_expr(statements, result, type, origin: origin)
             end
 
-            def variable_decl_stmt(name:, type:, value:, mutable: false, origin: nil)
-              MLC::SemanticIR::Builder.variable_decl_stmt(name, type, value, mutable: mutable, origin: origin)
+            def variable_decl_stmt(name:, type:, value:, mutable: false, constant: false, origin: nil)
+              MLC::SemanticIR::Builder.variable_decl_stmt(name, type, value, mutable: mutable, constant: constant, origin: origin)
             end
 
             def expr_statement(expression:, origin: nil)

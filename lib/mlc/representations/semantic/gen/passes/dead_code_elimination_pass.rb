@@ -267,6 +267,7 @@ module MLC
                   type: stmt.type,
                   value: eliminate_expr(stmt.value),
                   mutable: stmt.mutable,
+                  constant: stmt.constant,
                   origin: stmt.origin
                 )
               when MLC::SemanticIR::ExprStatement

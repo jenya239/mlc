@@ -48,6 +48,8 @@ module MLC
           case current.type
           when :LET
             parse_variable_decl_statement
+          when :CONST
+            parse_const_decl_statement
           when :RETURN
             parse_return_statement
           when :BREAK
@@ -124,6 +126,24 @@ module MLC
           consume(:SEMICOLON) if current.type == :SEMICOLON
 
           with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }
+        end
+
+        def parse_const_decl_statement
+          consume(:CONST)
+          name_token = consume(:IDENTIFIER)
+          name = name_token.value
+
+          type_annotation = nil
+          if current.type == :COLON
+            consume(:COLON)
+            type_annotation = parse_type
+          end
+
+          consume(:EQUAL)
+          value = parse_expression_in_block
+          consume(:SEMICOLON) if current.type == :SEMICOLON
+
+          with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: false, constant: true, type: type_annotation) }
         end
 
         # Parse tuple destructuring: let (a, b) = expr

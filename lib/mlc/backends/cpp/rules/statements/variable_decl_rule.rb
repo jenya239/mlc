@@ -41,9 +41,8 @@ module MLC
               init_source = "std::move(#{init_source})" if needs_move?(node)
               declarator = "#{identifier} = #{init_source}"
 
-              # Don't add const for pointer types (they end with *)
-              # Also don't add const if variable might be rebound (we don't know at this point)
-              prefix = "" # Remove const - variables may be rebound
+              # Use constexpr for const declarations
+              prefix = node.constant ? "constexpr " : ""
 
               context.factory.variable_declaration(
                 type: decl_type,

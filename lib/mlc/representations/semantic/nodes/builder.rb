@@ -145,8 +145,8 @@ module MLC
         ExprStatement.new(expression: expression, origin: origin)
       end
 
-      def self.variable_decl_stmt(name, type, value, mutable: false, origin: nil)
-        VariableDeclStmt.new(name: name, type: type, value: value, mutable: mutable, origin: origin)
+      def self.variable_decl_stmt(name, type, value, mutable: false, constant: false, origin: nil)
+        VariableDeclStmt.new(name: name, type: type, value: value, mutable: mutable, constant: constant, origin: origin)
       end
 
       def self.assignment_stmt(target, value, origin: nil)

@@ -216,6 +216,8 @@ module MLC
           case current.type
           when :LET
             parse_variable_decl_statement
+          when :CONST
+            parse_const_decl_statement
           when :IF, :UNLESS
             parse_if_expression_in_block
           when :MATCH
@@ -642,6 +644,7 @@ module MLC
 
         def parse_let_header
           mutable = false
+          
           if current.type == :MUT
             consume(:MUT)
             mutable = true

@@ -486,14 +486,15 @@ module MLC
 
       # Let binding (sugar)
       class Let < Expr
-        attr_reader :name, :value, :body, :mutable, :type
+        attr_reader :name, :value, :body, :mutable, :constant, :type
 
-        def initialize(name:, value:, body:, mutable: false, type: nil, origin: nil)
+        def initialize(name:, value:, body:, mutable: false, constant: false, type: nil, origin: nil)
           super(kind: :let, data: { name: name, value: value, body: body }, origin: origin)
           @name = name
           @value = value
           @body = body
           @mutable = mutable
+          @constant = constant
           @type = type # Optional type annotation
         end
       end
@@ -639,13 +640,14 @@ module MLC
 
       # Variable declaration statement
       class VariableDecl < Stmt
-        attr_reader :name, :value, :mutable, :type
+        attr_reader :name, :value, :mutable, :constant, :type
 
-        def initialize(name:, value:, mutable: false, type: nil, origin: nil)
+        def initialize(name:, value:, mutable: false, constant: false, type: nil, origin: nil)
           super(origin: origin)
           @name = name
           @value = value
           @mutable = mutable
+          @constant = constant
           @type = type # Optional type annotation
         end
       end

@@ -42,6 +42,7 @@ module MLC
                   type: final_type,
                   value: value_ir,
                   mutable: node.mutable,
+                  constant: node.constant,
                   origin: node
                 )
               end

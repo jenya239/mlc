@@ -1,5 +1,11 @@
-- `git status`: `main` ahead of origin, one unstaged change in `flow/current_state.json`.
-- Tests: `rake test_fast` passed in `/home/jenya/workspaces/mlc` (2,439 tests, 6,135 assertions, 0 failures/errors/skips; ~53s). SimpleCov still not installed, so coverage wasn’t generated. Existing DSL block warnings remain.
+- Test infra: bundle SimpleCov deps or vendor them so coverage works for Minitest; add a single rake task that runs both Minitest and (when available) RSpec to simplify CI wiring.  
+- Warnings cleanup: the “block may be ignored” warnings from `friend_/enum_/requires_` can be addressed by clearer block handling (e.g., &block forwarding or explicit yields), keeping test output clean.  
+- Large classes: `lib/mlc/source/parser/expression_parser.rb` (~1.4k LOC) and `lib/mlc/backends/cpp/rules/expressions/call_rule.rb` (~1k LOC) are strong candidates for decomposition—split into sub-parsers/rule objects to reduce cognitive load.  
+- Duplication: generated OpenGL helper headers (`buffer.hpp`, `shader.hpp`, `text_types.hpp`) are emitted repeatedly in tests; consider consolidating template generation or snapshot fixtures to reduce noise and duplication in test outputs.  
+- Coverage parity: RSpec coverage config lives in `spec/spec_helper.rb`; Minitest setup now mirrors it. You could DRY coverage init into a shared helper to avoid diverging filter lists.
 
-- `git status`: `main` ahead of origin, one unstaged change in `flow/current_state.json`.
-- Tests: `rake test_fast` passed in `/home/jenya/workspaces/mlc` (2,439 tests, 6,135 assertions, 0 failures/errors/skips; ~53s). SimpleCov still not installed, so coverage wasn’t generated. Existing DSL block warnings remain.
+- Test infra: bundle SimpleCov deps or vendor them so coverage works for Minitest; add a single rake task that runs both Minitest and (when available) RSpec to simplify CI wiring.  
+- Warnings cleanup: the “block may be ignored” warnings from `friend_/enum_/requires_` can be addressed by clearer block handling (e.g., &block forwarding or explicit yields), keeping test output clean.  
+- Large classes: `lib/mlc/source/parser/expression_parser.rb` (~1.4k LOC) and `lib/mlc/backends/cpp/rules/expressions/call_rule.rb` (~1k LOC) are strong candidates for decomposition—split into sub-parsers/rule objects to reduce cognitive load.  
+- Duplication: generated OpenGL helper headers (`buffer.hpp`, `shader.hpp`, `text_types.hpp`) are emitted repeatedly in tests; consider consolidating template generation or snapshot fixtures to reduce noise and duplication in test outputs.  
+- Coverage parity: RSpec coverage config lives in `spec/spec_helper.rb`; Minitest setup now mirrors it. You could DRY coverage init into a shared helper to avoid diverging filter lists.
