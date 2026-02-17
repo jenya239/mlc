@@ -6,8 +6,8 @@ module MLC
       # Pure functions for type predicates and name operations
       # No side effects, no dependencies, no state
       module Predicates
-        NUMERIC_PRIMITIVES = %w[i8 i16 i32 i64 u8 u16 u32 u64 f32 f64].freeze
-        INTEGER_PRIMITIVES = %w[i8 i16 i32 i64 u8 u16 u32 u64].freeze
+        NUMERIC_PRIMITIVES = %w[i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char].freeze
+        INTEGER_PRIMITIVES = %w[i8 i16 i32 i64 u8 u16 u32 u64 char].freeze
         SIGNED_INTEGERS = %w[i8 i16 i32 i64].freeze
         UNSIGNED_INTEGERS = %w[u8 u16 u32 u64].freeze
 

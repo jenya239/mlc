@@ -125,6 +125,8 @@ module MLC
               return if expected.is_a?(SemanticIR::TypeVariable)
               return if actual_name == expected_name
               return if unit_like?(actual_name, actual) && unit_like?(expected_name, expected)
+              # Allow char <-> i32 comparison (char literals are parsed as i32)
+              return if (actual_name == "char" && expected_name == "i32") || (actual_name == "i32" && expected_name == "char")
 
               @event_bus&.publish(
                 :type_mismatch,
