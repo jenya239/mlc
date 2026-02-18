@@ -6,6 +6,7 @@
 #include <vector>
 #include <optional>
 #include "mlc/core/string.hpp"
+#include "mlc/core/array.hpp"
 
 namespace mlc::file {
 
@@ -176,8 +177,8 @@ inline mlc::String read_to_string(const mlc::String& path) {
     return mlc::String(content);
 }
 
-inline std::vector<mlc::String> read_lines(const mlc::String& path) {
-    std::vector<mlc::String> lines;
+inline mlc::Array<mlc::String> read_lines(const mlc::String& path) {
+    mlc::Array<mlc::String> lines;
     std::ifstream file(path.as_std_string());
     if (!file.is_open()) {
         return lines;

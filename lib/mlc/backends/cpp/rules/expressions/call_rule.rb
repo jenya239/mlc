@@ -69,6 +69,11 @@ module MLC
                 return lower_map_constructor(node)
               end
 
+              # Check for File methods
+              if context.checker.var_expr?(node.callee) && node.callee.name.start_with?("File_")
+                return lower_file_method(node)
+              end
+
               # Check for stdlib overrides
               if context.checker.var_expr?(node.callee)
                 override = lower_stdlib_override(node)
@@ -823,6 +828,30 @@ module MLC
                 callee: context.factory.identifier(name: map_type),
                 arguments: [],
                 argument_separators: []
+              )
+            end
+
+            # File.read(path) -> mlc::file::read_to_string(path)
+            # File.write(path, content) -> mlc::file::write_string(path, content)
+            # File.exists(path) -> mlc::file::exists(path)
+            # File.append(path, content) -> mlc::file::append_string(path, content)
+            # File.read_lines(path) -> mlc::file::read_lines(path)
+            FILE_CPP_NAMES = {
+              "File_read"       => "mlc::file::read_to_string",
+              "File_write"      => "mlc::file::write_string",
+              "File_exists"     => "mlc::file::exists",
+              "File_append"     => "mlc::file::append_string",
+              "File_read_lines" => "mlc::file::read_lines"
+            }.freeze
+
+            def lower_file_method(node)
+              cpp_name = FILE_CPP_NAMES[node.callee.name]
+              args = node.args.map { |arg| lower_expression(arg) }
+              seps = Array.new([args.size - 1, 0].max, ", ")
+              context.factory.function_call(
+                callee: context.factory.identifier(name: cpp_name),
+                arguments: args,
+                argument_separators: seps
               )
             end
 

@@ -155,6 +155,9 @@ module MLC
               # Built-in constructors
               return true if %w[Map HashMap].include?(type_name) && method_name == "new"
 
+              # Built-in File methods
+              return true if type_name == "File" && %w[read write exists append read_lines].include?(method_name)
+
               @services.trait_registry.resolve_static_method(type_name, method_name) ||
                 @services.function_registry.fetch("#{type_name}_#{method_name}")
             end
