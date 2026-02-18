@@ -5,17 +5,8 @@ require "open3"
 require "tmpdir"
 
 # Pattern Matching E2E Tests
-#
-# Current status: All tests skipped due to compiler limitations
-# The pattern matching generates std::visit code that has issues with:
-# - Return type consistency (float vs double)
-# - Nullary variants (need constructor syntax)
-# - Integer matching (std::visit on non-variant)
-# - Pattern guards (.value accessor)
-#
-# These tests document expected behavior for future implementation.
 class PatternMatchingE2ETest < Minitest::Test
-  tag :slow # Requires C++ compilation
+  tag :slow
 
   CLI = File.expand_path("../../bin/mlc", __dir__)
 
@@ -24,13 +15,10 @@ class PatternMatchingE2ETest < Minitest::Test
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
       stdout, stderr, status = Open3.capture3(CLI, source)
-
       refute_includes stderr, "error:", "Compilation failed: #{stderr}"
       yield stdout, stderr, status if block_given?
     end
   end
-
-  # === All tests skipped - pattern matching needs compiler fixes ===
 
   def test_match_simple_variant_with_data
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
@@ -219,6 +207,88 @@ class PatternMatchingE2ETest < Minitest::Test
       fn main() -> i32 = test_int(1) + test_float(0.0) + test_bool(true)
     MLC
       assert_equal 86, status.exitstatus  # 10 + 100 + 1000 = 1110, wraps to 86 (1110 % 256)
+    end
+  end
+
+  def test_match_multi_field_variant
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
+      type Expr = Add(i32, i32) | Mul(i32, i32) | Lit(i32)
+
+      fn eval(e: Expr) -> i32 = match e
+        | Add(a, b) => a + b
+        | Mul(a, b) => a * b
+        | Lit(v) => v
+
+      fn main() -> i32 = do
+        let x = Add(3, 4)
+        let y = Mul(2, 5)
+        let z = Lit(1)
+        eval(x) + eval(y) + eval(z)
+      end
+    MLC
+      assert_equal 18, status.exitstatus  # 7 + 10 + 1
+    end
+  end
+
+  def test_match_variant_binding_in_arithmetic
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
+      type Wrapped = Val(i32) | Zero
+
+      fn double(w: Wrapped) -> i32 = match w
+        | Val(x) => x * 2
+        | Zero => 0
+
+      fn main() -> i32 = do
+        let a = Val(7)
+        let b = Zero
+        double(a) + double(b)
+      end
+    MLC
+      assert_equal 14, status.exitstatus
+    end
+  end
+
+  def test_match_multiple_sum_types
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
+      type Direction = North | South | East | West
+
+      fn dx(d: Direction) -> i32 = match d
+        | East => 1
+        | West => -1
+        | _ => 0
+
+      fn dy(d: Direction) -> i32 = match d
+        | North => 1
+        | South => -1
+        | _ => 0
+
+      fn main() -> i32 = do
+        let d1 = East
+        let d2 = North
+        dx(d1) + dy(d2)
+      end
+    MLC
+      assert_equal 2, status.exitstatus
+    end
+  end
+
+  def test_match_chain_functions
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
+      type Opt = Some(i32) | None
+
+      fn unwrap_or(o: Opt, default: i32) -> i32 = match o
+        | Some(v) => v
+        | None => default
+
+      fn add_opt(a: Opt, b: Opt) -> i32 = unwrap_or(a, 0) + unwrap_or(b, 0)
+
+      fn main() -> i32 = do
+        let x = Some(10)
+        let y = None
+        add_opt(x, y)
+      end
+    MLC
+      assert_equal 10, status.exitstatus
     end
   end
 end

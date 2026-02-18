@@ -4,3 +4,4 @@ vendor/bundle/
 .DS_Store
 flow/*.jsonl
 coverage/
+*.gch

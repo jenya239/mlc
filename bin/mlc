@@ -5,6 +5,7 @@ require "optparse"
 require "tmpdir"
 require "open3"
 require "fileutils"
+require "timeout"
 
 ROOT_DIR = File.expand_path("..", __dir__)
 RUNTIME_DIR = File.join(ROOT_DIR, "runtime")
@@ -152,10 +153,11 @@ def compile_cpp(options, cpp_source)
   xcb_flags = `pkg-config --cflags --libs xcb cairo cairo-xcb 2>/dev/null`.strip.split
   xcb_flags = [] if $?.exitstatus != 0  # If pkg-config fails, continue without graphics
 
+  opt_level = ENV["MLC_OPT"] || "-O2"
   compile_cmd = [
     options[:compiler],
     "-std=c++20",
-    "-O2",
+    opt_level,
     "-I", File.join(RUNTIME_DIR, "include"),
     source_path,
     runtime_cpp,
@@ -168,7 +170,19 @@ def compile_cpp(options, cpp_source)
     warn "Compiling: #{compile_cmd.join(' ')}"
   end
 
-  stdout, stderr, status = Open3.capture3(*compile_cmd)
+  compile_timeout = ENV["MLC_COMPILE_TIMEOUT"]&.to_i || 120
+  stdout = +""
+  stderr = +""
+  status = nil
+  begin
+    Timeout.timeout(compile_timeout) do
+      stdout, stderr, status = Open3.capture3(*compile_cmd)
+    end
+  rescue Timeout::Error
+    warn "Compilation timed out after #{compile_timeout}s"
+    warn "Command: #{compile_cmd.join(' ')}"
+    exit 1
+  end
 
   unless status.success?
     warn stdout unless stdout.empty?
