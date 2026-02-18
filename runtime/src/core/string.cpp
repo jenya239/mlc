@@ -1,4 +1,5 @@
 #include "mlc/core/string.hpp"
+#include "mlc/core/array.hpp"
 #include <algorithm>
 #include <cctype>
 #include <sstream>
@@ -154,11 +155,10 @@ String String::trim_end() const {
 }
 
 // Splitting
-std::vector<String> String::split(const String& delimiter) const {
-    std::vector<String> result;
+mlc::Array<String> String::split(const String& delimiter) const {
+    mlc::Array<String> result;
 
     if (delimiter.data_.empty()) {
-        // Split into individual characters
         size_t char_count = length();
         for (size_t i = 0; i < char_count; i++) {
             result.push_back(String(char_at(i)));
@@ -175,9 +175,7 @@ std::vector<String> String::split(const String& delimiter) const {
         pos = data_.find(delimiter.data_, start);
     }
 
-    // Add the last part
     result.push_back(String(data_.substr(start)));
-
     return result;
 }
 

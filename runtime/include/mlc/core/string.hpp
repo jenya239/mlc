@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <utility>
+#include "mlc/core/array.hpp"
 
 namespace mlc {
 
@@ -70,7 +71,7 @@ public:
     String trim_end() const;
 
     // Splitting
-    std::vector<String> split(const String& delimiter) const;
+    mlc::Array<String> split(const String& delimiter) const;
 
     // Searching
     bool contains(const String& substring) const {

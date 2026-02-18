@@ -971,36 +971,26 @@ module MLC
 
             # Infer string member type (non-call)
             def infer_string_member_type(member, node: nil)
+              str = SemanticIR::Builder.primitive_type("string")
+              bool = SemanticIR::Builder.primitive_type("bool")
+              i32 = SemanticIR::Builder.primitive_type("i32")
               case member
               when "split"
-                SemanticIR::ArrayType.new(element_type: SemanticIR::Builder.primitive_type("string"))
-              when "trim", "trim_start", "trim_end", "upper", "lower"
-                SemanticIR::Builder.primitive_type("string")
-              when "is_empty", "contains", "starts_with", "ends_with"
-                SemanticIR::Builder.primitive_type("bool")
-              when "length", "len"
-                SemanticIR::Builder.primitive_type("i32")
-              when "index_of", "last_index_of"
-                # Returns index or -1 if not found
-                SemanticIR::Builder.primitive_type("i32")
-              when "replace"
-                # replace(old, new) returns string
-                SemanticIR::Builder.primitive_type("string")
-              when "char_at"
-                # char_at(index) returns single-char string
-                SemanticIR::Builder.primitive_type("string")
-              when "repeat"
-                # repeat(n) returns string
-                SemanticIR::Builder.primitive_type("string")
-              when "reverse"
-                # reverse() returns reversed string
-                SemanticIR::Builder.primitive_type("string")
-              when "to_lower", "to_upper"
-                # Alias for lower/upper
-                SemanticIR::Builder.primitive_type("string")
+                SemanticIR::ArrayType.new(element_type: str)
+              when "trim", "trim_start", "trim_end", "upper", "lower",
+                   "to_lower", "to_upper", "substring", "replace",
+                   "char_at", "repeat", "reverse", "squish", "truncate",
+                   "titleize", "camelize", "underscore", "pad_start", "pad_end"
+                str
+              when "is_empty", "is_blank", "is_present",
+                   "contains", "starts_with", "ends_with"
+                bool
+              when "length", "len", "index_of", "last_index_of"
+                i32
               else
                 type_error(
-                  "Unknown string member '#{member}'. Known members: split, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse", node: node
+                  "Unknown string member '#{member}'. Supported: split, substring, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, is_blank, is_present, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse, squish, truncate, titleize, camelize, underscore, pad_start, pad_end",
+                  node: node
                 )
               end
             end
