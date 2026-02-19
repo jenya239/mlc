@@ -54,7 +54,7 @@ module MLC
                 )
                 then_ir.type
               else
-                ir_builder.prim_type(name: 'unit', origin: node)
+                MLC::SemanticIR::UnitType.new(origin: node)
               end
             end
           end

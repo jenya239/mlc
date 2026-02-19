@@ -47,7 +47,19 @@ module MLC
               end
 
               # RecordType with no fields is also a nullary variant
-              type.is_a?(MLC::SemanticIR::RecordType) && type.fields.empty?
+              return true if type.is_a?(MLC::SemanticIR::RecordType) && type.fields.empty?
+
+              # FunctionType with no params whose return is a SumType containing
+              # a variant with this name and no fields (nullary constructor coerced to fn)
+              if type.is_a?(MLC::SemanticIR::FunctionType) && type.params.empty?
+                ret = type.ret_type
+                if ret.is_a?(MLC::SemanticIR::SumType)
+                  variant = ret.variants.find { |v| v[:name] == node.name }
+                  return variant && (variant[:fields].nil? || variant[:fields].empty?)
+                end
+              end
+
+              false
             end
           end
         end

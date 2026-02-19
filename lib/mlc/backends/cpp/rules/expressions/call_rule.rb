@@ -291,7 +291,7 @@ module MLC
             # Lower array method calls
             def lower_array_method(call)
               method_name = call.callee.member
-              array_obj = lower_expression(call.callee.object)
+              array_obj = wrap_for_member_access(lower_expression(call.callee.object), call.callee.object)
 
               case method_name
               when "length", "len"
@@ -857,7 +857,7 @@ module MLC
 
             # Lower map method calls: m.get(k), m.set(k,v), m.has(k), m.remove(k), m.keys(), m.values(), m.size()
             def lower_map_method(call)
-              map_obj = lower_expression(call.callee.object)
+              map_obj = wrap_for_member_access(lower_expression(call.callee.object), call.callee.object)
               method = call.callee.member
 
               case method
@@ -921,9 +921,23 @@ module MLC
             end
 
             # Lower string method calls
+            # Wrap a lowered expression in parentheses if its SemanticIR source
+            # is a compound expression (binary/unary) to preserve operator precedence
+            # when used as the object of a member access, e.g. (a + b).length()
+            def wrap_for_member_access(lowered, source_node)
+              case source_node
+              when MLC::SemanticIR::BinaryExpr, MLC::SemanticIR::UnaryExpr
+                context.factory.parenthesized(expression: lowered)
+              else
+                lowered
+              end
+            end
+
             def lower_string_method(call)
               method_name = call.callee.member
-              string_obj = lower_expression(call.callee.object)
+              string_obj = wrap_for_member_access(
+                lower_expression(call.callee.object), call.callee.object
+              )
 
               case method_name
               when "upper", "lower", "trim", "trim_start", "trim_end"

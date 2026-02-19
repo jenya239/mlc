@@ -316,16 +316,24 @@ module MLC
           end
         end
 
-        def parse_if_branch_expression
+        def parse_if_branch_expression(then_line: nil)
           if current.type == :LBRACE
             block = parse_block_expression
             wrap_block_like_expr(block)
           elsif current.type == :DO
             wrap_block_like_expr(parse_do_expression)
+          elsif then_line && current.line > then_line
+            # Body starts on a new line after 'then' — multiline if, parse until end
+            items = []
+            until current.type == :END || current.type == :ELSE || eof?
+              items << parse_do_statement
+              consume(:SEMICOLON) if current.type == :SEMICOLON
+            end
+            # Only consume 'end' if it terminates this if (not 'else' branch)
+            consume(:END) if current.type == :END
+            build_block_expr(items, current)
           else
-            # Allow single statement/expression without 'do'
-            # This handles: if x then y = 1
-            # as well as:    if x then 42
+            # Single statement/expression on same line as 'then'
             item = parse_do_statement
             wrap_block_like_expr(item)
           end
@@ -433,25 +441,28 @@ module MLC
           condition = parse_logical_or
 
           # Optional then keyword
+          then_token = current if current.type == :THEN
           consume(:THEN) if current.type == :THEN
+          then_line = then_token&.line || if_token.line
 
-          # Parse then branch as single expression/statement (backward compatible)
-          then_branch = parse_if_branch_expression
+          # Parse then branch
+          then_branch = parse_if_branch_expression(then_line: then_line)
 
           # Parse else branch
           else_branch = nil
           if current.type == :ELSE
-            consume(:ELSE)
+            else_token = consume(:ELSE)
+            else_line = else_token.line
             # Check for else-if chain
             else_branch = if [:IF, :UNLESS].include?(current.type)
                             wrap_block_like_expr(parse_if_or_unless_expression(inside_block: inside_block))
                           else
-                            parse_if_branch_expression
+                            parse_if_branch_expression(then_line: else_line)
                           end
           end
 
-          # Consume optional end (new syntax) - but NOT if we're inside a block
-          # to avoid stealing the parent block's END
+          # Consume trailing end when not inside a block
+          # (multiline then-branch without else already consumed its own end)
           consume(:END) if current.type == :END && !inside_block
 
           # For unless, invert condition: unless x = if !x
@@ -784,20 +795,28 @@ module MLC
         end
 
         def parse_pipe_style_match_arms(arms)
-          # Pipe style: match expr | pattern => body | ... end
-          while current.type == :OPERATOR && current.value == "|"
-            consume(:OPERATOR) # consume |
-
-            pattern = parse_pattern
-            pattern = build_or_pattern_if_needed(pattern)
-
-            guard = parse_optional_match_guard
-            consume_fat_arrow!
-
-            body = parse_match_arm_body_node
-            arms << { pattern: pattern, guard: guard, body: body }
+          if current.type == :OPERATOR && current.value == "|"
+            # Pipe style: match expr | pattern => body | ... end
+            while current.type == :OPERATOR && current.value == "|"
+              consume(:OPERATOR)
+              pattern = parse_pattern
+              pattern = build_or_pattern_if_needed(pattern)
+              guard = parse_optional_match_guard
+              consume_fat_arrow!
+              body = parse_match_arm_body_node
+              arms << { pattern: pattern, guard: guard, body: body }
+            end
+          elsif pattern_start?(current)
+            # End-terminated style: match expr\n  pattern => body\nend
+            until current.type == :END || eof?
+              pattern = parse_pattern
+              pattern = build_or_pattern_if_needed(pattern)
+              guard = parse_optional_match_guard
+              consume_fat_arrow!
+              body = parse_match_arm_body_node
+              arms << { pattern: pattern, guard: guard, body: body }
+            end
           end
-
           consume(:END) if current.type == :END
         end
 
@@ -840,6 +859,12 @@ module MLC
         def parse_match_arm_body_node
           if current.type == :DO
             wrap_block_like_expr(parse_do_expression)
+          elsif [:IF, :UNLESS].include?(current.type)
+            # inside_block: false so the if consumes its own 'end',
+            # preventing the match arm parser from stopping prematurely
+            wrap_block_like_expr(parse_if_or_unless_expression(inside_block: false))
+          elsif current.type == :MATCH
+            wrap_block_like_expr(parse_match_expression)
           else
             wrap_block_like_expr(parse_match_arm_body)
           end

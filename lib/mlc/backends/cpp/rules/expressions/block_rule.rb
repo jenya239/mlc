@@ -118,7 +118,7 @@ module MLC
 
             # Check if expression is a unit literal (void)
             def unit_literal?(expr)
-              # UnitLiteral check - need to verify SemanticIR has this type
+              return true if expr.is_a?(MLC::SemanticIR::UnitLiteral)
               expr.is_a?(MLC::SemanticIR::LiteralExpr) && expr.value == :unit
             end
           end

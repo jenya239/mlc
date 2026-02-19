@@ -165,6 +165,9 @@ module MLC
             end
 
             def handle_comparison(operator, left_type, right_type)
+              if string_type?(left_type) && string_type?(right_type)
+                return SemanticIR::Builder.primitive_type("bool")
+              end
               @type_checker.ensure_numeric_type(left_type, "left operand of '#{operator}'")
               @type_checker.ensure_numeric_type(right_type, "right operand of '#{operator}'")
               SemanticIR::Builder.primitive_type("bool")
