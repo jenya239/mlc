@@ -1,5 +1,5 @@
-#ifndef AURORA_MATH_HPP
-#define AURORA_MATH_HPP
+#ifndef MLC_MATH_HPP
+#define MLC_MATH_HPP
 
 #include <cmath>
 #include <cstdint>
@@ -60,4 +60,4 @@ constexpr float E = 2.71828182846f;
 
 } // namespace mlc::math
 
-#endif // AURORA_MATH_HPP
+#endif // MLC_MATH_HPP

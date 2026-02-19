@@ -1,5 +1,5 @@
-#ifndef AURORA_IO_HPP
-#define AURORA_IO_HPP
+#ifndef MLC_IO_HPP
+#define MLC_IO_HPP
 
 #include <iostream>
 #include <cstdlib>
@@ -28,4 +28,4 @@ void set_args(std::vector<String>&& new_args);
 } // namespace io
 } // namespace mlc
 
-#endif // AURORA_IO_HPP
+#endif // MLC_IO_HPP

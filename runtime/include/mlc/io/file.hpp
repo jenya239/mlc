@@ -1,5 +1,5 @@
-#ifndef AURORA_FILE_HPP
-#define AURORA_FILE_HPP
+#ifndef MLC_FILE_HPP
+#define MLC_FILE_HPP
 
 #include <fstream>
 #include <string>
@@ -256,4 +256,4 @@ inline bool rename_file(const mlc::String& old_path, const mlc::String& new_path
 
 } // namespace mlc::file
 
-#endif // AURORA_FILE_HPP
+#endif // MLC_FILE_HPP

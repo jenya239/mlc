@@ -7,8 +7,8 @@
 // Provides functional programming utilities for arrays
 
 // Note: Higher-order functions like map, filter, fold are generic templates
-// in C++ runtime (aurora_collections.hpp) and used directly through lambda
-// expressions in Aurora code.
+// in C++ runtime (mlc_collections.hpp) and used directly through lambda
+// expressions in MLC code.
 
 // Basic array operations
 
@@ -24,7 +24,7 @@ export fn first<T>(arr: T[]) -> T =
 export fn last<T>(arr: T[]) -> T =
   arr[arr.length() - 1]
 
-// Array queries and transformations (extern from aurora_collections.hpp)
+// Array queries and transformations (extern from mlc_collections.hpp)
 
 export extern fn contains_i32(arr: i32[], element: i32) -> bool
 export extern fn contains_f32(arr: f32[], element: f32) -> bool

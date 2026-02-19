@@ -1,5 +1,5 @@
-#ifndef AURORA_COLLECTIONS_HPP
-#define AURORA_COLLECTIONS_HPP
+#ifndef MLC_COLLECTIONS_HPP
+#define MLC_COLLECTIONS_HPP
 
 #include <vector>
 #include <type_traits>
@@ -849,4 +849,4 @@ auto flat_map(const mlc::Array<T>& items, Func&& func) {
 
 } // namespace mlc::collections
 
-#endif // AURORA_COLLECTIONS_HPP
+#endif // MLC_COLLECTIONS_HPP

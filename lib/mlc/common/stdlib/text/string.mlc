@@ -3,7 +3,7 @@
 //! @type extern
 //! @namespace mlc
 
-# Aurora Standard Library - String Module
+# MLC Standard Library - String Module
 # String manipulation and utilities
 # Wraps String methods for convenient imports
 
@@ -47,7 +47,7 @@ export fn length(s: str) -> i32 =
 export fn is_empty(s: str) -> bool =
   s.is_empty()
 
-# Aurora helper functions (implemented in Aurora)
+# Aurora helper functions (implemented in MLC)
 export fn lines(s: str) -> str[] =
   s.split("\n")
 

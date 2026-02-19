@@ -1,5 +1,5 @@
-#ifndef AURORA_STRING_HPP
-#define AURORA_STRING_HPP
+#ifndef MLC_STRING_HPP
+#define MLC_STRING_HPP
 
 #include <string>
 #include <vector>
@@ -513,4 +513,4 @@ inline String format(const String& fmt, Args&&... args) {
 
 } // namespace mlc
 
-#endif // AURORA_STRING_HPP
+#endif // MLC_STRING_HPP

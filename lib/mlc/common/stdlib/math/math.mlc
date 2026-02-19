@@ -3,7 +3,7 @@
 //! @type extern
 //! @namespace mlc::math
 
-# Aurora Standard Library - Math Module
+# MLC Standard Library - Math Module
 # Mathematical functions and utilities
 
 module Math
@@ -25,7 +25,7 @@ export extern fn sin_f(x: f32) -> f32
 export extern fn cos_f(x: f32) -> f32
 export extern fn tan_f(x: f32) -> f32
 
-# Aurora helper functions (implemented in Aurora)
+# Aurora helper functions (implemented in MLC)
 export fn hypotenuse(a: f32, b: f32) -> f32 =
   sqrt_f(a * a + b * b)
 

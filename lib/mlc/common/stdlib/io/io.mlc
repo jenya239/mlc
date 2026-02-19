@@ -3,7 +3,7 @@
 //! @type extern
 //! @namespace mlc::io
 
-# Aurora Standard Library - IO Module
+# MLC Standard Library - IO Module
 # Input/Output utilities
 
 module IO
@@ -21,7 +21,7 @@ export extern fn read_all() -> str
 # Exit function
 export extern fn exit(code: i32) -> void
 
-# Aurora helper functions (implemented in Aurora)
+# Aurora helper functions (implemented in MLC)
 export fn panic(message: str) -> void = do
   eprintln("PANIC: " + message);
   exit(1)

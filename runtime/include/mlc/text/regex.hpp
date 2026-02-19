@@ -1,5 +1,5 @@
-#ifndef AURORA_REGEX_HPP
-#define AURORA_REGEX_HPP
+#ifndef MLC_REGEX_HPP
+#define MLC_REGEX_HPP
 
 #include "mlc/core/string.hpp"
 #include <regex>
@@ -241,4 +241,4 @@ inline Regex regex_i(const String& pattern) {
 
 } // namespace mlc
 
-#endif // AURORA_REGEX_HPP
+#endif // MLC_REGEX_HPP

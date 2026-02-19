@@ -1,5 +1,5 @@
-#ifndef AURORA_MATCH_HPP
-#define AURORA_MATCH_HPP
+#ifndef MLC_MATCH_HPP
+#define MLC_MATCH_HPP
 
 #include <utility>
 #include <variant>
@@ -20,4 +20,4 @@ overloaded(Ts...) -> overloaded<Ts...>;
 // Provide the helper in the global namespace to match existing codegen
 using mlc::overloaded;
 
-#endif  // AURORA_MATCH_HPP
+#endif  // MLC_MATCH_HPP

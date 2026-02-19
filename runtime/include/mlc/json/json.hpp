@@ -1,5 +1,5 @@
-#ifndef AURORA_JSON_HPP
-#define AURORA_JSON_HPP
+#ifndef MLC_JSON_HPP
+#define MLC_JSON_HPP
 
 #include <variant>
 #include <vector>
@@ -250,4 +250,4 @@ inline JsonValue json_array_push(const JsonValue& arr, const JsonValue& value) {
 
 } // namespace mlc::json
 
-#endif // AURORA_JSON_HPP
+#endif // MLC_JSON_HPP

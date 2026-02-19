@@ -3,7 +3,7 @@
 //! @type extern
 //! @namespace mlc
 
-# Aurora Standard Library - Conversion Module
+# MLC Standard Library - Conversion Module
 # Type conversion utilities
 
 module Conv

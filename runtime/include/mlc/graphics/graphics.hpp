@@ -1,5 +1,5 @@
-#ifndef AURORA_GRAPHICS_HPP
-#define AURORA_GRAPHICS_HPP
+#ifndef MLC_GRAPHICS_HPP
+#define MLC_GRAPHICS_HPP
 
 #include <cstdint>
 #include <memory>
@@ -301,4 +301,4 @@ inline bool is_quit_event(const Event& evt) {
 
 } // namespace mlc::graphics
 
-#endif // AURORA_GRAPHICS_HPP
+#endif // MLC_GRAPHICS_HPP
