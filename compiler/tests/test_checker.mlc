@@ -1,0 +1,43 @@
+// Unit tests for the checker (check function).
+
+fn check_source(source: string) -> CheckOut =
+  check(parse_program(tokenize(source).tokens))
+
+fn check_error_count(source: string) -> i32 =
+  check_source(source).errors.length()
+
+fn checker_tests() -> [TestResult] = do
+  let mut results: [TestResult] = []
+
+  results.push(assert_eq_int("empty program → 0 errors",
+    check_error_count(""), 0))
+
+  results.push(assert_eq_int("fn returning literal → 0 errors",
+    check_error_count("fn f() -> i32 = 42"), 0))
+
+  results.push(assert_eq_int("fn using its own param → 0 errors",
+    check_error_count("fn f(x: i32) -> i32 = x"), 0))
+
+  results.push(assert_eq_int("fn calling another fn → 0 errors",
+    check_error_count("fn add(x: i32, y: i32) -> i32 = x + y\nfn main() -> i32 = add(1, 2)"), 0))
+
+  results.push(assert_true("undefined name → at least 1 error",
+    check_error_count("fn f() -> i32 = undefined_name") > 0))
+
+  results.push(assert_eq_int("type decl with variants → 0 errors",
+    check_error_count("type Color = Red | Green | Blue"), 0))
+
+  results.push(assert_eq_int("fn returning bool → 0 errors",
+    check_error_count("fn f() -> bool = true"), 0))
+
+  results.push(assert_eq_int("fn with let binding → 0 errors",
+    check_error_count("fn f() -> i32 = do\n  let x = 1\n  x\nend"), 0))
+
+  results.push(assert_true("two undefined names → at least 1 error",
+    check_error_count("fn f() -> i32 = foo + bar") > 0))
+
+  results.push(assert_eq_int("builtin print → 0 errors",
+    check_error_count("fn f() -> i32 = do\n  print(\"hi\")\n  0\nend"), 0))
+
+  results
+end

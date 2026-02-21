@@ -1,0 +1,56 @@
+// ─── Statement parsers ────────────────────────────────────────────────────
+
+fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
+  let mut stmts: [Shared<Stmt>] = []
+  let mut state = parser
+  while !is_keyword_end(parser_kind(state)) && !parser_at_eof(state) do
+    let result = parse_stmt(state)
+    stmts.push(result.stmt)
+    state = parser_skip_semi(result.parser)
+  end
+  StmtsResult { stmts: stmts, parser: parser_advance(state) }
+end
+
+fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
+  let mut stmts: [Shared<Stmt>] = []
+  let mut state = parser
+  while !is_keyword_end(parser_kind(state)) && !is_keyword_else(parser_kind(state)) && !parser_at_eof(state) do
+    let result = parse_stmt(state)
+    stmts.push(result.stmt)
+    state = parser_skip_semi(result.parser)
+  end
+  StmtsResult { stmts: stmts, parser: state }
+end
+
+fn parse_stmt(parser: Parser) -> StmtResult = do
+  let kind = parser_kind(parser)
+  if is_keyword_let(kind) then do
+    let is_mutable = is_keyword_mut(parser_kind(parser_advance(parser)))
+    let name_pos   = if is_mutable then parser_advance_by(parser, 2) else parser_advance(parser) end
+    let var_name   = get_ident(parser_kind(name_pos))
+    let value_pos  =
+      if is_colon(parser_kind(parser_advance(name_pos))) then
+        parser_advance(parse_type(parser_advance_by(name_pos, 2)).parser)
+      else parser_advance_by(name_pos, 2)
+      end
+    let value_result = parse_expr(value_pos)
+    StmtResult { stmt: Shared.new(StmtLet(var_name, is_mutable, value_result.expr)), parser: value_result.parser }
+  end
+  else if is_keyword_break(kind)    then StmtResult { stmt: Shared.new(StmtBreak),    parser: parser_advance(parser) }
+  else if is_keyword_continue(kind) then StmtResult { stmt: Shared.new(StmtContinue), parser: parser_advance(parser) }
+  else if is_keyword_return(kind) then do
+    let value_result = parse_expr(parser_advance(parser))
+    StmtResult { stmt: Shared.new(StmtReturn(value_result.expr)), parser: value_result.parser }
+  end
+  else do
+    let expr_result = parse_expr(parser)
+    if is_equal(parser_kind(expr_result.parser)) then do
+      let rhs = parse_expr(parser_advance(expr_result.parser))
+      StmtResult { stmt: Shared.new(StmtExpr(Shared.new(ExprBin("=", expr_result.expr, rhs.expr)))), parser: rhs.parser }
+    end
+    else
+      StmtResult { stmt: Shared.new(StmtExpr(expr_result.expr)), parser: expr_result.parser }
+    end
+  end
+  end
+end

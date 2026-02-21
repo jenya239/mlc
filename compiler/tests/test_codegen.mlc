@@ -1,0 +1,57 @@
+// Unit tests for the code generator.
+
+fn codegen_tests() -> [TestResult] = do
+  let mut results: [TestResult] = []
+
+  results.push(assert_eq_str("TyI32 → 'int'",
+    type_to_cpp(Shared.new(TyI32)), "int"))
+
+  results.push(assert_eq_str("TyString → 'mlc::String'",
+    type_to_cpp(Shared.new(TyString)), "mlc::String"))
+
+  results.push(assert_eq_str("TyBool → 'bool'",
+    type_to_cpp(Shared.new(TyBool)), "bool"))
+
+  results.push(assert_eq_str("TyUnit → 'void'",
+    type_to_cpp(Shared.new(TyUnit)), "void"))
+
+  results.push(assert_eq_str("TyArray(TyI32) → 'mlc::Array<int>'",
+    type_to_cpp(Shared.new(TyArray(Shared.new(TyI32)))), "mlc::Array<int>"))
+
+  results.push(assert_eq_str("TyShared(TyI32) → 'std::shared_ptr<int>'",
+    type_to_cpp(Shared.new(TyShared(Shared.new(TyI32)))), "std::shared_ptr<int>"))
+
+  let empty_orders: [Shared<FieldOrder>] = []
+
+  results.push(assert_eq_str("ExprInt(42) → '42'",
+    gen_expr(Shared.new(ExprInt(42)), empty_orders), "42"))
+
+  results.push(assert_eq_str("ExprBool(true) → 'true'",
+    gen_expr(Shared.new(ExprBool(true)), empty_orders), "true"))
+
+  results.push(assert_eq_str("ExprStr('hi') → 'mlc::String(\"hi\")'",
+    gen_expr(Shared.new(ExprStr("hi")), empty_orders), "mlc::String(\"hi\")"))
+
+  results.push(assert_eq_str("ExprUnit → '/* unit */'",
+    gen_expr(Shared.new(ExprUnit), empty_orders), "/* unit */"))
+
+  results.push(assert_eq_str("ExprIdent('x') → 'x'",
+    gen_expr(Shared.new(ExprIdent("x")), empty_orders), "x"))
+
+  results.push(assert_eq_str("ExprIdent('print') → 'mlc::io::print'",
+    gen_expr(Shared.new(ExprIdent("print")), empty_orders), "mlc::io::print"))
+
+  results.push(assert_eq_str("ExprIdent('println') → 'mlc::io::println'",
+    gen_expr(Shared.new(ExprIdent("println")), empty_orders), "mlc::io::println"))
+
+  results.push(assert_eq_str("ExprBin add → '(1 + 2)'",
+    gen_expr(Shared.new(ExprBin("+", Shared.new(ExprInt(1)), Shared.new(ExprInt(2)))), empty_orders), "(1 + 2)"))
+
+  results.push(assert_eq_str("ExprUn neg → '(-42)'",
+    gen_expr(Shared.new(ExprUn("-", Shared.new(ExprInt(42)))), empty_orders), "(-42)"))
+
+  results.push(assert_eq_str("map_builtin passthrough → 'foo'",
+    map_builtin("foo"), "foo"))
+
+  results
+end

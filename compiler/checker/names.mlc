@@ -1,0 +1,153 @@
+// Checker: name resolution.
+// Shared types defined in ast.mlc. errs_append defined in ast.mlc.
+
+// ─── Name scope helpers ───────────────────────────────────────────────────
+
+fn scope_has(scope: [string], name: string) -> bool = do
+  let mut found = false
+  let mut i = 0
+  while i < scope.length() do
+    if scope[i] == name then found = true end
+    i = i + 1
+  end
+  found
+end
+
+fn pat_bindings(pat: Shared<Pat>) -> [string] = do
+  let mut acc: [string] = []
+  collect_pat_binds(pat, acc)
+end
+
+fn collect_pat_binds(pat: Shared<Pat>, mut acc: [string]) -> [string] = do
+  match pat {
+    PatIdent(name) => do acc.push(name); acc end,
+    PatCtor(_, sub_pats) => do
+      let mut i = 0
+      while i < sub_pats.length() do acc = collect_pat_binds(sub_pats[i], acc); i = i + 1 end
+      acc
+    end,
+    _ => acc
+  }
+end
+
+// ─── Name resolution ──────────────────────────────────────────────────────
+
+fn collect_globals(prog: Program) -> [string] = do
+  let mut names: [string] = []
+  names.push("true"); names.push("false"); names.push("exit")
+  names.push("print"); names.push("println"); names.push("args")
+  names.push("File")
+  let mut i = 0
+  while i < prog.decls.length() do
+    match prog.decls[i] {
+      DeclFn(name, _, _, _) => names.push(name),
+      DeclType(name, variants) => do
+        names.push(name); let mut j = 0
+        while j < variants.length() do
+          match variants[j] {
+            VarUnit(variant_name)     => names.push(variant_name),
+            VarTuple(variant_name, _) => names.push(variant_name),
+            VarRecord(variant_name, _) => names.push(variant_name)
+          }
+          j = j + 1
+        end
+      end
+    }
+    i = i + 1
+  end
+  names
+end
+
+fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [string]) -> [string] = do
+  match expr {
+    ExprIdent(name) => do
+      let mut errors: [string] = []
+      if !scope_has(locals, name) && !scope_has(globals, name) then
+        errors.push("undefined: " + name)
+      end
+      errors
+    end,
+    ExprBin(_, left, right) =>
+      errs_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals)),
+    ExprUn(_, inner) => check_names_expr(inner, locals, globals),
+    ExprCall(func, args) => do
+      let mut errors = check_names_expr(func, locals, globals); let mut i = 0
+      while i < args.length() do
+        errors = errs_append(errors, check_names_expr(args[i], locals, globals)); i = i + 1
+      end
+      errors
+    end,
+    ExprMethod(obj, _, args) => do
+      let mut errors = check_names_expr(obj, locals, globals); let mut i = 0
+      while i < args.length() do
+        errors = errs_append(errors, check_names_expr(args[i], locals, globals)); i = i + 1
+      end
+      errors
+    end,
+    ExprField(obj, _) => check_names_expr(obj, locals, globals),
+    ExprIndex(obj, idx) =>
+      errs_append(check_names_expr(obj, locals, globals), check_names_expr(idx, locals, globals)),
+    ExprIf(cond, then_expr, else_expr) =>
+      errs_append(
+        errs_append(check_names_expr(cond, locals, globals), check_names_expr(then_expr, locals, globals)),
+        check_names_expr(else_expr, locals, globals)),
+    ExprBlock(stmts, result) => do
+      let check_result = check_names_stmts(stmts, locals, globals)
+      errs_append(check_result.errors, check_names_expr(result, check_result.scope, globals))
+    end,
+    ExprWhile(cond, stmts) => do
+      let check_result = check_names_stmts(stmts, locals, globals)
+      errs_append(check_names_expr(cond, locals, globals), check_result.errors)
+    end,
+    ExprFor(var, iter, stmts) => do
+      let mut inner = locals; inner.push(var)
+      let check_result = check_names_stmts(stmts, inner, globals)
+      errs_append(check_names_expr(iter, locals, globals), check_result.errors)
+    end,
+    ExprMatch(subject, arms) => do
+      let mut errors = check_names_expr(subject, locals, globals); let mut i = 0
+      while i < arms.length() do
+        let binds = pat_bindings(arms[i].pat)
+        let mut arm_scope = locals; let mut j = 0
+        while j < binds.length() do arm_scope.push(binds[j]); j = j + 1 end
+        errors = errs_append(errors, check_names_expr(arms[i].body, arm_scope, globals)); i = i + 1
+      end
+      errors
+    end,
+    ExprRecord(_, field_vals) => do
+      let mut errors: [string] = []; let mut i = 0
+      while i < field_vals.length() do
+        errors = errs_append(errors, check_names_expr(field_vals[i].val, locals, globals)); i = i + 1
+      end
+      errors
+    end,
+    ExprArray(exprs) => do
+      let mut errors: [string] = []; let mut i = 0
+      while i < exprs.length() do
+        errors = errs_append(errors, check_names_expr(exprs[i], locals, globals)); i = i + 1
+      end
+      errors
+    end,
+    ExprQuestion(inner) => check_names_expr(inner, locals, globals),
+    _ => []
+  }
+end
+
+type NameCheckResult = NameCheckResult { errors: [string], scope: [string] }
+
+fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: [string]) -> NameCheckResult = do
+  let mut errors: [string] = []; let mut scope = locals; let mut i = 0
+  while i < stmts.length() do
+    match stmts[i] {
+      StmtLet(name, _, value) => do
+        errors = errs_append(errors, check_names_expr(value, scope, globals)); scope.push(name)
+      end,
+      StmtExpr(expr)   => do errors = errs_append(errors, check_names_expr(expr, scope, globals)) end,
+      StmtReturn(expr) => do errors = errs_append(errors, check_names_expr(expr, scope, globals)) end,
+      StmtBreak    => do end,
+      StmtContinue => do end
+    }
+    i = i + 1
+  end
+  NameCheckResult { errors: errors, scope: scope }
+end

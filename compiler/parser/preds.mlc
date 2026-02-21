@@ -1,0 +1,91 @@
+// Parser state, result types, and token kind predicates.
+// Shared types (TKind, Token, Expr, etc.) defined in ast.mlc.
+
+// ─── Parser state ─────────────────────────────────────────────────────────
+
+type Parser = Parser { tokens: [Token], pos: i32 }
+
+fn parser_new(tokens: [Token]) -> Parser =
+  Parser { tokens: tokens, pos: 0 }
+
+fn parser_kind(parser: Parser) -> TKind =
+  parser.tokens[parser.pos].kind
+
+fn parser_advance(parser: Parser) -> Parser =
+  Parser { tokens: parser.tokens, pos: parser.pos + 1 }
+
+fn parser_advance_by(parser: Parser, count: i32) -> Parser =
+  Parser { tokens: parser.tokens, pos: parser.pos + count }
+
+fn parser_at_eof(parser: Parser) -> bool =
+  match parser_kind(parser) { Eof => true, _ => false }
+
+fn parser_skip_semi(parser: Parser) -> Parser =
+  match parser_kind(parser) { Semicolon => parser_advance(parser), _ => parser }
+
+// ─── Result types ─────────────────────────────────────────────────────────
+
+type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
+type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
+type PatResult       = PatResult       { pat:        Shared<Pat>,            parser: Parser }
+type StmtResult      = StmtResult      { stmt:       Shared<Stmt>,           parser: Parser }
+type StmtsResult     = StmtsResult     { stmts:      [Shared<Stmt>],         parser: Parser }
+type ExprsResult     = ExprsResult     { exprs:      [Shared<Expr>],         parser: Parser }
+type ArmsResult      = ArmsResult      { arms:       [Shared<MatchArm>],     parser: Parser }
+type VariantResult   = VariantResult   { variant:    Shared<TypeVariant>,    parser: Parser }
+type VariantsResult  = VariantsResult  { variants:   [Shared<TypeVariant>],  parser: Parser }
+type ParamsResult    = ParamsResult    { params:     [Shared<Param>],        parser: Parser }
+type DeclResult      = DeclResult      { decl:       Shared<Decl>,           parser: Parser }
+type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
+type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          parser: Parser }
+type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
+type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
+type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
+
+// ─── Token kind predicates ────────────────────────────────────────────────
+
+fn is_keyword_fn(kind: TKind)       -> bool = match kind { KFn       => true, _ => false }
+fn is_keyword_type(kind: TKind)     -> bool = match kind { KType     => true, _ => false }
+fn is_keyword_let(kind: TKind)      -> bool = match kind { KLet      => true, _ => false }
+fn is_keyword_mut(kind: TKind)      -> bool = match kind { KMut      => true, _ => false }
+fn is_keyword_if(kind: TKind)       -> bool = match kind { KIf       => true, _ => false }
+fn is_keyword_unless(kind: TKind)   -> bool = match kind { KUnless   => true, _ => false }
+fn is_keyword_else(kind: TKind)     -> bool = match kind { KElse     => true, _ => false }
+fn is_keyword_end(kind: TKind)      -> bool = match kind { KEnd      => true, _ => false }
+fn is_keyword_do(kind: TKind)       -> bool = match kind { KDo       => true, _ => false }
+fn is_keyword_while(kind: TKind)    -> bool = match kind { KWhile    => true, _ => false }
+fn is_keyword_for(kind: TKind)      -> bool = match kind { KFor      => true, _ => false }
+fn is_keyword_match(kind: TKind)    -> bool = match kind { KMatch    => true, _ => false }
+fn is_keyword_return(kind: TKind)   -> bool = match kind { KReturn   => true, _ => false }
+fn is_keyword_break(kind: TKind)    -> bool = match kind { KBreak    => true, _ => false }
+fn is_keyword_continue(kind: TKind) -> bool = match kind { KContinue => true, _ => false }
+fn is_keyword_true(kind: TKind)     -> bool = match kind { KTrue     => true, _ => false }
+fn is_keyword_false(kind: TKind)    -> bool = match kind { KFalse    => true, _ => false }
+fn is_keyword_extern(kind: TKind)   -> bool = match kind { KExtern   => true, _ => false }
+fn is_keyword_extend(kind: TKind)   -> bool = match kind { KExtend   => true, _ => false }
+
+fn is_ident(kind: TKind)         -> bool = match kind { Ident(_)  => true, _ => false }
+fn is_int_literal(kind: TKind)   -> bool = match kind { LInt(_)   => true, _ => false }
+fn is_str_literal(kind: TKind)   -> bool = match kind { LStr(_)   => true, _ => false }
+fn is_equal(kind: TKind)         -> bool = match kind { Equal     => true, _ => false }
+fn is_bar(kind: TKind)           -> bool = match kind { Bar       => true, _ => false }
+fn is_pipe(kind: TKind)          -> bool = match kind { Pipe      => true, _ => false }
+fn is_colon(kind: TKind)         -> bool = match kind { Colon     => true, _ => false }
+fn is_comma(kind: TKind)         -> bool = match kind { Comma     => true, _ => false }
+fn is_dot(kind: TKind)           -> bool = match kind { Dot       => true, _ => false }
+fn is_question(kind: TKind)      -> bool = match kind { Question  => true, _ => false }
+fn is_left_paren(kind: TKind)    -> bool = match kind { LParen    => true, _ => false }
+fn is_right_paren(kind: TKind)   -> bool = match kind { RParen    => true, _ => false }
+fn is_left_brace(kind: TKind)    -> bool = match kind { LBrace    => true, _ => false }
+fn is_right_brace(kind: TKind)   -> bool = match kind { RBrace    => true, _ => false }
+fn is_left_bracket(kind: TKind)  -> bool = match kind { LBracket  => true, _ => false }
+fn is_right_bracket(kind: TKind) -> bool = match kind { RBracket  => true, _ => false }
+fn is_operator(kind: TKind)      -> bool = match kind { Op(_)     => true, _ => false }
+
+fn get_ident(kind: TKind)        -> string = match kind { Ident(name) => name, _ => "" }
+fn get_int_literal(kind: TKind)  -> i32    = match kind { LInt(n)    => n,    _ => 0 }
+fn get_str_literal(kind: TKind)  -> string = match kind { LStr(s)    => s,    _ => "" }
+fn get_operator(kind: TKind)     -> string = match kind { Op(s)      => s,    _ => "" }
+
+fn is_ctor_name(name: string) -> bool =
+  name.char_at(0) >= "A" && name.char_at(0) <= "Z"

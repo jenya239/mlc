@@ -1,0 +1,323 @@
+// ─── Pattern parser ───────────────────────────────────────────────────────
+
+fn parse_pat(parser: Parser) -> PatResult = do
+  let kind = parser_kind(parser)
+  if is_ident(kind) then
+    let name = get_ident(kind)
+    if name == "_" then
+      PatResult { pat: Shared.new(PatWild), parser: parser_advance(parser) }
+    else if is_ctor_name(name) then
+      let after = parser_advance(parser)
+      if is_left_paren(parser_kind(after)) then
+        let sub_pats = parse_pat_args(parser_advance(after))
+        PatResult { pat: Shared.new(PatCtor(name, sub_pats.pats)), parser: sub_pats.parser }
+      else
+        PatResult { pat: Shared.new(PatCtor(name, [])), parser: after }
+      end
+    else
+      PatResult { pat: Shared.new(PatIdent(name)), parser: parser_advance(parser) }
+    end
+  else if is_int_literal(kind) then
+    PatResult { pat: Shared.new(PatInt(get_int_literal(kind))), parser: parser_advance(parser) }
+  else if is_str_literal(kind) then
+    PatResult { pat: Shared.new(PatStr(get_str_literal(kind))), parser: parser_advance(parser) }
+  else if is_keyword_true(kind) then
+    PatResult { pat: Shared.new(PatBool(true)),  parser: parser_advance(parser) }
+  else if is_keyword_false(kind) then
+    PatResult { pat: Shared.new(PatBool(false)), parser: parser_advance(parser) }
+  else
+    PatResult { pat: Shared.new(PatWild), parser: parser_advance(parser) }
+  end
+end
+
+fn parse_pat_args(parser: Parser) -> PatsResult = do
+  let mut pats: [Shared<Pat>] = []
+  if is_right_paren(parser_kind(parser)) then
+    PatsResult { pats: pats, parser: parser_advance(parser) }
+  else
+    let first = parse_pat(parser); pats.push(first.pat)
+    let mut state = first.parser
+    while is_comma(parser_kind(state)) do
+      let next = parse_pat(parser_advance(state)); pats.push(next.pat); state = next.parser
+    end
+    PatsResult { pats: pats, parser: parser_advance(state) }
+  end
+end
+
+// ─── Expression parser (precedence climbing) ─────────────────────────────
+
+fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
+
+fn parse_pipe(parser: Parser) -> ExprResult = do
+  let left = parse_or(parser)
+  let mut expr = left.expr; let mut state = left.parser
+  while is_pipe(parser_kind(state)) do
+    let right = parse_or(parser_advance(state))
+    let mut call_args: [Shared<Expr>] = []; call_args.push(expr)
+    expr = Shared.new(ExprCall(right.expr, call_args)); state = right.parser
+  end
+  ExprResult { expr: expr, parser: state }
+end
+
+fn parse_or(parser: Parser) -> ExprResult = do
+  let left = parse_and(parser)
+  let mut expr = left.expr; let mut state = left.parser
+  while is_operator(parser_kind(state)) && get_operator(parser_kind(state)) == "||" do
+    let right = parse_and(parser_advance(state))
+    expr = Shared.new(ExprBin("||", expr, right.expr)); state = right.parser
+  end
+  ExprResult { expr: expr, parser: state }
+end
+
+fn parse_and(parser: Parser) -> ExprResult = do
+  let left = parse_cmp(parser)
+  let mut expr = left.expr; let mut state = left.parser
+  while is_operator(parser_kind(state)) && get_operator(parser_kind(state)) == "&&" do
+    let right = parse_cmp(parser_advance(state))
+    expr = Shared.new(ExprBin("&&", expr, right.expr)); state = right.parser
+  end
+  ExprResult { expr: expr, parser: state }
+end
+
+fn is_cmp_op(op: string) -> bool =
+  op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">="
+
+fn parse_cmp(parser: Parser) -> ExprResult = do
+  let left = parse_add(parser)
+  let mut expr = left.expr; let mut state = left.parser
+  let kind = parser_kind(state)
+  if is_operator(kind) && is_cmp_op(get_operator(kind)) then
+    let right = parse_add(parser_advance(state))
+    expr = Shared.new(ExprBin(get_operator(kind), expr, right.expr)); state = right.parser
+  end
+  ExprResult { expr: expr, parser: state }
+end
+
+fn parse_add(parser: Parser) -> ExprResult = do
+  let left = parse_mul(parser)
+  let mut expr = left.expr; let mut state = left.parser; let mut go = true
+  while go do
+    let kind = parser_kind(state)
+    if is_operator(kind) && (get_operator(kind) == "+" || get_operator(kind) == "-") then
+      let right = parse_mul(parser_advance(state))
+      expr = Shared.new(ExprBin(get_operator(kind), expr, right.expr)); state = right.parser
+    else go = false
+    end
+  end
+  ExprResult { expr: expr, parser: state }
+end
+
+fn parse_mul(parser: Parser) -> ExprResult = do
+  let left = parse_unary(parser)
+  let mut expr = left.expr; let mut state = left.parser; let mut go = true
+  while go do
+    let kind = parser_kind(state)
+    if is_operator(kind) && (get_operator(kind) == "*" || get_operator(kind) == "/" || get_operator(kind) == "%") then
+      let right = parse_unary(parser_advance(state))
+      expr = Shared.new(ExprBin(get_operator(kind), expr, right.expr)); state = right.parser
+    else go = false
+    end
+  end
+  ExprResult { expr: expr, parser: state }
+end
+
+fn parse_unary(parser: Parser) -> ExprResult = do
+  let kind = parser_kind(parser)
+  if is_operator(kind) && (get_operator(kind) == "!" || get_operator(kind) == "-") then
+    let inner = parse_unary(parser_advance(parser))
+    ExprResult { expr: Shared.new(ExprUn(get_operator(kind), inner.expr)), parser: inner.parser }
+  else
+    parse_postfix(parser)
+  end
+end
+
+fn parse_postfix(parser: Parser) -> ExprResult = do
+  let base = parse_primary(parser)
+  let mut expr = base.expr; let mut state = base.parser; let mut go = true
+  while go do
+    let kind = parser_kind(state)
+    if is_dot(kind) then
+      let field_name = get_ident(parser_kind(parser_advance(state)))
+      if is_left_paren(parser_kind(parser_advance_by(state, 2))) then
+        let args = parse_arg_list(parser_advance_by(state, 3))
+        expr = Shared.new(ExprMethod(expr, field_name, args.exprs)); state = args.parser
+      else
+        expr = Shared.new(ExprField(expr, field_name)); state = parser_advance_by(state, 2)
+      end
+    else if is_left_paren(kind) then
+      let args = parse_arg_list(parser_advance(state))
+      expr = Shared.new(ExprCall(expr, args.exprs)); state = args.parser
+    else if is_left_bracket(kind) then
+      let index = parse_expr(parser_advance(state))
+      expr = Shared.new(ExprIndex(expr, index.expr)); state = parser_advance(index.parser)
+    else if is_question(kind) then
+      expr = Shared.new(ExprQuestion(expr)); state = parser_advance(state)
+    else
+      go = false
+    end
+  end
+  ExprResult { expr: expr, parser: state }
+end
+
+fn parse_arg_list(parser: Parser) -> ExprsResult = do
+  let mut exprs: [Shared<Expr>] = []
+  if is_right_paren(parser_kind(parser)) then
+    ExprsResult { exprs: exprs, parser: parser_advance(parser) }
+  else
+    let first = parse_expr(parser); exprs.push(first.expr)
+    let mut state = first.parser
+    while is_comma(parser_kind(state)) do
+      let next = parse_expr(parser_advance(state)); exprs.push(next.expr); state = next.parser
+    end
+    ExprsResult { exprs: exprs, parser: parser_advance(state) }
+  end
+end
+
+fn parse_primary(parser: Parser) -> ExprResult = do
+  let kind = parser_kind(parser)
+  if is_int_literal(kind) then
+    ExprResult { expr: Shared.new(ExprInt(get_int_literal(kind))),  parser: parser_advance(parser) }
+  else if is_str_literal(kind) then
+    ExprResult { expr: Shared.new(ExprStr(get_str_literal(kind))),  parser: parser_advance(parser) }
+  else if is_keyword_true(kind) then
+    ExprResult { expr: Shared.new(ExprBool(true)),  parser: parser_advance(parser) }
+  else if is_keyword_false(kind) then
+    ExprResult { expr: Shared.new(ExprBool(false)), parser: parser_advance(parser) }
+  else if is_left_paren(kind) then do
+    if is_right_paren(parser_kind(parser_advance(parser))) then
+      ExprResult { expr: Shared.new(ExprUnit), parser: parser_advance_by(parser, 2) }
+    else
+      let inner = parse_expr(parser_advance(parser))
+      ExprResult { expr: inner.expr, parser: parser_advance(inner.parser) }
+    end
+  end
+  else if is_left_bracket(kind)   then parse_array_lit(parser_advance(parser))
+  else if is_keyword_if(kind) || is_keyword_unless(kind) then parse_if_expr(parser)
+  else if is_keyword_do(kind)     then parse_block(parser_advance(parser))
+  else if is_keyword_while(kind)  then parse_while_expr(parser_advance(parser))
+  else if is_keyword_for(kind)    then parse_for_expr(parser_advance(parser))
+  else if is_keyword_match(kind)  then parse_match_expr(parser_advance(parser))
+  else if is_keyword_return(kind) then do
+    let value = parse_expr(parser_advance(parser))
+    let mut stmts: [Shared<Stmt>] = []
+    stmts.push(Shared.new(StmtReturn(value.expr)))
+    ExprResult { expr: Shared.new(ExprBlock(stmts, Shared.new(ExprUnit))), parser: value.parser }
+  end
+  else if is_ident(kind) then do
+    let name = get_ident(kind)
+    if is_ctor_name(name) && is_left_brace(parser_kind(parser_advance(parser))) then
+      parse_record_expr(parser_advance_by(parser, 2), name)
+    else
+      ExprResult { expr: Shared.new(ExprIdent(name)), parser: parser_advance(parser) }
+    end
+  end
+  else ExprResult { expr: Shared.new(ExprUnit), parser: parser_advance(parser) }
+  end
+end
+
+fn parse_array_lit(parser: Parser) -> ExprResult = do
+  let mut exprs: [Shared<Expr>] = []
+  if is_right_bracket(parser_kind(parser)) then
+    ExprResult { expr: Shared.new(ExprArray(exprs)), parser: parser_advance(parser) }
+  else
+    let first = parse_expr(parser); exprs.push(first.expr)
+    let mut state = first.parser
+    while is_comma(parser_kind(state)) do
+      let next = parse_expr(parser_advance(state)); exprs.push(next.expr); state = next.parser
+    end
+    ExprResult { expr: Shared.new(ExprArray(exprs)), parser: parser_advance(state) }
+  end
+end
+
+fn parse_if_expr(parser: Parser) -> ExprResult = do
+  let is_negated = is_keyword_unless(parser_kind(parser))
+  let cond_result = parse_expr(parser_advance(parser))
+  let cond = if is_negated then Shared.new(ExprUn("!", cond_result.expr)) else cond_result.expr end
+  let then_result = parse_stmts_until_else_end(parser_advance(cond_result.parser))
+  let then_expr = Shared.new(ExprBlock(then_result.stmts, Shared.new(ExprUnit)))
+  if is_keyword_else(parser_kind(then_result.parser)) then do
+    let after_else = parser_advance(then_result.parser)
+    if is_keyword_if(parser_kind(after_else)) || is_keyword_unless(parser_kind(after_else)) then do
+      let else_result = parse_if_expr(after_else)
+      ExprResult { expr: Shared.new(ExprIf(cond, then_expr, else_result.expr)), parser: else_result.parser }
+    end
+    else do
+      let else_stmts = parse_stmts_until_end(after_else)
+      let else_expr = Shared.new(ExprBlock(else_stmts.stmts, Shared.new(ExprUnit)))
+      ExprResult { expr: Shared.new(ExprIf(cond, then_expr, else_expr)), parser: else_stmts.parser }
+    end
+    end
+  end
+  else
+    ExprResult { expr: Shared.new(ExprIf(cond, then_expr, Shared.new(ExprUnit))), parser: parser_advance(then_result.parser) }
+  end
+end
+
+fn parse_block(parser: Parser) -> ExprResult = do
+  let result = parse_stmts_until_end(parser)
+  let tail = block_result(result.stmts)
+  ExprResult { expr: Shared.new(ExprBlock(block_body(result.stmts), tail)), parser: result.parser }
+end
+
+fn block_result(stmts: [Shared<Stmt>]) -> Shared<Expr> =
+  if stmts.length() == 0 then Shared.new(ExprUnit)
+  else match stmts[stmts.length() - 1] { StmtExpr(expr) => expr, _ => Shared.new(ExprUnit) }
+  end
+
+fn block_body(stmts: [Shared<Stmt>]) -> [Shared<Stmt>] = do
+  if stmts.length() == 0 then stmts
+  else match stmts[stmts.length() - 1] {
+    StmtExpr(_) => do
+      let mut result: [Shared<Stmt>] = []; let mut i = 0
+      while i < stmts.length() - 1 do result.push(stmts[i]); i = i + 1 end
+      result
+    end,
+    _ => stmts
+  }
+  end
+end
+
+fn parse_while_expr(parser: Parser) -> ExprResult = do
+  let cond = parse_expr(parser)
+  let body = parse_stmts_until_end(parser_advance(cond.parser))
+  ExprResult { expr: Shared.new(ExprWhile(cond.expr, body.stmts)), parser: body.parser }
+end
+
+fn parse_for_expr(parser: Parser) -> ExprResult = do
+  let var_name = get_ident(parser_kind(parser))
+  let iter = parse_expr(parser_advance_by(parser, 2))
+  let body = parse_stmts_until_end(parser_advance(iter.parser))
+  ExprResult { expr: Shared.new(ExprFor(var_name, iter.expr, body.stmts)), parser: body.parser }
+end
+
+fn parse_match_expr(parser: Parser) -> ExprResult = do
+  let subject = parse_expr(parser)
+  let arms = parse_arms(parser_advance(subject.parser))
+  ExprResult { expr: Shared.new(ExprMatch(subject.expr, arms.arms)), parser: arms.parser }
+end
+
+fn parse_arms(parser: Parser) -> ArmsResult = do
+  let mut arms: [Shared<MatchArm>] = []
+  let mut state = parser
+  while !is_right_brace(parser_kind(state)) && !parser_at_eof(state) do
+    let pat_result  = parse_pat(state)
+    let body_result = parse_expr(parser_advance(pat_result.parser))
+    arms.push(Shared.new(MatchArm { pat: pat_result.pat, body: body_result.expr }))
+    state = body_result.parser
+    if is_comma(parser_kind(state)) then state = parser_advance(state) end
+  end
+  ArmsResult { arms: arms, parser: parser_advance(state) }
+end
+
+fn parse_record_expr(parser: Parser, record_name: string) -> ExprResult = do
+  let mut field_vals: [Shared<FieldVal>] = []
+  let mut state = parser
+  while !is_right_brace(parser_kind(state)) && !parser_at_eof(state) do
+    let field_name  = get_ident(parser_kind(state))
+    let value_result = parse_expr(parser_advance_by(state, 2))
+    field_vals.push(Shared.new(FieldVal { name: field_name, val: value_result.expr }))
+    state = value_result.parser
+    if is_comma(parser_kind(state)) then state = parser_advance(state) end
+  end
+  ExprResult { expr: Shared.new(ExprRecord(record_name, field_vals)), parser: parser_advance(state) }
+end

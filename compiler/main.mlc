@@ -1,0 +1,33 @@
+// Entry point. Pipeline: source → tokenize → parse → check → gen_program
+
+fn compile_source(src: string) -> string = do
+  let lex = tokenize(src)
+  if lex.errors.length() > 0 then
+    format_errs("lex", lex.errors)
+  else
+    let prog = parse_program(lex.tokens)
+    let chk = check(prog)
+    if chk.errors.length() > 0 then format_errs("check", chk.errors)
+    else gen_program(prog)
+    end
+  end
+end
+
+fn format_errs(label: string, errors: [string]) -> string = do
+  let mut output = ""; let mut i = 0
+  while i < errors.length() do
+    output = output + label + ": " + errors[i] + "\n"; i = i + 1
+  end
+  output
+end
+
+fn main() -> i32 = do
+  let cli_args = args()
+  if cli_args.length() == 0 then
+    println("Usage: mlcc <source.mlc>")
+    exit(1)
+  end
+  let src = File.read(cli_args[0])
+  print(compile_source(src))
+  0
+end

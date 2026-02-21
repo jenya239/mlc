@@ -369,11 +369,6 @@ module MLC
               next
             end
 
-            if @source[@pos] == '{'
-              has_interpolation ||= handle_interpolation(parts, current_text)
-              next
-            end
-
             append_string_char(current_text)
           end
 

@@ -1,0 +1,210 @@
+// Lexer: source string → token array.
+// TKind, Token, LexOut defined in ast.mlc.
+
+type LexState = LexState { src: string, pos: i32, line: i32, col: i32 }
+type ScanIdR  = ScanIdR  { st: LexState, tok: Token }
+type ScanIntR = ScanIntR { st: LexState, tok: Token }
+type ScanStrR = ScanStrR { st: LexState, tok: Token, err: string }
+type ScanOpR  = ScanOpR  { st: LexState, tok: Token }
+
+fn is_alpha(c: string) -> bool =
+  (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c == "_"
+fn is_digit(c: string) -> bool = c >= "0" && c <= "9"
+fn is_alnum(c: string) -> bool = is_alpha(c) || is_digit(c)
+fn is_ws(c: string) -> bool =
+  c == " " || c == "\t" || c == "\r" || c == "\n"
+
+fn ls_eof(st: LexState) -> bool = st.pos >= st.src.length()
+fn ls_cur(st: LexState) -> string =
+  if ls_eof(st) then "\0" else st.src.char_at(st.pos) end
+fn ls_peek(st: LexState, offset: i32) -> string = do
+  let p = st.pos + offset
+  if p >= st.src.length() then "\0" else st.src.char_at(p) end
+end
+fn ls_advance(st: LexState) -> LexState =
+  if ls_cur(st) == "\n" then
+    LexState { src: st.src, pos: st.pos + 1, line: st.line + 1, col: 1 }
+  else
+    LexState { src: st.src, pos: st.pos + 1, line: st.line, col: st.col + 1 }
+  end
+fn ls_advance_n(st: LexState, n: i32) -> LexState = do
+  let mut s = st
+  let mut i = 0
+  while i < n do
+    s = ls_advance(s)
+    i = i + 1
+  end
+  s
+end
+fn ls_tok(st: LexState, k: TKind) -> Token = Token { kind: k, line: st.line, col: st.col }
+
+fn keyword_kind(s: string) -> TKind =
+  if s == "fn"       then KFn
+  else if s == "type"     then KType
+  else if s == "let"      then KLet
+  else if s == "mut"      then KMut
+  else if s == "const"    then KConst
+  else if s == "return"   then KReturn
+  else if s == "break"    then KBreak
+  else if s == "continue" then KContinue
+  else if s == "if"       then KIf
+  else if s == "then"     then KThen
+  else if s == "else"     then KElse
+  else if s == "unless"   then KUnless
+  else if s == "while"    then KWhile
+  else if s == "for"      then KFor
+  else if s == "in"       then KIn
+  else if s == "do"       then KDo
+  else if s == "end"      then KEnd
+  else if s == "match"    then KMatch
+  else if s == "import"   then KImport
+  else if s == "from"     then KFrom
+  else if s == "as"       then KAs
+  else if s == "extern"   then KExtern
+  else if s == "extend"   then KExtend
+  else if s == "where"    then KWhere
+  else if s == "true"     then KTrue
+  else if s == "false"    then KFalse
+  else Ident(s)
+  end
+
+fn scan_ident(st: LexState) -> ScanIdR = do
+  let start = st.pos
+  let src = st.src
+  let tok_ln = st.line
+  let tok_cl = st.col
+  let mut s = st
+  while !ls_eof(s) && is_alnum(ls_cur(s)) do
+    s = ls_advance(s)
+  end
+  let word = src.substring(start, s.pos - start)
+  ScanIdR { st: s, tok: Token { kind: keyword_kind(word), line: tok_ln, col: tok_cl } }
+end
+
+fn scan_int(st: LexState) -> ScanIntR = do
+  let tok_ln = st.line
+  let tok_cl = st.col
+  let mut s = st
+  let mut v = 0
+  while !ls_eof(s) && is_digit(ls_cur(s)) do
+    v = v * 10 + ls_cur(s).to_i()
+    s = ls_advance(s)
+  end
+  ScanIntR { st: s, tok: Token { kind: LInt(v), line: tok_ln, col: tok_cl } }
+end
+
+fn map_escape(c: string) -> string =
+  if c == "n" then "\n" else if c == "t" then "\t"
+  else if c == "r" then "\r" else if c == "\"" then "\""
+  else if c == "\\" then "\\" else if c == "0" then "\0"
+  else if c == "{" then "{" else if c == "}" then "}"
+  else ""
+  end
+
+fn scan_string(st: LexState) -> ScanStrR = do
+  let tok_ln = st.line
+  let tok_cl = st.col
+  let mut s = ls_advance(st)
+  let mut parts: [string] = []
+  let mut err = ""
+  while !ls_eof(s) && ls_cur(s) != "\"" do
+    if ls_cur(s) == "\\" then
+      s = ls_advance(s)
+      let mapped = map_escape(ls_cur(s))
+      if mapped != "" then
+        parts.push(mapped)
+      else
+        parts.push("\\")
+        parts.push(ls_cur(s))
+      end
+      s = ls_advance(s)
+    else
+      parts.push(ls_cur(s))
+      s = ls_advance(s)
+    end
+  end
+  if ls_eof(s) then
+    err = "unterminated string"
+  else
+    s = ls_advance(s)
+  end
+  ScanStrR { st: s, tok: Token { kind: LStr(parts.join("")), line: tok_ln, col: tok_cl }, err: err }
+end
+
+fn skip_ws(st: LexState) -> LexState = do
+  let mut s = st
+  while !ls_eof(s) do
+    let c = ls_cur(s)
+    if is_ws(c) then
+      s = ls_advance(s)
+    else if c == "/" && ls_peek(s, 1) == "/" then
+      s = ls_advance(ls_advance(s))
+      while !ls_eof(s) && ls_cur(s) != "\n" do s = ls_advance(s) end
+    else if c == "/" && ls_peek(s, 1) == "*" then
+      s = ls_advance(ls_advance(s))
+      while !ls_eof(s) do
+        if ls_cur(s) == "*" && ls_peek(s, 1) == "/" then
+          s = ls_advance(ls_advance(s)); break
+        end
+        s = ls_advance(s)
+      end
+    else
+      break
+    end
+  end
+  s
+end
+
+fn scan_op(st: LexState) -> ScanOpR = do
+  let tok_ln = st.line
+  let tok_cl = st.col
+  let c = ls_cur(st)
+  let c2 = ls_peek(st, 1)
+  if      c == "-" && c2 == ">" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Arrow,      line: tok_ln, col: tok_cl } }
+  else if c == "=" && c2 == ">" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: FatArrow,   line: tok_ln, col: tok_cl } }
+  else if c == "|" && c2 == ">" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Pipe,       line: tok_ln, col: tok_cl } }
+  else if c == "=" && c2 == "=" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Op("=="),   line: tok_ln, col: tok_cl } }
+  else if c == "!" && c2 == "=" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Op("!="),   line: tok_ln, col: tok_cl } }
+  else if c == "<" && c2 == "=" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Op("<="),   line: tok_ln, col: tok_cl } }
+  else if c == ">" && c2 == "=" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Op(">="),   line: tok_ln, col: tok_cl } }
+  else if c == "&" && c2 == "&" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Op("&&"),   line: tok_ln, col: tok_cl } }
+  else if c == "|" && c2 == "|" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Op("||"),   line: tok_ln, col: tok_cl } }
+  else if c == "="  then ScanOpR { st: ls_advance(st), tok: Token { kind: Equal,    line: tok_ln, col: tok_cl } }
+  else if c == "|"  then ScanOpR { st: ls_advance(st), tok: Token { kind: Bar,      line: tok_ln, col: tok_cl } }
+  else if c == "?"  then ScanOpR { st: ls_advance(st), tok: Token { kind: Question, line: tok_ln, col: tok_cl } }
+  else if c == "."  then ScanOpR { st: ls_advance(st), tok: Token { kind: Dot,      line: tok_ln, col: tok_cl } }
+  else if c == "("  then ScanOpR { st: ls_advance(st), tok: Token { kind: LParen,   line: tok_ln, col: tok_cl } }
+  else if c == ")"  then ScanOpR { st: ls_advance(st), tok: Token { kind: RParen,   line: tok_ln, col: tok_cl } }
+  else if c == "\{" then ScanOpR { st: ls_advance(st), tok: Token { kind: LBrace,   line: tok_ln, col: tok_cl } }
+  else if c == "\}" then ScanOpR { st: ls_advance(st), tok: Token { kind: RBrace,   line: tok_ln, col: tok_cl } }
+  else if c == "["  then ScanOpR { st: ls_advance(st), tok: Token { kind: LBracket, line: tok_ln, col: tok_cl } }
+  else if c == "]"  then ScanOpR { st: ls_advance(st), tok: Token { kind: RBracket, line: tok_ln, col: tok_cl } }
+  else if c == ","  then ScanOpR { st: ls_advance(st), tok: Token { kind: Comma,    line: tok_ln, col: tok_cl } }
+  else if c == ";"  then ScanOpR { st: ls_advance(st), tok: Token { kind: Semicolon,line: tok_ln, col: tok_cl } }
+  else if c == ":"  then ScanOpR { st: ls_advance(st), tok: Token { kind: Colon,    line: tok_ln, col: tok_cl } }
+  else ScanOpR { st: ls_advance(st), tok: Token { kind: Op(c), line: tok_ln, col: tok_cl } }
+  end
+end
+
+fn tokenize(src: string) -> LexOut = do
+  let mut st = LexState { src: src, pos: 0, line: 1, col: 1 }
+  let mut tokens: [Token] = []
+  let mut errors: [string] = []
+  while !ls_eof(st) do
+    st = skip_ws(st)
+    if ls_eof(st) then break end
+    let c = ls_cur(st)
+    if is_alpha(c) then
+      let r = scan_ident(st); tokens.push(r.tok); st = r.st
+    else if is_digit(c) then
+      let r = scan_int(st);   tokens.push(r.tok); st = r.st
+    else if c == "\"" then
+      let r = scan_string(st); tokens.push(r.tok); st = r.st
+      if r.err != "" then errors.push(r.err) end
+    else
+      let r = scan_op(st); tokens.push(r.tok); st = r.st
+    end
+  end
+  tokens.push(Token { kind: Eof, line: st.line, col: st.col })
+  LexOut { tokens: tokens, errors: errors }
+end

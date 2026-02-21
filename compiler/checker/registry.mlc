@@ -1,0 +1,97 @@
+// ─── Semantic type ────────────────────────────────────────────────────────
+
+type Type =
+  | TI32 | TString | TBool | TUnit
+  | TArray(Shared<Type>)
+  | TShared(Shared<Type>)
+  | TNamed(string)
+  | TFn([Shared<Type>], Shared<Type>)
+  | TUnknown
+
+// ─── Type registry ────────────────────────────────────────────────────────
+
+type TypeRegistry = TypeRegistry {
+  fn_types:    Map<string, Shared<Type>>,
+  ctor_types:  Map<string, Shared<Type>>,
+  ctor_params: Map<string, [Shared<Type>]>,
+  field_types: Map<string, Map<string, Shared<Type>>>
+}
+
+fn empty_registry() -> TypeRegistry =
+  TypeRegistry { fn_types: Map.new(), ctor_types: Map.new(),
+                 ctor_params: Map.new(), field_types: Map.new() }
+
+fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
+  match type_expr {
+    TyI32     => Shared.new(TI32),
+    TyString  => Shared.new(TString),
+    TyBool    => Shared.new(TBool),
+    TyUnit    => Shared.new(TUnit),
+    TyNamed(name)   => Shared.new(TNamed(name)),
+    TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),
+    TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),
+    _ => Shared.new(TUnknown)
+  }
+
+fn build_registry(prog: Program) -> TypeRegistry = do
+  let mut registry = empty_registry()
+  let mut i = 0
+  while i < prog.decls.length() do
+    registry = register_decl(registry, prog.decls[i]); i = i + 1
+  end
+  registry
+end
+
+fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry = do
+  match decl {
+    DeclFn(name, params, return_type, _) => do
+      let mut param_types: [Shared<Type>] = []
+      let mut i = 0
+      while i < params.length() do
+        param_types.push(type_from_annotation(params[i].typ)); i = i + 1
+      end
+      registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
+      registry
+    end,
+    DeclType(type_name, variants) => do
+      let mut i = 0
+      while i < variants.length() do
+        registry = register_variant(registry, type_name, variants[i]); i = i + 1
+      end
+      registry
+    end
+  }
+end
+
+fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shared<TypeVariant>) -> TypeRegistry = do
+  let result_type = Shared.new(TNamed(type_name))
+  match variant {
+    VarUnit(variant_name) => do
+      registry.ctor_types.set(variant_name, result_type)
+      registry.ctor_params.set(variant_name, [])
+      registry
+    end,
+    VarTuple(variant_name, field_types) => do
+      let mut field_type_list: [Shared<Type>] = []
+      let mut i = 0
+      while i < field_types.length() do
+        field_type_list.push(type_from_annotation(field_types[i])); i = i + 1
+      end
+      registry.ctor_types.set(variant_name, result_type)
+      registry.ctor_params.set(variant_name, field_type_list)
+      registry
+    end,
+    VarRecord(variant_name, field_defs) => do
+      let mut field_map: Map<string, Shared<Type>> = Map.new()
+      let mut i = 0
+      while i < field_defs.length() do
+        field_map.set(field_defs[i].name, type_from_annotation(field_defs[i].typ)); i = i + 1
+      end
+      registry.ctor_types.set(variant_name, result_type)
+      registry.ctor_params.set(variant_name, [])
+      registry.field_types.set(variant_name, field_map)
+      registry.field_types.set(type_name, field_map)
+      registry
+    end
+  }
+end

@@ -1,0 +1,48 @@
+// ─── Type expression parser ───────────────────────────────────────────────
+
+fn parse_type(parser: Parser) -> TypeResult = do
+  let kind = parser_kind(parser)
+  if is_left_bracket(kind) then
+    let inner = parse_type(parser_advance(parser))
+    TypeResult { type_expr: Shared.new(TyArray(inner.type_expr)), parser: parser_advance(inner.parser) }
+  else if is_ident(kind) then
+    let name = get_ident(kind)
+    if      name == "i32"    then TypeResult { type_expr: Shared.new(TyI32),    parser: parser_advance(parser) }
+    else if name == "string" then TypeResult { type_expr: Shared.new(TyString), parser: parser_advance(parser) }
+    else if name == "bool"   then TypeResult { type_expr: Shared.new(TyBool),   parser: parser_advance(parser) }
+    else if name == "unit"   then TypeResult { type_expr: Shared.new(TyUnit),   parser: parser_advance(parser) }
+    else
+      let after = parser_advance(parser)
+      if is_operator(parser_kind(after)) && get_operator(parser_kind(after)) == "<" then
+        let args = parse_type_args(parser_advance(after))
+        let type_expr =
+          if name == "Shared" && args.types.length() == 1 then Shared.new(TyShared(args.types[0]))
+          else Shared.new(TyGeneric(name, args.types))
+          end
+        TypeResult { type_expr: type_expr, parser: args.parser }
+      else
+        TypeResult { type_expr: Shared.new(TyNamed(name)), parser: after }
+      end
+    end
+  else
+    TypeResult { type_expr: Shared.new(TyUnit), parser: parser_advance_by(parser, 2) }
+  end
+end
+
+fn parse_type_args(parser: Parser) -> TypesResult = do
+  let mut types: [Shared<TypeExpr>] = []
+  let first = parse_type(parser)
+  types.push(first.type_expr)
+  let mut state = first.parser
+  while is_comma(parser_kind(state)) do
+    let next = parse_type(parser_advance(state))
+    types.push(next.type_expr)
+    state = next.parser
+  end
+  let end_state =
+    if is_operator(parser_kind(state)) && get_operator(parser_kind(state)) == ">" then
+      parser_advance(state)
+    else state
+    end
+  TypesResult { types: types, parser: end_state }
+end

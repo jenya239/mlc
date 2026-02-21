@@ -1,0 +1,32 @@
+// Test entry point. Runs all test suites.
+
+fn all_tests() -> [TestResult] = do
+  let mut all: [TestResult] = []
+  let mut i = 0
+
+  let lex_results = lexer_tests()
+  while i < lex_results.length() do all.push(lex_results[i]); i = i + 1 end
+
+  let parse_results = parser_tests()
+  i = 0
+  while i < parse_results.length() do all.push(parse_results[i]); i = i + 1 end
+
+  let check_results = checker_tests()
+  i = 0
+  while i < check_results.length() do all.push(check_results[i]); i = i + 1 end
+
+  let gen_results = codegen_tests()
+  i = 0
+  while i < gen_results.length() do all.push(gen_results[i]); i = i + 1 end
+
+  let cpp_lex_results = cpp_lexer_tests()
+  i = 0
+  while i < cpp_lex_results.length() do all.push(cpp_lex_results[i]); i = i + 1 end
+
+  all
+end
+
+fn main() -> i32 = do
+  print(run_all(all_tests()))
+  0
+end
