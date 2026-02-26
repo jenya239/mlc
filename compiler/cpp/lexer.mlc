@@ -1,0 +1,156 @@
+// C++ lexer: source string → [CppToken]
+// Reuses: LexState, ls_cur, ls_peek, ls_advance, ls_advance_n, ls_eof
+// Reuses: is_alpha, is_digit, is_alnum, is_ws, map_escape, skip_ws
+
+type CppTKind =
+  | CKAuto | CKConst | CKConstexpr | CKIf | CKElse | CKWhile | CKFor
+  | CKReturn | CKBreak | CKStruct | CKUsing | CKNoexcept | CKInline | CKStatic
+  | CKVoid | CKInt | CKBool | CKChar | CKTrue | CKFalse | CKNullptr
+  | CKTemplate | CKTypename | CKNamespace | CKNew | CKDelete | CKOperator
+  | CIdent(string) | CLInt(i32) | CLStr(string)
+  | CArrow | CScope | CEq | CNe | CLe | CGe | CAnd | COr | CInc | CDec
+  | CLShift | CRShift
+  | CLParen | CRParen | CLBrace | CRBrace | CLBracket | CRBracket
+  | CLAngle | CRAngle
+  | COp(string)
+  | CEof
+
+type CppToken  = CppToken  { kind: CppTKind, line: i32, col: i32 }
+type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
+
+type CppScanIdR  = CppScanIdR  { st: LexState, tok: CppToken }
+type CppScanIntR = CppScanIntR { st: LexState, tok: CppToken }
+type CppScanStrR = CppScanStrR { st: LexState, tok: CppToken, err: string }
+type CppScanOpR  = CppScanOpR  { st: LexState, tok: CppToken }
+
+fn cpp_keyword_kind(word: string) -> CppTKind =
+  if      word == "auto"       then CKAuto
+  else if word == "const"      then CKConst
+  else if word == "constexpr"  then CKConstexpr
+  else if word == "if"         then CKIf
+  else if word == "else"       then CKElse
+  else if word == "while"      then CKWhile
+  else if word == "for"        then CKFor
+  else if word == "return"     then CKReturn
+  else if word == "break"      then CKBreak
+  else if word == "struct"     then CKStruct
+  else if word == "using"      then CKUsing
+  else if word == "noexcept"   then CKNoexcept
+  else if word == "inline"     then CKInline
+  else if word == "static"     then CKStatic
+  else if word == "void"       then CKVoid
+  else if word == "int"        then CKInt
+  else if word == "bool"       then CKBool
+  else if word == "char"       then CKChar
+  else if word == "true"       then CKTrue
+  else if word == "false"      then CKFalse
+  else if word == "nullptr"    then CKNullptr
+  else if word == "template"   then CKTemplate
+  else if word == "typename"   then CKTypename
+  else if word == "namespace"  then CKNamespace
+  else if word == "new"        then CKNew
+  else if word == "delete"     then CKDelete
+  else if word == "operator"   then CKOperator
+  else CIdent(word)
+  end
+
+fn cpp_scan_ident(state: LexState) -> CppScanIdR = do
+  const start = state.pos
+  const source = state.src
+  let line = state.line
+  const column = state.col
+  let current = state
+  while !ls_eof(current) && is_alnum(ls_cur(current)) do current = ls_advance(current) end
+  const word = source.substring(start, current.pos - start)
+  CppScanIdR { st: current, tok: CppToken { kind: cpp_keyword_kind(word), line: line, col: column } }
+end
+
+fn cpp_scan_int(state: LexState) -> CppScanIntR = do
+  let line = state.line
+  const column = state.col
+  let current = state
+  let value = 0
+  while !ls_eof(current) && is_digit(ls_cur(current)) do
+    value = value * 10 + ls_cur(current).to_i()
+    current = ls_advance(current)
+  end
+  CppScanIntR { st: current, tok: CppToken { kind: CLInt(value), line: line, col: column } }
+end
+
+fn cpp_scan_string(state: LexState) -> CppScanStrR = do
+  let line = state.line
+  const column = state.col
+  let current = ls_advance(state)
+  let parts: [string] = []
+  let error = ""
+  while !ls_eof(current) && ls_cur(current) != "\"" do
+    if ls_cur(current) == "\\" then
+      current = ls_advance(current)
+      const mapped = map_escape(ls_cur(current))
+      if mapped != "" then parts.push(mapped)
+      else
+        parts.push("\\"); parts.push(ls_cur(current))
+      end
+      current = ls_advance(current)
+    else
+      parts.push(ls_cur(current))
+      current = ls_advance(current)
+    end
+  end
+  if ls_eof(current) then error = "unterminated string"
+  else current = ls_advance(current)
+  end
+  CppScanStrR { st: current, tok: CppToken { kind: CLStr(parts.join("")), line: line, col: column }, err: error }
+end
+
+fn cpp_scan_op(state: LexState) -> CppScanOpR = do
+  let line = state.line
+  const column = state.col
+  const character = ls_cur(state)
+  const next_char = ls_peek(state, 1)
+  if      character == "-" && next_char == ">" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CArrow,    line: line, col: column } }
+  else if character == ":" && next_char == ":" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CScope,    line: line, col: column } }
+  else if character == "=" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CEq,       line: line, col: column } }
+  else if character == "!" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CNe,       line: line, col: column } }
+  else if character == "<" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CLe,       line: line, col: column } }
+  else if character == ">" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CGe,       line: line, col: column } }
+  else if character == "&" && next_char == "&" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CAnd,      line: line, col: column } }
+  else if character == "|" && next_char == "|" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: COr,       line: line, col: column } }
+  else if character == "+" && next_char == "+" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CInc,      line: line, col: column } }
+  else if character == "-" && next_char == "-" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CDec,      line: line, col: column } }
+  else if character == "<" && next_char == "<" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CLShift,   line: line, col: column } }
+  else if character == ">" && next_char == ">" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CRShift,   line: line, col: column } }
+  else if character == "("  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLParen,   line: line, col: column } }
+  else if character == ")"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRParen,   line: line, col: column } }
+  else if character == "{"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLBrace,   line: line, col: column } }
+  else if character == "}"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRBrace,   line: line, col: column } }
+  else if character == "["  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLBracket, line: line, col: column } }
+  else if character == "]"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRBracket, line: line, col: column } }
+  else if character == "<"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLAngle,   line: line, col: column } }
+  else if character == ">"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRAngle,   line: line, col: column } }
+  else CppScanOpR { st: ls_advance(state), tok: CppToken { kind: COp(character), line: line, col: column } }
+  end
+end
+
+fn cpp_tokenize(source: string) -> CppLexOut = do
+  let state = LexState { src: source, pos: 0, line: 1, col: 1 }
+  const tokens: [CppToken] = []
+  let errors: [string] = []
+  while !ls_eof(state) do
+    state = skip_ws(state)
+    if ls_eof(state) then break end
+    const character = ls_cur(state)
+    if is_alpha(character) then
+      let result = cpp_scan_ident(state); tokens.push(result.tok); state = result.st
+    else if is_digit(character) then
+      let result = cpp_scan_int(state); tokens.push(result.tok); state = result.st
+    else if character == "\"" then
+      let result = cpp_scan_string(state); tokens.push(result.tok); state = result.st
+      if result.err != "" then errors.push(result.err) end
+    else
+      let result = cpp_scan_op(state); tokens.push(result.tok); state = result.st
+    end
+  end
+  tokens.push(CppToken { kind: CEof, line: state.line, col: state.col })
+  CppLexOut { tokens: tokens, errors: errors }
+end

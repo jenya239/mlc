@@ -10,7 +10,7 @@ fn first_decl(source: string) -> Shared<Decl> =
   parse_source(source).decls[0]
 
 fn parser_tests() -> [TestResult] = do
-  let mut results: [TestResult] = []
+  let results: [TestResult] = []
 
   results.push(assert_eq_int("empty source → 0 decls",
     decl_count(""), 0))
@@ -28,7 +28,7 @@ fn parser_tests() -> [TestResult] = do
     decl_count("fn add(x: i32, y: i32) -> i32 = x + y"), 1))
 
   results.push(assert_eq_int("fn with do block → 1 decl",
-    decl_count("fn f() -> i32 = do\n  let x = 1\n  x\nend"), 1))
+    decl_count("fn f() -> i32 = do\n  const x = 1\n  x\nend"), 1))
 
   results.push(assert_eq_int("type + fn → 2 decls",
     decl_count("type Color = Red\nfn f() -> i32 = 1"), 2))

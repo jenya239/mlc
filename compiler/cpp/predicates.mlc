@@ -1,0 +1,88 @@
+// Token kind predicates. Use in conditions instead of match to avoid parse issues.
+
+fn cpp_token_kind_at(tokens: [CppToken], position: i32) -> CppTKind =
+  if position < tokens.length() then tokens[position].kind else CEof end
+
+fn cpp_at_end(tokens: [CppToken], position: i32) -> bool =
+  match cpp_token_kind_at(tokens, position) { CEof => true, _ => false }
+
+fn cpp_get_identifier(kind: CppTKind) -> string =
+  match kind { CIdent(name) => name, _ => "" }
+
+fn cpp_get_string(kind: CppTKind) -> string =
+  match kind { CLStr(value) => value, _ => "" }
+
+fn cpp_get_operator(kind: CppTKind) -> string =
+  match kind { COp(symbol) => symbol, _ => "" }
+
+fn cpp_is_hash(kind: CppTKind) -> bool =
+  match kind { COp(symbol) => symbol == "#", _ => false }
+
+fn cpp_is_identifier(kind: CppTKind) -> bool =
+  match kind { CIdent(_) => true, _ => false }
+
+fn cpp_is_string(kind: CppTKind) -> bool =
+  match kind { CLStr(_) => true, _ => false }
+
+fn cpp_is_angle(kind: CppTKind) -> bool =
+  match kind { CLAngle => true, _ => false }
+
+fn cpp_is_right_angle(kind: CppTKind) -> bool =
+  match kind { CRAngle => true, _ => false }
+
+fn cpp_is_scope(kind: CppTKind) -> bool =
+  match kind { CScope => true, _ => false }
+
+fn cpp_is_semicolon(kind: CppTKind) -> bool =
+  match kind { COp(symbol) => symbol == ";", _ => false }
+
+fn cpp_is_equals(kind: CppTKind) -> bool =
+  match kind { COp(symbol) => symbol == "=", _ => false }
+
+fn cpp_is_left_paren(kind: CppTKind) -> bool =
+  match kind { CLParen => true, _ => false }
+
+fn cpp_is_right_paren(kind: CppTKind) -> bool =
+  match kind { CRParen => true, _ => false }
+
+fn cpp_is_left_brace(kind: CppTKind) -> bool =
+  match kind { CLBrace => true, _ => false }
+
+fn cpp_is_right_brace(kind: CppTKind) -> bool =
+  match kind { CRBrace => true, _ => false }
+
+fn cpp_is_stop_for_type(kind: CppTKind) -> bool =
+  match kind { COp(symbol) => (symbol == ";" || symbol == "," || symbol == ")"), _ => false }
+
+fn cpp_is_using_keyword(kind: CppTKind) -> bool =
+  match kind { CKUsing => true, _ => false }
+
+fn cpp_is_struct_keyword(kind: CppTKind) -> bool =
+  match kind { CKStruct => true, _ => false }
+
+fn cpp_is_void_keyword(kind: CppTKind) -> bool =
+  match kind { CKVoid => true, _ => false }
+
+fn cpp_is_int_keyword(kind: CppTKind) -> bool =
+  match kind { CKInt => true, _ => false }
+
+fn cpp_is_bool_keyword(kind: CppTKind) -> bool =
+  match kind { CKBool => true, _ => false }
+
+fn cpp_is_char_keyword(kind: CppTKind) -> bool =
+  match kind { CKChar => true, _ => false }
+
+fn cpp_type_part_string(kind: CppTKind) -> string = do
+  if cpp_get_identifier(kind) != "" then cpp_get_identifier(kind)
+  else if cpp_get_string(kind) != "" then "\"" + cpp_get_string(kind) + "\""
+  else if cpp_is_angle(kind) then "<"
+  else if cpp_is_right_angle(kind) then ">"
+  else if cpp_is_scope(kind) then "::"
+  else if cpp_is_void_keyword(kind) then "void"
+  else if cpp_is_int_keyword(kind) then "int"
+  else if cpp_is_bool_keyword(kind) then "bool"
+  else if cpp_is_char_keyword(kind) then "char"
+  else if cpp_get_operator(kind) != "" then cpp_get_operator(kind)
+  else ""
+  end
+end

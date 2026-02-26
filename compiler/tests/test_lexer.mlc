@@ -10,7 +10,7 @@ fn lex_error_count(source: string) -> i32 =
   tokenize(source).errors.length()
 
 fn lexer_tests() -> [TestResult] = do
-  let mut results: [TestResult] = []
+  let results: [TestResult] = []
 
   results.push(assert_eq_int("empty source → 1 token (Eof)",       lex_token_count(""),   1))
   results.push(assert_eq_int("whitespace only → 1 token (Eof)",    lex_token_count("   "), 1))

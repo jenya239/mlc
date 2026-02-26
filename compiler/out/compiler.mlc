@@ -1,5 +1,4 @@
 // Shared AST type definitions for the self-hosted MLC compiler.
-// All phases include this file (via concatenation in build.sh).
 
 extend Shared<T> {
   extern fn new(value: T) -> Shared<T>
@@ -7,7 +6,7 @@ extend Shared<T> {
 
 // ─── Token types ──────────────────────────────────────────────────────────
 
-type TKind =
+export type TKind =
   | KFn | KType | KLet | KMut | KConst | KReturn
   | KBreak | KContinue | KIf | KThen | KElse | KUnless
   | KWhile | KFor | KIn | KDo | KEnd | KMatch
@@ -18,28 +17,28 @@ type TKind =
   | LParen | RParen | LBrace | RBrace | LBracket | RBracket
   | Comma | Semicolon | Colon | Op(string) | Eof
 
-type Token  = Token  { kind: TKind, line: i32, col: i32 }
-type LexOut = LexOut { tokens: [Token], errors: [string] }
+export type Token  = Token  { kind: TKind, line: i32, col: i32 }
+export type LexOut = LexOut { tokens: [Token], errors: [string] }
 
 // ─── AST ─────────────────────────────────────────────────────────────────
 
-type TypeExpr =
+export type TypeExpr =
   | TyI32 | TyString | TyBool | TyUnit | TyNamed(string)
   | TyArray(Shared<TypeExpr>)
   | TyShared(Shared<TypeExpr>)
   | TyGeneric(string, [Shared<TypeExpr>])
   | TyFn([Shared<TypeExpr>], Shared<TypeExpr>)
 
-type Pat =
+export type Pat =
   | PatWild | PatIdent(string) | PatInt(i32) | PatStr(string)
   | PatBool(bool) | PatUnit
   | PatCtor(string, [Shared<Pat>])
 
-type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
-type MatchArm = MatchArm { pat: Shared<Pat>, body: Shared<Expr> }
-type FieldVal = FieldVal { name: string, val: Shared<Expr> }
+export type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
+export type MatchArm = MatchArm { pat: Shared<Pat>, body: Shared<Expr> }
+export type FieldVal = FieldVal { name: string, val: Shared<Expr> }
 
-type Expr =
+export type Expr =
   | ExprInt(i32) | ExprStr(string) | ExprBool(bool) | ExprUnit
   | ExprIdent(string)
   | ExprBin(string, Shared<Expr>, Shared<Expr>)
@@ -59,28 +58,28 @@ type Expr =
   | ExprQuestion(Shared<Expr>)
   | ExprLambda([string], Shared<Expr>)
 
-type Stmt =
+export type Stmt =
   | StmtLet(string, bool, Shared<TypeExpr>, Shared<Expr>)
   | StmtExpr(Shared<Expr>)
   | StmtBreak | StmtContinue | StmtReturn(Shared<Expr>)
 
-type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr> }
-type FieldDef = FieldDef { name: string, typ: Shared<TypeExpr> }
+export type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr> }
+export type FieldDef = FieldDef { name: string, typ: Shared<TypeExpr> }
 
-type TypeVariant =
+export type TypeVariant =
   | VarUnit(string)
   | VarTuple(string, [Shared<TypeExpr>])
   | VarRecord(string, [Shared<FieldDef>])
 
-type Decl =
+export type Decl =
   | DeclFn(string, [Shared<Param>], Shared<TypeExpr>, Shared<Expr>)
   | DeclType(string, [Shared<TypeVariant>])
 
-type Program = Program { decls: [Shared<Decl>] }
+export type Program = Program { decls: [Shared<Decl>] }
 
 // ─── Shared utility ───────────────────────────────────────────────────────
 
-fn errs_append(mut dst: [string], src: [string]) -> [string] = do
+export fn errs_append(mut dst: [string], src: [string]) -> [string] = do
   let i = 0
   while i < src.length() do
     dst.push(src[i])
@@ -89,9 +88,8 @@ fn errs_append(mut dst: [string], src: [string]) -> [string] = do
   dst
 end
 
-
 // Lexer: source string → token array.
-// TKind, Token, LexOut defined in ast.mlc.
+
 
 type LexState = LexState { src: string, pos: i32, line: i32, col: i32 }
 type ScanIdR  = ScanIdR  { st: LexState, tok: Token }
@@ -279,7 +277,7 @@ fn scan_op(st: LexState) -> ScanOpR = do
   end
 end
 
-fn tokenize(src: string) -> LexOut = do
+export fn tokenize(src: string) -> LexOut = do
   let st = LexState { src: src, pos: 0, line: 1, col: 1 }
   const tokens: [Token] = []
   let errors: [string] = []
@@ -302,412 +300,14 @@ fn tokenize(src: string) -> LexOut = do
   LexOut { tokens: tokens, errors: errors }
 end
 
-
-// C++ AST for the subset we parse.
-
-type CppExpr =
-  | CppInt(i32)
-  | CppStr(string)
-  | CppIdent(string)
-  | CppCall(Shared<CppExpr>, [Shared<CppExpr>])
-  | CppMember(Shared<CppExpr>, string)
-  | CppIndex(Shared<CppExpr>, Shared<CppExpr>)
-  | CppBinary(string, Shared<CppExpr>, Shared<CppExpr>)
-  | CppUnary(string, Shared<CppExpr>)
-
-type CppStmt =
-  | CppAutoDecl(string, Shared<CppExpr>)
-  | CppReturn(Shared<CppExpr>)
-  | CppExprStmt(Shared<CppExpr>)
-  | CppBlock([Shared<CppStmt>])
-  | CppIf(Shared<CppExpr>, Shared<CppStmt>, Shared<CppStmt>)
-  | CppWhile(Shared<CppExpr>, Shared<CppStmt>)
-
-type CppField = CppField { typ: string, name: string }
-
-type CppDecl =
-  | CppInclude(bool, string)
-  | CppUsing(string, string)
-  | CppStruct(string, [Shared<CppField>])
-  | CppFnProto(string, string, [string])
-  | CppFnDef(string, string, [string], [Shared<CppStmt>])
-
-type CppProgram = CppProgram { decls: [Shared<CppDecl>] }
-
-
-// C++ lexer: source string → [CppToken]
-// Reuses: LexState, ls_cur, ls_peek, ls_advance, ls_advance_n, ls_eof
-// Reuses: is_alpha, is_digit, is_alnum, is_ws, map_escape, skip_ws
-
-type CppTKind =
-  | CKAuto | CKConst | CKConstexpr | CKIf | CKElse | CKWhile | CKFor
-  | CKReturn | CKBreak | CKStruct | CKUsing | CKNoexcept | CKInline | CKStatic
-  | CKVoid | CKInt | CKBool | CKChar | CKTrue | CKFalse | CKNullptr
-  | CKTemplate | CKTypename | CKNamespace | CKNew | CKDelete | CKOperator
-  | CIdent(string) | CLInt(i32) | CLStr(string)
-  | CArrow | CScope | CEq | CNe | CLe | CGe | CAnd | COr | CInc | CDec
-  | CLShift | CRShift
-  | CLParen | CRParen | CLBrace | CRBrace | CLBracket | CRBracket
-  | CLAngle | CRAngle
-  | COp(string)
-  | CEof
-
-type CppToken  = CppToken  { kind: CppTKind, line: i32, col: i32 }
-type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
-
-type CppScanIdR  = CppScanIdR  { st: LexState, tok: CppToken }
-type CppScanIntR = CppScanIntR { st: LexState, tok: CppToken }
-type CppScanStrR = CppScanStrR { st: LexState, tok: CppToken, err: string }
-type CppScanOpR  = CppScanOpR  { st: LexState, tok: CppToken }
-
-fn cpp_keyword_kind(word: string) -> CppTKind =
-  if      word == "auto"       then CKAuto
-  else if word == "const"      then CKConst
-  else if word == "constexpr"  then CKConstexpr
-  else if word == "if"         then CKIf
-  else if word == "else"       then CKElse
-  else if word == "while"      then CKWhile
-  else if word == "for"        then CKFor
-  else if word == "return"     then CKReturn
-  else if word == "break"      then CKBreak
-  else if word == "struct"     then CKStruct
-  else if word == "using"      then CKUsing
-  else if word == "noexcept"   then CKNoexcept
-  else if word == "inline"     then CKInline
-  else if word == "static"     then CKStatic
-  else if word == "void"       then CKVoid
-  else if word == "int"        then CKInt
-  else if word == "bool"       then CKBool
-  else if word == "char"       then CKChar
-  else if word == "true"       then CKTrue
-  else if word == "false"      then CKFalse
-  else if word == "nullptr"    then CKNullptr
-  else if word == "template"   then CKTemplate
-  else if word == "typename"   then CKTypename
-  else if word == "namespace"  then CKNamespace
-  else if word == "new"        then CKNew
-  else if word == "delete"     then CKDelete
-  else if word == "operator"   then CKOperator
-  else CIdent(word)
-  end
-
-fn cpp_scan_ident(state: LexState) -> CppScanIdR = do
-  const start = state.pos
-  const source = state.src
-  let line = state.line
-  const column = state.col
-  let current = state
-  while !ls_eof(current) && is_alnum(ls_cur(current)) do current = ls_advance(current) end
-  const word = source.substring(start, current.pos - start)
-  CppScanIdR { st: current, tok: CppToken { kind: cpp_keyword_kind(word), line: line, col: column } }
-end
-
-fn cpp_scan_int(state: LexState) -> CppScanIntR = do
-  let line = state.line
-  const column = state.col
-  let current = state
-  let value = 0
-  while !ls_eof(current) && is_digit(ls_cur(current)) do
-    value = value * 10 + ls_cur(current).to_i()
-    current = ls_advance(current)
-  end
-  CppScanIntR { st: current, tok: CppToken { kind: CLInt(value), line: line, col: column } }
-end
-
-fn cpp_scan_string(state: LexState) -> CppScanStrR = do
-  let line = state.line
-  const column = state.col
-  let current = ls_advance(state)
-  let parts: [string] = []
-  let error = ""
-  while !ls_eof(current) && ls_cur(current) != "\"" do
-    if ls_cur(current) == "\\" then
-      current = ls_advance(current)
-      const mapped = map_escape(ls_cur(current))
-      if mapped != "" then parts.push(mapped)
-      else
-        parts.push("\\"); parts.push(ls_cur(current))
-      end
-      current = ls_advance(current)
-    else
-      parts.push(ls_cur(current))
-      current = ls_advance(current)
-    end
-  end
-  if ls_eof(current) then error = "unterminated string"
-  else current = ls_advance(current)
-  end
-  CppScanStrR { st: current, tok: CppToken { kind: CLStr(parts.join("")), line: line, col: column }, err: error }
-end
-
-fn cpp_scan_op(state: LexState) -> CppScanOpR = do
-  let line = state.line
-  const column = state.col
-  const character = ls_cur(state)
-  const next_char = ls_peek(state, 1)
-  if      character == "-" && next_char == ">" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CArrow,    line: line, col: column } }
-  else if character == ":" && next_char == ":" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CScope,    line: line, col: column } }
-  else if character == "=" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CEq,       line: line, col: column } }
-  else if character == "!" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CNe,       line: line, col: column } }
-  else if character == "<" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CLe,       line: line, col: column } }
-  else if character == ">" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CGe,       line: line, col: column } }
-  else if character == "&" && next_char == "&" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CAnd,      line: line, col: column } }
-  else if character == "|" && next_char == "|" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: COr,       line: line, col: column } }
-  else if character == "+" && next_char == "+" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CInc,      line: line, col: column } }
-  else if character == "-" && next_char == "-" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CDec,      line: line, col: column } }
-  else if character == "<" && next_char == "<" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CLShift,   line: line, col: column } }
-  else if character == ">" && next_char == ">" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CRShift,   line: line, col: column } }
-  else if character == "("  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLParen,   line: line, col: column } }
-  else if character == ")"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRParen,   line: line, col: column } }
-  else if character == "{"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLBrace,   line: line, col: column } }
-  else if character == "}"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRBrace,   line: line, col: column } }
-  else if character == "["  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLBracket, line: line, col: column } }
-  else if character == "]"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRBracket, line: line, col: column } }
-  else if character == "<"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLAngle,   line: line, col: column } }
-  else if character == ">"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRAngle,   line: line, col: column } }
-  else CppScanOpR { st: ls_advance(state), tok: CppToken { kind: COp(character), line: line, col: column } }
-  end
-end
-
-fn cpp_tokenize(source: string) -> CppLexOut = do
-  let state = LexState { src: source, pos: 0, line: 1, col: 1 }
-  const tokens: [CppToken] = []
-  let errors: [string] = []
-  while !ls_eof(state) do
-    state = skip_ws(state)
-    if ls_eof(state) then break end
-    const character = ls_cur(state)
-    if is_alpha(character) then
-      let result = cpp_scan_ident(state); tokens.push(result.tok); state = result.st
-    else if is_digit(character) then
-      let result = cpp_scan_int(state); tokens.push(result.tok); state = result.st
-    else if character == "\"" then
-      let result = cpp_scan_string(state); tokens.push(result.tok); state = result.st
-      if result.err != "" then errors.push(result.err) end
-    else
-      let result = cpp_scan_op(state); tokens.push(result.tok); state = result.st
-    end
-  end
-  tokens.push(CppToken { kind: CEof, line: state.line, col: state.col })
-  CppLexOut { tokens: tokens, errors: errors }
-end
-
-
-// Token kind predicates. Use in conditions instead of match to avoid parse issues.
-
-fn cpp_token_kind_at(tokens: [CppToken], position: i32) -> CppTKind =
-  if position < tokens.length() then tokens[position].kind else CEof end
-
-fn cpp_at_end(tokens: [CppToken], position: i32) -> bool =
-  match cpp_token_kind_at(tokens, position) { CEof => true, _ => false }
-
-fn cpp_get_identifier(kind: CppTKind) -> string =
-  match kind { CIdent(name) => name, _ => "" }
-
-fn cpp_get_string(kind: CppTKind) -> string =
-  match kind { CLStr(value) => value, _ => "" }
-
-fn cpp_get_operator(kind: CppTKind) -> string =
-  match kind { COp(symbol) => symbol, _ => "" }
-
-fn cpp_is_hash(kind: CppTKind) -> bool =
-  match kind { COp(symbol) => symbol == "#", _ => false }
-
-fn cpp_is_identifier(kind: CppTKind) -> bool =
-  match kind { CIdent(_) => true, _ => false }
-
-fn cpp_is_string(kind: CppTKind) -> bool =
-  match kind { CLStr(_) => true, _ => false }
-
-fn cpp_is_angle(kind: CppTKind) -> bool =
-  match kind { CLAngle => true, _ => false }
-
-fn cpp_is_right_angle(kind: CppTKind) -> bool =
-  match kind { CRAngle => true, _ => false }
-
-fn cpp_is_scope(kind: CppTKind) -> bool =
-  match kind { CScope => true, _ => false }
-
-fn cpp_is_semicolon(kind: CppTKind) -> bool =
-  match kind { COp(symbol) => symbol == ";", _ => false }
-
-fn cpp_is_equals(kind: CppTKind) -> bool =
-  match kind { COp(symbol) => symbol == "=", _ => false }
-
-fn cpp_is_left_paren(kind: CppTKind) -> bool =
-  match kind { CLParen => true, _ => false }
-
-fn cpp_is_right_paren(kind: CppTKind) -> bool =
-  match kind { CRParen => true, _ => false }
-
-fn cpp_is_left_brace(kind: CppTKind) -> bool =
-  match kind { CLBrace => true, _ => false }
-
-fn cpp_is_right_brace(kind: CppTKind) -> bool =
-  match kind { CRBrace => true, _ => false }
-
-fn cpp_is_stop_for_type(kind: CppTKind) -> bool =
-  match kind { COp(symbol) => (symbol == ";" || symbol == "," || symbol == ")"), _ => false }
-
-fn cpp_is_using_keyword(kind: CppTKind) -> bool =
-  match kind { CKUsing => true, _ => false }
-
-fn cpp_is_struct_keyword(kind: CppTKind) -> bool =
-  match kind { CKStruct => true, _ => false }
-
-fn cpp_is_void_keyword(kind: CppTKind) -> bool =
-  match kind { CKVoid => true, _ => false }
-
-fn cpp_is_int_keyword(kind: CppTKind) -> bool =
-  match kind { CKInt => true, _ => false }
-
-fn cpp_is_bool_keyword(kind: CppTKind) -> bool =
-  match kind { CKBool => true, _ => false }
-
-fn cpp_is_char_keyword(kind: CppTKind) -> bool =
-  match kind { CKChar => true, _ => false }
-
-fn cpp_type_part_string(kind: CppTKind) -> string = do
-  if cpp_get_identifier(kind) != "" then cpp_get_identifier(kind)
-  else if cpp_get_string(kind) != "" then "\"" + cpp_get_string(kind) + "\""
-  else if cpp_is_angle(kind) then "<"
-  else if cpp_is_right_angle(kind) then ">"
-  else if cpp_is_scope(kind) then "::"
-  else if cpp_is_void_keyword(kind) then "void"
-  else if cpp_is_int_keyword(kind) then "int"
-  else if cpp_is_bool_keyword(kind) then "bool"
-  else if cpp_is_char_keyword(kind) then "char"
-  else if cpp_get_operator(kind) != "" then cpp_get_operator(kind)
-  else ""
-  end
-end
-
-
-// C++ parser: [CppToken] → CppProgram
-// Uses tokens and position (no struct) to avoid move semantics issues.
-
-type CppParseResult = CppParseResult { program: CppProgram, errors: [string] }
-
-type CppDeclResult = CppDeclResult { decl: Shared<CppDecl>, position: i32 }
-
-type CppTypeResult = CppTypeResult { type_string: string, position: i32 }
-
-fn parse_include_skip(tokens: [CppToken], position: i32) -> i32 = do
-  let pos = position
-  if cpp_is_hash(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
-  if cpp_is_identifier(cpp_token_kind_at(tokens, pos)) && cpp_get_identifier(cpp_token_kind_at(tokens, pos)) == "include" then pos = pos + 1 end
-  pos
-end
-
-fn parse_type_tokens(tokens: [CppToken], position: i32) -> CppTypeResult = do
-  let parts: [string] = []
-  let depth = 0
-  let pos = position
-  while !cpp_at_end(tokens, pos) do
-    let kind = cpp_token_kind_at(tokens, pos)
-    const stop = cpp_is_stop_for_type(kind) || cpp_is_right_paren(kind) || cpp_is_right_brace(kind) || (cpp_is_right_angle(kind) && depth == 0)
-    if stop then break end
-    let part = cpp_type_part_string(kind)
-    if cpp_is_angle(kind) then depth = depth + 1
-    else if cpp_is_right_angle(kind) then depth = if depth > 0 then depth - 1 else 0 end
-    end
-    if part != "" then parts.push(part) end
-    pos = pos + 1
-  end
-  CppTypeResult { type_string: parts.join(" "), position: pos }
-end
-
-fn parse_include_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
-  const after_skip = parse_include_skip(tokens, position)
-  let kind = cpp_token_kind_at(tokens, after_skip)
-  if cpp_is_angle(kind) then
-    const name = cpp_get_identifier(cpp_token_kind_at(tokens, after_skip + 1))
-    CppDeclResult { decl: Shared.new(CppInclude(true, name)), position: after_skip + 3 }
-  else if cpp_is_string(kind) then
-    const path = cpp_get_string(kind)
-    CppDeclResult { decl: Shared.new(CppInclude(false, path)), position: after_skip + 1 }
-  else
-    CppDeclResult { decl: Shared.new(CppInclude(true, "")), position: after_skip }
-  end
-end
-
-fn parse_using_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
-  const after_using = position + 1
-  const alias = cpp_get_identifier(cpp_token_kind_at(tokens, after_using))
-  const after_alias = after_using + 1
-  const after_equals = if cpp_is_equals(cpp_token_kind_at(tokens, after_alias)) then after_alias + 1 else after_alias end
-  const type_result = parse_type_tokens(tokens, after_equals)
-  const after_type = type_result.position
-  const after_semicolon = if cpp_is_semicolon(cpp_token_kind_at(tokens, after_type)) then after_type + 1 else after_type end
-  CppDeclResult { decl: Shared.new(CppUsing(alias, type_result.type_string)), position: after_semicolon }
-end
-
-fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
-  const after_struct = position + 1
-  const name = cpp_get_identifier(cpp_token_kind_at(tokens, after_struct))
-  const after_name = after_struct + 1
-  const fields: [Shared<CppField>] = []
-  let pos = after_name
-  if cpp_is_left_brace(cpp_token_kind_at(tokens, pos)) then
-    pos = pos + 1
-    while !cpp_at_end(tokens, pos) && !cpp_is_right_brace(cpp_token_kind_at(tokens, pos)) do
-      const type_result = parse_type_tokens(tokens, pos)
-      const typ_and_name = type_result.type_string
-      let last_space = -1
-      let index = 0
-      while index < typ_and_name.length() do
-        if typ_and_name.substring(index, 1) == " " then last_space = index end
-        index = index + 1
-      end
-      const field_name = if last_space >= 0 then typ_and_name.substring(last_space + 1, typ_and_name.length() - last_space - 1) else typ_and_name end
-      const field_type = if last_space > 0 then typ_and_name.substring(0, last_space) else "int" end
-      pos = type_result.position
-      if cpp_is_semicolon(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
-      fields.push(Shared.new(CppField { typ: field_type, name: field_name }))
-    end
-    if cpp_is_right_brace(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
-  end
-  CppDeclResult { decl: Shared.new(CppStruct(name, fields)), position: pos }
-end
-
-fn cpp_parse_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
-  let kind = cpp_token_kind_at(tokens, position)
-  if cpp_is_hash(kind) then parse_include_decl(tokens, position)
-  else if cpp_is_using_keyword(kind) then parse_using_decl(tokens, position)
-  else if cpp_is_struct_keyword(kind) then parse_struct_decl(tokens, position)
-  else CppDeclResult { decl: Shared.new(CppInclude(true, "__skip__")), position: position }
-  end
-end
-
-fn cpp_is_skip_decl(decl: Shared<CppDecl>) -> bool =
-  match decl { CppInclude(is_angle, path) => is_angle && path == "__skip__", _ => false }
-
-fn cpp_parse(tokens: [CppToken]) -> CppParseResult = do
-  const decls: [Shared<CppDecl>] = []
-  let position = 0
-  while !cpp_at_end(tokens, position) do
-    let result = cpp_parse_decl(tokens, position)
-    if cpp_is_skip_decl(result.decl) && result.position == position then
-      position = position + 1
-    else
-      do
-        if !cpp_is_skip_decl(result.decl) then decls.push(result.decl) end
-        position = result.position
-      end
-    end
-  end
-  CppParseResult { program: CppProgram { decls: decls }, errors: [] }
-end
-
-
 // Parser state, result types, and token kind predicates.
-// Shared types (TKind, Token, Expr, etc.) defined in ast.mlc.
+
 
 // ─── Parser state ─────────────────────────────────────────────────────────
 
-type Parser = Parser { tokens: [Token], pos: i32 }
+export type Parser = Parser { tokens: [Token], pos: i32 }
 
-fn parser_new(tokens: [Token]) -> Parser =
+export fn parser_new(tokens: [Token]) -> Parser =
   Parser { tokens: tokens, pos: 0 }
 
 fn parser_kind(parser: Parser) -> TKind =
@@ -727,23 +327,23 @@ fn parser_skip_semi(parser: Parser) -> Parser =
 
 // ─── Result types ─────────────────────────────────────────────────────────
 
-type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
-type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
-type PatResult       = PatResult       { pat:        Shared<Pat>,            parser: Parser }
-type StmtResult      = StmtResult      { stmt:       Shared<Stmt>,           parser: Parser }
-type StmtsResult     = StmtsResult     { stmts:      [Shared<Stmt>],         parser: Parser }
-type ExprsResult     = ExprsResult     { exprs:      [Shared<Expr>],         parser: Parser }
-type ArmsResult      = ArmsResult      { arms:       [Shared<MatchArm>],     parser: Parser }
-type VariantResult   = VariantResult   { variant:    Shared<TypeVariant>,    parser: Parser }
-type VariantsResult  = VariantsResult  { variants:   [Shared<TypeVariant>],  parser: Parser }
-type ParamsResult    = ParamsResult    { params:     [Shared<Param>],        parser: Parser }
-type DeclResult      = DeclResult      { decl:       Shared<Decl>,           parser: Parser }
-type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
-type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          parser: Parser }
-type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
-type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
-type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
-type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
+export type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
+export type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
+export type PatResult       = PatResult       { pat:        Shared<Pat>,            parser: Parser }
+export type StmtResult      = StmtResult      { stmt:       Shared<Stmt>,           parser: Parser }
+export type StmtsResult     = StmtsResult     { stmts:      [Shared<Stmt>],         parser: Parser }
+export type ExprsResult     = ExprsResult     { exprs:      [Shared<Expr>],         parser: Parser }
+export type ArmsResult      = ArmsResult      { arms:       [Shared<MatchArm>],     parser: Parser }
+export type VariantResult   = VariantResult   { variant:    Shared<TypeVariant>,    parser: Parser }
+export type VariantsResult  = VariantsResult  { variants:   [Shared<TypeVariant>],  parser: Parser }
+export type ParamsResult    = ParamsResult    { params:     [Shared<Param>],        parser: Parser }
+export type DeclResult      = DeclResult      { decl:       Shared<Decl>,           parser: Parser }
+export type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
+export type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          parser: Parser }
+export type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
+export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
+export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
+export type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
 
 // ─── Token kind predicates ────────────────────────────────────────────────
 
@@ -794,12 +394,12 @@ fn get_int_literal(kind: TKind)  -> i32    = match kind { LInt(n)    => n,    _ 
 fn get_str_literal(kind: TKind)  -> string = match kind { LStr(s)    => s,    _ => "" }
 fn get_operator(kind: TKind)     -> string = match kind { Op(s)      => s,    _ => "" }
 
-fn is_ctor_name(name: string) -> bool =
+export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"
 
 // ─── extend TKind ─────────────────────────────────────────────────────────
 
-extend TKind {
+export extend TKind {
   fn is_fn(self)       -> bool = match self { KFn       => true, _ => false }
   fn is_type(self)     -> bool = match self { KType     => true, _ => false }
   fn is_let(self)      -> bool = match self { KLet      => true, _ => false }
@@ -849,7 +449,7 @@ extend TKind {
 
 // ─── extend Parser ────────────────────────────────────────────────────────
 
-extend Parser {
+export extend Parser {
   fn kind(self)      -> TKind  = tokens[pos].kind
   fn advance(self)   -> Parser = Parser { tokens, pos: pos + 1 }
   fn advance_by(self, count: i32) -> Parser = Parser { tokens, pos: pos + count }
@@ -858,14 +458,13 @@ extend Parser {
     match tokens[pos].kind { Semicolon => self.advance(), _ => self }
 }
 
-
 // ─── Type expression parser ───────────────────────────────────────────────
 
-fn parse_type(parser: Parser) -> TypeResult = do
+
+export fn parse_type(parser: Parser) -> TypeResult = do
   const base = parse_base_type(parser)
-  // T -> R  →  function type
-  if is_arrow(parser_kind(base.parser)) then
-    const ret = parse_type(parser_advance(base.parser))
+  if base.parser.kind().is_arrow() then
+    const ret = parse_type(base.parser.advance())
     const params: [Shared<TypeExpr>] = [base.type_expr]
     TypeResult { type_expr: Shared.new(TyFn(params, ret.type_expr)), parser: ret.parser }
   else
@@ -874,31 +473,31 @@ fn parse_type(parser: Parser) -> TypeResult = do
 end
 
 fn parse_base_type(parser: Parser) -> TypeResult = do
-  let kind = parser_kind(parser)
-  if is_left_bracket(kind) then
-    const inner = parse_type(parser_advance(parser))
-    TypeResult { type_expr: Shared.new(TyArray(inner.type_expr)), parser: parser_advance(inner.parser) }
-  else if is_ident(kind) then
-    const name = get_ident(kind)
-    if      name == "i32"    then TypeResult { type_expr: Shared.new(TyI32),    parser: parser_advance(parser) }
-    else if name == "string" then TypeResult { type_expr: Shared.new(TyString), parser: parser_advance(parser) }
-    else if name == "bool"   then TypeResult { type_expr: Shared.new(TyBool),   parser: parser_advance(parser) }
-    else if name == "unit"   then TypeResult { type_expr: Shared.new(TyUnit),   parser: parser_advance(parser) }
+  const kind = parser.kind()
+  if kind.is_lbracket() then
+    const inner = parse_type(parser.advance())
+    TypeResult { type_expr: Shared.new(TyArray(inner.type_expr)), parser: inner.parser.advance() }
+  else if kind.is_ident() then
+    const name = kind.ident()
+    if      name == "i32"    then TypeResult { type_expr: Shared.new(TyI32),    parser: parser.advance() }
+    else if name == "string" then TypeResult { type_expr: Shared.new(TyString), parser: parser.advance() }
+    else if name == "bool"   then TypeResult { type_expr: Shared.new(TyBool),   parser: parser.advance() }
+    else if name == "unit"   then TypeResult { type_expr: Shared.new(TyUnit),   parser: parser.advance() }
     else
-      const after = parser_advance(parser)
-      if is_operator(parser_kind(after)) && get_operator(parser_kind(after)) == "<" then
-        const args = parse_type_args(parser_advance(after))
+      const after = parser.advance()
+      if after.kind().is_op() && after.kind().op_val() == "<" then
+        const args = parse_type_args(after.advance())
         const type_expr =
           if name == "Shared" && args.types.length() == 1 then Shared.new(TyShared(args.types[0]))
           else Shared.new(TyGeneric(name, args.types))
           end
-        TypeResult { type_expr: type_expr, parser: args.parser }
+        TypeResult { type_expr, parser: args.parser }
       else
         TypeResult { type_expr: Shared.new(TyNamed(name)), parser: after }
       end
     end
   else
-    TypeResult { type_expr: Shared.new(TyUnit), parser: parser_advance_by(parser, 2) }
+    TypeResult { type_expr: Shared.new(TyUnit), parser: parser.advance_by(2) }
   end
 end
 
@@ -907,21 +506,96 @@ fn parse_type_args(parser: Parser) -> TypesResult = do
   const first = parse_type(parser)
   types.push(first.type_expr)
   let state = first.parser
-  while is_comma(parser_kind(state)) do
-    let next = parse_type(parser_advance(state))
+  while state.kind().is_comma() do
+    const next = parse_type(state.advance())
     types.push(next.type_expr)
     state = next.parser
   end
   const end_state =
-    if is_operator(parser_kind(state)) && get_operator(parser_kind(state)) == ">" then
-      parser_advance(state)
+    if state.kind().is_op() && state.kind().op_val() == ">" then state.advance()
     else state
     end
-  TypesResult { types: types, parser: end_state }
+  TypesResult { types, parser: end_state }
 end
 
+// ─── Statement parsers ────────────────────────────────────────────────────
 
-// ─── Pattern parser ───────────────────────────────────────────────────────
+
+export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
+  const stmts: [Shared<Stmt>] = []
+  let state = parser
+  while !state.kind().is_end() && !state.at_eof() do
+    const result = parse_stmt(state)
+    stmts.push(result.stmt)
+    state = result.parser.skip_semi()
+  end
+  StmtsResult { stmts, parser: state.advance() }
+end
+
+export fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
+  const stmts: [Shared<Stmt>] = []
+  let state = parser
+  while !state.kind().is_end() && !state.kind().is_else() && !state.at_eof() do
+    const result = parse_stmt(state)
+    stmts.push(result.stmt)
+    state = result.parser.skip_semi()
+  end
+  StmtsResult { stmts, parser: state }
+end
+
+export fn parse_stmt(parser: Parser) -> StmtResult = do
+  const kind = parser.kind()
+  if kind.is_let() then
+    const after_let  = parser.advance()
+    const is_const   = after_let.kind().is_const()
+    const name_pos   = if is_const then after_let.advance() else after_let end
+    const var_name   = name_pos.kind().ident()
+    const type_result =
+      if name_pos.advance().kind().is_colon() then
+        parse_type(name_pos.advance_by(2))
+      else
+        TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
+      end
+    const value_result = parse_expr(type_result.parser.advance())
+    StmtResult {
+      stmt: Shared.new(StmtLet(var_name, !is_const, type_result.type_expr, value_result.expr)),
+      parser: value_result.parser
+    }
+  else if kind.is_const() then
+    const name_pos    = parser.advance()
+    const var_name    = name_pos.kind().ident()
+    const type_result =
+      if name_pos.advance().kind().is_colon() then
+        parse_type(name_pos.advance_by(2))
+      else
+        TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
+      end
+    const value_result = parse_expr(type_result.parser.advance())
+    StmtResult {
+      stmt: Shared.new(StmtLet(var_name, false, type_result.type_expr, value_result.expr)),
+      parser: value_result.parser
+    }
+  else if kind.is_break()    then StmtResult { stmt: Shared.new(StmtBreak),    parser: parser.advance() }
+  else if kind.is_continue() then StmtResult { stmt: Shared.new(StmtContinue), parser: parser.advance() }
+  else if kind.is_return() then
+    const value_result = parse_expr(parser.advance())
+    StmtResult { stmt: Shared.new(StmtReturn(value_result.expr)), parser: value_result.parser }
+  else
+    const expr_result = parse_expr(parser)
+    if expr_result.parser.kind().is_equal() then
+      const rhs = parse_expr(expr_result.parser.advance())
+      StmtResult {
+        stmt: Shared.new(StmtExpr(Shared.new(ExprBin("=", expr_result.expr, rhs.expr)))),
+        parser: rhs.parser
+      }
+    else
+      StmtResult { stmt: Shared.new(StmtExpr(expr_result.expr)), parser: expr_result.parser }
+    end
+  end
+end
+
+// ─── Expression and pattern parser ───────────────────────────────────────
+
 
 fn parse_pat(parser: Parser) -> PatResult = do
   const kind = parser.kind()
@@ -972,7 +646,7 @@ end
 
 // ─── Expression parser (precedence climbing) ─────────────────────────────
 
-fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
+export fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
 
 fn pipe_desugar(left_expr: Shared<Expr>, right_expr: Shared<Expr>) -> Shared<Expr> =
   match right_expr {
@@ -1257,7 +931,7 @@ fn parse_array_lit(parser: Parser) -> ExprResult = do
   end
 end
 
-fn parse_if_expr(parser: Parser) -> ExprResult = do
+export fn parse_if_expr(parser: Parser) -> ExprResult = do
   const is_negated = parser.kind().is_unless()
   const cond_result = parse_expr(parser.advance())
   const condition = if is_negated
@@ -1389,86 +1063,10 @@ fn parse_record_expr(parser: Parser, record_name: string) -> ExprResult =
     ExprResult { expr: Shared.new(ExprRecord(record_name, fields_result.field_vals)), parser: fields_result.parser }
   end
 
-
-// ─── Statement parsers ────────────────────────────────────────────────────
-
-fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
-  const stmts: [Shared<Stmt>] = []
-  let state = parser
-  while !state.kind().is_end() && !state.at_eof() do
-    const result = parse_stmt(state)
-    stmts.push(result.stmt)
-    state = result.parser.skip_semi()
-  end
-  StmtsResult { stmts, parser: state.advance() }
-end
-
-fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
-  const stmts: [Shared<Stmt>] = []
-  let state = parser
-  while !state.kind().is_end() && !state.kind().is_else() && !state.at_eof() do
-    const result = parse_stmt(state)
-    stmts.push(result.stmt)
-    state = result.parser.skip_semi()
-  end
-  StmtsResult { stmts, parser: state }
-end
-
-fn parse_stmt(parser: Parser) -> StmtResult = do
-  const kind = parser.kind()
-  if kind.is_let() then
-    const after_let  = parser.advance()
-    const is_const   = after_let.kind().is_const()
-    const name_pos   = if is_const then after_let.advance() else after_let end
-    const var_name   = name_pos.kind().ident()
-    const type_result =
-      if name_pos.advance().kind().is_colon() then
-        parse_type(name_pos.advance_by(2))
-      else
-        TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
-      end
-    const value_result = parse_expr(type_result.parser.advance())
-    StmtResult {
-      stmt: Shared.new(StmtLet(var_name, !is_const, type_result.type_expr, value_result.expr)),
-      parser: value_result.parser
-    }
-  else if kind.is_const() then
-    const name_pos    = parser.advance()
-    const var_name    = name_pos.kind().ident()
-    const type_result =
-      if name_pos.advance().kind().is_colon() then
-        parse_type(name_pos.advance_by(2))
-      else
-        TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
-      end
-    const value_result = parse_expr(type_result.parser.advance())
-    StmtResult {
-      stmt: Shared.new(StmtLet(var_name, false, type_result.type_expr, value_result.expr)),
-      parser: value_result.parser
-    }
-  else if kind.is_break()    then StmtResult { stmt: Shared.new(StmtBreak),    parser: parser.advance() }
-  else if kind.is_continue() then StmtResult { stmt: Shared.new(StmtContinue), parser: parser.advance() }
-  else if kind.is_return() then
-    const value_result = parse_expr(parser.advance())
-    StmtResult { stmt: Shared.new(StmtReturn(value_result.expr)), parser: value_result.parser }
-  else
-    const expr_result = parse_expr(parser)
-    if expr_result.parser.kind().is_equal() then
-      const rhs = parse_expr(expr_result.parser.advance())
-      StmtResult {
-        stmt: Shared.new(StmtExpr(Shared.new(ExprBin("=", expr_result.expr, rhs.expr)))),
-        parser: rhs.parser
-      }
-    else
-      StmtResult { stmt: Shared.new(StmtExpr(expr_result.expr)), parser: expr_result.parser }
-    end
-  end
-end
-
-
 // ─── Declaration parsers ──────────────────────────────────────────────────
 
-fn parse_decl(parser: Parser) -> DeclResult = do
+
+export fn parse_decl(parser: Parser) -> DeclResult = do
   const kind = parser.kind()
   if kind.is_fn() || (kind.is_extern() && parser.advance().kind().is_fn()) then
     parse_fn_decl(parser)
@@ -1612,7 +1210,7 @@ end
 
 // ─── Entry point ──────────────────────────────────────────────────────────
 
-fn parse_program(tokens: [Token]) -> Program = do
+export fn parse_program(tokens: [Token]) -> Program = do
   const decls: [Shared<Decl>] = []
   let state = parser_new(tokens)
   while !state.at_eof() do
@@ -1623,9 +1221,8 @@ fn parse_program(tokens: [Token]) -> Program = do
   Program { decls }
 end
 
-
 // Checker: name resolution.
-// Shared types defined in ast.mlc. errs_append defined in ast.mlc.
+
 
 // ─── Name scope helpers ───────────────────────────────────────────────────
 
@@ -1658,7 +1255,7 @@ end
 
 // ─── Name resolution ──────────────────────────────────────────────────────
 
-fn collect_globals(prog: Program) -> [string] = do
+export fn collect_globals(prog: Program) -> [string] = do
   const names: [string] = []
   names.push("true"); names.push("false"); names.push("exit")
   names.push("print"); names.push("println"); names.push("args")
@@ -1685,7 +1282,7 @@ fn collect_globals(prog: Program) -> [string] = do
   names
 end
 
-fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [string]) -> [string] = do
+export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [string]) -> [string] = do
   match expr {
     ExprIdent(name) => do
       let errors: [string] = []
@@ -1775,9 +1372,9 @@ fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [string]) -> 
   }
 end
 
-type NameCheckResult = NameCheckResult { errors: [string], scope: [string] }
+export type NameCheckResult = NameCheckResult { errors: [string], scope: [string] }
 
-fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: [string]) -> NameCheckResult = do
+export fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: [string]) -> NameCheckResult = do
   let errors: [string] = []; const scope = locals; let i = 0
   while i < stmts.length() do
     match stmts[i] {
@@ -1796,10 +1393,10 @@ fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: [string])
   NameCheckResult { errors: errors, scope: scope }
 end
 
-
 // ─── Semantic type ────────────────────────────────────────────────────────
 
-type Type =
+
+export type Type =
   | TI32 | TString | TBool | TUnit
   | TArray(Shared<Type>)
   | TShared(Shared<Type>)
@@ -1809,18 +1406,18 @@ type Type =
 
 // ─── Type registry ────────────────────────────────────────────────────────
 
-type TypeRegistry = TypeRegistry {
+export type TypeRegistry = TypeRegistry {
   fn_types:    Map<string, Shared<Type>>,
   ctor_types:  Map<string, Shared<Type>>,
   ctor_params: Map<string, [Shared<Type>]>,
   field_types: Map<string, Map<string, Shared<Type>>>
 }
 
-fn empty_registry() -> TypeRegistry =
+export fn empty_registry() -> TypeRegistry =
   TypeRegistry { fn_types: Map.new(), ctor_types: Map.new(),
                  ctor_params: Map.new(), field_types: Map.new() }
 
-fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
+export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
   match type_expr {
     TyI32     => Shared.new(TI32),
     TyString  => Shared.new(TString),
@@ -1837,7 +1434,7 @@ fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     _ => Shared.new(TUnknown)
   }
 
-fn build_registry(prog: Program) -> Shared<TypeRegistry> = do
+export fn build_registry(prog: Program) -> Shared<TypeRegistry> = do
   let registry = empty_registry()
   let i = 0
   while i < prog.decls.length() do
@@ -1900,8 +1497,8 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
   }
 end
 
-
 // ─── Type inference ───────────────────────────────────────────────────────
+
 
 type InferResult     = InferResult     { inferred_type: Shared<Type>,             errors: [string] }
 type StmtInferResult = StmtInferResult { type_env:      Map<string, Shared<Type>>, errors: [string] }
@@ -2126,9 +1723,9 @@ end
 
 // ─── Entry point ──────────────────────────────────────────────────────────
 
-type CheckOut = CheckOut { errors: [string], registry: Shared<TypeRegistry> }
+export type CheckOut = CheckOut { errors: [string], registry: Shared<TypeRegistry> }
 
-fn check(prog: Program) -> CheckOut = do
+export fn check(prog: Program) -> CheckOut = do
   const globals  = collect_globals(prog)
   let registry = build_registry(prog)
   let all_errors: [string] = []
@@ -2155,9 +1752,8 @@ fn check(prog: Program) -> CheckOut = do
   CheckOut { errors: all_errors, registry: registry }
 end
 
-
 // Code generator: Program AST → C++ source string.
-// Shared types defined in ast.mlc.
+
 
 // ─── Field order registry ─────────────────────────────────────────────────
 
@@ -2673,7 +2269,7 @@ fn gen_proto(decl: Shared<Decl>) -> string =
     DeclFn(name, params, ret, _) => gen_fn_proto(name, params, ret)
   }
 
-fn gen_program(prog: Program) -> string = do
+export fn gen_program(prog: Program) -> string = do
   const field_orders = build_field_orders(prog)
   let parts: [string] = []
   parts.push("#include \"mlc/core/string.hpp\"\n")
@@ -2727,8 +2323,8 @@ fn gen_program(prog: Program) -> string = do
   parts.join("")
 end
 
-
 // Entry point. Pipeline: source → tokenize → parse → check → gen_program
+
 
 fn compile_source(src: string) -> string = do
   const lex = tokenize(src)

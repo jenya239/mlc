@@ -1,12 +1,17 @@
 // Entry point. Pipeline: source → tokenize → parse → check → gen_program
 
+import { tokenize } from "./lexer"
+import { parse_program } from "./parser/decls"
+import { check, CheckOut } from "./checker/infer"
+import { gen_program } from "./codegen"
+
 fn compile_source(src: string) -> string = do
-  let lex = tokenize(src)
+  const lex = tokenize(src)
   if lex.errors.length() > 0 then
     format_errs("lex", lex.errors)
   else
-    let prog = parse_program(lex.tokens)
-    let chk = check(prog)
+    const prog = parse_program(lex.tokens)
+    const chk = check(prog)
     if chk.errors.length() > 0 then format_errs("check", chk.errors)
     else gen_program(prog)
     end
@@ -14,7 +19,7 @@ fn compile_source(src: string) -> string = do
 end
 
 fn format_errs(label: string, errors: [string]) -> string = do
-  let mut output = ""; let mut i = 0
+  let output = ""; let i = 0
   while i < errors.length() do
     output = output + label + ": " + errors[i] + "\n"; i = i + 1
   end
@@ -22,12 +27,12 @@ fn format_errs(label: string, errors: [string]) -> string = do
 end
 
 fn main() -> i32 = do
-  let cli_args = args()
+  const cli_args = args()
   if cli_args.length() == 0 then
     println("Usage: mlcc <source.mlc>")
     exit(1)
   end
-  let src = File.read(cli_args[0])
+  const src = File.read(cli_args[0])
   print(compile_source(src))
   0
 end

@@ -1,0 +1,18 @@
+// Unit tests for C++ AST types.
+
+fn cpp_ast_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const inc = Shared.new(CppInclude(true, "string"))
+  const prog = CppProgram { decls: [inc] }
+  results.push(assert_eq_int("CppProgram with 1 decl",
+    prog.decls.length(), 1))
+
+  const field = Shared.new(CppField { typ: "int", name: "x" })
+  const st = Shared.new(CppStruct("Point", [field]))
+  const prog2 = CppProgram { decls: [st] }
+  results.push(assert_true("CppStruct in program",
+    match prog2.decls[0] { CppStruct(_, _) => true, _ => false }))
+
+  results
+end

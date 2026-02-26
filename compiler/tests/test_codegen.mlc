@@ -1,7 +1,7 @@
 // Unit tests for the code generator.
 
 fn codegen_tests() -> [TestResult] = do
-  let mut results: [TestResult] = []
+  let results: [TestResult] = []
 
   results.push(assert_eq_str("TyI32 → 'int'",
     type_to_cpp(Shared.new(TyI32)), "int"))
@@ -21,7 +21,7 @@ fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("TyShared(TyI32) → 'std::shared_ptr<int>'",
     type_to_cpp(Shared.new(TyShared(Shared.new(TyI32)))), "std::shared_ptr<int>"))
 
-  let empty_orders: [Shared<FieldOrder>] = []
+  const empty_orders: [Shared<FieldOrder>] = []
 
   results.push(assert_eq_str("ExprInt(42) → '42'",
     gen_expr(Shared.new(ExprInt(42)), empty_orders), "42"))
@@ -52,6 +52,51 @@ fn codegen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str("map_builtin passthrough → 'foo'",
     map_builtin("foo"), "foo"))
+
+  const single_params: [string] = ["x"]
+  results.push(assert_eq_str("ExprLambda single param → '[=](auto x) { return ... }'",
+    gen_expr(Shared.new(ExprLambda(single_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("x")), Shared.new(ExprInt(1)))))), empty_orders),
+    "[=](auto x) { return (x + 1); }"))
+
+  const two_params: [string] = ["a", "b"]
+  results.push(assert_eq_str("ExprLambda two params → '[=](auto a, auto b) { return ... }'",
+    gen_expr(Shared.new(ExprLambda(two_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("a")), Shared.new(ExprIdent("b")))))), empty_orders),
+    "[=](auto a, auto b) { return (a + b); }"))
+
+  const zero_params: [string] = []
+  results.push(assert_eq_str("ExprLambda zero params → '[]() { return ... }'",
+    gen_expr(Shared.new(ExprLambda(zero_params, Shared.new(ExprInt(42)))), empty_orders),
+    "[]() { return 42; }"))
+
+  results.push(assert_eq_str("map_method: length → length",
+    map_method("length"), "length"))
+
+  results.push(assert_eq_str("map_method: len → length",
+    map_method("len"), "length"))
+
+  results.push(assert_eq_str("map_method: push → push_back",
+    map_method("push"), "push_back"))
+
+  results.push(assert_eq_str("map_method: upper → upper",
+    map_method("upper"), "upper"))
+
+  results.push(assert_eq_str("map_method: to_upper → upper",
+    map_method("to_upper"), "upper"))
+
+  results.push(assert_eq_str("map_method: to_lower → lower",
+    map_method("to_lower"), "lower"))
+
+  results.push(assert_eq_str("map_method: trim passthrough",
+    map_method("trim"), "trim"))
+
+  results.push(assert_eq_str("map_method: split passthrough",
+    map_method("split"), "split"))
+
+  results.push(assert_eq_str("map_method: chars passthrough",
+    map_method("chars"), "chars"))
+
+  results.push(assert_eq_str("map_method: lines passthrough",
+    map_method("lines"), "lines"))
 
   results
 end

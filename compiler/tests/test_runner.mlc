@@ -18,7 +18,7 @@ fn assert_eq_str(test_name: string, actual: string, expected: string) -> TestRes
   end
 
 fn run_all(results: [TestResult]) -> string = do
-  let mut passed = 0; let mut failed = 0; let mut output = ""; let mut i = 0
+  let passed = 0; let failed = 0; let output = ""; let i = 0
   while i < results.length() do
     match results[i] {
       Pass(_)            => do passed = passed + 1 end,

@@ -1,0 +1,30 @@
+// C++ AST for the subset we parse.
+
+type CppExpr =
+  | CppInt(i32)
+  | CppStr(string)
+  | CppIdent(string)
+  | CppCall(Shared<CppExpr>, [Shared<CppExpr>])
+  | CppMember(Shared<CppExpr>, string)
+  | CppIndex(Shared<CppExpr>, Shared<CppExpr>)
+  | CppBinary(string, Shared<CppExpr>, Shared<CppExpr>)
+  | CppUnary(string, Shared<CppExpr>)
+
+type CppStmt =
+  | CppAutoDecl(string, Shared<CppExpr>)
+  | CppReturn(Shared<CppExpr>)
+  | CppExprStmt(Shared<CppExpr>)
+  | CppBlock([Shared<CppStmt>])
+  | CppIf(Shared<CppExpr>, Shared<CppStmt>, Shared<CppStmt>)
+  | CppWhile(Shared<CppExpr>, Shared<CppStmt>)
+
+type CppField = CppField { typ: string, name: string }
+
+type CppDecl =
+  | CppInclude(bool, string)
+  | CppUsing(string, string)
+  | CppStruct(string, [Shared<CppField>])
+  | CppFnProto(string, string, [string])
+  | CppFnDef(string, string, [string], [Shared<CppStmt>])
+
+type CppProgram = CppProgram { decls: [Shared<CppDecl>] }

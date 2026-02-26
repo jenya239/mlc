@@ -1,48 +1,60 @@
 // ─── Type expression parser ───────────────────────────────────────────────
 
-fn parse_type(parser: Parser) -> TypeResult = do
-  let kind = parser_kind(parser)
-  if is_left_bracket(kind) then
-    let inner = parse_type(parser_advance(parser))
-    TypeResult { type_expr: Shared.new(TyArray(inner.type_expr)), parser: parser_advance(inner.parser) }
-  else if is_ident(kind) then
-    let name = get_ident(kind)
-    if      name == "i32"    then TypeResult { type_expr: Shared.new(TyI32),    parser: parser_advance(parser) }
-    else if name == "string" then TypeResult { type_expr: Shared.new(TyString), parser: parser_advance(parser) }
-    else if name == "bool"   then TypeResult { type_expr: Shared.new(TyBool),   parser: parser_advance(parser) }
-    else if name == "unit"   then TypeResult { type_expr: Shared.new(TyUnit),   parser: parser_advance(parser) }
+import { Parser, TypeResult, TypesResult } from "./preds"
+
+export fn parse_type(parser: Parser) -> TypeResult = do
+  const base = parse_base_type(parser)
+  if base.parser.kind().is_arrow() then
+    const ret = parse_type(base.parser.advance())
+    const params: [Shared<TypeExpr>] = [base.type_expr]
+    TypeResult { type_expr: Shared.new(TyFn(params, ret.type_expr)), parser: ret.parser }
+  else
+    base
+  end
+end
+
+fn parse_base_type(parser: Parser) -> TypeResult = do
+  const kind = parser.kind()
+  if kind.is_lbracket() then
+    const inner = parse_type(parser.advance())
+    TypeResult { type_expr: Shared.new(TyArray(inner.type_expr)), parser: inner.parser.advance() }
+  else if kind.is_ident() then
+    const name = kind.ident()
+    if      name == "i32"    then TypeResult { type_expr: Shared.new(TyI32),    parser: parser.advance() }
+    else if name == "string" then TypeResult { type_expr: Shared.new(TyString), parser: parser.advance() }
+    else if name == "bool"   then TypeResult { type_expr: Shared.new(TyBool),   parser: parser.advance() }
+    else if name == "unit"   then TypeResult { type_expr: Shared.new(TyUnit),   parser: parser.advance() }
     else
-      let after = parser_advance(parser)
-      if is_operator(parser_kind(after)) && get_operator(parser_kind(after)) == "<" then
-        let args = parse_type_args(parser_advance(after))
-        let type_expr =
+      const after = parser.advance()
+      if after.kind().is_op() && after.kind().op_val() == "<" then
+        const args = parse_type_args(after.advance())
+        const type_expr =
           if name == "Shared" && args.types.length() == 1 then Shared.new(TyShared(args.types[0]))
           else Shared.new(TyGeneric(name, args.types))
           end
-        TypeResult { type_expr: type_expr, parser: args.parser }
+        TypeResult { type_expr, parser: args.parser }
       else
         TypeResult { type_expr: Shared.new(TyNamed(name)), parser: after }
       end
     end
   else
-    TypeResult { type_expr: Shared.new(TyUnit), parser: parser_advance_by(parser, 2) }
+    TypeResult { type_expr: Shared.new(TyUnit), parser: parser.advance_by(2) }
   end
 end
 
 fn parse_type_args(parser: Parser) -> TypesResult = do
-  let mut types: [Shared<TypeExpr>] = []
-  let first = parse_type(parser)
+  const types: [Shared<TypeExpr>] = []
+  const first = parse_type(parser)
   types.push(first.type_expr)
-  let mut state = first.parser
-  while is_comma(parser_kind(state)) do
-    let next = parse_type(parser_advance(state))
+  let state = first.parser
+  while state.kind().is_comma() do
+    const next = parse_type(state.advance())
     types.push(next.type_expr)
     state = next.parser
   end
-  let end_state =
-    if is_operator(parser_kind(state)) && get_operator(parser_kind(state)) == ">" then
-      parser_advance(state)
+  const end_state =
+    if state.kind().is_op() && state.kind().op_val() == ">" then state.advance()
     else state
     end
-  TypesResult { types: types, parser: end_state }
+  TypesResult { types, parser: end_state }
 end

@@ -1,5 +1,6 @@
 // Lexer: source string → token array.
-// TKind, Token, LexOut defined in ast.mlc.
+
+import { TKind, Token, LexOut } from "./ast"
 
 type LexState = LexState { src: string, pos: i32, line: i32, col: i32 }
 type ScanIdR  = ScanIdR  { st: LexState, tok: Token }
@@ -28,8 +29,8 @@ fn ls_advance(st: LexState) -> LexState =
     LexState { src: st.src, pos: st.pos + 1, line: st.line, col: st.col + 1 }
   end
 fn ls_advance_n(st: LexState, n: i32) -> LexState = do
-  let mut s = st
-  let mut i = 0
+  let s = st
+  let i = 0
   while i < n do
     s = ls_advance(s)
     i = i + 1
@@ -69,23 +70,23 @@ fn keyword_kind(s: string) -> TKind =
   end
 
 fn scan_ident(st: LexState) -> ScanIdR = do
-  let start = st.pos
-  let src = st.src
-  let tok_ln = st.line
-  let tok_cl = st.col
-  let mut s = st
+  const start = st.pos
+  const src = st.src
+  const tok_ln = st.line
+  const tok_cl = st.col
+  let s = st
   while !ls_eof(s) && is_alnum(ls_cur(s)) do
     s = ls_advance(s)
   end
-  let word = src.substring(start, s.pos - start)
+  const word = src.substring(start, s.pos - start)
   ScanIdR { st: s, tok: Token { kind: keyword_kind(word), line: tok_ln, col: tok_cl } }
 end
 
 fn scan_int(st: LexState) -> ScanIntR = do
-  let tok_ln = st.line
-  let tok_cl = st.col
-  let mut s = st
-  let mut v = 0
+  const tok_ln = st.line
+  const tok_cl = st.col
+  let s = st
+  let v = 0
   while !ls_eof(s) && is_digit(ls_cur(s)) do
     v = v * 10 + ls_cur(s).to_i()
     s = ls_advance(s)
@@ -102,15 +103,15 @@ fn map_escape(c: string) -> string =
   end
 
 fn scan_string(st: LexState) -> ScanStrR = do
-  let tok_ln = st.line
-  let tok_cl = st.col
-  let mut s = ls_advance(st)
-  let mut parts: [string] = []
-  let mut err = ""
+  const tok_ln = st.line
+  const tok_cl = st.col
+  let s = ls_advance(st)
+  let parts: [string] = []
+  let err = ""
   while !ls_eof(s) && ls_cur(s) != "\"" do
     if ls_cur(s) == "\\" then
       s = ls_advance(s)
-      let mapped = map_escape(ls_cur(s))
+      const mapped = map_escape(ls_cur(s))
       if mapped != "" then
         parts.push(mapped)
       else
@@ -132,7 +133,7 @@ fn scan_string(st: LexState) -> ScanStrR = do
 end
 
 fn skip_ws(st: LexState) -> LexState = do
-  let mut s = st
+  let s = st
   while !ls_eof(s) do
     let c = ls_cur(s)
     if is_ws(c) then
@@ -156,10 +157,10 @@ fn skip_ws(st: LexState) -> LexState = do
 end
 
 fn scan_op(st: LexState) -> ScanOpR = do
-  let tok_ln = st.line
-  let tok_cl = st.col
+  const tok_ln = st.line
+  const tok_cl = st.col
   let c = ls_cur(st)
-  let c2 = ls_peek(st, 1)
+  const c2 = ls_peek(st, 1)
   if      c == "-" && c2 == ">" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Arrow,      line: tok_ln, col: tok_cl } }
   else if c == "=" && c2 == ">" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: FatArrow,   line: tok_ln, col: tok_cl } }
   else if c == "|" && c2 == ">" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Pipe,       line: tok_ln, col: tok_cl } }
@@ -172,6 +173,7 @@ fn scan_op(st: LexState) -> ScanOpR = do
   else if c == "="  then ScanOpR { st: ls_advance(st), tok: Token { kind: Equal,    line: tok_ln, col: tok_cl } }
   else if c == "|"  then ScanOpR { st: ls_advance(st), tok: Token { kind: Bar,      line: tok_ln, col: tok_cl } }
   else if c == "?"  then ScanOpR { st: ls_advance(st), tok: Token { kind: Question, line: tok_ln, col: tok_cl } }
+  else if c == "." && c2 == "." && ls_peek(st, 2) == "." then ScanOpR { st: ls_advance_n(st, 3), tok: Token { kind: Spread,    line: tok_ln, col: tok_cl } }
   else if c == "."  then ScanOpR { st: ls_advance(st), tok: Token { kind: Dot,      line: tok_ln, col: tok_cl } }
   else if c == "("  then ScanOpR { st: ls_advance(st), tok: Token { kind: LParen,   line: tok_ln, col: tok_cl } }
   else if c == ")"  then ScanOpR { st: ls_advance(st), tok: Token { kind: RParen,   line: tok_ln, col: tok_cl } }
@@ -186,10 +188,10 @@ fn scan_op(st: LexState) -> ScanOpR = do
   end
 end
 
-fn tokenize(src: string) -> LexOut = do
-  let mut st = LexState { src: src, pos: 0, line: 1, col: 1 }
-  let mut tokens: [Token] = []
-  let mut errors: [string] = []
+export fn tokenize(src: string) -> LexOut = do
+  let st = LexState { src: src, pos: 0, line: 1, col: 1 }
+  const tokens: [Token] = []
+  let errors: [string] = []
   while !ls_eof(st) do
     st = skip_ws(st)
     if ls_eof(st) then break end

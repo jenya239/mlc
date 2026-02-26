@@ -1,4 +1,7 @@
-// ─── Pattern parser ───────────────────────────────────────────────────────
+// ─── Expression and pattern parser ───────────────────────────────────────
+
+import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, FieldValsResult, StmtsResult } from "./preds"
+import { parse_stmts_until_end, parse_stmts_until_else_end } from "./stmts"
 
 fn parse_pat(parser: Parser) -> PatResult = do
   const kind = parser.kind()
@@ -49,7 +52,7 @@ end
 
 // ─── Expression parser (precedence climbing) ─────────────────────────────
 
-fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
+export fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
 
 fn pipe_desugar(left_expr: Shared<Expr>, right_expr: Shared<Expr>) -> Shared<Expr> =
   match right_expr {
@@ -334,7 +337,7 @@ fn parse_array_lit(parser: Parser) -> ExprResult = do
   end
 end
 
-fn parse_if_expr(parser: Parser) -> ExprResult = do
+export fn parse_if_expr(parser: Parser) -> ExprResult = do
   const is_negated = parser.kind().is_unless()
   const cond_result = parse_expr(parser.advance())
   const condition = if is_negated

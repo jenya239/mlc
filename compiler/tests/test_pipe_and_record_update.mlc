@@ -1,0 +1,66 @@
+// Tests for pipe operator desugaring and record update codegen.
+
+fn pipe_and_record_update_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  const empty_orders: [Shared<FieldOrder>] = []
+
+  // ── Pipe operator desugaring ─────────────────────────────────────────────
+
+  const left_expr = Shared.new(ExprIdent("x"))
+  const right_fn   = Shared.new(ExprIdent("double"))
+
+  const plain_pipe = pipe_desugar(left_expr, right_fn)
+  results.push(assert_eq_str("pipe x |> double → double(x)",
+    gen_expr(plain_pipe, empty_orders),
+    "double(x)"))
+
+  const right_call_args: [Shared<Expr>] = [Shared.new(ExprInt(5))]
+  const right_call = Shared.new(ExprCall(Shared.new(ExprIdent("add")), right_call_args))
+  const partial_pipe = pipe_desugar(left_expr, right_call)
+  results.push(assert_eq_str("pipe x |> add(5) → add(x, 5)",
+    gen_expr(partial_pipe, empty_orders),
+    "add(x, 5)"))
+
+  const right_multi_args: [Shared<Expr>] = [Shared.new(ExprInt(3)), Shared.new(ExprInt(4))]
+  const right_multi_call = Shared.new(ExprCall(Shared.new(ExprIdent("clamp")), right_multi_args))
+  const multi_partial_pipe = pipe_desugar(left_expr, right_multi_call)
+  results.push(assert_eq_str("pipe x |> clamp(3, 4) → clamp(x, 3, 4)",
+    gen_expr(multi_partial_pipe, empty_orders),
+    "clamp(x, 3, 4)"))
+
+  // ── Record update codegen ────────────────────────────────────────────────
+
+  const point_fields: [string] = ["x", "y"]
+  const point_order = Shared.new(FieldOrder { type_name: "Point", fields: point_fields })
+  const orders: [Shared<FieldOrder>] = [point_order]
+
+  const override_fields: [Shared<FieldVal>] = [
+    Shared.new(FieldVal { name: "x", val: Shared.new(ExprInt(10)) })
+  ]
+  const base_expr = Shared.new(ExprIdent("p"))
+  const update_expr = Shared.new(ExprRecordUpdate("Point", base_expr, override_fields))
+  results.push(assert_eq_str("Point { ...p, x: 10 } → Point{10, p.y}",
+    gen_expr(update_expr, orders),
+    "Point{10, p.y}"))
+
+  const two_overrides: [Shared<FieldVal>] = [
+    Shared.new(FieldVal { name: "x", val: Shared.new(ExprInt(0)) }),
+    Shared.new(FieldVal { name: "y", val: Shared.new(ExprInt(0)) })
+  ]
+  const all_overrides_expr = Shared.new(ExprRecordUpdate("Point", base_expr, two_overrides))
+  results.push(assert_eq_str("Point { ...p, x: 0, y: 0 } → Point{0, 0}",
+    gen_expr(all_overrides_expr, orders),
+    "Point{0, 0}"))
+
+  // ── Lexer tokenizes ... as Spread ────────────────────────────────────────
+
+  const spread_tokens = tokenize("...")
+  results.push(assert_eq_int("'...' → 2 tokens (Spread + Eof)",
+    spread_tokens.tokens.length(), 2))
+
+  const first_token_is_spread = match spread_tokens.tokens[0].kind { Spread => 1, _ => 0 }
+  results.push(assert_eq_int("first token of '...' is Spread",
+    first_token_is_spread, 1))
+
+  results
+end

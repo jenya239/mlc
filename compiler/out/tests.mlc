@@ -14,7 +14,7 @@ type TKind =
   | KImport | KFrom | KAs | KExtern | KExtend | KWhere
   | KTrue | KFalse
   | LInt(i32) | LStr(string) | Ident(string)
-  | Arrow | FatArrow | Pipe | Bar | Equal | Question | Dot
+  | Arrow | FatArrow | Pipe | Bar | Equal | Question | Dot | Spread
   | LParen | RParen | LBrace | RBrace | LBracket | RBracket
   | Comma | Semicolon | Colon | Op(string) | Eof
 
@@ -28,6 +28,7 @@ type TypeExpr =
   | TyArray(Shared<TypeExpr>)
   | TyShared(Shared<TypeExpr>)
   | TyGeneric(string, [Shared<TypeExpr>])
+  | TyFn([Shared<TypeExpr>], Shared<TypeExpr>)
 
 type Pat =
   | PatWild | PatIdent(string) | PatInt(i32) | PatStr(string)
@@ -53,11 +54,13 @@ type Expr =
   | ExprFor(string, Shared<Expr>, [Shared<Stmt>])
   | ExprMatch(Shared<Expr>, [Shared<MatchArm>])
   | ExprRecord(string, [Shared<FieldVal>])
+  | ExprRecordUpdate(string, Shared<Expr>, [Shared<FieldVal>])
   | ExprArray([Shared<Expr>])
   | ExprQuestion(Shared<Expr>)
+  | ExprLambda([string], Shared<Expr>)
 
 type Stmt =
-  | StmtLet(string, bool, Shared<Expr>)
+  | StmtLet(string, bool, Shared<TypeExpr>, Shared<Expr>)
   | StmtExpr(Shared<Expr>)
   | StmtBreak | StmtContinue | StmtReturn(Shared<Expr>)
 
@@ -78,7 +81,7 @@ type Program = Program { decls: [Shared<Decl>] }
 // ─── Shared utility ───────────────────────────────────────────────────────
 
 fn errs_append(mut dst: [string], src: [string]) -> [string] = do
-  let mut i = 0
+  let i = 0
   while i < src.length() do
     dst.push(src[i])
     i = i + 1
@@ -117,8 +120,8 @@ fn ls_advance(st: LexState) -> LexState =
     LexState { src: st.src, pos: st.pos + 1, line: st.line, col: st.col + 1 }
   end
 fn ls_advance_n(st: LexState, n: i32) -> LexState = do
-  let mut s = st
-  let mut i = 0
+  let s = st
+  let i = 0
   while i < n do
     s = ls_advance(s)
     i = i + 1
@@ -158,23 +161,23 @@ fn keyword_kind(s: string) -> TKind =
   end
 
 fn scan_ident(st: LexState) -> ScanIdR = do
-  let start = st.pos
-  let src = st.src
-  let tok_ln = st.line
-  let tok_cl = st.col
-  let mut s = st
+  const start = st.pos
+  const src = st.src
+  const tok_ln = st.line
+  const tok_cl = st.col
+  let s = st
   while !ls_eof(s) && is_alnum(ls_cur(s)) do
     s = ls_advance(s)
   end
-  let word = src.substring(start, s.pos - start)
+  const word = src.substring(start, s.pos - start)
   ScanIdR { st: s, tok: Token { kind: keyword_kind(word), line: tok_ln, col: tok_cl } }
 end
 
 fn scan_int(st: LexState) -> ScanIntR = do
-  let tok_ln = st.line
-  let tok_cl = st.col
-  let mut s = st
-  let mut v = 0
+  const tok_ln = st.line
+  const tok_cl = st.col
+  let s = st
+  let v = 0
   while !ls_eof(s) && is_digit(ls_cur(s)) do
     v = v * 10 + ls_cur(s).to_i()
     s = ls_advance(s)
@@ -191,15 +194,15 @@ fn map_escape(c: string) -> string =
   end
 
 fn scan_string(st: LexState) -> ScanStrR = do
-  let tok_ln = st.line
-  let tok_cl = st.col
-  let mut s = ls_advance(st)
-  let mut parts: [string] = []
-  let mut err = ""
+  const tok_ln = st.line
+  const tok_cl = st.col
+  let s = ls_advance(st)
+  let parts: [string] = []
+  let err = ""
   while !ls_eof(s) && ls_cur(s) != "\"" do
     if ls_cur(s) == "\\" then
       s = ls_advance(s)
-      let mapped = map_escape(ls_cur(s))
+      const mapped = map_escape(ls_cur(s))
       if mapped != "" then
         parts.push(mapped)
       else
@@ -221,7 +224,7 @@ fn scan_string(st: LexState) -> ScanStrR = do
 end
 
 fn skip_ws(st: LexState) -> LexState = do
-  let mut s = st
+  let s = st
   while !ls_eof(s) do
     let c = ls_cur(s)
     if is_ws(c) then
@@ -245,10 +248,10 @@ fn skip_ws(st: LexState) -> LexState = do
 end
 
 fn scan_op(st: LexState) -> ScanOpR = do
-  let tok_ln = st.line
-  let tok_cl = st.col
+  const tok_ln = st.line
+  const tok_cl = st.col
   let c = ls_cur(st)
-  let c2 = ls_peek(st, 1)
+  const c2 = ls_peek(st, 1)
   if      c == "-" && c2 == ">" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Arrow,      line: tok_ln, col: tok_cl } }
   else if c == "=" && c2 == ">" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: FatArrow,   line: tok_ln, col: tok_cl } }
   else if c == "|" && c2 == ">" then ScanOpR { st: ls_advance_n(st, 2), tok: Token { kind: Pipe,       line: tok_ln, col: tok_cl } }
@@ -261,6 +264,7 @@ fn scan_op(st: LexState) -> ScanOpR = do
   else if c == "="  then ScanOpR { st: ls_advance(st), tok: Token { kind: Equal,    line: tok_ln, col: tok_cl } }
   else if c == "|"  then ScanOpR { st: ls_advance(st), tok: Token { kind: Bar,      line: tok_ln, col: tok_cl } }
   else if c == "?"  then ScanOpR { st: ls_advance(st), tok: Token { kind: Question, line: tok_ln, col: tok_cl } }
+  else if c == "." && c2 == "." && ls_peek(st, 2) == "." then ScanOpR { st: ls_advance_n(st, 3), tok: Token { kind: Spread,    line: tok_ln, col: tok_cl } }
   else if c == "."  then ScanOpR { st: ls_advance(st), tok: Token { kind: Dot,      line: tok_ln, col: tok_cl } }
   else if c == "("  then ScanOpR { st: ls_advance(st), tok: Token { kind: LParen,   line: tok_ln, col: tok_cl } }
   else if c == ")"  then ScanOpR { st: ls_advance(st), tok: Token { kind: RParen,   line: tok_ln, col: tok_cl } }
@@ -276,9 +280,9 @@ fn scan_op(st: LexState) -> ScanOpR = do
 end
 
 fn tokenize(src: string) -> LexOut = do
-  let mut st = LexState { src: src, pos: 0, line: 1, col: 1 }
-  let mut tokens: [Token] = []
-  let mut errors: [string] = []
+  let st = LexState { src: src, pos: 0, line: 1, col: 1 }
+  const tokens: [Token] = []
+  let errors: [string] = []
   while !ls_eof(st) do
     st = skip_ws(st)
     if ls_eof(st) then break end
@@ -296,6 +300,403 @@ fn tokenize(src: string) -> LexOut = do
   end
   tokens.push(Token { kind: Eof, line: st.line, col: st.col })
   LexOut { tokens: tokens, errors: errors }
+end
+
+
+// C++ AST for the subset we parse.
+
+type CppExpr =
+  | CppInt(i32)
+  | CppStr(string)
+  | CppIdent(string)
+  | CppCall(Shared<CppExpr>, [Shared<CppExpr>])
+  | CppMember(Shared<CppExpr>, string)
+  | CppIndex(Shared<CppExpr>, Shared<CppExpr>)
+  | CppBinary(string, Shared<CppExpr>, Shared<CppExpr>)
+  | CppUnary(string, Shared<CppExpr>)
+
+type CppStmt =
+  | CppAutoDecl(string, Shared<CppExpr>)
+  | CppReturn(Shared<CppExpr>)
+  | CppExprStmt(Shared<CppExpr>)
+  | CppBlock([Shared<CppStmt>])
+  | CppIf(Shared<CppExpr>, Shared<CppStmt>, Shared<CppStmt>)
+  | CppWhile(Shared<CppExpr>, Shared<CppStmt>)
+
+type CppField = CppField { typ: string, name: string }
+
+type CppDecl =
+  | CppInclude(bool, string)
+  | CppUsing(string, string)
+  | CppStruct(string, [Shared<CppField>])
+  | CppFnProto(string, string, [string])
+  | CppFnDef(string, string, [string], [Shared<CppStmt>])
+
+type CppProgram = CppProgram { decls: [Shared<CppDecl>] }
+
+
+// C++ lexer: source string → [CppToken]
+// Reuses: LexState, ls_cur, ls_peek, ls_advance, ls_advance_n, ls_eof
+// Reuses: is_alpha, is_digit, is_alnum, is_ws, map_escape, skip_ws
+
+type CppTKind =
+  | CKAuto | CKConst | CKConstexpr | CKIf | CKElse | CKWhile | CKFor
+  | CKReturn | CKBreak | CKStruct | CKUsing | CKNoexcept | CKInline | CKStatic
+  | CKVoid | CKInt | CKBool | CKChar | CKTrue | CKFalse | CKNullptr
+  | CKTemplate | CKTypename | CKNamespace | CKNew | CKDelete | CKOperator
+  | CIdent(string) | CLInt(i32) | CLStr(string)
+  | CArrow | CScope | CEq | CNe | CLe | CGe | CAnd | COr | CInc | CDec
+  | CLShift | CRShift
+  | CLParen | CRParen | CLBrace | CRBrace | CLBracket | CRBracket
+  | CLAngle | CRAngle
+  | COp(string)
+  | CEof
+
+type CppToken  = CppToken  { kind: CppTKind, line: i32, col: i32 }
+type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
+
+type CppScanIdR  = CppScanIdR  { st: LexState, tok: CppToken }
+type CppScanIntR = CppScanIntR { st: LexState, tok: CppToken }
+type CppScanStrR = CppScanStrR { st: LexState, tok: CppToken, err: string }
+type CppScanOpR  = CppScanOpR  { st: LexState, tok: CppToken }
+
+fn cpp_keyword_kind(word: string) -> CppTKind =
+  if      word == "auto"       then CKAuto
+  else if word == "const"      then CKConst
+  else if word == "constexpr"  then CKConstexpr
+  else if word == "if"         then CKIf
+  else if word == "else"       then CKElse
+  else if word == "while"      then CKWhile
+  else if word == "for"        then CKFor
+  else if word == "return"     then CKReturn
+  else if word == "break"      then CKBreak
+  else if word == "struct"     then CKStruct
+  else if word == "using"      then CKUsing
+  else if word == "noexcept"   then CKNoexcept
+  else if word == "inline"     then CKInline
+  else if word == "static"     then CKStatic
+  else if word == "void"       then CKVoid
+  else if word == "int"        then CKInt
+  else if word == "bool"       then CKBool
+  else if word == "char"       then CKChar
+  else if word == "true"       then CKTrue
+  else if word == "false"      then CKFalse
+  else if word == "nullptr"    then CKNullptr
+  else if word == "template"   then CKTemplate
+  else if word == "typename"   then CKTypename
+  else if word == "namespace"  then CKNamespace
+  else if word == "new"        then CKNew
+  else if word == "delete"     then CKDelete
+  else if word == "operator"   then CKOperator
+  else CIdent(word)
+  end
+
+fn cpp_scan_ident(state: LexState) -> CppScanIdR = do
+  const start = state.pos
+  const source = state.src
+  let line = state.line
+  const column = state.col
+  let current = state
+  while !ls_eof(current) && is_alnum(ls_cur(current)) do current = ls_advance(current) end
+  const word = source.substring(start, current.pos - start)
+  CppScanIdR { st: current, tok: CppToken { kind: cpp_keyword_kind(word), line: line, col: column } }
+end
+
+fn cpp_scan_int(state: LexState) -> CppScanIntR = do
+  let line = state.line
+  const column = state.col
+  let current = state
+  let value = 0
+  while !ls_eof(current) && is_digit(ls_cur(current)) do
+    value = value * 10 + ls_cur(current).to_i()
+    current = ls_advance(current)
+  end
+  CppScanIntR { st: current, tok: CppToken { kind: CLInt(value), line: line, col: column } }
+end
+
+fn cpp_scan_string(state: LexState) -> CppScanStrR = do
+  let line = state.line
+  const column = state.col
+  let current = ls_advance(state)
+  let parts: [string] = []
+  let error = ""
+  while !ls_eof(current) && ls_cur(current) != "\"" do
+    if ls_cur(current) == "\\" then
+      current = ls_advance(current)
+      const mapped = map_escape(ls_cur(current))
+      if mapped != "" then parts.push(mapped)
+      else
+        parts.push("\\"); parts.push(ls_cur(current))
+      end
+      current = ls_advance(current)
+    else
+      parts.push(ls_cur(current))
+      current = ls_advance(current)
+    end
+  end
+  if ls_eof(current) then error = "unterminated string"
+  else current = ls_advance(current)
+  end
+  CppScanStrR { st: current, tok: CppToken { kind: CLStr(parts.join("")), line: line, col: column }, err: error }
+end
+
+fn cpp_scan_op(state: LexState) -> CppScanOpR = do
+  let line = state.line
+  const column = state.col
+  const character = ls_cur(state)
+  const next_char = ls_peek(state, 1)
+  if      character == "-" && next_char == ">" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CArrow,    line: line, col: column } }
+  else if character == ":" && next_char == ":" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CScope,    line: line, col: column } }
+  else if character == "=" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CEq,       line: line, col: column } }
+  else if character == "!" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CNe,       line: line, col: column } }
+  else if character == "<" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CLe,       line: line, col: column } }
+  else if character == ">" && next_char == "=" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CGe,       line: line, col: column } }
+  else if character == "&" && next_char == "&" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CAnd,      line: line, col: column } }
+  else if character == "|" && next_char == "|" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: COr,       line: line, col: column } }
+  else if character == "+" && next_char == "+" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CInc,      line: line, col: column } }
+  else if character == "-" && next_char == "-" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CDec,      line: line, col: column } }
+  else if character == "<" && next_char == "<" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CLShift,   line: line, col: column } }
+  else if character == ">" && next_char == ">" then CppScanOpR { st: ls_advance_n(state, 2), tok: CppToken { kind: CRShift,   line: line, col: column } }
+  else if character == "("  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLParen,   line: line, col: column } }
+  else if character == ")"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRParen,   line: line, col: column } }
+  else if character == "{"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLBrace,   line: line, col: column } }
+  else if character == "}"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRBrace,   line: line, col: column } }
+  else if character == "["  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLBracket, line: line, col: column } }
+  else if character == "]"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRBracket, line: line, col: column } }
+  else if character == "<"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CLAngle,   line: line, col: column } }
+  else if character == ">"  then CppScanOpR { st: ls_advance(state), tok: CppToken { kind: CRAngle,   line: line, col: column } }
+  else CppScanOpR { st: ls_advance(state), tok: CppToken { kind: COp(character), line: line, col: column } }
+  end
+end
+
+fn cpp_tokenize(source: string) -> CppLexOut = do
+  let state = LexState { src: source, pos: 0, line: 1, col: 1 }
+  const tokens: [CppToken] = []
+  let errors: [string] = []
+  while !ls_eof(state) do
+    state = skip_ws(state)
+    if ls_eof(state) then break end
+    const character = ls_cur(state)
+    if is_alpha(character) then
+      let result = cpp_scan_ident(state); tokens.push(result.tok); state = result.st
+    else if is_digit(character) then
+      let result = cpp_scan_int(state); tokens.push(result.tok); state = result.st
+    else if character == "\"" then
+      let result = cpp_scan_string(state); tokens.push(result.tok); state = result.st
+      if result.err != "" then errors.push(result.err) end
+    else
+      let result = cpp_scan_op(state); tokens.push(result.tok); state = result.st
+    end
+  end
+  tokens.push(CppToken { kind: CEof, line: state.line, col: state.col })
+  CppLexOut { tokens: tokens, errors: errors }
+end
+
+
+// Token kind predicates. Use in conditions instead of match to avoid parse issues.
+
+fn cpp_token_kind_at(tokens: [CppToken], position: i32) -> CppTKind =
+  if position < tokens.length() then tokens[position].kind else CEof end
+
+fn cpp_at_end(tokens: [CppToken], position: i32) -> bool =
+  match cpp_token_kind_at(tokens, position) { CEof => true, _ => false }
+
+fn cpp_get_identifier(kind: CppTKind) -> string =
+  match kind { CIdent(name) => name, _ => "" }
+
+fn cpp_get_string(kind: CppTKind) -> string =
+  match kind { CLStr(value) => value, _ => "" }
+
+fn cpp_get_operator(kind: CppTKind) -> string =
+  match kind { COp(symbol) => symbol, _ => "" }
+
+fn cpp_is_hash(kind: CppTKind) -> bool =
+  match kind { COp(symbol) => symbol == "#", _ => false }
+
+fn cpp_is_identifier(kind: CppTKind) -> bool =
+  match kind { CIdent(_) => true, _ => false }
+
+fn cpp_is_string(kind: CppTKind) -> bool =
+  match kind { CLStr(_) => true, _ => false }
+
+fn cpp_is_angle(kind: CppTKind) -> bool =
+  match kind { CLAngle => true, _ => false }
+
+fn cpp_is_right_angle(kind: CppTKind) -> bool =
+  match kind { CRAngle => true, _ => false }
+
+fn cpp_is_scope(kind: CppTKind) -> bool =
+  match kind { CScope => true, _ => false }
+
+fn cpp_is_semicolon(kind: CppTKind) -> bool =
+  match kind { COp(symbol) => symbol == ";", _ => false }
+
+fn cpp_is_equals(kind: CppTKind) -> bool =
+  match kind { COp(symbol) => symbol == "=", _ => false }
+
+fn cpp_is_left_paren(kind: CppTKind) -> bool =
+  match kind { CLParen => true, _ => false }
+
+fn cpp_is_right_paren(kind: CppTKind) -> bool =
+  match kind { CRParen => true, _ => false }
+
+fn cpp_is_left_brace(kind: CppTKind) -> bool =
+  match kind { CLBrace => true, _ => false }
+
+fn cpp_is_right_brace(kind: CppTKind) -> bool =
+  match kind { CRBrace => true, _ => false }
+
+fn cpp_is_stop_for_type(kind: CppTKind) -> bool =
+  match kind { COp(symbol) => (symbol == ";" || symbol == "," || symbol == ")"), _ => false }
+
+fn cpp_is_using_keyword(kind: CppTKind) -> bool =
+  match kind { CKUsing => true, _ => false }
+
+fn cpp_is_struct_keyword(kind: CppTKind) -> bool =
+  match kind { CKStruct => true, _ => false }
+
+fn cpp_is_void_keyword(kind: CppTKind) -> bool =
+  match kind { CKVoid => true, _ => false }
+
+fn cpp_is_int_keyword(kind: CppTKind) -> bool =
+  match kind { CKInt => true, _ => false }
+
+fn cpp_is_bool_keyword(kind: CppTKind) -> bool =
+  match kind { CKBool => true, _ => false }
+
+fn cpp_is_char_keyword(kind: CppTKind) -> bool =
+  match kind { CKChar => true, _ => false }
+
+fn cpp_type_part_string(kind: CppTKind) -> string = do
+  if cpp_get_identifier(kind) != "" then cpp_get_identifier(kind)
+  else if cpp_get_string(kind) != "" then "\"" + cpp_get_string(kind) + "\""
+  else if cpp_is_angle(kind) then "<"
+  else if cpp_is_right_angle(kind) then ">"
+  else if cpp_is_scope(kind) then "::"
+  else if cpp_is_void_keyword(kind) then "void"
+  else if cpp_is_int_keyword(kind) then "int"
+  else if cpp_is_bool_keyword(kind) then "bool"
+  else if cpp_is_char_keyword(kind) then "char"
+  else if cpp_get_operator(kind) != "" then cpp_get_operator(kind)
+  else ""
+  end
+end
+
+
+// C++ parser: [CppToken] → CppProgram
+// Uses tokens and position (no struct) to avoid move semantics issues.
+
+type CppParseResult = CppParseResult { program: CppProgram, errors: [string] }
+
+type CppDeclResult = CppDeclResult { decl: Shared<CppDecl>, position: i32 }
+
+type CppTypeResult = CppTypeResult { type_string: string, position: i32 }
+
+fn parse_include_skip(tokens: [CppToken], position: i32) -> i32 = do
+  let pos = position
+  if cpp_is_hash(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
+  if cpp_is_identifier(cpp_token_kind_at(tokens, pos)) && cpp_get_identifier(cpp_token_kind_at(tokens, pos)) == "include" then pos = pos + 1 end
+  pos
+end
+
+fn parse_type_tokens(tokens: [CppToken], position: i32) -> CppTypeResult = do
+  let parts: [string] = []
+  let depth = 0
+  let pos = position
+  while !cpp_at_end(tokens, pos) do
+    let kind = cpp_token_kind_at(tokens, pos)
+    const stop = cpp_is_stop_for_type(kind) || cpp_is_right_paren(kind) || cpp_is_right_brace(kind) || (cpp_is_right_angle(kind) && depth == 0)
+    if stop then break end
+    let part = cpp_type_part_string(kind)
+    if cpp_is_angle(kind) then depth = depth + 1
+    else if cpp_is_right_angle(kind) then depth = if depth > 0 then depth - 1 else 0 end
+    end
+    if part != "" then parts.push(part) end
+    pos = pos + 1
+  end
+  CppTypeResult { type_string: parts.join(" "), position: pos }
+end
+
+fn parse_include_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
+  const after_skip = parse_include_skip(tokens, position)
+  let kind = cpp_token_kind_at(tokens, after_skip)
+  if cpp_is_angle(kind) then
+    const name = cpp_get_identifier(cpp_token_kind_at(tokens, after_skip + 1))
+    CppDeclResult { decl: Shared.new(CppInclude(true, name)), position: after_skip + 3 }
+  else if cpp_is_string(kind) then
+    const path = cpp_get_string(kind)
+    CppDeclResult { decl: Shared.new(CppInclude(false, path)), position: after_skip + 1 }
+  else
+    CppDeclResult { decl: Shared.new(CppInclude(true, "")), position: after_skip }
+  end
+end
+
+fn parse_using_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
+  const after_using = position + 1
+  const alias = cpp_get_identifier(cpp_token_kind_at(tokens, after_using))
+  const after_alias = after_using + 1
+  const after_equals = if cpp_is_equals(cpp_token_kind_at(tokens, after_alias)) then after_alias + 1 else after_alias end
+  const type_result = parse_type_tokens(tokens, after_equals)
+  const after_type = type_result.position
+  const after_semicolon = if cpp_is_semicolon(cpp_token_kind_at(tokens, after_type)) then after_type + 1 else after_type end
+  CppDeclResult { decl: Shared.new(CppUsing(alias, type_result.type_string)), position: after_semicolon }
+end
+
+fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
+  const after_struct = position + 1
+  const name = cpp_get_identifier(cpp_token_kind_at(tokens, after_struct))
+  const after_name = after_struct + 1
+  const fields: [Shared<CppField>] = []
+  let pos = after_name
+  if cpp_is_left_brace(cpp_token_kind_at(tokens, pos)) then
+    pos = pos + 1
+    while !cpp_at_end(tokens, pos) && !cpp_is_right_brace(cpp_token_kind_at(tokens, pos)) do
+      const type_result = parse_type_tokens(tokens, pos)
+      const typ_and_name = type_result.type_string
+      let last_space = -1
+      let index = 0
+      while index < typ_and_name.length() do
+        if typ_and_name.substring(index, 1) == " " then last_space = index end
+        index = index + 1
+      end
+      const field_name = if last_space >= 0 then typ_and_name.substring(last_space + 1, typ_and_name.length() - last_space - 1) else typ_and_name end
+      const field_type = if last_space > 0 then typ_and_name.substring(0, last_space) else "int" end
+      pos = type_result.position
+      if cpp_is_semicolon(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
+      fields.push(Shared.new(CppField { typ: field_type, name: field_name }))
+    end
+    if cpp_is_right_brace(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
+  end
+  CppDeclResult { decl: Shared.new(CppStruct(name, fields)), position: pos }
+end
+
+fn cpp_parse_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
+  let kind = cpp_token_kind_at(tokens, position)
+  if cpp_is_hash(kind) then parse_include_decl(tokens, position)
+  else if cpp_is_using_keyword(kind) then parse_using_decl(tokens, position)
+  else if cpp_is_struct_keyword(kind) then parse_struct_decl(tokens, position)
+  else CppDeclResult { decl: Shared.new(CppInclude(true, "__skip__")), position: position }
+  end
+end
+
+fn cpp_is_skip_decl(decl: Shared<CppDecl>) -> bool =
+  match decl { CppInclude(is_angle, path) => is_angle && path == "__skip__", _ => false }
+
+fn cpp_parse(tokens: [CppToken]) -> CppParseResult = do
+  const decls: [Shared<CppDecl>] = []
+  let position = 0
+  while !cpp_at_end(tokens, position) do
+    let result = cpp_parse_decl(tokens, position)
+    if cpp_is_skip_decl(result.decl) && result.position == position then
+      position = position + 1
+    else
+      do
+        if !cpp_is_skip_decl(result.decl) then decls.push(result.decl) end
+        position = result.position
+      end
+    end
+  end
+  CppParseResult { program: CppProgram { decls: decls }, errors: [] }
 end
 
 
@@ -342,6 +743,7 @@ type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          par
 type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
 type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
 type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
+type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
 
 // ─── Token kind predicates ────────────────────────────────────────────────
 
@@ -349,6 +751,7 @@ fn is_keyword_fn(kind: TKind)       -> bool = match kind { KFn       => true, _ 
 fn is_keyword_type(kind: TKind)     -> bool = match kind { KType     => true, _ => false }
 fn is_keyword_let(kind: TKind)      -> bool = match kind { KLet      => true, _ => false }
 fn is_keyword_mut(kind: TKind)      -> bool = match kind { KMut      => true, _ => false }
+fn is_keyword_const(kind: TKind)    -> bool = match kind { KConst    => true, _ => false }
 fn is_keyword_if(kind: TKind)       -> bool = match kind { KIf       => true, _ => false }
 fn is_keyword_unless(kind: TKind)   -> bool = match kind { KUnless   => true, _ => false }
 fn is_keyword_else(kind: TKind)     -> bool = match kind { KElse     => true, _ => false }
@@ -374,6 +777,9 @@ fn is_pipe(kind: TKind)          -> bool = match kind { Pipe      => true, _ => 
 fn is_colon(kind: TKind)         -> bool = match kind { Colon     => true, _ => false }
 fn is_comma(kind: TKind)         -> bool = match kind { Comma     => true, _ => false }
 fn is_dot(kind: TKind)           -> bool = match kind { Dot       => true, _ => false }
+fn is_spread(kind: TKind)        -> bool = match kind { Spread    => true, _ => false }
+fn is_arrow(kind: TKind)         -> bool = match kind { Arrow     => true, _ => false }
+fn is_fat_arrow(kind: TKind)     -> bool = match kind { FatArrow  => true, _ => false }
 fn is_question(kind: TKind)      -> bool = match kind { Question  => true, _ => false }
 fn is_left_paren(kind: TKind)    -> bool = match kind { LParen    => true, _ => false }
 fn is_right_paren(kind: TKind)   -> bool = match kind { RParen    => true, _ => false }
@@ -395,21 +801,33 @@ fn is_ctor_name(name: string) -> bool =
 // ─── Type expression parser ───────────────────────────────────────────────
 
 fn parse_type(parser: Parser) -> TypeResult = do
+  const base = parse_base_type(parser)
+  // T -> R  →  function type
+  if is_arrow(parser_kind(base.parser)) then
+    const ret = parse_type(parser_advance(base.parser))
+    const params: [Shared<TypeExpr>] = [base.type_expr]
+    TypeResult { type_expr: Shared.new(TyFn(params, ret.type_expr)), parser: ret.parser }
+  else
+    base
+  end
+end
+
+fn parse_base_type(parser: Parser) -> TypeResult = do
   let kind = parser_kind(parser)
   if is_left_bracket(kind) then
-    let inner = parse_type(parser_advance(parser))
+    const inner = parse_type(parser_advance(parser))
     TypeResult { type_expr: Shared.new(TyArray(inner.type_expr)), parser: parser_advance(inner.parser) }
   else if is_ident(kind) then
-    let name = get_ident(kind)
+    const name = get_ident(kind)
     if      name == "i32"    then TypeResult { type_expr: Shared.new(TyI32),    parser: parser_advance(parser) }
     else if name == "string" then TypeResult { type_expr: Shared.new(TyString), parser: parser_advance(parser) }
     else if name == "bool"   then TypeResult { type_expr: Shared.new(TyBool),   parser: parser_advance(parser) }
     else if name == "unit"   then TypeResult { type_expr: Shared.new(TyUnit),   parser: parser_advance(parser) }
     else
-      let after = parser_advance(parser)
+      const after = parser_advance(parser)
       if is_operator(parser_kind(after)) && get_operator(parser_kind(after)) == "<" then
-        let args = parse_type_args(parser_advance(after))
-        let type_expr =
+        const args = parse_type_args(parser_advance(after))
+        const type_expr =
           if name == "Shared" && args.types.length() == 1 then Shared.new(TyShared(args.types[0]))
           else Shared.new(TyGeneric(name, args.types))
           end
@@ -424,16 +842,16 @@ fn parse_type(parser: Parser) -> TypeResult = do
 end
 
 fn parse_type_args(parser: Parser) -> TypesResult = do
-  let mut types: [Shared<TypeExpr>] = []
-  let first = parse_type(parser)
+  const types: [Shared<TypeExpr>] = []
+  const first = parse_type(parser)
   types.push(first.type_expr)
-  let mut state = first.parser
+  let state = first.parser
   while is_comma(parser_kind(state)) do
     let next = parse_type(parser_advance(state))
     types.push(next.type_expr)
     state = next.parser
   end
-  let end_state =
+  const end_state =
     if is_operator(parser_kind(state)) && get_operator(parser_kind(state)) == ">" then
       parser_advance(state)
     else state
@@ -447,13 +865,13 @@ end
 fn parse_pat(parser: Parser) -> PatResult = do
   let kind = parser_kind(parser)
   if is_ident(kind) then
-    let name = get_ident(kind)
+    const name = get_ident(kind)
     if name == "_" then
       PatResult { pat: Shared.new(PatWild), parser: parser_advance(parser) }
     else if is_ctor_name(name) then
-      let after = parser_advance(parser)
+      const after = parser_advance(parser)
       if is_left_paren(parser_kind(after)) then
-        let sub_pats = parse_pat_args(parser_advance(after))
+        const sub_pats = parse_pat_args(parser_advance(after))
         PatResult { pat: Shared.new(PatCtor(name, sub_pats.pats)), parser: sub_pats.parser }
       else
         PatResult { pat: Shared.new(PatCtor(name, [])), parser: after }
@@ -475,12 +893,12 @@ fn parse_pat(parser: Parser) -> PatResult = do
 end
 
 fn parse_pat_args(parser: Parser) -> PatsResult = do
-  let mut pats: [Shared<Pat>] = []
+  const pats: [Shared<Pat>] = []
   if is_right_paren(parser_kind(parser)) then
     PatsResult { pats: pats, parser: parser_advance(parser) }
   else
-    let first = parse_pat(parser); pats.push(first.pat)
-    let mut state = first.parser
+    const first = parse_pat(parser); pats.push(first.pat)
+    let state = first.parser
     while is_comma(parser_kind(state)) do
       let next = parse_pat(parser_advance(state)); pats.push(next.pat); state = next.parser
     end
@@ -492,32 +910,47 @@ end
 
 fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
 
+fn pipe_desugar(left_expr: Shared<Expr>, right_expr: Shared<Expr>) -> Shared<Expr> =
+  match right_expr {
+    ExprCall(callee, existing_args) => do
+      const new_args: [Shared<Expr>] = [left_expr]
+      let i = 0
+      while i < existing_args.length() do
+        new_args.push(existing_args[i]); i = i + 1
+      end
+      Shared.new(ExprCall(callee, new_args))
+    end,
+    _ => do
+      const call_args: [Shared<Expr>] = [left_expr]
+      Shared.new(ExprCall(right_expr, call_args))
+    end
+  }
+
 fn parse_pipe(parser: Parser) -> ExprResult = do
-  let left = parse_or(parser)
-  let mut expr = left.expr; let mut state = left.parser
+  const left = parse_or(parser)
+  let expr = left.expr; let state = left.parser
   while is_pipe(parser_kind(state)) do
-    let right = parse_or(parser_advance(state))
-    let mut call_args: [Shared<Expr>] = []; call_args.push(expr)
-    expr = Shared.new(ExprCall(right.expr, call_args)); state = right.parser
+    const right = parse_or(parser_advance(state))
+    expr = pipe_desugar(expr, right.expr); state = right.parser
   end
   ExprResult { expr: expr, parser: state }
 end
 
 fn parse_or(parser: Parser) -> ExprResult = do
-  let left = parse_and(parser)
-  let mut expr = left.expr; let mut state = left.parser
+  const left = parse_and(parser)
+  let expr = left.expr; let state = left.parser
   while is_operator(parser_kind(state)) && get_operator(parser_kind(state)) == "||" do
-    let right = parse_and(parser_advance(state))
+    const right = parse_and(parser_advance(state))
     expr = Shared.new(ExprBin("||", expr, right.expr)); state = right.parser
   end
   ExprResult { expr: expr, parser: state }
 end
 
 fn parse_and(parser: Parser) -> ExprResult = do
-  let left = parse_cmp(parser)
-  let mut expr = left.expr; let mut state = left.parser
+  const left = parse_cmp(parser)
+  let expr = left.expr; let state = left.parser
   while is_operator(parser_kind(state)) && get_operator(parser_kind(state)) == "&&" do
-    let right = parse_cmp(parser_advance(state))
+    const right = parse_cmp(parser_advance(state))
     expr = Shared.new(ExprBin("&&", expr, right.expr)); state = right.parser
   end
   ExprResult { expr: expr, parser: state }
@@ -527,23 +960,23 @@ fn is_cmp_op(op: string) -> bool =
   op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">="
 
 fn parse_cmp(parser: Parser) -> ExprResult = do
-  let left = parse_add(parser)
-  let mut expr = left.expr; let mut state = left.parser
+  const left = parse_add(parser)
+  let expr = left.expr; let state = left.parser
   let kind = parser_kind(state)
   if is_operator(kind) && is_cmp_op(get_operator(kind)) then
-    let right = parse_add(parser_advance(state))
+    const right = parse_add(parser_advance(state))
     expr = Shared.new(ExprBin(get_operator(kind), expr, right.expr)); state = right.parser
   end
   ExprResult { expr: expr, parser: state }
 end
 
 fn parse_add(parser: Parser) -> ExprResult = do
-  let left = parse_mul(parser)
-  let mut expr = left.expr; let mut state = left.parser; let mut go = true
+  const left = parse_mul(parser)
+  let expr = left.expr; let state = left.parser; let go = true
   while go do
     let kind = parser_kind(state)
     if is_operator(kind) && (get_operator(kind) == "+" || get_operator(kind) == "-") then
-      let right = parse_mul(parser_advance(state))
+      const right = parse_mul(parser_advance(state))
       expr = Shared.new(ExprBin(get_operator(kind), expr, right.expr)); state = right.parser
     else go = false
     end
@@ -552,12 +985,12 @@ fn parse_add(parser: Parser) -> ExprResult = do
 end
 
 fn parse_mul(parser: Parser) -> ExprResult = do
-  let left = parse_unary(parser)
-  let mut expr = left.expr; let mut state = left.parser; let mut go = true
+  const left = parse_unary(parser)
+  let expr = left.expr; let state = left.parser; let go = true
   while go do
     let kind = parser_kind(state)
     if is_operator(kind) && (get_operator(kind) == "*" || get_operator(kind) == "/" || get_operator(kind) == "%") then
-      let right = parse_unary(parser_advance(state))
+      const right = parse_unary(parser_advance(state))
       expr = Shared.new(ExprBin(get_operator(kind), expr, right.expr)); state = right.parser
     else go = false
     end
@@ -568,7 +1001,7 @@ end
 fn parse_unary(parser: Parser) -> ExprResult = do
   let kind = parser_kind(parser)
   if is_operator(kind) && (get_operator(kind) == "!" || get_operator(kind) == "-") then
-    let inner = parse_unary(parser_advance(parser))
+    const inner = parse_unary(parser_advance(parser))
     ExprResult { expr: Shared.new(ExprUn(get_operator(kind), inner.expr)), parser: inner.parser }
   else
     parse_postfix(parser)
@@ -576,20 +1009,20 @@ fn parse_unary(parser: Parser) -> ExprResult = do
 end
 
 fn parse_postfix(parser: Parser) -> ExprResult = do
-  let base = parse_primary(parser)
-  let mut expr = base.expr; let mut state = base.parser; let mut go = true
+  const base = parse_primary(parser)
+  let expr = base.expr; let state = base.parser; let go = true
   while go do
     let kind = parser_kind(state)
     if is_dot(kind) then
-      let field_name = get_ident(parser_kind(parser_advance(state)))
+      const field_name = get_ident(parser_kind(parser_advance(state)))
       if is_left_paren(parser_kind(parser_advance_by(state, 2))) then
-        let args = parse_arg_list(parser_advance_by(state, 3))
+        const args = parse_arg_list(parser_advance_by(state, 3))
         expr = Shared.new(ExprMethod(expr, field_name, args.exprs)); state = args.parser
       else
         expr = Shared.new(ExprField(expr, field_name)); state = parser_advance_by(state, 2)
       end
     else if is_left_paren(kind) then
-      let args = parse_arg_list(parser_advance(state))
+      const args = parse_arg_list(parser_advance(state))
       expr = Shared.new(ExprCall(expr, args.exprs)); state = args.parser
     else if is_left_bracket(kind) then
       let index = parse_expr(parser_advance(state))
@@ -604,12 +1037,12 @@ fn parse_postfix(parser: Parser) -> ExprResult = do
 end
 
 fn parse_arg_list(parser: Parser) -> ExprsResult = do
-  let mut exprs: [Shared<Expr>] = []
+  const exprs: [Shared<Expr>] = []
   if is_right_paren(parser_kind(parser)) then
     ExprsResult { exprs: exprs, parser: parser_advance(parser) }
   else
-    let first = parse_expr(parser); exprs.push(first.expr)
-    let mut state = first.parser
+    const first = parse_expr(parser); exprs.push(first.expr)
+    let state = first.parser
     while is_comma(parser_kind(state)) do
       let next = parse_expr(parser_advance(state)); exprs.push(next.expr); state = next.parser
     end
@@ -627,45 +1060,98 @@ fn parse_primary(parser: Parser) -> ExprResult = do
     ExprResult { expr: Shared.new(ExprBool(true)),  parser: parser_advance(parser) }
   else if is_keyword_false(kind) then
     ExprResult { expr: Shared.new(ExprBool(false)), parser: parser_advance(parser) }
-  else if is_left_paren(kind) then do
+  else if is_left_paren(kind) then
     if is_right_paren(parser_kind(parser_advance(parser))) then
-      ExprResult { expr: Shared.new(ExprUnit), parser: parser_advance_by(parser, 2) }
+      // () =>  →  zero-param lambda, or just () unit
+      if is_fat_arrow(parser_kind(parser_advance_by(parser, 2))) then
+        const params: [string] = []
+        const body = parse_expr(parser_advance_by(parser, 3))
+        ExprResult { expr: Shared.new(ExprLambda(params, body.expr)), parser: body.parser }
+      else
+        ExprResult { expr: Shared.new(ExprUnit), parser: parser_advance_by(parser, 2) }
+      end
+    else if looks_like_lambda_params(parser_advance(parser)) then
+      // (x, y, ...) => expr
+      const param_result = parse_lambda_params(parser_advance(parser))
+      const body = parse_expr(parser_advance(param_result.parser))
+      ExprResult { expr: Shared.new(ExprLambda(param_result.exprs, body.expr)), parser: body.parser }
     else
-      let inner = parse_expr(parser_advance(parser))
+      const inner = parse_expr(parser_advance(parser))
       ExprResult { expr: inner.expr, parser: parser_advance(inner.parser) }
     end
-  end
   else if is_left_bracket(kind)   then parse_array_lit(parser_advance(parser))
   else if is_keyword_if(kind) || is_keyword_unless(kind) then parse_if_expr(parser)
   else if is_keyword_do(kind)     then parse_block(parser_advance(parser))
   else if is_keyword_while(kind)  then parse_while_expr(parser_advance(parser))
   else if is_keyword_for(kind)    then parse_for_expr(parser_advance(parser))
   else if is_keyword_match(kind)  then parse_match_expr(parser_advance(parser))
-  else if is_keyword_return(kind) then do
+  else if is_keyword_return(kind) then
     let value = parse_expr(parser_advance(parser))
-    let mut stmts: [Shared<Stmt>] = []
+    const stmts: [Shared<Stmt>] = []
     stmts.push(Shared.new(StmtReturn(value.expr)))
     ExprResult { expr: Shared.new(ExprBlock(stmts, Shared.new(ExprUnit))), parser: value.parser }
-  end
-  else if is_ident(kind) then do
-    let name = get_ident(kind)
-    if is_ctor_name(name) && is_left_brace(parser_kind(parser_advance(parser))) then
+  else if is_ident(kind) then
+    const name = get_ident(kind)
+    // x => expr  →  single-param lambda
+    if is_fat_arrow(parser_kind(parser_advance(parser))) then
+      const params: [string] = [name]
+      const body = parse_expr(parser_advance_by(parser, 2))
+      ExprResult { expr: Shared.new(ExprLambda(params, body.expr)), parser: body.parser }
+    else if is_ctor_name(name) && is_left_brace(parser_kind(parser_advance(parser))) then
       parse_record_expr(parser_advance_by(parser, 2), name)
     else
       ExprResult { expr: Shared.new(ExprIdent(name)), parser: parser_advance(parser) }
     end
-  end
   else ExprResult { expr: Shared.new(ExprUnit), parser: parser_advance(parser) }
   end
 end
 
+// Check if parser (after `(`) looks like lambda params: IDENT (, IDENT)* ) =>
+fn looks_like_lambda_params(parser: Parser) -> bool = do
+  let state = parser; let ok = true
+  if !is_ident(parser_kind(state)) then
+    ok = false
+  else
+    state = parser_advance(state)
+    while is_comma(parser_kind(state)) do
+      state = parser_advance(state)
+      if !is_ident(parser_kind(state)) then
+        ok = false
+        state = parser_advance(state)
+      else
+        state = parser_advance(state)
+      end
+    end
+    if !is_right_paren(parser_kind(state)) then
+      ok = false
+    else
+      ok = is_fat_arrow(parser_kind(parser_advance(state)))
+    end
+  end
+  ok
+end
+
+// Parse lambda params: IDENT (, IDENT)* ) — stops AFTER `)`
+fn parse_lambda_params(parser: Parser) -> NamesResult = do
+  const names: [string] = []
+  let state = parser
+  names.push(get_ident(parser_kind(state))); state = parser_advance(state)
+  while is_comma(parser_kind(state)) do
+    state = parser_advance(state)
+    names.push(get_ident(parser_kind(state))); state = parser_advance(state)
+  end
+  // consume `)`
+  state = parser_advance(state)
+  NamesResult { exprs: names, parser: state }
+end
+
 fn parse_array_lit(parser: Parser) -> ExprResult = do
-  let mut exprs: [Shared<Expr>] = []
+  const exprs: [Shared<Expr>] = []
   if is_right_bracket(parser_kind(parser)) then
     ExprResult { expr: Shared.new(ExprArray(exprs)), parser: parser_advance(parser) }
   else
-    let first = parse_expr(parser); exprs.push(first.expr)
-    let mut state = first.parser
+    const first = parse_expr(parser); exprs.push(first.expr)
+    let state = first.parser
     while is_comma(parser_kind(state)) do
       let next = parse_expr(parser_advance(state)); exprs.push(next.expr); state = next.parser
     end
@@ -674,24 +1160,23 @@ fn parse_array_lit(parser: Parser) -> ExprResult = do
 end
 
 fn parse_if_expr(parser: Parser) -> ExprResult = do
-  let is_negated = is_keyword_unless(parser_kind(parser))
-  let cond_result = parse_expr(parser_advance(parser))
-  let cond = if is_negated then Shared.new(ExprUn("!", cond_result.expr)) else cond_result.expr end
-  let then_result = parse_stmts_until_else_end(parser_advance(cond_result.parser))
-  let then_expr = Shared.new(ExprBlock(then_result.stmts, Shared.new(ExprUnit)))
-  if is_keyword_else(parser_kind(then_result.parser)) then do
-    let after_else = parser_advance(then_result.parser)
-    if is_keyword_if(parser_kind(after_else)) || is_keyword_unless(parser_kind(after_else)) then do
-      let else_result = parse_if_expr(after_else)
+  const is_negated = is_keyword_unless(parser_kind(parser))
+  const cond_result = parse_expr(parser_advance(parser))
+  const cond = if is_negated then Shared.new(ExprUn("!", cond_result.expr)) else cond_result.expr end
+  const then_result = parse_stmts_until_else_end(parser_advance(cond_result.parser))
+  const then_tail = block_result(then_result.stmts)
+  const then_expr = Shared.new(ExprBlock(block_body(then_result.stmts), then_tail))
+  if is_keyword_else(parser_kind(then_result.parser)) then
+    const after_else = parser_advance(then_result.parser)
+    if is_keyword_if(parser_kind(after_else)) || is_keyword_unless(parser_kind(after_else)) then
+      const else_result = parse_if_expr(after_else)
       ExprResult { expr: Shared.new(ExprIf(cond, then_expr, else_result.expr)), parser: else_result.parser }
-    end
-    else do
-      let else_stmts = parse_stmts_until_end(after_else)
-      let else_expr = Shared.new(ExprBlock(else_stmts.stmts, Shared.new(ExprUnit)))
+    else
+      const else_stmts = parse_stmts_until_end(after_else)
+      const else_tail = block_result(else_stmts.stmts)
+      const else_expr = Shared.new(ExprBlock(block_body(else_stmts.stmts), else_tail))
       ExprResult { expr: Shared.new(ExprIf(cond, then_expr, else_expr)), parser: else_stmts.parser }
     end
-    end
-  end
   else
     ExprResult { expr: Shared.new(ExprIf(cond, then_expr, Shared.new(ExprUnit))), parser: parser_advance(then_result.parser) }
   end
@@ -699,53 +1184,66 @@ end
 
 fn parse_block(parser: Parser) -> ExprResult = do
   let result = parse_stmts_until_end(parser)
-  let tail = block_result(result.stmts)
+  const tail = block_result(result.stmts)
   ExprResult { expr: Shared.new(ExprBlock(block_body(result.stmts), tail)), parser: result.parser }
 end
 
+fn is_unit_expr(expr: Shared<Expr>) -> bool =
+  match expr {
+    ExprUnit                => true,
+    ExprBlock(_, result)    => is_unit_expr(result),
+    ExprIf(_, _, else_expr) => is_unit_expr(else_expr),
+    _                       => false
+  }
+
 fn block_result(stmts: [Shared<Stmt>]) -> Shared<Expr> =
   if stmts.length() == 0 then Shared.new(ExprUnit)
-  else match stmts[stmts.length() - 1] { StmtExpr(expr) => expr, _ => Shared.new(ExprUnit) }
+  else match stmts[stmts.length() - 1] {
+    StmtExpr(expr) => if is_unit_expr(expr) then Shared.new(ExprUnit) else expr end,
+    _              => Shared.new(ExprUnit)
+  }
   end
 
 fn block_body(stmts: [Shared<Stmt>]) -> [Shared<Stmt>] = do
   if stmts.length() == 0 then stmts
   else match stmts[stmts.length() - 1] {
-    StmtExpr(_) => do
-      let mut result: [Shared<Stmt>] = []; let mut i = 0
-      while i < stmts.length() - 1 do result.push(stmts[i]); i = i + 1 end
-      result
-    end,
+    StmtExpr(expr) =>
+      if is_unit_expr(expr) then stmts
+      else
+        let result: [Shared<Stmt>] = []; let i = 0
+        while i < stmts.length() - 1 do result.push(stmts[i]); i = i + 1 end
+        result
+      end,
     _ => stmts
   }
   end
 end
 
 fn parse_while_expr(parser: Parser) -> ExprResult = do
-  let cond = parse_expr(parser)
-  let body = parse_stmts_until_end(parser_advance(cond.parser))
+  const cond = parse_expr(parser)
+  const body = parse_stmts_until_end(parser_advance(cond.parser))
   ExprResult { expr: Shared.new(ExprWhile(cond.expr, body.stmts)), parser: body.parser }
 end
 
 fn parse_for_expr(parser: Parser) -> ExprResult = do
-  let var_name = get_ident(parser_kind(parser))
-  let iter = parse_expr(parser_advance_by(parser, 2))
-  let body = parse_stmts_until_end(parser_advance(iter.parser))
+  const var_name = get_ident(parser_kind(parser))
+  const iter = parse_expr(parser_advance_by(parser, 2))
+  const body = parse_stmts_until_end(parser_advance(iter.parser))
   ExprResult { expr: Shared.new(ExprFor(var_name, iter.expr, body.stmts)), parser: body.parser }
 end
 
 fn parse_match_expr(parser: Parser) -> ExprResult = do
-  let subject = parse_expr(parser)
-  let arms = parse_arms(parser_advance(subject.parser))
+  const subject = parse_expr(parser)
+  const arms = parse_arms(parser_advance(subject.parser))
   ExprResult { expr: Shared.new(ExprMatch(subject.expr, arms.arms)), parser: arms.parser }
 end
 
 fn parse_arms(parser: Parser) -> ArmsResult = do
-  let mut arms: [Shared<MatchArm>] = []
-  let mut state = parser
+  const arms: [Shared<MatchArm>] = []
+  let state = parser
   while !is_right_brace(parser_kind(state)) && !parser_at_eof(state) do
-    let pat_result  = parse_pat(state)
-    let body_result = parse_expr(parser_advance(pat_result.parser))
+    const pat_result  = parse_pat(state)
+    const body_result = parse_expr(parser_advance(pat_result.parser))
     arms.push(Shared.new(MatchArm { pat: pat_result.pat, body: body_result.expr }))
     state = body_result.parser
     if is_comma(parser_kind(state)) then state = parser_advance(state) end
@@ -753,25 +1251,41 @@ fn parse_arms(parser: Parser) -> ArmsResult = do
   ArmsResult { arms: arms, parser: parser_advance(state) }
 end
 
-fn parse_record_expr(parser: Parser, record_name: string) -> ExprResult = do
-  let mut field_vals: [Shared<FieldVal>] = []
-  let mut state = parser
+fn parse_record_fields(parser: Parser) -> FieldValsResult = do
+  const field_vals: [Shared<FieldVal>] = []
+  let state = parser
   while !is_right_brace(parser_kind(state)) && !parser_at_eof(state) do
-    let field_name  = get_ident(parser_kind(state))
-    let value_result = parse_expr(parser_advance_by(state, 2))
+    const field_name  = get_ident(parser_kind(state))
+    const value_result = parse_expr(parser_advance_by(state, 2))
     field_vals.push(Shared.new(FieldVal { name: field_name, val: value_result.expr }))
     state = value_result.parser
     if is_comma(parser_kind(state)) then state = parser_advance(state) end
   end
-  ExprResult { expr: Shared.new(ExprRecord(record_name, field_vals)), parser: parser_advance(state) }
+  FieldValsResult { field_vals: field_vals, parser: parser_advance(state) }
 end
+
+fn parse_record_expr(parser: Parser, record_name: string) -> ExprResult =
+  if is_spread(parser_kind(parser))
+  then
+    const base_result = parse_expr(parser_advance(parser))
+    let after_base = base_result.parser
+    if is_comma(parser_kind(after_base)) then after_base = parser_advance(after_base) end
+    const fields_result = parse_record_fields(after_base)
+    ExprResult {
+      expr: Shared.new(ExprRecordUpdate(record_name, base_result.expr, fields_result.field_vals)),
+      parser: fields_result.parser
+    }
+  else
+    const fields_result = parse_record_fields(parser)
+    ExprResult { expr: Shared.new(ExprRecord(record_name, fields_result.field_vals)), parser: fields_result.parser }
+  end
 
 
 // ─── Statement parsers ────────────────────────────────────────────────────
 
 fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
-  let mut stmts: [Shared<Stmt>] = []
-  let mut state = parser
+  const stmts: [Shared<Stmt>] = []
+  let state = parser
   while !is_keyword_end(parser_kind(state)) && !parser_at_eof(state) do
     let result = parse_stmt(state)
     stmts.push(result.stmt)
@@ -781,8 +1295,8 @@ fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
 end
 
 fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
-  let mut stmts: [Shared<Stmt>] = []
-  let mut state = parser
+  const stmts: [Shared<Stmt>] = []
+  let state = parser
   while !is_keyword_end(parser_kind(state)) && !is_keyword_else(parser_kind(state)) && !parser_at_eof(state) do
     let result = parse_stmt(state)
     stmts.push(result.stmt)
@@ -793,34 +1307,47 @@ end
 
 fn parse_stmt(parser: Parser) -> StmtResult = do
   let kind = parser_kind(parser)
-  if is_keyword_let(kind) then do
-    let is_mutable = is_keyword_mut(parser_kind(parser_advance(parser)))
-    let name_pos   = if is_mutable then parser_advance_by(parser, 2) else parser_advance(parser) end
-    let var_name   = get_ident(parser_kind(name_pos))
-    let value_pos  =
+  if is_keyword_let(kind) then
+    // let NAME = ...  →  rebindable (mutable=true)
+    // let const NAME = ...  →  compile-time constant (mutable=false)
+    const after_let    = parser_advance(parser)
+    const is_const     = is_keyword_const(parser_kind(after_let))
+    const is_mutable   = !is_const
+    const name_pos     = if is_const then parser_advance(after_let) else after_let end
+    const var_name     = get_ident(parser_kind(name_pos))
+    const type_result  =
       if is_colon(parser_kind(parser_advance(name_pos))) then
-        parser_advance(parse_type(parser_advance_by(name_pos, 2)).parser)
-      else parser_advance_by(name_pos, 2)
+        parse_type(parser_advance_by(name_pos, 2))
+      else TypeResult { type_expr: Shared.new(TyUnit), parser: parser_advance_by(name_pos, 1) }
       end
-    let value_result = parse_expr(value_pos)
-    StmtResult { stmt: Shared.new(StmtLet(var_name, is_mutable, value_result.expr)), parser: value_result.parser }
-  end
+    const value_pos    = parser_advance(type_result.parser)
+    const value_result = parse_expr(value_pos)
+    StmtResult { stmt: Shared.new(StmtLet(var_name, is_mutable, type_result.type_expr, value_result.expr)), parser: value_result.parser }
+  else if is_keyword_const(kind) then
+    // const NAME = ...  →  non-rebindable (mutable=false)
+    const name_pos     = parser_advance(parser)
+    const var_name     = get_ident(parser_kind(name_pos))
+    const type_result  =
+      if is_colon(parser_kind(parser_advance(name_pos))) then
+        parse_type(parser_advance_by(name_pos, 2))
+      else TypeResult { type_expr: Shared.new(TyUnit), parser: parser_advance_by(name_pos, 1) }
+      end
+    const value_pos    = parser_advance(type_result.parser)
+    const value_result = parse_expr(value_pos)
+    StmtResult { stmt: Shared.new(StmtLet(var_name, false, type_result.type_expr, value_result.expr)), parser: value_result.parser }
   else if is_keyword_break(kind)    then StmtResult { stmt: Shared.new(StmtBreak),    parser: parser_advance(parser) }
   else if is_keyword_continue(kind) then StmtResult { stmt: Shared.new(StmtContinue), parser: parser_advance(parser) }
-  else if is_keyword_return(kind) then do
-    let value_result = parse_expr(parser_advance(parser))
+  else if is_keyword_return(kind) then
+    const value_result = parse_expr(parser_advance(parser))
     StmtResult { stmt: Shared.new(StmtReturn(value_result.expr)), parser: value_result.parser }
-  end
-  else do
-    let expr_result = parse_expr(parser)
-    if is_equal(parser_kind(expr_result.parser)) then do
-      let rhs = parse_expr(parser_advance(expr_result.parser))
+  else
+    const expr_result = parse_expr(parser)
+    if is_equal(parser_kind(expr_result.parser)) then
+      const rhs = parse_expr(parser_advance(expr_result.parser))
       StmtResult { stmt: Shared.new(StmtExpr(Shared.new(ExprBin("=", expr_result.expr, rhs.expr)))), parser: rhs.parser }
-    end
     else
       StmtResult { stmt: Shared.new(StmtExpr(expr_result.expr)), parser: expr_result.parser }
     end
-  end
   end
 end
 
@@ -833,24 +1360,37 @@ fn parse_decl(parser: Parser) -> DeclResult = do
     parse_fn_decl(parser)
   else if is_keyword_type(kind) then
     parse_type_decl(parser_advance(parser))
-  else if is_keyword_extend(kind) then do
-    let mut state = parser_advance(parser)
-    while !is_keyword_end(parser_kind(state)) && !parser_at_eof(state) do
+  else if is_keyword_extend(kind) then
+    let state = parser_advance(parser)
+    while !is_left_brace(parser_kind(state)) && !parser_at_eof(state) do
       state = parser_advance(state)
     end
-    DeclResult { decl: Shared.new(DeclFn("__ext__", [], Shared.new(TyUnit), Shared.new(ExprUnit))), parser: parser_advance(state) }
-  end
+    let depth = 0
+    let done = false
+    while !parser_at_eof(state) && !done do
+      if is_left_brace(parser_kind(state)) then
+        depth = depth + 1
+        state = parser_advance(state)
+      else if is_right_brace(parser_kind(state)) then
+        depth = depth - 1
+        state = parser_advance(state)
+        if depth == 0 then done = true end
+      else
+        state = parser_advance(state)
+      end
+    end
+    DeclResult { decl: Shared.new(DeclFn("__ext__", [], Shared.new(TyUnit), Shared.new(ExprUnit))), parser: state }
   else
     DeclResult { decl: Shared.new(DeclFn("__skip__", [], Shared.new(TyUnit), Shared.new(ExprUnit))), parser: parser_advance(parser) }
   end
 end
 
 fn parse_fn_decl(parser: Parser) -> DeclResult = do
-  let fn_start        = if is_keyword_extern(parser_kind(parser)) then parser_advance(parser) else parser end
-  let fn_name         = get_ident(parser_kind(parser_advance(fn_start)))
-  let params_result   = parse_params(parser_advance_by(fn_start, 3))
-  let ret_type_result = parse_type(parser_advance(params_result.parser))
-  let body_result     = parse_expr(parser_advance(ret_type_result.parser))
+  const fn_start        = if is_keyword_extern(parser_kind(parser)) then parser_advance(parser) else parser end
+  const fn_name         = get_ident(parser_kind(parser_advance(fn_start)))
+  const params_result   = parse_params(parser_advance_by(fn_start, 3))
+  const ret_type_result = parse_type(parser_advance(params_result.parser))
+  const body_result     = parse_expr(parser_advance(ret_type_result.parser))
   DeclResult {
     decl:   Shared.new(DeclFn(fn_name, params_result.params, ret_type_result.type_expr, body_result.expr)),
     parser: body_result.parser
@@ -858,12 +1398,12 @@ fn parse_fn_decl(parser: Parser) -> DeclResult = do
 end
 
 fn parse_params(parser: Parser) -> ParamsResult = do
-  let mut params: [Shared<Param>] = []
+  const params: [Shared<Param>] = []
   if is_right_paren(parser_kind(parser)) then
     ParamsResult { params: params, parser: parser_advance(parser) }
   else
-    let first = parse_param(parser); params.push(first.param)
-    let mut state = first.parser
+    const first = parse_param(parser); params.push(first.param)
+    let state = first.parser
     while is_comma(parser_kind(state)) do
       let next = parse_param(parser_advance(state)); params.push(next.param); state = next.parser
     end
@@ -872,9 +1412,9 @@ fn parse_params(parser: Parser) -> ParamsResult = do
 end
 
 fn parse_param(parser: Parser) -> ParamResult = do
-  let is_mutable  = is_keyword_mut(parser_kind(parser))
-  let name_pos    = if is_mutable then parser_advance(parser) else parser end
-  let type_result = parse_type(parser_advance_by(name_pos, 2))
+  const is_mutable  = is_keyword_mut(parser_kind(parser))
+  const name_pos    = if is_mutable then parser_advance(parser) else parser end
+  const type_result = parse_type(parser_advance_by(name_pos, 2))
   ParamResult {
     param:  Shared.new(Param { name: get_ident(parser_kind(name_pos)), is_mut: is_mutable, typ: type_result.type_expr }),
     parser: type_result.parser
@@ -882,27 +1422,30 @@ fn parse_param(parser: Parser) -> ParamResult = do
 end
 
 fn parse_type_decl(parser: Parser) -> DeclResult = do
-  let type_name  = get_ident(parser_kind(parser))
-  let after_eq   = parser_advance_by(parser, 2)
-  let first_kind = parser_kind(after_eq)
-  if is_ident(first_kind) && is_ctor_name(get_ident(first_kind)) && is_left_brace(parser_kind(parser_advance(after_eq))) then do
-    let field_defs_result = parse_field_defs(parser_advance_by(after_eq, 2))
-    let mut variants: [Shared<TypeVariant>] = []
+  const type_name  = get_ident(parser_kind(parser))
+  const after_eq   = parser_advance_by(parser, 2)
+  const first_kind = parser_kind(after_eq)
+  if is_left_brace(first_kind) then
+    const field_defs_result = parse_field_defs(parser_advance(after_eq))
+    const variants: [Shared<TypeVariant>] = []
+    variants.push(Shared.new(VarRecord(type_name, field_defs_result.field_defs)))
+    DeclResult { decl: Shared.new(DeclType(type_name, variants)), parser: field_defs_result.parser }
+  else if is_ident(first_kind) && is_ctor_name(get_ident(first_kind)) && is_left_brace(parser_kind(parser_advance(after_eq))) then
+    const field_defs_result = parse_field_defs(parser_advance_by(after_eq, 2))
+    const variants: [Shared<TypeVariant>] = []
     variants.push(Shared.new(VarRecord(get_ident(first_kind), field_defs_result.field_defs)))
     DeclResult { decl: Shared.new(DeclType(type_name, variants)), parser: field_defs_result.parser }
-  end
-  else do
-    let variants_result = parse_variants(after_eq)
+  else
+    const variants_result = parse_variants(after_eq)
     DeclResult { decl: Shared.new(DeclType(type_name, variants_result.variants)), parser: variants_result.parser }
-  end
   end
 end
 
 fn parse_variants(parser: Parser) -> VariantsResult = do
-  let mut variants: [Shared<TypeVariant>] = []
-  let mut state = if is_bar(parser_kind(parser)) then parser_advance(parser) else parser end
+  const variants: [Shared<TypeVariant>] = []
+  let state = if is_bar(parser_kind(parser)) then parser_advance(parser) else parser end
   while !parser_at_eof(state) && (is_bar(parser_kind(state)) || is_ident(parser_kind(state))) do
-    let variant_result = parse_variant(state)
+    const variant_result = parse_variant(state)
     variants.push(variant_result.variant)
     state = variant_result.parser
     if is_bar(parser_kind(state)) then state = parser_advance(state) end
@@ -911,13 +1454,13 @@ fn parse_variants(parser: Parser) -> VariantsResult = do
 end
 
 fn parse_variant(parser: Parser) -> VariantResult = do
-  let variant_name = get_ident(parser_kind(parser))
-  let after_name   = parser_advance(parser)
+  const variant_name = get_ident(parser_kind(parser))
+  const after_name   = parser_advance(parser)
   if is_left_paren(parser_kind(after_name)) then
-    let types_result = parse_tuple_types(parser_advance(after_name))
+    const types_result = parse_tuple_types(parser_advance(after_name))
     VariantResult { variant: Shared.new(VarTuple(variant_name, types_result.types)), parser: types_result.parser }
   else if is_left_brace(parser_kind(after_name)) then
-    let field_defs_result = parse_field_defs(parser_advance(after_name))
+    const field_defs_result = parse_field_defs(parser_advance(after_name))
     VariantResult { variant: Shared.new(VarRecord(variant_name, field_defs_result.field_defs)), parser: field_defs_result.parser }
   else
     VariantResult { variant: Shared.new(VarUnit(variant_name)), parser: after_name }
@@ -925,9 +1468,9 @@ fn parse_variant(parser: Parser) -> VariantResult = do
 end
 
 fn parse_tuple_types(parser: Parser) -> TypesResult = do
-  let mut types: [Shared<TypeExpr>] = []
-  let first = parse_type(parser); types.push(first.type_expr)
-  let mut state = first.parser
+  const types: [Shared<TypeExpr>] = []
+  const first = parse_type(parser); types.push(first.type_expr)
+  let state = first.parser
   while is_comma(parser_kind(state)) do
     let next = parse_type(parser_advance(state)); types.push(next.type_expr); state = next.parser
   end
@@ -935,11 +1478,11 @@ fn parse_tuple_types(parser: Parser) -> TypesResult = do
 end
 
 fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
-  let mut field_defs: [Shared<FieldDef>] = []
-  let mut state = parser
+  const field_defs: [Shared<FieldDef>] = []
+  let state = parser
   while !is_right_brace(parser_kind(state)) && !parser_at_eof(state) do
-    let field_name   = get_ident(parser_kind(state))
-    let type_result  = parse_type(parser_advance_by(state, 2))
+    const field_name   = get_ident(parser_kind(state))
+    const type_result  = parse_type(parser_advance_by(state, 2))
     field_defs.push(Shared.new(FieldDef { name: field_name, typ: type_result.type_expr }))
     state = type_result.parser
     if is_comma(parser_kind(state)) then state = parser_advance(state) end
@@ -950,8 +1493,8 @@ end
 // ─── Entry point ──────────────────────────────────────────────────────────
 
 fn parse_program(tokens: [Token]) -> Program = do
-  let mut decls: [Shared<Decl>] = []
-  let mut state = parser_new(tokens)
+  const decls: [Shared<Decl>] = []
+  let state = parser_new(tokens)
   while !parser_at_eof(state) do
     let result = parse_decl(state)
     decls.push(result.decl)
@@ -967,8 +1510,8 @@ end
 // ─── Name scope helpers ───────────────────────────────────────────────────
 
 fn scope_has(scope: [string], name: string) -> bool = do
-  let mut found = false
-  let mut i = 0
+  let found = false
+  let i = 0
   while i < scope.length() do
     if scope[i] == name then found = true end
     i = i + 1
@@ -977,7 +1520,7 @@ fn scope_has(scope: [string], name: string) -> bool = do
 end
 
 fn pat_bindings(pat: Shared<Pat>) -> [string] = do
-  let mut acc: [string] = []
+  const acc: [string] = []
   collect_pat_binds(pat, acc)
 end
 
@@ -985,7 +1528,7 @@ fn collect_pat_binds(pat: Shared<Pat>, mut acc: [string]) -> [string] = do
   match pat {
     PatIdent(name) => do acc.push(name); acc end,
     PatCtor(_, sub_pats) => do
-      let mut i = 0
+      let i = 0
       while i < sub_pats.length() do acc = collect_pat_binds(sub_pats[i], acc); i = i + 1 end
       acc
     end,
@@ -996,24 +1539,25 @@ end
 // ─── Name resolution ──────────────────────────────────────────────────────
 
 fn collect_globals(prog: Program) -> [string] = do
-  let mut names: [string] = []
+  const names: [string] = []
   names.push("true"); names.push("false"); names.push("exit")
   names.push("print"); names.push("println"); names.push("args")
   names.push("File")
-  let mut i = 0
+  let i = 0
   while i < prog.decls.length() do
     match prog.decls[i] {
-      DeclFn(name, _, _, _) => names.push(name),
+      DeclFn(name, _, _, _) => do names.push(name); () end,
       DeclType(name, variants) => do
-        names.push(name); let mut j = 0
+        names.push(name); let j = 0
         while j < variants.length() do
           match variants[j] {
-            VarUnit(variant_name)     => names.push(variant_name),
-            VarTuple(variant_name, _) => names.push(variant_name),
-            VarRecord(variant_name, _) => names.push(variant_name)
+            VarUnit(variant_name)     => do names.push(variant_name); () end,
+            VarTuple(variant_name, _) => do names.push(variant_name); () end,
+            VarRecord(variant_name, _) => do names.push(variant_name); () end
           }
           j = j + 1
         end
+        ()
       end
     }
     i = i + 1
@@ -1024,7 +1568,7 @@ end
 fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [string]) -> [string] = do
   match expr {
     ExprIdent(name) => do
-      let mut errors: [string] = []
+      let errors: [string] = []
       if !scope_has(locals, name) && !scope_has(globals, name) then
         errors.push("undefined: " + name)
       end
@@ -1034,14 +1578,14 @@ fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [string]) -> 
       errs_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals)),
     ExprUn(_, inner) => check_names_expr(inner, locals, globals),
     ExprCall(func, args) => do
-      let mut errors = check_names_expr(func, locals, globals); let mut i = 0
+      let errors = check_names_expr(func, locals, globals); let i = 0
       while i < args.length() do
         errors = errs_append(errors, check_names_expr(args[i], locals, globals)); i = i + 1
       end
       errors
     end,
     ExprMethod(obj, _, args) => do
-      let mut errors = check_names_expr(obj, locals, globals); let mut i = 0
+      let errors = check_names_expr(obj, locals, globals); let i = 0
       while i < args.length() do
         errors = errs_append(errors, check_names_expr(args[i], locals, globals)); i = i + 1
       end
@@ -1055,43 +1599,58 @@ fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [string]) -> 
         errs_append(check_names_expr(cond, locals, globals), check_names_expr(then_expr, locals, globals)),
         check_names_expr(else_expr, locals, globals)),
     ExprBlock(stmts, result) => do
-      let check_result = check_names_stmts(stmts, locals, globals)
+      const check_result = check_names_stmts(stmts, locals, globals)
       errs_append(check_result.errors, check_names_expr(result, check_result.scope, globals))
     end,
     ExprWhile(cond, stmts) => do
-      let check_result = check_names_stmts(stmts, locals, globals)
+      const check_result = check_names_stmts(stmts, locals, globals)
       errs_append(check_names_expr(cond, locals, globals), check_result.errors)
     end,
     ExprFor(var, iter, stmts) => do
-      let mut inner = locals; inner.push(var)
-      let check_result = check_names_stmts(stmts, inner, globals)
+      const inner = locals; inner.push(var)
+      const check_result = check_names_stmts(stmts, inner, globals)
       errs_append(check_names_expr(iter, locals, globals), check_result.errors)
     end,
     ExprMatch(subject, arms) => do
-      let mut errors = check_names_expr(subject, locals, globals); let mut i = 0
+      let errors = check_names_expr(subject, locals, globals); let i = 0
       while i < arms.length() do
-        let binds = pat_bindings(arms[i].pat)
-        let mut arm_scope = locals; let mut j = 0
+        const binds = pat_bindings(arms[i].pat)
+        const arm_scope = locals; let j = 0
         while j < binds.length() do arm_scope.push(binds[j]); j = j + 1 end
         errors = errs_append(errors, check_names_expr(arms[i].body, arm_scope, globals)); i = i + 1
       end
       errors
     end,
     ExprRecord(_, field_vals) => do
-      let mut errors: [string] = []; let mut i = 0
+      let errors: [string] = []; let i = 0
+      while i < field_vals.length() do
+        errors = errs_append(errors, check_names_expr(field_vals[i].val, locals, globals)); i = i + 1
+      end
+      errors
+    end,
+    ExprRecordUpdate(_, base, field_vals) => do
+      let errors: [string] = check_names_expr(base, locals, globals); let i = 0
       while i < field_vals.length() do
         errors = errs_append(errors, check_names_expr(field_vals[i].val, locals, globals)); i = i + 1
       end
       errors
     end,
     ExprArray(exprs) => do
-      let mut errors: [string] = []; let mut i = 0
+      let errors: [string] = []; let i = 0
       while i < exprs.length() do
         errors = errs_append(errors, check_names_expr(exprs[i], locals, globals)); i = i + 1
       end
       errors
     end,
     ExprQuestion(inner) => check_names_expr(inner, locals, globals),
+    ExprLambda(params, body) => do
+      const lambda_locals: [string] = []
+      let i = 0
+      while i < locals.length() do lambda_locals.push(locals[i]); i = i + 1 end
+      let j = 0
+      while j < params.length() do lambda_locals.push(params[j]); j = j + 1 end
+      check_names_expr(body, lambda_locals, globals)
+    end,
     _ => []
   }
 end
@@ -1099,16 +1658,18 @@ end
 type NameCheckResult = NameCheckResult { errors: [string], scope: [string] }
 
 fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: [string]) -> NameCheckResult = do
-  let mut errors: [string] = []; let mut scope = locals; let mut i = 0
+  let errors: [string] = []; const scope = locals; let i = 0
   while i < stmts.length() do
     match stmts[i] {
-      StmtLet(name, _, value) => do
-        errors = errs_append(errors, check_names_expr(value, scope, globals)); scope.push(name)
+      StmtLet(name, _, _, value) => do
+        errors = errs_append(errors, check_names_expr(value, scope, globals))
+        scope.push(name)
+        ()
       end,
-      StmtExpr(expr)   => do errors = errs_append(errors, check_names_expr(expr, scope, globals)) end,
-      StmtReturn(expr) => do errors = errs_append(errors, check_names_expr(expr, scope, globals)) end,
-      StmtBreak    => do end,
-      StmtContinue => do end
+      StmtExpr(expr)   => do errors = errs_append(errors, check_names_expr(expr, scope, globals)); () end,
+      StmtReturn(expr) => do errors = errs_append(errors, check_names_expr(expr, scope, globals)); () end,
+      StmtBreak    => do () end,
+      StmtContinue => do () end
     }
     i = i + 1
   end
@@ -1148,23 +1709,28 @@ fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     TyNamed(name)   => Shared.new(TNamed(name)),
     TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),
     TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),
+    TyFn(params, ret) => do
+      const param_types: [Shared<Type>] = []; let i = 0
+      while i < params.length() do param_types.push(type_from_annotation(params[i])); i = i + 1 end
+      Shared.new(TFn(param_types, type_from_annotation(ret)))
+    end,
     _ => Shared.new(TUnknown)
   }
 
-fn build_registry(prog: Program) -> TypeRegistry = do
-  let mut registry = empty_registry()
-  let mut i = 0
+fn build_registry(prog: Program) -> Shared<TypeRegistry> = do
+  let registry = empty_registry()
+  let i = 0
   while i < prog.decls.length() do
     registry = register_decl(registry, prog.decls[i]); i = i + 1
   end
-  registry
+  Shared.new(registry)
 end
 
 fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry = do
   match decl {
     DeclFn(name, params, return_type, _) => do
-      let mut param_types: [Shared<Type>] = []
-      let mut i = 0
+      const param_types: [Shared<Type>] = []
+      let i = 0
       while i < params.length() do
         param_types.push(type_from_annotation(params[i].typ)); i = i + 1
       end
@@ -1172,7 +1738,7 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       registry
     end,
     DeclType(type_name, variants) => do
-      let mut i = 0
+      let i = 0
       while i < variants.length() do
         registry = register_variant(registry, type_name, variants[i]); i = i + 1
       end
@@ -1182,7 +1748,7 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
 end
 
 fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shared<TypeVariant>) -> TypeRegistry = do
-  let result_type = Shared.new(TNamed(type_name))
+  const result_type = Shared.new(TNamed(type_name))
   match variant {
     VarUnit(variant_name) => do
       registry.ctor_types.set(variant_name, result_type)
@@ -1190,8 +1756,8 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
       registry
     end,
     VarTuple(variant_name, field_types) => do
-      let mut field_type_list: [Shared<Type>] = []
-      let mut i = 0
+      const field_type_list: [Shared<Type>] = []
+      let i = 0
       while i < field_types.length() do
         field_type_list.push(type_from_annotation(field_types[i])); i = i + 1
       end
@@ -1200,8 +1766,8 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
       registry
     end,
     VarRecord(variant_name, field_defs) => do
-      let mut field_map: Map<string, Shared<Type>> = Map.new()
-      let mut i = 0
+      const field_map: Map<string, Shared<Type>> = Map.new()
+      let i = 0
       while i < field_defs.length() do
         field_map.set(field_defs[i].name, type_from_annotation(field_defs[i].typ)); i = i + 1
       end
@@ -1239,16 +1805,16 @@ fn method_return_type(method_name: string) -> Shared<Type> =
   else Shared.new(TUnknown)
   end
 
-fn field_lookup_type(obj_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
-  let type_name = match obj_type { TNamed(name) => name, _ => "" }
+fn field_lookup_type(obj_type: Shared<Type>, field_name: string, registry: Shared<TypeRegistry>) -> Shared<Type> = do
+  const type_name = match obj_type { TNamed(name) => name, _ => "" }
   if type_name != "" && registry.field_types.has(type_name) then
-    let field_map = registry.field_types.get(type_name)
+    const field_map = registry.field_types.get(type_name)
     if field_map.has(field_name) then field_map.get(field_name) else Shared.new(TUnknown) end
   else Shared.new(TUnknown)
   end
 end
 
-fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> InferResult = do
+fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry: Shared<TypeRegistry>) -> InferResult = do
   match expr {
     ExprInt(_)  => infer_ok(Shared.new(TI32)),
     ExprStr(_)  => infer_ok(Shared.new(TString)),
@@ -1261,87 +1827,87 @@ fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry:
       else infer_ok(Shared.new(TUnknown))
       end,
     ExprBin(op, left, right) => do
-      let left_result  = infer_expr(left, type_env, registry)
-      let right_result = infer_expr(right, type_env, registry)
+      const left_result  = infer_expr(left, type_env, registry)
+      const right_result = infer_expr(right, type_env, registry)
       InferResult {
         inferred_type: binary_op_type(op, left_result.inferred_type),
         errors: errs_append(left_result.errors, right_result.errors)
       }
     end,
     ExprUn(op, inner) => do
-      let inner_result = infer_expr(inner, type_env, registry)
-      let result_type = if op == "!" then Shared.new(TBool) else inner_result.inferred_type end
+      const inner_result = infer_expr(inner, type_env, registry)
+      const result_type = if op == "!" then Shared.new(TBool) else inner_result.inferred_type end
       InferResult { inferred_type: result_type, errors: inner_result.errors }
     end,
     ExprCall(func, args) => do
-      let func_result = infer_expr(func, type_env, registry)
-      let mut errors = func_result.errors; let mut i = 0
+      const func_result = infer_expr(func, type_env, registry)
+      let errors = func_result.errors; let i = 0
       while i < args.length() do
-        let arg_result = infer_expr(args[i], type_env, registry)
+        const arg_result = infer_expr(args[i], type_env, registry)
         errors = errs_append(errors, arg_result.errors); i = i + 1
       end
-      let return_type = match func_result.inferred_type { TFn(_, ret) => ret, _ => Shared.new(TUnknown) }
+      const return_type = match func_result.inferred_type { TFn(_, ret) => ret, _ => Shared.new(TUnknown) }
       InferResult { inferred_type: return_type, errors: errors }
     end,
     ExprMethod(obj, method_name, args) => do
-      let obj_result = infer_expr(obj, type_env, registry)
-      let mut errors = obj_result.errors; let mut i = 0
+      const obj_result = infer_expr(obj, type_env, registry)
+      let errors = obj_result.errors; let i = 0
       while i < args.length() do
-        let arg_result = infer_expr(args[i], type_env, registry)
+        const arg_result = infer_expr(args[i], type_env, registry)
         errors = errs_append(errors, arg_result.errors); i = i + 1
       end
       InferResult { inferred_type: method_return_type(method_name), errors: errors }
     end,
     ExprField(obj, field_name) => do
-      let obj_result = infer_expr(obj, type_env, registry)
+      const obj_result = infer_expr(obj, type_env, registry)
       InferResult {
         inferred_type: field_lookup_type(obj_result.inferred_type, field_name, registry),
         errors: obj_result.errors
       }
     end,
     ExprIndex(obj, idx) => do
-      let obj_result = infer_expr(obj, type_env, registry)
-      let idx_result = infer_expr(idx, type_env, registry)
+      const obj_result = infer_expr(obj, type_env, registry)
+      const idx_result = infer_expr(idx, type_env, registry)
       let elem_type = match obj_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
       InferResult { inferred_type: elem_type, errors: errs_append(obj_result.errors, idx_result.errors) }
     end,
     ExprIf(cond, then_expr, else_expr) => do
-      let cond_result = infer_expr(cond, type_env, registry)
-      let then_result = infer_expr(then_expr, type_env, registry)
-      let else_result = infer_expr(else_expr, type_env, registry)
+      const cond_result = infer_expr(cond, type_env, registry)
+      const then_result = infer_expr(then_expr, type_env, registry)
+      const else_result = infer_expr(else_expr, type_env, registry)
       InferResult {
         inferred_type: then_result.inferred_type,
         errors: errs_append(errs_append(cond_result.errors, then_result.errors), else_result.errors)
       }
     end,
     ExprBlock(stmts, result) => do
-      let stmts_result = infer_stmts(stmts, type_env, registry)
-      let result_infer = infer_expr(result, stmts_result.type_env, registry)
+      const stmts_result = infer_stmts(stmts, type_env, registry)
+      const result_infer = infer_expr(result, stmts_result.type_env, registry)
       InferResult {
         inferred_type: result_infer.inferred_type,
         errors: errs_append(stmts_result.errors, result_infer.errors)
       }
     end,
     ExprWhile(cond, stmts) => do
-      let cond_result  = infer_expr(cond, type_env, registry)
-      let stmts_result = infer_stmts(stmts, type_env, registry)
+      const cond_result  = infer_expr(cond, type_env, registry)
+      const stmts_result = infer_stmts(stmts, type_env, registry)
       InferResult { inferred_type: Shared.new(TUnit), errors: errs_append(cond_result.errors, stmts_result.errors) }
     end,
     ExprFor(var, iter, stmts) => do
-      let iter_result = infer_expr(iter, type_env, registry)
-      let elem_type   = match iter_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
-      let mut inner_env = type_env; inner_env.set(var, elem_type)
-      let stmts_result = infer_stmts(stmts, inner_env, registry)
+      const iter_result = infer_expr(iter, type_env, registry)
+      const elem_type   = match iter_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+      const inner_env = type_env; inner_env.set(var, elem_type)
+      const stmts_result = infer_stmts(stmts, inner_env, registry)
       InferResult { inferred_type: Shared.new(TUnit), errors: errs_append(iter_result.errors, stmts_result.errors) }
     end,
     ExprMatch(subject, arms) => do
-      let subject_result = infer_expr(subject, type_env, registry)
-      let mut errors = subject_result.errors
-      let mut arm_type: Shared<Type> = Shared.new(TUnknown)
-      let mut i = 0
+      const subject_result = infer_expr(subject, type_env, registry)
+      let errors = subject_result.errors
+      let arm_type: Shared<Type> = Shared.new(TUnknown)
+      let i = 0
       while i < arms.length() do
-        let arm_env    = env_for_pat(type_env, arms[i].pat, registry)
-        let arm_result = infer_expr(arms[i].body, arm_env, registry)
+        const arm_env    = env_for_pat(type_env, arms[i].pat, registry)
+        const arm_result = infer_expr(arms[i].body, arm_env, registry)
         errors = errs_append(errors, arm_result.errors)
         if i == 0 then arm_type = arm_result.inferred_type end
         i = i + 1
@@ -1349,66 +1915,80 @@ fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry:
       InferResult { inferred_type: arm_type, errors: errors }
     end,
     ExprRecord(name, field_vals) => do
-      let mut errors: [string] = []; let mut i = 0
+      let errors: [string] = []; let i = 0
       while i < field_vals.length() do
-        let field_result = infer_expr(field_vals[i].val, type_env, registry)
+        const field_result = infer_expr(field_vals[i].val, type_env, registry)
+        errors = errs_append(errors, field_result.errors); i = i + 1
+      end
+      InferResult { inferred_type: Shared.new(TNamed(name)), errors: errors }
+    end,
+    ExprRecordUpdate(name, base, field_vals) => do
+      const base_result = infer_expr(base, type_env, registry)
+      let errors: [string] = base_result.errors; let i = 0
+      while i < field_vals.length() do
+        const field_result = infer_expr(field_vals[i].val, type_env, registry)
         errors = errs_append(errors, field_result.errors); i = i + 1
       end
       InferResult { inferred_type: Shared.new(TNamed(name)), errors: errors }
     end,
     ExprArray(exprs) => do
-      let mut errors: [string] = []
-      let mut elem_type: Shared<Type> = Shared.new(TUnknown)
-      let mut i = 0
+      let errors: [string] = []
+      let elem_type: Shared<Type> = Shared.new(TUnknown)
+      let i = 0
       while i < exprs.length() do
-        let elem_result = infer_expr(exprs[i], type_env, registry)
+        const elem_result = infer_expr(exprs[i], type_env, registry)
         errors = errs_append(errors, elem_result.errors)
         if i == 0 then elem_type = elem_result.inferred_type end
         i = i + 1
       end
       InferResult { inferred_type: Shared.new(TArray(elem_type)), errors: errors }
     end,
-    ExprQuestion(inner) => infer_expr(inner, type_env, registry)
+    ExprQuestion(inner) => infer_expr(inner, type_env, registry),
+    ExprLambda(params, body) => do
+      let lambda_env = type_env
+      let i = 0
+      while i < params.length() do
+        lambda_env.set(params[i], Shared.new(TUnknown)); i = i + 1
+      end
+      const ret_result = infer_expr(body, lambda_env, registry)
+      infer_ok(Shared.new(TFn([], ret_result.inferred_type)))
+    end
   }
 end
 
-fn infer_stmts(stmts: [Shared<Stmt>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> StmtInferResult = do
-  let mut errors: [string] = []; let mut current_env = type_env; let mut i = 0
+fn infer_stmts(stmts: [Shared<Stmt>], type_env: Map<string, Shared<Type>>, registry: Shared<TypeRegistry>) -> StmtInferResult = do
+  let errors: [string] = []; let current_env = type_env; let i = 0
   while i < stmts.length() do
-    let result = infer_stmt(stmts[i], current_env, registry)
-    errors = errs_append(errors, result.errors); current_env = result.type_env; i = i + 1
+    match stmts[i] {
+      StmtLet(name, _, _, value) => do
+        const value_result = infer_expr(value, current_env, registry)
+        current_env.set(name, value_result.inferred_type)
+        errors = errs_append(errors, value_result.errors)
+      end,
+      StmtExpr(expr)   => do
+        const expr_res = infer_expr(expr, current_env, registry)
+        errors = errs_append(errors, expr_res.errors)
+      end,
+      StmtReturn(expr) => do
+        const ret_res = infer_expr(expr, current_env, registry)
+        errors = errs_append(errors, ret_res.errors)
+      end,
+      StmtBreak    => do end,
+      StmtContinue => do end
+    }
+    i = i + 1
   end
   StmtInferResult { errors: errors, type_env: current_env }
 end
 
-fn infer_stmt(stmt: Shared<Stmt>, type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> StmtInferResult = do
-  match stmt {
-    StmtLet(name, _, value) => do
-      let value_result = infer_expr(value, type_env, registry)
-      let mut new_env = type_env; new_env.set(name, value_result.inferred_type)
-      StmtInferResult { errors: value_result.errors, type_env: new_env }
-    end,
-    StmtExpr(expr)   => do
-      let result = infer_expr(expr, type_env, registry)
-      StmtInferResult { errors: result.errors, type_env: type_env }
-    end,
-    StmtReturn(expr) => do
-      let result = infer_expr(expr, type_env, registry)
-      StmtInferResult { errors: result.errors, type_env: type_env }
-    end,
-    StmtBreak    => StmtInferResult { errors: [], type_env: type_env },
-    StmtContinue => StmtInferResult { errors: [], type_env: type_env }
-  }
-end
-
-fn env_for_pat(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+fn env_for_pat(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, registry: Shared<TypeRegistry>) -> Map<string, Shared<Type>> = do
   match pat {
-    PatIdent(name) => do let mut env = type_env; env.set(name, Shared.new(TUnknown)); env end,
+    PatIdent(name) => do let env = type_env; env.set(name, Shared.new(TUnknown)); env end,
     PatCtor(ctor_name, sub_pats) => do
-      let param_types = if registry.ctor_params.has(ctor_name) then registry.ctor_params.get(ctor_name) else [] end
-      let mut current_env = type_env; let mut i = 0
+      const param_types = if registry.ctor_params.has(ctor_name) then registry.ctor_params.get(ctor_name) else [] end
+      let current_env = type_env; let i = 0
       while i < sub_pats.length() do
-        let sub_type = if i < param_types.length() then param_types[i] else Shared.new(TUnknown) end
+        const sub_type = if i < param_types.length() then param_types[i] else Shared.new(TUnknown) end
         current_env = env_for_pat_with_type(current_env, sub_pats[i], sub_type, registry); i = i + 1
       end
       current_env
@@ -1417,35 +1997,35 @@ fn env_for_pat(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, registry: 
   }
 end
 
-fn env_for_pat_with_type(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, type_val: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+fn env_for_pat_with_type(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, type_val: Shared<Type>, registry: Shared<TypeRegistry>) -> Map<string, Shared<Type>> = do
   match pat {
-    PatIdent(name) => do let mut env = type_env; env.set(name, type_val); env end,
+    PatIdent(name) => do let env = type_env; env.set(name, type_val); env end,
     _ => env_for_pat(type_env, pat, registry)
   }
 end
 
 // ─── Entry point ──────────────────────────────────────────────────────────
 
-type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
+type CheckOut = CheckOut { errors: [string], registry: Shared<TypeRegistry> }
 
 fn check(prog: Program) -> CheckOut = do
-  let globals  = collect_globals(prog)
+  const globals  = collect_globals(prog)
   let registry = build_registry(prog)
-  let mut all_errors: [string] = []
-  let mut i = 0
+  let all_errors: [string] = []
+  let i = 0
   while i < prog.decls.length() do
     match prog.decls[i] {
       DeclFn(_, params, _, body) => do
-        let mut locals: [string] = []
-        let mut type_env: Map<string, Shared<Type>> = Map.new()
-        let mut j = 0
+        const locals: [string] = []
+        const type_env: Map<string, Shared<Type>> = Map.new()
+        let j = 0
         while j < params.length() do
           locals.push(params[j].name)
           type_env.set(params[j].name, type_from_annotation(params[j].typ))
           j = j + 1
         end
         all_errors = errs_append(all_errors, check_names_expr(body, locals, globals))
-        let infer_result = infer_expr(body, type_env, registry)
+        const infer_result = infer_expr(body, type_env, registry)
         all_errors = errs_append(all_errors, infer_result.errors)
       end,
       DeclType(_, _) => do end
@@ -1464,27 +2044,29 @@ end
 type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 
 fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
-  let mut orders: [Shared<FieldOrder>] = []
-  let mut i = 0
+  const orders: [Shared<FieldOrder>] = []
+  let i = 0
   while i < prog.decls.length() do
     match prog.decls[i] {
       DeclType(type_name, variants) => do
-        let mut j = 0
+        let j = 0
         while j < variants.length() do
           match variants[j] {
             VarRecord(variant_name, field_defs) => do
-              let mut field_names: [string] = []; let mut k = 0
+              const field_names: [string] = []; let k = 0
               while k < field_defs.length() do field_names.push(field_defs[k].name); k = k + 1 end
               orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
               if variants.length() == 1 then
                 orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
               end
+              const _d1 = 0
             end,
             VarTuple(_, _) => do end,
             VarUnit(_)     => do end
           }
           j = j + 1
         end
+        const _d2 = 0
       end,
       DeclFn(_, _, _, _) => do end
     }
@@ -1494,9 +2076,9 @@ fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
 end
 
 fn lookup_fields(orders: [Shared<FieldOrder>], name: string) -> [string] = do
-  let mut result: [string] = []
-  let mut i = 0
-  let mut found = false
+  let result: [string] = []
+  let i = 0
+  let found = false
   while i < orders.length() && !found do
     if orders[i].type_name == name then
       result = orders[i].fields
@@ -1527,35 +2109,48 @@ fn type_to_cpp(type_expr: Shared<TypeExpr>) -> string =
       if args.length() == 0 then name
       else if args.length() == 1 then name + "<" + type_to_cpp(args[0]) + ">"
       else name + "<" + type_to_cpp(args[0]) + ", " + type_to_cpp(args[1]) + ">"
+      end,
+    TyFn(params, ret) => do
+      const param_types: [string] = []; let i = 0
+      while i < params.length() do
+        param_types.push(type_to_cpp(params[i])); i = i + 1
       end
+      "std::function<" + type_to_cpp(ret) + "(" + param_types.join(", ") + ")>"
+    end
   }
 
 // ─── Expression codegen ───────────────────────────────────────────────────
 
 fn escape_str(input: string) -> string = do
-  let mut output = ""; let mut i = 0
+  let parts: [string] = []; let i = 0
   while i < input.length() do
     let c = input.char_at(i)
-    if c == "\\" then output = output + "\\\\"
-    else if c == "\"" then output = output + "\\\""
-    else if c == "\n" then output = output + "\\n"
-    else if c == "\t" then output = output + "\\t"
-    else output = output + c
+    if c == "\\" then parts.push("\\\\")
+    else if c == "\"" then parts.push("\\\"")
+    else if c == "\n" then parts.push("\\n")
+    else if c == "\r" then parts.push("\\r")
+    else if c == "\t" then parts.push("\\t")
+    else if c == "\0" then parts.push("\\0")
+    else parts.push(c)
     end
     i = i + 1
   end
-  output
+  parts.join("")
 end
 
 fn gen_args(args: [Shared<Expr>], field_orders: [Shared<FieldOrder>]) -> string = do
-  let mut parts: [string] = []; let mut i = 0
+  let parts: [string] = []; let i = 0
   while i < args.length() do parts.push(gen_expr(args[i], field_orders)); i = i + 1 end
   parts.join(", ")
 end
 
 fn map_method(method_name: string) -> string =
-  if method_name == "length" || method_name == "len" then "size"
+  if method_name == "length" || method_name == "len" then "length"
   else if method_name == "push" then "push_back"
+  else if method_name == "to_string" then "to_string"
+  else if method_name == "to_int" || method_name == "to_i" then "to_i"
+  else if method_name == "upper" || method_name == "to_upper" then "upper"
+  else if method_name == "lower" || method_name == "to_lower" then "lower"
   else method_name
   end
 
@@ -1568,18 +2163,19 @@ fn map_builtin(name: string) -> string =
   end
 
 fn gen_stmts_str(stmts: [Shared<Stmt>], field_orders: [Shared<FieldOrder>]) -> string = do
-  let mut output = ""; let mut i = 0
-  while i < stmts.length() do output = output + gen_stmt(stmts[i], field_orders); i = i + 1 end
-  output
+  let parts: [string] = []; let i = 0
+  while i < stmts.length() do parts.push(gen_stmt(stmts[i], field_orders)); i = i + 1 end
+  parts.join("")
 end
 
 fn gen_block_body(expr: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> string =
   match expr {
     ExprBlock(stmts, result) => do
-      let stmts_code  = gen_stmts_str(stmts, field_orders)
-      let result_code = gen_expr(result, field_orders)
+      const stmts_code  = gen_stmts_str(stmts, field_orders)
+      const result_code = gen_expr(result, field_orders)
       if result_code == "/* unit */" then stmts_code else stmts_code + result_code + ";\n" end
     end,
+    ExprIf(_, _, _) => gen_stmt_expr(expr, field_orders),
     _ => gen_expr(expr, field_orders) + ";\n"
   }
 
@@ -1589,22 +2185,34 @@ fn gen_expr(expr: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> string =
     ExprStr(s)   => "mlc::String(\"" + escape_str(s) + "\")",
     ExprBool(b)  => if b then "true" else "false" end,
     ExprUnit     => "/* unit */",
-    ExprIdent(name) => map_builtin(name),
+    ExprIdent(name) => do
+      const mapped = map_builtin(name)
+      const first = mapped.char_at(0)
+      if first >= "A" && first <= "Z" then mapped + "{}" else mapped end
+    end,
     ExprBin(op, left, right) =>
       "(" + gen_expr(left, field_orders) + " " + op + " " + gen_expr(right, field_orders) + ")",
     ExprUn(op, inner) =>
       "(" + op + gen_expr(inner, field_orders) + ")",
-    ExprCall(func, args) =>
-      gen_expr(func, field_orders) + "(" + gen_args(args, field_orders) + ")",
+    ExprCall(func, args) => do
+      const fn_code = match func {
+        ExprIdent(name) => map_builtin(name),
+        _ => gen_expr(func, field_orders)
+      }
+      fn_code + "(" + gen_args(args, field_orders) + ")"
+    end,
     ExprMethod(obj, method_name, args) => do
-      let obj_code = gen_expr(obj, field_orders)
+      const obj_code = match obj {
+        ExprIdent(name) => map_builtin(name),
+        _ => gen_expr(obj, field_orders)
+      }
       if obj_code == "File" then
-        let cpp_fn = if method_name == "read" then "mlc::file::read_to_string"
+        const cpp_fn = if method_name == "read" then "mlc::file::read_to_string"
                      else "mlc::file::" + method_name
                      end
         cpp_fn + "(" + gen_args(args, field_orders) + ")"
       else
-        let base = obj_code + "." + map_method(method_name) + "("
+        const base = obj_code + "." + map_method(method_name) + "("
         if args.length() == 0 then base + ")" else base + gen_args(args, field_orders) + ")" end
       end
     end,
@@ -1615,8 +2223,12 @@ fn gen_expr(expr: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> string =
     ExprIf(cond, then_expr, else_expr) =>
       "(" + gen_expr(cond, field_orders) + " ? " + gen_expr(then_expr, field_orders) + " : " + gen_expr(else_expr, field_orders) + ")",
     ExprBlock(stmts, result) => do
-      let body = gen_stmts_str(stmts, field_orders) + "return " + gen_expr(result, field_orders) + ";\n"
-      "[&]() \{\n" + body + "\}()"
+      if stmts.length() == 0 then
+        gen_expr(result, field_orders)
+      else
+        const body = gen_stmts_str(stmts, field_orders) + "return " + gen_expr(result, field_orders) + ";\n"
+        "[&]() \{\n" + body + "\}()"
+      end
     end,
     ExprWhile(cond, stmts) =>
       "[&]() \{\nwhile (" + gen_expr(cond, field_orders) + ") \{\n" + gen_stmts_str(stmts, field_orders) + "\}\n\}()",
@@ -1625,21 +2237,39 @@ fn gen_expr(expr: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> string =
     ExprMatch(subject, arms) =>
       gen_match(subject, arms, field_orders),
     ExprRecord(name, field_vals) => do
-      let field_order = lookup_fields(field_orders, name)
-      let vals = if field_order.length() > 0
+      const field_order = lookup_fields(field_orders, name)
+      const vals = if field_order.length() > 0
                  then gen_record_ordered(field_vals, field_order, field_orders)
                  else gen_record_unordered(field_vals, field_orders)
                  end
       name + "\{" + vals + "\}"
     end,
+    ExprRecordUpdate(name, base, overrides) => do
+      const field_order = lookup_fields(field_orders, name)
+      const vals = gen_record_update_ordered(base, overrides, field_order, field_orders)
+      name + "\{" + vals + "\}"
+    end,
     ExprArray(exprs) =>
       "mlc::Array<auto>\{" + gen_args(exprs, field_orders) + "\}",
     ExprQuestion(inner) =>
-      gen_expr(inner, field_orders)
+      gen_expr(inner, field_orders),
+    ExprLambda(params, body) => do
+      const capture = if params.length() == 0 then "[]" else "[=]" end
+      const param_list = if params.length() == 0
+        then ""
+        else do
+          let parts: [string] = []; let i = 0
+          while i < params.length() do parts.push("auto " + params[i]); i = i + 1 end
+          parts.join(", ")
+        end
+        end
+      const body_code = gen_expr(body, field_orders)
+      capture + "(" + param_list + ") { return " + body_code + "; }"
+    end
   }
 
 fn gen_record_ordered(field_vals: [Shared<FieldVal>], field_order: [string], field_orders: [Shared<FieldOrder>]) -> string = do
-  let mut parts: [string] = []; let mut i = 0
+  let parts: [string] = []; let i = 0
   while i < field_order.length() do
     let value = find_field_val(field_vals, field_order[i])
     parts.push(gen_expr(value, field_orders)); i = i + 1
@@ -1648,13 +2278,27 @@ fn gen_record_ordered(field_vals: [Shared<FieldVal>], field_order: [string], fie
 end
 
 fn gen_record_unordered(field_vals: [Shared<FieldVal>], field_orders: [Shared<FieldOrder>]) -> string = do
-  let mut parts: [string] = []; let mut i = 0
+  let parts: [string] = []; let i = 0
   while i < field_vals.length() do parts.push(gen_expr(field_vals[i].val, field_orders)); i = i + 1 end
   parts.join(", ")
 end
 
+fn gen_record_update_ordered(base: Shared<Expr>, overrides: [Shared<FieldVal>], field_order: [string], field_orders: [Shared<FieldOrder>]) -> string = do
+  let parts: [string] = []; let i = 0
+  while i < field_order.length() do
+    const field_name = field_order[i]
+    const override_val = find_field_val(overrides, field_name)
+    let val_str = match override_val {
+      ExprUnit => gen_expr(Shared.new(ExprField(base, field_name)), field_orders),
+      _        => gen_expr(override_val, field_orders)
+    }
+    parts.push(val_str); i = i + 1
+  end
+  parts.join(", ")
+end
+
 fn find_field_val(field_vals: [Shared<FieldVal>], name: string) -> Shared<Expr> = do
-  let mut result: Shared<Expr> = Shared.new(ExprUnit); let mut i = 0
+  let result: Shared<Expr> = Shared.new(ExprUnit); let i = 0
   while i < field_vals.length() do
     if field_vals[i].name == name then result = field_vals[i].val end
     i = i + 1
@@ -1663,7 +2307,7 @@ fn find_field_val(field_vals: [Shared<FieldVal>], name: string) -> Shared<Expr> 
 end
 
 fn gen_match(subject: Shared<Expr>, arms: [Shared<MatchArm>], field_orders: [Shared<FieldOrder>]) -> string = do
-  let mut parts: [string] = []; let mut i = 0
+  let parts: [string] = []; let i = 0
   while i < arms.length() do parts.push(gen_arm(arms[i], field_orders)); i = i + 1 end
   "std::visit(overloaded\{" + parts.join(",\n") + "\n\}, " + gen_expr(subject, field_orders) + ")"
 end
@@ -1680,8 +2324,8 @@ fn gen_pat_header(pat: Shared<Pat>) -> string =
     PatStr(_)  => "[&](auto& __v) ",
     PatIdent(name) => "[&](auto " + name + ") ",
     PatCtor(name, sub_pats) => do
-      let lower_name = lower_first(name)
-      let binding =
+      const lower_name = lower_first(name)
+      const binding =
         if sub_pats.length() == 0 then ""
         else "\{ auto [" + pat_bind_names(sub_pats) + "] = " + lower_name + "; \} "
         end
@@ -1690,9 +2334,9 @@ fn gen_pat_header(pat: Shared<Pat>) -> string =
   }
 
 fn pat_bind_names(sub_pats: [Shared<Pat>]) -> string = do
-  let mut parts: [string] = []; let mut i = 0
+  let parts: [string] = []; let i = 0
   while i < sub_pats.length() do
-    let bind_name = match sub_pats[i] { PatIdent(name) => name, _ => "__" + i.to_string() }
+    const bind_name = match sub_pats[i] { PatIdent(name) => name, _ => "__" + i.to_string() }
     parts.push(bind_name); i = i + 1
   end
   parts.join(", ")
@@ -1702,7 +2346,20 @@ end
 
 fn gen_stmt(stmt: Shared<Stmt>, field_orders: [Shared<FieldOrder>]) -> string =
   match stmt {
-    StmtLet(name, _, value) => "auto " + name + " = " + gen_expr(value, field_orders) + ";\n",
+    StmtLet(name, _, typ, value) => do
+      const val_code = match value {
+        ExprArray(elems) =>
+          if elems.length() == 0 then
+            match typ {
+              TyArray(inner) => "mlc::Array<" + type_to_cpp(inner) + ">\{\}",
+              _              => "mlc::Array<auto>\{\}"
+            }
+          else "mlc::Array<auto>\{" + gen_args(elems, field_orders) + "\}"
+          end,
+        _ => gen_expr(value, field_orders)
+      }
+      "auto " + name + " = " + val_code + ";\n"
+    end,
     StmtExpr(expr)          => gen_stmt_expr(expr, field_orders),
     StmtBreak               => "break;\n",
     StmtContinue            => "continue;\n",
@@ -1716,11 +2373,18 @@ fn gen_stmt_expr(expr: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> stri
       else "(" + gen_expr(lhs, field_orders) + " " + op + " " + gen_expr(rhs, field_orders) + ");\n"
       end,
     ExprIf(cond, then_expr, else_expr) => do
-      let mut output = "if (" + gen_expr(cond, field_orders) + ") \{\n" + gen_block_body(then_expr, field_orders) + "\}"
-      let else_code  = gen_expr(else_expr, field_orders)
-      if else_code != "/* unit */" then
-        output = output + " else \{\n" + gen_block_body(else_expr, field_orders) + "\}"
-      end
+      let output = "if (" + gen_expr(cond, field_orders) + ") \{\n" + gen_block_body(then_expr, field_orders) + "\}"
+      const else_str = match else_expr {
+        ExprUnit                    => "",
+        ExprBlock(stmts, result)    =>
+          if stmts.length() == 0 then
+            match result { ExprUnit => "", _ => " else \{\n" + gen_block_body(else_expr, field_orders) + "\}" }
+          else " else \{\n" + gen_block_body(else_expr, field_orders) + "\}"
+          end,
+        ExprIf(_, _, _)             => " else " + gen_stmt_expr(else_expr, field_orders),
+        _                           => " else \{\n" + gen_block_body(else_expr, field_orders) + "\}"
+      }
+      if else_str.length() > 0 then output = output + else_str end
       output + "\n"
     end,
     ExprWhile(cond, stmts) =>
@@ -1728,8 +2392,8 @@ fn gen_stmt_expr(expr: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> stri
     ExprFor(var, iter, stmts) =>
       "for (auto " + var + " : " + gen_expr(iter, field_orders) + ") \{\n" + gen_stmts_str(stmts, field_orders) + "\}\n",
     ExprBlock(stmts, result) => do
-      let stmts_code  = gen_stmts_str(stmts, field_orders)
-      let result_code = gen_expr(result, field_orders)
+      const stmts_code  = gen_stmts_str(stmts, field_orders)
+      const result_code = gen_expr(result, field_orders)
       if result_code == "/* unit */" then stmts_code else stmts_code + result_code + ";\n" end
     end,
     _ => gen_expr(expr, field_orders) + ";\n"
@@ -1737,56 +2401,99 @@ fn gen_stmt_expr(expr: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> stri
 
 // ─── Declaration codegen ──────────────────────────────────────────────────
 
-fn gen_fn_body(body: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> string =
-  match body {
+fn gen_return_body(expr: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> string =
+  match expr {
     ExprBlock(stmts, result) => do
-      let stmts_code  = gen_stmts_str(stmts, field_orders)
-      let result_code = gen_expr(result, field_orders)
+      const stmts_code  = gen_stmts_str(stmts, field_orders)
+      const result_code = gen_expr(result, field_orders)
       if result_code == "/* unit */" then stmts_code else stmts_code + "return " + result_code + ";\n" end
     end,
-    _ => "return " + gen_expr(body, field_orders) + ";\n"
+    ExprIf(cond, then_expr, else_expr) => do
+      let output = "if (" + gen_expr(cond, field_orders) + ") \{\n" + gen_return_body(then_expr, field_orders) + "\}"
+      const else_str = match else_expr {
+        ExprUnit        => "",
+        ExprIf(_, _, _) => " else " + gen_return_if_stmt(else_expr, field_orders),
+        _               => " else \{\n" + gen_return_body(else_expr, field_orders) + "\}"
+      }
+      if else_str.length() > 0 then output = output + else_str end
+      output + "\n"
+    end,
+    _ => "return " + gen_expr(expr, field_orders) + ";\n"
   }
 
+fn gen_return_if_stmt(expr: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> string =
+  match expr {
+    ExprIf(cond, then_expr, else_expr) => do
+      let output = "if (" + gen_expr(cond, field_orders) + ") \{\n" + gen_return_body(then_expr, field_orders) + "\}"
+      const else_str = match else_expr {
+        ExprUnit        => "",
+        ExprIf(_, _, _) => " else " + gen_return_if_stmt(else_expr, field_orders),
+        _               => " else \{\n" + gen_return_body(else_expr, field_orders) + "\}"
+      }
+      if else_str.length() > 0 then output = output + else_str end
+      output + "\n"
+    end,
+    _ => "if (true) \{\n" + gen_return_body(expr, field_orders) + "\}\n"
+  }
+
+fn gen_fn_body(body: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> string =
+  gen_return_body(body, field_orders)
+
 fn gen_params(params: [Shared<Param>]) -> string = do
-  let mut parts: [string] = []; let mut i = 0
+  let parts: [string] = []; let i = 0
   while i < params.length() do
     parts.push(type_to_cpp(params[i].typ) + " " + params[i].name); i = i + 1
   end
   parts.join(", ")
 end
 
-fn gen_type_decl(type_name: string, variants: [Shared<TypeVariant>]) -> string =
+fn gen_type_decl_fwd(type_name: string, variants: [Shared<TypeVariant>]) -> string =
+  if variants.length() == 1 then ""
+  else gen_adt_fwd(type_name, variants)
+  end
+
+fn gen_type_decl_body(type_name: string, variants: [Shared<TypeVariant>]) -> string =
   if variants.length() == 1 then gen_single_variant(type_name, variants[0])
-  else gen_adt(type_name, variants)
+  else gen_adt_defs(variants)
   end
 
 fn gen_single_variant(type_name: string, variant: Shared<TypeVariant>) -> string =
   match variant {
     VarRecord(_, field_defs) => do
-      let mut output = "struct " + type_name + " \{"; let mut i = 0
+      let parts: [string] = []; let i = 0
       while i < field_defs.length() do
-        output = output + type_to_cpp(field_defs[i].typ) + " " + field_defs[i].name + ";"; i = i + 1
+        parts.push(type_to_cpp(field_defs[i].typ) + " " + field_defs[i].name + ";"); i = i + 1
       end
-      output + "\};\n"
+      "struct " + type_name + " \{" + parts.join("") + "\};\n"
     end,
     VarTuple(_, field_types) => do
-      let mut output = "struct " + type_name + " \{"; let mut i = 0
+      let parts: [string] = []; let i = 0
       while i < field_types.length() do
-        output = output + type_to_cpp(field_types[i]) + " field" + i.to_string() + ";"; i = i + 1
+        parts.push(type_to_cpp(field_types[i]) + " field" + i.to_string() + ";"); i = i + 1
       end
-      output + "\};\n"
+      "struct " + type_name + " \{" + parts.join("") + "\};\n"
     end,
     VarUnit(_) => "struct " + type_name + " \{\};\n"
   }
 
-fn gen_adt(type_name: string, variants: [Shared<TypeVariant>]) -> string = do
-  let mut output = ""; let mut variant_names: [string] = []; let mut i = 0
+fn gen_adt_fwd(type_name: string, variants: [Shared<TypeVariant>]) -> string = do
+  let parts: [string] = []; const variant_names: [string] = []; let i = 0
   while i < variants.length() do
-    variant_names.push(variant_ctor_name(variants[i]))
-    output = output + gen_variant_struct(variants[i])
+    const vname = variant_ctor_name(variants[i])
+    variant_names.push(vname)
+    parts.push("struct " + vname + ";\n")
     i = i + 1
   end
-  output + "using " + type_name + " = std::variant<" + variant_names.join(", ") + ">;\n"
+  parts.join("") + "using " + type_name + " = std::variant<" + variant_names.join(", ") + ">;\n"
+end
+
+fn gen_adt_defs(variants: [Shared<TypeVariant>]) -> string = do
+  let parts: [string] = []; let i = 0
+  while i < variants.length() do
+    parts.push(gen_variant_struct(variants[i]))
+    i = i + 1
+  end
+  parts.join("")
 end
 
 fn variant_ctor_name(variant: Shared<TypeVariant>) -> string =
@@ -1796,24 +2503,24 @@ fn gen_variant_struct(variant: Shared<TypeVariant>) -> string =
   match variant {
     VarUnit(name) => "struct " + name + " \{\};\n",
     VarTuple(name, field_types) => do
-      let mut output = "struct " + name + " \{"; let mut i = 0
+      let parts: [string] = []; let i = 0
       while i < field_types.length() do
-        output = output + type_to_cpp(field_types[i]) + " field" + i.to_string() + ";"; i = i + 1
+        parts.push(type_to_cpp(field_types[i]) + " field" + i.to_string() + ";"); i = i + 1
       end
-      output + "\};\n"
+      "struct " + name + " \{" + parts.join("") + "\};\n"
     end,
     VarRecord(name, field_defs) => do
-      let mut output = "struct " + name + " \{"; let mut i = 0
+      let parts: [string] = []; let i = 0
       while i < field_defs.length() do
-        output = output + type_to_cpp(field_defs[i].typ) + " " + field_defs[i].name + ";"; i = i + 1
+        parts.push(type_to_cpp(field_defs[i].typ) + " " + field_defs[i].name + ";"); i = i + 1
       end
-      output + "\};\n"
+      "struct " + name + " \{" + parts.join("") + "\};\n"
     end
   }
 
 fn gen_fn_decl(name: string, params: [Shared<Param>], return_type: Shared<TypeExpr>, body: Shared<Expr>, field_orders: [Shared<FieldOrder>]) -> string =
   if name == "main" && params.length() == 0 then
-    let preamble = "mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n"
+    const preamble = "mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n"
     type_to_cpp(return_type) + " " + name + "(int argc, char** argv) noexcept\{\n" +
     preamble + gen_fn_body(body, field_orders) + "\}\n"
   else
@@ -1827,6 +2534,9 @@ fn gen_fn_proto(name: string, params: [Shared<Param>], return_type: Shared<TypeE
   else
     type_to_cpp(return_type) + " " + name + "(" + gen_params(params) + ") noexcept;\n"
   end
+
+fn gen_type_decl(type_name: string, variants: [Shared<TypeVariant>]) -> string =
+  gen_type_decl_fwd(type_name, variants) + gen_type_decl_body(type_name, variants)
 
 fn gen_decl(decl: Shared<Decl>, field_orders: [Shared<FieldOrder>]) -> string =
   match decl {
@@ -1844,23 +2554,36 @@ fn gen_proto(decl: Shared<Decl>) -> string =
   }
 
 fn gen_program(prog: Program) -> string = do
-  let field_orders = build_field_orders(prog)
-  let mut output = "#include \"mlc/core/string.hpp\"\n"
-  output = output + "#include \"mlc/core/array.hpp\"\n"
-  output = output + "#include \"mlc/core/hashmap.hpp\"\n"
-  output = output + "#include \"mlc/core/match.hpp\"\n"
-  output = output + "#include \"mlc/io/io.hpp\"\n"
-  output = output + "#include \"mlc/io/file.hpp\"\n"
-  output = output + "#include <variant>\n"
-  output = output + "#include <vector>\n\n"
-  let mut i = 0
-  let mut s = ""
+  const field_orders = build_field_orders(prog)
+  let parts: [string] = []
+  parts.push("#include \"mlc/core/string.hpp\"\n")
+  parts.push("#include \"mlc/core/array.hpp\"\n")
+  parts.push("#include \"mlc/core/hashmap.hpp\"\n")
+  parts.push("#include \"mlc/core/match.hpp\"\n")
+  parts.push("#include \"mlc/io/io.hpp\"\n")
+  parts.push("#include \"mlc/io/file.hpp\"\n")
+  parts.push("#include <functional>\n")
+  parts.push("#include <memory>\n")
+  parts.push("#include <variant>\n")
+  parts.push("#include <vector>\n\n")
+  let i = 0
+  let s = ""
   while i < prog.decls.length() do
     s = match prog.decls[i] {
-      DeclType(_, _)     => gen_decl(prog.decls[i], field_orders),
-      DeclFn(_, _, _, _) => ""
+      DeclType(type_name, variants) => gen_type_decl_fwd(type_name, variants),
+      DeclFn(_, _, _, _)            => ""
     }
-    output = output + s; i = i + 1
+    if s.length() > 0 then parts.push(s) end
+    i = i + 1
+  end
+  i = 0
+  while i < prog.decls.length() do
+    s = match prog.decls[i] {
+      DeclType(type_name, variants) => gen_type_decl_body(type_name, variants),
+      DeclFn(_, _, _, _)            => ""
+    }
+    if s.length() > 0 then parts.push(s) end
+    i = i + 1
   end
   i = 0
   while i < prog.decls.length() do
@@ -1868,193 +2591,20 @@ fn gen_program(prog: Program) -> string = do
       DeclFn(_, _, _, _) => gen_proto(prog.decls[i]),
       DeclType(_, _)     => ""
     }
-    output = output + s; i = i + 1
+    if s.length() > 0 then parts.push(s) end
+    i = i + 1
   end
-  output = output + "\n"
+  parts.push("\n")
   i = 0
   while i < prog.decls.length() do
     s = match prog.decls[i] {
       DeclFn(_, _, _, _) => gen_decl(prog.decls[i], field_orders),
       DeclType(_, _)     => ""
     }
-    output = output + s; i = i + 1
+    if s.length() > 0 then parts.push(s) end
+    i = i + 1
   end
-  output
-end
-
-
-// C++ lexer: source string → [CppToken]
-// Reuses from lexer.mlc: LexState, ls_cur, ls_peek, ls_advance, ls_advance_n, ls_eof
-// Reuses from lexer.mlc: is_alpha, is_digit, is_alnum, is_ws, map_escape, skip_ws
-
-// ─── Token types ──────────────────────────────────────────────────────────
-
-type CppTKind =
-  // Keywords
-  | CKAuto | CKConst | CKConstexpr | CKIf | CKElse | CKWhile | CKFor
-  | CKReturn | CKBreak | CKStruct | CKUsing | CKNoexcept | CKInline | CKStatic
-  | CKVoid | CKInt | CKBool | CKChar | CKTrue | CKFalse | CKNullptr
-  | CKTemplate | CKTypename | CKNamespace | CKNew | CKDelete | CKOperator
-  // Identifiers and literals
-  | CIdent(string) | CLInt(i32) | CLStr(string)
-  // Multi-char operators
-  | CArrow | CScope | CEq | CNe | CLe | CGe | CAnd | COr | CInc | CDec
-  | CLShift | CRShift
-  // Brackets
-  | CLParen | CRParen | CLBrace | CRBrace | CLBracket | CRBracket
-  | CLAngle | CRAngle
-  // Everything else
-  | COp(string)
-  | CEof
-
-type CppToken  = CppToken  { kind: CppTKind, line: i32, col: i32 }
-type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
-
-type CppScanIdR  = CppScanIdR  { st: LexState, tok: CppToken }
-type CppScanIntR = CppScanIntR { st: LexState, tok: CppToken }
-type CppScanStrR = CppScanStrR { st: LexState, tok: CppToken, err: string }
-type CppScanOpR  = CppScanOpR  { st: LexState, tok: CppToken }
-
-// ─── Keyword recognition ──────────────────────────────────────────────────
-
-fn cpp_keyword_kind(s: string) -> CppTKind =
-  if      s == "auto"       then CKAuto
-  else if s == "const"      then CKConst
-  else if s == "constexpr"  then CKConstexpr
-  else if s == "if"         then CKIf
-  else if s == "else"       then CKElse
-  else if s == "while"      then CKWhile
-  else if s == "for"        then CKFor
-  else if s == "return"     then CKReturn
-  else if s == "break"      then CKBreak
-  else if s == "struct"     then CKStruct
-  else if s == "using"      then CKUsing
-  else if s == "noexcept"   then CKNoexcept
-  else if s == "inline"     then CKInline
-  else if s == "static"     then CKStatic
-  else if s == "void"       then CKVoid
-  else if s == "int"        then CKInt
-  else if s == "bool"       then CKBool
-  else if s == "char"       then CKChar
-  else if s == "true"       then CKTrue
-  else if s == "false"      then CKFalse
-  else if s == "nullptr"    then CKNullptr
-  else if s == "template"   then CKTemplate
-  else if s == "typename"   then CKTypename
-  else if s == "namespace"  then CKNamespace
-  else if s == "new"        then CKNew
-  else if s == "delete"     then CKDelete
-  else if s == "operator"   then CKOperator
-  else CIdent(s)
-  end
-
-// ─── Scan functions ───────────────────────────────────────────────────────
-
-fn cpp_scan_ident(st: LexState) -> CppScanIdR = do
-  let start  = st.pos
-  let src    = st.src
-  let tok_ln = st.line
-  let tok_cl = st.col
-  let mut s  = st
-  while !ls_eof(s) && is_alnum(ls_cur(s)) do s = ls_advance(s) end
-  let word = src.substring(start, s.pos - start)
-  CppScanIdR { st: s, tok: CppToken { kind: cpp_keyword_kind(word), line: tok_ln, col: tok_cl } }
-end
-
-fn cpp_scan_int(st: LexState) -> CppScanIntR = do
-  let tok_ln = st.line
-  let tok_cl = st.col
-  let mut s  = st
-  let mut v  = 0
-  while !ls_eof(s) && is_digit(ls_cur(s)) do
-    v = v * 10 + ls_cur(s).to_i()
-    s = ls_advance(s)
-  end
-  CppScanIntR { st: s, tok: CppToken { kind: CLInt(v), line: tok_ln, col: tok_cl } }
-end
-
-fn cpp_scan_string(st: LexState) -> CppScanStrR = do
-  let tok_ln    = st.line
-  let tok_cl    = st.col
-  let mut s     = ls_advance(st)
-  let mut parts: [string] = []
-  let mut err   = ""
-  while !ls_eof(s) && ls_cur(s) != "\"" do
-    if ls_cur(s) == "\\" then
-      s = ls_advance(s)
-      let mapped = map_escape(ls_cur(s))
-      if mapped != "" then
-        parts.push(mapped)
-      else
-        parts.push("\\")
-        parts.push(ls_cur(s))
-      end
-      s = ls_advance(s)
-    else
-      parts.push(ls_cur(s))
-      s = ls_advance(s)
-    end
-  end
-  if ls_eof(s) then
-    err = "unterminated string"
-  else
-    s = ls_advance(s)
-  end
-  CppScanStrR { st: s, tok: CppToken { kind: CLStr(parts.join("")), line: tok_ln, col: tok_cl }, err: err }
-end
-
-fn cpp_scan_op(st: LexState) -> CppScanOpR = do
-  let tok_ln = st.line
-  let tok_cl = st.col
-  let c      = ls_cur(st)
-  let c2     = ls_peek(st, 1)
-  if      c == "-" && c2 == ">" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CArrow,    line: tok_ln, col: tok_cl } }
-  else if c == ":" && c2 == ":" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CScope,    line: tok_ln, col: tok_cl } }
-  else if c == "=" && c2 == "=" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CEq,       line: tok_ln, col: tok_cl } }
-  else if c == "!" && c2 == "=" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CNe,       line: tok_ln, col: tok_cl } }
-  else if c == "<" && c2 == "=" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CLe,       line: tok_ln, col: tok_cl } }
-  else if c == ">" && c2 == "=" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CGe,       line: tok_ln, col: tok_cl } }
-  else if c == "&" && c2 == "&" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CAnd,      line: tok_ln, col: tok_cl } }
-  else if c == "|" && c2 == "|" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: COr,       line: tok_ln, col: tok_cl } }
-  else if c == "+" && c2 == "+" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CInc,      line: tok_ln, col: tok_cl } }
-  else if c == "-" && c2 == "-" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CDec,      line: tok_ln, col: tok_cl } }
-  else if c == "<" && c2 == "<" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CLShift,   line: tok_ln, col: tok_cl } }
-  else if c == ">" && c2 == ">" then CppScanOpR { st: ls_advance_n(st, 2), tok: CppToken { kind: CRShift,   line: tok_ln, col: tok_cl } }
-  else if c == "("  then CppScanOpR { st: ls_advance(st), tok: CppToken { kind: CLParen,   line: tok_ln, col: tok_cl } }
-  else if c == ")"  then CppScanOpR { st: ls_advance(st), tok: CppToken { kind: CRParen,   line: tok_ln, col: tok_cl } }
-        else if c == "{" then CppScanOpR { st: ls_advance(st), tok: CppToken { kind: CLBrace,   line: tok_ln, col: tok_cl } }
-         else if c == "}" then CppScanOpR { st: ls_advance(st), tok: CppToken { kind: CRBrace,   line: tok_ln, col: tok_cl } }
-  else if c == "["  then CppScanOpR { st: ls_advance(st), tok: CppToken { kind: CLBracket, line: tok_ln, col: tok_cl } }
-  else if c == "]"  then CppScanOpR { st: ls_advance(st), tok: CppToken { kind: CRBracket, line: tok_ln, col: tok_cl } }
-  else if c == "<"  then CppScanOpR { st: ls_advance(st), tok: CppToken { kind: CLAngle,   line: tok_ln, col: tok_cl } }
-  else if c == ">"  then CppScanOpR { st: ls_advance(st), tok: CppToken { kind: CRAngle,   line: tok_ln, col: tok_cl } }
-  else               CppScanOpR { st: ls_advance(st), tok: CppToken { kind: COp(c),     line: tok_ln, col: tok_cl } }
-  end
-end
-
-// ─── Main tokenizer ───────────────────────────────────────────────────────
-
-fn cpp_tokenize(src: string) -> CppLexOut = do
-  let mut st      = LexState { src: src, pos: 0, line: 1, col: 1 }
-  let mut tokens: [CppToken] = []
-  let mut errors: [string]   = []
-  while !ls_eof(st) do
-    st = skip_ws(st)
-    if ls_eof(st) then break end
-    let c = ls_cur(st)
-    if is_alpha(c) then
-      let r = cpp_scan_ident(st);  tokens.push(r.tok); st = r.st
-    else if is_digit(c) then
-      let r = cpp_scan_int(st);    tokens.push(r.tok); st = r.st
-    else if c == "\"" then
-      let r = cpp_scan_string(st); tokens.push(r.tok); st = r.st
-      if r.err != "" then errors.push(r.err) end
-    else
-      let r = cpp_scan_op(st);     tokens.push(r.tok); st = r.st
-    end
-  end
-  tokens.push(CppToken { kind: CEof, line: st.line, col: st.col })
-  CppLexOut { tokens: tokens, errors: errors }
+  parts.join("")
 end
 
 
@@ -2078,7 +2628,7 @@ fn assert_eq_str(test_name: string, actual: string, expected: string) -> TestRes
   end
 
 fn run_all(results: [TestResult]) -> string = do
-  let mut passed = 0; let mut failed = 0; let mut output = ""; let mut i = 0
+  let passed = 0; let failed = 0; let output = ""; let i = 0
   while i < results.length() do
     match results[i] {
       Pass(_)            => do passed = passed + 1 end,
@@ -2105,7 +2655,7 @@ fn lex_error_count(source: string) -> i32 =
   tokenize(source).errors.length()
 
 fn lexer_tests() -> [TestResult] = do
-  let mut results: [TestResult] = []
+  let results: [TestResult] = []
 
   results.push(assert_eq_int("empty source → 1 token (Eof)",       lex_token_count(""),   1))
   results.push(assert_eq_int("whitespace only → 1 token (Eof)",    lex_token_count("   "), 1))
@@ -2143,7 +2693,7 @@ fn first_decl(source: string) -> Shared<Decl> =
   parse_source(source).decls[0]
 
 fn parser_tests() -> [TestResult] = do
-  let mut results: [TestResult] = []
+  let results: [TestResult] = []
 
   results.push(assert_eq_int("empty source → 0 decls",
     decl_count(""), 0))
@@ -2161,7 +2711,7 @@ fn parser_tests() -> [TestResult] = do
     decl_count("fn add(x: i32, y: i32) -> i32 = x + y"), 1))
 
   results.push(assert_eq_int("fn with do block → 1 decl",
-    decl_count("fn f() -> i32 = do\n  let x = 1\n  x\nend"), 1))
+    decl_count("fn f() -> i32 = do\n  const x = 1\n  x\nend"), 1))
 
   results.push(assert_eq_int("type + fn → 2 decls",
     decl_count("type Color = Red\nfn f() -> i32 = 1"), 2))
@@ -2194,7 +2744,7 @@ fn check_error_count(source: string) -> i32 =
   check_source(source).errors.length()
 
 fn checker_tests() -> [TestResult] = do
-  let mut results: [TestResult] = []
+  let results: [TestResult] = []
 
   results.push(assert_eq_int("empty program → 0 errors",
     check_error_count(""), 0))
@@ -2217,8 +2767,8 @@ fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("fn returning bool → 0 errors",
     check_error_count("fn f() -> bool = true"), 0))
 
-  results.push(assert_eq_int("fn with let binding → 0 errors",
-    check_error_count("fn f() -> i32 = do\n  let x = 1\n  x\nend"), 0))
+  results.push(assert_eq_int("fn with const binding → 0 errors",
+    check_error_count("fn f() -> i32 = do\n  const x = 1\n  x\nend"), 0))
 
   results.push(assert_true("two undefined names → at least 1 error",
     check_error_count("fn f() -> i32 = foo + bar") > 0))
@@ -2233,7 +2783,7 @@ end
 // Unit tests for the code generator.
 
 fn codegen_tests() -> [TestResult] = do
-  let mut results: [TestResult] = []
+  let results: [TestResult] = []
 
   results.push(assert_eq_str("TyI32 → 'int'",
     type_to_cpp(Shared.new(TyI32)), "int"))
@@ -2253,7 +2803,7 @@ fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("TyShared(TyI32) → 'std::shared_ptr<int>'",
     type_to_cpp(Shared.new(TyShared(Shared.new(TyI32)))), "std::shared_ptr<int>"))
 
-  let empty_orders: [Shared<FieldOrder>] = []
+  const empty_orders: [Shared<FieldOrder>] = []
 
   results.push(assert_eq_str("ExprInt(42) → '42'",
     gen_expr(Shared.new(ExprInt(42)), empty_orders), "42"))
@@ -2285,6 +2835,119 @@ fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("map_builtin passthrough → 'foo'",
     map_builtin("foo"), "foo"))
 
+  const single_params: [string] = ["x"]
+  results.push(assert_eq_str("ExprLambda single param → '[=](auto x) { return ... }'",
+    gen_expr(Shared.new(ExprLambda(single_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("x")), Shared.new(ExprInt(1)))))), empty_orders),
+    "[=](auto x) { return (x + 1); }"))
+
+  const two_params: [string] = ["a", "b"]
+  results.push(assert_eq_str("ExprLambda two params → '[=](auto a, auto b) { return ... }'",
+    gen_expr(Shared.new(ExprLambda(two_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("a")), Shared.new(ExprIdent("b")))))), empty_orders),
+    "[=](auto a, auto b) { return (a + b); }"))
+
+  const zero_params: [string] = []
+  results.push(assert_eq_str("ExprLambda zero params → '[]() { return ... }'",
+    gen_expr(Shared.new(ExprLambda(zero_params, Shared.new(ExprInt(42)))), empty_orders),
+    "[]() { return 42; }"))
+
+  results.push(assert_eq_str("map_method: length → length",
+    map_method("length"), "length"))
+
+  results.push(assert_eq_str("map_method: len → length",
+    map_method("len"), "length"))
+
+  results.push(assert_eq_str("map_method: push → push_back",
+    map_method("push"), "push_back"))
+
+  results.push(assert_eq_str("map_method: upper → upper",
+    map_method("upper"), "upper"))
+
+  results.push(assert_eq_str("map_method: to_upper → upper",
+    map_method("to_upper"), "upper"))
+
+  results.push(assert_eq_str("map_method: to_lower → lower",
+    map_method("to_lower"), "lower"))
+
+  results.push(assert_eq_str("map_method: trim passthrough",
+    map_method("trim"), "trim"))
+
+  results.push(assert_eq_str("map_method: split passthrough",
+    map_method("split"), "split"))
+
+  results.push(assert_eq_str("map_method: chars passthrough",
+    map_method("chars"), "chars"))
+
+  results.push(assert_eq_str("map_method: lines passthrough",
+    map_method("lines"), "lines"))
+
+  results
+end
+
+
+// Tests for pipe operator desugaring and record update codegen.
+
+fn pipe_and_record_update_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  const empty_orders: [Shared<FieldOrder>] = []
+
+  // ── Pipe operator desugaring ─────────────────────────────────────────────
+
+  const left_expr = Shared.new(ExprIdent("x"))
+  const right_fn   = Shared.new(ExprIdent("double"))
+
+  const plain_pipe = pipe_desugar(left_expr, right_fn)
+  results.push(assert_eq_str("pipe x |> double → double(x)",
+    gen_expr(plain_pipe, empty_orders),
+    "double(x)"))
+
+  const right_call_args: [Shared<Expr>] = [Shared.new(ExprInt(5))]
+  const right_call = Shared.new(ExprCall(Shared.new(ExprIdent("add")), right_call_args))
+  const partial_pipe = pipe_desugar(left_expr, right_call)
+  results.push(assert_eq_str("pipe x |> add(5) → add(x, 5)",
+    gen_expr(partial_pipe, empty_orders),
+    "add(x, 5)"))
+
+  const right_multi_args: [Shared<Expr>] = [Shared.new(ExprInt(3)), Shared.new(ExprInt(4))]
+  const right_multi_call = Shared.new(ExprCall(Shared.new(ExprIdent("clamp")), right_multi_args))
+  const multi_partial_pipe = pipe_desugar(left_expr, right_multi_call)
+  results.push(assert_eq_str("pipe x |> clamp(3, 4) → clamp(x, 3, 4)",
+    gen_expr(multi_partial_pipe, empty_orders),
+    "clamp(x, 3, 4)"))
+
+  // ── Record update codegen ────────────────────────────────────────────────
+
+  const point_fields: [string] = ["x", "y"]
+  const point_order = Shared.new(FieldOrder { type_name: "Point", fields: point_fields })
+  const orders: [Shared<FieldOrder>] = [point_order]
+
+  const override_fields: [Shared<FieldVal>] = [
+    Shared.new(FieldVal { name: "x", val: Shared.new(ExprInt(10)) })
+  ]
+  const base_expr = Shared.new(ExprIdent("p"))
+  const update_expr = Shared.new(ExprRecordUpdate("Point", base_expr, override_fields))
+  results.push(assert_eq_str("Point { ...p, x: 10 } → Point{10, p.y}",
+    gen_expr(update_expr, orders),
+    "Point{10, p.y}"))
+
+  const two_overrides: [Shared<FieldVal>] = [
+    Shared.new(FieldVal { name: "x", val: Shared.new(ExprInt(0)) }),
+    Shared.new(FieldVal { name: "y", val: Shared.new(ExprInt(0)) })
+  ]
+  const all_overrides_expr = Shared.new(ExprRecordUpdate("Point", base_expr, two_overrides))
+  results.push(assert_eq_str("Point { ...p, x: 0, y: 0 } → Point{0, 0}",
+    gen_expr(all_overrides_expr, orders),
+    "Point{0, 0}"))
+
+  // ── Lexer tokenizes ... as Spread ────────────────────────────────────────
+
+  const spread_tokens = tokenize("...")
+  results.push(assert_eq_int("'...' → 2 tokens (Spread + Eof)",
+    spread_tokens.tokens.length(), 2))
+
+  const first_token_is_spread = match spread_tokens.tokens[0].kind { Spread => 1, _ => 0 }
+  results.push(assert_eq_int("first token of '...' is Spread",
+    first_token_is_spread, 1))
+
   results
 end
 
@@ -2310,7 +2973,7 @@ fn cpp_int_at(src: string, i: i32) -> i32 =
   match cpp_kind_at(src, i) { CLInt(n) => n, _ => -1 }
 
 fn cpp_lexer_tests() -> [TestResult] = do
-  let mut results: [TestResult] = []
+  let results: [TestResult] = []
 
   // ─── Token counts ───────────────────────────────────────────────────────
 
@@ -2455,30 +3118,58 @@ fn cpp_lexer_tests() -> [TestResult] = do
 end
 
 
+// Unit tests for C++ AST types.
+
+fn cpp_ast_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const inc = Shared.new(CppInclude(true, "string"))
+  const prog = CppProgram { decls: [inc] }
+  results.push(assert_eq_int("CppProgram with 1 decl",
+    prog.decls.length(), 1))
+
+  const field = Shared.new(CppField { typ: "int", name: "x" })
+  const st = Shared.new(CppStruct("Point", [field]))
+  const prog2 = CppProgram { decls: [st] }
+  results.push(assert_true("CppStruct in program",
+    match prog2.decls[0] { CppStruct(_, _) => true, _ => false }))
+
+  results
+end
+
+
 // Test entry point. Runs all test suites.
 
 fn all_tests() -> [TestResult] = do
-  let mut all: [TestResult] = []
-  let mut i = 0
+  const all: [TestResult] = []
+  let i = 0
 
-  let lex_results = lexer_tests()
+  const lex_results = lexer_tests()
   while i < lex_results.length() do all.push(lex_results[i]); i = i + 1 end
 
-  let parse_results = parser_tests()
+  const parse_results = parser_tests()
   i = 0
   while i < parse_results.length() do all.push(parse_results[i]); i = i + 1 end
 
-  let check_results = checker_tests()
+  const check_results = checker_tests()
   i = 0
   while i < check_results.length() do all.push(check_results[i]); i = i + 1 end
 
-  let gen_results = codegen_tests()
+  const gen_results = codegen_tests()
   i = 0
   while i < gen_results.length() do all.push(gen_results[i]); i = i + 1 end
 
-  let cpp_lex_results = cpp_lexer_tests()
+  const pipe_record_results = pipe_and_record_update_tests()
+  i = 0
+  while i < pipe_record_results.length() do all.push(pipe_record_results[i]); i = i + 1 end
+
+  const cpp_lex_results = cpp_lexer_tests()
   i = 0
   while i < cpp_lex_results.length() do all.push(cpp_lex_results[i]); i = i + 1 end
+
+  const cpp_ast_results = cpp_ast_tests()
+  i = 0
+  while i < cpp_ast_results.length() do all.push(cpp_ast_results[i]); i = i + 1 end
 
   all
 end

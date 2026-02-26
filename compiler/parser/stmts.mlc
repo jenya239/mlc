@@ -1,6 +1,9 @@
 // ─── Statement parsers ────────────────────────────────────────────────────
 
-fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
+import { Parser, StmtResult, StmtsResult, TypeResult } from "./preds"
+import { parse_type } from "./types"
+
+export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
   let state = parser
   while !state.kind().is_end() && !state.at_eof() do
@@ -11,7 +14,7 @@ fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
   StmtsResult { stmts, parser: state.advance() }
 end
 
-fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
+export fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
   let state = parser
   while !state.kind().is_end() && !state.kind().is_else() && !state.at_eof() do
@@ -22,7 +25,7 @@ fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
   StmtsResult { stmts, parser: state }
 end
 
-fn parse_stmt(parser: Parser) -> StmtResult = do
+export fn parse_stmt(parser: Parser) -> StmtResult = do
   const kind = parser.kind()
   if kind.is_let() then
     const after_let  = parser.advance()

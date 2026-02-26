@@ -1,11 +1,12 @@
 // Parser state, result types, and token kind predicates.
-// Shared types (TKind, Token, Expr, etc.) defined in ast.mlc.
+
+import { TKind, Token, TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program } from "../ast"
 
 // ─── Parser state ─────────────────────────────────────────────────────────
 
-type Parser = Parser { tokens: [Token], pos: i32 }
+export type Parser = Parser { tokens: [Token], pos: i32 }
 
-fn parser_new(tokens: [Token]) -> Parser =
+export fn parser_new(tokens: [Token]) -> Parser =
   Parser { tokens: tokens, pos: 0 }
 
 fn parser_kind(parser: Parser) -> TKind =
@@ -25,23 +26,23 @@ fn parser_skip_semi(parser: Parser) -> Parser =
 
 // ─── Result types ─────────────────────────────────────────────────────────
 
-type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
-type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
-type PatResult       = PatResult       { pat:        Shared<Pat>,            parser: Parser }
-type StmtResult      = StmtResult      { stmt:       Shared<Stmt>,           parser: Parser }
-type StmtsResult     = StmtsResult     { stmts:      [Shared<Stmt>],         parser: Parser }
-type ExprsResult     = ExprsResult     { exprs:      [Shared<Expr>],         parser: Parser }
-type ArmsResult      = ArmsResult      { arms:       [Shared<MatchArm>],     parser: Parser }
-type VariantResult   = VariantResult   { variant:    Shared<TypeVariant>,    parser: Parser }
-type VariantsResult  = VariantsResult  { variants:   [Shared<TypeVariant>],  parser: Parser }
-type ParamsResult    = ParamsResult    { params:     [Shared<Param>],        parser: Parser }
-type DeclResult      = DeclResult      { decl:       Shared<Decl>,           parser: Parser }
-type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
-type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          parser: Parser }
-type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
-type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
-type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
-type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
+export type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
+export type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
+export type PatResult       = PatResult       { pat:        Shared<Pat>,            parser: Parser }
+export type StmtResult      = StmtResult      { stmt:       Shared<Stmt>,           parser: Parser }
+export type StmtsResult     = StmtsResult     { stmts:      [Shared<Stmt>],         parser: Parser }
+export type ExprsResult     = ExprsResult     { exprs:      [Shared<Expr>],         parser: Parser }
+export type ArmsResult      = ArmsResult      { arms:       [Shared<MatchArm>],     parser: Parser }
+export type VariantResult   = VariantResult   { variant:    Shared<TypeVariant>,    parser: Parser }
+export type VariantsResult  = VariantsResult  { variants:   [Shared<TypeVariant>],  parser: Parser }
+export type ParamsResult    = ParamsResult    { params:     [Shared<Param>],        parser: Parser }
+export type DeclResult      = DeclResult      { decl:       Shared<Decl>,           parser: Parser }
+export type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
+export type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          parser: Parser }
+export type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
+export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
+export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
+export type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
 
 // ─── Token kind predicates ────────────────────────────────────────────────
 
@@ -92,12 +93,12 @@ fn get_int_literal(kind: TKind)  -> i32    = match kind { LInt(n)    => n,    _ 
 fn get_str_literal(kind: TKind)  -> string = match kind { LStr(s)    => s,    _ => "" }
 fn get_operator(kind: TKind)     -> string = match kind { Op(s)      => s,    _ => "" }
 
-fn is_ctor_name(name: string) -> bool =
+export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"
 
 // ─── extend TKind ─────────────────────────────────────────────────────────
 
-extend TKind {
+export extend TKind {
   fn is_fn(self)       -> bool = match self { KFn       => true, _ => false }
   fn is_type(self)     -> bool = match self { KType     => true, _ => false }
   fn is_let(self)      -> bool = match self { KLet      => true, _ => false }
@@ -147,7 +148,7 @@ extend TKind {
 
 // ─── extend Parser ────────────────────────────────────────────────────────
 
-extend Parser {
+export extend Parser {
   fn kind(self)      -> TKind  = tokens[pos].kind
   fn advance(self)   -> Parser = Parser { tokens, pos: pos + 1 }
   fn advance_by(self, count: i32) -> Parser = Parser { tokens, pos: pos + count }

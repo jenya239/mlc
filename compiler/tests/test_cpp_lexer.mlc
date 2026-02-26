@@ -19,7 +19,7 @@ fn cpp_int_at(src: string, i: i32) -> i32 =
   match cpp_kind_at(src, i) { CLInt(n) => n, _ => -1 }
 
 fn cpp_lexer_tests() -> [TestResult] = do
-  let mut results: [TestResult] = []
+  let results: [TestResult] = []
 
   // ─── Token counts ───────────────────────────────────────────────────────
 

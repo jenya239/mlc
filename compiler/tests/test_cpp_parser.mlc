@@ -1,0 +1,38 @@
+// Unit tests for C++ parser.
+
+fn cpp_parse_decl_count(src: string) -> i32 =
+  cpp_parse(cpp_tokenize(src).tokens).program.decls.length()
+
+fn cpp_parse_first(src: string) -> Shared<CppDecl> =
+  const prog = cpp_parse(cpp_tokenize(src).tokens).program
+  if prog.decls.length() > 0 then prog.decls[0] else Shared.new(CppInclude(true, "")) end
+
+fn cpp_parser_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_int("#include <string> → 1 decl",
+    cpp_parse_decl_count("#include <string>"), 1))
+
+  results.push(assert_true("#include <string> → CppInclude angle",
+    match cpp_parse_first("#include <string>") { CppInclude(true, s) => s == "string", _ => false }))
+
+  results.push(assert_eq_int("#include \"foo.h\" → 1 decl",
+    cpp_parse_decl_count("#include \"foo.h\""), 1))
+
+  results.push(assert_true("#include \"foo.h\" → CppInclude quote",
+    match cpp_parse_first("#include \"foo.h\"") { CppInclude(false, s) => s == "foo.h", _ => false }))
+
+  results.push(assert_eq_int("using X = int; → 1 decl",
+    cpp_parse_decl_count("using X = int;"), 1))
+
+  results.push(assert_true("using X = int; → CppUsing",
+    match cpp_parse_first("using X = int;") { CppUsing(a, t) => a == "X" && t == "int", _ => false }))
+
+  results.push(assert_eq_int("struct S { int x; }; → 1 decl",
+    cpp_parse_decl_count("struct S { int x; };"), 1))
+
+  results.push(assert_true("struct S { int x; }; → CppStruct",
+    match cpp_parse_first("struct S { int x; };") { CppStruct(n, _) => n == "S", _ => false }))
+
+  results
+end

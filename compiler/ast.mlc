@@ -1,5 +1,4 @@
 // Shared AST type definitions for the self-hosted MLC compiler.
-// All phases include this file (via concatenation in build.sh).
 
 extend Shared<T> {
   extern fn new(value: T) -> Shared<T>
@@ -7,38 +6,39 @@ extend Shared<T> {
 
 // ─── Token types ──────────────────────────────────────────────────────────
 
-type TKind =
+export type TKind =
   | KFn | KType | KLet | KMut | KConst | KReturn
   | KBreak | KContinue | KIf | KThen | KElse | KUnless
   | KWhile | KFor | KIn | KDo | KEnd | KMatch
   | KImport | KFrom | KAs | KExtern | KExtend | KWhere
   | KTrue | KFalse
   | LInt(i32) | LStr(string) | Ident(string)
-  | Arrow | FatArrow | Pipe | Bar | Equal | Question | Dot
+  | Arrow | FatArrow | Pipe | Bar | Equal | Question | Dot | Spread
   | LParen | RParen | LBrace | RBrace | LBracket | RBracket
   | Comma | Semicolon | Colon | Op(string) | Eof
 
-type Token  = Token  { kind: TKind, line: i32, col: i32 }
-type LexOut = LexOut { tokens: [Token], errors: [string] }
+export type Token  = Token  { kind: TKind, line: i32, col: i32 }
+export type LexOut = LexOut { tokens: [Token], errors: [string] }
 
 // ─── AST ─────────────────────────────────────────────────────────────────
 
-type TypeExpr =
+export type TypeExpr =
   | TyI32 | TyString | TyBool | TyUnit | TyNamed(string)
   | TyArray(Shared<TypeExpr>)
   | TyShared(Shared<TypeExpr>)
   | TyGeneric(string, [Shared<TypeExpr>])
+  | TyFn([Shared<TypeExpr>], Shared<TypeExpr>)
 
-type Pat =
+export type Pat =
   | PatWild | PatIdent(string) | PatInt(i32) | PatStr(string)
   | PatBool(bool) | PatUnit
   | PatCtor(string, [Shared<Pat>])
 
-type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
-type MatchArm = MatchArm { pat: Shared<Pat>, body: Shared<Expr> }
-type FieldVal = FieldVal { name: string, val: Shared<Expr> }
+export type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
+export type MatchArm = MatchArm { pat: Shared<Pat>, body: Shared<Expr> }
+export type FieldVal = FieldVal { name: string, val: Shared<Expr> }
 
-type Expr =
+export type Expr =
   | ExprInt(i32) | ExprStr(string) | ExprBool(bool) | ExprUnit
   | ExprIdent(string)
   | ExprBin(string, Shared<Expr>, Shared<Expr>)
@@ -53,32 +53,34 @@ type Expr =
   | ExprFor(string, Shared<Expr>, [Shared<Stmt>])
   | ExprMatch(Shared<Expr>, [Shared<MatchArm>])
   | ExprRecord(string, [Shared<FieldVal>])
+  | ExprRecordUpdate(string, Shared<Expr>, [Shared<FieldVal>])
   | ExprArray([Shared<Expr>])
   | ExprQuestion(Shared<Expr>)
+  | ExprLambda([string], Shared<Expr>)
 
-type Stmt =
-  | StmtLet(string, bool, Shared<Expr>)
+export type Stmt =
+  | StmtLet(string, bool, Shared<TypeExpr>, Shared<Expr>)
   | StmtExpr(Shared<Expr>)
   | StmtBreak | StmtContinue | StmtReturn(Shared<Expr>)
 
-type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr> }
-type FieldDef = FieldDef { name: string, typ: Shared<TypeExpr> }
+export type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr> }
+export type FieldDef = FieldDef { name: string, typ: Shared<TypeExpr> }
 
-type TypeVariant =
+export type TypeVariant =
   | VarUnit(string)
   | VarTuple(string, [Shared<TypeExpr>])
   | VarRecord(string, [Shared<FieldDef>])
 
-type Decl =
+export type Decl =
   | DeclFn(string, [Shared<Param>], Shared<TypeExpr>, Shared<Expr>)
   | DeclType(string, [Shared<TypeVariant>])
 
-type Program = Program { decls: [Shared<Decl>] }
+export type Program = Program { decls: [Shared<Decl>] }
 
 // ─── Shared utility ───────────────────────────────────────────────────────
 
-fn errs_append(mut dst: [string], src: [string]) -> [string] = do
-  let mut i = 0
+export fn errs_append(mut dst: [string], src: [string]) -> [string] = do
+  let i = 0
   while i < src.length() do
     dst.push(src[i])
     i = i + 1
