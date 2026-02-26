@@ -1,56 +1,74 @@
 // ─── Statement parsers ────────────────────────────────────────────────────
 
 fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
-  let mut stmts: [Shared<Stmt>] = []
-  let mut state = parser
-  while !is_keyword_end(parser_kind(state)) && !parser_at_eof(state) do
-    let result = parse_stmt(state)
+  const stmts: [Shared<Stmt>] = []
+  let state = parser
+  while !state.kind().is_end() && !state.at_eof() do
+    const result = parse_stmt(state)
     stmts.push(result.stmt)
-    state = parser_skip_semi(result.parser)
+    state = result.parser.skip_semi()
   end
-  StmtsResult { stmts: stmts, parser: parser_advance(state) }
+  StmtsResult { stmts, parser: state.advance() }
 end
 
 fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
-  let mut stmts: [Shared<Stmt>] = []
-  let mut state = parser
-  while !is_keyword_end(parser_kind(state)) && !is_keyword_else(parser_kind(state)) && !parser_at_eof(state) do
-    let result = parse_stmt(state)
+  const stmts: [Shared<Stmt>] = []
+  let state = parser
+  while !state.kind().is_end() && !state.kind().is_else() && !state.at_eof() do
+    const result = parse_stmt(state)
     stmts.push(result.stmt)
-    state = parser_skip_semi(result.parser)
+    state = result.parser.skip_semi()
   end
-  StmtsResult { stmts: stmts, parser: state }
+  StmtsResult { stmts, parser: state }
 end
 
 fn parse_stmt(parser: Parser) -> StmtResult = do
-  let kind = parser_kind(parser)
-  if is_keyword_let(kind) then do
-    let is_mutable = is_keyword_mut(parser_kind(parser_advance(parser)))
-    let name_pos   = if is_mutable then parser_advance_by(parser, 2) else parser_advance(parser) end
-    let var_name   = get_ident(parser_kind(name_pos))
-    let value_pos  =
-      if is_colon(parser_kind(parser_advance(name_pos))) then
-        parser_advance(parse_type(parser_advance_by(name_pos, 2)).parser)
-      else parser_advance_by(name_pos, 2)
+  const kind = parser.kind()
+  if kind.is_let() then
+    const after_let  = parser.advance()
+    const is_const   = after_let.kind().is_const()
+    const name_pos   = if is_const then after_let.advance() else after_let end
+    const var_name   = name_pos.kind().ident()
+    const type_result =
+      if name_pos.advance().kind().is_colon() then
+        parse_type(name_pos.advance_by(2))
+      else
+        TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
       end
-    let value_result = parse_expr(value_pos)
-    StmtResult { stmt: Shared.new(StmtLet(var_name, is_mutable, value_result.expr)), parser: value_result.parser }
-  end
-  else if is_keyword_break(kind)    then StmtResult { stmt: Shared.new(StmtBreak),    parser: parser_advance(parser) }
-  else if is_keyword_continue(kind) then StmtResult { stmt: Shared.new(StmtContinue), parser: parser_advance(parser) }
-  else if is_keyword_return(kind) then do
-    let value_result = parse_expr(parser_advance(parser))
+    const value_result = parse_expr(type_result.parser.advance())
+    StmtResult {
+      stmt: Shared.new(StmtLet(var_name, !is_const, type_result.type_expr, value_result.expr)),
+      parser: value_result.parser
+    }
+  else if kind.is_const() then
+    const name_pos    = parser.advance()
+    const var_name    = name_pos.kind().ident()
+    const type_result =
+      if name_pos.advance().kind().is_colon() then
+        parse_type(name_pos.advance_by(2))
+      else
+        TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
+      end
+    const value_result = parse_expr(type_result.parser.advance())
+    StmtResult {
+      stmt: Shared.new(StmtLet(var_name, false, type_result.type_expr, value_result.expr)),
+      parser: value_result.parser
+    }
+  else if kind.is_break()    then StmtResult { stmt: Shared.new(StmtBreak),    parser: parser.advance() }
+  else if kind.is_continue() then StmtResult { stmt: Shared.new(StmtContinue), parser: parser.advance() }
+  else if kind.is_return() then
+    const value_result = parse_expr(parser.advance())
     StmtResult { stmt: Shared.new(StmtReturn(value_result.expr)), parser: value_result.parser }
-  end
-  else do
-    let expr_result = parse_expr(parser)
-    if is_equal(parser_kind(expr_result.parser)) then do
-      let rhs = parse_expr(parser_advance(expr_result.parser))
-      StmtResult { stmt: Shared.new(StmtExpr(Shared.new(ExprBin("=", expr_result.expr, rhs.expr)))), parser: rhs.parser }
-    end
+  else
+    const expr_result = parse_expr(parser)
+    if expr_result.parser.kind().is_equal() then
+      const rhs = parse_expr(expr_result.parser.advance())
+      StmtResult {
+        stmt: Shared.new(StmtExpr(Shared.new(ExprBin("=", expr_result.expr, rhs.expr)))),
+        parser: rhs.parser
+      }
     else
       StmtResult { stmt: Shared.new(StmtExpr(expr_result.expr)), parser: expr_result.parser }
     end
-  end
   end
 end

@@ -1,29 +1,42 @@
 // ─── Declaration parsers ──────────────────────────────────────────────────
 
 fn parse_decl(parser: Parser) -> DeclResult = do
-  let kind = parser_kind(parser)
-  if is_keyword_fn(kind) || (is_keyword_extern(kind) && is_keyword_fn(parser_kind(parser_advance(parser)))) then
+  const kind = parser.kind()
+  if kind.is_fn() || (kind.is_extern() && parser.advance().kind().is_fn()) then
     parse_fn_decl(parser)
-  else if is_keyword_type(kind) then
-    parse_type_decl(parser_advance(parser))
-  else if is_keyword_extend(kind) then do
-    let mut state = parser_advance(parser)
-    while !is_keyword_end(parser_kind(state)) && !parser_at_eof(state) do
-      state = parser_advance(state)
+  else if kind.is_type() then
+    parse_type_decl(parser.advance())
+  else if kind.is_extend() then
+    let state = parser.advance()
+    while !state.kind().is_lbrace() && !state.at_eof() do
+      state = state.advance()
     end
-    DeclResult { decl: Shared.new(DeclFn("__ext__", [], Shared.new(TyUnit), Shared.new(ExprUnit))), parser: parser_advance(state) }
-  end
+    let depth = 0
+    let done = false
+    while !state.at_eof() && !done do
+      if state.kind().is_lbrace() then
+        depth = depth + 1
+        state = state.advance()
+      else if state.kind().is_rbrace() then
+        depth = depth - 1
+        state = state.advance()
+        if depth == 0 then done = true end
+      else
+        state = state.advance()
+      end
+    end
+    DeclResult { decl: Shared.new(DeclFn("__ext__", [], Shared.new(TyUnit), Shared.new(ExprUnit))), parser: state }
   else
-    DeclResult { decl: Shared.new(DeclFn("__skip__", [], Shared.new(TyUnit), Shared.new(ExprUnit))), parser: parser_advance(parser) }
+    DeclResult { decl: Shared.new(DeclFn("__skip__", [], Shared.new(TyUnit), Shared.new(ExprUnit))), parser: parser.advance() }
   end
 end
 
 fn parse_fn_decl(parser: Parser) -> DeclResult = do
-  let fn_start        = if is_keyword_extern(parser_kind(parser)) then parser_advance(parser) else parser end
-  let fn_name         = get_ident(parser_kind(parser_advance(fn_start)))
-  let params_result   = parse_params(parser_advance_by(fn_start, 3))
-  let ret_type_result = parse_type(parser_advance(params_result.parser))
-  let body_result     = parse_expr(parser_advance(ret_type_result.parser))
+  const fn_start        = if parser.kind().is_extern() then parser.advance() else parser end
+  const fn_name         = fn_start.advance().kind().ident()
+  const params_result   = parse_params(fn_start.advance_by(3))
+  const ret_type_result = parse_type(params_result.parser.advance())
+  const body_result     = parse_expr(ret_type_result.parser.advance())
   DeclResult {
     decl:   Shared.new(DeclFn(fn_name, params_result.params, ret_type_result.type_expr, body_result.expr)),
     parser: body_result.parser
@@ -31,66 +44,72 @@ fn parse_fn_decl(parser: Parser) -> DeclResult = do
 end
 
 fn parse_params(parser: Parser) -> ParamsResult = do
-  let mut params: [Shared<Param>] = []
-  if is_right_paren(parser_kind(parser)) then
-    ParamsResult { params: params, parser: parser_advance(parser) }
+  const params: [Shared<Param>] = []
+  if parser.kind().is_rparen() then
+    ParamsResult { params, parser: parser.advance() }
   else
-    let first = parse_param(parser); params.push(first.param)
-    let mut state = first.parser
-    while is_comma(parser_kind(state)) do
-      let next = parse_param(parser_advance(state)); params.push(next.param); state = next.parser
+    const first = parse_param(parser)
+    params.push(first.param)
+    let state = first.parser
+    while state.kind().is_comma() do
+      const next = parse_param(state.advance())
+      params.push(next.param)
+      state = next.parser
     end
-    ParamsResult { params: params, parser: parser_advance(state) }
+    ParamsResult { params, parser: state.advance() }
   end
 end
 
 fn parse_param(parser: Parser) -> ParamResult = do
-  let is_mutable  = is_keyword_mut(parser_kind(parser))
-  let name_pos    = if is_mutable then parser_advance(parser) else parser end
-  let type_result = parse_type(parser_advance_by(name_pos, 2))
+  const is_mutable  = parser.kind().is_mut()
+  const name_pos    = if is_mutable then parser.advance() else parser end
+  const type_result = parse_type(name_pos.advance_by(2))
   ParamResult {
-    param:  Shared.new(Param { name: get_ident(parser_kind(name_pos)), is_mut: is_mutable, typ: type_result.type_expr }),
+    param:  Shared.new(Param { name: name_pos.kind().ident(), is_mut: is_mutable, typ: type_result.type_expr }),
     parser: type_result.parser
   }
 end
 
 fn parse_type_decl(parser: Parser) -> DeclResult = do
-  let type_name  = get_ident(parser_kind(parser))
-  let after_eq   = parser_advance_by(parser, 2)
-  let first_kind = parser_kind(after_eq)
-  if is_ident(first_kind) && is_ctor_name(get_ident(first_kind)) && is_left_brace(parser_kind(parser_advance(after_eq))) then do
-    let field_defs_result = parse_field_defs(parser_advance_by(after_eq, 2))
-    let mut variants: [Shared<TypeVariant>] = []
-    variants.push(Shared.new(VarRecord(get_ident(first_kind), field_defs_result.field_defs)))
+  const type_name  = parser.kind().ident()
+  const after_eq   = parser.advance_by(2)
+  const first_kind = after_eq.kind()
+  if first_kind.is_lbrace() then
+    const field_defs_result = parse_field_defs(after_eq.advance())
+    const variants: [Shared<TypeVariant>] = []
+    variants.push(Shared.new(VarRecord(type_name, field_defs_result.field_defs)))
     DeclResult { decl: Shared.new(DeclType(type_name, variants)), parser: field_defs_result.parser }
-  end
-  else do
-    let variants_result = parse_variants(after_eq)
+  else if first_kind.is_ident() && is_ctor_name(first_kind.ident()) && after_eq.advance().kind().is_lbrace() then
+    const field_defs_result = parse_field_defs(after_eq.advance_by(2))
+    const variants: [Shared<TypeVariant>] = []
+    variants.push(Shared.new(VarRecord(first_kind.ident(), field_defs_result.field_defs)))
+    DeclResult { decl: Shared.new(DeclType(type_name, variants)), parser: field_defs_result.parser }
+  else
+    const variants_result = parse_variants(after_eq)
     DeclResult { decl: Shared.new(DeclType(type_name, variants_result.variants)), parser: variants_result.parser }
-  end
   end
 end
 
 fn parse_variants(parser: Parser) -> VariantsResult = do
-  let mut variants: [Shared<TypeVariant>] = []
-  let mut state = if is_bar(parser_kind(parser)) then parser_advance(parser) else parser end
-  while !parser_at_eof(state) && (is_bar(parser_kind(state)) || is_ident(parser_kind(state))) do
-    let variant_result = parse_variant(state)
+  const variants: [Shared<TypeVariant>] = []
+  let state = if parser.kind().is_bar() then parser.advance() else parser end
+  while !state.at_eof() && (state.kind().is_bar() || state.kind().is_ident()) do
+    const variant_result = parse_variant(state)
     variants.push(variant_result.variant)
     state = variant_result.parser
-    if is_bar(parser_kind(state)) then state = parser_advance(state) end
+    if state.kind().is_bar() then state = state.advance() end
   end
-  VariantsResult { variants: variants, parser: state }
+  VariantsResult { variants, parser: state }
 end
 
 fn parse_variant(parser: Parser) -> VariantResult = do
-  let variant_name = get_ident(parser_kind(parser))
-  let after_name   = parser_advance(parser)
-  if is_left_paren(parser_kind(after_name)) then
-    let types_result = parse_tuple_types(parser_advance(after_name))
+  const variant_name = parser.kind().ident()
+  const after_name   = parser.advance()
+  if after_name.kind().is_lparen() then
+    const types_result = parse_tuple_types(after_name.advance())
     VariantResult { variant: Shared.new(VarTuple(variant_name, types_result.types)), parser: types_result.parser }
-  else if is_left_brace(parser_kind(after_name)) then
-    let field_defs_result = parse_field_defs(parser_advance(after_name))
+  else if after_name.kind().is_lbrace() then
+    const field_defs_result = parse_field_defs(after_name.advance())
     VariantResult { variant: Shared.new(VarRecord(variant_name, field_defs_result.field_defs)), parser: field_defs_result.parser }
   else
     VariantResult { variant: Shared.new(VarUnit(variant_name)), parser: after_name }
@@ -98,37 +117,40 @@ fn parse_variant(parser: Parser) -> VariantResult = do
 end
 
 fn parse_tuple_types(parser: Parser) -> TypesResult = do
-  let mut types: [Shared<TypeExpr>] = []
-  let first = parse_type(parser); types.push(first.type_expr)
-  let mut state = first.parser
-  while is_comma(parser_kind(state)) do
-    let next = parse_type(parser_advance(state)); types.push(next.type_expr); state = next.parser
+  const types: [Shared<TypeExpr>] = []
+  const first = parse_type(parser)
+  types.push(first.type_expr)
+  let state = first.parser
+  while state.kind().is_comma() do
+    const next = parse_type(state.advance())
+    types.push(next.type_expr)
+    state = next.parser
   end
-  TypesResult { types: types, parser: parser_advance(state) }
+  TypesResult { types, parser: state.advance() }
 end
 
 fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
-  let mut field_defs: [Shared<FieldDef>] = []
-  let mut state = parser
-  while !is_right_brace(parser_kind(state)) && !parser_at_eof(state) do
-    let field_name   = get_ident(parser_kind(state))
-    let type_result  = parse_type(parser_advance_by(state, 2))
+  const field_defs: [Shared<FieldDef>] = []
+  let state = parser
+  while !state.kind().is_rbrace() && !state.at_eof() do
+    const field_name  = state.kind().ident()
+    const type_result = parse_type(state.advance_by(2))
     field_defs.push(Shared.new(FieldDef { name: field_name, typ: type_result.type_expr }))
     state = type_result.parser
-    if is_comma(parser_kind(state)) then state = parser_advance(state) end
+    if state.kind().is_comma() then state = state.advance() end
   end
-  FieldDefsResult { field_defs: field_defs, parser: parser_advance(state) }
+  FieldDefsResult { field_defs, parser: state.advance() }
 end
 
 // ─── Entry point ──────────────────────────────────────────────────────────
 
 fn parse_program(tokens: [Token]) -> Program = do
-  let mut decls: [Shared<Decl>] = []
-  let mut state = parser_new(tokens)
-  while !parser_at_eof(state) do
-    let result = parse_decl(state)
+  const decls: [Shared<Decl>] = []
+  let state = parser_new(tokens)
+  while !state.at_eof() do
+    const result = parse_decl(state)
     decls.push(result.decl)
     state = result.parser
   end
-  Program { decls: decls }
+  Program { decls }
 end

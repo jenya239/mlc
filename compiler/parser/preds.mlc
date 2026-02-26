@@ -41,6 +41,7 @@ type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          par
 type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
 type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
 type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
+type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
 
 // ─── Token kind predicates ────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ fn is_keyword_fn(kind: TKind)       -> bool = match kind { KFn       => true, _ 
 fn is_keyword_type(kind: TKind)     -> bool = match kind { KType     => true, _ => false }
 fn is_keyword_let(kind: TKind)      -> bool = match kind { KLet      => true, _ => false }
 fn is_keyword_mut(kind: TKind)      -> bool = match kind { KMut      => true, _ => false }
+fn is_keyword_const(kind: TKind)    -> bool = match kind { KConst    => true, _ => false }
 fn is_keyword_if(kind: TKind)       -> bool = match kind { KIf       => true, _ => false }
 fn is_keyword_unless(kind: TKind)   -> bool = match kind { KUnless   => true, _ => false }
 fn is_keyword_else(kind: TKind)     -> bool = match kind { KElse     => true, _ => false }
@@ -73,6 +75,9 @@ fn is_pipe(kind: TKind)          -> bool = match kind { Pipe      => true, _ => 
 fn is_colon(kind: TKind)         -> bool = match kind { Colon     => true, _ => false }
 fn is_comma(kind: TKind)         -> bool = match kind { Comma     => true, _ => false }
 fn is_dot(kind: TKind)           -> bool = match kind { Dot       => true, _ => false }
+fn is_spread(kind: TKind)        -> bool = match kind { Spread    => true, _ => false }
+fn is_arrow(kind: TKind)         -> bool = match kind { Arrow     => true, _ => false }
+fn is_fat_arrow(kind: TKind)     -> bool = match kind { FatArrow  => true, _ => false }
 fn is_question(kind: TKind)      -> bool = match kind { Question  => true, _ => false }
 fn is_left_paren(kind: TKind)    -> bool = match kind { LParen    => true, _ => false }
 fn is_right_paren(kind: TKind)   -> bool = match kind { RParen    => true, _ => false }
@@ -89,3 +94,64 @@ fn get_operator(kind: TKind)     -> string = match kind { Op(s)      => s,    _ 
 
 fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"
+
+// ─── extend TKind ─────────────────────────────────────────────────────────
+
+extend TKind {
+  fn is_fn(self)       -> bool = match self { KFn       => true, _ => false }
+  fn is_type(self)     -> bool = match self { KType     => true, _ => false }
+  fn is_let(self)      -> bool = match self { KLet      => true, _ => false }
+  fn is_mut(self)      -> bool = match self { KMut      => true, _ => false }
+  fn is_const(self)    -> bool = match self { KConst    => true, _ => false }
+  fn is_if(self)       -> bool = match self { KIf       => true, _ => false }
+  fn is_unless(self)   -> bool = match self { KUnless   => true, _ => false }
+  fn is_else(self)     -> bool = match self { KElse     => true, _ => false }
+  fn is_end(self)      -> bool = match self { KEnd      => true, _ => false }
+  fn is_do(self)       -> bool = match self { KDo       => true, _ => false }
+  fn is_while(self)    -> bool = match self { KWhile    => true, _ => false }
+  fn is_for(self)      -> bool = match self { KFor      => true, _ => false }
+  fn is_match(self)    -> bool = match self { KMatch    => true, _ => false }
+  fn is_return(self)   -> bool = match self { KReturn   => true, _ => false }
+  fn is_break(self)    -> bool = match self { KBreak    => true, _ => false }
+  fn is_continue(self) -> bool = match self { KContinue => true, _ => false }
+  fn is_true(self)     -> bool = match self { KTrue     => true, _ => false }
+  fn is_false(self)    -> bool = match self { KFalse    => true, _ => false }
+  fn is_extern(self)   -> bool = match self { KExtern   => true, _ => false }
+  fn is_extend(self)   -> bool = match self { KExtend   => true, _ => false }
+  fn is_eof(self)      -> bool = match self { Eof       => true, _ => false }
+  fn is_ident(self)    -> bool = match self { Ident(_)  => true, _ => false }
+  fn is_int(self)      -> bool = match self { LInt(_)   => true, _ => false }
+  fn is_str(self)      -> bool = match self { LStr(_)   => true, _ => false }
+  fn is_equal(self)    -> bool = match self { Equal     => true, _ => false }
+  fn is_bar(self)      -> bool = match self { Bar       => true, _ => false }
+  fn is_pipe(self)     -> bool = match self { Pipe      => true, _ => false }
+  fn is_colon(self)    -> bool = match self { Colon     => true, _ => false }
+  fn is_comma(self)    -> bool = match self { Comma     => true, _ => false }
+  fn is_dot(self)      -> bool = match self { Dot       => true, _ => false }
+  fn is_spread(self)   -> bool = match self { Spread    => true, _ => false }
+  fn is_arrow(self)    -> bool = match self { Arrow     => true, _ => false }
+  fn is_fat_arrow(self) -> bool = match self { FatArrow => true, _ => false }
+  fn is_question(self) -> bool = match self { Question  => true, _ => false }
+  fn is_lparen(self)   -> bool = match self { LParen    => true, _ => false }
+  fn is_rparen(self)   -> bool = match self { RParen    => true, _ => false }
+  fn is_lbrace(self)   -> bool = match self { LBrace    => true, _ => false }
+  fn is_rbrace(self)   -> bool = match self { RBrace    => true, _ => false }
+  fn is_lbracket(self) -> bool = match self { LBracket  => true, _ => false }
+  fn is_rbracket(self) -> bool = match self { RBracket  => true, _ => false }
+  fn is_op(self)       -> bool = match self { Op(_)     => true, _ => false }
+  fn ident(self)       -> string = match self { Ident(name) => name, _ => "" }
+  fn int_val(self)     -> i32    = match self { LInt(n)     => n,    _ => 0 }
+  fn str_val(self)     -> string = match self { LStr(s)     => s,    _ => "" }
+  fn op_val(self)      -> string = match self { Op(s)       => s,    _ => "" }
+}
+
+// ─── extend Parser ────────────────────────────────────────────────────────
+
+extend Parser {
+  fn kind(self)      -> TKind  = tokens[pos].kind
+  fn advance(self)   -> Parser = Parser { tokens, pos: pos + 1 }
+  fn advance_by(self, count: i32) -> Parser = Parser { tokens, pos: pos + count }
+  fn at_eof(self)    -> bool   = tokens[pos].kind.is_eof()
+  fn skip_semi(self) -> Parser =
+    match tokens[pos].kind { Semicolon => self.advance(), _ => self }
+}
