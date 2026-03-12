@@ -18,11 +18,17 @@ module MLC
               left_ir = context.fetch(:left_ir)
               right_ir = context.fetch(:right_ir)
 
-              result_type = svc.type_inference_service.infer_binary_type(
-                node.op,
-                left_ir.type,
-                right_ir.type
-              )
+              result_type = begin
+                svc.type_inference_service.infer_binary_type(
+                  node.op,
+                  left_ir.type,
+                  right_ir.type
+                )
+              rescue => e
+                right_name = right_ir.respond_to?(:name) ? right_ir.name : right_ir.origin.inspect[0..80] rescue "?"
+                left_val = left_ir.respond_to?(:value) ? left_ir.value : "?"
+                raise "#{e.message} | left_val=#{left_val.inspect[0..50]} right_name=#{right_name}"
+              end
 
               # Check for operator overloading via traits
               if svc.operator_trait_mapper.overloadable?(node.op, left_ir.type)

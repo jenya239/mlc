@@ -36,8 +36,13 @@ module MLC
           @container = backend[:container]
           @context = backend[:context]
 
-          # Track state for generic function context (needed for lowering)
           @in_generic_function = false
+          @cyclic_sum_types = Set.new
+        end
+
+        def cyclic_sum_types=(val)
+          @cyclic_sum_types = val
+          @container.cyclic_sum_types = val
         end
 
         # Main entry point - Phase 2: use new architecture for expression/statement lowering
@@ -57,6 +62,9 @@ module MLC
         # Lower function using new architecture for expression/statement lowering
         # Public for test compatibility
         def lower_function(func)
+          # Reset variable declaration tracking for each new function scope
+          @context.reset_declared_variables
+
           return_type = @context.map_type(func.ret_type)
           name = @context.sanitize_identifier(func.name)
           parameters = func.params.map do |param|
@@ -67,12 +75,25 @@ module MLC
           @in_generic_function = func.type_params.any?
           @container.instance_variable_set(:@in_generic_function, @in_generic_function)
 
+          # For main(), inject argc/argv and set_args preamble
+          is_main = name == "main" && func.params.empty?
+          if is_main
+            parameters = ["int argc", "char** argv"]
+          end
+
           # Lower function body using new architecture
           block_body = if func.body.nil?
                          # External/opaque functions have no body
                          nil
                        elsif func.body.is_a?(SemanticIR::BlockExpr)
+                         @container.expected_return_type = func.ret_type
                          stmts = lower_block_expr_statements(func.body, emit_return: true)
+                         if is_main
+                           set_args = @context.factory.raw_statement(
+                             code: "mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));"
+                           )
+                           stmts = [set_args] + stmts
+                         end
                          CppAst::Nodes::BlockStatement.new(
                            statements: stmts,
                            statement_trailings: Array.new(stmts.length, "\n"),
@@ -80,6 +101,7 @@ module MLC
                            rbrace_prefix: ""
                          )
                        else
+                         @container.expected_return_type = func.ret_type
                          body_expr = @context.lower_expression(func.body)
                          CppAst::Nodes::BlockStatement.new(
                            statements: [CppAst::Nodes::ReturnStatement.new(expression: body_expr)],
@@ -89,9 +111,10 @@ module MLC
                          )
                        end
 
-          # Reset flag after processing function body
+          # Reset flags after processing function body
           @in_generic_function = false
           @container.instance_variable_set(:@in_generic_function, false)
+          @container.expected_return_type = nil
 
           func_decl = CppAst::Nodes::FunctionDeclaration.new(
             return_type: return_type,
@@ -142,20 +165,129 @@ module MLC
           include_stmts = [
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/string.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/collections.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/hashmap.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/io/io.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/io/file.hpp", system: false),
-            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/match.hpp", system: false)
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/match.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/result.hpp", system: false)
           ]
 
-          items = module_node.items.flat_map do |item|
-            result = lower(item)
-            # If result is a Program (from sum types), extract its statements
+          # Phase 1: emit forward declarations + using aliases for ALL sum types.
+          # Record types (like MatchArm, FieldVal) may reference sum types (Expr, Stmt)
+          # that are declared later. Emitting all sum type preambles first ensures
+          # every sum type name is known before any struct body references it.
+          sum_preambles = module_node.items.grep(SemanticIR::TypeDecl).flat_map do |td|
+            next [] unless td.type.is_a?(SemanticIR::SumType)
+            next [] if td.type_params.any? # skip generic sum types (handled inline)
+            sum_type_preamble_stmts(td.name, td.type)
+          end
+
+          # Phase 2: full type definitions (sum type variant structs + record types).
+          # Functions are excluded here; they come after forward declarations in Phase 4.
+          type_defs = module_node.items.grep(SemanticIR::TypeDecl).flat_map do |td|
+            if td.type.is_a?(SemanticIR::SumType) && td.type_params.empty?
+              sum_type_body_stmts(td.name, td.type)
+            else
+              result = lower(td)
+              result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
+            end
+          end
+
+          # Phase 3: forward declarations for all non-generic user functions.
+          # Must come after all type definitions so parameter/return types are known.
+          # Uses the same modifiers as the actual definition to avoid redeclaration mismatch.
+          func_protos = module_node.items.grep(SemanticIR::Func).flat_map do |func|
+            next [] if func.type_params.any?
+            next [] if func.body.nil? # extern - no forward decl needed
+            [function_forward_decl(func)]
+          end
+
+          # Phase 4: full function bodies (non-generic functions only; generics handled inline).
+          func_bodies = module_node.items.grep(SemanticIR::Func).flat_map do |func|
+            result = lower(func)
             result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
           end
 
-          statements = include_stmts + items
-          trailings = Array.new(include_stmts.size, "\n") + Array.new(items.size, "\n")
-          CppAst::Nodes::Program.new(statements: statements, statement_trailings: trailings)
+          all_stmts = include_stmts + sum_preambles + type_defs + func_protos + func_bodies
+          CppAst::Nodes::Program.new(
+            statements: all_stmts,
+            statement_trailings: Array.new(all_stmts.size, "\n")
+          )
+        end
+
+        # Generate a forward declaration (prototype) for a function using the same
+        # modifiers (constexpr, noexcept) that the actual definition will have.
+        def function_forward_decl(func)
+          return_type = @context.map_type(func.ret_type)
+          name = @context.sanitize_identifier(func.name)
+          is_main = name == "main" && func.params.empty?
+          parameters = if is_main
+                         ["int argc", "char** argv"]
+                       else
+                         func.params.map do |p|
+                           "#{@context.map_type(p.type)} #{@context.sanitize_identifier(p.name)}"
+                         end
+                       end
+          proto = CppAst::Nodes::FunctionDeclaration.new(
+            return_type: return_type,
+            name: name,
+            parameters: parameters,
+            body: nil,
+            return_type_suffix: " ",
+            lparen_suffix: "",
+            rparen_suffix: "",
+            param_separators: parameters.size > 1 ? Array.new(parameters.size - 1, ", ") : [],
+            modifiers_text: "",
+            prefix_modifiers: ""
+          )
+          function_rule = MLC::Backends::Cpp::Rules::FunctionRule.new(@context)
+          function_rule.apply(proto, semantic_func: func, event_bus: @container.event_bus)
+        end
+
+        # Forward declarations + using alias for a sum type (no full struct bodies).
+        def sum_type_preamble_stmts(name, sum_type)
+          fwd_decls = sum_type.variants.map do |v|
+            @context.factory.raw_statement(code: "struct #{v[:name]};")
+          end
+          variant_names = sum_type.variants.map { |v| v[:name] }.join(", ")
+          using_decl = CppAst::Nodes::UsingDeclaration.new(
+            kind: :alias,
+            name: name,
+            alias_target: "std::variant<#{variant_names}>",
+            using_suffix: " ",
+            equals_prefix: " ",
+            equals_suffix: " "
+          )
+          fwd_decls + [using_decl]
+        end
+
+        # Full struct definitions for sum type variants only (no fwd decls or using).
+        def sum_type_body_stmts(name, sum_type)
+          sum_type.variants.map do |variant|
+            if variant[:fields].empty?
+              CppAst::Nodes::StructDeclaration.new(
+                name: variant[:name], members: [], member_trailings: [],
+                struct_suffix: " ", name_suffix: " ",
+                lbrace_suffix: "", rbrace_suffix: "", base_classes_text: ""
+              )
+            else
+              members = variant[:fields].map do |field|
+                CppAst::Nodes::VariableDeclaration.new(
+                  type: @context.map_type(field[:type]),
+                  declarators: [field[:name]],
+                  declarator_separators: [],
+                  type_suffix: " ",
+                  prefix_modifiers: ""
+                )
+              end
+              CppAst::Nodes::StructDeclaration.new(
+                name: variant[:name], members: members,
+                member_trailings: Array.new(members.size, ""),
+                struct_suffix: " ", name_suffix: " ",
+                lbrace_suffix: "", rbrace_suffix: "", base_classes_text: ""
+              )
+            end
+          end
         end
 
         # Helper: Lower block expression statements with optional return
@@ -251,7 +383,65 @@ module MLC
           )
         end
 
+        def sum_type_recursive?(name, sum_type)
+          sum_type.variants.any? do |v|
+            v[:fields].any? { |f| field_type_references?(f[:type], name) }
+          end
+        end
+
+        def field_type_references?(type, name)
+          case type
+          when SemanticIR::GenericType
+            type.type_args.any? { |a| field_type_references?(a, name) }
+          when SemanticIR::ArrayType
+            field_type_references?(type.element_type, name)
+          when SemanticIR::Type
+            type.name == name
+          else
+            false
+          end
+        end
+
+        def cyclic_sum_type_stmts(name, sum_type)
+          variant_structs = sum_type_body_stmts(name, sum_type)
+          wrapper = lower_sum_type_as_wrapper_struct(name, sum_type)
+          stmts = variant_structs + [wrapper]
+          CppAst::Nodes::Program.new(
+            statements: stmts,
+            statement_trailings: Array.new(stmts.size, "\n")
+          )
+        end
+
+        # Output sum type as wrapper struct (for forward decl in modular headers with cycles)
+        def lower_sum_type_as_wrapper_struct(name, sum_type)
+          variant_names = sum_type.variants.map { |v| v[:name] }.join(", ")
+          variant_type = "std::variant<#{variant_names}>"
+          member = CppAst::Nodes::VariableDeclaration.new(
+            type: variant_type,
+            declarators: ["_"],
+            declarator_separators: [],
+            type_suffix: " ",
+            prefix_modifiers: ""
+          )
+          CppAst::Nodes::StructDeclaration.new(
+            name: name,
+            members: [member],
+            member_trailings: [""],
+            struct_suffix: " ",
+            name_suffix: " ",
+            lbrace_suffix: "",
+            rbrace_suffix: "",
+            base_classes_text: ""
+          )
+        end
+
         def lower_sum_type_internal(name, sum_type, type_params = [])
+          if @cyclic_sum_types&.include?(name)
+            return cyclic_sum_type_stmts(name, sum_type)
+          end
+
+          recursive = sum_type_recursive?(name, sum_type)
+
           # Generate structs for each variant
           variant_structs = sum_type.variants.map do |variant|
             if variant[:fields].empty?
@@ -308,8 +498,17 @@ module MLC
             equals_suffix: " "
           )
 
-          # Return program with all structs + using declaration
-          all_statements = variant_structs + [using_decl]
+          if recursive
+            # For recursive types: forward-declare structs, emit using alias,
+            # then full struct definitions so that std::shared_ptr<SumType> compiles.
+            fwd_decls = sum_type.variants.map do |v|
+              @context.factory.raw_statement(code: "struct #{v[:name]};")
+            end
+            all_statements = fwd_decls + [using_decl] + variant_structs
+          else
+            all_statements = variant_structs + [using_decl]
+          end
+
           CppAst::Nodes::Program.new(
             statements: all_statements,
             statement_trailings: Array.new(all_statements.size, "")

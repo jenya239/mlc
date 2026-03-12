@@ -85,4 +85,34 @@ class MLCLambdaTest < Minitest::Test
     ast = MLC.parse(mlc_source)
     refute_nil ast
   end
+
+  def test_closure_captures_outer_variable_by_value
+    mlc_source = <<~MLCORA
+      fn make_adder(n: i32) -> i32 =
+        let f = x => x + n;
+        f(10)
+    MLCORA
+
+    cpp_code = MLC.to_cpp(mlc_source)
+
+    # n should appear in the capture list (not &n — not by reference)
+    assert_match(/\[n\]/, cpp_code)
+    refute_match(/\[&n\]/, cpp_code)
+    refute_match(/\[&\]/, cpp_code)
+  end
+
+  def test_closure_with_multiple_captures_by_value
+    mlc_source = <<~MLCORA
+      fn make_multiplier(a: i32, b: i32) -> i32 =
+        let f = x => x * a + b;
+        f(5)
+    MLCORA
+
+    cpp_code = MLC.to_cpp(mlc_source)
+
+    # Both captured variables should appear in capture list without &
+    assert_match(/\[a, b\]|\[b, a\]/, cpp_code)
+    refute_match(/&a/, cpp_code)
+    refute_match(/&b/, cpp_code)
+  end
 end

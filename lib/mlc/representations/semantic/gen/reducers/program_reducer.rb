@@ -10,22 +10,23 @@ module MLC
         module Reducers
           # ProgramReducer orchestrates the SemanticGen pipeline using passes
           class ProgramReducer
-            def initialize(services:, type_reducer:, function_reducer:, module_import_pass:, type_resolution_service:)
+            def initialize(services:, type_reducer:, function_reducer:, module_import_pass:, type_resolution_service:, module_name_override: nil)
               @services = services
               @type_reducer = type_reducer
               @function_reducer = function_reducer
               @module_import_pass = module_import_pass
               @type_resolution_service = type_resolution_service
+              @module_name_override = module_name_override
               @pass_manager = build_pass_manager
             end
 
-            def reduce(program)
+            def reduce(program, module_name: nil)
               context = {
                 program: program,
                 imports: [],
                 type_items: [],
                 func_items: [],
-                module_name: module_name_for(program),
+                module_name: module_name || @module_name_override || module_name_for(program),
                 import_aliases: {}
               }
 
@@ -128,6 +129,7 @@ module MLC
                   # Wrap method processing in associated type context for signature resolution
                   @services.scope_context.with_associated_type_bindings(associated_type_bindings) do
                     decl.methods.each do |func|
+                      func = fill_self_type(func, decl.target_type)
                       methods[func.name] = Services::TraitRegistry::MethodInfo.new(
                         name: func.name,
                         params: func.params,
@@ -136,10 +138,7 @@ module MLC
                         is_static: !self_receiver?(func)
                       )
 
-                      # Also register as regular function with mangled name for C++ backend
-                      # Type_method -> allows Type.method() to resolve to Type_method()
                       mangled_name = "#{type_name}_#{func.name}"
-                      # Combine extend type params with function's own type params
                       combined_type_params = extend_type_params + Array(func.type_params)
                       synthetic_func = MLC::Source::AST::FuncDecl.new(
                         name: mangled_name,
@@ -148,7 +147,7 @@ module MLC
                         body: func.body,
                         type_params: combined_type_params,
                         exported: decl.exported,
-                        external: func.external, # Preserve extern flag
+                        external: func.external,
                         origin: func.origin
                       )
                       @function_reducer.register_signature(synthetic_func)
@@ -197,6 +196,26 @@ module MLC
 
             def self_receiver?(func)
               func.params.any? && func.params.first.name == "self"
+            end
+
+            # If method has explicit `self` param with no type annotation, fill it in from the extend target type.
+            def fill_self_type(func, target_type)
+              return func unless self_receiver?(func)
+
+              first = func.params.first
+              return func if first.type # already has explicit type
+
+              filled = MLC::Source::AST::Param.new(name: "self", type: target_type, mutable: first.mutable)
+              MLC::Source::AST::FuncDecl.new(
+                name: func.name,
+                params: [filled] + func.params.drop(1),
+                ret_type: func.ret_type,
+                body: func.body,
+                type_params: func.type_params,
+                exported: func.exported,
+                external: func.external,
+                origin: func.origin
+              )
             end
 
             # Extract type parameters from extend target type
@@ -256,9 +275,9 @@ module MLC
                   # Wrap method processing in associated type context
                   @services.scope_context.with_associated_type_bindings(assoc_bindings) do
                     decl.methods.each do |func|
-                      # Skip extern functions - they are declarations only, no code generation
                       next if func.external
 
+                      func = fill_self_type(func, decl.target_type)
                       mangled_name = "#{type_name}_#{func.name}"
                       combined_type_params = extend_type_params + Array(func.type_params)
                       synthetic_func = MLC::Source::AST::FuncDecl.new(

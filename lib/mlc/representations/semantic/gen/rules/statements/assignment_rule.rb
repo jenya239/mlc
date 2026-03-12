@@ -21,6 +21,9 @@ module MLC
                 target_name = target.name
                 existing_type = svc.var_type_registry.get(target_name)
                 svc.type_checker.type_error("assignment to undefined variable '#{target_name}'", node: node) unless existing_type
+                unless svc.var_type_registry.mutable?(target_name)
+                  svc.type_checker.type_error("cannot rebind 'const #{target_name}'", node: node)
+                end
 
                 svc.type_checker.ensure_compatible_type(
                   value_ir.type,
@@ -35,7 +38,7 @@ module MLC
                 # Reset moved state of target (mutable variable can be reassigned)
                 svc.var_type_registry.reset_moved(target_name)
 
-                svc.var_type_registry.set(target_name, existing_type)
+                svc.var_type_registry.set(target_name, existing_type, mutable: true)
 
                 target_ir = svc.ir_builder.var(name: target_name, type: existing_type, origin: node)
                 svc.ir_builder.assignment_stmt(target: target_ir, value: value_ir, origin: node)

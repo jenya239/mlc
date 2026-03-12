@@ -1,5 +1,10 @@
 // Unit tests for the parser (parse_program function).
 
+import { TestResult, assert_eq_int, assert_true } from "./test_runner"
+import { tokenize } from "../lexer"
+import { parse_program } from "../parser/decls"
+import { Decl, DeclFn, DeclType } from "../ast"
+
 fn parse_source(source: string) -> Program =
   parse_program(tokenize(source).tokens)
 
@@ -9,7 +14,7 @@ fn decl_count(source: string) -> i32 =
 fn first_decl(source: string) -> Shared<Decl> =
   parse_source(source).decls[0]
 
-fn parser_tests() -> [TestResult] = do
+export fn parser_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
   results.push(assert_eq_int("empty source → 0 decls",
@@ -36,13 +41,13 @@ fn parser_tests() -> [TestResult] = do
   results.push(assert_true("fn decl is DeclFn",
     match first_decl("fn f() -> i32 = 42") {
       DeclFn(_, _, _, _) => true,
-      DeclType(_, _)     => false
+      _ => false
     }))
 
   results.push(assert_true("type decl is DeclType",
     match first_decl("type Color = Red | Green") {
-      DeclType(_, _)     => true,
-      DeclFn(_, _, _, _) => false
+      DeclType(_, _) => true,
+      _ => false
     }))
 
   results.push(assert_eq_int("fn with if expr → 1 decl",

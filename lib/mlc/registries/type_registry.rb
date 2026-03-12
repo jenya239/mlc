@@ -301,6 +301,11 @@ module MLC
         @types[type_name]&.module_name
       end
 
+      # Find TypeInfo for a sum type that contains the given variant
+      def find_type_with_variant(variant_name)
+        @types.values.find { |ti| ti.variant?(variant_name) }
+      end
+
       # Get all exported types
       # @return [Array<TypeInfo>]
       def exported_types

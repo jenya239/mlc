@@ -141,7 +141,7 @@ class MoveSemanticsE2ETest < Minitest::Test
   def test_mutable_reassignment_allows_reuse
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut a = [1, 2, 3]
+        let a = [1, 2, 3]
         let _b = a
         a = [4, 5, 6]
         a[0]

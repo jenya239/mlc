@@ -67,11 +67,9 @@ module MLC
                 element = transform(node.element_type)
                 @ir_builder.array_type(element_type: element)
               when MLC::Source::AST::RefType
-                validate_unsafe_context!(node, "ref T")
                 inner = transform(node.inner_type)
                 @ir_builder.ref_type(inner_type: inner)
               when MLC::Source::AST::MutRefType
-                validate_unsafe_context!(node, "ref mut T")
                 inner = transform(node.inner_type)
                 @ir_builder.mut_ref_type(inner_type: inner)
               else

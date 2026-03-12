@@ -1,4 +1,12 @@
 // Test entry point. Runs all test suites.
+// Uses import for modular build (build_tests.sh).
+
+import { lexer_tests } from "./test_lexer"
+import { parser_tests } from "./test_parser"
+import { checker_tests } from "./test_checker"
+import { codegen_tests } from "./test_codegen"
+import { pipe_and_record_update_tests } from "./test_pipe_and_record_update"
+import { TestResult, run_all } from "./test_runner"
 
 fn all_tests() -> [TestResult] = do
   const all: [TestResult] = []
@@ -22,14 +30,6 @@ fn all_tests() -> [TestResult] = do
   const pipe_record_results = pipe_and_record_update_tests()
   i = 0
   while i < pipe_record_results.length() do all.push(pipe_record_results[i]); i = i + 1 end
-
-  const cpp_lex_results = cpp_lexer_tests()
-  i = 0
-  while i < cpp_lex_results.length() do all.push(cpp_lex_results[i]); i = i + 1 end
-
-  const cpp_ast_results = cpp_ast_tests()
-  i = 0
-  while i < cpp_ast_results.length() do all.push(cpp_ast_results[i]); i = i + 1 end
 
   all
 end

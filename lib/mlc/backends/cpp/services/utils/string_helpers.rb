@@ -48,9 +48,14 @@ module MLC
               end.join
             end
 
-            # Build C++ string literal: "escaped content"
+            # Build C++ string literal argument for mlc::String ctor.
+            # For strings containing null bytes, uses length-aware 2-arg form.
             def cpp_string_literal(value)
-              "\"#{escape_cpp_string(value)}\""
+              if value.include?("\0")
+                "\"#{escape_cpp_string(value)}\", #{value.bytesize}"
+              else
+                "\"#{escape_cpp_string(value)}\""
+              end
             end
           end
         end

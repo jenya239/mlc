@@ -1,5 +1,5 @@
 #include "mlc/io/io.hpp"
-
+#include "mlc/core/array.hpp"
 #include <iostream>
 #include <sstream>
 
@@ -47,8 +47,8 @@ String read_all() {
     return String(oss.str());
 }
 
-const std::vector<String>& args() {
-    return g_args;
+Array<String> args() {
+    return Array<String>(g_args);
 }
 
 void set_args(std::vector<String>&& new_args) {

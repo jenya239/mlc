@@ -64,10 +64,13 @@ module MLC
                 lower_match_with_guards(node, scrutinee)
               else
                 # Generate MatchExpression with std::visit
-                arms = node.arms.map { |arm| lower_match_arm(arm) }
+                scrutinee_type = node.scrutinee&.type
+                # Dereference shared_ptr before std::visit; use ._ for wrapper struct
+                visit_value = build_visit_value(scrutinee, scrutinee_type)
+                arms = node.arms.map { |arm| lower_match_arm(arm, scrutinee_type: scrutinee_type) }
 
                 CppAst::Nodes::MatchExpression.new(
-                  value: scrutinee,
+                  value: visit_value,
                   arms: arms,
                   arm_separators: Array.new([arms.size - 1, 0].max, ",\n")
                 )
@@ -83,6 +86,42 @@ module MLC
               Array(pattern[:fields]).any? do |field|
                 field.is_a?(Hash) && field[:kind] == :constructor
               end
+            end
+
+            # Replace duplicate "_" wildcards with unique names (_w0, _w1, ...)
+            # C++ structured bindings require unique names for each binding.
+            def uniquify_wildcard_bindings(bindings)
+              counter = 0
+              bindings.map do |b|
+                if b == "_"
+                  name = "_w#{counter}"
+                  counter += 1
+                  name
+                else
+                  b
+                end
+              end
+            end
+
+            def build_visit_value(scrutinee, scrutinee_type)
+              return scrutinee unless scrutinee_type
+
+              scrutinee_src = scrutinee.to_source
+              is_shared = shared_type?(scrutinee_type)
+              inner = is_shared ? scrutinee_type.type_args&.first : scrutinee_type
+              inner_type_name = inner ? extract_type_name(inner) : nil
+              is_wrapper = inner_type_name && context.cyclic_sum_types.include?(inner_type_name)
+
+              base = is_shared ? "(*#{scrutinee_src})" : scrutinee_src
+              base = "#{base}._" if is_wrapper
+              context.factory.raw_expression(code: base)
+            end
+
+            def shared_type?(type)
+              return false unless type.is_a?(MLC::SemanticIR::GenericType)
+
+              base_name = extract_type_name(type.base_type)
+              base_name == "Shared"
             end
 
             # Check if type is stdlib Option<T> (std::optional)
@@ -121,6 +160,54 @@ module MLC
 
             private
 
+            # Resolve the C++ type name for a variant in a generic sum type.
+            # For GenericType scrutinee (e.g. Result<i32, string>), returns
+            # namespace-qualified template type (e.g. "mlc::result::Ok<int>").
+            # Returns nil for non-generic or non-namespaced types.
+            def resolve_variant_cpp_type(variant_name, scrutinee_type)
+              return nil unless scrutinee_type.is_a?(MLC::SemanticIR::GenericType)
+
+              base_name = extract_type_name(scrutinee_type.base_type)
+              return nil unless base_name
+
+              type_info = context.type_registry&.lookup(base_name)
+              return nil unless type_info
+              return nil unless type_info.namespace
+
+              # Find which variant index this name corresponds to
+              variants = type_info.core_ir_type.respond_to?(:variants) ? type_info.core_ir_type.variants : []
+              variant = variants.find { |v| v[:name] == variant_name }
+              return nil unless variant
+
+              variant_idx = variants.index(variant)
+              type_args = scrutinee_type.type_args
+
+              # Build template args from the variant's field types
+              field_types = variant[:fields]
+              if field_types.any?
+                # Map each TypeVariable in the field to the concrete type arg
+                # We use all distinct type vars from the variant's fields
+                # Get the type variables from the sum type definition
+                sum_type_params = variants.flat_map { |v| v[:fields] }
+                                         .map { |f| f[:type] }
+                                         .select { |t| t.is_a?(MLC::SemanticIR::TypeVariable) }
+                                         .uniq(&:name)
+
+                field_type_args = field_types.map do |field|
+                  t = field[:type]
+                  if t.is_a?(MLC::SemanticIR::TypeVariable)
+                    param_idx = sum_type_params.index { |p| p.name == t.name }
+                    param_idx ? context.map_type(type_args[param_idx]) : t.name
+                  else
+                    context.map_type(t)
+                  end
+                end
+                "#{type_info.namespace}::#{variant_name}<#{field_type_args.join(", ")}>"
+              else
+                "#{type_info.namespace}::#{variant_name}"
+              end
+            end
+
             # Lower match with regex patterns to IIFE with if-else chain
             def lower_match_with_regex(match_expr, scrutinee)
               # Generate an IIFE (Immediately Invoked Function Expression) lambda
@@ -155,14 +242,20 @@ module MLC
               # Build body string from statements
               body_str = statements.map(&:to_source).join(" ")
 
-              # Create IIFE lambda: [&]() { ... }()
+              # Create IIFE lambda: [&]() -> ReturnType { ... }()
+              ret_type = nil
+              if match_expr.respond_to?(:type) && match_expr.type
+                mapped = context.map_type(match_expr.type)
+                ret_type = mapped unless mapped.nil? || mapped.empty? || mapped == "auto" || mapped.include?("int") || mapped.include?("function<")
+              end
               lambda_expr = context.factory.lambda(
                 capture: "&",
                 parameters: "",
                 specifiers: "",
                 body: body_str,
                 capture_suffix: "",
-                params_suffix: ""
+                params_suffix: "",
+                return_type: ret_type
               )
 
               context.factory.function_call(
@@ -241,7 +334,7 @@ module MLC
             end
 
             # Lower match arm to MatchArm node
-            def lower_match_arm(arm)
+            def lower_match_arm(arm, scrutinee_type: nil)
               pattern = arm[:pattern]
               body = context.lower_expression(arm[:body])
 
@@ -251,10 +344,15 @@ module MLC
                 case_name = pattern[:name]
                 bindings = pattern[:bindings] || pattern[:fields] || []
 
+                cpp_param_type = resolve_variant_cpp_type(case_name, scrutinee_type)
+
+                sanitized_bindings = uniquify_wildcard_bindings(bindings)
+
                 CppAst::Nodes::MatchArm.new(
                   case_name: case_name,
-                  bindings: bindings.reject { |f| f == "_" }, # Filter out wildcards
-                  body: body
+                  bindings: sanitized_bindings,
+                  body: body,
+                  cpp_param_type: cpp_param_type
                 )
 
               when :wildcard, :var
@@ -320,29 +418,54 @@ module MLC
             #     }
             #     throw std::runtime_error("non-exhaustive match");
             #   }()
+            def qualified_case_name(case_name, scrutinee_type)
+              return case_name unless scrutinee_type
+
+              base = shared_type?(scrutinee_type) ? scrutinee_type.type_args&.first : scrutinee_type
+              base_name = base ? extract_type_name(base) : nil
+              return case_name unless base_name
+
+              info = context.type_registry&.lookup(base_name)
+              return case_name unless info
+
+              ns = info.namespace
+              ns ||= info.cpp_name[/\A([^:]+)::/, 1] if info.cpp_name&.include?("::")
+              return case_name unless ns
+
+              "#{ns}::#{case_name}"
+            end
+
+            def variant_src_for(scrutinee_src, scrutinee_type)
+              return scrutinee_src unless scrutinee_type
+
+              base = shared_type?(scrutinee_type) ? "(*#{scrutinee_src})" : scrutinee_src
+              inner = shared_type?(scrutinee_type) ? scrutinee_type.type_args&.first : scrutinee_type
+              inner_name = inner ? extract_type_name(inner) : nil
+              inner_name && context.cyclic_sum_types.include?(inner_name) ? "#{base}._" : base
+            end
+
             def lower_match_with_guards(match_expr, scrutinee)
               statements = []
               scrutinee_src = scrutinee.to_source
-              # Get scrutinee type for determining Option<T> vs user-defined Option
               scrutinee_type = match_expr.scrutinee&.type
+              variant_src = variant_src_for(scrutinee_src, scrutinee_type)
 
               match_expr.arms.each do |arm|
                 pattern = arm[:pattern]
                 guard = arm[:guard]
                 body = context.lower_expression(arm[:body])
-                body_src = body.to_source
+                body_src = body&.to_source
+                body_src = ";" if body_src.nil? || body_src.empty?
 
                 case pattern[:kind]
                 when :constructor
                   statements << build_constructor_guard_arm(pattern, guard, body_src, scrutinee_src, scrutinee_type)
 
                 when :or
-                  # Or-pattern: generate (cond1 || cond2 || ...) condition
-                  statements << build_or_pattern_arm(pattern, guard, body_src, scrutinee_src)
+                  statements << build_or_pattern_arm(pattern, guard, body_src, variant_src, scrutinee_type)
 
                 when :literal
-                  # Literal pattern: check equality
-                  condition = build_pattern_condition(pattern, scrutinee_src)
+                  condition = build_pattern_condition(pattern, scrutinee_src, scrutinee_type)
                   if guard
                     guard_expr = context.lower_expression(guard)
                     guard_src = guard_expr.to_source
@@ -382,15 +505,21 @@ module MLC
                 end
               end
 
-              # Build IIFE
+              # Build IIFE with explicit return type so `return {}` resolves correctly.
               body_str = statements.map(&:to_source).join(" ")
+              ret_type = nil
+              if match_expr.respond_to?(:type) && match_expr.type
+                mapped = context.map_type(match_expr.type)
+                ret_type = mapped unless mapped.nil? || mapped.empty? || mapped == "auto" || mapped.include?("int") || mapped.include?("function<")
+              end
               lambda_expr = context.factory.lambda(
                 capture: "&",
                 parameters: "",
                 specifiers: "",
                 body: body_str,
                 capture_suffix: "",
-                params_suffix: ""
+                params_suffix: "",
+                return_type: ret_type
               )
 
               context.factory.function_call(
@@ -411,11 +540,11 @@ module MLC
                 return build_option_pattern_arm(case_name, bindings, guard, body_src, scrutinee_src)
               end
 
-              # Build std::holds_alternative check for regular sum types
-              holds_check = "std::holds_alternative<#{case_name}>(#{scrutinee_src})"
+              variant_src = variant_src_for(scrutinee_src, scrutinee_type)
+              qcase = qualified_case_name(case_name, scrutinee_type)
 
-              # Build binding declarations and nested pattern checks
-              binding_decls, nested_checks = build_binding_extractions(case_name, bindings, scrutinee_src)
+              holds_check = "std::holds_alternative<#{qcase}>(#{variant_src})"
+              binding_decls, nested_checks = build_binding_extractions(case_name, bindings, variant_src, scrutinee_type)
 
               binding_str = binding_decls.join(" ")
 
@@ -441,15 +570,16 @@ module MLC
               )
             end
 
-            def build_binding_extractions(case_name, bindings, scrutinee_src)
+            def build_binding_extractions(case_name, bindings, scrutinee_src, scrutinee_type = nil)
               return [[], []] if bindings.empty?
 
               binding_decls = []
               nested_checks = []
               temp_var_counter = 0
+              qcase = qualified_case_name(case_name, scrutinee_type)
 
               temp_var = "_v_#{case_name.downcase}"
-              binding_decls << "auto #{temp_var} = std::get<#{case_name}>(#{scrutinee_src});"
+              binding_decls << "auto #{temp_var} = std::get<#{qcase}>(#{scrutinee_src});"
 
               non_wildcard_bindings = bindings.reject { |b| b == "_" || (b.is_a?(Hash) && b[:kind] == :constructor) }
               binding_decls << structured_binding_decl(bindings, temp_var) if non_wildcard_bindings.any?
@@ -556,13 +686,11 @@ module MLC
               decls
             end
 
-            # Build or-pattern arm with (cond1 || cond2 || ...) condition
-            def build_or_pattern_arm(pattern, guard, body_src, scrutinee_src)
+            def build_or_pattern_arm(pattern, guard, body_src, scrutinee_src, scrutinee_type = nil)
               alternatives = pattern[:alternatives] || []
 
-              # Build OR condition from all alternatives
               conditions = alternatives.map do |alt|
-                build_pattern_condition(alt, scrutinee_src)
+                build_pattern_condition(alt, scrutinee_src, scrutinee_type)
               end
 
               or_condition = conditions.join(" || ")
@@ -693,12 +821,12 @@ module MLC
               end
             end
 
-            # Build condition check for a single pattern
-            def build_pattern_condition(pattern, scrutinee_src)
+            def build_pattern_condition(pattern, scrutinee_src, scrutinee_type = nil)
               case pattern[:kind]
               when :constructor
                 case_name = pattern[:name]
-                "std::holds_alternative<#{case_name}>(#{scrutinee_src})"
+                qcase = qualified_case_name(case_name, scrutinee_type)
+                "std::holds_alternative<#{qcase}>(#{scrutinee_src})"
               when :literal
                 value = pattern[:value]
                 literal_src = format_literal_value(value)

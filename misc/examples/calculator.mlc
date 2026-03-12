@@ -18,23 +18,23 @@ end
 
 fn main() -> i32 = do
   // Test suite of expressions
-  let e1 = Num(42)
-  let e2 = Add(10, 20)
-  let e3 = Mul(5, 6)
-  let e4 = Sub(100, 30)
-  let e5 = Div(50, 2)
-  let e6 = Add(100, 200)
-  let e7 = Mul(10, 10)
-  let e8 = Sub(1000, 500)
+  const e1 = Num(42)
+  const e2 = Add(10, 20)
+  const e3 = Mul(5, 6)
+  const e4 = Sub(100, 30)
+  const e5 = Div(50, 2)
+  const e6 = Add(100, 200)
+  const e7 = Mul(10, 10)
+  const e8 = Sub(1000, 500)
   
-  let r1 = eval(e1)
-  let r2 = eval(e2)
-  let r3 = eval(e3)
-  let r4 = eval(e4)
-  let r5 = eval(e5)
-  let r6 = eval(e6)
-  let r7 = eval(e7)
-  let r8 = eval(e8)
+  const r1 = eval(e1)
+  const r2 = eval(e2)
+  const r3 = eval(e3)
+  const r4 = eval(e4)
+  const r5 = eval(e5)
+  const r6 = eval(e6)
+  const r7 = eval(e7)
+  const r8 = eval(e8)
   
   println(r1.to_string())
   println(r2.to_string())
@@ -45,7 +45,7 @@ fn main() -> i32 = do
   println(r7.to_string())
   println(r8.to_string())
   
-  let total = r1 + r2 + r3 + r4 + r5 + r6 + r7 + r8
+  const total = r1 + r2 + r3 + r4 + r5 + r6 + r7 + r8
   println("Total: " + total.to_string())
   
   total

@@ -163,15 +163,17 @@ module MLC
             end
 
             def process_user_import(import_decl, function_registry:)
-              # Phase 24-C/24-D: Load metadata before registering aliases
-              # Uses ModulePathResolver for proper path resolution (relative paths, etc.)
-              module_name = import_decl.path
-              metadata_path = @module_path_resolver.resolve(module_name)
+              import_path = import_decl.path
+              metadata_path = @module_path_resolver.resolve(import_path)
+              resolved_module_name = @module_path_resolver.resolve_module_name(import_path)
 
               @metadata_loader.load(metadata_path) if File.exist?(metadata_path)
 
-              # Register import aliases (existing behavior)
-              @module_resolver.register_module_import(import_decl, function_registry)
+              @module_resolver.register_module_import(
+                import_decl,
+                function_registry,
+                resolved_module_name: resolved_module_name
+              )
             end
           end
         end

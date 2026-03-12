@@ -159,12 +159,24 @@ module MLC
           params = []
 
           while current.type != :RPAREN
+            mutable = current.type == :MUT
+            consume(:MUT) if mutable
             name_token = consume(:IDENTIFIER)
             name = name_token.value
-            consume(:COLON)
-            type = parse_type
 
-            params << with_origin(name_token) { MLC::Source::AST::Param.new(name: name, type: type) }
+            # `self` without type annotation is allowed inside extend blocks;
+            # the type will be filled in by the semantic layer.
+            if current.type == :COLON
+              consume(:COLON)
+              type = parse_type
+            elsif name == "self"
+              type = nil
+            else
+              consume(:COLON) # will raise expected error
+              type = parse_type
+            end
+
+            params << with_origin(name_token) { MLC::Source::AST::Param.new(name: name, type: type, mutable: mutable) }
 
             break unless current.type == :COMMA
 

@@ -13,18 +13,19 @@ module MLC
             end
 
             def apply(node)
-              # Get element type and map to C++
-              element_type = context.map_type(node.type.element_type)
-
-              # Recursively lower each element
               elements = node.elements.map { |elem| lower_expression(elem) }
 
-              # Generate brace initializer: mlc::Array<int>{1, 2, 3}
-              context.factory.brace_initializer(
-                type: "mlc::Array<#{element_type}>",
-                arguments: elements,
-                argument_separators: elements.size > 1 ? Array.new(elements.size - 1, ", ") : []
-              )
+              if elements.empty?
+                # Empty array: emit {} and let C++ deduce the type from context.
+                context.factory.raw_expression(code: "{}")
+              else
+                element_type = context.map_type(node.type.element_type)
+                context.factory.brace_initializer(
+                  type: "mlc::Array<#{element_type}>",
+                  arguments: elements,
+                  argument_separators: elements.size > 1 ? Array.new(elements.size - 1, ", ") : []
+                )
+              end
             end
           end
         end

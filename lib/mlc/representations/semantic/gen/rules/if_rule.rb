@@ -25,6 +25,10 @@ module MLC
                           visitor.visit(node.else_branch)
                         end
 
+              # Auto-call zero-arity constructors so branch types match
+              then_ir = maybe_autocall(then_ir, else_ir&.type, svc.ir_builder, node)
+              else_ir = maybe_autocall(else_ir, then_ir.type, svc.ir_builder, node) if else_ir
+
               result_type = determine_type(
                 type_checker: svc.type_checker,
                 ir_builder: svc.ir_builder,
@@ -43,6 +47,20 @@ module MLC
             end
 
             private
+
+            # If ir has type FunctionType([]) and expected_type is not a function type,
+            # wrap it in a zero-arg call to normalize to the value type.
+            def maybe_autocall(ir, expected_type, ir_builder, node)
+              return ir unless ir
+              return ir unless ir.type.is_a?(SemanticIR::FunctionType)
+              return ir if expected_type.nil? || expected_type.is_a?(SemanticIR::FunctionType)
+
+              params = ir.type.params || []
+              return ir unless params.empty?
+
+              ret_type = ir.type.ret_type
+              ir_builder.call(func: ir, args: [], type: ret_type, origin: node)
+            end
 
             def determine_type(type_checker:, ir_builder:, then_ir:, else_ir:, node:)
               if else_ir

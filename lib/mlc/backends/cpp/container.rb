@@ -11,7 +11,7 @@ module MLC
       # Dependency injection container for backend services
       class Container
         attr_reader :type_registry, :function_registry, :type_map, :runtime_policy, :stdlib_scanner, :event_bus
-        attr_accessor :rule_engine, :in_generic_function, :user_functions, :declared_variables
+        attr_accessor :rule_engine, :in_generic_function, :user_functions, :declared_variables, :expected_return_type, :cyclic_sum_types
 
         def initialize(type_registry:, function_registry:, runtime_policy: nil, stdlib_scanner: nil, event_bus: nil)
           @type_registry = type_registry
@@ -25,7 +25,9 @@ module MLC
           @in_generic_function = false # Mutable state for generic function lowering
           @user_functions = Set.new # Track user-defined functions
           @declared_variables = Set.new # Track declared variables for rebinding detection
+          @expected_return_type = nil # When lowering function body result (for IIFE return type)
           @temp_counter = 0 # Counter for generating unique temp variable names
+          @cyclic_sum_types = Set.new # Sum types in cross-type cycles (use wrapper struct)
         end
 
         # Generate unique temporary variable name
@@ -38,6 +40,15 @@ module MLC
         # Reset declared variables (call when entering new function scope)
         def reset_declared_variables
           @declared_variables = Set.new
+        end
+
+        # Snapshot and restore for branch-scoped variables
+        def snapshot_declared_variables
+          @declared_variables.dup
+        end
+
+        def restore_declared_variables(snapshot)
+          @declared_variables = snapshot
         end
 
         # Check if variable was already declared (for rebinding)

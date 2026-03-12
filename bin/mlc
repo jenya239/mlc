@@ -3,47 +3,17 @@
 
 require "optparse"
 require "tmpdir"
-require "open3"
 require "fileutils"
-require "timeout"
 
 ROOT_DIR = File.expand_path("..", __dir__)
-RUNTIME_DIR = File.join(ROOT_DIR, "runtime")
-DEFAULT_COMPILER = ENV.fetch("CXX", "g++")
-
 $LOAD_PATH.unshift(File.join(ROOT_DIR, "lib"))
 require "mlc/common/index"
 
-def wrap_cpp(body)
-  <<~CPP
-    #include "mlc.hpp"
-
-    #define main mlc_user_main
-    #{body}
-    #undef main
-
-    static void mlc_cli_set_args(int argc, char** argv) {
-      std::vector<mlc::String> arguments;
-      arguments.reserve(argc > 0 ? argc - 1 : 0);
-      for (int i = 1; i < argc; ++i) {
-        arguments.emplace_back(argv[i]);
-      }
-      mlc::io::set_args(std::move(arguments));
-    }
-
-    int main(int argc, char** argv) {
-      mlc_cli_set_args(argc, argv);
-      return mlc_user_main();
-    }
-  CPP
-end
-
 def parse_arguments(argv)
   options = {
-    compiler: DEFAULT_COMPILER,
-    keep_tmp: false,
     emit_cpp: false,
-    emit_cpp_output: nil,
+    out_dir: "build",
+    build: true,
     verbose: false
   }
 
@@ -52,21 +22,17 @@ def parse_arguments(argv)
   parser = OptionParser.new do |opts|
     opts.banner = "Usage: mlc [options] [file] [-- program-args]"
 
-    opts.on("--emit-cpp", "Emit generated C++ to STDOUT") do
+    opts.on("-oDIR", "--output=DIR", "Output directory (default: build)") do |path|
+      options[:out_dir] = path
+    end
+
+    opts.on("--emit-cpp", "Only generate .hpp/.cpp, do not run g++") do
       options[:emit_cpp] = true
+      options[:build] = false
     end
 
-    opts.on("-oFILE", "--output=FILE", "Write generated C++ to FILE (implies --emit-cpp)") do |file|
-      options[:emit_cpp] = true
-      options[:emit_cpp_output] = file
-    end
-
-    opts.on("--compiler=CMD", "C++ compiler command (default: #{DEFAULT_COMPILER})") do |cmd|
-      options[:compiler] = cmd
-    end
-
-    opts.on("--keep-tmp", "Keep temporary build directory for inspection") do
-      options[:keep_tmp] = true
+    opts.on("--no-build", "Only generate files, do not run g++") do
+      options[:build] = false
     end
 
     opts.on("--verbose", "Print commands executed by the CLI") do
@@ -110,97 +76,6 @@ def parse_arguments(argv)
   { options: options, input_path: input_path, program_args: program_args }
 end
 
-def read_source(input_path)
-  if input_path.nil?
-    if STDIN.tty?
-      warn "No input file provided. Pass a file path or pipe source code via STDIN."
-      exit 1
-    end
-    [STDIN.read, "<stdin>"]
-  elsif input_path == "-"
-    [STDIN.read, "<stdin>"]
-  else
-    [File.read(input_path), input_path]
-  end
-rescue Errno::ENOENT
-  warn "Input file not found: #{input_path}"
-  exit 1
-rescue Errno::EACCES
-  warn "Cannot read input file: #{input_path}"
-  exit 1
-end
-
-def emit_cpp(options, cpp_source)
-  if (output = options[:emit_cpp_output])
-    FileUtils.mkdir_p(File.dirname(output))
-    File.write(output, cpp_source)
-  else
-    puts cpp_source
-  end
-end
-
-def compile_cpp(options, cpp_source)
-  dir = Dir.mktmpdir("mlc-cli")
-  source_path = File.join(dir, "mlc_main.cpp")
-  binary_path = File.join(dir, "mlc_program")
-
-  File.write(source_path, cpp_source)
-
-  runtime_cpp = File.join(RUNTIME_DIR, "src/core/string.cpp")
-  runtime_io_cpp = File.join(RUNTIME_DIR, "src/io/io.cpp")
-
-  # Get XCB and Cairo flags via pkg-config
-  xcb_flags = `pkg-config --cflags --libs xcb cairo cairo-xcb 2>/dev/null`.strip.split
-  xcb_flags = [] if $?.exitstatus != 0  # If pkg-config fails, continue without graphics
-
-  opt_level = ENV["MLC_OPT"] || "-O2"
-  compile_cmd = [
-    options[:compiler],
-    "-std=c++20",
-    opt_level,
-    "-I", File.join(RUNTIME_DIR, "include"),
-    source_path,
-    runtime_cpp,
-    runtime_io_cpp,
-    *xcb_flags,
-    "-o", binary_path
-  ]
-
-  if options[:verbose]
-    warn "Compiling: #{compile_cmd.join(' ')}"
-  end
-
-  compile_timeout = ENV["MLC_COMPILE_TIMEOUT"]&.to_i || 120
-  stdout = +""
-  stderr = +""
-  status = nil
-  begin
-    Timeout.timeout(compile_timeout) do
-      stdout, stderr, status = Open3.capture3(*compile_cmd)
-    end
-  rescue Timeout::Error
-    warn "Compilation timed out after #{compile_timeout}s"
-    warn "Command: #{compile_cmd.join(' ')}"
-    exit 1
-  end
-
-  unless status.success?
-    warn stdout unless stdout.empty?
-    warn stderr unless stderr.empty?
-    warn "Compilation failed (status #{status.exitstatus})"
-    warn "Command: #{compile_cmd.join(' ')}" if options[:verbose]
-    exit status.exitstatus || 1
-  end
-
-  yield(binary_path, dir)
-ensure
-  if options[:keep_tmp]
-    warn "Temporary build directory retained: #{dir}" if dir && options[:verbose]
-  elsif dir && Dir.exist?(dir)
-    FileUtils.remove_entry(dir)
-  end
-end
-
 def run_program(binary_path, program_args, verbose:)
   if verbose
     warn "Running: #{([binary_path] + program_args).join(' ')}"
@@ -217,24 +92,49 @@ def main
   program_args = parsed[:program_args]
   input_path = parsed[:input_path]
 
-  source_code, source_name = read_source(input_path)
+  entry_path, root_dir = resolve_entry_path(input_path)
+  exit 1 unless entry_path
 
-  begin
-    generated_cpp = MLC.to_cpp(source_code, filename: source_name)
-  rescue MLC::ParseError, MLC::CompileError => e
-    warn e.message
+  run_modular(options, entry_path, root_dir, program_args)
+end
+
+def resolve_entry_path(input_path)
+  if input_path.nil?
+    return [nil, nil] if STDIN.tty?
+    input_path = "-"
+  end
+
+  if input_path == "-"
+    source = STDIN.read
+    path = File.join(Dir.tmpdir, "mlc_stdin_#{Process.pid}.mlc")
+    File.write(path, source)
+    at_exit { File.delete(path) rescue nil }
+    [path, Dir.pwd]
+  elsif File.exist?(input_path)
+    [File.expand_path(input_path), File.dirname(File.expand_path(input_path))]
+  else
+    warn "File not found: #{input_path}"
+    [nil, nil]
+  end
+end
+
+def run_modular(options, entry_path, root_dir, program_args)
+  out_dir = options[:out_dir] || "build"
+  if File.exist?(out_dir) && !File.directory?(out_dir)
+    warn "-o must be a directory, not a file: #{out_dir}"
     exit 1
   end
 
-  wrapped_cpp = wrap_cpp(generated_cpp)
-
-  if options[:emit_cpp]
-    emit_cpp(options, wrapped_cpp)
-    return
-  end
-
-  compile_cpp(options, wrapped_cpp) do |binary_path, _temp_dir|
-    run_program(binary_path, program_args, verbose: options[:verbose])
+  begin
+    if options[:build] && !options[:emit_cpp]
+      result = MLC.build_project(entry_path: entry_path, out_dir: out_dir, root_dir: root_dir)
+      run_program(result[:binary], program_args, verbose: options[:verbose])
+    else
+      MLC.compile_project(entry_path: entry_path, out_dir: out_dir, root_dir: root_dir)
+    end
+  rescue MLC::ParseError, MLC::CompileError => e
+    warn e.message
+    exit 1
   end
 end
 

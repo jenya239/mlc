@@ -27,15 +27,17 @@ module MLC
               )
 
               @type_decl_table[decl.name] = decl
-              register_constructors_if_needed(decl.name, core_type)
+              register_constructors_if_needed(decl.name, core_type, namespace: namespace, module_name: module_name)
             end
 
             private
 
-            def register_constructors_if_needed(type_name, core_type)
+            def register_constructors_if_needed(type_name, core_type, namespace: nil, module_name: nil)
               return unless core_type.is_a?(MLC::SemanticIR::SumType)
 
-              @sum_type_constructor_service.register_sum_type_constructors(type_name, core_type)
+              @sum_type_constructor_service.register_sum_type_constructors(
+                type_name, core_type, namespace: namespace, module_name: module_name
+              )
             end
           end
         end

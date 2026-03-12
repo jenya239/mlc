@@ -8,8 +8,8 @@ class GccExpressionStrategyTest < Minitest::Test
     # Test that gcc_optimized policy generates statement expressions
     _source = <<~MLC
       fn test() -> i32 =
-        let mut x = 1;
-        let mut y = 2;
+        let x = 1;
+        let y = 2;
         x + y
     MLC
 

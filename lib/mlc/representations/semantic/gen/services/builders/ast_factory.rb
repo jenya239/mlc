@@ -89,7 +89,7 @@ module MLC
               MLC::Source::AST::ExprStmt.new(expr: expr, origin: origin)
             end
 
-            def variable_decl(name:, value:, mutable: false, type: nil, origin: nil)
+            def variable_decl(name:, value:, mutable: true, type: nil, origin: nil)
               MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type, origin: origin)
             end
 

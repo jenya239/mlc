@@ -72,7 +72,7 @@ module MLC
 
               func_decl.params.each_with_index.map do |param, index|
                 type = param_types[index]
-                MLC::SemanticIR::Param.new(name: param.name, type: type, origin: param.origin)
+                MLC::SemanticIR::Param.new(name: param.name, type: type, mutable: param.mutable, origin: param.origin)
               end
             end
 
@@ -108,7 +108,9 @@ module MLC
                 )
               end
 
-              params.each { |param| @var_type_registry.set(param.name, param.type) }
+              func_decl.params.each_with_index do |ast_param, i|
+                @var_type_registry.set(params[i].name, params[i].type, mutable: ast_param.respond_to?(:mutable) && ast_param.mutable)
+              end
 
               body_ir = nil
               @scope_context.with_function_return(signature.ret_type) do
@@ -144,6 +146,13 @@ module MLC
             def ensure_return_type!(func_decl, body_ir, expected_type)
               actual_type = body_ir&.type
               return if expected_type.nil? || actual_type.nil?
+
+              # main() may have unit body when all error paths exit(); allow unit->i32
+              actual_name = @type_checker.normalized_type_name(@type_checker.type_name(actual_type))
+              expected_name = @type_checker.normalized_type_name(@type_checker.type_name(expected_type))
+              if func_decl.name == "main" && expected_name == "i32" && @type_checker.unit_like?(actual_name, actual_type)
+                return
+              end
 
               @type_checker.ensure_compatible_type(
                 actual_type,

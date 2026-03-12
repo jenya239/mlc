@@ -26,7 +26,7 @@ class ArrayCowE2ETest < Minitest::Test
   def test_cow_copy_is_independent
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut a = [10, 20, 30]
+        let a = [10, 20, 30]
         let b = a
         a.push(40)
         a.length() * 10 + b.length()
@@ -40,7 +40,7 @@ class ArrayCowE2ETest < Minitest::Test
   def test_cow_set_does_not_affect_copy
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut a = [1, 2, 3]
+        let a = [1, 2, 3]
         let b = a
         a.set(0, 99)
         a[0] + b[0]
@@ -54,7 +54,7 @@ class ArrayCowE2ETest < Minitest::Test
   def test_cow_multiple_copies
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut a = [1, 2, 3]
+        let a = [1, 2, 3]
         let b = a
         let c = a
         a.push(4)
@@ -75,7 +75,7 @@ class ArrayCowE2ETest < Minitest::Test
       fn get_len(arr: i32[]) -> i32 = arr.length()
 
       fn main() -> i32 = do
-        let mut a = [1, 2, 3]
+        let a = [1, 2, 3]
         let len_before = get_len(a)
         a.push(4)
         let len_after = a.length()
@@ -94,7 +94,7 @@ class ArrayCowE2ETest < Minitest::Test
   def test_cow_with_map
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut a = [1, 2, 3]
+        let a = [1, 2, 3]
         a.push(4)
         let b = a.map(x => x * 2)
         b[3]
@@ -108,7 +108,7 @@ class ArrayCowE2ETest < Minitest::Test
   def test_cow_with_filter
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut a = [1, 2, 3, 4, 5, 6]
+        let a = [1, 2, 3, 4, 5, 6]
         a.push(7)
         a.push(8)
         let evens = a.filter(x => x % 2 == 0)
@@ -127,8 +127,8 @@ class ArrayCowE2ETest < Minitest::Test
   def test_push_in_while_loop
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut arr: i32[] = []
-        let mut i = 0
+        let arr: i32[] = []
+        let i = 0
         while i < 10 do
           arr.push(i)
           i = i + 1
@@ -143,7 +143,7 @@ class ArrayCowE2ETest < Minitest::Test
   def test_accumulate_sum_via_set
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut arr = [0, 0, 0]
+        let arr = [0, 0, 0]
         arr.set(0, 10)
         arr.set(1, 20)
         arr.set(2, 30)

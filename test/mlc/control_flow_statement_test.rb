@@ -7,7 +7,7 @@ class MLCControlFlowStatementTest < Minitest::Test
   def test_if_statement_generates_cpp_if
     source = <<~MLC
       fn adjust(value: i32) -> i32 =
-        let mut total = value;
+        let total = value;
         if total > 10 then {
           total = total - 5;
         } else {
@@ -39,7 +39,7 @@ class MLCControlFlowStatementTest < Minitest::Test
   def test_while_statement_generates_cpp_while
     source = <<~MLC
       fn countdown(n: i32) -> i32 =
-        let mut value = n;
+        let value = n;
         while value > 0 do
           value = value - 1;
           0
@@ -56,7 +56,7 @@ class MLCControlFlowStatementTest < Minitest::Test
   def test_return_statement_in_block
     source = <<~MLC
       fn pick(value: i32) -> i32 =
-        let mut answer = value;
+        let answer = value;
         if value > 0 then {
           return value;
         };
@@ -71,7 +71,7 @@ class MLCControlFlowStatementTest < Minitest::Test
   def test_break_and_continue_inside_loop
     source = <<~MLC
       fn first_positive(xs: i32[]) -> i32 =
-        let mut found = -1;
+        let found = -1;
         for x in xs do
           if x < 0 then do
             continue;

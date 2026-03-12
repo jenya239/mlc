@@ -51,6 +51,7 @@ module MLC
           if next_token.type == :IDENTIFIER
             token_after_next = @tokens[@pos + 2] if @pos + 2 < @tokens.length
             return false if token_after_next && token_after_next.type == :COLON
+            return false if token_after_next && (token_after_next.type == :COMMA || token_after_next.type == :RBRACE)
             return true if token_after_next && token_after_next.type == :FAT_ARROW
 
             # Otherwise, assume it's a match arm if identifier is uppercase (constructor pattern)
@@ -316,26 +317,28 @@ module MLC
           end
         end
 
+        # Returns [block_expr, end_consumed]
+        # end_consumed=true means this branch consumed its own 'end' → no 'else' follows for this if
         def parse_if_branch_expression(then_line: nil)
           if current.type == :LBRACE
             block = parse_block_expression
-            wrap_block_like_expr(block)
+            [wrap_block_like_expr(block), false]
           elsif current.type == :DO
-            wrap_block_like_expr(parse_do_expression)
+            [wrap_block_like_expr(parse_do_expression), false]
           elsif then_line && current.line > then_line
-            # Body starts on a new line after 'then' — multiline if, parse until end
+            # Body starts on a new line after 'then' — multiline if, parse until end/else
             items = []
             until current.type == :END || current.type == :ELSE || eof?
               items << parse_do_statement
               consume(:SEMICOLON) if current.type == :SEMICOLON
             end
-            # Only consume 'end' if it terminates this if (not 'else' branch)
-            consume(:END) if current.type == :END
-            build_block_expr(items, current)
+            end_consumed = current.type == :END
+            consume(:END) if end_consumed
+            [build_block_expr(items, current), end_consumed]
           else
             # Single statement/expression on same line as 'then'
             item = parse_do_statement
-            wrap_block_like_expr(item)
+            [wrap_block_like_expr(item), false]
           end
         end
 
@@ -369,7 +372,8 @@ module MLC
 
         def parse_if_expression
           if [:IF, :UNLESS].include?(current.type)
-            parse_if_or_unless_expression(inside_block: false)
+            ir, _end_consumed = parse_if_or_unless_expression(inside_block: false)
+            ir
           else
             # Parse primary expression, then check for postfix if/unless
             expr = parse_logical_or
@@ -378,10 +382,10 @@ module MLC
         end
 
         # Parse if expression when inside a block (do...end, while, etc.)
-        # Does not consume trailing END to avoid stealing parent's END
         def parse_if_expression_in_block
           if [:IF, :UNLESS].include?(current.type)
-            parse_if_or_unless_expression(inside_block: true)
+            ir, _end_consumed = parse_if_or_unless_expression(inside_block: true)
+            ir
           else
             expr = parse_logical_or
             parse_postfix_conditional(expr)
@@ -433,8 +437,9 @@ module MLC
           with_origin(origin_token) { MLC::Source::AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
         end
 
-        # Parse if/unless with then/else/end
-        # Compatible with both old syntax (no end) and new syntax (with end)
+        # Parse if/unless with then/else/end.
+        # Returns [ir, end_consumed] where end_consumed indicates whether this call
+        # consumed a trailing 'end' token.
         def parse_if_or_unless_expression(inside_block: false)
           is_unless = current.type == :UNLESS
           if_token = consume(current.type) # IF or UNLESS
@@ -446,24 +451,27 @@ module MLC
           then_line = then_token&.line || if_token.line
 
           # Parse then branch
-          then_branch = parse_if_branch_expression(then_line: then_line)
+          then_branch, then_end_consumed = parse_if_branch_expression(then_line: then_line)
 
-          # Parse else branch
+          # Parse else branch — only if then-branch didn't consume its own 'end'
           else_branch = nil
-          if current.type == :ELSE
+          else_end_consumed = false
+          if !then_end_consumed && current.type == :ELSE
             else_token = consume(:ELSE)
             else_line = else_token.line
-            # Check for else-if chain
-            else_branch = if [:IF, :UNLESS].include?(current.type)
-                            wrap_block_like_expr(parse_if_or_unless_expression(inside_block: inside_block))
-                          else
-                            parse_if_branch_expression(then_line: else_line)
-                          end
+            # For else-if chain (else-if on SAME LINE), recurse and propagate end_consumed.
+            # If `if` is on a NEW LINE after `else`, treat as regular else branch.
+            else_branch, else_end_consumed = if [:IF, :UNLESS].include?(current.type) && current.line == else_line
+                                               nested, nested_end = parse_if_or_unless_expression(inside_block: inside_block)
+                                               [wrap_block_like_expr(nested), nested_end]
+                                             else
+                                               parse_if_branch_expression(then_line: else_line)
+                                             end
           end
 
-          # Consume trailing end when not inside a block
-          # (multiline then-branch without else already consumed its own end)
-          consume(:END) if current.type == :END && !inside_block
+          # Consume trailing 'end' only if neither branch already consumed one.
+          did_consume = !then_end_consumed && !else_end_consumed && current.type == :END
+          consume(:END) if did_consume
 
           # For unless, invert condition: unless x = if !x
           final_condition = if is_unless
@@ -472,7 +480,8 @@ module MLC
                               condition
                             end
 
-          with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: final_condition, then_branch: then_branch, else_branch: else_branch) }
+          ir = with_origin(if_token) { MLC::Source::AST::IfExpr.new(condition: final_condition, then_branch: then_branch, else_branch: else_branch) }
+          [ir, did_consume || then_end_consumed || else_end_consumed]
         end
 
         # Parse postfix if/unless: expr if condition, expr unless condition
@@ -599,6 +608,7 @@ module MLC
           consume(:LET)
           let_info = parse_let_header
           mutable = let_info[:mutable]
+          constant = let_info[:constant]
           name_token = let_info[:name_token]
           type_annotation = let_info[:type_annotation]
           consume(:EQUAL)
@@ -612,6 +622,7 @@ module MLC
                 value: value,
                 body: body,
                 mutable: mutable,
+                constant: constant,
                 type: type_annotation
               )
             end
@@ -623,6 +634,7 @@ module MLC
               name: name_token.value,
               value: value,
               mutable: mutable,
+              constant: constant,
               type: type_annotation
             )
           end]
@@ -632,34 +644,35 @@ module MLC
         end
 
         def parse_let_statement
-          # Parse: let x = value or let mut x = value or let x: Type = value
           let_token = consume(:LET)
           let_info = parse_let_header
           mutable = let_info[:mutable]
+          constant = let_info[:constant]
           name_token = let_info[:name_token]
           type_annotation = let_info[:type_annotation]
           value = parse_let_value(:parse_if_expression)
 
-          # In do-blocks, let is a statement that doesn't need 'in'
-          # It returns a special LetStmt expression
           with_origin(let_token) do
             MLC::Source::AST::Let.new(
               name: name_token.value,
               value: value,
               body: nil,
               mutable: mutable,
+              constant: constant,
               type: type_annotation
             )
           end
         end
 
         def parse_let_header
-          mutable = false
-          
-          if current.type == :MUT
-            consume(:MUT)
-            mutable = true
+          # let NAME = expr  →  rebindable (mutable: true)
+          # let const NAME = expr  →  compile-time constant (mutable: false, constant: true)
+          constant = false
+          if current.type == :CONST
+            consume(:CONST)
+            constant = true
           end
+          mutable = !constant
 
           name_token = consume(:IDENTIFIER)
 
@@ -671,6 +684,7 @@ module MLC
 
           {
             mutable: mutable,
+            constant: constant,
             name_token: name_token,
             type_annotation: type_annotation
           }
@@ -862,7 +876,8 @@ module MLC
           elsif [:IF, :UNLESS].include?(current.type)
             # inside_block: false so the if consumes its own 'end',
             # preventing the match arm parser from stopping prematurely
-            wrap_block_like_expr(parse_if_or_unless_expression(inside_block: false))
+            ir, _end_consumed = parse_if_or_unless_expression(inside_block: false)
+            wrap_block_like_expr(ir)
           elsif current.type == :MATCH
             wrap_block_like_expr(parse_match_expression)
           else

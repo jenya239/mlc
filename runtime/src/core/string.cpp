@@ -85,14 +85,16 @@ std::string String::utf8_char_at(const std::string& str, size_t char_pos) {
 
 // Substring by character positions
 String String::substring(size_t start) const {
+    if (is_ascii_) return String(data_.substr(start), true);
     size_t byte_start = utf8_char_index(data_, start);
-    return String(data_.substr(byte_start));
+    return String(data_.substr(byte_start), false);
 }
 
 String String::substring(size_t start, size_t length) const {
+    if (is_ascii_) return String(data_.substr(start, length), true);
     size_t byte_start = utf8_char_index(data_, start);
     size_t byte_end = utf8_char_index(data_, start + length);
-    return String(data_.substr(byte_start, byte_end - byte_start));
+    return String(data_.substr(byte_start, byte_end - byte_start), false);
 }
 
 // Case conversion (simple ASCII version for MVP)
@@ -177,6 +179,19 @@ mlc::Array<String> String::split(const String& delimiter) const {
 
     result.push_back(String(data_.substr(start)));
     return result;
+}
+
+mlc::Array<String> String::chars() const {
+    mlc::Array<String> result;
+    size_t char_count = length();
+    for (size_t i = 0; i < char_count; i++) {
+        result.push_back(char_at(i));
+    }
+    return result;
+}
+
+mlc::Array<String> String::lines() const {
+    return split(String("\n"));
 }
 
 } // namespace mlc

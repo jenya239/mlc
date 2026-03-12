@@ -52,9 +52,9 @@ module MLC
                         :sum_type_constructors, :type_inference_service, :trait_registry,
                         :operator_trait_mapper
 
-            def initialize(function_registry:, type_registry:)
+            def initialize(function_registry:, type_registry:, source_file_dir: nil)
               @module_resolver = ModuleResolver.new
-              @module_path_resolver = ModulePathResolver.new
+              @module_path_resolver = ModulePathResolver.new(source_file_dir: source_file_dir)
               @function_registry = function_registry
               @type_registry = type_registry
               @ast_type_checker = ASTTypeChecker.new

@@ -1,70 +1,71 @@
 // Checker: name resolution.
 
-import { Expr, Stmt, Pat, Decl, Program, errs_append } from "../ast"
+import { Expr, Stmt, Pat, Decl, Program, decl_inner, errs_append } from "../ast"
 
-// ─── Name scope helpers ───────────────────────────────────────────────────
-
-fn scope_has(scope: [string], name: string) -> bool = do
-  let found = false
-  let i = 0
-  while i < scope.length() do
-    if scope[i] == name then found = true end
-    i = i + 1
+fn scope_contains(scope: [string], name: string) -> bool = do
+  let found = false; let index = 0
+  while index < scope.length() && !found do
+    if scope[index] == name then found = true end
+    index = index + 1
   end
   found
 end
 
-fn pat_bindings(pat: Shared<Pat>) -> [string] = do
-  const acc: [string] = []
-  collect_pat_binds(pat, acc)
+fn pattern_bindings(pattern: Shared<Pat>) -> [string] = do
+  const accumulator: [string] = []
+  collect_pattern_bindings(pattern, accumulator)
 end
 
-fn collect_pat_binds(pat: Shared<Pat>, mut acc: [string]) -> [string] = do
-  match pat {
-    PatIdent(name) => do acc.push(name); acc end,
-    PatCtor(_, sub_pats) => do
-      let i = 0
-      while i < sub_pats.length() do acc = collect_pat_binds(sub_pats[i], acc); i = i + 1 end
-      acc
+fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> [string] = do
+  match pattern {
+    PatIdent(name) => do accumulator.push(name); accumulator end,
+    PatCtor(_, sub_patterns) => do
+      let index = 0
+      while index < sub_patterns.length() do
+        accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
+      end
+      accumulator
     end,
-    _ => acc
+    _ => accumulator
   }
 end
 
 // ─── Name resolution ──────────────────────────────────────────────────────
 
-export fn collect_globals(prog: Program) -> [string] = do
-  const names: [string] = []
-  names.push("true"); names.push("false"); names.push("exit")
-  names.push("print"); names.push("println"); names.push("args")
-  names.push("File")
+export fn collect_globals(prog: Program) -> Map<string, bool> = do
+  let names: Map<string, bool> = Map.new()
+  names.set("true", true); names.set("false", true); names.set("exit", true)
+  names.set("print", true); names.set("println", true); names.set("args", true)
+  names.set("File", true); names.set("Shared", true); names.set("Map", true)
   let i = 0
   while i < prog.decls.length() do
-    match prog.decls[i] {
-      DeclFn(name, _, _, _) => do names.push(name); () end,
+    match decl_inner(prog.decls[i]) {
+      DeclFn(name, _, _, _) => do names.set(name, true); () end,
       DeclType(name, variants) => do
-        names.push(name); let j = 0
+        names.set(name, true); let j = 0
         while j < variants.length() do
           match variants[j] {
-            VarUnit(variant_name)     => do names.push(variant_name); () end,
-            VarTuple(variant_name, _) => do names.push(variant_name); () end,
-            VarRecord(variant_name, _) => do names.push(variant_name); () end
+            VarUnit(variant_name)     => do names.set(variant_name, true); () end,
+            VarTuple(variant_name, _) => do names.set(variant_name, true); () end,
+            VarRecord(variant_name, _) => do names.set(variant_name, true); () end
           }
           j = j + 1
-        end
-        ()
-      end
+        end; ()
+      end,
+      DeclExtend(_, _) => do () end,
+      DeclImport(_, _) => do () end,
+      DeclExported(_)  => do () end
     }
     i = i + 1
   end
   names
 end
 
-export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [string]) -> [string] = do
+export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [string] = do
   match expr {
     ExprIdent(name) => do
       let errors: [string] = []
-      if !scope_has(locals, name) && !scope_has(globals, name) then
+      if !scope_contains(locals, name) && !globals.has(name) then
         errors.push("undefined: " + name)
       end
       errors
@@ -72,17 +73,17 @@ export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [strin
     ExprBin(_, left, right) =>
       errs_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals)),
     ExprUn(_, inner) => check_names_expr(inner, locals, globals),
-    ExprCall(func, args) => do
+    ExprCall(func, call_args) => do
       let errors = check_names_expr(func, locals, globals); let i = 0
-      while i < args.length() do
-        errors = errs_append(errors, check_names_expr(args[i], locals, globals)); i = i + 1
+      while i < call_args.length() do
+        errors = errs_append(errors, check_names_expr(call_args[i], locals, globals)); i = i + 1
       end
       errors
     end,
-    ExprMethod(obj, _, args) => do
+    ExprMethod(obj, _, margs) => do
       let errors = check_names_expr(obj, locals, globals); let i = 0
-      while i < args.length() do
-        errors = errs_append(errors, check_names_expr(args[i], locals, globals)); i = i + 1
+      while i < margs.length() do
+        errors = errs_append(errors, check_names_expr(margs[i], locals, globals)); i = i + 1
       end
       errors
     end,
@@ -94,8 +95,8 @@ export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [strin
         errs_append(check_names_expr(cond, locals, globals), check_names_expr(then_expr, locals, globals)),
         check_names_expr(else_expr, locals, globals)),
     ExprBlock(stmts, result) => do
-      const check_result = check_names_stmts(stmts, locals, globals)
-      errs_append(check_result.errors, check_names_expr(result, check_result.scope, globals))
+      const stmt_result = check_names_stmts(stmts, locals, globals)
+      stmt_result.append_expr_errors(check_names_expr(result, stmt_result.scope, globals))
     end,
     ExprWhile(cond, stmts) => do
       const check_result = check_names_stmts(stmts, locals, globals)
@@ -109,9 +110,9 @@ export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [strin
     ExprMatch(subject, arms) => do
       let errors = check_names_expr(subject, locals, globals); let i = 0
       while i < arms.length() do
-        const binds = pat_bindings(arms[i].pat)
-        const arm_scope = locals; let j = 0
-        while j < binds.length() do arm_scope.push(binds[j]); j = j + 1 end
+        const bindings = pattern_bindings(arms[i].pat)
+        const arm_scope = locals; let index = 0
+        while index < bindings.length() do arm_scope.push(bindings[index]); index = index + 1 end
         errors = errs_append(errors, check_names_expr(arms[i].body, arm_scope, globals)); i = i + 1
       end
       errors
@@ -146,20 +147,24 @@ export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: [strin
       while j < params.length() do lambda_locals.push(params[j]); j = j + 1 end
       check_names_expr(body, lambda_locals, globals)
     end,
-    _ => []
+    _ => do let e: [string] = []; e end
   }
 end
 
 export type NameCheckResult = NameCheckResult { errors: [string], scope: [string] }
 
-export fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: [string]) -> NameCheckResult = do
+extend NameCheckResult {
+  fn append_expr_errors(self, expr_errors: [string]) -> [string] =
+    errs_append(errors, expr_errors)
+}
+
+export fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult = do
   let errors: [string] = []; const scope = locals; let i = 0
   while i < stmts.length() do
     match stmts[i] {
       StmtLet(name, _, _, value) => do
         errors = errs_append(errors, check_names_expr(value, scope, globals))
-        scope.push(name)
-        ()
+        scope.push(name); ()
       end,
       StmtExpr(expr)   => do errors = errs_append(errors, check_names_expr(expr, scope, globals)); () end,
       StmtReturn(expr) => do errors = errs_append(errors, check_names_expr(expr, scope, globals)); () end,

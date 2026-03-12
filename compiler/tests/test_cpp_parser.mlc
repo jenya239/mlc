@@ -1,5 +1,7 @@
 // Unit tests for C++ parser.
 
+import { TestResult, assert_eq_int, assert_true } from "./test_runner"
+
 fn cpp_parse_decl_count(src: string) -> i32 =
   cpp_parse(cpp_tokenize(src).tokens).program.decls.length()
 

@@ -29,7 +29,7 @@ module MLC
               @type_registration_service.register(
                 decl: decl,
                 core_type: core_type,
-                namespace: nil,
+                namespace: @module_context_service.current_module_namespace,
                 kind: kind,
                 exported: decl.exported,
                 module_name: @module_context_service.current_module_name

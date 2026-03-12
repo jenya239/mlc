@@ -1,7 +1,7 @@
 fn normalize(line: str) -> str = line.trim()
 
 fn parse_status(line: str) -> str =
-  let trimmed = normalize(line).upper()
+  const trimmed = normalize(line).upper()
   if trimmed.starts_with("TODO") then
     "TODO"
   else if trimmed.starts_with("DOING") then
@@ -12,7 +12,7 @@ fn parse_status(line: str) -> str =
     "OTHER"
 
 fn main() -> i32 =
-  let _ = println(parse_status("TODO: something"))
-  let _ = println(parse_status("DOING: now"))
-  let _ = println(parse_status("DONE: done"))
+  const _ = println(parse_status("TODO: something"))
+  const _ = println(parse_status("DOING: now"))
+  const _ = println(parse_status("DONE: done"))
   0

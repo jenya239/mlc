@@ -63,6 +63,7 @@ fn join_impl(strings: str[], separator: str, index: i32, acc: str) -> str =
     join_impl(strings, separator, index + 1, strings[0])
   else
     join_impl(strings, separator, index + 1, acc + separator + strings[index])
+  end
 
 export fn repeat(s: str, count: i32) -> str =
   repeat_impl(s, count, "")

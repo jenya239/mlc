@@ -141,7 +141,7 @@ class MLCRangeExpressionsTest < Minitest::Test
   def test_parser_for_loop_with_range
     source = <<~MLC
       fn test() -> i32 = do
-        let mut sum = 0;
+        let sum = 0;
         for i in 1..10 do
           sum = sum + i
         end

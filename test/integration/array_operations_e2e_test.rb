@@ -243,7 +243,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   def test_array_passed_to_function
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn sum_array(arr: i32[]) -> i32 =
-        arr.fold(0, (acc, x) => acc + x)
+        ".fold()0, (acc, x) => acc + x)
 
       fn main() -> i32 = do
         let nums = [3, 5, 7, 9]
@@ -257,7 +257,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   def test_array_transform_function
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn double_all(arr: i32[]) -> i32[] =
-        arr.map(x => x * 2)
+        ".map()x => x * 2)
 
       fn main() -> i32 = do
         let nums = [5, 10, 15]

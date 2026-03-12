@@ -35,14 +35,14 @@ type Address = {
 
 // Validate DynRecord matches User shape
 fn validate_user(r: DynRecord) -> ShapeResult<User> = do
-  let name = dyn_get_str(r, :name)
-  let age = dyn_get_i32(r, :age)
-  let email = dyn_get_str(r, :email)
-  let verified = dyn_get_bool(r, :verified)
+  const name = dyn_get_str(r, :name)
+  const age = dyn_get_i32(r, :age)
+  const email = dyn_get_str(r, :email)
+  const verified = dyn_get_bool(r, :verified)
 
   match (name, age, email)
     | (Some(n), Some(a), Some(e)) =>
-        let v = match verified
+        const v = match verified
           | Some(b) => b
           | None => false  // default to unverified
         Ok(User { name: n, age: a, email: e, verified: v })
@@ -77,7 +77,7 @@ end
 
 // Create a user record dynamically
 fn create_user_dyn(name: str, age: i32, email: str) -> DynRecord = do
-  let r = dyn_new()
+  const r = dyn_new()
   r = dyn_set(r, :name, v_str(name))
   r = dyn_set(r, :age, v_i32(age))
   r = dyn_set(r, :email, v_str(email))
@@ -95,12 +95,12 @@ fn create_user_with_address(
   street: str,
   city: str
 ) -> DynRecord = do
-  let addr = dyn_new()
+  const addr = dyn_new()
   addr = dyn_set(addr, :street, v_str(street))
   addr = dyn_set(addr, :city, v_str(city))
   addr = dyn_set(addr, :zip, v_str(""))
 
-  let user = dyn_new()
+  const user = dyn_new()
   user = dyn_set(user, :name, v_str(name))
   user = dyn_set(user, :age, v_i32(age))
   user = dyn_set(user, :address, v_record(addr))
@@ -120,7 +120,7 @@ end
 
 fn main() -> i32 = do
   // Create dynamic record
-  let dyn_user = create_user_dyn("Alice", 30, "alice@example.com")
+  const dyn_user = create_user_dyn("Alice", 30, "alice@example.com")
 
   // Validate and convert to static type
   match validate_user(dyn_user)

@@ -1,6 +1,7 @@
 // Parser state, result types, and token kind predicates.
 
-import { TKind, Token, TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program } from "../ast"
+import { TKind, Token, LexOut } from "../ast_tokens"
+import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program } from "../ast"
 
 // ─── Parser state ─────────────────────────────────────────────────────────
 
@@ -9,8 +10,9 @@ export type Parser = Parser { tokens: [Token], pos: i32 }
 export fn parser_new(tokens: [Token]) -> Parser =
   Parser { tokens: tokens, pos: 0 }
 
-fn parser_kind(parser: Parser) -> TKind =
-  parser.tokens[parser.pos].kind
+fn parser_kind(parser: Parser) -> TKind = do
+  const tok: Token = parser.tokens[parser.pos]; tok.kind
+end
 
 fn parser_advance(parser: Parser) -> Parser =
   Parser { tokens: parser.tokens, pos: parser.pos + 1 }
@@ -18,11 +20,18 @@ fn parser_advance(parser: Parser) -> Parser =
 fn parser_advance_by(parser: Parser, count: i32) -> Parser =
   Parser { tokens: parser.tokens, pos: parser.pos + count }
 
-fn parser_at_eof(parser: Parser) -> bool =
-  match parser_kind(parser) { Eof => true, _ => false }
+fn parser_at_eof(parser: Parser) -> bool = do
+  if parser.pos >= parser.tokens.length() then true
+  else
+    const tok: Token = parser.tokens[parser.pos]
+    match tok.kind { Eof => true, _ => false }
+  end
+end
 
-fn parser_skip_semi(parser: Parser) -> Parser =
-  match parser_kind(parser) { Semicolon => parser_advance(parser), _ => parser }
+fn parser_skip_semi(parser: Parser) -> Parser = do
+  const tok: Token = parser.tokens[parser.pos]
+  match tok.kind { Semicolon => parser_advance(parser), _ => parser }
+end
 
 // ─── Result types ─────────────────────────────────────────────────────────
 
@@ -119,6 +128,8 @@ export extend TKind {
   fn is_false(self)    -> bool = match self { KFalse    => true, _ => false }
   fn is_extern(self)   -> bool = match self { KExtern   => true, _ => false }
   fn is_extend(self)   -> bool = match self { KExtend   => true, _ => false }
+  fn is_import(self)   -> bool = match self { KImport   => true, _ => false }
+  fn is_from(self)     -> bool = match self { KFrom     => true, _ => false }
   fn is_eof(self)      -> bool = match self { Eof       => true, _ => false }
   fn is_ident(self)    -> bool = match self { Ident(_)  => true, _ => false }
   fn is_int(self)      -> bool = match self { LInt(_)   => true, _ => false }
@@ -149,10 +160,16 @@ export extend TKind {
 // ─── extend Parser ────────────────────────────────────────────────────────
 
 export extend Parser {
-  fn kind(self)      -> TKind  = tokens[pos].kind
+  fn kind(self) -> TKind = do const tok: Token = tokens[pos]; tok.kind end
   fn advance(self)   -> Parser = Parser { tokens, pos: pos + 1 }
   fn advance_by(self, count: i32) -> Parser = Parser { tokens, pos: pos + count }
-  fn at_eof(self)    -> bool   = tokens[pos].kind.is_eof()
-  fn skip_semi(self) -> Parser =
-    match tokens[pos].kind { Semicolon => self.advance(), _ => self }
+  fn at_eof(self) -> bool =
+    if pos >= tokens.length() then true
+    else
+      const tok: Token = tokens[pos]; tok.kind.is_eof()
+    end
+  fn skip_semi(self) -> Parser = do
+    const tok: Token = tokens[pos]
+    match tok.kind { Semicolon => self.advance(), _ => self }
+  end
 }

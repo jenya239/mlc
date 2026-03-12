@@ -70,6 +70,56 @@ class DoBlockTest < Minitest::Test
     assert cpp.include?("10") || cpp.include?("20")
   end
 
+  def test_do_block_with_while_and_result
+    source = <<~MLCORA
+      fn foo() -> i32 = do
+        let x = 0
+        while x < 3 do
+          x = x + 1
+        end
+        x
+      end
+    MLCORA
+
+    ast = MLC.parse(source)
+    func = ast.declarations.first
+    body = func.body
+    assert body.is_a?(MLC::Source::AST::BlockExpr)
+    # 2 statements: let x, while loop. result: x (VarRef)
+    assert_equal 2, body.statements.length
+    assert body.result_expr.is_a?(MLC::Source::AST::VarRef),
+           "expected VarRef (x), got #{body.result_expr.class}"
+  end
+
+  def test_do_block_with_while_if_and_record_result
+    # Mimics cpp_parse: do; let; let; while with if/else (nested if)/end; RecordLit; end
+    source = <<~MLCORA
+      type R = R { x: i32 }
+      fn foo() -> R = do
+        let x = 0
+        let y = 0
+        while y < 1 do
+          if true then
+            x = 1
+          else
+            if false then x = 2 end
+            y = 1
+          end
+          y = y + 1
+        end
+        R { x: x }
+      end
+    MLCORA
+
+    ast = MLC.parse(source)
+    func = ast.declarations.find { |d| d.respond_to?(:name) && d.name == "foo" }
+    body = func.body
+    assert body.is_a?(MLC::Source::AST::BlockExpr)
+    assert_equal 3, body.statements.length, "expected 3 stmts: let, let, while"
+    assert body.result_expr.is_a?(MLC::Source::AST::RecordLit),
+           "expected RecordLit, got #{body.result_expr.class}"
+  end
+
   def test_nested_do_blocks
     source = <<~MLCORA
       fn test() -> i32 = do

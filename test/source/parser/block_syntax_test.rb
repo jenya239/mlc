@@ -211,7 +211,7 @@ class BlockSyntaxTest < Minitest::Test
   def test_while_loop_syntax
     source = <<~MLC
       fn foo() -> i32 = do
-        let mut i = 0
+        let i = 0
         while i < 10 do
           i = i + 1
         end
@@ -227,7 +227,7 @@ class BlockSyntaxTest < Minitest::Test
   def test_for_loop_syntax
     source = <<~MLC
       fn sum(arr: i32[]) -> i32 = do
-        let mut total = 0
+        let total = 0
         for x in arr do
           total = total + x
         end

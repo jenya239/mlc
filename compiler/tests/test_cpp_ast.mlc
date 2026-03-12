@@ -1,6 +1,9 @@
 // Unit tests for C++ AST types.
 
-fn cpp_ast_tests() -> [TestResult] = do
+import { TestResult, assert_eq_int, assert_true } from "./test_runner"
+import { CppProgram, CppInclude, CppStruct, CppField } from "../cpp/ast"
+
+export fn cpp_ast_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
   const inc = Shared.new(CppInclude(true, "string"))

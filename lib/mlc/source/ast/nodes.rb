@@ -168,12 +168,13 @@ module MLC
 
       # Function parameter
       class Param < Node
-        attr_reader :name, :type
+        attr_reader :name, :type, :mutable
 
-        def initialize(name:, type:, origin: nil)
+        def initialize(name:, type:, mutable: false, origin: nil)
           super(origin: origin)
           @name = name
           @type = type
+          @mutable = mutable
         end
       end
 

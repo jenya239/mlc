@@ -18,13 +18,31 @@ module MLC
           #   metadata_path = resolver.resolve("./math")
           #   # => "/path/to/src/math.mlcmeta"
           class ModulePathResolver
+            attr_writer :source_file_dir
+
             def initialize(source_file_dir: nil)
               @source_file_dir = source_file_dir || Dir.pwd
             end
 
-            # Resolve import path to .mlcmeta file path
-            # @param import_path [String] Import path from source (e.g., "./math", "../core/utils", "MyModule")
-            # @return [String] Absolute path to .mlcmeta file
+            # Resolve import path to module name (from filename).
+            # @param import_path [String] e.g. "./bar", "../lib/foo"
+            # @return [String, nil] e.g. "bar", "foo", or nil if source not found
+            def resolve_module_name(import_path)
+              path = resolve_source(import_path)
+              path ? File.basename(path, ".mlc") : nil
+            end
+
+            # Resolve import path to .mlc source file path (returns nil if not found)
+            def resolve_source(import_path)
+              base = if import_path.start_with?("./", "../")
+                       File.expand_path(import_path, @source_file_dir)
+                     else
+                       File.join(@source_file_dir, import_path)
+                     end
+              path = "#{base}.mlc"
+              File.exist?(path) ? path : nil
+            end
+
             def resolve(import_path)
               # Handle relative paths
               if import_path.start_with?("./", "../")

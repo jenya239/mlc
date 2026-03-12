@@ -20,6 +20,7 @@
 #include "mlc/core/collections.hpp"
 #include "mlc/core/match.hpp"
 #include "mlc/core/option.hpp"
+#include "mlc/core/result.hpp"
 #include "mlc/core/task.hpp"
 
 // I/O

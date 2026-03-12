@@ -112,7 +112,7 @@ class SelfHostingInfrastructureTest < Minitest::Test
       end
 
       fn main() -> i32 = do
-        let mut arr = [10, 20]
+        let arr = [10, 20]
         collect(arr, 30)
       end
     MLC
@@ -123,7 +123,7 @@ class SelfHostingInfrastructureTest < Minitest::Test
   def test_mut_parameter_string_building
     run_mlc(<<~MLC) do |_out, _err, status|
       fn append_n(mut parts: string[], s: string, n: i32) -> i32 = do
-        let mut i = 0
+        let i = 0
         while i < n do
           parts.push(s)
           i = i + 1
@@ -132,7 +132,7 @@ class SelfHostingInfrastructureTest < Minitest::Test
       end
 
       fn main() -> i32 = do
-        let mut buf = ["x"]
+        let buf = ["x"]
         append_n(buf, "y", 3)
       end
     MLC
@@ -141,12 +141,12 @@ class SelfHostingInfrastructureTest < Minitest::Test
   end
 
   # ─── Map / Symbol Table ─────────────────────────────────────────────────────
-  # Pattern: let mut env = Map.new()
+  # Pattern: let env = Map.new()
 
   def test_map_as_symbol_table
     run_mlc(<<~MLC) do |_out, _err, status|
       fn main() -> i32 = do
-        let mut table: Map<string, i32> = Map.new()
+        let table: Map<string, i32> = Map.new()
         table.set("x", 10)
         table.set("y", 20)
         table.set("z", 30)
@@ -163,7 +163,7 @@ class SelfHostingInfrastructureTest < Minitest::Test
         table.get(key)
 
       fn main() -> i32 = do
-        let mut t: Map<string, i32> = Map.new()
+        let t: Map<string, i32> = Map.new()
         t.set("a", 5)
         lookup(t, "a") + lookup(t, "b")
       end
@@ -178,8 +178,8 @@ class SelfHostingInfrastructureTest < Minitest::Test
   def test_string_scan_chars
     run_mlc(<<~MLC) do |_out, _err, status|
       fn count_digits(src: string) -> i32 = do
-        let mut count = 0
-        let mut i = 0
+        let count = 0
+        let i = 0
         while i < src.length() do
           let c = src.char_at(i)
           if c >= "0" && c <= "9" then
@@ -199,8 +199,8 @@ class SelfHostingInfrastructureTest < Minitest::Test
   def test_string_build_from_chars
     run_mlc(<<~MLC) do |_out, _err, status|
       fn take_while_digit(src: string, start: i32) -> string = do
-        let mut result = ""
-        let mut i = start
+        let result = ""
+        let i = start
         while i < src.length() do
           let c = src.char_at(i)
           if c >= "0" && c <= "9" then
@@ -260,7 +260,7 @@ class SelfHostingInfrastructureTest < Minitest::Test
   end
 
   # ─── Array of ADTs ──────────────────────────────────────────────────────────
-  # Pattern: let mut tokens: Token[] = [], then push and iterate
+  # Pattern: let tokens: Token[] = [], then push and iterate
 
   def test_array_of_adt
     run_mlc(<<~MLC) do |_out, _err, status|
@@ -276,7 +276,7 @@ class SelfHostingInfrastructureTest < Minitest::Test
         end
 
       fn main() -> i32 = do
-        let mut tokens = [TNum(10), TNum(20), TNum(30), TEof]
+        let tokens = [TNum(10), TNum(20), TNum(30), TEof]
         sum_nums(tokens, 0, 0)
       end
     MLC

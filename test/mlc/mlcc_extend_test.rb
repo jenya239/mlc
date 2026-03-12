@@ -114,6 +114,84 @@ class MlccExtendTest < Minitest::Test
     assert_includes cpp, "TKind_get_ident("
   end
 
+  def test_mlcc_compiles_extend_block
+    source = <<~MLC
+      type Counter = Counter { value: i32 }
+      extend Counter {
+        fn increment(self) -> Counter = Counter { value: self.value + 1 }
+        fn get(self) -> i32 = self.value
+      }
+      fn main() -> i32 = do
+        const counter = Counter { value: 0 }
+        counter.increment().get()
+      end
+    MLC
+    cpp = compile(source)
+    assert_includes cpp, "Counter_increment"
+    assert_includes cpp, "Counter_get"
+  end
+
+  def test_record_shorthand_in_mlcc_source
+    source = <<~MLC
+      type Point = Point { x: i32, y: i32 }
+      fn make(x: i32, y: i32) -> Point = Point { x, y }
+      fn main() -> i32 = do
+        const p = make(3, 4)
+        p.x + p.y
+      end
+    MLC
+    cpp = compile(source)
+    assert_includes cpp, "Point{"
+  end
+
+  def test_extend_lexout_has_errors
+    source = <<~MLC
+      type LexOut = LexOut { errors: [string] }
+      extend LexOut {
+        fn has_errors(self) -> bool = errors.length() > 0
+      }
+      fn main() -> bool = do
+        const out = LexOut { errors: [] }
+        !out.has_errors()
+      end
+    MLC
+    cpp = compile(source)
+    assert_includes cpp, "LexOut_has_errors"
+  end
+
+  def test_extend_checkout_has_errors
+    source = <<~MLC
+      type CheckOut = CheckOut { errors: [string] }
+      extend CheckOut {
+        fn has_errors(self) -> bool = errors.length() > 0
+      }
+      fn main() -> bool = do
+        const result = CheckOut { errors: [] }
+        !result.has_errors()
+      end
+    MLC
+    cpp = compile(source)
+    assert_includes cpp, "CheckOut_has_errors"
+  end
+
+  def test_extend_token_line_column
+    source = <<~MLC
+      type Token = Token { kind: i32, line: i32, col: i32 }
+      extend Token {
+        fn kind_value(self) -> i32 = kind
+        fn line_number(self) -> i32 = line
+        fn column(self) -> i32 = col
+      }
+      fn main() -> i32 = do
+        const token = Token { kind: 1, line: 5, col: 10 }
+        token.line_number() + token.column()
+      end
+    MLC
+    cpp = compile(source)
+    assert_includes cpp, "Token_line_number"
+    assert_includes cpp, "Token_column"
+  end
+
   def test_record_shorthand_in_parser_advance
     cpp = compile(PREAMBLE + <<~MLC)
       fn main() -> i32 = do

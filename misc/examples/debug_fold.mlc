@@ -16,8 +16,8 @@ fn show(stats: Totals) -> str =
   "todo=" + to_string(stats.todo) + ", doing=" + to_string(stats.doing) + ", done=" + to_string(stats.done)
 
 fn main() -> i32 =
-  let items = ["TODO", "DOING", "DONE"]
-  let stats = items.fold(
+  const items = ["TODO", "DOING", "DONE"]
+  const stats = items.fold(
     Totals { todo: 0, doing: 0, done: 0 },
     (acc: Totals, status: str) => bump(acc, status)
   )

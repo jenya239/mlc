@@ -23,8 +23,8 @@ module MLC
               @import_aliases[alias_name] = module_name
             end
 
-            def register_module_import(import_decl, function_registry)
-              module_name = import_decl.path
+            def register_module_import(import_decl, function_registry, resolved_module_name: nil)
+              module_name = resolved_module_name || import_decl.path
               alias_name = import_decl.alias
 
               add_alias(alias_name, module_name) if alias_name && !alias_name.empty?

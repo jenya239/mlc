@@ -20,9 +20,9 @@ fn main() -> i32 = do
   println("=== Match and Sum Types Demo ===")
   println("")
 
-  let c = Circle(5)
-  let r = Rectangle(4, 6)
-  let s = Square(3)
+  const c = Circle(5)
+  const r = Rectangle(4, 6)
+  const s = Square(3)
 
   println(describe(c) + " -> area: " + to_string(area(c)))
   println(describe(r) + " -> area: " + to_string(area(r)))

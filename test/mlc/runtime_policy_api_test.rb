@@ -54,7 +54,7 @@ class RuntimePolicyApiTest < Minitest::Test
 
     assert result.key?(:header)
     assert result.key?(:implementation)
-    assert_includes result[:header], "factorial"
+    assert_includes result[:implementation], "factorial"
   end
 
   def test_lower_to_cpp_accepts_runtime_policy

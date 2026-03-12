@@ -4,7 +4,7 @@ type Totals = { todo: i32, doing: i32, done: i32 }
 fn normalize(line: str) -> str = line.trim()
 
 fn parse_status(line: str) -> str =
-  let upper = normalize(line).upper()
+  const upper = normalize(line).upper()
   if upper.starts_with("TODO") then "TODO"
   else if upper.starts_with("DOING") then "DOING"
   else if upper.starts_with("DONE") then "DONE"
@@ -21,16 +21,16 @@ fn bump(stats: Totals, status: str) -> Totals =
     stats
 
 fn show_totals(totals: Totals) -> i32 =
-  let _ = println("=== Todo Summary ===")
-  let _ = println("todo=" + to_string(totals.todo))
-  let _ = println("doing=" + to_string(totals.doing))
-  let _ = println("done=" + to_string(totals.done))
+  const _ = println("=== Todo Summary ===")
+  const _ = println("todo=" + to_string(totals.todo))
+  const _ = println("doing=" + to_string(totals.doing))
+  const _ = println("done=" + to_string(totals.done))
   if totals.todo > 0 then 1
   else 0
 
 fn main() -> i32 =
-  let lines = ["TODO: Fix bug", "DOING: Write tests", "done: Deploy"]
-  let totals = lines
+  const lines = ["TODO: Fix bug", "DOING: Write tests", "done: Deploy"]
+  const totals = lines
     .map((line: str) => parse_status(line))
     .fold(Totals { todo: 0, doing: 0, done: 0 }, (acc: Totals, status: str) => bump(acc, status))
   show_totals(totals)

@@ -1,0 +1,44 @@
+import { tokenize } from "./lexer"
+import { parse_program } from "./parser/decls"
+import { check } from "./checker/infer"
+import { gen_module } from "./codegen"
+import { Program, Decl, DeclImport, DeclExported, errs_append } from "./ast"
+
+fn format_errs(label: string, errors: [string]) -> string = ""
+
+type LoadItem = LoadItem { path: string, decls: [Shared<Decl>], imports: [string] }
+type MergeResult = MergeResult { prog: Program, errors: [string], items: [LoadItem] }
+
+fn merge_program(entry_path: string, prog: Program) -> MergeResult =
+  MergeResult { prog: prog, errors: [], items: [] }
+
+fn path_to_module_base(path: string) -> string = ""
+
+fn compile_modular(entry_path: string, out_dir: string) -> string = do
+  const src = File.read(entry_path)
+  const lex = tokenize(src)
+  if lex.has_errors() then format_errs("lex", lex.errors)
+  else
+    const prog = parse_program(lex.tokens)
+    const merged_result = merge_program(entry_path, prog)
+    if merged_result.errors.length() > 0 then format_errs("import", merged_result.errors)
+    else
+      const chk = check(merged_result.prog)
+      if chk.has_errors() then format_errs("check", chk.errors)
+      else do
+        let i = 0
+        while i < merged_result.items.length() do
+          const item = merged_result.items[i]
+          const out = gen_module(item, merged_result.items, merged_result.prog)
+          const base = path_to_module_base(item.path)
+          const hpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".hpp" else base + ".hpp" end
+          const cpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".cpp" else base + ".cpp" end
+          File.write(hpp_path, out.h)
+          File.write(cpp_path, out.c)
+          i = i + 1
+        end
+        ""
+      end
+    end
+  end
+end

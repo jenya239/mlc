@@ -12,14 +12,14 @@ module MLC
             end
 
             def apply(node)
-              # Lower scrutinee expression
               scrutinee = context.lower_expression(node.scrutinee)
+              scrutinee_type = node.scrutinee&.type
+              visit_value = build_visit_value(scrutinee, scrutinee_type)
 
-              # Lower match arms
               arms = node.arms.map { |arm| lower_match_arm(arm) }
 
-              CppAst::Nodes::MatchExpression.new(
-                value: scrutinee,
+              CppAst::Nodes::MatchStatement.new(
+                value: visit_value,
                 arms: arms,
                 arm_separators: Array.new([arms.size - 1, 0].max, ",\n")
               )
@@ -47,7 +47,8 @@ module MLC
               pattern = arm[:pattern]
               case_name = pattern[:name]
               var_name = context.sanitize_identifier(case_name.downcase)
-              bindings = Array(pattern[:bindings] || pattern[:fields]).compact.reject { |b| b == "_" }
+              raw_bindings = Array(pattern[:bindings] || pattern[:fields]).compact
+              bindings = uniquify_wildcard_bindings(raw_bindings)
               sanitized_bindings = bindings.map { |name| context.sanitize_identifier(name) }
 
               body_block = lower_statement_block(arm[:body])
@@ -64,6 +65,47 @@ module MLC
                 var_name: var_name,
                 body: block_with_binding
               )
+            end
+
+            def build_visit_value(scrutinee, scrutinee_type)
+              return scrutinee unless scrutinee_type
+
+              scrutinee_src = scrutinee.to_source
+              is_shared = shared_type?(scrutinee_type)
+              inner = is_shared ? scrutinee_type.type_args&.first : scrutinee_type
+              inner_type_name = extract_type_name(inner)
+              is_wrapper = inner_type_name && context.cyclic_sum_types.include?(inner_type_name)
+
+              base = is_shared ? "(*#{scrutinee_src})" : scrutinee_src
+              base = "#{base}._" if is_wrapper
+              context.factory.raw_expression(code: base)
+            end
+
+            def extract_type_name(type)
+              return nil unless type
+              return type.name if type.respond_to?(:name) && type.name
+              return extract_type_name(type.base_type) if type.respond_to?(:type_args) && type.respond_to?(:base_type)
+
+              nil
+            end
+
+            def shared_type?(type)
+              return false unless type.is_a?(MLC::SemanticIR::GenericType)
+
+              type.base_type.respond_to?(:name) && type.base_type.name == "Shared"
+            end
+
+            def uniquify_wildcard_bindings(bindings)
+              counter = 0
+              bindings.map do |b|
+                if b == "_"
+                  name = "_w#{counter}"
+                  counter += 1
+                  name
+                else
+                  b
+                end
+              end
             end
 
             def lower_statement_block(body_ir)

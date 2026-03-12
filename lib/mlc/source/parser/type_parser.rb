@@ -260,6 +260,10 @@ module MLC
             return parse_sum_type
           end
 
+          # Named record: Identifier { fields... } without | following
+          # e.g. type ENode = ENode { kind: i32, children: ENode[] }
+          return parse_record_type if current.type == :LBRACE
+
           # Otherwise, it's just a type reference
           @pos = start_pos
           parse_type

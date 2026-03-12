@@ -19,6 +19,29 @@ export type TypeRegistry = TypeRegistry {
   field_types: Map<string, Map<string, Shared<Type>>>
 }
 
+export extend TypeRegistry {
+  fn fn_type(self, name: string) -> Shared<Type> =
+    fn_types.get(name)
+
+  fn has_fn(self, name: string) -> bool =
+    fn_types.has(name)
+
+  fn ctor_type(self, name: string) -> Shared<Type> =
+    ctor_types.get(name)
+
+  fn has_ctor(self, name: string) -> bool =
+    ctor_types.has(name)
+
+  fn ctor_params_for(self, name: string) -> [Shared<Type>] =
+    if ctor_params.has(name) then ctor_params.get(name) else [] end
+
+  fn fields_for(self, type_name: string) -> Map<string, Shared<Type>> =
+    field_types.get(type_name)
+
+  fn has_fields(self, type_name: string) -> bool =
+    field_types.has(type_name)
+}
+
 export fn empty_registry() -> TypeRegistry =
   TypeRegistry { fn_types: Map.new(), ctor_types: Map.new(),
                  ctor_params: Map.new(), field_types: Map.new() }
@@ -40,22 +63,23 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     _ => Shared.new(TUnknown)
   }
 
-export fn build_registry(prog: Program) -> Shared<TypeRegistry> = do
+export fn build_registry(prog: Program) -> TypeRegistry = do
   let registry = empty_registry()
   let i = 0
   while i < prog.decls.length() do
     registry = register_decl(registry, prog.decls[i]); i = i + 1
   end
-  Shared.new(registry)
+  registry
 end
 
 fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry = do
   match decl {
+    DeclExtend(_, _) => registry,
     DeclFn(name, params, return_type, _) => do
       const param_types: [Shared<Type>] = []
       let i = 0
       while i < params.length() do
-        param_types.push(type_from_annotation(params[i].typ)); i = i + 1
+        param_types.push(type_from_annotation(param_typ(params[i]))); i = i + 1
       end
       registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
       registry
@@ -66,7 +90,9 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
         registry = register_variant(registry, type_name, variants[i]); i = i + 1
       end
       registry
-    end
+    end,
+    DeclImport(_, _) => registry,
+    DeclExported(d) => register_decl(registry, d)
   }
 end
 

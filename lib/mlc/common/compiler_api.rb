@@ -20,11 +20,12 @@ module MLC
     # @param runtime_policy [RuntimePolicy, nil] Policy for runtime lowering strategies
     # @return [Backends::Cpp::AST] C++ AST
     def compile(source, filename: nil, runtime_policy: nil)
-      # 1. Parse MLC source
+      # Parse MLC source (use build_project for multi-file with imports)
       ast = parse(source, filename: filename)
 
       # 2. Transform to SemanticIR (with type_registry)
-      transformer = Representations::Semantic::Gen::Pipeline.new
+      source_file_dir = filename ? File.dirname(File.expand_path(filename)) : nil
+      transformer = Representations::Semantic::Gen::Pipeline.new(source_file_dir: source_file_dir)
       core_ir, type_registry, function_registry = transform_to_core_with_registry(ast, transformer: transformer)
 
       # 3. Lower to C++ AST (with shared type_registry and stdlib_scanner)
@@ -185,6 +186,33 @@ module MLC
     def create_error_collector(max_errors: 100)
       require_relative "diagnostics/error_collector"
       Diagnostics::ErrorCollector.new(max_errors: max_errors)
+    end
+
+    # Compile project in modular mode: per-module .hpp/.cpp, optional g++ build.
+    # @param entry_path [String] Path to entry .mlc file
+    # @param out_dir [String] Output directory for generated files
+    # @param root_dir [String, nil] Root for resolving imports (default: entry dir)
+    # @return [Hash] { cpp_files: [...], hpp_files: [...] }
+    def compile_project(entry_path:, out_dir:, root_dir: nil)
+      require_relative "modular_compilation/modular_compiler"
+      MLC::Common::ModularCompilation::ModularCompiler.new(
+        entry_path: entry_path,
+        out_dir: out_dir,
+        root_dir: root_dir
+      ).compile
+    end
+
+    # Compile project and build executable with g++.
+    # @param binary_name [String] Output binary name (default: "app")
+    # @return [Hash] { binary: path, cpp_files: [...], hpp_files: [...] }
+    def build_project(entry_path:, out_dir:, root_dir: nil, binary_name: "app")
+      require_relative "modular_compilation/modular_compiler"
+      MLC::Common::ModularCompilation::ModularCompiler.new(
+        entry_path: entry_path,
+        out_dir: out_dir,
+        root_dir: root_dir,
+        binary_name: binary_name
+      ).build
     end
   end
 end

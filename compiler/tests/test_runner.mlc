@@ -1,23 +1,23 @@
 // Minimal test framework.
 
-type TestResult = Pass { name: string } | Fail { name: string, message: string }
+export type TestResult = Pass { name: string } | Fail { name: string, message: string }
 
-fn assert_true(test_name: string, condition: bool) -> TestResult =
+export fn assert_true(test_name: string, condition: bool) -> TestResult =
   if condition then Pass { name: test_name }
   else Fail { name: test_name, message: "expected true, got false" }
   end
 
-fn assert_eq_int(test_name: string, actual: i32, expected: i32) -> TestResult =
+export fn assert_eq_int(test_name: string, actual: i32, expected: i32) -> TestResult =
   if actual == expected then Pass { name: test_name }
   else Fail { name: test_name, message: "expected " + expected.to_string() + ", got " + actual.to_string() }
   end
 
-fn assert_eq_str(test_name: string, actual: string, expected: string) -> TestResult =
+export fn assert_eq_str(test_name: string, actual: string, expected: string) -> TestResult =
   if actual == expected then Pass { name: test_name }
   else Fail { name: test_name, message: "expected '" + expected + "', got '" + actual + "'" }
   end
 
-fn run_all(results: [TestResult]) -> string = do
+export fn run_all(results: [TestResult]) -> string = do
   let passed = 0; let failed = 0; let output = ""; let i = 0
   while i < results.length() do
     match results[i] {

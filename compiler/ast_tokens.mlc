@@ -1,0 +1,29 @@
+// Token types - split out for mlcc parser compatibility
+
+export type TKind =
+  | KFn | KType | KLet | KMut | KConst | KReturn
+  | KBreak | KContinue | KIf | KThen | KElse | KUnless
+  | KWhile | KFor | KIn | KDo | KEnd | KMatch
+  | KImport | KFrom | KAs | KExtern | KExtend | KWhere
+  | KTrue | KFalse
+  | LInt(i32) | LStr(string) | Ident(string)
+  | Arrow | FatArrow | Pipe | Bar | Equal | Question | Dot | Spread
+  | LParen | RParen | LBrace | RBrace | LBracket | RBracket
+  | Comma | Semicolon | Colon | Op(string) | Eof
+
+export type Token  = Token  { kind: TKind, line: i32, col: i32 }
+export type LexOut = LexOut { tokens: [Token], errors: [string] }
+
+extend Shared<T> {
+  extern fn new(value: T) -> Shared<T>
+}
+
+export extend LexOut {
+  fn has_errors(self) -> bool = errors.length() > 0
+}
+
+export extend Token {
+  fn kind_value(self) -> TKind = kind
+  fn line_number(self) -> i32 = line
+  fn column(self) -> i32 = col
+}

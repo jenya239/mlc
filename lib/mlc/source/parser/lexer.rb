@@ -32,7 +32,7 @@ module MLC
         KEYWORDS = %w[
           fn type let mut const return break continue if then else unless while for in do end match
           i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 bool void str module export import enum from as extern
-          unsafe trait extend async await record where
+          unsafe trait extend async await record where ref
         ].freeze
 
         OPERATORS = %w[
@@ -369,6 +369,13 @@ module MLC
               next
             end
 
+            if @source[@pos] == '$' && @pos + 1 < @source.length && @source[@pos + 1] == '{'
+              @pos += 1
+              @column += 1
+              has_interpolation ||= handle_interpolation(parts, current_text)
+              next
+            end
+
             append_string_char(current_text)
           end
 
@@ -400,6 +407,7 @@ module MLC
                           when '\\' then "\\"
                           when '"' then '"'
                           when '0' then "\0"
+                          when '$' then '$'
                           when '{' then '{'
                           when '}' then '}'
                           else

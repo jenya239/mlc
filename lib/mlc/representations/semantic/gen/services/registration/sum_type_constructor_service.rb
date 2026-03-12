@@ -34,7 +34,7 @@ module MLC
             #
             # @param sum_type_name [String] Name of the sum type
             # @param sum_type [SemanticIR::SumType] The sum type definition
-            def register_sum_type_constructors(sum_type_name, sum_type)
+            def register_sum_type_constructors(sum_type_name, sum_type, namespace: nil, module_name: nil)
               return unless sum_type.respond_to?(:variants)
 
               type_decl = @type_decl_table[sum_type_name]
@@ -62,12 +62,13 @@ module MLC
                   type_params
                 )
 
-                # Register in both storages
                 @sum_type_constructors[variant[:name]] = constructor_info
                 @function_registry.register(variant[:name], constructor_info, {
-                                              exported: true,
-                                              external: true # Constructors are treated as external/builtin
-                                            })
+                  exported: true,
+                  external: true,
+                  namespace: namespace,
+                  module_name: module_name
+                })
               end
             end
           end

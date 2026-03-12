@@ -1,12 +1,17 @@
 // Unit tests for the checker (check function).
 
+import { TestResult, assert_eq_int, assert_true } from "./test_runner"
+import { tokenize } from "../lexer"
+import { parse_program } from "../parser/decls"
+import { check, CheckOut } from "../checker/infer"
+
 fn check_source(source: string) -> CheckOut =
   check(parse_program(tokenize(source).tokens))
 
 fn check_error_count(source: string) -> i32 =
   check_source(source).errors.length()
 
-fn checker_tests() -> [TestResult] = do
+export fn checker_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
   results.push(assert_eq_int("empty program → 0 errors",

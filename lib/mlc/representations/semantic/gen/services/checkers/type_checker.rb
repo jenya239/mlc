@@ -33,10 +33,12 @@ module MLC
               "eprint" => "i32",
               "eprintln" => "i32",
               "read_line" => "string",
+              "read_all" => "string",
               "input" => "string",
               "args" => :array_of_string,
               "to_string" => "string",
-              "format" => "string"
+              "format" => "string",
+              "exit" => "i32"
             }.freeze
 
             # Delegate to Predicates module for NUMERIC_PRIMITIVES
@@ -127,6 +129,11 @@ module MLC
               return if unit_like?(actual_name, actual) && unit_like?(expected_name, expected)
               # Allow char <-> i32 comparison (char literals are parsed as i32)
               return if (actual_name == "char" && expected_name == "i32") || (actual_name == "i32" && expected_name == "char")
+              # Allow T where ref mut T is expected (auto-ref coercion)
+              if expected.is_a?(SemanticIR::MutRefType) || expected.is_a?(SemanticIR::RefType)
+                inner_name = normalized_type_name(type_name(expected.inner_type))
+                return if actual_name == inner_name
+              end
 
               @event_bus&.publish(
                 :type_mismatch,
@@ -205,7 +212,9 @@ module MLC
               expected.each_with_index do |type, index|
                 arg_expr = args[index]
                 ensure_compatible_type(arg_expr.type, type, "argument #{index + 1} of '#{name}'")
-                assign_expression_type(arg_expr, type)
+                # Don't propagate ref types back to the argument expression
+                effective_type = (type.is_a?(SemanticIR::MutRefType) || type.is_a?(SemanticIR::RefType)) ? type.inner_type : type
+                assign_expression_type(arg_expr, effective_type)
               end
             end
 

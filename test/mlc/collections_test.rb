@@ -12,8 +12,8 @@ class MLCCollectionsTest < Minitest::Test
 
     cpp = MLC.to_cpp(mlc_source)
 
-    assert_includes cpp, "mlc::collections::map"
-    assert_includes cpp, "mlc::collections::filter"
+    assert_includes cpp, ".map("
+    assert_includes cpp, ".filter("
   end
 
   def test_fold_lowering
@@ -24,6 +24,6 @@ class MLCCollectionsTest < Minitest::Test
 
     cpp = MLC.to_cpp(mlc_source)
 
-    assert_includes cpp, "mlc::collections::fold"
+    assert_includes cpp, ".fold("
   end
 end

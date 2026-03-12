@@ -20,9 +20,9 @@ fn unwrap_or(r: Result, default: i32) -> i32 =
     | Err(_) => default
 
 fn main() -> i32 = do
-  let c = Circle(5)
-  let r = Rect(4, 6)
-  let t = Triangle(10, 3)
+  const c = Circle(5)
+  const r = Rect(4, 6)
+  const t = Triangle(10, 3)
 
   println("=== MLC Demo ===")
   println("")
@@ -31,20 +31,20 @@ fn main() -> i32 = do
   println("Shape: " + describe(t) + ", area = " + to_string(area(t)))
   println("")
 
-  let result = Ok(42)
-  let error = Err("something went wrong")
+  const result = Ok(42)
+  const error = Err("something went wrong")
 
   println("Ok(42) unwrapped = " + to_string(unwrap_or(result, 0)))
   println("Err unwrapped = " + to_string(unwrap_or(error, -1)))
   println("")
 
-  let nums = [10, 20, 30, 40, 50]
-  let doubled = nums.map(x => x * 2)
+  const nums = [10, 20, 30, 40, 50]
+  const doubled = nums.map(x => x * 2)
   println("Original: " + nums.join(", "))
   println("Doubled:  " + doubled.join(", "))
   println("")
 
-  let pair = (99, 1)
+  const pair = (99, 1)
   println("Tuple: (" + to_string(pair.0) + ", " + to_string(pair.1) + ")")
 
   0

@@ -15,8 +15,10 @@ module MLC
               "eprint" => "mlc::io::eprint",
               "eprintln" => "mlc::io::eprintln",
               "read_line" => "mlc::io::read_line",
+              "read_all" => "mlc::io::read_all",
               "input" => "mlc::io::read_all",
               "args" => "mlc::io::args",
+              "exit" => "mlc::io::exit",
               "to_string" => "mlc::to_string",
               "format" => "mlc::format"
             }.freeze
@@ -112,9 +114,16 @@ module MLC
                 return lower_numeric_method(node)
               end
 
-              # Regular function call
+              # Regular function call.
               callee = lower_expression(node.callee)
               args = node.args.map { |arg| lower_argument_with_move(arg) }
+
+              # Nullary variant constructors: CtorName{} or (ns::Ctor{}) for ternary safety.
+              # Adding () would produce invalid CtorName{}(). Return callee directly.
+              if args.empty? && callee.is_a?(CppAst::Nodes::RawExpression)
+                src = callee.to_source
+                return callee if src.end_with?("{}") || src.match?(/\([^)]*\{\}\)\z/)
+              end
 
               context.factory.function_call(
                 callee: callee,
@@ -248,12 +257,21 @@ module MLC
               case type
               when MLC::SemanticIR::GenericType
                 if type.type_args&.first
-                  context.map_type(type.type_args.first)
+                  arg_type = type.type_args.first
+                  # If inner type is a zero-arg FunctionType (() -> T), unwrap to T.
+                  # This happens when a nullary variant constructor (TyI32 : () -> TypeExpr)
+                  # is passed to Shared.new and the type is inferred as Shared<() -> T>.
+                  if arg_type.is_a?(MLC::SemanticIR::FunctionType) &&
+                     arg_type.params.empty? &&
+                     arg_type.respond_to?(:ret_type)
+                    context.map_type(arg_type.ret_type)
+                  else
+                    context.map_type(arg_type)
+                  end
                 else
                   "auto"
                 end
               when MLC::SemanticIR::Type
-                # For Option<Shared<T>>, need to dig deeper
                 "auto"
               else
                 "auto"
@@ -285,6 +303,19 @@ module MLC
                 callee: callee,
                 arguments: args,
                 argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+              )
+            end
+
+            def direct_method_call(receiver, method_name, args)
+              member = context.factory.member_access(
+                object: receiver,
+                operator: ".",
+                member: context.factory.identifier(name: method_name)
+              )
+              context.factory.function_call(
+                callee: member,
+                arguments: args,
+                argument_separators: args.size > 1 ? ::Array.new(args.size - 1, ", ") : []
               )
             end
 
@@ -347,12 +378,7 @@ module MLC
                 )
 
               when "reverse"
-                # arr.reverse() -> mlc::collections::reverse(arr)
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::reverse"),
-                  arguments: [array_obj],
-                  argument_separators: []
-                )
+                direct_method_call(array_obj, "reverse", [])
 
               when "push"
                 # arr.push(x) -> arr.push_back(x)
@@ -403,296 +429,36 @@ module MLC
                   index: args[0]
                 )
 
-              when "map"
-                # arr.map(f) -> mlc::collections::map(arr, f)
-                func_arg = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, func_arg].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::map"),
-                  arguments: args,
-                  argument_separators: func_arg ? [", "] : []
-                )
+              when "map", "filter", "any", "all", "none", "find", "find_index",
+                   "contains", "index_of", "reverse", "sort", "enumerate",
+                   "concat", "append", "zip", "sort_by", "take", "drop",
+                   "first_n", "last_n", "flat_map", "each",
+                   "uniq", "uniq_by", "group_by", "partition", "flatten",
+                   "min", "max"
+                args = call.args.map { |a| lower_expression(a) }
+                direct_method_call(array_obj, method_name, args)
 
-              when "filter"
-                # arr.filter(pred) -> mlc::collections::filter(arr, pred)
-                predicate = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, predicate].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::filter"),
-                  arguments: args,
-                  argument_separators: predicate ? [", "] : []
+              when "join"
+                args = call.args.map { |a| lower_expression(a) }
+                direct_method_call(array_obj, "join", args)
+
+              when "sum"
+                direct_method_call(
+                  array_obj, "fold",
+                  [context.factory.identifier(name: "0"),
+                   context.factory.raw_expression(code: "[](auto acc, auto x) { return acc + x; }")]
                 )
 
               when "fold"
-                # arr.fold(init, f) -> mlc::collections::fold(arr, init, f)
-                init_arg = call.args[0] ? lower_expression(call.args[0]) : nil
-                func_arg = call.args[1] ? lower_expression(call.args[1]) : nil
-                arguments = [array_obj]
-                separators = []
-                if init_arg
-                  arguments << init_arg
-                  separators << ", "
-                end
-                if func_arg
-                  arguments << func_arg
-                  separators << ", "
-                end
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::fold"),
-                  arguments: arguments,
-                  argument_separators: separators
-                )
-
-              when "take"
-                # arr.take(n) -> mlc::collections::take(arr, n)
-                n_arg = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, n_arg].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::take"),
-                  arguments: args,
-                  argument_separators: n_arg ? [", "] : []
-                )
-
-              when "drop"
-                # arr.drop(n) -> mlc::collections::drop(arr, n)
-                n_arg = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, n_arg].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::drop"),
-                  arguments: args,
-                  argument_separators: n_arg ? [", "] : []
-                )
-
-              when "contains"
-                # arr.contains(elem) -> mlc::collections::contains(arr, elem)
-                elem_arg = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, elem_arg].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::contains"),
-                  arguments: args,
-                  argument_separators: elem_arg ? [", "] : []
-                )
-
-              when "join"
-                # arr.join(sep) -> mlc::collections::join(arr, sep)
-                sep_arg = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, sep_arg].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::join"),
-                  arguments: args,
-                  argument_separators: sep_arg ? [", "] : []
-                )
-
-              when "sum"
-                # arr.sum() -> mlc::collections::sum_i32(arr) or sum_f32(arr)
-                # We use the generic version and let C++ figure out the type
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::fold"),
-                  arguments: [
-                    array_obj,
-                    context.factory.identifier(name: "0"),
-                    context.factory.raw_expression(code: "[](auto acc, auto x) { return acc + x; }")
-                  ],
-                  argument_separators: [", ", ", "]
-                )
-
-              when "any"
-                # arr.any(pred) -> mlc::collections::any(arr, pred)
-                predicate = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, predicate].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::any"),
-                  arguments: args,
-                  argument_separators: predicate ? [", "] : []
-                )
-
-              when "all"
-                # arr.all(pred) -> mlc::collections::all(arr, pred)
-                predicate = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, predicate].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::all"),
-                  arguments: args,
-                  argument_separators: predicate ? [", "] : []
-                )
-
-              when "none"
-                # arr.none(pred) -> mlc::collections::none(arr, pred)
-                predicate = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, predicate].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::none"),
-                  arguments: args,
-                  argument_separators: predicate ? [", "] : []
-                )
-
-              when "find"
-                # arr.find(pred) -> mlc::collections::find(arr, pred)
-                predicate = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, predicate].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::find"),
-                  arguments: args,
-                  argument_separators: predicate ? [", "] : []
-                )
-
-              when "find_index"
-                # arr.find_index(pred) -> mlc::collections::find_index(arr, pred)
-                predicate = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, predicate].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::find_index"),
-                  arguments: args,
-                  argument_separators: predicate ? [", "] : []
-                )
-
-              when "index_of"
-                # arr.index_of(elem) -> mlc::collections::index_of(arr, elem)
-                elem_arg = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, elem_arg].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::index_of"),
-                  arguments: args,
-                  argument_separators: elem_arg ? [", "] : []
-                )
-
-              when "concat"
-                # arr.concat(other) -> mlc::collections::concat(arr, other)
-                other_arg = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, other_arg].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::concat"),
-                  arguments: args,
-                  argument_separators: other_arg ? [", "] : []
-                )
-
-              when "append"
-                # arr.append(other) -> mlc::collections::append(arr, other)
-                # In-place version of concat
-                other_arg = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, other_arg].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::append"),
-                  arguments: args,
-                  argument_separators: other_arg ? [", "] : []
-                )
-
-              when "flatten"
-                # arr.flatten() -> mlc::collections::flatten(arr)
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::flatten"),
-                  arguments: [array_obj],
-                  argument_separators: []
-                )
-
-              when "zip"
-                # arr.zip(other) -> mlc::collections::zip(arr, other)
-                other_arg = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, other_arg].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::zip"),
-                  arguments: args,
-                  argument_separators: other_arg ? [", "] : []
-                )
-
-              when "enumerate"
-                # arr.enumerate() -> mlc::collections::enumerate(arr)
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::enumerate"),
-                  arguments: [array_obj],
-                  argument_separators: []
-                )
-
-              when "min"
-                # arr.min() -> mlc::collections::min(arr)
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::min"),
-                  arguments: [array_obj],
-                  argument_separators: []
-                )
-
-              when "max"
-                # arr.max() -> mlc::collections::max(arr)
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::max"),
-                  arguments: [array_obj],
-                  argument_separators: []
-                )
+                args = call.args.map { |a| lower_expression(a) }
+                direct_method_call(array_obj, "fold", args)
 
               when "slice"
-                # arr.slice(start, end) -> mlc::collections::slice(arr, start, end)
-                start_arg = call.args[0] ? lower_expression(call.args[0]) : nil
-                end_arg = call.args[1] ? lower_expression(call.args[1]) : nil
-                arguments = [array_obj]
-                separators = []
-                if start_arg
-                  arguments << start_arg
-                  separators << ", "
-                end
-                if end_arg
-                  arguments << end_arg
-                  separators << ", "
-                end
+                args = call.args.map { |a| lower_expression(a) }
                 context.factory.function_call(
                   callee: context.factory.identifier(name: "mlc::collections::slice"),
-                  arguments: arguments,
-                  argument_separators: separators
-                )
-
-              when "sort"
-                # arr.sort() -> mlc::collections::sort(arr)
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::sort"),
-                  arguments: [array_obj],
-                  argument_separators: []
-                )
-
-              when "sort_by"
-                # arr.sort_by(f) -> mlc::collections::sort_by(arr, f)
-                key_fn = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, key_fn].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::sort_by"),
-                  arguments: args,
-                  argument_separators: key_fn ? [", "] : []
-                )
-
-              when "uniq"
-                # arr.uniq() -> mlc::collections::uniq(arr)
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::uniq"),
-                  arguments: [array_obj],
-                  argument_separators: []
-                )
-
-              when "uniq_by"
-                # arr.uniq_by(f) -> mlc::collections::uniq_by(arr, f)
-                key_fn = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, key_fn].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::uniq_by"),
-                  arguments: args,
-                  argument_separators: key_fn ? [", "] : []
-                )
-
-              when "group_by"
-                # arr.group_by(f) -> mlc::collections::group_by(arr, f)
-                key_fn = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, key_fn].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::group_by"),
-                  arguments: args,
-                  argument_separators: key_fn ? [", "] : []
-                )
-
-              when "partition"
-                # arr.partition(pred) -> mlc::collections::partition(arr, pred)
-                predicate = call.args.first ? lower_expression(call.args.first) : nil
-                args = [array_obj, predicate].compact
-                context.factory.function_call(
-                  callee: context.factory.identifier(name: "mlc::collections::partition"),
-                  arguments: args,
-                  argument_separators: predicate ? [", "] : []
+                  arguments: [array_obj] + args,
+                  argument_separators: ::Array.new(args.size, ", ")
                 )
 
               when "take_while"
@@ -958,7 +724,7 @@ module MLC
                 )
 
               # rubocop:disable Layout/LineLength
-              when "split", "contains", "starts_with", "ends_with", "substring", "index_of", "last_index_of", "replace", "char_at", "repeat", "reverse", "to_lower", "to_upper", "is_blank", "is_present", "squish", "truncate", "titleize", "camelize", "underscore", "pad_start", "pad_end"
+              when "split", "chars", "lines", "contains", "starts_with", "ends_with", "substring", "index_of", "last_index_of", "replace", "char_at", "to_i", "repeat", "reverse", "to_lower", "to_upper", "is_blank", "is_present", "squish", "truncate", "titleize", "camelize", "underscore", "pad_start", "pad_end"
                 # rubocop:enable Layout/LineLength
                 # String methods that pass through to C++ mlc::String methods
                 member = context.factory.member_access(
@@ -1223,6 +989,32 @@ module MLC
                   argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
                 )
               end
+            end
+
+            # True when a VarExpr refers to a nullary (no-arg) ADT variant constructor.
+            # Mirrors VarRefRule#nullary_variant_constructor? but operates on the raw node.
+            def nullary_variant_callee?(var_expr)
+              return false unless var_expr.respond_to?(:type) && var_expr.type
+
+              type = var_expr.type
+              name = var_expr.name
+
+              if type.is_a?(MLC::SemanticIR::SumType)
+                v = type.variants.find { |vt| vt[:name] == name }
+                return v && (v[:fields].nil? || v[:fields].empty?)
+              end
+
+              return true if type.is_a?(MLC::SemanticIR::RecordType) && type.fields.empty?
+
+              if type.is_a?(MLC::SemanticIR::FunctionType) && type.params.empty?
+                ret = type.ret_type
+                if ret.is_a?(MLC::SemanticIR::SumType)
+                  v = ret.variants.find { |vt| vt[:name] == name }
+                  return v && (v[:fields].nil? || v[:fields].empty?)
+                end
+              end
+
+              false
             end
           end
         end

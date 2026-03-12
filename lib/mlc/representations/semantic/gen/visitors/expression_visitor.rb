@@ -118,6 +118,10 @@ module MLC
                 return apply_rules(node, extra_context.merge(operand_ir: operand_ir))
               end
 
+              if svc.try_expr?(node)
+                return apply_rules(node, extra_context.merge(expression_visitor: self))
+              end
+
               if svc.binary_op?(node)
                 left_ir = visit(node.left)
                 right_ir = visit(node.right)

@@ -53,10 +53,10 @@ export fn dyn_new() -> DynRecord = map_new()
 // Create DynRecord from symbol-value pairs
 // Usage: dyn_from([(:name, VStr("Alice")), (:age, VI32(30))])
 export fn dyn_from(pairs: (Symbol, Variant)[]) -> DynRecord = do
-  let m = map_new()
+  const m = map_new()
   for pair in pairs do
-    let sym = pair.0
-    let val = pair.1
+    const sym = pair.0
+    const val = pair.1
     m = map_set(m, symbol_to_key(sym), val)
   end
   m
@@ -160,8 +160,8 @@ export type ShapeResult<T> = Ok(T) | Err(str)
 // For now, users should write manual validation functions like:
 //
 // fn validate_user(r: DynRecord) -> ShapeResult<User> = do
-//   let name = dyn_get_str(r, :name)
-//   let age = dyn_get_i32(r, :age)
+//   const name = dyn_get_str(r, :name)
+//   const age = dyn_get_i32(r, :age)
 //   if name.is_none() || age.is_none() then
 //     Err("Invalid User shape")
 //   else

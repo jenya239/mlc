@@ -20,12 +20,14 @@ module MLC
         class Pipeline
           attr_reader :type_registry, :function_registry, :services
 
-          def initialize(function_registry: nil, type_registry: nil, rule_engine: nil)
+          def initialize(function_registry: nil, type_registry: nil, rule_engine: nil, source_file_dir: nil, module_name: nil)
             @type_registry = type_registry || MLC::Registries::TypeRegistry.new
             @function_registry = function_registry || MLC::Registries::FunctionRegistry.new
+            @module_name_override = module_name
             @services = MLC::Representations::Semantic::Gen::Services::Container.new(
               function_registry: @function_registry,
-              type_registry: @type_registry
+              type_registry: @type_registry,
+              source_file_dir: source_file_dir
             )
 
             @function_registration_service = MLC::Representations::Semantic::Gen::Services::FunctionRegistrationService.new(
@@ -79,12 +81,13 @@ module MLC
               type_reducer: @type_reducer,
               function_reducer: @function_reducer,
               module_import_pass: @module_import_pass,
-              type_resolution_service: @type_resolution_service
+              type_resolution_service: @type_resolution_service,
+              module_name_override: @module_name_override
             )
           end
 
-          def transform(ast)
-            @program_reducer.reduce(ast)
+          def transform(ast, module_name: nil)
+            @program_reducer.reduce(ast, module_name: module_name)
           end
 
           private

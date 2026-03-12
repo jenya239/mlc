@@ -21,6 +21,10 @@ module MLC
           @container.type_registry
         end
 
+        def cyclic_sum_types
+          @container.cyclic_sum_types || Set.new
+        end
+
         def function_registry
           @container.function_registry
         end
@@ -28,6 +32,10 @@ module MLC
         # Generic function context flag
         def in_generic_function?
           @container.in_generic_function
+        end
+
+        def expected_return_type
+          @container.expected_return_type
         end
 
         # Runtime policy for strategy selection
@@ -158,6 +166,14 @@ module MLC
 
         def reset_declared_variables
           @container.reset_declared_variables
+        end
+
+        def snapshot_declared_variables
+          @container.snapshot_declared_variables
+        end
+
+        def restore_declared_variables(snapshot)
+          @container.restore_declared_variables(snapshot)
         end
 
         # Generate unique temporary variable name

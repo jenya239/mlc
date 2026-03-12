@@ -20,9 +20,12 @@ module MLC
               # Functions returning non-literal types
               NON_LITERAL_FUNCTION_PATTERN = /^(to_string|format|String)/
 
-              # Non-literal type names
-              NON_LITERAL_TYPES = %w[string String].freeze
-              NON_LITERAL_TYPE_PATTERN = /^(Array|Vec|HashMap|HashSet)$/
+              # Primitive (literal) type names that are constexpr-safe in C++
+              LITERAL_PRIMITIVE_TYPES = %w[i32 i64 u32 u64 f32 f64 bool unit i8 u8 i16 u16 isize usize].freeze
+
+              # Non-literal type names (C++20: cannot be constexpr param/return)
+              NON_LITERAL_TYPES = %w[string String array map].freeze
+              NON_LITERAL_TYPE_PATTERN = /^(Array|Vec|HashMap|HashSet|Shared|Weak|Owned)$/
 
               module_function
 
@@ -78,8 +81,17 @@ module MLC
                 return false if type.nil?
                 return false unless type.respond_to?(:name)
 
-                NON_LITERAL_TYPES.include?(type.name) ||
-                  type.name =~ NON_LITERAL_TYPE_PATTERN
+                return true if NON_LITERAL_TYPES.include?(type.name)
+                return true if type.name =~ NON_LITERAL_TYPE_PATTERN
+
+                # User-defined types (records, sum types) are non-literal unless they are
+                # known primitive types. A type is "user-defined" if its name starts with
+                # an uppercase letter and is not a known primitive.
+                if type.name =~ /\A[A-Z]/
+                  return !LITERAL_PRIMITIVE_TYPES.include?(type.name)
+                end
+
+                false
               end
 
               # Check if a block expression is pure
@@ -99,7 +111,7 @@ module MLC
               def pure_statement?(stmt)
                 case stmt
                 when MLC::SemanticIR::VariableDeclStmt
-                  !stmt.mutable && pure_expression?(stmt.value)
+                  pure_expression?(stmt.value)
                 when MLC::SemanticIR::ExprStatement
                   pure_expression?(stmt.expression)
                 when MLC::SemanticIR::Block

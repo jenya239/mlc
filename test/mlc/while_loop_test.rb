@@ -6,8 +6,8 @@ class WhileLoopUnitTypeTest < Minitest::Test
   def test_while_loop_no_dummy_values
     source = <<~MLCORA
       fn test() -> i32 = do
-        let mut sum = 0;
-        let mut i = 0;
+        let sum = 0;
+        let i = 0;
 
         while i < 5 do
           sum = sum + i;
@@ -33,7 +33,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
   def test_while_loop_with_block_body
     source = <<~MLCORA
       fn test() -> i32 = do
-        let mut count = 0;
+        let count = 0;
 
         while count < 3 do
           count = count + 1;
@@ -56,7 +56,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
   def test_while_loop_empty_body
     source = <<~MLCORA
       fn test() -> i32 = do
-        let mut x = 0;
+        let x = 0;
 
         while x < 0 do
         end;
@@ -76,8 +76,8 @@ class WhileLoopUnitTypeTest < Minitest::Test
   def test_while_loop_nested
     source = <<~MLCORA
       fn test() -> i32 = do
-        let mut x = 0;
-        let mut y = 0;
+        let x = 0;
+        let y = 0;
 
         while x < 2 do
           y = 0;

@@ -238,18 +238,19 @@ module MLC
               info = @type_unification_service.constructor_info_for(pattern[:name], scrutinee_type)
               field_types = info ? info.param_types : []
               bindings = []
+              wildcard_counter = 0
 
               Array(pattern[:fields]).each_with_index do |field, index|
                 field_type = field_types[index] || unknown_type
 
                 if field.is_a?(Hash) && field[:kind]
-                  # Nested pattern - recursively bind its variables
                   bind_pattern_variables(field, field_type)
                   bindings << field
                 elsif ignored_binding?(field)
-                  next
+                  # Preserve wildcard position with a unique name for C++ structured bindings.
+                  bindings << "_w#{wildcard_counter}"
+                  wildcard_counter += 1
                 else
-                  # Simple variable binding
                   bind_variable(field, field_type)
                   bindings << field
                 end

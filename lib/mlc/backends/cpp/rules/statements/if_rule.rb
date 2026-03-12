@@ -34,12 +34,26 @@ module MLC
             private
 
             def lower_statement_block(body_ir)
+              # Each branch is a C++ {} block with its own scope.
+              # Save and restore declared_variables so that let-bindings in one
+              # branch do not shadow or suppress declarations in sibling branches.
+              snapshot = context.snapshot_declared_variables
+              result = lower_statement_block_inner(body_ir)
+              context.restore_declared_variables(snapshot)
+              result
+            end
+
+            def lower_statement_block_inner(body_ir)
               if context.checker.block_expr?(body_ir)
                 stmts = body_ir.statements.map { |stmt| context.lower_statement(stmt) }
                 # Include result expr as statement if it's non-unit
                 unless context.checker.unit_literal?(body_ir.result)
-                  result_expr = context.lower_expression(body_ir.result)
-                  stmts << context.factory.expression_statement(expression: result_expr)
+                  if context.should_lower_as_statement?(body_ir.result)
+                    stmts << context.lower_statement(MLC::SemanticIR::ExprStatement.new(expression: body_ir.result, origin: body_ir.result.origin))
+                  else
+                    result_expr = context.lower_expression(body_ir.result)
+                    stmts << context.factory.expression_statement(expression: result_expr)
+                  end
                 end
                 context.factory.block_statement(
                   statements: stmts,

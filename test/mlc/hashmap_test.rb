@@ -7,7 +7,7 @@ class HashMapTest < Minitest::Test
   def test_map_new_codegen
     source = <<~MLC
       fn main() -> i32 = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("x", 42)
         m.get("x")
       end
@@ -21,7 +21,7 @@ class HashMapTest < Minitest::Test
   def test_map_has_codegen
     source = <<~MLC
       fn main() -> bool = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("a", 1)
         m.has("a")
       end
@@ -33,7 +33,7 @@ class HashMapTest < Minitest::Test
   def test_map_size_codegen
     source = <<~MLC
       fn main() -> i32 = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("a", 1)
         m.size()
       end
@@ -45,7 +45,7 @@ class HashMapTest < Minitest::Test
   def test_map_keys_codegen
     source = <<~MLC
       fn main() -> i32 = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("a", 1)
         m.keys().length()
       end
@@ -54,28 +54,40 @@ class HashMapTest < Minitest::Test
     assert_includes cpp, "m.keys()"
   end
 
-  def test_map_set_on_immutable_errors
+  def test_map_set_on_const_allowed
     source = <<~MLC
       fn main() -> i32 = do
-        let m: Map<string, i32> = Map.new()
+        const m: Map<string, i32> = Map.new()
         m.set("a", 1)
         0
       end
     MLC
-    error = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
-    assert_match(/Cannot call .set\(\) on immutable binding 'm'/, error.message)
+    cpp = MLC.to_cpp(source)
+    assert_includes cpp, "m.set"
   end
 
-  def test_map_remove_on_immutable_errors
+  def test_map_remove_on_const_allowed
     source = <<~MLC
       fn main() -> i32 = do
-        let m: Map<string, i32> = Map.new()
+        const m: Map<string, i32> = Map.new()
         m.remove("a")
         0
       end
     MLC
+    cpp = MLC.to_cpp(source)
+    assert_includes cpp, "m.remove"
+  end
+
+  def test_const_map_cannot_rebind
+    source = <<~MLC
+      fn main() -> i32 = do
+        const m: Map<string, i32> = Map.new()
+        m = Map.new()
+        0
+      end
+    MLC
     error = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
-    assert_match(/Cannot call .remove\(\) on immutable binding 'm'/, error.message)
+    assert_match(/cannot rebind 'const m'/, error.message)
   end
 
   def test_map_immutable_ops_on_let
@@ -92,7 +104,7 @@ class HashMapTest < Minitest::Test
   def test_hashmap_alias
     source = <<~MLC
       fn main() -> i32 = do
-        let mut m: HashMap<string, i32> = HashMap.new()
+        let m: HashMap<string, i32> = HashMap.new()
         m.set("x", 99)
         m.get("x")
       end
@@ -104,7 +116,7 @@ class HashMapTest < Minitest::Test
   def test_map_i32_keys
     source = <<~MLC
       fn main() -> i32 = do
-        let mut m: Map<i32, i32> = Map.new()
+        let m: Map<i32, i32> = Map.new()
         m.set(1, 100)
         m.set(2, 200)
         m.get(1)

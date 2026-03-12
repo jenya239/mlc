@@ -187,7 +187,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 3, 4, 5]
-        if arr.any(x => x > 3) then 1 else 0
+        if ".any()x => x > 3) then 1 else 0
       end
     MLC
       assert_equal 1, status.exitstatus
@@ -198,7 +198,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 3]
-        if arr.any(x => x > 10) then 1 else 0
+        if ".any()x => x > 10) then 1 else 0
       end
     MLC
       assert_equal 0, status.exitstatus
@@ -209,7 +209,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [2, 4, 6, 8]
-        if arr.all(x => x % 2 == 0) then 1 else 0
+        if ".all()x => x % 2 == 0) then 1 else 0
       end
     MLC
       assert_equal 1, status.exitstatus
@@ -220,7 +220,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [2, 4, 5, 8]
-        if arr.all(x => x % 2 == 0) then 1 else 0
+        if ".all()x => x % 2 == 0) then 1 else 0
       end
     MLC
       assert_equal 0, status.exitstatus
@@ -231,7 +231,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 3]
-        if arr.none(x => x > 10) then 1 else 0
+        if ".none()x => x > 10) then 1 else 0
       end
     MLC
       assert_equal 1, status.exitstatus
@@ -242,7 +242,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 30]
-        if arr.none(x => x > 10) then 1 else 0
+        if ".none()x => x > 10) then 1 else 0
       end
     MLC
       assert_equal 0, status.exitstatus
@@ -255,7 +255,7 @@ class BuiltinMethodsE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let arr = [1, 2, 30, 4, 5]
-        arr.find(x => x > 10)
+        ".find()x => x > 10)
       end
     MLC
       assert_equal 30, status.exitstatus
@@ -371,8 +371,8 @@ class BuiltinMethodsE2ETest < Minitest::Test
       fn main() -> i32 = do
         let arr = [5, 10, 15, 20, 25]
         let len = arr.length()
-        let has_big = if arr.any(x => x > 20) then 1 else 0
-        let all_pos = if arr.all(x => x > 0) then 1 else 0
+        let has_big = if ".any()x => x > 20) then 1 else 0
+        let all_pos = if ".all()x => x > 0) then 1 else 0
         len + has_big + all_pos
       end
     MLC

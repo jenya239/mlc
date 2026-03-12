@@ -97,23 +97,23 @@ module MLC
 
         def parse_variable_decl_statement
           let_token = consume(:LET)
-          mutable = false
-          if current.type == :MUT
-            consume(:MUT)
-            mutable = true
+
+          # let const NAME = expr  →  compile-time constexpr
+          if current.type == :CONST
+            consume(:CONST)
+            return parse_const_decl_body(let_token, compile_time: true)
           end
 
-          # Check for destructuring patterns: let (a, b) = ... or let { x, y } = ...
+          # let NAME = expr  →  rebindable binding
           if current.type == :LPAREN
-            return parse_tuple_destructuring(let_token, mutable)
+            return parse_tuple_destructuring(let_token, true)
           elsif current.type == :LBRACE
-            return parse_record_destructuring(let_token, mutable)
+            return parse_record_destructuring(let_token, true)
           end
 
           name_token = consume(:IDENTIFIER)
           name = name_token.value
 
-          # Optional type annotation: let x: Type = value
           type_annotation = nil
           if current.type == :COLON
             consume(:COLON)
@@ -121,15 +121,20 @@ module MLC
           end
 
           consume(:EQUAL)
-          # Use parse_expression_in_block to avoid stealing END from parent block
           value = parse_expression_in_block
           consume(:SEMICOLON) if current.type == :SEMICOLON
 
-          with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: mutable, type: type_annotation) }
+          with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: true, type: type_annotation) }
         end
 
         def parse_const_decl_statement
-          consume(:CONST)
+          const_token = consume(:CONST)
+          parse_const_decl_body(const_token, compile_time: false)
+        end
+
+        private
+
+        def parse_const_decl_body(origin_token, compile_time:)
           name_token = consume(:IDENTIFIER)
           name = name_token.value
 
@@ -143,8 +148,15 @@ module MLC
           value = parse_expression_in_block
           consume(:SEMICOLON) if current.type == :SEMICOLON
 
-          with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: false, constant: true, type: type_annotation) }
+          with_origin(name_token) do
+            MLC::Source::AST::VariableDecl.new(
+              name: name, value: value, mutable: false,
+              constant: compile_time, type: type_annotation
+            )
+          end
         end
+
+        public
 
         # Parse tuple destructuring: let (a, b) = expr
         def parse_tuple_destructuring(let_token, mutable)

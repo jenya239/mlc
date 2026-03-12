@@ -1,5 +1,8 @@
 // Unit tests for the lexer (tokenize function).
 
+import { TestResult, assert_eq_int } from "./test_runner"
+import { tokenize } from "../lexer"
+
 fn lex_token_count(source: string) -> i32 =
   tokenize(source).tokens.length()
 
@@ -9,7 +12,7 @@ fn lex_first_kind(source: string) -> TKind =
 fn lex_error_count(source: string) -> i32 =
   tokenize(source).errors.length()
 
-fn lexer_tests() -> [TestResult] = do
+export fn lexer_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
   results.push(assert_eq_int("empty source → 1 token (Eof)",       lex_token_count(""),   1))

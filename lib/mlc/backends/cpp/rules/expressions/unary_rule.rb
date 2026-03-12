@@ -16,8 +16,13 @@ module MLC
               # Recursively lower operand through context
               operand = lower_expression(node.operand)
 
+              # Wrap binary/comparison expressions in parens to preserve precedence
+              # e.g. !(A && B) must generate !(A && B), not !A && B
+              if operand.is_a?(CppAst::Nodes::BinaryExpression)
+                operand = context.factory.parenthesized(expression: operand)
+              end
+
               # Prevent operator collision: -(-x) must generate -(-x), not --x
-              # Same for +(+x) -> +(+x) and +(-x) -> +(-x), etc.
               operand = context.factory.parenthesized(expression: operand) if needs_parentheses?(node.op, operand)
 
               context.factory.unary_expression(

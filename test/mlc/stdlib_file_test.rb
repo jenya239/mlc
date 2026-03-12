@@ -189,6 +189,7 @@ class StdlibFileTest < Minitest::Test
         if is_ok(result)
           then is_ok(safe_write_string(output_path, unwrap_or(result, "")))
           else false
+        end
       end
     MLCORA
 

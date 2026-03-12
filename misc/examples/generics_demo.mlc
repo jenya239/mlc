@@ -11,22 +11,22 @@ fn main() -> i32 = do
   println("")
 
   // Identity with i32
-  let n = identity(42)
+  const n = identity(42)
   println("identity(42) = " + to_string(n))
 
   // Identity with str
-  let s = identity("hello")
+  const s = identity("hello")
   println("identity(\"hello\") = " + s)
 
   // first/second with i32
-  let f = first(10, 20)
-  let sec = second(10, 20)
+  const f = first(10, 20)
+  const sec = second(10, 20)
   println("first(10, 20) = " + to_string(f))
   println("second(10, 20) = " + to_string(sec))
 
   // first/second with str
-  let fs = first("alpha", "beta")
-  let ss = second("alpha", "beta")
+  const fs = first("alpha", "beta")
+  const ss = second("alpha", "beta")
   println("first(\"alpha\", \"beta\") = " + fs)
   println("second(\"alpha\", \"beta\") = " + ss)
 

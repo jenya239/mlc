@@ -18,6 +18,16 @@ class Bytes;
 class String {
 private:
     std::string data_;
+    bool is_ascii_;
+
+    static bool check_ascii(const std::string& s) {
+        for (unsigned char c : s) if (c >= 0x80) return false;
+        return true;
+    }
+
+    // Private constructor for known-ASCII strings (avoids re-checking)
+    String(std::string&& data, bool is_ascii) : data_(std::move(data)), is_ascii_(is_ascii) {}
+    String(const std::string& data, bool is_ascii) : data_(data), is_ascii_(is_ascii) {}
 
     // Helper: count UTF-8 characters in a string
     static size_t utf8_length(const std::string& str);
@@ -30,10 +40,11 @@ private:
 
 public:
     // Constructors
-    String() : data_() {}
-    String(const char* str) : data_(str) {}
-    String(const std::string& str) : data_(str) {}
-    String(std::string&& str) : data_(std::move(str)) {}
+    String() : data_(), is_ascii_(true) {}
+    String(const char* str) : data_(str), is_ascii_(check_ascii(data_)) {}
+    String(const char* data, size_t len) : data_(data, len), is_ascii_(check_ascii(data_)) {}
+    String(const std::string& str) : data_(str), is_ascii_(check_ascii(data_)) {}
+    String(std::string&& str) : data_(std::move(str)), is_ascii_(check_ascii(data_)) {}
 
     // Copy/Move
     String(const String&) = default;
@@ -42,24 +53,28 @@ public:
     String& operator=(String&&) = default;
 
     // Basic properties
-    size_t length() const { return utf8_length(data_); }
+    int length() const { return static_cast<int>(is_ascii_ ? data_.size() : utf8_length(data_)); }
     size_t byte_size() const { return data_.size(); }
     bool is_empty() const { return data_.empty(); }
 
     // Character access
-    std::string char_at(size_t index) const {
-        return utf8_char_at(data_, index);
+    String char_at(size_t index) const {
+        if (is_ascii_) return String(data_.substr(index, 1));
+        return String(utf8_char_at(data_, index));
     }
 
     // Indexing operator - returns first byte of UTF-8 character
     char operator[](size_t index) const {
-        size_t byte_index = utf8_char_index(data_, index);
+        size_t byte_index = is_ascii_ ? index : utf8_char_index(data_, index);
         return byte_index < data_.size() ? data_[byte_index] : '\0';
     }
 
     // Substrings (by character positions, not bytes)
     String substring(size_t start) const;
     String substring(size_t start, size_t length) const;
+
+    // Parse to integer
+    int to_i() const { return std::stoi(data_); }
 
     // Case conversion
     String upper() const;
@@ -72,6 +87,8 @@ public:
 
     // Splitting
     mlc::Array<String> split(const String& delimiter) const;
+    mlc::Array<String> chars() const;
+    mlc::Array<String> lines() const;
 
     // Searching
     bool contains(const String& substring) const {
@@ -270,11 +287,12 @@ public:
 
     // Concatenation
     String operator+(const String& other) const {
-        return String(data_ + other.data_);
+        return String(data_ + other.data_, is_ascii_ && other.is_ascii_);
     }
 
     String& operator+=(const String& other) {
         data_ += other.data_;
+        is_ascii_ = is_ascii_ && other.is_ascii_;
         return *this;
     }
 

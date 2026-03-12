@@ -112,14 +112,15 @@ module MLC
 
             # Lambda expression
             def lambda(capture: "", parameters: "", specifiers: "", body: "",
-                       capture_suffix: "", params_suffix: "")
+                       capture_suffix: "", params_suffix: "", return_type: nil)
               CppAst::Nodes::LambdaExpression.new(
                 capture: capture,
                 parameters: parameters,
                 specifiers: specifiers,
                 body: body,
                 capture_suffix: capture_suffix,
-                params_suffix: params_suffix
+                params_suffix: params_suffix,
+                return_type: return_type
               )
             end
 

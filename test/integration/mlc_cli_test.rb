@@ -52,10 +52,15 @@ class MLCCLITest < Minitest::Test
       fn main() -> i32 = 0
     MLC
 
-    stdout, stderr, status = Open3.capture3(CLI, "--emit-cpp", "-", stdin_data: source)
+    Dir.mktmpdir do |dir|
+      stdout, stderr, status = Open3.capture3(CLI, "--emit-cpp", "-o", dir, "-", stdin_data: source)
 
-    assert(status.success?, "Expected emit success, stderr: #{stderr}")
-    assert_includes stdout, "int main()"
+      assert(status.success?, "Expected emit success, stderr: #{stderr}")
+      cpp_files = Dir[File.join(dir, "*.cpp")]
+      assert cpp_files.any?, "Expected .cpp files in #{dir}"
+      content = File.read(cpp_files.first)
+      assert_includes content, "int main("
+    end
   end
 
   def test_compile_error_includes_filename

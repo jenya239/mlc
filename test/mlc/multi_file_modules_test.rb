@@ -252,7 +252,7 @@ class MLCMultiFileModulesTest < Minitest::Test
     # Verify content
     hpp_content = File.read(hpp_file)
     assert_includes hpp_content, "#ifndef"
-    assert_includes hpp_content, "int hello();"
+    assert_includes hpp_content, "hello()"
 
     cpp_content = File.read(cpp_file)
     # NOTE: module name defaults to "main" without explicit module declaration

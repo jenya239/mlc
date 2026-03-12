@@ -11,41 +11,44 @@ module MLC
 
         # Generate header and implementation files
         # Returns: { header: String, implementation: String }
-        def generate(module_node)
+        def generate(module_node, all_modules: nil)
           header_guard = generate_header_guard(module_node.name)
           dependencies = collect_required_import_paths(module_node)
 
-          # Separate declarations into header and implementation
+          # Separate: header = exported only (step 23), impl = all non-external
           header_items = []
           impl_items = []
+          impl_types = []  # non-exported types for .cpp
 
           module_node.items.each do |item|
             case item
             when SemanticIR::TypeDecl
-              # All type declarations go in header
               header_items << item
             when SemanticIR::Func
-              # Function declarations go in header
-              header_items << item
-              # External functions don't need implementation
-              impl_items << item unless item.external
+              header_items << item if item.exported
+              next if item.external
+              impl_items << item
             end
           end
 
           # Generate header file
           header = generate_header(
+            module_node: module_node,
             module_name: module_node.name,
             guard: header_guard,
             imports: module_node.imports,
             items: header_items,
-            dependencies: dependencies
+            dependencies: dependencies,
+            all_modules: all_modules
           )
 
           # Generate implementation file
           implementation = generate_implementation(
+            module_node: module_node,
             module_name: module_node.name,
             imports: module_node.imports,
             items: impl_items,
+            type_items: impl_types,
             required_imports: dependencies[:implementation]
           )
 
@@ -59,7 +62,7 @@ module MLC
           "#{module_name.upcase.gsub('::', '_').gsub('/', '_')}_HPP"
         end
 
-        def generate_header(module_name:, guard:, imports:, items:, dependencies:)
+        def generate_header(module_node:, module_name:, guard:, imports:, items:, dependencies:, all_modules: nil)
           lines = []
 
           # Header guard
@@ -67,10 +70,9 @@ module MLC
           lines << "#define #{guard}"
           lines << ""
 
-          # Standard includes
+          # Standard includes (mlc.hpp provides String, Array, etc.)
+          lines << "#include \"mlc.hpp\""
           lines << "#include <variant>"
-          lines << "#include <string>"
-          lines << "#include \"mlc/core/match.hpp\""
           lines << ""
 
           # Module imports -> #include statements
@@ -87,6 +89,9 @@ module MLC
             lines << ""
           end
 
+          cyclic = all_modules ? cyclic_sum_types_global(all_modules) : cyclic_sum_types(module_node)
+          @lowering.cyclic_sum_types = cyclic
+
           # Namespace for module
           namespace = module_name_to_namespace(module_name)
           unless namespace.empty?
@@ -94,7 +99,12 @@ module MLC
             lines << ""
           end
 
-          # Generate forward declarations and type definitions
+          unless cyclic.empty?
+            cyclic.each { |name| lines << "struct #{name};" }
+            lines << ""
+          end
+
+          # Generate type definitions and functions
           items.each do |item|
             case item
             when SemanticIR::TypeDecl
@@ -103,9 +113,7 @@ module MLC
               lines << cpp_ast.to_source
               lines << ""
             when SemanticIR::Func
-              # Only function declaration (prototype) goes in header
-              func_decl = generate_function_declaration(item)
-              lines << func_decl
+              lines << generate_function_declaration(item)
               lines << ""
             end
           end
@@ -123,8 +131,14 @@ module MLC
           lines.join("\n")
         end
 
-        def generate_implementation(module_name:, imports:, items:, required_imports:)
+        def generate_implementation(module_node: nil, module_name:, imports:, items:, type_items: [], required_imports: nil)
           lines = []
+
+          # Set user_functions so local calls are not qualified with wrong namespace
+          if module_node
+            func_names = module_node.items.grep(SemanticIR::Func).map(&:name).to_set
+            @lowering.container.user_functions = func_names
+          end
 
           # Include own header
           header_name = module_path_to_header(module_name)
@@ -146,6 +160,28 @@ module MLC
             lines << ""
           end
 
+          # Using directives for imported modules (e.g. ast_tokens for TKind variants)
+          impl_imports = filtered_imports(imports, required_imports)
+          impl_imports.each do |import|
+            imp_ns = module_name_to_namespace(File.basename(import.path, ".mlc"))
+            lines << "using namespace #{imp_ns};" if imp_ns && !imp_ns.empty?
+          end
+          # ast re-exports ast_tokens; add it when we have ast
+          if impl_imports.any? { |i| File.basename(i.path, ".mlc") == "ast" }
+            lines << "using namespace ast_tokens;"
+          end
+          lines << "" if impl_imports.any?
+
+          # Forward declarations for internal functions (used before definition)
+          items.each do |item|
+            next unless item.is_a?(SemanticIR::Func)
+            next if item.type_params.any?
+            next if item.body.nil?
+
+            lines << generate_function_declaration(item)
+            lines << ""
+          end
+
           # Generate function implementations
           items.each do |item|
             case item
@@ -162,7 +198,20 @@ module MLC
             lines << ""
           end
 
-          lines.join("\n")
+          wrap_qualified_variants_in_ternary(lines.join("\n"))
+        end
+
+        # Wrap qualified variant refs in LexState_token(state, X) and similar - only
+        # when used as direct function arg: , ast_tokens::Colon) -> , (ast_tokens::Colon{}))
+        TOKEN_NULLARY = %w[Arrow FatArrow Pipe Bar Equal Question Spread Dot LParen RParen
+          LBrace RBrace LBracket RBracket Comma Semicolon Colon Eof].freeze
+
+        def wrap_qualified_variants_in_ternary(cpp)
+          TOKEN_NULLARY.each do |v|
+            cpp = cpp.gsub(/(, )(ast_tokens::#{v})(\))/, '\1(ast_tokens::' + v + '{})\3')
+            cpp = cpp.gsub(/(, )(ast_tokens::#{v})(,)/, '\1(ast_tokens::' + v + '{})\3')
+          end
+          cpp
         end
 
         def filtered_imports(imports, required_imports)
@@ -186,30 +235,43 @@ module MLC
             "#{type} #{param.name}"
           end.join(", ")
 
-          # Add template parameters if generic
+          effects = Array(func.effects)
+          prefix = ""
+          suffix = effects.include?(:noexcept) ? " noexcept" : ""
+
           lines = []
           type_params = func.type_params || []
 
           lines.concat(build_template_lines(type_params)) unless type_params.empty?
 
-          lines << "#{ret_type} #{name}(#{params});"
+          lines << "#{prefix}#{ret_type} #{name}(#{params})#{suffix};"
           lines.join("\n")
         end
 
         def generate_function_implementation(func)
-          cpp_ast = @lowering.lower(func)
-          cpp_ast.to_source
+          effects = Array(func.effects)
+          if effects.include?(:constexpr)
+            new_effects = effects - [:constexpr]
+            f = SemanticIR::Func.new(
+              name: func.name, params: func.params, ret_type: func.ret_type, body: func.body,
+              effects: new_effects, type_params: func.type_params, external: func.external,
+              exported: func.exported, is_async: func.is_async
+            )
+            @lowering.lower(f).to_source
+          else
+            @lowering.lower(func).to_source
+          end
         end
 
         def module_path_to_header(path)
           # Handle three cases:
-          # 1. File path: "./math" -> "math.hpp"
-          # 2. File path: "../core/utils" -> "../core/utils.hpp"
+          # 1. File path: "./foo" -> "foo.hpp" (step 18: same-dir include)
+          # 2. File path: "../lib/bar" -> "bar.hpp" (basename for flat out_dir)
           # 3. Module name: "Math::Vector" -> "math/vector.hpp"
 
           if path.start_with?("./", "../", "/")
-            # It's a file path - just add .hpp if needed
-            path.end_with?(".hpp") ? path : "#{path}.hpp"
+            base = File.basename(path, ".hpp")
+            base.end_with?(".hpp") ? base : "#{base}.hpp"
           elsif path.include?("::")
             # Module path: Math::Vector -> math/vector.hpp
             "#{path.split('::').map(&:downcase).join('/')}.hpp"
@@ -220,8 +282,9 @@ module MLC
         end
 
         def module_name_to_namespace(name)
-          # Convert Math::Vector -> math::vector
-          name.gsub("/", "::").split("::").map(&:downcase).join("::")
+          # Convert Math::Vector -> math::vector; "main" -> "mlc_main" (C++ reserved)
+          base = name.gsub("/", "::").split("::").map(&:downcase).join("::")
+          base == "main" ? "mlc_main" : base
         end
 
         def build_template_lines(type_params)
@@ -275,6 +338,41 @@ module MLC
         ensure
           @include_modules = nil
           @forward_modules = nil
+        end
+
+        def cyclic_sum_types(module_node)
+          type_registry = @lowering.type_registry
+          return Set.new unless type_registry
+
+          sum_decls = module_node.items.grep(SemanticIR::TypeDecl).select do |td|
+            td.type.is_a?(SemanticIR::SumType) && td.type_params.empty?
+          end
+          return Set.new if sum_decls.empty?
+
+          module_type_names = sum_decls.map(&:name).to_set
+          refs = {}
+          sum_decls.each do |td|
+            info = type_registry.lookup(td.name)
+            next unless info
+
+            refs[td.name] = (info.referenced_type_names || []).select { |n| module_type_names.include?(n) }.to_set
+          end
+
+          cyclic = Set.new
+          refs.each_key do |a|
+            refs[a].each do |b|
+              cyclic << a << b if refs[b]&.include?(a)
+            end
+          end
+          cyclic
+        end
+
+        # Union of cyclic sum types across all modules (for cross-module match on wrapper types)
+        def cyclic_sum_types_global(module_nodes)
+          type_registry = @lowering.type_registry
+          return Set.new unless type_registry
+
+          module_nodes.flat_map { |mod| cyclic_sum_types(mod).to_a }.to_set
         end
 
         def build_forward_declarations(current_module, items, dependencies)

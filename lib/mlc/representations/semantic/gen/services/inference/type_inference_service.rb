@@ -139,7 +139,7 @@ module MLC
               elsif numeric_type?(left_type) && numeric_type?(right_type)
                 combine_numeric_type(left_type, right_type)
               else
-                type_error("Cannot add #{describe_type(left_type)} and #{describe_type(right_type)}")
+                raise "Cannot add #{describe_type(left_type)} and #{describe_type(right_type)}\n#{caller.first(8).join("\n")}"
               end
             end
 
@@ -250,6 +250,11 @@ module MLC
             # Infer type of member access
             def infer_member_type(object_type, member, node: nil)
               type_error("Cannot access member '#{member}' on value without type", node: node) unless object_type
+
+              # Auto-deref for ref/mut_ref types
+              if object_type.is_a?(SemanticIR::RefType) || object_type.is_a?(SemanticIR::MutRefType)
+                return infer_member_type(object_type.inner_type, member, node: node)
+              end
 
               if object_type.is_a?(SemanticIR::GenericType)
                 base_name = type_name(object_type.base_type)
@@ -581,6 +586,11 @@ module MLC
               end
 
               def infer(object_type, member, args)
+                # Auto-deref for ref/mut_ref types
+                if object_type.is_a?(SemanticIR::RefType) || object_type.is_a?(SemanticIR::MutRefType)
+                  return infer(object_type.inner_type, member, args)
+                end
+
                 return resolve_array_member(object_type, member, args) if object_type.is_a?(SemanticIR::ArrayType)
                 return resolve_map_member(object_type, member, args) if object_type.is_a?(SemanticIR::MapType)
                 return resolve_string_member(member, args) if string?(object_type)
@@ -663,8 +673,8 @@ module MLC
 
               def resolve_string_member(member, args)
                 case member
-                when "split"
-                  ensure_args(member, args, 1)
+                when "split", "chars", "lines"
+                  ensure_args(member, args, member == "split" ? 1 : 0)
                   SemanticIR::ArrayType.new(element_type: prim("string"))
                 when "trim", "trim_start", "trim_end", "upper", "lower"
                   ensure_args(member, args, 0)
@@ -690,6 +700,9 @@ module MLC
                 when "char_at"
                   ensure_args(member, args, 1)
                   prim("string")
+                when "to_i"
+                  ensure_args(member, args, 0)
+                  prim("i32")
                 when "repeat"
                   ensure_args(member, args, 1)
                   prim("string")
@@ -716,7 +729,7 @@ module MLC
                   prim("string")
                 else
                   type_error(
-                    "Unknown string method '#{member}'. Supported methods: split, substring, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse, is_blank, is_present, squish, truncate, titleize, camelize, underscore, pad_start, pad_end"
+                    "Unknown string method '#{member}'. Supported methods: split, chars, lines, substring, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, to_i, repeat, reverse, is_blank, is_present, squish, truncate, titleize, camelize, underscore, pad_start, pad_end"
                   )
                 end
               end
@@ -816,26 +829,9 @@ module MLC
               end
             end
 
-            ARRAY_MUTATING_METHODS = %w[push pop set].freeze
-
             # Infer member call type for arrays/maps
             def infer_member_call_type(object_type, member, args, object_ir: nil)
-              if ARRAY_MUTATING_METHODS.include?(member) && object_type.is_a?(SemanticIR::ArrayType)
-                check_mutability(object_ir, member)
-              end
-              if HASHMAP_MUTATING_METHODS.include?(member) && object_type.is_a?(SemanticIR::MapType)
-                check_mutability(object_ir, member)
-              end
               MemberResolver.new(self, @type_checker).infer(object_type, member, args)
-            end
-
-            def check_mutability(object_ir, method_name)
-              return unless object_ir.is_a?(SemanticIR::VarExpr)
-
-              var_name = object_ir.name
-              unless @var_type_registry.mutable?(var_name)
-                type_error("Cannot call .#{method_name}() on immutable binding '#{var_name}'. Use 'let mut' to allow mutation")
-              end
             end
 
             # Infer numeric member call type (method call with args)
@@ -946,7 +942,6 @@ module MLC
               end
             end
 
-            HASHMAP_MUTATING_METHODS = %w[set remove].freeze
 
             # Infer map member type (non-call)
             def infer_map_member_type(map_type, member, node: nil)
@@ -978,7 +973,7 @@ module MLC
               bool = SemanticIR::Builder.primitive_type("bool")
               i32 = SemanticIR::Builder.primitive_type("i32")
               case member
-              when "split"
+              when "split", "chars", "lines"
                 SemanticIR::ArrayType.new(element_type: str)
               when "trim", "trim_start", "trim_end", "upper", "lower",
                    "to_lower", "to_upper", "substring", "replace",
@@ -988,11 +983,11 @@ module MLC
               when "is_empty", "is_blank", "is_present",
                    "contains", "starts_with", "ends_with"
                 bool
-              when "length", "len", "index_of", "last_index_of"
+              when "length", "len", "index_of", "last_index_of", "to_i"
                 i32
               else
                 type_error(
-                  "Unknown string member '#{member}'. Supported: split, substring, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, is_blank, is_present, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, repeat, reverse, squish, truncate, titleize, camelize, underscore, pad_start, pad_end",
+                  "Unknown string member '#{member}'. Supported: split, chars, lines, substring, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, is_blank, is_present, contains, starts_with, ends_with, length, len, index_of, last_index_of, replace, char_at, to_i, repeat, reverse, squish, truncate, titleize, camelize, underscore, pad_start, pad_end",
                   node: node
                 )
               end

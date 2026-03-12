@@ -194,10 +194,9 @@ class MLCESMModulesTest < Minitest::Test
 
     result = MLC.to_hpp_cpp(mlc_source)
 
-    # Both functions should be in header (for now, we generate all declarations)
-    # But in future, we could omit non-exported ones
     assert_includes result[:header], "int add"
-    assert_includes result[:header], "int helper"
+    refute_includes result[:header], "helper"
+    assert_includes result[:implementation], "helper"
   end
 
   def test_esm_import_generates_includes
@@ -265,8 +264,7 @@ class MLCESMModulesTest < Minitest::Test
 
     result = MLC.to_hpp_cpp(mlc_source)
 
-    # File path should be preserved in #include
-    assert_includes result[:header], '#include "./math.hpp"'
+    assert_includes result[:header], '#include "math.hpp"'
   end
 
   def test_generate_include_from_parent_path
@@ -278,7 +276,7 @@ class MLCESMModulesTest < Minitest::Test
 
     result = MLC.to_hpp_cpp(mlc_source)
 
-    assert_includes result[:header], '#include "../core/utils.hpp"'
+    assert_includes result[:header], '#include "utils.hpp"'
   end
 
   def test_mixed_import_styles

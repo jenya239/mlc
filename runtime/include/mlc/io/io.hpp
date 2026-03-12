@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <vector>
 #include "mlc/core/string.hpp"
+#include "mlc/core/array.hpp"
 
 namespace mlc {
 namespace io {
@@ -22,8 +23,11 @@ String read_line();
 String read_all();
 
 // Command line arguments
-const std::vector<String>& args();
+Array<String> args();
 void set_args(std::vector<String>&& new_args);
+
+// Process control
+[[noreturn]] inline void exit(int code) { std::exit(code); }
 
 } // namespace io
 } // namespace mlc

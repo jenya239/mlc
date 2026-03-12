@@ -26,7 +26,9 @@ module MLC
                 lower_as_gcc_expr(node)
               when :inline
                 # For trivial blocks, just return the result expression
-                node.result ? lower_expression(node.result) : nil
+                if node.result && !unit_literal?(node.result)
+                  lower_expression(node.result)
+                end
               else
                 # Fallback to IIFE (conservative)
                 lower_as_iife(node)
@@ -35,11 +37,23 @@ module MLC
 
             private
 
-            # IIFE strategy: [&]() { ... return val; }()
+            # IIFE strategy: [&]() -> ReturnType { ... return val; }()
             def lower_as_iife(block_expr)
+              snapshot = context.snapshot_declared_variables
               statements = lower_statements(block_expr, emit_return: true)
+              context.restore_declared_variables(snapshot)
               body_lines = statements.map { |stmt| "  #{stmt.to_source}" }
               lambda_body = "\n#{body_lines.join("\n")}\n"
+
+              # Add explicit return type so `return {}` resolves correctly and IIFE returns correct type.
+              ret_type = nil
+              type_to_map = (block_expr.result && !unit_literal?(block_expr.result)) ? block_expr.result.type : nil
+              type_to_map ||= block_expr.type
+              if type_to_map && !unit_type?(type_to_map)
+                mapped = context.map_type(type_to_map)
+                skip = mapped.nil? || mapped.empty? || mapped == "auto" || mapped.include?("function<") || mapped == "void"
+                ret_type = mapped unless skip
+              end
 
               lambda_expr = context.factory.lambda(
                 capture: "&",
@@ -47,7 +61,8 @@ module MLC
                 specifiers: "",
                 body: lambda_body,
                 capture_suffix: "",
-                params_suffix: ""
+                params_suffix: "",
+                return_type: ret_type
               )
 
               context.factory.function_call(
@@ -84,8 +99,12 @@ module MLC
 
               # Add result expression as final statement (no return needed in GCC expr)
               if block_expr.result && !unit_literal?(block_expr.result)
-                result_expr = lower_expression(block_expr.result)
-                statements << context.factory.expression_statement(expression: result_expr)
+                if context.should_lower_as_statement?(block_expr.result)
+                  statements << lower_statement(MLC::SemanticIR::ExprStatement.new(expression: block_expr.result, origin: block_expr.result.origin))
+                else
+                  result_expr = lower_expression(block_expr.result)
+                  statements << context.factory.expression_statement(expression: result_expr)
+                end
               end
 
               # Generate compound expression: ({ ... })
@@ -99,18 +118,23 @@ module MLC
 
             # Helper to lower block statements with optional return
             def lower_statements(block_expr, emit_return: true)
-              statements = block_expr.statements.map do |stmt|
-                lower_statement(stmt)
+              statements = block_expr.statements.flat_map do |stmt|
+                result = lower_statement(stmt)
+                result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
               end
 
               # Skip unit literals - they represent void/no value
               if block_expr.result && !unit_literal?(block_expr.result)
-                result_expr = lower_expression(block_expr.result)
-                statements << if emit_return
-                                context.factory.return_statement(expression: result_expr)
-                              else
-                                context.factory.expression_statement(expression: result_expr)
-                              end
+                if context.should_lower_as_statement?(block_expr.result)
+                  statements << lower_statement(MLC::SemanticIR::ExprStatement.new(expression: block_expr.result, origin: block_expr.result.origin))
+                else
+                  result_expr = lower_expression(block_expr.result)
+                  statements << if emit_return
+                                  context.factory.return_statement(expression: result_expr)
+                                else
+                                  context.factory.expression_statement(expression: result_expr)
+                                end
+                end
               end
 
               statements
@@ -120,6 +144,11 @@ module MLC
             def unit_literal?(expr)
               return true if expr.is_a?(MLC::SemanticIR::UnitLiteral)
               expr.is_a?(MLC::SemanticIR::LiteralExpr) && expr.value == :unit
+            end
+
+            def unit_type?(type)
+              type.is_a?(MLC::SemanticIR::UnitType) ||
+                (type.respond_to?(:name) && %w[unit void].include?(type.name.to_s))
             end
           end
         end

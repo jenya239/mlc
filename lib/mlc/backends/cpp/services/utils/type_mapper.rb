@@ -173,6 +173,10 @@ module MLC
               return true if contains_type_variables?(type)
 
               case type
+              when SemanticIR::GenericType
+                # Shared<() -> T> is a bug from inferring unit constructors as functions.
+                # Use auto so C++ deduces the correct type from the initializer.
+                type.type_args&.any? { |arg| arg.is_a?(SemanticIR::FunctionType) }
               when SemanticIR::ArrayType
                 type_requires_auto?(type.element_type, type_map: type_map, type_registry: type_registry)
               when SemanticIR::FunctionType

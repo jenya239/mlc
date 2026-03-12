@@ -1,21 +1,214 @@
-// Entry point. Pipeline: source → tokenize → parse → check → gen_program
+// Entry point. Pipeline: source → tokenize → parse → load imports → check → gen_module (per file)
 
 import { tokenize } from "./lexer"
 import { parse_program } from "./parser/decls"
-import { check, CheckOut } from "./checker/infer"
-import { gen_program } from "./codegen"
+import { check, check_with_context, CheckOut } from "./checker/infer"
+import { gen_module, LoadItem } from "./codegen"
+import { Program, Decl, DeclImport, DeclExported, errs_append } from "./ast"
 
-fn compile_source(src: string) -> string = do
-  const lex = tokenize(src)
-  if lex.errors.length() > 0 then
-    format_errs("lex", lex.errors)
+fn dirname(path: string) -> string = do
+  let last_slash = -1
+  let index = 0
+  while index < path.length() do
+    if path.char_at(index) == "/" then last_slash = index end
+    index = index + 1
+  end
+  if last_slash <= 0 then "" else path.substring(0, last_slash) end
+end
+
+fn resolve_dotdot(path: string) -> string = do
+  let p = path
+  let i = 0
+  while i + 4 <= p.length() do
+    if p.substring(i, 4) == "/../" then
+      let j = i - 1
+      while j >= 0 && p.char_at(j) != "/" do j = j - 1 end
+      const prefix = if j <= 0 then "" else p.substring(0, j) end
+      const suffix = p.substring(i + 4, p.length() - i - 4)
+      p = if prefix == "" then suffix else prefix + "/" + suffix end
+      i = 0
+    end
+    i = i + 1
+  end
+  if p.length() >= 3 && p.substring(0, 3) == "../" then
+    p = p.substring(3, p.length() - 3)
+  end
+  p
+end
+
+fn resolve_import_path(base_path: string, import_path: string) -> string = do
+  const base_dir = dirname(base_path)
+  const rest = if import_path.length() >= 2 && import_path.substring(0, 2) == "./"
+    then import_path.substring(2, import_path.length() - 2)
+    else import_path
+    end
+  const with_ext = if rest.length() >= 4 && rest.substring(rest.length() - 4, 4) == ".mlc"
+    then rest
+    else rest + ".mlc"
+    end
+  const raw = if base_dir == "" then with_ext else base_dir + "/" + with_ext end
+  resolve_dotdot(raw)
+end
+
+fn path_in_loaded(path: string, loaded: [string]) -> bool = do
+  let found = false
+  let i = 0
+  while i < loaded.length() do
+    if loaded[i] == path then found = true end
+    i = i + 1
+  end
+  found
+end
+
+type LoadResult = LoadResult { items: [LoadItem], errors: [string] }
+
+fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, LoadResult>) -> LoadResult = do
+  const norm_path = resolve_dotdot(path)
+  if cache.has(norm_path) then cache.get(norm_path)
+  else if path_in_loaded(norm_path, loaded) then
+    LoadResult { items: [], errors: ["circular: " + norm_path] }
+  else
+  let cur_loaded = loaded
+  cur_loaded.push(norm_path)
+  const source = File.read(path)
+  if source.length() == 0 && !File.exists(path) then
+    LoadResult { items: [], errors: ["file not found: " + path] }
+  else
+  const lex = tokenize(source)
+  if lex.has_errors() then
+    LoadResult { items: [], errors: ["lex " + path + ": " + lex.errors[0]] }
   else
     const prog = parse_program(lex.tokens)
-    const chk = check(prog)
-    if chk.errors.length() > 0 then format_errs("check", chk.errors)
-    else gen_program(prog)
+    let items: [LoadItem] = []
+    let seen: [string] = []
+    let my_decls: [Shared<Decl>] = []
+    let my_imports: [string] = []
+    let all_errors: [string] = []
+    let index = 0
+    while index < prog.decls.length() do
+      match prog.decls[index] {
+        DeclImport(import_path, _) => do
+          const resolved = resolve_dotdot(resolve_import_path(path, import_path))
+          my_imports.push(resolved)
+          const dep_result = load_module_impl(resolved, cur_loaded, cache)
+          all_errors = errs_append(all_errors, dep_result.errors)
+          let dep_i = 0
+          while dep_i < dep_result.items.length() do
+            const item = dep_result.items[dep_i]
+            if !path_in_loaded(item.path, seen) then
+              seen.push(item.path)
+              items.push(item)
+            end
+            dep_i = dep_i + 1
+          end
+        end,
+        DeclExported(d) => my_decls.push(prog.decls[index]),
+        _ => my_decls.push(prog.decls[index])
+      }
+      index = index + 1
+    end
+    items.push(LoadItem { path: norm_path, decls: my_decls, imports: my_imports })
+    const result = LoadResult { items: items, errors: all_errors }
+    cache.set(norm_path, result)
+    result
+  end
+  end
+  end
+end
+
+fn load_module(path: string, cache: ref mut Map<string, LoadResult>) -> LoadResult =
+  load_module_impl(path, [], cache)
+
+type MergeResult = MergeResult { prog: Program, errors: [string], items: [LoadItem] }
+
+fn path_to_module_base(path: string) -> string = do
+  let last_slash = -1
+  let last_dot = path.length()
+  let i = 0
+  while i < path.length() do
+    if path.char_at(i) == "/" then last_slash = i
+    else if path.char_at(i) == "." && i > last_slash then last_dot = i
+    end
+    i = i + 1
+  end
+  if last_dot > last_slash then path.substring(last_slash + 1, last_dot - last_slash - 1)
+  else path.substring(last_slash + 1, path.length() - last_slash - 1)
+  end
+end
+
+fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
+  let all_decls: [Shared<Decl>] = []
+  let all_errors: [string] = []
+  let seen_paths: [string] = []
+  let items_ordered: [LoadItem] = []
+  let entry_decls: [Shared<Decl>] = []
+  let entry_imports: [string] = []
+  let cache: Map<string, LoadResult> = Map.new()
+  let index = 0
+  while index < prog.decls.length() do
+    match prog.decls[index] {
+      DeclImport(path, _) => do
+        const resolved = resolve_dotdot(resolve_import_path(entry_path, path))
+        entry_imports.push(resolved)
+        const dep_result = load_module(resolved, cache)
+        all_errors = errs_append(all_errors, dep_result.errors)
+        let dep_i = 0
+        while dep_i < dep_result.items.length() do
+          const item = dep_result.items[dep_i]
+          if !path_in_loaded(item.path, seen_paths) then
+            seen_paths.push(item.path)
+            items_ordered.push(item)
+            let d = 0
+            while d < item.decls.length() do
+              all_decls.push(item.decls[d]); d = d + 1
+            end
+          end
+          dep_i = dep_i + 1
+        end
+      end,
+      DeclExported(d) => do entry_decls.push(d); all_decls.push(d) end,
+      _ => do entry_decls.push(prog.decls[index]); all_decls.push(prog.decls[index]) end
+    }
+    index = index + 1
+  end
+  const norm_entry = resolve_dotdot(entry_path)
+  items_ordered.push(LoadItem { path: norm_entry, decls: entry_decls, imports: entry_imports })
+  MergeResult { prog: Program { decls: all_decls }, errors: all_errors, items: items_ordered }
+end
+
+fn compile_modular(entry_path: string, out_dir: string) -> string = do
+  const src = File.read(entry_path)
+  const lex = tokenize(src)
+  if lex.has_errors() then format_errs("lex", lex.errors)
+  else
+    const prog = parse_program(lex.tokens)
+    const merged_result = merge_program(entry_path, prog)
+    if merged_result.errors.length() > 0 then format_errs("import", merged_result.errors)
+    else
+      const n = merged_result.items.length()
+      const entry_item = merged_result.items[n - 1]
+      const entry_prog = Program { decls: entry_item.decls }
+      const chk = check_with_context(entry_prog, merged_result.prog)
+      if chk.errors.length() > 0 then format_errs("check", chk.errors)
+      else compile_modular_loop(merged_result.items, merged_result.prog, out_dir)
+      end
     end
   end
+end
+
+fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) -> string = do
+  let i = 0
+  while i < items.length() do
+    const item = items[i]
+    const out = gen_module(item, items, full_prog)
+    const base = path_to_module_base(item.path)
+    const hpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".hpp" else base + ".hpp" end
+    const cpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".cpp" else base + ".cpp" end
+    File.write(hpp_path, out.h)
+    File.write(cpp_path, out.c)
+    i = i + 1
+  end
+  ""
 end
 
 fn format_errs(label: string, errors: [string]) -> string = do
@@ -27,12 +220,17 @@ fn format_errs(label: string, errors: [string]) -> string = do
 end
 
 fn main() -> i32 = do
-  const cli_args = args()
-  if cli_args.length() == 0 then
-    println("Usage: mlcc <source.mlc>")
+  const a = args()
+  if a.length() == 0 then
+    println("Usage: mlcc <source.mlc> [-o out_dir]")
     exit(1)
   end
-  const src = File.read(cli_args[0])
-  print(compile_source(src))
+  const entry_path = if a.length() >= 3 && a[0] == "-o" then a[2] else a[0] end
+  const out_dir = if a.length() >= 3 && a[0] == "-o" then a[1]
+    else if a.length() >= 3 && a[1] == "-o" then a[2]
+    else "out" end
+  const err = compile_modular(entry_path, out_dir)
+  if err.length() > 0 then print(err) end
+  if err.length() > 0 then exit(1) end
   0
 end

@@ -1,11 +1,22 @@
 // ─── Type inference ───────────────────────────────────────────────────────
 
-import { Expr, Stmt, Pat, Program, errs_append } from "../ast"
+import { Expr, Stmt, Pat, Program, decl_inner, errs_append } from "../ast"
 import { collect_globals, check_names_expr } from "./names"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
 
 type InferResult     = InferResult     { inferred_type: Shared<Type>,             errors: [string] }
 type StmtInferResult = StmtInferResult { type_env:      Map<string, Shared<Type>>, errors: [string] }
+
+extend InferResult {
+  fn with_type(self, new_type: Shared<Type>) -> InferResult =
+    InferResult { inferred_type: new_type, errors }
+
+  fn absorb(self, other: InferResult) -> InferResult =
+    InferResult { inferred_type, errors: errs_append(errors, other.errors) }
+
+  fn absorb_stmt(self, stmt_result: StmtInferResult) -> InferResult =
+    InferResult { inferred_type, errors: errs_append(stmt_result.errors, errors) }
+}
 
 fn infer_ok(type_val: Shared<Type>) -> InferResult =
   InferResult { inferred_type: type_val, errors: [] }
@@ -26,100 +37,100 @@ fn method_return_type(method_name: string) -> Shared<Type> =
   else Shared.new(TUnknown)
   end
 
-fn field_lookup_type(obj_type: Shared<Type>, field_name: string, registry: Shared<TypeRegistry>) -> Shared<Type> = do
+fn infer_args_errors(initial: InferResult, exprs: [Shared<Expr>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> InferResult = do
+  let result = initial
+  let index = 0
+  while index < exprs.length() do
+    result = result.absorb(infer_expr(exprs[index], type_env, registry))
+    index = index + 1
+  end
+  result
+end
+
+fn infer_field_vals_errors(initial: InferResult, field_vals: [Shared<FieldVal>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> InferResult = do
+  let result = initial
+  let index = 0
+  while index < field_vals.length() do
+    result = result.absorb(infer_expr(field_vals[index].val, type_env, registry))
+    index = index + 1
+  end
+  result
+end
+
+fn field_lookup_type(obj_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
   const type_name = match obj_type { TNamed(name) => name, _ => "" }
-  if type_name != "" && registry.field_types.has(type_name) then
-    const field_map = registry.field_types.get(type_name)
+  if type_name != "" && registry.has_fields(type_name) then
+    const field_map = registry.fields_for(type_name)
     if field_map.has(field_name) then field_map.get(field_name) else Shared.new(TUnknown) end
   else Shared.new(TUnknown)
   end
 end
 
-fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry: Shared<TypeRegistry>) -> InferResult = do
+fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> InferResult = do
   match expr {
     ExprInt(_)  => infer_ok(Shared.new(TI32)),
     ExprStr(_)  => infer_ok(Shared.new(TString)),
     ExprBool(_) => infer_ok(Shared.new(TBool)),
     ExprUnit    => infer_ok(Shared.new(TUnit)),
+    ExprExtern  => infer_ok(Shared.new(TUnit)),
     ExprIdent(name) =>
       if type_env.has(name) then infer_ok(type_env.get(name))
-      else if registry.fn_types.has(name) then infer_ok(registry.fn_types.get(name))
-      else if registry.ctor_types.has(name) then infer_ok(registry.ctor_types.get(name))
+      else if registry.has_fn(name) then infer_ok(registry.fn_type(name))
+      else if registry.has_ctor(name) then infer_ok(registry.ctor_type(name))
       else infer_ok(Shared.new(TUnknown))
       end,
     ExprBin(op, left, right) => do
       const left_result  = infer_expr(left, type_env, registry)
       const right_result = infer_expr(right, type_env, registry)
-      InferResult {
-        inferred_type: binary_op_type(op, left_result.inferred_type),
-        errors: errs_append(left_result.errors, right_result.errors)
-      }
+      left_result.absorb(right_result).with_type(binary_op_type(op, left_result.inferred_type))
     end,
     ExprUn(op, inner) => do
       const inner_result = infer_expr(inner, type_env, registry)
-      const result_type = if op == "!" then Shared.new(TBool) else inner_result.inferred_type end
-      InferResult { inferred_type: result_type, errors: inner_result.errors }
+      const result_type  = if op == "!" then Shared.new(TBool) else inner_result.inferred_type end
+      inner_result.with_type(result_type)
     end,
-    ExprCall(func, args) => do
-      const func_result = infer_expr(func, type_env, registry)
-      let errors = func_result.errors; let i = 0
-      while i < args.length() do
-        const arg_result = infer_expr(args[i], type_env, registry)
-        errors = errs_append(errors, arg_result.errors); i = i + 1
-      end
-      const return_type = match func_result.inferred_type { TFn(_, ret) => ret, _ => Shared.new(TUnknown) }
-      InferResult { inferred_type: return_type, errors: errors }
+    ExprCall(func, call_args) => do
+      const func_result  = infer_expr(func, type_env, registry)
+      const with_args    = infer_args_errors(func_result, call_args, type_env, registry)
+      const return_type  = match func_result.inferred_type { TFn(_, ret) => ret, _ => Shared.new(TUnknown) }
+      with_args.with_type(return_type)
     end,
-    ExprMethod(obj, method_name, args) => do
+    ExprMethod(obj, method_name, margs) => do
       const obj_result = infer_expr(obj, type_env, registry)
-      let errors = obj_result.errors; let i = 0
-      while i < args.length() do
-        const arg_result = infer_expr(args[i], type_env, registry)
-        errors = errs_append(errors, arg_result.errors); i = i + 1
-      end
-      InferResult { inferred_type: method_return_type(method_name), errors: errors }
+      infer_args_errors(obj_result, margs, type_env, registry).with_type(method_return_type(method_name))
     end,
     ExprField(obj, field_name) => do
       const obj_result = infer_expr(obj, type_env, registry)
-      InferResult {
-        inferred_type: field_lookup_type(obj_result.inferred_type, field_name, registry),
-        errors: obj_result.errors
-      }
+      obj_result.with_type(field_lookup_type(obj_result.inferred_type, field_name, registry))
     end,
     ExprIndex(obj, idx) => do
-      const obj_result = infer_expr(obj, type_env, registry)
-      const idx_result = infer_expr(idx, type_env, registry)
-      let elem_type = match obj_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
-      InferResult { inferred_type: elem_type, errors: errs_append(obj_result.errors, idx_result.errors) }
+      const obj_result  = infer_expr(obj, type_env, registry)
+      const idx_result  = infer_expr(idx, type_env, registry)
+      const elem_type   = match obj_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+      obj_result.absorb(idx_result).with_type(elem_type)
     end,
     ExprIf(cond, then_expr, else_expr) => do
       const cond_result = infer_expr(cond, type_env, registry)
       const then_result = infer_expr(then_expr, type_env, registry)
       const else_result = infer_expr(else_expr, type_env, registry)
-      InferResult {
-        inferred_type: then_result.inferred_type,
-        errors: errs_append(errs_append(cond_result.errors, then_result.errors), else_result.errors)
-      }
+      then_result.absorb(cond_result).absorb(else_result)
     end,
     ExprBlock(stmts, result) => do
       const stmts_result = infer_stmts(stmts, type_env, registry)
       const result_infer = infer_expr(result, stmts_result.type_env, registry)
-      InferResult {
-        inferred_type: result_infer.inferred_type,
-        errors: errs_append(stmts_result.errors, result_infer.errors)
-      }
+      result_infer.absorb_stmt(stmts_result)
     end,
     ExprWhile(cond, stmts) => do
       const cond_result  = infer_expr(cond, type_env, registry)
       const stmts_result = infer_stmts(stmts, type_env, registry)
-      InferResult { inferred_type: Shared.new(TUnit), errors: errs_append(cond_result.errors, stmts_result.errors) }
+      cond_result.absorb_stmt(stmts_result).with_type(Shared.new(TUnit))
     end,
     ExprFor(var, iter, stmts) => do
-      const iter_result = infer_expr(iter, type_env, registry)
-      const elem_type   = match iter_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
-      const inner_env = type_env; inner_env.set(var, elem_type)
+      const iter_result  = infer_expr(iter, type_env, registry)
+      const elem_type    = match iter_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+      const inner_env    = type_env; inner_env.set(var, elem_type)
       const stmts_result = infer_stmts(stmts, inner_env, registry)
-      InferResult { inferred_type: Shared.new(TUnit), errors: errs_append(iter_result.errors, stmts_result.errors) }
+      iter_result.absorb_stmt(stmts_result).with_type(Shared.new(TUnit))
     end,
     ExprMatch(subject, arms) => do
       const subject_result = infer_expr(subject, type_env, registry)
@@ -135,34 +146,18 @@ fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry:
       end
       InferResult { inferred_type: arm_type, errors: errors }
     end,
-    ExprRecord(name, field_vals) => do
-      let errors: [string] = []; let i = 0
-      while i < field_vals.length() do
-        const field_result = infer_expr(field_vals[i].val, type_env, registry)
-        errors = errs_append(errors, field_result.errors); i = i + 1
-      end
-      InferResult { inferred_type: Shared.new(TNamed(name)), errors: errors }
-    end,
+    ExprRecord(name, field_vals) =>
+      infer_field_vals_errors(infer_ok(Shared.new(TNamed(name))), field_vals, type_env, registry),
     ExprRecordUpdate(name, base, field_vals) => do
       const base_result = infer_expr(base, type_env, registry)
-      let errors: [string] = base_result.errors; let i = 0
-      while i < field_vals.length() do
-        const field_result = infer_expr(field_vals[i].val, type_env, registry)
-        errors = errs_append(errors, field_result.errors); i = i + 1
-      end
-      InferResult { inferred_type: Shared.new(TNamed(name)), errors: errors }
+      infer_field_vals_errors(base_result.with_type(Shared.new(TNamed(name))), field_vals, type_env, registry)
     end,
     ExprArray(exprs) => do
-      let errors: [string] = []
-      let elem_type: Shared<Type> = Shared.new(TUnknown)
-      let i = 0
-      while i < exprs.length() do
-        const elem_result = infer_expr(exprs[i], type_env, registry)
-        errors = errs_append(errors, elem_result.errors)
-        if i == 0 then elem_type = elem_result.inferred_type end
-        i = i + 1
-      end
-      InferResult { inferred_type: Shared.new(TArray(elem_type)), errors: errors }
+      const first_type = if exprs.length() > 0
+        then infer_expr(exprs[0], type_env, registry).inferred_type
+        else Shared.new(TUnknown)
+        end
+      infer_args_errors(infer_ok(Shared.new(TArray(first_type))), exprs, type_env, registry)
     end,
     ExprQuestion(inner) => infer_expr(inner, type_env, registry),
     ExprLambda(params, body) => do
@@ -177,36 +172,36 @@ fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry:
   }
 end
 
-fn infer_stmts(stmts: [Shared<Stmt>], type_env: Map<string, Shared<Type>>, registry: Shared<TypeRegistry>) -> StmtInferResult = do
+fn infer_stmts(stmts: [Shared<Stmt>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> StmtInferResult = do
   let errors: [string] = []; let current_env = type_env; let i = 0
   while i < stmts.length() do
     match stmts[i] {
       StmtLet(name, _, _, value) => do
         const value_result = infer_expr(value, current_env, registry)
         current_env.set(name, value_result.inferred_type)
-        errors = errs_append(errors, value_result.errors)
+        errors = errs_append(errors, value_result.errors); ()
       end,
       StmtExpr(expr)   => do
         const expr_res = infer_expr(expr, current_env, registry)
-        errors = errs_append(errors, expr_res.errors)
+        errors = errs_append(errors, expr_res.errors); ()
       end,
       StmtReturn(expr) => do
         const ret_res = infer_expr(expr, current_env, registry)
-        errors = errs_append(errors, ret_res.errors)
+        errors = errs_append(errors, ret_res.errors); ()
       end,
-      StmtBreak    => do end,
-      StmtContinue => do end
+      StmtBreak    => do () end,
+      StmtContinue => do () end
     }
     i = i + 1
   end
   StmtInferResult { errors: errors, type_env: current_env }
 end
 
-fn env_for_pat(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, registry: Shared<TypeRegistry>) -> Map<string, Shared<Type>> = do
+fn env_for_pat(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
   match pat {
     PatIdent(name) => do let env = type_env; env.set(name, Shared.new(TUnknown)); env end,
     PatCtor(ctor_name, sub_pats) => do
-      const param_types = if registry.ctor_params.has(ctor_name) then registry.ctor_params.get(ctor_name) else [] end
+      const param_types = registry.ctor_params_for(ctor_name)
       let current_env = type_env; let i = 0
       while i < sub_pats.length() do
         const sub_type = if i < param_types.length() then param_types[i] else Shared.new(TUnknown) end
@@ -218,7 +213,7 @@ fn env_for_pat(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, registry: 
   }
 end
 
-fn env_for_pat_with_type(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, type_val: Shared<Type>, registry: Shared<TypeRegistry>) -> Map<string, Shared<Type>> = do
+fn env_for_pat_with_type(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, type_val: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
   match pat {
     PatIdent(name) => do let env = type_env; env.set(name, type_val); env end,
     _ => env_for_pat(type_env, pat, registry)
@@ -227,7 +222,41 @@ end
 
 // ─── Entry point ──────────────────────────────────────────────────────────
 
-export type CheckOut = CheckOut { errors: [string], registry: Shared<TypeRegistry> }
+export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
+
+export extend CheckOut {
+  fn has_errors(self) -> bool = errors.length() > 0
+}
+
+export fn check_with_context(entry: Program, full: Program) -> CheckOut = do
+  const globals  = collect_globals(full)
+  let registry = build_registry(full)
+  let all_errors: [string] = []
+  let i = 0
+  while i < entry.decls.length() do
+    match decl_inner(entry.decls[i]) {
+      DeclFn(_, params, _, body) => do
+        const locals: [string] = []
+        const type_env: Map<string, Shared<Type>> = Map.new()
+        let j = 0
+        while j < params.length() do
+          locals.push(param_name(params[j]))
+          type_env.set(param_name(params[j]), type_from_annotation(param_typ(params[j])))
+          j = j + 1
+        end
+        all_errors = errs_append(all_errors, check_names_expr(body, locals, globals))
+        const infer_result = infer_expr(body, type_env, registry)
+        all_errors = errs_append(all_errors, infer_result.errors); ()
+      end,
+      DeclType(_, _)    => do () end,
+      DeclExtend(_, _)  => do () end,
+      DeclImport(_, _)  => do () end,
+      DeclExported(d)   => do () end
+    }
+    i = i + 1
+  end
+  CheckOut { errors: all_errors, registry: registry }
+end
 
 export fn check(prog: Program) -> CheckOut = do
   const globals  = collect_globals(prog)
@@ -235,21 +264,24 @@ export fn check(prog: Program) -> CheckOut = do
   let all_errors: [string] = []
   let i = 0
   while i < prog.decls.length() do
-    match prog.decls[i] {
+    match decl_inner(prog.decls[i]) {
       DeclFn(_, params, _, body) => do
         const locals: [string] = []
         const type_env: Map<string, Shared<Type>> = Map.new()
         let j = 0
         while j < params.length() do
-          locals.push(params[j].name)
-          type_env.set(params[j].name, type_from_annotation(params[j].typ))
+          locals.push(param_name(params[j]))
+          type_env.set(param_name(params[j]), type_from_annotation(param_typ(params[j])))
           j = j + 1
         end
         all_errors = errs_append(all_errors, check_names_expr(body, locals, globals))
         const infer_result = infer_expr(body, type_env, registry)
-        all_errors = errs_append(all_errors, infer_result.errors)
+        all_errors = errs_append(all_errors, infer_result.errors); ()
       end,
-      DeclType(_, _) => do end
+      DeclType(_, _)    => do () end,
+      DeclExtend(_, _)  => do () end,
+      DeclImport(_, _)  => do () end,
+      DeclExported(d)   => do () end
     }
     i = i + 1
   end

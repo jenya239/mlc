@@ -1,24 +1,6 @@
 // Shared AST type definitions for the self-hosted MLC compiler.
 
-extend Shared<T> {
-  extern fn new(value: T) -> Shared<T>
-}
-
-// ─── Token types ──────────────────────────────────────────────────────────
-
-export type TKind =
-  | KFn | KType | KLet | KMut | KConst | KReturn
-  | KBreak | KContinue | KIf | KThen | KElse | KUnless
-  | KWhile | KFor | KIn | KDo | KEnd | KMatch
-  | KImport | KFrom | KAs | KExtern | KExtend | KWhere
-  | KTrue | KFalse
-  | LInt(i32) | LStr(string) | Ident(string)
-  | Arrow | FatArrow | Pipe | Bar | Equal | Question | Dot | Spread
-  | LParen | RParen | LBrace | RBrace | LBracket | RBracket
-  | Comma | Semicolon | Colon | Op(string) | Eof
-
-export type Token  = Token  { kind: TKind, line: i32, col: i32 }
-export type LexOut = LexOut { tokens: [Token], errors: [string] }
+import { TKind, Token, LexOut } from "./ast_tokens"
 
 // ─── AST ─────────────────────────────────────────────────────────────────
 
@@ -56,6 +38,7 @@ export type Expr =
   | ExprRecordUpdate(string, Shared<Expr>, [Shared<FieldVal>])
   | ExprArray([Shared<Expr>])
   | ExprQuestion(Shared<Expr>)
+  | ExprExtern
   | ExprLambda([string], Shared<Expr>)
 
 export type Stmt =
@@ -74,8 +57,36 @@ export type TypeVariant =
 export type Decl =
   | DeclFn(string, [Shared<Param>], Shared<TypeExpr>, Shared<Expr>)
   | DeclType(string, [Shared<TypeVariant>])
+  | DeclExtend(string, [Shared<Decl>])
+  | DeclImport(string, [string])
+  | DeclExported(Shared<Decl>)
 
 export type Program = Program { decls: [Shared<Decl>] }
+
+export fn param_name(p: Shared<Param>) -> string = p.name
+export fn param_typ(p: Shared<Param>) -> Shared<TypeExpr> = p.typ
+
+export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
+  const d: Shared<Decl> = decl
+  match d {
+    DeclExported(inner) => inner,
+    DeclFn(_, _, _, _) => decl,
+    DeclType(_, _) => decl,
+    DeclExtend(_, _) => decl,
+    DeclImport(_, _) => decl
+  }
+end
+
+export fn decl_name(decl: Shared<Decl>) -> string = do
+  const d: Shared<Decl> = decl
+  match d {
+    DeclFn(name, _, _, _) => name,
+    DeclType(name, _) => name,
+    DeclExtend(type_name, _) => type_name,
+    DeclImport(_, _) => "",
+    DeclExported(inner) => decl_name(inner)
+  }
+end
 
 // ─── Shared utility ───────────────────────────────────────────────────────
 

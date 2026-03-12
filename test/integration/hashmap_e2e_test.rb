@@ -21,7 +21,7 @@ class HashMapE2ETest < Minitest::Test
   def test_map_set_get
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("a", 10)
         m.set("b", 20)
         m.get("a") + m.get("b")
@@ -34,7 +34,7 @@ class HashMapE2ETest < Minitest::Test
   def test_map_has
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("x", 42)
         if m.has("x") then 1 else 0
       end
@@ -46,7 +46,7 @@ class HashMapE2ETest < Minitest::Test
   def test_map_size
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("a", 1)
         m.set("b", 2)
         m.set("c", 3)
@@ -60,7 +60,7 @@ class HashMapE2ETest < Minitest::Test
   def test_map_overwrite
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("a", 10)
         m.set("a", 99)
         m.get("a")
@@ -73,7 +73,7 @@ class HashMapE2ETest < Minitest::Test
   def test_map_i32_keys
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut m: Map<i32, i32> = Map.new()
+        let m: Map<i32, i32> = Map.new()
         m.set(1, 10)
         m.set(2, 20)
         m.set(3, 30)
@@ -87,7 +87,7 @@ class HashMapE2ETest < Minitest::Test
   def test_map_keys_length
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("a", 1)
         m.set("b", 2)
         m.keys().length()
@@ -100,7 +100,7 @@ class HashMapE2ETest < Minitest::Test
   def test_map_remove
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut m: Map<string, i32> = Map.new()
+        let m: Map<string, i32> = Map.new()
         m.set("a", 1)
         m.set("b", 2)
         m.remove("a")
@@ -114,7 +114,7 @@ class HashMapE2ETest < Minitest::Test
   def test_map_cow_copy_independent
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let mut a: Map<string, i32> = Map.new()
+        let a: Map<string, i32> = Map.new()
         a.set("x", 10)
         let b = a
         a.set("y", 20)

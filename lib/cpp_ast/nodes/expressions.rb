@@ -120,20 +120,22 @@ module CppAst
 
     # LambdaExpression - lambda: [capture](params) { body }
     class LambdaExpression < Expression
-      attr_accessor :capture, :parameters, :specifiers, :body, :capture_suffix, :params_suffix
+      attr_accessor :capture, :parameters, :specifiers, :body, :capture_suffix, :params_suffix, :return_type
 
       def initialize(capture: "", parameters: "", specifiers: "", body: "",
-                     capture_suffix: "", params_suffix: "")
+                     capture_suffix: "", params_suffix: "", return_type: nil)
         @capture = capture
         @parameters = parameters
         @specifiers = specifiers
         @body = body
         @capture_suffix = capture_suffix
         @params_suffix = params_suffix
+        @return_type = return_type
       end
 
       def to_source
-        "[#{capture}]#{capture_suffix}(#{parameters})#{params_suffix}#{specifiers} { #{body} }"
+        ret = return_type ? " -> #{return_type}" : ""
+        "[#{capture}]#{capture_suffix}(#{parameters})#{params_suffix}#{specifiers}#{ret} { #{body} }"
       end
     end
 
