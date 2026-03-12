@@ -23,7 +23,11 @@ module MLC
           module_node.items.each do |item|
             case item
             when SemanticIR::TypeDecl
-              header_items << item
+              if item.exported
+                header_items << item
+              else
+                impl_types << item
+              end
             when SemanticIR::Func
               header_items << item if item.exported
               next if item.external
@@ -42,7 +46,6 @@ module MLC
             all_modules: all_modules
           )
 
-          # Generate implementation file
           implementation = generate_implementation(
             module_node: module_node,
             module_name: module_node.name,
@@ -171,6 +174,13 @@ module MLC
             lines << "using namespace ast_tokens;"
           end
           lines << "" if impl_imports.any?
+
+          # Non-exported type definitions in implementation
+          type_items.each do |item|
+            cpp_ast = @lowering.lower(item)
+            lines << cpp_ast.to_source
+            lines << ""
+          end
 
           # Forward declarations for internal functions (used before definition)
           items.each do |item|
