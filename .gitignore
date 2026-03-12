@@ -5,3 +5,13 @@ vendor/bundle/
 flow/*.jsonl
 coverage/
 *.gch
+# Compiled binaries and object files
+*.o
+compiler/out/mlcc
+compiler/out/run_tests
+compiler/out/obj/
+build/obj/
+build/app
+misc/examples/out_minimal/obj/
+misc/examples/out_minimal/minimal
+perf.data
