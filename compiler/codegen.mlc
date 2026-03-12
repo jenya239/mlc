@@ -1002,6 +1002,7 @@ export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program) 
     shared_params: [],
     variant_types: build_variant_types_from_decls(full_prog.decls)
   }
+  const ns = if base == "main" then "mlc_main" else base end
   const std_includes = "#include \"mlc.hpp\"\n#include <variant>\n\n" + include_lines(item.imports) + "\n"
   const type_fwds = collect_decl_parts(item.decls, ctx, 0)
   const type_defs = collect_decl_parts(item.decls, ctx, 1)
@@ -1013,24 +1014,29 @@ export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program) 
     "#define " + guard + "\n",
     "\n",
     std_includes,
-    "namespace " + base + " {\n",
+    "namespace " + ns + " {\n",
     "\n",
     type_fwds.join(""),
     type_defs.join(""),
     fn_protos.join(""),
     "\n",
-    "} // namespace " + base + "\n",
+    "} // namespace " + ns + "\n",
     "\n",
     "#endif // " + guard + "\n"
   ].join("")
+  const cli_wrapper = if base == "main" then
+    "\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::mlc_main::mlc_user_main(argc, argv);\n}\n"
+    else "" end
   const impl = [
+    "#define main mlc_user_main\n",
     "#include \"" + base + ".hpp\"\n",
     "\n",
-    "namespace " + base + " {\n",
+    "namespace " + ns + " {\n",
     "\n",
     fn_defs.join(""),
     "\n",
-    "} // namespace " + base + "\n"
+    "} // namespace " + ns + "\n",
+    cli_wrapper
   ].join("")
   GenModuleOut { h: header, c: impl }
 end
