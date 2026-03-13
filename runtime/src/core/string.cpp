@@ -85,29 +85,29 @@ std::string String::utf8_char_at(const std::string& str, size_t char_pos) {
 
 // Substring by character positions
 String String::substring(size_t start) const {
-    if (is_ascii_) return String(data_.substr(start), true);
-    size_t byte_start = utf8_char_index(data_, start);
-    return String(data_.substr(byte_start), false);
+    if (is_ascii_) return String(data_->substr(start), true);
+    size_t byte_start = utf8_char_index(*data_, start);
+    return String(data_->substr(byte_start), false);
 }
 
 String String::substring(size_t start, size_t length) const {
-    if (is_ascii_) return String(data_.substr(start, length), true);
-    size_t byte_start = utf8_char_index(data_, start);
-    size_t byte_end = utf8_char_index(data_, start + length);
-    return String(data_.substr(byte_start, byte_end - byte_start), false);
+    if (is_ascii_) return String(data_->substr(start, length), true);
+    size_t byte_start = utf8_char_index(*data_, start);
+    size_t byte_end = utf8_char_index(*data_, start + length);
+    return String(data_->substr(byte_start, byte_end - byte_start), false);
 }
 
 // Case conversion (simple ASCII version for MVP)
 // TODO: Add ICU/Boost.Locale for proper Unicode case conversion
 String String::upper() const {
-    std::string result = data_;
+    std::string result = *data_;
     std::transform(result.begin(), result.end(), result.begin(),
                    [](unsigned char c) { return std::toupper(c); });
     return String(result);
 }
 
 String String::lower() const {
-    std::string result = data_;
+    std::string result = *data_;
     std::transform(result.begin(), result.end(), result.begin(),
                    [](unsigned char c) { return std::tolower(c); });
     return String(result);
@@ -115,52 +115,52 @@ String String::lower() const {
 
 // Trimming whitespace
 String String::trim() const {
-    if (data_.empty()) return String();
+    if (data_->empty()) return String();
 
     size_t start = 0;
-    size_t end = data_.size() - 1;
+    size_t end = data_->size() - 1;
 
     // Find first non-whitespace
-    while (start < data_.size() && std::isspace(static_cast<unsigned char>(data_[start]))) {
+    while (start < data_->size() && std::isspace(static_cast<unsigned char>((*data_)[start]))) {
         start++;
     }
 
     // Find last non-whitespace
-    while (end > start && std::isspace(static_cast<unsigned char>(data_[end]))) {
+    while (end > start && std::isspace(static_cast<unsigned char>((*data_)[end]))) {
         end--;
     }
 
     if (start > end) return String();
-    return String(data_.substr(start, end - start + 1));
+    return String(data_->substr(start, end - start + 1));
 }
 
 String String::trim_start() const {
-    if (data_.empty()) return String();
+    if (data_->empty()) return String();
 
     size_t start = 0;
-    while (start < data_.size() && std::isspace(static_cast<unsigned char>(data_[start]))) {
+    while (start < data_->size() && std::isspace(static_cast<unsigned char>((*data_)[start]))) {
         start++;
     }
 
-    return String(data_.substr(start));
+    return String(data_->substr(start));
 }
 
 String String::trim_end() const {
-    if (data_.empty()) return String();
+    if (data_->empty()) return String();
 
-    size_t end = data_.size() - 1;
-    while (end > 0 && std::isspace(static_cast<unsigned char>(data_[end]))) {
+    size_t end = data_->size() - 1;
+    while (end > 0 && std::isspace(static_cast<unsigned char>((*data_)[end]))) {
         end--;
     }
 
-    return String(data_.substr(0, end + 1));
+    return String(data_->substr(0, end + 1));
 }
 
 // Splitting
 mlc::Array<String> String::split(const String& delimiter) const {
     mlc::Array<String> result;
 
-    if (delimiter.data_.empty()) {
+    if (delimiter.data_->empty()) {
         size_t char_count = length();
         for (size_t i = 0; i < char_count; i++) {
             result.push_back(String(char_at(i)));
@@ -169,15 +169,15 @@ mlc::Array<String> String::split(const String& delimiter) const {
     }
 
     size_t start = 0;
-    size_t pos = data_.find(delimiter.data_);
+    size_t pos = data_->find(*delimiter.data_);
 
     while (pos != std::string::npos) {
-        result.push_back(String(data_.substr(start, pos - start)));
-        start = pos + delimiter.data_.size();
-        pos = data_.find(delimiter.data_, start);
+        result.push_back(String(data_->substr(start, pos - start)));
+        start = pos + delimiter.data_->size();
+        pos = data_->find(*delimiter.data_, start);
     }
 
-    result.push_back(String(data_.substr(start)));
+    result.push_back(String(data_->substr(start)));
     return result;
 }
 

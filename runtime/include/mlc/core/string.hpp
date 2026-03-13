@@ -15,9 +15,10 @@ namespace mlc {
 class Bytes;
 
 // Aurora String class - high-level, character-oriented, UTF-8 aware
+// Copying is O(1) via shared_ptr (immutable value semantics).
 class String {
 private:
-    std::string data_;
+    std::shared_ptr<std::string> data_;
     bool is_ascii_;
 
     static bool check_ascii(const std::string& s) {
@@ -25,9 +26,13 @@ private:
         return true;
     }
 
-    // Private constructor for known-ASCII strings (avoids re-checking)
-    String(std::string&& data, bool is_ascii) : data_(std::move(data)), is_ascii_(is_ascii) {}
-    String(const std::string& data, bool is_ascii) : data_(data), is_ascii_(is_ascii) {}
+    // Private constructors for known-ASCII strings (avoids re-checking)
+    String(std::shared_ptr<std::string> data, bool is_ascii)
+        : data_(std::move(data)), is_ascii_(is_ascii) {}
+    String(std::string&& data, bool is_ascii)
+        : data_(std::make_shared<std::string>(std::move(data))), is_ascii_(is_ascii) {}
+    String(const std::string& data, bool is_ascii)
+        : data_(std::make_shared<std::string>(data)), is_ascii_(is_ascii) {}
 
     // Helper: count UTF-8 characters in a string
     static size_t utf8_length(const std::string& str);
@@ -40,33 +45,34 @@ private:
 
 public:
     // Constructors
-    String() : data_(), is_ascii_(true) {}
-    String(const char* str) : data_(str), is_ascii_(check_ascii(data_)) {}
-    String(const char* data, size_t len) : data_(data, len), is_ascii_(check_ascii(data_)) {}
-    String(const std::string& str) : data_(str), is_ascii_(check_ascii(data_)) {}
-    String(std::string&& str) : data_(std::move(str)), is_ascii_(check_ascii(data_)) {}
+    String() : data_(std::make_shared<std::string>()), is_ascii_(true) {}
+    String(const char* str) : data_(std::make_shared<std::string>(str)), is_ascii_(check_ascii(*data_)) {}
+    String(const char* s, size_t len) : data_(std::make_shared<std::string>(s, len)), is_ascii_(check_ascii(*data_)) {}
+    String(const std::string& str) : data_(std::make_shared<std::string>(str)), is_ascii_(check_ascii(*data_)) {}
+    String(std::string&& str) : data_(std::make_shared<std::string>(std::move(str))), is_ascii_(check_ascii(*data_)) {}
 
-    // Copy/Move
+    // Copy/Move — O(1) via shared_ptr
     String(const String&) = default;
-    String(String&&) = default;
+    String(String&&) noexcept = default;
     String& operator=(const String&) = default;
-    String& operator=(String&&) = default;
+    String& operator=(String&&) noexcept = default;
 
     // Basic properties
-    int length() const { return static_cast<int>(is_ascii_ ? data_.size() : utf8_length(data_)); }
-    size_t byte_size() const { return data_.size(); }
-    bool is_empty() const { return data_.empty(); }
+    int length() const { return static_cast<int>(is_ascii_ ? data_->size() : utf8_length(*data_)); }
+    size_t byte_size() const { return data_->size(); }
+    size_t size() const { return data_->size(); }
+    bool is_empty() const { return data_->empty(); }
 
     // Character access
     String char_at(size_t index) const {
-        if (is_ascii_) return String(data_.substr(index, 1));
-        return String(utf8_char_at(data_, index));
+        if (is_ascii_) return String(std::make_shared<std::string>(data_->substr(index, 1)), true);
+        return String(utf8_char_at(*data_, index));
     }
 
     // Indexing operator - returns first byte of UTF-8 character
     char operator[](size_t index) const {
-        size_t byte_index = is_ascii_ ? index : utf8_char_index(data_, index);
-        return byte_index < data_.size() ? data_[byte_index] : '\0';
+        size_t byte_index = is_ascii_ ? index : utf8_char_index(*data_, index);
+        return byte_index < data_->size() ? (*data_)[byte_index] : '\0';
     }
 
     // Substrings (by character positions, not bytes)
@@ -74,7 +80,7 @@ public:
     String substring(size_t start, size_t length) const;
 
     // Parse to integer
-    int to_i() const { return std::stoi(data_); }
+    int to_i() const { return std::stoi(*data_); }
 
     // Case conversion
     String upper() const;
@@ -92,42 +98,42 @@ public:
 
     // Searching
     bool contains(const String& substring) const {
-        return data_.find(substring.data_) != std::string::npos;
+        return data_->find(*substring.data_) != std::string::npos;
     }
 
     bool starts_with(const String& prefix) const {
         if (prefix.byte_size() > byte_size()) return false;
-        return data_.compare(0, prefix.byte_size(), prefix.data_) == 0;
+        return data_->compare(0, prefix.byte_size(), prefix.as_std_string()) == 0;
     }
 
     bool ends_with(const String& suffix) const {
         if (suffix.byte_size() > byte_size()) return false;
-        return data_.compare(byte_size() - suffix.byte_size(),
-                            suffix.byte_size(), suffix.data_) == 0;
+        return data_->compare(byte_size() - suffix.byte_size(),
+                            suffix.byte_size(), suffix.as_std_string()) == 0;
     }
 
     // Find index of substring (-1 if not found)
     int32_t index_of(const String& substr) const {
-        size_t pos = data_.find(substr.data_);
+        size_t pos = data_->find(substr.as_std_string());
         if (pos == std::string::npos) return -1;
         // Convert byte position to character position
-        return static_cast<int32_t>(utf8_length(data_.substr(0, pos)));
+        return static_cast<int32_t>(utf8_length(data_->substr(0, pos)));
     }
 
     // Find last index of substring (-1 if not found)
     int32_t last_index_of(const String& substr) const {
-        size_t pos = data_.rfind(substr.data_);
+        size_t pos = data_->rfind(substr.as_std_string());
         if (pos == std::string::npos) return -1;
-        return static_cast<int32_t>(utf8_length(data_.substr(0, pos)));
+        return static_cast<int32_t>(utf8_length(data_->substr(0, pos)));
     }
 
     // Replace all occurrences of old_str with new_str
     String replace(const String& old_str, const String& new_str) const {
-        std::string result = data_;
+        std::string result = *data_;
         size_t pos = 0;
-        while ((pos = result.find(old_str.data_, pos)) != std::string::npos) {
-            result.replace(pos, old_str.data_.size(), new_str.data_);
-            pos += new_str.data_.size();
+        while ((pos = result.find(old_str.as_std_string(), pos)) != std::string::npos) {
+            result.replace(pos, old_str.data_->size(), new_str.as_std_string());
+            pos += new_str.data_->size();
         }
         return String(result);
     }
@@ -136,9 +142,9 @@ public:
     String repeat(int32_t n) const {
         if (n <= 0) return String("");
         std::string result;
-        result.reserve(data_.size() * n);
+        result.reserve(data_->size() * n);
         for (int32_t i = 0; i < n; ++i) {
-            result += data_;
+            result += *data_;
         }
         return String(result);
     }
@@ -146,10 +152,10 @@ public:
     // Reverse string (UTF-8 aware)
     String reverse() const {
         std::string result;
-        result.reserve(data_.size());
-        size_t len = utf8_length(data_);
+        result.reserve(data_->size());
+        size_t len = utf8_length(*data_);
         for (size_t i = len; i > 0; --i) {
-            result += utf8_char_at(data_, i - 1);
+            result += utf8_char_at(*data_, i - 1);
         }
         return String(result);
     }
@@ -162,7 +168,7 @@ public:
 
     // Check if string is blank (empty or only whitespace)
     bool is_blank() const {
-        for (char c : data_) {
+        for (char c : *data_) {
             if (!std::isspace(static_cast<unsigned char>(c))) {
                 return false;
             }
@@ -179,7 +185,7 @@ public:
     String squish() const {
         std::string result;
         bool in_space = true;  // Start true to trim leading space
-        for (char c : data_) {
+        for (char c : *data_) {
             if (std::isspace(static_cast<unsigned char>(c))) {
                 if (!in_space) {
                     result += ' ';
@@ -200,7 +206,7 @@ public:
     // Truncate string to max length with ellipsis
     String truncate(int32_t max_len) const {
         if (max_len <= 0) return String("");
-        size_t char_len = utf8_length(data_);
+        size_t char_len = utf8_length(*data_);
         if (char_len <= static_cast<size_t>(max_len)) return *this;
         if (max_len <= 3) return String("...");
         return substring(0, max_len - 3) + String("...");
@@ -210,7 +216,7 @@ public:
     String titleize() const {
         std::string result;
         bool cap_next = true;
-        for (char c : data_) {
+        for (char c : *data_) {
             if (std::isspace(static_cast<unsigned char>(c)) || c == '_' || c == '-') {
                 result += ' ';
                 cap_next = true;
@@ -228,7 +234,7 @@ public:
     String camelize() const {
         std::string result;
         bool cap_next = false;
-        for (char c : data_) {
+        for (char c : *data_) {
             if (c == '_' || c == '-' || c == ' ') {
                 cap_next = true;
             } else if (cap_next) {
@@ -244,8 +250,8 @@ public:
     // Underscore - convert to snake_case
     String underscore() const {
         std::string result;
-        for (size_t i = 0; i < data_.size(); ++i) {
-            char c = data_[i];
+        for (size_t i = 0; i < data_->size(); ++i) {
+            char c = (*data_)[i];
             if (std::isupper(static_cast<unsigned char>(c))) {
                 if (i > 0) result += '_';
                 result += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
@@ -260,24 +266,24 @@ public:
 
     // Pad start with character to reach length
     String pad_start(int32_t len, const String& pad_char) const {
-        size_t char_len = utf8_length(data_);
+        size_t char_len = utf8_length(*data_);
         if (char_len >= static_cast<size_t>(len)) return *this;
-        std::string pc = pad_char.data_.empty() ? " " : pad_char.data_.substr(0, 1);
+        std::string pc = pad_char.data_->empty() ? " " : pad_char.data_->substr(0, 1);
         std::string result;
         size_t pad_count = static_cast<size_t>(len) - char_len;
         for (size_t i = 0; i < pad_count; ++i) {
             result += pc;
         }
-        result += data_;
+        result += *data_;
         return String(result);
     }
 
     // Pad end with character to reach length
     String pad_end(int32_t len, const String& pad_char) const {
-        size_t char_len = utf8_length(data_);
+        size_t char_len = utf8_length(*data_);
         if (char_len >= static_cast<size_t>(len)) return *this;
-        std::string pc = pad_char.data_.empty() ? " " : pad_char.data_.substr(0, 1);
-        std::string result = data_;
+        std::string pc = pad_char.data_->empty() ? " " : pad_char.data_->substr(0, 1);
+        std::string result = *data_;
         size_t pad_count = static_cast<size_t>(len) - char_len;
         for (size_t i = 0; i < pad_count; ++i) {
             result += pc;
@@ -285,32 +291,36 @@ public:
         return String(result);
     }
 
-    // Concatenation
+    // Concatenation — creates new shared string, O(len_a + len_b)
     String operator+(const String& other) const {
-        return String(data_ + other.data_, is_ascii_ && other.is_ascii_);
+        auto s = std::make_shared<std::string>(*data_ + *other.data_);
+        return String(std::move(s), is_ascii_ && other.is_ascii_);
     }
 
     String& operator+=(const String& other) {
-        data_ += other.data_;
+        // Detach if shared, then mutate
+        if (data_.use_count() > 1)
+            data_ = std::make_shared<std::string>(*data_);
+        *data_ += *other.data_;
         is_ascii_ = is_ascii_ && other.is_ascii_;
         return *this;
     }
 
     // Comparison
-    bool operator==(const String& other) const { return data_ == other.data_; }
-    bool operator!=(const String& other) const { return data_ != other.data_; }
-    bool operator<(const String& other) const { return data_ < other.data_; }
-    bool operator>(const String& other) const { return data_ > other.data_; }
-    bool operator<=(const String& other) const { return data_ <= other.data_; }
-    bool operator>=(const String& other) const { return data_ >= other.data_; }
+    bool operator==(const String& other) const { return *data_ == *other.data_; }
+    bool operator!=(const String& other) const { return *data_ != *other.data_; }
+    bool operator<(const String& other) const { return *data_ < *other.data_; }
+    bool operator>(const String& other) const { return *data_ > *other.data_; }
+    bool operator<=(const String& other) const { return *data_ <= *other.data_; }
+    bool operator>=(const String& other) const { return *data_ >= *other.data_; }
 
     // Conversion to/from Bytes
     Bytes to_bytes() const;
     static String from_bytes(const Bytes& bytes);
 
     // Access to underlying std::string (for C++ interop)
-    const std::string& as_std_string() const { return data_; }
-    const char* c_str() const { return data_.c_str(); }
+    const std::string& as_std_string() const { return *data_; }
+    const char* c_str() const { return data_->c_str(); }
 };
 
 // Aurora Bytes class - low-level, byte-oriented, FFI-friendly
@@ -363,7 +373,7 @@ public:
     }
 
     Bytes slice(size_t start, size_t length) const {
-        if (start > data_.size() || start + length > data_.size()) {
+        if (start + length > data_.size()) {
             throw std::out_of_range("Bytes slice out of range");
         }
         return Bytes(data_.begin() + start, data_.begin() + start + length);

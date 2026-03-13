@@ -136,32 +136,33 @@ fn add_method_owners_from_decls(decls: [Shared<Decl>], m: Map<string, string>) -
   m
 end
 
-fn build_method_owners_for(item: LoadItem, all_items: [LoadItem]) -> Map<string, string> = do
+fn build_item_index(all_items: [LoadItem]) -> Map<string, Shared<LoadItem>> = do
+  let idx: Map<string, Shared<LoadItem>> = Map.new()
+  let i = 0
+  while i < all_items.length() do
+    idx.set(all_items[i].path, Shared.new(all_items[i]))
+    i = i + 1
+  end
+  idx
+end
+
+fn build_method_owners_with_index(item: LoadItem, idx: Map<string, Shared<LoadItem>>) -> Map<string, string> = do
   let m: Map<string, string> = Map.new()
   m = add_method_owners_from_decls(item.decls, m)
   let imp_i = 0
   while imp_i < item.imports.length() do
     const imp_path = item.imports[imp_i]
-    let ai = 0
-    while ai < all_items.length() do
-      const ai_item = all_items[ai]
-      if ai_item.path == imp_path then
-        m = add_method_owners_from_decls(ai_item.decls, m)
-        let ti = 0
-        while ti < ai_item.imports.length() do
-          const t_path = ai_item.imports[ti]
-          let bi = 0
-          while bi < all_items.length() do
-            const bi_item = all_items[bi]
-            if bi_item.path == t_path then
-              m = add_method_owners_from_decls(bi_item.decls, m)
-            end
-            bi = bi + 1
-          end
-          ti = ti + 1
+    if idx.has(imp_path) then
+      const dep = idx.get(imp_path)
+      m = add_method_owners_from_decls(dep.decls, m)
+      let ti = 0
+      while ti < dep.imports.length() do
+        const t_path = dep.imports[ti]
+        if idx.has(t_path) then
+          m = add_method_owners_from_decls(idx.get(t_path).decls, m)
         end
+        ti = ti + 1
       end
-      ai = ai + 1
     end
     imp_i = imp_i + 1
   end
@@ -989,18 +990,30 @@ fn include_lines(import_paths: [string]) -> string = do
 end
 
 export type GenModuleOut = GenModuleOut { h: string, c: string }
+export type PrecomputedCtx = PrecomputedCtx {
+  field_orders: [Shared<FieldOrder>],
+  variant_types: Map<string, string>,
+  item_index: Map<string, Shared<LoadItem>>
+}
 
-export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program) -> GenModuleOut = do
+export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx =
+  PrecomputedCtx {
+    field_orders: build_field_orders(prog),
+    variant_types: build_variant_types_from_decls(prog.decls),
+    item_index: build_item_index(all_items)
+  }
+
+export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
   const base = path_to_module_base(item.path)
   const qualified = build_qualified(item.imports, all_items)
   const ctx = CodegenContext {
-    field_orders: build_field_orders(full_prog),
+    field_orders: precomp.field_orders,
     ns_prefix: "",
     qualified: qualified,
     self_type: "",
-    method_owners: build_method_owners_for(item, all_items),
+    method_owners: build_method_owners_with_index(item, precomp.item_index),
     shared_params: [],
-    variant_types: build_variant_types_from_decls(full_prog.decls)
+    variant_types: precomp.variant_types
   }
   const ns = if base == "main" then "mlc_main" else base end
   const std_includes = "#include \"mlc.hpp\"\n#include <variant>\n\n" + include_lines(item.imports) + "\n"

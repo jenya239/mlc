@@ -3,7 +3,7 @@
 import { tokenize } from "./lexer"
 import { parse_program } from "./parser/decls"
 import { check, check_with_context, CheckOut } from "./checker/infer"
-import { gen_module, LoadItem } from "./codegen"
+import { gen_module, LoadItem, PrecomputedCtx, precompute } from "./codegen"
 import { Program, Decl, DeclImport, DeclExported, errs_append } from "./ast"
 
 fn dirname(path: string) -> string = do
@@ -197,10 +197,11 @@ fn compile_modular(entry_path: string, out_dir: string) -> string = do
 end
 
 fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) -> string = do
+  const precomp = precompute(full_prog, items)
   let i = 0
   while i < items.length() do
     const item = items[i]
-    const out = gen_module(item, items, full_prog)
+    const out = gen_module(item, items, full_prog, precomp)
     const base = path_to_module_base(item.path)
     const hpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".hpp" else base + ".hpp" end
     const cpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".cpp" else base + ".cpp" end
