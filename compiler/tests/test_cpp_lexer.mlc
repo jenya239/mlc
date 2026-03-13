@@ -24,132 +24,132 @@ fn cpp_int_at(src: string, i: i32) -> i32 =
 export fn cpp_lexer_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  // ─── Token counts ───────────────────────────────────────────────────────
+  // --- Token counts -------------------------------------------------------
 
-  results.push(assert_eq_int("empty → 1 token (CEof)",
+  results.push(assert_eq_int("empty - 1 token (CEof)",
     cpp_tok_count(""), 1))
 
-  results.push(assert_eq_int("'int x' → 3 tokens",
+  results.push(assert_eq_int("'int x' - 3 tokens",
     cpp_tok_count("int x"), 3))
 
-  results.push(assert_eq_int("'::'  → 2 tokens",
+  results.push(assert_eq_int("'::'  - 2 tokens",
     cpp_tok_count("::"), 2))
 
-  results.push(assert_eq_int("'->'  → 2 tokens",
+  results.push(assert_eq_int("'->'  - 2 tokens",
     cpp_tok_count("->"), 2))
 
-  results.push(assert_eq_int("'// comment\\nint' → 2 tokens",
+  results.push(assert_eq_int("'// comment\\nint' - 2 tokens",
     cpp_tok_count("// comment\nint"), 2))
 
-  results.push(assert_eq_int("'/* block */int' → 2 tokens",
+  results.push(assert_eq_int("'/* block */int' - 2 tokens",
     cpp_tok_count("/* block */int"), 2))
 
-  results.push(assert_eq_int("'#include' → 3 tokens",
+  results.push(assert_eq_int("'#include' - 3 tokens",
     cpp_tok_count("#include"), 3))
 
-  // ─── Keywords ───────────────────────────────────────────────────────────
+  // --- Keywords -----------------------------------------------------------
 
-  results.push(assert_true("'auto'       → CKAuto",
+  results.push(assert_true("'auto'       - CKAuto",
     match cpp_first_kind("auto")       { CKAuto      => true, _ => false }))
 
-  results.push(assert_true("'const'      → CKConst",
+  results.push(assert_true("'const'      - CKConst",
     match cpp_first_kind("const")      { CKConst     => true, _ => false }))
 
-  results.push(assert_true("'constexpr'  → CKConstexpr",
+  results.push(assert_true("'constexpr'  - CKConstexpr",
     match cpp_first_kind("constexpr")  { CKConstexpr => true, _ => false }))
 
-  results.push(assert_true("'int'        → CKInt",
+  results.push(assert_true("'int'        - CKInt",
     match cpp_first_kind("int")        { CKInt       => true, _ => false }))
 
-  results.push(assert_true("'void'       → CKVoid",
+  results.push(assert_true("'void'       - CKVoid",
     match cpp_first_kind("void")       { CKVoid      => true, _ => false }))
 
-  results.push(assert_true("'bool'       → CKBool",
+  results.push(assert_true("'bool'       - CKBool",
     match cpp_first_kind("bool")       { CKBool      => true, _ => false }))
 
-  results.push(assert_true("'return'     → CKReturn",
+  results.push(assert_true("'return'     - CKReturn",
     match cpp_first_kind("return")     { CKReturn    => true, _ => false }))
 
-  results.push(assert_true("'struct'     → CKStruct",
+  results.push(assert_true("'struct'     - CKStruct",
     match cpp_first_kind("struct")     { CKStruct    => true, _ => false }))
 
-  results.push(assert_true("'using'      → CKUsing",
+  results.push(assert_true("'using'      - CKUsing",
     match cpp_first_kind("using")      { CKUsing     => true, _ => false }))
 
-  results.push(assert_true("'noexcept'   → CKNoexcept",
+  results.push(assert_true("'noexcept'   - CKNoexcept",
     match cpp_first_kind("noexcept")   { CKNoexcept  => true, _ => false }))
 
-  // ─── Multi-char operators ────────────────────────────────────────────────
+  // --- Multi-char operators ------------------------------------------------
 
-  results.push(assert_true("'::'  → CScope",
+  results.push(assert_true("'::'  - CScope",
     match cpp_first_kind("::")  { CScope => true, _ => false }))
 
-  results.push(assert_true("'->'  → CArrow",
+  results.push(assert_true("'->'  - CArrow",
     match cpp_first_kind("->")  { CArrow => true, _ => false }))
 
-  results.push(assert_true("'=='  → CEq",
+  results.push(assert_true("'=='  - CEq",
     match cpp_first_kind("==")  { CEq    => true, _ => false }))
 
-  results.push(assert_true("'!='  → CNe",
+  results.push(assert_true("'!='  - CNe",
     match cpp_first_kind("!=")  { CNe    => true, _ => false }))
 
-  results.push(assert_true("'<='  → CLe",
+  results.push(assert_true("'<='  - CLe",
     match cpp_first_kind("<=")  { CLe    => true, _ => false }))
 
-  results.push(assert_true("'>='  → CGe",
+  results.push(assert_true("'>='  - CGe",
     match cpp_first_kind(">=")  { CGe    => true, _ => false }))
 
-  results.push(assert_true("'&&'  → CAnd",
+  results.push(assert_true("'&&'  - CAnd",
     match cpp_first_kind("&&")  { CAnd   => true, _ => false }))
 
-  results.push(assert_true("'||'  → COr",
+  results.push(assert_true("'||'  - COr",
     match cpp_first_kind("||")  { COr    => true, _ => false }))
 
-  results.push(assert_true("'++'  → CInc",
+  results.push(assert_true("'++'  - CInc",
     match cpp_first_kind("++")  { CInc   => true, _ => false }))
 
-  results.push(assert_true("'--'  → CDec",
+  results.push(assert_true("'--'  - CDec",
     match cpp_first_kind("--")  { CDec   => true, _ => false }))
 
-  // ─── Braces and angle brackets ───────────────────────────────────────────
+  // --- Braces and angle brackets -------------------------------------------
 
-  results.push(assert_true("'{' → CLBrace",
+  results.push(assert_true("'{' - CLBrace",
     match cpp_first_kind("{") { CLBrace => true, _ => false }))
 
-  results.push(assert_true("'}' → CRBrace",
+  results.push(assert_true("'}' - CRBrace",
     match cpp_first_kind("}") { CRBrace => true, _ => false }))
 
-  results.push(assert_true("'<' → CLAngle",
+  results.push(assert_true("'<' - CLAngle",
     match cpp_first_kind("<") { CLAngle => true, _ => false }))
 
-  results.push(assert_true("'>' → CRAngle",
+  results.push(assert_true("'>' - CRAngle",
     match cpp_first_kind(">") { CRAngle => true, _ => false }))
 
-  // ─── Identifiers ─────────────────────────────────────────────────────────
+  // --- Identifiers ---------------------------------------------------------
 
-  results.push(assert_eq_str("'foo' → CIdent(\"foo\")",
+  results.push(assert_eq_str("'foo' - CIdent(\"foo\")",
     cpp_ident_at("foo", 0), "foo"))
 
-  results.push(assert_eq_str("'std::string' [0] → \"std\"",
+  results.push(assert_eq_str("'std::string' [0] - \"std\"",
     cpp_ident_at("std::string", 0), "std"))
 
-  results.push(assert_true("'std::string' [1] → CScope",
+  results.push(assert_true("'std::string' [1] - CScope",
     match cpp_kind_at("std::string", 1) { CScope => true, _ => false }))
 
-  results.push(assert_eq_str("'std::string' [2] → \"string\"",
+  results.push(assert_eq_str("'std::string' [2] - \"string\"",
     cpp_ident_at("std::string", 2), "string"))
 
-  // ─── Integer literals ────────────────────────────────────────────────────
+  // --- Integer literals ----------------------------------------------------
 
-  results.push(assert_eq_int("'42' → CLInt(42)",
+  results.push(assert_eq_int("'42' - CLInt(42)",
     cpp_int_at("42", 0), 42))
 
-  results.push(assert_eq_int("'0'  → CLInt(0)",
+  results.push(assert_eq_int("'0'  - CLInt(0)",
     cpp_int_at("0", 0), 0))
 
-  // ─── String literals ─────────────────────────────────────────────────────
+  // --- String literals -----------------------------------------------------
 
-  results.push(assert_eq_str("'\"hello\"' → CLStr(\"hello\")",
+  results.push(assert_eq_str("'\"hello\"' - CLStr(\"hello\")",
     cpp_str_at("\"hello\"", 0), "hello"))
 
   results.push(assert_eq_str("escape \\n in string",
@@ -158,9 +158,9 @@ export fn cpp_lexer_tests() -> [TestResult] = do
   results.push(assert_eq_str("escaped quote in string",
     cpp_str_at("\"a\\\"b\"", 0), "a\"b"))
 
-  // ─── Hash token ──────────────────────────────────────────────────────────
+  // --- Hash token ----------------------------------------------------------
 
-  results.push(assert_true("'#' → COp(\"#\")",
+  results.push(assert_true("'#' - COp(\"#\")",
     match cpp_first_kind("#") { COp(s) => s == "#", _ => false }))
 
   results

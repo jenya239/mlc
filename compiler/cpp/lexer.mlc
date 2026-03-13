@@ -1,4 +1,4 @@
-// C++ lexer: source string → [CppToken]
+// C++ lexer: source string - [CppToken]
 
 import { LexState, is_alpha, is_digit, is_alnum, is_ws, map_escape, skip_whitespace } from "../lexer"
 

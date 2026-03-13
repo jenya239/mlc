@@ -1,4 +1,4 @@
-// ─── Type expression parser ───────────────────────────────────────────────
+// --- Type expression parser -----------------------------------------------
 
 import { Parser, TypeResult, TypesResult } from "./preds"
 

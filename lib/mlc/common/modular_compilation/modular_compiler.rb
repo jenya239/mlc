@@ -79,22 +79,24 @@ module MLC
           FileUtils.mkdir_p(obj_dir)
           objs = []
 
+          extra_flags = (ENV["MLC_CXX_FLAGS"] || "").split
+
           result[:cpp_files].each do |cpp|
             obj = File.join(obj_dir, "#{File.basename(cpp, ".cpp")}.o")
-            cmd = ["g++", "-std=c++20", "-O2", "-I", @out_dir, "-I", runtime_include, "-c", cpp, "-o", obj]
+            cmd = ["g++", "-std=c++20", "-O2", *extra_flags, "-I", @out_dir, "-I", runtime_include, "-c", cpp, "-o", obj]
             system(*cmd) || raise("g++ failed: #{cmd.join(' ')}")
             objs << obj
           end
 
           runtime_cpp.each do |rcpp|
             obj = File.join(obj_dir, "runtime_#{File.basename(rcpp, ".cpp")}.o")
-            cmd = ["g++", "-std=c++20", "-O2", "-I", runtime_include, "-c", rcpp, "-o", obj]
+            cmd = ["g++", "-std=c++20", "-O2", *extra_flags, "-I", runtime_include, "-c", rcpp, "-o", obj]
             system(*cmd) || raise("g++ failed: #{cmd.join(' ')}")
             objs << obj
           end
 
           bin_path = File.join(@out_dir, @binary_name)
-          cmd = ["g++", "-std=c++20", "-o", bin_path, *objs]
+          cmd = ["g++", "-std=c++20", *extra_flags, "-o", bin_path, *objs]
           system(*cmd) || raise("g++ link failed: #{cmd.join(' ')}")
 
           { binary: bin_path, cpp_files: result[:cpp_files], hpp_files: result[:hpp_files] }

@@ -24,7 +24,7 @@ export fn run_all(results: [TestResult]) -> string = do
       Pass(_)            => do passed = passed + 1 end,
       Fail(name, message) => do
         failed = failed + 1
-        output = output + "FAIL: " + name + " — " + message + "\n"
+        output = output + "FAIL: " + name + " - " + message + "\n"
       end
     }
     i = i + 1

@@ -1,4 +1,4 @@
-// Entry point. Pipeline: source → tokenize → parse → load imports → check → gen_module (per file)
+// Entry point. Pipeline: source - tokenize - parse - load imports - check - gen_module (per file)
 
 import { tokenize } from "./lexer"
 import { parse_program } from "./parser/decls"

@@ -15,24 +15,24 @@ fn lex_error_count(source: string) -> i32 =
 export fn lexer_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  results.push(assert_eq_int("empty source → 1 token (Eof)",       lex_token_count(""),   1))
-  results.push(assert_eq_int("whitespace only → 1 token (Eof)",    lex_token_count("   "), 1))
-  results.push(assert_eq_int("comment only → 1 token (Eof)",       lex_token_count("// hi"), 1))
+  results.push(assert_eq_int("empty source - 1 token (Eof)",       lex_token_count(""),   1))
+  results.push(assert_eq_int("whitespace only - 1 token (Eof)",    lex_token_count("   "), 1))
+  results.push(assert_eq_int("comment only - 1 token (Eof)",       lex_token_count("// hi"), 1))
 
-  results.push(assert_eq_int("'fn' → 2 tokens",                    lex_token_count("fn"),      2))
-  results.push(assert_eq_int("'type' → 2 tokens",                  lex_token_count("type"),    2))
-  results.push(assert_eq_int("'let' → 2 tokens",                   lex_token_count("let"),     2))
-  results.push(assert_eq_int("'if' → 2 tokens",                    lex_token_count("if"),      2))
-  results.push(assert_eq_int("'match' → 2 tokens",                 lex_token_count("match"),   2))
-  results.push(assert_eq_int("'end' → 2 tokens",                   lex_token_count("end"),     2))
+  results.push(assert_eq_int("'fn' - 2 tokens",                    lex_token_count("fn"),      2))
+  results.push(assert_eq_int("'type' - 2 tokens",                  lex_token_count("type"),    2))
+  results.push(assert_eq_int("'let' - 2 tokens",                   lex_token_count("let"),     2))
+  results.push(assert_eq_int("'if' - 2 tokens",                    lex_token_count("if"),      2))
+  results.push(assert_eq_int("'match' - 2 tokens",                 lex_token_count("match"),   2))
+  results.push(assert_eq_int("'end' - 2 tokens",                   lex_token_count("end"),     2))
 
-  results.push(assert_eq_int("integer literal → 2 tokens",         lex_token_count("42"),      2))
-  results.push(assert_eq_int("string literal → 2 tokens",          lex_token_count("\"hi\""),  2))
-  results.push(assert_eq_int("identifier → 2 tokens",              lex_token_count("foo"),     2))
+  results.push(assert_eq_int("integer literal - 2 tokens",         lex_token_count("42"),      2))
+  results.push(assert_eq_int("string literal - 2 tokens",          lex_token_count("\"hi\""),  2))
+  results.push(assert_eq_int("identifier - 2 tokens",              lex_token_count("foo"),     2))
 
   results.push(assert_eq_int("no lex errors on valid source",       lex_error_count("fn f() -> i32 = 42"), 0))
 
-  results.push(assert_eq_int("fn decl → correct token count",
+  results.push(assert_eq_int("fn decl - correct token count",
     lex_token_count("fn f() -> i32 = 42"), 9))
 
   results

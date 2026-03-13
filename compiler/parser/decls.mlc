@@ -1,4 +1,4 @@
-// ─── Declaration parsers ──────────────────────────────────────────────────
+// --- Declaration parsers --------------------------------------------------
 
 import { Parser, DeclResult, ParamsResult, ParamResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult } from "./preds"
 import { parse_type } from "./types"
@@ -255,7 +255,7 @@ fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
   FieldDefsResult { field_defs, parser: state.advance() }
 end
 
-// ─── Entry point ──────────────────────────────────────────────────────────
+// --- Entry point ----------------------------------------------------------
 
 export fn parse_program(tokens: [Token]) -> Program = do
   const decls: [Shared<Decl>] = []

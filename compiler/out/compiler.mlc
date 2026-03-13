@@ -32,7 +32,7 @@ export extend Token {
 // Shared AST type definitions for the self-hosted MLC compiler.
 
 
-// ─── AST ─────────────────────────────────────────────────────────────────
+// --- AST -----------------------------------------------------------------
 
 export type TypeExpr =
   | TyI32 | TyString | TyBool | TyUnit | TyNamed(string)
@@ -105,7 +105,7 @@ export fn decl_name(decl: Shared<Decl>) -> string = match decl {
   DeclExported(d) => decl_name(d)
 }
 
-// ─── Shared utility ───────────────────────────────────────────────────────
+// --- Shared utility -------------------------------------------------------
 
 export fn errs_append(mut dst: [string], src: [string]) -> [string] = do
   let i = 0
@@ -116,7 +116,7 @@ export fn errs_append(mut dst: [string], src: [string]) -> [string] = do
   dst
 end
 
-// Lexer: source string → token array.
+// Lexer: source string - token array.
 
 
 type LexState     = LexState     { src: string, pos: i32, line: i32, col: i32 }
@@ -345,7 +345,7 @@ end
 // Parser state, result types, and token kind predicates.
 
 
-// ─── Parser state ─────────────────────────────────────────────────────────
+// --- Parser state ---------------------------------------------------------
 
 export type Parser = Parser { tokens: [Token], pos: i32 }
 
@@ -367,7 +367,7 @@ fn parser_at_eof(parser: Parser) -> bool =
 fn parser_skip_semi(parser: Parser) -> Parser =
   match parser_kind(parser) { Semicolon => parser_advance(parser), _ => parser }
 
-// ─── Result types ─────────────────────────────────────────────────────────
+// --- Result types ---------------------------------------------------------
 
 export type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
 export type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
@@ -387,7 +387,7 @@ export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>], 
 export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
 export type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
 
-// ─── Token kind predicates ────────────────────────────────────────────────
+// --- Token kind predicates ------------------------------------------------
 
 fn is_keyword_fn(kind: TKind)       -> bool = match kind { KFn       => true, _ => false }
 fn is_keyword_type(kind: TKind)     -> bool = match kind { KType     => true, _ => false }
@@ -439,7 +439,7 @@ fn get_operator(kind: TKind)     -> string = match kind { Op(s)      => s,    _ 
 export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"
 
-// ─── extend TKind ─────────────────────────────────────────────────────────
+// --- extend TKind ---------------------------------------------------------
 
 export extend TKind {
   fn is_fn(self)       -> bool = match self { KFn       => true, _ => false }
@@ -491,7 +491,7 @@ export extend TKind {
   fn op_val(self)      -> string = match self { Op(s)       => s,    _ => "" }
 }
 
-// ─── extend Parser ────────────────────────────────────────────────────────
+// --- extend Parser --------------------------------------------------------
 
 export extend Parser {
   fn kind(self)      -> TKind  = tokens[pos].kind
@@ -502,7 +502,7 @@ export extend Parser {
     match tokens[pos].kind { Semicolon => self.advance(), _ => self }
 }
 
-// ─── Type expression parser ───────────────────────────────────────────────
+// --- Type expression parser -----------------------------------------------
 
 
 export fn parse_type(parser: Parser) -> TypeResult = do
@@ -562,10 +562,10 @@ fn parse_type_args(parser: Parser) -> TypesResult = do
   TypesResult { types, parser: end_state }
 end
 
-// ─── Expression and pattern parser ───────────────────────────────────────
+// --- Expression and pattern parser ---------------------------------------
 
 
-// ─── Statement parsers (merged to break exprs<->stmts cycle) ──────────────
+// --- Statement parsers (merged to break exprs<->stmts cycle) --------------
 
 export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
@@ -640,7 +640,7 @@ fn parse_stmt(parser: Parser) -> StmtResult = do
   end
 end
 
-// ─── Expression and pattern parser ───────────────────────────────────────
+// --- Expression and pattern parser ---------------------------------------
 
 fn parse_pat(parser: Parser) -> PatResult = do
   const kind = parser.kind()
@@ -689,7 +689,7 @@ fn parse_pat_args(parser: Parser) -> PatsResult = do
   end
 end
 
-// ─── Expression parser (precedence climbing) ─────────────────────────────
+// --- Expression parser (precedence climbing) -----------------------------
 
 export fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
 
@@ -945,7 +945,7 @@ fn looks_like_lambda_params(parser: Parser) -> bool = do
   ok
 end
 
-// Parse lambda params: IDENT (, IDENT)* ) — stops AFTER `)`
+// Parse lambda params: IDENT (, IDENT)* ) - stops AFTER `)`
 fn parse_lambda_params(parser: Parser) -> NamesResult = do
   const names: [string] = []
   let state = parser
@@ -1109,7 +1109,7 @@ fn parse_record_expr(parser: Parser, record_name: string) -> ExprResult =
     ExprResult { expr: Shared.new(ExprRecord(record_name, fields_result.field_vals)), parser: fields_result.parser }
   end
 
-// ─── Declaration parsers ──────────────────────────────────────────────────
+// --- Declaration parsers --------------------------------------------------
 
 
 fn parse_import_decl(parser: Parser) -> DeclResult = do
@@ -1324,7 +1324,7 @@ fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
   FieldDefsResult { field_defs, parser: state.advance() }
 end
 
-// ─── Entry point ──────────────────────────────────────────────────────────
+// --- Entry point ----------------------------------------------------------
 
 export fn parse_program(tokens: [Token]) -> Program = do
   const decls: [Shared<Decl>] = []
@@ -1369,7 +1369,7 @@ fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> 
   }
 end
 
-// ─── Name resolution ──────────────────────────────────────────────────────
+// --- Name resolution ------------------------------------------------------
 
 export fn collect_globals(prog: Program) -> [string] = do
   const names: [string] = []
@@ -1517,7 +1517,7 @@ export fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: [s
   NameCheckResult { errors: errors, scope: scope }
 end
 
-// ─── Semantic type ────────────────────────────────────────────────────────
+// --- Semantic type --------------------------------------------------------
 
 
 export type Type =
@@ -1528,7 +1528,7 @@ export type Type =
   | TFn([Shared<Type>], Shared<Type>)
   | TUnknown
 
-// ─── Type registry ────────────────────────────────────────────────────────
+// --- Type registry --------------------------------------------------------
 
 export type TypeRegistry = TypeRegistry {
   fn_types:    Map<string, Shared<Type>>,
@@ -1647,7 +1647,7 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
   }
 end
 
-// ─── Type inference ───────────────────────────────────────────────────────
+// --- Type inference -------------------------------------------------------
 
 
 type InferResult     = InferResult     { inferred_type: Shared<Type>,             errors: [string] }
@@ -1865,7 +1865,7 @@ fn env_for_pat_with_type(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, 
   }
 end
 
-// ─── Entry point ──────────────────────────────────────────────────────────
+// --- Entry point ----------------------------------------------------------
 
 export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
 
@@ -1903,10 +1903,10 @@ export fn check(prog: Program) -> CheckOut = do
   CheckOut { errors: all_errors, registry: registry }
 end
 
-// Code generator: Program AST → C++ source string.
+// Code generator: Program AST - C++ source string.
 
 
-// ─── Context (DI-style) ───────────────────────────────────────────────────
+// --- Context (DI-style) ---------------------------------------------------
 
 type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 type CodegenContext = CodegenContext { field_orders: [Shared<FieldOrder>] }
@@ -1914,7 +1914,7 @@ type CodegenContext = CodegenContext { field_orders: [Shared<FieldOrder>] }
 fn create_codegen_context(prog: Program) -> CodegenContext =
   CodegenContext { field_orders: build_field_orders(prog) }
 
-// ─── Field order registry ─────────────────────────────────────────────────
+// --- Field order registry -------------------------------------------------
 
 fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
   const orders: [Shared<FieldOrder>] = []
@@ -1990,7 +1990,7 @@ fn lookup_fields(orders: [Shared<FieldOrder>], name: string) -> [string] = do
   result
 end
 
-// ─── C++ identifier safety ───────────────────────────────────────────────
+// --- C++ identifier safety -----------------------------------------------
 
 fn cpp_keyword(name: string) -> bool =
   name == "export" || name == "import" || name == "module" || name == "struct" || name == "class"
@@ -2015,7 +2015,7 @@ fn cpp_keyword(name: string) -> bool =
 fn cpp_safe(name: string) -> string =
   if cpp_keyword(name) then name + "_" else name end
 
-// ─── Type name → C++ ─────────────────────────────────────────────────────
+// --- Type name - C++ -----------------------------------------------------
 
 fn lower_first(name: string) -> string =
   if name.length() == 0 then name
@@ -2047,7 +2047,7 @@ fn type_to_cpp(type_expr: Shared<TypeExpr>) -> string =
     end
   }
 
-// ─── Expression codegen ───────────────────────────────────────────────────
+// --- Expression codegen ---------------------------------------------------
 
 fn escape_str(input: string) -> string = do
   let parts: [string] = []; let i = 0
@@ -2271,7 +2271,7 @@ fn pat_bind_names(sub_pats: [Shared<Pat>]) -> string = do
   parts.join(", ")
 end
 
-// ─── Statement codegen ────────────────────────────────────────────────────
+// --- Statement codegen ----------------------------------------------------
 
 fn gen_stmt(stmt: Shared<Stmt>, ctx: CodegenContext) -> string =
   match stmt {
@@ -2328,7 +2328,7 @@ fn gen_stmt_expr(expr: Shared<Expr>, ctx: CodegenContext) -> string =
     _ => gen_expr(expr, ctx) + ";\n"
   }
 
-// ─── Declaration codegen ──────────────────────────────────────────────────
+// --- Declaration codegen --------------------------------------------------
 
 fn gen_return_body(expr: Shared<Expr>, ctx: CodegenContext) -> string =
   match expr {
@@ -2487,7 +2487,7 @@ fn gen_decl(decl: Shared<Decl>, ctx: CodegenContext) -> string =
     DeclExported(d) => gen_decl(d, ctx)
   }
 
-// ─── Entry point ──────────────────────────────────────────────────────────
+// --- Entry point ----------------------------------------------------------
 
 fn gen_proto(decl: Shared<Decl>) -> string =
   match decl {
@@ -2558,7 +2558,7 @@ export fn gen_program(prog: Program) -> string = do
   errs_append(errs_append(errs_append(errs_append(preamble, type_fwds), type_defs), errs_append(fn_protos, ["\n"])), fn_decls).join("")
 end
 
-// Entry point. Pipeline: source → tokenize → parse → load imports → check → gen_program
+// Entry point. Pipeline: source - tokenize - parse - load imports - check - gen_program
 
 
 fn dirname(path: string) -> string = do

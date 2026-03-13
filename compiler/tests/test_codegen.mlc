@@ -12,85 +12,85 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("create_codegen_context: gen_expr with ctx",
     gen_expr(Shared.new(ExprInt(42)), ctx), "42"))
 
-  results.push(assert_eq_str("TyI32 → 'int'",
+  results.push(assert_eq_str("TyI32 - 'int'",
     type_to_cpp(ctx, Shared.new(TyI32)), "int"))
 
-  results.push(assert_eq_str("TyString → 'mlc::String'",
+  results.push(assert_eq_str("TyString - 'mlc::String'",
     type_to_cpp(ctx, Shared.new(TyString)), "mlc::String"))
 
-  results.push(assert_eq_str("TyBool → 'bool'",
+  results.push(assert_eq_str("TyBool - 'bool'",
     type_to_cpp(ctx, Shared.new(TyBool)), "bool"))
 
-  results.push(assert_eq_str("TyUnit → 'void'",
+  results.push(assert_eq_str("TyUnit - 'void'",
     type_to_cpp(ctx, Shared.new(TyUnit)), "void"))
 
-  results.push(assert_eq_str("TyArray(TyI32) → 'mlc::Array<int>'",
+  results.push(assert_eq_str("TyArray(TyI32) - 'mlc::Array<int>'",
     type_to_cpp(ctx, Shared.new(TyArray(Shared.new(TyI32)))), "mlc::Array<int>"))
 
-  results.push(assert_eq_str("TyShared(TyI32) → 'std::shared_ptr<int>'",
+  results.push(assert_eq_str("TyShared(TyI32) - 'std::shared_ptr<int>'",
     type_to_cpp(ctx, Shared.new(TyShared(Shared.new(TyI32)))), "std::shared_ptr<int>"))
 
-  results.push(assert_eq_str("ExprInt(42) → '42'",
+  results.push(assert_eq_str("ExprInt(42) - '42'",
     gen_expr(Shared.new(ExprInt(42)), ctx), "42"))
 
-  results.push(assert_eq_str("ExprBool(true) → 'true'",
+  results.push(assert_eq_str("ExprBool(true) - 'true'",
     gen_expr(Shared.new(ExprBool(true)), ctx), "true"))
 
-  results.push(assert_eq_str("ExprStr('hi') → 'mlc::String(\"hi\")'",
+  results.push(assert_eq_str("ExprStr('hi') - 'mlc::String(\"hi\")'",
     gen_expr(Shared.new(ExprStr("hi")), ctx), "mlc::String(\"hi\")"))
 
-  results.push(assert_eq_str("ExprUnit → '/* unit */'",
+  results.push(assert_eq_str("ExprUnit - '/* unit */'",
     gen_expr(Shared.new(ExprUnit), ctx), "/* unit */"))
 
-  results.push(assert_eq_str("ExprIdent('x') → 'x'",
+  results.push(assert_eq_str("ExprIdent('x') - 'x'",
     gen_expr(Shared.new(ExprIdent("x")), ctx), "x"))
 
-  results.push(assert_eq_str("ExprIdent('print') → 'mlc::io::print'",
+  results.push(assert_eq_str("ExprIdent('print') - 'mlc::io::print'",
     gen_expr(Shared.new(ExprIdent("print")), ctx), "mlc::io::print"))
 
-  results.push(assert_eq_str("ExprIdent('println') → 'mlc::io::println'",
+  results.push(assert_eq_str("ExprIdent('println') - 'mlc::io::println'",
     gen_expr(Shared.new(ExprIdent("println")), ctx), "mlc::io::println"))
 
-  results.push(assert_eq_str("ExprBin add → '(1 + 2)'",
+  results.push(assert_eq_str("ExprBin add - '(1 + 2)'",
     gen_expr(Shared.new(ExprBin("+", Shared.new(ExprInt(1)), Shared.new(ExprInt(2)))), ctx), "(1 + 2)"))
 
-  results.push(assert_eq_str("ExprUn neg → '(-42)'",
+  results.push(assert_eq_str("ExprUn neg - '(-42)'",
     gen_expr(Shared.new(ExprUn("-", Shared.new(ExprInt(42)))), ctx), "(-42)"))
 
-  results.push(assert_eq_str("map_builtin passthrough → 'foo'",
+  results.push(assert_eq_str("map_builtin passthrough - 'foo'",
     map_builtin("foo"), "foo"))
 
   const single_params: [string] = ["x"]
-  results.push(assert_eq_str("ExprLambda single param → '[=](auto x) { return ... }'",
+  results.push(assert_eq_str("ExprLambda single param - '[=](auto x) { return ... }'",
     gen_expr(Shared.new(ExprLambda(single_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("x")), Shared.new(ExprInt(1)))))), ctx),
     "[=](auto x) { return (x + 1); }"))
 
   const two_params: [string] = ["a", "b"]
-  results.push(assert_eq_str("ExprLambda two params → '[=](auto a, auto b) { return ... }'",
+  results.push(assert_eq_str("ExprLambda two params - '[=](auto a, auto b) { return ... }'",
     gen_expr(Shared.new(ExprLambda(two_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("a")), Shared.new(ExprIdent("b")))))), ctx),
     "[=](auto a, auto b) { return (a + b); }"))
 
   const zero_params: [string] = []
-  results.push(assert_eq_str("ExprLambda zero params → '[]() { return ... }'",
+  results.push(assert_eq_str("ExprLambda zero params - '[]() { return ... }'",
     gen_expr(Shared.new(ExprLambda(zero_params, Shared.new(ExprInt(42)))), ctx),
     "[]() { return 42; }"))
 
-  results.push(assert_eq_str("map_method: length → length",
+  results.push(assert_eq_str("map_method: length - length",
     map_method("length"), "length"))
 
-  results.push(assert_eq_str("map_method: len → length",
+  results.push(assert_eq_str("map_method: len - length",
     map_method("len"), "length"))
 
-  results.push(assert_eq_str("map_method: push → push_back",
+  results.push(assert_eq_str("map_method: push - push_back",
     map_method("push"), "push_back"))
 
-  results.push(assert_eq_str("map_method: upper → upper",
+  results.push(assert_eq_str("map_method: upper - upper",
     map_method("upper"), "upper"))
 
-  results.push(assert_eq_str("map_method: to_upper → upper",
+  results.push(assert_eq_str("map_method: to_upper - upper",
     map_method("to_upper"), "upper"))
 
-  results.push(assert_eq_str("map_method: to_lower → lower",
+  results.push(assert_eq_str("map_method: to_lower - lower",
     map_method("to_lower"), "lower"))
 
   results.push(assert_eq_str("map_method: trim passthrough",

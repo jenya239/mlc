@@ -1,9 +1,9 @@
-// ─── Expression and pattern parser ───────────────────────────────────────
+// --- Expression and pattern parser ---------------------------------------
 
 import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, FieldValsResult, StmtsResult, StmtResult, TypeResult } from "./preds"
 import { parse_type } from "./types"
 
-// ─── Statement parsers (merged to break exprs<->stmts cycle) ──────────────
+// --- Statement parsers (merged to break exprs<->stmts cycle) --------------
 
 export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
@@ -78,7 +78,7 @@ fn parse_stmt(parser: Parser) -> StmtResult = do
   end
 end
 
-// ─── Expression and pattern parser ───────────────────────────────────────
+// --- Expression and pattern parser ---------------------------------------
 
 fn parse_pat(parser: Parser) -> PatResult = do
   const kind = parser.kind()
@@ -127,7 +127,7 @@ fn parse_pat_args(parser: Parser) -> PatsResult = do
   end
 end
 
-// ─── Expression parser (precedence climbing) ─────────────────────────────
+// --- Expression parser (precedence climbing) -----------------------------
 
 export fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
 
@@ -383,7 +383,7 @@ fn looks_like_lambda_params(parser: Parser) -> bool = do
   ok
 end
 
-// Parse lambda params: IDENT (, IDENT)* ) — stops AFTER `)`
+// Parse lambda params: IDENT (, IDENT)* ) - stops AFTER `)`
 fn parse_lambda_params(parser: Parser) -> NamesResult = do
   const names: [string] = []
   let state = parser

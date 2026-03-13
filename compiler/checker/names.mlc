@@ -30,7 +30,7 @@ fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> 
   }
 end
 
-// ─── Name resolution ──────────────────────────────────────────────────────
+// --- Name resolution ------------------------------------------------------
 
 export fn collect_globals(prog: Program) -> Map<string, bool> = do
   let names: Map<string, bool> = Map.new()

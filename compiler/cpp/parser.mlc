@@ -1,4 +1,4 @@
-// C++ parser: [CppToken] → CppProgram
+// C++ parser: [CppToken] - CppProgram
 // Uses tokens and position (no struct) to avoid move semantics issues.
 
 type CppParseResult = CppParseResult { program: CppProgram, errors: [string] }

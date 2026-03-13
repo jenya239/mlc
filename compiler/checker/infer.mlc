@@ -1,4 +1,4 @@
-// ─── Type inference ───────────────────────────────────────────────────────
+// --- Type inference -------------------------------------------------------
 
 import { Expr, Stmt, Pat, Program, decl_inner, errs_append } from "../ast"
 import { collect_globals, check_names_expr } from "./names"
@@ -220,7 +220,7 @@ fn env_for_pat_with_type(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, 
   }
 end
 
-// ─── Entry point ──────────────────────────────────────────────────────────
+// --- Entry point ----------------------------------------------------------
 
 export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
 

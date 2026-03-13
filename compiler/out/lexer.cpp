@@ -48,13 +48,13 @@ lexer::ScanResult scan_op(lexer::LexState state) noexcept;
 
 ast_tokens::LexOut tokenize(mlc::String source) noexcept;
 
-bool LexState_eof(lexer::LexState self) noexcept{return self.pos >= self.src.length();}
+bool LexState_eof(lexer::LexState self) noexcept{return self.pos >= self.src.byte_size();}
 
-mlc::String LexState_current(lexer::LexState self) noexcept{return LexState_eof(self) ? mlc::String("\0", 1) : self.src.char_at(self.pos);}
+mlc::String LexState_current(lexer::LexState self) noexcept{return LexState_eof(self) ? mlc::String("\0", 1) : self.src.byte_at(self.pos);}
 
 mlc::String LexState_peek(lexer::LexState self, int offset) noexcept{
 int position = self.pos + offset;
-return position >= self.src.length() ? mlc::String("\0", 1) : self.src.char_at(position);
+return position >= self.src.byte_size() ? mlc::String("\0", 1) : self.src.byte_at(position);
 }
 
 lexer::LexState LexState_advance(lexer::LexState self) noexcept{return LexState_current(self) == mlc::String("\n") ? lexer::LexState{self.src, self.pos + 1, self.line + 1, 1} : lexer::LexState{self.src, self.pos + 1, self.line, self.col + 1};}
@@ -94,7 +94,7 @@ while (!LexState_eof(current) && is_alnum(LexState_current(current))){
 current = LexState_advance(current);
 }
 }
-mlc::String word = source.substring(start, current.pos - start);
+mlc::String word = source.byte_substring(start, current.pos - start);
 return lexer::ScanResult{current, ast_tokens::Token{keyword_kind(word), token_line, token_col}};
 }
 

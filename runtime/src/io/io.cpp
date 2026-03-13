@@ -8,7 +8,7 @@ namespace {
 std::vector<String> g_args;
 
 int write_to_stream(std::ostream& stream, const String& value, bool newline) {
-    stream << value.as_std_string();
+    stream << value.view();
     if (newline) {
         stream << '\n';
     }

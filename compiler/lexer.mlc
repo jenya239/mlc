@@ -1,4 +1,4 @@
-// Lexer: source string → token array.
+// Lexer: source string - token array.
 
 import { TKind, Token, LexOut } from "./ast_tokens"
 
@@ -8,14 +8,14 @@ type ScanStrResult = ScanStrResult { state: LexState, token: Token, error: strin
 
 extend LexState {
   fn eof(self) -> bool =
-    pos >= src.length()
+    pos >= src.byte_size()
 
   fn current(self) -> string =
-    if self.eof() then "\0" else src.char_at(pos) end
+    if self.eof() then "\0" else src.byte_at(pos) end
 
   fn peek(self, offset: i32) -> string = do
     const position = pos + offset
-    if position >= src.length() then "\0" else src.char_at(position) end
+    if position >= src.byte_size() then "\0" else src.byte_at(position) end
   end
 
   fn advance(self) -> LexState =
@@ -83,7 +83,7 @@ fn scan_ident(state: LexState) -> ScanResult = do
   while !current.eof() && is_alnum(current.current()) do
     current = current.advance()
   end
-  const word = source.substring(start, current.pos - start)
+  const word = source.byte_substring(start, current.pos - start)
   ScanResult { state: current, token: Token { kind: keyword_kind(word), line: token_line, col: token_col } }
 end
 
@@ -93,6 +93,7 @@ fn scan_int(state: LexState) -> ScanResult = do
   let current = state
   let value = 0
   while !current.eof() && is_digit(current.current()) do
+    // byte_at returns a 1-byte ASCII digit string, to_i() works correctly
     value = value * 10 + current.current().to_i()
     current = current.advance()
   end

@@ -11,31 +11,31 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   const empty_prog = Program { decls: [] }
   const ctx = create_codegen_context(empty_prog)
 
-  // ── Pipe operator desugaring ─────────────────────────────────────────────
+  // -- Pipe operator desugaring ---------------------------------------------
 
   const left_expr = Shared.new(ExprIdent("x"))
   const right_fn   = Shared.new(ExprIdent("double"))
 
   const plain_pipe = pipe_desugar(left_expr, right_fn)
-  results.push(assert_eq_str("pipe x |> double → double_(x)",
+  results.push(assert_eq_str("pipe x |> double - double_(x)",
     gen_expr(plain_pipe, ctx),
     "double_(x)"))
 
   const right_call_args: [Shared<Expr>] = [Shared.new(ExprInt(5))]
   const right_call = Shared.new(ExprCall(Shared.new(ExprIdent("add")), right_call_args))
   const partial_pipe = pipe_desugar(left_expr, right_call)
-  results.push(assert_eq_str("pipe x |> add(5) → add(x, 5)",
+  results.push(assert_eq_str("pipe x |> add(5) - add(x, 5)",
     gen_expr(partial_pipe, ctx),
     "add(x, 5)"))
 
   const right_multi_args: [Shared<Expr>] = [Shared.new(ExprInt(3)), Shared.new(ExprInt(4))]
   const right_multi_call = Shared.new(ExprCall(Shared.new(ExprIdent("clamp")), right_multi_args))
   const multi_partial_pipe = pipe_desugar(left_expr, right_multi_call)
-  results.push(assert_eq_str("pipe x |> clamp(3, 4) → clamp(x, 3, 4)",
+  results.push(assert_eq_str("pipe x |> clamp(3, 4) - clamp(x, 3, 4)",
     gen_expr(multi_partial_pipe, ctx),
     "clamp(x, 3, 4)"))
 
-  // ── Record update codegen ────────────────────────────────────────────────
+  // -- Record update codegen ------------------------------------------------
 
   const point_decl = Shared.new(DeclType("Point", [Shared.new(VarRecord("Point", [
     Shared.new(FieldDef { name: "x", typ: Shared.new(TyI32) }),
@@ -49,7 +49,7 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   ]
   const base_expr = Shared.new(ExprIdent("p"))
   const update_expr = Shared.new(ExprRecordUpdate("Point", base_expr, override_fields))
-  results.push(assert_eq_str("Point { ...p, x: 10 } → Point{10, p.y}",
+  results.push(assert_eq_str("Point { ...p, x: 10 } - Point{10, p.y}",
     gen_expr(update_expr, ctx_point),
     "Point{10, p.y}"))
 
@@ -58,14 +58,14 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
     Shared.new(FieldVal { name: "y", val: Shared.new(ExprInt(0)) })
   ]
   const all_overrides_expr = Shared.new(ExprRecordUpdate("Point", base_expr, two_overrides))
-  results.push(assert_eq_str("Point { ...p, x: 0, y: 0 } → Point{0, 0}",
+  results.push(assert_eq_str("Point { ...p, x: 0, y: 0 } - Point{0, 0}",
     gen_expr(all_overrides_expr, ctx_point),
     "Point{0, 0}"))
 
-  // ── Lexer tokenizes ... as Spread ────────────────────────────────────────
+  // -- Lexer tokenizes ... as Spread ----------------------------------------
 
   const spread_tokens = tokenize("...")
-  results.push(assert_eq_int("'...' → 2 tokens (Spread + Eof)",
+  results.push(assert_eq_int("'...' - 2 tokens (Spread + Eof)",
     spread_tokens.tokens.length(), 2))
 
   const first_token_is_spread = match spread_tokens.tokens[0].kind { Spread => 1, _ => 0 }

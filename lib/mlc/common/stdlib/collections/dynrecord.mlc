@@ -13,9 +13,9 @@
 // - Can be validated and converted to static types via shape_as/shape_try
 //
 // Usage Philosophy:
-// - Статика по умолчанию: Use static records { x: i32, y: i32 } for known shapes
-// - Динамика как оболочка: Use DynRecord for external data (JSON, configs, plugins)
-// - Мост обратно в статику: Use shape_as<T>(dyn) to validate and convert
+// - ------- -- ---------: Use static records { x: i32, y: i32 } for known shapes
+// - -------- --- --------: Use DynRecord for external data (JSON, configs, plugins)
+// - ---- ------- - -------: Use shape_as<T>(dyn) to validate and convert
 
 import std/collections/map::{Map, Key, symbol_to_key, map_new, map_get, map_set, map_has, map_keys}
 import std/core/option::{Option, Some, None}

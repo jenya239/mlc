@@ -1,4 +1,4 @@
-// Code generator: Program AST → C++ source string.
+// Code generator: Program AST - C++ source string.
 
 import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, decl_inner, decl_name, errs_append } from "./ast"
 
@@ -99,7 +99,7 @@ fn build_qualified(import_paths: [string], all_items: [LoadItem]) -> Map<string,
   q
 end
 
-// ─── Context (DI-style) ───────────────────────────────────────────────────
+// --- Context (DI-style) ---------------------------------------------------
 
 export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 export type CodegenContext = CodegenContext { field_orders: [Shared<FieldOrder>], ns_prefix: string, qualified: Map<string, string>, self_type: string, method_owners: Map<string, string>, shared_params: [string], variant_types: Map<string, string> }
@@ -205,7 +205,7 @@ fn ctx_resolve(ctx: CodegenContext, name: string) -> string =
   else cpp_safe(name)
   end
 
-// ─── Field order registry ─────────────────────────────────────────────────
+// --- Field order registry -------------------------------------------------
 
 fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
   const orders: [Shared<FieldOrder>] = []
@@ -289,7 +289,7 @@ fn lookup_fields(orders: [Shared<FieldOrder>], name: string) -> [string] = do
   result
 end
 
-// ─── C++ identifier safety ───────────────────────────────────────────────
+// --- C++ identifier safety -----------------------------------------------
 
 fn cpp_keyword(name: string) -> bool =
   name == "export" || name == "import" || name == "module" || name == "struct" || name == "class"
@@ -314,7 +314,7 @@ fn cpp_keyword(name: string) -> bool =
 fn cpp_safe(name: string) -> string =
   if cpp_keyword(name) then name + "_" else name end
 
-// ─── Type name → C++ ─────────────────────────────────────────────────────
+// --- Type name - C++ -----------------------------------------------------
 
 fn lower_first(name: string) -> string =
   if name.length() == 0 then name
@@ -353,7 +353,7 @@ export fn type_to_cpp(ctx: CodegenContext, type_expr: Shared<TypeExpr>) -> strin
     end
   }
 
-// ─── Expression codegen ───────────────────────────────────────────────────
+// --- Expression codegen ---------------------------------------------------
 
 fn escape_str(input: string) -> string = do
   let parts: [string] = []; let i = 0
@@ -637,7 +637,7 @@ fn pat_bind_names(sub_pats: [Shared<Pat>]) -> string = do
   parts.join(", ")
 end
 
-// ─── Statement codegen ────────────────────────────────────────────────────
+// --- Statement codegen ----------------------------------------------------
 
 fn gen_stmt(stmt: Shared<Stmt>, ctx: CodegenContext) -> string =
   match stmt {
@@ -713,7 +713,7 @@ fn gen_stmt_expr(expr: Shared<Expr>, ctx: CodegenContext) -> string =
     _ => gen_expr(expr, ctx) + ";\n"
   }
 
-// ─── Declaration codegen ──────────────────────────────────────────────────
+// --- Declaration codegen --------------------------------------------------
 
 fn gen_return_body(expr: Shared<Expr>, ctx: CodegenContext) -> string =
   match expr {
@@ -897,7 +897,7 @@ fn gen_decl(decl: Shared<Decl>, ctx: CodegenContext) -> string =
     DeclExported(d) => gen_decl(d, ctx)
   }
 
-// ─── Entry point ──────────────────────────────────────────────────────────
+// --- Entry point ----------------------------------------------------------
 
 fn gen_proto(decl: Shared<Decl>, ctx: CodegenContext) -> string =
   match decl {

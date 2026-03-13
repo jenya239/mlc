@@ -6,187 +6,146 @@
 
 namespace mlc {
 
-// UTF-8 helper: count characters in a UTF-8 string
-size_t String::utf8_length(const std::string& str) {
+// ── UTF-8 helpers ─────────────────────────────────────────────────────────────
+
+size_t String::utf8_length(std::string_view str) noexcept {
     size_t count = 0;
     for (size_t i = 0; i < str.size(); ) {
         uint8_t byte = static_cast<uint8_t>(str[i]);
-
-        // Determine how many bytes this character uses
-        if ((byte & 0x80) == 0x00) {
-            // 1-byte character (0xxxxxxx)
-            i += 1;
-        } else if ((byte & 0xE0) == 0xC0) {
-            // 2-byte character (110xxxxx)
-            i += 2;
-        } else if ((byte & 0xF0) == 0xE0) {
-            // 3-byte character (1110xxxx)
-            i += 3;
-        } else if ((byte & 0xF8) == 0xF0) {
-            // 4-byte character (11110xxx)
-            i += 4;
-        } else {
-            // Invalid UTF-8, skip this byte
-            i += 1;
-        }
-        count++;
+        if      ((byte & 0x80) == 0x00) i += 1;
+        else if ((byte & 0xE0) == 0xC0) i += 2;
+        else if ((byte & 0xF0) == 0xE0) i += 3;
+        else if ((byte & 0xF8) == 0xF0) i += 4;
+        else                            i += 1;  // invalid byte
+        ++count;
     }
     return count;
 }
 
-// UTF-8 helper: get byte index of nth character
-size_t String::utf8_char_index(const std::string& str, size_t char_pos) {
-    size_t current_char = 0;
-    size_t byte_index = 0;
-
-    while (byte_index < str.size() && current_char < char_pos) {
-        uint8_t byte = static_cast<uint8_t>(str[byte_index]);
-
-        if ((byte & 0x80) == 0x00) {
-            byte_index += 1;
-        } else if ((byte & 0xE0) == 0xC0) {
-            byte_index += 2;
-        } else if ((byte & 0xF0) == 0xE0) {
-            byte_index += 3;
-        } else if ((byte & 0xF8) == 0xF0) {
-            byte_index += 4;
-        } else {
-            byte_index += 1;
-        }
-        current_char++;
+size_t String::utf8_char_index(std::string_view str, size_t char_pos) {
+    size_t cur = 0, bi = 0;
+    while (bi < str.size() && cur < char_pos) {
+        uint8_t byte = static_cast<uint8_t>(str[bi]);
+        if      ((byte & 0x80) == 0x00) bi += 1;
+        else if ((byte & 0xE0) == 0xC0) bi += 2;
+        else if ((byte & 0xF0) == 0xE0) bi += 3;
+        else if ((byte & 0xF8) == 0xF0) bi += 4;
+        else                            bi += 1;
+        ++cur;
     }
-
-    return byte_index;
+    return bi;
 }
 
-// UTF-8 helper: get one character at position
-std::string String::utf8_char_at(const std::string& str, size_t char_pos) {
-    size_t byte_index = utf8_char_index(str, char_pos);
+std::string String::utf8_char_at(std::string_view str, size_t char_pos) {
+    size_t bi = utf8_char_index(str, char_pos);
+    if (bi >= str.size()) throw std::out_of_range("String character index out of range");
 
-    if (byte_index >= str.size()) {
-        throw std::out_of_range("String character index out of range");
-    }
-
-    uint8_t byte = static_cast<uint8_t>(str[byte_index]);
+    uint8_t byte = static_cast<uint8_t>(str[bi]);
     size_t char_bytes = 1;
+    if      ((byte & 0x80) == 0x00) char_bytes = 1;
+    else if ((byte & 0xE0) == 0xC0) char_bytes = 2;
+    else if ((byte & 0xF0) == 0xE0) char_bytes = 3;
+    else if ((byte & 0xF8) == 0xF0) char_bytes = 4;
 
-    if ((byte & 0x80) == 0x00) {
-        char_bytes = 1;
-    } else if ((byte & 0xE0) == 0xC0) {
-        char_bytes = 2;
-    } else if ((byte & 0xF0) == 0xE0) {
-        char_bytes = 3;
-    } else if ((byte & 0xF8) == 0xF0) {
-        char_bytes = 4;
-    }
-
-    return str.substr(byte_index, char_bytes);
+    return std::string(str.substr(bi, char_bytes));
 }
 
-// Substring by character positions
+// ── substring ─────────────────────────────────────────────────────────────────
+
 String String::substring(size_t start) const {
-    if (is_ascii_) return String(data_->substr(start), true);
-    size_t byte_start = utf8_char_index(*data_, start);
-    return String(data_->substr(byte_start), false);
+    auto v = view();
+    if (is_ascii_) {
+        if (start >= v.size()) return String();
+        return String(v.data() + start, v.size() - start, true);
+    }
+    size_t bi = utf8_char_index(v, start);
+    return String(v.data() + bi, v.size() - bi, false);
 }
 
 String String::substring(size_t start, size_t length) const {
-    if (is_ascii_) return String(data_->substr(start, length), true);
-    size_t byte_start = utf8_char_index(*data_, start);
-    size_t byte_end = utf8_char_index(*data_, start + length);
-    return String(data_->substr(byte_start, byte_end - byte_start), false);
+    auto v = view();
+    if (is_ascii_) {
+        if (start >= v.size()) return String();
+        size_t len = std::min(length, v.size() - start);
+        return String(v.data() + start, len, true);
+    }
+    size_t byte_start = utf8_char_index(v, start);
+    size_t byte_end   = utf8_char_index(v, start + length);
+    return String(v.data() + byte_start, byte_end - byte_start, false);
 }
 
-// Case conversion (simple ASCII version for MVP)
-// TODO: Add ICU/Boost.Locale for proper Unicode case conversion
+// ── case ──────────────────────────────────────────────────────────────────────
+
 String String::upper() const {
-    std::string result = *data_;
+    auto v = view();
+    std::string result(v);
     std::transform(result.begin(), result.end(), result.begin(),
                    [](unsigned char c) { return std::toupper(c); });
-    return String(result);
+    return String(std::move(result));
 }
 
 String String::lower() const {
-    std::string result = *data_;
+    auto v = view();
+    std::string result(v);
     std::transform(result.begin(), result.end(), result.begin(),
                    [](unsigned char c) { return std::tolower(c); });
-    return String(result);
+    return String(std::move(result));
 }
 
-// Trimming whitespace
+// ── trim ──────────────────────────────────────────────────────────────────────
+
 String String::trim() const {
-    if (data_->empty()) return String();
-
-    size_t start = 0;
-    size_t end = data_->size() - 1;
-
-    // Find first non-whitespace
-    while (start < data_->size() && std::isspace(static_cast<unsigned char>((*data_)[start]))) {
-        start++;
-    }
-
-    // Find last non-whitespace
-    while (end > start && std::isspace(static_cast<unsigned char>((*data_)[end]))) {
-        end--;
-    }
-
-    if (start > end) return String();
-    return String(data_->substr(start, end - start + 1));
+    auto v = view();
+    size_t s = 0, e = v.size();
+    while (s < e && std::isspace(static_cast<unsigned char>(v[s]))) ++s;
+    while (e > s && std::isspace(static_cast<unsigned char>(v[e-1]))) --e;
+    return String(v.data() + s, e - s);
 }
 
 String String::trim_start() const {
-    if (data_->empty()) return String();
-
-    size_t start = 0;
-    while (start < data_->size() && std::isspace(static_cast<unsigned char>((*data_)[start]))) {
-        start++;
-    }
-
-    return String(data_->substr(start));
+    auto v = view();
+    size_t s = 0;
+    while (s < v.size() && std::isspace(static_cast<unsigned char>(v[s]))) ++s;
+    return String(v.data() + s, v.size() - s);
 }
 
 String String::trim_end() const {
-    if (data_->empty()) return String();
-
-    size_t end = data_->size() - 1;
-    while (end > 0 && std::isspace(static_cast<unsigned char>((*data_)[end]))) {
-        end--;
-    }
-
-    return String(data_->substr(0, end + 1));
+    auto v = view();
+    size_t e = v.size();
+    while (e > 0 && std::isspace(static_cast<unsigned char>(v[e-1]))) --e;
+    return String(v.data(), e);
 }
 
-// Splitting
+// ── split ─────────────────────────────────────────────────────────────────────
+
 mlc::Array<String> String::split(const String& delimiter) const {
     mlc::Array<String> result;
+    auto v  = view();
+    auto dv = delimiter.view();
 
-    if (delimiter.data_->empty()) {
-        size_t char_count = length();
-        for (size_t i = 0; i < char_count; i++) {
-            result.push_back(String(char_at(i)));
-        }
+    if (dv.empty()) {
+        size_t char_count = static_cast<size_t>(length());
+        for (size_t i = 0; i < char_count; ++i)
+            result.push_back(char_at(i));
         return result;
     }
 
     size_t start = 0;
-    size_t pos = data_->find(*delimiter.data_);
-
-    while (pos != std::string::npos) {
-        result.push_back(String(data_->substr(start, pos - start)));
-        start = pos + delimiter.data_->size();
-        pos = data_->find(*delimiter.data_, start);
+    size_t pos   = v.find(dv);
+    while (pos != std::string_view::npos) {
+        result.push_back(String(v.data() + start, pos - start));
+        start = pos + dv.size();
+        pos   = v.find(dv, start);
     }
-
-    result.push_back(String(data_->substr(start)));
+    result.push_back(String(v.data() + start, v.size() - start));
     return result;
 }
 
 mlc::Array<String> String::chars() const {
     mlc::Array<String> result;
-    size_t char_count = length();
-    for (size_t i = 0; i < char_count; i++) {
+    size_t char_count = static_cast<size_t>(length());
+    for (size_t i = 0; i < char_count; ++i)
         result.push_back(char_at(i));
-    }
     return result;
 }
 

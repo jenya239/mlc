@@ -32,7 +32,7 @@ export extend Token {
 // Shared AST type definitions for the self-hosted MLC compiler.
 
 
-// ─── AST ─────────────────────────────────────────────────────────────────
+// --- AST -----------------------------------------------------------------
 
 export type TypeExpr =
   | TyI32 | TyString | TyBool | TyUnit | TyNamed(string)
@@ -105,7 +105,7 @@ export fn decl_name(decl: Shared<Decl>) -> string = match decl {
   DeclExported(d) => decl_name(d)
 }
 
-// ─── Shared utility ───────────────────────────────────────────────────────
+// --- Shared utility -------------------------------------------------------
 
 export fn errs_append(mut dst: [string], src: [string]) -> [string] = do
   let i = 0
@@ -116,7 +116,7 @@ export fn errs_append(mut dst: [string], src: [string]) -> [string] = do
   dst
 end
 
-// Lexer: source string → token array.
+// Lexer: source string - token array.
 
 
 type LexState     = LexState     { src: string, pos: i32, line: i32, col: i32 }
@@ -357,24 +357,24 @@ fn lex_error_count(source: string) -> i32 =
 fn lexer_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  results.push(assert_eq_int("empty source → 1 token (Eof)",       lex_token_count(""),   1))
-  results.push(assert_eq_int("whitespace only → 1 token (Eof)",    lex_token_count("   "), 1))
-  results.push(assert_eq_int("comment only → 1 token (Eof)",       lex_token_count("// hi"), 1))
+  results.push(assert_eq_int("empty source - 1 token (Eof)",       lex_token_count(""),   1))
+  results.push(assert_eq_int("whitespace only - 1 token (Eof)",    lex_token_count("   "), 1))
+  results.push(assert_eq_int("comment only - 1 token (Eof)",       lex_token_count("// hi"), 1))
 
-  results.push(assert_eq_int("'fn' → 2 tokens",                    lex_token_count("fn"),      2))
-  results.push(assert_eq_int("'type' → 2 tokens",                  lex_token_count("type"),    2))
-  results.push(assert_eq_int("'let' → 2 tokens",                   lex_token_count("let"),     2))
-  results.push(assert_eq_int("'if' → 2 tokens",                    lex_token_count("if"),      2))
-  results.push(assert_eq_int("'match' → 2 tokens",                 lex_token_count("match"),   2))
-  results.push(assert_eq_int("'end' → 2 tokens",                   lex_token_count("end"),     2))
+  results.push(assert_eq_int("'fn' - 2 tokens",                    lex_token_count("fn"),      2))
+  results.push(assert_eq_int("'type' - 2 tokens",                  lex_token_count("type"),    2))
+  results.push(assert_eq_int("'let' - 2 tokens",                   lex_token_count("let"),     2))
+  results.push(assert_eq_int("'if' - 2 tokens",                    lex_token_count("if"),      2))
+  results.push(assert_eq_int("'match' - 2 tokens",                 lex_token_count("match"),   2))
+  results.push(assert_eq_int("'end' - 2 tokens",                   lex_token_count("end"),     2))
 
-  results.push(assert_eq_int("integer literal → 2 tokens",         lex_token_count("42"),      2))
-  results.push(assert_eq_int("string literal → 2 tokens",          lex_token_count("\"hi\""),  2))
-  results.push(assert_eq_int("identifier → 2 tokens",              lex_token_count("foo"),     2))
+  results.push(assert_eq_int("integer literal - 2 tokens",         lex_token_count("42"),      2))
+  results.push(assert_eq_int("string literal - 2 tokens",          lex_token_count("\"hi\""),  2))
+  results.push(assert_eq_int("identifier - 2 tokens",              lex_token_count("foo"),     2))
 
   results.push(assert_eq_int("no lex errors on valid source",       lex_error_count("fn f() -> i32 = 42"), 0))
 
-  results.push(assert_eq_int("fn decl → correct token count",
+  results.push(assert_eq_int("fn decl - correct token count",
     lex_token_count("fn f() -> i32 = 42"), 9))
 
   results
@@ -383,7 +383,7 @@ end
 // Parser state, result types, and token kind predicates.
 
 
-// ─── Parser state ─────────────────────────────────────────────────────────
+// --- Parser state ---------------------------------------------------------
 
 export type Parser = Parser { tokens: [Token], pos: i32 }
 
@@ -405,7 +405,7 @@ fn parser_at_eof(parser: Parser) -> bool =
 fn parser_skip_semi(parser: Parser) -> Parser =
   match parser_kind(parser) { Semicolon => parser_advance(parser), _ => parser }
 
-// ─── Result types ─────────────────────────────────────────────────────────
+// --- Result types ---------------------------------------------------------
 
 export type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
 export type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
@@ -425,7 +425,7 @@ export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>], 
 export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
 export type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
 
-// ─── Token kind predicates ────────────────────────────────────────────────
+// --- Token kind predicates ------------------------------------------------
 
 fn is_keyword_fn(kind: TKind)       -> bool = match kind { KFn       => true, _ => false }
 fn is_keyword_type(kind: TKind)     -> bool = match kind { KType     => true, _ => false }
@@ -477,7 +477,7 @@ fn get_operator(kind: TKind)     -> string = match kind { Op(s)      => s,    _ 
 export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"
 
-// ─── extend TKind ─────────────────────────────────────────────────────────
+// --- extend TKind ---------------------------------------------------------
 
 export extend TKind {
   fn is_fn(self)       -> bool = match self { KFn       => true, _ => false }
@@ -529,7 +529,7 @@ export extend TKind {
   fn op_val(self)      -> string = match self { Op(s)       => s,    _ => "" }
 }
 
-// ─── extend Parser ────────────────────────────────────────────────────────
+// --- extend Parser --------------------------------------------------------
 
 export extend Parser {
   fn kind(self)      -> TKind  = tokens[pos].kind
@@ -540,7 +540,7 @@ export extend Parser {
     match tokens[pos].kind { Semicolon => self.advance(), _ => self }
 }
 
-// ─── Type expression parser ───────────────────────────────────────────────
+// --- Type expression parser -----------------------------------------------
 
 
 export fn parse_type(parser: Parser) -> TypeResult = do
@@ -600,7 +600,7 @@ fn parse_type_args(parser: Parser) -> TypesResult = do
   TypesResult { types, parser: end_state }
 end
 
-// ─── Statement parsers ────────────────────────────────────────────────────
+// --- Statement parsers ----------------------------------------------------
 
 
 export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
@@ -676,7 +676,7 @@ export fn parse_stmt(parser: Parser) -> StmtResult = do
   end
 end
 
-// ─── Expression and pattern parser ───────────────────────────────────────
+// --- Expression and pattern parser ---------------------------------------
 
 
 fn parse_pat(parser: Parser) -> PatResult = do
@@ -726,7 +726,7 @@ fn parse_pat_args(parser: Parser) -> PatsResult = do
   end
 end
 
-// ─── Expression parser (precedence climbing) ─────────────────────────────
+// --- Expression parser (precedence climbing) -----------------------------
 
 export fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
 
@@ -982,7 +982,7 @@ fn looks_like_lambda_params(parser: Parser) -> bool = do
   ok
 end
 
-// Parse lambda params: IDENT (, IDENT)* ) — stops AFTER `)`
+// Parse lambda params: IDENT (, IDENT)* ) - stops AFTER `)`
 fn parse_lambda_params(parser: Parser) -> NamesResult = do
   const names: [string] = []
   let state = parser
@@ -1146,7 +1146,7 @@ fn parse_record_expr(parser: Parser, record_name: string) -> ExprResult =
     ExprResult { expr: Shared.new(ExprRecord(record_name, fields_result.field_vals)), parser: fields_result.parser }
   end
 
-// ─── Declaration parsers ──────────────────────────────────────────────────
+// --- Declaration parsers --------------------------------------------------
 
 
 fn parse_import_decl(parser: Parser) -> DeclResult = do
@@ -1361,7 +1361,7 @@ fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
   FieldDefsResult { field_defs, parser: state.advance() }
 end
 
-// ─── Entry point ──────────────────────────────────────────────────────────
+// --- Entry point ----------------------------------------------------------
 
 export fn parse_program(tokens: [Token]) -> Program = do
   const decls: [Shared<Decl>] = []
@@ -1389,25 +1389,25 @@ fn first_decl(source: string) -> Shared<Decl> =
 fn parser_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  results.push(assert_eq_int("empty source → 0 decls",
+  results.push(assert_eq_int("empty source - 0 decls",
     decl_count(""), 0))
 
-  results.push(assert_eq_int("single fn decl → 1 decl",
+  results.push(assert_eq_int("single fn decl - 1 decl",
     decl_count("fn f() -> i32 = 42"), 1))
 
-  results.push(assert_eq_int("two fn decls → 2 decls",
+  results.push(assert_eq_int("two fn decls - 2 decls",
     decl_count("fn f() -> i32 = 1\nfn g() -> i32 = 2"), 2))
 
-  results.push(assert_eq_int("type decl → 1 decl",
+  results.push(assert_eq_int("type decl - 1 decl",
     decl_count("type Color = Red | Green | Blue"), 1))
 
-  results.push(assert_eq_int("fn with params → 1 decl",
+  results.push(assert_eq_int("fn with params - 1 decl",
     decl_count("fn add(x: i32, y: i32) -> i32 = x + y"), 1))
 
-  results.push(assert_eq_int("fn with do block → 1 decl",
+  results.push(assert_eq_int("fn with do block - 1 decl",
     decl_count("fn f() -> i32 = do\n  const x = 1\n  x\nend"), 1))
 
-  results.push(assert_eq_int("type + fn → 2 decls",
+  results.push(assert_eq_int("type + fn - 2 decls",
     decl_count("type Color = Red\nfn f() -> i32 = 1"), 2))
 
   results.push(assert_true("fn decl is DeclFn",
@@ -1422,7 +1422,7 @@ fn parser_tests() -> [TestResult] = do
       DeclFn(_, _, _, _) => false
     }))
 
-  results.push(assert_eq_int("fn with if expr → 1 decl",
+  results.push(assert_eq_int("fn with if expr - 1 decl",
     decl_count("fn f(x: i32) -> i32 = if x > 0 then 1 else 0 end"), 1))
 
   results
@@ -1460,7 +1460,7 @@ fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> 
   }
 end
 
-// ─── Name resolution ──────────────────────────────────────────────────────
+// --- Name resolution ------------------------------------------------------
 
 export fn collect_globals(prog: Program) -> [string] = do
   const names: [string] = []
@@ -1608,7 +1608,7 @@ export fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: [s
   NameCheckResult { errors: errors, scope: scope }
 end
 
-// ─── Semantic type ────────────────────────────────────────────────────────
+// --- Semantic type --------------------------------------------------------
 
 
 export type Type =
@@ -1619,7 +1619,7 @@ export type Type =
   | TFn([Shared<Type>], Shared<Type>)
   | TUnknown
 
-// ─── Type registry ────────────────────────────────────────────────────────
+// --- Type registry --------------------------------------------------------
 
 export type TypeRegistry = TypeRegistry {
   fn_types:    Map<string, Shared<Type>>,
@@ -1738,7 +1738,7 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
   }
 end
 
-// ─── Type inference ───────────────────────────────────────────────────────
+// --- Type inference -------------------------------------------------------
 
 
 type InferResult     = InferResult     { inferred_type: Shared<Type>,             errors: [string] }
@@ -1956,7 +1956,7 @@ fn env_for_pat_with_type(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, 
   }
 end
 
-// ─── Entry point ──────────────────────────────────────────────────────────
+// --- Entry point ----------------------------------------------------------
 
 export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
 
@@ -2006,43 +2006,43 @@ fn check_error_count(source: string) -> i32 =
 fn checker_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  results.push(assert_eq_int("empty program → 0 errors",
+  results.push(assert_eq_int("empty program - 0 errors",
     check_error_count(""), 0))
 
-  results.push(assert_eq_int("fn returning literal → 0 errors",
+  results.push(assert_eq_int("fn returning literal - 0 errors",
     check_error_count("fn f() -> i32 = 42"), 0))
 
-  results.push(assert_eq_int("fn using its own param → 0 errors",
+  results.push(assert_eq_int("fn using its own param - 0 errors",
     check_error_count("fn f(x: i32) -> i32 = x"), 0))
 
-  results.push(assert_eq_int("fn calling another fn → 0 errors",
+  results.push(assert_eq_int("fn calling another fn - 0 errors",
     check_error_count("fn add(x: i32, y: i32) -> i32 = x + y\nfn main() -> i32 = add(1, 2)"), 0))
 
-  results.push(assert_true("undefined name → at least 1 error",
+  results.push(assert_true("undefined name - at least 1 error",
     check_error_count("fn f() -> i32 = undefined_name") > 0))
 
-  results.push(assert_eq_int("type decl with variants → 0 errors",
+  results.push(assert_eq_int("type decl with variants - 0 errors",
     check_error_count("type Color = Red | Green | Blue"), 0))
 
-  results.push(assert_eq_int("fn returning bool → 0 errors",
+  results.push(assert_eq_int("fn returning bool - 0 errors",
     check_error_count("fn f() -> bool = true"), 0))
 
-  results.push(assert_eq_int("fn with const binding → 0 errors",
+  results.push(assert_eq_int("fn with const binding - 0 errors",
     check_error_count("fn f() -> i32 = do\n  const x = 1\n  x\nend"), 0))
 
-  results.push(assert_true("two undefined names → at least 1 error",
+  results.push(assert_true("two undefined names - at least 1 error",
     check_error_count("fn f() -> i32 = foo + bar") > 0))
 
-  results.push(assert_eq_int("builtin print → 0 errors",
+  results.push(assert_eq_int("builtin print - 0 errors",
     check_error_count("fn f() -> i32 = do\n  print(\"hi\")\n  0\nend"), 0))
 
   results
 end
 
-// Code generator: Program AST → C++ source string.
+// Code generator: Program AST - C++ source string.
 
 
-// ─── Context (DI-style) ───────────────────────────────────────────────────
+// --- Context (DI-style) ---------------------------------------------------
 
 type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 type CodegenContext = CodegenContext { field_orders: [Shared<FieldOrder>] }
@@ -2050,7 +2050,7 @@ type CodegenContext = CodegenContext { field_orders: [Shared<FieldOrder>] }
 fn create_codegen_context(prog: Program) -> CodegenContext =
   CodegenContext { field_orders: build_field_orders(prog) }
 
-// ─── Field order registry ─────────────────────────────────────────────────
+// --- Field order registry -------------------------------------------------
 
 fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
   const orders: [Shared<FieldOrder>] = []
@@ -2126,7 +2126,7 @@ fn lookup_fields(orders: [Shared<FieldOrder>], name: string) -> [string] = do
   result
 end
 
-// ─── C++ identifier safety ───────────────────────────────────────────────
+// --- C++ identifier safety -----------------------------------------------
 
 fn cpp_keyword(name: string) -> bool =
   name == "export" || name == "import" || name == "module" || name == "struct" || name == "class"
@@ -2151,7 +2151,7 @@ fn cpp_keyword(name: string) -> bool =
 fn cpp_safe(name: string) -> string =
   if cpp_keyword(name) then name + "_" else name end
 
-// ─── Type name → C++ ─────────────────────────────────────────────────────
+// --- Type name - C++ -----------------------------------------------------
 
 fn lower_first(name: string) -> string =
   if name.length() == 0 then name
@@ -2183,7 +2183,7 @@ fn type_to_cpp(type_expr: Shared<TypeExpr>) -> string =
     end
   }
 
-// ─── Expression codegen ───────────────────────────────────────────────────
+// --- Expression codegen ---------------------------------------------------
 
 fn escape_str(input: string) -> string = do
   let parts: [string] = []; let i = 0
@@ -2407,7 +2407,7 @@ fn pat_bind_names(sub_pats: [Shared<Pat>]) -> string = do
   parts.join(", ")
 end
 
-// ─── Statement codegen ────────────────────────────────────────────────────
+// --- Statement codegen ----------------------------------------------------
 
 fn gen_stmt(stmt: Shared<Stmt>, ctx: CodegenContext) -> string =
   match stmt {
@@ -2464,7 +2464,7 @@ fn gen_stmt_expr(expr: Shared<Expr>, ctx: CodegenContext) -> string =
     _ => gen_expr(expr, ctx) + ";\n"
   }
 
-// ─── Declaration codegen ──────────────────────────────────────────────────
+// --- Declaration codegen --------------------------------------------------
 
 fn gen_return_body(expr: Shared<Expr>, ctx: CodegenContext) -> string =
   match expr {
@@ -2623,7 +2623,7 @@ fn gen_decl(decl: Shared<Decl>, ctx: CodegenContext) -> string =
     DeclExported(d) => gen_decl(d, ctx)
   }
 
-// ─── Entry point ──────────────────────────────────────────────────────────
+// --- Entry point ----------------------------------------------------------
 
 fn gen_proto(decl: Shared<Decl>) -> string =
   match decl {
@@ -2705,85 +2705,85 @@ fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("create_codegen_context: gen_expr with ctx",
     gen_expr(Shared.new(ExprInt(42)), ctx), "42"))
 
-  results.push(assert_eq_str("TyI32 → 'int'",
+  results.push(assert_eq_str("TyI32 - 'int'",
     type_to_cpp(Shared.new(TyI32)), "int"))
 
-  results.push(assert_eq_str("TyString → 'mlc::String'",
+  results.push(assert_eq_str("TyString - 'mlc::String'",
     type_to_cpp(Shared.new(TyString)), "mlc::String"))
 
-  results.push(assert_eq_str("TyBool → 'bool'",
+  results.push(assert_eq_str("TyBool - 'bool'",
     type_to_cpp(Shared.new(TyBool)), "bool"))
 
-  results.push(assert_eq_str("TyUnit → 'void'",
+  results.push(assert_eq_str("TyUnit - 'void'",
     type_to_cpp(Shared.new(TyUnit)), "void"))
 
-  results.push(assert_eq_str("TyArray(TyI32) → 'mlc::Array<int>'",
+  results.push(assert_eq_str("TyArray(TyI32) - 'mlc::Array<int>'",
     type_to_cpp(Shared.new(TyArray(Shared.new(TyI32)))), "mlc::Array<int>"))
 
-  results.push(assert_eq_str("TyShared(TyI32) → 'std::shared_ptr<int>'",
+  results.push(assert_eq_str("TyShared(TyI32) - 'std::shared_ptr<int>'",
     type_to_cpp(Shared.new(TyShared(Shared.new(TyI32)))), "std::shared_ptr<int>"))
 
-  results.push(assert_eq_str("ExprInt(42) → '42'",
+  results.push(assert_eq_str("ExprInt(42) - '42'",
     gen_expr(Shared.new(ExprInt(42)), ctx), "42"))
 
-  results.push(assert_eq_str("ExprBool(true) → 'true'",
+  results.push(assert_eq_str("ExprBool(true) - 'true'",
     gen_expr(Shared.new(ExprBool(true)), ctx), "true"))
 
-  results.push(assert_eq_str("ExprStr('hi') → 'mlc::String(\"hi\")'",
+  results.push(assert_eq_str("ExprStr('hi') - 'mlc::String(\"hi\")'",
     gen_expr(Shared.new(ExprStr("hi")), ctx), "mlc::String(\"hi\")"))
 
-  results.push(assert_eq_str("ExprUnit → '/* unit */'",
+  results.push(assert_eq_str("ExprUnit - '/* unit */'",
     gen_expr(Shared.new(ExprUnit), ctx), "/* unit */"))
 
-  results.push(assert_eq_str("ExprIdent('x') → 'x'",
+  results.push(assert_eq_str("ExprIdent('x') - 'x'",
     gen_expr(Shared.new(ExprIdent("x")), ctx), "x"))
 
-  results.push(assert_eq_str("ExprIdent('print') → 'mlc::io::print'",
+  results.push(assert_eq_str("ExprIdent('print') - 'mlc::io::print'",
     gen_expr(Shared.new(ExprIdent("print")), ctx), "mlc::io::print"))
 
-  results.push(assert_eq_str("ExprIdent('println') → 'mlc::io::println'",
+  results.push(assert_eq_str("ExprIdent('println') - 'mlc::io::println'",
     gen_expr(Shared.new(ExprIdent("println")), ctx), "mlc::io::println"))
 
-  results.push(assert_eq_str("ExprBin add → '(1 + 2)'",
+  results.push(assert_eq_str("ExprBin add - '(1 + 2)'",
     gen_expr(Shared.new(ExprBin("+", Shared.new(ExprInt(1)), Shared.new(ExprInt(2)))), ctx), "(1 + 2)"))
 
-  results.push(assert_eq_str("ExprUn neg → '(-42)'",
+  results.push(assert_eq_str("ExprUn neg - '(-42)'",
     gen_expr(Shared.new(ExprUn("-", Shared.new(ExprInt(42)))), ctx), "(-42)"))
 
-  results.push(assert_eq_str("map_builtin passthrough → 'foo'",
+  results.push(assert_eq_str("map_builtin passthrough - 'foo'",
     map_builtin("foo"), "foo"))
 
   const single_params: [string] = ["x"]
-  results.push(assert_eq_str("ExprLambda single param → '[=](auto x) { return ... }'",
+  results.push(assert_eq_str("ExprLambda single param - '[=](auto x) { return ... }'",
     gen_expr(Shared.new(ExprLambda(single_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("x")), Shared.new(ExprInt(1)))))), ctx),
     "[=](auto x) { return (x + 1); }"))
 
   const two_params: [string] = ["a", "b"]
-  results.push(assert_eq_str("ExprLambda two params → '[=](auto a, auto b) { return ... }'",
+  results.push(assert_eq_str("ExprLambda two params - '[=](auto a, auto b) { return ... }'",
     gen_expr(Shared.new(ExprLambda(two_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("a")), Shared.new(ExprIdent("b")))))), ctx),
     "[=](auto a, auto b) { return (a + b); }"))
 
   const zero_params: [string] = []
-  results.push(assert_eq_str("ExprLambda zero params → '[]() { return ... }'",
+  results.push(assert_eq_str("ExprLambda zero params - '[]() { return ... }'",
     gen_expr(Shared.new(ExprLambda(zero_params, Shared.new(ExprInt(42)))), ctx),
     "[]() { return 42; }"))
 
-  results.push(assert_eq_str("map_method: length → length",
+  results.push(assert_eq_str("map_method: length - length",
     map_method("length"), "length"))
 
-  results.push(assert_eq_str("map_method: len → length",
+  results.push(assert_eq_str("map_method: len - length",
     map_method("len"), "length"))
 
-  results.push(assert_eq_str("map_method: push → push_back",
+  results.push(assert_eq_str("map_method: push - push_back",
     map_method("push"), "push_back"))
 
-  results.push(assert_eq_str("map_method: upper → upper",
+  results.push(assert_eq_str("map_method: upper - upper",
     map_method("upper"), "upper"))
 
-  results.push(assert_eq_str("map_method: to_upper → upper",
+  results.push(assert_eq_str("map_method: to_upper - upper",
     map_method("to_upper"), "upper"))
 
-  results.push(assert_eq_str("map_method: to_lower → lower",
+  results.push(assert_eq_str("map_method: to_lower - lower",
     map_method("to_lower"), "lower"))
 
   results.push(assert_eq_str("map_method: trim passthrough",
@@ -2809,31 +2809,31 @@ fn pipe_and_record_update_tests() -> [TestResult] = do
   const empty_prog = Program { decls: [] }
   const ctx = create_codegen_context(empty_prog)
 
-  // ── Pipe operator desugaring ─────────────────────────────────────────────
+  // -- Pipe operator desugaring ---------------------------------------------
 
   const left_expr = Shared.new(ExprIdent("x"))
   const right_fn   = Shared.new(ExprIdent("double"))
 
   const plain_pipe = pipe_desugar(left_expr, right_fn)
-  results.push(assert_eq_str("pipe x |> double → double(x)",
+  results.push(assert_eq_str("pipe x |> double - double(x)",
     gen_expr(plain_pipe, ctx),
     "double(x)"))
 
   const right_call_args: [Shared<Expr>] = [Shared.new(ExprInt(5))]
   const right_call = Shared.new(ExprCall(Shared.new(ExprIdent("add")), right_call_args))
   const partial_pipe = pipe_desugar(left_expr, right_call)
-  results.push(assert_eq_str("pipe x |> add(5) → add(x, 5)",
+  results.push(assert_eq_str("pipe x |> add(5) - add(x, 5)",
     gen_expr(partial_pipe, ctx),
     "add(x, 5)"))
 
   const right_multi_args: [Shared<Expr>] = [Shared.new(ExprInt(3)), Shared.new(ExprInt(4))]
   const right_multi_call = Shared.new(ExprCall(Shared.new(ExprIdent("clamp")), right_multi_args))
   const multi_partial_pipe = pipe_desugar(left_expr, right_multi_call)
-  results.push(assert_eq_str("pipe x |> clamp(3, 4) → clamp(x, 3, 4)",
+  results.push(assert_eq_str("pipe x |> clamp(3, 4) - clamp(x, 3, 4)",
     gen_expr(multi_partial_pipe, ctx),
     "clamp(x, 3, 4)"))
 
-  // ── Record update codegen ────────────────────────────────────────────────
+  // -- Record update codegen ------------------------------------------------
 
   const point_decl = Shared.new(DeclType("Point", [Shared.new(VarRecord("Point", [
     Shared.new(FieldDef { name: "x", typ: Shared.new(TyI32) }),
@@ -2847,7 +2847,7 @@ fn pipe_and_record_update_tests() -> [TestResult] = do
   ]
   const base_expr = Shared.new(ExprIdent("p"))
   const update_expr = Shared.new(ExprRecordUpdate("Point", base_expr, override_fields))
-  results.push(assert_eq_str("Point { ...p, x: 10 } → Point{10, p.y}",
+  results.push(assert_eq_str("Point { ...p, x: 10 } - Point{10, p.y}",
     gen_expr(update_expr, ctx_point),
     "Point{10, p.y}"))
 
@@ -2856,14 +2856,14 @@ fn pipe_and_record_update_tests() -> [TestResult] = do
     Shared.new(FieldVal { name: "y", val: Shared.new(ExprInt(0)) })
   ]
   const all_overrides_expr = Shared.new(ExprRecordUpdate("Point", base_expr, two_overrides))
-  results.push(assert_eq_str("Point { ...p, x: 0, y: 0 } → Point{0, 0}",
+  results.push(assert_eq_str("Point { ...p, x: 0, y: 0 } - Point{0, 0}",
     gen_expr(all_overrides_expr, ctx_point),
     "Point{0, 0}"))
 
-  // ── Lexer tokenizes ... as Spread ────────────────────────────────────────
+  // -- Lexer tokenizes ... as Spread ----------------------------------------
 
   const spread_tokens = tokenize("...")
-  results.push(assert_eq_int("'...' → 2 tokens (Spread + Eof)",
+  results.push(assert_eq_int("'...' - 2 tokens (Spread + Eof)",
     spread_tokens.tokens.length(), 2))
 
   const first_token_is_spread = match spread_tokens.tokens[0].kind { Spread => 1, _ => 0 }
@@ -2873,7 +2873,7 @@ fn pipe_and_record_update_tests() -> [TestResult] = do
   results
 end
 
-// C++ lexer: source string → [CppToken]
+// C++ lexer: source string - [CppToken]
 
 
 type CppTKind =
@@ -3053,132 +3053,132 @@ fn cpp_int_at(src: string, i: i32) -> i32 =
 fn cpp_lexer_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  // ─── Token counts ───────────────────────────────────────────────────────
+  // --- Token counts -------------------------------------------------------
 
-  results.push(assert_eq_int("empty → 1 token (CEof)",
+  results.push(assert_eq_int("empty - 1 token (CEof)",
     cpp_tok_count(""), 1))
 
-  results.push(assert_eq_int("'int x' → 3 tokens",
+  results.push(assert_eq_int("'int x' - 3 tokens",
     cpp_tok_count("int x"), 3))
 
-  results.push(assert_eq_int("'::'  → 2 tokens",
+  results.push(assert_eq_int("'::'  - 2 tokens",
     cpp_tok_count("::"), 2))
 
-  results.push(assert_eq_int("'->'  → 2 tokens",
+  results.push(assert_eq_int("'->'  - 2 tokens",
     cpp_tok_count("->"), 2))
 
-  results.push(assert_eq_int("'// comment\\nint' → 2 tokens",
+  results.push(assert_eq_int("'// comment\\nint' - 2 tokens",
     cpp_tok_count("// comment\nint"), 2))
 
-  results.push(assert_eq_int("'/* block */int' → 2 tokens",
+  results.push(assert_eq_int("'/* block */int' - 2 tokens",
     cpp_tok_count("/* block */int"), 2))
 
-  results.push(assert_eq_int("'#include' → 3 tokens",
+  results.push(assert_eq_int("'#include' - 3 tokens",
     cpp_tok_count("#include"), 3))
 
-  // ─── Keywords ───────────────────────────────────────────────────────────
+  // --- Keywords -----------------------------------------------------------
 
-  results.push(assert_true("'auto'       → CKAuto",
+  results.push(assert_true("'auto'       - CKAuto",
     match cpp_first_kind("auto")       { CKAuto      => true, _ => false }))
 
-  results.push(assert_true("'const'      → CKConst",
+  results.push(assert_true("'const'      - CKConst",
     match cpp_first_kind("const")      { CKConst     => true, _ => false }))
 
-  results.push(assert_true("'constexpr'  → CKConstexpr",
+  results.push(assert_true("'constexpr'  - CKConstexpr",
     match cpp_first_kind("constexpr")  { CKConstexpr => true, _ => false }))
 
-  results.push(assert_true("'int'        → CKInt",
+  results.push(assert_true("'int'        - CKInt",
     match cpp_first_kind("int")        { CKInt       => true, _ => false }))
 
-  results.push(assert_true("'void'       → CKVoid",
+  results.push(assert_true("'void'       - CKVoid",
     match cpp_first_kind("void")       { CKVoid      => true, _ => false }))
 
-  results.push(assert_true("'bool'       → CKBool",
+  results.push(assert_true("'bool'       - CKBool",
     match cpp_first_kind("bool")       { CKBool      => true, _ => false }))
 
-  results.push(assert_true("'return'     → CKReturn",
+  results.push(assert_true("'return'     - CKReturn",
     match cpp_first_kind("return")     { CKReturn    => true, _ => false }))
 
-  results.push(assert_true("'struct'     → CKStruct",
+  results.push(assert_true("'struct'     - CKStruct",
     match cpp_first_kind("struct")     { CKStruct    => true, _ => false }))
 
-  results.push(assert_true("'using'      → CKUsing",
+  results.push(assert_true("'using'      - CKUsing",
     match cpp_first_kind("using")      { CKUsing     => true, _ => false }))
 
-  results.push(assert_true("'noexcept'   → CKNoexcept",
+  results.push(assert_true("'noexcept'   - CKNoexcept",
     match cpp_first_kind("noexcept")   { CKNoexcept  => true, _ => false }))
 
-  // ─── Multi-char operators ────────────────────────────────────────────────
+  // --- Multi-char operators ------------------------------------------------
 
-  results.push(assert_true("'::'  → CScope",
+  results.push(assert_true("'::'  - CScope",
     match cpp_first_kind("::")  { CScope => true, _ => false }))
 
-  results.push(assert_true("'->'  → CArrow",
+  results.push(assert_true("'->'  - CArrow",
     match cpp_first_kind("->")  { CArrow => true, _ => false }))
 
-  results.push(assert_true("'=='  → CEq",
+  results.push(assert_true("'=='  - CEq",
     match cpp_first_kind("==")  { CEq    => true, _ => false }))
 
-  results.push(assert_true("'!='  → CNe",
+  results.push(assert_true("'!='  - CNe",
     match cpp_first_kind("!=")  { CNe    => true, _ => false }))
 
-  results.push(assert_true("'<='  → CLe",
+  results.push(assert_true("'<='  - CLe",
     match cpp_first_kind("<=")  { CLe    => true, _ => false }))
 
-  results.push(assert_true("'>='  → CGe",
+  results.push(assert_true("'>='  - CGe",
     match cpp_first_kind(">=")  { CGe    => true, _ => false }))
 
-  results.push(assert_true("'&&'  → CAnd",
+  results.push(assert_true("'&&'  - CAnd",
     match cpp_first_kind("&&")  { CAnd   => true, _ => false }))
 
-  results.push(assert_true("'||'  → COr",
+  results.push(assert_true("'||'  - COr",
     match cpp_first_kind("||")  { COr    => true, _ => false }))
 
-  results.push(assert_true("'++'  → CInc",
+  results.push(assert_true("'++'  - CInc",
     match cpp_first_kind("++")  { CInc   => true, _ => false }))
 
-  results.push(assert_true("'--'  → CDec",
+  results.push(assert_true("'--'  - CDec",
     match cpp_first_kind("--")  { CDec   => true, _ => false }))
 
-  // ─── Braces and angle brackets ───────────────────────────────────────────
+  // --- Braces and angle brackets -------------------------------------------
 
-  results.push(assert_true("'{' → CLBrace",
+  results.push(assert_true("'{' - CLBrace",
     match cpp_first_kind("{") { CLBrace => true, _ => false }))
 
-  results.push(assert_true("'}' → CRBrace",
+  results.push(assert_true("'}' - CRBrace",
     match cpp_first_kind("}") { CRBrace => true, _ => false }))
 
-  results.push(assert_true("'<' → CLAngle",
+  results.push(assert_true("'<' - CLAngle",
     match cpp_first_kind("<") { CLAngle => true, _ => false }))
 
-  results.push(assert_true("'>' → CRAngle",
+  results.push(assert_true("'>' - CRAngle",
     match cpp_first_kind(">") { CRAngle => true, _ => false }))
 
-  // ─── Identifiers ─────────────────────────────────────────────────────────
+  // --- Identifiers ---------------------------------------------------------
 
-  results.push(assert_eq_str("'foo' → CIdent(\"foo\")",
+  results.push(assert_eq_str("'foo' - CIdent(\"foo\")",
     cpp_ident_at("foo", 0), "foo"))
 
-  results.push(assert_eq_str("'std::string' [0] → \"std\"",
+  results.push(assert_eq_str("'std::string' [0] - \"std\"",
     cpp_ident_at("std::string", 0), "std"))
 
-  results.push(assert_true("'std::string' [1] → CScope",
+  results.push(assert_true("'std::string' [1] - CScope",
     match cpp_kind_at("std::string", 1) { CScope => true, _ => false }))
 
-  results.push(assert_eq_str("'std::string' [2] → \"string\"",
+  results.push(assert_eq_str("'std::string' [2] - \"string\"",
     cpp_ident_at("std::string", 2), "string"))
 
-  // ─── Integer literals ────────────────────────────────────────────────────
+  // --- Integer literals ----------------------------------------------------
 
-  results.push(assert_eq_int("'42' → CLInt(42)",
+  results.push(assert_eq_int("'42' - CLInt(42)",
     cpp_int_at("42", 0), 42))
 
-  results.push(assert_eq_int("'0'  → CLInt(0)",
+  results.push(assert_eq_int("'0'  - CLInt(0)",
     cpp_int_at("0", 0), 0))
 
-  // ─── String literals ─────────────────────────────────────────────────────
+  // --- String literals -----------------------------------------------------
 
-  results.push(assert_eq_str("'\"hello\"' → CLStr(\"hello\")",
+  results.push(assert_eq_str("'\"hello\"' - CLStr(\"hello\")",
     cpp_str_at("\"hello\"", 0), "hello"))
 
   results.push(assert_eq_str("escape \\n in string",
@@ -3187,9 +3187,9 @@ fn cpp_lexer_tests() -> [TestResult] = do
   results.push(assert_eq_str("escaped quote in string",
     cpp_str_at("\"a\\\"b\"", 0), "a\"b"))
 
-  // ─── Hash token ──────────────────────────────────────────────────────────
+  // --- Hash token ----------------------------------------------------------
 
-  results.push(assert_true("'#' → COp(\"#\")",
+  results.push(assert_true("'#' - COp(\"#\")",
     match cpp_first_kind("#") { COp(s) => s == "#", _ => false }))
 
   results
@@ -3272,7 +3272,7 @@ fn run_all(results: [TestResult]) -> string = do
       Pass(_)            => do passed = passed + 1 end,
       Fail(name, message) => do
         failed = failed + 1
-        output = output + "FAIL: " + name + " — " + message + "\n"
+        output = output + "FAIL: " + name + " - " + message + "\n"
       end
     }
     i = i + 1

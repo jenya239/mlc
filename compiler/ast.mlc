@@ -2,7 +2,7 @@
 
 import { TKind, Token, LexOut } from "./ast_tokens"
 
-// ─── AST ─────────────────────────────────────────────────────────────────
+// --- AST -----------------------------------------------------------------
 
 export type TypeExpr =
   | TyI32 | TyString | TyBool | TyUnit | TyNamed(string)
@@ -88,7 +88,7 @@ export fn decl_name(decl: Shared<Decl>) -> string = do
   }
 end
 
-// ─── Shared utility ───────────────────────────────────────────────────────
+// --- Shared utility -------------------------------------------------------
 
 export fn errs_append(mut dst: [string], src: [string]) -> [string] = do
   let i = 0

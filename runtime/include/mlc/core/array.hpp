@@ -52,17 +52,16 @@ public:
     template<typename Sep>
     T join(const Sep& sep) const {
         if (data_->empty()) return T{};
-        // O(n) via reserve+append instead of O(n²) repeated concatenation
+        // O(n) via reserve+append
         std::string buf;
-        size_t total = 0;
-        const std::string& sep_s = sep.as_std_string();
-        for (const auto& s : *data_) total += s.as_std_string().size();
-        total += sep_s.size() * (data_->size() - 1);
+        auto sep_v = sep.view();
+        size_t total = sep_v.size() * (data_->size() - 1);
+        for (const auto& s : *data_) total += s.view().size();
         buf.reserve(total);
-        buf.append((*data_)[0].as_std_string());
+        buf.append((*data_)[0].view());
         for (size_t i = 1; i < data_->size(); ++i) {
-            buf.append(sep_s);
-            buf.append((*data_)[i].as_std_string());
+            buf.append(sep_v);
+            buf.append((*data_)[i].view());
         }
         return T(std::move(buf));
     }

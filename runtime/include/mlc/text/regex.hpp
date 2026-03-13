@@ -112,15 +112,17 @@ public:
     // Test if string matches the pattern
     bool test(const String& text) const {
         if (!valid_) return false;
-        return std::regex_search(text.as_std_string(), regex_);
+        std::string s(text.view());
+        return std::regex_search(s, regex_);
     }
 
     // Find first match
     std::optional<Match> match(const String& text) const {
         if (!valid_) return std::nullopt;
 
+        std::string s(text.view());
         std::smatch sm;
-        if (std::regex_search(text.as_std_string(), sm, regex_)) {
+        if (std::regex_search(s, sm, regex_)) {
             Match m(String(sm[0].str()), sm.position(0), sm.position(0) + sm[0].length());
 
             // Add capture groups (excluding full match at index 0)
@@ -145,7 +147,7 @@ public:
         std::vector<Match> matches;
         if (!valid_) return matches;
 
-        const std::string& str = text.as_std_string();
+        std::string str(text.view());
         std::smatch sm;
         std::string::const_iterator search_start(str.cbegin());
 
@@ -177,10 +179,11 @@ public:
     String replace(const String& text, const String& replacement) const {
         if (!valid_) return text;
 
+        std::string s(text.view());
         std::string result = std::regex_replace(
-            text.as_std_string(),
+            s,
             regex_,
-            replacement.as_std_string(),
+            std::string(replacement.view()),
             std::regex_constants::format_first_only
         );
 
@@ -191,10 +194,11 @@ public:
     String replace_all(const String& text, const String& replacement) const {
         if (!valid_) return text;
 
+        std::string s(text.view());
         std::string result = std::regex_replace(
-            text.as_std_string(),
+            s,
             regex_,
-            replacement.as_std_string()
+            std::string(replacement.view())
         );
 
         return String(result);
@@ -208,7 +212,7 @@ public:
             return result;
         }
 
-        const std::string& str = text.as_std_string();
+        std::string str(text.view());
         std::sregex_token_iterator iter(str.begin(), str.end(), regex_, -1);
         std::sregex_token_iterator end;
 

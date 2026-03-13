@@ -3,7 +3,7 @@
 import { TKind, Token, LexOut } from "../ast_tokens"
 import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program } from "../ast"
 
-// ─── Parser state ─────────────────────────────────────────────────────────
+// --- Parser state ---------------------------------------------------------
 
 export type Parser = Parser { tokens: [Token], pos: i32 }
 
@@ -33,7 +33,7 @@ fn parser_skip_semi(parser: Parser) -> Parser = do
   match tok.kind { Semicolon => parser_advance(parser), _ => parser }
 end
 
-// ─── Result types ─────────────────────────────────────────────────────────
+// --- Result types ---------------------------------------------------------
 
 export type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
 export type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
@@ -53,7 +53,7 @@ export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>], 
 export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
 export type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
 
-// ─── Token kind predicates ────────────────────────────────────────────────
+// --- Token kind predicates ------------------------------------------------
 
 fn is_keyword_fn(kind: TKind)       -> bool = match kind { KFn       => true, _ => false }
 fn is_keyword_type(kind: TKind)     -> bool = match kind { KType     => true, _ => false }
@@ -105,7 +105,7 @@ fn get_operator(kind: TKind)     -> string = match kind { Op(s)      => s,    _ 
 export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"
 
-// ─── extend TKind ─────────────────────────────────────────────────────────
+// --- extend TKind ---------------------------------------------------------
 
 export extend TKind {
   fn is_fn(self)       -> bool = match self { KFn       => true, _ => false }
@@ -157,7 +157,7 @@ export extend TKind {
   fn op_val(self)      -> string = match self { Op(s)       => s,    _ => "" }
 }
 
-// ─── extend Parser ────────────────────────────────────────────────────────
+// --- extend Parser --------------------------------------------------------
 
 export extend Parser {
   fn kind(self) -> TKind = do const tok: Token = tokens[pos]; tok.kind end

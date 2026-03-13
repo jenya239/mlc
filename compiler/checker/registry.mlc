@@ -1,4 +1,4 @@
-// ─── Semantic type ────────────────────────────────────────────────────────
+// --- Semantic type --------------------------------------------------------
 
 import { TypeExpr, Decl, TypeVariant, FieldDef, Program } from "../ast"
 
@@ -10,7 +10,7 @@ export type Type =
   | TFn([Shared<Type>], Shared<Type>)
   | TUnknown
 
-// ─── Type registry ────────────────────────────────────────────────────────
+// --- Type registry --------------------------------------------------------
 
 export type TypeRegistry = TypeRegistry {
   fn_types:    Map<string, Shared<Type>>,
