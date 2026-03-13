@@ -2,6 +2,7 @@
 #define MLC_FILE_HPP
 
 #include <fstream>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <optional>
@@ -195,6 +196,10 @@ inline mlc::Array<mlc::String> read_lines(const mlc::String& path) {
 // Convenience functions for writing files
 
 inline bool write_string(const mlc::String& path, const mlc::String& content) {
+    std::filesystem::path p(path.as_std_string());
+    if (p.has_parent_path()) {
+        std::filesystem::create_directories(p.parent_path());
+    }
     std::ofstream file(path.as_std_string(), std::ios::out | std::ios::trunc);
     if (!file.is_open()) {
         return false;

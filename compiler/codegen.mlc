@@ -102,7 +102,8 @@ end
 // --- Context (DI-style) ---------------------------------------------------
 
 export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
-export type CodegenContext = CodegenContext { field_orders: [Shared<FieldOrder>], ns_prefix: string, qualified: Map<string, string>, self_type: string, method_owners: Map<string, string>, shared_params: [string], variant_types: Map<string, string> }
+export type CtorTypeInfo = CtorTypeInfo { name: string, shared_pos: [i32], shared_arr_pos: [i32] }
+export type CodegenContext = CodegenContext { field_orders: [Shared<FieldOrder>], ns_prefix: string, qualified: Map<string, string>, self_type: string, method_owners: Map<string, string>, shared_params: [string], shared_array_params: [string], array_elem_types: Map<string, string>, shared_map_params: [string], ctor_type_infos: [Shared<CtorTypeInfo>], variant_types: Map<string, string> }
 
 fn extract_method_name(fn_name: string, type_name: string) -> string = do
   const prefix = type_name + "_"
@@ -197,7 +198,7 @@ fn build_variant_types_from_decls(decls: [Shared<Decl>]) -> Map<string, string> 
 end
 
 export fn create_codegen_context(prog: Program) -> CodegenContext =
-  CodegenContext { field_orders: build_field_orders(prog), ns_prefix: "", qualified: Map.new(), self_type: "", method_owners: build_method_owners_from_decls(prog.decls), shared_params: [], variant_types: build_variant_types_from_decls(prog.decls) }
+  CodegenContext { field_orders: build_field_orders(prog), ns_prefix: "", qualified: Map.new(), self_type: "", method_owners: build_method_owners_from_decls(prog.decls), shared_params: [], shared_array_params: [], array_elem_types: Map.new(), shared_map_params: [], ctor_type_infos: [], variant_types: build_variant_types_from_decls(prog.decls) }
 
 fn ctx_resolve(ctx: CodegenContext, name: string) -> string =
   if ctx.qualified.has(name) then ctx.qualified.get(name) + cpp_safe(name)
@@ -397,16 +398,29 @@ export fn map_builtin(name: string) -> string =
   end
 
 fn gen_stmts_str(stmts: [Shared<Stmt>], ctx: CodegenContext) -> string = do
-  let parts: [string] = []; let i = 0
-  while i < stmts.length() do parts.push(gen_stmt(stmts[i], ctx)); i = i + 1 end
+  let parts: [string] = []; let i = 0; let cur_ctx = ctx
+  while i < stmts.length() do
+    parts.push(gen_stmt(stmts[i], cur_ctx))
+    cur_ctx = update_ctx_from_stmt(stmts[i], cur_ctx)
+    i = i + 1
+  end
   parts.join("")
+end
+
+fn stmts_final_ctx(stmts: [Shared<Stmt>], ctx: CodegenContext) -> CodegenContext = do
+  let cur_ctx = ctx; let i = 0
+  while i < stmts.length() do
+    cur_ctx = update_ctx_from_stmt(stmts[i], cur_ctx)
+    i = i + 1
+  end
+  cur_ctx
 end
 
 fn gen_block_body(expr: Shared<Expr>, ctx: CodegenContext) -> string =
   match expr {
     ExprBlock(stmts, result) => do
       const stmts_code  = gen_stmts_str(stmts, ctx)
-      const result_code = gen_expr(result, ctx)
+      const result_code = gen_expr(result, stmts_final_ctx(stmts, ctx))
       if result_code == "/* unit */" then stmts_code else stmts_code + result_code + ";\n" end
     end,
     ExprIf(_, _, _) => gen_stmt_expr(expr, ctx),
@@ -473,6 +487,10 @@ export fn gen_expr(expr: Shared<Expr>, ctx: CodegenContext) -> string =
           ExprRecord(n, _) => n,
           ExprCall(fn_expr, _) => match fn_expr { ExprIdent(n) => n, _ => "" },
           ExprIdent(n) => n,
+          ExprIndex(arr, _) => match arr {
+            ExprIdent(n) => if ctx.array_elem_types.has(n) then ctx.array_elem_types.get(n) else "" end,
+            _ => ""
+          },
           _ => ""
         }
         const parent = if raw_name.length() > 0 && ctx.variant_types.has(raw_name) then ctx.variant_types.get(raw_name) else raw_name end
@@ -494,8 +512,18 @@ export fn gen_expr(expr: Shared<Expr>, ctx: CodegenContext) -> string =
     end,
     ExprField(obj, field_name) =>
       match obj {
-        ExprIndex(_, _) => gen_expr(obj, ctx) + "->" + cpp_safe(field_name),
+        ExprIndex(inner, _) => match inner {
+          ExprIdent(n) => if ctx.shared_array_params.contains(n) then gen_expr(obj, ctx) + "->" + cpp_safe(field_name) else gen_expr(obj, ctx) + "." + cpp_safe(field_name) end,
+          _ => gen_expr(obj, ctx) + "->" + cpp_safe(field_name)
+        },
         ExprIdent(n) => if ctx.shared_params.contains(n) then gen_expr(obj, ctx) + "->" + cpp_safe(field_name) else gen_expr(obj, ctx) + "." + cpp_safe(field_name) end,
+        ExprMethod(m_obj, method_name, _) =>
+          if method_name == "get" then
+            match m_obj {
+              ExprIdent(m) => if ctx.shared_map_params.contains(m) then gen_expr(obj, ctx) + "->" + cpp_safe(field_name) else gen_expr(obj, ctx) + "." + cpp_safe(field_name) end,
+              _ => gen_expr(obj, ctx) + "." + cpp_safe(field_name)
+            }
+          else gen_expr(obj, ctx) + "." + cpp_safe(field_name) end,
         _ => gen_expr(obj, ctx) + "." + cpp_safe(field_name)
       },
     ExprIndex(obj, idx) =>
@@ -506,7 +534,7 @@ export fn gen_expr(expr: Shared<Expr>, ctx: CodegenContext) -> string =
       if stmts.length() == 0 then
         gen_expr(result, ctx)
       else
-        const body = gen_stmts_str(stmts, ctx) + "return " + gen_expr(result, ctx) + ";\n"
+        const body = gen_stmts_str(stmts, ctx) + "return " + gen_expr(result, stmts_final_ctx(stmts, ctx)) + ";\n"
         "[&]() \{\n" + body + "\}()"
       end
     end,
@@ -624,7 +652,19 @@ fn gen_arm(arm: Shared<MatchArm>, ctx: CodegenContext) -> string =
         if sub_pats.length() == 0 then ""
         else "auto [" + pat_bind_names(sub_pats) + "] = " + lower_name + "; "
         end
-      "[&](const " + qual + "& " + lower_name + ") \{ " + binding + "return " + gen_expr(arm.body, ctx) + "; \}"
+      const cti: Shared<CtorTypeInfo> = lookup_ctor_type_info(ctx.ctor_type_infos, name)
+      let arm_ctx = ctx; let k = 0
+      while k < sub_pats.length() do
+        match sub_pats[k] {
+          PatIdent(pn) => do
+            if cti.shared_pos.contains(k) then arm_ctx = ctx_add_shared(arm_ctx, pn) end
+            if cti.shared_arr_pos.contains(k) then arm_ctx = ctx_add_shared_array(arm_ctx, pn) end
+          end,
+          _ => do end
+        }
+        k = k + 1
+      end
+      "[&](const " + qual + "& " + lower_name + ") \{ " + binding + "return " + gen_expr(arm.body, arm_ctx) + "; \}"
     end
   }
 
@@ -707,7 +747,7 @@ fn gen_stmt_expr(expr: Shared<Expr>, ctx: CodegenContext) -> string =
       "for (auto " + cpp_safe(var) + " : " + gen_expr(iter, ctx) + ") \{\n" + gen_stmts_str(stmts, ctx) + "\}\n",
     ExprBlock(stmts, result) => do
       const stmts_code  = gen_stmts_str(stmts, ctx)
-      const result_code = gen_expr(result, ctx)
+      const result_code = gen_expr(result, stmts_final_ctx(stmts, ctx))
       if result_code == "/* unit */" then stmts_code else stmts_code + result_code + ";\n" end
     end,
     _ => gen_expr(expr, ctx) + ";\n"
@@ -719,7 +759,7 @@ fn gen_return_body(expr: Shared<Expr>, ctx: CodegenContext) -> string =
   match expr {
     ExprBlock(stmts, result) => do
       const stmts_code  = gen_stmts_str(stmts, ctx)
-      const result_code = gen_expr(result, ctx)
+      const result_code = gen_expr(result, stmts_final_ctx(stmts, ctx))
       if result_code == "/* unit */" then stmts_code else stmts_code + "return " + result_code + ";\n" end
     end,
     ExprIf(cond, then_expr, else_expr) => do
@@ -839,6 +879,24 @@ fn is_shared_type(t: Shared<TypeExpr>) -> bool =
     _ => false
   }
 
+fn is_shared_array_type(t: Shared<TypeExpr>) -> bool =
+  match t {
+    TyArray(inner) => is_shared_type(inner),
+    _ => false
+  }
+
+fn is_shared_map_type(t: Shared<TypeExpr>) -> bool =
+  match t {
+    TyGeneric(n, targs) => n == "Map" && targs.length() >= 2 && is_shared_type(targs[1]),
+    _ => false
+  }
+
+fn array_elem_name(t: Shared<TypeExpr>) -> string =
+  match t {
+    TyArray(inner) => match inner { TyNamed(n) => n, _ => "" },
+    _ => ""
+  }
+
 fn collect_shared_params(params: [Shared<Param>]) -> [string] = do
   let result: [string] = []; let i = 0
   while i < params.length() do
@@ -848,16 +906,140 @@ fn collect_shared_params(params: [Shared<Param>]) -> [string] = do
   result
 end
 
+fn collect_shared_array_params(params: [Shared<Param>]) -> [string] = do
+  let result: [string] = []; let i = 0
+  while i < params.length() do
+    if is_shared_array_type(params[i].typ) then result.push(params[i].name) end
+    i = i + 1
+  end
+  result
+end
+
+fn collect_array_elem_types(params: [Shared<Param>]) -> Map<string, string> = do
+  let result: Map<string, string> = Map.new(); let i = 0
+  while i < params.length() do
+    const en = array_elem_name(params[i].typ)
+    if en.length() > 0 then result.set(params[i].name, en) end
+    i = i + 1
+  end
+  result
+end
+
+fn collect_shared_map_params(params: [Shared<Param>]) -> [string] = do
+  let result: [string] = []; let i = 0
+  while i < params.length() do
+    if is_shared_map_type(params[i].typ) then result.push(params[i].name) end
+    i = i + 1
+  end
+  result
+end
+
+fn ctor_type_info_for(cti_name: string, types: [Shared<TypeExpr>]) -> Shared<CtorTypeInfo> = do
+  let sp: [i32] = []; let sap: [i32] = []; let k = 0
+  while k < types.length() do
+    if is_shared_type(types[k]) then sp.push(k) end
+    if is_shared_array_type(types[k]) then sap.push(k) end
+    k = k + 1
+  end
+  Shared.new(CtorTypeInfo { name: cti_name, shared_pos: sp, shared_arr_pos: sap })
+end
+
+fn field_def_type(fd: Shared<FieldDef>) -> Shared<TypeExpr> = fd.typ
+
+fn add_ctor_infos_from_variants(variants: [Shared<TypeVariant>]) -> [Shared<CtorTypeInfo>] = do
+  let result: [Shared<CtorTypeInfo>] = []; let j = 0
+  while j < variants.length() do
+    match variants[j] {
+      VarTuple(vn, types) => result.push(ctor_type_info_for(vn, types)),
+      VarRecord(vn, fdefs) => do
+        let types: [Shared<TypeExpr>] = []; let k = 0
+        while k < fdefs.length() do types.push(field_def_type(fdefs[k])); k = k + 1 end
+        result.push(ctor_type_info_for(vn, types))
+      end,
+      VarUnit(_) => do end
+    }
+    j = j + 1
+  end
+  result
+end
+
+fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] = do
+  let result: [Shared<CtorTypeInfo>] = []; let i = 0
+  while i < decls.length() do
+    match decls[i] {
+      DeclExported(d) => match decl_inner(d) {
+        DeclType(_, variants) => do
+          let items = add_ctor_infos_from_variants(variants)
+          let m = 0; while m < items.length() do result.push(items[m]); m = m + 1 end
+        end,
+        _ => do end
+      },
+      DeclType(_, variants) => do
+        let items = add_ctor_infos_from_variants(variants)
+        let m = 0; while m < items.length() do result.push(items[m]); m = m + 1 end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  result
+end
+
+fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], cti_name: string) -> Shared<CtorTypeInfo> = do
+  let result: Shared<CtorTypeInfo> = Shared.new(CtorTypeInfo { name: "", shared_pos: [], shared_arr_pos: [] })
+  let i = 0
+  while i < infos.length() do
+    if infos[i].name == cti_name then result = infos[i] end
+    i = i + 1
+  end
+  result
+end
+
+fn make_body_ctx(ctx: CodegenContext, sp: [string], sap: [string], aet: Map<string, string>, smp: [string], self_t: string) -> CodegenContext =
+  CodegenContext { field_orders: ctx.field_orders, ns_prefix: ctx.ns_prefix, qualified: ctx.qualified, self_type: self_t, method_owners: ctx.method_owners, shared_params: sp, shared_array_params: sap, array_elem_types: aet, shared_map_params: smp, ctor_type_infos: ctx.ctor_type_infos, variant_types: ctx.variant_types }
+
+fn ctx_add_shared(ctx: CodegenContext, n: string) -> CodegenContext = do
+  let sp = ctx.shared_params; sp.push(n)
+  make_body_ctx(ctx, sp, ctx.shared_array_params, ctx.array_elem_types, ctx.shared_map_params, ctx.self_type)
+end
+
+fn ctx_add_shared_array(ctx: CodegenContext, n: string) -> CodegenContext = do
+  let sap = ctx.shared_array_params; sap.push(n)
+  make_body_ctx(ctx, ctx.shared_params, sap, ctx.array_elem_types, ctx.shared_map_params, ctx.self_type)
+end
+
+fn update_ctx_from_stmt(stmt: Shared<Stmt>, ctx: CodegenContext) -> CodegenContext =
+  match stmt {
+    StmtLet(n, _, typ, value) =>
+      if is_shared_type(typ) then ctx_add_shared(ctx, n)
+      else if is_shared_array_type(typ) then ctx_add_shared_array(ctx, n)
+      else match value {
+        ExprMethod(m_obj, method_name, _) =>
+          if method_name == "get" then
+            match m_obj {
+              ExprIdent(m) => if ctx.shared_map_params.contains(m) then ctx_add_shared(ctx, n) else ctx end,
+              _ => ctx
+            }
+          else ctx end,
+        _ => ctx
+      }
+      end,
+    _ => ctx
+  }
+
 fn gen_fn_decl(name: string, params: [Shared<Param>], return_type: Shared<TypeExpr>, body: Shared<Expr>, ctx: CodegenContext) -> string = do
   const safe_name = ctx_resolve(ctx, name)
   const sp = collect_shared_params(params)
+  const sap = collect_shared_array_params(params)
+  const aet = collect_array_elem_types(params)
+  const smp = collect_shared_map_params(params)
   const body_ctx = if params.length() > 0 && params[0].name == "self" then
     match params[0].typ {
-      TyNamed(t) => CodegenContext { field_orders: ctx.field_orders, ns_prefix: ctx.ns_prefix, qualified: ctx.qualified, self_type: t, method_owners: ctx.method_owners, shared_params: sp, variant_types: ctx.variant_types },
-      _ => CodegenContext { field_orders: ctx.field_orders, ns_prefix: ctx.ns_prefix, qualified: ctx.qualified, self_type: ctx.self_type, method_owners: ctx.method_owners, shared_params: sp, variant_types: ctx.variant_types }
+      TyNamed(t) => make_body_ctx(ctx, sp, sap, aet, smp, t),
+      _ => make_body_ctx(ctx, sp, sap, aet, smp, ctx.self_type)
     }
   else
-    CodegenContext { field_orders: ctx.field_orders, ns_prefix: ctx.ns_prefix, qualified: ctx.qualified, self_type: ctx.self_type, method_owners: ctx.method_owners, shared_params: sp, variant_types: ctx.variant_types }
+    make_body_ctx(ctx, sp, sap, aet, smp, ctx.self_type)
   end
   if name == "main" && params.length() == 0 then
     const preamble = "mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n"
@@ -993,14 +1175,16 @@ export type GenModuleOut = GenModuleOut { h: string, c: string }
 export type PrecomputedCtx = PrecomputedCtx {
   field_orders: [Shared<FieldOrder>],
   variant_types: Map<string, string>,
-  item_index: Map<string, Shared<LoadItem>>
+  item_index: Map<string, Shared<LoadItem>>,
+  ctor_type_infos: [Shared<CtorTypeInfo>]
 }
 
 export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx =
   PrecomputedCtx {
     field_orders: build_field_orders(prog),
     variant_types: build_variant_types_from_decls(prog.decls),
-    item_index: build_item_index(all_items)
+    item_index: build_item_index(all_items),
+    ctor_type_infos: build_ctor_type_infos_from_decls(prog.decls)
   }
 
 export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
@@ -1013,6 +1197,10 @@ export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program, 
     self_type: "",
     method_owners: build_method_owners_with_index(item, precomp.item_index),
     shared_params: [],
+    shared_array_params: [],
+    array_elem_types: Map.new(),
+    shared_map_params: [],
+    ctor_type_infos: precomp.ctor_type_infos,
     variant_types: precomp.variant_types
   }
   const ns = if base == "main" then "mlc_main" else base end
