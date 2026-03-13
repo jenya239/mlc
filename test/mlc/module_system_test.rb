@@ -162,7 +162,8 @@ class MLCModuleSystemTest < Minitest::Test
 
     result = MLC.to_hpp_cpp(mlc_source)
 
-    assert_includes result[:header], '#include "math.hpp"'
+    # Math is a stdlib module covered by mlc.hpp — no separate include needed
+    refute_includes result[:header], '#include "math.hpp"'
   end
 
   def test_generate_nested_include_from_import
@@ -232,7 +233,8 @@ class MLCModuleSystemTest < Minitest::Test
     assert_equal "std/containers", ast.imports.first.path
 
     result = MLC.to_hpp_cpp(mlc_source)
-    assert_includes result[:implementation], '#include "std/containers.hpp"'
+    # std/ prefix is a stdlib module — covered by mlc.hpp, no separate include needed
+    refute_includes result[:implementation], '#include "std/containers.hpp"'
   end
 
   def test_type_declaration_in_header

@@ -225,16 +225,24 @@ module MLC
         end
 
         def filtered_imports(imports, required_imports)
-          return imports if required_imports.nil? || required_imports.empty?
+          user_imports = imports.reject { |imp| stdlib_import?(imp.path) }
+          return user_imports if required_imports.nil? || required_imports.empty?
 
-          imports.select { |import| include_import?(import, required_imports) }
+          user_imports.select { |import| include_import?(import, required_imports) }
         end
 
         def include_import?(import, required_imports)
           path = import.path
+          return false if stdlib_import?(path)
           return true if path.start_with?("./", "../", "/")
 
           required_imports.include?(path)
+        end
+
+        def stdlib_import?(path)
+          return true if path.start_with?("std/")
+          stdlib_aliases = %w[Option Result Array String Conv IO File Json Math Graphics]
+          stdlib_aliases.include?(path)
         end
 
         def generate_function_declaration(func)

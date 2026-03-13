@@ -33,7 +33,7 @@ private:
 public:
     Array() : data_(std::make_shared<std::vector<T>>()) {}
     Array(std::initializer_list<T> init) : data_(std::make_shared<std::vector<T>>(init)) {}
-    explicit Array(std::vector<T> vec) : data_(std::make_shared<std::vector<T>>(std::move(vec))) {}
+    Array(std::vector<T> vec) : data_(std::make_shared<std::vector<T>>(std::move(vec))) {}
 
     template<typename Iter>
     Array(Iter first, Iter last) : data_(std::make_shared<std::vector<T>>(first, last)) {}
@@ -82,6 +82,7 @@ public:
     void reserve(size_t n)         { detach(); data_->reserve(n); }
 
     const std::vector<T>& data() const { return *data_; }
+    operator const std::vector<T>&() const { return *data_; }
 
     // ── Higher-order methods ──────────────────────────────────────────────────
 
