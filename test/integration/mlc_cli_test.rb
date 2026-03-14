@@ -135,37 +135,33 @@ class MLCCLITest < Minitest::Test
       File.write(source, <<~MLC)
         type Stats = { total: i32, warnings: i32, errors: i32 }
 
-        fn normalize(line: str) -> str = line.trim()
+        fn normalize(line: string) -> string = line.trim()
 
-        fn is_empty_line(line: str) -> bool = line.trim().is_empty()
+        fn is_empty_line(line: string) -> bool = line.trim().length() == 0
 
-        fn detect(line: str) -> str =
+        fn detect(line: string) -> string = do
           let parts = line.split(":")
-          if parts.is_empty() then
-            "OTHER"
-          else
-            parts[0].trim().upper()
+          if parts.length() == 0 then "OTHER"
+          else parts[0].trim().upper()
+          end
+        end
 
-        fn update_stats(acc: Stats, level: str) -> Stats =
+        fn update_stats(acc: Stats, level: string) -> Stats =
           if level == "WARN" then
             Stats { total: acc.total + 1, warnings: acc.warnings + 1, errors: acc.errors }
           else if level == "ERROR" then
             Stats { total: acc.total + 1, warnings: acc.warnings, errors: acc.errors + 1 }
           else
             Stats { total: acc.total + 1, warnings: acc.warnings, errors: acc.errors }
+          end
 
-        fn main() -> i32 =
-          let lines = input().split("\n")
-          let clean = lines.map((line: str) => normalize(line)).filter((line: str) => !is_empty_line(line))
-          let levels = clean.map((line: str) => detect(line))
-          let stats = levels.fold(
-            Stats { total: 0, warnings: 0, errors: 0 },
-            (acc: Stats, level: str) => update_stats(acc, level)
-          )
-          if stats.errors == 1 then
-            0
-          else
-            1
+        fn main() -> i32 = do
+          let lines = input().split("\\n")
+          let clean = lines.filter((line: string) => line.trim().length() > 0)
+          let levels = clean.map((line: string) => detect(line))
+          let stats = levels.fold(Stats { total: 0, warnings: 0, errors: 0 }, (acc: Stats, level: string) => update_stats(acc, level))
+          if stats.errors == 1 then 0 else 1 end
+        end
       MLC
 
       input = <<~LOG

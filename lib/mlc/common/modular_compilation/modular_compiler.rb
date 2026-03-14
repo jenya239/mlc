@@ -121,8 +121,9 @@ module MLC
         end
 
         def wrap_main(cpp_content)
-          entry_base = File.basename(@entry_path, ".mlc")
-          ns = (entry_base == "main" ? "mlc_main" : entry_base.downcase)
+          entry_base = File.basename(@entry_path, ".mlc").downcase
+          reserved = %w[main stdin stdout stderr errno]
+          ns = reserved.include?(entry_base) ? "mlc_#{entry_base}" : entry_base
           qualified = "::#{ns}::mlc_user_main"
 
           <<~CPP

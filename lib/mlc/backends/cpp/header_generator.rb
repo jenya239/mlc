@@ -299,10 +299,11 @@ module MLC
           end
         end
 
+        RESERVED_NAMESPACES = %w[main stdin stdout stderr errno].freeze
+
         def module_name_to_namespace(name)
-          # Convert Math::Vector -> math::vector; "main" -> "mlc_main" (C++ reserved)
           base = name.gsub("/", "::").split("::").map(&:downcase).join("::")
-          base == "main" ? "mlc_main" : base
+          RESERVED_NAMESPACES.include?(base) ? "mlc_#{base}" : base
         end
 
         def build_template_lines(type_params)

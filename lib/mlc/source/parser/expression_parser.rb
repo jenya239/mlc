@@ -1187,6 +1187,15 @@ module MLC
                 attach_origin(MLC::Source::AST::VarRef.new(name: name), name_token)
               end
             end
+          when :FN
+            # fn(params) => body  -- lambda with fn keyword
+            fn_token = consume(:FN)
+            consume(:LPAREN)
+            params = parse_lambda_params
+            consume(:RPAREN)
+            consume(:FAT_ARROW)
+            body = parse_lambda_body
+            with_origin(fn_token) { MLC::Source::AST::Lambda.new(params: params, body: body) }
           when :LPAREN
             # Could be lambda, tuple literal, or grouped expression
             # Lookahead to determine
