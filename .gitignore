@@ -7,7 +7,6 @@ coverage/
 *.gch
 # Compiled binaries and object files
 *.o
-compiler/out/mlcc
 compiler/out/run_tests
 compiler/out/obj/
 build/obj/
