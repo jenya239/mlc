@@ -212,27 +212,20 @@ module MLC
             end
 
             # Infer expected lambda parameter types for map/filter/fold
-            def expected_lambda_param_types(object_ir, member_name, _transformed_args, index)
+            def expected_lambda_param_types(object_ir, member_name, transformed_args)
               return [] unless object_ir && member_name
 
               object_type = object_ir.type
               return [] unless object_type
 
               case member_name
-              when "map"
-                if index.zero? && object_type.is_a?(SemanticIR::ArrayType)
-                  [object_type.element_type]
-                else
-                  []
-                end
-              when "filter"
-                if index.zero? && object_type.is_a?(SemanticIR::ArrayType)
-                  [object_type.element_type]
-                else
-                  []
-                end
+              when "map", "filter"
+                object_type.is_a?(SemanticIR::ArrayType) ? [object_type.element_type] : []
               when "fold"
-                []
+                return [] unless object_type.is_a?(SemanticIR::ArrayType)
+                acc_ir = transformed_args&.first
+                return [] unless acc_ir&.type
+                [acc_ir.type, object_type.element_type]
               else
                 []
               end

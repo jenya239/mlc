@@ -30,7 +30,8 @@ fi
 
 # Wrap main
 MAIN_CPP="$OUT_DIR/$ENTRY_BASE.cpp"
-NS="$([ "$ENTRY_BASE" = "main" ] && echo "mlc_main" || echo "$(echo "$ENTRY_BASE" | tr '[:upper:]' '[:lower:]')")"
+_base="$(echo "$ENTRY_BASE" | tr '[:upper:]' '[:lower:]')"
+case "$_base" in main|stdin|stdout|stderr|errno) NS="mlc_$_base" ;; *) NS="$_base" ;; esac
 {
   echo '#include "mlc.hpp"'
   echo '#define main mlc_user_main'

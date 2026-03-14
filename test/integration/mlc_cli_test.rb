@@ -157,9 +157,9 @@ class MLCCLITest < Minitest::Test
 
         fn main() -> i32 = do
           let lines = input().split("\\n")
-          let clean = lines.filter((line: string) => line.trim().length() > 0)
-          let levels = clean.map((line: string) => detect(line))
-          let stats = levels.fold(Stats { total: 0, warnings: 0, errors: 0 }, (acc: Stats, level: string) => update_stats(acc, level))
+          let clean = lines.filter(fn(line) => line.trim().length() > 0)
+          let levels = clean.map(fn(line) => detect(line))
+          let stats = levels.fold(Stats { total: 0, warnings: 0, errors: 0 }, fn(acc, level) => update_stats(acc, level))
           if stats.errors == 1 then 0 else 1 end
         end
       MLC

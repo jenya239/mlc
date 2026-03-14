@@ -104,7 +104,7 @@ module MLC
                   return apply_rules(node, extra_context.merge(args_ir: args_ir, skip_callee_visit: true))
                 end
                 callee_ir = visit(node.callee)
-                args_ir = node.args.map { |arg| visit(arg) }
+                args_ir = build_call_args_with_lambda_context(node, callee_ir)
                 return apply_rules(node, extra_context.merge(callee_ir: callee_ir, args_ir: args_ir))
               end
 
@@ -132,6 +132,24 @@ module MLC
             end
 
             private
+
+            def build_call_args_with_lambda_context(node, callee_ir)
+              svc = @services.ast_type_checker
+              scope = @services.scope_context
+              inference = @services.type_inference_service
+              args_ir = []
+              node.args.each do |arg|
+                expected = if callee_ir.is_a?(SemanticIR::MemberExpr) && svc.lambda?(arg)
+                             inference.send(:expected_lambda_param_types, callee_ir.object, callee_ir.member, args_ir)
+                           end
+                if expected&.any?
+                  args_ir << scope.with_lambda_param_types(expected) { visit(arg) }
+                else
+                  args_ir << visit(arg)
+                end
+              end
+              args_ir
+            end
 
             def pipe_op?(node)
               node.respond_to?(:op) && node.op == '|>'
