@@ -12,6 +12,9 @@ compiler/out/run_tests
 compiler/out/obj/
 build/obj/
 build/app
+build/*.cpp
+build/*.hpp
+build/mlc_stdin_*
 misc/examples/out_minimal/obj/
 misc/examples/out_minimal/minimal
 perf.data
