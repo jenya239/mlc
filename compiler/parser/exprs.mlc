@@ -473,6 +473,7 @@ fn is_unit_expr(expr: Shared<Expr>) -> bool =
     ExprUnit                => true,
     ExprBlock(_, result)    => is_unit_expr(result),
     ExprIf(_, _, else_expr) => is_unit_expr(else_expr),
+    ExprBin(op, _, _)       => op == "=",
     _                       => false
   }
 
