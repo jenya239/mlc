@@ -437,7 +437,7 @@ fn gen_block_body(expr: Shared<Expr>, context: CodegenContext) -> string =
 export fn gen_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
   match expr {
     ExprInt(n)   => n.to_string(),
-    ExprStr(s)   => "mlc::String(\"" + escape_str(s) + "\")",
+    ExprStr(s)   => "mlc::String(\"" + escape_str(s) + "\", " + s.length().to_string() + ")",
     ExprBool(b)  => if b then "true" else "false" end,
     ExprUnit     => "/* unit */",
     ExprExtern   => "",
@@ -686,6 +686,21 @@ fn gen_arm(arm: Shared<MatchArm>, context: CodegenContext) -> string =
         index = index + 1
       end
       "[&](const " + qualified_name + "& " + lower_name + ") \{ " + binding + "return " + gen_expr(arm.body, arm_context) + "; \}"
+    end,
+    PatRecord(name, field_pats) => do
+      const qualified_name = context_resolve(context, name)
+      const lower_name = cpp_safe(lower_first(name))
+      let field_bindings = ""; let fi = 0
+      while fi < field_pats.length() do
+        match field_pats[fi] {
+          PatIdent(field_name) => do
+            field_bindings = field_bindings + "const auto& " + cpp_safe(field_name) + " = " + lower_name + "." + cpp_safe(field_name) + "; "
+          end,
+          _ => do end
+        }
+        fi = fi + 1
+      end
+      "[&](const " + qualified_name + "& " + lower_name + ") \{ " + field_bindings + "return " + gen_expr(arm.body, context) + "; \}"
     end
   }
 

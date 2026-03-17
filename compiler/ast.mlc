@@ -15,6 +15,7 @@ export type Pat =
   | PatWild | PatIdent(string) | PatInt(i32) | PatStr(string)
   | PatBool(bool) | PatUnit
   | PatCtor(string, [Shared<Pat>])
+  | PatRecord(string, [Shared<Pat>])
 
 export type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
 export type MatchArm = MatchArm { pat: Shared<Pat>, body: Shared<Expr> }

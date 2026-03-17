@@ -26,6 +26,13 @@ fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> 
       end
       accumulator
     end,
+    PatRecord(_, field_pats) => do
+      let index = 0
+      while index < field_pats.length() do
+        accumulator = collect_pattern_bindings(field_pats[index], accumulator); index = index + 1
+      end
+      accumulator
+    end,
     _ => accumulator
   }
 end

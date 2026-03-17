@@ -18,6 +18,8 @@ preds::PatResult parse_pat(preds::Parser parser) noexcept;
 
 preds::PatsResult parse_pat_args(preds::Parser parser) noexcept;
 
+preds::PatsResult parse_record_pat_fields(preds::Parser parser) noexcept;
+
 preds::ExprResult parse_expr(preds::Parser parser) noexcept;
 
 std::shared_ptr<ast::Expr> pipe_desugar(std::shared_ptr<ast::Expr> left_expr, std::shared_ptr<ast::Expr> right_expr) noexcept;
@@ -150,6 +152,9 @@ return preds::TKind_is_ident(kind) ? [&]() -> preds::PatResult {
   return preds::TKind_is_lparen(preds::Parser_kind(after)) ? [&]() -> preds::PatResult { 
   preds::PatsResult sub_pats = parse_pat_args(preds::Parser_advance(after));
   return preds::PatResult{std::make_shared<ast::Pat>(ast::PatCtor(name, sub_pats.pats)), sub_pats.parser};
+ }() : preds::TKind_is_lbrace(preds::Parser_kind(after)) ? [&]() -> preds::PatResult { 
+  preds::PatsResult field_result = parse_record_pat_fields(preds::Parser_advance(after));
+  return preds::PatResult{std::make_shared<ast::Pat>(ast::PatRecord(name, field_result.pats)), field_result.parser};
  }() : preds::PatResult{std::make_shared<ast::Pat>(ast::PatCtor(name, {})), after};
  }() : preds::PatResult{std::make_shared<ast::Pat>(ast::PatIdent(name)), preds::Parser_advance(parser)};
  }() : preds::TKind_is_int(kind) ? preds::PatResult{std::make_shared<ast::Pat>(ast::PatInt(preds::TKind_int_val(kind))), preds::Parser_advance(parser)} : preds::TKind_is_str(kind) ? preds::PatResult{std::make_shared<ast::Pat>(ast::PatStr(preds::TKind_str_val(kind))), preds::Parser_advance(parser)} : preds::TKind_is_true(kind) ? preds::PatResult{std::make_shared<ast::Pat>(ast::PatBool(true)), preds::Parser_advance(parser)} : preds::TKind_is_false(kind) ? preds::PatResult{std::make_shared<ast::Pat>(ast::PatBool(false)), preds::Parser_advance(parser)} : preds::PatResult{std::make_shared<ast::Pat>((ast::PatWild{})), preds::Parser_advance(parser)};
@@ -170,6 +175,27 @@ state = next.parser;
 }
   return preds::PatsResult{pats, preds::Parser_advance(state)};
  }();
+}
+
+preds::PatsResult parse_record_pat_fields(preds::Parser parser) noexcept{
+mlc::Array<std::shared_ptr<ast::Pat>> pats = {};
+preds::Parser state = std::move(parser);
+while (!preds::TKind_is_rbrace(preds::Parser_kind(state)) && !preds::Parser_at_eof(state)){
+{
+if (preds::TKind_is_ident(preds::Parser_kind(state))){
+{
+pats.push_back(std::make_shared<ast::Pat>(ast::PatIdent(preds::TKind_ident(preds::Parser_kind(state)))));
+}
+}
+state = preds::Parser_advance(state);
+if (preds::TKind_is_comma(preds::Parser_kind(state))){
+{
+state = preds::Parser_advance(state);
+}
+}
+}
+}
+return preds::PatsResult{pats, preds::Parser_advance(state)};
 }
 
 preds::ExprResult parse_expr(preds::Parser parser) noexcept{return parse_pipe(parser);}

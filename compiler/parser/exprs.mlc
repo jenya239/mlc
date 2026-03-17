@@ -100,6 +100,9 @@ fn parse_pat(parser: Parser) -> PatResult = do
       if after.kind().is_lparen() then
         const sub_pats = parse_pat_args(after.advance())
         PatResult { pat: Shared.new(PatCtor(name, sub_pats.pats)), parser: sub_pats.parser }
+      else if after.kind().is_lbrace() then
+        const field_result = parse_record_pat_fields(after.advance())
+        PatResult { pat: Shared.new(PatRecord(name, field_result.pats)), parser: field_result.parser }
       else
         PatResult { pat: Shared.new(PatCtor(name, [])), parser: after }
       end
@@ -134,6 +137,17 @@ fn parse_pat_args(parser: Parser) -> PatsResult = do
     end
     PatsResult { pats, parser: state.advance() }
   end
+end
+
+fn parse_record_pat_fields(parser: Parser) -> PatsResult = do
+  const pats: [Shared<Pat>] = []
+  let state = parser
+  while !state.kind().is_rbrace() && !state.at_eof() do
+    if state.kind().is_ident() then pats.push(Shared.new(PatIdent(state.kind().ident()))) end
+    state = state.advance()
+    if state.kind().is_comma() then state = state.advance() end
+  end
+  PatsResult { pats: pats, parser: state.advance() }
 end
 
 // --- Expression parser (precedence climbing) -----------------------------

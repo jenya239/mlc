@@ -693,7 +693,7 @@ mlc::String gen_block_body(std::shared_ptr<ast::Expr> expr, codegen::CodegenCont
 
 mlc::String gen_expr(std::shared_ptr<ast::Expr> expr, codegen::CodegenContext context) noexcept{return std::visit(overloaded{
   [&](const ExprInt& exprint) -> mlc::String { auto [n] = exprint; return mlc::to_string(n); },
-  [&](const ExprStr& exprstr) -> mlc::String { auto [s] = exprstr; return mlc::String("mlc::String(\"") + escape_str(s) + mlc::String("\")"); },
+  [&](const ExprStr& exprstr) -> mlc::String { auto [s] = exprstr; return mlc::String("mlc::String(\"") + escape_str(s) + mlc::String("\", ") + mlc::to_string(s.length()) + mlc::String(")"); },
   [&](const ExprBool& exprbool) -> mlc::String { auto [b] = exprbool; return b ? mlc::String("true") : mlc::String("false"); },
   [&](const ExprUnit& exprunit) -> mlc::String { return mlc::String("/* unit */"); },
   [&](const ExprExtern& exprextern) -> mlc::String { return mlc::String(""); },
@@ -885,6 +885,30 @@ index = index + 1;
 }
 }
   return mlc::String("[&](const ") + qualified_name + mlc::String("& ") + lower_name + mlc::String(") { ") + binding + mlc::String("return ") + gen_expr(arm->body, arm_context) + mlc::String("; }");
+ }(); },
+  [&](const PatRecord& patrecord) -> mlc::String { auto [name, field_pats] = patrecord; return [&]() -> mlc::String { 
+  mlc::String qualified_name = context_resolve(context, name);
+  mlc::String lower_name = cpp_safe(lower_first(name));
+  mlc::String field_bindings = mlc::String("");
+  int fi = 0;
+  while (fi < field_pats.size()){
+{
+std::visit(overloaded{
+  [&](const PatIdent& patident) {
+auto [field_name] = patident;
+{
+field_bindings = field_bindings + mlc::String("const auto& ") + cpp_safe(field_name) + mlc::String(" = ") + lower_name + mlc::String(".") + cpp_safe(field_name) + mlc::String("; ");
+}
+},
+  [&](const auto& _unused) {
+{
+}
+}
+}, (*field_pats[fi]));
+fi = fi + 1;
+}
+}
+  return mlc::String("[&](const ") + qualified_name + mlc::String("& ") + lower_name + mlc::String(") { ") + field_bindings + mlc::String("return ") + gen_expr(arm->body, context) + mlc::String("; }");
  }(); }
 }, (*arm->pat));}
 

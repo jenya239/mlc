@@ -55,6 +55,15 @@ index = index + 1;
 }
 }
   return accumulator;
+ }(); } if (std::holds_alternative<ast::PatRecord>((*pattern))) { auto _v_patrecord = std::get<ast::PatRecord>((*pattern)); auto [_w0, field_pats] = _v_patrecord; return [&]() -> mlc::Array<mlc::String> { 
+  int index = 0;
+  while (index < field_pats.size()){
+{
+accumulator = collect_pattern_bindings(field_pats[index], accumulator);
+index = index + 1;
+}
+}
+  return accumulator;
  }(); } return accumulator; }();
 }
 
