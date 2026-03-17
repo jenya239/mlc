@@ -112,10 +112,11 @@ module MLC
               case expected_type
               when MLC::SemanticIR::RecordType
                 expected_type.name&.to_s
+              when MLC::SemanticIR::GenericType
+                expected_type.base_type&.name&.to_s
               when Hash
                 expected_type[:name]&.to_s
               when String
-                # Strip generic parameters: "Pair<T, U>" -> "Pair"
                 expected_type.split('<').first
               else
                 expected_type.respond_to?(:name) ? expected_type.name&.to_s : nil

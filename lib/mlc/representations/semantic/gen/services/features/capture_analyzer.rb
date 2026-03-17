@@ -28,6 +28,7 @@ module MLC
             def analyze(node)
               param_names = extract_param_names(node.params)
               free_vars = collect_free_vars(node.body, param_names)
+              assigned_vars = collect_assigned_vars(node.body, param_names)
 
               free_vars.map do |name|
                 type = @var_type_registry.get(name)
@@ -36,12 +37,43 @@ module MLC
                 {
                   name: name,
                   type: type,
-                  mode: determine_capture_mode(type)
+                  mode: assigned_vars.include?(name) ? :ref : determine_capture_mode(type)
                 }
               end.compact
             end
 
             private
+
+            # Collect variables assigned to in the lambda body (excluding lambda params)
+            def collect_assigned_vars(body, param_names)
+              assigned = Set.new
+              collect_assignments(body, param_names, assigned)
+              assigned
+            end
+
+            def collect_assignments(node, param_names, assigned)
+              return unless node
+              case node
+              when MLC::Source::AST::Assignment
+                target = node.respond_to?(:target) ? node.target : nil
+                if target.is_a?(MLC::Source::AST::VarRef) && !param_names.include?(target.name)
+                  assigned.add(target.name)
+                end
+                collect_assignments(node.value, param_names, assigned) if node.respond_to?(:value)
+              when MLC::Source::AST::Lambda
+                # Don't recurse into nested lambdas for outer-scope assignments
+              else
+                %i[body statements value condition then_branch else_branch result result_expr].each do |m|
+                  next unless node.respond_to?(m)
+                  child = node.send(m)
+                  if child.is_a?(Array)
+                    child.each { |c| collect_assignments(c, param_names, assigned) }
+                  else
+                    collect_assignments(child, param_names, assigned)
+                  end
+                end
+              end
+            end
 
             # Extract parameter names from lambda params
             def extract_param_names(params)

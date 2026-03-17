@@ -24,7 +24,7 @@ module MLC
       class Codegen
         attr_reader :container, :context
 
-        def initialize(type_registry:, function_registry: nil, stdlib_scanner: nil, _rule_engine: nil, event_bus: nil, runtime_policy: nil)
+        def initialize(type_registry:, function_registry: nil, trait_registry: nil, stdlib_scanner: nil, _rule_engine: nil, event_bus: nil, runtime_policy: nil)
           # Initialize new architecture
           backend = MLC::Backends::Cpp::Bootstrap.create_backend(
             type_registry: type_registry,
@@ -35,6 +35,8 @@ module MLC
           )
           @container = backend[:container]
           @context = backend[:context]
+          @trait_registry = trait_registry
+          @container.trait_registry = trait_registry
 
           @in_generic_function = false
           @cyclic_sum_types = Set.new
@@ -208,7 +210,13 @@ module MLC
             result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
           end
 
-          all_stmts = include_stmts + sum_preambles + type_defs + func_protos + func_bodies
+          # Phase 0: trait vtable structs (before type defs, so param types can reference them)
+          trait_structs = generate_trait_structs
+
+          # Phase 3.5: adapter functions for trait implementations
+          trait_adapters = generate_trait_adapters
+
+          all_stmts = include_stmts + trait_structs + sum_preambles + type_defs + func_protos + trait_adapters + func_bodies
           CppAst::Nodes::Program.new(
             statements: all_stmts,
             statement_trailings: Array.new(all_stmts.size, "\n")
@@ -217,6 +225,52 @@ module MLC
 
         # Generate a forward declaration (prototype) for a function using the same
         # modifiers (constexpr, noexcept) that the actual definition will have.
+        def generate_trait_structs
+          return [] unless @trait_registry
+          @trait_registry.all_traits.map do |trait_info|
+            fields = trait_info.trait_methods
+                               .reject { |m| m[:name] == "self" }
+                               .map do |m|
+              params = Array(m[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
+              param_types = params.map do |p|
+                t = p.respond_to?(:type) ? p.type : p[:type]
+                t ? @context.map_type(t) : "auto"
+              end.join(", ")
+              ret_type = m[:ret_type] ? @context.map_type(m[:ret_type]) : "void"
+              "  std::function<#{ret_type}(#{param_types})> #{m[:name]};"
+            end.join("\n")
+            @context.factory.raw_statement(code: "struct #{trait_info.name} {\n#{fields}\n};")
+          end
+        end
+
+        def generate_trait_adapters
+          return [] unless @trait_registry
+          adapters = []
+          @trait_registry.all_traits.each do |trait_info|
+            trait_name = trait_info.name
+            @trait_registry.implementations_for_trait(trait_name).each do |impl|
+              type_name = impl.type_name
+              cpp_type = @context.type_registry&.cpp_name(type_name) || type_name
+              field_inits = trait_info.trait_methods
+                                      .reject { |m| m[:name] == "self" }
+                                      .map do |m|
+                method_name = m[:name]
+                params = Array(m[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
+                param_decls = params.each_with_index.map do |p, i|
+                  t = p.respond_to?(:type) ? p.type : p[:type]
+                  "#{t ? @context.map_type(t) : "auto"} _p#{i}"
+                end.join(", ")
+                param_names = params.each_with_index.map { |_, i| "_p#{i}" }.join(", ")
+                sep = param_names.empty? ? "" : ", "
+                "  .#{method_name} = [self](#{param_decls}) noexcept { return #{type_name}_#{method_name}(self#{sep}#{param_names}); }"
+              end.join(",\n")
+              adapter_code = "inline #{trait_name} #{type_name}_as_#{trait_name}(#{cpp_type} self) noexcept {\n  return #{trait_name}{\n#{field_inits}\n  };\n}"
+              adapters << @context.factory.raw_statement(code: adapter_code)
+            end
+          end
+          adapters
+        end
+
         def function_forward_decl(func)
           return_type = @context.map_type(func.ret_type)
           name = @context.sanitize_identifier(func.name)

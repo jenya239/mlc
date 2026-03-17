@@ -75,7 +75,7 @@ module MLC
 
         def extract_imports(source, from_file:)
           imports = []
-          import_re = /^\s*import\s+(?:\{[^}]*\}|\*\s+as\s+\w+)\s+from\s+"(\.\.?\/[^"]+)"/
+          import_re = /^\s*import\s+(?:\{[^}]*\}|\*\s+as\s+\w+)\s+from\s+["'](\.\.?\/[^"']+)["']/
           source.each_line do |line|
             m = line.match(import_re)
             next unless m

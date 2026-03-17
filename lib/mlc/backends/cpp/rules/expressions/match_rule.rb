@@ -65,9 +65,10 @@ module MLC
               else
                 # Generate MatchExpression with std::visit
                 scrutinee_type = node.scrutinee&.type
+                match_return_type = node.respond_to?(:type) && node.type ? context.map_type(node.type) : nil
                 # Dereference shared_ptr before std::visit; use ._ for wrapper struct
                 visit_value = build_visit_value(scrutinee, scrutinee_type)
-                arms = node.arms.map { |arm| lower_match_arm(arm, scrutinee_type: scrutinee_type) }
+                arms = node.arms.map { |arm| lower_match_arm(arm, scrutinee_type: scrutinee_type, return_type: match_return_type) }
 
                 CppAst::Nodes::MatchExpression.new(
                   value: visit_value,
@@ -172,7 +173,8 @@ module MLC
 
               type_info = context.type_registry&.lookup(base_name)
               return nil unless type_info
-              return nil unless type_info.namespace
+
+              ns = type_info.namespace
 
               # Find which variant index this name corresponds to
               variants = type_info.core_ir_type.respond_to?(:variants) ? type_info.core_ir_type.variants : []
@@ -182,29 +184,20 @@ module MLC
               variant_idx = variants.index(variant)
               type_args = scrutinee_type.type_args
 
-              # Build template args from the variant's field types
+              # Build template args: variants always use ALL type args of the parent generic type
               field_types = variant[:fields]
               if field_types.any?
-                # Map each TypeVariable in the field to the concrete type arg
-                # We use all distinct type vars from the variant's fields
-                # Get the type variables from the sum type definition
-                sum_type_params = variants.flat_map { |v| v[:fields] }
-                                         .map { |f| f[:type] }
-                                         .select { |t| t.is_a?(MLC::SemanticIR::TypeVariable) }
-                                         .uniq(&:name)
-
-                field_type_args = field_types.map do |field|
-                  t = field[:type]
-                  if t.is_a?(MLC::SemanticIR::TypeVariable)
-                    param_idx = sum_type_params.index { |p| p.name == t.name }
-                    param_idx ? context.map_type(type_args[param_idx]) : t.name
-                  else
-                    context.map_type(t)
-                  end
-                end
-                "#{type_info.namespace}::#{variant_name}<#{field_type_args.join(", ")}>"
+                all_cpp_args = type_args.map { |t| context.map_type(t) }
+                qualified = ns ? "#{ns}::#{variant_name}" : variant_name
+                "#{qualified}<#{all_cpp_args.join(", ")}>"
               else
-                "#{type_info.namespace}::#{variant_name}"
+                if type_args.any?
+                  cpp_type_args = type_args.map { |t| context.map_type(t) }
+                  qualified = ns ? "#{ns}::#{variant_name}" : variant_name
+                  "#{qualified}<#{cpp_type_args.join(", ")}>"
+                else
+                  ns ? "#{ns}::#{variant_name}" : nil
+                end
               end
             end
 
@@ -246,7 +239,7 @@ module MLC
               ret_type = nil
               if match_expr.respond_to?(:type) && match_expr.type
                 mapped = context.map_type(match_expr.type)
-                ret_type = mapped unless mapped.nil? || mapped.empty? || mapped == "auto" || mapped.include?("int") || mapped.include?("function<")
+                ret_type = mapped unless mapped.nil? || mapped.empty? || mapped == "auto" || mapped == "int" || mapped == "bool" || mapped == "float" || mapped == "double" || mapped.include?("function<")
               end
               lambda_expr = context.factory.lambda(
                 capture: "&",
@@ -334,7 +327,7 @@ module MLC
             end
 
             # Lower match arm to MatchArm node
-            def lower_match_arm(arm, scrutinee_type: nil)
+            def lower_match_arm(arm, scrutinee_type: nil, return_type: nil)
               pattern = arm[:pattern]
               body = context.lower_expression(arm[:body])
 
@@ -352,7 +345,8 @@ module MLC
                   case_name: case_name,
                   bindings: sanitized_bindings,
                   body: body,
-                  cpp_param_type: cpp_param_type
+                  cpp_param_type: cpp_param_type,
+                  return_type: return_type
                 )
 
               when :wildcard, :var
@@ -361,7 +355,8 @@ module MLC
 
                 CppAst::Nodes::WildcardMatchArm.new(
                   var_name: var_name,
-                  body: body
+                  body: body,
+                  return_type: return_type
                 )
 
               when :literal
@@ -488,15 +483,23 @@ module MLC
 
                 when :wildcard, :var
                   # Wildcard/var with optional guard
+                  var_name = pattern[:kind] == :var ? pattern[:name] : nil
+                  binding_str = (var_name && var_name != "_") ? "auto #{var_name} = #{scrutinee_src}; " : ""
                   if guard
                     guard_expr = context.lower_expression(guard)
                     guard_src = guard_expr.to_source
                     statements << context.factory.raw_statement(
-                      code: "if (#{guard_src}) { return #{body_src}; }"
+                      code: "{ #{binding_str}if (#{guard_src}) { return #{body_src}; } }"
                     )
                   else
-                    # Final wildcard - just return
-                    statements << context.factory.return_statement(expression: body)
+                    # Final wildcard/var - declare binding if needed, then return
+                    if binding_str.empty?
+                      statements << context.factory.return_statement(expression: body)
+                    else
+                      statements << context.factory.raw_statement(
+                        code: "{ #{binding_str}return #{body_src}; }"
+                      )
+                    end
                   end
 
                 else
@@ -510,7 +513,7 @@ module MLC
               ret_type = nil
               if match_expr.respond_to?(:type) && match_expr.type
                 mapped = context.map_type(match_expr.type)
-                ret_type = mapped unless mapped.nil? || mapped.empty? || mapped == "auto" || mapped.include?("int") || mapped.include?("function<")
+                ret_type = mapped unless mapped.nil? || mapped.empty? || mapped == "auto" || mapped == "int" || mapped == "bool" || mapped == "float" || mapped == "double" || mapped.include?("function<")
               end
               lambda_expr = context.factory.lambda(
                 capture: "&",

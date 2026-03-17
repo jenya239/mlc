@@ -11,7 +11,7 @@ module MLC
       # Dependency injection container for backend services
       class Container
         attr_reader :type_registry, :function_registry, :type_map, :runtime_policy, :stdlib_scanner, :event_bus
-        attr_accessor :rule_engine, :in_generic_function, :user_functions, :declared_variables, :expected_return_type, :cyclic_sum_types
+        attr_accessor :rule_engine, :in_generic_function, :user_functions, :declared_variables, :expected_return_type, :cyclic_sum_types, :trait_registry
 
         def initialize(type_registry:, function_registry:, runtime_policy: nil, stdlib_scanner: nil, event_bus: nil)
           @type_registry = type_registry
@@ -93,9 +93,12 @@ module MLC
             "f32" => "float",
             "f64" => "double",
             "bool" => "bool",
+            "unit" => "void",
             "void" => "void",
             "str" => "mlc::String",
             "string" => "mlc::String",
+            "Symbol" => "mlc::Symbol",
+            "symbol" => "mlc::Symbol",
             "regex" => "mlc::Regex"
           }.freeze
         end

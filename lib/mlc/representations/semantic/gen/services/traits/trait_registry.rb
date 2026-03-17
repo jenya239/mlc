@@ -116,6 +116,11 @@ module MLC
               @implementations.select { |(tn, _), _| tn == type_name }.values
             end
 
+            # Get all implementations for a trait (across all types)
+            def implementations_for_trait(trait_name)
+              @implementations.select { |(_, tn), _| tn == trait_name }.values
+            end
+
             # TraitInfo - trait definition
             TraitInfo = Struct.new(:name, :type_params, :trait_methods, :associated_types, keyword_init: true)
 

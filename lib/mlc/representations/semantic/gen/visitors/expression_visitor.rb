@@ -175,7 +175,7 @@ module MLC
               return false unless type_name[0] =~ /[A-Z]/
 
               # Built-in constructors
-              return true if %w[Map HashMap].include?(type_name) && method_name == "new"
+              return true if %w[Map HashMap Shared].include?(type_name) && method_name == "new"
 
               # Built-in File methods
               return true if type_name == "File" && %w[read write exists append read_lines].include?(method_name)
@@ -209,7 +209,13 @@ module MLC
                 if part[:type] == :text
                   factory.string_literal(value: part[:value], origin: node.origin)
                 else
-                  part[:value]
+                  # Wrap non-string expressions in to_string() call
+                  expr = part[:value]
+                  factory.call(
+                    callee: factory.var_ref(name: 'to_string', origin: node.origin),
+                    args: [expr],
+                    origin: node.origin
+                  )
                 end
               end
 

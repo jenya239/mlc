@@ -116,7 +116,14 @@ module MLC
 
               # Regular function call.
               callee = lower_expression(node.callee)
-              args = node.args.map { |arg| lower_argument_with_move(arg) }
+              callee = maybe_add_variant_template_args(callee, node)
+              callee_param_types = node.callee.respond_to?(:type) && node.callee.type.is_a?(MLC::SemanticIR::FunctionType) ? node.callee.type.params : []
+              args = node.args.each_with_index.map do |arg, i|
+                lowered = lower_argument_with_move(arg)
+                param = callee_param_types[i]
+                expected_type = param.is_a?(Hash) ? param[:type] : param
+                maybe_wrap_trait_coercion(lowered, arg.type, expected_type)
+              end
 
               # Nullary variant constructors: CtorName{} or (ns::Ctor{}) for ternary safety.
               # Adding () would produce invalid CtorName{}(). Return callee directly.
@@ -135,10 +142,20 @@ module MLC
             private
 
             # Lower IO function calls
+            IO_STRING_FUNCTIONS = %w[print println eprint eprintln].freeze
+
             def lower_io_function(call)
               target = IO_FUNCTIONS[call.callee.name]
               callee = context.factory.identifier(name: target)
-              args = call.args.map { |arg| lower_expression(arg) }
+              needs_string = IO_STRING_FUNCTIONS.include?(call.callee.name)
+              args = call.args.each_with_index.map do |arg, _i|
+                lowered = lower_expression(arg)
+                if needs_string && arg.respond_to?(:type) && arg.type && !io_string_type?(arg.type)
+                  context.factory.raw_expression(code: "mlc::to_string(#{lowered.to_source})")
+                else
+                  lowered
+                end
+              end
 
               context.factory.function_call(
                 callee: callee,
@@ -296,6 +313,18 @@ module MLC
 
             # Lower qualified function calls (stdlib functions with namespace)
             def lower_qualified_function(call, qualified_name)
+              concrete_type = resolve_concrete_generic_type(call)
+              if concrete_type
+                base = concrete_type.base_type
+                if base.is_a?(MLC::SemanticIR::SumType)
+                  variant_name = call.callee.respond_to?(:name) ? call.callee.name : nil
+                  variant = variant_name && base.variants.find { |v| v[:name] == variant_name }
+                  if variant && !(variant[:fields].nil? || variant[:fields].empty?)
+                    cpp_args = concrete_type.type_args.map { |t| context.map_type(t) }
+                    qualified_name = "#{qualified_name}<#{cpp_args.join(", ")}>"
+                  end
+                end
+              end
               callee = context.factory.identifier(name: qualified_name)
               args = call.args.map { |arg| lower_expression(arg) }
 
@@ -781,6 +810,90 @@ module MLC
               end
             end
 
+            # Wrap argument with trait coercion adapter if expected type is a trait
+            # Add template args to variant constructor calls for generic ADTs.
+            # Handles both fully-resolved types and TypeVariable-containing types by substituting
+            # from the enclosing function's expected_return_type.
+            def maybe_add_variant_template_args(callee_expr, call_node)
+              return callee_expr unless call_node.respond_to?(:callee)
+
+              callee_ir = call_node.callee
+              return callee_expr unless callee_ir.respond_to?(:name)
+
+              name = callee_ir.name
+              return callee_expr unless name.match?(/\A[A-Z]/) # Constructor convention
+
+              result_type = resolve_concrete_generic_type(call_node)
+              return callee_expr unless result_type
+
+              base = result_type.base_type
+              return callee_expr unless base.is_a?(MLC::SemanticIR::SumType)
+
+              variant = base.variants.find { |v| v[:name] == name }
+              return callee_expr unless variant
+
+              cpp_args = result_type.type_args.map { |t| context.map_type(t) }
+              targs = "<#{cpp_args.join(", ")}>"
+
+              context.factory.raw_expression(code: "#{callee_expr.to_source}#{targs}")
+            end
+
+            # Resolve concrete generic type for a call node, substituting TypeVariables
+            # from expected_return_type when needed.
+            def resolve_concrete_generic_type(call_node)
+              result_type = call_node.respond_to?(:type) && call_node.type ? call_node.type : nil
+              return nil unless result_type.is_a?(MLC::SemanticIR::GenericType)
+
+              # If all concrete, use directly
+              return result_type unless result_type.type_args.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+
+              # Try to substitute from expected_return_type
+              expected = context.expected_return_type
+              return nil unless expected.is_a?(MLC::SemanticIR::GenericType)
+              return nil unless expected.base_type == result_type.base_type ||
+                                (expected.respond_to?(:name) && result_type.respond_to?(:name) && expected.name == result_type.name)
+              return nil if expected.type_args.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+              return nil unless expected.type_args.size == result_type.type_args.size
+
+              # Build substitution map TypeVar.name → concrete type
+              subst = {}
+              result_type.type_args.each_with_index do |arg, i|
+                subst[arg.name] = expected.type_args[i] if arg.is_a?(MLC::SemanticIR::TypeVariable)
+              end
+
+              resolved_args = result_type.type_args.map do |arg|
+                arg.is_a?(MLC::SemanticIR::TypeVariable) ? (subst[arg.name] || arg) : arg
+              end
+
+              # Return only if all args are now concrete
+              return nil if resolved_args.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+
+              MLC::SemanticIR::GenericType.new(
+                base_type: result_type.base_type,
+                type_args: resolved_args
+              )
+            end
+
+            def maybe_wrap_trait_coercion(lowered_arg, actual_type, expected_type)
+              return lowered_arg unless expected_type && actual_type
+              return lowered_arg unless context.trait_registry
+
+              expected_name = expected_type.respond_to?(:name) ? expected_type.name : nil
+              return lowered_arg unless expected_name
+              return lowered_arg unless context.trait_registry.get_trait(expected_name)
+
+              actual_name = actual_type.respond_to?(:name) ? actual_type.name : nil
+              return lowered_arg unless actual_name
+              return lowered_arg if actual_name == expected_name
+
+              adapter_name = "#{actual_name}_as_#{expected_name}"
+              context.factory.function_call(
+                callee: context.factory.identifier(name: adapter_name),
+                arguments: [lowered_arg],
+                argument_separators: []
+              )
+            end
+
             # Lower an argument, wrapping in std::move() if needed for move-only types (Owned<T>)
             def lower_argument_with_move(arg)
               lowered = lower_expression(arg)
@@ -1015,6 +1128,12 @@ module MLC
               end
 
               false
+            end
+
+            def io_string_type?(type)
+              return true if type.is_a?(MLC::SemanticIR::SymbolType)
+              return false unless type.respond_to?(:name)
+              %w[string str String mlc::String].include?(type.name)
             end
           end
         end

@@ -127,7 +127,14 @@ module MLC
                           end
                         end
                         consume(:RPAREN)
-                        with_origin(base_token) { MLC::Source::AST::TupleType.new(types: types) }
+                        # (T1, T2) -> RetType is a function type
+                        if current.type == :ARROW
+                          consume(:ARROW)
+                          ret_type = parse_type
+                          with_origin(base_token) { MLC::Source::AST::FunctionType.new(param_types: types, ret_type: ret_type) }
+                        else
+                          with_origin(base_token) { MLC::Source::AST::TupleType.new(types: types) }
+                        end
                       when :LBRACKET
                         # Parse prefix array type: [Type]
                         base_token = consume(:LBRACKET)

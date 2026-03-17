@@ -66,6 +66,7 @@ module MLC
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::SymbolRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::RecordRule").new(context))
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::LambdaRule").new(context))
+          rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::RangeRule").new(context))
 
           # Control flow
           rule_engine.register_expression_rule(Object.const_get("MLC::Backends::Cpp::Rules::Expressions::IfRule").new(context))

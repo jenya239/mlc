@@ -27,10 +27,11 @@ module MLC
         # @return [String, nil] The normalized name
         def normalized_type_name(name)
           case name
-          when "str"
-            "string"
-          else
-            name
+          when "str"    then "string"
+          when "int"    then "i32"
+          when "uint"   then "u32"
+          when "float"  then "f64"
+          else name
           end
         end
 

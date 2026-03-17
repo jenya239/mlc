@@ -31,13 +31,14 @@ module CppAst
 
     # Match arm - generates lambda for one case
     class MatchArm < Node
-      attr_accessor :case_name, :bindings, :body, :cpp_param_type
+      attr_accessor :case_name, :bindings, :body, :cpp_param_type, :return_type
 
-      def initialize(case_name:, body:, bindings: [], cpp_param_type: nil)
+      def initialize(case_name:, body:, bindings: [], cpp_param_type: nil, return_type: nil)
         @case_name = case_name
         @bindings = bindings
         @body = body
         @cpp_param_type = cpp_param_type
+        @return_type = return_type
       end
 
       CPP_KEYWORDS = %w[
@@ -55,7 +56,8 @@ module CppAst
         param_type = cpp_param_type || case_name
         raw_name = case_name.downcase
         var_name = CPP_KEYWORDS.include?(raw_name) ? "#{raw_name}_" : raw_name
-        result = +"[&](const #{param_type}& #{var_name}) { "
+        ret = return_type ? " -> #{return_type}" : ""
+        result = +"[&](const #{param_type}& #{var_name})#{ret} { "
 
         binding_items = Array(bindings).compact
 
@@ -72,16 +74,18 @@ module CppAst
 
     # Wildcard match arm - generates generic lambda for catch-all cases
     class WildcardMatchArm < Node
-      attr_accessor :var_name, :body
+      attr_accessor :var_name, :body, :return_type
 
-      def initialize(var_name:, body:)
+      def initialize(var_name:, body:, return_type: nil)
         @var_name = var_name
         @body = body
+        @return_type = return_type
       end
 
       def to_source
+        ret = return_type ? " -> #{return_type}" : ""
         body_str = body.respond_to?(:to_source) ? body.to_source : body.to_s
-        "[&](const auto& #{var_name}) { return #{body_str}; }"
+        "[&](const auto& #{var_name})#{ret} { return #{body_str}; }"
       end
     end
 

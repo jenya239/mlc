@@ -14,13 +14,13 @@ module MLC
 
             def produce(node, context)
               svc = services(context)
-              # fields_ir is pre-computed by ExpressionVisitor.build_record_fields
-              # which handles spread expansion
               fields_ir = context[:fields_ir] || build_simple_fields(node, context)
+              expected_type = context[:expected_type] || svc.scope_context.current_function_return
 
               svc.record_literal_builder.build(
                 node: node,
-                fields_ir: fields_ir
+                fields_ir: fields_ir,
+                expected_type: expected_type
               )
             end
 

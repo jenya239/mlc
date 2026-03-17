@@ -89,6 +89,7 @@ module MLC
             # In normal mode, raises CompileError immediately
             def type_error(message, node: nil, origin: nil)
               origin ||= node&.origin
+              origin = origin.origin if origin && !origin.respond_to?(:label) && origin.respond_to?(:origin)
               origin ||= @current_node_proc&.call&.origin
 
               raise MLC::CompileError.new(message, origin: origin) unless error_recovery_mode?
@@ -211,7 +212,7 @@ module MLC
 
               expected.each_with_index do |type, index|
                 arg_expr = args[index]
-                ensure_compatible_type(arg_expr.type, type, "argument #{index + 1} of '#{name}'")
+                ensure_compatible_type(arg_expr.type, type, "argument #{index + 1} of '#{name}'", node: arg_expr)
                 # Don't propagate ref types back to the argument expression
                 effective_type = (type.is_a?(SemanticIR::MutRefType) || type.is_a?(SemanticIR::RefType)) ? type.inner_type : type
                 assign_expression_type(arg_expr, effective_type)
@@ -236,6 +237,20 @@ module MLC
             def assign_expression_type(expr, type, update_registry: true)
               return unless expr && type
 
+              # Don't overwrite a concrete record/sum type with a different concrete type (trait coercion guard)
+              # But allow: FunctionType (variant constructors), auto, TypeVariable, same-name generics
+              if expr.respond_to?(:type) && expr.type
+                current_type = expr.type
+                unless current_type.is_a?(MLC::SemanticIR::FunctionType) ||
+                       current_type.is_a?(MLC::SemanticIR::TypeVariable)
+                  current_name = normalized_type_name(type_name(current_type))
+                  new_name = normalized_type_name(type_name(type))
+                  if current_name && current_name != "auto" && new_name && current_name != new_name
+                    return
+                  end
+                end
+              end
+
               set_expression_type(expr, type)
               propagate_literal_types(expr, type)
 
@@ -243,7 +258,11 @@ module MLC
 
               @var_type_registry.update_type(expr.name, type)
               if (initializer = @var_type_registry.initializer(expr.name))
-                assign_expression_type(initializer, type, update_registry: false)
+                init_name = normalized_type_name(type_name(initializer.type))
+                expected_name = normalized_type_name(type_name(type))
+                if init_name.nil? || init_name == "auto" || init_name == expected_name
+                  assign_expression_type(initializer, type, update_registry: false)
+                end
               end
             end
 

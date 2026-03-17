@@ -26,13 +26,14 @@ module MLC
       # 2. Transform to SemanticIR (with type_registry)
       source_file_dir = filename ? File.dirname(File.expand_path(filename)) : nil
       transformer = Representations::Semantic::Gen::Pipeline.new(source_file_dir: source_file_dir)
-      core_ir, type_registry, function_registry = transform_to_core_with_registry(ast, transformer: transformer)
+      core_ir, type_registry, function_registry, trait_registry = transform_to_core_with_registry(ast, transformer: transformer)
 
       # 3. Lower to C++ AST (with shared type_registry and stdlib_scanner)
       stdlib_scanner = MLC::Common::Stdlib::Scanner.new
       cpp_lowerer = Backends::Cpp::Codegen.new(
         type_registry: type_registry,
         function_registry: function_registry,
+        trait_registry: trait_registry,
         stdlib_scanner: stdlib_scanner,
         runtime_policy: runtime_policy
       )
@@ -66,7 +67,7 @@ module MLC
     # @return [Array<SemanticIR::Module, TypeRegistry, FunctionRegistry>]
     def transform_to_core_with_registry(ast, transformer: Representations::Semantic::Gen::Pipeline.new)
       core_ir = transformer.transform(ast)
-      [core_ir, transformer.type_registry, transformer.function_registry]
+      [core_ir, transformer.type_registry, transformer.function_registry, transformer.services.trait_registry]
     rescue MLC::CompileError
       raise
     rescue StandardError => e
@@ -117,7 +118,7 @@ module MLC
       # Parse and transform to SemanticIR
       ast = parse(source, filename: filename)
       transformer = Representations::Semantic::Gen::Pipeline.new
-      core_ir, type_registry, function_registry = transform_to_core_with_registry(ast, transformer: transformer)
+      core_ir, type_registry, function_registry, trait_registry = transform_to_core_with_registry(ast, transformer: transformer)
 
       # Create Compiler::Scanner
       stdlib_scanner = MLC::Common::Stdlib::Scanner.new
@@ -126,6 +127,7 @@ module MLC
       lowering = Backends::Cpp::Codegen.new(
         type_registry: type_registry,
         function_registry: function_registry,
+        trait_registry: trait_registry,
         stdlib_scanner: stdlib_scanner,
         runtime_policy: runtime_policy
       )

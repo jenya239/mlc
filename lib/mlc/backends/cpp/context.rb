@@ -21,6 +21,10 @@ module MLC
           @container.type_registry
         end
 
+        def trait_registry
+          @container.trait_registry
+        end
+
         def cyclic_sum_types
           @container.cyclic_sum_types || Set.new
         end

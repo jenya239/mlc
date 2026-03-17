@@ -1,0 +1,48 @@
+---
+description: No abbreviations in code — all identifiers must use full words
+alwaysApply: true
+---
+
+# No Abbreviations in Code
+
+All identifiers (variables, functions, parameters, fields, types) must use full English words. No abbreviations ever.
+
+## Examples
+
+```
+// BAD
+let sp = collect_shared_params(params)
+let sap = collect_shared_array_params(params)
+let smp = collect_shared_map_params(params)
+let vp = collect_value_params(params)
+let aet = collect_array_elem_types(params)
+let ctx = build_ctx(prog)
+fn gen_fn_decl(name: string, params: ...) -> string
+fn ctx_add_shared(ctx: CodegenContext, n: string)
+const ns = "mlc_main"
+let idx = 0
+let arr = []
+let obj = build()
+let res = compute()
+let err = check()
+let msg = format()
+
+// GOOD
+let shared_params = collect_shared_params(params)
+let shared_array_params = collect_shared_array_params(params)
+let shared_map_params = collect_shared_map_params(params)
+let value_params = collect_value_params(params)
+let array_elem_types = collect_array_elem_types(params)
+let context = build_context(prog)
+fn generate_function_declaration(name: string, params: ...) -> string
+fn context_add_shared(context: CodegenContext, name: string)
+const namespace = "mlc_main"
+let index = 0
+let array = []
+let object = build()
+let result = compute()
+let error = check()
+let message = format()
+```
+
+## Applies to all files: .mlc, .rb, .cpp, .hpp, and any other source files.

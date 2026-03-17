@@ -14,9 +14,21 @@ namespace io {
 int print(const String& s);
 int println(const String& s);
 
+// Overloads for non-String types (auto-convert via to_string)
+template <typename T>
+inline int print(const T& v) { return print(mlc::to_string(v)); }
+template <typename T>
+inline int println(const T& v) { return println(mlc::to_string(v)); }
+
 // Error output
 int eprint(const String& s);
 int eprintln(const String& s);
+
+// Overloads for non-String types
+template <typename T>
+inline int eprint(const T& v) { return eprint(mlc::to_string(v)); }
+template <typename T>
+inline int eprintln(const T& v) { return eprintln(mlc::to_string(v)); }
 
 // I/O functions
 String read_line();

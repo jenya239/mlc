@@ -23,6 +23,9 @@ module MLC
               if type.respond_to?(:element_type) && type.element_type
                 ensure_type!(type.element_type, 'iterable', node)
                 type.element_type
+              elsif type.is_a?(MLC::SemanticIR::GenericType) && type.base_type.respond_to?(:name) &&
+                    type.base_type.name == "Range" && type.type_args.size >= 1
+                type.type_args.first
               else
                 @type_checker.type_error('cannot iterate over value without element type', node: node)
               end

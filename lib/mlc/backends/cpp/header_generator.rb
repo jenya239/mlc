@@ -175,6 +175,12 @@ module MLC
           end
           lines << "" if impl_imports.any?
 
+          # Trait vtable structs for this module (before type defs)
+          generate_trait_structs_for_module(module_node).each do |code|
+            lines << code
+            lines << ""
+          end
+
           # Non-exported type definitions in implementation
           type_items.each do |item|
             cpp_ast = @lowering.lower(item)
@@ -189,6 +195,12 @@ module MLC
             next if item.body.nil?
 
             lines << generate_function_declaration(item)
+            lines << ""
+          end
+
+          # Trait adapter functions (after function forward declarations)
+          generate_trait_adapters_for_module(module_node).each do |code|
+            lines << code
             lines << ""
           end
 
@@ -250,7 +262,7 @@ module MLC
           name = @lowering.send(:sanitize_identifier, func.name)
           params = func.params.map do |param|
             type = @lowering.send(:map_type, param.type)
-            "#{type} #{param.name}"
+            "#{type} #{@lowering.send(:sanitize_identifier, param.name)}"
           end.join(", ")
 
           effects = Array(func.effects)
@@ -297,6 +309,76 @@ module MLC
             # Simple name: Math -> math.hpp
             "#{path.downcase}.hpp"
           end
+        end
+
+        TRAIT_AST_TYPE_MAP = {
+          "unit" => "void", "void" => "void", "string" => "mlc::String", "str" => "mlc::String",
+          "bool" => "bool", "i32" => "int", "i64" => "int64_t", "i8" => "int8_t",
+          "u32" => "uint32_t", "u64" => "uint64_t", "f32" => "float", "f64" => "double",
+          "int" => "int"
+        }.freeze
+
+        def ast_type_to_cpp(ast_type)
+          return "void" unless ast_type
+          name = ast_type.respond_to?(:name) ? ast_type.name.to_s : ast_type.to_s
+          TRAIT_AST_TYPE_MAP[name] || name
+        end
+
+        def generate_trait_structs_for_module(module_node)
+          return [] unless module_node
+          tr = @lowering.container.trait_registry
+          return [] unless tr
+          trait_names_in_module = collect_trait_names_in_module(module_node)
+          return [] if trait_names_in_module.empty?
+          tr.all_traits.select { |t| trait_names_in_module.include?(t.name) }.map do |trait_info|
+            fields = trait_info.trait_methods.reject { |m| m[:name] == "self" }.map do |m|
+              params = Array(m[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
+              param_types = params.map do |p|
+                ast_type_to_cpp(p.respond_to?(:type) ? p.type : p[:type])
+              end.join(", ")
+              ret_type = ast_type_to_cpp(m[:ret_type])
+              "  std::function<#{ret_type}(#{param_types})> #{m[:name]};"
+            end.join("\n")
+            "struct #{trait_info.name} {\n#{fields}\n};"
+          end
+        end
+
+        def generate_trait_adapters_for_module(module_node)
+          return [] unless module_node
+          tr = @lowering.container.trait_registry
+          return [] unless tr
+          type_registry = @lowering.container.type_registry
+          adapters = []
+          tr.all_traits.each do |trait_info|
+            trait_name = trait_info.name
+            tr.implementations_for_trait(trait_name).each do |impl|
+              type_name = impl.type_name
+              cpp_type = type_registry&.cpp_name(type_name) || type_name
+              field_inits = trait_info.trait_methods.reject { |m| m[:name] == "self" }.map do |m|
+                method_name = m[:name]
+                params = Array(m[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
+                param_decls = params.each_with_index.map do |p, i|
+                  t = p.respond_to?(:type) ? p.type : p[:type]
+                  "#{ast_type_to_cpp(t)} _p#{i}"
+                end.join(", ")
+                param_names = params.each_with_index.map { |_, i| "_p#{i}" }.join(", ")
+                sep = param_names.empty? ? "" : ", "
+                ret_type = ast_type_to_cpp(m[:ret_type])
+                stmt = ret_type == "void" ? "" : "return "
+                "  .#{method_name} = [self](#{param_decls}) noexcept { #{stmt}#{type_name}_#{method_name}(self#{sep}#{param_names}); }"
+              end.join(",\n")
+              adapters << "inline #{trait_name} #{type_name}_as_#{trait_name}(#{cpp_type} self) noexcept {\n  return #{trait_name}{\n#{field_inits}\n  };\n}"
+            end
+          end
+          adapters
+        end
+
+        def collect_trait_names_in_module(module_node)
+          # We consider all traits registered in the trait_registry as "in module"
+          # (since traits are registered globally from source files)
+          tr = @lowering.container.trait_registry
+          return Set.new unless tr
+          Set.new(tr.all_traits.map(&:name))
         end
 
         RESERVED_NAMESPACES = %w[main stdin stdout stderr errno].freeze

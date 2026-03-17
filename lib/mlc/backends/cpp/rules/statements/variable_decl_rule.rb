@@ -94,8 +94,10 @@ module MLC
               type_info = context.type_registry.lookup(base_name)
               ns = type_info.namespace
               type_args = operand_type.type_args
-              ok_type = "#{ns}::Ok<#{context.map_type(type_args[0])}>"
-              err_type = "#{ns}::Err<#{context.map_type(type_args[1])}>"
+              t_cpp = context.map_type(type_args[0])
+              e_cpp = context.map_type(type_args[1])
+              ok_type = "#{ns}::Ok<#{t_cpp}, #{e_cpp}>"
+              err_type = "#{ns}::Err<#{t_cpp}, #{e_cpp}>"
               result_type = context.map_type(operand_type)
 
               # 2. if (holds_alternative<Err>(__try_N)) return ResultType(__try_N);
@@ -110,7 +112,7 @@ module MLC
               val_type = context.map_type(node.type)
               val_decl = context.factory.variable_declaration(
                 type: val_type,
-                declarators: ["#{context.sanitize_identifier(node.name)} = std::get<#{ok_type}>(#{tmp})._0"],
+                declarators: ["#{context.sanitize_identifier(node.name)} = std::get<#{ok_type}>(#{tmp}).field0"],
                 declarator_separators: [],
                 type_suffix: " "
               )

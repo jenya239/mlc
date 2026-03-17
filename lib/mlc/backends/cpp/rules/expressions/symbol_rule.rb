@@ -13,13 +13,7 @@ module MLC
             end
 
             def apply(node)
-              # Generate: mlc::Symbol("name")
-              # For now, symbols are represented as interned strings
-              context.factory.call(
-                callee: context.factory.identifier("mlc::Symbol"),
-                arguments: [context.factory.string_literal(node.name)],
-                argument_separators: []
-              )
+              context.factory.raw_expression(code: "mlc::Symbol(\"#{node.name.gsub('"', '\\"')}\")")
             end
           end
         end

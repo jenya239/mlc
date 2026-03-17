@@ -70,7 +70,13 @@ module MLC
                 return @type_checker.io_return_type(callee.name) if @type_checker.class::IO_RETURN_TYPES.key?(callee.name)
 
                 info = @function_registry.fetch(callee.name)
-                return SemanticIR::Builder.primitive_type("auto") unless info
+                unless info
+                  # Local variable that's a lambda/function type
+                  if callee.type.is_a?(SemanticIR::FunctionType)
+                    return callee.type.ret_type
+                  end
+                  return SemanticIR::Builder.primitive_type("auto")
+                end
 
                 # Check if this is a generic function
                 if info.type_params && !info.type_params.empty?
@@ -266,7 +272,7 @@ module MLC
                   inner_type = object_type.type_args.first
                   begin
                     return infer_member_type(inner_type, member, node: node)
-                  rescue MLC::Common::TypeError
+                  rescue MLC::CompileError
                     # Fall through to regular error handling
                   end
                 end
@@ -299,10 +305,30 @@ module MLC
                 infer_string_member_type(member, node: node)
               elsif numeric_type?(object_type)
                 infer_numeric_member_type(member, object_type, node: node)
+              elsif object_type.is_a?(SemanticIR::SymbolType) || normalized_type_name(type_name(object_type)) == "Symbol"
+                case member
+                when "to_string", "name", "inspect" then SemanticIR::Builder.primitive_type("string")
+                when "id" then SemanticIR::Builder.primitive_type("i32")
+                else type_error("Unknown Symbol method '#{member}'", node: node)
+                end
               else
                 # Fallback: check extend blocks for instance methods
                 instance_fn_type = resolve_extend_instance_method_type(object_type, member)
                 return instance_fn_type if instance_fn_type
+
+                # Check if this is a trait type (dynamic dispatch via trait object)
+                if object_type.respond_to?(:name) && @trait_registry
+                  trait_info = @trait_registry.get_trait(object_type.name)
+                  if trait_info
+                    trait_method = trait_info.trait_methods.find { |m| m[:name] == member }
+                  if trait_method
+                    raw_params = Array(trait_method[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
+                    params = raw_params.map { |p| { name: (p.respond_to?(:name) ? p.name : p[:name]), type: (p.respond_to?(:type) ? p.type : p[:type]) } }
+                    return SemanticIR::Builder.function_type(params, trait_method[:ret_type])
+                    end
+                    type_error("Unknown method '#{member}' for trait #{object_type.name}", node: node)
+                  end
+                end
 
                 type_error("Unknown member '#{member}' for type #{describe_type(object_type)}", node: node)
               end
@@ -588,10 +614,15 @@ module MLC
                 return resolve_map_member(object_type, member, args) if object_type.is_a?(SemanticIR::MapType)
                 return resolve_string_member(member, args) if string?(object_type)
                 return resolve_numeric_member(object_type, member, args) if numeric?(object_type)
+                return resolve_symbol_member(member, args) if symbol?(object_type)
 
                 # Fallback: check extend blocks for instance methods
-                instance_ret = @context.resolve_instance_method_call_type(object_type, member, args)
+                instance_ret = @context.send(:resolve_instance_method_call_type, object_type, member, args)
                 return instance_ret if instance_ret
+
+                # Check trait object methods
+                trait_ret = @context.send(:resolve_trait_method_call_type, object_type, member, args)
+                return trait_ret if trait_ret
 
                 type_error("Unknown member '#{member}' for type #{describe(object_type)}")
               end
@@ -807,6 +838,19 @@ module MLC
                 @context.string_type?(type)
               end
 
+              def symbol?(type)
+                type.is_a?(SemanticIR::SymbolType) || @context.normalized_type_name(@context.type_name(type)) == "Symbol"
+              end
+
+              def resolve_symbol_member(member, _args)
+                case member
+                when "to_string", "name" then prim("string")
+                when "inspect" then prim("string")
+                when "id" then prim("i32")
+                else type_error("Unknown Symbol method '#{member}'")
+                end
+              end
+
               def prim(name)
                 SemanticIR::Builder.primitive_type(name)
               end
@@ -832,6 +876,18 @@ module MLC
             def infer_member_call_type(object_type, member, args, object_ir: nil)
               MemberResolver.new(self, @type_checker).infer(object_type, member, args)
             end
+
+            private
+
+            def resolve_trait_method_call_type(object_type, member, _args)
+              return nil unless object_type.respond_to?(:name) && @trait_registry
+              trait_info = @trait_registry.get_trait(object_type.name)
+              return nil unless trait_info
+              trait_method = trait_info.trait_methods.find { |m| m[:name] == member }
+              trait_method ? trait_method[:ret_type] : nil
+            end
+
+            public
 
             # Infer numeric member call type (method call with args)
             def infer_numeric_member_call_type(object_type, member, args)

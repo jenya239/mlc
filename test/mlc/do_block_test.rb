@@ -138,4 +138,46 @@ class DoBlockTest < Minitest::Test
     assert func.body.statements.first.is_a?(MLC::Source::AST::VariableDecl)
     assert func.body.statements.first.value.is_a?(MLC::Source::AST::BlockExpr)
   end
+
+  def test_return_in_do_block_parses
+    source = <<~MLCORA
+      fn find(arr: [i32], target: i32) -> i32 = do
+        let mut i = 0
+        while i < arr.length() do
+          if arr[i] == target do
+            return i
+          end
+          i = i + 1
+        end
+        -1
+      end
+    MLCORA
+
+    ast = MLC.parse(source)
+    func = ast.declarations.first
+    body = func.body
+    assert body.is_a?(MLC::Source::AST::BlockExpr), "body should be BlockExpr"
+    assert_equal 2, body.statements.length, "expected 2 stmts: let, while"
+    assert body.result_expr.is_a?(MLC::Source::AST::UnaryOp),
+           "expected UnaryOp for -1, got #{body.result_expr.class}"
+  end
+
+  def test_while_not_consumed_into_binary_op
+    source = <<~MLCORA
+      fn foo() -> i32 = do
+        while false do
+          0
+        end
+        42
+      end
+    MLCORA
+
+    ast = MLC.parse(source)
+    func = ast.declarations.first
+    body = func.body
+    assert_equal 1, body.statements.length, "while should be a stmt"
+    assert body.result_expr.is_a?(MLC::Source::AST::IntLit),
+           "42 should be result expr, got #{body.result_expr.class}"
+    assert_equal 42, body.result_expr.value
+  end
 end

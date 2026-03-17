@@ -8,8 +8,8 @@ module MLC
           # StaticMethodCallRule - handles Type.method() calls
           # Transforms Type.method(args) -> Type_method(args)
           class StaticMethodCallRule < BaseRule
-            # Built-in type constructors: Map.new(), HashMap.new()
-            BUILTIN_CONSTRUCTORS = %w[Map HashMap].freeze
+            # Built-in type constructors: Map.new(), HashMap.new(), Shared.new()
+            BUILTIN_CONSTRUCTORS = %w[Map HashMap Shared].freeze
 
             # File I/O methods and their return types
             FILE_METHODS = {
@@ -99,13 +99,60 @@ module MLC
             private
 
             def produce_builtin_constructor(node, context, svc, type_name)
-              # Map.new() / HashMap.new() — returns MapType from expected type annotation
+              args_ir = context[:args_ir] || []
               expected_type = context[:expected_type]
 
+              # Shared.new(val) — wraps value in std::shared_ptr
+              if type_name == "Shared"
+                expected_inner = expected_type.is_a?(SemanticIR::GenericType) ? expected_type.type_args.first : nil
+                arg = args_ir.first
+                arg_type = arg&.type
+
+                # Detect if arg is a variant of a sum type; if so, use the parent sum type
+                arg_name = arg_type.respond_to?(:name) ? arg_type.name : nil
+                parent_info = arg_name ? svc.type_registry&.find_type_with_variant(arg_name) : nil
+
+                inner_type = if expected_inner
+                               expected_inner
+                             elsif parent_info
+                               parent_info.core_ir_type
+                             else
+                               arg_type || SemanticIR::Builder.primitive_type("auto")
+                             end
+
+                shared_type = SemanticIR::Builder.generic_type(
+                  SemanticIR::Builder.primitive_type("Shared"),
+                  [inner_type]
+                )
+
+                # Wrap arg in parent sum type if arg is a variant
+                final_args = if parent_info && inner_type != arg_type
+                               [svc.ir_builder.call(
+                                 func: svc.ir_builder.var(
+                                   name: inner_type.respond_to?(:name) ? inner_type.name : "auto",
+                                   type: SemanticIR::Builder.function_type([arg_type], inner_type),
+                                   origin: node
+                                 ),
+                                 args: args_ir,
+                                 type: inner_type,
+                                 origin: node
+                               )]
+                             else
+                               args_ir
+                             end
+
+                return svc.ir_builder.call(
+                  func: svc.ir_builder.var(name: "Shared_new", type: SemanticIR::Builder.function_type([inner_type], shared_type), origin: node),
+                  args: final_args,
+                  type: shared_type,
+                  origin: node
+                )
+              end
+
+              # Map.new() / HashMap.new() — returns MapType from expected type annotation
               map_type = if expected_type.is_a?(SemanticIR::MapType)
                            expected_type
                          else
-                           # Default to Map<string, string> if no annotation
                            svc.ir_builder.map_type(
                              key_type: SemanticIR::Builder.primitive_type("string"),
                              value_type: SemanticIR::Builder.primitive_type("string")
@@ -114,7 +161,7 @@ module MLC
 
               svc.ir_builder.call(
                 func: svc.ir_builder.var(name: "#{type_name}_new", type: SemanticIR::Builder.function_type([], map_type), origin: node),
-                args: context[:args_ir] || [],
+                args: args_ir,
                 type: map_type,
                 origin: node
               )

@@ -32,6 +32,7 @@ module MLC
               result_type = determine_type(
                 type_checker: svc.type_checker,
                 ir_builder: svc.ir_builder,
+                type_registry: svc.type_registry,
                 then_ir: then_ir,
                 else_ir: else_ir,
                 node: node
@@ -62,18 +63,45 @@ module MLC
               ir_builder.call(func: ir, args: [], type: ret_type, origin: node)
             end
 
-            def determine_type(type_checker:, ir_builder:, then_ir:, else_ir:, node:)
+            def determine_type(type_checker:, ir_builder:, type_registry:, then_ir:, else_ir:, node:)
               if else_ir
+                then_type = then_ir.type
+                else_type = else_ir.type
+
+                # When branches have different types, check if they share a parent sum type
+                parent = common_sum_parent(then_type, else_type, type_registry)
+                return parent if parent
+
                 type_checker.ensure_compatible_type(
-                  else_ir.type,
-                  then_ir.type,
+                  else_type,
+                  then_type,
                   'if expression branches',
                   node: node
                 )
-                then_ir.type
+                then_type
               else
                 MLC::SemanticIR::UnitType.new(origin: node)
               end
+            end
+
+            # Returns parent SumType if both types are record variants of the same sum type
+            def common_sum_parent(then_type, else_type, type_registry)
+              return nil unless type_registry
+              return nil if then_type.class == else_type.class && type_name(then_type) == type_name(else_type)
+
+              then_name = type_name(then_type)
+              else_name = type_name(else_type)
+              return nil unless then_name && else_name
+
+              parent_info = type_registry.find_type_with_variant(then_name)
+              return nil unless parent_info
+              return nil unless parent_info.variant?(else_name)
+
+              parent_info.core_ir_type
+            end
+
+            def type_name(type)
+              type.respond_to?(:name) ? type.name : nil
             end
           end
         end

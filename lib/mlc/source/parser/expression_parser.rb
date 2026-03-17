@@ -225,6 +225,17 @@ module MLC
             parse_match_expression
           when :DO
             parse_do_expression
+          when :WHILE
+            parse_while_loop
+          when :FOR
+            parse_for_loop
+          when :RETURN
+            return_token = consume(:RETURN)
+            expr = nil
+            unless [:END, :EOF, :NEWLINE].include?(current.type) || current.line != return_token.line
+              expr = parse_expression
+            end
+            with_origin(return_token) { MLC::Source::AST::Return.new(expr: expr) }
           when :BREAK
             token = consume(:BREAK)
             with_origin(token) { MLC::Source::AST::Break.new }
@@ -232,7 +243,7 @@ module MLC
             token = consume(:CONTINUE)
             with_origin(token) { MLC::Source::AST::Continue.new }
           when :IDENTIFIER
-            # Check for assignment: x = ...
+            # Check for assignment: x = ... or x[i] = ... or x.f = ...
             if peek && peek.type == :EQUAL
               target_token = consume(:IDENTIFIER)
               target_name = target_token.value
@@ -240,6 +251,8 @@ module MLC
               value = parse_expression
               target = attach_origin(MLC::Source::AST::VarRef.new(name: target_name), target_token)
               with_origin(target_token) { MLC::Source::AST::Assignment.new(target: target, value: value) }
+            elsif assignment_lhs_ahead?
+              parse_assignment_lhs_statement
             else
               # Otherwise it's an expression (inside block, don't steal END)
               parse_if_expression_in_block
@@ -247,6 +260,68 @@ module MLC
           else
             # Parse any other expression (inside block, don't steal END)
             parse_if_expression_in_block
+          end
+        end
+
+        def assignment_lhs_ahead?
+          # Scan ahead to check if we have: identifier[...]= or identifier.field=
+          return false unless current.type == :IDENTIFIER
+          # Simple lookahead: peek at tokens after identifier
+          pos = @pos
+          # We're at IDENTIFIER, peek is next
+          tok1 = peek # token after identifier
+          return false unless tok1
+          if tok1.type == :LBRACKET
+            # identifier[ ... ] = ? Scan for matching ] then check for =
+            depth = 0
+            i = @pos + 1
+            while i < @tokens.length
+              t = @tokens[i]
+              depth += 1 if t.type == :LBRACKET
+              if t.type == :RBRACKET
+                depth -= 1
+                if depth == 0
+                  next_tok = @tokens[i + 1]
+                  return next_tok&.type == :EQUAL
+                end
+              end
+              break if depth < 0 || t.type == :EOF
+              i += 1
+            end
+          elsif tok1.type == :DOT
+            tok2 = @tokens[@pos + 2]
+            tok3 = @tokens[@pos + 3]
+            return tok2&.type == :IDENTIFIER && tok3&.type == :EQUAL
+          end
+          false
+        end
+
+        def parse_assignment_lhs_statement
+          target_token = consume(:IDENTIFIER)
+          target_name = target_token.value
+
+          if current.type == :LBRACKET
+            # arr[idx] = value
+            consume(:LBRACKET)
+            index = parse_expression
+            consume(:RBRACKET)
+            consume(:EQUAL)
+            value = parse_expression
+            base = attach_origin(MLC::Source::AST::VarRef.new(name: target_name), target_token)
+            target = attach_origin(MLC::Source::AST::IndexAccess.new(object: base, index: index), target_token)
+            with_origin(target_token) { MLC::Source::AST::Assignment.new(target: target, value: value) }
+          elsif current.type == :DOT
+            # obj.field = value
+            consume(:DOT)
+            field_token = consume(:IDENTIFIER)
+            field_name = field_token.value
+            consume(:EQUAL)
+            value = parse_expression
+            base = attach_origin(MLC::Source::AST::VarRef.new(name: target_name), target_token)
+            target = attach_origin(MLC::Source::AST::MemberAccess.new(object: base, member: field_name), target_token)
+            with_origin(target_token) { MLC::Source::AST::Assignment.new(target: target, value: value) }
+          else
+            raise parse_error("Expected [ or . after identifier in assignment")
           end
         end
 
@@ -665,12 +740,15 @@ module MLC
         end
 
         def parse_let_header
-          # let NAME = expr  →  rebindable (mutable: true)
-          # let const NAME = expr  →  compile-time constant (mutable: false, constant: true)
+          # let NAME = expr      →  rebindable binding
+          # let mut NAME = expr  →  same (explicit mut marker accepted)
+          # let const NAME = expr  →  compile-time constant
           constant = false
           if current.type == :CONST
             consume(:CONST)
             constant = true
+          elsif current.type == :MUT
+            consume(:MUT)
           end
           mutable = !constant
 
@@ -859,7 +937,7 @@ module MLC
           return unless current.type == :IF
 
           consume(:IF)
-          parse_equality
+          parse_logical_or_no_pipe
         end
 
         def consume_fat_arrow!
@@ -1168,8 +1246,8 @@ module MLC
               name_token = consume(:IDENTIFIER)
               name = name_token.value
 
-              if current.type == :LPAREN
-                # Function call
+              if current.type == :LPAREN && current.line == name_token.line
+                # Function call (same line only)
                 lparen_token = consume(:LPAREN)
                 args = parse_args
                 consume(:RPAREN)

@@ -8,12 +8,14 @@
 #include <cstdint>
 #include <iostream>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <string>
 #include <variant>
 #include <vector>
 
 // Core types
+#include "mlc/core/symbol.hpp"
 #include "mlc/core/string.hpp"
 #include "mlc/core/array.hpp"
 #include "mlc/core/hashmap.hpp"

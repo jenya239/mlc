@@ -21,17 +21,18 @@ module MLC
               else
                 identifier = context.sanitize_identifier(node.name)
                 ctor_name = qualified_constructor_name(node)
+                targs = generic_variant_template_args(node)
 
                 if ctor_name != identifier # Is a qualified constructor (contains ::)
                   if nullary_variant_constructor?(node)
-                    context.factory.raw_expression(code: "(#{ctor_name}{})")
+                    context.factory.raw_expression(code: "(#{ctor_name}#{targs}{})")
                   elsif variant_constructor?(node)
-                    context.factory.raw_expression(code: "(#{ctor_name})")
+                    context.factory.raw_expression(code: "(#{ctor_name}#{targs})")
                   else
                     context.factory.identifier(name: ctor_name)
                   end
                 elsif nullary_variant_constructor?(node)
-                  context.factory.raw_expression(code: "#{identifier}{}")
+                  context.factory.raw_expression(code: "#{identifier}#{targs}{}")
                 elsif variant_constructor?(node)
                   context.factory.identifier(name: identifier)
                 else
@@ -48,7 +49,13 @@ module MLC
               return name unless name.match?(/\A[A-Z]/) # Constructor convention
 
               type = node.respond_to?(:type) && node.type ? node.type : nil
-              base_name = type && (type.is_a?(MLC::SemanticIR::SumType) ? type.name : (type.is_a?(MLC::SemanticIR::FunctionType) && type.ret_type.respond_to?(:name) ? type.ret_type.name : nil))
+              base_name = if type.is_a?(MLC::SemanticIR::SumType)
+                            type.name
+                          elsif type.is_a?(MLC::SemanticIR::GenericType)
+                            type.base_type&.name
+                          elsif type.is_a?(MLC::SemanticIR::FunctionType) && type.ret_type.respond_to?(:name)
+                            type.ret_type.name
+                          end
 
               info = (base_name && context.type_registry&.lookup(base_name)) || context.type_registry&.find_type_with_variant(name)
               ns = nil
@@ -72,7 +79,17 @@ module MLC
               end
               if type.is_a?(MLC::SemanticIR::FunctionType)
                 ret = type.ret_type
-                return ret.is_a?(MLC::SemanticIR::SumType) && ret.variants.any? { |v| v[:name] == node.name }
+                if ret.is_a?(MLC::SemanticIR::SumType)
+                  return ret.variants.any? { |v| v[:name] == node.name }
+                end
+                if ret.is_a?(MLC::SemanticIR::GenericType)
+                  base = ret.base_type
+                  return base.is_a?(MLC::SemanticIR::SumType) && base.variants.any? { |v| v[:name] == node.name }
+                end
+              end
+              if type.is_a?(MLC::SemanticIR::GenericType)
+                base = type.base_type
+                return base.is_a?(MLC::SemanticIR::SumType) && base.variants.any? { |v| v[:name] == node.name }
               end
               false
             end
@@ -88,26 +105,99 @@ module MLC
 
               type = node.type
 
-              # SumType - check if the variant with this name has no fields
               if type.is_a?(MLC::SemanticIR::SumType)
                 variant = type.variants.find { |v| v[:name] == node.name }
                 return variant && (variant[:fields].nil? || variant[:fields].empty?)
               end
 
-              # RecordType with no fields is also a nullary variant
               return true if type.is_a?(MLC::SemanticIR::RecordType) && type.fields.empty?
 
-              # FunctionType with no params whose return is a SumType containing
-              # a variant with this name and no fields (nullary constructor coerced to fn)
               if type.is_a?(MLC::SemanticIR::FunctionType) && type.params.empty?
                 ret = type.ret_type
-                if ret.is_a?(MLC::SemanticIR::SumType)
-                  variant = ret.variants.find { |v| v[:name] == node.name }
+                sum = if ret.is_a?(MLC::SemanticIR::SumType) then ret
+                      elsif ret.is_a?(MLC::SemanticIR::GenericType) && ret.base_type.is_a?(MLC::SemanticIR::SumType) then ret.base_type
+                      end
+                if sum
+                  variant = sum.variants.find { |v| v[:name] == node.name }
+                  return variant && (variant[:fields].nil? || variant[:fields].empty?)
+                end
+              end
+
+              if type.is_a?(MLC::SemanticIR::GenericType)
+                sum = resolve_sum_type(type.base_type)
+                if sum
+                  variant = sum.variants.find { |v| v[:name] == node.name }
                   return variant && (variant[:fields].nil? || variant[:fields].empty?)
                 end
               end
 
               false
+            end
+
+            # Returns template args string like "<int>" for variants of generic ADTs, else ""
+            def generic_variant_template_args(node)
+              return "" unless node.respond_to?(:type) && node.type
+
+              type = node.type
+
+              if type.is_a?(MLC::SemanticIR::GenericType)
+                sum = resolve_sum_type(type.base_type)
+                if sum
+                  variant = sum.variants.find { |v| v[:name] == node.name }
+                  return "" unless variant
+                  return "" if type.type_args.empty?
+                  resolved = resolve_type_args(type.type_args, type.base_type)
+                  cpp_args = resolved.map { |t| context.map_type(t) }
+                  return "<#{cpp_args.join(", ")}>"
+                end
+              end
+
+              if type.is_a?(MLC::SemanticIR::FunctionType)
+                ret = type.ret_type
+                if ret.is_a?(MLC::SemanticIR::GenericType)
+                  sum = resolve_sum_type(ret.base_type)
+                  if sum
+                    variant = sum.variants.find { |v| v[:name] == node.name }
+                    return "" unless variant
+                    return "" if ret.type_args.empty?
+                    resolved = resolve_type_args(ret.type_args, ret.base_type)
+                    cpp_args = resolved.map { |t| context.map_type(t) }
+                    return "<#{cpp_args.join(", ")}>"
+                  end
+                end
+              end
+
+              ""
+            end
+
+            # Resolve a potential SumType from a base_type (which may be PrimitiveType or actual SumType)
+            def resolve_sum_type(base)
+              return base if base.is_a?(MLC::SemanticIR::SumType)
+              return nil unless base.respond_to?(:name) && base.name
+
+              info = context.type_registry&.lookup(base.name)
+              return nil unless info
+
+              core = info.respond_to?(:core_ir_type) ? info.core_ir_type : nil
+              core.is_a?(MLC::SemanticIR::SumType) ? core : nil
+            end
+
+            # Resolve TypeVariable args using expected_return_type from context
+            def resolve_type_args(type_args, base_type)
+              return type_args unless type_args.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+
+              expected = context.expected_return_type
+              return type_args unless expected.is_a?(MLC::SemanticIR::GenericType)
+              return type_args unless expected.base_type.respond_to?(:name) && base_type.respond_to?(:name) &&
+                                      expected.base_type.name == base_type.name
+              return type_args if expected.type_args.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+              return type_args unless expected.type_args.size == type_args.size
+
+              subst = {}
+              type_args.each_with_index do |arg, i|
+                subst[arg.name] = expected.type_args[i] if arg.is_a?(MLC::SemanticIR::TypeVariable)
+              end
+              type_args.map { |a| a.is_a?(MLC::SemanticIR::TypeVariable) ? (subst[a.name] || a) : a }
             end
           end
         end

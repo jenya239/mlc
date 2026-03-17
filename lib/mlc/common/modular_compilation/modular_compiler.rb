@@ -40,6 +40,7 @@ module MLC
           lowerer = MLC::Backends::Cpp::Codegen.new(
             type_registry: pipeline.type_registry,
             function_registry: pipeline.function_registry,
+            trait_registry: pipeline.services.trait_registry,
             stdlib_scanner: stdlib_scanner
           )
           generator = MLC::Backends::Cpp::HeaderGenerator.new(lowerer)
@@ -144,7 +145,7 @@ module MLC
 
             int main(int argc, char** argv) {
               mlc_cli_set_args(argc, argv);
-              return #{qualified}(argc, argv);
+              #{cpp_content.match?(/\bvoid\s+main\s*\(/) ? "#{qualified}(argc, argv); return 0;" : "return #{qualified}(argc, argv);"}
             }
           CPP
         end

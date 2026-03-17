@@ -104,6 +104,12 @@ module MLC
             return parse_const_decl_body(let_token, compile_time: true)
           end
 
+          # let mut NAME = expr  →  explicitly mutable binding (same as let for now)
+          if current.type == :MUT
+            consume(:MUT)
+          end
+          explicit_mut = true
+
           # let NAME = expr  →  rebindable binding
           if current.type == :LPAREN
             return parse_tuple_destructuring(let_token, true)
@@ -124,7 +130,7 @@ module MLC
           value = parse_expression_in_block
           consume(:SEMICOLON) if current.type == :SEMICOLON
 
-          with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: true, type: type_annotation) }
+          with_origin(name_token) { MLC::Source::AST::VariableDecl.new(name: name, value: value, mutable: explicit_mut, type: type_annotation) }
         end
 
         def parse_const_decl_statement
