@@ -100,6 +100,45 @@ fn scan_int(state: LexState) -> ScanResult = do
   ScanResult { state: current, token: Token { kind: LInt(value), line: token_line, col: token_col } }
 end
 
+fn scan_single_string(state: LexState) -> ScanStrResult = do
+  const token_line = state.line
+  const token_col  = state.col
+  let current = state.advance()
+  let parts: [string] = []
+  let error = ""
+  while !current.eof() && current.current() != "'" do
+    if current.current() == "\\" then
+      current = current.advance()
+      if current.eof() then
+        error = "unterminated escape in single-quoted string"
+      else if current.current() == "\\" then
+        parts.push("\\"); current = current.advance()
+      else if current.current() == "'" then
+        parts.push("'"); current = current.advance()
+      else if current.current() == "n" then
+        parts.push("\n"); current = current.advance()
+      else if current.current() == "t" then
+        parts.push("\t"); current = current.advance()
+      else
+        parts.push("\\"); parts.push(current.current()); current = current.advance()
+      end
+    else
+      parts.push(current.current())
+      current = current.advance()
+    end
+  end
+  if current.eof() then
+    error = "unterminated single-quoted string"
+  else
+    current = current.advance()
+  end
+  ScanStrResult {
+    state: current,
+    token: Token { kind: LStr(parts.join("")), line: token_line, col: token_col },
+    error
+  }
+end
+
 fn map_escape(character: string) -> string =
   if      character == "n"  then "\n"
   else if character == "t"  then "\t"
@@ -142,6 +181,52 @@ fn scan_string(state: LexState) -> ScanStrResult = do
   ScanStrResult {
     state: current,
     token: Token { kind: LStr(parts.join("")), line: token_line, col: token_col },
+    error
+  }
+end
+
+fn scan_fstring(state: LexState) -> ScanStrResult = do
+  const token_line = state.line
+  const token_col  = state.col
+  let current = state.advance().advance()
+  let parts: [string] = []
+  let current_lit: [string] = []
+  let error = ""
+  while !current.eof() && current.current() != "\"" do
+    if current.current() == "\\" then
+      current = current.advance()
+      const mapped = map_escape(current.current())
+      if mapped != "" then
+        current_lit.push(mapped)
+      else
+        current_lit.push("\\")
+        current_lit.push(current.current())
+      end
+      current = current.advance()
+    else if current.current() == "{" then
+      parts.push(current_lit.join(""))
+      current_lit = []
+      current = current.advance()
+      let expr_chars: [string] = []
+      while !current.eof() && current.current() != "}" do
+        expr_chars.push(current.current()); current = current.advance()
+      end
+      if !current.eof() then current = current.advance() end
+      parts.push(expr_chars.join(""))
+    else
+      current_lit.push(current.current())
+      current = current.advance()
+    end
+  end
+  if current.eof() then
+    error = "unterminated f-string"
+  else
+    current = current.advance()
+  end
+  parts.push(current_lit.join(""))
+  ScanStrResult {
+    state: current,
+    token: Token { kind: LFStr(parts), line: token_line, col: token_col },
     error
   }
 end
@@ -212,11 +297,19 @@ export fn tokenize(source: string) -> LexOut = do
     if state.eof() then break end
     const character = state.current()
     if is_alpha(character) then
-      const result = scan_ident(state); tokens.push(result.token); state = result.state
+      if character == "f" && !state.advance().eof() && state.advance().current() == "\"" then
+        const result = scan_fstring(state); tokens.push(result.token); state = result.state
+        if result.error != "" then errors.push(result.error) end
+      else
+        const result = scan_ident(state); tokens.push(result.token); state = result.state
+      end
     else if is_digit(character) then
       const result = scan_int(state); tokens.push(result.token); state = result.state
     else if character == "\"" then
       const result = scan_string(state); tokens.push(result.token); state = result.state
+      if result.error != "" then errors.push(result.error) end
+    else if character == "'" then
+      const result = scan_single_string(state); tokens.push(result.token); state = result.state
       if result.error != "" then errors.push(result.error) end
     else
       const result = scan_op(state); tokens.push(result.token); state = result.state

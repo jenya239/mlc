@@ -13,7 +13,7 @@ struct Stmt;
 
 struct TyI32;struct TyString;struct TyBool;struct TyUnit;struct TyNamed;struct TyArray;struct TyShared;struct TyGeneric;struct TyFn;using TypeExpr = std::variant<TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn>;struct TyI32 {};struct TyString {};struct TyBool {};struct TyUnit {};struct TyNamed {mlc::String field0;};struct TyArray {std::shared_ptr<ast::TypeExpr> field0;};struct TyShared {std::shared_ptr<ast::TypeExpr> field0;};struct TyGeneric {mlc::String field0;mlc::Array<std::shared_ptr<ast::TypeExpr>> field1;};struct TyFn {mlc::Array<std::shared_ptr<ast::TypeExpr>> field0;std::shared_ptr<ast::TypeExpr> field1;};
 
-struct PatWild;struct PatIdent;struct PatInt;struct PatStr;struct PatBool;struct PatUnit;struct PatCtor;using Pat = std::variant<PatWild, PatIdent, PatInt, PatStr, PatBool, PatUnit, PatCtor>;struct PatWild {};struct PatIdent {mlc::String field0;};struct PatInt {int field0;};struct PatStr {mlc::String field0;};struct PatBool {bool field0;};struct PatUnit {};struct PatCtor {mlc::String field0;mlc::Array<std::shared_ptr<ast::Pat>> field1;};
+struct PatWild;struct PatIdent;struct PatInt;struct PatStr;struct PatBool;struct PatUnit;struct PatCtor;struct PatRecord;using Pat = std::variant<PatWild, PatIdent, PatInt, PatStr, PatBool, PatUnit, PatCtor, PatRecord>;struct PatWild {};struct PatIdent {mlc::String field0;};struct PatInt {int field0;};struct PatStr {mlc::String field0;};struct PatBool {bool field0;};struct PatUnit {};struct PatCtor {mlc::String field0;mlc::Array<std::shared_ptr<ast::Pat>> field1;};struct PatRecord {mlc::String field0;mlc::Array<std::shared_ptr<ast::Pat>> field1;};
 
 struct FieldPat {mlc::String name;std::shared_ptr<ast::Pat> pat;};
 

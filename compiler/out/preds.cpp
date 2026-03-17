@@ -67,6 +67,10 @@ bool is_int_literal(ast_tokens::TKind kind) noexcept;
 
 bool is_str_literal(ast_tokens::TKind kind) noexcept;
 
+bool is_fstr_literal(ast_tokens::TKind kind) noexcept;
+
+mlc::Array<mlc::String> get_fstr_parts(ast_tokens::TKind kind) noexcept;
+
 bool is_equal(ast_tokens::TKind kind) noexcept;
 
 bool is_bar(ast_tokens::TKind kind) noexcept;
@@ -162,6 +166,10 @@ bool TKind_is_ident(ast_tokens::TKind self) noexcept;
 bool TKind_is_int(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_str(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_fstr(ast_tokens::TKind self) noexcept;
+
+mlc::Array<mlc::String> TKind_fstr_parts(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_equal(ast_tokens::TKind self) noexcept;
 
@@ -284,6 +292,10 @@ bool is_int_literal(ast_tokens::TKind kind) noexcept{return [&]() { if (std::hol
 
 bool is_str_literal(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LStr>(kind)) { auto _v_lstr = std::get<ast_tokens::LStr>(kind); auto [_w0] = _v_lstr; return true; } return false; }();}
 
+bool is_fstr_literal(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LFStr>(kind)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(kind); auto [_w0] = _v_lfstr; return true; } return false; }();}
+
+mlc::Array<mlc::String> get_fstr_parts(ast_tokens::TKind kind) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast_tokens::LFStr>(kind)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(kind); auto [parts] = _v_lfstr; return parts; } return {}; }();}
+
 bool is_equal(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::Equal>(kind)) {  return true; } return false; }();}
 
 bool is_bar(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::Bar>(kind)) {  return true; } return false; }();}
@@ -379,6 +391,10 @@ bool TKind_is_ident(ast_tokens::TKind self) noexcept{return [&]() { if (std::hol
 bool TKind_is_int(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LInt>(self)) { auto _v_lint = std::get<ast_tokens::LInt>(self); auto [_w0] = _v_lint; return true; } return false; }();}
 
 bool TKind_is_str(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LStr>(self)) { auto _v_lstr = std::get<ast_tokens::LStr>(self); auto [_w0] = _v_lstr; return true; } return false; }();}
+
+bool TKind_is_fstr(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LFStr>(self)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(self); auto [_w0] = _v_lfstr; return true; } return false; }();}
+
+mlc::Array<mlc::String> TKind_fstr_parts(ast_tokens::TKind self) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast_tokens::LFStr>(self)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(self); auto [parts] = _v_lfstr; return parts; } return {}; }();}
 
 bool TKind_is_equal(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::Equal>(self)) {  return true; } return false; }();}
 

@@ -44,6 +44,12 @@ preds::ExprResult parse_postfix(preds::Parser parser) noexcept;
 
 preds::ExprsResult parse_arg_list(preds::Parser parser) noexcept;
 
+std::shared_ptr<ast::Expr> fstr_to_string_expr(mlc::String part) noexcept;
+
+std::shared_ptr<ast::Expr> build_fstr_part_expr(mlc::String part, bool is_literal) noexcept;
+
+std::shared_ptr<ast::Expr> build_fstr_expr(mlc::Array<mlc::String> parts) noexcept;
+
 preds::ExprResult parse_primary(preds::Parser parser) noexcept;
 
 bool looks_like_lambda_params(preds::Parser parser) noexcept;
@@ -394,9 +400,34 @@ state = next.parser;
  }();
 }
 
+std::shared_ptr<ast::Expr> fstr_to_string_expr(mlc::String part) noexcept{return std::make_shared<ast::Expr>(ast::ExprMethod(std::make_shared<ast::Expr>(ast::ExprIdent(part)), mlc::String("to_string"), {}));}
+
+std::shared_ptr<ast::Expr> build_fstr_part_expr(mlc::String part, bool is_literal) noexcept{return is_literal ? std::make_shared<ast::Expr>(ast::ExprStr(part)) : part.length() == 0 ? std::make_shared<ast::Expr>(ast::ExprStr(part)) : fstr_to_string_expr(part);}
+
+std::shared_ptr<ast::Expr> build_fstr_expr(mlc::Array<mlc::String> parts) noexcept{
+std::shared_ptr<ast::Expr> result = std::make_shared<ast::Expr>(ast::ExprStr(mlc::String("")));
+int pi = 0;
+while (pi < parts.size()){
+{
+std::shared_ptr<ast::Expr> part_expr = build_fstr_part_expr(parts[pi], pi % 2 == 0);
+if (pi == 0){
+{
+result = part_expr;
+}
+} else {
+{
+result = std::make_shared<ast::Expr>(ast::ExprBin(mlc::String("+"), result, part_expr));
+}
+}
+pi = pi + 1;
+}
+}
+return result;
+}
+
 preds::ExprResult parse_primary(preds::Parser parser) noexcept{
 ast_tokens::TKind kind = preds::Parser_kind(parser);
-return preds::TKind_is_int(kind) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprInt(preds::TKind_int_val(kind))), preds::Parser_advance(parser)} : preds::TKind_is_str(kind) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprStr(preds::TKind_str_val(kind))), preds::Parser_advance(parser)} : preds::TKind_is_true(kind) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprBool(true)), preds::Parser_advance(parser)} : preds::TKind_is_false(kind) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprBool(false)), preds::Parser_advance(parser)} : preds::TKind_is_lparen(kind) ? preds::TKind_is_rparen(preds::Parser_kind(preds::Parser_advance(parser))) ? preds::TKind_is_fat_arrow(preds::Parser_kind(preds::Parser_advance_by(parser, 2))) ? [&]() -> preds::ExprResult { 
+return preds::TKind_is_int(kind) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprInt(preds::TKind_int_val(kind))), preds::Parser_advance(parser)} : preds::TKind_is_str(kind) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprStr(preds::TKind_str_val(kind))), preds::Parser_advance(parser)} : preds::TKind_is_fstr(kind) ? preds::ExprResult{build_fstr_expr(preds::TKind_fstr_parts(kind)), preds::Parser_advance(parser)} : preds::TKind_is_true(kind) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprBool(true)), preds::Parser_advance(parser)} : preds::TKind_is_false(kind) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprBool(false)), preds::Parser_advance(parser)} : preds::TKind_is_lparen(kind) ? preds::TKind_is_rparen(preds::Parser_kind(preds::Parser_advance(parser))) ? preds::TKind_is_fat_arrow(preds::Parser_kind(preds::Parser_advance_by(parser, 2))) ? [&]() -> preds::ExprResult { 
   mlc::Array<mlc::String> params = {};
   preds::ExprResult body = parse_expr(preds::Parser_advance_by(parser, 3));
   return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprLambda(params, body.expr)), body.parser};

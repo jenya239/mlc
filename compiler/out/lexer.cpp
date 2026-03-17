@@ -44,6 +44,8 @@ mlc::String map_escape(mlc::String character) noexcept;
 
 lexer::ScanStrResult scan_string(lexer::LexState state) noexcept;
 
+lexer::ScanStrResult scan_fstring(lexer::LexState state) noexcept;
+
 lexer::LexState skip_whitespace(lexer::LexState state) noexcept;
 
 lexer::ScanResult scan_op(lexer::LexState state) noexcept;
@@ -219,6 +221,71 @@ current = LexState_advance(current);
 return lexer::ScanStrResult{current, ast_tokens::Token{ast_tokens::LStr(parts.join(mlc::String(""))), token_line, token_col}, error};
 }
 
+lexer::ScanStrResult scan_fstring(lexer::LexState state) noexcept{
+int token_line = state.line;
+int token_col = state.col;
+lexer::LexState current = LexState_advance(LexState_advance(state));
+mlc::Array<mlc::String> parts = {};
+mlc::Array<mlc::String> current_lit = {};
+mlc::String error = mlc::String("");
+while (!LexState_eof(current) && LexState_current(current) != mlc::String("\"")){
+{
+if (LexState_current(current) == mlc::String("\\")){
+{
+current = LexState_advance(current);
+mlc::String mapped = map_escape(LexState_current(current));
+if (mapped != mlc::String("")){
+{
+current_lit.push_back(mapped);
+}
+} else {
+{
+current_lit.push_back(mlc::String("\\"));
+current_lit.push_back(LexState_current(current));
+}
+}
+current = LexState_advance(current);
+}
+} else {
+{
+if (LexState_current(current) == mlc::String("{")){
+parts.push_back(current_lit.join(mlc::String("")));
+current_lit = {};
+current = LexState_advance(current);
+mlc::Array<mlc::String> expr_chars = {};
+while (!LexState_eof(current) && LexState_current(current) != mlc::String("}")){
+{
+expr_chars.push_back(LexState_current(current));
+current = LexState_advance(current);
+}
+}
+if (!LexState_eof(current)){
+{
+current = LexState_advance(current);
+}
+}
+parts.push_back(expr_chars.join(mlc::String("")));
+} else {
+current_lit.push_back(LexState_current(current));
+current = LexState_advance(current);
+}
+}
+}
+}
+}
+if (LexState_eof(current)){
+{
+error = mlc::String("unterminated f-string");
+}
+} else {
+{
+current = LexState_advance(current);
+}
+}
+parts.push_back(current_lit.join(mlc::String("")));
+return lexer::ScanStrResult{current, ast_tokens::Token{ast_tokens::LFStr(parts), token_line, token_col}, error};
+}
+
 lexer::LexState skip_whitespace(lexer::LexState state) noexcept{
 lexer::LexState current = std::move(state);
 while (!LexState_eof(current)){
@@ -289,9 +356,18 @@ break;
 mlc::String character = LexState_current(state);
 if (is_alpha(character)){
 {
+if (character == mlc::String("f") && !LexState_eof(LexState_advance(state)) && LexState_current(LexState_advance(state)) == mlc::String("\"")){
+lexer::ScanStrResult result = scan_fstring(state);
+tokens.push_back(result.token);
+state = result.state;
+if (result.error != mlc::String("")){
+errors.push_back(result.error);
+}
+} else {
 lexer::ScanResult result = scan_ident(state);
 tokens.push_back(result.token);
 state = result.state;
+}
 }
 } else {
 {
