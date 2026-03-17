@@ -1,0 +1,204 @@
+Отличный вопрос! К сожалению, эти тонкости разбросаны по разным источникам. Вот самые ценные:
+
+## Книги с архитектурными деталями
+
+### 1. **"Engineering a Compiler"** - Cooper & Torczon
+```
+Глава 5: Intermediate Representations - детально про уровни IR
+Глава 8: Introduction to Optimization - про организацию passes
+Глава 15: Building a Runnable Program - про pipeline
+```
+
+### 2. **"Modern Compiler Implementation in ML/Java/C"** - Appel
+```
+Особенно ценно:
+- Tree IR vs Graph IR (глава 8)
+- Dataflow analysis framework (глава 10)
+- SSA form (глава 19)
+- Functional IR (глава 15)
+```
+
+### 3. **"SSA-based Compiler Design"** - Rastello & Bouchez (2022)
+```
+Современная книга именно про архитектуру:
+- Глава 3: SSA Construction 
+- Глава 11: Instruction Selection как rules
+- Глава 18: Compiler Infrastructure (LLVM, GCC)
+```
+
+## Академические статьи (must read)
+
+### Про архитектуру компиляторов:
+1. **"A Nanopass Framework for Compiler Education"** (2006)
+   - Dipanwita Sarkar, Oscar Waddell, R. Kent Dybvig
+   - Описывает подход с микро-проходами
+
+2. **"The Glasgow Haskell Compiler"** (2012) 
+   - Simon Marlow, Simon Peyton Jones
+   - Детально про pipeline GHC
+
+3. **"Bringing the Web up to Speed with WebAssembly"** (2017)
+   - Про дизайн WASM и его IR
+
+### Про Visitors и трансформации:
+4. **"Visitor Combination and Traversal Control"** (2001)
+   - Joost Visser
+   - Продвинутые паттерны visitor
+
+5. **"Attribute Grammars and Visitors"** (1998)
+   - Как правильно организовать visitors
+
+## Блоги и серии статей
+
+### 1. **Eli Bendersky's Blog**
+```
+"How to write a compiler" series:
+- AST representations
+- Visitor patterns for compilers  
+- Lowering in compilers
+- https://eli.thegreenplace.net/tag/compilers
+```
+
+### 2. **Matt Godbolt's Blog** (создатель Compiler Explorer)
+```
+"Compiler Internals" series:
+- How GCC works internally
+- Optimization passes
+- https://xania.org/compiler-internals
+```
+
+### 3. **V8 Blog** (официальный)
+```
+Статьи про архитектуру:
+- "Ignition: V8 Interpreter"
+- "TurboFan JIT Design"
+- "Sea of Nodes" IR
+- https://v8.dev/blog
+```
+
+### 4. **Rui Ueyama's Blog** (создатель mold linker)
+```
+- "Design of lld" 
+- "Compiler design patterns"
+- https://github.com/rui314/mold/blob/main/docs/design.md
+```
+
+## Talks и видео
+
+### Must-watch презентации:
+1. **"Building a Modern Computer From First Principles"** - Nisan & Schocken
+   - Включает компилятор с нуля
+
+2. **"Anders Hejlsberg on Modern Compiler Construction"** (YouTube)
+   - Архитектор TypeScript про дизайн компиляторов
+
+3. **LLVM Developers' Meeting talks**:
+   - "Building a Compiler with MLIR" (2019)
+   - "GlobalISel Design and Implementation" (2016)
+   - "Writing Great Compiler Backends" (2017)
+
+## Исходники для изучения
+
+### Простые и понятные:
+```ruby
+# 1. Opal (Ruby → JavaScript)
+# https://github.com/opal/opal
+# - Чистая архитектура visitors + nodes
+# - Понятный pipeline
+
+# 2. Crystal compiler (Crystal → LLVM)
+# https://github.com/crystal-lang/crystal
+# - Отличный пример semantic analysis
+# - Чёткое разделение фаз
+
+# 3. Nim compiler
+# https://github.com/nim-lang/Nim
+# - Много уровней IR
+# - Хорошие макросистемы
+```
+
+### Продвинутые:
+```cpp
+// 1. Dart VM
+// https://github.com/dart-lang/sdk
+// - Отличный pipeline дизайн
+// - Kernel IR → несколько backends
+
+// 2. JavaScriptCore (WebKit)
+// https://github.com/WebKit/WebKit/tree/main/Source/JavaScriptCore
+// - DFG, FTL tiers
+// - Профайл-направленные оптимизации
+
+// 3. Cranelift
+// https://github.com/bytecodealliance/wasmtime/tree/main/cranelift
+// - Современный подход к IR
+// - ISLE rules для инструкций
+```
+
+## Курсы с продвинутыми темами
+
+### 1. **Stanford CS243** - Program Analysis and Optimization
+```
+Lecture notes покрывают:
+- Dataflow frameworks
+- SSA construction and use
+- Optimization ordering
+```
+
+### 2. **CMU 15-411** - Compiler Design
+```
+Особенно Lab 6:
+- IR design choices
+- Instruction selection as tiling
+- Register allocation approaches
+```
+
+### 3. **Cornell CS 6120** - Advanced Compilers
+```
+Adrian Sampson's course:
+- LLVM deep dive
+- Bril IR для экспериментов
+- https://www.cs.cornell.edu/courses/cs6120/
+```
+
+## Специфичные ресурсы про паттерны
+
+### Про Services/Context:
+- **"Scopes and Frames"** in Programming Language Pragmatics (Scott)
+- **"Symbol Tables"** глава в Dragon Book, но с современным взглядом
+
+### Про Rules и term rewriting:
+- **"Term Rewriting and All That"** - Baader & Nipkow
+- **"Stratego/XT"** documentation - DSL для трансформаций
+
+### Про уровни IR:
+- **"The Design of a Resourceable and Retargetable Binary Translator"** 
+- **MLIR documentation** - многоуровневые IR от Google
+
+## Практические ресурсы
+
+### GitHub Awesome Lists:
+```markdown
+- awesome-compilers
+- awesome-static-analysis  
+- awesome-jit
+```
+
+### Статьи на конкретные темы:
+```
+"Visitor vs Interpreter pattern" - на Stack Overflow
+"Why does Rust have HIR and MIR" - официальная документация
+"How QuerySystem works in rustc" - Rust compiler guide
+```
+
+## Мой совет по порядку изучения:
+
+1. **Начните с Nanopass paper** - даёт концептуальную основу
+2. **Прочитайте исходники Opal или Crystal** - простые, на Ruby
+3. **Изучите V8 blog posts** - практические решения
+4. **Посмотрите LLVM talks** - продвинутые техники
+5. **Почитайте Rust Compiler Guide** - современный подход
+
+Самое ценное - это комбинация теории (papers) и практики (исходники). К сожалению, единой книги "Архитектурные паттерны компиляторов" пока нет.
+
+Хотите, я подберу конкретные главы/статьи под вашу текущую задачу?

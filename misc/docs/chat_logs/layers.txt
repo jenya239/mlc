@@ -1,0 +1,168 @@
+Архитектура слоёв
+
+Green/Red Tree + инкрементальность: токены → Green AST (иммутабельный, структурно-шарится) → Red AST (завязка на файл/позиции). Быстрая перепарсировка и IDE.
+
+AST → HIR → MIR:
+AST (синтаксис) → HIR (десахаринг: async/await, for, ?, pattern sugar) → MIR (CFG, почти SSA, готово для анализов) → C++ AST/IR.
+
+Запросная система а-ля Salsa: все анализы — как мемоизируемые «queries», с точечной инвалидцией (импорты, правки).
+
+Парсинг/лексинг
+
+Юникод-грамотный лексер, интернирование идентификаторов.
+
+Pratt-парсер для выражений, таблица приоритетов, бесконфликтная правофакторизация.
+
+Опционально: отступочувствительный блок-синтаксис (если хотите LiveScript-флоу) — явно фиксируйте правила смешения {} и отступов.
+
+Модули/импорты (ESM-like)
+
+Один файл = один модуль; явные export/import (только имена/пакеты, без неявных «index»).
+
+Граф зависимостей, исключение циклов на уровне HIR (или ограниченная поддержка циклов через двухфазное разрешение).
+
+Версионирование и feature gates (как в Rust editions).
+
+Имена/резолвинг
+
+Символьные таблицы по областям + иерархия модулей; двухпроходный резолвинг (сбор объявлений → связывание ссылок).
+
+Генерация стабильных NodeId/DefId для кешей.
+
+Гигиеничные макросы: токен-три (TT), маркировка происхождения (def-site/call-site hygiene).
+
+Типы и полиморфизм (Rust + TypeScript лучшие практики)
+
+Вывод типов локально (bidirectional): аннотации только на границах API.
+
+Nominal + ADT: struct, enum (tagged union) с исчерпывающей проверкой матчей (алгоритм usefulness/coverage как у Rust).
+
+Generics: моноформизация по умолчанию → в C++ templates; опционально typeclass/trait через dictionary passing для reduce-bloat.
+
+Traits / interfaces: статическое связывание через bounds; динамическое — через vtable-erasure (dyn Trait аналог).
+
+Null/undefined запрещены в ядре; Option/Result и ?.
+
+Вариативность/лайфтаймы (лайт-модель): переносы/заимствования в терминах C++ move/borrow; NLL-подобная эвристика без полного region-инференса (начните просто: переменная после move — невалидна).
+
+Effects/async (минимум): async → state-machine в MIR → C++20 coroutines; unsafe-блоки для FFI.
+
+Десахаринг (HIR)
+
+for … in → loop + итераторный протокол.
+
+? → ранний return Result::Err.
+
+match → decision tree, fallthrough запрещён.
+
+defer → скрытый scope-guard (RAII).
+
+Пайпы/with → обычные вызовы/let-цепочки.
+
+Анализы (MIR/CFG)
+
+Построение CFG, доминирование, liveness.
+
+Данные-потоки: def-use, инициализация до использования, простые алиасы.
+
+Перемещения/заимствования: линейность и «use-after-move» на CFG.
+
+Проверка исчерпываемости match.
+
+Простые оптимизации до C++ (copy-prop, dce) — уменьшают шум сгенерённого кода.
+
+Генерация C++
+
+Маппинг типов: Option<T> → std::optional<T>, Result<T,E> → std::expected<T,E> (или свой).
+
+Моноформизация → шаблоны; vtable/erasure → std::unique_ptr<concept_base> или CRTP, по ситуации.
+
+Имена/манглинг: стабильные, детерминированные; иерархия пакетов → namespace.
+
+Модули C++20 предпочтительнее #include; один модуль на исходный модуль языка.
+
+Атрибуты компилятора: [[nodiscard]], constexpr когда возможно.
+
+Исключения: по умолчанию off; ошибки через Result.
+
+ABI/FFI: extern "C" прослойка; строгая изоляция unsafe.
+
+Конкурентность (Erlang-вдохновение)
+
+Акторы/почтовые ящики на уровне библиотеки: spawn, send, receive (select-like); без shared-mutable по умолчанию.
+
+Надёжность как опция: супервизоры/рестарты (OTP-лайт), но без принудительного GC — акцент на RAII/арены.
+
+Инфраструктура компиляции
+
+PassManager: декларативные зависимости анализов, инвалидация по графу модулей.
+
+UI-тесты компилятора: «золотые» файлы диагностик, стабкод, snapshot-тесты десахаринга и MIR.
+
+Диагностика как у rustc: спаны, метки, note/help, фикс-иты, коды ошибок.
+
+Форматер + линтер: единый стиль, набор «clippy»-правил.
+
+Пакет-менеджер: lockfile, семвер, таргеты/трипы, reproducible builds.
+
+Language Server: на базе вашей запросной системы (go-to, hover, semantic tokens, inlay hints).
+
+Минимальный роадмап
+
+Лексер/Pratt/AST(+spans) → green/red.
+
+Импорты/симтаб/резолвинг.
+
+HIR-десахаринг (match, ?, for, defer).
+
+Типизация (локальный вывод, generics, traits).
+
+MIR/CFG + базовые проверки (init/use, move).
+
+Exhaustiveness + простые DCE/CP.
+
+C++ backend (модули, optional/expected, templates).
+
+Диагностики/форматер/линтер/тест-сетка.
+
+Async/coroutines, акторы (lib), proc-макросы.
+
+Что взять из rustc/TS/Erlang/LLVM
+
+rustc: HIR/MIR слои, editions/feature gates, NLL-подход, diagnostics UX, clippy, cargo-lock.
+
+TypeScript: bidirectional inference, control-flow-based typing, сужение типов в if/match.
+
+Erlang/OTP: модель акторов, супервизоры, изолированность компонентов.
+
+LLVM: SSA и CFG-анализы в MIR, PassManager/invalidations, профилирование.
+
+Книги/материалы (ядро)
+
+Aho, Lam, Sethi, Ullman — “Compilers: Principles, Techniques, and Tools” (Dragon Book)
+
+Cooper & Torczon — “Engineering a Compiler”
+
+Muchnick — “Advanced Compiler Design and Implementation”
+
+Grune & Jacobs — “Parsing Techniques”
+
+Pierce — “Types and Programming Languages (TAPL)”
+
+Appel — “Modern Compiler Implementation”
+
+Плюс статьи/гайды по: SSA, dominance, data-flow, decision trees for pattern matching, error reporting UX.
+
+Практические паттерны
+
+Интернирование строк/типов/путей; арены для узлов.
+
+Идентификаторы версий (hash модульного графа) → инкрементальные билды.
+
+Canonical type forms + unifier с occurs-check.
+
+Decision-tree matcher + usefulness (wildcards, ор-паттерны, guards).
+
+Dictionary-passing для trait-объектов; где надо — явная impl-таблица.
+
+Кросс-таргеты: генерируйте «чистый» C++ без UB и с контролируемыми флагами.

@@ -1,0 +1,322 @@
+Отличный вопрос! Давайте разработаем систематический подход к определению нужных компонентов.
+
+## Методология: от языка к архитектуре
+
+### 1. Анализ фич языка → определяем Visitors
+
+```ruby
+# Составляем таблицу: фича языка → необходимый анализ
+LANGUAGE_FEATURES = {
+  # Фича языка          → Какие visitors нужны
+  variables:            [:name_resolver, :scope_checker],
+  types:               [:type_checker, :type_inferrer],
+  functions:           [:signature_checker, :return_checker],
+  closures:            [:capture_analyzer, :closure_converter],
+  templates:           [:template_expander],
+  macros:              [:macro_expander],
+  operator_overload:   [:overload_resolver],
+  pattern_matching:    [:pattern_compiler],
+  async_await:         [:async_transformer],
+  memory_management:   [:lifetime_checker, :escape_analyzer],
+}
+
+# Пример для вашего языка Flow
+class LanguageAnalyzer
+  def analyze_source(examples_dir)
+    features_used = Set.new
+    
+    Dir["#{examples_dir}/**/*.flow"].each do |file|
+      source = File.read(file)
+      
+      # Детектим используемые фичи
+      features_used << :closures if source =~ /\|.*\|.*=>/
+      features_used << :templates if source =~ /<.*>/
+      features_used << :pattern_matching if source =~ /match.*\{/
+      features_used << :pipes if source =~ /\|>/
+    end
+    
+    # Определяем необходимые visitors
+    visitors_needed = features_used.flat_map { |f| LANGUAGE_FEATURES[f] }
+    visitors_needed.uniq
+  end
+end
+```
+
+### 2. Анализ семантических разрывов → определяем Rules
+
+```ruby
+# Разница между source и target языком = правила трансформации
+class GapAnalyzer
+  def analyze_gaps(source_lang: 'Flow', target_lang: 'C++')
+    gaps = []
+    
+    # Flow есть, в C++ нет → нужны rules
+    gaps << {
+      feature: "pipe operator",
+      flow_syntax: "x |> f |> g",
+      cpp_syntax: "g(f(x))",
+      rule_type: :desugar
+    }
+    
+    gaps << {
+      feature: "pattern matching", 
+      flow_syntax: "match x { Some(y) => y, None => 0 }",
+      cpp_syntax: "x.has_value() ? x.value() : 0",
+      rule_type: :desugar
+    }
+    
+    gaps << {
+      feature: "defer",
+      flow_syntax: "defer cleanup()",
+      cpp_syntax: "SCOPE_EXIT { cleanup(); }",
+      rule_type: :lower
+    }
+    
+    gaps << {
+      feature: "closures",
+      flow_syntax: "|x| x + captured",
+      cpp_syntax: "[captured](auto x) { return x + captured; }",
+      rule_type: :lower
+    }
+    
+    # Генерируем rule sets
+    gaps.group_by { |g| g[:rule_type] }
+  end
+end
+```
+
+### 3. Анализ состояния компиляции → определяем Services
+
+```ruby
+# Какую информацию нужно передавать между visitors?
+class StateAnalyzer
+  def required_services
+    services = {}
+    
+    # Анализируем, что нужно шарить между проходами
+    services[:symbols] = {
+      purpose: "Хранение определений и их типов",
+      used_by: [:name_resolver, :type_checker, :code_generator],
+      data: {
+        scopes: "Stack of hash tables",
+        types: "Node ID → Type mapping",
+        definitions: "Name → Declaration node"
+      }
+    }
+    
+    services[:types] = {
+      purpose: "Type inference результаты",
+      used_by: [:type_inferrer, :type_checker, :overload_resolver],
+      data: {
+        inferred: "Node ID → Type",
+        constraints: "Type variables → Constraints",
+        substitutions: "Type var → Concrete type"
+      }
+    }
+    
+    services[:constants] = {
+      purpose: "Compile-time вычисления",
+      used_by: [:const_evaluator, :optimizer],
+      data: {
+        values: "Node ID → Computed value",
+        pure_functions: "List of pure functions"
+      }
+    }
+    
+    services[:diagnostics] = {
+      purpose: "Ошибки и предупреждения",
+      used_by: :all_visitors,
+      data: {
+        errors: "List of Error objects",
+        warnings: "List of Warning objects",
+        notes: "Additional context"
+      }
+    }
+    
+    services
+  end
+end
+```
+
+### 4. Практический чеклист
+
+```ruby
+# Минимальный набор для работающего компилятора
+class CompilerRequirements
+  def self.minimum_viable_compiler
+    {
+      visitors: [
+        :parser,           # Обязательно
+        :name_resolver,    # Обязательно для переменных
+        :type_checker,     # Обязательно для типизации
+        :code_generator    # Обязательно для вывода
+      ],
+      
+      services: [
+        :symbol_table,     # Минимум для имён
+        :type_registry,    # Минимум для типов
+        :diagnostics       # Минимум для ошибок
+      ],
+      
+      rules: [
+        :desugar,         # Упрощение синтаксиса
+        :lower_to_cpp     # Преобразование в C++
+      ]
+    }
+  end
+  
+  def self.analyze_example(code)
+    requirements = {visitors: [], services: [], rules: []}
+    
+    # Смотрим, что используется
+    if code.include?('let ') || code.include?('fn ')
+      requirements[:visitors] << :name_resolver
+      requirements[:services] << :symbol_table
+    end
+    
+    if code.include?('|>')
+      requirements[:rules] << :pipe_desugar
+    end
+    
+    if code.include?('<') && code.include?('>')
+      requirements[:visitors] << :template_expander
+      requirements[:services] << :template_cache
+    end
+    
+    requirements
+  end
+end
+```
+
+### 5. Инкрементальная разработка
+
+```ruby
+# Начинаем с минимума и добавляем по мере необходимости
+class IncrementalCompiler
+  VERSION_1 = {
+    # Только арифметика
+    features: [:integers, :arithmetic],
+    visitors: [:parser, :evaluator],
+    services: [:constants],
+    rules: [:const_fold]
+  }
+  
+  VERSION_2 = {
+    # Добавляем переменные
+    features: VERSION_1[:features] + [:variables, :assignment],
+    visitors: VERSION_1[:visitors] + [:name_resolver],
+    services: VERSION_1[:services] + [:symbols],
+    rules: VERSION_1[:rules]
+  }
+  
+  VERSION_3 = {
+    # Добавляем функции
+    features: VERSION_2[:features] + [:functions, :calls],
+    visitors: VERSION_2[:visitors] + [:type_checker, :call_resolver],
+    services: VERSION_2[:services] + [:types, :signatures],
+    rules: VERSION_2[:rules] + [:inline_small_functions]
+  }
+  
+  VERSION_4 = {
+    # Добавляем классы
+    features: VERSION_3[:features] + [:classes, :methods],
+    visitors: VERSION_3[:visitors] + [:class_resolver, :method_resolver],
+    services: VERSION_3[:services] + [:class_hierarchy],
+    rules: VERSION_3[:rules] + [:devirtualize]
+  }
+end
+```
+
+### 6. Автоматическое определение по тестам
+
+```ruby
+# Анализируем тесты, чтобы понять, что нужно
+class TestDrivenAnalyzer
+  def analyze_test_file(test_file)
+    requirements = {
+      visitors: Set.new,
+      services: Set.new,
+      rules: Set.new
+    }
+    
+    File.readlines(test_file).each do |line|
+      case line
+      when /should.*resolve.*names/
+        requirements[:visitors] << :name_resolver
+        requirements[:services] << :symbol_table
+        
+      when /should.*infer.*types/
+        requirements[:visitors] << :type_inferrer
+        requirements[:services] << :type_registry
+        
+      when /should.*optimize/
+        requirements[:rules] << :optimizer
+        requirements[:services] << :constant_evaluator
+        
+      when /should.*compile.*to.*C\+\+/
+        requirements[:visitors] << :cpp_generator
+        requirements[:rules] << :lower_to_cpp
+      end
+    end
+    
+    requirements
+  end
+end
+```
+
+### 7. Реальный пример анализа
+
+```ruby
+# Берём конкретный код и определяем, что нужно
+source = <<~FLOW
+  fn fibonacci(n: i32) -> i32 {
+    match n {
+      0 | 1 => n,
+      _ => fibonacci(n-1) + fibonacci(n-2)
+    }
+  }
+  
+  let result = [1, 2, 3, 4, 5]
+    |> map(fibonacci)
+    |> filter(x => x > 10)
+    |> sum();
+FLOW
+
+analyzer = CompilerArchitect.new
+arch = analyzer.analyze(source)
+
+puts arch.to_yaml
+# =>
+# visitors:
+#   - parser              # fn, let
+#   - name_resolver       # fibonacci, n, result  
+#   - type_inferrer       # i32, array types
+#   - pattern_compiler    # match expression
+#   - lambda_analyzer     # x => x > 10
+#   - pipeline_desugarer  # |> operator
+#
+# services:
+#   - symbol_table        # для имён
+#   - type_registry       # для типов
+#   - pattern_context     # для match
+#   - lambda_captures     # для замыканий
+#
+# rules:
+#   desugar:
+#     - pipe_to_calls     # |> → вложенные вызовы
+#     - match_to_if       # match → if/else
+#     - lambda_to_struct  # => → struct with operator()
+#   optimize:
+#     - tail_recursion    # fibonacci → loop
+#     - inline_lambdas    # x => x > 10 → inline
+```
+
+## Итоговая методология:
+
+1. **Начните с примеров кода** на вашем языке
+2. **Определите фичи**, которые используются
+3. **Найдите разрывы** между вашим языком и C++
+4. **Составьте минимальный набор** для этих примеров
+5. **Итеративно добавляйте** по мере роста языка
+
+Хотите, покажу как это применить к конкретному примеру вашего языка?

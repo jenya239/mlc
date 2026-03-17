@@ -1,0 +1,137 @@
+Синтаксические приёмы (и куда они раскладываются)
+Базовая эргономика
+
+Именованные/дефолтные параметры (Ruby/Kotlin/Swift/TS): fn f(x, y=1, *, step=2) → HIR нормализация в позиционные с сгенерированным «record» аргументов.
+
+Pipe / thread-first (LiveScript/Elixir/F#): xs |> map(f) |> filter(p) → HIR как вложенные вызовы; легко оптимизировать inline.
+
+with-цепочки (Ruby/Elixir): with a <- f(), b <- g(a) do h(b) end → sugar для Result-монáды (?); MIR — линейный CFG.
+
+Safe navigation (CoffeeScript/TS): user?.address?.city → HIR в каскад match Option.
+
+Destructuring (TS/Swift/Kotlin): для кортежей/записей/ADT → HIR биндинги + проверка исчерпываемости в match.
+
+Коллекции и литералы
+
+Литералы записей c неизменяемостью по умолчанию (Elm/Rust): {a:1, b:2} и update {..r, b:3} → HIR копия + move/borrow-эвристики.
+
+Comprehensions (Swift/Dart/TS): [for x in xs if p(x) -> f(x)] → desugar в map/filter/fold.
+
+Типы/полиморфизм
+
+Algebraic Data Types (Rust/Swift/Kotlin sealed): enum + match с exhaustiveness.
+
+Type inference bidirectional (TS/Kotlin): локальный вывод; аннотации только на API.
+
+where-bounds / constraints (Rust/Kotlin): fn f<T>(x:T) where T: Eq+Hash → в C++ concepts/traits/dictionary-passing.
+
+opaque type (Swift/Rust impl Trait): скрыть конкретику в сигнатуре, облегчает ABI.
+
+Ошибки/ресурсы
+
+?-propagation (Rust/Swift try?): в MIR — ранний выход.
+
+defer (Go/Swift) → RAII scope-guard; HIR вставляет скрытый объект-сторож.
+
+using/with resource (C#/Python) → sugar над RAII-конструктором.
+
+Async/конкурентность
+
+async/await (Rust/Swift/Kotlin/Dart): в MIR — state machine; в C++20 — coroutines.
+
+Акторы (Elixir/Kotlin/Swift): actor Mailbox { receive ... } → либный слой + синтаксис для почтового ящика.
+
+Паттерн-матчинг
+
+Or-/as-/guard-паттерны (Rust/Elixir): match x { A(a) | B(a) if p(a) => ... } → decision tree.
+
+Struct/array patterns (TS/Rust): let {x, y: y0} = p / [head, ..tail].
+
+Импорты/модули
+
+ESM-like (TS/Deno): import {foo as f} from "pkg/mod"; explicit export; без магии index.
+
+Re-exports (Rust pub use) для стабильного публичного фасада.
+
+Макросы/метапрограммирование
+
+Проц-макросы (Rust) / Compile-time eval (Zig): ограничить до «TT → TT» и «const-eval fn»; гигиена по умолчанию.
+
+inline fn/const fn (Swift/Rust): сигнализировать бекенду, безопасно для C++ constexpr/inline.
+
+Мелкие, но ценные
+
+String interp (Kotlin/Swift): "Hello ${name}" → форматтер без аллокаций, если возможно.
+
+Вызовы без скобок для DSL (Ruby-лайт, опционально): только в ограниченном контексте (builder-блоки), чтобы не ломать парсер.
+
+Range/step (Kotlin/Swift): for i in 0..10 step 2 → итераторный протокол.
+
+«Как это ляжет» (правило интеграции)
+
+Любой сахар должен детерминированно раскладываться в HIR-ядро: «вызовы», «let», «match», «loop», RAII, Result/Option, traits.
+
+Любая фича с побочками — через эффект-метки в типах (async, unsafe, actor), чтобы анализы работали до C++.
+
+Экосистема: проверенные решения
+Инструменты и процессы
+
+Единый пакетный менеджер: как Cargo. Lockfile, workspaces, feature flags, profiles (dev/release).
+
+Edtitions/feature-gates (Rust): эволюция без ломающих изменений.
+
+Форматер (rustfmt) и линтер (clippy) из коробки; «ошибки → коды → fixer hints».
+
+UI-тесты компилятора: golden-диагностики, snapshot HIR/MIR/pretty-print.
+
+Playground/REPL в браузере (WASM) + «Share gist» → снижает порог входа.
+
+RFC-процесс (Rust): публичные обсуждения, стабилизация API/синтаксиса волнами.
+
+SemVer + MSRV/MCV: минимальные поддерживаемые версии компилятора/стандарта.
+
+Док-система (rustdoc-стайл): извлечение комментов, примеры как doctests.
+
+Crates-like registry: namespace, верификация владельцев, DCO/Supply-chain сканы.
+
+Локальный кеш артефактов: инкрементальные билды, sccache-аналог.
+
+LSP из коробки: hover, go-to, semantic tokens, inlay hints, code actions.
+
+Официальные шаблоны: new lib, new bin, new actor-service, new wasm.
+
+FFI/интероп
+
+C ABI слой: стабильный extern "C" + генераторы биндингов (cbindgen-стайл).
+
+C++ interop: опционально — режим «чистый C++ headers/modules» для встраивания в существующие монорепы.
+
+build.rs-аналог: декларативные сборки нативных зависимостей.
+
+Качество/безопасность
+
+MIR-borrow-checks лайт-версия: use-after-move, not-initialized, match-exhaustiveness.
+
+Fuzzing/Proptests из коробки (AFL/LibFuzzer hooks).
+
+Crash-key reports в компиляторе: быстрые баг-репорты с минимальным case.
+
+Дистрибуция
+
+Однострочная установка + версионировщик (rustup-аналог): каналы stable/beta/nightly.
+
+Prebuilt toolchains для Linux/macOS/Windows; воспроизводимые релизы.
+
+Набор «минимум-жизнеспособный» для старта
+
+Пакетник + форматер + линтер + LSP (базовый).
+
+Синтаксис: pipes, pattern-match, destructuring, ?, defer, named args.
+
+Типы: ADT, traits, generics (моноформизация), Option/Result.
+
+Async/coroutines и акторы в либе (без сложных эффект-систем).
+
+Док-ген + doctests, playground, RFC-процесс.
+
+FFI: C-слой + генерация заголовков C++.

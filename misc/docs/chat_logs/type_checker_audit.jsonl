@@ -1,0 +1,28 @@
+{"method":"type_name","lines":"49-51","category":"type_name_resolution","target_class":"TypeNameResolver","dependencies":[],"public":true,"usage_count":0}
+{"method":"normalized_type_name","lines":"53-60","category":"type_name_resolution","target_class":"TypeNameResolver","dependencies":[],"public":true,"usage_count":0}
+{"method":"describe_type","lines":"62-64","category":"type_name_resolution","target_class":"TypeNameResolver","dependencies":["type_name","normalized_type_name"],"public":true,"usage_count":0}
+{"method":"type_error","lines":"67-71","category":"error_reporting","target_class":"ErrorReporter","dependencies":[],"public":true,"usage_count":0}
+{"method":"ensure_type!","lines":"73-75","category":"error_reporting","target_class":"ErrorReporter","dependencies":["type_error"],"public":true,"usage_count":0}
+{"method":"ensure_compatible_type","lines":"78-102","category":"type_validation","target_class":"TypeValidator","dependencies":["ensure_type!","type_name","normalized_type_name","generic_type_name?","unit_like?","type_error"],"public":true,"usage_count":0}
+{"method":"ensure_boolean_type","lines":"104-108","category":"type_validation","target_class":"TypeValidator","dependencies":["type_name","normalized_type_name","generic_type_name?","describe_type","type_error"],"public":true,"usage_count":0}
+{"method":"ensure_numeric_type","lines":"110-114","category":"type_validation","target_class":"TypeValidator","dependencies":["type_name","normalized_type_name","generic_type_name?","describe_type","numeric_type?","type_error"],"public":true,"usage_count":0}
+{"method":"numeric_type?","lines":"117-123","category":"type_predicates","target_class":"TypeNameResolver","dependencies":["type_name","normalized_type_name"],"public":true,"usage_count":0}
+{"method":"generic_type_name?","lines":"125-128","category":"type_predicates","target_class":"TypeNameResolver","dependencies":[],"public":true,"usage_count":0}
+{"method":"unit_like?","lines":"130-133","category":"type_predicates","target_class":"TypeNameResolver","dependencies":[],"public":true,"usage_count":0}
+{"method":"io_return_type","lines":"136-147","category":"io_functions","target_class":"TypeChecker","dependencies":[],"public":true,"usage_count":0,"note":"IO-specific, keep in TypeChecker"}
+{"method":"validate_function_call","lines":"150-163","category":"function_validation","target_class":"TypeValidator","dependencies":["ensure_compatible_type","assign_expression_type","type_error"],"public":true,"usage_count":0}
+{"method":"ensure_argument_count","lines":"165-169","category":"function_validation","target_class":"TypeValidator","dependencies":["type_error"],"public":true,"usage_count":0}
+{"method":"module_member_info","lines":"172-178","category":"function_validation","target_class":"TypeChecker","dependencies":[],"public":true,"usage_count":0,"note":"Registry access, keep in TypeChecker"}
+{"method":"assign_expression_type","lines":"180-191","category":"expression_assignment","target_class":"TypeChecker","dependencies":["set_expression_type","propagate_literal_types"],"public":true,"usage_count":0,"note":"Complex state management, keep in TypeChecker"}
+{"method":"set_expression_type","lines":"193-199","category":"expression_assignment","target_class":"TypeChecker","dependencies":[],"public":false,"usage_count":0,"note":"Helper for assign_expression_type"}
+{"method":"propagate_literal_types","lines":"201-215","category":"expression_assignment","target_class":"TypeChecker","dependencies":["assign_expression_type","record_field_type_map"],"public":false,"usage_count":0,"note":"Helper for assign_expression_type"}
+{"method":"validate_constraint_name","lines":"218-223","category":"constraint_validation","target_class":"TypeValidator","dependencies":["type_error"],"public":true,"usage_count":0}
+{"method":"type_satisfies_constraint?","lines":"225-228","category":"constraint_validation","target_class":"TypeValidator","dependencies":[],"public":true,"usage_count":0}
+{"method":"extract_actual_type_name","lines":"230-240","category":"constraint_validation","target_class":"TypeValidator","dependencies":[],"public":true,"usage_count":0}
+{"method":"validate_type_constraints","lines":"305-319","category":"constraint_validation","target_class":"TypeValidator","dependencies":["extract_actual_type_name","type_satisfies_constraint?","type_error"],"public":true,"usage_count":0}
+{"method":"record_field_type_map","lines":"242-251","category":"record_field_map","target_class":"TypeChecker","dependencies":["resolve_generic_record_field_map"],"public":true,"usage_count":0,"note":"Complex generic logic, keep in TypeChecker"}
+{"method":"resolve_generic_record_field_map","lines":"253-265","category":"record_field_map","target_class":"TypeChecker","dependencies":["build_generic_substitution","substitute_type_variables"],"public":false,"usage_count":0}
+{"method":"build_generic_substitution","lines":"267-277","category":"record_field_map","target_class":"TypeChecker","dependencies":[],"public":false,"usage_count":0}
+{"method":"substitute_type_variables","lines":"279-294","category":"record_field_map","target_class":"TypeChecker","dependencies":[],"public":false,"usage_count":0}
+{"method":"normalize_type_params","lines":"296-303","category":"type_params","target_class":"TypeChecker","dependencies":["validate_constraint_name"],"public":true,"usage_count":0,"note":"Type param processing, keep in TypeChecker"}
+{"method":"infer_type_kind","lines":"327-348","category":"type_kind","target_class":"TypeChecker","dependencies":[],"public":true,"usage_count":0,"note":"Complex type analysis, keep in TypeChecker"}
