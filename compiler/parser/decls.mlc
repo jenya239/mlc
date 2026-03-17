@@ -182,11 +182,6 @@ fn parse_type_decl(parser: Parser) -> DeclResult = do
     const variants: [Shared<TypeVariant>] = []
     variants.push(Shared.new(VarRecord(type_name, field_defs_result.field_defs)))
     DeclResult { decl: Shared.new(DeclType(type_name, variants)), parser: field_defs_result.parser }
-  else if first_kind.is_ident() && is_ctor_name(first_kind.ident()) && after_eq.advance().kind().is_lbrace() then
-    const field_defs_result = parse_field_defs(after_eq.advance_by(2))
-    const variants: [Shared<TypeVariant>] = []
-    variants.push(Shared.new(VarRecord(first_kind.ident(), field_defs_result.field_defs)))
-    DeclResult { decl: Shared.new(DeclType(type_name, variants)), parser: field_defs_result.parser }
   else
     const variants_result = parse_variants(after_eq)
     DeclResult { decl: Shared.new(DeclType(type_name, variants_result.variants)), parser: variants_result.parser }

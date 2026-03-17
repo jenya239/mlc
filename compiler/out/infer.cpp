@@ -93,59 +93,59 @@ return type_name != mlc::String("") && registry::TypeRegistry_has_fields(registr
 
 infer::InferResult infer_expr(std::shared_ptr<ast::Expr> expr, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env, registry::TypeRegistry registry) noexcept{
 return std::visit(overloaded{
-  [&](const ExprInt& exprint) { auto [_w0] = exprint; return infer_ok(std::make_shared<registry::Type>((registry::TI32{}))); },
-  [&](const ExprStr& exprstr) { auto [_w0] = exprstr; return infer_ok(std::make_shared<registry::Type>((registry::TString{}))); },
-  [&](const ExprBool& exprbool) { auto [_w0] = exprbool; return infer_ok(std::make_shared<registry::Type>((registry::TBool{}))); },
-  [&](const ExprUnit& exprunit) { return infer_ok(std::make_shared<registry::Type>((registry::TUnit{}))); },
-  [&](const ExprExtern& exprextern) { return infer_ok(std::make_shared<registry::Type>((registry::TUnit{}))); },
-  [&](const ExprIdent& exprident) { auto [name] = exprident; return type_env.has(name) ? infer_ok(type_env.get(name)) : registry::TypeRegistry_has_fn(registry, name) ? infer_ok(registry::TypeRegistry_fn_type(registry, name)) : registry::TypeRegistry_has_ctor(registry, name) ? infer_ok(registry::TypeRegistry_ctor_type(registry, name)) : infer_ok(std::make_shared<registry::Type>((registry::TUnknown{}))); },
-  [&](const ExprBin& exprbin) { auto [op, left, right] = exprbin; return [&]() -> infer::InferResult { 
+  [&](const ExprInt& exprint) -> infer::InferResult { auto [_w0] = exprint; return infer_ok(std::make_shared<registry::Type>((registry::TI32{}))); },
+  [&](const ExprStr& exprstr) -> infer::InferResult { auto [_w0] = exprstr; return infer_ok(std::make_shared<registry::Type>((registry::TString{}))); },
+  [&](const ExprBool& exprbool) -> infer::InferResult { auto [_w0] = exprbool; return infer_ok(std::make_shared<registry::Type>((registry::TBool{}))); },
+  [&](const ExprUnit& exprunit) -> infer::InferResult { return infer_ok(std::make_shared<registry::Type>((registry::TUnit{}))); },
+  [&](const ExprExtern& exprextern) -> infer::InferResult { return infer_ok(std::make_shared<registry::Type>((registry::TUnit{}))); },
+  [&](const ExprIdent& exprident) -> infer::InferResult { auto [name] = exprident; return type_env.has(name) ? infer_ok(type_env.get(name)) : registry::TypeRegistry_has_fn(registry, name) ? infer_ok(registry::TypeRegistry_fn_type(registry, name)) : registry::TypeRegistry_has_ctor(registry, name) ? infer_ok(registry::TypeRegistry_ctor_type(registry, name)) : infer_ok(std::make_shared<registry::Type>((registry::TUnknown{}))); },
+  [&](const ExprBin& exprbin) -> infer::InferResult { auto [op, left, right] = exprbin; return [&]() -> infer::InferResult { 
   infer::InferResult left_result = infer_expr(left, type_env, registry);
   infer::InferResult right_result = infer_expr(right, type_env, registry);
   return InferResult_with_type(InferResult_absorb(left_result, right_result), binary_op_type(op, left_result.inferred_type));
  }(); },
-  [&](const ExprUn& exprun) { auto [op, inner] = exprun; return [&]() -> infer::InferResult { 
+  [&](const ExprUn& exprun) -> infer::InferResult { auto [op, inner] = exprun; return [&]() -> infer::InferResult { 
   infer::InferResult inner_result = infer_expr(inner, type_env, registry);
   auto result_type = op == mlc::String("!") ? std::make_shared<registry::Type>((registry::TBool{})) : inner_result.inferred_type;
   return InferResult_with_type(inner_result, result_type);
  }(); },
-  [&](const ExprCall& exprcall) { auto [func, call_args] = exprcall; return [&]() -> infer::InferResult { 
+  [&](const ExprCall& exprcall) -> infer::InferResult { auto [func, call_args] = exprcall; return [&]() -> infer::InferResult { 
   infer::InferResult func_result = infer_expr(func, type_env, registry);
   infer::InferResult with_args = infer_args_errors(func_result, call_args, type_env, registry);
   std::shared_ptr<registry::Type> return_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TFn>((*func_result.inferred_type))) { auto _v_tfn = std::get<registry::TFn>((*func_result.inferred_type)); auto [_w0, ret] = _v_tfn; return ret; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
   return InferResult_with_type(with_args, return_type);
  }(); },
-  [&](const ExprMethod& exprmethod) { auto [obj, method_name, margs] = exprmethod; return [&]() -> infer::InferResult { 
+  [&](const ExprMethod& exprmethod) -> infer::InferResult { auto [obj, method_name, margs] = exprmethod; return [&]() -> infer::InferResult { 
   infer::InferResult obj_result = infer_expr(obj, type_env, registry);
   return InferResult_with_type(infer_args_errors(obj_result, margs, type_env, registry), method_return_type(method_name));
  }(); },
-  [&](const ExprField& exprfield) { auto [obj, field_name] = exprfield; return [&]() -> infer::InferResult { 
+  [&](const ExprField& exprfield) -> infer::InferResult { auto [obj, field_name] = exprfield; return [&]() -> infer::InferResult { 
   infer::InferResult obj_result = infer_expr(obj, type_env, registry);
   return InferResult_with_type(obj_result, field_lookup_type(obj_result.inferred_type, field_name, registry));
  }(); },
-  [&](const ExprIndex& exprindex) { auto [obj, idx] = exprindex; return [&]() -> infer::InferResult { 
+  [&](const ExprIndex& exprindex) -> infer::InferResult { auto [obj, idx] = exprindex; return [&]() -> infer::InferResult { 
   infer::InferResult obj_result = infer_expr(obj, type_env, registry);
   infer::InferResult idx_result = infer_expr(idx, type_env, registry);
   std::shared_ptr<registry::Type> elem_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*obj_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*obj_result.inferred_type)); auto [inner] = _v_tarray; return inner; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
   return InferResult_with_type(InferResult_absorb(obj_result, idx_result), elem_type);
  }(); },
-  [&](const ExprIf& exprif) { auto [cond, then_expr, else_expr] = exprif; return [&]() -> infer::InferResult { 
+  [&](const ExprIf& exprif) -> infer::InferResult { auto [cond, then_expr, else_expr] = exprif; return [&]() -> infer::InferResult { 
   infer::InferResult cond_result = infer_expr(cond, type_env, registry);
   infer::InferResult then_result = infer_expr(then_expr, type_env, registry);
   infer::InferResult else_result = infer_expr(else_expr, type_env, registry);
   return InferResult_absorb(InferResult_absorb(then_result, cond_result), else_result);
  }(); },
-  [&](const ExprBlock& exprblock) { auto [stmts, result] = exprblock; return [&]() -> infer::InferResult { 
+  [&](const ExprBlock& exprblock) -> infer::InferResult { auto [stmts, result] = exprblock; return [&]() -> infer::InferResult { 
   infer::StmtInferResult stmts_result = infer_stmts(stmts, type_env, registry);
   infer::InferResult result_infer = infer_expr(result, stmts_result.type_env, registry);
   return InferResult_absorb_stmt(result_infer, stmts_result);
  }(); },
-  [&](const ExprWhile& exprwhile) { auto [cond, stmts] = exprwhile; return [&]() -> infer::InferResult { 
+  [&](const ExprWhile& exprwhile) -> infer::InferResult { auto [cond, stmts] = exprwhile; return [&]() -> infer::InferResult { 
   infer::InferResult cond_result = infer_expr(cond, type_env, registry);
   infer::StmtInferResult stmts_result = infer_stmts(stmts, type_env, registry);
   return InferResult_with_type(InferResult_absorb_stmt(cond_result, stmts_result), std::make_shared<registry::Type>((registry::TUnit{})));
  }(); },
-  [&](const ExprFor& exprfor) { auto [var, iter, stmts] = exprfor; return [&]() -> infer::InferResult { 
+  [&](const ExprFor& exprfor) -> infer::InferResult { auto [var, iter, stmts] = exprfor; return [&]() -> infer::InferResult { 
   infer::InferResult iter_result = infer_expr(iter, type_env, registry);
   std::shared_ptr<registry::Type> elem_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*iter_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*iter_result.inferred_type)); auto [inner] = _v_tarray; return inner; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> inner_env = type_env;
@@ -153,7 +153,7 @@ return std::visit(overloaded{
   infer::StmtInferResult stmts_result = infer_stmts(stmts, inner_env, registry);
   return InferResult_with_type(InferResult_absorb_stmt(iter_result, stmts_result), std::make_shared<registry::Type>((registry::TUnit{})));
  }(); },
-  [&](const ExprMatch& exprmatch) { auto [subject, arms] = exprmatch; return [&]() -> infer::InferResult { 
+  [&](const ExprMatch& exprmatch) -> infer::InferResult { auto [subject, arms] = exprmatch; return [&]() -> infer::InferResult { 
   infer::InferResult subject_result = infer_expr(subject, type_env, registry);
   mlc::Array<mlc::String> errors = subject_result.errors;
   std::shared_ptr<registry::Type> arm_type = std::make_shared<registry::Type>((registry::TUnknown{}));
@@ -173,17 +173,17 @@ i = i + 1;
 }
   return infer::InferResult{arm_type, errors};
  }(); },
-  [&](const ExprRecord& exprrecord) { auto [name, field_vals] = exprrecord; return infer_field_vals_errors(infer_ok(std::make_shared<registry::Type>(registry::TNamed(name))), field_vals, type_env, registry); },
-  [&](const ExprRecordUpdate& exprrecordupdate) { auto [name, base, field_vals] = exprrecordupdate; return [&]() -> infer::InferResult { 
+  [&](const ExprRecord& exprrecord) -> infer::InferResult { auto [name, field_vals] = exprrecord; return infer_field_vals_errors(infer_ok(std::make_shared<registry::Type>(registry::TNamed(name))), field_vals, type_env, registry); },
+  [&](const ExprRecordUpdate& exprrecordupdate) -> infer::InferResult { auto [name, base, field_vals] = exprrecordupdate; return [&]() -> infer::InferResult { 
   infer::InferResult base_result = infer_expr(base, type_env, registry);
   return infer_field_vals_errors(InferResult_with_type(base_result, std::make_shared<registry::Type>(registry::TNamed(name))), field_vals, type_env, registry);
  }(); },
-  [&](const ExprArray& exprarray) { auto [exprs] = exprarray; return [&]() -> infer::InferResult { 
+  [&](const ExprArray& exprarray) -> infer::InferResult { auto [exprs] = exprarray; return [&]() -> infer::InferResult { 
   std::shared_ptr<registry::Type> first_type = exprs.size() > 0 ? infer_expr(exprs[0], type_env, registry).inferred_type : std::make_shared<registry::Type>((registry::TUnknown{}));
   return infer_args_errors(infer_ok(std::make_shared<registry::Type>(registry::TArray(first_type))), exprs, type_env, registry);
  }(); },
-  [&](const ExprQuestion& exprquestion) { auto [inner] = exprquestion; return infer_expr(inner, type_env, registry); },
-  [&](const ExprLambda& exprlambda) { auto [params, body] = exprlambda; return [&]() -> infer::InferResult { 
+  [&](const ExprQuestion& exprquestion) -> infer::InferResult { auto [inner] = exprquestion; return infer_expr(inner, type_env, registry); },
+  [&](const ExprLambda& exprlambda) -> infer::InferResult { auto [params, body] = exprlambda; return [&]() -> infer::InferResult { 
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> lambda_env = type_env;
   int i = 0;
   while (i < params.size()){
@@ -205,24 +205,24 @@ int i = 0;
 while (i < stmts.size()){
 {
 std::visit(overloaded{
-  [&](const StmtLet& stmtlet) { auto [name, _w0, _w1, value] = stmtlet; return [&]() -> std::tuple<> { 
+  [&](const StmtLet& stmtlet) -> std::tuple<> { auto [name, _w0, _w1, value] = stmtlet; return [&]() -> std::tuple<> { 
   infer::InferResult value_result = infer_expr(value, current_env, registry);
   current_env.set(name, value_result.inferred_type);
   errors = ast::errs_append(errors, value_result.errors);
   return std::make_tuple();
  }(); },
-  [&](const StmtExpr& stmtexpr) { auto [expr] = stmtexpr; return [&]() -> std::tuple<> { 
+  [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expr] = stmtexpr; return [&]() -> std::tuple<> { 
   infer::InferResult expr_res = infer_expr(expr, current_env, registry);
   errors = ast::errs_append(errors, expr_res.errors);
   return std::make_tuple();
  }(); },
-  [&](const StmtReturn& stmtreturn) { auto [expr] = stmtreturn; return [&]() -> std::tuple<> { 
+  [&](const StmtReturn& stmtreturn) -> std::tuple<> { auto [expr] = stmtreturn; return [&]() -> std::tuple<> { 
   infer::InferResult ret_res = infer_expr(expr, current_env, registry);
   errors = ast::errs_append(errors, ret_res.errors);
   return std::make_tuple();
  }(); },
-  [&](const StmtBreak& stmtbreak) { return std::make_tuple(); },
-  [&](const StmtContinue& stmtcontinue) { return std::make_tuple(); }
+  [&](const StmtBreak& stmtbreak) -> std::tuple<> { return std::make_tuple(); },
+  [&](const StmtContinue& stmtcontinue) -> std::tuple<> { return std::make_tuple(); }
 }, (*stmts[i])._);
 i = i + 1;
 }
@@ -268,15 +268,15 @@ int i = 0;
 while (i < entry.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclFn& declfn) { auto [_w0, params, _w1, body] = declfn; return [&]() -> std::tuple<> { 
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, params, _w1, body] = declfn; return [&]() -> std::tuple<> { 
   mlc::Array<mlc::String> locals = {};
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
-  int j = 0;
-  while (j < params.size()){
+  int pi = 0;
+  while (pi < params.size()){
 {
-locals.push_back(ast::param_name(params[j]));
-type_env.set(ast::param_name(params[j]), registry::type_from_annotation(ast::param_typ(params[j])));
-j = j + 1;
+locals.push_back(ast::param_name(params[pi]));
+type_env.set(ast::param_name(params[pi]), registry::type_from_annotation(ast::param_typ(params[pi])));
+pi = pi + 1;
 }
 }
   all_errors = ast::errs_append(all_errors, names::check_names_expr(body, locals, globals));
@@ -284,10 +284,10 @@ j = j + 1;
   all_errors = ast::errs_append(all_errors, infer_result.errors);
   return std::make_tuple();
  }(); },
-  [&](const DeclType& decltype_) { auto [_w0, _w1] = decltype_; return std::make_tuple(); },
-  [&](const DeclExtend& declextend) { auto [_w0, _w1] = declextend; return std::make_tuple(); },
-  [&](const DeclImport& declimport) { auto [_w0, _w1] = declimport; return std::make_tuple(); },
-  [&](const DeclExported& declexported) { auto [d] = declexported; return std::make_tuple(); }
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1] = decltype_; return std::make_tuple(); },
+  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1] = declextend; return std::make_tuple(); },
+  [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
+  [&](const DeclExported& declexported) -> std::tuple<> { auto [d] = declexported; return std::make_tuple(); }
 }, (*ast::decl_inner(entry.decls[i])));
 i = i + 1;
 }
@@ -303,15 +303,15 @@ int i = 0;
 while (i < prog.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclFn& declfn) { auto [_w0, params, _w1, body] = declfn; return [&]() -> std::tuple<> { 
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, params, _w1, body] = declfn; return [&]() -> std::tuple<> { 
   mlc::Array<mlc::String> locals = {};
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
-  int j = 0;
-  while (j < params.size()){
+  int pi = 0;
+  while (pi < params.size()){
 {
-locals.push_back(ast::param_name(params[j]));
-type_env.set(ast::param_name(params[j]), registry::type_from_annotation(ast::param_typ(params[j])));
-j = j + 1;
+locals.push_back(ast::param_name(params[pi]));
+type_env.set(ast::param_name(params[pi]), registry::type_from_annotation(ast::param_typ(params[pi])));
+pi = pi + 1;
 }
 }
   all_errors = ast::errs_append(all_errors, names::check_names_expr(body, locals, globals));
@@ -319,10 +319,10 @@ j = j + 1;
   all_errors = ast::errs_append(all_errors, infer_result.errors);
   return std::make_tuple();
  }(); },
-  [&](const DeclType& decltype_) { auto [_w0, _w1] = decltype_; return std::make_tuple(); },
-  [&](const DeclExtend& declextend) { auto [_w0, _w1] = declextend; return std::make_tuple(); },
-  [&](const DeclImport& declimport) { auto [_w0, _w1] = declimport; return std::make_tuple(); },
-  [&](const DeclExported& declexported) { auto [d] = declexported; return std::make_tuple(); }
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1] = decltype_; return std::make_tuple(); },
+  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1] = declextend; return std::make_tuple(); },
+  [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
+  [&](const DeclExported& declexported) -> std::tuple<> { auto [d] = declexported; return std::make_tuple(); }
 }, (*ast::decl_inner(prog.decls[i])));
 i = i + 1;
 }

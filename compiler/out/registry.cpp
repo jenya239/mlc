@@ -73,8 +73,8 @@ return registry;
 
 registry::TypeRegistry register_decl(registry::TypeRegistry registry, std::shared_ptr<ast::Decl> decl) noexcept{
 return std::visit(overloaded{
-  [&](const DeclExtend& declextend) { auto [_w0, _w1] = declextend; return registry; },
-  [&](const DeclFn& declfn) { auto [name, params, return_type, _w0] = declfn; return [&]() -> registry::TypeRegistry { 
+  [&](const DeclExtend& declextend) -> registry::TypeRegistry { auto [_w0, _w1] = declextend; return registry; },
+  [&](const DeclFn& declfn) -> registry::TypeRegistry { auto [name, params, return_type, _w0] = declfn; return [&]() -> registry::TypeRegistry { 
   mlc::Array<std::shared_ptr<registry::Type>> param_types = {};
   int i = 0;
   while (i < params.size()){
@@ -86,7 +86,7 @@ i = i + 1;
   registry.fn_types.set(name, std::make_shared<registry::Type>(registry::TFn(param_types, type_from_annotation(return_type))));
   return registry;
  }(); },
-  [&](const DeclType& decltype_) { auto [type_name, variants] = decltype_; return [&]() -> registry::TypeRegistry { 
+  [&](const DeclType& decltype_) -> registry::TypeRegistry { auto [type_name, variants] = decltype_; return [&]() -> registry::TypeRegistry { 
   int i = 0;
   while (i < variants.size()){
 {
@@ -96,20 +96,20 @@ i = i + 1;
 }
   return registry;
  }(); },
-  [&](const DeclImport& declimport) { auto [_w0, _w1] = declimport; return registry; },
-  [&](const DeclExported& declexported) { auto [d] = declexported; return register_decl(registry, d); }
+  [&](const DeclImport& declimport) -> registry::TypeRegistry { auto [_w0, _w1] = declimport; return registry; },
+  [&](const DeclExported& declexported) -> registry::TypeRegistry { auto [d] = declexported; return register_decl(registry, d); }
 }, (*decl));
 }
 
 registry::TypeRegistry register_variant(registry::TypeRegistry registry, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{
 std::shared_ptr<registry::Type> result_type = std::make_shared<registry::Type>(registry::TNamed(type_name));
 return std::visit(overloaded{
-  [&](const VarUnit& varunit) { auto [variant_name] = varunit; return [&]() -> registry::TypeRegistry { 
+  [&](const VarUnit& varunit) -> registry::TypeRegistry { auto [variant_name] = varunit; return [&]() -> registry::TypeRegistry { 
   registry.ctor_types.set(variant_name, result_type);
   registry.ctor_params.set(variant_name, {});
   return registry;
  }(); },
-  [&](const VarTuple& vartuple) { auto [variant_name, field_types] = vartuple; return [&]() -> registry::TypeRegistry { 
+  [&](const VarTuple& vartuple) -> registry::TypeRegistry { auto [variant_name, field_types] = vartuple; return [&]() -> registry::TypeRegistry { 
   mlc::Array<std::shared_ptr<registry::Type>> field_type_list = {};
   int i = 0;
   while (i < field_types.size()){
@@ -122,7 +122,7 @@ i = i + 1;
   registry.ctor_params.set(variant_name, field_type_list);
   return registry;
  }(); },
-  [&](const VarRecord& varrecord) { auto [variant_name, field_defs] = varrecord; return [&]() -> registry::TypeRegistry { 
+  [&](const VarRecord& varrecord) -> registry::TypeRegistry { auto [variant_name, field_defs] = varrecord; return [&]() -> registry::TypeRegistry { 
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> field_map = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
   int i = 0;
   while (i < field_defs.size()){

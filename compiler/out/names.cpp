@@ -73,37 +73,37 @@ int i = 0;
 while (i < prog.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclFn& declfn) { auto [name, _w0, _w1, _w2] = declfn; return [&]() -> std::tuple<> { 
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [name, _w0, _w1, _w2] = declfn; return [&]() -> std::tuple<> { 
   names.set(name, true);
   return std::make_tuple();
  }(); },
-  [&](const DeclType& decltype_) { auto [name, variants] = decltype_; return [&]() -> std::tuple<> { 
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [name, variants] = decltype_; return [&]() -> std::tuple<> { 
   names.set(name, true);
-  int j = 0;
-  while (j < variants.size()){
+  int vi = 0;
+  while (vi < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarUnit& varunit) { auto [variant_name] = varunit; return [&]() -> std::tuple<> { 
+  [&](const VarUnit& varunit) -> std::tuple<> { auto [variant_name] = varunit; return [&]() -> std::tuple<> { 
   names.set(variant_name, true);
   return std::make_tuple();
  }(); },
-  [&](const VarTuple& vartuple) { auto [variant_name, _w0] = vartuple; return [&]() -> std::tuple<> { 
+  [&](const VarTuple& vartuple) -> std::tuple<> { auto [variant_name, _w0] = vartuple; return [&]() -> std::tuple<> { 
   names.set(variant_name, true);
   return std::make_tuple();
  }(); },
-  [&](const VarRecord& varrecord) { auto [variant_name, _w0] = varrecord; return [&]() -> std::tuple<> { 
+  [&](const VarRecord& varrecord) -> std::tuple<> { auto [variant_name, _w0] = varrecord; return [&]() -> std::tuple<> { 
   names.set(variant_name, true);
   return std::make_tuple();
  }(); }
-}, (*variants[j]));
-j = j + 1;
+}, (*variants[vi]));
+vi = vi + 1;
 }
 }
   return std::make_tuple();
  }(); },
-  [&](const DeclExtend& declextend) { auto [_w0, _w1] = declextend; return std::make_tuple(); },
-  [&](const DeclImport& declimport) { auto [_w0, _w1] = declimport; return std::make_tuple(); },
-  [&](const DeclExported& declexported) { auto [_w0] = declexported; return std::make_tuple(); }
+  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1] = declextend; return std::make_tuple(); },
+  [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
+  [&](const DeclExported& declexported) -> std::tuple<> { auto [_w0] = declexported; return std::make_tuple(); }
 }, (*ast::decl_inner(prog.decls[i])));
 i = i + 1;
 }
@@ -140,7 +140,7 @@ i = i + 1;
 }
 }
   return errors;
- }(); } if (std::holds_alternative<ast::ExprField>((*expr)._)) { auto _v_exprfield = std::get<ast::ExprField>((*expr)._); auto [obj, _w0] = _v_exprfield; return check_names_expr(obj, locals, globals); } if (std::holds_alternative<ast::ExprIndex>((*expr)._)) { auto _v_exprindex = std::get<ast::ExprIndex>((*expr)._); auto [obj, idx] = _v_exprindex; return ast::errs_append(check_names_expr(obj, locals, globals), check_names_expr(idx, locals, globals)); } if (std::holds_alternative<ast::ExprIf>((*expr)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expr)._); auto [cond, then_expr, else_expr] = _v_exprif; return ast::errs_append(ast::errs_append(check_names_expr(cond, locals, globals), check_names_expr(then_expr, locals, globals)), check_names_expr(else_expr, locals, globals)); } if (std::holds_alternative<ast::ExprBlock>((*expr)._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*expr)._); auto [stmts, result] = _v_exprblock; return [&]() -> mlc::Array<mlc::String> { 
+ }(); } if (std::holds_alternative<ast::ExprField>((*expr)._)) { auto _v_exprfield = std::get<ast::ExprField>((*expr)._); auto [obj, _w0] = _v_exprfield; return check_names_expr(obj, locals, globals); } if (std::holds_alternative<ast::ExprIndex>((*expr)._)) { auto _v_exprindex = std::get<ast::ExprIndex>((*expr)._); auto [obj, index_expr] = _v_exprindex; return ast::errs_append(check_names_expr(obj, locals, globals), check_names_expr(index_expr, locals, globals)); } if (std::holds_alternative<ast::ExprIf>((*expr)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expr)._); auto [cond, then_expr, else_expr] = _v_exprif; return ast::errs_append(ast::errs_append(check_names_expr(cond, locals, globals), check_names_expr(then_expr, locals, globals)), check_names_expr(else_expr, locals, globals)); } if (std::holds_alternative<ast::ExprBlock>((*expr)._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*expr)._); auto [stmts, result] = _v_exprblock; return [&]() -> mlc::Array<mlc::String> { 
   names::NameCheckResult stmt_result = check_names_stmts(stmts, locals, globals);
   return NameCheckResult_append_expr_errors(stmt_result, check_names_expr(result, stmt_result.scope, globals));
  }(); } if (std::holds_alternative<ast::ExprWhile>((*expr)._)) { auto _v_exprwhile = std::get<ast::ExprWhile>((*expr)._); auto [cond, stmts] = _v_exprwhile; return [&]() -> mlc::Array<mlc::String> { 
@@ -209,17 +209,17 @@ lambda_locals.push_back(locals[i]);
 i = i + 1;
 }
 }
-  int j = 0;
-  while (j < params.size()){
+  int pi = 0;
+  while (pi < params.size()){
 {
-lambda_locals.push_back(params[j]);
-j = j + 1;
+lambda_locals.push_back(params[pi]);
+pi = pi + 1;
 }
 }
   return check_names_expr(body, lambda_locals, globals);
  }(); } return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> e = {};
-  return e;
+  mlc::Array<mlc::String> empty_errors = {};
+  return empty_errors;
  }(); }();
 }
 
@@ -232,21 +232,21 @@ int i = 0;
 while (i < stmts.size()){
 {
 std::visit(overloaded{
-  [&](const StmtLet& stmtlet) { auto [name, _w0, _w1, value] = stmtlet; return [&]() -> std::tuple<> { 
+  [&](const StmtLet& stmtlet) -> std::tuple<> { auto [name, _w0, _w1, value] = stmtlet; return [&]() -> std::tuple<> { 
   errors = ast::errs_append(errors, check_names_expr(value, scope, globals));
   scope.push_back(name);
   return std::make_tuple();
  }(); },
-  [&](const StmtExpr& stmtexpr) { auto [expr] = stmtexpr; return [&]() -> std::tuple<> { 
+  [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expr] = stmtexpr; return [&]() -> std::tuple<> { 
   errors = ast::errs_append(errors, check_names_expr(expr, scope, globals));
   return std::make_tuple();
  }(); },
-  [&](const StmtReturn& stmtreturn) { auto [expr] = stmtreturn; return [&]() -> std::tuple<> { 
+  [&](const StmtReturn& stmtreturn) -> std::tuple<> { auto [expr] = stmtreturn; return [&]() -> std::tuple<> { 
   errors = ast::errs_append(errors, check_names_expr(expr, scope, globals));
   return std::make_tuple();
  }(); },
-  [&](const StmtBreak& stmtbreak) { return std::make_tuple(); },
-  [&](const StmtContinue& stmtcontinue) { return std::make_tuple(); }
+  [&](const StmtBreak& stmtbreak) -> std::tuple<> { return std::make_tuple(); },
+  [&](const StmtContinue& stmtcontinue) -> std::tuple<> { return std::make_tuple(); }
 }, (*stmts[i])._);
 i = i + 1;
 }

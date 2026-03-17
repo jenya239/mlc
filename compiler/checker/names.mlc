@@ -42,14 +42,14 @@ export fn collect_globals(prog: Program) -> Map<string, bool> = do
     match decl_inner(prog.decls[i]) {
       DeclFn(name, _, _, _) => do names.set(name, true); () end,
       DeclType(name, variants) => do
-        names.set(name, true); let j = 0
-        while j < variants.length() do
-          match variants[j] {
+        names.set(name, true); let vi = 0
+        while vi < variants.length() do
+          match variants[vi] {
             VarUnit(variant_name)     => do names.set(variant_name, true); () end,
             VarTuple(variant_name, _) => do names.set(variant_name, true); () end,
             VarRecord(variant_name, _) => do names.set(variant_name, true); () end
           }
-          j = j + 1
+          vi = vi + 1
         end; ()
       end,
       DeclExtend(_, _) => do () end,
@@ -88,8 +88,8 @@ export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: Map<st
       errors
     end,
     ExprField(obj, _) => check_names_expr(obj, locals, globals),
-    ExprIndex(obj, idx) =>
-      errs_append(check_names_expr(obj, locals, globals), check_names_expr(idx, locals, globals)),
+    ExprIndex(obj, index_expr) =>
+      errs_append(check_names_expr(obj, locals, globals), check_names_expr(index_expr, locals, globals)),
     ExprIf(cond, then_expr, else_expr) =>
       errs_append(
         errs_append(check_names_expr(cond, locals, globals), check_names_expr(then_expr, locals, globals)),
@@ -143,11 +143,11 @@ export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: Map<st
       const lambda_locals: [string] = []
       let i = 0
       while i < locals.length() do lambda_locals.push(locals[i]); i = i + 1 end
-      let j = 0
-      while j < params.length() do lambda_locals.push(params[j]); j = j + 1 end
+      let pi = 0
+      while pi < params.length() do lambda_locals.push(params[pi]); pi = pi + 1 end
       check_names_expr(body, lambda_locals, globals)
     end,
-    _ => do let e: [string] = []; e end
+    _ => do let empty_errors: [string] = []; empty_errors end
   }
 end
 

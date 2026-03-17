@@ -213,11 +213,6 @@ return preds::TKind_is_lbrace(first_kind) ? [&]() -> preds::DeclResult {
   mlc::Array<std::shared_ptr<ast::TypeVariant>> variants = {};
   variants.push_back(std::make_shared<ast::TypeVariant>(ast::VarRecord(type_name, field_defs_result.field_defs)));
   return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType(type_name, variants)), field_defs_result.parser};
- }() : preds::TKind_is_ident(first_kind) && preds::is_ctor_name(preds::TKind_ident(first_kind)) && preds::TKind_is_lbrace(preds::Parser_kind(preds::Parser_advance(after_eq))) ? [&]() -> preds::DeclResult { 
-  preds::FieldDefsResult field_defs_result = parse_field_defs(preds::Parser_advance_by(after_eq, 2));
-  mlc::Array<std::shared_ptr<ast::TypeVariant>> variants = {};
-  variants.push_back(std::make_shared<ast::TypeVariant>(ast::VarRecord(preds::TKind_ident(first_kind), field_defs_result.field_defs)));
-  return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType(type_name, variants)), field_defs_result.parser};
  }() : [&]() -> preds::DeclResult { 
   preds::VariantsResult variants_result = parse_variants(after_eq);
   return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType(type_name, variants_result.variants)), variants_result.parser};

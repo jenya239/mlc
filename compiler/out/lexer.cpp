@@ -38,6 +38,8 @@ lexer::ScanResult scan_ident(lexer::LexState state) noexcept;
 
 lexer::ScanResult scan_int(lexer::LexState state) noexcept;
 
+lexer::ScanStrResult scan_single_string(lexer::LexState state) noexcept;
+
 mlc::String map_escape(mlc::String character) noexcept;
 
 lexer::ScanStrResult scan_string(lexer::LexState state) noexcept;
@@ -110,6 +112,65 @@ current = LexState_advance(current);
 }
 }
 return lexer::ScanResult{current, ast_tokens::Token{ast_tokens::LInt(value), token_line, token_col}};
+}
+
+lexer::ScanStrResult scan_single_string(lexer::LexState state) noexcept{
+int token_line = state.line;
+int token_col = state.col;
+lexer::LexState current = LexState_advance(state);
+mlc::Array<mlc::String> parts = {};
+mlc::String error = mlc::String("");
+while (!LexState_eof(current) && LexState_current(current) != mlc::String("'")){
+{
+if (LexState_current(current) == mlc::String("\\")){
+{
+current = LexState_advance(current);
+if (LexState_eof(current)){
+error = mlc::String("unterminated escape in single-quoted string");
+} else {
+if (LexState_current(current) == mlc::String("\\")){
+parts.push_back(mlc::String("\\"));
+current = LexState_advance(current);
+} else {
+if (LexState_current(current) == mlc::String("'")){
+parts.push_back(mlc::String("'"));
+current = LexState_advance(current);
+} else {
+if (LexState_current(current) == mlc::String("n")){
+parts.push_back(mlc::String("\n"));
+current = LexState_advance(current);
+} else {
+if (LexState_current(current) == mlc::String("t")){
+parts.push_back(mlc::String("\t"));
+current = LexState_advance(current);
+} else {
+parts.push_back(mlc::String("\\"));
+parts.push_back(LexState_current(current));
+current = LexState_advance(current);
+}
+}
+}
+}
+}
+}
+} else {
+{
+parts.push_back(LexState_current(current));
+current = LexState_advance(current);
+}
+}
+}
+}
+if (LexState_eof(current)){
+{
+error = mlc::String("unterminated single-quoted string");
+}
+} else {
+{
+current = LexState_advance(current);
+}
+}
+return lexer::ScanStrResult{current, ast_tokens::Token{ast_tokens::LStr(parts.join(mlc::String(""))), token_line, token_col}, error};
 }
 
 mlc::String map_escape(mlc::String character) noexcept{return character == mlc::String("n") ? mlc::String("\n") : character == mlc::String("t") ? mlc::String("\t") : character == mlc::String("r") ? mlc::String("\r") : character == mlc::String("\"") ? mlc::String("\"") : character == mlc::String("\\") ? mlc::String("\\") : character == mlc::String("0") ? mlc::String("\0", 1) : character == mlc::String("{") ? mlc::String("{") : character == mlc::String("}") ? mlc::String("}") : mlc::String("");}
@@ -247,9 +308,18 @@ if (result.error != mlc::String("")){
 errors.push_back(result.error);
 }
 } else {
+if (character == mlc::String("'")){
+lexer::ScanStrResult result = scan_single_string(state);
+tokens.push_back(result.token);
+state = result.state;
+if (result.error != mlc::String("")){
+errors.push_back(result.error);
+}
+} else {
 lexer::ScanResult result = scan_op(state);
 tokens.push_back(result.token);
 state = result.state;
+}
 }
 }
 }

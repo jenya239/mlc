@@ -67,8 +67,8 @@ export fn param_name(p: Shared<Param>) -> string = p.name
 export fn param_typ(p: Shared<Param>) -> Shared<TypeExpr> = p.typ
 
 export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
-  const d: Shared<Decl> = decl
-  match d {
+  const unwrapped: Shared<Decl> = decl
+  match unwrapped {
     DeclExported(inner) => inner,
     DeclFn(_, _, _, _) => decl,
     DeclType(_, _) => decl,
@@ -78,8 +78,8 @@ export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
 end
 
 export fn decl_name(decl: Shared<Decl>) -> string = do
-  const d: Shared<Decl> = decl
-  match d {
+  const unwrapped: Shared<Decl> = decl
+  match unwrapped {
     DeclFn(name, _, _, _) => name,
     DeclType(name, _) => name,
     DeclExtend(type_name, _) => type_name,
