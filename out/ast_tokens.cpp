@@ -3,17 +3,11 @@
 
 namespace ast_tokens {
 
-bool LexOut_has_errors(LexOut self) noexcept{
-return (self.errors.length() > 0);
+void LexOut_has_errors(LexOut self) noexcept{
+return (/* unit */ > 0);
 }
-TKind Token_kind_value(Token self) noexcept{
-return self.kind;
-}
-int Token_line_number(Token self) noexcept{
-return self.line;
-}
-int Token_column(Token self) noexcept{
-return self.col;
+void Token_kind_value(Token self) noexcept{
+return self;
 }
 
 } // namespace ast_tokens

@@ -35,6 +35,7 @@ struct KTrue;
 struct KFalse;
 struct LInt;
 struct LStr;
+struct LFStr;
 struct Ident;
 struct Arrow;
 struct FatArrow;
@@ -55,7 +56,7 @@ struct Semicolon;
 struct Colon;
 struct Op;
 struct Eof;
-using TKind = std::variant<KFn, KType, KLet, KMut, KConst, KReturn, KBreak, KContinue, KIf, KThen, KElse, KUnless, KWhile, KFor, KIn, KDo, KEnd, KMatch, KImport, KFrom, KAs, KExtern, KExtend, KWhere, KTrue, KFalse, LInt, LStr, Ident, Arrow, FatArrow, Pipe, Bar, Equal, Question, Dot, Spread, LParen, RParen, LBrace, RBrace, LBracket, RBracket, Comma, Semicolon, Colon, Op, Eof>;
+using TKind = std::variant<KFn, KType, KLet, KMut, KConst, KReturn, KBreak, KContinue, KIf, KThen, KElse, KUnless, KWhile, KFor, KIn, KDo, KEnd, KMatch, KImport, KFrom, KAs, KExtern, KExtend, KWhere, KTrue, KFalse, LInt, LStr, LFStr, Ident, Arrow, FatArrow, Pipe, Bar, Equal, Question, Dot, Spread, LParen, RParen, LBrace, RBrace, LBracket, RBracket, Comma, Semicolon, Colon, Op, Eof>;
 struct KFn {};
 struct KType {};
 struct KLet {};
@@ -84,6 +85,7 @@ struct KTrue {};
 struct KFalse {};
 struct LInt {int field0;};
 struct LStr {mlc::String field0;};
+struct LFStr {mlc::Array<mlc::String> field0;};
 struct Ident {mlc::String field0;};
 struct Arrow {};
 struct FatArrow {};
@@ -106,10 +108,8 @@ struct Op {mlc::String field0;};
 struct Eof {};
 struct Token {TKind kind;int line;int col;};
 struct LexOut {mlc::Array<Token> tokens;mlc::Array<mlc::String> errors;};
-bool LexOut_has_errors(LexOut self) noexcept;
-TKind Token_kind_value(Token self) noexcept;
-int Token_line_number(Token self) noexcept;
-int Token_column(Token self) noexcept;
+void LexOut_has_errors(LexOut self) noexcept;
+void Token_kind_value(Token self) noexcept;
 
 } // namespace ast_tokens
 

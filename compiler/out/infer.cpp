@@ -268,8 +268,16 @@ int i = 0;
 while (i < entry.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, params, _w1, body] = declfn; return [&]() -> std::tuple<> { 
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, type_params, _w1, params, return_type, body] = declfn; return [&]() -> std::tuple<> { 
   mlc::Array<mlc::String> locals = {};
+  int tpi = 0;
+  while (tpi < type_params.size()){
+{
+locals.push_back(type_params[tpi]);
+globals.set(type_params[tpi], true);
+tpi = tpi + 1;
+}
+}
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
   int pi = 0;
   while (pi < params.size()){
@@ -284,8 +292,9 @@ pi = pi + 1;
   all_errors = ast::errs_append(all_errors, infer_result.errors);
   return std::make_tuple();
  }(); },
-  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1] = decltype_; return std::make_tuple(); },
-  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1] = declextend; return std::make_tuple(); },
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1, _w2] = decltype_; return std::make_tuple(); },
+  [&](const DeclTrait& decltrait) -> std::tuple<> { auto [_w0, _w1, _w2] = decltrait; return std::make_tuple(); },
+  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1, _w2] = declextend; return std::make_tuple(); },
   [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
   [&](const DeclExported& declexported) -> std::tuple<> { auto [d] = declexported; return std::make_tuple(); }
 }, (*ast::decl_inner(entry.decls[i])));
@@ -303,8 +312,16 @@ int i = 0;
 while (i < prog.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, params, _w1, body] = declfn; return [&]() -> std::tuple<> { 
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, type_params, _w1, params, return_type, body] = declfn; return [&]() -> std::tuple<> { 
   mlc::Array<mlc::String> locals = {};
+  int tpi = 0;
+  while (tpi < type_params.size()){
+{
+locals.push_back(type_params[tpi]);
+globals.set(type_params[tpi], true);
+tpi = tpi + 1;
+}
+}
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
   int pi = 0;
   while (pi < params.size()){
@@ -319,8 +336,9 @@ pi = pi + 1;
   all_errors = ast::errs_append(all_errors, infer_result.errors);
   return std::make_tuple();
  }(); },
-  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1] = decltype_; return std::make_tuple(); },
-  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1] = declextend; return std::make_tuple(); },
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1, _w2] = decltype_; return std::make_tuple(); },
+  [&](const DeclTrait& decltrait) -> std::tuple<> { auto [_w0, _w1, _w2] = decltrait; return std::make_tuple(); },
+  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1, _w2] = declextend; return std::make_tuple(); },
   [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
   [&](const DeclExported& declexported) -> std::tuple<> { auto [d] = declexported; return std::make_tuple(); }
 }, (*ast::decl_inner(prog.decls[i])));

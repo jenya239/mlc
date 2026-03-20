@@ -180,6 +180,26 @@ module MLC
           @container.restore_declared_variables(snapshot)
         end
 
+        def lookup_var_type(name)
+          @container.get_var_type(name)
+        end
+
+        def set_var_type(name, type)
+          @container.set_var_type(name, type)
+        end
+
+        def init_var_type_map_from_params(params)
+          @container.init_var_type_map_from_params(params)
+        end
+
+        def snapshot_var_type_map
+          @container.snapshot_var_type_map
+        end
+
+        def restore_var_type_map(snapshot)
+          @container.restore_var_type_map(snapshot)
+        end
+
         # Generate unique temporary variable name
         def generate_temp_name
           @container.generate_temp_name

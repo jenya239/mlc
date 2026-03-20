@@ -14,7 +14,7 @@ module MLC
             def apply(node)
               scrutinee = context.lower_expression(node.scrutinee)
               scrutinee_type = node.scrutinee&.type
-              visit_value = build_visit_value(scrutinee, scrutinee_type)
+              visit_value = build_visit_value(scrutinee, scrutinee_type, scrutinee_node: node.scrutinee)
 
               arms = node.arms.map { |arm| lower_match_arm(arm) }
 
@@ -67,16 +67,33 @@ module MLC
               )
             end
 
-            def build_visit_value(scrutinee, scrutinee_type)
+            MATCH_SCRUTINEE_SHARED_CALLS = MLC::Backends::Cpp::Rules::Expressions::MatchRule::MATCH_SCRUTINEE_SHARED_CALLS
+
+            def build_visit_value(scrutinee, scrutinee_type, scrutinee_node: nil)
+              if scrutinee_node.is_a?(MLC::SemanticIR::CallExpr) &&
+                 scrutinee_node.callee.is_a?(MLC::SemanticIR::VarExpr) &&
+                 MATCH_SCRUTINEE_SHARED_CALLS.include?(scrutinee_node.callee.name)
+                src = scrutinee.to_source
+                return context.factory.raw_expression(code: "(*#{src})")
+              end
+
+              if scrutinee_node && context.checker.var_expr?(scrutinee_node)
+                vt = context.lookup_var_type(scrutinee_node.name)
+                scrutinee_type = vt unless vt.nil?
+              end
+
               return scrutinee unless scrutinee_type
 
               scrutinee_src = scrutinee.to_source
               is_shared = shared_type?(scrutinee_type)
+              needs_star = is_shared || ::MLC::Backends::Cpp::MatchScrutineeDeref.ast_sum_needs_star?(
+                context.type_registry, scrutinee_type
+              )
               inner = is_shared ? scrutinee_type.type_args&.first : scrutinee_type
               inner_type_name = extract_type_name(inner)
               is_wrapper = inner_type_name && context.cyclic_sum_types.include?(inner_type_name)
 
-              base = is_shared ? "(*#{scrutinee_src})" : scrutinee_src
+              base = needs_star ? "(*#{scrutinee_src})" : scrutinee_src
               base = "#{base}._" if is_wrapper
               context.factory.raw_expression(code: base)
             end

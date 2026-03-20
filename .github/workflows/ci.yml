@@ -1,0 +1,27 @@
+# Обязательный минимум: Ruby unit + self-hosted compiler/tests.
+# Ruby lib/mlc остаётся эталоном и резервом (см. docs/SELF_HOSTED_PLAN.md).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit-and-compiler-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install g++
+        run: sudo apt-get update && sudo apt-get install -y g++
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Ruby unit tests (test/ except integration)
+        run: bundle exec rake test_unit
+
+      - name: Self-hosted compiler tests
+        run: compiler/tests/build_tests.sh

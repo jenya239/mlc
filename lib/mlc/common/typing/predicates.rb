@@ -92,6 +92,7 @@ module MLC
         # @return [Boolean] Whether the type is unit-like
         def unit_like?(name, type)
           return true if %w[unit void].include?(name)
+          return true if name == "tuple" && type.respond_to?(:element_types) && type.element_types&.empty?
 
           type.is_a?(SemanticIR::UnitType)
         end

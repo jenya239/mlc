@@ -1,2 +1,0 @@
-import { TKind } from "./ast"
-fn main() -> i32 = 42

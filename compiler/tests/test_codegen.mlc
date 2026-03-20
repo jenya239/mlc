@@ -36,8 +36,8 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("ExprBool(true) - 'true'",
     gen_expr(Shared.new(ExprBool(true)), ctx), "true"))
 
-  results.push(assert_eq_str("ExprStr('hi') - 'mlc::String(\"hi\")'",
-    gen_expr(Shared.new(ExprStr("hi")), ctx), "mlc::String(\"hi\")"))
+  results.push(assert_eq_str("ExprStr('hi') - 'mlc::String(\"hi\", 2)'",
+    gen_expr(Shared.new(ExprStr("hi")), ctx), "mlc::String(\"hi\", 2)"))
 
   results.push(assert_eq_str("ExprUnit - '/* unit */'",
     gen_expr(Shared.new(ExprUnit), ctx), "/* unit */"))

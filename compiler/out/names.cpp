@@ -82,11 +82,11 @@ int i = 0;
 while (i < prog.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclFn& declfn) -> std::tuple<> { auto [name, _w0, _w1, _w2] = declfn; return [&]() -> std::tuple<> { 
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [name, _w0, _w1, _w2, _w3, _w4] = declfn; return [&]() -> std::tuple<> { 
   names.set(name, true);
   return std::make_tuple();
  }(); },
-  [&](const DeclType& decltype_) -> std::tuple<> { auto [name, variants] = decltype_; return [&]() -> std::tuple<> { 
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [name, _w0, variants] = decltype_; return [&]() -> std::tuple<> { 
   names.set(name, true);
   int vi = 0;
   while (vi < variants.size()){
@@ -110,7 +110,21 @@ vi = vi + 1;
 }
   return std::make_tuple();
  }(); },
-  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1] = declextend; return std::make_tuple(); },
+  [&](const DeclTrait& decltrait) -> std::tuple<> { auto [name, _w0, methods] = decltrait; return [&]() -> std::tuple<> { 
+  names.set(name, true);
+  int mi = 0;
+  while (mi < methods.size()){
+{
+[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[mi]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[mi])); auto [fn_name, _w0, _w1, _w2, _w3, _w4] = _v_declfn; return [&]() -> std::tuple<> { 
+  names.set(fn_name, true);
+  return std::make_tuple();
+ }(); } return std::make_tuple(); }();
+mi = mi + 1;
+}
+}
+  return std::make_tuple();
+ }(); },
+  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1, _w2] = declextend; return std::make_tuple(); },
   [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
   [&](const DeclExported& declexported) -> std::tuple<> { auto [_w0] = declexported; return std::make_tuple(); }
 }, (*ast::decl_inner(prog.decls[i])));

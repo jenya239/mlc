@@ -56,9 +56,10 @@ export type TypeVariant =
   | VarRecord(string, [Shared<FieldDef>])
 
 export type Decl =
-  | DeclFn(string, [Shared<Param>], Shared<TypeExpr>, Shared<Expr>)
-  | DeclType(string, [Shared<TypeVariant>])
-  | DeclExtend(string, [Shared<Decl>])
+  | DeclFn(string, [string], [[string]], [Shared<Param>], Shared<TypeExpr>, Shared<Expr>)
+  | DeclType(string, [string], [Shared<TypeVariant>])
+  | DeclTrait(string, [string], [Shared<Decl>])
+  | DeclExtend(string, string, [Shared<Decl>])
   | DeclImport(string, [string])
   | DeclExported(Shared<Decl>)
 
@@ -71,9 +72,10 @@ export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
   const unwrapped: Shared<Decl> = decl
   match unwrapped {
     DeclExported(inner) => inner,
-    DeclFn(_, _, _, _) => decl,
-    DeclType(_, _) => decl,
-    DeclExtend(_, _) => decl,
+    DeclFn(_, _, _, _, _, _) => decl,
+    DeclType(_, _, _) => decl,
+    DeclTrait(_, _, _) => decl,
+    DeclExtend(_, _, _) => decl,
     DeclImport(_, _) => decl
   }
 end
@@ -81,9 +83,10 @@ end
 export fn decl_name(decl: Shared<Decl>) -> string = do
   const unwrapped: Shared<Decl> = decl
   match unwrapped {
-    DeclFn(name, _, _, _) => name,
-    DeclType(name, _) => name,
-    DeclExtend(type_name, _) => type_name,
+    DeclFn(name, _, _, _, _, _) => name,
+    DeclType(name, _, _) => name,
+    DeclTrait(name, _, _) => name,
+    DeclExtend(type_name, _, _) => type_name,
     DeclImport(_, _) => "",
     DeclExported(inner) => decl_name(inner)
   }

@@ -104,17 +104,17 @@ module MLC
             return parse_const_decl_body(let_token, compile_time: true)
           end
 
-          # let mut NAME = expr  →  explicitly mutable binding (same as let for now)
+          # let mut NAME = expr  →  mutable; plain let → immutable
+          explicit_mut = false
           if current.type == :MUT
             consume(:MUT)
+            explicit_mut = true
           end
-          explicit_mut = true
 
-          # let NAME = expr  →  rebindable binding
           if current.type == :LPAREN
-            return parse_tuple_destructuring(let_token, true)
+            return parse_tuple_destructuring(let_token, explicit_mut)
           elsif current.type == :LBRACE
-            return parse_record_destructuring(let_token, true)
+            return parse_record_destructuring(let_token, explicit_mut)
           end
 
           name_token = consume(:IDENTIFIER)

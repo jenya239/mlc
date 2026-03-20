@@ -73,8 +73,18 @@ return registry;
 
 registry::TypeRegistry register_decl(registry::TypeRegistry registry, std::shared_ptr<ast::Decl> decl) noexcept{
 return std::visit(overloaded{
-  [&](const DeclExtend& declextend) -> registry::TypeRegistry { auto [_w0, _w1] = declextend; return registry; },
-  [&](const DeclFn& declfn) -> registry::TypeRegistry { auto [name, params, return_type, _w0] = declfn; return [&]() -> registry::TypeRegistry { 
+  [&](const DeclTrait& decltrait) -> registry::TypeRegistry { auto [_w0, _w1, methods] = decltrait; return [&]() -> registry::TypeRegistry { 
+  int i = 0;
+  while (i < methods.size()){
+{
+registry = register_decl(registry, methods[i]);
+i = i + 1;
+}
+}
+  return registry;
+ }(); },
+  [&](const DeclExtend& declextend) -> registry::TypeRegistry { auto [_w0, _w1, _w2] = declextend; return registry; },
+  [&](const DeclFn& declfn) -> registry::TypeRegistry { auto [name, _w0, _w1, params, return_type, _w2] = declfn; return [&]() -> registry::TypeRegistry { 
   mlc::Array<std::shared_ptr<registry::Type>> param_types = {};
   int i = 0;
   while (i < params.size()){
@@ -86,7 +96,7 @@ i = i + 1;
   registry.fn_types.set(name, std::make_shared<registry::Type>(registry::TFn(param_types, type_from_annotation(return_type))));
   return registry;
  }(); },
-  [&](const DeclType& decltype_) -> registry::TypeRegistry { auto [type_name, variants] = decltype_; return [&]() -> registry::TypeRegistry { 
+  [&](const DeclType& decltype_) -> registry::TypeRegistry { auto [type_name, _w0, variants] = decltype_; return [&]() -> registry::TypeRegistry { 
   int i = 0;
   while (i < variants.size()){
 {

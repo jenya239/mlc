@@ -66,6 +66,7 @@ module MLC
         def lower_function(func)
           # Reset variable declaration tracking for each new function scope
           @context.reset_declared_variables
+          @context.init_var_type_map_from_params(func.params)
 
           return_type = @context.map_type(func.ret_type)
           name = @context.sanitize_identifier(func.name)

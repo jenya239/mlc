@@ -74,8 +74,15 @@ end
 
 fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry = do
   match decl {
-    DeclExtend(_, _) => registry,
-    DeclFn(name, params, return_type, _) => do
+    DeclTrait(_, _, methods) => do
+      let i = 0
+      while i < methods.length() do
+        registry = register_decl(registry, methods[i]); i = i + 1
+      end
+      registry
+    end,
+    DeclExtend(_, _, _) => registry,
+    DeclFn(name, _, _, params, return_type, _) => do
       const param_types: [Shared<Type>] = []
       let i = 0
       while i < params.length() do
@@ -84,7 +91,7 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
       registry
     end,
-    DeclType(type_name, variants) => do
+    DeclType(type_name, _, variants) => do
       let i = 0
       while i < variants.length() do
         registry = register_variant(registry, type_name, variants[i]); i = i + 1

@@ -294,7 +294,10 @@ bool is_str_literal(ast_tokens::TKind kind) noexcept{return [&]() { if (std::hol
 
 bool is_fstr_literal(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LFStr>(kind)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(kind); auto [_w0] = _v_lfstr; return true; } return false; }();}
 
-mlc::Array<mlc::String> get_fstr_parts(ast_tokens::TKind kind) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast_tokens::LFStr>(kind)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(kind); auto [parts] = _v_lfstr; return parts; } return {}; }();}
+mlc::Array<mlc::String> get_fstr_parts(ast_tokens::TKind kind) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast_tokens::LFStr>(kind)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(kind); auto [parts] = _v_lfstr; return parts; } return [&]() -> mlc::Array<mlc::String> { 
+  mlc::Array<mlc::String> r = {};
+  return r;
+ }(); }();}
 
 bool is_equal(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::Equal>(kind)) {  return true; } return false; }();}
 
@@ -394,7 +397,10 @@ bool TKind_is_str(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds
 
 bool TKind_is_fstr(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LFStr>(self)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(self); auto [_w0] = _v_lfstr; return true; } return false; }();}
 
-mlc::Array<mlc::String> TKind_fstr_parts(ast_tokens::TKind self) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast_tokens::LFStr>(self)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(self); auto [parts] = _v_lfstr; return parts; } return {}; }();}
+mlc::Array<mlc::String> TKind_fstr_parts(ast_tokens::TKind self) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast_tokens::LFStr>(self)) { auto _v_lfstr = std::get<ast_tokens::LFStr>(self); auto [parts] = _v_lfstr; return parts; } return [&]() -> mlc::Array<mlc::String> { 
+  mlc::Array<mlc::String> r = {};
+  return r;
+ }(); }();}
 
 bool TKind_is_equal(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::Equal>(self)) {  return true; } return false; }();}
 

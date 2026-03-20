@@ -297,7 +297,7 @@ class TypeInferenceServiceTest < Minitest::Test
     array_type = MLC::SemanticIR::ArrayType.new(element_type: element_type)
     mock_object = Struct.new(:type).new(array_type)
 
-    result = @service.expected_lambda_param_types(mock_object, "map", [], 0)
+    result = @service.expected_lambda_param_types(mock_object, "map", [])
 
     assert_equal [element_type], result
   end
@@ -307,7 +307,7 @@ class TypeInferenceServiceTest < Minitest::Test
     array_type = MLC::SemanticIR::ArrayType.new(element_type: element_type)
     mock_object = Struct.new(:type).new(array_type)
 
-    result = @service.expected_lambda_param_types(mock_object, "filter", [], 0)
+    result = @service.expected_lambda_param_types(mock_object, "filter", [])
 
     assert_equal [element_type], result
   end
@@ -317,7 +317,7 @@ class TypeInferenceServiceTest < Minitest::Test
     array_type = MLC::SemanticIR::ArrayType.new(element_type: element_type)
     mock_object = Struct.new(:type).new(array_type)
 
-    result = @service.expected_lambda_param_types(mock_object, "unknown", [], 0)
+    result = @service.expected_lambda_param_types(mock_object, "unknown", [])
 
     assert_equal [], result
   end

@@ -112,22 +112,37 @@ fn parse_extend_decl(parser: Parser) -> DeclResult = do
   DeclResult { decl: Shared.new(DeclExtend(type_name, trait_name, methods)), parser: methods_state.advance() }
 end
 
+// Split helpers: nested if/else in one fn confused self-hosted parse/codegen (extra `}`).
+fn parse_extend_extern_no_self_params(after_lparen: Parser) -> ParamsResult =
+  if after_lparen.kind().is_rparen()
+    then ParamsResult { params: [], parser: after_lparen.advance() }
+    else parse_params(after_lparen)
+  end
+
+fn parse_extend_extern_rest_params(after_lparen: Parser, leading_self: bool) -> ParamsResult =
+  if leading_self then
+    const after_self = after_lparen
+    const after_self_skip = if after_self.kind().is_rparen() then after_self
+      else if after_self.kind().is_comma() then after_self.advance()
+      else after_self.advance()
+      end
+    if after_self_skip.kind().is_rparen()
+      then ParamsResult { params: [], parser: after_self_skip.advance() }
+      else parse_params(if after_self_skip.kind().is_comma() then after_self_skip.advance() else after_self_skip end)
+    end
+  else
+    parse_extend_extern_no_self_params(after_lparen)
+  end
+
 fn parse_extend_extern_method(parser: Parser, type_name: string) -> DeclResult = do
   const fn_name       = parser.advance().kind().ident()
   const mangled_name  = type_name + "_" + fn_name
   const after_lparen  = parser.advance_by(3)
-  const after_self    = if after_lparen.kind().is_ident() && after_lparen.kind().ident() == "self"
-    then after_lparen
-    else after_lparen.advance()
-    end
   const self_param = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed(type_name)) })
   const params: [Shared<Param>] = []
-  params.push(self_param)
-  const params_state = if after_self.kind().is_comma() then after_self.advance() else after_self end
-  const rest_params = if params_state.kind().is_rparen()
-    then ParamsResult { params: [], parser: params_state.advance() }
-    else parse_params(params_state)
-    end
+  const leading_self = after_lparen.kind().is_ident() && after_lparen.kind().ident() == "self"
+  if leading_self then params.push(self_param) end
+  const rest_params = parse_extend_extern_rest_params(after_lparen, leading_self)
   let index = 0
   while index < rest_params.params.length() do
     const rp = rest_params.params[index]
@@ -137,11 +152,9 @@ fn parse_extend_extern_method(parser: Parser, type_name: string) -> DeclResult =
   const after_rparen = rest_params.parser.advance()
   const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
   const ret_type_result = parse_type(type_parser)
-  let p = ret_type_result.parser
-  while !p.kind().is_rbrace() && !p.at_eof() do p = p.advance() end
   DeclResult {
     decl:   Shared.new(DeclFn(mangled_name, [], [], params, ret_type_result.type_expr, Shared.new(ExprExtern))),
-    parser: p
+    parser: ret_type_result.parser
   }
 end
 
@@ -156,10 +169,13 @@ fn parse_extend_method(parser: Parser, type_name: string) -> DeclResult = do
   const self_param = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed(type_name)) })
   const params: [Shared<Param>] = []
   params.push(self_param)
-  const params_state = if after_self.kind().is_comma() then after_self.advance() else after_self end
-  const rest_params = if params_state.kind().is_rparen()
-    then ParamsResult { params: [], parser: params_state.advance() }
-    else parse_params(params_state)
+  const after_self_skip = if after_self.kind().is_rparen() then after_self
+    else if after_self.kind().is_comma() then after_self.advance()
+    else after_self.advance()
+    end
+  const rest_params = if after_self_skip.kind().is_rparen()
+    then ParamsResult { params: [], parser: after_self_skip.advance() }
+    else parse_params(if after_self_skip.kind().is_comma() then after_self_skip.advance() else after_self_skip end)
     end
   let index = 0
   while index < rest_params.params.length() do
@@ -180,11 +196,9 @@ fn parse_extend_method(parser: Parser, type_name: string) -> DeclResult = do
       _ => parsed
     }
   end
-  let p = body_result.parser
-  while !p.kind().is_rbrace() && !p.at_eof() do p = p.advance() end
   DeclResult {
     decl:   Shared.new(DeclFn(mangled_name, [], [], params, ret_type_result.type_expr, body_result.expr)),
-    parser: p
+    parser: body_result.parser
   }
 end
 

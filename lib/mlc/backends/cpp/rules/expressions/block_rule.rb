@@ -40,8 +40,10 @@ module MLC
             # IIFE strategy: [&]() -> ReturnType { ... return val; }()
             def lower_as_iife(block_expr)
               snapshot = context.snapshot_declared_variables
+              var_snapshot = context.snapshot_var_type_map
               statements = lower_statements(block_expr, emit_return: true)
               context.restore_declared_variables(snapshot)
+              context.restore_var_type_map(var_snapshot)
               body_lines = statements.map { |stmt| "  #{stmt.to_source}" }
               lambda_body = "\n#{body_lines.join("\n")}\n"
 

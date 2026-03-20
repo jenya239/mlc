@@ -26,6 +26,14 @@ Rake::TestTask.new(:test_unit) do |t|
   t.verbose = true
 end
 
+# Только test/mlc/** — эталон для CI и README (~1100 runs); test_unit шире и может включать падающие suite вне mlc.
+Rake::TestTask.new(:test_mlc) do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = FileList["test/mlc/**/*_test.rb"]
+  t.verbose = true
+end
+
 # Integration tests only
 Rake::TestTask.new(:test_integration) do |t|
   t.libs << "test"
@@ -43,6 +51,15 @@ Rake::TestTask.new(:test_e2e) do |t|
 end
 
 task default: :test
+
+# Self-hosted compiler: собирает compiler/tests/tests_main.mlc через Ruby и запускает run_tests (нужен g++).
+desc "Тесты self-hosted компилятора (compiler/tests/build_tests.sh)"
+task :test_compiler_mlc do
+  sh "#{__dir__}/compiler/tests/build_tests.sh"
+end
+
+desc "test/mlc + тесты compiler/tests (рекомендуемый минимум для self-hosted)"
+task test_self_hosted_stack: %i[test_mlc test_compiler_mlc]
 
 # Optional RSpec task (only works if rspec gem is available)
 begin

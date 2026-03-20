@@ -52,6 +52,9 @@ export type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>], 
 export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
 export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
 export type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
+export type TypeParamsResult = TypeParamsResult { params: [string], bounds: [[string]], parser: Parser }
+export type BoundsResult = BoundsResult { bounds: [string], parser: Parser }
+export type TraitBodyResult  = TraitBodyResult  { methods:  [Shared<Decl>],           parser: Parser }
 
 // --- Token kind predicates ------------------------------------------------
 
@@ -80,7 +83,10 @@ fn is_ident(kind: TKind)         -> bool = match kind { Ident(_)  => true, _ => 
 fn is_int_literal(kind: TKind)   -> bool = match kind { LInt(_)   => true, _ => false }
 fn is_str_literal(kind: TKind)   -> bool = match kind { LStr(_)   => true, _ => false }
 fn is_fstr_literal(kind: TKind)  -> bool = match kind { LFStr(_)  => true, _ => false }
-fn get_fstr_parts(kind: TKind)   -> [string] = match kind { LFStr(parts) => parts, _ => [] }
+fn get_fstr_parts(kind: TKind)   -> [string] = match kind {
+  LFStr(parts) => parts,
+  _            => do let r: [string] = []; r end
+}
 fn is_equal(kind: TKind)         -> bool = match kind { Equal     => true, _ => false }
 fn is_bar(kind: TKind)           -> bool = match kind { Bar       => true, _ => false }
 fn is_pipe(kind: TKind)          -> bool = match kind { Pipe      => true, _ => false }
@@ -137,7 +143,10 @@ export extend TKind {
   fn is_int(self)      -> bool = match self { LInt(_)   => true, _ => false }
   fn is_str(self)      -> bool = match self { LStr(_)   => true, _ => false }
   fn is_fstr(self)     -> bool = match self { LFStr(_)  => true, _ => false }
-  fn fstr_parts(self)  -> [string] = match self { LFStr(parts) => parts, _ => [] }
+  fn fstr_parts(self)  -> [string] = match self {
+    LFStr(parts) => parts,
+    _            => do let r: [string] = []; r end
+  }
   fn is_equal(self)    -> bool = match self { Equal     => true, _ => false }
   fn is_bar(self)      -> bool = match self { Bar       => true, _ => false }
   fn is_pipe(self)     -> bool = match self { Pipe      => true, _ => false }

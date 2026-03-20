@@ -11,7 +11,7 @@ module MLC
       # Dependency injection container for backend services
       class Container
         attr_reader :type_registry, :function_registry, :type_map, :runtime_policy, :stdlib_scanner, :event_bus
-        attr_accessor :rule_engine, :in_generic_function, :user_functions, :declared_variables, :expected_return_type, :cyclic_sum_types, :trait_registry
+        attr_accessor :rule_engine, :in_generic_function, :user_functions, :declared_variables, :expected_return_type, :cyclic_sum_types, :trait_registry, :var_type_map
 
         def initialize(type_registry:, function_registry:, runtime_policy: nil, stdlib_scanner: nil, event_bus: nil)
           @type_registry = type_registry
@@ -28,6 +28,27 @@ module MLC
           @expected_return_type = nil # When lowering function body result (for IIFE return type)
           @temp_counter = 0 # Counter for generating unique temp variable names
           @cyclic_sum_types = Set.new # Sum types in cross-type cycles (use wrapper struct)
+          @var_type_map = {} # name -> SemanticIR::Type for match scrutinee fallback
+        end
+
+        def init_var_type_map_from_params(params)
+          @var_type_map = params.to_h { |p| [p.name, p.type] }
+        end
+
+        def set_var_type(name, type)
+          @var_type_map[name] = type
+        end
+
+        def get_var_type(name)
+          @var_type_map[name]
+        end
+
+        def snapshot_var_type_map
+          @var_type_map.dup
+        end
+
+        def restore_var_type_map(snapshot)
+          @var_type_map = snapshot
         end
 
         # Generate unique temporary variable name

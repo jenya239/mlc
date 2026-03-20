@@ -38,8 +38,8 @@ class MlccExtendTest < Minitest::Test
     }
 
     fn make_parser(kinds: [TKind]) -> Parser = do
-      let tokens: [Token] = []
-      let index = 0
+      let mut tokens: [Token] = []
+      let mut index = 0
       while index < kinds.length() do
         tokens.push(Token { kind: kinds[index], line: 1 })
         index = index + 1

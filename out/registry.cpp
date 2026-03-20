@@ -3,30 +3,8 @@
 
 namespace registry {
 
-std::shared_ptr<Type> TypeRegistry_fn_type(TypeRegistry self, mlc::String name) noexcept{
-return self.fn_types.get(name);
-}
-bool TypeRegistry_has_fn(TypeRegistry self, mlc::String name) noexcept{
-return self.fn_types.has(name);
-}
-std::shared_ptr<Type> TypeRegistry_ctor_type(TypeRegistry self, mlc::String name) noexcept{
-return self.ctor_types.get(name);
-}
-bool TypeRegistry_has_ctor(TypeRegistry self, mlc::String name) noexcept{
-return self.ctor_types.has(name);
-}
-mlc::Array<std::shared_ptr<Type>> TypeRegistry_ctor_params_for(TypeRegistry self, mlc::String name) noexcept{
-if (self.ctor_params.has(name)) {
-return self.ctor_params.get(name);
-} else {
-return {};
-}
-}
-mlc::HashMap<mlc::String, std::shared_ptr<Type>> TypeRegistry_fields_for(TypeRegistry self, mlc::String type_name) noexcept{
-return self.field_types.get(type_name);
-}
-bool TypeRegistry_has_fields(TypeRegistry self, mlc::String type_name) noexcept{
-return self.field_types.has(type_name);
+void TypeRegistry_fn_type(TypeRegistry self) noexcept{
+return /* unit */;
 }
 TypeRegistry empty_registry() noexcept{
 return TypeRegistry{{}, {}, {}, {}};
@@ -61,8 +39,16 @@ i = (i + 1);
 return registry;
 }
 TypeRegistry register_decl(TypeRegistry registry, std::shared_ptr<ast::Decl> decl) noexcept{
-return std::visit(overloaded{[&](const ast::DeclExtend& declExtend) { auto [__0, __1] = declExtend; return registry; },
-[&](const ast::DeclFn& declFn) { auto [name, params, return_type, __3] = declFn; return [&]() {
+return std::visit(overloaded{[&](const ast::DeclTrait& declTrait) { auto [__0, __1, methods] = declTrait; return [&]() {
+auto i = 0;
+while ((i < methods.length())) {
+registry = register_decl(registry, methods[i]);
+i = (i + 1);
+}
+return registry;
+}(); },
+[&](const ast::DeclExtend& declExtend) { auto [__0, __1, __2] = declExtend; return registry; },
+[&](const ast::DeclFn& declFn) { auto [name, __1, __2, params, return_type, __5] = declFn; return [&]() {
 auto param_types = mlc::Array<std::shared_ptr<Type>>{};
 auto i = 0;
 while ((i < params.length())) {
@@ -72,7 +58,7 @@ i = (i + 1);
 registry.fn_types.set(name, std::make_shared<Type>(TFn(param_types, type_from_annotation(return_type))));
 return registry;
 }(); },
-[&](const ast::DeclType& declType) { auto [type_name, variants] = declType; return [&]() {
+[&](const ast::DeclType& declType) { auto [type_name, __1, variants] = declType; return [&]() {
 auto i = 0;
 while ((i < variants.length())) {
 registry = register_variant(registry, type_name, variants[i]);

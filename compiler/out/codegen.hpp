@@ -19,6 +19,10 @@ struct CtorTypeInfo {mlc::String name;mlc::Array<int> shared_pos;mlc::Array<int>
 
 struct CodegenContext {mlc::Array<std::shared_ptr<codegen::FieldOrder>> field_orders;mlc::String namespace_prefix;mlc::HashMap<mlc::String, mlc::String> qualified;mlc::String self_type;mlc::HashMap<mlc::String, mlc::String> method_owners;mlc::Array<mlc::String> shared_params;mlc::Array<mlc::String> shared_array_params;mlc::HashMap<mlc::String, mlc::String> array_elem_types;mlc::Array<mlc::String> shared_map_params;mlc::Array<std::shared_ptr<codegen::CtorTypeInfo>> ctor_type_infos;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::Array<mlc::String> value_params;};
 
+struct GenStmtsResult {mlc::String code;int next_try;};
+
+struct GenStmtResult {mlc::String output;int next_try;};
+
 struct GenModuleOut {mlc::String h;mlc::String c;};
 
 struct PrecomputedCtx {mlc::Array<std::shared_ptr<codegen::FieldOrder>> field_orders;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::HashMap<mlc::String, std::shared_ptr<codegen::LoadItem>> item_index;mlc::Array<std::shared_ptr<codegen::CtorTypeInfo>> ctor_type_infos;};

@@ -48,6 +48,12 @@ struct ParamResult {std::shared_ptr<ast::Param> param;preds::Parser parser;};
 
 struct NamesResult {mlc::Array<mlc::String> exprs;preds::Parser parser;};
 
+struct TypeParamsResult {mlc::Array<mlc::String> params;mlc::Array<mlc::Array<mlc::String>> bounds;preds::Parser parser;};
+
+struct BoundsResult {mlc::Array<mlc::String> bounds;preds::Parser parser;};
+
+struct TraitBodyResult {mlc::Array<std::shared_ptr<ast::Decl>> methods;preds::Parser parser;};
+
 preds::Parser parser_new(mlc::Array<ast_tokens::Token> tokens) noexcept;
 
 bool is_ctor_name(mlc::String name) noexcept;

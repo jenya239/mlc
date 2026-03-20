@@ -7,6 +7,7 @@
 #include "preds.hpp"
 #include "types.hpp"
 #include "exprs.hpp"
+#include "ast.hpp"
 
 namespace decls {
 

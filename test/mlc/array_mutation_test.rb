@@ -150,12 +150,12 @@ class ArrayMutationTest < Minitest::Test
     assert_match(/cannot rebind 'const x'/, error.message)
   end
 
-  # let rebinding is allowed
+  # let mut rebinding is allowed
 
-  def test_let_rebinding_allowed
+  def test_let_mut_rebinding_allowed
     source = <<~MLC
       fn main() -> i32 = do
-        let x = 1
+        let mut x = 1
         x = 2
         x
       end

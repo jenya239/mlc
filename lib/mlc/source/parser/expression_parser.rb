@@ -740,17 +740,18 @@ module MLC
         end
 
         def parse_let_header
-          # let NAME = expr      →  rebindable binding
-          # let mut NAME = expr  →  same (explicit mut marker accepted)
-          # let const NAME = expr  →  compile-time constant
+          # let NAME = expr       → immutable (mutable: false)
+          # let mut NAME = expr   → mutable
+          # let const NAME = expr → compile-time constant
           constant = false
+          mutable = false
           if current.type == :CONST
             consume(:CONST)
             constant = true
           elsif current.type == :MUT
             consume(:MUT)
+            mutable = true
           end
-          mutable = !constant
 
           name_token = consume(:IDENTIFIER)
 

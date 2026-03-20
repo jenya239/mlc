@@ -111,6 +111,7 @@ module MLC
               def pure_statement?(stmt)
                 case stmt
                 when MLC::SemanticIR::VariableDeclStmt
+                  return false if stmt.mutable
                   pure_expression?(stmt.value)
                 when MLC::SemanticIR::ExprStatement
                   pure_expression?(stmt.expression)

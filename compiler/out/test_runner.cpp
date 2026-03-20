@@ -34,7 +34,7 @@ passed = passed + 1;
 auto [name, message] = fail;
 {
 failed = failed + 1;
-output = output + mlc::String("FAIL: ") + name + mlc::String(" — ") + message + mlc::String("\n");
+output = output + mlc::String("FAIL: ") + name + mlc::String(" - ") + message + mlc::String("\n");
 }
 }
 }, results[i]);

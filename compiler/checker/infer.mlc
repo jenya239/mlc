@@ -1,6 +1,6 @@
 // --- Type inference -------------------------------------------------------
 
-import { Expr, Stmt, Pat, Program, decl_inner, errs_append } from "../ast"
+import { Expr, Stmt, Pat, Program, decl_inner, errs_append, param_name, param_typ } from "../ast"
 import { collect_globals, check_names_expr } from "./names"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
 
@@ -235,8 +235,14 @@ export fn check_with_context(entry: Program, full: Program) -> CheckOut = do
   let i = 0
   while i < entry.decls.length() do
     match decl_inner(entry.decls[i]) {
-      DeclFn(_, params, _, body) => do
+      DeclFn(_, type_params, _, params, return_type, body) => do
         const locals: [string] = []
+        let tpi = 0
+        while tpi < type_params.length() do
+          locals.push(type_params[tpi])
+          globals.set(type_params[tpi], true)
+          tpi = tpi + 1
+        end
         const type_env: Map<string, Shared<Type>> = Map.new()
         let pi = 0
         while pi < params.length() do
@@ -248,8 +254,9 @@ export fn check_with_context(entry: Program, full: Program) -> CheckOut = do
         const infer_result = infer_expr(body, type_env, registry)
         all_errors = errs_append(all_errors, infer_result.errors); ()
       end,
-      DeclType(_, _)    => do () end,
-      DeclExtend(_, _)  => do () end,
+      DeclType(_, _, _)    => do () end,
+      DeclTrait(_, _, _)   => do () end,
+      DeclExtend(_, _, _)  => do () end,
       DeclImport(_, _)  => do () end,
       DeclExported(d)   => do () end
     }
@@ -265,8 +272,14 @@ export fn check(prog: Program) -> CheckOut = do
   let i = 0
   while i < prog.decls.length() do
     match decl_inner(prog.decls[i]) {
-      DeclFn(_, params, _, body) => do
+      DeclFn(_, type_params, _, params, return_type, body) => do
         const locals: [string] = []
+        let tpi = 0
+        while tpi < type_params.length() do
+          locals.push(type_params[tpi])
+          globals.set(type_params[tpi], true)
+          tpi = tpi + 1
+        end
         const type_env: Map<string, Shared<Type>> = Map.new()
         let pi = 0
         while pi < params.length() do
@@ -278,8 +291,9 @@ export fn check(prog: Program) -> CheckOut = do
         const infer_result = infer_expr(body, type_env, registry)
         all_errors = errs_append(all_errors, infer_result.errors); ()
       end,
-      DeclType(_, _)    => do () end,
-      DeclExtend(_, _)  => do () end,
+      DeclType(_, _, _)    => do () end,
+      DeclTrait(_, _, _)   => do () end,
+      DeclExtend(_, _, _)  => do () end,
       DeclImport(_, _)  => do () end,
       DeclExported(d)   => do () end
     }

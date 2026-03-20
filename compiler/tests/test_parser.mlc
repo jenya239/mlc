@@ -40,13 +40,13 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true("fn decl is DeclFn",
     match first_decl("fn f() -> i32 = 42") {
-      DeclFn(_, _, _, _) => true,
+      DeclFn(_, _, _, _, _, _) => true,
       _ => false
     }))
 
   results.push(assert_true("type decl is DeclType",
     match first_decl("type Color = Red | Green") {
-      DeclType(_, _) => true,
+      DeclType(_, _, _) => true,
       _ => false
     }))
 

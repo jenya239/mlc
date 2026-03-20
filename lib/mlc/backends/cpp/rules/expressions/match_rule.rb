@@ -67,7 +67,7 @@ module MLC
                 scrutinee_type = node.scrutinee&.type
                 match_return_type = node.respond_to?(:type) && node.type ? context.map_type(node.type) : nil
                 # Dereference shared_ptr before std::visit; use ._ for wrapper struct
-                visit_value = build_visit_value(scrutinee, scrutinee_type)
+                visit_value = build_visit_value(scrutinee, scrutinee_type, scrutinee_node: node.scrutinee)
                 arms = node.arms.map { |arm| lower_match_arm(arm, scrutinee_type: scrutinee_type, return_type: match_return_type) }
 
                 CppAst::Nodes::MatchExpression.new(
@@ -104,16 +104,32 @@ module MLC
               end
             end
 
-            def build_visit_value(scrutinee, scrutinee_type)
+            # Calls that return Shared<sum> but IR may lose Shared wrapper for match scrutinee.
+            MATCH_SCRUTINEE_SHARED_CALLS = %w[decl_inner find_field_val param_typ].freeze
+
+            def build_visit_value(scrutinee, scrutinee_type, scrutinee_node: nil)
+              if scrutinee_node.is_a?(MLC::SemanticIR::CallExpr) &&
+                 scrutinee_node.callee.is_a?(MLC::SemanticIR::VarExpr) &&
+                 MATCH_SCRUTINEE_SHARED_CALLS.include?(scrutinee_node.callee.name)
+                src = scrutinee.to_source
+                return context.factory.raw_expression(code: "(*#{src})")
+              end
+
+              if scrutinee_node && context.checker.var_expr?(scrutinee_node)
+                vt = context.lookup_var_type(scrutinee_node.name)
+                scrutinee_type = vt unless vt.nil?
+              end
+
               return scrutinee unless scrutinee_type
 
               scrutinee_src = scrutinee.to_source
               is_shared = shared_type?(scrutinee_type)
+              needs_star = is_shared || MatchScrutineeDeref.ast_sum_needs_star?(context.type_registry, scrutinee_type)
               inner = is_shared ? scrutinee_type.type_args&.first : scrutinee_type
               inner_type_name = inner ? extract_type_name(inner) : nil
               is_wrapper = inner_type_name && context.cyclic_sum_types.include?(inner_type_name)
 
-              base = is_shared ? "(*#{scrutinee_src})" : scrutinee_src
+              base = needs_star ? "(*#{scrutinee_src})" : scrutinee_src
               base = "#{base}._" if is_wrapper
               context.factory.raw_expression(code: base)
             end
@@ -433,7 +449,11 @@ module MLC
             def variant_src_for(scrutinee_src, scrutinee_type)
               return scrutinee_src unless scrutinee_type
 
-              base = shared_type?(scrutinee_type) ? "(*#{scrutinee_src})" : scrutinee_src
+              needs_star = shared_type?(scrutinee_type) ||
+                           ::MLC::Backends::Cpp::MatchScrutineeDeref.ast_sum_needs_star?(
+                             context.type_registry, scrutinee_type
+                           )
+              base = needs_star ? "(*#{scrutinee_src})" : scrutinee_src
               inner = shared_type?(scrutinee_type) ? scrutinee_type.type_args&.first : scrutinee_type
               inner_name = inner ? extract_type_name(inner) : nil
               inner_name && context.cyclic_sum_types.include?(inner_name) ? "#{base}._" : base
@@ -442,8 +462,19 @@ module MLC
             def lower_match_with_guards(match_expr, scrutinee)
               statements = []
               scrutinee_src = scrutinee.to_source
-              scrutinee_type = match_expr.scrutinee&.type
-              variant_src = variant_src_for(scrutinee_src, scrutinee_type)
+              sn = match_expr.scrutinee
+              scrutinee_type = sn&.type
+              if sn && context.checker.var_expr?(sn)
+                vt = context.lookup_var_type(sn.name)
+                scrutinee_type = vt unless vt.nil?
+              end
+              variant_src = if sn.is_a?(MLC::SemanticIR::CallExpr) &&
+                               sn.callee.is_a?(MLC::SemanticIR::VarExpr) &&
+                               MATCH_SCRUTINEE_SHARED_CALLS.include?(sn.callee.name)
+                              "(*#{scrutinee_src})"
+                            else
+                              variant_src_for(scrutinee_src, scrutinee_type)
+                            end
 
               match_expr.arms.each do |arm|
                 pattern = arm[:pattern]
@@ -601,13 +632,8 @@ module MLC
             end
 
             def structured_binding_decl(bindings, temp_var)
-              binding_list = bindings.map do |b|
-                if b.is_a?(Hash)
-                  "_"
-                else
-                  (b == "_" ? "_" : b)
-                end
-              end.join(", ")
+              sanitized = uniquify_wildcard_bindings(bindings.map { |b| b.is_a?(Hash) ? "_" : b })
+              binding_list = sanitized.join(", ")
               "auto [#{binding_list}] = #{temp_var};"
             end
 
@@ -678,11 +704,7 @@ module MLC
 
               non_wildcard_bindings = bindings.reject { |b| b == "_" || b.is_a?(Hash) }
               if non_wildcard_bindings.any?
-                binding_list = bindings.map do |binding|
-                  next "_" if binding.is_a?(Hash)
-
-                  binding == "_" ? "_" : binding
-                end.join(", ")
+                binding_list = uniquify_wildcard_bindings(bindings.map { |b| b.is_a?(Hash) ? "_" : b }).join(", ")
                 decls << "auto [#{binding_list}] = #{temp_var};"
               end
 

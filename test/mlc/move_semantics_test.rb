@@ -181,7 +181,7 @@ class MoveSemanticsTest < Minitest::Test
   def test_mutable_reassignment_resets_moved
     source = <<~MLC
       fn foo() -> i32[] = do
-        let a = [1, 2, 3]
+        let mut a = [1, 2, 3]
         let b = a
         a = [4, 5, 6]
         a

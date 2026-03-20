@@ -75,6 +75,23 @@ Shared<T>        — std::shared_ptr<T>
 # Unit-тесты (быстро, ~50 сек)
 bundle exec ruby -Ilib:test -e "Dir['test/mlc/**/*_test.rb'].each { |f| require_relative f }"
 
+# Только test/mlc/** (~1100 тестов)
+bundle exec rake test_mlc
+
+# Как в CI: весь unit-слой (test/ кроме integration)
+bundle exec rake test_unit
+
+# Тесты self-hosted компилятора (compiler/tests, нужен g++)
+bundle exec rake test_compiler_mlc
+
+# Минимум: test_mlc + test_compiler_mlc
+bundle exec rake test_self_hosted_stack
+
+# Весь test/ кроме integration (шире, чем test_mlc)
+bundle exec rake test_unit
+
+# Полный план и политика Ruby (резерв + bootstrap): docs/SELF_HOSTED_PLAN.md
+
 # Собрать mlcc из исходников
 compiler/build.sh
 
@@ -100,7 +117,7 @@ compiler/           — self-hosted компилятор (MLC-исходники
   checker/          — name resolution, type inference, registry
   codegen.mlc       — генерация C++
   out/              — скомпилированный mlcc (бинарник + C++)
-lib/mlc/            — Ruby bootstrap-компилятор
+lib/mlc/            — Ruby bootstrap-компилятор (эталон и резерв, не удаляется)
 runtime/            — C++20 runtime
   include/mlc/      — заголовки (String, Array, HashMap, io)
   src/              — реализации (string.cpp, io.cpp)

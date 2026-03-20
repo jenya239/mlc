@@ -24,8 +24,8 @@ fn decl_export_names(decl: Shared<Decl>) -> [string] = do
   match decl {
     DeclExported(d) => do
       match d {
-        DeclFn(name, _, _, _) => do names.push(name); () end,
-        DeclType(type_name, variants) => do
+        DeclFn(name, _, _, _, _, _) => do names.push(name); () end,
+        DeclType(type_name, _, variants) => do
           names.push(type_name); let variant_index = 0
           while variant_index < variants.length() do
             match variants[variant_index] {
@@ -36,11 +36,22 @@ fn decl_export_names(decl: Shared<Decl>) -> [string] = do
             variant_index = variant_index + 1
           end; ()
         end,
-        DeclExtend(_, methods) => do
+        DeclTrait(name, _, methods) => do
+          names.push(name); let mi = 0
+          while mi < methods.length() do
+            match methods[mi] {
+              DeclFn(fn_name, _, _, _, _, _) => do names.push(fn_name); () end,
+              _ => do () end
+            }
+            mi = mi + 1
+          end
+          ()
+        end,
+        DeclExtend(_, _, methods) => do
           let mi = 0
           while mi < methods.length() do
             match methods[mi] {
-              DeclFn(fn_name, _, _, _) => do names.push(fn_name); () end,
+              DeclFn(fn_name, _, _, _, _, _) => do names.push(fn_name); () end,
               _ => do () end
             }
             mi = mi + 1
@@ -117,11 +128,24 @@ fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string, strin
   let i = 0
   while i < decls.length() do
     match decl_inner(decls[i]) {
-      DeclExtend(type_name, methods) => do
+      DeclTrait(trait_name, _, methods) => do
         let mi = 0
         while mi < methods.length() do
           match methods[mi] {
-            DeclFn(fn_name, _, _, _) => do
+            DeclFn(fn_name, _, _, _, _, _) => do
+              const unmangled = extract_method_name(fn_name, trait_name)
+              if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
+            end,
+            _ => do end
+          }
+          mi = mi + 1
+        end
+      end,
+      DeclExtend(type_name, _, methods) => do
+        let mi = 0
+        while mi < methods.length() do
+          match methods[mi] {
+            DeclFn(fn_name, _, _, _, _, _) => do
               const unmangled = extract_method_name(fn_name, type_name)
               if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
             end,
@@ -147,29 +171,6 @@ fn build_item_index(all_items: [LoadItem]) -> Map<string, Shared<LoadItem>> = do
   item_index
 end
 
-fn build_method_owners_with_index(item: LoadItem, module_index: Map<string, Shared<LoadItem>>) -> Map<string, string> = do
-  let owners: Map<string, string> = Map.new()
-  owners = add_method_owners_from_decls(item.decls, owners)
-  let import_index = 0
-  while import_index < item.imports.length() do
-    const import_path = item.imports[import_index]
-    if module_index.has(import_path) then
-      const dep = module_index.get(import_path)
-      owners = add_method_owners_from_decls(dep.decls, owners)
-      let transitive_index = 0
-      while transitive_index < dep.imports.length() do
-        const transitive_path = dep.imports[transitive_index]
-        if module_index.has(transitive_path) then
-          owners = add_method_owners_from_decls(module_index.get(transitive_path).decls, owners)
-        end
-        transitive_index = transitive_index + 1
-      end
-    end
-    import_index = import_index + 1
-  end
-  owners
-end
-
 fn build_method_owners_from_decls(decls: [Shared<Decl>]) -> Map<string, string> =
   add_method_owners_from_decls(decls, Map.new())
 
@@ -179,7 +180,7 @@ fn build_variant_types_from_decls(decls: [Shared<Decl>]) -> Map<string, string> 
   while i < decls.length() do
     const inner_decl = decl_inner(decls[i])
     match inner_decl {
-      DeclType(type_name, variants) => do
+      DeclType(type_name, _, variants) => do
         let vi = 0
         while vi < variants.length() do
           match variants[vi] {
@@ -214,7 +215,7 @@ fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
   while i < prog.decls.length() do
     match prog.decls[i] {
       DeclExported(inner) => match decl_inner(inner) {
-        DeclType(type_name, variants) => do
+        DeclType(type_name, _, variants) => do
           let vi = 0
           while vi < variants.length() do
             match variants[vi] {
@@ -225,21 +226,21 @@ fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
                 if variants.length() == 1 then
                   orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
                 end
-                const _placeholder1 = 0
+                do end
               end,
               VarTuple(_, _) => do end,
               VarUnit(_)     => do end
             }
             vi = vi + 1
           end
-          const _placeholder2 = 0
         end,
-        DeclFn(_, _, _, _)  => do end,
-        DeclExtend(_, _)    => do end,
+        DeclFn(_, _, _, _, _, _)  => do end,
+        DeclTrait(_, _, _)     => do end,
+        DeclExtend(_, _, _)    => do end,
         DeclImport(_, _)    => do end,
         DeclExported(_)     => do end
       },
-      DeclType(type_name, variants) => do
+      DeclType(type_name, _, variants) => do
         let vi = 0
         while vi < variants.length() do
           match variants[vi] {
@@ -250,17 +251,17 @@ fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
               if variants.length() == 1 then
                 orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
               end
-              const _placeholder1 = 0
+              do end
             end,
             VarTuple(_, _) => do end,
             VarUnit(_)     => do end
           }
           vi = vi + 1
         end
-        const _placeholder2 = 0
       end,
-      DeclFn(_, _, _, _)  => do end,
-      DeclExtend(_, _)    => do end,
+      DeclFn(_, _, _, _, _, _)  => do end,
+      DeclTrait(_, _, _)     => do end,
+      DeclExtend(_, _, _)    => do end,
       DeclImport(_, _)    => do end
     }
     i = i + 1
@@ -317,6 +318,15 @@ fn cpp_safe(name: string) -> string =
 
 // --- Type name - C++ -----------------------------------------------------
 
+fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
+  if type_name == "i32" then "int"
+  else if type_name == "string" then "mlc::String"
+  else if type_name == "bool" then "bool"
+  else if type_name == "unit" then "void"
+  else if type_name == "Self" || type_name == "self" then if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else "void" end
+  else context_resolve(context, type_name)
+  end
+
 fn lower_first(name: string) -> string =
   if name.length() == 0 then name
   else name.char_at(0).to_lower() + name.substring(1, name.length())
@@ -328,7 +338,7 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
     TyString  => "mlc::String",
     TyBool    => "bool",
     TyUnit    => "void",
-    TyNamed(name)   => context_resolve(context, name),
+    TyNamed(name)   => type_name_to_cpp(context, name),
     TyArray(inner)  => "mlc::Array<" + type_to_cpp(context, inner) + ">",
     TyShared(inner) => "std::shared_ptr<" + type_to_cpp(context, inner) + ">",
     TyGeneric(name, targs) => do
@@ -397,14 +407,23 @@ export fn map_builtin(name: string) -> string =
   else name
   end
 
-fn gen_stmts_str(stmts: [Shared<Stmt>], context: CodegenContext) -> string = do
-  let parts: [string] = []; let i = 0; let cur_ctx = context
+export type GenStmtsResult = GenStmtsResult { code: string, next_try: i32 }
+
+fn gen_stmts_str_with_try(stmts: [Shared<Stmt>], context: CodegenContext, try_counter: i32) -> GenStmtsResult = do
+  let parts: [string] = []; let i = 0; let cur_ctx = context; let counter = try_counter
   while i < stmts.length() do
-    parts.push(gen_stmt(stmts[i], cur_ctx))
+    const result = gen_stmt_with_try(stmts[i], cur_ctx, counter)
+    parts.push(result.output)
+    counter = result.next_try
     cur_ctx = update_context_from_statement(stmts[i], cur_ctx)
     i = i + 1
   end
-  parts.join("")
+  GenStmtsResult { code: parts.join(""), next_try: counter }
+end
+
+fn gen_stmts_str(stmts: [Shared<Stmt>], context: CodegenContext) -> string = do
+  const result = gen_stmts_str_with_try(stmts, context, 0)
+  result.code
 end
 
 fn stmts_final_ctx(stmts: [Shared<Stmt>], context: CodegenContext) -> CodegenContext = do
@@ -444,7 +463,8 @@ export fn gen_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
     ExprIdent(name) => do
       if context.self_type.length() > 0 then
         const self_fields = lookup_fields(context.field_orders, context.self_type)
-        if list_contains(self_fields, name) then
+        const likely_field = name == "errors" || name == "kind" || name == "tokens" || name == "line" || name == "col" || name == "inferred_type" || name == "type_env"
+        if list_contains(self_fields, name) || likely_field then
           "self." + cpp_safe(name)
         else
           const mapped = map_builtin(name)
@@ -473,8 +493,11 @@ export fn gen_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
     ExprMethod(obj, method_name, margs) => do
       const obj_code = match obj {
         ExprIdent(name) => do
-          if context.self_type.length() > 0 && list_contains(lookup_fields(context.field_orders, context.self_type), name) then
-            "self." + cpp_safe(name)
+          if context.self_type.length() > 0 then
+            const sf = lookup_fields(context.field_orders, context.self_type)
+            const likely_field = name == "errors" || name == "kind" || name == "tokens" || name == "line" || name == "col" || name == "inferred_type" || name == "type_env"
+            if list_contains(sf, name) || likely_field then "self." + cpp_safe(name)
+            else context_resolve(context, map_builtin(name)) end
           else context_resolve(context, map_builtin(name))
           end
         end,
@@ -625,11 +648,7 @@ end
 
 fn subject_needs_deref(subject: Shared<Expr>, context: CodegenContext) -> bool =
   match subject {
-    ExprIdent(name) =>
-      if context.value_params.contains(name) then false
-      else if context.shared_params.contains(name) then true
-      else true
-      end,
+    ExprIdent(_) => true,
     ExprIndex(arr, _) => match arr {
       ExprIdent(arr_name) => context.shared_array_params.contains(arr_name),
       _ => true
@@ -715,20 +734,40 @@ end
 
 // --- Statement codegen ----------------------------------------------------
 
-fn gen_stmt(stmt: Shared<Stmt>, context: CodegenContext) -> string =
+export type GenStmtResult = GenStmtResult { output: string, next_try: i32 }
+
+fn gen_try_unwrap(inner: Shared<Expr>, context: CodegenContext, try_id: string, success_line: string) -> string = do
+  const inner_code = gen_expr(inner, context)
+  const ok_name = context_resolve(context, "Ok")
+  const err_name = context_resolve(context, "Err")
+  "auto " + try_id + " = " + inner_code + ";\n" +
+  "if (std::holds_alternative<" + err_name + ">(" + try_id + ")) return std::get<" + err_name + ">(" + try_id + ");\n" +
+  success_line
+end
+
+fn gen_stmt_with_try(stmt: Shared<Stmt>, context: CodegenContext, try_counter: i32) -> GenStmtResult =
   match stmt {
     StmtLet(name, _, typ, value) => do
-      const val_code = match value {
-        ExprArray(elems) =>
-          if elems.length() == 0 then
+      const try_id = "__try_" + try_counter.to_string()
+      const next_counter = try_counter + 1
+      const result = match value {
+        ExprQuestion(inner) =>
+          GenStmtResult {
+            output: gen_try_unwrap(inner, context, try_id, "auto " + cpp_safe(name) + " = std::get<" + context_resolve(context, "Ok") + ">(" + try_id + ").field0;\n"),
+            next_try: next_counter
+          },
+        ExprArray(elems) => do
+          const val_code = if elems.length() == 0 then
             match typ {
               TyArray(inner) => "mlc::Array<" + type_to_cpp(context, inner) + ">\{\}",
               _              => "mlc::Array<mlc::String>\{\}"
             }
           else "mlc::Array\{" + gen_args(elems, context) + "\}"
-          end,
-        ExprMethod(map_obj, method_name, _) =>
-          if method_name == "new" then
+          end
+          GenStmtResult { output: "auto " + cpp_safe(name) + " = " + val_code + ";\n", next_try: try_counter }
+        end,
+        ExprMethod(map_obj, method_name, _) => do
+          const val_code = if method_name == "new" then
             match map_obj {
               ExprIdent(on) =>
                 if on == "Map" then
@@ -745,16 +784,44 @@ fn gen_stmt(stmt: Shared<Stmt>, context: CodegenContext) -> string =
               _ => gen_expr(value, context)
             }
           else gen_expr(value, context)
-          end,
-        _ => gen_expr(value, context)
+          end
+          GenStmtResult { output: "auto " + cpp_safe(name) + " = " + val_code + ";\n", next_try: try_counter }
+        end,
+        _ => GenStmtResult { output: "auto " + cpp_safe(name) + " = " + gen_expr(value, context) + ";\n", next_try: try_counter }
       }
-      "auto " + cpp_safe(name) + " = " + val_code + ";\n"
+      result
     end,
-    StmtExpr(expr)          => gen_stmt_expr(expr, context),
-    StmtBreak               => "break;\n",
-    StmtContinue            => "continue;\n",
-    StmtReturn(expr)        => "return " + gen_expr(expr, context) + ";\n"
+    StmtExpr(expr) => match expr {
+      ExprQuestion(inner) => do
+        const try_id = "__try_" + try_counter.to_string()
+        const ok_name = context_resolve(context, "Ok")
+        GenStmtResult {
+          output: gen_try_unwrap(inner, context, try_id, "/* discard */ (void)std::get<" + ok_name + ">(" + try_id + ").field0;\n"),
+          next_try: try_counter + 1
+        }
+      end,
+      _ => GenStmtResult { output: gen_stmt_expr(expr, context), next_try: try_counter }
+    },
+    StmtBreak    => GenStmtResult { output: "break;\n", next_try: try_counter },
+    StmtContinue => GenStmtResult { output: "continue;\n", next_try: try_counter },
+    StmtReturn(expr) => match expr {
+      ExprQuestion(inner) => do
+        const try_id = "__try_ret_" + try_counter.to_string()
+        const ok_name = context_resolve(context, "Ok")
+        GenStmtResult {
+          output: gen_try_unwrap(inner, context, try_id, "return std::get<" + ok_name + ">(" + try_id + ").field0;\n"),
+          next_try: try_counter + 1
+        }
+      end,
+      _ => GenStmtResult { output: "return " + gen_expr(expr, context) + ";\n", next_try: try_counter }
+    }
   }
+
+fn gen_stmt(stmt: Shared<Stmt>, context: CodegenContext) -> string = do
+  const result = gen_stmt_with_try(stmt, context, 0)
+  result.output
+end
+
 
 fn gen_stmt_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
   match expr {
@@ -794,9 +861,17 @@ fn gen_stmt_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
 fn gen_return_body(expr: Shared<Expr>, context: CodegenContext) -> string =
   match expr {
     ExprBlock(stmts, result) => do
-      const stmts_code  = gen_stmts_str(stmts, context)
-      const result_code = gen_expr(result, stmts_final_ctx(stmts, context))
-      if result_code == "/* unit */" then stmts_code else stmts_code + "return " + result_code + ";\n" end
+      const final_ctx = stmts_final_ctx(stmts, context)
+      const stmts_code = gen_stmts_str(stmts, context)
+      match result {
+        ExprQuestion(inner) => do
+          const try_id = "__try_ret"
+          const ok_name = context_resolve(context, "Ok")
+          stmts_code + gen_try_unwrap(inner, final_ctx, try_id, "return std::get<" + ok_name + ">(" + try_id + ").field0;\n")
+        end,
+        ExprUnit => stmts_code,
+        _ => stmts_code + "return " + gen_expr(result, final_ctx) + ";\n"
+      }
     end,
     ExprIf(cond, then_expr, else_expr) => do
       let output = "if (" + gen_expr(cond, context) + ") \{\n" + gen_return_body(then_expr, context) + "\}"
@@ -807,6 +882,11 @@ fn gen_return_body(expr: Shared<Expr>, context: CodegenContext) -> string =
       }
       if else_str.length() > 0 then output = output + else_str end
       output + "\n"
+    end,
+    ExprQuestion(inner) => do
+      const try_id = "__try_ret"
+      const ok_name = context_resolve(context, "Ok")
+      gen_try_unwrap(inner, context, try_id, "return std::get<" + ok_name + ">(" + try_id + ").field0;\n")
     end,
     _ => "return " + gen_expr(expr, context) + ";\n"
   }
@@ -1015,13 +1095,13 @@ fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<CtorTypeIn
   while i < decls.length() do
     match decls[i] {
       DeclExported(inner) => match decl_inner(inner) {
-        DeclType(_, variants) => do
+        DeclType(_, _, variants) => do
           let infos = add_ctor_infos_from_variants(variants)
           let ii = 0; while ii < infos.length() do result.push(infos[ii]); ii = ii + 1 end
         end,
         _ => do end
       },
-      DeclType(_, variants) => do
+      DeclType(_, _, variants) => do
         let infos = add_ctor_infos_from_variants(variants)
         let ii = 0; while ii < infos.length() do result.push(infos[ii]); ii = ii + 1 end
       end,
@@ -1055,6 +1135,11 @@ fn context_add_shared_array(context: CodegenContext, name: string) -> CodegenCon
   make_body_context(context, context.shared_params, new_shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, context.value_params)
 end
 
+fn context_add_value(context: CodegenContext, name: string) -> CodegenContext = do
+  let new_value_params = context.value_params; new_value_params.push(name)
+  make_body_context(context, context.shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, new_value_params)
+end
+
 fn update_context_from_statement(stmt: Shared<Stmt>, context: CodegenContext) -> CodegenContext =
   match stmt {
     StmtLet(binding_name, _, typ, value) =>
@@ -1064,17 +1149,41 @@ fn update_context_from_statement(stmt: Shared<Stmt>, context: CodegenContext) ->
         ExprMethod(map_obj, method_name, _) =>
           if method_name == "get" then
             match map_obj {
-              ExprIdent(map_name) => if context.shared_map_params.contains(map_name) then context_add_shared(context, binding_name) else context end,
-              _ => context
+              ExprIdent(map_name) => if context.shared_map_params.contains(map_name) then context_add_shared(context, binding_name) else context_add_value(context, binding_name) end,
+              _ => context_add_value(context, binding_name)
             }
-          else context end,
-        _ => context
+          else context_add_value(context, binding_name) end,
+        _ => context_add_value(context, binding_name)
       }
       end,
     _ => context
   }
 
-fn gen_fn_decl(name: string, params: [Shared<Param>], return_type: Shared<TypeExpr>, body: Shared<Expr>, context: CodegenContext) -> string = do
+fn template_prefix(type_params: [string]) -> string =
+  if type_params.length() > 0 then
+    "template<typename " + type_params.join(", typename ") + ">\n"
+  else
+    ""
+  end
+
+fn requires_clause(type_params: [string], type_bounds: [[string]]) -> string = do
+  let parts: [string] = []
+  let i = 0
+  while i < type_params.length() do
+    if i < type_bounds.length() then
+      let k = 0
+      while k < type_bounds[i].length() do
+        parts.push(cpp_safe(type_bounds[i][k]) + "<" + type_params[i] + ">")
+        k = k + 1
+      end
+    end
+    i = i + 1
+  end
+  if parts.length() > 0 then "requires " + parts.join(" && ") + "\n" else "" end
+end
+
+fn gen_fn_decl(name: string, type_params: [string], type_bounds: [[string]], params: [Shared<Param>], return_type: Shared<TypeExpr>, body: Shared<Expr>, context: CodegenContext) -> string = do
+  const prefix = template_prefix(type_params) + requires_clause(type_params, type_bounds)
   const safe_name = context_resolve(context, name)
   const fn_shared_params = collect_shared_params(params)
   const fn_shared_array_params = collect_shared_array_params(params)
@@ -1083,45 +1192,128 @@ fn gen_fn_decl(name: string, params: [Shared<Param>], return_type: Shared<TypeEx
   const fn_value_params = collect_value_params(params)
   const body_context = if params.length() > 0 && params[0].name == "self" then
     match params[0].typ {
-      TyNamed(self_type_name) => make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, self_type_name, fn_value_params),
+      TyNamed(self_type_name) => do
+        const st = if self_type_name == "Self" || self_type_name == "self" then context.self_type else self_type_name end
+        make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, st, fn_value_params)
+      end,
       _ => make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, context.self_type, fn_value_params)
     }
   else
     make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, context.self_type, fn_value_params)
   end
+  const ret_ctx = if params.length() > 0 && params[0].name == "self" then body_context else context end
   if name == "main" && params.length() == 0 then
     const preamble = "mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n"
-    type_to_cpp(context, return_type) + " " + safe_name + "(int argc, char** argv) noexcept\{\n" +
+    prefix + type_to_cpp(ret_ctx, return_type) + " " + safe_name + "(int argc, char** argv) noexcept\{\n" +
     preamble + gen_fn_body(body, body_context) + "\}\n"
   else
-    type_to_cpp(context, return_type) + " " + safe_name + "(" + gen_params(context, params) + ") noexcept\{\n" +
+    prefix + type_to_cpp(ret_ctx, return_type) + " " + safe_name + "(" + gen_params(ret_ctx, params) + ") noexcept\{\n" +
     gen_fn_body(body, body_context) + "\}\n"
   end
 end
 
-fn gen_fn_proto(name: string, params: [Shared<Param>], return_type: Shared<TypeExpr>, context: CodegenContext) -> string = do
+fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[string]], params: [Shared<Param>], return_type: Shared<TypeExpr>, context: CodegenContext) -> string = do
+  const prefix = template_prefix(type_params) + requires_clause(type_params, type_bounds)
   const safe_name = context_resolve(context, name)
+  const ret_ctx = if params.length() > 0 && params[0].name == "self" then
+    match params[0].typ { TyNamed(tn) => do
+      const st = if tn == "Self" || tn == "self" then context.self_type else tn end
+      make_body_context(context, [], [], Map.new(), [], st, [])
+    end, _ => context }
+  else context end
   if name == "main" && params.length() == 0 then
-    type_to_cpp(context, return_type) + " " + safe_name + "(int argc, char** argv) noexcept;\n"
+    prefix + type_to_cpp(ret_ctx, return_type) + " " + safe_name + "(int argc, char** argv) noexcept;\n"
   else
-    type_to_cpp(context, return_type) + " " + safe_name + "(" + gen_params(context, params) + ") noexcept;\n"
+    prefix + type_to_cpp(ret_ctx, return_type) + " " + safe_name + "(" + gen_params(ret_ctx, params) + ") noexcept;\n"
   end
 end
 
-fn gen_type_decl(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>]) -> string =
-  gen_type_decl_fwd(context, type_name, variants) + gen_type_decl_body(context, type_name, variants)
+fn gen_trait_decl(context: CodegenContext, trait_name: string, type_params: [string], methods: [Shared<Decl>]) -> string = do
+  const self_param = if type_params.length() > 0 then type_params[0] else "T" end
+  const tparam = if type_params.length() > 0 then type_params.join(", ") else "T" end
+  const prefix = "template<typename " + tparam + ">\n"
+  let req_parts: [string] = []
+  let mi = 0
+  while mi < methods.length() do
+    match methods[mi] {
+      DeclFn(mangled, _, _, params, ret_type, _) => do
+        const method_name = extract_method_name(mangled, trait_name)
+        const ret_cpp = type_to_cpp(context, ret_type)
+        req_parts.push("{ " + method_name + "(self) } -> std::convertible_to<" + ret_cpp + ">")
+      end,
+      _ => do end
+    }
+    mi = mi + 1
+  end
+  const req_body = req_parts.join("; ")
+  prefix + "concept " + cpp_safe(trait_name) + " = requires(const " + self_param + "& self) { " + req_body + "; };\n"
+end
+
+fn gen_type_decl(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
+  const prefix = template_prefix(type_params)
+  prefix + gen_type_decl_fwd(context, type_name, variants) + gen_type_decl_body(context, type_name, variants)
+end
 
 fn gen_decl(decl: Shared<Decl>, context: CodegenContext) -> string =
   match decl {
-    DeclType(type_name, variants) => gen_type_decl(context, type_name, variants),
-    DeclFn(name, params, return_type, body) =>
-      match body { ExprExtern => "", _ => gen_fn_decl(name, params, return_type, body, context) },
-    DeclExtend(_, methods) => do
+    DeclType(type_name, type_params, variants) => gen_type_decl(context, type_name, type_params, variants),
+    DeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
+    DeclFn(name, type_params, type_bounds, params, return_type, body) =>
+      match body { ExprExtern => "", _ => gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context) },
+    DeclExtend(type_name, trait_name, methods) => do
+      const ext_ctx = make_body_context(context, [], [], Map.new(), [], type_name, [])
       let parts: [string] = []; let index = 0
       while index < methods.length() do
-        parts.push(gen_decl(methods[index], context)); index = index + 1
+        match methods[index] {
+          DeclFn(mangled, _, _, params, ret_type, body) => do
+            match body {
+              ExprExtern => do
+                const method_name = if trait_name.length() > 0 then extract_method_name(mangled, type_name) else "" end
+                if type_name == "i32" && method_name == "to_string" && params.length() > 0 then
+                  const ret_cpp = type_to_cpp(context, ret_type)
+                  const params_str = gen_params(context, params)
+                  parts.push(ret_cpp + " " + context_resolve(context, mangled) + "(" + params_str + ") noexcept { return mlc::to_string(" + cpp_safe(params[0].name) + "); }\n")
+                else
+                  ()
+                end
+              end,
+              _ => parts.push(gen_decl(methods[index], ext_ctx))
+            }
+          end,
+          _ => parts.push(gen_decl(methods[index], ext_ctx))
+        }
+        index = index + 1
       end
-      parts.join("")
+      let wrappers = ""
+      if trait_name.length() > 0 then
+        let mi = 0
+        while mi < methods.length() do
+          match methods[mi] {
+            DeclFn(mangled, _, _, params, ret_type, _) => do
+              const wrapper_ctx = make_body_context(context, [], [], Map.new(), [], type_name, [])
+              const method_name = extract_method_name(mangled, type_name)
+              const ret_cpp = type_to_cpp(wrapper_ctx, ret_type)
+              const fn_resolved = context_resolve(context, mangled)
+              const params_str = gen_params(wrapper_ctx, params)
+              let call_args: [string] = []; let pi = 0
+              while pi < params.length() do
+                call_args.push(cpp_safe(params[pi].name)); pi = pi + 1
+              end
+              wrappers = wrappers + "inline " + ret_cpp + " " + cpp_safe(method_name) + "(" + params_str + ") noexcept { return " + fn_resolved + "(" + call_args.join(", ") + "); }\n"
+            end,
+            _ => do end
+          }
+          mi = mi + 1
+        end
+      end
+      const methods_str = parts.join("")
+      if trait_name.length() > 0 then
+        const cpp_type = type_name_to_cpp(context, type_name)
+        const trait_safe = cpp_safe(trait_name)
+        methods_str + wrappers + "static_assert(" + trait_safe + "<" + cpp_type + ">, \"" + type_name + " does not implement " + trait_name + "\");\n"
+      else
+        methods_str
+      end
     end,
     DeclImport(_, _) => "",
     DeclExported(d) => gen_decl(d, context)
@@ -1129,14 +1321,36 @@ fn gen_decl(decl: Shared<Decl>, context: CodegenContext) -> string =
 
 // --- Entry point ----------------------------------------------------------
 
+fn gen_extend_wrapper_protos(type_name: string, trait_name: string, methods: [Shared<Decl>], context: CodegenContext) -> string =
+  if trait_name.length() == 0 then ""
+  else
+    let wrappers = ""; let mi = 0
+    while mi < methods.length() do
+      match methods[mi] {
+        DeclFn(mangled, _, _, params, ret_type, _) => do
+          const wrapper_ctx = make_body_context(context, [], [], Map.new(), [], type_name, [])
+          const method_name = extract_method_name(mangled, type_name)
+          const ret_cpp = type_to_cpp(wrapper_ctx, ret_type)
+          const params_str = gen_params(wrapper_ctx, params)
+          wrappers = wrappers + ret_cpp + " " + cpp_safe(method_name) + "(" + params_str + ") noexcept;\n"
+        end,
+        _ => do end
+      }
+      mi = mi + 1
+    end
+    wrappers
+  end
+
 fn gen_proto(decl: Shared<Decl>, context: CodegenContext) -> string =
   match decl {
-    DeclType(_, _)               => "",
-    DeclFn(name, params, ret, body) => match body { ExprExtern => "", _ => gen_fn_proto(name, params, ret, context) },
-    DeclExtend(_, methods) => do
+    DeclType(_, _, _)               => "",
+    DeclTrait(_, _, _)               => "",
+    DeclFn(name, type_params, type_bounds, params, ret, body) => match body { ExprExtern => "", _ => gen_fn_proto(name, type_params, type_bounds, params, ret, context) },
+    DeclExtend(type_name, trait_name, methods) => do
+      const ext_ctx = make_body_context(context, [], [], Map.new(), [], type_name, [])
       let parts: [string] = []; let index = 0
       while index < methods.length() do
-        parts.push(gen_proto(methods[index], context)); index = index + 1
+        parts.push(gen_proto(methods[index], ext_ctx)); index = index + 1
       end
       parts.join("")
     end,
@@ -1146,20 +1360,36 @@ fn gen_proto(decl: Shared<Decl>, context: CodegenContext) -> string =
 
 fn collect_decl_parts(decls: [Shared<Decl>], context: CodegenContext, phase: i32) -> [string] = do
   let parts: [string] = []
+  if phase == 0 then
+    let i = 0
+    while i < decls.length() do
+      const w = match decls[i] {
+        DeclExtend(tn, tr, m) => gen_extend_wrapper_protos(tn, tr, m, context),
+        DeclExported(d) => match decl_inner(d) { DeclExtend(tn, tr, m) => gen_extend_wrapper_protos(tn, tr, m, context), _ => "" },
+        _ => ""
+      }
+      if w.length() > 0 then parts.push(w) end
+      i = i + 1
+    end
+  end
   let index = 0
   while index < decls.length() do
     const segment = match decls[index] {
-      DeclType(type_name, variants) =>
+      DeclType(type_name, _, variants) =>
         if phase == 0 then gen_type_decl_fwd(context, type_name, variants)
         else if phase == 1 then gen_type_decl_body(context, type_name, variants)
         else ""
         end,
-      DeclFn(_, _, _, _) =>
+      DeclTrait(name, type_params, methods) =>
+        if phase == 0 then gen_trait_decl(context, name, type_params, methods)
+        else ""
+        end,
+      DeclFn(_, _, _, _, _, _) =>
         if phase == 2 then gen_proto(decls[index], context)
         else if phase == 3 then gen_decl(decls[index], context)
         else ""
         end,
-      DeclExtend(_, _) =>
+      DeclExtend(_, _, _) =>
         if phase == 2 then gen_proto(decls[index], context)
         else if phase == 3 then gen_decl(decls[index], context)
         else ""
@@ -1167,16 +1397,18 @@ fn collect_decl_parts(decls: [Shared<Decl>], context: CodegenContext, phase: i32
       DeclImport(_, _) => "",
       DeclExported(d) =>
         if phase == 0 then match decl_inner(d) {
-          DeclType(type_name, variants) => gen_type_decl_fwd(context, type_name, variants),
+          DeclType(type_name, _, variants) => gen_type_decl_fwd(context, type_name, variants),
+          DeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
           _ => ""
         }
         else if phase == 1 then match decl_inner(d) {
-          DeclType(type_name, variants) => gen_type_decl_body(context, type_name, variants),
+          DeclType(type_name, _, variants) => gen_type_decl_body(context, type_name, variants),
           _ => ""
         }
         else if phase == 2 then gen_proto(d, context)
         else if phase == 3 then match decl_inner(d) {
-          DeclType(_, _) => "",
+          DeclType(_, _, _) => "",
+          DeclTrait(_, _, _) => "",
           _ => gen_decl(d, context)
         }
         else ""
@@ -1243,7 +1475,7 @@ export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program, 
     namespace_prefix: "",
     qualified: qualified,
     self_type: "",
-    method_owners: build_method_owners_with_index(item, precomp.item_index),
+    method_owners: build_method_owners_from_decls(full_prog.decls),
     shared_params: [],
     shared_array_params: [],
     array_elem_types: Map.new(),

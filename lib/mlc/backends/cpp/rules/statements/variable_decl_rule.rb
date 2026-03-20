@@ -35,6 +35,7 @@ module MLC
 
               # First declaration - track it
               context.declare_variable(node.name)
+              context.set_var_type(node.name, node.type)
 
               # Map type to C++
               type_str = context.map_type(node.type)
@@ -109,6 +110,7 @@ module MLC
 
               # 3. T x = std::get<Ok<T>>(__try_N)._0;
               context.declare_variable(node.name)
+              context.set_var_type(node.name, node.type)
               val_type = context.map_type(node.type)
               val_decl = context.factory.variable_declaration(
                 type: val_type,

@@ -26,7 +26,7 @@ class MLCBlockTest < Minitest::Test
     source = <<~MLC
       fn sum(xs: i32[]) -> i32 =
         for x in xs do
-          let total = 0;
+          let mut total = 0;
           total = total + x;
           total
         end
@@ -46,7 +46,7 @@ class MLCBlockTest < Minitest::Test
   def test_block_lowering_generates_statements
     source = <<~MLC
       fn apply(xs: i32[]) -> i32 =
-        let result = 0;
+        let mut result = 0;
         for x in xs do
           result = x + 1;
         end;
@@ -63,7 +63,7 @@ class MLCBlockTest < Minitest::Test
   def test_function_level_mutable_assignments
     source = <<~MLC
       fn main() -> i32 =
-        let x = 0;
+        let mut x = 0;
         x = x + 1;
         x
     MLC

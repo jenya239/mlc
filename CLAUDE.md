@@ -14,6 +14,9 @@
 
 MLC — компилятор языка программирования. Цель: self-hosted compiler.
 
+- Self-hosted исходники: `compiler/`. Дорожная карта и политика **Ruby как резерв/bootstrap**: `docs/SELF_HOSTED_PLAN.md`.
+- `lib/mlc/` не удалять — эталон и запасной компилятор.
+
 ### Архитектура
 
 ```
@@ -35,6 +38,7 @@ MLC Source → Lexer/Parser → AST → SemanticIR → C++ AST DSL → C++ sourc
 | C++ AST DSL | lib/mlc/backends/cpp/cpp_ast/ | Представление C++ кода |
 | Runtime | runtime/include/mlc/ | C++20 runtime библиотека |
 | Registries | lib/mlc/registries/ | TypeRegistry, FunctionRegistry |
+| Self-hosted | compiler/ | MLC lexer/parser/checker/codegen → C++ |
 
 ### Паттерны проекта
 
@@ -64,6 +68,10 @@ obj.instance_method()                               # instance call → Type_met
 ```bash
 bundle exec ruby -Ilib:test test/mlc/some_test.rb    # один тест
 bundle exec ruby -Ilib:test -e "Dir['test/mlc/**/*_test.rb'].each { |f| require_relative f }"  # все unit-тесты
+bundle exec rake test_mlc                              # только test/mlc/** (CI)
+bundle exec rake test_compiler_mlc                     # compiler/tests (нужен g++)
+bundle exec rake test_self_hosted_stack                # test_mlc + test_compiler_mlc
+bundle exec rake test_unit                             # весь test/ кроме integration
 bundle exec rake test                                  # все тесты (долго, E2E компилирует C++)
 ```
 

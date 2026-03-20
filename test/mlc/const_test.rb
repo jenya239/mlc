@@ -89,10 +89,10 @@ class ConstTest < Minitest::Test
     refute_includes cpp, "constexpr"
   end
 
-  def test_let_can_rebind
+  def test_let_mut_can_rebind
     source = <<~MLC
       fn main() -> i32 = do
-        let x = 1
+        let mut x = 1
         x = 2
         x
       end

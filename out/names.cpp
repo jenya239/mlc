@@ -55,12 +55,12 @@ names.set(mlc::String("Shared", 6), true);
 names.set(mlc::String("Map", 3), true);
 auto i = 0;
 while ((i < prog.decls.length())) {
-std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [name, __1, __2, __3] = declFn; return [&]() {
+std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [name, __1, __2, __3, __4, __5] = declFn; return [&]() {
 names.set(name, true);
 /* unit */;
 return /* unit */;
 }(); },
-[&](const ast::DeclType& declType) { auto [name, variants] = declType; return [&]() {
+[&](const ast::DeclType& declType) { auto [name, __1, variants] = declType; return [&]() {
 names.set(name, true);
 auto vi = 0;
 while ((vi < variants.length())) {
@@ -85,7 +85,26 @@ vi = (vi + 1);
 /* unit */;
 return /* unit */;
 }(); },
-[&](const ast::DeclExtend& declExtend) { auto [__0, __1] = declExtend; return [&]() {
+[&](const ast::DeclTrait& declTrait) { auto [name, __1, methods] = declTrait; return [&]() {
+names.set(name, true);
+auto mi = 0;
+while ((mi < methods.length())) {
+std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [fn_name, __1, __2, __3, __4, __5] = declFn; return [&]() {
+names.set(fn_name, true);
+/* unit */;
+return /* unit */;
+}(); },
+[&](const auto& __v) { return [&]() {
+/* unit */;
+return /* unit */;
+}(); }
+}, (*methods[mi]));
+mi = (mi + 1);
+}
+/* unit */;
+return /* unit */;
+}(); },
+[&](const ast::DeclExtend& declExtend) { auto [__0, __1, __2] = declExtend; return [&]() {
 /* unit */;
 return /* unit */;
 }(); },
@@ -211,8 +230,8 @@ return empty_errors;
 }(); }
 }, (*expr));
 }
-mlc::Array<mlc::String> NameCheckResult_append_expr_errors(NameCheckResult self, mlc::Array<mlc::String> expr_errors) noexcept{
-return ast::errs_append(self.errors, expr_errors);
+mlc::String NameCheckResult_append_expr_errors(NameCheckResult self) noexcept{
+return /* unit */;
 }
 NameCheckResult check_names_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> stmts, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
 auto errors = mlc::Array<mlc::String>{};

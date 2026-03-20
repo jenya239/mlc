@@ -47,8 +47,8 @@ export fn collect_globals(prog: Program) -> Map<string, bool> = do
   let i = 0
   while i < prog.decls.length() do
     match decl_inner(prog.decls[i]) {
-      DeclFn(name, _, _, _) => do names.set(name, true); () end,
-      DeclType(name, variants) => do
+      DeclFn(name, _, _, _, _, _) => do names.set(name, true); () end,
+      DeclType(name, _, variants) => do
         names.set(name, true); let vi = 0
         while vi < variants.length() do
           match variants[vi] {
@@ -59,7 +59,19 @@ export fn collect_globals(prog: Program) -> Map<string, bool> = do
           vi = vi + 1
         end; ()
       end,
-      DeclExtend(_, _) => do () end,
+      DeclTrait(name, _, methods) => do
+        names.set(name, true)
+        let mi = 0
+        while mi < methods.length() do
+          match methods[mi] {
+            DeclFn(fn_name, _, _, _, _, _) => do names.set(fn_name, true); () end,
+            _ => do () end
+          }
+          mi = mi + 1
+        end
+        ()
+      end,
+      DeclExtend(_, _, _) => do () end,
       DeclImport(_, _) => do () end,
       DeclExported(_)  => do () end
     }
