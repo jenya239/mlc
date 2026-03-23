@@ -53,80 +53,98 @@
 | Инкрементальная сборка (кэш `.hpp`) | tooling | Низкий | ~10% |
 | Стандартная библиотека (итераторы, Display, …) | stdlib | Низкий | долго |
 
-## Следующие шаги
+## Ближайшие шаги (итерации)
 
-### 1. Error handling
+### Итерация 1 — `Result<T,E>` + `?` в mlcc (приоритет: высокий)
 
-```mlc
-type Result<T, E> = Ok(T) | Err(E)
+**Цель:** self-hosted компилятор использует `Result` для ошибок вместо `[string]`.
 
-fn parse(src: string) -> Result<AST, string> = ...
+**Текущее состояние:**
+- Ruby: `Result<T,E>` как stdlib (`lib/mlc/common/stdlib/core/result.mlc`), `TryExpr` + `try_rule` + `variable_decl_rule` — работают.
+- mlcc: `ExprQuestion` в `let`/`return`/stmt (`gen_try_unwrap`) — готово. В `gen_expr` (вложенный `?`) — passthrough без unwrap.
 
-fn compile(src: string) -> Result<string, string> = do
-  const ast = parse(src)?      // propagate Err
-  const cpp = codegen(ast)?
-  Ok(cpp)
-end
-```
+**Что делать:**
+1. В `compiler/codegen.mlc::gen_expr` ветка `ExprQuestion` — вместо passthrough сгенерировать `__try_N = inner; if (Err) return Err; std::get<Ok>(__try_N).field0`. Это требует `try_counter` внутри `gen_expr` → передавать его как параметр или использовать статический счётчик строк.
+2. Добавить `Result` в `compiler/ast.mlc` и `compiler/checker/registry.mlc` как известный generic-тип.
+3. Написать тест в `compiler/tests/test_codegen.mlc` на `? expr` внутри выражения.
 
-**Что нужно:**
-- `Result<T,E>` как встроенный тип (или stdlib)
-- `?` оператор: в Ruby-пайплайне — `TryExpr` → SemanticIR → C++ (`try_rule` / `variable_decl_rule` с early return где разобрано)
-- self-hosted (`compiler/`): `ExprQuestion` разобран в `let`/`return`/`expr`-stmt и в теле `do` перед `return`; в произвольном подвыражении `gen_expr` пока снимает `?` без unwrap (ограничение)
+---
 
-### 2. Generics
+### Итерация 2 — Generics в mlcc (приоритет: высокий)
 
-```mlc
-fn identity<T>(x: T) -> T = x
-fn map<T, U>(arr: [T], f: fn(T) -> U) -> [U] = ...
-```
+**Текущее состояние:**
+- Ruby: generics разобраны в парсере и SemanticIR, C++ templates генерируются.
+- mlcc: `fn foo<T>` в парсере `decls.mlc` разбирается (через `parse_type_params_opt`), type_params передаются в `DeclFn`. В `gen_fn_decl` → `template_prefix(type_params)` и `requires_clause(type_params, type_bounds)` — уже работают.
+- Что **не** работает: `check_names_expr` не знает о `T` как имени типа для пользовательских параметров в body; `registry.mlc` не регистрирует generic-функции; codegen не выводит concrete instantiation.
 
-**Варианты реализации:**
-- Мономорфизация (как Rust) — просто, но раздувает код
-- C++ templates (передать as-is) — проще реализовать
+**Что делать:**
+1. `compiler/checker/names.mlc::collect_globals` — добавить регистрацию имён параметров типа в locals для тела функции.
+2. Тест в `compiler/tests/test_checker.mlc` — `fn id<T>(x: T) -> T = x` уже есть (0 errors). Добавить тест на вызов `id(42)`.
+3. `compiler/checker/infer.mlc` — при вызове `fn id<T>` инстанцировать тип (простейший вариант — не проверять, возвращать TUnknown).
+4. `compiler/codegen.mlc` — убедиться что `template<typename T>` эмитируется (уже есть через `template_prefix`).
 
-### 3. Traits
+---
 
-```mlc
-trait Display {
-  fn to_string(self: Self) -> string
-}
+### Итерация 3 — Traits в mlcc (приоритет: высокий)
 
-extend i32 : Display {
-  fn to_string(self: i32) -> string = extern
-}
-```
+**Текущее состояние:**
+- Ruby: полный пайплайн traits через `DeclTrait` / `extend T : Foo` / `requires`-concept в C++.
+- mlcc: `compiler/parser/decls.mlc` разбирает `trait`-блок (`parse_trait_body`), `compiler/checker/registry.mlc` имеет `build_registry` с полями. `gen_trait_decl` в `codegen.mlc` генерирует `concept`. Impl через `extend T : Foo` — генерирует `static_assert`.
 
-Требует изменений во всех слоях: SemanticIR, codegen, stdlib.
+**Что делать:**
+1. Добавить тест `compiler/tests/` на компиляцию trait + impl + вызов через trait bound.
+2. Проверить, что checker в mlcc регистрирует методы trait и не даёт ложных ошибок при вызове через `obj.method()`.
+3. Trait inheritance (`trait B : A`) — пока не нужно.
+
+---
+
+### Итерация 4 — Лямбды без дыр в mlcc (приоритет: средний)
+
+**Текущее состояние:**
+- Ruby: `Lambda` AST, `x => body` и `(x, y) => body` — парсинг и codegen работают.
+- mlcc: парсер разбирает `() => expr`, `(x, y) => expr`. `gen_expr::ExprLambda` генерирует `[=](auto x) { return ...; }`. Тесты в `compiler/tests/test_codegen.mlc` — есть.
+- Не проверено: лямбда передаётся как аргумент в вызове (`arr.filter(x => x > 0)`).
+
+**Что делать:**
+1. Тест в `compiler/tests/test_codegen.mlc` — `ExprCall` с `ExprLambda` как аргументом.
+2. Проверить что `checker/names.mlc` не ругается на имена параметров лямбды.
+
+---
+
+### После (низкий приоритет)
+
+- **File I/O в stdlib** (`read_file`, `write_file`) — уже `File.read` / `File.write` есть в mlcc; для Ruby — в `stdlib/io/`.
+- **Инкрементальная сборка** — кэшировать `.hpp` если AST не изменился.
+- **Iterator / Display** — после traits.
+
+---
 
 ## Критический путь к full self-hosting
 
 ```
-mlcc компилирует compiler/ → работает
+mlcc компилирует compiler/ → работает  ✅
          ↓
-добавить Result<T,E> + ?   (error handling в compiler)
+Итерация 1: Result<T,E> + ? в gen_expr → mlcc использует Result для ошибок
          ↓
-generics                   (обобщённые алгоритмы)
+Итерация 2: Generics — проверка вызовов fn<T> без ложных ошибок
          ↓
-traits                     (visitor pattern, Display)
+Итерация 3: Traits — concept + impl в mlcc без ложных ошибок checker'а
          ↓
-mlcc полностью заменяет Ruby-компилятор
+Убрать Ruby-пайплайн как обязательный (mlcc достаточен для компиляции mlc)
 ```
 
 ## Команды
 
 ```bash
-# Unit-тесты
-bundle exec ruby -Ilib:test -e "Dir['test/mlc/**/*_test.rb'].each { |f| require_relative f }"
+# Unit-тесты Ruby-пайплайна
+bundle exec rake test_mlc
 
-# Собрать mlcc
+# Собрать mlcc (Ruby → C++ → g++)
 compiler/build.sh
 
-# Bootstrap-тест
-compiler/out/mlcc compiler/main.mlc && \
-  cd out && g++ -std=c++20 -I ../runtime/include \
-    ast.cpp ast_tokens.cpp codegen.cpp decls.cpp exprs.cpp \
-    infer.cpp lexer.cpp main.cpp names.cpp preds.cpp registry.cpp types.cpp \
-    ../runtime/src/io/io.cpp ../runtime/src/core/string.cpp \
-    -o /tmp/mlcc2
+# Self-hosted тесты (требует g++)
+compiler/tests/build_tests.sh
+
+# Один тест Ruby
+bundle exec ruby -Ilib:test test/mlc/some_test.rb
 ```
