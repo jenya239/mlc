@@ -56,7 +56,7 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),
     TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),
     TyFn(params, ret) => do
-      const param_types: [Shared<Type>] = []; let i = 0
+      const param_types: [Shared<Type>] = []; let mut i = 0
       while i < params.length() do param_types.push(type_from_annotation(params[i])); i = i + 1 end
       Shared.new(TFn(param_types, type_from_annotation(ret)))
     end,
@@ -64,8 +64,8 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
   }
 
 export fn build_registry(prog: Program) -> TypeRegistry = do
-  let registry = empty_registry()
-  let i = 0
+  let mut registry = empty_registry()
+  let mut i = 0
   while i < prog.decls.length() do
     registry = register_decl(registry, prog.decls[i]); i = i + 1
   end
@@ -75,7 +75,7 @@ end
 fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry = do
   match decl {
     DeclTrait(_, _, methods) => do
-      let i = 0
+      let mut i = 0
       while i < methods.length() do
         registry = register_decl(registry, methods[i]); i = i + 1
       end
@@ -84,7 +84,7 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
     DeclExtend(_, _, _) => registry,
     DeclFn(name, _, _, params, return_type, _) => do
       const param_types: [Shared<Type>] = []
-      let i = 0
+      let mut i = 0
       while i < params.length() do
         param_types.push(type_from_annotation(param_typ(params[i]))); i = i + 1
       end
@@ -92,7 +92,7 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       registry
     end,
     DeclType(type_name, _, variants) => do
-      let i = 0
+      let mut i = 0
       while i < variants.length() do
         registry = register_variant(registry, type_name, variants[i]); i = i + 1
       end
@@ -113,7 +113,7 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
     end,
     VarTuple(variant_name, field_types) => do
       const field_type_list: [Shared<Type>] = []
-      let i = 0
+      let mut i = 0
       while i < field_types.length() do
         field_type_list.push(type_from_annotation(field_types[i])); i = i + 1
       end
@@ -123,7 +123,7 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
     end,
     VarRecord(variant_name, field_defs) => do
       const field_map: Map<string, Shared<Type>> = Map.new()
-      let i = 0
+      let mut i = 0
       while i < field_defs.length() do
         field_map.set(field_defs[i].name, type_from_annotation(field_defs[i].typ)); i = i + 1
       end

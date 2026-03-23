@@ -1,37 +1,57 @@
 # План развития MLC
 
-Дата: март 2026
+Дата: март 2026 (актуализация плана и привязок)
 
-## Текущее состояние
+## Общая цель
 
-### Готово (self-hosted mlcc)
+**Self-hosted компилятор**: весь пайплайн MLC → C++ реализован на MLC (`compiler/*.mlc`), бинарь `mlcc` собирается из сгенерированного C++ и может пересобирать себя (bootstrap). До полной замены Ruby остаётся закрыть generics/traits/Result в self-hosted слое и перенести оставшуюся семантику.
 
-| Фича | Состояние |
-|------|-----------|
-| Лексер, парсер | ✅ |
-| AST: record/sum типы, функции, блоки | ✅ |
-| Name resolution | ✅ |
-| Type inference (базовый) | ✅ |
-| Codegen → C++20 | ✅ |
-| Модульная компиляция (import/export → hpp/cpp) | ✅ |
-| Pattern matching: PatCtor, PatRecord, PatIdent, PatWild | ✅ |
-| `Shared<T>` / `[T]` / `[K:V]` | ✅ |
-| `let mut` / `const` | ✅ |
-| `extend Type { fn method(self) }` | ✅ |
-| F-string `f"hello {name}"` | ✅ |
-| Bootstrap convergence (mlcc→mlcc→mlcc) | ✅ |
+---
 
-### Отсутствует
+## Что сделано
 
-| Фича | Приоритет | Оценка трудоёмкости |
-|------|-----------|---------------------|
-| `Result<T,E>` + `?` operator | Высокий | ~20% от сделанного |
-| Пользовательские generics (`fn foo<T>`) | Высокий | ~60% от сделанного |
-| Traits (`trait Foo + extend T : Foo`) | Высокий | ~80% от сделанного |
-| Lambdas в mlcc (полная поддержка) | Средний | ~15% |
-| File I/O в stdlib (read_file, write_file) | Средний | ~10% |
-| Инкрементальная сборка (кэш .hpp) | Низкий | ~10% |
-| Стандартная библиотека (Iterator, Display) | Низкий | бесконечно |
+### Ruby-компилятор (`lib/mlc/`) — основной продакшен-пайплайн
+
+| Область | Состояние |
+|---------|-----------|
+| Lexer/parser, AST | ✅ |
+| SemanticIR, type check, inference | ✅ |
+| Lowering → C++ AST, codegen, модульные `.hpp`/`.cpp` | ✅ |
+| `const` / `let` / `let mut` / `let const`, присваивание только в `mut` | ✅ |
+| `TryExpr` (`?`), частично: IR + C++ (`try_rule`, `variable_decl_rule`) | ⚠️ не везде идеальный unwrap |
+| Generics/traits в языке (парсинг, часть семантики) | ⚠️ по фичам; E2E частично |
+| Тесты `test/mlc/`, `test/integration/` | ✅ |
+
+### Self-hosted `compiler/*.mlc` (mlcc)
+
+| Область | Состояние |
+|---------|-----------|
+| Лексер, парсер модулей, AST, импорты | ✅ |
+| Имена + базовый infer + registry типов | ✅ |
+| Codegen в C++20, модульная сборка (`compiler/build.sh`) | ✅ |
+| Pattern matching, records, `extend`, f-строки | ✅ |
+| `Shared` / массивы / map, COW в рантайме | ✅ |
+| Семантика `let`/`const`/`let mut` (перепривязка) | ✅ приведено к правилам Ruby |
+| `ExprQuestion` в stmt/`return`/теле блока (`gen_try_unwrap` и т.д.) | ✅ |
+| `ExprQuestion` внутри произвольного `gen_expr` | ❌ passthrough (без unwrap) |
+| `Result`/`?` как в PLAN-примере end-to-end в mlcc | ❌ |
+| Пользовательские `fn foo<T>` в mlcc | ❌ |
+| Traits в mlcc как у Ruby | ❌ |
+| Unit-тесты `compiler/tests/` (сборка через `build_tests.sh`) | ✅ |
+
+---
+
+## Что не сделано (приоритеты)
+
+| Фича | Слой | Приоритет | Оценка |
+|------|------|-----------|--------|
+| `Result<T,E>` + `?` полностью (в т.ч. вложенные выражения в mlcc) | Ruby + mlcc | Высокий | ~20% |
+| Пользовательские generics `fn foo<T>` | в основном mlcc | Высокий | ~60% |
+| Traits `extend T : Foo` в mlcc | mlcc | Высокий | ~80% |
+| Lambdas в mlcc без дыр | mlcc | Средний | ~15% |
+| File I/O stdlib (`read_file`, …) | stdlib | Средний | ~10% |
+| Инкрементальная сборка (кэш `.hpp`) | tooling | Низкий | ~10% |
+| Стандартная библиотека (итераторы, Display, …) | stdlib | Низкий | долго |
 
 ## Следующие шаги
 
@@ -51,8 +71,8 @@ end
 
 **Что нужно:**
 - `Result<T,E>` как встроенный тип (или stdlib)
-- `?` оператор в парсере и codegen: `ExprQuestion(inner)` → `try { ... } / early return`
-- Сейчас `ExprQuestion` в AST есть, codegen его игнорирует
+- `?` оператор: в Ruby-пайплайне — `TryExpr` → SemanticIR → C++ (`try_rule` / `variable_decl_rule` с early return где разобрано)
+- self-hosted (`compiler/`): `ExprQuestion` разобран в `let`/`return`/`expr`-stmt и в теле `do` перед `return`; в произвольном подвыражении `gen_expr` пока снимает `?` без unwrap (ограничение)
 
 ### 2. Generics
 

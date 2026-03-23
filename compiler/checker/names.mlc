@@ -3,7 +3,7 @@
 import { Expr, Stmt, Pat, Decl, Program, decl_inner, errs_append } from "../ast"
 
 fn scope_contains(scope: [string], name: string) -> bool = do
-  let found = false; let index = 0
+  let mut found = false; let mut index = 0
   while index < scope.length() && !found do
     if scope[index] == name then found = true end
     index = index + 1
@@ -20,14 +20,14 @@ fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> 
   match pattern {
     PatIdent(name) => do accumulator.push(name); accumulator end,
     PatCtor(_, sub_patterns) => do
-      let index = 0
+      let mut index = 0
       while index < sub_patterns.length() do
         accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
     PatRecord(_, field_pats) => do
-      let index = 0
+      let mut index = 0
       while index < field_pats.length() do
         accumulator = collect_pattern_bindings(field_pats[index], accumulator); index = index + 1
       end
@@ -44,12 +44,12 @@ export fn collect_globals(prog: Program) -> Map<string, bool> = do
   names.set("true", true); names.set("false", true); names.set("exit", true)
   names.set("print", true); names.set("println", true); names.set("args", true)
   names.set("File", true); names.set("Shared", true); names.set("Map", true)
-  let i = 0
+  let mut i = 0
   while i < prog.decls.length() do
     match decl_inner(prog.decls[i]) {
       DeclFn(name, _, _, _, _, _) => do names.set(name, true); () end,
       DeclType(name, _, variants) => do
-        names.set(name, true); let vi = 0
+        names.set(name, true); let mut vi = 0
         while vi < variants.length() do
           match variants[vi] {
             VarUnit(variant_name)     => do names.set(variant_name, true); () end,
@@ -61,7 +61,7 @@ export fn collect_globals(prog: Program) -> Map<string, bool> = do
       end,
       DeclTrait(name, _, methods) => do
         names.set(name, true)
-        let mi = 0
+        let mut mi = 0
         while mi < methods.length() do
           match methods[mi] {
             DeclFn(fn_name, _, _, _, _, _) => do names.set(fn_name, true); () end,
@@ -83,7 +83,7 @@ end
 export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [string] = do
   match expr {
     ExprIdent(name) => do
-      let errors: [string] = []
+      let mut errors: [string] = []
       if !scope_contains(locals, name) && !globals.has(name) then
         errors.push("undefined: " + name)
       end
@@ -93,14 +93,14 @@ export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: Map<st
       errs_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals)),
     ExprUn(_, inner) => check_names_expr(inner, locals, globals),
     ExprCall(func, call_args) => do
-      let errors = check_names_expr(func, locals, globals); let i = 0
+      let mut errors = check_names_expr(func, locals, globals); let mut i = 0
       while i < call_args.length() do
         errors = errs_append(errors, check_names_expr(call_args[i], locals, globals)); i = i + 1
       end
       errors
     end,
     ExprMethod(obj, _, margs) => do
-      let errors = check_names_expr(obj, locals, globals); let i = 0
+      let mut errors = check_names_expr(obj, locals, globals); let mut i = 0
       while i < margs.length() do
         errors = errs_append(errors, check_names_expr(margs[i], locals, globals)); i = i + 1
       end
@@ -127,31 +127,31 @@ export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: Map<st
       errs_append(check_names_expr(iter, locals, globals), check_result.errors)
     end,
     ExprMatch(subject, arms) => do
-      let errors = check_names_expr(subject, locals, globals); let i = 0
+      let mut errors = check_names_expr(subject, locals, globals); let mut i = 0
       while i < arms.length() do
         const bindings = pattern_bindings(arms[i].pat)
-        const arm_scope = locals; let index = 0
+        const arm_scope = locals; let mut index = 0
         while index < bindings.length() do arm_scope.push(bindings[index]); index = index + 1 end
         errors = errs_append(errors, check_names_expr(arms[i].body, arm_scope, globals)); i = i + 1
       end
       errors
     end,
     ExprRecord(_, field_vals) => do
-      let errors: [string] = []; let i = 0
+      let mut errors: [string] = []; let mut i = 0
       while i < field_vals.length() do
         errors = errs_append(errors, check_names_expr(field_vals[i].val, locals, globals)); i = i + 1
       end
       errors
     end,
     ExprRecordUpdate(_, base, field_vals) => do
-      let errors: [string] = check_names_expr(base, locals, globals); let i = 0
+      let mut errors: [string] = check_names_expr(base, locals, globals); let mut i = 0
       while i < field_vals.length() do
         errors = errs_append(errors, check_names_expr(field_vals[i].val, locals, globals)); i = i + 1
       end
       errors
     end,
     ExprArray(exprs) => do
-      let errors: [string] = []; let i = 0
+      let mut errors: [string] = []; let mut i = 0
       while i < exprs.length() do
         errors = errs_append(errors, check_names_expr(exprs[i], locals, globals)); i = i + 1
       end
@@ -160,9 +160,9 @@ export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: Map<st
     ExprQuestion(inner) => check_names_expr(inner, locals, globals),
     ExprLambda(params, body) => do
       const lambda_locals: [string] = []
-      let i = 0
+      let mut i = 0
       while i < locals.length() do lambda_locals.push(locals[i]); i = i + 1 end
-      let pi = 0
+      let mut pi = 0
       while pi < params.length() do lambda_locals.push(params[pi]); pi = pi + 1 end
       check_names_expr(body, lambda_locals, globals)
     end,
@@ -178,7 +178,7 @@ extend NameCheckResult {
 }
 
 export fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult = do
-  let errors: [string] = []; const scope = locals; let i = 0
+  let mut errors: [string] = []; const scope = locals; let mut i = 0
   while i < stmts.length() do
     match stmts[i] {
       StmtLet(name, _, _, value) => do

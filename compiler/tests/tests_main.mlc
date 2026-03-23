@@ -10,7 +10,7 @@ import { TestResult, run_all } from "./test_runner"
 
 fn all_tests() -> [TestResult] = do
   const all: [TestResult] = []
-  let i = 0
+  let mut i = 0
 
   const lex_results = lexer_tests()
   while i < lex_results.length() do all.push(lex_results[i]); i = i + 1 end

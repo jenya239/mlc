@@ -53,8 +53,10 @@ MLC Source → Lexer/Parser → AST → SemanticIR → C++ AST DSL → C++ sourc
 ```
 fn name(args) -> RetType = expr                    # однострочная функция
 fn name(args) -> RetType = do ... end              # многострочная функция (НЕ { ... })
-let x = expr                                       # неизменяемая привязка
-let mut x = expr                                   # изменяемая привязка
+const x = expr                                     # неизменяемая привязка (stmt)
+let x = expr                                       # неизменяемая привязка (let-форма)
+let mut x = expr                                   # изменяемая; нужна для x = … и .push/.set на биндинге
+let const x = expr                                 # compile-time constexpr (где поддержано чекером/codegen)
 type Name = { field: Type }                        # record type
 type Name = Variant1(Type) | Variant2              # sum type
 extend Type { fn method(self: Type) -> T = ... }   # instance method

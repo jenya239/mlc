@@ -53,7 +53,7 @@ fn parse_type_args(parser: Parser) -> TypesResult = do
   const types: [Shared<TypeExpr>] = []
   const first = parse_type(parser)
   types.push(first.type_expr)
-  let state = first.parser
+  let mut state = first.parser
   while state.kind().is_comma() do
     const next = parse_type(state.advance())
     types.push(next.type_expr)

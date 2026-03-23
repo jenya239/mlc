@@ -38,8 +38,8 @@ fn method_return_type(method_name: string) -> Shared<Type> =
   end
 
 fn infer_args_errors(initial: InferResult, exprs: [Shared<Expr>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> InferResult = do
-  let result = initial
-  let index = 0
+  let mut result = initial
+  let mut index = 0
   while index < exprs.length() do
     result = result.absorb(infer_expr(exprs[index], type_env, registry))
     index = index + 1
@@ -48,8 +48,8 @@ fn infer_args_errors(initial: InferResult, exprs: [Shared<Expr>], type_env: Map<
 end
 
 fn infer_field_vals_errors(initial: InferResult, field_vals: [Shared<FieldVal>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> InferResult = do
-  let result = initial
-  let index = 0
+  let mut result = initial
+  let mut index = 0
   while index < field_vals.length() do
     result = result.absorb(infer_expr(field_vals[index].val, type_env, registry))
     index = index + 1
@@ -134,9 +134,9 @@ fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry:
     end,
     ExprMatch(subject, arms) => do
       const subject_result = infer_expr(subject, type_env, registry)
-      let errors = subject_result.errors
-      let arm_type: Shared<Type> = Shared.new(TUnknown)
-      let i = 0
+      let mut errors = subject_result.errors
+      let mut arm_type: Shared<Type> = Shared.new(TUnknown)
+      let mut i = 0
       while i < arms.length() do
         const arm_env    = env_for_pat(type_env, arms[i].pat, registry)
         const arm_result = infer_expr(arms[i].body, arm_env, registry)
@@ -162,7 +162,7 @@ fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry:
     ExprQuestion(inner) => infer_expr(inner, type_env, registry),
     ExprLambda(params, body) => do
       let lambda_env = type_env
-      let i = 0
+      let mut i = 0
       while i < params.length() do
         lambda_env.set(params[i], Shared.new(TUnknown)); i = i + 1
       end
@@ -173,7 +173,9 @@ fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry:
 end
 
 fn infer_stmts(stmts: [Shared<Stmt>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> StmtInferResult = do
-  let errors: [string] = []; let current_env = type_env; let i = 0
+  let mut errors: [string] = []
+  let current_env = type_env
+  let mut i = 0
   while i < stmts.length() do
     match stmts[i] {
       StmtLet(name, _, _, value) => do
@@ -202,7 +204,7 @@ fn env_for_pat(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, registry: 
     PatIdent(name) => do let env = type_env; env.set(name, Shared.new(TUnknown)); env end,
     PatCtor(ctor_name, sub_pats) => do
       const param_types = registry.ctor_params_for(ctor_name)
-      let current_env = type_env; let i = 0
+      let mut current_env = type_env; let mut i = 0
       while i < sub_pats.length() do
         const sub_type = if i < param_types.length() then param_types[i] else Shared.new(TUnknown) end
         current_env = env_for_pat_with_type(current_env, sub_pats[i], sub_type, registry); i = i + 1
@@ -231,20 +233,20 @@ export extend CheckOut {
 export fn check_with_context(entry: Program, full: Program) -> CheckOut = do
   const globals  = collect_globals(full)
   let registry = build_registry(full)
-  let all_errors: [string] = []
-  let i = 0
+  let mut all_errors: [string] = []
+  let mut i = 0
   while i < entry.decls.length() do
     match decl_inner(entry.decls[i]) {
       DeclFn(_, type_params, _, params, return_type, body) => do
         const locals: [string] = []
-        let tpi = 0
+        let mut tpi = 0
         while tpi < type_params.length() do
           locals.push(type_params[tpi])
           globals.set(type_params[tpi], true)
           tpi = tpi + 1
         end
         const type_env: Map<string, Shared<Type>> = Map.new()
-        let pi = 0
+        let mut pi = 0
         while pi < params.length() do
           locals.push(param_name(params[pi]))
           type_env.set(param_name(params[pi]), type_from_annotation(param_typ(params[pi])))
@@ -268,20 +270,20 @@ end
 export fn check(prog: Program) -> CheckOut = do
   const globals  = collect_globals(prog)
   let registry = build_registry(prog)
-  let all_errors: [string] = []
-  let i = 0
+  let mut all_errors: [string] = []
+  let mut i = 0
   while i < prog.decls.length() do
     match decl_inner(prog.decls[i]) {
       DeclFn(_, type_params, _, params, return_type, body) => do
         const locals: [string] = []
-        let tpi = 0
+        let mut tpi = 0
         while tpi < type_params.length() do
           locals.push(type_params[tpi])
           globals.set(type_params[tpi], true)
           tpi = tpi + 1
         end
         const type_env: Map<string, Shared<Type>> = Map.new()
-        let pi = 0
+        let mut pi = 0
         while pi < params.length() do
           locals.push(param_name(params[pi]))
           type_env.set(param_name(params[pi]), type_from_annotation(param_typ(params[pi])))

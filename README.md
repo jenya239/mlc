@@ -45,8 +45,9 @@ end
 |-------------|-----------|
 | Функция | `fn name(args) -> T = expr` |
 | Do-блок | `fn f() -> T = do stmts... expr end` |
-| Неизменяемая привязка | `const x = expr` |
-| Изменяемая привязка | `let mut x = expr` |
+| Неизменяемая привязка | `const x = expr` или `let x = expr` |
+| Изменяемая привязка | `let mut x = expr` (присваивание `x = …` только с `mut`) |
+| Compile-time константа | `let const x = expr` |
 | Record-тип | `type Point = Point { x: i32, y: i32 }` |
 | Sum-тип | `type Shape = Circle { r: i32 } \| Rect { w: i32, h: i32 }` |
 | Pattern matching | `match expr \| Pattern => body end` |

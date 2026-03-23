@@ -25,8 +25,8 @@ extend LexState {
     end
 
   fn lex_advance_by(self, count: i32) -> LexState = do
-    let state = self
-    let i = 0
+    let mut state = self
+    let mut i = 0
     while i < count do state = state.lex_advance(); i = i + 1 end
     state
   end
@@ -79,7 +79,7 @@ fn scan_ident(state: LexState) -> ScanResult = do
   const source = state.src
   const token_line = state.line
   const token_col  = state.col
-  let current = state
+  let mut current = state
   while !current.eof() && is_alnum(current.current()) do
     current = current.lex_advance()
   end
@@ -90,8 +90,8 @@ end
 fn scan_int(state: LexState) -> ScanResult = do
   const token_line = state.line
   const token_col  = state.col
-  let current = state
-  let value = 0
+  let mut current = state
+  let mut value = 0
   while !current.eof() && is_digit(current.current()) do
     // byte_at returns a 1-byte ASCII digit string, to_i() works correctly
     value = value * 10 + current.current().to_i()
@@ -103,9 +103,9 @@ end
 fn scan_single_string(state: LexState) -> ScanStrResult = do
   const token_line = state.line
   const token_col  = state.col
-  let current = state.lex_advance()
-  let parts: [string] = []
-  let error = ""
+  let mut current = state.lex_advance()
+  let mut parts: [string] = []
+  let mut error = ""
   while !current.eof() && current.current() != "'" do
     if current.current() == "\\" then
       current = current.lex_advance()
@@ -154,9 +154,9 @@ fn map_escape(character: string) -> string =
 fn scan_string(state: LexState) -> ScanStrResult = do
   const token_line = state.line
   const token_col  = state.col
-  let current = state.lex_advance()
-  let parts: [string] = []
-  let error = ""
+  let mut current = state.lex_advance()
+  let mut parts: [string] = []
+  let mut error = ""
   while !current.eof() && current.current() != "\"" do
     if current.current() == "\\" then
       current = current.lex_advance()
@@ -188,10 +188,10 @@ end
 fn scan_fstring(state: LexState) -> ScanStrResult = do
   const token_line = state.line
   const token_col  = state.col
-  let current = state.lex_advance().lex_advance()
-  let parts: [string] = []
-  let current_lit: [string] = []
-  let error = ""
+  let mut current = state.lex_advance().lex_advance()
+  let mut parts: [string] = []
+  let mut current_lit: [string] = []
+  let mut error = ""
   while !current.eof() && current.current() != "\"" do
     if current.current() == "\\" then
       current = current.lex_advance()
@@ -207,7 +207,7 @@ fn scan_fstring(state: LexState) -> ScanStrResult = do
       parts.push(current_lit.join(""))
       current_lit = []
       current = current.lex_advance()
-      let expr_chars: [string] = []
+      let mut expr_chars: [string] = []
       while !current.eof() && current.current() != "}" do
         expr_chars.push(current.current()); current = current.lex_advance()
       end
@@ -232,7 +232,7 @@ fn scan_fstring(state: LexState) -> ScanStrResult = do
 end
 
 fn skip_whitespace(state: LexState) -> LexState = do
-  let current = state
+  let mut current = state
   while !current.eof() do
     const character = current.current()
     if is_ws(character) then
@@ -289,9 +289,9 @@ fn scan_op(state: LexState) -> ScanResult = do
 end
 
 export fn tokenize(source: string) -> LexOut = do
-  let state = LexState { src: source, pos: 0, line: 1, col: 1 }
+  let mut state = LexState { src: source, pos: 0, line: 1, col: 1 }
   const tokens: [Token] = []
-  let errors: [string] = []
+  let mut errors: [string] = []
   while !state.eof() do
     state = skip_whitespace(state)
     if state.eof() then break end

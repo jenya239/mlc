@@ -69,7 +69,7 @@ fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
       const type_result = parse_type_tokens(tokens, pos)
       const typ_and_name = type_result.type_string
       let last_space = -1
-      let index = 0
+      let mut index = 0
       while index < typ_and_name.length() do
         if typ_and_name.substring(index, 1) == " " then last_space = index end
         index = index + 1

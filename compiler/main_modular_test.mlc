@@ -26,7 +26,7 @@ fn compile_modular(entry_path: string, out_dir: string) -> string = do
       const chk = check(merged_result.prog)
       if chk.has_errors() then format_errs("check", chk.errors)
       else do
-        let i = 0
+        let mut i = 0
         while i < merged_result.items.length() do
           const item = merged_result.items[i]
           const out = gen_module(item, merged_result.items, merged_result.prog)

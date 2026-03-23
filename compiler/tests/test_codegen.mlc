@@ -2,7 +2,7 @@
 
 import { TestResult, assert_eq_str } from "./test_runner"
 import { gen_expr, create_codegen_context, type_to_cpp, map_builtin, map_method, FieldOrder } from "../codegen"
-import { Program, ExprInt, ExprBool, ExprStr, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprLambda } from "../ast"
+import { Program, ExprInt, ExprBool, ExprStr, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprLambda, ExprQuestion } from "../ast"
 
 export fn codegen_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -32,6 +32,9 @@ export fn codegen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str("ExprInt(42) - '42'",
     gen_expr(Shared.new(ExprInt(42)), ctx), "42"))
+
+  results.push(assert_eq_str("ExprQuestion: gen_expr passthrough inner (nested ? not unwrapped)",
+    gen_expr(Shared.new(ExprQuestion(Shared.new(ExprInt(7)))), ctx), "7"))
 
   results.push(assert_eq_str("ExprBool(true) - 'true'",
     gen_expr(Shared.new(ExprBool(true)), ctx), "true"))

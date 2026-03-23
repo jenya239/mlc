@@ -7,7 +7,7 @@ import { parse_type } from "./types"
 
 export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
-  let state = parser
+  let mut state = parser
   while !state.kind().is_end() && !state.at_eof() do
     const result = parse_stmt(state)
     stmts.push(result.stmt)
@@ -18,7 +18,7 @@ end
 
 export fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
-  let state = parser
+  let mut state = parser
   while !state.kind().is_end() && !state.kind().is_else() && !state.at_eof() do
     const result = parse_stmt(state)
     stmts.push(result.stmt)
@@ -129,7 +129,7 @@ fn parse_pat_args(parser: Parser) -> PatsResult = do
   else
     const first = parse_pat(parser)
     pats.push(first.pat)
-    let state = first.parser
+    let mut state = first.parser
     while state.kind().is_comma() do
       const next = parse_pat(state.advance())
       pats.push(next.pat)
@@ -141,7 +141,7 @@ end
 
 fn parse_record_pat_fields(parser: Parser) -> PatsResult = do
   const pats: [Shared<Pat>] = []
-  let state = parser
+  let mut state = parser
   while !state.kind().is_rbrace() && !state.at_eof() do
     if state.kind().is_ident() then pats.push(Shared.new(PatIdent(state.kind().ident()))) end
     state = state.advance()
@@ -158,7 +158,7 @@ export fn pipe_desugar(left_expr: Shared<Expr>, right_expr: Shared<Expr>) -> Sha
   match right_expr {
     ExprCall(callee, existing_args) => do
       const new_args: [Shared<Expr>] = [left_expr]
-      let i = 0
+      let mut i = 0
       while i < existing_args.length() do
         new_args.push(existing_args[i]); i = i + 1
       end
@@ -172,8 +172,8 @@ export fn pipe_desugar(left_expr: Shared<Expr>, right_expr: Shared<Expr>) -> Sha
 
 fn parse_pipe(parser: Parser) -> ExprResult = do
   const left = parse_or(parser)
-  let expr = left.expr
-  let state = left.parser
+  let mut expr = left.expr
+  let mut state = left.parser
   while state.kind().is_pipe() do
     const right = parse_or(state.advance())
     expr = pipe_desugar(expr, right.expr)
@@ -184,8 +184,8 @@ end
 
 fn parse_or(parser: Parser) -> ExprResult = do
   const left = parse_and(parser)
-  let expr = left.expr
-  let state = left.parser
+  let mut expr = left.expr
+  let mut state = left.parser
   while state.kind().is_op() && state.kind().op_val() == "||" do
     const right = parse_and(state.advance())
     expr = Shared.new(ExprBin("||", expr, right.expr))
@@ -196,8 +196,8 @@ end
 
 fn parse_and(parser: Parser) -> ExprResult = do
   const left = parse_cmp(parser)
-  let expr = left.expr
-  let state = left.parser
+  let mut expr = left.expr
+  let mut state = left.parser
   while state.kind().is_op() && state.kind().op_val() == "&&" do
     const right = parse_cmp(state.advance())
     expr = Shared.new(ExprBin("&&", expr, right.expr))
@@ -211,8 +211,8 @@ fn is_cmp_op(op: string) -> bool =
 
 fn parse_cmp(parser: Parser) -> ExprResult = do
   const left = parse_add(parser)
-  let expr = left.expr
-  let state = left.parser
+  let mut expr = left.expr
+  let mut state = left.parser
   const kind = state.kind()
   if kind.is_op() && is_cmp_op(kind.op_val()) then
     const right = parse_add(state.advance())
@@ -224,9 +224,9 @@ end
 
 fn parse_add(parser: Parser) -> ExprResult = do
   const left = parse_mul(parser)
-  let expr = left.expr
-  let state = left.parser
-  let go = true
+  let mut expr = left.expr
+  let mut state = left.parser
+  let mut go = true
   while go do
     const kind = state.kind()
     if kind.is_op() && (kind.op_val() == "+" || kind.op_val() == "-") then
@@ -242,9 +242,9 @@ end
 
 fn parse_mul(parser: Parser) -> ExprResult = do
   const left = parse_unary(parser)
-  let expr = left.expr
-  let state = left.parser
-  let go = true
+  let mut expr = left.expr
+  let mut state = left.parser
+  let mut go = true
   while go do
     const kind = state.kind()
     if kind.is_op() && (kind.op_val() == "*" || kind.op_val() == "/" || kind.op_val() == "%") then
@@ -270,9 +270,9 @@ end
 
 fn parse_postfix(parser: Parser) -> ExprResult = do
   const base = parse_primary(parser)
-  let expr = base.expr
-  let state = base.parser
-  let go = true
+  let mut expr = base.expr
+  let mut state = base.parser
+  let mut go = true
   while go do
     const kind = state.kind()
     if kind.is_dot() then
@@ -310,7 +310,7 @@ fn parse_arg_list(parser: Parser) -> ExprsResult = do
   else
     const first = parse_expr(parser)
     exprs.push(first.expr)
-    let state = first.parser
+    let mut state = first.parser
     while state.kind().is_comma() do
       const next = parse_expr(state.advance())
       exprs.push(next.expr)
@@ -330,8 +330,8 @@ fn build_fstr_part_expr(part: string, is_literal: bool) -> Shared<Expr> =
   end
 
 fn build_fstr_expr(parts: [string]) -> Shared<Expr> = do
-  let result: Shared<Expr> = Shared.new(ExprStr(""))
-  let pi = 0
+  let mut result: Shared<Expr> = Shared.new(ExprStr(""))
+  let mut pi = 0
   while pi < parts.length() do
     const part_expr = build_fstr_part_expr(parts[pi], pi % 2 == 0)
     if pi == 0 then
@@ -408,8 +408,8 @@ end
 
 // Check if parser (after `(`) looks like lambda params: IDENT (, IDENT)* ) =>
 fn looks_like_lambda_params(parser: Parser) -> bool = do
-  let state = parser
-  let ok = true
+  let mut state = parser
+  let mut ok = true
   if !state.kind().is_ident() then
     ok = false
   else
@@ -435,7 +435,7 @@ end
 // Parse lambda params: IDENT (, IDENT)* ) - stops AFTER `)`
 fn parse_lambda_params(parser: Parser) -> NamesResult = do
   const names: [string] = []
-  let state = parser
+  let mut state = parser
   names.push(state.kind().ident())
   state = state.advance()
   while state.kind().is_comma() do
@@ -453,7 +453,7 @@ fn parse_array_lit(parser: Parser) -> ExprResult = do
   else
     const first = parse_expr(parser)
     exprs.push(first.expr)
-    let state = first.parser
+    let mut state = first.parser
     while state.kind().is_comma() do
       const next = parse_expr(state.advance())
       exprs.push(next.expr)
@@ -517,7 +517,7 @@ fn block_body(stmts: [Shared<Stmt>]) -> [Shared<Stmt>] = do
     StmtExpr(expr) =>
       if is_unit_expr(expr) then stmts
       else
-        let result: [Shared<Stmt>] = []; let i = 0
+        let result: [Shared<Stmt>] = []; let mut i = 0
         while i < stmts.length() - 1 do result.push(stmts[i]); i = i + 1 end
         result
       end,
@@ -558,7 +558,7 @@ end
 
 fn parse_arms_brace(parser: Parser) -> ArmsResult = do
   const arms: [Shared<MatchArm>] = []
-  let state = parser
+  let mut state = parser
   while !state.kind().is_rbrace() && !state.at_eof() do
     if state.kind().is_bar() then state = state.advance() end
     const pat_result  = parse_pat(state)
@@ -572,7 +572,7 @@ end
 
 fn parse_arms_pipe(parser: Parser) -> ArmsResult = do
   const arms: [Shared<MatchArm>] = []
-  let state = parser
+  let mut state = parser
   while state.kind().is_bar() do
     const pat_result  = parse_pat(state.advance())
     const body_result = parse_expr(pat_result.parser.advance())
@@ -587,7 +587,7 @@ fn parse_arms(parser: Parser) -> ArmsResult = parse_arms_brace(parser)
 
 fn parse_record_fields(parser: Parser) -> FieldValsResult = do
   const field_vals: [Shared<FieldVal>] = []
-  let state = parser
+  let mut state = parser
   while !state.kind().is_rbrace() && !state.at_eof() do
     const field_name = state.kind().ident()
     const after_name = state.advance()
@@ -607,7 +607,7 @@ end
 fn parse_record_expr(parser: Parser, record_name: string) -> ExprResult =
   if parser.kind().is_spread() then
     const base_result = parse_expr(parser.advance())
-    let after_base = base_result.parser
+    let mut after_base = base_result.parser
     if after_base.kind().is_comma() then after_base = after_base.advance() end
     const fields_result = parse_record_fields(after_base)
     ExprResult {

@@ -95,7 +95,7 @@ end
 // --- Shared utility -------------------------------------------------------
 
 export fn errs_append(mut dst: [string], src: [string]) -> [string] = do
-  let i = 0
+  let mut i = 0
   while i < src.length() do
     dst.push(src[i])
     i = i + 1

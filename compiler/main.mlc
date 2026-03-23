@@ -7,8 +7,8 @@ import { gen_module, LoadItem, PrecomputedCtx, precompute } from "./codegen"
 import { Program, Decl, DeclImport, DeclExported, errs_append } from "./ast"
 
 fn dirname(path: string) -> string = do
-  let last_slash = -1
-  let index = 0
+  let mut last_slash = -1
+  let mut index = 0
   while index < path.length() do
     if path.char_at(index) == "/" then last_slash = index end
     index = index + 1
@@ -17,11 +17,11 @@ fn dirname(path: string) -> string = do
 end
 
 fn resolve_dotdot(path: string) -> string = do
-  let p = path
-  let i = 0
+  let mut p = path
+  let mut i = 0
   while i + 4 <= p.length() do
     if p.substring(i, 4) == "/../" then
-      let j = i - 1
+      let mut j = i - 1
       while j >= 0 && p.char_at(j) != "/" do j = j - 1 end
       const prefix = if j <= 0 then "" else p.substring(0, j) end
       const suffix = p.substring(i + 4, p.length() - i - 4)
@@ -51,8 +51,8 @@ fn resolve_import_path(base_path: string, import_path: string) -> string = do
 end
 
 fn path_in_loaded(path: string, loaded: [string]) -> bool = do
-  let found = false
-  let i = 0
+  let mut found = false
+  let mut i = 0
   while i < loaded.length() do
     if loaded[i] == path then found = true end
     i = i + 1
@@ -83,8 +83,8 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
     let seen: [string] = []
     let my_decls: [Shared<Decl>] = []
     let my_imports: [string] = []
-    let all_errors: [string] = []
-    let index = 0
+    let mut all_errors: [string] = []
+    let mut index = 0
     while index < prog.decls.length() do
       match prog.decls[index] {
         DeclImport(import_path, _) => do
@@ -92,7 +92,7 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
           my_imports.push(resolved)
           const dep_result = load_module_impl(resolved, cur_loaded, cache)
           all_errors = errs_append(all_errors, dep_result.errors)
-          let dep_i = 0
+          let mut dep_i = 0
           while dep_i < dep_result.items.length() do
             const item = dep_result.items[dep_i]
             if !path_in_loaded(item.path, seen) then
@@ -122,9 +122,9 @@ fn load_module(path: string, cache: ref mut Map<string, LoadResult>) -> LoadResu
 type MergeResult = MergeResult { prog: Program, errors: [string], items: [LoadItem] }
 
 fn path_to_module_base(path: string) -> string = do
-  let last_slash = -1
-  let last_dot = path.length()
-  let i = 0
+  let mut last_slash = -1
+  let mut last_dot = path.length()
+  let mut i = 0
   while i < path.length() do
     if path.char_at(i) == "/" then last_slash = i
     else if path.char_at(i) == "." && i > last_slash then last_dot = i
@@ -138,13 +138,13 @@ end
 
 fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
   let all_decls: [Shared<Decl>] = []
-  let all_errors: [string] = []
+  let mut all_errors: [string] = []
   let seen_paths: [string] = []
   let items_ordered: [LoadItem] = []
   let entry_decls: [Shared<Decl>] = []
   let entry_imports: [string] = []
   let cache: Map<string, LoadResult> = Map.new()
-  let index = 0
+  let mut index = 0
   while index < prog.decls.length() do
     match prog.decls[index] {
       DeclImport(path, _) => do
@@ -152,13 +152,13 @@ fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
         entry_imports.push(resolved)
         const dep_result = load_module(resolved, cache)
         all_errors = errs_append(all_errors, dep_result.errors)
-        let dep_i = 0
+        let mut dep_i = 0
         while dep_i < dep_result.items.length() do
           const item = dep_result.items[dep_i]
           if !path_in_loaded(item.path, seen_paths) then
             seen_paths.push(item.path)
             items_ordered.push(item)
-            let d = 0
+            let mut d = 0
             while d < item.decls.length() do
               all_decls.push(item.decls[d]); d = d + 1
             end
@@ -198,7 +198,7 @@ end
 
 fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) -> string = do
   const precomp = precompute(full_prog, items)
-  let i = 0
+  let mut i = 0
   while i < items.length() do
     const item = items[i]
     const out = gen_module(item, items, full_prog, precomp)
@@ -213,7 +213,7 @@ fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) 
 end
 
 fn format_errs(label: string, errors: [string]) -> string = do
-  let output = ""; let i = 0
+  let mut output = ""; let mut i = 0
   while i < errors.length() do
     output = output + label + ": " + errors[i] + "\n"; i = i + 1
   end
