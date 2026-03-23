@@ -67,6 +67,12 @@ struct DeclExtend;
 struct DeclImport;
 struct DeclExported;
 using Decl = std::variant<DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported>;
+template<typename T>
+struct Ok;
+template<typename E>
+struct Err;
+template<typename T, typename E>
+using Result = std::variant<Ok<T>, Err<E>>;
 struct TyI32 {};
 struct TyString {};
 struct TyBool {};
@@ -126,6 +132,10 @@ struct DeclExtend {mlc::String field0;mlc::String field1;mlc::Array<std::shared_
 struct DeclImport {mlc::String field0;mlc::Array<mlc::String> field1;};
 struct DeclExported {std::shared_ptr<Decl> field0;};
 struct Program {mlc::Array<std::shared_ptr<Decl>> decls;};
+template<typename T>
+struct Ok {T field0;};
+template<typename E>
+struct Err {E field0;};
 mlc::String param_name(std::shared_ptr<Param> p) noexcept;
 std::shared_ptr<TypeExpr> param_typ(std::shared_ptr<Param> p) noexcept;
 std::shared_ptr<Decl> decl_inner(std::shared_ptr<Decl> decl) noexcept;

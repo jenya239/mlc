@@ -108,8 +108,10 @@ struct Op {mlc::String field0;};
 struct Eof {};
 struct Token {TKind kind;int line;int col;};
 struct LexOut {mlc::Array<Token> tokens;mlc::Array<mlc::String> errors;};
-void LexOut_has_errors(LexOut self) noexcept;
-void Token_kind_value(Token self) noexcept;
+bool LexOut_has_errors(LexOut self) noexcept;
+TKind Token_kind_value(Token self) noexcept;
+int Token_line_number(Token self) noexcept;
+int Token_column(Token self) noexcept;
 
 } // namespace ast_tokens
 

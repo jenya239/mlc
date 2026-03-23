@@ -575,7 +575,7 @@ export fn gen_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
       match obj {
         ExprIndex(inner, _) => match inner {
           ExprIdent(n) => if context.shared_array_params.contains(n) then gen_expr(obj, context) + "->" + cpp_safe(field_name) else gen_expr(obj, context) + "." + cpp_safe(field_name) end,
-          _ => gen_expr(obj, context) + "->" + cpp_safe(field_name)
+          _ => gen_expr(obj, context) + "." + cpp_safe(field_name)
         },
         ExprIdent(n) => if context.shared_params.contains(n) then gen_expr(obj, context) + "->" + cpp_safe(field_name) else gen_expr(obj, context) + "." + cpp_safe(field_name) end,
         ExprMethod(m_obj, method_name, _) =>
@@ -1470,6 +1470,20 @@ fn gen_proto(decl: Shared<Decl>, context: CodegenContext) -> string =
     DeclExported(d) => gen_proto(d, context)
   }
 
+fn decls_have_main(decls: [Shared<Decl>]) -> bool = do
+  let mut found = false; let mut i = 0
+  while i < decls.length() do
+    const inner = decl_inner(decls[i])
+    const is_main = match inner {
+      DeclFn(name, _, _, _, _, _) => name == "main",
+      _ => false
+    }
+    if is_main then found = true else () end
+    i = i + 1
+  end
+  found
+end
+
 fn collect_decl_parts(decls: [Shared<Decl>], context: CodegenContext, phase: i32) -> [string] = do
   let parts: [string] = []
   if phase == 0 then
@@ -1601,6 +1615,7 @@ export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program, 
     generic_variants: precomp.generic_variants
   }
   const module_namespace = if base == "main" then "mlc_main" else base end
+  const is_entry = decls_have_main(item.decls)
   const std_includes = "#include \"mlc.hpp\"\n#include <variant>\n\n" + include_lines(item.imports) + "\n"
   const type_fwds = collect_decl_parts(item.decls, context, 0)
   const type_defs = collect_decl_parts(item.decls, context, 1)
@@ -1622,8 +1637,8 @@ export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program, 
     "\n",
     "#endif // " + guard + "\n"
   ].join("")
-  const cli_wrapper = if base == "main" then
-    "\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::mlc_main::mlc_user_main(argc, argv);\n}\n"
+  const cli_wrapper = if is_entry then
+    "\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::" + module_namespace + "::mlc_user_main(argc, argv);\n}\n"
     else "" end
   const impl = [
     "#define main mlc_user_main\n",

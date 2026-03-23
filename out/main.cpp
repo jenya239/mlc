@@ -12,7 +12,11 @@ last_slash = index;
 }
 index = (index + 1);
 }
-return ((last_slash <= 0) ? mlc::String("", 0) : path.substring(0, last_slash));
+if ((last_slash <= 0)) {
+return mlc::String("", 0);
+} else {
+return path.substring(0, last_slash);
+}
 }
 mlc::String resolve_dotdot(mlc::String path) noexcept{
 auto p = path;
@@ -55,13 +59,21 @@ return found;
 }
 LoadResult load_module_impl(mlc::String path, mlc::Array<mlc::String> loaded, mlc::HashMap<mlc::String, LoadResult>& cache) noexcept{
 auto norm_path = resolve_dotdot(path);
-return (cache.has(norm_path) ? cache.get(norm_path) : (path_in_loaded(norm_path, loaded) ? LoadResult{{}, mlc::Array{(mlc::String("circular: ", 10) + norm_path)}} : [&]() {
+if (cache.has(norm_path)) {
+return cache.get(norm_path);
+} else if (path_in_loaded(norm_path, loaded)) {
+return LoadResult{{}, mlc::Array{(mlc::String("circular: ", 10) + norm_path)}};
+} else {
 auto cur_loaded = loaded;
 cur_loaded.push_back(norm_path);
 auto source = mlc::file::read_to_string(path);
-return (((source.length() == 0) && (!mlc::file::exists(path))) ? LoadResult{{}, mlc::Array{(mlc::String("file not found: ", 16) + path)}} : [&]() {
+if (((source.length() == 0) && (!mlc::file::exists(path)))) {
+return LoadResult{{}, mlc::Array{(mlc::String("file not found: ", 16) + path)}};
+} else {
 auto lex = lexer::tokenize(source);
-return (ast_tokens::LexOut_has_errors(lex) ? LoadResult{{}, mlc::Array{(((mlc::String("lex ", 4) + path) + mlc::String(": ", 2)) + lex.errors[0])}} : [&]() {
+if (ast_tokens::LexOut_has_errors(lex)) {
+return LoadResult{{}, mlc::Array{(((mlc::String("lex ", 4) + path) + mlc::String(": ", 2)) + lex.errors[0])}};
+} else {
 auto prog = decls::parse_program(lex.tokens);
 auto items = mlc::Array<codegen::LoadItem>{};
 auto seen = mlc::Array<mlc::String>{};
@@ -96,9 +108,10 @@ items.push_back(codegen::LoadItem{norm_path, my_decls, my_imports});
 auto result = LoadResult{items, all_errors};
 cache.set(norm_path, result);
 return result;
-}());
-}());
-}()));
+}
+}
+}
+
 }
 LoadResult load_module(mlc::String path, mlc::HashMap<mlc::String, LoadResult>& cache) noexcept{
 return load_module_impl(path, {}, cache);
@@ -116,7 +129,11 @@ last_dot = i;
 
 i = (i + 1);
 }
-return ((last_dot > last_slash) ? path.substring((last_slash + 1), ((last_dot - last_slash) - 1)) : path.substring((last_slash + 1), ((path.length() - last_slash) - 1)));
+if ((last_dot > last_slash)) {
+return path.substring((last_slash + 1), ((last_dot - last_slash) - 1));
+} else {
+return path.substring((last_slash + 1), ((path.length() - last_slash) - 1));
+}
 }
 MergeResult merge_program(mlc::String entry_path, ast::Program prog) noexcept{
 auto all_decls = mlc::Array<std::shared_ptr<ast::Decl>>{};
@@ -167,20 +184,26 @@ auto norm_entry = resolve_dotdot(entry_path);
 items_ordered.push_back(codegen::LoadItem{norm_entry, entry_decls, entry_imports});
 return MergeResult{ast::Program{all_decls}, all_errors, items_ordered};
 }
-mlc::String compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept{
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept{
 auto src = mlc::file::read_to_string(entry_path);
 auto lex = lexer::tokenize(src);
-return (ast_tokens::LexOut_has_errors(lex) ? format_errs(mlc::String("lex", 3), lex.errors) : [&]() {
+if (ast_tokens::LexOut_has_errors(lex)) {
+return ast::Err{mlc::Array{(mlc::String("lex: ", 5) + lex.errors[0])}};
+} else {
 auto prog = decls::parse_program(lex.tokens);
-auto merged_result = merge_program(entry_path, prog);
-return ((merged_result.errors.length() > 0) ? format_errs(mlc::String("import", 6), merged_result.errors) : [&]() {
-auto n = merged_result.items.length();
-auto entry_item = merged_result.items[(n - 1)];
+auto merged = merge_program(entry_path, prog);
+if ((merged.errors.length() > 0)) {
+return ast::Err{merged.errors};
+} else {
+auto n = merged.items.length();
+auto entry_item = merged.items[(n - 1)];
 auto entry_prog = ast::Program{entry_item.decls};
-auto chk = infer::check_with_context(entry_prog, merged_result.prog);
-return ((chk.errors.length() > 0) ? format_errs(mlc::String("check", 5), chk.errors) : compile_modular_loop(merged_result.items, merged_result.prog, out_dir));
-}());
-}());
+auto __try_0 = infer::check_with_context(entry_prog, merged.prog);
+if (std::get_if<1>(&__try_0)) return *std::get_if<1>(&__try_0);
+auto _chk = std::get<0>(__try_0).field0;
+return ast::Ok{compile_modular_loop(merged.items, merged.prog, out_dir)};
+}
+}
 }
 mlc::String compile_modular_loop(mlc::Array<codegen::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept{
 auto precomp = codegen::precompute(full_prog, items);
@@ -215,14 +238,12 @@ mlc::io::exit(1);
 }
 auto entry_path = (((a.length() >= 3) && (a[0] == mlc::String("-o", 2))) ? a[2] : a[0]);
 auto out_dir = (((a.length() >= 3) && (a[0] == mlc::String("-o", 2))) ? a[1] : (((a.length() >= 3) && (a[1] == mlc::String("-o", 2))) ? a[2] : mlc::String("out", 3)));
-auto err = compile_modular(entry_path, out_dir);
-if ((err.length() > 0)) {
-mlc::io::print(err);
-}
-if ((err.length() > 0)) {
-mlc::io::exit(1);
-}
-return 0;
+return std::visit(overloaded{[&](const ast::Ok<auto>& ok) { auto [__0] = ok; return 0; },
+[&](const ast::Err<auto>& err) { auto [errors] = err; return [&]() {
+mlc::io::print(format_errs(mlc::String("error", 5), errors));
+return mlc::io::exit(1);
+}(); }
+}, compile_modular(entry_path, out_dir));
 }
 
 } // namespace mlc_main

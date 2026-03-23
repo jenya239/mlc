@@ -15,6 +15,8 @@ preds::BoundsResult parse_one_param_bounds(preds::Parser state) noexcept;
 preds::TypeParamsResult parse_type_params_opt(preds::Parser parser) noexcept;
 preds::DeclResult parse_import_decl(preds::Parser parser) noexcept;
 preds::DeclResult parse_extend_decl(preds::Parser parser) noexcept;
+preds::ParamsResult parse_extend_extern_no_self_params(preds::Parser after_lparen) noexcept;
+preds::ParamsResult parse_extend_extern_rest_params(preds::Parser after_lparen, bool leading_self) noexcept;
 preds::DeclResult parse_extend_extern_method(preds::Parser parser, mlc::String type_name) noexcept;
 preds::DeclResult parse_extend_method(preds::Parser parser, mlc::String type_name) noexcept;
 preds::DeclResult parse_decl(preds::Parser parser) noexcept;

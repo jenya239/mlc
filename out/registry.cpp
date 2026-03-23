@@ -3,20 +3,53 @@
 
 namespace registry {
 
-void TypeRegistry_fn_type(TypeRegistry self) noexcept{
-return /* unit */;
+std::shared_ptr<Type> TypeRegistry_fn_type(TypeRegistry self, mlc::String name) noexcept{
+return self.fn_types.get(name);
+}
+bool TypeRegistry_has_fn(TypeRegistry self, mlc::String name) noexcept{
+return self.fn_types.has(name);
+}
+std::shared_ptr<Type> TypeRegistry_ctor_type(TypeRegistry self, mlc::String name) noexcept{
+return self.ctor_types.get(name);
+}
+bool TypeRegistry_has_ctor(TypeRegistry self, mlc::String name) noexcept{
+return self.ctor_types.has(name);
+}
+mlc::Array<std::shared_ptr<Type>> TypeRegistry_ctor_params_for(TypeRegistry self, mlc::String name) noexcept{
+if (self.ctor_params.has(name)) {
+return self.ctor_params.get(name);
+} else {
+return {};
+}
+}
+mlc::HashMap<mlc::String, std::shared_ptr<Type>> TypeRegistry_fields_for(TypeRegistry self, mlc::String type_name) noexcept{
+return self.field_types.get(type_name);
+}
+bool TypeRegistry_has_fields(TypeRegistry self, mlc::String type_name) noexcept{
+return self.field_types.has(type_name);
 }
 TypeRegistry empty_registry() noexcept{
-return TypeRegistry{{}, {}, {}, {}};
+auto ctor_types = mlc::HashMap<mlc::String, std::shared_ptr<Type>>();
+auto ctor_params = mlc::HashMap<mlc::String, mlc::Array<std::shared_ptr<Type>>>();
+ctor_types.set(mlc::String("Ok", 2), std::make_shared<Type>(TNamed{mlc::String("Result", 6)}));
+ctor_types.set(mlc::String("Err", 3), std::make_shared<Type>(TNamed{mlc::String("Result", 6)}));
+auto ok_params = mlc::Array<std::shared_ptr<Type>>{};
+auto err_params = mlc::Array<std::shared_ptr<Type>>{};
+ok_params.push_back(std::make_shared<Type>(TUnknown{}));
+err_params.push_back(std::make_shared<Type>(TUnknown{}));
+ctor_params.set(mlc::String("Ok", 2), ok_params);
+ctor_params.set(mlc::String("Err", 3), err_params);
+return TypeRegistry{{}, ctor_types, ctor_params, {}};
 }
 std::shared_ptr<Type> type_from_annotation(std::shared_ptr<ast::TypeExpr> type_expr) noexcept{
 return std::visit(overloaded{[&](const ast::TyI32& tyI32) { return std::make_shared<Type>(TI32{}); },
 [&](const ast::TyString& tyString) { return std::make_shared<Type>(TString{}); },
 [&](const ast::TyBool& tyBool) { return std::make_shared<Type>(TBool{}); },
 [&](const ast::TyUnit& tyUnit) { return std::make_shared<Type>(TUnit{}); },
-[&](const ast::TyNamed& tyNamed) { auto [name] = tyNamed; return std::make_shared<Type>(TNamed(name)); },
-[&](const ast::TyArray& tyArray) { auto [inner] = tyArray; return std::make_shared<Type>(TArray(type_from_annotation(inner))); },
-[&](const ast::TyShared& tyShared) { auto [inner] = tyShared; return std::make_shared<Type>(TShared(type_from_annotation(inner))); },
+[&](const ast::TyNamed& tyNamed) { auto [name] = tyNamed; return std::make_shared<Type>(TNamed{name}); },
+[&](const ast::TyArray& tyArray) { auto [inner] = tyArray; return std::make_shared<Type>(TArray{type_from_annotation(inner)}); },
+[&](const ast::TyShared& tyShared) { auto [inner] = tyShared; return std::make_shared<Type>(TShared{type_from_annotation(inner)}); },
+[&](const ast::TyGeneric& tyGeneric) { auto [name, targs] = tyGeneric; return (((name == mlc::String("Result", 6)) && (targs.length() == 2)) ? std::make_shared<Type>(TNamed{mlc::String("Result", 6)}) : std::make_shared<Type>(TNamed{name})); },
 [&](const ast::TyFn& tyFn) { auto [params, ret] = tyFn; return [&]() {
 auto param_types = mlc::Array<std::shared_ptr<Type>>{};
 auto i = 0;
@@ -24,7 +57,7 @@ while ((i < params.length())) {
 param_types.push_back(type_from_annotation(params[i]));
 i = (i + 1);
 }
-return std::make_shared<Type>(TFn(param_types, type_from_annotation(ret)));
+return std::make_shared<Type>(TFn{param_types, type_from_annotation(ret)});
 }(); },
 [&](const auto& __v) { return std::make_shared<Type>(TUnknown{}); }
 }, (*type_expr));
@@ -55,7 +88,7 @@ while ((i < params.length())) {
 param_types.push_back(type_from_annotation(ast::param_typ(params[i])));
 i = (i + 1);
 }
-registry.fn_types.set(name, std::make_shared<Type>(TFn(param_types, type_from_annotation(return_type))));
+registry.fn_types.set(name, std::make_shared<Type>(TFn{param_types, type_from_annotation(return_type)}));
 return registry;
 }(); },
 [&](const ast::DeclType& declType) { auto [type_name, __1, variants] = declType; return [&]() {
@@ -71,7 +104,7 @@ return registry;
 }, (*decl));
 }
 TypeRegistry register_variant(TypeRegistry registry, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{
-auto result_type = std::make_shared<Type>(TNamed(type_name));
+auto result_type = std::make_shared<Type>(TNamed{type_name});
 return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [variant_name] = varUnit; return [&]() {
 registry.ctor_types.set(variant_name, result_type);
 registry.ctor_params.set(variant_name, {});

@@ -17,12 +17,14 @@ Parser parser_advance_by(Parser parser, int count) noexcept{
 return Parser{parser.tokens, (parser.pos + count)};
 }
 bool parser_at_eof(Parser parser) noexcept{
-return ((parser.pos >= parser.tokens.length()) ? true : [&]() {
+if ((parser.pos >= parser.tokens.length())) {
+return true;
+} else {
 auto tok = parser.tokens[parser.pos];
 return std::visit(overloaded{[&](const ast_tokens::Eof& eof) { return true; },
 [&](const auto& __v) { return false; }
 }, tok.kind);
-}());
+}
 }
 Parser parser_skip_semi(Parser parser) noexcept{
 auto tok = parser.tokens[parser.pos];
@@ -152,7 +154,10 @@ return std::visit(overloaded{[&](const ast_tokens::LFStr& lFStr) { auto [__0] = 
 }
 mlc::Array<mlc::String> get_fstr_parts(ast_tokens::TKind kind) noexcept{
 return std::visit(overloaded{[&](const ast_tokens::LFStr& lFStr) { auto [parts] = lFStr; return parts; },
-[&](const auto& __v) { return {}; }
+[&](const auto& __v) { return [&]() {
+auto r = mlc::Array<mlc::String>{};
+return r;
+}(); }
 }, kind);
 }
 bool is_equal(ast_tokens::TKind kind) noexcept{
@@ -263,1127 +268,277 @@ return std::visit(overloaded{[&](const ast_tokens::Op& op) { auto [s] = op; retu
 bool is_ctor_name(mlc::String name) noexcept{
 return ((name.char_at(0) >= mlc::String("A", 1)) && (name.char_at(0) <= mlc::String("Z", 1)));
 }
-self TKind_is_fn(ast_tokens::TKind self) noexcept{
-return [=](auto KFn) { return true; };
-}
-self is_type(void self) noexcept{
-return [=](auto KType) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_let(void self) noexcept{
-return [=](auto KLet) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_mut(void self) noexcept{
-return [=](auto KMut) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_const(void self) noexcept{
-return [=](auto KConst) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_if(void self) noexcept{
-return [=](auto KIf) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_unless(void self) noexcept{
-return [=](auto KUnless) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_else(void self) noexcept{
-return [=](auto KElse) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_end(void self) noexcept{
-return [=](auto KEnd) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_do(void self) noexcept{
-return [=](auto KDo) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_while(void self) noexcept{
-return [=](auto KWhile) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_for(void self) noexcept{
-return [=](auto KFor) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_match(void self) noexcept{
-return [=](auto KMatch) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_return(void self) noexcept{
-return [=](auto KReturn) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_break(void self) noexcept{
-return [=](auto KBreak) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_continue(void self) noexcept{
-return [=](auto KContinue) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_true(void self) noexcept{
-return [=](auto KTrue) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_false(void self) noexcept{
-return [=](auto KFalse) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_extern(void self) noexcept{
-return [=](auto KExtern) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_extend(void self) noexcept{
-return [=](auto KExtend) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_import(void self) noexcept{
-return [=](auto KImport) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_from(void self) noexcept{
-return [=](auto KFrom) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_eof(void self) noexcept{
-return [=](auto Eof) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_ident(void self) noexcept{
-return ast_tokens::Ident(_);
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_int(void self) noexcept{
-return ast_tokens::LInt(_);
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_str(void self) noexcept{
-return ast_tokens::LStr(_);
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_fstr(void self) noexcept{
-return ast_tokens::LFStr(_);
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void fstr_parts(void self) noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_equal(void self) noexcept{
-return [=](auto Equal) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_bar(void self) noexcept{
-return [=](auto Bar) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_pipe(void self) noexcept{
-return [=](auto Pipe) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_colon(void self) noexcept{
-return [=](auto Colon) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_comma(void self) noexcept{
-return [=](auto Comma) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_dot(void self) noexcept{
-return [=](auto Dot) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_spread(void self) noexcept{
-return [=](auto Spread) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_arrow(void self) noexcept{
-return [=](auto Arrow) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_fat_arrow(void self) noexcept{
-return [=](auto FatArrow) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_question(void self) noexcept{
-return [=](auto Question) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_lparen(void self) noexcept{
-return [=](auto LParen) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_rparen(void self) noexcept{
-return [=](auto RParen) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_lbrace(void self) noexcept{
-return [=](auto LBrace) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_rbrace(void self) noexcept{
-return [=](auto RBrace) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_lbracket(void self) noexcept{
-return [=](auto LBracket) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_rbracket(void self) noexcept{
-return [=](auto RBracket) { return true; };
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self is_op(void self) noexcept{
-return ast_tokens::Op(_);
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self ident(void self) noexcept{
-return ast_tokens::Ident(name);
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self int_val(void self) noexcept{
-return ast_tokens::LInt(n);
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self str_val(void self) noexcept{
-return ast_tokens::LStr(s);
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-self op_val(void self) noexcept{
-return ast_tokens::Op(s);
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void Parser_kind(Parser self) noexcept{
-return ast_tokens::Token{};
-}
-void advance_by(count self) noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-pos at_eof(void self) noexcept{
-return tokens.length();
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void skip_semi(void self) noexcept{
-return ast_tokens::Token{};
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
+bool TKind_is_fn(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KFn& kFn) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_type(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KType& kType) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_let(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KLet& kLet) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_mut(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KMut& kMut) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_const(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KConst& kConst) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_if(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KIf& kIf) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_unless(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KUnless& kUnless) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_else(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KElse& kElse) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_end(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KEnd& kEnd) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_do(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KDo& kDo) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_while(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KWhile& kWhile) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_for(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KFor& kFor) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_match(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KMatch& kMatch) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_return(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KReturn& kReturn) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_break(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KBreak& kBreak) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_continue(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KContinue& kContinue) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_true(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KTrue& kTrue) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_false(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KFalse& kFalse) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_extern(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KExtern& kExtern) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_extend(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KExtend& kExtend) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_import(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KImport& kImport) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_from(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KFrom& kFrom) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_eof(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Eof& eof) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_ident(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Ident& ident) { auto [__0] = ident; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_int(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LInt& lInt) { auto [__0] = lInt; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_str(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LStr& lStr) { auto [__0] = lStr; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_fstr(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LFStr& lFStr) { auto [__0] = lFStr; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+mlc::Array<mlc::String> TKind_fstr_parts(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LFStr& lFStr) { auto [parts] = lFStr; return parts; },
+[&](const auto& __v) { return [&]() {
+auto r = mlc::Array<mlc::String>{};
+return r;
+}(); }
+}, self);
+}
+bool TKind_is_equal(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Equal& equal) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_bar(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Bar& bar) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_pipe(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Pipe& pipe) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_colon(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Colon& colon) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_comma(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Comma& comma) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_dot(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Dot& dot) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_spread(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Spread& spread) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_arrow(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Arrow& arrow) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_fat_arrow(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::FatArrow& fatArrow) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_question(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Question& question) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_lparen(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LParen& lParen) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_rparen(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::RParen& rParen) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_lbrace(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LBrace& lBrace) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_rbrace(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::RBrace& rBrace) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_lbracket(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LBracket& lBracket) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_rbracket(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::RBracket& rBracket) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_op(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Op& op) { auto [__0] = op; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+mlc::String TKind_ident(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Ident& ident) { auto [name] = ident; return name; },
+[&](const auto& __v) { return mlc::String("", 0); }
+}, self);
+}
+int TKind_int_val(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LInt& lInt) { auto [n] = lInt; return n; },
+[&](const auto& __v) { return 0; }
+}, self);
+}
+mlc::String TKind_str_val(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LStr& lStr) { auto [s] = lStr; return s; },
+[&](const auto& __v) { return mlc::String("", 0); }
+}, self);
+}
+mlc::String TKind_op_val(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::Op& op) { auto [s] = op; return s; },
+[&](const auto& __v) { return mlc::String("", 0); }
+}, self);
+}
+ast_tokens::TKind Parser_kind(Parser self) noexcept{
+auto tok = self.tokens[self.pos];
+return tok.kind;
+}
+Parser Parser_advance(Parser self) noexcept{
+return Parser{self.tokens, (self.pos + 1)};
+}
+Parser Parser_advance_by(Parser self, int count) noexcept{
+return Parser{self.tokens, (self.pos + count)};
+}
+bool Parser_at_eof(Parser self) noexcept{
+if ((self.pos >= self.tokens.length())) {
+return true;
+} else {
+auto tok = self.tokens[self.pos];
+return TKind_is_eof(tok.kind);
+}
+}
+Parser Parser_skip_semi(Parser self) noexcept{
+auto tok = self.tokens[self.pos];
+return std::visit(overloaded{[&](const ast_tokens::Semicolon& semicolon) { return Parser_advance(self); },
+[&](const auto& __v) { return self; }
+}, tok.kind);
 }
 
 } // namespace preds

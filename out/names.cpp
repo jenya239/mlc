@@ -53,6 +53,9 @@ names.set(mlc::String("args", 4), true);
 names.set(mlc::String("File", 4), true);
 names.set(mlc::String("Shared", 6), true);
 names.set(mlc::String("Map", 3), true);
+names.set(mlc::String("Ok", 2), true);
+names.set(mlc::String("Err", 3), true);
+names.set(mlc::String("Result", 6), true);
 auto i = 0;
 while ((i < prog.decls.length())) {
 std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [name, __1, __2, __3, __4, __5] = declFn; return [&]() {
@@ -230,8 +233,8 @@ return empty_errors;
 }(); }
 }, (*expr));
 }
-mlc::String NameCheckResult_append_expr_errors(NameCheckResult self) noexcept{
-return /* unit */;
+mlc::Array<mlc::String> NameCheckResult_append_expr_errors(NameCheckResult self, mlc::Array<mlc::String> expr_errors) noexcept{
+return ast::errs_append(self.errors, expr_errors);
 }
 NameCheckResult check_names_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> stmts, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
 auto errors = mlc::Array<mlc::String>{};

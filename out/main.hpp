@@ -22,7 +22,7 @@ LoadResult load_module_impl(mlc::String path, mlc::Array<mlc::String> loaded, ml
 LoadResult load_module(mlc::String path, mlc::HashMap<mlc::String, LoadResult>& cache) noexcept;
 mlc::String path_to_module_base(mlc::String path) noexcept;
 MergeResult merge_program(mlc::String entry_path, ast::Program prog) noexcept;
-mlc::String compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept;
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept;
 mlc::String compile_modular_loop(mlc::Array<codegen::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept;
 mlc::String format_errs(mlc::String label, mlc::Array<mlc::String> errors) noexcept;
 int main(int argc, char** argv) noexcept;

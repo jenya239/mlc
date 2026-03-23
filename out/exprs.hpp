@@ -39,7 +39,7 @@ preds::ExprResult parse_block(preds::Parser parser) noexcept;
 bool is_unit_expr(std::shared_ptr<ast::Expr> expr) noexcept;
 std::shared_ptr<ast::Expr> block_result(mlc::Array<std::shared_ptr<ast::Stmt>> stmts) noexcept;
 mlc::Array<std::shared_ptr<ast::Stmt>> block_body(mlc::Array<std::shared_ptr<ast::Stmt>> stmts) noexcept;
-void StmtsResult_to_block_expr(preds::StmtsResult self) noexcept;
+std::shared_ptr<ast::Expr> StmtsResult_to_block_expr(preds::StmtsResult self) noexcept;
 preds::ExprResult parse_while_expr(preds::Parser parser) noexcept;
 preds::ExprResult parse_for_expr(preds::Parser parser) noexcept;
 preds::ExprResult parse_match_expr(preds::Parser parser) noexcept;

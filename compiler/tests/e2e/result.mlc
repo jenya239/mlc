@@ -1,0 +1,19 @@
+type Result<T, E> = Ok(T) | Err(E)
+
+fn safe_div(a: i32, b: i32) -> Result<i32, string> =
+  if b == 0 then Err("division by zero") else Ok(a / b) end
+
+fn compute(divisor: i32) -> Result<i32, string> =
+  Ok(safe_div(10, divisor)? + 1)
+
+fn main() -> i32 = do
+  match compute(2) {
+    Ok(v) => println(v.to_string()),
+    Err(e) => println(e)
+  }
+  match compute(0) {
+    Ok(v) => println(v.to_string()),
+    Err(e) => println(e)
+  }
+  0
+end

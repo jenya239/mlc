@@ -3,107 +3,14 @@
 
 namespace infer {
 
-void InferResult_with_type(InferResult self) noexcept{
-return /* unit */;
+InferResult InferResult_with_type(InferResult self, std::shared_ptr<registry::Type> new_type) noexcept{
+return InferResult{new_type, self.errors};
 }
-void absorb(other self) noexcept{
-return /* unit */;
+InferResult InferResult_absorb(InferResult self, InferResult other) noexcept{
+return InferResult{self.inferred_type, ast::errs_append(self.errors, other.errors)};
 }
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void absorb_stmt(stmt_result self) noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
+InferResult InferResult_absorb_stmt(InferResult self, StmtInferResult stmt_result) noexcept{
+return InferResult{self.inferred_type, ast::errs_append(stmt_result.errors, self.errors)};
 }
 InferResult infer_ok(std::shared_ptr<registry::Type> type_val) noexcept{
 return InferResult{type_val, {}};
@@ -140,7 +47,7 @@ InferResult infer_args_errors(InferResult initial, mlc::Array<std::shared_ptr<as
 auto result = initial;
 auto index = 0;
 while ((index < exprs.length())) {
-result = result.absorb(infer_expr(exprs[index], type_env, registry));
+result = InferResult_absorb(result, infer_expr(exprs[index], type_env, registry));
 index = (index + 1);
 }
 return result;
@@ -149,7 +56,7 @@ InferResult infer_field_vals_errors(InferResult initial, mlc::Array<std::shared_
 auto result = initial;
 auto index = 0;
 while ((index < field_vals.length())) {
-result = result.absorb(infer_expr(field_vals[index]->val, type_env, registry));
+result = InferResult_absorb(result, infer_expr(field_vals[index]->val, type_env, registry));
 index = (index + 1);
 }
 return result;
@@ -158,10 +65,16 @@ std::shared_ptr<registry::Type> field_lookup_type(std::shared_ptr<registry::Type
 auto type_name = std::visit(overloaded{[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return name; },
 [&](const auto& __v) { return mlc::String("", 0); }
 }, (*obj_type));
-return (((type_name != mlc::String("", 0)) && registry.has_fields(type_name)) ? [&]() {
-auto field_map = registry.fields_for(type_name);
-return (field_map.has(field_name) ? field_map.get(field_name) : std::make_shared<registry::Type>(registry::TUnknown{}));
-}() : std::make_shared<registry::Type>(registry::TUnknown{}));
+if (((type_name != mlc::String("", 0)) && registry::TypeRegistry_has_fields(registry, type_name))) {
+auto field_map = registry::TypeRegistry_fields_for(registry, type_name);
+if (field_map.has(field_name)) {
+return field_map.get(field_name);
+} else {
+return std::make_shared<registry::Type>(registry::TUnknown{});
+}
+} else {
+return std::make_shared<registry::Type>(registry::TUnknown{});
+}
 }
 InferResult infer_expr(std::shared_ptr<ast::Expr> expr, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env, registry::TypeRegistry registry) noexcept{
 return std::visit(overloaded{[&](const ast::ExprInt& exprInt) { auto [__0] = exprInt; return infer_ok(std::make_shared<registry::Type>(registry::TI32{})); },
@@ -169,11 +82,11 @@ return std::visit(overloaded{[&](const ast::ExprInt& exprInt) { auto [__0] = exp
 [&](const ast::ExprBool& exprBool) { auto [__0] = exprBool; return infer_ok(std::make_shared<registry::Type>(registry::TBool{})); },
 [&](const ast::ExprUnit& exprUnit) { return infer_ok(std::make_shared<registry::Type>(registry::TUnit{})); },
 [&](const ast::ExprExtern& exprExtern) { return infer_ok(std::make_shared<registry::Type>(registry::TUnit{})); },
-[&](const ast::ExprIdent& exprIdent) { auto [name] = exprIdent; return (type_env.has(name) ? infer_ok(type_env.get(name)) : (registry.has_fn(name) ? infer_ok(registry::TypeRegistry_fn_type(registry, name)) : (registry.has_ctor(name) ? infer_ok(registry.ctor_type(name)) : infer_ok(std::make_shared<registry::Type>(registry::TUnknown{}))))); },
+[&](const ast::ExprIdent& exprIdent) { auto [name] = exprIdent; return (type_env.has(name) ? infer_ok(type_env.get(name)) : (registry::TypeRegistry_has_fn(registry, name) ? infer_ok(registry::TypeRegistry_fn_type(registry, name)) : (registry::TypeRegistry_has_ctor(registry, name) ? infer_ok(registry::TypeRegistry_ctor_type(registry, name)) : infer_ok(std::make_shared<registry::Type>(registry::TUnknown{}))))); },
 [&](const ast::ExprBin& exprBin) { auto [op, left, right] = exprBin; return [&]() {
 auto left_result = infer_expr(left, type_env, registry);
 auto right_result = infer_expr(right, type_env, registry);
-return InferResult_with_type(left_result.absorb(right_result), binary_op_type(op, left_result.inferred_type));
+return InferResult_with_type(InferResult_absorb(left_result, right_result), binary_op_type(op, left_result.inferred_type));
 }(); },
 [&](const ast::ExprUn& exprUn) { auto [op, inner] = exprUn; return [&]() {
 auto inner_result = infer_expr(inner, type_env, registry);
@@ -202,23 +115,23 @@ auto idx_result = infer_expr(idx, type_env, registry);
 auto elem_type = std::visit(overloaded{[&](const registry::TArray& tArray) { auto [inner] = tArray; return inner; },
 [&](const auto& __v) { return std::make_shared<registry::Type>(registry::TUnknown{}); }
 }, (*obj_result.inferred_type));
-return InferResult_with_type(obj_result.absorb(idx_result), elem_type);
+return InferResult_with_type(InferResult_absorb(obj_result, idx_result), elem_type);
 }(); },
 [&](const ast::ExprIf& exprIf) { auto [cond, then_expr, else_expr] = exprIf; return [&]() {
 auto cond_result = infer_expr(cond, type_env, registry);
 auto then_result = infer_expr(then_expr, type_env, registry);
 auto else_result = infer_expr(else_expr, type_env, registry);
-return then_result.absorb(cond_result).absorb(else_result);
+return InferResult_absorb(InferResult_absorb(then_result, cond_result), else_result);
 }(); },
 [&](const ast::ExprBlock& exprBlock) { auto [stmts, result] = exprBlock; return [&]() {
 auto stmts_result = infer_stmts(stmts, type_env, registry);
 auto result_infer = infer_expr(result, stmts_result.type_env, registry);
-return result_infer.absorb_stmt(stmts_result);
+return InferResult_absorb_stmt(result_infer, stmts_result);
 }(); },
 [&](const ast::ExprWhile& exprWhile) { auto [cond, stmts] = exprWhile; return [&]() {
 auto cond_result = infer_expr(cond, type_env, registry);
 auto stmts_result = infer_stmts(stmts, type_env, registry);
-return InferResult_with_type(cond_result.absorb_stmt(stmts_result), std::make_shared<registry::Type>(registry::TUnit{}));
+return InferResult_with_type(InferResult_absorb_stmt(cond_result, stmts_result), std::make_shared<registry::Type>(registry::TUnit{}));
 }(); },
 [&](const ast::ExprFor& exprFor) { auto [var, iter, stmts] = exprFor; return [&]() {
 auto iter_result = infer_expr(iter, type_env, registry);
@@ -228,7 +141,7 @@ auto elem_type = std::visit(overloaded{[&](const registry::TArray& tArray) { aut
 auto inner_env = type_env;
 inner_env.set(var, elem_type);
 auto stmts_result = infer_stmts(stmts, inner_env, registry);
-return InferResult_with_type(iter_result.absorb_stmt(stmts_result), std::make_shared<registry::Type>(registry::TUnit{}));
+return InferResult_with_type(InferResult_absorb_stmt(iter_result, stmts_result), std::make_shared<registry::Type>(registry::TUnit{}));
 }(); },
 [&](const ast::ExprMatch& exprMatch) { auto [subject, arms] = exprMatch; return [&]() {
 auto subject_result = infer_expr(subject, type_env, registry);
@@ -246,14 +159,14 @@ i = (i + 1);
 }
 return InferResult{arm_type, errors};
 }(); },
-[&](const ast::ExprRecord& exprRecord) { auto [name, field_vals] = exprRecord; return infer_field_vals_errors(infer_ok(std::make_shared<registry::Type>(registry::TNamed(name))), field_vals, type_env, registry); },
+[&](const ast::ExprRecord& exprRecord) { auto [name, field_vals] = exprRecord; return infer_field_vals_errors(infer_ok(std::make_shared<registry::Type>(registry::TNamed{name})), field_vals, type_env, registry); },
 [&](const ast::ExprRecordUpdate& exprRecordUpdate) { auto [name, base, field_vals] = exprRecordUpdate; return [&]() {
 auto base_result = infer_expr(base, type_env, registry);
-return infer_field_vals_errors(InferResult_with_type(base_result, std::make_shared<registry::Type>(registry::TNamed(name))), field_vals, type_env, registry);
+return infer_field_vals_errors(InferResult_with_type(base_result, std::make_shared<registry::Type>(registry::TNamed{name})), field_vals, type_env, registry);
 }(); },
 [&](const ast::ExprArray& exprArray) { auto [exprs] = exprArray; return [&]() {
 auto first_type = ((exprs.length() > 0) ? infer_expr(exprs[0], type_env, registry).inferred_type : std::make_shared<registry::Type>(registry::TUnknown{}));
-return infer_args_errors(infer_ok(std::make_shared<registry::Type>(registry::TArray(first_type))), exprs, type_env, registry);
+return infer_args_errors(infer_ok(std::make_shared<registry::Type>(registry::TArray{first_type})), exprs, type_env, registry);
 }(); },
 [&](const ast::ExprQuestion& exprQuestion) { auto [inner] = exprQuestion; return infer_expr(inner, type_env, registry); },
 [&](const ast::ExprLambda& exprLambda) { auto [params, body] = exprLambda; return [&]() {
@@ -264,7 +177,7 @@ lambda_env.set(params[i], std::make_shared<registry::Type>(registry::TUnknown{})
 i = (i + 1);
 }
 auto ret_result = infer_expr(body, lambda_env, registry);
-return infer_ok(std::make_shared<registry::Type>(registry::TFn({}, ret_result.inferred_type)));
+return infer_ok(std::make_shared<registry::Type>(registry::TFn{{}, ret_result.inferred_type}));
 }(); }
 }, (*expr));
 }
@@ -312,7 +225,7 @@ env.set(name, std::make_shared<registry::Type>(registry::TUnknown{}));
 return env;
 }(); },
 [&](const ast::PatCtor& patCtor) { auto [ctor_name, sub_pats] = patCtor; return [&]() {
-auto param_types = registry.ctor_params_for(ctor_name);
+auto param_types = registry::TypeRegistry_ctor_params_for(registry, ctor_name);
 auto current_env = type_env;
 auto i = 0;
 while ((i < sub_pats.length())) {
@@ -334,10 +247,10 @@ return env;
 [&](const auto& __v) { return env_for_pat(type_env, pat, registry); }
 }, (*pat));
 }
-void CheckOut_has_errors(CheckOut self) noexcept{
-return (/* unit */ > 0);
+bool CheckOut_has_errors(CheckOut self) noexcept{
+return (self.errors.length() > 0);
 }
-CheckOut check_with_context(ast::Program entry, ast::Program full) noexcept{
+ast::Result<CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept{
 auto globals = names::collect_globals(full);
 auto registry = registry::build_registry(full);
 auto all_errors = mlc::Array<mlc::String>{};
@@ -387,9 +300,13 @@ return /* unit */;
 }, (*ast::decl_inner(entry.decls[i])));
 i = (i + 1);
 }
-return CheckOut{all_errors, registry};
+if ((all_errors.length() > 0)) {
+return ast::Err{all_errors};
+} else {
+return ast::Ok{CheckOut{{}, registry}};
 }
-CheckOut check(ast::Program prog) noexcept{
+}
+ast::Result<CheckOut, mlc::Array<mlc::String>> check(ast::Program prog) noexcept{
 auto globals = names::collect_globals(prog);
 auto registry = registry::build_registry(prog);
 auto all_errors = mlc::Array<mlc::String>{};
@@ -439,7 +356,11 @@ return /* unit */;
 }, (*ast::decl_inner(prog.decls[i])));
 i = (i + 1);
 }
-return CheckOut{all_errors, registry};
+if ((all_errors.length() > 0)) {
+return ast::Err{all_errors};
+} else {
+return ast::Ok{CheckOut{{}, registry}};
+}
 }
 
 } // namespace infer
