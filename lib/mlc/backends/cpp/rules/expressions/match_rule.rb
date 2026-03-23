@@ -200,20 +200,19 @@ module MLC
               variant_idx = variants.index(variant)
               type_args = scrutinee_type.type_args
 
-              # Build template args: variants always use ALL type args of the parent generic type
-              field_types = variant[:fields]
-              if field_types.any?
-                all_cpp_args = type_args.map { |t| context.map_type(t) }
-                qualified = ns ? "#{ns}::#{variant_name}" : variant_name
-                "#{qualified}<#{all_cpp_args.join(", ")}>"
-              else
-                if type_args.any?
-                  cpp_type_args = type_args.map { |t| context.map_type(t) }
-                  qualified = ns ? "#{ns}::#{variant_name}" : variant_name
-                  "#{qualified}<#{cpp_type_args.join(", ")}>"
-                else
-                  ns ? "#{ns}::#{variant_name}" : nil
+              # Build template args using only this variant's own type params (per-variant params).
+              sum_type = type_info.core_ir_type
+              all_param_names = collect_sum_type_var_names(sum_type)
+              used_names = collect_variant_type_var_names(variant[:fields] || [])
+              qualified = ns ? "#{ns}::#{variant_name}" : variant_name
+              if used_names.any?
+                cpp_args = used_names.map do |vname|
+                  idx = all_param_names.index(vname)
+                  idx ? context.map_type(type_args[idx]) : vname
                 end
+                "#{qualified}<#{cpp_args.join(", ")}>"
+              else
+                qualified
               end
             end
 
@@ -878,6 +877,36 @@ module MLC
               else
                 # Numeric literals: use as-is
                 value.to_s
+              end
+            end
+
+            # Collect TypeVariable names from all variants of a SumType in declaration order.
+            def collect_sum_type_var_names(sum_type)
+              seen = []
+              sum_type.variants.each do |v|
+                collect_variant_type_var_names_into(v[:fields] || [], seen)
+              end
+              seen
+            end
+
+            # Collect TypeVariable names used by a specific variant's fields.
+            def collect_variant_type_var_names(fields)
+              seen = []
+              collect_variant_type_var_names_into(fields, seen)
+              seen
+            end
+
+            def collect_variant_type_var_names_into(fields, seen)
+              Array(fields).each do |f|
+                collect_type_var_names_from_type(f[:type], seen) if f[:type]
+              end
+            end
+
+            def collect_type_var_names_from_type(type, seen)
+              if type.is_a?(MLC::SemanticIR::TypeVariable)
+                seen << type.name unless seen.include?(type.name)
+              elsif type.respond_to?(:type_args)
+                type.type_args.each { |a| collect_type_var_names_from_type(a, seen) }
               end
             end
           end

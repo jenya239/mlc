@@ -17,9 +17,9 @@ struct CheckOut {mlc::Array<mlc::String> errors;registry::TypeRegistry registry;
 
 bool CheckOut_has_errors(infer::CheckOut self) noexcept;
 
-infer::CheckOut check_with_context(ast::Program entry, ast::Program full) noexcept;
+ast::Result<infer::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept;
 
-infer::CheckOut check(ast::Program prog) noexcept;
+ast::Result<infer::CheckOut, mlc::Array<mlc::String>> check(ast::Program prog) noexcept;
 
 } // namespace infer
 

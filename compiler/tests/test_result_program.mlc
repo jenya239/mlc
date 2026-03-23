@@ -1,0 +1,18 @@
+// E2E test: Result<T,E> and ? operator
+
+type Result<T, E> = Ok(T) | Err(E)
+
+fn safe_div(a: i32, b: i32) -> Result<i32, string> =
+  if b == 0 then Err("division by zero") else Ok(a / b) end
+
+fn compute(a: i32, b: i32) -> Result<i32, string> = do
+  const q = safe_div(a, b)?
+  Ok(q + 1)
+end
+
+fn main() -> i32 = do
+  match compute(10, 2) {
+    Ok(n)  => do println("ok: " + n.to_string()); 0 end,
+    Err(e) => do println("err: " + e); 1 end
+  }
+end

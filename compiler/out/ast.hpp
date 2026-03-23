@@ -64,6 +64,11 @@ struct DeclFn;struct DeclType;struct DeclTrait;struct DeclExtend;struct DeclImpo
 
 struct Program {mlc::Array<std::shared_ptr<ast::Decl>> decls;};
 
+template<typename T>
+struct Ok {T field0;};template<typename E>
+struct Err {E field0;};template<typename T, typename E>
+using Result = std::variant<Ok<T>, Err<E>>;
+
 mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept;
 
 std::shared_ptr<ast::TypeExpr> param_typ(std::shared_ptr<ast::Param> p) noexcept;

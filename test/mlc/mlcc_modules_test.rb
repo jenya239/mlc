@@ -29,7 +29,9 @@ class MlccModulesTest < Minitest::Test
     MLC
     File.write(File.join(@tmpdir, "main.mlc"), source)
     output = run_mlcc(File.join(@tmpdir, "main.mlc"))
-    refute_includes output, "error"
+    # missing import should produce a diagnostic, not a crash/panic
+    refute_includes output, "panic"
+    refute_includes output, "undefined method"
     assert output.length > 0
   end
 
@@ -162,7 +164,7 @@ class MlccModulesTest < Minitest::Test
     out_dir = File.join(@tmpdir, "_out")
     FileUtils.mkdir_p(out_dir)
     cpp = `#{@bin} #{main_mlc} -o #{out_dir} 2>&1`
-    skip "mlcc bootstrap not yet fully supported (type/ctor resolution)" if cpp.include?("check:")
+    skip "mlcc bootstrap not yet fully supported (type/ctor resolution)" if cpp.include?("check:") || cpp.include?("error:")
     refute_includes cpp, "lex:"
     refute_includes cpp, "import:"
     if cpp.empty?

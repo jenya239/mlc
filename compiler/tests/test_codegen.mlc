@@ -1,8 +1,8 @@
 // Unit tests for the code generator.
 
 import { TestResult, assert_eq_str } from "./test_runner"
-import { gen_expr, create_codegen_context, type_to_cpp, map_builtin, map_method, FieldOrder } from "../codegen"
-import { Program, ExprInt, ExprBool, ExprStr, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprLambda, ExprQuestion } from "../ast"
+import { gen_expr, create_codegen_context, type_to_cpp, map_builtin, map_method, FieldOrder, gen_type_decl } from "../codegen"
+import { Program, ExprInt, ExprBool, ExprStr, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprLambda, ExprQuestion, ExprCall, DeclType, VarTuple, TyNamed } from "../ast"
 
 export fn codegen_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -33,8 +33,9 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("ExprInt(42) - '42'",
     gen_expr(Shared.new(ExprInt(42)), ctx), "42"))
 
-  results.push(assert_eq_str("ExprQuestion: gen_expr passthrough inner (nested ? not unwrapped)",
-    gen_expr(Shared.new(ExprQuestion(Shared.new(ExprInt(7)))), ctx), "7"))
+  results.push(assert_eq_str("ExprQuestion: gen_expr index-based unwrap",
+    gen_expr(Shared.new(ExprQuestion(Shared.new(ExprInt(7)))), ctx),
+    "({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })"))
 
   results.push(assert_eq_str("ExprBool(true) - 'true'",
     gen_expr(Shared.new(ExprBool(true)), ctx), "true"))
@@ -107,6 +108,41 @@ export fn codegen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str("map_method: lines passthrough",
     map_method("lines"), "lines"))
+
+  const call_lambda_args: [Shared<Expr>] = [Shared.new(ExprInt(5)), Shared.new(ExprLambda(single_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("x")), Shared.new(ExprInt(1))))))]
+  results.push(assert_eq_str("ExprCall with lambda arg",
+    gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("apply")), call_lambda_args)), ctx),
+    "apply(5, [=](auto x) { return (x + 1); })"))
+
+  const ok_args: [Shared<Expr>] = [Shared.new(ExprInt(42))]
+  results.push(assert_eq_str("ExprCall ctor Ok(42) uses brace init",
+    gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("Ok")), ok_args)), ctx),
+    "Ok{42}"))
+
+  const err_args: [Shared<Expr>] = [Shared.new(ExprStr("oops"))]
+  results.push(assert_eq_str("ExprCall ctor Err(str) uses brace init",
+    gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("Err")), err_args)), ctx),
+    "Err{mlc::String(\"oops\", 4)}"))
+
+  // --- Generic type codegen -----------------------------------------------
+
+  const result_type_params: [string] = ["T", "E"]
+  const ok_fields:  [Shared<TypeExpr>] = [Shared.new(TyNamed("T"))]
+  const err_fields: [Shared<TypeExpr>] = [Shared.new(TyNamed("E"))]
+  const result_variants: [Shared<TypeVariant>] = [
+    Shared.new(VarTuple("Ok",  ok_fields)),
+    Shared.new(VarTuple("Err", err_fields))
+  ]
+  const expected_fwd =
+    "template<typename T>\nstruct Ok;\n" +
+    "template<typename E>\nstruct Err;\n" +
+    "template<typename T, typename E>\nusing Result = std::variant<Ok<T>, Err<E>>;\n"
+  const expected_body =
+    "template<typename T>\nstruct Ok {T field0;};\n" +
+    "template<typename E>\nstruct Err {E field0;};\n"
+  results.push(assert_eq_str("generic type Result<T,E> = Ok(T) | Err(E) codegen",
+    gen_type_decl(ctx, "Result", result_type_params, result_variants),
+    expected_fwd + expected_body))
 
   results
 end

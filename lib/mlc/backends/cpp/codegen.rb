@@ -391,7 +391,10 @@ module MLC
                    end
 
           if type_decl.type_params.any?
-            if result.is_a?(CppAst::Nodes::Program)
+            if result.is_a?(CppAst::Nodes::Program) && type_decl.type.is_a?(SemanticIR::SumType)
+              # Per-variant templates already applied inside lower_sum_type_internal.
+              result
+            elsif result.is_a?(CppAst::Nodes::Program)
               wrap_statements_with_template(type_decl.type_params, result)
             else
               template_params_str, params_suffix = @context.build_template_signature(type_decl.type_params)
@@ -537,14 +540,19 @@ module MLC
             end
           end
 
-          # Generate using declaration for std::variant
+          # Generate using declaration for std::variant.
+          # For generic sum types, use per-variant type params in the instantiation.
+          all_param_names = type_params.any? ? sum_type_param_names_ordered(sum_type) : []
           variant_type_names = if type_params.any?
-                                 type_params_str = type_params.map(&:name).join(", ")
-                                 sum_type.variants.map { |v| "#{v[:name]}<#{type_params_str}>" }.join(", ")
+                                 sum_type.variants.map do |v|
+                                   used = variant_param_names_used(v)
+                                   used_params = all_param_names.select { |n| used.include?(n) }
+                                   used_params.any? ? "#{v[:name]}<#{used_params.join(", ")}>" : v[:name]
+                                 end.join(", ")
                                else
                                  sum_type.variants.map { |v| v[:name] }.join(", ")
                                end
-          using_decl = CppAst::Nodes::UsingDeclaration.new(
+          using_decl_raw = CppAst::Nodes::UsingDeclaration.new(
             kind: :alias,
             name: name,
             alias_target: "std::variant<#{variant_type_names}>",
@@ -552,6 +560,31 @@ module MLC
             equals_prefix: " ",
             equals_suffix: " "
           )
+
+          # Wrap using alias with full template, variant structs with per-variant templates.
+          if type_params.any?
+            full_tpl_str, full_suffix = @context.build_template_signature(type_params)
+            using_decl = CppAst::Nodes::TemplateDeclaration.new(
+              template_params: full_tpl_str, declaration: using_decl_raw,
+              template_suffix: "", less_suffix: "", params_suffix: full_suffix
+            )
+            variant_structs = variant_structs.each_with_index.map do |struct, idx|
+              v = sum_type.variants[idx]
+              used = variant_param_names_used(v)
+              used_tps = type_params.select { |tp| used.include?(tp.name) }
+              if used_tps.any?
+                tpl_str, suffix = @context.build_template_signature(used_tps)
+                CppAst::Nodes::TemplateDeclaration.new(
+                  template_params: tpl_str, declaration: struct,
+                  template_suffix: "", less_suffix: "", params_suffix: suffix
+                )
+              else
+                struct
+              end
+            end
+          else
+            using_decl = using_decl_raw
+          end
 
           if recursive
             # For recursive types: forward-declare structs, emit using alias,
@@ -568,6 +601,36 @@ module MLC
             statements: all_statements,
             statement_trailings: Array.new(all_statements.size, "")
           )
+        end
+
+        # Collect TypeVariable names from all variants in declaration order.
+        def sum_type_param_names_ordered(sum_type)
+          seen = []
+          sum_type.variants.each do |v|
+            collect_type_var_names_from_fields(v[:fields] || [], seen)
+          end
+          seen
+        end
+
+        # Collect TypeVariable names used in a specific variant's fields.
+        def variant_param_names_used(variant)
+          seen = []
+          collect_type_var_names_from_fields(variant[:fields] || [], seen)
+          seen
+        end
+
+        def collect_type_var_names_from_fields(fields, seen)
+          Array(fields).each do |f|
+            collect_type_var_names_from_type(f[:type], seen) if f[:type]
+          end
+        end
+
+        def collect_type_var_names_from_type(type, seen)
+          if type.is_a?(MLC::SemanticIR::TypeVariable)
+            seen << type.name unless seen.include?(type.name)
+          elsif type.respond_to?(:type_args)
+            type.type_args.each { |a| collect_type_var_names_from_type(a, seen) }
+          end
         end
 
         def wrap_statements_with_template(type_params, program)

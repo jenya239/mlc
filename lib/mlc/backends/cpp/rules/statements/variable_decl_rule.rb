@@ -97,9 +97,14 @@ module MLC
               type_args = operand_type.type_args
               t_cpp = context.map_type(type_args[0])
               e_cpp = context.map_type(type_args[1])
-              ok_type = "#{ns}::Ok<#{t_cpp}, #{e_cpp}>"
-              err_type = "#{ns}::Err<#{t_cpp}, #{e_cpp}>"
-              result_type = context.map_type(operand_type)
+              ok_type = "#{ns}::Ok<#{t_cpp}>"
+              err_type = "#{ns}::Err<#{e_cpp}>"
+              caller_ret = context.expected_return_type
+              result_type = if caller_ret && !caller_ret.is_a?(MLC::SemanticIR::TypeVariable)
+                               context.map_type(caller_ret)
+                             else
+                               context.map_type(operand_type)
+                             end
 
               # 2. if (holds_alternative<Err>(__try_N)) return ResultType(__try_N);
               cond = "std::holds_alternative<#{err_type}>(#{tmp})"

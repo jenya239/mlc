@@ -488,7 +488,13 @@ export fn gen_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
         ExprIdent(name) => context_resolve(context, map_builtin(name)),
         _ => gen_expr(func, context)
       }
-      fn_code + "(" + gen_args(call_args, context) + ")"
+      const is_ctor = match func {
+        ExprIdent(name) => name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z",
+        _ => false
+      }
+      if is_ctor then fn_code + "\{" + gen_args(call_args, context) + "\}"
+      else fn_code + "(" + gen_args(call_args, context) + ")"
+      end
     end,
     ExprMethod(obj, method_name, margs) => do
       const obj_code = match obj {
@@ -591,8 +597,10 @@ export fn gen_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
       if exprs.length() == 0 then "\{\}"
       else "mlc::Array\{" + gen_args(exprs, context) + "\}"
       end,
-    ExprQuestion(inner) =>
-      gen_expr(inner, context),
+    ExprQuestion(inner) => do
+      const inner_code = gen_expr(inner, context)
+      "(\{ auto __q = " + inner_code + "; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; \})"
+    end,
     ExprLambda(params, body) => do
       const capture = if params.length() == 0 then "[]" else "[=]" end
       const param_list = if params.length() == 0
@@ -754,10 +762,8 @@ export type GenStmtResult = GenStmtResult { output: string, next_try: i32 }
 
 fn gen_try_unwrap(inner: Shared<Expr>, context: CodegenContext, try_id: string, success_line: string) -> string = do
   const inner_code = gen_expr(inner, context)
-  const ok_name = context_resolve(context, "Ok")
-  const err_name = context_resolve(context, "Err")
   "auto " + try_id + " = " + inner_code + ";\n" +
-  "if (std::holds_alternative<" + err_name + ">(" + try_id + ")) return std::get<" + err_name + ">(" + try_id + ");\n" +
+  "if (std::get_if<1>(&" + try_id + ")) return *std::get_if<1>(&" + try_id + ");\n" +
   success_line
 end
 
@@ -769,7 +775,7 @@ fn gen_stmt_with_try(stmt: Shared<Stmt>, context: CodegenContext, try_counter: i
       const result = match value {
         ExprQuestion(inner) =>
           GenStmtResult {
-            output: gen_try_unwrap(inner, context, try_id, "auto " + cpp_safe(name) + " = std::get<" + context_resolve(context, "Ok") + ">(" + try_id + ").field0;\n"),
+            output: gen_try_unwrap(inner, context, try_id, "auto " + cpp_safe(name) + " = std::get<0>(" + try_id + ").field0;\n"),
             next_try: next_counter
           },
         ExprArray(elems) => do
@@ -810,9 +816,8 @@ fn gen_stmt_with_try(stmt: Shared<Stmt>, context: CodegenContext, try_counter: i
     StmtExpr(expr) => match expr {
       ExprQuestion(inner) => do
         const try_id = "__try_" + try_counter.to_string()
-        const ok_name = context_resolve(context, "Ok")
         GenStmtResult {
-          output: gen_try_unwrap(inner, context, try_id, "/* discard */ (void)std::get<" + ok_name + ">(" + try_id + ").field0;\n"),
+          output: gen_try_unwrap(inner, context, try_id, "/* discard */ (void)std::get<0>(" + try_id + ").field0;\n"),
           next_try: try_counter + 1
         }
       end,
@@ -823,9 +828,8 @@ fn gen_stmt_with_try(stmt: Shared<Stmt>, context: CodegenContext, try_counter: i
     StmtReturn(expr) => match expr {
       ExprQuestion(inner) => do
         const try_id = "__try_ret_" + try_counter.to_string()
-        const ok_name = context_resolve(context, "Ok")
         GenStmtResult {
-          output: gen_try_unwrap(inner, context, try_id, "return std::get<" + ok_name + ">(" + try_id + ").field0;\n"),
+          output: gen_try_unwrap(inner, context, try_id, "return std::get<0>(" + try_id + ").field0;\n"),
           next_try: try_counter + 1
         }
       end,
@@ -882,8 +886,7 @@ fn gen_return_body(expr: Shared<Expr>, context: CodegenContext) -> string =
       match result {
         ExprQuestion(inner) => do
           const try_id = "__try_ret"
-          const ok_name = context_resolve(context, "Ok")
-          stmts_code + gen_try_unwrap(inner, final_ctx, try_id, "return std::get<" + ok_name + ">(" + try_id + ").field0;\n")
+          stmts_code + gen_try_unwrap(inner, final_ctx, try_id, "return std::get<0>(" + try_id + ").field0;\n")
         end,
         ExprUnit => stmts_code,
         _ => stmts_code + "return " + gen_expr(result, final_ctx) + ";\n"
@@ -901,8 +904,7 @@ fn gen_return_body(expr: Shared<Expr>, context: CodegenContext) -> string =
     end,
     ExprQuestion(inner) => do
       const try_id = "__try_ret"
-      const ok_name = context_resolve(context, "Ok")
-      gen_try_unwrap(inner, context, try_id, "return std::get<" + ok_name + ">(" + try_id + ").field0;\n")
+      gen_try_unwrap(inner, context, try_id, "return std::get<0>(" + try_id + ").field0;\n")
     end,
     _ => "return " + gen_expr(expr, context) + ";\n"
   }
@@ -933,14 +935,15 @@ fn gen_params(context: CodegenContext, params: [Shared<Param>]) -> string = do
   parts.join(", ")
 end
 
-fn gen_type_decl_fwd(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>]) -> string =
+fn gen_type_decl_fwd(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
   if variants.length() == 1 then ""
-  else gen_adt_fwd(context, type_name, variants)
+  else gen_adt_fwd(context, type_name, type_params, variants)
   end
 
-fn gen_type_decl_body(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>]) -> string =
-  if variants.length() == 1 then gen_single_variant(context, type_name, variants[0])
-  else gen_adt_defs(context, type_name, variants)
+fn gen_type_decl_body(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
+  if variants.length() == 1 then
+    template_prefix(type_params) + gen_single_variant(context, type_name, variants[0])
+  else gen_adt_defs(context, type_name, type_params, variants)
   end
 
 fn gen_single_variant(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
@@ -962,21 +965,28 @@ fn gen_single_variant(context: CodegenContext, type_name: string, variant: Share
     VarUnit(_) => "struct " + context_resolve(context, type_name) + " \{\};\n"
   }
 
-fn gen_adt_fwd(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>]) -> string = do
-  let parts: [string] = []; const variant_names: [string] = []; let mut index = 0
+fn gen_adt_fwd(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
+  const full_prefix = template_prefix(type_params)
+  let parts: [string] = []; const alias_parts: [string] = []; let mut index = 0
   while index < variants.length() do
-    const variant_name = context_resolve(context, variant_ctor_name(variants[index]))
-    variant_names.push(variant_name)
-    parts.push("struct " + variant_name + ";\n")
+    const v = variants[index]
+    const variant_name = context_resolve(context, variant_ctor_name(v))
+    const used = variant_used_type_params(type_params, v)
+    const var_prefix = template_prefix(used)
+    const var_targs  = if used.length() > 0 then "<" + used.join(", ") + ">" else "" end
+    alias_parts.push(variant_name + var_targs)
+    parts.push(var_prefix + "struct " + variant_name + ";\n")
     index = index + 1
   end
-  parts.join("") + "using " + context_resolve(context, type_name) + " = std::variant<" + variant_names.join(", ") + ">;\n"
+  parts.join("") + full_prefix + "using " + context_resolve(context, type_name) + " = std::variant<" + alias_parts.join(", ") + ">;\n"
 end
 
-fn gen_adt_defs(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>]) -> string = do
+fn gen_adt_defs(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
   let parts: [string] = []; let mut i = 0
   while i < variants.length() do
-    parts.push(gen_variant_struct(context, type_name, variants[i]))
+    const v = variants[i]
+    const used = variant_used_type_params(type_params, v)
+    parts.push(template_prefix(used) + gen_variant_struct(context, type_name, v))
     i = i + 1
   end
   parts.join("")
@@ -1193,6 +1203,48 @@ fn template_prefix(type_params: [string]) -> string =
     ""
   end
 
+fn type_param_in_typeexpr(param: string, t: Shared<TypeExpr>) -> bool =
+  match t {
+    TyNamed(name)       => name == param,
+    TyArray(inner)      => type_param_in_typeexpr(param, inner),
+    TyShared(inner)     => type_param_in_typeexpr(param, inner),
+    TyGeneric(_, targs) => type_param_in_typeexpr_list(param, targs),
+    TyFn(params, ret)   => type_param_in_typeexpr_list(param, params) || type_param_in_typeexpr(param, ret),
+    _                   => false
+  }
+
+fn type_param_in_typeexpr_list(param: string, types: [Shared<TypeExpr>]) -> bool = do
+  let mut found = false; let mut i = 0
+  while i < types.length() do
+    if !found then found = type_param_in_typeexpr(param, types[i]) end
+    i = i + 1
+  end
+  found
+end
+
+fn variant_field_typeexprs(variant: Shared<TypeVariant>) -> [Shared<TypeExpr>] =
+  match variant {
+    VarTuple(_, fts) => fts,
+    VarRecord(_, fds) => do
+      const result: [Shared<TypeExpr>] = []
+      let mut i = 0
+      while i < fds.length() do result.push(fds[i].typ); i = i + 1 end
+      result
+    end,
+    VarUnit(_) => []
+  }
+
+fn variant_used_type_params(type_params: [string], variant: Shared<TypeVariant>) -> [string] = do
+  const field_types = variant_field_typeexprs(variant)
+  const used: [string] = []
+  let mut i = 0
+  while i < type_params.length() do
+    if type_param_in_typeexpr_list(type_params[i], field_types) then used.push(type_params[i]) end
+    i = i + 1
+  end
+  used
+end
+
 fn requires_clause(type_params: [string], type_bounds: [[string]]) -> string = do
   let parts: [string] = []
   let mut i = 0
@@ -1276,10 +1328,8 @@ fn gen_trait_decl(context: CodegenContext, trait_name: string, type_params: [str
   prefix + "concept " + cpp_safe(trait_name) + " = requires(const " + self_param + "& self) { " + req_body + "; };\n"
 end
 
-fn gen_type_decl(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
-  const prefix = template_prefix(type_params)
-  prefix + gen_type_decl_fwd(context, type_name, variants) + gen_type_decl_body(context, type_name, variants)
-end
+export fn gen_type_decl(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
+  gen_type_decl_fwd(context, type_name, type_params, variants) + gen_type_decl_body(context, type_name, type_params, variants)
 
 fn gen_decl(decl: Shared<Decl>, context: CodegenContext) -> string =
   match decl {
@@ -1402,9 +1452,9 @@ fn collect_decl_parts(decls: [Shared<Decl>], context: CodegenContext, phase: i32
   let mut index = 0
   while index < decls.length() do
     const segment = match decls[index] {
-      DeclType(type_name, _, variants) =>
-        if phase == 0 then gen_type_decl_fwd(context, type_name, variants)
-        else if phase == 1 then gen_type_decl_body(context, type_name, variants)
+      DeclType(type_name, type_params, variants) =>
+        if phase == 0 then gen_type_decl_fwd(context, type_name, type_params, variants)
+        else if phase == 1 then gen_type_decl_body(context, type_name, type_params, variants)
         else ""
         end,
       DeclTrait(name, type_params, methods) =>
@@ -1424,12 +1474,12 @@ fn collect_decl_parts(decls: [Shared<Decl>], context: CodegenContext, phase: i32
       DeclImport(_, _) => "",
       DeclExported(d) =>
         if phase == 0 then match decl_inner(d) {
-          DeclType(type_name, _, variants) => gen_type_decl_fwd(context, type_name, variants),
+          DeclType(type_name, type_params, variants) => gen_type_decl_fwd(context, type_name, type_params, variants),
           DeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
           _ => ""
         }
         else if phase == 1 then match decl_inner(d) {
-          DeclType(type_name, _, variants) => gen_type_decl_body(context, type_name, variants),
+          DeclType(type_name, type_params, variants) => gen_type_decl_body(context, type_name, type_params, variants),
           _ => ""
         }
         else if phase == 2 then gen_proto(d, context)

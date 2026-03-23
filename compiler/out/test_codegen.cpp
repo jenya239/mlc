@@ -25,7 +25,7 @@ results.push_back(test_runner::assert_eq_str(mlc::String("TyUnit - 'void'"), cod
 results.push_back(test_runner::assert_eq_str(mlc::String("TyArray(TyI32) - 'mlc::Array<int>'"), codegen::type_to_cpp(ctx, std::make_shared<ast::TypeExpr>(ast::TyArray(std::make_shared<ast::TypeExpr>((ast::TyI32{}))))), mlc::String("mlc::Array<int>")));
 results.push_back(test_runner::assert_eq_str(mlc::String("TyShared(TyI32) - 'std::shared_ptr<int>'"), codegen::type_to_cpp(ctx, std::make_shared<ast::TypeExpr>(ast::TyShared(std::make_shared<ast::TypeExpr>((ast::TyI32{}))))), mlc::String("std::shared_ptr<int>")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprInt(42) - '42'"), codegen::gen_expr(std::make_shared<ast::Expr>(ast::ExprInt(42)), ctx), mlc::String("42")));
-results.push_back(test_runner::assert_eq_str(mlc::String("ExprQuestion: gen_expr passthrough inner (nested ? not unwrapped)"), codegen::gen_expr(std::make_shared<ast::Expr>(ast::ExprQuestion(std::make_shared<ast::Expr>(ast::ExprInt(7)))), ctx), mlc::String("7")));
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprQuestion: gen_expr index-based unwrap"), codegen::gen_expr(std::make_shared<ast::Expr>(ast::ExprQuestion(std::make_shared<ast::Expr>(ast::ExprInt(7)))), ctx), mlc::String("({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprBool(true) - 'true'"), codegen::gen_expr(std::make_shared<ast::Expr>(ast::ExprBool(true)), ctx), mlc::String("true")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprStr('hi') - 'mlc::String(\"hi\", 2)'"), codegen::gen_expr(std::make_shared<ast::Expr>(ast::ExprStr(mlc::String("hi"))), ctx), mlc::String("mlc::String(\"hi\", 2)")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprUnit - '/* unit */'"), codegen::gen_expr(std::make_shared<ast::Expr>((ast::ExprUnit{})), ctx), mlc::String("/* unit */")));
@@ -51,6 +51,19 @@ results.push_back(test_runner::assert_eq_str(mlc::String("map_method: trim passt
 results.push_back(test_runner::assert_eq_str(mlc::String("map_method: split passthrough"), codegen::map_method(mlc::String("split")), mlc::String("split")));
 results.push_back(test_runner::assert_eq_str(mlc::String("map_method: chars passthrough"), codegen::map_method(mlc::String("chars")), mlc::String("chars")));
 results.push_back(test_runner::assert_eq_str(mlc::String("map_method: lines passthrough"), codegen::map_method(mlc::String("lines")), mlc::String("lines")));
+mlc::Array<std::shared_ptr<ast::Expr>> call_lambda_args = mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprInt(5)), std::make_shared<ast::Expr>(ast::ExprLambda(single_params, std::make_shared<ast::Expr>(ast::ExprBin(mlc::String("+"), std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("x"))), std::make_shared<ast::Expr>(ast::ExprInt(1))))))};
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprCall with lambda arg"), codegen::gen_expr(std::make_shared<ast::Expr>(ast::ExprCall(std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("apply"))), call_lambda_args)), ctx), mlc::String("apply(5, [=](auto x) { return (x + 1); })")));
+mlc::Array<std::shared_ptr<ast::Expr>> ok_args = mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprInt(42))};
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprCall ctor Ok(42) uses brace init"), codegen::gen_expr(std::make_shared<ast::Expr>(ast::ExprCall(std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("Ok"))), ok_args)), ctx), mlc::String("Ok{42}")));
+mlc::Array<std::shared_ptr<ast::Expr>> err_args = mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprStr(mlc::String("oops")))};
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprCall ctor Err(str) uses brace init"), codegen::gen_expr(std::make_shared<ast::Expr>(ast::ExprCall(std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("Err"))), err_args)), ctx), mlc::String("Err{mlc::String(\"oops\", 4)}")));
+mlc::Array<mlc::String> result_type_params = mlc::Array<mlc::String>{mlc::String("T"), mlc::String("E")};
+mlc::Array<std::shared_ptr<ast::TypeExpr>> ok_fields = mlc::Array<std::shared_ptr<ast::TypeExpr>>{std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("T")))};
+mlc::Array<std::shared_ptr<ast::TypeExpr>> err_fields = mlc::Array<std::shared_ptr<ast::TypeExpr>>{std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("E")))};
+mlc::Array<std::shared_ptr<ast::TypeVariant>> result_variants = mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarTuple(mlc::String("Ok"), ok_fields)), std::make_shared<ast::TypeVariant>(ast::VarTuple(mlc::String("Err"), err_fields))};
+mlc::String expected_fwd = mlc::String("template<typename T>\nstruct Ok;\n") + mlc::String("template<typename E>\nstruct Err;\n") + mlc::String("template<typename T, typename E>\nusing Result = std::variant<Ok<T>, Err<E>>;\n");
+mlc::String expected_body = mlc::String("template<typename T>\nstruct Ok {T field0;};\n") + mlc::String("template<typename E>\nstruct Err {E field0;};\n");
+results.push_back(test_runner::assert_eq_str(mlc::String("generic type Result<T,E> = Ok(T) | Err(E) codegen"), codegen::gen_type_decl(ctx, mlc::String("Result"), result_type_params, result_variants), expected_fwd + expected_body));
 return results;
 }
 

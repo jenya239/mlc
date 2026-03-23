@@ -11,6 +11,8 @@ module MLC
         def ast_sum_needs_star?(type_registry, type)
           return false if type.nil?
           return false if shared_generic?(type)
+          # Generic sum types (e.g. Result<T,E>) are direct values, not shared_ptrs.
+          return false if type.is_a?(MLC::SemanticIR::GenericType)
 
           sum_name = sum_base_name(type)
           return false unless sum_name

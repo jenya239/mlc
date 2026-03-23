@@ -51,6 +51,7 @@ module MLC
               ret_type = nil
               type_to_map = (block_expr.result && !unit_literal?(block_expr.result)) ? block_expr.result.type : nil
               type_to_map ||= block_expr.type
+              type_to_map = resolve_type_variables(type_to_map) if type_to_map
               if type_to_map && !unit_type?(type_to_map)
                 mapped = context.map_type(type_to_map)
                 skip = mapped.nil? || mapped.empty? || mapped == "auto" || mapped.include?("function<") || mapped == "void"
@@ -151,6 +152,33 @@ module MLC
             def unit_type?(type)
               type.is_a?(MLC::SemanticIR::UnitType) ||
                 (type.respond_to?(:name) && %w[unit void].include?(type.name.to_s))
+            end
+
+            def resolve_type_variables(type)
+              return type unless type.is_a?(MLC::SemanticIR::GenericType)
+              return type unless type.type_args.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+
+              expected = context.expected_return_type
+              return type unless expected.is_a?(MLC::SemanticIR::GenericType)
+              return type unless expected.type_args.none? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+              return type unless expected.type_args.size == type.type_args.size
+
+              base_match = begin
+                             expected.base_type == type.base_type
+                           rescue StandardError
+                             false
+                           end
+              name_match = expected.respond_to?(:name) && type.respond_to?(:name) && expected.name == type.name
+              return type unless base_match || name_match
+
+              subst = {}
+              type.type_args.each_with_index do |arg, i|
+                subst[arg.name] = expected.type_args[i] if arg.is_a?(MLC::SemanticIR::TypeVariable)
+              end
+              resolved = type.type_args.map { |a| a.is_a?(MLC::SemanticIR::TypeVariable) ? (subst[a.name] || a) : a }
+              return type if resolved.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+
+              MLC::SemanticIR::GenericType.new(base_type: type.base_type, type_args: resolved)
             end
           end
         end

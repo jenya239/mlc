@@ -38,7 +38,7 @@ mlc::String path_to_module_base(mlc::String path) noexcept;
 
 MergeResult merge_program(mlc::String entry_path, ast::Program prog) noexcept;
 
-mlc::String compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept;
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept;
 
 mlc::String compile_modular_loop(mlc::Array<codegen::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept;
 
@@ -247,20 +247,22 @@ items_ordered.push_back(codegen::LoadItem{norm_entry, entry_decls, entry_imports
 return MergeResult{ast::Program{all_decls}, all_errors, items_ordered};
 }
 
-mlc::String compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept{
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept{
 mlc::String src = mlc::file::read_to_string(entry_path);
 ast_tokens::LexOut lex = lexer::tokenize(src);
-return ast_tokens::LexOut_has_errors(lex) ? format_errs(mlc::String("lex"), lex.errors) : [&]() -> mlc::String { 
+return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(mlc::Array<mlc::String>{mlc::String("lex: ") + lex.errors[0]})) : ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   ast::Program prog = decls::parse_program(lex.tokens);
-  MergeResult merged_result = merge_program(entry_path, prog);
-  return merged_result.errors.size() > 0 ? format_errs(mlc::String("import"), merged_result.errors) : [&]() -> mlc::String { 
-  int n = merged_result.items.size();
-  codegen::LoadItem entry_item = merged_result.items[n - 1];
+  MergeResult merged = merge_program(entry_path, prog);
+  return merged.errors.size() > 0 ? ast::Result<mlc::String, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(merged.errors)) : ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
+  int n = merged.items.size();
+  codegen::LoadItem entry_item = merged.items[n - 1];
   ast::Program entry_prog = ast::Program{entry_item.decls};
-  infer::CheckOut chk = infer::check_with_context(entry_prog, merged_result.prog);
-  return chk.errors.size() > 0 ? format_errs(mlc::String("check"), chk.errors) : compile_modular_loop(merged_result.items, merged_result.prog, out_dir);
- }();
- }();
+  auto __try__chk = infer::check_with_context(entry_prog, merged.prog);
+  if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try__chk)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try__chk));
+  infer::CheckOut _chk = std::get<ast::Ok<infer::CheckOut>>(__try__chk).field0;
+  return ast::Ok<mlc::String>(compile_modular_loop(merged.items, merged.prog, out_dir));
+ }());
+ }());
 }
 
 mlc::String compile_modular_loop(mlc::Array<codegen::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept{
@@ -304,18 +306,13 @@ mlc::io::exit(1);
 }
 mlc::String entry_path = a.size() >= 3 && a[0] == mlc::String("-o") ? a[2] : a[0];
 mlc::String out_dir = a.size() >= 3 && a[0] == mlc::String("-o") ? a[1] : a.size() >= 3 && a[1] == mlc::String("-o") ? a[2] : mlc::String("out");
-mlc::String err = compile_modular(entry_path, out_dir);
-if (err.length() > 0){
-{
-mlc::io::print(err);
-}
-}
-if (err.length() > 0){
-{
-mlc::io::exit(1);
-}
-}
-return 0;
+return std::visit(overloaded{
+  [&](const ast::Ok<mlc::String>& ok) -> int { auto [_w0] = ok; return 0; },
+  [&](const ast::Err<mlc::Array<mlc::String>>& err) -> int { auto [errors] = err; return [&]() -> int { 
+  mlc::io::print(format_errs(mlc::String("error"), errors));
+  return mlc::io::exit(1);
+ }(); }
+}, compile_modular(entry_path, out_dir));
 }
 
 } // namespace mlc_main

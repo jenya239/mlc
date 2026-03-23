@@ -35,7 +35,8 @@ module MLC
               # When result type is a sum/generic type, wrap both branches to avoid C++ ternary
               # type mismatch (variant constructors are different struct types)
               if variant_result_type?(node.type) && node.else_branch
-                sum_type_name = context.map_type(node.type)
+                resolved_type = resolve_type_variables(node.type)
+                sum_type_name = context.map_type(resolved_type || node.type)
                 then_branch = wrap_in_type(then_branch, sum_type_name)
                 else_branch = wrap_in_type(else_branch, sum_type_name)
               end
@@ -80,6 +81,29 @@ module MLC
                 callee: context.factory.identifier(name: type_name),
                 arguments: [expr]
               )
+            end
+
+            # Resolve TypeVariables in a GenericType using context.expected_return_type.
+            def resolve_type_variables(type)
+              return type unless type.is_a?(MLC::SemanticIR::GenericType)
+              return type unless type.type_args.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+
+              expected = context.expected_return_type
+              return type unless expected.is_a?(MLC::SemanticIR::GenericType)
+              return type unless expected.base_type == type.base_type ||
+                                 expected.name == type.name
+              return type if expected.type_args.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+              return type unless expected.type_args.size == type.type_args.size
+
+              subst = {}
+              type.type_args.each_with_index do |arg, i|
+                subst[arg.name] = expected.type_args[i] if arg.is_a?(MLC::SemanticIR::TypeVariable)
+              end
+
+              resolved = type.type_args.map { |a| a.is_a?(MLC::SemanticIR::TypeVariable) ? (subst[a.name] || a) : a }
+              return type if resolved.any? { |a| a.is_a?(MLC::SemanticIR::TypeVariable) }
+
+              MLC::SemanticIR::GenericType.new(base_type: type.base_type, type_args: resolved)
             end
           end
         end

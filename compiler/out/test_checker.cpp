@@ -12,15 +12,14 @@ using namespace lexer;
 using namespace decls;
 using namespace infer;
 
-infer::CheckOut check_source(mlc::String source) noexcept;
-
 int check_error_count(mlc::String source) noexcept;
 
 mlc::Array<test_runner::TestResult> checker_tests() noexcept;
 
-infer::CheckOut check_source(mlc::String source) noexcept{return infer::check(decls::parse_program(lexer::tokenize(source).tokens));}
-
-int check_error_count(mlc::String source) noexcept{return check_source(source).errors.size();}
+int check_error_count(mlc::String source) noexcept{return std::visit(overloaded{
+  [&](const ast::Ok<infer::CheckOut>& ok) -> int { auto [_w0] = ok; return 0; },
+  [&](const ast::Err<mlc::Array<mlc::String>>& err) -> int { auto [errs] = err; return errs.size(); }
+}, infer::check(decls::parse_program(lexer::tokenize(source).tokens)));}
 
 mlc::Array<test_runner::TestResult> checker_tests() noexcept{
 mlc::Array<test_runner::TestResult> results = {};
@@ -36,6 +35,13 @@ results.push_back(test_runner::assert_true(mlc::String("two undefined names - at
 results.push_back(test_runner::assert_eq_int(mlc::String("builtin print - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  print(\"hi\")\n  0\nend")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with type param - 0 errors"), check_error_count(mlc::String("fn id<T>(x: T) -> T = x")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with type param and bound - 0 errors"), check_error_count(mlc::String("type Display { fn to_string(self: Self) -> string }\nfn id<T: Display>(x: T) -> T = x")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("call generic fn - 0 errors"), check_error_count(mlc::String("fn id<T>(x: T) -> T = x\nfn f() -> i32 = id(42)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("trait decl + extend impl - 0 errors"), check_error_count(mlc::String("type Display { fn to_string(self: Self) -> string }\ntype Color = Red | Green\nextend Color : Display { fn to_string(self: Color) -> string = \"Red\" }")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("method call on param - 0 errors"), check_error_count(mlc::String("fn f(c: string) -> string = c.to_string()")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("lambda expr - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  const g = x => x + 1\n  g(41)\nend")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("Ok/Err/Result as known globals - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  const r = Ok(42)\n  0\nend")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("Err constructor - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  const e = Err(\"oops\")\n  0\nend")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("Result return type annotation - 0 errors"), check_error_count(mlc::String("type Result<T, E> = Ok(T) | Err(E)\nfn f() -> Result<i32, string> = Ok(42)")), 0));
 return results;
 }
 

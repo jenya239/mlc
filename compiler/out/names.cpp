@@ -78,6 +78,9 @@ names.set(mlc::String("args"), true);
 names.set(mlc::String("File"), true);
 names.set(mlc::String("Shared"), true);
 names.set(mlc::String("Map"), true);
+names.set(mlc::String("Ok"), true);
+names.set(mlc::String("Err"), true);
+names.set(mlc::String("Result"), true);
 int i = 0;
 while (i < prog.decls.size()){
 {

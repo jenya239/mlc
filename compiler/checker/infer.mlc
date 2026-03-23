@@ -1,6 +1,6 @@
 // --- Type inference -------------------------------------------------------
 
-import { Expr, Stmt, Pat, Program, decl_inner, errs_append, param_name, param_typ } from "../ast"
+import { Expr, Stmt, Pat, Program, Result, decl_inner, errs_append, param_name, param_typ } from "../ast"
 import { collect_globals, check_names_expr } from "./names"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
 
@@ -230,7 +230,7 @@ export extend CheckOut {
   fn has_errors(self) -> bool = errors.length() > 0
 }
 
-export fn check_with_context(entry: Program, full: Program) -> CheckOut = do
+export fn check_with_context(entry: Program, full: Program) -> Result<CheckOut, [string]> = do
   const globals  = collect_globals(full)
   let registry = build_registry(full)
   let mut all_errors: [string] = []
@@ -264,10 +264,12 @@ export fn check_with_context(entry: Program, full: Program) -> CheckOut = do
     }
     i = i + 1
   end
-  CheckOut { errors: all_errors, registry: registry }
+  if all_errors.length() > 0 then Err(all_errors)
+  else Ok(CheckOut { errors: [], registry: registry })
+  end
 end
 
-export fn check(prog: Program) -> CheckOut = do
+export fn check(prog: Program) -> Result<CheckOut, [string]> = do
   const globals  = collect_globals(prog)
   let registry = build_registry(prog)
   let mut all_errors: [string] = []
@@ -301,5 +303,7 @@ export fn check(prog: Program) -> CheckOut = do
     }
     i = i + 1
   end
-  CheckOut { errors: all_errors, registry: registry }
+  if all_errors.length() > 0 then Err(all_errors)
+  else Ok(CheckOut { errors: [], registry: registry })
+  end
 end

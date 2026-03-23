@@ -39,7 +39,7 @@ Array<String> args();
 void set_args(std::vector<String>&& new_args);
 
 // Process control
-[[noreturn]] inline void exit(int code) { std::exit(code); }
+[[noreturn]] inline int exit(int code) { std::exit(code); }
 
 } // namespace io
 } // namespace mlc

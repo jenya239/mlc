@@ -33,11 +33,14 @@
 | `Shared` / массивы / map, COW в рантайме | ✅ |
 | Семантика `let`/`const`/`let mut` (перепривязка) | ✅ приведено к правилам Ruby |
 | `ExprQuestion` в stmt/`return`/теле блока (`gen_try_unwrap` и т.д.) | ✅ |
-| `ExprQuestion` внутри произвольного `gen_expr` | ❌ passthrough (без unwrap) |
-| `Result`/`?` как в PLAN-примере end-to-end в mlcc | ❌ |
-| Пользовательские `fn foo<T>` в mlcc | ❌ |
-| Traits в mlcc как у Ruby | ❌ |
-| Unit-тесты `compiler/tests/` (сборка через `build_tests.sh`) | ✅ |
+| `ExprQuestion` в `gen_expr` (вложенный `?`) | ✅ GNU statement expr `({ ... })` |
+| `Ok`/`Err`/`Result` как builtin globals в checker | ✅ |
+| Generic fn call без ложных ошибок checker | ✅ |
+| Lambda как аргумент функции | ✅ |
+| Trait + extend impl — 0 ложных ошибок checker | ✅ |
+| `Result`/`?` end-to-end в mlcc (compiler/ использует Result) | ❌ |
+| Generic type codegen (`template<T,E>` на каждую variant struct) | ❌ |
+| Unit-тесты `compiler/tests/` (81 passed) | ✅ |
 
 ---
 
@@ -55,59 +58,34 @@
 
 ## Ближайшие шаги (итерации)
 
-### Итерация 1 — `Result<T,E>` + `?` в mlcc (приоритет: высокий)
+### Итерация 1–4 — ЗАВЕРШЕНО
 
-**Цель:** self-hosted компилятор использует `Result` для ошибок вместо `[string]`.
-
-**Текущее состояние:**
-- Ruby: `Result<T,E>` как stdlib (`lib/mlc/common/stdlib/core/result.mlc`), `TryExpr` + `try_rule` + `variable_decl_rule` — работают.
-- mlcc: `ExprQuestion` в `let`/`return`/stmt (`gen_try_unwrap`) — готово. В `gen_expr` (вложенный `?`) — passthrough без unwrap.
-
-**Что делать:**
-1. В `compiler/codegen.mlc::gen_expr` ветка `ExprQuestion` — вместо passthrough сгенерировать `__try_N = inner; if (Err) return Err; std::get<Ok>(__try_N).field0`. Это требует `try_counter` внутри `gen_expr` → передавать его как параметр или использовать статический счётчик строк.
-2. Добавить `Result` в `compiler/ast.mlc` и `compiler/checker/registry.mlc` как известный generic-тип.
-3. Написать тест в `compiler/tests/test_codegen.mlc` на `? expr` внутри выражения.
+- `ExprQuestion` в `gen_expr`: GNU statement expr `({ auto __q = inner; if (holds<Err>) return get<Err>; get<Ok>.field0; })` — корректная семантика `?` во вложенных выражениях.
+- `Ok`/`Err`/`Result` зарегистрированы в checker как built-in globals и constructors.
+- Generic fn call — checker не даёт ложных ошибок (type params в locals/globals).
+- Trait + extend impl — checker не даёт ложных ошибок.
+- Lambda как аргумент — codegen корректен.
+- Тестов: 81 passed.
 
 ---
 
-### Итерация 2 — Generics в mlcc (приоритет: высокий)
+### Итерации 5–6 — ЗАВЕРШЕНО
 
-**Текущее состояние:**
-- Ruby: generics разобраны в парсере и SemanticIR, C++ templates генерируются.
-- mlcc: `fn foo<T>` в парсере `decls.mlc` разбирается (через `parse_type_params_opt`), type_params передаются в `DeclFn`. В `gen_fn_decl` → `template_prefix(type_params)` и `requires_clause(type_params, type_bounds)` — уже работают.
-- Что **не** работает: `check_names_expr` не знает о `T` как имени типа для пользовательских параметров в body; `registry.mlc` не регистрирует generic-функции; codegen не выводит concrete instantiation.
-
-**Что делать:**
-1. `compiler/checker/names.mlc::collect_globals` — добавить регистрацию имён параметров типа в locals для тела функции.
-2. Тест в `compiler/tests/test_checker.mlc` — `fn id<T>(x: T) -> T = x` уже есть (0 errors). Добавить тест на вызов `id(42)`.
-3. `compiler/checker/infer.mlc` — при вызове `fn id<T>` инстанцировать тип (простейший вариант — не проверять, возвращать TUnknown).
-4. `compiler/codegen.mlc` — убедиться что `template<typename T>` эмитируется (уже есть через `template_prefix`).
+- Generic type codegen: `gen_adt_fwd`/`gen_adt_defs` теперь применяют `template_prefix` к каждой variant-struct отдельно; `using R = std::variant<Ok<T,E>, Err<T,E>>`.
+- `gen_try_unwrap` и `ExprQuestion` в `gen_expr` переведены на индексный доступ (`std::get_if<1>`, `std::get<0>`) — работают для любого generic `Result<T,E>`.
+- `type Result<T, E> = Ok(T) | Err(E)` добавлен в `compiler/ast.mlc` — доступен всем модулям.
+- Тестов: 83 passed.
 
 ---
 
-### Итерация 3 — Traits в mlcc (приоритет: высокий)
+### Итерация 7 — Использование `Result` в compiler/*.mlc (приоритет: средний)
 
-**Текущее состояние:**
-- Ruby: полный пайплайн traits через `DeclTrait` / `extend T : Foo` / `requires`-concept в C++.
-- mlcc: `compiler/parser/decls.mlc` разбирает `trait`-блок (`parse_trait_body`), `compiler/checker/registry.mlc` имеет `build_registry` с полями. `gen_trait_decl` в `codegen.mlc` генерирует `concept`. Impl через `extend T : Foo` — генерирует `static_assert`.
+**Цель:** переписать хотя бы один parser/checker на `Result<X, [string]>` вместо отдельного списка ошибок.
 
 **Что делать:**
-1. Добавить тест `compiler/tests/` на компиляцию trait + impl + вызов через trait bound.
-2. Проверить, что checker в mlcc регистрирует методы trait и не даёт ложных ошибок при вызове через `obj.method()`.
-3. Trait inheritance (`trait B : A`) — пока не нужно.
-
----
-
-### Итерация 4 — Лямбды без дыр в mlcc (приоритет: средний)
-
-**Текущее состояние:**
-- Ruby: `Lambda` AST, `x => body` и `(x, y) => body` — парсинг и codegen работают.
-- mlcc: парсер разбирает `() => expr`, `(x, y) => expr`. `gen_expr::ExprLambda` генерирует `[=](auto x) { return ...; }`. Тесты в `compiler/tests/test_codegen.mlc` — есть.
-- Не проверено: лямбда передаётся как аргумент в вызове (`arr.filter(x => x > 0)`).
-
-**Что делать:**
-1. Тест в `compiler/tests/test_codegen.mlc` — `ExprCall` с `ExprLambda` как аргументом.
-2. Проверить что `checker/names.mlc` не ругается на имена параметров лямбды.
+1. В `compiler/checker/infer.mlc::check` возвращать `Result<CheckOut, [string]>` вместо `CheckOut { errors, registry }` с проверкой `errors.length() > 0`.
+2. В `compiler/main.mlc` использовать `?` для chain-а check → codegen.
+3. Добавить E2E тест компиляции через mlcc программы с `Result`.
 
 ---
 

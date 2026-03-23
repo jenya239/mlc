@@ -320,8 +320,13 @@ module MLC
                   variant_name = call.callee.respond_to?(:name) ? call.callee.name : nil
                   variant = variant_name && base.variants.find { |v| v[:name] == variant_name }
                   if variant && !(variant[:fields].nil? || variant[:fields].empty?)
-                    cpp_args = concrete_type.type_args.map { |t| context.map_type(t) }
-                    qualified_name = "#{qualified_name}<#{cpp_args.join(", ")}>"
+                    all_names = collect_type_var_names_ordered(base)
+                    used = collect_type_var_names_ordered_from_fields(variant[:fields] || [])
+                    cpp_args = used.map do |vname|
+                      idx = all_names.index(vname)
+                      idx ? context.map_type(concrete_type.type_args[idx]) : vname
+                    end
+                    qualified_name = "#{qualified_name}<#{cpp_args.join(", ")}>" unless cpp_args.empty?
                   end
                 end
               end
@@ -832,9 +837,15 @@ module MLC
               variant = base.variants.find { |v| v[:name] == name }
               return callee_expr unless variant
 
-              cpp_args = result_type.type_args.map { |t| context.map_type(t) }
-              targs = "<#{cpp_args.join(", ")}>"
+              # Only include type args actually used by this variant's fields (per-variant params).
+              all_param_names = collect_type_var_names_ordered(base)
+              used_names = collect_type_var_names_ordered_from_fields(variant[:fields] || [])
+              cpp_args = used_names.map do |vname|
+                idx = all_param_names.index(vname)
+                idx ? context.map_type(result_type.type_args[idx]) : vname
+              end
 
+              targs = cpp_args.empty? ? "" : "<#{cpp_args.join(", ")}>"
               context.factory.raw_expression(code: "#{callee_expr.to_source}#{targs}")
             end
 
@@ -872,6 +883,36 @@ module MLC
                 base_type: result_type.base_type,
                 type_args: resolved_args
               )
+            end
+
+            # Collect TypeVariable names from all variants' fields in declaration order.
+            def collect_type_var_names_ordered(sum_type)
+              seen = []
+              sum_type.variants.each do |v|
+                collect_type_var_names_from_fields(v[:fields] || [], seen)
+              end
+              seen
+            end
+
+            # Collect TypeVariable names from a specific variant's fields.
+            def collect_type_var_names_ordered_from_fields(fields)
+              seen = []
+              collect_type_var_names_from_fields(fields, seen)
+              seen
+            end
+
+            def collect_type_var_names_from_fields(fields, seen)
+              Array(fields).each do |f|
+                collect_type_var_names_from_type(f[:type], seen) if f[:type]
+              end
+            end
+
+            def collect_type_var_names_from_type(type, seen)
+              if type.is_a?(MLC::SemanticIR::TypeVariable)
+                seen << type.name unless seen.include?(type.name)
+              elsif type.respond_to?(:type_args)
+                type.type_args.each { |a| collect_type_var_names_from_type(a, seen) }
+              end
             end
 
             def maybe_wrap_trait_coercion(lowered_arg, actual_type, expected_type)

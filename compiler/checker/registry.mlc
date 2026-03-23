@@ -42,9 +42,20 @@ export extend TypeRegistry {
     field_types.has(type_name)
 }
 
-export fn empty_registry() -> TypeRegistry =
-  TypeRegistry { fn_types: Map.new(), ctor_types: Map.new(),
-                 ctor_params: Map.new(), field_types: Map.new() }
+export fn empty_registry() -> TypeRegistry = do
+  const ctor_types:  Map<string, Shared<Type>> = Map.new()
+  const ctor_params: Map<string, [Shared<Type>]> = Map.new()
+  ctor_types.set("Ok",  Shared.new(TNamed("Result")))
+  ctor_types.set("Err", Shared.new(TNamed("Result")))
+  const ok_params:  [Shared<Type>] = []
+  const err_params: [Shared<Type>] = []
+  ok_params.push(Shared.new(TUnknown))
+  err_params.push(Shared.new(TUnknown))
+  ctor_params.set("Ok",  ok_params)
+  ctor_params.set("Err", err_params)
+  TypeRegistry { fn_types: Map.new(), ctor_types: ctor_types,
+                 ctor_params: ctor_params, field_types: Map.new() }
+end
 
 export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
   match type_expr {
@@ -55,6 +66,10 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     TyNamed(name)   => Shared.new(TNamed(name)),
     TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),
     TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),
+    TyGeneric(name, targs) => if name == "Result" && targs.length() == 2
+      then Shared.new(TNamed("Result"))
+      else Shared.new(TNamed(name))
+      end,
     TyFn(params, ret) => do
       const param_types: [Shared<Type>] = []; let mut i = 0
       while i < params.length() do param_types.push(type_from_annotation(params[i])); i = i + 1 end

@@ -43,9 +43,9 @@ mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> env_for_pat_with_type
 
 bool CheckOut_has_errors(infer::CheckOut self) noexcept;
 
-infer::CheckOut check_with_context(ast::Program entry, ast::Program full) noexcept;
+ast::Result<infer::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept;
 
-infer::CheckOut check(ast::Program prog) noexcept;
+ast::Result<infer::CheckOut, mlc::Array<mlc::String>> check(ast::Program prog) noexcept;
 
 infer::InferResult InferResult_with_type(infer::InferResult self, std::shared_ptr<registry::Type> new_type) noexcept{return infer::InferResult{new_type, self.errors};}
 
@@ -260,7 +260,7 @@ return [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { if 
 
 bool CheckOut_has_errors(infer::CheckOut self) noexcept{return self.errors.size() > 0;}
 
-infer::CheckOut check_with_context(ast::Program entry, ast::Program full) noexcept{
+ast::Result<infer::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept{
 mlc::HashMap<mlc::String, bool> globals = names::collect_globals(full);
 registry::TypeRegistry registry = registry::build_registry(full);
 mlc::Array<mlc::String> all_errors = {};
@@ -301,10 +301,10 @@ pi = pi + 1;
 i = i + 1;
 }
 }
-return infer::CheckOut{all_errors, registry};
+return all_errors.size() > 0 ? ast::Result<infer::CheckOut, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(all_errors)) : ast::Result<infer::CheckOut, mlc::Array<mlc::String>>(ast::Ok<infer::CheckOut>(infer::CheckOut{{}, registry}));
 }
 
-infer::CheckOut check(ast::Program prog) noexcept{
+ast::Result<infer::CheckOut, mlc::Array<mlc::String>> check(ast::Program prog) noexcept{
 mlc::HashMap<mlc::String, bool> globals = names::collect_globals(prog);
 registry::TypeRegistry registry = registry::build_registry(prog);
 mlc::Array<mlc::String> all_errors = {};
@@ -345,7 +345,7 @@ pi = pi + 1;
 i = i + 1;
 }
 }
-return infer::CheckOut{all_errors, registry};
+return all_errors.size() > 0 ? ast::Result<infer::CheckOut, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(all_errors)) : ast::Result<infer::CheckOut, mlc::Array<mlc::String>>(ast::Ok<infer::CheckOut>(infer::CheckOut{{}, registry}));
 }
 
 } // namespace infer

@@ -37,6 +37,8 @@ mlc::String map_builtin(mlc::String name) noexcept;
 
 mlc::String gen_expr(std::shared_ptr<ast::Expr> expr, codegen::CodegenContext context) noexcept;
 
+mlc::String gen_type_decl(codegen::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
 mlc::String gen_program(ast::Program prog) noexcept;
 
 codegen::PrecomputedCtx precompute(ast::Program prog, mlc::Array<codegen::LoadItem> all_items) noexcept;

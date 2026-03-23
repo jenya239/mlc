@@ -92,6 +92,10 @@ export fn decl_name(decl: Shared<Decl>) -> string = do
   }
 end
 
+// --- Result type ----------------------------------------------------------
+
+export type Result<T, E> = Ok(T) | Err(E)
+
 // --- Shared utility -------------------------------------------------------
 
 export fn errs_append(mut dst: [string], src: [string]) -> [string] = do

@@ -44,6 +44,7 @@ export fn collect_globals(prog: Program) -> Map<string, bool> = do
   names.set("true", true); names.set("false", true); names.set("exit", true)
   names.set("print", true); names.set("println", true); names.set("args", true)
   names.set("File", true); names.set("Shared", true); names.set("Map", true)
+  names.set("Ok", true); names.set("Err", true); names.set("Result", true)
   let mut i = 0
   while i < prog.decls.length() do
     match decl_inner(prog.decls[i]) {
