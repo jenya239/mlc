@@ -664,7 +664,7 @@ fn expr_returns_shared_sum_visit_ptr(e: Shared<Expr>) -> bool =
     _ => false
   }
 
-fn subject_needs_deref(subject: Shared<Expr>, context: CodegenContext) -> bool =
+fn subject_needs_deref(subject: Shared<Expr>, context: CodegenContext) -> bool = do
   if expr_returns_shared_sum_visit_ptr(subject) then true
   else match subject {
     ExprIdent(name) =>
@@ -680,6 +680,8 @@ fn subject_needs_deref(subject: Shared<Expr>, context: CodegenContext) -> bool =
     ExprMethod(_, _, _) => false,
     _ => true
   }
+  end
+end
 
 fn first_arm_needs_deref(first_arm: Shared<MatchArm>, subject: Shared<Expr>, context: CodegenContext) -> bool =
   match first_arm.pat {
