@@ -23,6 +23,8 @@ mlc::HashMap<mlc::String, std::shared_ptr<codegen::LoadItem>> build_item_index(m
 
 mlc::HashMap<mlc::String, mlc::String> build_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept;
 
+mlc::Array<mlc::String> build_generic_variants_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept;
+
 mlc::HashMap<mlc::String, mlc::String> build_variant_types_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept;
 
 codegen::CodegenContext create_codegen_context(ast::Program prog) noexcept;
@@ -401,6 +403,43 @@ return item_index;
 
 mlc::HashMap<mlc::String, mlc::String> build_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept{return add_method_owners_from_decls(decls, mlc::HashMap<mlc::String, mlc::String>());}
 
+mlc::Array<mlc::String> build_generic_variants_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept{
+mlc::Array<mlc::String> result = {};
+int i = 0;
+while (i < decls.size()){
+{
+std::shared_ptr<ast::Decl> inner_decl = ast::decl_inner(decls[i]);
+[&]() -> void { if (std::holds_alternative<ast::DeclType>((*inner_decl))) { auto _v_decltype = std::get<ast::DeclType>((*inner_decl)); auto [_w0, type_params, variants] = _v_decltype; return [&]() { 
+  int vi = 0;
+  return [&]() { 
+  while (vi < variants.size()){
+{
+bool should_add = type_params.size() > 0;
+mlc::String vname = std::visit(overloaded{
+  [&](const VarRecord& varrecord) -> mlc::String { auto [n, _w0] = varrecord; return n; },
+  [&](const VarTuple& vartuple) -> mlc::String { auto [n, _w0] = vartuple; return n; },
+  [&](const VarUnit& varunit) -> mlc::String { auto [n] = varunit; return n; }
+}, (*variants[vi]));
+if (should_add){
+{
+result.push_back(vname);
+}
+} else {
+{
+result.push_back(mlc::String("__skip__"));
+}
+}
+vi = vi + 1;
+}
+}
+ }();
+ }(); } return; }();
+i = i + 1;
+}
+}
+return result;
+}
+
 mlc::HashMap<mlc::String, mlc::String> build_variant_types_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept{
 mlc::HashMap<mlc::String, mlc::String> variant_map = mlc::HashMap<mlc::String, mlc::String>();
 int i = 0;
@@ -428,7 +467,7 @@ i = i + 1;
 return variant_map;
 }
 
-codegen::CodegenContext create_codegen_context(ast::Program prog) noexcept{return codegen::CodegenContext{build_field_orders(prog), mlc::String(""), mlc::HashMap<mlc::String, mlc::String>(), mlc::String(""), build_method_owners_from_decls(prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, {}, build_variant_types_from_decls(prog.decls), {}, {}};}
+codegen::CodegenContext create_codegen_context(ast::Program prog) noexcept{return codegen::CodegenContext{build_field_orders(prog), mlc::String(""), mlc::HashMap<mlc::String, mlc::String>(), mlc::String(""), build_method_owners_from_decls(prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, {}, build_variant_types_from_decls(prog.decls), {}, {}, build_generic_variants_from_decls(prog.decls)};}
 
 mlc::String context_resolve(codegen::CodegenContext context, mlc::String name) noexcept{return context.qualified.has(name) ? context.qualified.get(name) + cpp_safe(name) : context.namespace_prefix.length() > 0 ? context.namespace_prefix + cpp_safe(name) : cpp_safe(name);}
 
@@ -844,7 +883,7 @@ return expr_returns_shared_sum_visit_ptr(subject) ? true : [&]() { if (std::hold
 
 bool first_arm_needs_deref(std::shared_ptr<ast::MatchArm> first_arm, std::shared_ptr<ast::Expr> subject, codegen::CodegenContext context) noexcept{return [&]() { if (std::holds_alternative<ast::PatCtor>((*first_arm->pat))) { auto _v_patctor = std::get<ast::PatCtor>((*first_arm->pat)); auto [name, _w0] = _v_patctor; return [&]() -> bool { 
   mlc::String resolved = context_resolve(context, name);
-  return resolved.length() >= 12 && resolved.substring(0, 12) == mlc::String("ast_tokens::") ? false : subject_needs_deref(subject, context);
+  return resolved.length() >= 12 && resolved.substring(0, 12) == mlc::String("ast_tokens::") ? false : list_contains(context.generic_variants, name) ? false : subject_needs_deref(subject, context);
  }(); } return subject_needs_deref(subject, context); }();}
 
 mlc::String gen_match(std::shared_ptr<ast::Expr> subject, mlc::Array<std::shared_ptr<ast::MatchArm>> arms, codegen::CodegenContext context) noexcept{
@@ -874,6 +913,8 @@ mlc::String gen_arm(std::shared_ptr<ast::MatchArm> arm, codegen::CodegenContext 
   mlc::String lower_name = cpp_safe(lower_first(name));
   mlc::String binding = sub_pats.size() == 0 ? mlc::String("") : mlc::String("auto [") + pat_bind_names(sub_pats) + mlc::String("] = ") + lower_name + mlc::String("; ");
   std::shared_ptr<codegen::CtorTypeInfo> ctor_type_info = lookup_ctor_type_info(context.ctor_type_infos, name);
+  bool is_generic = list_contains(context.generic_variants, name);
+  mlc::String type_arg = is_generic ? mlc::String("<auto>") : mlc::String("");
   codegen::CodegenContext arm_context = std::move(context);
   int index = 0;
   while (index < sub_pats.size()){
@@ -891,11 +932,13 @@ arm_context = context_add_shared_array(arm_context, pat_name);
 index = index + 1;
 }
 }
-  return mlc::String("[&](const ") + qualified_name + mlc::String("& ") + lower_name + mlc::String(") { ") + binding + mlc::String("return ") + gen_expr(arm->body, arm_context) + mlc::String("; }");
+  return mlc::String("[&](const ") + qualified_name + type_arg + mlc::String("& ") + lower_name + mlc::String(") { ") + binding + mlc::String("return ") + gen_expr(arm->body, arm_context) + mlc::String("; }");
  }(); },
   [&](const PatRecord& patrecord) -> mlc::String { auto [name, field_pats] = patrecord; return [&]() -> mlc::String { 
   mlc::String qualified_name = context_resolve(context, name);
   mlc::String lower_name = cpp_safe(lower_first(name));
+  bool is_generic = list_contains(context.generic_variants, name);
+  mlc::String type_arg = is_generic ? mlc::String("<auto>") : mlc::String("");
   mlc::String field_bindings = mlc::String("");
   int fi = 0;
   while (fi < field_pats.size()){
@@ -915,7 +958,7 @@ field_bindings = field_bindings + mlc::String("const auto& ") + cpp_safe(field_n
 fi = fi + 1;
 }
 }
-  return mlc::String("[&](const ") + qualified_name + mlc::String("& ") + lower_name + mlc::String(") { ") + field_bindings + mlc::String("return ") + gen_expr(arm->body, context) + mlc::String("; }");
+  return mlc::String("[&](const ") + qualified_name + type_arg + mlc::String("& ") + lower_name + mlc::String(") { ") + field_bindings + mlc::String("return ") + gen_expr(arm->body, context) + mlc::String("; }");
  }(); }
 }, (*arm->pat));}
 
@@ -988,7 +1031,7 @@ mlc::String gen_return_body(std::shared_ptr<ast::Expr> expr, codegen::CodegenCon
   return [&]() -> mlc::String { if (std::holds_alternative<ast::ExprQuestion>((*result)._)) { auto _v_exprquestion = std::get<ast::ExprQuestion>((*result)._); auto [inner] = _v_exprquestion; return [&]() -> mlc::String { 
   mlc::String try_id = mlc::String("__try_ret");
   return stmts_code + gen_try_unwrap(inner, final_ctx, try_id, mlc::String("return std::get<0>(") + try_id + mlc::String(").field0;\n"));
- }(); } if (std::holds_alternative<ast::ExprUnit>((*result)._)) {  return stmts_code; } return stmts_code + mlc::String("return ") + gen_expr(result, final_ctx) + mlc::String(";\n"); }();
+ }(); } if (std::holds_alternative<ast::ExprUnit>((*result)._)) {  return stmts_code; } if (std::holds_alternative<ast::ExprIf>((*result)._)) { auto _v_exprif = std::get<ast::ExprIf>((*result)._); auto [_w0, _w1, _w2] = _v_exprif; return stmts_code + gen_return_body(result, final_ctx); } if (std::holds_alternative<ast::ExprMatch>((*result)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*result)._); auto [_w0, _w1] = _v_exprmatch; return stmts_code + gen_return_body(result, final_ctx); } if (std::holds_alternative<ast::ExprBlock>((*result)._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*result)._); auto [_w0, _w1] = _v_exprblock; return stmts_code + gen_return_body(result, final_ctx); } return stmts_code + mlc::String("return ") + gen_expr(result, final_ctx) + mlc::String(";\n"); }();
  }(); } if (std::holds_alternative<ast::ExprIf>((*expr)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expr)._); auto [cond, then_expr, else_expr] = _v_exprif; return [&]() -> mlc::String { 
   mlc::String output = mlc::String("if (") + gen_expr(cond, context) + mlc::String(") {\n") + gen_return_body(then_expr, context) + mlc::String("}");
   mlc::String else_str = [&]() -> mlc::String { if (std::holds_alternative<ast::ExprUnit>((*else_expr)._)) {  return mlc::String(""); } if (std::holds_alternative<ast::ExprIf>((*else_expr)._)) { auto _v_exprif = std::get<ast::ExprIf>((*else_expr)._); auto [_w0, _w1, _w2] = _v_exprif; return mlc::String(" else ") + gen_return_if_stmt(else_expr, context); } return mlc::String(" else {\n") + gen_return_body(else_expr, context) + mlc::String("}"); }();
@@ -1313,7 +1356,7 @@ i = i + 1;
 return result;
 }
 
-codegen::CodegenContext make_body_context(codegen::CodegenContext base, mlc::Array<mlc::String> shared_params, mlc::Array<mlc::String> shared_array_params, mlc::HashMap<mlc::String, mlc::String> array_elem_types, mlc::Array<mlc::String> shared_map_params, mlc::String self_type, mlc::Array<mlc::String> value_params, mlc::Array<mlc::String> match_deref_params) noexcept{return codegen::CodegenContext{base.field_orders, base.namespace_prefix, base.qualified, self_type, base.method_owners, shared_params, shared_array_params, array_elem_types, shared_map_params, base.ctor_type_infos, base.variant_types, value_params, match_deref_params};}
+codegen::CodegenContext make_body_context(codegen::CodegenContext base, mlc::Array<mlc::String> shared_params, mlc::Array<mlc::String> shared_array_params, mlc::HashMap<mlc::String, mlc::String> array_elem_types, mlc::Array<mlc::String> shared_map_params, mlc::String self_type, mlc::Array<mlc::String> value_params, mlc::Array<mlc::String> match_deref_params) noexcept{return codegen::CodegenContext{base.field_orders, base.namespace_prefix, base.qualified, self_type, base.method_owners, shared_params, shared_array_params, array_elem_types, shared_map_params, base.ctor_type_infos, base.variant_types, value_params, match_deref_params, base.generic_variants};}
 
 codegen::CodegenContext context_add_shared(codegen::CodegenContext context, mlc::String name) noexcept{
 mlc::Array<mlc::String> new_shared_params = context.shared_params;
@@ -1380,7 +1423,10 @@ i = i + 1;
 }
   return result;
  }(); },
-  [&](const VarUnit& varunit) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0] = varunit; return {}; }
+  [&](const VarUnit& varunit) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0] = varunit; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
+  mlc::Array<std::shared_ptr<ast::TypeExpr>> r = {};
+  return r;
+ }(); }
 }, (*variant));}
 
 mlc::Array<mlc::String> variant_used_type_params(mlc::Array<mlc::String> type_params, std::shared_ptr<ast::TypeVariant> variant) noexcept{
@@ -1658,12 +1704,12 @@ i = i + 1;
 return lines.join(mlc::String(""));
 }
 
-codegen::PrecomputedCtx precompute(ast::Program prog, mlc::Array<codegen::LoadItem> all_items) noexcept{return codegen::PrecomputedCtx{build_field_orders(prog), build_variant_types_from_decls(prog.decls), build_item_index(all_items), build_ctor_type_infos_from_decls(prog.decls)};}
+codegen::PrecomputedCtx precompute(ast::Program prog, mlc::Array<codegen::LoadItem> all_items) noexcept{return codegen::PrecomputedCtx{build_field_orders(prog), build_variant_types_from_decls(prog.decls), build_item_index(all_items), build_ctor_type_infos_from_decls(prog.decls), build_generic_variants_from_decls(prog.decls)};}
 
 codegen::GenModuleOut gen_module(codegen::LoadItem item, mlc::Array<codegen::LoadItem> all_items, ast::Program full_prog, codegen::PrecomputedCtx precomp) noexcept{
 mlc::String base = path_to_module_base(item.path);
 mlc::HashMap<mlc::String, mlc::String> qualified = build_qualified(item.imports, all_items);
-codegen::CodegenContext context = codegen::CodegenContext{precomp.field_orders, mlc::String(""), qualified, mlc::String(""), build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}};
+codegen::CodegenContext context = codegen::CodegenContext{precomp.field_orders, mlc::String(""), qualified, mlc::String(""), build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants};
 mlc::String module_namespace = base == mlc::String("main") ? mlc::String("mlc_main") : base;
 mlc::String std_includes = mlc::String("#include \"mlc.hpp\"\n#include <variant>\n\n") + include_lines(item.imports) + mlc::String("\n");
 mlc::Array<mlc::String> type_fwds = collect_decl_parts(item.decls, context, 0);
