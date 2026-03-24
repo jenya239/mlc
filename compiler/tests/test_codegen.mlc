@@ -1,8 +1,8 @@
 // Unit tests for the code generator.
 
 import { TestResult, assert_eq_str } from "./test_runner"
-import { gen_expr, create_codegen_context, type_to_cpp, map_builtin, map_method, FieldOrder, gen_type_decl } from "../codegen"
-import { Program, ExprInt, ExprBool, ExprStr, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprLambda, ExprQuestion, ExprCall, DeclType, VarTuple, TyNamed } from "../ast"
+import { gen_expr, create_codegen_context, type_to_cpp, map_builtin, map_method, FieldOrder, gen_type_decl, gen_program } from "../codegen"
+import { Program, Stmt, StmtLet, StmtExpr, ExprInt, ExprBool, ExprStr, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprIf, ExprBlock, ExprArray, ExprIndex, ExprField, ExprMethod, ExprMatch, MatchArm, PatInt, PatWild, ExprWhile, ExprRecord, ExprRecordUpdate, FieldVal, ExprLambda, ExprQuestion, ExprCall, DeclType, DeclFn, DeclExported, Param, VarTuple, TyNamed, TyI32 } from "../ast"
 
 export fn codegen_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -123,6 +123,101 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("ExprCall ctor Err(str) uses brace init",
     gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("Err")), err_args)), ctx),
     "Err{mlc::String(\"oops\", 4)}"))
+
+  // --- ExprIf -------------------------------------------------------------------
+
+  results.push(assert_eq_str("ExprIf",
+    gen_expr(Shared.new(ExprIf(Shared.new(ExprBool(true)), Shared.new(ExprInt(1)), Shared.new(ExprInt(2)))), ctx),
+    "(true ? 1 : 2)"))
+
+  // --- ExprArray ----------------------------------------------------------------
+
+  const arr_elems: [Shared<Expr>] = [Shared.new(ExprInt(1)), Shared.new(ExprInt(2)), Shared.new(ExprInt(3))]
+  results.push(assert_eq_str("ExprArray",
+    gen_expr(Shared.new(ExprArray(arr_elems)), ctx),
+    "mlc::Array{1, 2, 3}"))
+
+  const empty_arr: [Shared<Expr>] = []
+  results.push(assert_eq_str("ExprArray empty",
+    gen_expr(Shared.new(ExprArray(empty_arr)), ctx),
+    "{}"))
+
+  // --- ExprIndex ----------------------------------------------------------------
+
+  results.push(assert_eq_str("ExprIndex",
+    gen_expr(Shared.new(ExprIndex(Shared.new(ExprIdent("arr")), Shared.new(ExprInt(0)))), ctx),
+    "arr[0]"))
+
+  // --- ExprField ----------------------------------------------------------------
+
+  results.push(assert_eq_str("ExprField on ident",
+    gen_expr(Shared.new(ExprField(Shared.new(ExprIdent("point")), "x")), ctx),
+    "point.x"))
+
+  // --- ExprMethod ---------------------------------------------------------------
+
+  const method_args: [Shared<Expr>] = [Shared.new(ExprInt(1))]
+  results.push(assert_eq_str("ExprMethod push",
+    gen_expr(Shared.new(ExprMethod(Shared.new(ExprIdent("arr")), "push", method_args)), ctx),
+    "arr.push_back(1)"))
+
+  results.push(assert_eq_str("ExprMethod length",
+    gen_expr(Shared.new(ExprMethod(Shared.new(ExprIdent("arr")), "length", empty_arr)), ctx),
+    "arr.length()"))
+
+  // --- ExprMatch ----------------------------------------------------------------
+  // ExprMatch with PatInt uses overloaded with auto capture (no type context available)
+
+  const pat_arms: [Shared<MatchArm>] = [
+    Shared.new(MatchArm { pat: Shared.new(PatInt(1)), body: Shared.new(ExprStr("one")) }),
+    Shared.new(MatchArm { pat: Shared.new(PatWild), body: Shared.new(ExprStr("other")) })
+  ]
+  const match_out = gen_expr(Shared.new(ExprMatch(Shared.new(ExprIdent("n")), pat_arms)), ctx)
+  results.push(assert_eq_str("ExprMatch contains std::visit",
+    if match_out.contains("std::visit") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str("ExprMatch contains one",
+    if match_out.contains("\"one\"") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str("ExprMatch contains other",
+    if match_out.contains("\"other\"") then "yes" else "no" end, "yes"))
+
+  // --- ExprWhile ----------------------------------------------------------------
+
+  const while_body: [Shared<Stmt>] = [Shared.new(StmtExpr(Shared.new(ExprInt(0))))]
+  const while_out = gen_expr(Shared.new(ExprWhile(Shared.new(ExprBool(true)), while_body)), ctx)
+  results.push(assert_eq_str("ExprWhile contains while (true)",
+    if while_out.contains("while (true)") then "yes" else "no" end, "yes"))
+
+  // --- ExprBlock ----------------------------------------------------------------
+
+  const block_stmts: [Shared<Stmt>] = [Shared.new(StmtLet("x", false, Shared.new(TyI32), Shared.new(ExprInt(1))))]
+  results.push(assert_eq_str("ExprBlock",
+    gen_expr(Shared.new(ExprBlock(block_stmts, Shared.new(ExprIdent("x")))), ctx),
+    "[&]() {\nauto x = 1;\nreturn x;\n}()"))
+
+  // --- ExprRecord ---------------------------------------------------------------
+  // Without FieldOrder context, fields are emitted positionally
+
+  const fv_a: [Shared<FieldVal>] = [Shared.new(FieldVal { name: "a", val: Shared.new(ExprInt(1)) }), Shared.new(FieldVal { name: "b", val: Shared.new(ExprInt(2)) })]
+  results.push(assert_eq_str("ExprRecord positional",
+    gen_expr(Shared.new(ExprRecord("Point", fv_a)), ctx),
+    "Point{1, 2}"))
+
+  // --- DeclFn via gen_program ---------------------------------------------------
+
+  const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", typ: Shared.new(TyI32), is_mut: false })]
+  const fn_body = Shared.new(ExprBin("*", Shared.new(ExprIdent("n")), Shared.new(ExprInt(2))))
+  const fn_decl = DeclFn("double_it", [], [], fn_param, Shared.new(TyI32), fn_body)
+  const fn_prog = Program { decls: [Shared.new(DeclExported(Shared.new(fn_decl)))] }
+  const fn_prog_out = gen_program(fn_prog)
+  results.push(assert_eq_str("DeclFn: signature in output",
+    if fn_prog_out.contains("double_it") then "yes" else "no" end,
+    "yes"))
+  results.push(assert_eq_str("DeclFn: param type in output",
+    if fn_prog_out.contains("int n") then "yes" else "no" end,
+    "yes"))
+  results.push(assert_eq_str("DeclFn: body in output",
+    if fn_prog_out.contains("return (n * 2)") then "yes" else "no" end,
+    "yes"))
 
   // --- Generic type codegen -----------------------------------------------
 
