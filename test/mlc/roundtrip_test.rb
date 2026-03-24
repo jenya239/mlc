@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "tmpdir"
+
 require_relative "../test_helper"
 
 class MLCRoundtripTest < Minitest::Test
@@ -65,22 +67,22 @@ class MLCRoundtripTest < Minitest::Test
       }
     CPP
 
-    # Write to temporary file
-    temp_file = "/tmp/mlc_test.cpp"
-    File.write(temp_file, full_cpp)
     runtime_dir = File.expand_path("../../runtime", __dir__)
+    Dir.mktmpdir("mlc_roundtrip") do |work_dir|
+      source_path = File.join(work_dir, "roundtrip.cpp")
+      binary_path = File.join(work_dir, "roundtrip_bin")
+      File.write(source_path, full_cpp)
 
-    # Compile
-    compile_result = system("g++ -std=c++20 -I #{runtime_dir}/include -o /tmp/mlc_test #{temp_file}")
-    assert compile_result, "Compilation failed"
+      compile_cmd = [
+        "g++", "-std=c++20",
+        "-I", "#{runtime_dir}/include",
+        "-o", binary_path,
+        source_path
+      ]
+      assert system(*compile_cmd), "Compilation failed"
 
-    # Run and check result
-    run_result = system("/tmp/mlc_test")
-    assert run_result, "Program should return 0 (success)"
-
-    # Cleanup
-    File.delete(temp_file) if File.exist?(temp_file)
-    File.delete("/tmp/mlc_test") if File.exist?("/tmp/mlc_test")
+      assert system(binary_path), "Program should return 0 (success)"
+    end
   end
 
   def test_float_function
