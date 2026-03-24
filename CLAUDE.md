@@ -14,67 +14,84 @@
 
 MLC — компилятор языка программирования. Цель: self-hosted compiler.
 
-- Self-hosted исходники: `compiler/`. Дорожная карта и политика **Ruby как резерв/bootstrap**: `docs/SELF_HOSTED_PLAN.md`.
-- `lib/mlc/` не удалять — эталон и запасной компилятор.
+- Self-hosted исходники: `compiler/`. Детальный roadmap: `docs/ROADMAP.md`. Политика Ruby: `docs/SELF_HOSTED_PLAN.md`.
+- `lib/mlc/` не удалять — эталон семантики и codegen, резерв при регрессиях.
 
-### Архитектура
+### Два компилятора
 
-```
-MLC Source → Lexer/Parser → AST → SemanticIR → C++ AST DSL → C++ source
-```
-
-- **Компилятор**: Ruby (lib/mlc/)
-- **Target**: C++20 (runtime/include/mlc/)
-- **Тесты**: Minitest (test/)
+| | Bootstrap (Ruby) | Self-hosted (MLC) |
+|-|-----------------|-------------------|
+| Путь | `lib/mlc/` | `compiler/` |
+| Сборка | — (интерпретатор) | `compiler/build.sh` → `compiler/out/mlcc` |
+| Пайплайн | `MLC → SemanticIR → C++ AST DSL → C++ source` | `MLC → AST → checker → codegen → C++ source` |
+| Тесты | `rake test_mlc` (1106 runs) | `rake test_compiler_mlc` (85 tests) |
+| Статус | Эталон, полный стек | Компилирует весь `compiler/`, E2E работает |
 
 ### Ключевые компоненты
 
 | Слой | Путь | Назначение |
 |------|------|------------|
-| Parser | lib/mlc/source/parser/ | Лексер и парсер MLC |
-| AST | lib/mlc/source/ast/nodes.rb | AST-узлы |
-| SemanticIR | lib/mlc/representations/semantic/gen/ | Семантический анализ, типы |
-| C++ Backend | lib/mlc/backends/cpp/ | Lowering SemanticIR → C++ AST |
-| C++ AST DSL | lib/mlc/backends/cpp/cpp_ast/ | Представление C++ кода |
-| Runtime | runtime/include/mlc/ | C++20 runtime библиотека |
-| Registries | lib/mlc/registries/ | TypeRegistry, FunctionRegistry |
-| Self-hosted | compiler/ | MLC lexer/parser/checker/codegen → C++ |
+| Parser (Ruby) | `lib/mlc/source/parser/` | Лексер и парсер MLC |
+| AST (Ruby) | `lib/mlc/source/ast/nodes.rb` | AST-узлы |
+| SemanticIR | `lib/mlc/representations/semantic/gen/` | Семантический анализ, типы |
+| C++ Backend (Ruby) | `lib/mlc/backends/cpp/` | Lowering SemanticIR → C++ AST |
+| C++ AST DSL | `lib/mlc/backends/cpp/cpp_ast/` | Представление C++ кода |
+| Runtime | `runtime/include/mlc/` | C++20 runtime |
+| Registries | `lib/mlc/registries/` | TypeRegistry, FunctionRegistry |
+| Self-hosted lexer/parser | `compiler/lexer.mlc`, `compiler/parser/` | — |
+| Self-hosted checker | `compiler/checker/` | names.mlc, infer.mlc, registry.mlc |
+| Self-hosted codegen | `compiler/codegen.mlc` | → C++20 |
+| E2E тесты mlcc | `compiler/tests/e2e/` | 4 программы через mlcc |
 
-### Паттерны проекта
+### Паттерны проекта (Ruby-компилятор)
 
-- **Rule Engine**: правила (rules/) для каждого типа AST-узла
-- **Visitor Pattern**: expression_visitor.rb, statement_visitor.rb
-- **Registry Pattern**: TypeRegistry, FunctionRegistry, TraitRegistry, ImplRegistry
-- **Pipeline**: PassManager с последовательными проходами
-- **extend блоки**: `extend Type { fn method(self: Type, ...) }` → `Type_method(obj, ...)`
+- **Rule Engine**: `rules/` — по одному файлу на каждый тип AST-узла (`call_rule.rb`, `if_rule.rb`, …)
+- **Visitor Pattern**: `expression_visitor.rb`, `statement_visitor.rb`
+- **Registry Pattern**: `TypeRegistry`, `FunctionRegistry`, `TraitRegistry`, `ImplRegistry`
+- **Pipeline**: `PassManager` с последовательными проходами
+
+### Целевые паттерны self-hosted (roadmap Фаза 2)
+
+- Разбивка `compiler/codegen.mlc` (1655 строк) на модули: `codegen/context.mlc`, `codegen/expr.mlc`, `codegen/decl.mlc`, `codegen/type.mlc`, `codegen/pattern.mlc`
+- Каждый модуль — отдельный сервис, публичный интерфейс через `export fn`
+- Checker разбить аналогично: `checker/types.mlc`, `checker/expr_checker.mlc`, `checker/context.mlc`
 
 ### Синтаксис MLC
 
 ```
-fn name(args) -> RetType = expr                    # однострочная функция
-fn name(args) -> RetType = do ... end              # многострочная функция (НЕ { ... })
-const x = expr                                     # неизменяемая привязка (stmt)
-let x = expr                                       # неизменяемая привязка (let-форма)
-let mut x = expr                                   # изменяемая; нужна для x = … и .push/.set на биндинге
-let const x = expr                                 # compile-time constexpr (где поддержано чекером/codegen)
-type Name = { field: Type }                        # record type
-type Name = Variant1(Type) | Variant2              # sum type
-extend Type { fn method(self: Type) -> T = ... }   # instance method
+fn name(args) -> RetType = expr                     # однострочная функция
+fn name(args) -> RetType = do ... end               # многострочная функция (НЕ { ... })
+const x = expr                                      # неизменяемая привязка (stmt)
+let x = expr                                        # неизменяемая привязка (let-форма)
+let mut x = expr                                    # изменяемая; нужна для x = … и .push/.set на биндинге
+let const x = expr                                  # compile-time constexpr
+type Name = { field: Type }                         # record type
+type Name = Variant1(Type) | Variant2               # sum type
+type Result<T, E> = Ok(T) | Err(E)                  # generic sum type
+extend Type { fn method(self: Type) -> T = ... }    # instance method
 extend Type : Trait { fn method(self: Type) = ... } # trait impl
 Type.static_method()                                # static call
 obj.instance_method()                               # instance call → Type_method(obj)
+expr?                                               # ? оператор — ранний возврат Err из Result<T,E>
 ```
 
 ### Команды
 
 ```bash
-bundle exec ruby -Ilib:test test/mlc/some_test.rb    # один тест
-bundle exec ruby -Ilib:test -e "Dir['test/mlc/**/*_test.rb'].each { |f| require_relative f }"  # все unit-тесты
-bundle exec rake test_mlc                              # только test/mlc/** (CI)
-bundle exec rake test_compiler_mlc                     # compiler/tests (нужен g++)
-bundle exec rake test_self_hosted_stack                # test_mlc + test_compiler_mlc
-bundle exec rake test_unit                             # весь test/ кроме integration
-bundle exec rake test                                  # все тесты (долго, E2E компилирует C++)
+# Ruby-компилятор: тесты
+bundle exec ruby -Ilib:test test/mlc/some_test.rb   # один тест
+bundle exec rake test_mlc                            # test/mlc/** (быстро, CI)
+bundle exec rake test_unit                           # весь test/ кроме integration
+
+# Self-hosted: тесты
+bundle exec rake test_compiler_mlc                  # compiler/tests/ → 85 тестов
+bundle exec rake test_self_hosted_stack             # test_mlc + test_compiler_mlc
+compiler/tests/e2e/run_e2e.sh [mlcc_binary]         # E2E: 4 программы
+compiler/tests/build_tests_self.sh [mlcc_binary]    # unit-тесты через self-hosted бинарь
+
+# Сборка
+compiler/build.sh                                   # Ruby → mlcc
+MLCC_BOOTSTRAP=1 compiler/build.sh                 # Ruby → mlcc → mlcc_bootstrap (g++)
 ```
 
 ### Важные соглашения
