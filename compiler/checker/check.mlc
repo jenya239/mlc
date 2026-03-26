@@ -1,0 +1,60 @@
+// Checker entry: name resolution + type inference over a program (or entry slice).
+
+import { Program, Result, decl_inner, param_name, param_typ,
+         Diagnostic, diagnostics_append, diagnostics_to_strings } from "../ast"
+import { collect_globals, check_names_expr } from "./names"
+import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
+import { infer_expr } from "./infer"
+import { check_context_new } from "./check_context"
+
+export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
+
+export extend CheckOut {
+  fn has_errors(self) -> bool = errors.length() > 0
+}
+
+fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
+  const globals = collect_globals(full_program)
+  let registry = build_registry(full_program)
+  let mut all_diagnostics: [Diagnostic] = []
+  let mut declaration_index = 0
+  while declaration_index < entry.decls.length() do
+    match decl_inner(entry.decls[declaration_index]) {
+      DeclFn(_, type_parameters, _, parameters, _, body) => do
+        const locals: [string] = []
+        let mut type_parameter_index = 0
+        while type_parameter_index < type_parameters.length() do
+          locals.push(type_parameters[type_parameter_index])
+          globals.set(type_parameters[type_parameter_index], true)
+          type_parameter_index = type_parameter_index + 1
+        end
+        const type_environment: Map<string, Shared<Type>> = Map.new()
+        let mut parameter_index = 0
+        while parameter_index < parameters.length() do
+          locals.push(param_name(parameters[parameter_index]))
+          type_environment.set(param_name(parameters[parameter_index]), type_from_annotation(param_typ(parameters[parameter_index])))
+          parameter_index = parameter_index + 1
+        end
+        all_diagnostics = diagnostics_append(all_diagnostics, check_names_expr(body, locals, globals))
+        const inference_context = check_context_new(type_environment, registry)
+        const inference_result = infer_expr(body, inference_context)
+        all_diagnostics = diagnostics_append(all_diagnostics, inference_result.errors); ()
+      end,
+      DeclType(_, _, _)    => do () end,
+      DeclTrait(_, _, _)   => do () end,
+      DeclExtend(_, _, _)  => do () end,
+      DeclImport(_, _)     => do () end,
+      DeclExported(_)      => do () end
+    }
+    declaration_index = declaration_index + 1
+  end
+  if all_diagnostics.length() > 0 then Err(diagnostics_to_strings(all_diagnostics))
+  else Ok(CheckOut { errors: [], registry: registry })
+  end
+end
+
+export fn check_with_context(entry: Program, full: Program) -> Result<CheckOut, [string]> =
+  check_program_against_full(entry, full)
+
+export fn check(program: Program) -> Result<CheckOut, [string]> =
+  check_program_against_full(program, program)

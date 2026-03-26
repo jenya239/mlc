@@ -1,9 +1,10 @@
 // Entry point. Pipeline: source - tokenize - parse - load imports - check - gen_module (per file)
 
 import { tokenize } from "./lexer"
-import { parse_program } from "./parser/decls"
-import { check, check_with_context, CheckOut } from "./checker/infer"
-import { gen_module, LoadItem, PrecomputedCtx, precompute } from "./codegen"
+import { parse_program_with_source_path } from "./parser/decls"
+import { check_with_context } from "./checker/check"
+import { gen_module, GenModuleOut, precompute } from "./codegen/module"
+import { LoadItem, PrecomputedCtx } from "./codegen/context"
 import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from "./ast"
 
 fn dirname(path: string) -> string = do
@@ -78,7 +79,7 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
   if lex.has_errors() then
     LoadResult { items: [], errors: ["lex " + path + ": " + lex.errors[0]] }
   else
-    const prog = parse_program(lex.tokens)
+    const prog = parse_program_with_source_path(lex.tokens, norm_path)
     let items: [LoadItem] = []
     let seen: [string] = []
     let my_decls: [Shared<Decl>] = []
@@ -181,14 +182,15 @@ fn compile_modular(entry_path: string, out_dir: string) -> Result<string, [strin
   const lex = tokenize(src)
   if lex.has_errors() then Err(["lex: " + lex.errors[0]])
   else
-    const prog = parse_program(lex.tokens)
+    const source_path = resolve_dotdot(entry_path)
+    const prog = parse_program_with_source_path(lex.tokens, source_path)
     const merged = merge_program(entry_path, prog)
     if merged.errors.length() > 0 then Err(merged.errors)
     else do
       const n = merged.items.length()
       const entry_item = merged.items[n - 1]
       const entry_prog = Program { decls: entry_item.decls }
-      const _chk = check_with_context(entry_prog, merged.prog)?
+      const _checked = check_with_context(entry_prog, merged.prog)?
       Ok(compile_modular_loop(merged.items, merged.prog, out_dir))
     end
     end

@@ -1,8 +1,11 @@
 // Unit tests for the code generator.
 
 import { TestResult, assert_eq_str } from "./test_runner"
-import { gen_expr, create_codegen_context, type_to_cpp, map_builtin, map_method, FieldOrder, gen_type_decl, gen_program } from "../codegen"
-import { Program, Stmt, StmtLet, StmtExpr, ExprInt, ExprBool, ExprStr, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprIf, ExprBlock, ExprArray, ExprIndex, ExprField, ExprMethod, ExprMatch, MatchArm, PatInt, PatWild, ExprWhile, ExprRecord, ExprRecordUpdate, FieldVal, ExprLambda, ExprQuestion, ExprCall, DeclType, DeclFn, DeclExported, Param, VarTuple, TyNamed, TyI32 } from "../ast"
+import { gen_expr, gen_argument_list, gen_stmts_str } from "../codegen/eval"
+import { create_codegen_context, FieldOrder, map_builtin, map_method } from "../codegen/context"
+import { type_to_cpp, gen_type_decl } from "../codegen/type_gen"
+import { gen_program } from "../codegen/module"
+import { Program, Stmt, StmtLet, StmtExpr, ExprInt, ExprBool, ExprStr, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprIf, ExprBlock, ExprArray, ExprIndex, ExprField, ExprMethod, ExprMatch, MatchArm, PatInt, PatWild, ExprWhile, ExprRecord, ExprRecordUpdate, FieldVal, ExprLambda, ExprQuestion, ExprCall, DeclType, DeclFn, DeclExported, Param, VarTuple, TyNamed, TyI32, span_unknown } from "../ast"
 
 export fn codegen_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -10,7 +13,7 @@ export fn codegen_tests() -> [TestResult] = do
   const empty_prog = Program { decls: [] }
   const ctx = create_codegen_context(empty_prog)
   results.push(assert_eq_str("create_codegen_context: gen_expr with ctx",
-    gen_expr(Shared.new(ExprInt(42)), ctx), "42"))
+    gen_expr(Shared.new(ExprInt(42, span_unknown())), ctx), "42"))
 
   results.push(assert_eq_str("TyI32 - 'int'",
     type_to_cpp(ctx, Shared.new(TyI32)), "int"))
@@ -31,52 +34,52 @@ export fn codegen_tests() -> [TestResult] = do
     type_to_cpp(ctx, Shared.new(TyShared(Shared.new(TyI32)))), "std::shared_ptr<int>"))
 
   results.push(assert_eq_str("ExprInt(42) - '42'",
-    gen_expr(Shared.new(ExprInt(42)), ctx), "42"))
+    gen_expr(Shared.new(ExprInt(42, span_unknown())), ctx), "42"))
 
   results.push(assert_eq_str("ExprQuestion: gen_expr index-based unwrap",
-    gen_expr(Shared.new(ExprQuestion(Shared.new(ExprInt(7)))), ctx),
+    gen_expr(Shared.new(ExprQuestion(Shared.new(ExprInt(7, span_unknown())), span_unknown())), ctx),
     "({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })"))
 
   results.push(assert_eq_str("ExprBool(true) - 'true'",
-    gen_expr(Shared.new(ExprBool(true)), ctx), "true"))
+    gen_expr(Shared.new(ExprBool(true, span_unknown())), ctx), "true"))
 
   results.push(assert_eq_str("ExprStr('hi') - 'mlc::String(\"hi\", 2)'",
-    gen_expr(Shared.new(ExprStr("hi")), ctx), "mlc::String(\"hi\", 2)"))
+    gen_expr(Shared.new(ExprStr("hi", span_unknown())), ctx), "mlc::String(\"hi\", 2)"))
 
   results.push(assert_eq_str("ExprUnit - '/* unit */'",
-    gen_expr(Shared.new(ExprUnit), ctx), "/* unit */"))
+    gen_expr(Shared.new(ExprUnit(span_unknown())), ctx), "/* unit */"))
 
   results.push(assert_eq_str("ExprIdent('x') - 'x'",
-    gen_expr(Shared.new(ExprIdent("x")), ctx), "x"))
+    gen_expr(Shared.new(ExprIdent("x", span_unknown())), ctx), "x"))
 
   results.push(assert_eq_str("ExprIdent('print') - 'mlc::io::print'",
-    gen_expr(Shared.new(ExprIdent("print")), ctx), "mlc::io::print"))
+    gen_expr(Shared.new(ExprIdent("print", span_unknown())), ctx), "mlc::io::print"))
 
   results.push(assert_eq_str("ExprIdent('println') - 'mlc::io::println'",
-    gen_expr(Shared.new(ExprIdent("println")), ctx), "mlc::io::println"))
+    gen_expr(Shared.new(ExprIdent("println", span_unknown())), ctx), "mlc::io::println"))
 
   results.push(assert_eq_str("ExprBin add - '(1 + 2)'",
-    gen_expr(Shared.new(ExprBin("+", Shared.new(ExprInt(1)), Shared.new(ExprInt(2)))), ctx), "(1 + 2)"))
+    gen_expr(Shared.new(ExprBin("+", Shared.new(ExprInt(1, span_unknown())), Shared.new(ExprInt(2, span_unknown())), span_unknown())), ctx), "(1 + 2)"))
 
   results.push(assert_eq_str("ExprUn neg - '(-42)'",
-    gen_expr(Shared.new(ExprUn("-", Shared.new(ExprInt(42)))), ctx), "(-42)"))
+    gen_expr(Shared.new(ExprUn("-", Shared.new(ExprInt(42, span_unknown())), span_unknown())), ctx), "(-42)"))
 
   results.push(assert_eq_str("map_builtin passthrough - 'foo'",
     map_builtin("foo"), "foo"))
 
   const single_params: [string] = ["x"]
   results.push(assert_eq_str("ExprLambda single param - '[=](auto x) { return ... }'",
-    gen_expr(Shared.new(ExprLambda(single_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("x")), Shared.new(ExprInt(1)))))), ctx),
+    gen_expr(Shared.new(ExprLambda(single_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("x", span_unknown())), Shared.new(ExprInt(1, span_unknown())), span_unknown())), span_unknown())), ctx),
     "[=](auto x) { return (x + 1); }"))
 
   const two_params: [string] = ["a", "b"]
   results.push(assert_eq_str("ExprLambda two params - '[=](auto a, auto b) { return ... }'",
-    gen_expr(Shared.new(ExprLambda(two_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("a")), Shared.new(ExprIdent("b")))))), ctx),
+    gen_expr(Shared.new(ExprLambda(two_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("a", span_unknown())), Shared.new(ExprIdent("b", span_unknown())), span_unknown())), span_unknown())), ctx),
     "[=](auto a, auto b) { return (a + b); }"))
 
   const zero_params: [string] = []
   results.push(assert_eq_str("ExprLambda zero params - '[]() { return ... }'",
-    gen_expr(Shared.new(ExprLambda(zero_params, Shared.new(ExprInt(42)))), ctx),
+    gen_expr(Shared.new(ExprLambda(zero_params, Shared.new(ExprInt(42, span_unknown())), span_unknown())), ctx),
     "[]() { return 42; }"))
 
   results.push(assert_eq_str("map_method: length - length",
@@ -109,70 +112,70 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("map_method: lines passthrough",
     map_method("lines"), "lines"))
 
-  const call_lambda_args: [Shared<Expr>] = [Shared.new(ExprInt(5)), Shared.new(ExprLambda(single_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("x")), Shared.new(ExprInt(1))))))]
+  const call_lambda_args: [Shared<Expr>] = [Shared.new(ExprInt(5, span_unknown())), Shared.new(ExprLambda(single_params, Shared.new(ExprBin("+", Shared.new(ExprIdent("x", span_unknown())), Shared.new(ExprInt(1, span_unknown())), span_unknown())), span_unknown()))]
   results.push(assert_eq_str("ExprCall with lambda arg",
-    gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("apply")), call_lambda_args)), ctx),
+    gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("apply", span_unknown())), call_lambda_args, span_unknown())), ctx),
     "apply(5, [=](auto x) { return (x + 1); })"))
 
-  const ok_args: [Shared<Expr>] = [Shared.new(ExprInt(42))]
+  const ok_args: [Shared<Expr>] = [Shared.new(ExprInt(42, span_unknown()))]
   results.push(assert_eq_str("ExprCall ctor Ok(42) uses brace init",
-    gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("Ok")), ok_args)), ctx),
+    gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("Ok", span_unknown())), ok_args, span_unknown())), ctx),
     "Ok{42}"))
 
-  const err_args: [Shared<Expr>] = [Shared.new(ExprStr("oops"))]
+  const err_args: [Shared<Expr>] = [Shared.new(ExprStr("oops", span_unknown()))]
   results.push(assert_eq_str("ExprCall ctor Err(str) uses brace init",
-    gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("Err")), err_args)), ctx),
+    gen_expr(Shared.new(ExprCall(Shared.new(ExprIdent("Err", span_unknown())), err_args, span_unknown())), ctx),
     "Err{mlc::String(\"oops\", 4)}"))
 
   // --- ExprIf -------------------------------------------------------------------
 
   results.push(assert_eq_str("ExprIf",
-    gen_expr(Shared.new(ExprIf(Shared.new(ExprBool(true)), Shared.new(ExprInt(1)), Shared.new(ExprInt(2)))), ctx),
+    gen_expr(Shared.new(ExprIf(Shared.new(ExprBool(true, span_unknown())), Shared.new(ExprInt(1, span_unknown())), Shared.new(ExprInt(2, span_unknown())), span_unknown())), ctx),
     "(true ? 1 : 2)"))
 
   // --- ExprArray ----------------------------------------------------------------
 
-  const arr_elems: [Shared<Expr>] = [Shared.new(ExprInt(1)), Shared.new(ExprInt(2)), Shared.new(ExprInt(3))]
+  const arr_elems: [Shared<Expr>] = [Shared.new(ExprInt(1, span_unknown())), Shared.new(ExprInt(2, span_unknown())), Shared.new(ExprInt(3, span_unknown()))]
   results.push(assert_eq_str("ExprArray",
-    gen_expr(Shared.new(ExprArray(arr_elems)), ctx),
+    gen_expr(Shared.new(ExprArray(arr_elems, span_unknown())), ctx),
     "mlc::Array{1, 2, 3}"))
 
   const empty_arr: [Shared<Expr>] = []
   results.push(assert_eq_str("ExprArray empty",
-    gen_expr(Shared.new(ExprArray(empty_arr)), ctx),
+    gen_expr(Shared.new(ExprArray(empty_arr, span_unknown())), ctx),
     "{}"))
 
   // --- ExprIndex ----------------------------------------------------------------
 
   results.push(assert_eq_str("ExprIndex",
-    gen_expr(Shared.new(ExprIndex(Shared.new(ExprIdent("arr")), Shared.new(ExprInt(0)))), ctx),
+    gen_expr(Shared.new(ExprIndex(Shared.new(ExprIdent("arr", span_unknown())), Shared.new(ExprInt(0, span_unknown())), span_unknown())), ctx),
     "arr[0]"))
 
   // --- ExprField ----------------------------------------------------------------
 
   results.push(assert_eq_str("ExprField on ident",
-    gen_expr(Shared.new(ExprField(Shared.new(ExprIdent("point")), "x")), ctx),
+    gen_expr(Shared.new(ExprField(Shared.new(ExprIdent("point", span_unknown())), "x", span_unknown())), ctx),
     "point.x"))
 
   // --- ExprMethod ---------------------------------------------------------------
 
-  const method_args: [Shared<Expr>] = [Shared.new(ExprInt(1))]
+  const method_args: [Shared<Expr>] = [Shared.new(ExprInt(1, span_unknown()))]
   results.push(assert_eq_str("ExprMethod push",
-    gen_expr(Shared.new(ExprMethod(Shared.new(ExprIdent("arr")), "push", method_args)), ctx),
+    gen_expr(Shared.new(ExprMethod(Shared.new(ExprIdent("arr", span_unknown())), "push", method_args, span_unknown())), ctx),
     "arr.push_back(1)"))
 
   results.push(assert_eq_str("ExprMethod length",
-    gen_expr(Shared.new(ExprMethod(Shared.new(ExprIdent("arr")), "length", empty_arr)), ctx),
+    gen_expr(Shared.new(ExprMethod(Shared.new(ExprIdent("arr", span_unknown())), "length", empty_arr, span_unknown())), ctx),
     "arr.length()"))
 
   // --- ExprMatch ----------------------------------------------------------------
   // ExprMatch with PatInt uses overloaded with auto capture (no type context available)
 
   const pat_arms: [Shared<MatchArm>] = [
-    Shared.new(MatchArm { pat: Shared.new(PatInt(1)), body: Shared.new(ExprStr("one")) }),
-    Shared.new(MatchArm { pat: Shared.new(PatWild), body: Shared.new(ExprStr("other")) })
+    Shared.new(MatchArm { pat: Shared.new(PatInt(1, span_unknown())), body: Shared.new(ExprStr("one", span_unknown())) }),
+    Shared.new(MatchArm { pat: Shared.new(PatWild(span_unknown())), body: Shared.new(ExprStr("other", span_unknown())) })
   ]
-  const match_out = gen_expr(Shared.new(ExprMatch(Shared.new(ExprIdent("n")), pat_arms)), ctx)
+  const match_out = gen_expr(Shared.new(ExprMatch(Shared.new(ExprIdent("n", span_unknown())), pat_arms, span_unknown())), ctx)
   results.push(assert_eq_str("ExprMatch contains std::visit",
     if match_out.contains("std::visit") then "yes" else "no" end, "yes"))
   results.push(assert_eq_str("ExprMatch contains one",
@@ -182,30 +185,30 @@ export fn codegen_tests() -> [TestResult] = do
 
   // --- ExprWhile ----------------------------------------------------------------
 
-  const while_body: [Shared<Stmt>] = [Shared.new(StmtExpr(Shared.new(ExprInt(0))))]
-  const while_out = gen_expr(Shared.new(ExprWhile(Shared.new(ExprBool(true)), while_body)), ctx)
+  const while_body: [Shared<Stmt>] = [Shared.new(StmtExpr(Shared.new(ExprInt(0, span_unknown())), span_unknown()))]
+  const while_out = gen_expr(Shared.new(ExprWhile(Shared.new(ExprBool(true, span_unknown())), while_body, span_unknown())), ctx)
   results.push(assert_eq_str("ExprWhile contains while (true)",
     if while_out.contains("while (true)") then "yes" else "no" end, "yes"))
 
   // --- ExprBlock ----------------------------------------------------------------
 
-  const block_stmts: [Shared<Stmt>] = [Shared.new(StmtLet("x", false, Shared.new(TyI32), Shared.new(ExprInt(1))))]
+  const block_stmts: [Shared<Stmt>] = [Shared.new(StmtLet("x", false, Shared.new(TyI32), Shared.new(ExprInt(1, span_unknown())), span_unknown()))]
   results.push(assert_eq_str("ExprBlock",
-    gen_expr(Shared.new(ExprBlock(block_stmts, Shared.new(ExprIdent("x")))), ctx),
+    gen_expr(Shared.new(ExprBlock(block_stmts, Shared.new(ExprIdent("x", span_unknown())), span_unknown())), ctx),
     "[&]() {\nauto x = 1;\nreturn x;\n}()"))
 
   // --- ExprRecord ---------------------------------------------------------------
   // Without FieldOrder context, fields are emitted positionally
 
-  const fv_a: [Shared<FieldVal>] = [Shared.new(FieldVal { name: "a", val: Shared.new(ExprInt(1)) }), Shared.new(FieldVal { name: "b", val: Shared.new(ExprInt(2)) })]
+  const fv_a: [Shared<FieldVal>] = [Shared.new(FieldVal { name: "a", val: Shared.new(ExprInt(1, span_unknown())) }), Shared.new(FieldVal { name: "b", val: Shared.new(ExprInt(2, span_unknown())) })]
   results.push(assert_eq_str("ExprRecord positional",
-    gen_expr(Shared.new(ExprRecord("Point", fv_a)), ctx),
+    gen_expr(Shared.new(ExprRecord("Point", fv_a, span_unknown())), ctx),
     "Point{1, 2}"))
 
   // --- DeclFn via gen_program ---------------------------------------------------
 
   const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", typ: Shared.new(TyI32), is_mut: false })]
-  const fn_body = Shared.new(ExprBin("*", Shared.new(ExprIdent("n")), Shared.new(ExprInt(2))))
+  const fn_body = Shared.new(ExprBin("*", Shared.new(ExprIdent("n", span_unknown())), Shared.new(ExprInt(2, span_unknown())), span_unknown()))
   const fn_decl = DeclFn("double_it", [], [], fn_param, Shared.new(TyI32), fn_body)
   const fn_prog = Program { decls: [Shared.new(DeclExported(Shared.new(fn_decl)))] }
   const fn_prog_out = gen_program(fn_prog)

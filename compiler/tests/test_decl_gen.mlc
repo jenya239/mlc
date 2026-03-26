@@ -1,0 +1,114 @@
+// Unit tests for declaration code generation.
+
+import { TestResult, assert_eq_str, assert_true } from "./test_runner"
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, Param, FieldDef } from "../ast"
+import { create_codegen_context } from "../codegen/context"
+import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_decl, gen_proto, decls_have_main } from "../codegen/decl"
+import { empty_program, integer_type, string_type, unit_type, named_type,
+         integer_expr, identifier_expr, binary_expr, unit_expr,
+         value_param, function_decl, type_decl, exported_decl,
+         record_variant, tuple_variant, unit_variant, field_definition } from "./ast_builders"
+import { assert_code_contains, assert_expr_generates, empty_codegen_context } from "./codegen_test_helpers"
+
+export fn decl_gen_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  const context = empty_codegen_context()
+
+  // --- gen_fn_proto -----------------------------------------------------------
+
+  results.push(assert_eq_str("gen_fn_proto: zero params",
+    gen_fn_proto("compute", [], [], [], unit_type(), context),
+    "void compute() noexcept;\n"))
+
+  results.push(assert_eq_str("gen_fn_proto: single i32 param",
+    gen_fn_proto("double_it", [], [], [value_param("value", integer_type())], integer_type(), context),
+    "int double_it(int value) noexcept;\n"))
+
+  results.push(assert_eq_str("gen_fn_proto: two params",
+    gen_fn_proto("add", [], [], [value_param("left", integer_type()), value_param("right", integer_type())], integer_type(), context),
+    "int add(int left, int right) noexcept;\n"))
+
+  results.push(assert_eq_str("gen_fn_proto: string return type",
+    gen_fn_proto("greet", [], [], [value_param("name", string_type())], string_type(), context),
+    "mlc::String greet(mlc::String name) noexcept;\n"))
+
+  // --- gen_fn_decl ------------------------------------------------------------
+
+  results.push(assert_eq_str("gen_fn_decl: identity function",
+    gen_fn_decl("identity", [], [], [value_param("value", integer_type())], integer_type(),
+      identifier_expr("value"), context),
+    "int identity(int value) noexcept{\nreturn value;\n}\n"))
+
+  results.push(assert_eq_str("gen_fn_decl: addition",
+    gen_fn_decl("add", [], [], [value_param("left", integer_type()), value_param("right", integer_type())], integer_type(),
+      binary_expr("+", identifier_expr("left"), identifier_expr("right")), context),
+    "int add(int left, int right) noexcept{\nreturn (left + right);\n}\n"))
+
+  results.push(assert_eq_str("gen_fn_decl: unit return",
+    gen_fn_decl("nothing", [], [], [], unit_type(), unit_expr(), context),
+    "void nothing() noexcept{\nreturn /* unit */;\n}\n"))
+
+  // --- gen_decl with DeclFn ---------------------------------------------------
+
+  const add_decl = function_decl("add",
+    [value_param("left", integer_type()), value_param("right", integer_type())],
+    integer_type(),
+    binary_expr("+", identifier_expr("left"), identifier_expr("right")))
+
+  results.push(assert_code_contains("gen_decl DeclFn: contains return type",
+    gen_decl(add_decl, context), "int add"))
+
+  results.push(assert_code_contains("gen_decl DeclFn: contains body",
+    gen_decl(add_decl, context), "return (left + right)"))
+
+  // --- gen_decl with DeclType -------------------------------------------------
+
+  const point_type = type_decl("Point",
+    [record_variant("Point", [field_definition("x", integer_type()), field_definition("y", integer_type())])])
+
+  results.push(assert_code_contains("gen_decl DeclType: record struct",
+    gen_decl(point_type, context), "Point"))
+
+  const color_type = type_decl("Color",
+    [unit_variant("Red"), unit_variant("Green"), unit_variant("Blue")])
+
+  results.push(assert_code_contains("gen_decl DeclType: unit variants",
+    gen_decl(color_type, context), "Red"))
+
+  // --- gen_decl with DeclExported ---------------------------------------------
+
+  const exported_fn = exported_decl(function_decl("square",
+    [value_param("value", integer_type())], integer_type(),
+    binary_expr("*", identifier_expr("value"), identifier_expr("value"))))
+
+  results.push(assert_code_contains("gen_decl DeclExported: generates body",
+    gen_decl(exported_fn, context), "int square"))
+
+  results.push(assert_code_contains("gen_decl DeclExported: contains multiplication",
+    gen_decl(exported_fn, context), "value * value"))
+
+  // --- gen_proto --------------------------------------------------------------
+
+  results.push(assert_eq_str("gen_proto DeclFn: produces prototype",
+    gen_proto(add_decl, context),
+    "int add(int left, int right) noexcept;\n"))
+
+  results.push(assert_eq_str("gen_proto DeclType: empty string",
+    gen_proto(point_type, context), ""))
+
+  // --- decls_have_main --------------------------------------------------------
+
+  const main_decl = function_decl("main", [], unit_type(), unit_expr())
+  const other_decl = function_decl("other", [], unit_type(), unit_expr())
+
+  results.push(assert_true("decls_have_main: finds main",
+    decls_have_main([main_decl, other_decl])))
+
+  results.push(assert_true("decls_have_main: no main",
+    !decls_have_main([other_decl])))
+
+  results.push(assert_true("decls_have_main: empty list",
+    !decls_have_main([])))
+
+  results
+end

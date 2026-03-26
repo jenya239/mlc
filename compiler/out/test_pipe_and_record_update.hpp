@@ -5,7 +5,8 @@
 #include <variant>
 
 #include "test_runner.hpp"
-#include "codegen.hpp"
+#include "eval.hpp"
+#include "context.hpp"
 #include "exprs.hpp"
 #include "lexer.hpp"
 #include "ast.hpp"

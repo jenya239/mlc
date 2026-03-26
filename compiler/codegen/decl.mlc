@@ -1,0 +1,319 @@
+// Declaration code generation: functions, traits, extend blocks.
+
+import { Program, Decl, TypeVariant, TypeExpr, Param, decl_inner, errs_append } from "../ast"
+import { CodegenContext, CtorTypeInfo,
+         cpp_safe, context_resolve, make_body_context,
+         collect_shared_params, collect_shared_array_params, collect_array_elem_types,
+         collect_shared_map_params, collect_value_params } from "./context"
+import { type_to_cpp, type_name_to_cpp, gen_type_decl, gen_type_decl_fwd_only, gen_type_decl_body_only,
+         template_prefix, requires_clause } from "./type_gen"
+import { gen_fn_body } from "./eval"
+
+// --- Context builder methods (intra-module OOP helpers) ----------------------
+
+extend CodegenContext {
+  fn for_type_body(self: CodegenContext, type_name: string) -> CodegenContext =
+    make_body_context(self, [], [], Map.new(), [], type_name, [], [])
+}
+
+// --- Helpers -----------------------------------------------------------------
+
+fn extract_method_name(fn_name: string, type_name: string) -> string = do
+  const prefix = type_name + "_"
+  if fn_name.length() > prefix.length() && fn_name.substring(0, prefix.length()) == prefix then
+    fn_name.substring(prefix.length(), fn_name.length() - prefix.length())
+  else fn_name
+  end
+end
+
+export fn gen_params(context: CodegenContext, params: [Shared<Param>]) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < params.length() do
+    parts.push(type_to_cpp(context, params[index].typ) + " " + cpp_safe(params[index].name))
+    index = index + 1
+  end
+  parts.join(", ")
+end
+
+// --- Function prototype and declaration --------------------------------------
+
+export fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[string]], params: [Shared<Param>], return_type: Shared<TypeExpr>, context: CodegenContext) -> string = do
+  const prefix = template_prefix(type_params) + requires_clause(type_params, type_bounds)
+  const safe_name = context_resolve(context, name)
+  const prototype_context = if params.length() > 0 && params[0].name == "self" then
+    match params[0].typ {
+      TyNamed(type_name) => do
+        const resolved_type = if type_name == "Self" || type_name == "self" then context.self_type else type_name end
+        context.for_type_body(resolved_type)
+      end,
+      _ => context
+    }
+  else context end
+  if name == "main" && params.length() == 0 then
+    prefix + type_to_cpp(prototype_context, return_type) + " " + safe_name + "(int argc, char** argv) noexcept;\n"
+  else
+    prefix + type_to_cpp(prototype_context, return_type) + " " + safe_name + "(" + gen_params(prototype_context, params) + ") noexcept;\n"
+  end
+end
+
+fn compute_fn_body_context(name: string, params: [Shared<Param>], context: CodegenContext) -> CodegenContext = do
+  const fn_shared_params = collect_shared_params(params)
+  const fn_shared_array_params = collect_shared_array_params(params)
+  const fn_array_elem_types = collect_array_elem_types(params)
+  const fn_shared_map_params = collect_shared_map_params(params)
+  const fn_value_params = collect_value_params(params)
+  if params.length() > 0 && params[0].name == "self" then
+    match params[0].typ {
+      TyNamed(self_type_name) => do
+        const resolved_type = if self_type_name == "Self" || self_type_name == "self" then context.self_type else self_type_name end
+        make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, resolved_type, fn_value_params, [])
+      end,
+      _ => make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, context.self_type, fn_value_params, [])
+    }
+  else
+    make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, context.self_type, fn_value_params, [])
+  end
+end
+
+export fn gen_fn_decl(name: string, type_params: [string], type_bounds: [[string]], params: [Shared<Param>], return_type: Shared<TypeExpr>, body: Shared<Expr>, context: CodegenContext) -> string = do
+  const prefix = template_prefix(type_params) + requires_clause(type_params, type_bounds)
+  const safe_name = context_resolve(context, name)
+  const body_context = compute_fn_body_context(name, params, context)
+  const prototype_context = if params.length() > 0 && params[0].name == "self" then body_context else context end
+  if name == "main" && params.length() == 0 then
+    const preamble = "mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n"
+    prefix + type_to_cpp(prototype_context, return_type) + " " + safe_name + "(int argc, char** argv) noexcept\{\n" +
+    preamble + gen_fn_body(body, body_context) + "\}\n"
+  else
+    prefix + type_to_cpp(prototype_context, return_type) + " " + safe_name + "(" + gen_params(prototype_context, params) + ") noexcept\{\n" +
+    gen_fn_body(body, body_context) + "\}\n"
+  end
+end
+
+// --- Trait declaration -------------------------------------------------------
+
+export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_params: [string], methods: [Shared<Decl>]) -> string = do
+  const self_param = if type_params.length() > 0 then type_params[0] else "T" end
+  const tparam = if type_params.length() > 0 then type_params.join(", ") else "T" end
+  const prefix = "template<typename " + tparam + ">\n"
+  let req_parts: [string] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      DeclFn(mangled, _, _, params, ret_type, _) => do
+        const method_name = extract_method_name(mangled, trait_name)
+        const ret_cpp = type_to_cpp(context, ret_type)
+        req_parts.push("{ " + method_name + "(self) } -> std::convertible_to<" + ret_cpp + ">")
+      end,
+      _ => do end
+    }
+    method_index = method_index + 1
+  end
+  const req_body = req_parts.join("; ")
+  prefix + "concept " + cpp_safe(trait_name) + " = requires(const " + self_param + "& self) { " + req_body + "; };\n"
+end
+
+// --- Extend block declaration ------------------------------------------------
+
+fn gen_extend_wrapper_protos(type_name: string, trait_name: string, methods: [Shared<Decl>], context: CodegenContext) -> string =
+  if trait_name.length() == 0 then ""
+  else
+    let mut wrappers = ""; let mut method_index = 0
+    while method_index < methods.length() do
+      match methods[method_index] {
+        DeclFn(mangled, _, _, params, ret_type, _) => do
+          const wrapper_context = context.for_type_body(type_name)
+          const method_name = extract_method_name(mangled, type_name)
+          const ret_cpp = type_to_cpp(wrapper_context, ret_type)
+          const params_str = gen_params(wrapper_context, params)
+          wrappers = wrappers + ret_cpp + " " + cpp_safe(method_name) + "(" + params_str + ") noexcept;\n"
+        end,
+        _ => do end
+      }
+      method_index = method_index + 1
+    end
+    wrappers
+  end
+
+fn gen_extend_trait_wrapper(type_name: string, mangled: string, params: [Shared<Param>], ret_type: Shared<TypeExpr>, context: CodegenContext) -> string = do
+  const wrapper_context = context.for_type_body(type_name)
+  const method_name = extract_method_name(mangled, type_name)
+  const ret_cpp = type_to_cpp(wrapper_context, ret_type)
+  const fn_resolved = context_resolve(context, mangled)
+  const params_str = gen_params(wrapper_context, params)
+  let call_args: [string] = []; let mut param_index = 0
+  while param_index < params.length() do
+    call_args.push(cpp_safe(params[param_index].name))
+    param_index = param_index + 1
+  end
+  "inline " + ret_cpp + " " + cpp_safe(method_name) + "(" + params_str + ") noexcept { return " + fn_resolved + "(" + call_args.join(", ") + "); }\n"
+end
+
+fn gen_extend_trait_wrappers(type_name: string, methods: [Shared<Decl>], context: CodegenContext) -> string = do
+  let mut wrappers = ""; let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      DeclFn(mangled, _, _, params, ret_type, _) =>
+        do wrappers = wrappers + gen_extend_trait_wrapper(type_name, mangled, params, ret_type, context) end,
+      _ => do end
+    }
+    method_index = method_index + 1
+  end
+  wrappers
+end
+
+fn gen_extend_extern_method(mangled: string, type_name: string, params: [Shared<Param>], ret_type: Shared<TypeExpr>, trait_name: string, context: CodegenContext) -> string = do
+  const method_name = if trait_name.length() > 0 then extract_method_name(mangled, type_name) else "" end
+  if type_name == "i32" && method_name == "to_string" && params.length() > 0 then
+    const ret_cpp = type_to_cpp(context, ret_type)
+    const params_str = gen_params(context, params)
+    ret_cpp + " " + context_resolve(context, mangled) + "(" + params_str + ") noexcept { return mlc::to_string(" + cpp_safe(params[0].name) + "); }\n"
+  else ""
+  end
+end
+
+fn gen_extend_method_parts(type_name: string, trait_name: string, methods: [Shared<Decl>], extend_context: CodegenContext, context: CodegenContext) -> [string] = do
+  let parts: [string] = []; let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      DeclFn(mangled, _, _, params, ret_type, body) => do
+        match body {
+          ExprExtern(_) => do
+            const generated = gen_extend_extern_method(mangled, type_name, params, ret_type, trait_name, context)
+            if generated.length() > 0 then parts.push(generated) end
+          end,
+          _ => parts.push(gen_decl(methods[method_index], extend_context))
+        }
+      end,
+      _ => parts.push(gen_decl(methods[method_index], extend_context))
+    }
+    method_index = method_index + 1
+  end
+  parts
+end
+
+fn gen_decl_extend(type_name: string, trait_name: string, methods: [Shared<Decl>], context: CodegenContext) -> string = do
+  const extend_context = context.for_type_body(type_name)
+  const method_parts = gen_extend_method_parts(type_name, trait_name, methods, extend_context, context)
+  const methods_str = method_parts.join("")
+  if trait_name.length() > 0 then
+    const trait_wrappers = gen_extend_trait_wrappers(type_name, methods, context)
+    const cpp_type = type_name_to_cpp(context, type_name)
+    const trait_safe = cpp_safe(trait_name)
+    methods_str + trait_wrappers + "static_assert(" + trait_safe + "<" + cpp_type + ">, \"" + type_name + " does not implement " + trait_name + "\");\n"
+  else
+    methods_str
+  end
+end
+
+// --- Main declaration dispatcher ---------------------------------------------
+
+export fn gen_decl(decl: Shared<Decl>, context: CodegenContext) -> string =
+  match decl {
+    DeclType(type_name, type_params, variants) => gen_type_decl(context, type_name, type_params, variants),
+    DeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
+    DeclFn(name, type_params, type_bounds, params, return_type, body) =>
+      match body { ExprExtern(_) => "", _ => gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context) },
+    DeclExtend(type_name, trait_name, methods) => gen_decl_extend(type_name, trait_name, methods, context),
+    DeclImport(_, _) => "",
+    DeclExported(d) => gen_decl(d, context)
+  }
+
+export fn gen_proto(decl: Shared<Decl>, context: CodegenContext) -> string =
+  match decl {
+    DeclType(_, _, _)                        => "",
+    DeclTrait(_, _, _)                       => "",
+    DeclFn(name, type_params, type_bounds, params, ret, body) =>
+      match body { ExprExtern(_) => "", _ => gen_fn_proto(name, type_params, type_bounds, params, ret, context) },
+    DeclExtend(type_name, _, methods) => do
+      const extend_context = context.for_type_body(type_name)
+      let parts: [string] = []; let mut index = 0
+      while index < methods.length() do
+        parts.push(gen_proto(methods[index], extend_context)); index = index + 1
+      end
+      parts.join("")
+    end,
+    DeclImport(_, _) => "",
+    DeclExported(d) => gen_proto(d, context)
+  }
+
+// --- Whole-program helpers ---------------------------------------------------
+
+export fn decls_have_main(decls: [Shared<Decl>]) -> bool = do
+  let mut found = false; let mut index = 0
+  while index < decls.length() do
+    const inner = decl_inner(decls[index])
+    const is_main = match inner {
+      DeclFn(name, _, _, _, _, _) => name == "main",
+      _ => false
+    }
+    if is_main then found = true else () end
+    index = index + 1
+  end
+  found
+end
+
+export fn collect_decl_parts(decls: [Shared<Decl>], context: CodegenContext, phase: i32) -> [string] = do
+  let parts: [string] = []
+  if phase == 0 then
+    let mut index = 0
+    while index < decls.length() do
+      const wrapper = match decls[index] {
+        DeclExtend(type_name, trait_name, methods) => gen_extend_wrapper_protos(type_name, trait_name, methods, context),
+        DeclExported(d) => match decl_inner(d) {
+          DeclExtend(type_name, trait_name, methods) => gen_extend_wrapper_protos(type_name, trait_name, methods, context),
+          _ => ""
+        },
+        _ => ""
+      }
+      if wrapper.length() > 0 then parts.push(wrapper) end
+      index = index + 1
+    end
+  end
+  let mut index = 0
+  while index < decls.length() do
+    const segment = match decls[index] {
+      DeclType(type_name, type_params, variants) =>
+        if phase == 0 then gen_type_decl_fwd_only(context, type_name, type_params, variants)
+        else if phase == 1 then gen_type_decl_body_only(context, type_name, type_params, variants)
+        else ""
+        end,
+      DeclTrait(name, type_params, methods) =>
+        if phase == 0 then gen_trait_decl(context, name, type_params, methods)
+        else ""
+        end,
+      DeclFn(_, _, _, _, _, _) =>
+        if phase == 2 then gen_proto(decls[index], context)
+        else if phase == 3 then gen_decl(decls[index], context)
+        else ""
+        end,
+      DeclExtend(_, _, _) =>
+        if phase == 2 then gen_proto(decls[index], context)
+        else if phase == 3 then gen_decl(decls[index], context)
+        else ""
+        end,
+      DeclImport(_, _) => "",
+      DeclExported(d) =>
+        if phase == 0 then match decl_inner(d) {
+          DeclType(type_name, type_params, variants) => gen_type_decl_fwd_only(context, type_name, type_params, variants),
+          DeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
+          _ => ""
+        }
+        else if phase == 1 then match decl_inner(d) {
+          DeclType(type_name, type_params, variants) => gen_type_decl_body_only(context, type_name, type_params, variants),
+          _ => ""
+        }
+        else if phase == 2 then gen_proto(d, context)
+        else if phase == 3 then match decl_inner(d) {
+          DeclType(_, _, _) => "",
+          DeclTrait(_, _, _) => "",
+          _ => gen_decl(d, context)
+        }
+        else ""
+        end
+    }
+    if segment.length() > 0 then parts.push(segment) end
+    index = index + 1
+  end
+  parts
+end

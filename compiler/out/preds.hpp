@@ -12,7 +12,7 @@ namespace preds {
 struct Expr;
 struct Stmt;
 
-struct Parser {mlc::Array<ast_tokens::Token> tokens;int pos;};
+struct Parser {mlc::Array<ast_tokens::Token> tokens;int pos;mlc::String source_path;};
 
 struct ExprResult {std::shared_ptr<ast::Expr> expr;preds::Parser parser;};
 
@@ -53,6 +53,8 @@ struct TypeParamsResult {mlc::Array<mlc::String> params;mlc::Array<mlc::Array<ml
 struct BoundsResult {mlc::Array<mlc::String> bounds;preds::Parser parser;};
 
 struct TraitBodyResult {mlc::Array<std::shared_ptr<ast::Decl>> methods;preds::Parser parser;};
+
+preds::Parser parser_new_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
 
 preds::Parser parser_new(mlc::Array<ast_tokens::Token> tokens) noexcept;
 
@@ -165,6 +167,8 @@ preds::Parser Parser_advance_by(preds::Parser self, int count) noexcept;
 bool Parser_at_eof(preds::Parser self) noexcept;
 
 preds::Parser Parser_skip_semi(preds::Parser self) noexcept;
+
+ast::Span Parser_span_at_cursor(preds::Parser self) noexcept;
 
 } // namespace preds
 

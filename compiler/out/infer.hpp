@@ -5,21 +5,21 @@
 #include <variant>
 
 #include "ast.hpp"
-#include "names.hpp"
 #include "registry.hpp"
+#include "check_context.hpp"
 
 namespace infer {
 
 struct Expr;
 struct Stmt;
 
-struct CheckOut {mlc::Array<mlc::String> errors;registry::TypeRegistry registry;};
+struct InferResult {std::shared_ptr<registry::Type> inferred_type;mlc::Array<ast::Diagnostic> errors;};
 
-bool CheckOut_has_errors(infer::CheckOut self) noexcept;
+struct StmtInferResult {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;mlc::Array<ast::Diagnostic> errors;};
 
-ast::Result<infer::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept;
+infer::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept;
 
-ast::Result<infer::CheckOut, mlc::Array<mlc::String>> check(ast::Program prog) noexcept;
+infer::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 
 } // namespace infer
 

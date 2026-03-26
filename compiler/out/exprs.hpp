@@ -6,6 +6,7 @@
 
 #include "preds.hpp"
 #include "types.hpp"
+#include "ast.hpp"
 
 namespace exprs {
 

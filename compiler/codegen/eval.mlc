@@ -1,0 +1,669 @@
+// Expression and statement code generation (mutually recursive evaluation core).
+// gen_expr is a pure dispatcher; each expression form has its own named rule function.
+
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, span_unknown } from "../ast"
+import { CodegenContext, CtorTypeInfo, GenStmtsResult, GenStmtResult,
+         context_resolve, cpp_safe, lower_first, map_method, map_builtin, escape_str,
+         lookup_fields, list_contains, lookup_ctor_type_info,
+         context_add_shared, context_add_shared_array,
+         expr_returns_shared_sum_visit_ptr, update_context_from_statement,
+         is_shared_type, is_shared_array_type } from "./context"
+import { type_to_cpp } from "./type_gen"
+
+// --- Context builder methods (intra-module OOP helpers) ----------------------
+// extend methods are resolved within the eval namespace; do not export.
+
+extend CodegenContext {
+  fn with_shared_param(self: CodegenContext, name: string) -> CodegenContext =
+    context_add_shared(self, name)
+  fn with_shared_array_param(self: CodegenContext, name: string) -> CodegenContext =
+    context_add_shared_array(self, name)
+}
+
+// --- Argument list helper ----------------------------------------------------
+
+export fn gen_argument_list(expressions: [Shared<Expr>], context: CodegenContext) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < expressions.length() do
+    parts.push(gen_expr(expressions[index], context)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+// --- Record helpers ----------------------------------------------------------
+
+fn find_field_value(field_values: [Shared<FieldVal>], field_name: string) -> Shared<Expr> = do
+  let mut result: Shared<Expr> = Shared.new(ExprUnit(span_unknown())); let mut index = 0
+  while index < field_values.length() do
+    if field_values[index].name == field_name then result = field_values[index].val end
+    index = index + 1
+  end
+  result
+end
+
+fn gen_record_ordered(field_values: [Shared<FieldVal>], field_order: [string], context: CodegenContext) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < field_order.length() do
+    let value = find_field_value(field_values, field_order[index])
+    parts.push(gen_expr(value, context)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_record_unordered(field_values: [Shared<FieldVal>], context: CodegenContext) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < field_values.length() do
+    parts.push(gen_expr(field_values[index].val, context)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_record_update_ordered(base_expr: Shared<Expr>, overrides: [Shared<FieldVal>], field_order: [string], context: CodegenContext) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < field_order.length() do
+    const field_name = field_order[index]
+    const override_value = find_field_value(overrides, field_name)
+    let value_string = match override_value {
+      ExprUnit(_) => gen_expr(Shared.new(ExprField(base_expr, field_name, span_unknown())), context),
+      _        => gen_expr(override_value, context)
+    }
+    parts.push(value_string); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_record_update_lazy(base_expr: Shared<Expr>, overrides: [Shared<FieldVal>], context: CodegenContext) -> string = do
+  let parts: [string] = ["auto __upd = " + gen_expr(base_expr, context) + "; "]
+  let mut index = 0
+  while index < overrides.length() do
+    parts.push("__upd." + cpp_safe(overrides[index].name) + " = " + gen_expr(overrides[index].val, context) + "; ")
+    index = index + 1
+  end
+  "[&]() { " + parts.join("") + "return __upd; }()"
+end
+
+// --- Match arm / deref detection rules --------------------------------------
+
+export fn subject_needs_deref(subject: Shared<Expr>, context: CodegenContext) -> bool = do
+  if expr_returns_shared_sum_visit_ptr(subject) then true
+  else match subject {
+    ExprIdent(name, _) =>
+      if context.match_deref_params.contains(name) then true
+      else if context.shared_params.contains(name) then true
+      else if context.value_params.contains(name) then false
+      else true
+      end,
+    ExprIndex(array_expr, _, _) => match array_expr {
+      ExprIdent(array_name, _) => context.shared_array_params.contains(array_name),
+      _ => true
+    },
+    ExprMethod(_, _, _, _) => false,
+    _ => true
+  }
+  end
+end
+
+export fn first_arm_needs_deref(first_arm: Shared<MatchArm>, subject: Shared<Expr>, context: CodegenContext) -> bool =
+  match first_arm.pat {
+    PatCtor(name, _, _) => do
+      const resolved = context_resolve(context, name)
+      if resolved.length() >= 12 && resolved.substring(0, 12) == "ast_tokens::" then false
+      else if list_contains(context.generic_variants, name) then false
+      else subject_needs_deref(subject, context)
+      end
+    end,
+    _ => subject_needs_deref(subject, context)
+  }
+
+fn pat_bind_names(sub_patterns: [Shared<Pat>]) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < sub_patterns.length() do
+    const bind_name = match sub_patterns[index] {
+      PatIdent(name, _) => cpp_safe(name),
+      _ => "__" + index.to_string()
+    }
+    parts.push(bind_name); index = index + 1
+  end
+  parts.join(", ")
+end
+
+// --- Match arm generation rule ----------------------------------------------
+
+fn gen_arm_ctor(ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared<Expr>, context: CodegenContext) -> string = do
+  const qualified_name = context_resolve(context, ctor_name)
+  const lower_name = cpp_safe(lower_first(ctor_name))
+  const binding =
+    if sub_patterns.length() == 0 then ""
+    else "auto [" + pat_bind_names(sub_patterns) + "] = " + lower_name + "; "
+    end
+  const ctor_type_info: Shared<CtorTypeInfo> = lookup_ctor_type_info(context.ctor_type_infos, ctor_name)
+  const is_generic = list_contains(context.generic_variants, ctor_name)
+  const type_argument = if is_generic then "<auto>" else "" end
+  let mut arm_context = context; let mut index = 0
+  while index < sub_patterns.length() do
+    match sub_patterns[index] {
+      PatIdent(pattern_name, _) => do
+        if ctor_type_info.shared_pos.contains(index) then
+          arm_context = arm_context.with_shared_param(pattern_name)
+        end
+        if ctor_type_info.shared_arr_pos.contains(index) then
+          arm_context = arm_context.with_shared_array_param(pattern_name)
+        end
+      end,
+      _ => do end
+    }
+    index = index + 1
+  end
+  "[&](const " + qualified_name + type_argument + "& " + lower_name + ") \{ " + binding + "return " + gen_expr(arm_body, arm_context) + "; \}"
+end
+
+fn gen_arm_record_pattern(record_name: string, field_patterns: [Shared<Pat>], arm_body: Shared<Expr>, context: CodegenContext) -> string = do
+  const qualified_name = context_resolve(context, record_name)
+  const lower_name = cpp_safe(lower_first(record_name))
+  const is_generic = list_contains(context.generic_variants, record_name)
+  const type_argument = if is_generic then "<auto>" else "" end
+  let mut field_bindings = ""; let mut field_index = 0
+  while field_index < field_patterns.length() do
+    match field_patterns[field_index] {
+      PatIdent(field_name, _) => do
+        field_bindings = field_bindings + "const auto& " + cpp_safe(field_name) + " = " + lower_name + "." + cpp_safe(field_name) + "; "
+      end,
+      _ => do end
+    }
+    field_index = field_index + 1
+  end
+  "[&](const " + qualified_name + type_argument + "& " + lower_name + ") \{ " + field_bindings + "return " + gen_expr(arm_body, context) + "; \}"
+end
+
+fn gen_arm(arm: Shared<MatchArm>, context: CodegenContext) -> string =
+  match arm.pat {
+    PatWild(_)        => "[&](const auto& __v) \{ return " + gen_expr(arm.body, context) + "; \}",
+    PatUnit(_)        => "[&](const auto& __v) \{ return " + gen_expr(arm.body, context) + "; \}",
+    PatBool(_, _)     => "[&](const auto& __v) \{ return " + gen_expr(arm.body, context) + "; \}",
+    PatInt(_, _)      => "[&](const auto& __v) \{ return " + gen_expr(arm.body, context) + "; \}",
+    PatStr(_, _)      => "[&](const auto& __v) \{ return " + gen_expr(arm.body, context) + "; \}",
+    PatIdent(name, _) => "[&](const auto& " + cpp_safe(name) + ") \{ return " + gen_expr(arm.body, context) + "; \}",
+    PatCtor(name, sub_patterns, _)           => gen_arm_ctor(name, sub_patterns, arm.body, context),
+    PatRecord(name, field_patterns, _)       => gen_arm_record_pattern(name, field_patterns, arm.body, context)
+  }
+
+fn gen_match(subject: Shared<Expr>, arms: [Shared<MatchArm>], context: CodegenContext) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < arms.length() do parts.push(gen_arm(arms[index], context)); index = index + 1 end
+  const subject_code = gen_expr(subject, context)
+  const needs_deref = if arms.length() > 0 then first_arm_needs_deref(arms[0], subject, context) else true end
+  const visit_subject = if needs_deref then "(*" + subject_code + ")" else subject_code end
+  "std::visit(overloaded\{" + parts.join(",\n") + "\n\}, " + visit_subject + ")"
+end
+
+// --- Expression rules (one function per expression form) --------------------
+
+fn gen_integer_literal(integer_value: i32) -> string =
+  integer_value.to_string()
+
+fn gen_string_literal(string_value: string) -> string =
+  "mlc::String(\"" + escape_str(string_value) + "\", " + string_value.length().to_string() + ")"
+
+fn gen_boolean_literal(boolean_value: bool) -> string =
+  if boolean_value then "true" else "false" end
+
+fn gen_unit_literal() -> string = "/* unit */"
+
+fn gen_extern_placeholder() -> string = ""
+
+fn resolve_identifier_in_self_context(name: string, context: CodegenContext) -> string = do
+  const self_fields = lookup_fields(context.field_orders, context.self_type)
+  const is_known_field = name == "errors" || name == "kind" || name == "tokens" || name == "line" || name == "col" || name == "inferred_type" || name == "type_env"
+  if list_contains(self_fields, name) || is_known_field then
+    "self." + cpp_safe(name)
+  else
+    const mapped = map_builtin(name)
+    const resolved = context_resolve(context, mapped)
+    const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
+    if needs_constructor_brace then resolved + "{}" else resolved end
+  end
+end
+
+fn gen_identifier(name: string, context: CodegenContext) -> string =
+  if context.self_type.length() > 0 then
+    resolve_identifier_in_self_context(name, context)
+  else
+    const mapped = map_builtin(name)
+    const resolved = context_resolve(context, mapped)
+    const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
+    if needs_constructor_brace then resolved + "{}" else resolved end
+  end
+
+fn gen_binary_expr(operation: string, left_expr: Shared<Expr>, right_expr: Shared<Expr>, context: CodegenContext) -> string =
+  "(" + gen_expr(left_expr, context) + " " + operation + " " + gen_expr(right_expr, context) + ")"
+
+fn gen_unary_expr(operation: string, inner_expr: Shared<Expr>, context: CodegenContext) -> string =
+  "(" + operation + gen_expr(inner_expr, context) + ")"
+
+fn gen_call_function_code(function_expr: Shared<Expr>, context: CodegenContext) -> string =
+  match function_expr {
+    ExprIdent(name, _) => context_resolve(context, map_builtin(name)),
+    _ => gen_expr(function_expr, context)
+  }
+
+fn is_constructor_call(function_expr: Shared<Expr>) -> bool =
+  match function_expr {
+    ExprIdent(name, _) => name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z",
+    _ => false
+  }
+
+fn gen_call_expr(function_expr: Shared<Expr>, arguments: [Shared<Expr>], context: CodegenContext) -> string = do
+  const function_code = gen_call_function_code(function_expr, context)
+  const argument_list = gen_argument_list(arguments, context)
+  if is_constructor_call(function_expr) then function_code + "\{" + argument_list + "\}"
+  else function_code + "(" + argument_list + ")"
+  end
+end
+
+fn resolve_object_code_in_self_context(object_name: string, context: CodegenContext) -> string = do
+  const self_fields = lookup_fields(context.field_orders, context.self_type)
+  const is_known_field = object_name == "errors" || object_name == "kind" || object_name == "tokens" || object_name == "line" || object_name == "col" || object_name == "inferred_type" || object_name == "type_env"
+  if list_contains(self_fields, object_name) || is_known_field then "self." + cpp_safe(object_name)
+  else context_resolve(context, map_builtin(object_name))
+  end
+end
+
+fn gen_object_code(object: Shared<Expr>, context: CodegenContext) -> string =
+  match object {
+    ExprIdent(name, _) =>
+      if context.self_type.length() > 0 then resolve_object_code_in_self_context(name, context)
+      else context_resolve(context, map_builtin(name))
+      end,
+    _ => gen_expr(object, context)
+  }
+
+fn infer_shared_new_type_name(argument: Shared<Expr>, context: CodegenContext) -> string = do
+  const raw_type_name = match argument {
+    ExprRecord(name, _, _)  => name,
+    ExprCall(function_expr, _, _) => match function_expr { ExprIdent(name, _) => name, _ => "" },
+    ExprIdent(name, _)      => name,
+    ExprIndex(array_expr, _, _) => match array_expr {
+      ExprIdent(array_name, _) => if context.array_elem_types.has(array_name) then context.array_elem_types.get(array_name) else "" end,
+      _ => ""
+    },
+    _ => ""
+  }
+  const parent_type = if raw_type_name.length() > 0 && context.variant_types.has(raw_type_name)
+                      then context.variant_types.get(raw_type_name)
+                      else raw_type_name
+                      end
+  if parent_type.length() > 0 then context_resolve(context, parent_type) else "auto" end
+end
+
+fn gen_method_file(method_name: string, arguments: [Shared<Expr>], context: CodegenContext) -> string = do
+  const cpp_function = if method_name == "read" then "mlc::file::read_to_string"
+                       else if method_name == "write" then "mlc::file::write_string"
+                       else "mlc::file::" + method_name
+                       end
+  cpp_function + "(" + gen_argument_list(arguments, context) + ")"
+end
+
+fn gen_method_shared_new(argument: Shared<Expr>, context: CodegenContext) -> string = do
+  const argument_code = gen_expr(argument, context)
+  const type_name = infer_shared_new_type_name(argument, context)
+  "std::make_shared<" + type_name + ">(" + argument_code + ")"
+end
+
+fn gen_method_owner_call(object_code: string, method_name: string, arguments: [Shared<Expr>], context: CodegenContext) -> string = do
+  const mangled_name = context.method_owners.get(method_name)
+  const function_name = context_resolve(context, mangled_name)
+  if arguments.length() == 0 then function_name + "(" + object_code + ")"
+  else function_name + "(" + object_code + ", " + gen_argument_list(arguments, context) + ")"
+  end
+end
+
+fn gen_method_builtin(object_code: string, method_name: string, arguments: [Shared<Expr>], context: CodegenContext) -> string = do
+  const call_base = object_code + "." + map_method(method_name) + "("
+  if arguments.length() == 0 then call_base + ")"
+  else call_base + gen_argument_list(arguments, context) + ")"
+  end
+end
+
+fn gen_method_expr(object: Shared<Expr>, method_name: string, arguments: [Shared<Expr>], context: CodegenContext) -> string = do
+  const object_code = gen_object_code(object, context)
+  if object_code == "File" then
+    gen_method_file(method_name, arguments, context)
+  else if object_code == "Map" && method_name == "new" then
+    "\{\}"
+  else if object_code == "Shared" && method_name == "new" && arguments.length() == 1 then
+    gen_method_shared_new(arguments[0], context)
+  else if method_name == "to_string" && arguments.length() == 0 then
+    "mlc::to_string(" + object_code + ")"
+  else if context.method_owners.has(method_name) then
+    gen_method_owner_call(object_code, method_name, arguments, context)
+  else
+    gen_method_builtin(object_code, method_name, arguments, context)
+  end
+end
+
+fn field_access_operator(object: Shared<Expr>, context: CodegenContext) -> string =
+  match object {
+    ExprIndex(inner_expr, _, _) => match inner_expr {
+      ExprIdent(array_name, _) =>
+        if context.shared_array_params.contains(array_name) then "->" else "." end,
+      _ => "."
+    },
+    ExprIdent(name, _) =>
+      if context.shared_params.contains(name) then "->" else "." end,
+    ExprMethod(map_object, method_name, _, _) =>
+      if method_name == "get" then
+        match map_object {
+          ExprIdent(map_name, _) =>
+            if context.shared_map_params.contains(map_name) then "->" else "." end,
+          _ => "."
+        }
+      else "." end,
+    _ => "."
+  }
+
+fn gen_field_expr(object: Shared<Expr>, field_name: string, context: CodegenContext) -> string = do
+  const object_code = gen_expr(object, context)
+  const operator = field_access_operator(object, context)
+  object_code + operator + cpp_safe(field_name)
+end
+
+fn gen_index_expr(object: Shared<Expr>, index_expr: Shared<Expr>, context: CodegenContext) -> string =
+  gen_expr(object, context) + "[" + gen_expr(index_expr, context) + "]"
+
+fn gen_if_expr(condition: Shared<Expr>, then_expr: Shared<Expr>, else_expr: Shared<Expr>, context: CodegenContext) -> string =
+  "(" + gen_expr(condition, context) + " ? " + gen_expr(then_expr, context) + " : " + gen_expr(else_expr, context) + ")"
+
+fn gen_block_expr(statements: [Shared<Stmt>], result_expr: Shared<Expr>, context: CodegenContext) -> string =
+  if statements.length() == 0 then
+    gen_expr(result_expr, context)
+  else
+    const body = gen_stmts_str(statements, context) + "return " + gen_expr(result_expr, stmts_final_ctx(statements, context)) + ";\n"
+    "[&]() \{\n" + body + "\}()"
+  end
+
+fn gen_while_expr(condition: Shared<Expr>, statements: [Shared<Stmt>], context: CodegenContext) -> string =
+  "[&]() \{\nwhile (" + gen_expr(condition, context) + ") \{\n" + gen_stmts_str(statements, context) + "\}\n\}()"
+
+fn gen_for_expr(variable: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], context: CodegenContext) -> string =
+  "[&]() \{\nfor (auto " + cpp_safe(variable) + " : " + gen_expr(iterator, context) + ") \{\n" + gen_stmts_str(statements, context) + "\}\n\}()"
+
+fn gen_record_expr(type_name: string, field_values: [Shared<FieldVal>], context: CodegenContext) -> string = do
+  const field_order = lookup_fields(context.field_orders, type_name)
+  const values_code = if field_order.length() > 0
+                      then gen_record_ordered(field_values, field_order, context)
+                      else gen_record_unordered(field_values, context)
+                      end
+  context_resolve(context, type_name) + "\{" + values_code + "\}"
+end
+
+fn gen_record_update_expr(type_name: string, base_expr: Shared<Expr>, overrides: [Shared<FieldVal>], context: CodegenContext) -> string = do
+  const field_order = lookup_fields(context.field_orders, type_name)
+  if field_order.length() > 0 then
+    context_resolve(context, type_name) + "\{" + gen_record_update_ordered(base_expr, overrides, field_order, context) + "\}"
+  else
+    gen_record_update_lazy(base_expr, overrides, context)
+  end
+end
+
+fn gen_array_expr(elements: [Shared<Expr>], context: CodegenContext) -> string =
+  if elements.length() == 0 then "\{\}"
+  else "mlc::Array\{" + gen_argument_list(elements, context) + "\}"
+  end
+
+fn gen_question_expr(inner_expr: Shared<Expr>, context: CodegenContext) -> string = do
+  const inner_code = gen_expr(inner_expr, context)
+  "(\{ auto __q = " + inner_code + "; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; \})"
+end
+
+fn gen_lambda_expr(parameters: [string], body_expr: Shared<Expr>, context: CodegenContext) -> string = do
+  const capture = if parameters.length() == 0 then "[]" else "[=]" end
+  const parameter_list = if parameters.length() == 0 then ""
+    else do
+      let parts: [string] = []; let mut index = 0
+      while index < parameters.length() do
+        parts.push("auto " + cpp_safe(parameters[index])); index = index + 1
+      end
+      parts.join(", ")
+    end
+    end
+  capture + "(" + parameter_list + ") { return " + gen_expr(body_expr, context) + "; }"
+end
+
+// --- Dispatcher --------------------------------------------------------------
+
+export fn gen_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
+  match expr {
+    ExprInt(integer_value, _)                           => gen_integer_literal(integer_value),
+    ExprStr(string_value, _)                            => gen_string_literal(string_value),
+    ExprBool(boolean_value, _)                          => gen_boolean_literal(boolean_value),
+    ExprUnit(_)                                         => gen_unit_literal(),
+    ExprExtern(_)                                       => gen_extern_placeholder(),
+    ExprIdent(name, _)                                     => gen_identifier(name, context),
+    ExprBin(operation, left_expr, right_expr, _)        => gen_binary_expr(operation, left_expr, right_expr, context),
+    ExprUn(operation, inner_expr, _)                    => gen_unary_expr(operation, inner_expr, context),
+    ExprCall(function_expr, arguments, _)               => gen_call_expr(function_expr, arguments, context),
+    ExprMethod(object, method_name, arguments, _)       => gen_method_expr(object, method_name, arguments, context),
+    ExprField(object, field_name, _)                    => gen_field_expr(object, field_name, context),
+    ExprIndex(object, index_expr, _)                    => gen_index_expr(object, index_expr, context),
+    ExprIf(condition, then_expr, else_expr, _)          => gen_if_expr(condition, then_expr, else_expr, context),
+    ExprBlock(statements, result_expr, _)               => gen_block_expr(statements, result_expr, context),
+    ExprWhile(condition, statements, _)                 => gen_while_expr(condition, statements, context),
+    ExprFor(variable, iterator, statements, _)          => gen_for_expr(variable, iterator, statements, context),
+    ExprMatch(subject, arms, _)                         => gen_match(subject, arms, context),
+    ExprRecord(type_name, field_values, _)               => gen_record_expr(type_name, field_values, context),
+    ExprRecordUpdate(type_name, base_expr, overrides, _) => gen_record_update_expr(type_name, base_expr, overrides, context),
+    ExprArray(elements, _)                              => gen_array_expr(elements, context),
+    ExprQuestion(inner_expr, _)                         => gen_question_expr(inner_expr, context),
+    ExprLambda(parameters, body_expr, _)                => gen_lambda_expr(parameters, body_expr, context)
+  }
+
+// --- Statement generation ----------------------------------------------------
+
+fn stmts_final_ctx(statements: [Shared<Stmt>], context: CodegenContext) -> CodegenContext = do
+  let mut current_context = context; let mut index = 0
+  while index < statements.length() do
+    current_context = update_context_from_statement(statements[index], current_context)
+    index = index + 1
+  end
+  current_context
+end
+
+fn gen_try_unwrap(inner_expr: Shared<Expr>, context: CodegenContext, try_identifier: string, success_line: string) -> string = do
+  const inner_code = gen_expr(inner_expr, context)
+  "auto " + try_identifier + " = " + inner_code + ";\n" +
+  "if (std::get_if<1>(&" + try_identifier + ")) return *std::get_if<1>(&" + try_identifier + ");\n" +
+  success_line
+end
+
+export fn gen_stmt_with_try(stmt: Shared<Stmt>, context: CodegenContext, try_counter: i32) -> GenStmtResult =
+  match stmt {
+    StmtLet(name, _, typ, value, _) => do
+      const try_identifier = "__try_" + try_counter.to_string()
+      const next_counter = try_counter + 1
+      const result = match value {
+        ExprQuestion(inner_expr, _) =>
+          GenStmtResult {
+            output: gen_try_unwrap(inner_expr, context, try_identifier, "auto " + cpp_safe(name) + " = std::get<0>(" + try_identifier + ").field0;\n"),
+            next_try: next_counter
+          },
+        ExprArray(elements, _) => do
+          const value_code = if elements.length() == 0 then
+            match typ {
+              TyArray(inner_type) => "mlc::Array<" + type_to_cpp(context, inner_type) + ">\{\}",
+              _                   => "mlc::Array<mlc::String>\{\}"
+            }
+          else "mlc::Array\{" + gen_argument_list(elements, context) + "\}"
+          end
+          GenStmtResult { output: "auto " + cpp_safe(name) + " = " + value_code + ";\n", next_try: try_counter }
+        end,
+        ExprMethod(map_object, method_name, _, _) => do
+          const value_code = if method_name == "new" then
+            match map_object {
+              ExprIdent(object_name, _) =>
+                if object_name == "Map" then
+                  match typ {
+                    TyGeneric(type_name, type_arguments) =>
+                      if type_name == "Map" && type_arguments.length() == 2 then
+                        "mlc::HashMap<" + type_to_cpp(context, type_arguments[0]) + ", " + type_to_cpp(context, type_arguments[1]) + ">()"
+                      else gen_expr(value, context)
+                      end,
+                    _ => gen_expr(value, context)
+                  }
+                else gen_expr(value, context)
+                end,
+              _ => gen_expr(value, context)
+            }
+          else gen_expr(value, context)
+          end
+          GenStmtResult { output: "auto " + cpp_safe(name) + " = " + value_code + ";\n", next_try: try_counter }
+        end,
+        _ => GenStmtResult { output: "auto " + cpp_safe(name) + " = " + gen_expr(value, context) + ";\n", next_try: try_counter }
+      }
+      result
+    end,
+    StmtExpr(expression, _) => match expression {
+      ExprQuestion(inner_expr, _) => do
+        const try_identifier = "__try_" + try_counter.to_string()
+        GenStmtResult {
+          output: gen_try_unwrap(inner_expr, context, try_identifier, "/* discard */ (void)std::get<0>(" + try_identifier + ").field0;\n"),
+          next_try: try_counter + 1
+        }
+      end,
+      _ => GenStmtResult { output: gen_stmt_expr(expression, context), next_try: try_counter }
+    },
+    StmtBreak(_)    => GenStmtResult { output: "break;\n", next_try: try_counter },
+    StmtContinue(_) => GenStmtResult { output: "continue;\n", next_try: try_counter },
+    StmtReturn(expression, _) => match expression {
+      ExprQuestion(inner_expr, _) => do
+        const try_identifier = "__try_ret_" + try_counter.to_string()
+        GenStmtResult {
+          output: gen_try_unwrap(inner_expr, context, try_identifier, "return std::get<0>(" + try_identifier + ").field0;\n"),
+          next_try: try_counter + 1
+        }
+      end,
+      _ => GenStmtResult { output: "return " + gen_expr(expression, context) + ";\n", next_try: try_counter }
+    }
+  }
+
+fn gen_stmt_expr(expression: Shared<Expr>, context: CodegenContext) -> string =
+  match expression {
+    ExprBin(operation, left_expr, right_expr, _) =>
+      if operation == "=" then gen_expr(left_expr, context) + " = " + gen_expr(right_expr, context) + ";\n"
+      else "(" + gen_expr(left_expr, context) + " " + operation + " " + gen_expr(right_expr, context) + ");\n"
+      end,
+    ExprIf(condition, then_expr, else_expr, _) => do
+      let mut output = "if (" + gen_expr(condition, context) + ") \{\n" + gen_block_body(then_expr, context) + "\}"
+      const else_string = match else_expr {
+        ExprUnit(_)                    => "",
+        ExprBlock(statements, result_expr, _) =>
+          if statements.length() == 0 then
+            match result_expr { ExprUnit(_) => "", _ => " else \{\n" + gen_block_body(else_expr, context) + "\}" }
+          else " else \{\n" + gen_block_body(else_expr, context) + "\}"
+          end,
+        ExprIf(_, _, _, _)             => " else " + gen_stmt_expr(else_expr, context),
+        _                              => " else \{\n" + gen_block_body(else_expr, context) + "\}"
+      }
+      if else_string.length() > 0 then output = output + else_string end
+      output + "\n"
+    end,
+    ExprWhile(condition, statements, _) =>
+      "while (" + gen_expr(condition, context) + ") \{\n" + gen_stmts_str(statements, context) + "\}\n",
+    ExprFor(variable, iterator, statements, _) =>
+      "for (auto " + cpp_safe(variable) + " : " + gen_expr(iterator, context) + ") \{\n" + gen_stmts_str(statements, context) + "\}\n",
+    ExprBlock(statements, result_expr, _) => do
+      const statements_code = gen_stmts_str(statements, context)
+      const result_code = gen_expr(result_expr, stmts_final_ctx(statements, context))
+      if result_code == "/* unit */" then statements_code else statements_code + result_code + ";\n" end
+    end,
+    _ => gen_expr(expression, context) + ";\n"
+  }
+
+fn gen_block_body(expr: Shared<Expr>, context: CodegenContext) -> string =
+  match expr {
+    ExprBlock(statements, result_expr, _) => do
+      const statements_code = gen_stmts_str(statements, context)
+      const final_context   = stmts_final_ctx(statements, context)
+      match result_expr {
+        ExprIf(_, _, _, _) => statements_code + gen_stmt_expr(result_expr, final_context),
+        ExprUnit(_)     => statements_code,
+        _ => do
+          const result_code = gen_expr(result_expr, final_context)
+          if result_code == "/* unit */" then statements_code else statements_code + result_code + ";\n" end
+        end
+      }
+    end,
+    ExprIf(_, _, _, _) => gen_stmt_expr(expr, context),
+    _ => gen_expr(expr, context) + ";\n"
+  }
+
+export fn gen_stmts_str_with_try(statements: [Shared<Stmt>], context: CodegenContext, try_counter: i32) -> GenStmtsResult = do
+  let parts: [string] = []; let mut index = 0
+  let mut current_context = context; let mut counter = try_counter
+  while index < statements.length() do
+    const result = gen_stmt_with_try(statements[index], current_context, counter)
+    parts.push(result.output)
+    counter = result.next_try
+    current_context = update_context_from_statement(statements[index], current_context)
+    index = index + 1
+  end
+  GenStmtsResult { code: parts.join(""), next_try: counter }
+end
+
+export fn gen_stmts_str(statements: [Shared<Stmt>], context: CodegenContext) -> string = do
+  const result = gen_stmts_str_with_try(statements, context, 0)
+  result.code
+end
+
+// --- Return body generation --------------------------------------------------
+
+fn gen_return_if_stmt(expr: Shared<Expr>, context: CodegenContext) -> string =
+  match expr {
+    ExprIf(condition, then_expr, else_expr, _) => do
+      let mut output = "if (" + gen_expr(condition, context) + ") \{\n" + gen_return_body(then_expr, context) + "\}"
+      const else_string = match else_expr {
+        ExprUnit(_)     => "",
+        ExprIf(_, _, _, _) => " else " + gen_return_if_stmt(else_expr, context),
+        _               => " else \{\n" + gen_return_body(else_expr, context) + "\}"
+      }
+      if else_string.length() > 0 then output = output + else_string end
+      output + "\n"
+    end,
+    _ => "if (true) \{\n" + gen_return_body(expr, context) + "\}\n"
+  }
+
+export fn gen_return_body(expr: Shared<Expr>, context: CodegenContext) -> string =
+  match expr {
+    ExprBlock(statements, result_expr, _) => do
+      const final_context  = stmts_final_ctx(statements, context)
+      const statements_code = gen_stmts_str(statements, context)
+      match result_expr {
+        ExprQuestion(inner_expr, _) => do
+          const try_identifier = "__try_ret"
+          statements_code + gen_try_unwrap(inner_expr, final_context, try_identifier, "return std::get<0>(" + try_identifier + ").field0;\n")
+        end,
+        ExprUnit(_)       => statements_code,
+        ExprIf(_, _, _, _)   => statements_code + gen_return_body(result_expr, final_context),
+        ExprMatch(_, _, _)   => statements_code + gen_return_body(result_expr, final_context),
+        ExprBlock(_, _, _)   => statements_code + gen_return_body(result_expr, final_context),
+        _                 => statements_code + "return " + gen_expr(result_expr, final_context) + ";\n"
+      }
+    end,
+    ExprIf(condition, then_expr, else_expr, _) => do
+      let mut output = "if (" + gen_expr(condition, context) + ") \{\n" + gen_return_body(then_expr, context) + "\}"
+      const else_string = match else_expr {
+        ExprUnit(_)     => "",
+        ExprIf(_, _, _, _) => " else " + gen_return_if_stmt(else_expr, context),
+        _               => " else \{\n" + gen_return_body(else_expr, context) + "\}"
+      }
+      if else_string.length() > 0 then output = output + else_string end
+      output + "\n"
+    end,
+    ExprQuestion(inner_expr, _) => do
+      const try_identifier = "__try_ret"
+      gen_try_unwrap(inner_expr, context, try_identifier, "return std::get<0>(" + try_identifier + ").field0;\n")
+    end,
+    _ => "return " + gen_expr(expr, context) + ";\n"
+  }
+
+export fn gen_fn_body(body_expr: Shared<Expr>, context: CodegenContext) -> string =
+  gen_return_body(body_expr, context)

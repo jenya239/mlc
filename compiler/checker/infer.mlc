@@ -1,34 +1,34 @@
-// --- Type inference -------------------------------------------------------
+// Type inference: dispatcher and per-expression rule functions.
 
-import { Expr, Stmt, Pat, Program, Result, decl_inner, errs_append, param_name, param_typ } from "../ast"
-import { collect_globals, check_names_expr } from "./names"
-import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
+import { Expr, Stmt, Pat, FieldVal, MatchArm, Diagnostic, Span, diagnostic_error, diagnostics_append } from "../ast"
+import { Type, TypeRegistry } from "./registry"
+import { CheckContext, check_context_new } from "./check_context"
 
-type InferResult     = InferResult     { inferred_type: Shared<Type>,             errors: [string] }
-type StmtInferResult = StmtInferResult { type_env:      Map<string, Shared<Type>>, errors: [string] }
+export type InferResult     = InferResult     { inferred_type: Shared<Type>,             errors: [Diagnostic] }
+export type StmtInferResult = StmtInferResult { type_env:      Map<string, Shared<Type>>, errors: [Diagnostic] }
 
 extend InferResult {
   fn with_type(self, new_type: Shared<Type>) -> InferResult =
     InferResult { inferred_type: new_type, errors }
 
   fn absorb(self, other: InferResult) -> InferResult =
-    InferResult { inferred_type, errors: errs_append(errors, other.errors) }
+    InferResult { inferred_type, errors: diagnostics_append(errors, other.errors) }
 
-  fn absorb_stmt(self, stmt_result: StmtInferResult) -> InferResult =
-    InferResult { inferred_type, errors: errs_append(stmt_result.errors, errors) }
+  fn absorb_stmt(self, statement_result: StmtInferResult) -> InferResult =
+    InferResult { inferred_type, errors: diagnostics_append(statement_result.errors, errors) }
 }
 
-fn infer_ok(type_val: Shared<Type>) -> InferResult =
-  InferResult { inferred_type: type_val, errors: [] }
+fn infer_ok(type_value: Shared<Type>) -> InferResult =
+  InferResult { inferred_type: type_value, errors: [] }
 
-fn binary_op_type(op: string, left_type: Shared<Type>) -> Shared<Type> =
-  if op == "+" || op == "-" || op == "*" || op == "/" || op == "%" then
+fn binary_operation_result_type(operation: string, left_type: Shared<Type>) -> Shared<Type> =
+  if operation == "+" || operation == "-" || operation == "*" || operation == "/" || operation == "%" then
     match left_type { TString => Shared.new(TString), _ => Shared.new(TI32) }
-  else if op == "=" then Shared.new(TUnit)
+  else if operation == "=" then Shared.new(TUnit)
   else Shared.new(TBool)
   end
 
-fn method_return_type(method_name: string) -> Shared<Type> =
+fn builtin_method_return_type(method_name: string) -> Shared<Type> =
   if method_name == "length" || method_name == "size" || method_name == "to_i" then Shared.new(TI32)
   else if method_name == "push" || method_name == "set" then Shared.new(TUnit)
   else if method_name == "char_at" || method_name == "join" || method_name == "to_string"
@@ -37,28 +37,28 @@ fn method_return_type(method_name: string) -> Shared<Type> =
   else Shared.new(TUnknown)
   end
 
-fn infer_args_errors(initial: InferResult, exprs: [Shared<Expr>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> InferResult = do
+fn infer_arguments_errors(initial: InferResult, expressions: [Shared<Expr>], inference_context: CheckContext) -> InferResult = do
   let mut result = initial
   let mut index = 0
-  while index < exprs.length() do
-    result = result.absorb(infer_expr(exprs[index], type_env, registry))
+  while index < expressions.length() do
+    result = result.absorb(infer_expr(expressions[index], inference_context))
     index = index + 1
   end
   result
 end
 
-fn infer_field_vals_errors(initial: InferResult, field_vals: [Shared<FieldVal>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> InferResult = do
+fn infer_field_values_errors(initial: InferResult, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult = do
   let mut result = initial
   let mut index = 0
-  while index < field_vals.length() do
-    result = result.absorb(infer_expr(field_vals[index].val, type_env, registry))
+  while index < field_values.length() do
+    result = result.absorb(infer_expr(field_values[index].val, inference_context))
     index = index + 1
   end
   result
 end
 
-fn field_lookup_type(obj_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
-  const type_name = match obj_type { TNamed(name) => name, _ => "" }
+fn field_type_from_object(object_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
+  const type_name = match object_type { TNamed(name) => name, _ => "" }
   if type_name != "" && registry.has_fields(type_name) then
     const field_map = registry.fields_for(type_name)
     if field_map.has(field_name) then field_map.get(field_name) else Shared.new(TUnknown) end
@@ -66,244 +66,227 @@ fn field_lookup_type(obj_type: Shared<Type>, field_name: string, registry: TypeR
   end
 end
 
-fn infer_expr(expr: Shared<Expr>, type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> InferResult = do
-  match expr {
-    ExprInt(_)  => infer_ok(Shared.new(TI32)),
-    ExprStr(_)  => infer_ok(Shared.new(TString)),
-    ExprBool(_) => infer_ok(Shared.new(TBool)),
-    ExprUnit    => infer_ok(Shared.new(TUnit)),
-    ExprExtern  => infer_ok(Shared.new(TUnit)),
-    ExprIdent(name) =>
-      if type_env.has(name) then infer_ok(type_env.get(name))
-      else if registry.has_fn(name) then infer_ok(registry.fn_type(name))
-      else if registry.has_ctor(name) then infer_ok(registry.ctor_type(name))
-      else infer_ok(Shared.new(TUnknown))
-      end,
-    ExprBin(op, left, right) => do
-      const left_result  = infer_expr(left, type_env, registry)
-      const right_result = infer_expr(right, type_env, registry)
-      left_result.absorb(right_result).with_type(binary_op_type(op, left_result.inferred_type))
-    end,
-    ExprUn(op, inner) => do
-      const inner_result = infer_expr(inner, type_env, registry)
-      const result_type  = if op == "!" then Shared.new(TBool) else inner_result.inferred_type end
-      inner_result.with_type(result_type)
-    end,
-    ExprCall(func, call_args) => do
-      const func_result  = infer_expr(func, type_env, registry)
-      const with_args    = infer_args_errors(func_result, call_args, type_env, registry)
-      const return_type  = match func_result.inferred_type { TFn(_, ret) => ret, _ => Shared.new(TUnknown) }
-      with_args.with_type(return_type)
-    end,
-    ExprMethod(obj, method_name, margs) => do
-      const obj_result = infer_expr(obj, type_env, registry)
-      infer_args_errors(obj_result, margs, type_env, registry).with_type(method_return_type(method_name))
-    end,
-    ExprField(obj, field_name) => do
-      const obj_result = infer_expr(obj, type_env, registry)
-      obj_result.with_type(field_lookup_type(obj_result.inferred_type, field_name, registry))
-    end,
-    ExprIndex(obj, idx) => do
-      const obj_result  = infer_expr(obj, type_env, registry)
-      const idx_result  = infer_expr(idx, type_env, registry)
-      const elem_type   = match obj_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
-      obj_result.absorb(idx_result).with_type(elem_type)
-    end,
-    ExprIf(cond, then_expr, else_expr) => do
-      const cond_result = infer_expr(cond, type_env, registry)
-      const then_result = infer_expr(then_expr, type_env, registry)
-      const else_result = infer_expr(else_expr, type_env, registry)
-      then_result.absorb(cond_result).absorb(else_result)
-    end,
-    ExprBlock(stmts, result) => do
-      const stmts_result = infer_stmts(stmts, type_env, registry)
-      const result_infer = infer_expr(result, stmts_result.type_env, registry)
-      result_infer.absorb_stmt(stmts_result)
-    end,
-    ExprWhile(cond, stmts) => do
-      const cond_result  = infer_expr(cond, type_env, registry)
-      const stmts_result = infer_stmts(stmts, type_env, registry)
-      cond_result.absorb_stmt(stmts_result).with_type(Shared.new(TUnit))
-    end,
-    ExprFor(var, iter, stmts) => do
-      const iter_result  = infer_expr(iter, type_env, registry)
-      const elem_type    = match iter_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
-      const inner_env    = type_env; inner_env.set(var, elem_type)
-      const stmts_result = infer_stmts(stmts, inner_env, registry)
-      iter_result.absorb_stmt(stmts_result).with_type(Shared.new(TUnit))
-    end,
-    ExprMatch(subject, arms) => do
-      const subject_result = infer_expr(subject, type_env, registry)
-      let mut errors = subject_result.errors
-      let mut arm_type: Shared<Type> = Shared.new(TUnknown)
-      let mut i = 0
-      while i < arms.length() do
-        const arm_env    = env_for_pat(type_env, arms[i].pat, registry)
-        const arm_result = infer_expr(arms[i].body, arm_env, registry)
-        errors = errs_append(errors, arm_result.errors)
-        if i == 0 then arm_type = arm_result.inferred_type end
-        i = i + 1
-      end
-      InferResult { inferred_type: arm_type, errors: errors }
-    end,
-    ExprRecord(name, field_vals) =>
-      infer_field_vals_errors(infer_ok(Shared.new(TNamed(name))), field_vals, type_env, registry),
-    ExprRecordUpdate(name, base, field_vals) => do
-      const base_result = infer_expr(base, type_env, registry)
-      infer_field_vals_errors(base_result.with_type(Shared.new(TNamed(name))), field_vals, type_env, registry)
-    end,
-    ExprArray(exprs) => do
-      const first_type = if exprs.length() > 0
-        then infer_expr(exprs[0], type_env, registry).inferred_type
-        else Shared.new(TUnknown)
-        end
-      infer_args_errors(infer_ok(Shared.new(TArray(first_type))), exprs, type_env, registry)
-    end,
-    ExprQuestion(inner) => infer_expr(inner, type_env, registry),
-    ExprLambda(params, body) => do
-      let lambda_env = type_env
-      let mut i = 0
-      while i < params.length() do
-        lambda_env.set(params[i], Shared.new(TUnknown)); i = i + 1
-      end
-      const ret_result = infer_expr(body, lambda_env, registry)
-      infer_ok(Shared.new(TFn([], ret_result.inferred_type)))
+// --- Expression rule functions ----------------------------------------------
+
+fn infer_expr_integer_literal() -> InferResult =
+  infer_ok(Shared.new(TI32))
+
+fn infer_expr_string_literal() -> InferResult =
+  infer_ok(Shared.new(TString))
+
+fn infer_expr_boolean_literal() -> InferResult =
+  infer_ok(Shared.new(TBool))
+
+fn infer_expr_unit_literal() -> InferResult =
+  infer_ok(Shared.new(TUnit))
+
+fn infer_expr_extern_placeholder() -> InferResult =
+  infer_ok(Shared.new(TUnit))
+
+fn infer_expr_identifier(name: string, inference_context: CheckContext) -> InferResult =
+  if inference_context.type_env.has(name) then infer_ok(inference_context.type_env.get(name))
+  else if inference_context.registry.has_fn(name) then infer_ok(inference_context.registry.fn_type(name))
+  else if inference_context.registry.has_ctor(name) then infer_ok(inference_context.registry.ctor_type(name))
+  else infer_ok(Shared.new(TUnknown))
+  end
+
+fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
+  const left_result  = infer_expr(left, inference_context)
+  const right_result = infer_expr(right, inference_context)
+  left_result.absorb(right_result).with_type(binary_operation_result_type(operation, left_result.inferred_type))
+end
+
+fn infer_expr_unary(operation: string, inner: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
+  const inner_result = infer_expr(inner, inference_context)
+  const result_type  = if operation == "!" then Shared.new(TBool) else inner_result.inferred_type end
+  inner_result.with_type(result_type)
+end
+
+fn infer_expr_call(function: Shared<Expr>, call_arguments: [Shared<Expr>], inference_context: CheckContext) -> InferResult = do
+  const function_result = infer_expr(function, inference_context)
+  const with_arguments  = infer_arguments_errors(function_result, call_arguments, inference_context)
+  const return_type     = match function_result.inferred_type { TFn(_, ret) => ret, _ => Shared.new(TUnknown) }
+  with_arguments.with_type(return_type)
+end
+
+fn infer_expr_method(object: Shared<Expr>, method_name: string, method_arguments: [Shared<Expr>], inference_context: CheckContext) -> InferResult = do
+  const object_result = infer_expr(object, inference_context)
+  infer_arguments_errors(object_result, method_arguments, inference_context).with_type(builtin_method_return_type(method_name))
+end
+
+fn infer_expr_field(object: Shared<Expr>, field_name: string, field_source_span: Span, inference_context: CheckContext) -> InferResult = do
+  const object_result = infer_expr(object, inference_context)
+  const resolved_field_type = field_type_from_object(object_result.inferred_type, field_name, inference_context.registry)
+  const type_name = match object_result.inferred_type { TNamed(name) => name, _ => "" }
+  let mut attached: [Diagnostic] = []
+  if type_name != "" && inference_context.registry.has_fields(type_name) then
+    const field_map = inference_context.registry.fields_for(type_name)
+    if !field_map.has(field_name) then
+      attached.push(diagnostic_error("undefined field: " + field_name + " on " + type_name, field_source_span)); ()
     end
-  }
-end
-
-fn infer_stmts(stmts: [Shared<Stmt>], type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> StmtInferResult = do
-  let mut errors: [string] = []
-  let current_env = type_env
-  let mut i = 0
-  while i < stmts.length() do
-    match stmts[i] {
-      StmtLet(name, _, _, value) => do
-        const value_result = infer_expr(value, current_env, registry)
-        current_env.set(name, value_result.inferred_type)
-        errors = errs_append(errors, value_result.errors); ()
-      end,
-      StmtExpr(expr)   => do
-        const expr_res = infer_expr(expr, current_env, registry)
-        errors = errs_append(errors, expr_res.errors); ()
-      end,
-      StmtReturn(expr) => do
-        const ret_res = infer_expr(expr, current_env, registry)
-        errors = errs_append(errors, ret_res.errors); ()
-      end,
-      StmtBreak    => do () end,
-      StmtContinue => do () end
-    }
-    i = i + 1
   end
-  StmtInferResult { errors: errors, type_env: current_env }
+  InferResult { inferred_type: resolved_field_type, errors: diagnostics_append(object_result.errors, attached) }
 end
 
-fn env_for_pat(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
-  match pat {
-    PatIdent(name) => do let env = type_env; env.set(name, Shared.new(TUnknown)); env end,
-    PatCtor(ctor_name, sub_pats) => do
-      const param_types = registry.ctor_params_for(ctor_name)
-      let mut current_env = type_env; let mut i = 0
-      while i < sub_pats.length() do
-        const sub_type = if i < param_types.length() then param_types[i] else Shared.new(TUnknown) end
-        current_env = env_for_pat_with_type(current_env, sub_pats[i], sub_type, registry); i = i + 1
+fn infer_expr_index(object: Shared<Expr>, index_expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
+  const object_result = infer_expr(object, inference_context)
+  const index_result  = infer_expr(index_expression, inference_context)
+  const element_type  = match object_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+  object_result.absorb(index_result).with_type(element_type)
+end
+
+fn infer_expr_conditional(condition: Shared<Expr>, then_expression: Shared<Expr>, else_expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
+  const condition_result = infer_expr(condition, inference_context)
+  const then_result      = infer_expr(then_expression, inference_context)
+  const else_result      = infer_expr(else_expression, inference_context)
+  then_result.absorb(condition_result).absorb(else_result)
+end
+
+fn infer_expr_block(statements: [Shared<Stmt>], result_expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
+  const statements_result = infer_statements(statements, inference_context)
+  const result_inference  = infer_expr(result_expression, check_context_new(statements_result.type_env, inference_context.registry))
+  result_inference.absorb_stmt(statements_result)
+end
+
+fn infer_expr_while_loop(condition: Shared<Expr>, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
+  const condition_result  = infer_expr(condition, inference_context)
+  const statements_result = infer_statements(statements, inference_context)
+  condition_result.absorb_stmt(statements_result).with_type(Shared.new(TUnit))
+end
+
+fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
+  const iterator_result = infer_expr(iterator, inference_context)
+  const element_type    = match iterator_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+  const inner_environment = inference_context.type_env; inner_environment.set(variable_name, element_type)
+  const loop_context    = check_context_new(inner_environment, inference_context.registry)
+  const statements_result = infer_statements(statements, loop_context)
+  iterator_result.absorb_stmt(statements_result).with_type(Shared.new(TUnit))
+end
+
+fn infer_expr_match(subject: Shared<Expr>, arms: [Shared<MatchArm>], inference_context: CheckContext) -> InferResult = do
+  const subject_result = infer_expr(subject, inference_context)
+  let mut collected_errors = subject_result.errors
+  let mut arm_type: Shared<Type> = Shared.new(TUnknown)
+  let mut arm_index = 0
+  while arm_index < arms.length() do
+    const arm_environment = env_for_pattern(inference_context.type_env, arms[arm_index].pat, inference_context.registry)
+    const arm_context     = check_context_new(arm_environment, inference_context.registry)
+    const arm_result      = infer_expr(arms[arm_index].body, arm_context)
+    collected_errors = diagnostics_append(collected_errors, arm_result.errors)
+    if arm_index == 0 then arm_type = arm_result.inferred_type end
+    arm_index = arm_index + 1
+  end
+  InferResult { inferred_type: arm_type, errors: collected_errors }
+end
+
+fn infer_expr_record(type_name: string, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult =
+  infer_field_values_errors(infer_ok(Shared.new(TNamed(type_name))), field_values, inference_context)
+
+fn infer_expr_record_update(type_name: string, base: Shared<Expr>, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult = do
+  const base_result = infer_expr(base, inference_context)
+  infer_field_values_errors(base_result.with_type(Shared.new(TNamed(type_name))), field_values, inference_context)
+end
+
+fn infer_expr_array_literal(elements: [Shared<Expr>], inference_context: CheckContext) -> InferResult = do
+  const first_element_type = if elements.length() > 0
+    then infer_expr(elements[0], inference_context).inferred_type
+    else Shared.new(TUnknown)
+    end
+  infer_arguments_errors(infer_ok(Shared.new(TArray(first_element_type))), elements, inference_context)
+end
+
+fn infer_expr_question(inner: Shared<Expr>, inference_context: CheckContext) -> InferResult =
+  infer_expr(inner, inference_context)
+
+fn infer_expr_lambda(parameter_names: [string], body: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
+  let lambda_environment = inference_context.type_env
+  let mut parameter_index = 0
+  while parameter_index < parameter_names.length() do
+    lambda_environment.set(parameter_names[parameter_index], Shared.new(TUnknown))
+    parameter_index = parameter_index + 1
+  end
+  const lambda_context = check_context_new(lambda_environment, inference_context.registry)
+  const body_result    = infer_expr(body, lambda_context)
+  infer_ok(Shared.new(TFn([], body_result.inferred_type)))
+end
+
+// --- Dispatcher -------------------------------------------------------------
+
+export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) -> InferResult =
+  match expression {
+    ExprInt(_, _)                           => infer_expr_integer_literal(),
+    ExprStr(_, _)                           => infer_expr_string_literal(),
+    ExprBool(_, _)                          => infer_expr_boolean_literal(),
+    ExprUnit(_)                             => infer_expr_unit_literal(),
+    ExprExtern(_)                           => infer_expr_extern_placeholder(),
+    ExprIdent(name, _)                      => infer_expr_identifier(name, inference_context),
+    ExprBin(operation, left, right, _)    => infer_expr_binary(operation, left, right, inference_context),
+    ExprUn(operation, inner, _)             => infer_expr_unary(operation, inner, inference_context),
+    ExprCall(function, call_arguments, _)   => infer_expr_call(function, call_arguments, inference_context),
+    ExprMethod(object, method_name, margs, _)  => infer_expr_method(object, method_name, margs, inference_context),
+    ExprField(object, field_name, field_source_span) => infer_expr_field(object, field_name, field_source_span, inference_context),
+    ExprIndex(object, index_expression, _)     => infer_expr_index(object, index_expression, inference_context),
+    ExprIf(condition, then_expr, else_expr, _) => infer_expr_conditional(condition, then_expr, else_expr, inference_context),
+    ExprBlock(statements, result, _)        => infer_expr_block(statements, result, inference_context),
+    ExprWhile(condition, statements, _)     => infer_expr_while_loop(condition, statements, inference_context),
+    ExprFor(variable, iterator, statements, _) => infer_expr_for_loop(variable, iterator, statements, inference_context),
+    ExprMatch(subject, arms, _)             => infer_expr_match(subject, arms, inference_context),
+    ExprRecord(name, field_vals, _)         => infer_expr_record(name, field_vals, inference_context),
+    ExprRecordUpdate(name, base, field_vals, _) => infer_expr_record_update(name, base, field_vals, inference_context),
+    ExprArray(elements, _)                  => infer_expr_array_literal(elements, inference_context),
+    ExprQuestion(inner, _)                  => infer_expr_question(inner, inference_context),
+    ExprLambda(params, body, _)             => infer_expr_lambda(params, body, inference_context)
+  }
+
+// --- Statements and patterns -----------------------------------------------
+
+export fn infer_statements(statements: [Shared<Stmt>], inference_context: CheckContext) -> StmtInferResult = do
+  let mut collected_errors: [Diagnostic] = []
+  let current_environment = inference_context.type_env
+  let mut statement_index = 0
+  while statement_index < statements.length() do
+    match statements[statement_index] {
+      StmtLet(binding_name, _, _, value_expression, _) => do
+        const value_result = infer_expr(value_expression, check_context_new(current_environment, inference_context.registry))
+        current_environment.set(binding_name, value_result.inferred_type)
+        collected_errors = diagnostics_append(collected_errors, value_result.errors); ()
+      end,
+      StmtExpr(expression, _) => do
+        const expression_result = infer_expr(expression, check_context_new(current_environment, inference_context.registry))
+        collected_errors = diagnostics_append(collected_errors, expression_result.errors); ()
+      end,
+      StmtReturn(return_expression, _) => do
+        const return_result = infer_expr(return_expression, check_context_new(current_environment, inference_context.registry))
+        collected_errors = diagnostics_append(collected_errors, return_result.errors); ()
+      end,
+      StmtBreak(_)    => do () end,
+      StmtContinue(_) => do () end
+    }
+    statement_index = statement_index + 1
+  end
+  StmtInferResult { errors: collected_errors, type_env: current_environment }
+end
+
+fn env_for_pattern(type_environment: Map<string, Shared<Type>>, pattern: Shared<Pat>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  match pattern {
+    PatIdent(binding_name, _) => do let environment = type_environment; environment.set(binding_name, Shared.new(TUnknown)); environment end,
+    PatCtor(constructor_name, sub_patterns, _) => do
+      const parameter_types = registry.ctor_params_for(constructor_name)
+      let mut current_environment = type_environment; let mut sub_index = 0
+      while sub_index < sub_patterns.length() do
+        const sub_type = if sub_index < parameter_types.length() then parameter_types[sub_index] else Shared.new(TUnknown) end
+        current_environment = env_for_pattern_with_type(current_environment, sub_patterns[sub_index], sub_type, registry)
+        sub_index = sub_index + 1
       end
-      current_env
+      current_environment
     end,
-    _ => type_env
+    _ => type_environment
   }
 end
 
-fn env_for_pat_with_type(type_env: Map<string, Shared<Type>>, pat: Shared<Pat>, type_val: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
-  match pat {
-    PatIdent(name) => do let env = type_env; env.set(name, type_val); env end,
-    _ => env_for_pat(type_env, pat, registry)
+fn env_for_pattern_with_type(type_environment: Map<string, Shared<Type>>, pattern: Shared<Pat>, type_value: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  match pattern {
+    PatIdent(binding_name, _) => do let environment = type_environment; environment.set(binding_name, type_value); environment end,
+    _ => env_for_pattern(type_environment, pattern, registry)
   }
-end
-
-// --- Entry point ----------------------------------------------------------
-
-export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
-
-export extend CheckOut {
-  fn has_errors(self) -> bool = errors.length() > 0
-}
-
-export fn check_with_context(entry: Program, full: Program) -> Result<CheckOut, [string]> = do
-  const globals  = collect_globals(full)
-  let registry = build_registry(full)
-  let mut all_errors: [string] = []
-  let mut i = 0
-  while i < entry.decls.length() do
-    match decl_inner(entry.decls[i]) {
-      DeclFn(_, type_params, _, params, return_type, body) => do
-        const locals: [string] = []
-        let mut tpi = 0
-        while tpi < type_params.length() do
-          locals.push(type_params[tpi])
-          globals.set(type_params[tpi], true)
-          tpi = tpi + 1
-        end
-        const type_env: Map<string, Shared<Type>> = Map.new()
-        let mut pi = 0
-        while pi < params.length() do
-          locals.push(param_name(params[pi]))
-          type_env.set(param_name(params[pi]), type_from_annotation(param_typ(params[pi])))
-          pi = pi + 1
-        end
-        all_errors = errs_append(all_errors, check_names_expr(body, locals, globals))
-        const infer_result = infer_expr(body, type_env, registry)
-        all_errors = errs_append(all_errors, infer_result.errors); ()
-      end,
-      DeclType(_, _, _)    => do () end,
-      DeclTrait(_, _, _)   => do () end,
-      DeclExtend(_, _, _)  => do () end,
-      DeclImport(_, _)  => do () end,
-      DeclExported(d)   => do () end
-    }
-    i = i + 1
-  end
-  if all_errors.length() > 0 then Err(all_errors)
-  else Ok(CheckOut { errors: [], registry: registry })
-  end
-end
-
-export fn check(prog: Program) -> Result<CheckOut, [string]> = do
-  const globals  = collect_globals(prog)
-  let registry = build_registry(prog)
-  let mut all_errors: [string] = []
-  let mut i = 0
-  while i < prog.decls.length() do
-    match decl_inner(prog.decls[i]) {
-      DeclFn(_, type_params, _, params, return_type, body) => do
-        const locals: [string] = []
-        let mut tpi = 0
-        while tpi < type_params.length() do
-          locals.push(type_params[tpi])
-          globals.set(type_params[tpi], true)
-          tpi = tpi + 1
-        end
-        const type_env: Map<string, Shared<Type>> = Map.new()
-        let mut pi = 0
-        while pi < params.length() do
-          locals.push(param_name(params[pi]))
-          type_env.set(param_name(params[pi]), type_from_annotation(param_typ(params[pi])))
-          pi = pi + 1
-        end
-        all_errors = errs_append(all_errors, check_names_expr(body, locals, globals))
-        const infer_result = infer_expr(body, type_env, registry)
-        all_errors = errs_append(all_errors, infer_result.errors); ()
-      end,
-      DeclType(_, _, _)    => do () end,
-      DeclTrait(_, _, _)   => do () end,
-      DeclExtend(_, _, _)  => do () end,
-      DeclImport(_, _)  => do () end,
-      DeclExported(d)   => do () end
-    }
-    i = i + 1
-  end
-  if all_errors.length() > 0 then Err(all_errors)
-  else Ok(CheckOut { errors: [], registry: registry })
-  end
 end

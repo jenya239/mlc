@@ -1,9 +1,9 @@
 // --- Declaration parsers --------------------------------------------------
 
-import { Parser, DeclResult, ParamsResult, ParamResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult } from "./preds"
+import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult } from "./preds"
 import { parse_type } from "./types"
 import { parse_expr } from "./exprs"
-import { ExprExtern, ExprIdent, param_name } from "../ast"
+import { ExprExtern, ExprIdent, param_name, span_unknown, expr_span } from "../ast"
 
 fn parse_one_param_bounds(state: Parser) -> BoundsResult = do
   if state.kind().is_colon() then
@@ -135,6 +135,7 @@ fn parse_extend_extern_rest_params(after_lparen: Parser, leading_self: bool) -> 
   end
 
 fn parse_extend_extern_method(parser: Parser, type_name: string) -> DeclResult = do
+  const extern_span   = parser.span_at_cursor()
   const fn_name       = parser.advance().kind().ident()
   const mangled_name  = type_name + "_" + fn_name
   const after_lparen  = parser.advance_by(3)
@@ -153,7 +154,7 @@ fn parse_extend_extern_method(parser: Parser, type_name: string) -> DeclResult =
   const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
   const ret_type_result = parse_type(type_parser)
   DeclResult {
-    decl:   Shared.new(DeclFn(mangled_name, [], [], params, ret_type_result.type_expr, Shared.new(ExprExtern))),
+    decl:   Shared.new(DeclFn(mangled_name, [], [], params, ret_type_result.type_expr, Shared.new(ExprExtern(extern_span)))),
     parser: ret_type_result.parser
   }
 end
@@ -188,11 +189,11 @@ fn parse_extend_method(parser: Parser, type_name: string) -> DeclResult = do
   const ret_type_result = parse_type(type_parser)
   const after_eq = ret_type_result.parser.advance()
   const body_result = if after_eq.kind().is_extern() then
-    ExprResult { expr: Shared.new(ExprExtern), parser: after_eq.advance() }
+    ExprResult { expr: Shared.new(ExprExtern(after_eq.span_at_cursor())), parser: after_eq.advance() }
   else
     const parsed = parse_expr(after_eq)
     match parsed.expr {
-      ExprIdent(name) => if name == "extern" then ExprResult { expr: Shared.new(ExprExtern), parser: parsed.parser } else parsed end,
+      ExprIdent(name, _) => if name == "extern" then ExprResult { expr: Shared.new(ExprExtern(expr_span(parsed.expr))), parser: parsed.parser } else parsed end,
       _ => parsed
     }
   end
@@ -216,12 +217,13 @@ export fn parse_decl(parser: Parser) -> DeclResult = do
   else if kind.is_import() then
     parse_import_decl(parser.advance())
   else
-    DeclResult { decl: Shared.new(DeclFn("__skip__", [], [], [], Shared.new(TyUnit), Shared.new(ExprUnit))), parser: parser.advance() }
+    DeclResult { decl: Shared.new(DeclFn("__skip__", [], [], [], Shared.new(TyUnit), Shared.new(ExprUnit(span_unknown())))), parser: parser.advance() }
   end
 end
 
 fn parse_fn_decl(parser: Parser) -> DeclResult = do
   const is_extern       = parser.kind().is_extern()
+  const extern_keyword_span = if is_extern then parser.span_at_cursor() else span_unknown() end
   const fn_start        = if is_extern then parser.advance() else parser end
   let after_name        = fn_start.advance()
   const fn_name         = after_name.kind().ident()
@@ -233,7 +235,7 @@ fn parse_fn_decl(parser: Parser) -> DeclResult = do
   const type_bounds = type_params_res.bounds
   if is_extern then
     DeclResult {
-      decl:   Shared.new(DeclFn(fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, Shared.new(ExprExtern))),
+      decl:   Shared.new(DeclFn(fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, Shared.new(ExprExtern(extern_keyword_span)))),
       parser: ret_type_result.parser
     }
   else
@@ -365,8 +367,9 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
         state = body_res.parser
         body_res.expr
       else
+        const extern_method_span = after_ret.span_at_cursor()
         state = after_ret
-        Shared.new(ExprExtern)
+        Shared.new(ExprExtern(extern_method_span))
       end
       const trait_bounds: [[string]] = []; let mut bi = 0; while bi < type_params.length() do trait_bounds.push([]); bi = bi + 1 end
       methods.push(Shared.new(DeclFn(mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, body)))
@@ -379,7 +382,7 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
       const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
       const ret_result = parse_type(type_parser)
       const trait_bounds: [[string]] = []; let mut bi = 0; while bi < type_params.length() do trait_bounds.push([]); bi = bi + 1 end
-      methods.push(Shared.new(DeclFn(mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, Shared.new(ExprExtern))))
+      methods.push(Shared.new(DeclFn(mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, Shared.new(ExprExtern(span_unknown())))))
       state = ret_result.parser
     else
       state = state.advance()
@@ -403,9 +406,9 @@ end
 
 // --- Entry point ----------------------------------------------------------
 
-export fn parse_program(tokens: [Token]) -> Program = do
+export fn parse_program_with_source_path(tokens: [Token], source_path: string) -> Program = do
   const decls: [Shared<Decl>] = []
-  let mut state = parser_new(tokens)
+  let mut state = parser_new_with_source_path(tokens, source_path)
   while !state.at_eof() do
     const result = parse_decl(state)
     decls.push(result.decl)
@@ -413,3 +416,6 @@ export fn parse_program(tokens: [Token]) -> Program = do
   end
   Program { decls }
 end
+
+export fn parse_program(tokens: [Token]) -> Program =
+  parse_program_with_source_path(tokens, "")

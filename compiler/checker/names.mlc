@@ -1,6 +1,7 @@
 // Checker: name resolution.
 
-import { Expr, Stmt, Pat, Decl, Program, decl_inner, errs_append } from "../ast"
+import { Expr, Stmt, Pat, Decl, Program, FieldVal, MatchArm, decl_inner,
+         Diagnostic, Span, diagnostic_error, diagnostics_append, span_unknown } from "../ast"
 
 fn scope_contains(scope: [string], name: string) -> bool = do
   let mut found = false; let mut index = 0
@@ -18,18 +19,18 @@ end
 
 fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> [string] = do
   match pattern {
-    PatIdent(name) => do accumulator.push(name); accumulator end,
-    PatCtor(_, sub_patterns) => do
+    PatIdent(name, _) => do accumulator.push(name); accumulator end,
+    PatCtor(_, sub_patterns, _) => do
       let mut index = 0
       while index < sub_patterns.length() do
         accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatRecord(_, field_pats) => do
+    PatRecord(_, field_patterns, _) => do
       let mut index = 0
-      while index < field_pats.length() do
-        accumulator = collect_pattern_bindings(field_pats[index], accumulator); index = index + 1
+      while index < field_patterns.length() do
+        accumulator = collect_pattern_bindings(field_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
@@ -37,38 +38,38 @@ fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> 
   }
 end
 
-// --- Name resolution ------------------------------------------------------
+// --- Global collection -------------------------------------------------------
 
-export fn collect_globals(prog: Program) -> Map<string, bool> = do
+export fn collect_globals(program: Program) -> Map<string, bool> = do
   let names: Map<string, bool> = Map.new()
   names.set("true", true); names.set("false", true); names.set("exit", true)
   names.set("print", true); names.set("println", true); names.set("args", true)
   names.set("File", true); names.set("Shared", true); names.set("Map", true)
   names.set("Ok", true); names.set("Err", true); names.set("Result", true)
-  let mut i = 0
-  while i < prog.decls.length() do
-    match decl_inner(prog.decls[i]) {
+  let mut index = 0
+  while index < program.decls.length() do
+    match decl_inner(program.decls[index]) {
       DeclFn(name, _, _, _, _, _) => do names.set(name, true); () end,
       DeclType(name, _, variants) => do
-        names.set(name, true); let mut vi = 0
-        while vi < variants.length() do
-          match variants[vi] {
-            VarUnit(variant_name)     => do names.set(variant_name, true); () end,
-            VarTuple(variant_name, _) => do names.set(variant_name, true); () end,
+        names.set(name, true); let mut variant_index = 0
+        while variant_index < variants.length() do
+          match variants[variant_index] {
+            VarUnit(variant_name)      => do names.set(variant_name, true); () end,
+            VarTuple(variant_name, _)  => do names.set(variant_name, true); () end,
             VarRecord(variant_name, _) => do names.set(variant_name, true); () end
           }
-          vi = vi + 1
+          variant_index = variant_index + 1
         end; ()
       end,
       DeclTrait(name, _, methods) => do
         names.set(name, true)
-        let mut mi = 0
-        while mi < methods.length() do
-          match methods[mi] {
-            DeclFn(fn_name, _, _, _, _, _) => do names.set(fn_name, true); () end,
+        let mut method_index = 0
+        while method_index < methods.length() do
+          match methods[method_index] {
+            DeclFn(function_name, _, _, _, _, _) => do names.set(function_name, true); () end,
             _ => do () end
           }
-          mi = mi + 1
+          method_index = method_index + 1
         end
         ()
       end,
@@ -76,122 +77,165 @@ export fn collect_globals(prog: Program) -> Map<string, bool> = do
       DeclImport(_, _) => do () end,
       DeclExported(_)  => do () end
     }
-    i = i + 1
+    index = index + 1
   end
   names
 end
 
-export fn check_names_expr(expr: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [string] = do
-  match expr {
-    ExprIdent(name) => do
-      let mut errors: [string] = []
-      if !scope_contains(locals, name) && !globals.has(name) then
-        errors.push("undefined: " + name)
-      end
-      errors
-    end,
-    ExprBin(_, left, right) =>
-      errs_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals)),
-    ExprUn(_, inner) => check_names_expr(inner, locals, globals),
-    ExprCall(func, call_args) => do
-      let mut errors = check_names_expr(func, locals, globals); let mut i = 0
-      while i < call_args.length() do
-        errors = errs_append(errors, check_names_expr(call_args[i], locals, globals)); i = i + 1
-      end
-      errors
-    end,
-    ExprMethod(obj, _, margs) => do
-      let mut errors = check_names_expr(obj, locals, globals); let mut i = 0
-      while i < margs.length() do
-        errors = errs_append(errors, check_names_expr(margs[i], locals, globals)); i = i + 1
-      end
-      errors
-    end,
-    ExprField(obj, _) => check_names_expr(obj, locals, globals),
-    ExprIndex(obj, index_expr) =>
-      errs_append(check_names_expr(obj, locals, globals), check_names_expr(index_expr, locals, globals)),
-    ExprIf(cond, then_expr, else_expr) =>
-      errs_append(
-        errs_append(check_names_expr(cond, locals, globals), check_names_expr(then_expr, locals, globals)),
-        check_names_expr(else_expr, locals, globals)),
-    ExprBlock(stmts, result) => do
-      const stmt_result = check_names_stmts(stmts, locals, globals)
-      stmt_result.append_expr_errors(check_names_expr(result, stmt_result.scope, globals))
-    end,
-    ExprWhile(cond, stmts) => do
-      const check_result = check_names_stmts(stmts, locals, globals)
-      errs_append(check_names_expr(cond, locals, globals), check_result.errors)
-    end,
-    ExprFor(var, iter, stmts) => do
-      const inner = locals; inner.push(var)
-      const check_result = check_names_stmts(stmts, inner, globals)
-      errs_append(check_names_expr(iter, locals, globals), check_result.errors)
-    end,
-    ExprMatch(subject, arms) => do
-      let mut errors = check_names_expr(subject, locals, globals); let mut i = 0
-      while i < arms.length() do
-        const bindings = pattern_bindings(arms[i].pat)
-        const arm_scope = locals; let mut index = 0
-        while index < bindings.length() do arm_scope.push(bindings[index]); index = index + 1 end
-        errors = errs_append(errors, check_names_expr(arms[i].body, arm_scope, globals)); i = i + 1
-      end
-      errors
-    end,
-    ExprRecord(_, field_vals) => do
-      let mut errors: [string] = []; let mut i = 0
-      while i < field_vals.length() do
-        errors = errs_append(errors, check_names_expr(field_vals[i].val, locals, globals)); i = i + 1
-      end
-      errors
-    end,
-    ExprRecordUpdate(_, base, field_vals) => do
-      let mut errors: [string] = check_names_expr(base, locals, globals); let mut i = 0
-      while i < field_vals.length() do
-        errors = errs_append(errors, check_names_expr(field_vals[i].val, locals, globals)); i = i + 1
-      end
-      errors
-    end,
-    ExprArray(exprs) => do
-      let mut errors: [string] = []; let mut i = 0
-      while i < exprs.length() do
-        errors = errs_append(errors, check_names_expr(exprs[i], locals, globals)); i = i + 1
-      end
-      errors
-    end,
-    ExprQuestion(inner) => check_names_expr(inner, locals, globals),
-    ExprLambda(params, body) => do
-      const lambda_locals: [string] = []
-      let mut i = 0
-      while i < locals.length() do lambda_locals.push(locals[i]); i = i + 1 end
-      let mut pi = 0
-      while pi < params.length() do lambda_locals.push(params[pi]); pi = pi + 1 end
-      check_names_expr(body, lambda_locals, globals)
-    end,
-    _ => do let empty_errors: [string] = []; empty_errors end
-  }
+// --- Name check rule functions (per expression form) -----------------------
+
+fn check_names_identifier(name: string, locals: [string], globals: Map<string, bool>, source_span: Span) -> [Diagnostic] = do
+  let collected: [Diagnostic] = []
+  if !scope_contains(locals, name) && !globals.has(name) then
+    collected.push(diagnostic_error("undefined: " + name, source_span))
+  end
+  collected
 end
 
-export type NameCheckResult = NameCheckResult { errors: [string], scope: [string] }
+fn check_names_binary_expression(left: Shared<Expr>, right: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  diagnostics_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals))
+
+fn check_names_unary_expression(inner: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  check_names_expr(inner, locals, globals)
+
+fn check_names_call_expression(function: Shared<Expr>, call_arguments: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  let mut collected = check_names_expr(function, locals, globals); let mut index = 0
+  while index < call_arguments.length() do
+    collected = diagnostics_append(collected, check_names_expr(call_arguments[index], locals, globals)); index = index + 1
+  end
+  collected
+end
+
+fn check_names_method_expression(object: Shared<Expr>, method_arguments: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  let mut collected = check_names_expr(object, locals, globals); let mut index = 0
+  while index < method_arguments.length() do
+    collected = diagnostics_append(collected, check_names_expr(method_arguments[index], locals, globals)); index = index + 1
+  end
+  collected
+end
+
+fn check_names_field_expression(object: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  check_names_expr(object, locals, globals)
+
+fn check_names_index_expression(object: Shared<Expr>, index_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  diagnostics_append(check_names_expr(object, locals, globals), check_names_expr(index_expression, locals, globals))
+
+fn check_names_conditional_expression(condition: Shared<Expr>, then_expression: Shared<Expr>, else_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  diagnostics_append(
+    diagnostics_append(check_names_expr(condition, locals, globals), check_names_expr(then_expression, locals, globals)),
+    check_names_expr(else_expression, locals, globals))
+
+fn check_names_block_expression(statements: [Shared<Stmt>], result: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  const statement_result = check_names_statements(statements, locals, globals)
+  statement_result.append_expression_diagnostics(check_names_expr(result, statement_result.scope, globals))
+end
+
+fn check_names_while_expression(condition: Shared<Expr>, statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  const statement_check = check_names_statements(statements, locals, globals)
+  diagnostics_append(check_names_expr(condition, locals, globals), statement_check.diagnostics)
+end
+
+fn check_names_for_expression(variable_name: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  const inner_scope = locals; inner_scope.push(variable_name)
+  const statement_check = check_names_statements(statements, inner_scope, globals)
+  diagnostics_append(check_names_expr(iterator, locals, globals), statement_check.diagnostics)
+end
+
+fn check_names_match_expression(subject: Shared<Expr>, arms: [Shared<MatchArm>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  let mut collected = check_names_expr(subject, locals, globals); let mut arm_index = 0
+  while arm_index < arms.length() do
+    const bindings = pattern_bindings(arms[arm_index].pat)
+    const arm_scope = locals; let mut binding_index = 0
+    while binding_index < bindings.length() do arm_scope.push(bindings[binding_index]); binding_index = binding_index + 1 end
+    collected = diagnostics_append(collected, check_names_expr(arms[arm_index].body, arm_scope, globals)); arm_index = arm_index + 1
+  end
+  collected
+end
+
+fn check_names_record_expression(field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  let mut collected: [Diagnostic] = []; let mut index = 0
+  while index < field_values.length() do
+    collected = diagnostics_append(collected, check_names_expr(field_values[index].val, locals, globals)); index = index + 1
+  end
+  collected
+end
+
+fn check_names_record_update_expression(base: Shared<Expr>, field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  let mut collected: [Diagnostic] = check_names_expr(base, locals, globals); let mut index = 0
+  while index < field_values.length() do
+    collected = diagnostics_append(collected, check_names_expr(field_values[index].val, locals, globals)); index = index + 1
+  end
+  collected
+end
+
+fn check_names_array_expression(elements: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  let mut collected: [Diagnostic] = []; let mut index = 0
+  while index < elements.length() do
+    collected = diagnostics_append(collected, check_names_expr(elements[index], locals, globals)); index = index + 1
+  end
+  collected
+end
+
+fn check_names_question_expression(inner: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  check_names_expr(inner, locals, globals)
+
+fn check_names_lambda_expression(parameter_names: [string], body: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  const lambda_locals: [string] = []
+  let mut local_index = 0
+  while local_index < locals.length() do lambda_locals.push(locals[local_index]); local_index = local_index + 1 end
+  let mut parameter_index = 0
+  while parameter_index < parameter_names.length() do lambda_locals.push(parameter_names[parameter_index]); parameter_index = parameter_index + 1 end
+  check_names_expr(body, lambda_locals, globals)
+end
+
+fn check_names_empty() -> [Diagnostic] = do let empty_list: [Diagnostic] = []; empty_list end
+
+// --- Expression dispatcher ---------------------------------------------------
+
+export fn check_names_expr(expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  match expression {
+    ExprIdent(name, source_span)            => check_names_identifier(name, locals, globals, source_span),
+    ExprBin(_, left, right, _)              => check_names_binary_expression(left, right, locals, globals),
+    ExprUn(_, inner, _)                     => check_names_unary_expression(inner, locals, globals),
+    ExprCall(function, call_arguments, _)   => check_names_call_expression(function, call_arguments, locals, globals),
+    ExprMethod(object, _, method_arguments, _) => check_names_method_expression(object, method_arguments, locals, globals),
+    ExprField(object, _, _)                    => check_names_field_expression(object, locals, globals),
+    ExprIndex(object, index_expression, _)     => check_names_index_expression(object, index_expression, locals, globals),
+    ExprIf(condition, then_expression, else_expression, _) =>
+      check_names_conditional_expression(condition, then_expression, else_expression, locals, globals),
+    ExprBlock(statements, result, _)       => check_names_block_expression(statements, result, locals, globals),
+    ExprWhile(condition, statements, _)    => check_names_while_expression(condition, statements, locals, globals),
+    ExprFor(variable, iterator, statements, _) => check_names_for_expression(variable, iterator, statements, locals, globals),
+    ExprMatch(subject, arms, _)            => check_names_match_expression(subject, arms, locals, globals),
+    ExprRecord(_, field_values, _)         => check_names_record_expression(field_values, locals, globals),
+    ExprRecordUpdate(_, base, field_values, _) => check_names_record_update_expression(base, field_values, locals, globals),
+    ExprArray(elements, _)                  => check_names_array_expression(elements, locals, globals),
+    ExprQuestion(inner, _)                  => check_names_question_expression(inner, locals, globals),
+    ExprLambda(parameter_names, body, _)  => check_names_lambda_expression(parameter_names, body, locals, globals),
+    _                                       => check_names_empty()
+  }
+
+export type NameCheckResult = NameCheckResult { diagnostics: [Diagnostic], scope: [string] }
 
 extend NameCheckResult {
-  fn append_expr_errors(self, expr_errors: [string]) -> [string] =
-    errs_append(errors, expr_errors)
+  fn append_expression_diagnostics(self, expression_diagnostics: [Diagnostic]) -> [Diagnostic] =
+    diagnostics_append(diagnostics, expression_diagnostics)
 }
 
-export fn check_names_stmts(stmts: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult = do
-  let mut errors: [string] = []; const scope = locals; let mut i = 0
-  while i < stmts.length() do
-    match stmts[i] {
-      StmtLet(name, _, _, value) => do
-        errors = errs_append(errors, check_names_expr(value, scope, globals))
+export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult = do
+  let mut collected_diagnostics: [Diagnostic] = []; const scope = locals; let mut index = 0
+  while index < statements.length() do
+    match statements[index] {
+      StmtLet(name, _, _, value, _) => do
+        collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
         scope.push(name); ()
       end,
-      StmtExpr(expr)   => do errors = errs_append(errors, check_names_expr(expr, scope, globals)); () end,
-      StmtReturn(expr) => do errors = errs_append(errors, check_names_expr(expr, scope, globals)); () end,
-      StmtBreak    => do () end,
-      StmtContinue => do () end
+      StmtExpr(expression, _) => do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
+      StmtReturn(expression, _) => do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
+      StmtBreak(_)    => do () end,
+      StmtContinue(_) => do () end
     }
-    i = i + 1
+    index = index + 1
   end
-  NameCheckResult { errors: errors, scope: scope }
+  NameCheckResult { diagnostics: collected_diagnostics, scope: scope }
 end

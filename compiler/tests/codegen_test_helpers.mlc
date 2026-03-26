@@ -1,0 +1,50 @@
+// Assertion helpers for codegen unit tests.
+
+import { TestResult, assert_eq_str, assert_true } from "./test_runner"
+import { Program, Expr, TypeExpr } from "../ast"
+import { CodegenContext, create_codegen_context } from "../codegen/context"
+import { gen_expr } from "../codegen/eval"
+import { type_to_cpp } from "../codegen/type_gen"
+import { empty_program } from "./ast_builders"
+
+export fn empty_codegen_context() -> CodegenContext =
+  create_codegen_context(empty_program())
+
+export fn assert_expr_generates(test_name: string, context: CodegenContext, expr: Shared<Expr>, expected_code: string) -> TestResult =
+  assert_eq_str(test_name, gen_expr(expr, context), expected_code)
+
+export fn assert_type_generates(test_name: string, context: CodegenContext, type_expr: Shared<TypeExpr>, expected_code: string) -> TestResult =
+  assert_eq_str(test_name, type_to_cpp(context, type_expr), expected_code)
+
+export fn assert_code_contains(test_name: string, actual_code: string, expected_substring: string) -> TestResult =
+  assert_true(test_name + " contains '" + expected_substring + "'", string_contains(actual_code, expected_substring))
+
+fn chars_match_at(haystack: string, start_position: i32, needle: string, needle_length: i32) -> bool = do
+  let mut character_index = 0
+  let mut all_match = true
+  while character_index < needle_length do
+    if haystack.char_at(start_position + character_index) != needle.char_at(character_index)
+    then do all_match = false; character_index = needle_length end
+    else do character_index = character_index + 1 end
+    end
+  end
+  all_match
+end
+
+fn string_contains(haystack: string, needle: string) -> bool = do
+  let needle_length = needle.length()
+  let haystack_length = haystack.length()
+  if needle_length > haystack_length then false
+  else do
+    let mut position = 0
+    let mut found = false
+    while position <= haystack_length - needle_length do
+      if chars_match_at(haystack, position, needle, needle_length)
+      then do found = true; position = haystack_length end
+      else do position = position + 1 end
+      end
+    end
+    found
+  end
+  end
+end

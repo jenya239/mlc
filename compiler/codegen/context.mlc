@@ -1,0 +1,632 @@
+// Context types, builders, and pure utilities for the code generator.
+
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, Param, FieldDef, decl_inner, errs_append } from "../ast"
+
+// --- Module item type --------------------------------------------------------
+
+export type LoadItem = LoadItem { path: string, decls: [Shared<Decl>], imports: [string] }
+
+fn path_to_module_base(path: string) -> string = do
+  let mut last_slash = -1
+  let mut last_dot = path.length()
+  let mut i = 0
+  while i < path.length() do
+    if path.char_at(i) == "/" then last_slash = i
+    else if path.char_at(i) == "." && i > last_slash then last_dot = i
+    end
+    i = i + 1
+  end
+  if last_dot > last_slash then path.substring(last_slash + 1, last_dot - last_slash - 1)
+  else path.substring(last_slash + 1, path.length() - last_slash - 1)
+  end
+end
+
+fn decl_export_names(decl: Shared<Decl>) -> [string] = do
+  let names: [string] = []
+  match decl {
+    DeclExported(d) => do
+      match d {
+        DeclFn(name, _, _, _, _, _) => do names.push(name); () end,
+        DeclType(type_name, _, variants) => do
+          names.push(type_name); let mut variant_index = 0
+          while variant_index < variants.length() do
+            match variants[variant_index] {
+              VarRecord(variant_name, _) => do names.push(variant_name); () end,
+              VarTuple(variant_name, _)  => do names.push(variant_name); () end,
+              VarUnit(variant_name)      => do names.push(variant_name); () end
+            }
+            variant_index = variant_index + 1
+          end; ()
+        end,
+        DeclTrait(name, _, methods) => do
+          names.push(name); let mut mi = 0
+          while mi < methods.length() do
+            match methods[mi] {
+              DeclFn(fn_name, _, _, _, _, _) => do names.push(fn_name); () end,
+              _ => do () end
+            }
+            mi = mi + 1
+          end
+          ()
+        end,
+        DeclExtend(_, _, methods) => do
+          let mut mi = 0
+          while mi < methods.length() do
+            match methods[mi] {
+              DeclFn(fn_name, _, _, _, _, _) => do names.push(fn_name); () end,
+              _ => do () end
+            }
+            mi = mi + 1
+          end; ()
+        end,
+        _ => do () end
+      }; ()
+    end,
+    _ => do () end
+  }
+  names
+end
+
+fn add_exports_to_qualified(qualified: Map<string, string>, imp_path: string, all_items: [LoadItem]) -> Map<string, string> = do
+  const prefix = path_to_module_base(imp_path) + "::"
+  let mut item_i = 0
+  while item_i < all_items.length() do
+    const cur_item = all_items[item_i]
+    if cur_item.path == imp_path then
+      let mut decl_index = 0
+      while decl_index < cur_item.decls.length() do
+        let mut name_index = 0
+        const exp_names = decl_export_names(cur_item.decls[decl_index])
+        while name_index < exp_names.length() do
+          if !qualified.has(exp_names[name_index]) then qualified.set(exp_names[name_index], prefix) end
+          name_index = name_index + 1
+        end
+        decl_index = decl_index + 1
+      end
+    end
+    item_i = item_i + 1
+  end
+  qualified
+end
+
+export fn build_qualified(import_paths: [string], all_items: [LoadItem]) -> Map<string, string> = do
+  let mut qualified: Map<string, string> = Map.new()
+  let mut imp_i = 0
+  while imp_i < import_paths.length() do
+    const imp_path = import_paths[imp_i]
+    qualified = add_exports_to_qualified(qualified, imp_path, all_items)
+    let mut item_i = 0
+    while item_i < all_items.length() do
+      const cur_item = all_items[item_i]
+      if cur_item.path == imp_path then
+        let mut trans_i = 0
+        while trans_i < cur_item.imports.length() do
+          qualified = add_exports_to_qualified(qualified, cur_item.imports[trans_i], all_items)
+          trans_i = trans_i + 1
+        end
+      end
+      item_i = item_i + 1
+    end
+    imp_i = imp_i + 1
+  end
+  qualified
+end
+
+// --- Context types -----------------------------------------------------------
+
+export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
+export type CtorTypeInfo = CtorTypeInfo { name: string, shared_pos: [i32], shared_arr_pos: [i32] }
+export type CodegenContext = CodegenContext {
+  field_orders: [Shared<FieldOrder>],
+  namespace_prefix: string,
+  qualified: Map<string, string>,
+  self_type: string,
+  method_owners: Map<string, string>,
+  shared_params: [string],
+  shared_array_params: [string],
+  array_elem_types: Map<string, string>,
+  shared_map_params: [string],
+  ctor_type_infos: [Shared<CtorTypeInfo>],
+  variant_types: Map<string, string>,
+  value_params: [string],
+  match_deref_params: [string],
+  generic_variants: [string]
+}
+export type GenStmtsResult = GenStmtsResult { code: string, next_try: i32 }
+export type GenStmtResult  = GenStmtResult  { output: string, next_try: i32 }
+export type GenModuleOut   = GenModuleOut   { h: string, c: string }
+export type PrecomputedCtx = PrecomputedCtx {
+  field_orders: [Shared<FieldOrder>],
+  variant_types: Map<string, string>,
+  item_index: Map<string, Shared<LoadItem>>,
+  ctor_type_infos: [Shared<CtorTypeInfo>],
+  generic_variants: [string]
+}
+
+// --- Identifier utilities ----------------------------------------------------
+
+export fn cpp_keyword(name: string) -> bool =
+  name == "export" || name == "import" || name == "module" || name == "struct" || name == "class"
+  || name == "template" || name == "typename" || name == "const" || name == "return"
+  || name == "if" || name == "else" || name == "for" || name == "while" || name == "do"
+  || name == "switch" || name == "case" || name == "default" || name == "break" || name == "continue"
+  || name == "try" || name == "catch" || name == "throw" || name == "new" || name == "delete"
+  || name == "virtual" || name == "override" || name == "final" || name == "public" || name == "private"
+  || name == "protected" || name == "friend" || name == "static" || name == "extern" || name == "inline"
+  || name == "using" || name == "namespace" || name == "typedef" || name == "enum" || name == "union"
+  || name == "true" || name == "false" || name == "nullptr" || name == "void" || name == "bool"
+  || name == "int" || name == "long" || name == "short" || name == "char" || name == "float" || name == "double"
+  || name == "signed" || name == "unsigned" || name == "auto" || name == "typeid" || name == "sizeof"
+  || name == "and" || name == "or" || name == "not" || name == "xor" || name == "and_eq" || name == "or_eq"
+  || name == "not_eq" || name == "xor_eq" || name == "bitand" || name == "bitor" || name == "compl"
+  || name == "alignas" || name == "alignof" || name == "asm" || name == "concept" || name == "consteval"
+  || name == "constexpr" || name == "constinit" || name == "const_cast" || name == "decltype"
+  || name == "dynamic_cast" || name == "explicit" || name == "mutable" || name == "noexcept"
+  || name == "operator" || name == "reinterpret_cast" || name == "requires" || name == "static_cast"
+  || name == "this" || name == "thread_local" || name == "volatile" || name == "wchar_t"
+
+export fn cpp_safe(name: string) -> string =
+  if cpp_keyword(name) then name + "_" else name end
+
+export fn lower_first(name: string) -> string =
+  if name.length() == 0 then name
+  else name.char_at(0).to_lower() + name.substring(1, name.length())
+  end
+
+export fn map_method(method_name: string) -> string =
+  if method_name == "length" || method_name == "len" then "length"
+  else if method_name == "push" then "push_back"
+  else if method_name == "to_string" then "to_string"
+  else if method_name == "to_int" || method_name == "to_i" then "to_i"
+  else if method_name == "upper" || method_name == "to_upper" then "upper"
+  else if method_name == "lower" || method_name == "to_lower" then "lower"
+  else method_name
+  end
+
+export fn map_builtin(name: string) -> string =
+  if name == "print"   then "mlc::io::print"
+  else if name == "println" then "mlc::io::println"
+  else if name == "exit"    then "mlc::io::exit"
+  else if name == "args"    then "mlc::io::args"
+  else name
+  end
+
+export fn escape_str(input: string) -> string = do
+  let parts: [string] = []; let mut i = 0
+  while i < input.length() do
+    let ch = input.char_at(i)
+    if ch == "\\" then parts.push("\\\\")
+    else if ch == "\"" then parts.push("\\\"")
+    else if ch == "\n" then parts.push("\\n")
+    else if ch == "\r" then parts.push("\\r")
+    else if ch == "\t" then parts.push("\\t")
+    else if ch == "\0" then parts.push("\\0")
+    else parts.push(ch)
+    end
+    i = i + 1
+  end
+  parts.join("")
+end
+
+export fn template_prefix(type_params: [string]) -> string =
+  if type_params.length() > 0 then
+    "template<typename " + type_params.join(", typename ") + ">\n"
+  else ""
+  end
+
+export fn include_lines(import_paths: [string]) -> string = do
+  let lines: [string] = []
+  let mut i = 0
+  while i < import_paths.length() do
+    lines.push("#include \"" + path_to_module_base(import_paths[i]) + ".hpp\"\n")
+    i = i + 1
+  end
+  lines.join("")
+end
+
+// --- Context resolution ------------------------------------------------------
+
+export fn context_resolve(context: CodegenContext, name: string) -> string =
+  if context.qualified.has(name) then context.qualified.get(name) + cpp_safe(name)
+  else if context.namespace_prefix.length() > 0 then context.namespace_prefix + cpp_safe(name)
+  else cpp_safe(name)
+  end
+
+// --- Field order registry ----------------------------------------------------
+
+export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
+  const orders: [Shared<FieldOrder>] = []
+  let mut i = 0
+  while i < prog.decls.length() do
+    match prog.decls[i] {
+      DeclExported(inner) => match decl_inner(inner) {
+        DeclType(type_name, _, variants) => do
+          let mut vi = 0
+          while vi < variants.length() do
+            match variants[vi] {
+              VarRecord(variant_name, field_defs) => do
+                const field_names: [string] = []; let mut fi = 0
+                while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
+                orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
+                if variants.length() == 1 then
+                  orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
+                end
+                do end
+              end,
+              VarTuple(_, _) => do end,
+              VarUnit(_)     => do end
+            }
+            vi = vi + 1
+          end
+        end,
+        DeclFn(_, _, _, _, _, _)  => do end,
+        DeclTrait(_, _, _)     => do end,
+        DeclExtend(_, _, _)    => do end,
+        DeclImport(_, _)    => do end,
+        DeclExported(_)     => do end
+      },
+      DeclType(type_name, _, variants) => do
+        let mut vi = 0
+        while vi < variants.length() do
+          match variants[vi] {
+            VarRecord(variant_name, field_defs) => do
+              const field_names: [string] = []; let mut fi = 0
+              while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
+              orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
+              if variants.length() == 1 then
+                orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
+              end
+              do end
+            end,
+            VarTuple(_, _) => do end,
+            VarUnit(_)     => do end
+          }
+          vi = vi + 1
+        end
+      end,
+      DeclFn(_, _, _, _, _, _)  => do end,
+      DeclTrait(_, _, _)     => do end,
+      DeclExtend(_, _, _)    => do end,
+      DeclImport(_, _)    => do end
+    }
+    i = i + 1
+  end
+  orders
+end
+
+export fn list_contains(list: [string], item: string) -> bool = do
+  let mut found = false; let mut i = 0
+  while i < list.length() && !found do
+    if list[i] == item then found = true end; i = i + 1
+  end
+  found
+end
+
+export fn lookup_fields(orders: [Shared<FieldOrder>], name: string) -> [string] = do
+  let mut result: [string] = []
+  let mut i = 0; let mut found = false
+  while i < orders.length() && !found do
+    if orders[i].type_name == name then
+      result = orders[i].fields
+      found = true
+    end
+    i = i + 1
+  end
+  result
+end
+
+// --- Method owners -----------------------------------------------------------
+
+fn extract_method_name(fn_name: string, type_name: string) -> string = do
+  const prefix = type_name + "_"
+  if fn_name.length() > prefix.length() && fn_name.substring(0, prefix.length()) == prefix then
+    fn_name.substring(prefix.length(), fn_name.length() - prefix.length())
+  else fn_name
+  end
+end
+
+export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string, string>) -> Map<string, string> = do
+  let mut i = 0
+  while i < decls.length() do
+    match decl_inner(decls[i]) {
+      DeclTrait(trait_name, _, methods) => do
+        let mut mi = 0
+        while mi < methods.length() do
+          match methods[mi] {
+            DeclFn(fn_name, _, _, _, _, _) => do
+              const unmangled = extract_method_name(fn_name, trait_name)
+              if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
+            end,
+            _ => do end
+          }
+          mi = mi + 1
+        end
+      end,
+      DeclExtend(type_name, _, methods) => do
+        let mut mi = 0
+        while mi < methods.length() do
+          match methods[mi] {
+            DeclFn(fn_name, _, _, _, _, _) => do
+              const unmangled = extract_method_name(fn_name, type_name)
+              if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
+            end,
+            _ => do end
+          }
+          mi = mi + 1
+        end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  owners
+end
+
+export fn build_method_owners_from_decls(decls: [Shared<Decl>]) -> Map<string, string> =
+  add_method_owners_from_decls(decls, Map.new())
+
+export fn build_item_index(all_items: [LoadItem]) -> Map<string, Shared<LoadItem>> = do
+  let item_index: Map<string, Shared<LoadItem>> = Map.new()
+  let mut i = 0
+  while i < all_items.length() do
+    item_index.set(all_items[i].path, Shared.new(all_items[i]))
+    i = i + 1
+  end
+  item_index
+end
+
+// --- Variant / type builders -------------------------------------------------
+
+export fn build_generic_variants_from_decls(decls: [Shared<Decl>]) -> [string] = do
+  let result: [string] = []; let mut i = 0
+  while i < decls.length() do
+    const inner_decl = decl_inner(decls[i])
+    match inner_decl {
+      DeclType(_, type_params, variants) => do
+        let mut vi = 0
+        while vi < variants.length() do
+          let should_add = type_params.length() > 0
+          let vname = match variants[vi] {
+            VarRecord(n, _) => n,
+            VarTuple(n, _)  => n,
+            VarUnit(n)      => n
+          }
+          if should_add then result.push(vname) else result.push("__skip__") end
+          vi = vi + 1
+        end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  result
+end
+
+export fn build_variant_types_from_decls(decls: [Shared<Decl>]) -> Map<string, string> = do
+  let variant_map: Map<string, string> = Map.new()
+  let mut i = 0
+  while i < decls.length() do
+    const inner_decl = decl_inner(decls[i])
+    match inner_decl {
+      DeclType(type_name, _, variants) => do
+        let mut vi = 0
+        while vi < variants.length() do
+          match variants[vi] {
+            VarRecord(variant_name, _) => variant_map.set(variant_name, type_name),
+            VarTuple(variant_name, _)  => variant_map.set(variant_name, type_name),
+            VarUnit(variant_name)      => variant_map.set(variant_name, type_name)
+          }
+          vi = vi + 1
+        end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  variant_map
+end
+
+// --- Shared/value type predicates --------------------------------------------
+
+export fn is_shared_type(t: Shared<TypeExpr>) -> bool =
+  match t {
+    TyGeneric(n, _) => n == "Shared",
+    TyShared(_) => true,
+    _ => false
+  }
+
+export fn is_shared_array_type(t: Shared<TypeExpr>) -> bool =
+  match t { TyArray(inner) => is_shared_type(inner), _ => false }
+
+export fn is_shared_map_type(t: Shared<TypeExpr>) -> bool =
+  match t {
+    TyGeneric(n, targs) => n == "Map" && targs.length() >= 2 && is_shared_type(targs[1]),
+    _ => false
+  }
+
+export fn array_elem_name(t: Shared<TypeExpr>) -> string =
+  match t { TyArray(inner) => match inner { TyNamed(n) => n, _ => "" }, _ => "" }
+
+export fn collect_shared_params(params: [Shared<Param>]) -> [string] = do
+  let result: [string] = []; let mut i = 0
+  while i < params.length() do
+    if is_shared_type(params[i].typ) then result.push(params[i].name) end; i = i + 1
+  end
+  result
+end
+
+export fn collect_shared_array_params(params: [Shared<Param>]) -> [string] = do
+  let result: [string] = []; let mut i = 0
+  while i < params.length() do
+    if is_shared_array_type(params[i].typ) then result.push(params[i].name) end; i = i + 1
+  end
+  result
+end
+
+export fn collect_array_elem_types(params: [Shared<Param>]) -> Map<string, string> = do
+  let result: Map<string, string> = Map.new(); let mut i = 0
+  while i < params.length() do
+    const en = array_elem_name(params[i].typ)
+    if en.length() > 0 then result.set(params[i].name, en) end; i = i + 1
+  end
+  result
+end
+
+export fn collect_shared_map_params(params: [Shared<Param>]) -> [string] = do
+  let result: [string] = []; let mut i = 0
+  while i < params.length() do
+    if is_shared_map_type(params[i].typ) then result.push(params[i].name) end; i = i + 1
+  end
+  result
+end
+
+export fn collect_value_params(params: [Shared<Param>]) -> [string] = do
+  let result: [string] = []; let mut i = 0
+  while i < params.length() do
+    if !is_shared_type(params[i].typ) && !is_shared_array_type(params[i].typ) then
+      result.push(params[i].name)
+    end; i = i + 1
+  end
+  result
+end
+
+// --- Constructor type info ---------------------------------------------------
+
+fn field_def_type(fd: Shared<FieldDef>) -> Shared<TypeExpr> = fd.typ
+
+fn ctor_type_info_for(ctor_name: string, types: [Shared<TypeExpr>]) -> Shared<CtorTypeInfo> = do
+  let shared_positions: [i32] = []; let shared_array_positions: [i32] = []; let mut index = 0
+  while index < types.length() do
+    if is_shared_type(types[index]) then shared_positions.push(index) end
+    if is_shared_array_type(types[index]) then shared_array_positions.push(index) end
+    index = index + 1
+  end
+  Shared.new(CtorTypeInfo { name: ctor_name, shared_pos: shared_positions, shared_arr_pos: shared_array_positions })
+end
+
+fn add_ctor_infos_from_variants(variants: [Shared<TypeVariant>]) -> [Shared<CtorTypeInfo>] = do
+  let result: [Shared<CtorTypeInfo>] = []; let mut vi = 0
+  while vi < variants.length() do
+    match variants[vi] {
+      VarTuple(variant_name, types) => result.push(ctor_type_info_for(variant_name, types)),
+      VarRecord(variant_name, field_defs) => do
+        let types: [Shared<TypeExpr>] = []; let mut fi = 0
+        while fi < field_defs.length() do types.push(field_def_type(field_defs[fi])); fi = fi + 1 end
+        result.push(ctor_type_info_for(variant_name, types))
+      end,
+      VarUnit(_) => do end
+    }
+    vi = vi + 1
+  end
+  result
+end
+
+export fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] = do
+  let result: [Shared<CtorTypeInfo>] = []; let mut i = 0
+  while i < decls.length() do
+    match decls[i] {
+      DeclExported(inner) => match decl_inner(inner) {
+        DeclType(_, _, variants) => do
+          let infos = add_ctor_infos_from_variants(variants)
+          let mut ii = 0; while ii < infos.length() do result.push(infos[ii]); ii = ii + 1 end
+        end,
+        _ => do end
+      },
+      DeclType(_, _, variants) => do
+        let infos = add_ctor_infos_from_variants(variants)
+        let mut ii = 0; while ii < infos.length() do result.push(infos[ii]); ii = ii + 1 end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  result
+end
+
+export fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], cti_name: string) -> Shared<CtorTypeInfo> = do
+  let mut result: Shared<CtorTypeInfo> = Shared.new(CtorTypeInfo { name: "", shared_pos: [], shared_arr_pos: [] })
+  let mut i = 0
+  while i < infos.length() do
+    if infos[i].name == cti_name then result = infos[i] end; i = i + 1
+  end
+  result
+end
+
+// --- Context mutation --------------------------------------------------------
+
+export fn make_body_context(base: CodegenContext, shared_params: [string], shared_array_params: [string], array_elem_types: Map<string, string>, shared_map_params: [string], self_type: string, value_params: [string], match_deref_params: [string]) -> CodegenContext =
+  CodegenContext { field_orders: base.field_orders, namespace_prefix: base.namespace_prefix, qualified: base.qualified, self_type: self_type, method_owners: base.method_owners, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, ctor_type_infos: base.ctor_type_infos, variant_types: base.variant_types, value_params: value_params, match_deref_params: match_deref_params, generic_variants: base.generic_variants }
+
+export fn context_add_shared(context: CodegenContext, name: string) -> CodegenContext = do
+  let new_shared_params = context.shared_params; new_shared_params.push(name)
+  make_body_context(context, new_shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, context.value_params, context.match_deref_params)
+end
+
+export fn context_add_shared_array(context: CodegenContext, name: string) -> CodegenContext = do
+  let new_shared_array_params = context.shared_array_params; new_shared_array_params.push(name)
+  make_body_context(context, context.shared_params, new_shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, context.value_params, context.match_deref_params)
+end
+
+export fn context_add_value(context: CodegenContext, name: string) -> CodegenContext = do
+  let new_value_params = context.value_params; new_value_params.push(name)
+  make_body_context(context, context.shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, new_value_params, context.match_deref_params)
+end
+
+export fn context_add_match_deref(context: CodegenContext, name: string) -> CodegenContext = do
+  let md = context.match_deref_params; md.push(name)
+  make_body_context(context, context.shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, context.value_params, md)
+end
+
+// --- Context factory ---------------------------------------------------------
+
+export fn expr_returns_shared_sum_visit_ptr(e: Shared<Expr>) -> bool =
+  match e {
+    ExprCall(func, _, _) => match func {
+      ExprIdent(n, _) => n == "decl_inner" || n == "find_field_val" || n == "param_typ",
+      _ => false
+    },
+    _ => false
+  }
+
+export fn update_context_from_statement(stmt: Shared<Stmt>, context: CodegenContext) -> CodegenContext =
+  match stmt {
+    StmtLet(binding_name, _, typ, value, _) =>
+      if is_shared_type(typ) then context_add_shared(context, binding_name)
+      else if is_shared_array_type(typ) then context_add_shared_array(context, binding_name)
+      else match value {
+        ExprMethod(map_obj, method_name, _, _) =>
+          if method_name == "get" then
+            match map_obj {
+              ExprIdent(map_name, _) => if context.shared_map_params.contains(map_name) then context_add_shared(context, binding_name) else context_add_value(context, binding_name) end,
+              _ => context_add_value(context, binding_name)
+            }
+          else do
+            const vctx = context_add_value(context, binding_name)
+            if expr_returns_shared_sum_visit_ptr(value) then context_add_match_deref(vctx, binding_name) else vctx end
+          end end,
+        _ => do
+          const vctx = context_add_value(context, binding_name)
+          if expr_returns_shared_sum_visit_ptr(value) then context_add_match_deref(vctx, binding_name) else vctx end
+        end
+      }
+      end,
+    _ => context
+  }
+
+export fn create_codegen_context(prog: Program) -> CodegenContext =
+  CodegenContext {
+    field_orders: build_field_orders(prog),
+    namespace_prefix: "",
+    qualified: Map.new(),
+    self_type: "",
+    method_owners: build_method_owners_from_decls(prog.decls),
+    shared_params: [],
+    shared_array_params: [],
+    array_elem_types: Map.new(),
+    shared_map_params: [],
+    ctor_type_infos: [],
+    variant_types: build_variant_types_from_decls(prog.decls),
+    value_params: [],
+    match_deref_params: [],
+    generic_variants: build_generic_variants_from_decls(prog.decls)
+  }

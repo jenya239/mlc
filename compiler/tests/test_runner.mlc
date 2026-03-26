@@ -17,6 +17,30 @@ export fn assert_eq_str(test_name: string, actual: string, expected: string) -> 
   else Fail { name: test_name, message: "expected '" + expected + "', got '" + actual + "'" }
   end
 
+// `formatted_diagnostic` is like `diagnostic_format` from the checker: "message at line:column".
+export fn assert_diagnostic_at(
+  test_name: string,
+  formatted_diagnostic: string,
+  expected_line: i32,
+  expected_column: i32,
+  message_needle: string
+) -> TestResult = do
+  const position_suffix = " at " + expected_line.to_string() + ":" + expected_column.to_string()
+  const has_message = formatted_diagnostic.contains(message_needle)
+  const has_position =
+    formatted_diagnostic.length() >= position_suffix.length() &&
+    formatted_diagnostic.substring(
+      formatted_diagnostic.length() - position_suffix.length(),
+      position_suffix.length()
+    ) == position_suffix
+  if has_message && has_position then Pass { name: test_name }
+  else Fail {
+    name: test_name,
+    message: "expected needle '" + message_needle + "' and suffix '" + position_suffix + "', got '" + formatted_diagnostic + "'"
+  }
+  end
+end
+
 export fn run_all(results: [TestResult]) -> string = do
   let mut passed = 0; let mut failed = 0; let mut output = ""; let mut i = 0
   while i < results.length() do

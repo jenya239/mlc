@@ -53,6 +53,8 @@ preds::TraitBodyResult parse_trait_body(preds::Parser parser, mlc::String trait_
 
 preds::FieldDefsResult parse_field_defs(preds::Parser parser) noexcept;
 
+ast::Program parse_program_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
+
 ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept;
 
 preds::BoundsResult parse_one_param_bounds(preds::Parser state) noexcept{
@@ -217,6 +219,7 @@ preds::ParamsResult parse_extend_extern_rest_params(preds::Parser after_lparen, 
  }() : parse_extend_extern_no_self_params(after_lparen);}
 
 preds::DeclResult parse_extend_extern_method(preds::Parser parser, mlc::String type_name) noexcept{
+ast::Span extern_span = preds::Parser_span_at_cursor(parser);
 mlc::String fn_name = preds::TKind_ident(preds::Parser_kind(preds::Parser_advance(parser)));
 mlc::String mangled_name = type_name + mlc::String("_") + fn_name;
 preds::Parser after_lparen = preds::Parser_advance_by(parser, 3);
@@ -244,7 +247,7 @@ index = index + 1;
 preds::Parser after_rparen = preds::Parser_advance(rest_params.parser);
 preds::Parser type_parser = preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? preds::Parser_advance(after_rparen) : after_rparen;
 preds::TypeResult ret_type_result = types::parse_type(type_parser);
-return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mangled_name, {}, {}, params, ret_type_result.type_expr, std::make_shared<ast::Expr>((ast::ExprExtern{})))), ret_type_result.parser};
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mangled_name, {}, {}, params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(extern_span)))), ret_type_result.parser};
 }
 
 preds::DeclResult parse_extend_method(preds::Parser parser, mlc::String type_name) noexcept{
@@ -273,9 +276,9 @@ preds::Parser after_rparen = preds::Parser_advance(rest_params.parser);
 preds::Parser type_parser = preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? preds::Parser_advance(after_rparen) : after_rparen;
 preds::TypeResult ret_type_result = types::parse_type(type_parser);
 preds::Parser after_eq = preds::Parser_advance(ret_type_result.parser);
-preds::ExprResult body_result = preds::TKind_is_extern(preds::Parser_kind(after_eq)) ? preds::ExprResult{std::make_shared<ast::Expr>((ast::ExprExtern{})), preds::Parser_advance(after_eq)} : [&]() -> preds::ExprResult { 
+preds::ExprResult body_result = preds::TKind_is_extern(preds::Parser_kind(after_eq)) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprExtern(preds::Parser_span_at_cursor(after_eq))), preds::Parser_advance(after_eq)} : [&]() -> preds::ExprResult { 
   preds::ExprResult parsed = exprs::parse_expr(after_eq);
-  return [&]() -> preds::ExprResult { if (std::holds_alternative<ast::ExprIdent>((*parsed.expr)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*parsed.expr)._); auto [name] = _v_exprident; return name == mlc::String("extern") ? preds::ExprResult{std::make_shared<ast::Expr>((ast::ExprExtern{})), parsed.parser} : parsed; } return parsed; }();
+  return [&]() -> preds::ExprResult { if (std::holds_alternative<ast::ExprIdent>((*parsed.expr)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*parsed.expr)._); auto [name, _w0] = _v_exprident; return name == mlc::String("extern") ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprExtern(ast::expr_span(parsed.expr))), parsed.parser} : parsed; } return parsed; }();
  }();
 return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mangled_name, {}, {}, params, ret_type_result.type_expr, body_result.expr)), body_result.parser};
 }
@@ -285,11 +288,12 @@ ast_tokens::TKind kind = preds::Parser_kind(parser);
 return preds::TKind_is_ident(kind) && preds::TKind_ident(kind) == mlc::String("export") ? [&]() -> preds::DeclResult { 
   preds::DeclResult inner = parse_decl(preds::Parser_advance(parser));
   return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclExported(inner.decl)), inner.parser};
- }() : preds::TKind_is_fn(kind) || preds::TKind_is_extern(kind) && preds::TKind_is_fn(preds::Parser_kind(preds::Parser_advance(parser))) ? parse_fn_decl(parser) : preds::TKind_is_type(kind) ? parse_type_decl(preds::Parser_advance(parser)) : preds::TKind_is_extend(kind) ? parse_extend_decl(preds::Parser_advance(parser)) : preds::TKind_is_import(kind) ? parse_import_decl(preds::Parser_advance(parser)) : preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mlc::String("__skip__"), {}, {}, {}, std::make_shared<ast::TypeExpr>((ast::TyUnit{})), std::make_shared<ast::Expr>((ast::ExprUnit{})))), preds::Parser_advance(parser)};
+ }() : preds::TKind_is_fn(kind) || preds::TKind_is_extern(kind) && preds::TKind_is_fn(preds::Parser_kind(preds::Parser_advance(parser))) ? parse_fn_decl(parser) : preds::TKind_is_type(kind) ? parse_type_decl(preds::Parser_advance(parser)) : preds::TKind_is_extend(kind) ? parse_extend_decl(preds::Parser_advance(parser)) : preds::TKind_is_import(kind) ? parse_import_decl(preds::Parser_advance(parser)) : preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mlc::String("__skip__"), {}, {}, {}, std::make_shared<ast::TypeExpr>((ast::TyUnit{})), std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())))), preds::Parser_advance(parser)};
 }
 
 preds::DeclResult parse_fn_decl(preds::Parser parser) noexcept{
 bool is_extern = preds::TKind_is_extern(preds::Parser_kind(parser));
+ast::Span extern_keyword_span = is_extern ? preds::Parser_span_at_cursor(parser) : ast::span_unknown();
 preds::Parser fn_start = is_extern ? preds::Parser_advance(parser) : parser;
 preds::Parser after_name = preds::Parser_advance(fn_start);
 mlc::String fn_name = preds::TKind_ident(preds::Parser_kind(after_name));
@@ -299,7 +303,7 @@ preds::Parser after_rparen = preds::Parser_advance(params_result.parser);
 preds::Parser type_parser = preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? preds::Parser_advance(after_rparen) : after_rparen;
 preds::TypeResult ret_type_result = types::parse_type(type_parser);
 mlc::Array<mlc::Array<mlc::String>> type_bounds = type_params_res.bounds;
-return is_extern ? preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, std::make_shared<ast::Expr>((ast::ExprExtern{})))), ret_type_result.parser} : [&]() -> preds::DeclResult { 
+return is_extern ? preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(extern_keyword_span)))), ret_type_result.parser} : [&]() -> preds::DeclResult { 
   preds::ExprResult body_result = exprs::parse_expr(preds::Parser_advance(ret_type_result.parser));
   return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, body_result.expr)), body_result.parser};
  }();
@@ -423,9 +427,10 @@ std::shared_ptr<ast::Expr> body = preds::TKind_is_equal(preds::Parser_kind(after
   preds::ExprResult body_res = exprs::parse_expr(preds::Parser_advance(after_ret));
   state = body_res.parser;
   return body_res.expr;
- }() : [&]() { 
+ }() : [&]() -> std::shared_ptr<ast::Expr> { 
+  ast::Span extern_method_span = preds::Parser_span_at_cursor(after_ret);
   state = after_ret;
-  return std::make_shared<ast::Expr>((ast::ExprExtern{}));
+  return std::make_shared<ast::Expr>(ast::ExprExtern(extern_method_span));
  }();
 mlc::Array<mlc::Array<mlc::String>> trait_bounds = {};
 int bi = 0;
@@ -455,7 +460,7 @@ trait_bounds.push_back({});
 bi = bi + 1;
 }
 }
-methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn(mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, std::make_shared<ast::Expr>((ast::ExprExtern{})))));
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn(mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(ast::span_unknown())))));
 state = ret_result.parser;
 } else {
 state = preds::Parser_advance(state);
@@ -486,9 +491,9 @@ state = preds::Parser_advance(state);
 return preds::FieldDefsResult{field_defs, preds::Parser_advance(state)};
 }
 
-ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept{
+ast::Program parse_program_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept{
 mlc::Array<std::shared_ptr<ast::Decl>> decls = {};
-preds::Parser state = preds::parser_new(tokens);
+preds::Parser state = preds::parser_new_with_source_path(tokens, source_path);
 while (!preds::Parser_at_eof(state)){
 {
 preds::DeclResult result = parse_decl(state);
@@ -498,5 +503,7 @@ state = result.parser;
 }
 return ast::Program{decls};
 }
+
+ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept{return parse_program_with_source_path(tokens, mlc::String(""));}
 
 } // namespace decls

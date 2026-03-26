@@ -6,30 +6,30 @@ import { parser_tests } from "./test_parser"
 import { checker_tests } from "./test_checker"
 import { codegen_tests } from "./test_codegen"
 import { pipe_and_record_update_tests } from "./test_pipe_and_record_update"
+import { decl_gen_tests } from "./test_decl_gen"
 import { TestResult, run_all } from "./test_runner"
 
 fn all_tests() -> [TestResult] = do
-  const all: [TestResult] = []
-  let mut i = 0
+  let mut all: [TestResult] = []
+  let mut index = 0
 
-  const lex_results = lexer_tests()
-  while i < lex_results.length() do all.push(lex_results[i]); i = i + 1 end
+  const suite_lex = lexer_tests()
+  index = 0; while index < suite_lex.length() do all.push(suite_lex[index]); index = index + 1 end
 
-  const parse_results = parser_tests()
-  i = 0
-  while i < parse_results.length() do all.push(parse_results[i]); i = i + 1 end
+  const suite_parse = parser_tests()
+  index = 0; while index < suite_parse.length() do all.push(suite_parse[index]); index = index + 1 end
 
-  const check_results = checker_tests()
-  i = 0
-  while i < check_results.length() do all.push(check_results[i]); i = i + 1 end
+  const suite_check = checker_tests()
+  index = 0; while index < suite_check.length() do all.push(suite_check[index]); index = index + 1 end
 
-  const gen_results = codegen_tests()
-  i = 0
-  while i < gen_results.length() do all.push(gen_results[i]); i = i + 1 end
+  const suite_gen = codegen_tests()
+  index = 0; while index < suite_gen.length() do all.push(suite_gen[index]); index = index + 1 end
 
-  const pipe_record_results = pipe_and_record_update_tests()
-  i = 0
-  while i < pipe_record_results.length() do all.push(pipe_record_results[i]); i = i + 1 end
+  const suite_pipe = pipe_and_record_update_tests()
+  index = 0; while index < suite_pipe.length() do all.push(suite_pipe[index]); index = index + 1 end
+
+  const suite_decl = decl_gen_tests()
+  index = 0; while index < suite_decl.length() do all.push(suite_decl[index]); index = index + 1 end
 
   all
 end

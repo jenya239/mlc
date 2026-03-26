@@ -1,14 +1,32 @@
 // Unit tests for the checker (check function).
 
-import { TestResult, assert_eq_int, assert_true } from "./test_runner"
+import { TestResult, assert_eq_int, assert_eq_str, assert_true, assert_diagnostic_at } from "./test_runner"
 import { tokenize } from "../lexer"
-import { parse_program } from "../parser/decls"
-import { check } from "../checker/infer"
+import { parse_program, parse_program_with_source_path } from "../parser/decls"
+import { check, check_with_context } from "../checker/check"
 
 fn check_error_count(source: string) -> i32 =
   match check(parse_program(tokenize(source).tokens)) {
     Ok(_)    => 0,
     Err(errs) => errs.length()
+  }
+
+fn check_with_context_error_count(entry_source: string, full_source: string) -> i32 =
+  match check_with_context(parse_program(tokenize(entry_source).tokens), parse_program(tokenize(full_source).tokens)) {
+    Ok(_) => 0,
+    Err(error_list) => error_list.length()
+  }
+
+fn first_checker_error_line(source: string) -> string =
+  match check(parse_program(tokenize(source).tokens)) {
+    Err(error_lines) => if error_lines.length() > 0 then error_lines[0] else "" end,
+    Ok(_) => ""
+  }
+
+fn first_checker_error_line_with_path(source: string, source_path: string) -> string =
+  match check(parse_program_with_source_path(tokenize(source).tokens, source_path)) {
+    Err(error_lines) => if error_lines.length() > 0 then error_lines[0] else "" end,
+    Ok(_) => ""
   }
 
 export fn checker_tests() -> [TestResult] = do
@@ -28,6 +46,25 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_true("undefined name - at least 1 error",
     check_error_count("fn f() -> i32 = undefined_name") > 0))
+
+  results.push(assert_diagnostic_at(
+    "undefined ident: line and column (single line body)",
+    first_checker_error_line("fn f() -> i32 = badident"),
+    1,
+    17,
+    "undefined: badident"))
+
+  results.push(assert_diagnostic_at(
+    "undefined ident: line and column (next line, indented)",
+    first_checker_error_line("fn f() -> i32 =\n  badident"),
+    2,
+    3,
+    "undefined: badident"))
+
+  results.push(assert_eq_str(
+    "undefined ident: diagnostic includes source path",
+    first_checker_error_line_with_path("fn f() -> i32 = badident", "unit.mlc"),
+    "error: undefined: badident at unit.mlc:1:17"))
 
   results.push(assert_eq_int("type decl with variants - 0 errors",
     check_error_count("type Color = Red | Green | Blue"), 0))
@@ -70,6 +107,30 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int("Result return type annotation - 0 errors",
     check_error_count("type Result<T, E> = Ok(T) | Err(E)\nfn f() -> Result<i32, string> = Ok(42)"), 0))
+
+  results.push(assert_eq_int("block: let then use binding - 0 errors",
+    check_error_count("fn f() -> i32 = do\n  let x = 10\n  x + 1\nend"), 0))
+
+  results.push(assert_eq_int("for-in: loop variable visible in body - 0 errors",
+    check_error_count("fn sum(items: [i32]) -> i32 = do\n  let mut total = 0\n  for element in items do\n    total = total + element\n  end\n  total\nend"), 0))
+
+  results.push(assert_eq_int("check_with_context: entry sees helper from full program - 0 errors",
+    check_with_context_error_count("fn main() -> i32 = helper()", "fn helper() -> i32 = 1\nfn main() -> i32 = helper()"), 0))
+
+  results.push(assert_eq_int("match: constructor arm binds payload - 0 errors",
+    check_error_count("type Answer = Yes(i32) | No\nfn value(answer: Answer) -> i32 = match answer | Yes(n) => n | No => 0\n"), 0))
+
+  results.push(assert_diagnostic_at(
+    "undefined record field: line and column on field access",
+    first_checker_error_line("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> i32 = p.z"),
+    2,
+    26,
+    "undefined field: z on Point"))
+
+  results.push(assert_eq_str(
+    "undefined record field: message text",
+    first_checker_error_line("type R = { a: i32 }\nfn f(x: R) -> i32 = x.missing"),
+    "error: undefined field: missing on R at 2:22"))
 
   results
 end

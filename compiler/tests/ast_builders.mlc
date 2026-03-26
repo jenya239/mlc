@@ -1,0 +1,146 @@
+// Builder functions for constructing AST nodes in tests.
+// Eliminates Shared.new(...) verbosity and makes test intent clear.
+
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown } from "../ast"
+
+// --- Program ------------------------------------------------------------------
+
+export fn empty_program() -> Program = Program { decls: [] }
+
+// --- Type expression builders ------------------------------------------------
+
+export fn integer_type() -> Shared<TypeExpr> = Shared.new(TyI32)
+export fn string_type()  -> Shared<TypeExpr> = Shared.new(TyString)
+export fn boolean_type() -> Shared<TypeExpr> = Shared.new(TyBool)
+export fn unit_type()    -> Shared<TypeExpr> = Shared.new(TyUnit)
+
+export fn named_type(type_name: string) -> Shared<TypeExpr> =
+  Shared.new(TyNamed(type_name))
+
+export fn array_type(element_type: Shared<TypeExpr>) -> Shared<TypeExpr> =
+  Shared.new(TyArray(element_type))
+
+export fn shared_type(inner_type: Shared<TypeExpr>) -> Shared<TypeExpr> =
+  Shared.new(TyShared(inner_type))
+
+export fn generic_type(type_name: string, type_arguments: [Shared<TypeExpr>]) -> Shared<TypeExpr> =
+  Shared.new(TyGeneric(type_name, type_arguments))
+
+export fn function_type(parameter_types: [Shared<TypeExpr>], return_type: Shared<TypeExpr>) -> Shared<TypeExpr> =
+  Shared.new(TyFn(parameter_types, return_type))
+
+// --- Expression builders -----------------------------------------------------
+
+export fn integer_expr(value: i32) -> Shared<Expr> =
+  Shared.new(ExprInt(value, span_unknown()))
+
+export fn string_expr(value: string) -> Shared<Expr> =
+  Shared.new(ExprStr(value, span_unknown()))
+
+export fn boolean_expr(value: bool) -> Shared<Expr> =
+  Shared.new(ExprBool(value, span_unknown()))
+
+export fn unit_expr() -> Shared<Expr> =
+  Shared.new(ExprUnit(span_unknown()))
+
+export fn identifier_expr(name: string) -> Shared<Expr> =
+  Shared.new(ExprIdent(name, span_unknown()))
+
+export fn binary_expr(operation: string, left_expr: Shared<Expr>, right_expr: Shared<Expr>) -> Shared<Expr> =
+  Shared.new(ExprBin(operation, left_expr, right_expr, span_unknown()))
+
+export fn unary_expr(operation: string, inner_expr: Shared<Expr>) -> Shared<Expr> =
+  Shared.new(ExprUn(operation, inner_expr, span_unknown()))
+
+export fn call_expr(function_name: string, arguments: [Shared<Expr>]) -> Shared<Expr> =
+  Shared.new(ExprCall(Shared.new(ExprIdent(function_name, span_unknown())), arguments, span_unknown()))
+
+export fn method_call_expr(object: Shared<Expr>, method_name: string, arguments: [Shared<Expr>]) -> Shared<Expr> =
+  Shared.new(ExprMethod(object, method_name, arguments, span_unknown()))
+
+export fn field_expr(object: Shared<Expr>, field_name: string) -> Shared<Expr> =
+  Shared.new(ExprField(object, field_name, span_unknown()))
+
+export fn index_expr(object: Shared<Expr>, index: Shared<Expr>) -> Shared<Expr> =
+  Shared.new(ExprIndex(object, index, span_unknown()))
+
+export fn if_expr(condition: Shared<Expr>, then_expr: Shared<Expr>, else_expr: Shared<Expr>) -> Shared<Expr> =
+  Shared.new(ExprIf(condition, then_expr, else_expr, span_unknown()))
+
+export fn block_expr(statements: [Shared<Stmt>], result_expr: Shared<Expr>) -> Shared<Expr> =
+  Shared.new(ExprBlock(statements, result_expr, span_unknown()))
+
+export fn while_expr(condition: Shared<Expr>, statements: [Shared<Stmt>]) -> Shared<Expr> =
+  Shared.new(ExprWhile(condition, statements, span_unknown()))
+
+export fn array_expr(elements: [Shared<Expr>]) -> Shared<Expr> =
+  Shared.new(ExprArray(elements, span_unknown()))
+
+export fn record_expr(type_name: string, field_values: [Shared<FieldVal>]) -> Shared<Expr> =
+  Shared.new(ExprRecord(type_name, field_values, span_unknown()))
+
+export fn question_expr(inner_expr: Shared<Expr>) -> Shared<Expr> =
+  Shared.new(ExprQuestion(inner_expr, span_unknown()))
+
+export fn lambda_expr(parameters: [string], body_expr: Shared<Expr>) -> Shared<Expr> =
+  Shared.new(ExprLambda(parameters, body_expr, span_unknown()))
+
+// --- FieldVal builder --------------------------------------------------------
+
+export fn field_value(field_name: string, value_expr: Shared<Expr>) -> Shared<FieldVal> =
+  Shared.new(FieldVal { name: field_name, val: value_expr })
+
+// --- Pattern builders --------------------------------------------------------
+
+export fn wildcard_pattern() -> Shared<Pat> = Shared.new(PatWild(span_unknown()))
+export fn integer_pattern(value: i32) -> Shared<Pat> = Shared.new(PatInt(value, span_unknown()))
+export fn identifier_pattern(name: string) -> Shared<Pat> = Shared.new(PatIdent(name, span_unknown()))
+export fn ctor_pattern(ctor_name: string, sub_patterns: [Shared<Pat>]) -> Shared<Pat> =
+  Shared.new(PatCtor(ctor_name, sub_patterns, span_unknown()))
+
+// --- MatchArm builder --------------------------------------------------------
+
+export fn match_arm(pattern: Shared<Pat>, body_expr: Shared<Expr>) -> Shared<MatchArm> =
+  Shared.new(MatchArm { pat: pattern, body: body_expr })
+
+// --- Statement builders ------------------------------------------------------
+
+export fn let_statement(binding_name: string, type_expr: Shared<TypeExpr>, value_expr: Shared<Expr>) -> Shared<Stmt> =
+  Shared.new(StmtLet(binding_name, false, type_expr, value_expr, span_unknown()))
+
+export fn let_mut_statement(binding_name: string, type_expr: Shared<TypeExpr>, value_expr: Shared<Expr>) -> Shared<Stmt> =
+  Shared.new(StmtLet(binding_name, true, type_expr, value_expr, span_unknown()))
+
+export fn expression_statement(expr: Shared<Expr>) -> Shared<Stmt> =
+  Shared.new(StmtExpr(expr, span_unknown()))
+
+export fn return_statement(value_expr: Shared<Expr>) -> Shared<Stmt> =
+  Shared.new(StmtReturn(value_expr, span_unknown()))
+
+// --- Param builder -----------------------------------------------------------
+
+export fn value_param(param_name: string, param_type: Shared<TypeExpr>) -> Shared<Param> =
+  Shared.new(Param { name: param_name, is_mut: false, typ: param_type })
+
+// --- Declaration builders ----------------------------------------------------
+
+export fn function_decl(function_name: string, parameters: [Shared<Param>], return_type: Shared<TypeExpr>, body_expr: Shared<Expr>) -> Shared<Decl> =
+  Shared.new(DeclFn(function_name, [], [], parameters, return_type, body_expr))
+
+export fn type_decl(type_name: string, variants: [Shared<TypeVariant>]) -> Shared<Decl> =
+  Shared.new(DeclType(type_name, [], variants))
+
+export fn exported_decl(inner_decl: Shared<Decl>) -> Shared<Decl> =
+  Shared.new(DeclExported(inner_decl))
+
+export fn record_variant(variant_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<TypeVariant> =
+  Shared.new(VarRecord(variant_name, field_definitions))
+
+export fn tuple_variant(variant_name: string, field_types: [Shared<TypeExpr>]) -> Shared<TypeVariant> =
+  Shared.new(VarTuple(variant_name, field_types))
+
+export fn unit_variant(variant_name: string) -> Shared<TypeVariant> =
+  Shared.new(VarUnit(variant_name))
+
+export fn field_definition(field_name: string, field_type: Shared<TypeExpr>) -> Shared<FieldDef> =
+  Shared.new(FieldDef { name: field_name, typ: field_type })

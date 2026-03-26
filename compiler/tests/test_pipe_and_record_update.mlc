@@ -1,10 +1,11 @@
 // Tests for pipe operator desugaring and record update codegen.
 
 import { TestResult, assert_eq_int, assert_eq_str } from "./test_runner"
-import { gen_expr, create_codegen_context } from "../codegen"
+import { gen_expr } from "../codegen/eval"
+import { create_codegen_context } from "../codegen/context"
 import { pipe_desugar } from "../parser/exprs"
 import { tokenize } from "../lexer"
-import { Program, DeclType, VarRecord, FieldDef, TyI32, ExprIdent, ExprRecordUpdate, FieldVal, ExprInt } from "../ast"
+import { Program, DeclType, VarRecord, FieldDef, TyI32, Expr, ExprIdent, ExprCall, ExprRecordUpdate, FieldVal, ExprInt, span_unknown } from "../ast"
 
 export fn pipe_and_record_update_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -13,23 +14,23 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
 
   // -- Pipe operator desugaring ---------------------------------------------
 
-  const left_expr = Shared.new(ExprIdent("x"))
-  const right_fn   = Shared.new(ExprIdent("double"))
+  const left_expr = Shared.new(ExprIdent("x", span_unknown()))
+  const right_fn   = Shared.new(ExprIdent("double", span_unknown()))
 
   const plain_pipe = pipe_desugar(left_expr, right_fn)
   results.push(assert_eq_str("pipe x |> double - double_(x)",
     gen_expr(plain_pipe, ctx),
     "double_(x)"))
 
-  const right_call_args: [Shared<Expr>] = [Shared.new(ExprInt(5))]
-  const right_call = Shared.new(ExprCall(Shared.new(ExprIdent("add")), right_call_args))
+  const right_call_args: [Shared<Expr>] = [Shared.new(ExprInt(5, span_unknown()))]
+  const right_call = Shared.new(ExprCall(Shared.new(ExprIdent("add", span_unknown())), right_call_args, span_unknown()))
   const partial_pipe = pipe_desugar(left_expr, right_call)
   results.push(assert_eq_str("pipe x |> add(5) - add(x, 5)",
     gen_expr(partial_pipe, ctx),
     "add(x, 5)"))
 
-  const right_multi_args: [Shared<Expr>] = [Shared.new(ExprInt(3)), Shared.new(ExprInt(4))]
-  const right_multi_call = Shared.new(ExprCall(Shared.new(ExprIdent("clamp")), right_multi_args))
+  const right_multi_args: [Shared<Expr>] = [Shared.new(ExprInt(3, span_unknown())), Shared.new(ExprInt(4, span_unknown()))]
+  const right_multi_call = Shared.new(ExprCall(Shared.new(ExprIdent("clamp", span_unknown())), right_multi_args, span_unknown()))
   const multi_partial_pipe = pipe_desugar(left_expr, right_multi_call)
   results.push(assert_eq_str("pipe x |> clamp(3, 4) - clamp(x, 3, 4)",
     gen_expr(multi_partial_pipe, ctx),
@@ -45,19 +46,19 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   const ctx_point = create_codegen_context(point_prog)
 
   const override_fields: [Shared<FieldVal>] = [
-    Shared.new(FieldVal { name: "x", val: Shared.new(ExprInt(10)) })
+    Shared.new(FieldVal { name: "x", val: Shared.new(ExprInt(10, span_unknown())) })
   ]
-  const base_expr = Shared.new(ExprIdent("p"))
-  const update_expr = Shared.new(ExprRecordUpdate("Point", base_expr, override_fields))
+  const base_expr = Shared.new(ExprIdent("p", span_unknown()))
+  const update_expr = Shared.new(ExprRecordUpdate("Point", base_expr, override_fields, span_unknown()))
   results.push(assert_eq_str("Point { ...p, x: 10 } - Point{10, p.y}",
     gen_expr(update_expr, ctx_point),
     "Point{10, p.y}"))
 
   const two_overrides: [Shared<FieldVal>] = [
-    Shared.new(FieldVal { name: "x", val: Shared.new(ExprInt(0)) }),
-    Shared.new(FieldVal { name: "y", val: Shared.new(ExprInt(0)) })
+    Shared.new(FieldVal { name: "x", val: Shared.new(ExprInt(0, span_unknown())) }),
+    Shared.new(FieldVal { name: "y", val: Shared.new(ExprInt(0, span_unknown())) })
   ]
-  const all_overrides_expr = Shared.new(ExprRecordUpdate("Point", base_expr, two_overrides))
+  const all_overrides_expr = Shared.new(ExprRecordUpdate("Point", base_expr, two_overrides, span_unknown()))
   results.push(assert_eq_str("Point { ...p, x: 0, y: 0 } - Point{0, 0}",
     gen_expr(all_overrides_expr, ctx_point),
     "Point{0, 0}"))

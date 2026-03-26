@@ -1,0 +1,197 @@
+// Type expression → C++ string generation.
+
+import { TypeVariant, TypeExpr, Decl, Param } from "../ast"
+import { CodegenContext, CtorTypeInfo, context_resolve, cpp_safe, lower_first, template_prefix, list_contains } from "./context"
+
+export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
+  if type_name == "i32" then "int"
+  else if type_name == "string" then "mlc::String"
+  else if type_name == "bool" then "bool"
+  else if type_name == "unit" then "void"
+  else if type_name == "Self" || type_name == "self" then
+    if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else "void" end
+  else context_resolve(context, type_name)
+  end
+
+export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> string =
+  match type_expr {
+    TyI32     => "int",
+    TyString  => "mlc::String",
+    TyBool    => "bool",
+    TyUnit    => "void",
+    TyNamed(name)   => type_name_to_cpp(context, name),
+    TyArray(inner)  => "mlc::Array<" + type_to_cpp(context, inner) + ">",
+    TyShared(inner) => "std::shared_ptr<" + type_to_cpp(context, inner) + ">",
+    TyGeneric(name, targs) => do
+      if name == "ref" && targs.length() == 1 then
+        type_to_cpp(context, targs[0]) + "&"
+      else
+        const safe = if name == "Map" then "mlc::HashMap"
+                     else if name == "Shared" then "std::shared_ptr"
+                     else context_resolve(context, name)
+                     end
+        if targs.length() == 0 then safe
+        else if targs.length() == 1 then safe + "<" + type_to_cpp(context, targs[0]) + ">"
+        else safe + "<" + type_to_cpp(context, targs[0]) + ", " + type_to_cpp(context, targs[1]) + ">"
+        end
+      end
+    end,
+    TyFn(params, ret) => do
+      const param_types: [string] = []; let mut i = 0
+      while i < params.length() do
+        param_types.push(type_to_cpp(context, params[i])); i = i + 1
+      end
+      "std::function<" + type_to_cpp(context, ret) + "(" + param_types.join(", ") + ")>"
+    end
+  }
+
+// --- Type parameter helpers --------------------------------------------------
+
+export fn type_param_in_typeexpr(param: string, t: Shared<TypeExpr>) -> bool =
+  match t {
+    TyNamed(name)       => name == param,
+    TyArray(inner)      => type_param_in_typeexpr(param, inner),
+    TyShared(inner)     => type_param_in_typeexpr(param, inner),
+    TyGeneric(_, targs) => type_param_in_typeexpr_list(param, targs),
+    TyFn(params, ret)   => type_param_in_typeexpr_list(param, params) || type_param_in_typeexpr(param, ret),
+    _                   => false
+  }
+
+export fn type_param_in_typeexpr_list(param: string, types: [Shared<TypeExpr>]) -> bool = do
+  let mut found = false; let mut i = 0
+  while i < types.length() do
+    if !found then found = type_param_in_typeexpr(param, types[i]) end; i = i + 1
+  end
+  found
+end
+
+export fn variant_field_typeexprs(variant: Shared<TypeVariant>) -> [Shared<TypeExpr>] =
+  match variant {
+    VarTuple(_, fts) => fts,
+    VarRecord(_, fds) => do
+      const result: [Shared<TypeExpr>] = []
+      let mut i = 0
+      while i < fds.length() do result.push(fds[i].typ); i = i + 1 end
+      result
+    end,
+    VarUnit(_) => do let r: [Shared<TypeExpr>] = []; r end
+  }
+
+export fn variant_used_type_params(type_params: [string], variant: Shared<TypeVariant>) -> [string] = do
+  const field_types = variant_field_typeexprs(variant)
+  const used: [string] = []
+  let mut i = 0
+  while i < type_params.length() do
+    if type_param_in_typeexpr_list(type_params[i], field_types) then used.push(type_params[i]) end
+    i = i + 1
+  end
+  used
+end
+
+// --- Variant struct generation -----------------------------------------------
+
+export fn variant_ctor_name(variant: Shared<TypeVariant>) -> string =
+  match variant { VarUnit(name) => name, VarTuple(name, _) => name, VarRecord(name, _) => name }
+
+fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
+  match variant {
+    VarUnit(name) => "struct " + context_resolve(context, name) + " \{\};\n",
+    VarTuple(name, field_types) => do
+      let parts: [string] = []; let mut i = 0
+      while i < field_types.length() do
+        parts.push(type_to_cpp(context, field_types[i]) + " field" + i.to_string() + ";"); i = i + 1
+      end
+      "struct " + context_resolve(context, name) + " \{" + parts.join("") + "\};\n"
+    end,
+    VarRecord(name, field_defs) => do
+      let parts: [string] = []; let mut i = 0
+      while i < field_defs.length() do
+        parts.push(type_to_cpp(context, field_defs[i].typ) + " " + cpp_safe(field_defs[i].name) + ";"); i = i + 1
+      end
+      "struct " + context_resolve(context, name) + " \{" + parts.join("") + "\};\n"
+    end
+  }
+
+fn gen_single_variant(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
+  match variant {
+    VarRecord(_, field_defs) => do
+      let parts: [string] = []; let mut i = 0
+      while i < field_defs.length() do
+        parts.push(type_to_cpp(context, field_defs[i].typ) + " " + cpp_safe(field_defs[i].name) + ";"); i = i + 1
+      end
+      "struct " + context_resolve(context, type_name) + " \{" + parts.join("") + "\};\n"
+    end,
+    VarTuple(_, field_types) => do
+      let parts: [string] = []; let mut i = 0
+      while i < field_types.length() do
+        parts.push(type_to_cpp(context, field_types[i]) + " field" + i.to_string() + ";"); i = i + 1
+      end
+      "struct " + context_resolve(context, type_name) + " \{" + parts.join("") + "\};\n"
+    end,
+    VarUnit(_) => "struct " + context_resolve(context, type_name) + " \{\};\n"
+  }
+
+export fn gen_adt_fwd(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
+  const full_prefix = template_prefix(type_params)
+  let parts: [string] = []; const alias_parts: [string] = []; let mut index = 0
+  while index < variants.length() do
+    const v = variants[index]
+    const variant_name = context_resolve(context, variant_ctor_name(v))
+    const used = variant_used_type_params(type_params, v)
+    const var_prefix = template_prefix(used)
+    const var_targs  = if used.length() > 0 then "<" + used.join(", ") + ">" else "" end
+    alias_parts.push(variant_name + var_targs)
+    parts.push(var_prefix + "struct " + variant_name + ";\n")
+    index = index + 1
+  end
+  parts.join("") + full_prefix + "using " + context_resolve(context, type_name) + " = std::variant<" + alias_parts.join(", ") + ">;\n"
+end
+
+export fn gen_adt_defs(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
+  let parts: [string] = []; let mut i = 0
+  while i < variants.length() do
+    const v = variants[i]
+    const used = variant_used_type_params(type_params, v)
+    parts.push(template_prefix(used) + gen_variant_struct(context, type_name, v))
+    i = i + 1
+  end
+  parts.join("")
+end
+
+fn gen_type_decl_fwd(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
+  if variants.length() == 1 then ""
+  else gen_adt_fwd(context, type_name, type_params, variants)
+  end
+
+fn gen_type_decl_body(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
+  if variants.length() == 1 then
+    template_prefix(type_params) + gen_single_variant(context, type_name, variants[0])
+  else gen_adt_defs(context, type_name, type_params, variants)
+  end
+
+export fn gen_type_decl(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
+  gen_type_decl_fwd(context, type_name, type_params, variants) + gen_type_decl_body(context, type_name, type_params, variants)
+
+export fn gen_type_decl_fwd_only(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
+  gen_type_decl_fwd(context, type_name, type_params, variants)
+
+export fn gen_type_decl_body_only(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
+  gen_type_decl_body(context, type_name, type_params, variants)
+
+// --- Requires clause ---------------------------------------------------------
+
+export fn requires_clause(type_params: [string], type_bounds: [[string]]) -> string = do
+  let parts: [string] = []
+  let mut i = 0
+  while i < type_params.length() do
+    if i < type_bounds.length() then
+      let mut k = 0
+      while k < type_bounds[i].length() do
+        parts.push(cpp_safe(type_bounds[i][k]) + "<" + type_params[i] + ">")
+        k = k + 1
+      end
+    end
+    i = i + 1
+  end
+  if parts.length() > 0 then "requires " + parts.join(" && ") + "\n" else "" end
+end

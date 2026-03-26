@@ -39,6 +39,9 @@ results.push_back(test_runner::assert_eq_int(mlc::String("type + fn - 2 decls"),
 results.push_back(test_runner::assert_true(mlc::String("fn decl is DeclFn"), [&]() { if (std::holds_alternative<ast::DeclFn>((*first_decl(mlc::String("fn f() -> i32 = 42"))))) { auto _v_declfn = std::get<ast::DeclFn>((*first_decl(mlc::String("fn f() -> i32 = 42")))); auto [_w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return true; } return false; }()));
 results.push_back(test_runner::assert_true(mlc::String("type decl is DeclType"), [&]() { if (std::holds_alternative<ast::DeclType>((*first_decl(mlc::String("type Color = Red | Green"))))) { auto _v_decltype = std::get<ast::DeclType>((*first_decl(mlc::String("type Color = Red | Green")))); auto [_w0, _w1, _w2] = _v_decltype; return true; } return false; }()));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with if expr - 1 decl"), decl_count(mlc::String("fn f(x: i32) -> i32 = if x > 0 then 1 else 0 end")), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("fn with for-in - 1 decl"), decl_count(mlc::String("fn f(items: [i32]) -> i32 = do\n  let mut s = 0\n  for x in items do\n    s = s + x\n  end\n  s\nend")), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("type + fn with match pipe arms - 2 decls"), decl_count(mlc::String("type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0\n")), 2));
+results.push_back(test_runner::assert_eq_int(mlc::String("fn with parenthesized lambda - 1 decl"), decl_count(mlc::String("fn f() -> i32 = (() => 7)()")), 1));
 return results;
 }
 

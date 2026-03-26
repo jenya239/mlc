@@ -8,6 +8,7 @@
 #include "test_checker.hpp"
 #include "test_codegen.hpp"
 #include "test_pipe_and_record_update.hpp"
+#include "test_decl_gen.hpp"
 #include "test_runner.hpp"
 
 namespace tests_main {
@@ -17,6 +18,7 @@ using namespace test_parser;
 using namespace test_checker;
 using namespace test_codegen;
 using namespace test_pipe_and_record_update;
+using namespace test_decl_gen;
 using namespace test_runner;
 
 mlc::Array<test_runner::TestResult> all_tests() noexcept;
@@ -25,44 +27,53 @@ int main() noexcept;
 
 mlc::Array<test_runner::TestResult> all_tests() noexcept{
 mlc::Array<test_runner::TestResult> all = {};
-int i = 0;
-mlc::Array<test_runner::TestResult> lex_results = test_lexer::lexer_tests();
-while (i < lex_results.size()){
+int index = 0;
+mlc::Array<test_runner::TestResult> suite_lex = test_lexer::lexer_tests();
+index = 0;
+while (index < suite_lex.size()){
 {
-all.push_back(lex_results[i]);
-i = i + 1;
+all.push_back(suite_lex[index]);
+index = index + 1;
 }
 }
-mlc::Array<test_runner::TestResult> parse_results = test_parser::parser_tests();
-i = 0;
-while (i < parse_results.size()){
+mlc::Array<test_runner::TestResult> suite_parse = test_parser::parser_tests();
+index = 0;
+while (index < suite_parse.size()){
 {
-all.push_back(parse_results[i]);
-i = i + 1;
+all.push_back(suite_parse[index]);
+index = index + 1;
 }
 }
-mlc::Array<test_runner::TestResult> check_results = test_checker::checker_tests();
-i = 0;
-while (i < check_results.size()){
+mlc::Array<test_runner::TestResult> suite_check = test_checker::checker_tests();
+index = 0;
+while (index < suite_check.size()){
 {
-all.push_back(check_results[i]);
-i = i + 1;
+all.push_back(suite_check[index]);
+index = index + 1;
 }
 }
-mlc::Array<test_runner::TestResult> gen_results = test_codegen::codegen_tests();
-i = 0;
-while (i < gen_results.size()){
+mlc::Array<test_runner::TestResult> suite_gen = test_codegen::codegen_tests();
+index = 0;
+while (index < suite_gen.size()){
 {
-all.push_back(gen_results[i]);
-i = i + 1;
+all.push_back(suite_gen[index]);
+index = index + 1;
 }
 }
-mlc::Array<test_runner::TestResult> pipe_record_results = test_pipe_and_record_update::pipe_and_record_update_tests();
-i = 0;
-while (i < pipe_record_results.size()){
+mlc::Array<test_runner::TestResult> suite_pipe = test_pipe_and_record_update::pipe_and_record_update_tests();
+index = 0;
+while (index < suite_pipe.size()){
 {
-all.push_back(pipe_record_results[i]);
-i = i + 1;
+all.push_back(suite_pipe[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_decl = test_decl_gen::decl_gen_tests();
+index = 0;
+while (index < suite_decl.size()){
+{
+all.push_back(suite_decl[index]);
+index = index + 1;
 }
 }
 return all;

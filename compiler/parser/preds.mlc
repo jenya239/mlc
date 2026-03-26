@@ -1,24 +1,27 @@
 // Parser state, result types, and token kind predicates.
 
 import { TKind, Token, LexOut } from "../ast_tokens"
-import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program } from "../ast"
+import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span } from "../ast"
 
 // --- Parser state ---------------------------------------------------------
 
-export type Parser = Parser { tokens: [Token], pos: i32 }
+export type Parser = Parser { tokens: [Token], pos: i32, source_path: string }
+
+export fn parser_new_with_source_path(tokens: [Token], source_path: string) -> Parser =
+  Parser { tokens: tokens, pos: 0, source_path: source_path }
 
 export fn parser_new(tokens: [Token]) -> Parser =
-  Parser { tokens: tokens, pos: 0 }
+  parser_new_with_source_path(tokens, "")
 
 fn parser_kind(parser: Parser) -> TKind = do
   const tok: Token = parser.tokens[parser.pos]; tok.kind
 end
 
 fn parser_advance(parser: Parser) -> Parser =
-  Parser { tokens: parser.tokens, pos: parser.pos + 1 }
+  Parser { tokens: parser.tokens, pos: parser.pos + 1, source_path: parser.source_path }
 
 fn parser_advance_by(parser: Parser, count: i32) -> Parser =
-  Parser { tokens: parser.tokens, pos: parser.pos + count }
+  Parser { tokens: parser.tokens, pos: parser.pos + count, source_path: parser.source_path }
 
 fn parser_at_eof(parser: Parser) -> bool = do
   if parser.pos >= parser.tokens.length() then true
@@ -174,8 +177,8 @@ export extend TKind {
 
 export extend Parser {
   fn kind(self) -> TKind = do const tok: Token = tokens[pos]; tok.kind end
-  fn advance(self)   -> Parser = Parser { tokens, pos: pos + 1 }
-  fn advance_by(self, count: i32) -> Parser = Parser { tokens, pos: pos + count }
+  fn advance(self)   -> Parser = Parser { tokens, pos: pos + 1, source_path: source_path }
+  fn advance_by(self, count: i32) -> Parser = Parser { tokens, pos: pos + count, source_path: source_path }
   fn at_eof(self) -> bool =
     if pos >= tokens.length() then true
     else
@@ -184,5 +187,9 @@ export extend Parser {
   fn skip_semi(self) -> Parser = do
     const tok: Token = tokens[pos]
     match tok.kind { Semicolon => self.advance(), _ => self }
+  end
+  fn span_at_cursor(self) -> Span = do
+    const tok: Token = tokens[pos]
+    Span { file: source_path, line: tok.line, column: tok.col }
   end
 }

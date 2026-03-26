@@ -13,13 +13,49 @@ mlc::Array<mlc::String> pattern_bindings(std::shared_ptr<ast::Pat> pattern) noex
 
 mlc::Array<mlc::String> collect_pattern_bindings(std::shared_ptr<ast::Pat> pattern, mlc::Array<mlc::String> accumulator) noexcept;
 
-mlc::HashMap<mlc::String, bool> collect_globals(ast::Program prog) noexcept;
+mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept;
 
-mlc::Array<mlc::String> check_names_expr(std::shared_ptr<ast::Expr> expr, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+mlc::Array<ast::Diagnostic> check_names_identifier(mlc::String name, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals, ast::Span source_span) noexcept;
 
-mlc::Array<mlc::String> NameCheckResult_append_expr_errors(names::NameCheckResult self, mlc::Array<mlc::String> expr_errors) noexcept;
+mlc::Array<ast::Diagnostic> check_names_binary_expression(std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
 
-names::NameCheckResult check_names_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> stmts, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+mlc::Array<ast::Diagnostic> check_names_unary_expression(std::shared_ptr<ast::Expr> inner, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_call_expression(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_method_expression(std::shared_ptr<ast::Expr> object, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_field_expression(std::shared_ptr<ast::Expr> object, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_index_expression(std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_conditional_expression(std::shared_ptr<ast::Expr> condition, std::shared_ptr<ast::Expr> then_expression, std::shared_ptr<ast::Expr> else_expression, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_block_expression(mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_while_expression(std::shared_ptr<ast::Expr> condition, mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_for_expression(mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_match_expression(std::shared_ptr<ast::Expr> subject, mlc::Array<std::shared_ptr<ast::MatchArm>> arms, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_record_expression(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_record_update_expression(std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_array_expression(mlc::Array<std::shared_ptr<ast::Expr>> elements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_question_expression(std::shared_ptr<ast::Expr> inner, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_lambda_expression(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_empty() noexcept;
+
+mlc::Array<ast::Diagnostic> check_names_expr(std::shared_ptr<ast::Expr> expression, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+
+mlc::Array<ast::Diagnostic> NameCheckResult_append_expression_diagnostics(names::NameCheckResult self, mlc::Array<ast::Diagnostic> expression_diagnostics) noexcept;
+
+names::NameCheckResult check_names_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
 
 bool scope_contains(mlc::Array<mlc::String> scope, mlc::String name) noexcept{
 bool found = false;
@@ -43,10 +79,10 @@ return collect_pattern_bindings(pattern, accumulator);
 }
 
 mlc::Array<mlc::String> collect_pattern_bindings(std::shared_ptr<ast::Pat> pattern, mlc::Array<mlc::String> accumulator) noexcept{
-return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::PatIdent>((*pattern))) { auto _v_patident = std::get<ast::PatIdent>((*pattern)); auto [name] = _v_patident; return [&]() -> mlc::Array<mlc::String> { 
+return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::PatIdent>((*pattern))) { auto _v_patident = std::get<ast::PatIdent>((*pattern)); auto [name, _w0] = _v_patident; return [&]() -> mlc::Array<mlc::String> { 
   accumulator.push_back(name);
   return accumulator;
- }(); } if (std::holds_alternative<ast::PatCtor>((*pattern))) { auto _v_patctor = std::get<ast::PatCtor>((*pattern)); auto [_w0, sub_patterns] = _v_patctor; return [&]() -> mlc::Array<mlc::String> { 
+ }(); } if (std::holds_alternative<ast::PatCtor>((*pattern))) { auto _v_patctor = std::get<ast::PatCtor>((*pattern)); auto [_w0, sub_patterns, _w1] = _v_patctor; return [&]() -> mlc::Array<mlc::String> { 
   int index = 0;
   while (index < sub_patterns.size()){
 {
@@ -55,11 +91,11 @@ index = index + 1;
 }
 }
   return accumulator;
- }(); } if (std::holds_alternative<ast::PatRecord>((*pattern))) { auto _v_patrecord = std::get<ast::PatRecord>((*pattern)); auto [_w0, field_pats] = _v_patrecord; return [&]() -> mlc::Array<mlc::String> { 
+ }(); } if (std::holds_alternative<ast::PatRecord>((*pattern))) { auto _v_patrecord = std::get<ast::PatRecord>((*pattern)); auto [_w0, field_patterns, _w1] = _v_patrecord; return [&]() -> mlc::Array<mlc::String> { 
   int index = 0;
-  while (index < field_pats.size()){
+  while (index < field_patterns.size()){
 {
-accumulator = collect_pattern_bindings(field_pats[index], accumulator);
+accumulator = collect_pattern_bindings(field_patterns[index], accumulator);
 index = index + 1;
 }
 }
@@ -67,7 +103,7 @@ index = index + 1;
  }(); } return accumulator; }();
 }
 
-mlc::HashMap<mlc::String, bool> collect_globals(ast::Program prog) noexcept{
+mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
 mlc::HashMap<mlc::String, bool> names = mlc::HashMap<mlc::String, bool>();
 names.set(mlc::String("true"), true);
 names.set(mlc::String("false"), true);
@@ -81,8 +117,8 @@ names.set(mlc::String("Map"), true);
 names.set(mlc::String("Ok"), true);
 names.set(mlc::String("Err"), true);
 names.set(mlc::String("Result"), true);
-int i = 0;
-while (i < prog.decls.size()){
+int index = 0;
+while (index < program.decls.size()){
 {
 std::visit(overloaded{
   [&](const DeclFn& declfn) -> std::tuple<> { auto [name, _w0, _w1, _w2, _w3, _w4] = declfn; return [&]() -> std::tuple<> { 
@@ -91,8 +127,8 @@ std::visit(overloaded{
  }(); },
   [&](const DeclType& decltype_) -> std::tuple<> { auto [name, _w0, variants] = decltype_; return [&]() -> std::tuple<> { 
   names.set(name, true);
-  int vi = 0;
-  while (vi < variants.size()){
+  int variant_index = 0;
+  while (variant_index < variants.size()){
 {
 std::visit(overloaded{
   [&](const VarUnit& varunit) -> std::tuple<> { auto [variant_name] = varunit; return [&]() -> std::tuple<> { 
@@ -107,22 +143,22 @@ std::visit(overloaded{
   names.set(variant_name, true);
   return std::make_tuple();
  }(); }
-}, (*variants[vi]));
-vi = vi + 1;
+}, (*variants[variant_index]));
+variant_index = variant_index + 1;
 }
 }
   return std::make_tuple();
  }(); },
   [&](const DeclTrait& decltrait) -> std::tuple<> { auto [name, _w0, methods] = decltrait; return [&]() -> std::tuple<> { 
   names.set(name, true);
-  int mi = 0;
-  while (mi < methods.size()){
+  int method_index = 0;
+  while (method_index < methods.size()){
 {
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[mi]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[mi])); auto [fn_name, _w0, _w1, _w2, _w3, _w4] = _v_declfn; return [&]() -> std::tuple<> { 
-  names.set(fn_name, true);
+[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [function_name, _w0, _w1, _w2, _w3, _w4] = _v_declfn; return [&]() -> std::tuple<> { 
+  names.set(function_name, true);
   return std::make_tuple();
  }(); } return std::make_tuple(); }();
-mi = mi + 1;
+method_index = method_index + 1;
 }
 }
   return std::make_tuple();
@@ -130,154 +166,188 @@ mi = mi + 1;
   [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1, _w2] = declextend; return std::make_tuple(); },
   [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
   [&](const DeclExported& declexported) -> std::tuple<> { auto [_w0] = declexported; return std::make_tuple(); }
-}, (*ast::decl_inner(prog.decls[i])));
-i = i + 1;
+}, (*ast::decl_inner(program.decls[index])));
+index = index + 1;
 }
 }
 return names;
 }
 
-mlc::Array<mlc::String> check_names_expr(std::shared_ptr<ast::Expr> expr, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
-return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::ExprIdent>((*expr)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*expr)._); auto [name] = _v_exprident; return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> errors = {};
-  if (!scope_contains(locals, name) && !globals.has(name)){
+mlc::Array<ast::Diagnostic> check_names_identifier(mlc::String name, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals, ast::Span source_span) noexcept{
+mlc::Array<ast::Diagnostic> collected = {};
+if (!scope_contains(locals, name) && !globals.has(name)){
 {
-errors.push_back(mlc::String("undefined: ") + name);
+collected.push_back(ast::diagnostic_error(mlc::String("undefined: ") + name, source_span));
 }
 }
-  return errors;
- }(); } if (std::holds_alternative<ast::ExprBin>((*expr)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expr)._); auto [_w0, left, right] = _v_exprbin; return ast::errs_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals)); } if (std::holds_alternative<ast::ExprUn>((*expr)._)) { auto _v_exprun = std::get<ast::ExprUn>((*expr)._); auto [_w0, inner] = _v_exprun; return check_names_expr(inner, locals, globals); } if (std::holds_alternative<ast::ExprCall>((*expr)._)) { auto _v_exprcall = std::get<ast::ExprCall>((*expr)._); auto [func, call_args] = _v_exprcall; return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> errors = check_names_expr(func, locals, globals);
-  int i = 0;
-  while (i < call_args.size()){
-{
-errors = ast::errs_append(errors, check_names_expr(call_args[i], locals, globals));
-i = i + 1;
+return collected;
 }
-}
-  return errors;
- }(); } if (std::holds_alternative<ast::ExprMethod>((*expr)._)) { auto _v_exprmethod = std::get<ast::ExprMethod>((*expr)._); auto [obj, _w0, margs] = _v_exprmethod; return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> errors = check_names_expr(obj, locals, globals);
-  int i = 0;
-  while (i < margs.size()){
-{
-errors = ast::errs_append(errors, check_names_expr(margs[i], locals, globals));
-i = i + 1;
-}
-}
-  return errors;
- }(); } if (std::holds_alternative<ast::ExprField>((*expr)._)) { auto _v_exprfield = std::get<ast::ExprField>((*expr)._); auto [obj, _w0] = _v_exprfield; return check_names_expr(obj, locals, globals); } if (std::holds_alternative<ast::ExprIndex>((*expr)._)) { auto _v_exprindex = std::get<ast::ExprIndex>((*expr)._); auto [obj, index_expr] = _v_exprindex; return ast::errs_append(check_names_expr(obj, locals, globals), check_names_expr(index_expr, locals, globals)); } if (std::holds_alternative<ast::ExprIf>((*expr)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expr)._); auto [cond, then_expr, else_expr] = _v_exprif; return ast::errs_append(ast::errs_append(check_names_expr(cond, locals, globals), check_names_expr(then_expr, locals, globals)), check_names_expr(else_expr, locals, globals)); } if (std::holds_alternative<ast::ExprBlock>((*expr)._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*expr)._); auto [stmts, result] = _v_exprblock; return [&]() -> mlc::Array<mlc::String> { 
-  names::NameCheckResult stmt_result = check_names_stmts(stmts, locals, globals);
-  return NameCheckResult_append_expr_errors(stmt_result, check_names_expr(result, stmt_result.scope, globals));
- }(); } if (std::holds_alternative<ast::ExprWhile>((*expr)._)) { auto _v_exprwhile = std::get<ast::ExprWhile>((*expr)._); auto [cond, stmts] = _v_exprwhile; return [&]() -> mlc::Array<mlc::String> { 
-  names::NameCheckResult check_result = check_names_stmts(stmts, locals, globals);
-  return ast::errs_append(check_names_expr(cond, locals, globals), check_result.errors);
- }(); } if (std::holds_alternative<ast::ExprFor>((*expr)._)) { auto _v_exprfor = std::get<ast::ExprFor>((*expr)._); auto [var, iter, stmts] = _v_exprfor; return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> inner = locals;
-  inner.push_back(var);
-  names::NameCheckResult check_result = check_names_stmts(stmts, inner, globals);
-  return ast::errs_append(check_names_expr(iter, locals, globals), check_result.errors);
- }(); } if (std::holds_alternative<ast::ExprMatch>((*expr)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*expr)._); auto [subject, arms] = _v_exprmatch; return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> errors = check_names_expr(subject, locals, globals);
-  int i = 0;
-  while (i < arms.size()){
-{
-mlc::Array<mlc::String> bindings = pattern_bindings(arms[i]->pat);
-mlc::Array<mlc::String> arm_scope = locals;
+
+mlc::Array<ast::Diagnostic> check_names_binary_expression(std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{return ast::diagnostics_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals));}
+
+mlc::Array<ast::Diagnostic> check_names_unary_expression(std::shared_ptr<ast::Expr> inner, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{return check_names_expr(inner, locals, globals);}
+
+mlc::Array<ast::Diagnostic> check_names_call_expression(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+mlc::Array<ast::Diagnostic> collected = check_names_expr(function, locals, globals);
 int index = 0;
-while (index < bindings.size()){
+while (index < call_arguments.size()){
 {
-arm_scope.push_back(bindings[index]);
+collected = ast::diagnostics_append(collected, check_names_expr(call_arguments[index], locals, globals));
 index = index + 1;
 }
 }
-errors = ast::errs_append(errors, check_names_expr(arms[i]->body, arm_scope, globals));
-i = i + 1;
-}
-}
-  return errors;
- }(); } if (std::holds_alternative<ast::ExprRecord>((*expr)._)) { auto _v_exprrecord = std::get<ast::ExprRecord>((*expr)._); auto [_w0, field_vals] = _v_exprrecord; return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> errors = {};
-  int i = 0;
-  while (i < field_vals.size()){
-{
-errors = ast::errs_append(errors, check_names_expr(field_vals[i]->val, locals, globals));
-i = i + 1;
-}
-}
-  return errors;
- }(); } if (std::holds_alternative<ast::ExprRecordUpdate>((*expr)._)) { auto _v_exprrecordupdate = std::get<ast::ExprRecordUpdate>((*expr)._); auto [_w0, base, field_vals] = _v_exprrecordupdate; return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> errors = check_names_expr(base, locals, globals);
-  int i = 0;
-  while (i < field_vals.size()){
-{
-errors = ast::errs_append(errors, check_names_expr(field_vals[i]->val, locals, globals));
-i = i + 1;
-}
-}
-  return errors;
- }(); } if (std::holds_alternative<ast::ExprArray>((*expr)._)) { auto _v_exprarray = std::get<ast::ExprArray>((*expr)._); auto [exprs] = _v_exprarray; return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> errors = {};
-  int i = 0;
-  while (i < exprs.size()){
-{
-errors = ast::errs_append(errors, check_names_expr(exprs[i], locals, globals));
-i = i + 1;
-}
-}
-  return errors;
- }(); } if (std::holds_alternative<ast::ExprQuestion>((*expr)._)) { auto _v_exprquestion = std::get<ast::ExprQuestion>((*expr)._); auto [inner] = _v_exprquestion; return check_names_expr(inner, locals, globals); } if (std::holds_alternative<ast::ExprLambda>((*expr)._)) { auto _v_exprlambda = std::get<ast::ExprLambda>((*expr)._); auto [params, body] = _v_exprlambda; return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> lambda_locals = {};
-  int i = 0;
-  while (i < locals.size()){
-{
-lambda_locals.push_back(locals[i]);
-i = i + 1;
-}
-}
-  int pi = 0;
-  while (pi < params.size()){
-{
-lambda_locals.push_back(params[pi]);
-pi = pi + 1;
-}
-}
-  return check_names_expr(body, lambda_locals, globals);
- }(); } return [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> empty_errors = {};
-  return empty_errors;
- }(); }();
+return collected;
 }
 
-mlc::Array<mlc::String> NameCheckResult_append_expr_errors(names::NameCheckResult self, mlc::Array<mlc::String> expr_errors) noexcept{return ast::errs_append(self.errors, expr_errors);}
+mlc::Array<ast::Diagnostic> check_names_method_expression(std::shared_ptr<ast::Expr> object, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+mlc::Array<ast::Diagnostic> collected = check_names_expr(object, locals, globals);
+int index = 0;
+while (index < method_arguments.size()){
+{
+collected = ast::diagnostics_append(collected, check_names_expr(method_arguments[index], locals, globals));
+index = index + 1;
+}
+}
+return collected;
+}
 
-names::NameCheckResult check_names_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> stmts, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
-mlc::Array<mlc::String> errors = {};
+mlc::Array<ast::Diagnostic> check_names_field_expression(std::shared_ptr<ast::Expr> object, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{return check_names_expr(object, locals, globals);}
+
+mlc::Array<ast::Diagnostic> check_names_index_expression(std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{return ast::diagnostics_append(check_names_expr(object, locals, globals), check_names_expr(index_expression, locals, globals));}
+
+mlc::Array<ast::Diagnostic> check_names_conditional_expression(std::shared_ptr<ast::Expr> condition, std::shared_ptr<ast::Expr> then_expression, std::shared_ptr<ast::Expr> else_expression, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{return ast::diagnostics_append(ast::diagnostics_append(check_names_expr(condition, locals, globals), check_names_expr(then_expression, locals, globals)), check_names_expr(else_expression, locals, globals));}
+
+mlc::Array<ast::Diagnostic> check_names_block_expression(mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+names::NameCheckResult statement_result = check_names_statements(statements, locals, globals);
+return NameCheckResult_append_expression_diagnostics(statement_result, check_names_expr(result, statement_result.scope, globals));
+}
+
+mlc::Array<ast::Diagnostic> check_names_while_expression(std::shared_ptr<ast::Expr> condition, mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+names::NameCheckResult statement_check = check_names_statements(statements, locals, globals);
+return ast::diagnostics_append(check_names_expr(condition, locals, globals), statement_check.diagnostics);
+}
+
+mlc::Array<ast::Diagnostic> check_names_for_expression(mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+mlc::Array<mlc::String> inner_scope = locals;
+inner_scope.push_back(variable_name);
+names::NameCheckResult statement_check = check_names_statements(statements, inner_scope, globals);
+return ast::diagnostics_append(check_names_expr(iterator, locals, globals), statement_check.diagnostics);
+}
+
+mlc::Array<ast::Diagnostic> check_names_match_expression(std::shared_ptr<ast::Expr> subject, mlc::Array<std::shared_ptr<ast::MatchArm>> arms, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+mlc::Array<ast::Diagnostic> collected = check_names_expr(subject, locals, globals);
+int arm_index = 0;
+while (arm_index < arms.size()){
+{
+mlc::Array<mlc::String> bindings = pattern_bindings(arms[arm_index]->pat);
+mlc::Array<mlc::String> arm_scope = locals;
+int binding_index = 0;
+while (binding_index < bindings.size()){
+{
+arm_scope.push_back(bindings[binding_index]);
+binding_index = binding_index + 1;
+}
+}
+collected = ast::diagnostics_append(collected, check_names_expr(arms[arm_index]->body, arm_scope, globals));
+arm_index = arm_index + 1;
+}
+}
+return collected;
+}
+
+mlc::Array<ast::Diagnostic> check_names_record_expression(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+mlc::Array<ast::Diagnostic> collected = {};
+int index = 0;
+while (index < field_values.size()){
+{
+collected = ast::diagnostics_append(collected, check_names_expr(field_values[index]->val, locals, globals));
+index = index + 1;
+}
+}
+return collected;
+}
+
+mlc::Array<ast::Diagnostic> check_names_record_update_expression(std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+mlc::Array<ast::Diagnostic> collected = check_names_expr(base, locals, globals);
+int index = 0;
+while (index < field_values.size()){
+{
+collected = ast::diagnostics_append(collected, check_names_expr(field_values[index]->val, locals, globals));
+index = index + 1;
+}
+}
+return collected;
+}
+
+mlc::Array<ast::Diagnostic> check_names_array_expression(mlc::Array<std::shared_ptr<ast::Expr>> elements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+mlc::Array<ast::Diagnostic> collected = {};
+int index = 0;
+while (index < elements.size()){
+{
+collected = ast::diagnostics_append(collected, check_names_expr(elements[index], locals, globals));
+index = index + 1;
+}
+}
+return collected;
+}
+
+mlc::Array<ast::Diagnostic> check_names_question_expression(std::shared_ptr<ast::Expr> inner, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{return check_names_expr(inner, locals, globals);}
+
+mlc::Array<ast::Diagnostic> check_names_lambda_expression(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+mlc::Array<mlc::String> lambda_locals = {};
+int local_index = 0;
+while (local_index < locals.size()){
+{
+lambda_locals.push_back(locals[local_index]);
+local_index = local_index + 1;
+}
+}
+int parameter_index = 0;
+while (parameter_index < parameter_names.size()){
+{
+lambda_locals.push_back(parameter_names[parameter_index]);
+parameter_index = parameter_index + 1;
+}
+}
+return check_names_expr(body, lambda_locals, globals);
+}
+
+mlc::Array<ast::Diagnostic> check_names_empty() noexcept{
+mlc::Array<ast::Diagnostic> empty_list = {};
+return empty_list;
+}
+
+mlc::Array<ast::Diagnostic> check_names_expr(std::shared_ptr<ast::Expr> expression, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{return [&]() -> mlc::Array<ast::Diagnostic> { if (std::holds_alternative<ast::ExprIdent>((*expression)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*expression)._); auto [name, source_span] = _v_exprident; return check_names_identifier(name, locals, globals, source_span); } if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [_w0, left, right, _w1] = _v_exprbin; return check_names_binary_expression(left, right, locals, globals); } if (std::holds_alternative<ast::ExprUn>((*expression)._)) { auto _v_exprun = std::get<ast::ExprUn>((*expression)._); auto [_w0, inner, _w1] = _v_exprun; return check_names_unary_expression(inner, locals, globals); } if (std::holds_alternative<ast::ExprCall>((*expression)._)) { auto _v_exprcall = std::get<ast::ExprCall>((*expression)._); auto [function, call_arguments, _w0] = _v_exprcall; return check_names_call_expression(function, call_arguments, locals, globals); } if (std::holds_alternative<ast::ExprMethod>((*expression)._)) { auto _v_exprmethod = std::get<ast::ExprMethod>((*expression)._); auto [object, _w0, method_arguments, _w1] = _v_exprmethod; return check_names_method_expression(object, method_arguments, locals, globals); } if (std::holds_alternative<ast::ExprField>((*expression)._)) { auto _v_exprfield = std::get<ast::ExprField>((*expression)._); auto [object, _w0, _w1] = _v_exprfield; return check_names_field_expression(object, locals, globals); } if (std::holds_alternative<ast::ExprIndex>((*expression)._)) { auto _v_exprindex = std::get<ast::ExprIndex>((*expression)._); auto [object, index_expression, _w0] = _v_exprindex; return check_names_index_expression(object, index_expression, locals, globals); } if (std::holds_alternative<ast::ExprIf>((*expression)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expression)._); auto [condition, then_expression, else_expression, _w0] = _v_exprif; return check_names_conditional_expression(condition, then_expression, else_expression, locals, globals); } if (std::holds_alternative<ast::ExprBlock>((*expression)._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*expression)._); auto [statements, result, _w0] = _v_exprblock; return check_names_block_expression(statements, result, locals, globals); } if (std::holds_alternative<ast::ExprWhile>((*expression)._)) { auto _v_exprwhile = std::get<ast::ExprWhile>((*expression)._); auto [condition, statements, _w0] = _v_exprwhile; return check_names_while_expression(condition, statements, locals, globals); } if (std::holds_alternative<ast::ExprFor>((*expression)._)) { auto _v_exprfor = std::get<ast::ExprFor>((*expression)._); auto [variable, iterator, statements, _w0] = _v_exprfor; return check_names_for_expression(variable, iterator, statements, locals, globals); } if (std::holds_alternative<ast::ExprMatch>((*expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*expression)._); auto [subject, arms, _w0] = _v_exprmatch; return check_names_match_expression(subject, arms, locals, globals); } if (std::holds_alternative<ast::ExprRecord>((*expression)._)) { auto _v_exprrecord = std::get<ast::ExprRecord>((*expression)._); auto [_w0, field_values, _w1] = _v_exprrecord; return check_names_record_expression(field_values, locals, globals); } if (std::holds_alternative<ast::ExprRecordUpdate>((*expression)._)) { auto _v_exprrecordupdate = std::get<ast::ExprRecordUpdate>((*expression)._); auto [_w0, base, field_values, _w1] = _v_exprrecordupdate; return check_names_record_update_expression(base, field_values, locals, globals); } if (std::holds_alternative<ast::ExprArray>((*expression)._)) { auto _v_exprarray = std::get<ast::ExprArray>((*expression)._); auto [elements, _w0] = _v_exprarray; return check_names_array_expression(elements, locals, globals); } if (std::holds_alternative<ast::ExprQuestion>((*expression)._)) { auto _v_exprquestion = std::get<ast::ExprQuestion>((*expression)._); auto [inner, _w0] = _v_exprquestion; return check_names_question_expression(inner, locals, globals); } if (std::holds_alternative<ast::ExprLambda>((*expression)._)) { auto _v_exprlambda = std::get<ast::ExprLambda>((*expression)._); auto [parameter_names, body, _w0] = _v_exprlambda; return check_names_lambda_expression(parameter_names, body, locals, globals); } return check_names_empty(); }();}
+
+mlc::Array<ast::Diagnostic> NameCheckResult_append_expression_diagnostics(names::NameCheckResult self, mlc::Array<ast::Diagnostic> expression_diagnostics) noexcept{return ast::diagnostics_append(self.diagnostics, expression_diagnostics);}
+
+names::NameCheckResult check_names_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
+mlc::Array<ast::Diagnostic> collected_diagnostics = {};
 mlc::Array<mlc::String> scope = locals;
-int i = 0;
-while (i < stmts.size()){
+int index = 0;
+while (index < statements.size()){
 {
 std::visit(overloaded{
-  [&](const StmtLet& stmtlet) -> std::tuple<> { auto [name, _w0, _w1, value] = stmtlet; return [&]() -> std::tuple<> { 
-  errors = ast::errs_append(errors, check_names_expr(value, scope, globals));
+  [&](const StmtLet& stmtlet) -> std::tuple<> { auto [name, _w0, _w1, value, _w2] = stmtlet; return [&]() -> std::tuple<> { 
+  collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals));
   scope.push_back(name);
   return std::make_tuple();
  }(); },
-  [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expr] = stmtexpr; return [&]() -> std::tuple<> { 
-  errors = ast::errs_append(errors, check_names_expr(expr, scope, globals));
+  [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expression, _w0] = stmtexpr; return [&]() -> std::tuple<> { 
+  collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals));
   return std::make_tuple();
  }(); },
-  [&](const StmtReturn& stmtreturn) -> std::tuple<> { auto [expr] = stmtreturn; return [&]() -> std::tuple<> { 
-  errors = ast::errs_append(errors, check_names_expr(expr, scope, globals));
+  [&](const StmtReturn& stmtreturn) -> std::tuple<> { auto [expression, _w0] = stmtreturn; return [&]() -> std::tuple<> { 
+  collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals));
   return std::make_tuple();
  }(); },
-  [&](const StmtBreak& stmtbreak) -> std::tuple<> { return std::make_tuple(); },
-  [&](const StmtContinue& stmtcontinue) -> std::tuple<> { return std::make_tuple(); }
-}, (*stmts[i])._);
-i = i + 1;
+  [&](const StmtBreak& stmtbreak) -> std::tuple<> { auto [_w0] = stmtbreak; return std::make_tuple(); },
+  [&](const StmtContinue& stmtcontinue) -> std::tuple<> { auto [_w0] = stmtcontinue; return std::make_tuple(); }
+}, (*statements[index])._);
+index = index + 1;
 }
 }
-return names::NameCheckResult{errors, scope};
+return names::NameCheckResult{collected_diagnostics, scope};
 }
 
 } // namespace names

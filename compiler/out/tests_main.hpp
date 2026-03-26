@@ -9,6 +9,7 @@
 #include "test_checker.hpp"
 #include "test_codegen.hpp"
 #include "test_pipe_and_record_update.hpp"
+#include "test_decl_gen.hpp"
 #include "test_runner.hpp"
 
 namespace tests_main {

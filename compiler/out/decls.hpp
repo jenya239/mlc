@@ -16,6 +16,8 @@ struct Stmt;
 
 preds::DeclResult parse_decl(preds::Parser parser) noexcept;
 
+ast::Program parse_program_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
+
 ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept;
 
 } // namespace decls

@@ -1,0 +1,12 @@
+// Checker: shared context for type environment and registry during inference.
+// Module basename must differ from codegen/context.mlc (both would emit context.cpp).
+
+import { Type, TypeRegistry } from "./registry"
+
+export type CheckContext = CheckContext {
+  type_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+}
+
+export fn check_context_new(type_environment: Map<string, Shared<Type>>, registry: TypeRegistry) -> CheckContext =
+  CheckContext { type_env: type_environment, registry: registry }

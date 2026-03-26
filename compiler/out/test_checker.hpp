@@ -7,7 +7,7 @@
 #include "test_runner.hpp"
 #include "lexer.hpp"
 #include "decls.hpp"
-#include "infer.hpp"
+#include "check.hpp"
 
 namespace test_checker {
 

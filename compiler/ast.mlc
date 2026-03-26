@@ -2,6 +2,53 @@
 
 import { TKind, Token, LexOut } from "./ast_tokens"
 
+// --- Source spans and diagnostics -----------------------------------------
+
+export type Span = Span { file: string, line: i32, column: i32 }
+
+export fn span_unknown() -> Span = Span { file: "", line: 0, column: 0 }
+
+export type Diagnostic = Diagnostic { message: string, span: Span, severity: string }
+
+export fn diagnostic_new(severity: string, message: string, span: Span) -> Diagnostic =
+  Diagnostic { message: message, span: span, severity: severity }
+
+export fn diagnostic_error(message: string, span: Span) -> Diagnostic =
+  diagnostic_new("error", message, span)
+
+export fn diagnostic_format(diagnostic: Diagnostic) -> string = do
+  const where_part = if diagnostic.span.file.length() > 0 then
+    diagnostic.span.file + ":" + diagnostic.span.line.to_string() + ":" + diagnostic.span.column.to_string()
+  else
+    diagnostic.span.line.to_string() + ":" + diagnostic.span.column.to_string()
+  end
+  diagnostic.severity + ": " + diagnostic.message + " at " + where_part
+end
+
+export fn diagnostics_append(mut destination: [Diagnostic], source: [Diagnostic]) -> [Diagnostic] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index]); index = index + 1
+  end
+  destination
+end
+
+export fn infer_messages_as_diagnostics(messages: [string]) -> [Diagnostic] = do
+  let collected: [Diagnostic] = []; let mut index = 0
+  while index < messages.length() do
+    collected.push(diagnostic_error(messages[index], span_unknown())); index = index + 1
+  end
+  collected
+end
+
+export fn diagnostics_to_strings(diagnostics: [Diagnostic]) -> [string] = do
+  let lines: [string] = []; let mut index = 0
+  while index < diagnostics.length() do
+    lines.push(diagnostic_format(diagnostics[index])); index = index + 1
+  end
+  lines
+end
+
 // --- AST -----------------------------------------------------------------
 
 export type TypeExpr =
@@ -12,40 +59,88 @@ export type TypeExpr =
   | TyFn([Shared<TypeExpr>], Shared<TypeExpr>)
 
 export type Pat =
-  | PatWild | PatIdent(string) | PatInt(i32) | PatStr(string)
-  | PatBool(bool) | PatUnit
-  | PatCtor(string, [Shared<Pat>])
-  | PatRecord(string, [Shared<Pat>])
+  | PatWild(Span) | PatIdent(string, Span) | PatInt(i32, Span) | PatStr(string, Span)
+  | PatBool(bool, Span) | PatUnit(Span)
+  | PatCtor(string, [Shared<Pat>], Span)
+  | PatRecord(string, [Shared<Pat>], Span)
 
 export type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
 export type MatchArm = MatchArm { pat: Shared<Pat>, body: Shared<Expr> }
 export type FieldVal = FieldVal { name: string, val: Shared<Expr> }
 
 export type Expr =
-  | ExprInt(i32) | ExprStr(string) | ExprBool(bool) | ExprUnit
-  | ExprIdent(string)
-  | ExprBin(string, Shared<Expr>, Shared<Expr>)
-  | ExprUn(string, Shared<Expr>)
-  | ExprCall(Shared<Expr>, [Shared<Expr>])
-  | ExprMethod(Shared<Expr>, string, [Shared<Expr>])
-  | ExprField(Shared<Expr>, string)
-  | ExprIndex(Shared<Expr>, Shared<Expr>)
-  | ExprIf(Shared<Expr>, Shared<Expr>, Shared<Expr>)
-  | ExprBlock([Shared<Stmt>], Shared<Expr>)
-  | ExprWhile(Shared<Expr>, [Shared<Stmt>])
-  | ExprFor(string, Shared<Expr>, [Shared<Stmt>])
-  | ExprMatch(Shared<Expr>, [Shared<MatchArm>])
-  | ExprRecord(string, [Shared<FieldVal>])
-  | ExprRecordUpdate(string, Shared<Expr>, [Shared<FieldVal>])
-  | ExprArray([Shared<Expr>])
-  | ExprQuestion(Shared<Expr>)
-  | ExprExtern
-  | ExprLambda([string], Shared<Expr>)
+  | ExprInt(i32, Span) | ExprStr(string, Span) | ExprBool(bool, Span) | ExprUnit(Span)
+  | ExprIdent(string, Span)
+  | ExprBin(string, Shared<Expr>, Shared<Expr>, Span)
+  | ExprUn(string, Shared<Expr>, Span)
+  | ExprCall(Shared<Expr>, [Shared<Expr>], Span)
+  | ExprMethod(Shared<Expr>, string, [Shared<Expr>], Span)
+  | ExprField(Shared<Expr>, string, Span)
+  | ExprIndex(Shared<Expr>, Shared<Expr>, Span)
+  | ExprIf(Shared<Expr>, Shared<Expr>, Shared<Expr>, Span)
+  | ExprBlock([Shared<Stmt>], Shared<Expr>, Span)
+  | ExprWhile(Shared<Expr>, [Shared<Stmt>], Span)
+  | ExprFor(string, Shared<Expr>, [Shared<Stmt>], Span)
+  | ExprMatch(Shared<Expr>, [Shared<MatchArm>], Span)
+  | ExprRecord(string, [Shared<FieldVal>], Span)
+  | ExprRecordUpdate(string, Shared<Expr>, [Shared<FieldVal>], Span)
+  | ExprArray([Shared<Expr>], Span)
+  | ExprQuestion(Shared<Expr>, Span)
+  | ExprExtern(Span)
+  | ExprLambda([string], Shared<Expr>, Span)
+
+export fn expr_span(expression: Shared<Expr>) -> Span =
+  match expression {
+    ExprIdent(_, source_span) => source_span,
+    ExprInt(_, source_span)   => source_span,
+    ExprStr(_, source_span)   => source_span,
+    ExprBool(_, source_span)  => source_span,
+    ExprUnit(source_span)     => source_span,
+    ExprBin(_, _, _, source_span)   => source_span,
+    ExprUn(_, _, source_span)       => source_span,
+    ExprCall(_, _, source_span)     => source_span,
+    ExprMethod(_, _, _, source_span) => source_span,
+    ExprField(_, _, source_span)   => source_span,
+    ExprIndex(_, _, source_span)   => source_span,
+    ExprIf(_, _, _, source_span)    => source_span,
+    ExprBlock(_, _, source_span)   => source_span,
+    ExprWhile(_, _, source_span)   => source_span,
+    ExprFor(_, _, _, source_span)  => source_span,
+    ExprMatch(_, _, source_span)   => source_span,
+    ExprRecord(_, _, source_span)  => source_span,
+    ExprRecordUpdate(_, _, _, source_span) => source_span,
+    ExprArray(_, source_span)      => source_span,
+    ExprQuestion(_, source_span)   => source_span,
+    ExprExtern(source_span)         => source_span,
+    ExprLambda(_, _, source_span)  => source_span,
+    _                               => span_unknown()
+  }
 
 export type Stmt =
-  | StmtLet(string, bool, Shared<TypeExpr>, Shared<Expr>)
-  | StmtExpr(Shared<Expr>)
-  | StmtBreak | StmtContinue | StmtReturn(Shared<Expr>)
+  | StmtLet(string, bool, Shared<TypeExpr>, Shared<Expr>, Span)
+  | StmtExpr(Shared<Expr>, Span)
+  | StmtBreak(Span) | StmtContinue(Span) | StmtReturn(Shared<Expr>, Span)
+
+export fn stmt_span(statement: Shared<Stmt>) -> Span =
+  match statement {
+    StmtLet(_, _, _, _, source_span) => source_span,
+    StmtExpr(_, source_span)         => source_span,
+    StmtBreak(source_span)           => source_span,
+    StmtContinue(source_span)        => source_span,
+    StmtReturn(_, source_span)       => source_span,
+  }
+
+export fn pat_span(pattern: Shared<Pat>) -> Span =
+  match pattern {
+    PatWild(source_span)                    => source_span,
+    PatIdent(_, source_span)                => source_span,
+    PatInt(_, source_span)                  => source_span,
+    PatStr(_, source_span)                  => source_span,
+    PatBool(_, source_span)                 => source_span,
+    PatUnit(source_span)                    => source_span,
+    PatCtor(_, _, source_span)              => source_span,
+    PatRecord(_, _, source_span)            => source_span,
+  }
 
 export type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr> }
 export type FieldDef = FieldDef { name: string, typ: Shared<TypeExpr> }

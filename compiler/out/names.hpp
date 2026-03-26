@@ -11,13 +11,13 @@ namespace names {
 struct Expr;
 struct Stmt;
 
-struct NameCheckResult {mlc::Array<mlc::String> errors;mlc::Array<mlc::String> scope;};
+struct NameCheckResult {mlc::Array<ast::Diagnostic> diagnostics;mlc::Array<mlc::String> scope;};
 
-mlc::HashMap<mlc::String, bool> collect_globals(ast::Program prog) noexcept;
+mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept;
 
-mlc::Array<mlc::String> check_names_expr(std::shared_ptr<ast::Expr> expr, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+mlc::Array<ast::Diagnostic> check_names_expr(std::shared_ptr<ast::Expr> expression, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
 
-names::NameCheckResult check_names_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> stmts, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
+names::NameCheckResult check_names_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
 
 } // namespace names
 

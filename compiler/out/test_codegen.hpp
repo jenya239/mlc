@@ -5,7 +5,10 @@
 #include <variant>
 
 #include "test_runner.hpp"
-#include "codegen.hpp"
+#include "eval.hpp"
+#include "context.hpp"
+#include "type_gen.hpp"
+#include "module.hpp"
 #include "ast.hpp"
 
 namespace test_codegen {
