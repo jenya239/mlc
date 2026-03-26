@@ -19,6 +19,20 @@ infer::InferResult InferResult_absorb_stmt(infer::InferResult self, infer::StmtI
 
 infer::InferResult infer_ok(std::shared_ptr<registry::Type> type_value) noexcept;
 
+mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept;
+
+bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
+
+mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept;
+
 std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept;
 
 std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_name) noexcept;
@@ -45,13 +59,23 @@ infer::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast:
 
 infer::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, check_context::CheckContext inference_context) noexcept;
 
-infer::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, check_context::CheckContext inference_context) noexcept;
+infer::InferResult infer_expr_call_for_constructor_name(mlc::String constructor_name, infer::InferResult with_arguments, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept;
+
+infer::InferResult infer_expr_call_non_constructor_arity_only(infer::InferResult base, infer::InferResult function_result, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, std::shared_ptr<registry::Type> return_type) noexcept;
+
+infer::InferResult infer_expr_call_non_constructor_not_callable(infer::InferResult base, infer::InferResult function_result, ast::Span call_source_span) noexcept;
+
+infer::InferResult infer_expr_call_non_constructor(infer::InferResult function_result, infer::InferResult with_arguments, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span) noexcept;
+
+infer::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept;
 
 infer::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, check_context::CheckContext inference_context) noexcept;
 
+mlc::Array<ast::Diagnostic> infer_expr_field_diagnostics(std::shared_ptr<registry::Type> object_type, mlc::String field_name, ast::Span field_source_span, registry::TypeRegistry registry) noexcept;
+
 infer::InferResult infer_expr_field(std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span field_source_span, check_context::CheckContext inference_context) noexcept;
 
-infer::InferResult infer_expr_index(std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, check_context::CheckContext inference_context) noexcept;
+infer::InferResult infer_expr_index(std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, ast::Span bracket_source_span, check_context::CheckContext inference_context) noexcept;
 
 infer::InferResult infer_expr_conditional(std::shared_ptr<ast::Expr> condition, std::shared_ptr<ast::Expr> then_expression, std::shared_ptr<ast::Expr> else_expression, check_context::CheckContext inference_context) noexcept;
 
@@ -89,9 +113,47 @@ infer::InferResult InferResult_absorb_stmt(infer::InferResult self, infer::StmtI
 
 infer::InferResult infer_ok(std::shared_ptr<registry::Type> type_value) noexcept{return infer::InferResult{type_value, {}};}
 
-std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept{return operation == mlc::String("+") || operation == mlc::String("-") || operation == mlc::String("*") || operation == mlc::String("/") || operation == mlc::String("%") ? [&]() { if (std::holds_alternative<registry::TString>((*left_type))) {  return std::make_shared<registry::Type>((registry::TString{})); } return std::make_shared<registry::Type>((registry::TI32{})); }() : operation == mlc::String("=") ? std::make_shared<registry::Type>((registry::TUnit{})) : std::make_shared<registry::Type>((registry::TBool{}));}
+mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TI32& ti32) -> mlc::String { return mlc::String("i32"); },
+  [&](const TString& tstring) -> mlc::String { return mlc::String("string"); },
+  [&](const TBool& tbool) -> mlc::String { return mlc::String("bool"); },
+  [&](const TUnit& tunit) -> mlc::String { return mlc::String("unit"); },
+  [&](const TUnknown& tunknown) -> mlc::String { return mlc::String("unknown"); },
+  [&](const TArray& tarray) -> mlc::String { auto [_w0] = tarray; return mlc::String("array"); },
+  [&](const TShared& tshared) -> mlc::String { auto [_w0] = tshared; return mlc::String("shared"); },
+  [&](const TNamed& tnamed) -> mlc::String { auto [type_name] = tnamed; return type_name; },
+  [&](const TFn& tfn) -> mlc::String { auto [_w0, _w1] = tfn; return mlc::String("function"); }
+}, (*type_value));}
 
-std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_name) noexcept{return method_name == mlc::String("length") || method_name == mlc::String("size") || method_name == mlc::String("to_i") ? std::make_shared<registry::Type>((registry::TI32{})) : method_name == mlc::String("push") || method_name == mlc::String("set") ? std::make_shared<registry::Type>((registry::TUnit{})) : method_name == mlc::String("char_at") || method_name == mlc::String("join") || method_name == mlc::String("to_string") || method_name == mlc::String("substring") || method_name == mlc::String("to_lower") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("has") ? std::make_shared<registry::Type>((registry::TBool{})) : std::make_shared<registry::Type>((registry::TUnknown{}));}
+bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept{return std::visit(overloaded{
+  [&](const TI32& ti32) -> bool { return [&]() { if (std::holds_alternative<registry::TI32>((*right))) {  return true; } return false; }(); },
+  [&](const TString& tstring) -> bool { return [&]() { if (std::holds_alternative<registry::TString>((*right))) {  return true; } return false; }(); },
+  [&](const TBool& tbool) -> bool { return [&]() { if (std::holds_alternative<registry::TBool>((*right))) {  return true; } return false; }(); },
+  [&](const TUnit& tunit) -> bool { return [&]() { if (std::holds_alternative<registry::TUnit>((*right))) {  return true; } return false; }(); },
+  [&](const TUnknown& tunknown) -> bool { return [&]() { if (std::holds_alternative<registry::TUnknown>((*right))) {  return true; } return false; }(); },
+  [&](const TArray& tarray) -> bool { auto [inner_left] = tarray; return [&]() { if (std::holds_alternative<registry::TArray>((*right))) { auto _v_tarray = std::get<registry::TArray>((*right)); auto [inner_right] = _v_tarray; return types_structurally_equal(inner_left, inner_right); } return false; }(); },
+  [&](const TShared& tshared) -> bool { auto [inner_left] = tshared; return [&]() { if (std::holds_alternative<registry::TShared>((*right))) { auto _v_tshared = std::get<registry::TShared>((*right)); auto [inner_right] = _v_tshared; return types_structurally_equal(inner_left, inner_right); } return false; }(); },
+  [&](const TNamed& tnamed) -> bool { auto [left_name] = tnamed; return [&]() { if (std::holds_alternative<registry::TNamed>((*right))) { auto _v_tnamed = std::get<registry::TNamed>((*right)); auto [right_name] = _v_tnamed; return left_name == right_name; } return false; }(); },
+  [&](const TFn& tfn) -> bool { auto [_w0, _w1] = tfn; return [&]() { if (std::holds_alternative<registry::TFn>((*right))) { auto _v_tfn = std::get<registry::TFn>((*right)); auto [_w0, _w1] = _v_tfn; return true; } return false; }(); }
+}, (*left));}
+
+bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TUnknown>((*type_value))) {  return true; } return false; }();}
+
+bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TArray>((*type_value))) { auto _v_tarray = std::get<registry::TArray>((*type_value)); auto [_w0] = _v_tarray; return true; } return false; }();}
+
+bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TI32>((*type_value))) {  return true; } return false; }();}
+
+bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TFn>((*type_value))) { auto _v_tfn = std::get<registry::TFn>((*type_value)); auto [_w0, _w1] = _v_tfn; return true; } return false; }();}
+
+mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept{return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { if (std::holds_alternative<registry::TFn>((*function_type))) { auto _v_tfn = std::get<registry::TFn>((*function_type)); auto [parameters, _w0] = _v_tfn; return parameters; } return {}; }();}
+
+std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept{
+return operation == mlc::String("+") || operation == mlc::String("-") || operation == mlc::String("*") || operation == mlc::String("/") || operation == mlc::String("%") ? [&]() { if (std::holds_alternative<registry::TString>((*left_type))) {  return std::make_shared<registry::Type>((registry::TString{})); } return std::make_shared<registry::Type>((registry::TI32{})); }() : operation == mlc::String("=") ? std::make_shared<registry::Type>((registry::TUnit{})) : std::make_shared<registry::Type>((registry::TBool{}));
+}
+
+std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_name) noexcept{
+return method_name == mlc::String("length") || method_name == mlc::String("size") || method_name == mlc::String("to_i") ? std::make_shared<registry::Type>((registry::TI32{})) : method_name == mlc::String("push") || method_name == mlc::String("set") ? std::make_shared<registry::Type>((registry::TUnit{})) : method_name == mlc::String("char_at") || method_name == mlc::String("join") || method_name == mlc::String("to_string") || method_name == mlc::String("substring") || method_name == mlc::String("to_lower") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("has") ? std::make_shared<registry::Type>((registry::TBool{})) : std::make_shared<registry::Type>((registry::TUnknown{}));
+}
 
 infer::InferResult infer_arguments_errors(infer::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept{
 infer::InferResult result = std::move(initial);
@@ -149,11 +211,31 @@ auto result_type = operation == mlc::String("!") ? std::make_shared<registry::Ty
 return InferResult_with_type(inner_result, result_type);
 }
 
-infer::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, check_context::CheckContext inference_context) noexcept{
+infer::InferResult infer_expr_call_for_constructor_name(mlc::String constructor_name, infer::InferResult with_arguments, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept{
+mlc::Array<std::shared_ptr<registry::Type>> constructor_parameter_types = registry::TypeRegistry_ctor_params_for(inference_context.registry, constructor_name);
+mlc::Array<ast::Diagnostic> call_errors = constructor_parameter_types.size() != call_arguments.size() ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(constructor_parameter_types.size()) + mlc::String(" arguments, got ") + mlc::to_string(call_arguments.size()), call_source_span)} : mlc::Array<ast::Diagnostic>{};
+return infer::InferResult{registry::TypeRegistry_ctor_type(inference_context.registry, constructor_name), ast::diagnostics_append(with_arguments.errors, call_errors)};
+}
+
+infer::InferResult infer_expr_call_non_constructor_arity_only(infer::InferResult base, infer::InferResult function_result, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, std::shared_ptr<registry::Type> return_type) noexcept{
+mlc::Array<std::shared_ptr<registry::Type>> parameter_types = function_parameter_list(function_result.inferred_type);
+mlc::Array<ast::Diagnostic> arity_errors = parameter_types.size() != call_arguments.size() ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(parameter_types.size()) + mlc::String(" arguments, got ") + mlc::to_string(call_arguments.size()), call_source_span)} : mlc::Array<ast::Diagnostic>{};
+return infer::InferResult{return_type, ast::diagnostics_append(base.errors, arity_errors)};
+}
+
+infer::InferResult infer_expr_call_non_constructor_not_callable(infer::InferResult base, infer::InferResult function_result, ast::Span call_source_span) noexcept{return type_is_unknown(function_result.inferred_type) ? base : infer::InferResult{std::make_shared<registry::Type>((registry::TUnknown{})), ast::diagnostics_append(base.errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("called value is not a function"), call_source_span)})};}
+
+infer::InferResult infer_expr_call_non_constructor(infer::InferResult function_result, infer::InferResult with_arguments, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span) noexcept{
+std::shared_ptr<registry::Type> return_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TFn>((*function_result.inferred_type))) { auto _v_tfn = std::get<registry::TFn>((*function_result.inferred_type)); auto [_w0, return_ty] = _v_tfn; return return_ty; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
+infer::InferResult base = InferResult_with_type(with_arguments, return_type);
+return type_is_function(function_result.inferred_type) ? infer_expr_call_non_constructor_arity_only(base, function_result, call_arguments, call_source_span, return_type) : infer_expr_call_non_constructor_not_callable(base, function_result, call_source_span);
+}
+
+infer::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult function_result = infer_expr(function, inference_context);
 infer::InferResult with_arguments = infer_arguments_errors(function_result, call_arguments, inference_context);
-std::shared_ptr<registry::Type> return_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TFn>((*function_result.inferred_type))) { auto _v_tfn = std::get<registry::TFn>((*function_result.inferred_type)); auto [_w0, ret] = _v_tfn; return ret; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
-return InferResult_with_type(with_arguments, return_type);
+mlc::String callee_name = [&]() -> mlc::String { if (std::holds_alternative<ast::ExprIdent>((*function)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*function)._); auto [name, _w0] = _v_exprident; return name; } return mlc::String(""); }();
+return callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(inference_context.registry, callee_name) ? infer_expr_call_for_constructor_name(callee_name, with_arguments, call_arguments, call_source_span, inference_context) : infer_expr_call_non_constructor(function_result, with_arguments, call_arguments, call_source_span);
 }
 
 infer::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, check_context::CheckContext inference_context) noexcept{
@@ -161,35 +243,36 @@ infer::InferResult object_result = infer_expr(object, inference_context);
 return InferResult_with_type(infer_arguments_errors(object_result, method_arguments, inference_context), builtin_method_return_type(method_name));
 }
 
+mlc::Array<ast::Diagnostic> infer_expr_field_diagnostics(std::shared_ptr<registry::Type> object_type, mlc::String field_name, ast::Span field_source_span, registry::TypeRegistry registry) noexcept{
+mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*object_type))) { auto _v_tnamed = std::get<registry::TNamed>((*object_type)); auto [name] = _v_tnamed; return name; } return mlc::String(""); }();
+return type_name != mlc::String("") && registry::TypeRegistry_has_fields(registry, type_name) ? !registry::TypeRegistry_fields_for(registry, type_name).has(field_name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("undefined field: ") + field_name + mlc::String(" on ") + type_name, field_source_span)} : mlc::Array<ast::Diagnostic>{} : !type_is_unknown(object_type) ? type_name != mlc::String("") && !registry::TypeRegistry_has_fields(registry, type_name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("field access needs a record type; ") + type_name + mlc::String(" is not one"), field_source_span)} : type_is_array(object_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("array value has no record fields for .") + field_name, field_source_span)} : !type_is_function(object_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("field access on value without record fields: ") + type_description(object_type), field_source_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
 infer::InferResult infer_expr_field(std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span field_source_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult object_result = infer_expr(object, inference_context);
 std::shared_ptr<registry::Type> resolved_field_type = field_type_from_object(object_result.inferred_type, field_name, inference_context.registry);
-mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*object_result.inferred_type))) { auto _v_tnamed = std::get<registry::TNamed>((*object_result.inferred_type)); auto [name] = _v_tnamed; return name; } return mlc::String(""); }();
-mlc::Array<ast::Diagnostic> attached = {};
-if (type_name != mlc::String("") && registry::TypeRegistry_has_fields(inference_context.registry, type_name)){
-{
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> field_map = registry::TypeRegistry_fields_for(inference_context.registry, type_name);
-if (!field_map.has(field_name)){
-attached.push_back(ast::diagnostic_error(mlc::String("undefined field: ") + field_name + mlc::String(" on ") + type_name, field_source_span));
-std::make_tuple();
-}
-}
-}
+mlc::Array<ast::Diagnostic> attached = infer_expr_field_diagnostics(object_result.inferred_type, field_name, field_source_span, inference_context.registry);
 return infer::InferResult{resolved_field_type, ast::diagnostics_append(object_result.errors, attached)};
 }
 
-infer::InferResult infer_expr_index(std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, check_context::CheckContext inference_context) noexcept{
+infer::InferResult infer_expr_index(std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, ast::Span bracket_source_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult object_result = infer_expr(object, inference_context);
 infer::InferResult index_result = infer_expr(index_expression, inference_context);
 std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*object_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*object_result.inferred_type)); auto [inner] = _v_tarray; return inner; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
-return InferResult_with_type(InferResult_absorb(object_result, index_result), element_type);
+mlc::Array<ast::Diagnostic> extra_not_array = !type_is_unknown(object_result.inferred_type) && !type_is_array(object_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("indexing requires an array, got ") + type_description(object_result.inferred_type), bracket_source_span)} : mlc::Array<ast::Diagnostic>{};
+mlc::Array<ast::Diagnostic> extra_bad_index = !type_is_unknown(index_result.inferred_type) && !type_is_i32(index_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("array index must be i32, got ") + type_description(index_result.inferred_type), bracket_source_span)} : mlc::Array<ast::Diagnostic>{};
+infer::InferResult merged = InferResult_absorb(object_result, index_result);
+return infer::InferResult{element_type, ast::diagnostics_append(ast::diagnostics_append(merged.errors, extra_not_array), extra_bad_index)};
 }
 
 infer::InferResult infer_expr_conditional(std::shared_ptr<ast::Expr> condition, std::shared_ptr<ast::Expr> then_expression, std::shared_ptr<ast::Expr> else_expression, check_context::CheckContext inference_context) noexcept{
 infer::InferResult condition_result = infer_expr(condition, inference_context);
 infer::InferResult then_result = infer_expr(then_expression, inference_context);
 infer::InferResult else_result = infer_expr(else_expression, inference_context);
-return InferResult_absorb(InferResult_absorb(then_result, condition_result), else_result);
+infer::InferResult merged = InferResult_absorb(InferResult_absorb(then_result, condition_result), else_result);
+bool branches_mismatch = !type_is_unknown(then_result.inferred_type) && !type_is_unknown(else_result.inferred_type) && !types_structurally_equal(then_result.inferred_type, else_result.inferred_type);
+mlc::Array<ast::Diagnostic> branch_errors = branches_mismatch ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("if branch types differ: then ") + type_description(then_result.inferred_type) + mlc::String(", else ") + type_description(else_result.inferred_type), ast::expr_span(else_expression))} : mlc::Array<ast::Diagnostic>{};
+return infer::InferResult{branches_mismatch ? then_result.inferred_type : merged.inferred_type, ast::diagnostics_append(merged.errors, branch_errors)};
 }
 
 infer::InferResult infer_expr_block(mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result_expression, check_context::CheckContext inference_context) noexcept{
@@ -205,7 +288,9 @@ return InferResult_with_type(InferResult_absorb_stmt(condition_result, statement
 }
 
 infer::InferResult infer_expr_for_loop(mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
-infer::InferResult iterator_result = infer_expr(iterator, inference_context);
+infer::InferResult iterator_base = infer_expr(iterator, inference_context);
+mlc::Array<ast::Diagnostic> range_errors = !type_is_unknown(iterator_base.inferred_type) && !type_is_array(iterator_base.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("for loop range must be an array, got ") + type_description(iterator_base.inferred_type), ast::expr_span(iterator))} : mlc::Array<ast::Diagnostic>{};
+infer::InferResult iterator_result = infer::InferResult{iterator_base.inferred_type, ast::diagnostics_append(iterator_base.errors, range_errors)};
 std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*iterator_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*iterator_result.inferred_type)); auto [inner] = _v_tarray; return inner; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> inner_environment = inference_context.type_env;
 inner_environment.set(variable_name, element_type);
@@ -225,11 +310,9 @@ mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> arm_environment = env
 check_context::CheckContext arm_context = check_context::check_context_new(arm_environment, inference_context.registry);
 infer::InferResult arm_result = infer_expr(arms[arm_index]->body, arm_context);
 collected_errors = ast::diagnostics_append(collected_errors, arm_result.errors);
-if (arm_index == 0){
-{
-arm_type = arm_result.inferred_type;
-}
-}
+arm_type = arm_index == 0 ? arm_result.inferred_type : arm_type;
+mlc::Array<ast::Diagnostic> arm_mismatch = arm_index > 0 && !type_is_unknown(arm_type) && !type_is_unknown(arm_result.inferred_type) && !types_structurally_equal(arm_type, arm_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("match arm result type ") + type_description(arm_result.inferred_type) + mlc::String(" does not match first arm type ") + type_description(arm_type), ast::expr_span(arms[arm_index]->body))} : mlc::Array<ast::Diagnostic>{};
+collected_errors = ast::diagnostics_append(collected_errors, arm_mismatch);
 arm_index = arm_index + 1;
 }
 }
@@ -252,16 +335,18 @@ infer::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner, check_c
 
 infer::InferResult infer_expr_lambda(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, check_context::CheckContext inference_context) noexcept{
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> lambda_environment = inference_context.type_env;
+mlc::Array<std::shared_ptr<registry::Type>> parameter_types = {};
 int parameter_index = 0;
 while (parameter_index < parameter_names.size()){
 {
+parameter_types.push_back(std::make_shared<registry::Type>((registry::TUnknown{})));
 lambda_environment.set(parameter_names[parameter_index], std::make_shared<registry::Type>((registry::TUnknown{})));
 parameter_index = parameter_index + 1;
 }
 }
 check_context::CheckContext lambda_context = check_context::check_context_new(lambda_environment, inference_context.registry);
 infer::InferResult body_result = infer_expr(body, lambda_context);
-return infer_ok(std::make_shared<registry::Type>(registry::TFn({}, body_result.inferred_type)));
+return infer_ok(std::make_shared<registry::Type>(registry::TFn(parameter_types, body_result.inferred_type)));
 }
 
 infer::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept{return std::visit(overloaded{
@@ -273,10 +358,10 @@ infer::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_conte
   [&](const ExprIdent& exprident) -> infer::InferResult { auto [name, _w0] = exprident; return infer_expr_identifier(name, inference_context); },
   [&](const ExprBin& exprbin) -> infer::InferResult { auto [operation, left, right, _w0] = exprbin; return infer_expr_binary(operation, left, right, inference_context); },
   [&](const ExprUn& exprun) -> infer::InferResult { auto [operation, inner, _w0] = exprun; return infer_expr_unary(operation, inner, inference_context); },
-  [&](const ExprCall& exprcall) -> infer::InferResult { auto [function, call_arguments, _w0] = exprcall; return infer_expr_call(function, call_arguments, inference_context); },
+  [&](const ExprCall& exprcall) -> infer::InferResult { auto [function, call_arguments, call_source_span] = exprcall; return infer_expr_call(function, call_arguments, call_source_span, inference_context); },
   [&](const ExprMethod& exprmethod) -> infer::InferResult { auto [object, method_name, margs, _w0] = exprmethod; return infer_expr_method(object, method_name, margs, inference_context); },
   [&](const ExprField& exprfield) -> infer::InferResult { auto [object, field_name, field_source_span] = exprfield; return infer_expr_field(object, field_name, field_source_span, inference_context); },
-  [&](const ExprIndex& exprindex) -> infer::InferResult { auto [object, index_expression, _w0] = exprindex; return infer_expr_index(object, index_expression, inference_context); },
+  [&](const ExprIndex& exprindex) -> infer::InferResult { auto [object, index_expression, bracket_source_span] = exprindex; return infer_expr_index(object, index_expression, bracket_source_span, inference_context); },
   [&](const ExprIf& exprif) -> infer::InferResult { auto [condition, then_expr, else_expr, _w0] = exprif; return infer_expr_conditional(condition, then_expr, else_expr, inference_context); },
   [&](const ExprBlock& exprblock) -> infer::InferResult { auto [statements, result, _w0] = exprblock; return infer_expr_block(statements, result, inference_context); },
   [&](const ExprWhile& exprwhile) -> infer::InferResult { auto [condition, statements, _w0] = exprwhile; return infer_expr_while_loop(condition, statements, inference_context); },

@@ -78,7 +78,7 @@ compiler/codegen/
 
 ### Проблема
 
-`compiler/checker/infer.mlc` — 309 строк, смешаны: unification, constraint solving, dispatch по AST-узлам.
+`compiler/checker/infer.mlc` — dispatch по выражениям, вывод типов и диагностики; дальнейшее разбиение см. дерево ниже.
 
 ### Цель
 
@@ -95,19 +95,13 @@ compiler/checker/
 
 ## Фаза 4 — Диагностики
 
-Сейчас ошибки: `[string]`. Нет позиций.
+В self-hosted цепочке: `Span` и `Diagnostic` в `compiler/ast.mlc`; checker накапливает `[Diagnostic]` с позициями из AST (например `expr_span`, спаны вызова / поля / индекса).
 
-```mlc
-type Span = { file: string, line: i32, column: i32 }
-type Diagnostic = { message: string, span: Span, severity: string }
-```
+В `compiler/checker/infer.mlc` среди прочего: арность вызова для `TFn` и конструктора; «called value is not a function»; поля записи и доступ к не-записи / массиву; индексация (не массив; индекс не `i32`); расхождение типов веток `if`; согласованность типов рук `match`; диапазон `for` не массив.
 
-- Lexer пробрасывает `Span` в токены (уже есть поля `line`/`col` в AST-токенах — проверить)
-- Parser прикрепляет `Span` к каждому AST-узлу
-- Checker использует `Span` из AST для `Diagnostic`
-- Codegen: ошибки уже не генерирует, но паникует — заменить на `Result<string, Diagnostic>`
+Тесты позиций и текста: `assert_diagnostic_at` в `compiler/tests/test_checker.mlc`.
 
-Тесты: `assert_diagnostic_at(source, line, col, "message")`.
+Дальше: больше узлов и сообщений; при желании единый формат вывода как у Ruby-компилятора.
 
 ---
 
@@ -119,7 +113,7 @@ type Diagnostic = { message: string, span: Span, severity: string }
 |------|-----------|----------|--------|
 | Generics с type bounds (`T: Display`) | есть | нет | нужен |
 | Trait dispatch (`extend Type : Trait`) | есть | нет | нужен |
-| Lambdas (`x => x + 1`) | есть | нет | нужен |
+| Lambdas (`x => x + 1`) | есть | есть (`test_checker`) | расширять по мере фич |
 | Record update (`{ old \| field: val }`) | есть | частично | расширить |
 | `let const` (constexpr) | есть | нет | нужен |
 | Вложенные generics (`Array<Result<T,E>>`) | есть | нет | нужен |
@@ -129,36 +123,14 @@ type Diagnostic = { message: string, span: Span, severity: string }
 
 ---
 
-## Фаза 6 — CI
-
-Текущее состояние: нет CI-конфига (`.github/workflows/`).
-
-Минимальный пайплайн:
-```yaml
-jobs:
-  test_ruby:
-    - bundle exec rake test_mlc
-  test_self_hosted:
-    - bundle exec rake test_compiler_mlc   # build_tests.sh → 85 тестов
-  test_e2e:
-    - compiler/tests/e2e/run_e2e.sh        # 4 E2E программы
-```
-
-Дополнительно (медленный job):
-- `build_tests_self.sh compiler/out/mlcc` — тесты через self-hosted бинарь
-- Triple-bootstrap diff
-
----
-
 ## Зависимости фаз
 
 ```
-Фаза 1 (triple-bootstrap)  — независима, можно начать сейчас
-Фаза 2 (codegen arch)      — после Фазы 1 (чтобы рефакторинг был стабилен)
+Фаза 1 (triple-bootstrap)  — DONE
+Фаза 2 (codegen arch)      — в работе
 Фаза 3 (checker arch)      — параллельно с Фазой 2
-Фаза 4 (диагностики)       — после Фаз 2+3 (нужна стабильная архитектура)
+Фаза 4 (диагностики)       — после Фаз 2+3
 Фаза 5 (покрытие)          — параллельно с любой фазой
-Фаза 6 (CI)                — после Фазы 1
 ```
 
 ---
