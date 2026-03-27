@@ -84,6 +84,19 @@ results.push_back(test_runner::assert_true(mlc::String("infer: bool && i32 is an
 results.push_back(test_runner::assert_eq_int(mlc::String("infer: i32 ordering ok"), check_error_count(mlc::String("fn f() -> bool = 1 < 2")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("infer: string ordering ok"), check_error_count(mlc::String("fn f() -> bool = \"a\" <= \"b\"")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("infer: bool && ok"), check_error_count(mlc::String("fn f() -> bool = true && false")), 0));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: unary minus on string"), first_checker_error_line(mlc::String("fn f() -> i32 = -\"x\"")), 1, 17, mlc::String("unary - expects i32")));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: to_i on non-string receiver"), first_checker_error_line(mlc::String("fn f() -> i32 = 1.to_i()")), 1, 18, mlc::String("method to_i expects a string receiver")));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: join on non-array receiver"), first_checker_error_line(mlc::String("fn f() -> string = \"a\".join(\",\")")), 1, 23, mlc::String("method join expects an array receiver")));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: push on string receiver"), first_checker_error_line(mlc::String("fn f() -> i32 = \"a\".push(1)")), 1, 20, mlc::String("method push expects an array receiver")));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: set on string receiver"), first_checker_error_line(mlc::String("fn f() -> i32 = \"a\".set(0, 1)")), 1, 20, mlc::String("method set expects an array or Map receiver")));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: get on non-Map receiver"), first_checker_error_line(mlc::String("fn f() -> i32 = 1.get(\"k\")")), 1, 18, mlc::String("method get expects a Map receiver")));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: get and set on Map ok"), check_error_count(mlc::String("fn f(m: Map<string, i32>) -> i32 = do\n  m.set(\"k\", 1)\n  m.get(\"k\")\nend")), 0));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: builtin map get wrong arity"), first_checker_error_line(mlc::String("fn f(m: Map<string, i32>) -> i32 = m.get()")), 1, 37, mlc::String("expected 1 arguments, got 0")));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: builtin map set wrong arity"), first_checker_error_line(mlc::String("fn f(m: Map<string, i32>) -> i32 = m.set(\"k\")")), 1, 37, mlc::String("expected 2 arguments, got 1")));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: builtin array push wrong arity"), first_checker_error_line(mlc::String("fn f(a: [i32]) -> i32 = a.push()")), 1, 26, mlc::String("expected 1 arguments, got 0")));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: has on non-Map receiver (i32)"), first_checker_error_line(mlc::String("fn f() -> bool = 1.has(\"k\")")), 1, 19, mlc::String("method has expects a Map receiver")));
+results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: has on sum type is an error"), first_checker_error_line(mlc::String("type Hue = Red | Green\nfn f(x: Hue) -> bool = x.has(\"k\")")), 2, 25, mlc::String("method has expects a Map receiver")));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: has on Map ok"), check_error_count(mlc::String("fn f(m: Map<string, i32>) -> bool = m.has(\"k\")")), 0));
 return results;
 }
 

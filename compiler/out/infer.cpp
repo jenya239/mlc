@@ -57,6 +57,8 @@ mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_shift(mlc::String operat
 
 mlc::Array<ast::Diagnostic> infer_binary_operand_diagnostics(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
 
+bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcept;
+
 bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
 
 mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept;
@@ -97,7 +99,29 @@ infer::InferResult infer_expr_call_non_constructor(infer::InferResult function_r
 
 infer::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept;
 
-infer::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, check_context::CheckContext inference_context) noexcept;
+mlc::Array<ast::Diagnostic> infer_method_receiver_push(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_set(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_length_or_size(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_to_integer_string_only(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_string_only_methods(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_join(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_has(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_get_remove_keys_values(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_builtin_method_receiver_diagnostics(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name, ast::Span method_span) noexcept;
+
+int builtin_method_expected_argument_count(mlc::String method_name) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_builtin_method_arity_diagnostics(mlc::String method_name, int argument_count, ast::Span method_span) noexcept;
+
+infer::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept;
 
 mlc::Array<ast::Diagnostic> infer_expr_field_diagnostics(std::shared_ptr<registry::Type> object_type, mlc::String field_name, ast::Span field_source_span, registry::TypeRegistry registry) noexcept;
 
@@ -229,6 +253,8 @@ return from_addition.size() > 0 ? from_addition : [&]() -> mlc::Array<ast::Diagn
  }();
 }
 
+bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcept{return [&]() { if (std::holds_alternative<registry::TNamed>((*receiver_type))) { auto _v_tnamed = std::get<registry::TNamed>((*receiver_type)); auto [name] = _v_tnamed; return name == mlc::String("Map"); } return false; }();}
+
 bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TFn>((*type_value))) { auto _v_tfn = std::get<registry::TFn>((*type_value)); auto [_w0, _w1] = _v_tfn; return true; } return false; }();}
 
 mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept{return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { if (std::holds_alternative<registry::TFn>((*function_type))) { auto _v_tfn = std::get<registry::TFn>((*function_type)); auto [parameters, _w0] = _v_tfn; return parameters; } return {}; }();}
@@ -238,7 +264,7 @@ return operation == mlc::String("+") || operation == mlc::String("-") || operati
 }
 
 std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_name) noexcept{
-return method_name == mlc::String("length") || method_name == mlc::String("size") || method_name == mlc::String("to_i") ? std::make_shared<registry::Type>((registry::TI32{})) : method_name == mlc::String("push") || method_name == mlc::String("set") ? std::make_shared<registry::Type>((registry::TUnit{})) : method_name == mlc::String("char_at") || method_name == mlc::String("join") || method_name == mlc::String("to_string") || method_name == mlc::String("substring") || method_name == mlc::String("to_lower") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("has") ? std::make_shared<registry::Type>((registry::TBool{})) : std::make_shared<registry::Type>((registry::TUnknown{}));
+return method_name == mlc::String("length") || method_name == mlc::String("size") || method_name == mlc::String("to_i") ? std::make_shared<registry::Type>((registry::TI32{})) : method_name == mlc::String("push") || method_name == mlc::String("set") || method_name == mlc::String("remove") ? std::make_shared<registry::Type>((registry::TUnit{})) : method_name == mlc::String("keys") || method_name == mlc::String("values") ? std::make_shared<registry::Type>(registry::TArray(std::make_shared<registry::Type>((registry::TUnknown{})))) : method_name == mlc::String("char_at") || method_name == mlc::String("join") || method_name == mlc::String("to_string") || method_name == mlc::String("substring") || method_name == mlc::String("to_lower") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("has") ? std::make_shared<registry::Type>((registry::TBool{})) : std::make_shared<registry::Type>((registry::TUnknown{}));
 }
 
 infer::InferResult infer_arguments_errors(infer::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept{
@@ -295,9 +321,10 @@ return infer::InferResult{binary_operation_result_type(operation, left_result.in
 
 infer::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult inner_result = infer_expr(inner, inference_context);
+mlc::Array<ast::Diagnostic> minus_errors = operation == mlc::String("-") && !type_is_unknown(inner_result.inferred_type) && !type_is_i32(inner_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("unary - expects i32, got ") + type_description(inner_result.inferred_type), source_span)} : mlc::Array<ast::Diagnostic>{};
 mlc::Array<ast::Diagnostic> bang_errors = operation == mlc::String("!") && !type_is_unknown(inner_result.inferred_type) && !type_is_bool(inner_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("operator ! expects bool, got ") + type_description(inner_result.inferred_type), source_span)} : mlc::Array<ast::Diagnostic>{};
 auto result_type = operation == mlc::String("!") ? std::make_shared<registry::Type>((registry::TBool{})) : inner_result.inferred_type;
-return infer::InferResult{result_type, ast::diagnostics_append(inner_result.errors, bang_errors)};
+return infer::InferResult{result_type, ast::diagnostics_append(ast::diagnostics_append(inner_result.errors, minus_errors), bang_errors)};
 }
 
 infer::InferResult infer_expr_call_for_constructor_name(mlc::String constructor_name, infer::InferResult with_arguments, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept{
@@ -327,9 +354,76 @@ mlc::String callee_name = [&]() -> mlc::String { if (std::holds_alternative<ast:
 return callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(inference_context.registry, callee_name) ? infer_expr_call_for_constructor_name(callee_name, with_arguments, call_arguments, call_source_span, inference_context) : infer_expr_call_non_constructor(function_result, with_arguments, call_arguments, call_source_span);
 }
 
-infer::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, check_context::CheckContext inference_context) noexcept{
+mlc::Array<ast::Diagnostic> infer_method_receiver_push(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
+return method_name == mlc::String("push") ? !type_is_unknown(receiver_type) && !type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method push expects an array receiver, got ") + type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_set(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
+return method_name == mlc::String("set") ? !type_is_unknown(receiver_type) && !type_is_array(receiver_type) && !receiver_type_is_map(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method set expects an array or Map receiver, got ") + type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_length_or_size(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
+return method_name == mlc::String("length") || method_name == mlc::String("size") ? !type_is_unknown(receiver_type) && !type_is_string(receiver_type) && !type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("methods length and size apply to string or array; receiver is ") + type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_to_integer_string_only(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
+return method_name == mlc::String("to_i") ? !type_is_unknown(receiver_type) && !type_is_string(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method to_i expects a string receiver, got ") + type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_string_only_methods(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
+return method_name == mlc::String("char_at") || method_name == mlc::String("substring") || method_name == mlc::String("to_lower") ? !type_is_unknown(receiver_type) && !type_is_string(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method ") + method_name + mlc::String(" expects a string receiver, got ") + type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_join(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
+return method_name == mlc::String("join") ? !type_is_unknown(receiver_type) && !type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method join expects an array receiver, got ") + type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_has(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
+return method_name == mlc::String("has") ? !type_is_unknown(receiver_type) && !receiver_type_is_map(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method has expects a Map receiver, got ") + type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_get_remove_keys_values(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
+return method_name == mlc::String("get") || method_name == mlc::String("remove") || method_name == mlc::String("keys") || method_name == mlc::String("values") ? !type_is_unknown(receiver_type) && !receiver_type_is_map(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method ") + method_name + mlc::String(" expects a Map receiver, got ") + type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> infer_builtin_method_receiver_diagnostics(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name, ast::Span method_span) noexcept{
+mlc::Array<ast::Diagnostic> from_push = infer_method_receiver_push(method_name, receiver_type, method_span);
+return from_push.size() > 0 ? from_push : [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> from_set = infer_method_receiver_set(method_name, receiver_type, method_span);
+  return from_set.size() > 0 ? from_set : [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> from_length = infer_method_receiver_length_or_size(method_name, receiver_type, method_span);
+  return from_length.size() > 0 ? from_length : [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> from_to_i = infer_method_receiver_to_integer_string_only(method_name, receiver_type, method_span);
+  return from_to_i.size() > 0 ? from_to_i : [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> from_string_ops = infer_method_receiver_string_only_methods(method_name, receiver_type, method_span);
+  return from_string_ops.size() > 0 ? from_string_ops : [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> from_join = infer_method_receiver_join(method_name, receiver_type, method_span);
+  return from_join.size() > 0 ? from_join : [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> from_map_access = infer_method_receiver_get_remove_keys_values(method_name, receiver_type, method_span);
+  return from_map_access.size() > 0 ? from_map_access : infer_method_receiver_has(method_name, receiver_type, method_span);
+ }();
+ }();
+ }();
+ }();
+ }();
+ }();
+}
+
+int builtin_method_expected_argument_count(mlc::String method_name) noexcept{
+return method_name == mlc::String("push") ? 1 : method_name == mlc::String("set") ? 2 : method_name == mlc::String("length") || method_name == mlc::String("size") ? 0 : method_name == mlc::String("to_i") || method_name == mlc::String("to_lower") ? 0 : method_name == mlc::String("char_at") ? 1 : method_name == mlc::String("substring") ? 2 : method_name == mlc::String("join") ? 1 : method_name == mlc::String("to_string") ? 0 : method_name == mlc::String("has") || method_name == mlc::String("get") || method_name == mlc::String("remove") ? 1 : method_name == mlc::String("keys") || method_name == mlc::String("values") ? 0 : -1;
+}
+
+mlc::Array<ast::Diagnostic> infer_builtin_method_arity_diagnostics(mlc::String method_name, int argument_count, ast::Span method_span) noexcept{
+int expected = builtin_method_expected_argument_count(method_name);
+return expected < 0 ? mlc::Array<ast::Diagnostic>{} : argument_count != expected ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(expected) + mlc::String(" arguments, got ") + mlc::to_string(argument_count), method_span)} : mlc::Array<ast::Diagnostic>{};
+}
+
+infer::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult object_result = infer_expr(object, inference_context);
-return InferResult_with_type(infer_arguments_errors(object_result, method_arguments, inference_context), builtin_method_return_type(method_name));
+mlc::Array<ast::Diagnostic> receiver_errors = infer_builtin_method_receiver_diagnostics(object_result.inferred_type, method_name, method_span);
+infer::InferResult with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context);
+mlc::Array<ast::Diagnostic> arity_errors = receiver_errors.size() > 0 ? mlc::Array<ast::Diagnostic>{} : infer_builtin_method_arity_diagnostics(method_name, method_arguments.size(), method_span);
+return infer::InferResult{builtin_method_return_type(method_name), ast::diagnostics_append(ast::diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)};
 }
 
 mlc::Array<ast::Diagnostic> infer_expr_field_diagnostics(std::shared_ptr<registry::Type> object_type, mlc::String field_name, ast::Span field_source_span, registry::TypeRegistry registry) noexcept{
@@ -448,7 +542,7 @@ infer::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_conte
   [&](const ExprBin& exprbin) -> infer::InferResult { auto [operation, left, right, span] = exprbin; return infer_expr_binary(operation, left, right, span, inference_context); },
   [&](const ExprUn& exprun) -> infer::InferResult { auto [operation, inner, span] = exprun; return infer_expr_unary(operation, inner, span, inference_context); },
   [&](const ExprCall& exprcall) -> infer::InferResult { auto [function, call_arguments, call_source_span] = exprcall; return infer_expr_call(function, call_arguments, call_source_span, inference_context); },
-  [&](const ExprMethod& exprmethod) -> infer::InferResult { auto [object, method_name, margs, _w0] = exprmethod; return infer_expr_method(object, method_name, margs, inference_context); },
+  [&](const ExprMethod& exprmethod) -> infer::InferResult { auto [object, method_name, margs, method_span] = exprmethod; return infer_expr_method(object, method_name, margs, method_span, inference_context); },
   [&](const ExprField& exprfield) -> infer::InferResult { auto [object, field_name, field_source_span] = exprfield; return infer_expr_field(object, field_name, field_source_span, inference_context); },
   [&](const ExprIndex& exprindex) -> infer::InferResult { auto [object, index_expression, bracket_source_span] = exprindex; return infer_expr_index(object, index_expression, bracket_source_span, inference_context); },
   [&](const ExprIf& exprif) -> infer::InferResult { auto [condition, then_expr, else_expr, _w0] = exprif; return infer_expr_conditional(condition, then_expr, else_expr, inference_context); },
