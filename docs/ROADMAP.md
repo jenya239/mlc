@@ -8,7 +8,7 @@
 |-----------|------|-----------|
 | Bootstrap-компилятор | `lib/mlc/` | Полнофункциональный, эталон семантики |
 | Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, 85 тестов проходят |
-| Triple-bootstrap | `mlcc → mlcc2 → mlcc3` | Не проверялась идентичность `out2 == out3` |
+| Triple-bootstrap | `compiler/triple_bootstrap.sh` | Скрипт есть; `mlcc` генерирует C++, но сборка `g++ bs1 → mlcc2` пока падает на ошибках self-hosted codegen (невалидный C++: см. лог скрипта) |
 | Runtime | `runtime/include/`, `runtime/src/` | C++20, стабильный |
 | Unit-тесты Ruby | `test/mlc/` | 1106 runs, 0 failures |
 | Unit-тесты MLC | `compiler/tests/` | 85 passed, 0 failed |
@@ -126,8 +126,8 @@ compiler/checker/
 ## Зависимости фаз
 
 ```
-Фаза 1 (triple-bootstrap)  — DONE
-Фаза 2 (codegen arch)      — в работе
+Фаза 1 (triple-bootstrap)  — скрипт + критерий diff; блокер: починить emit mlcc так, чтобы g++ собирал bs1 без ошибок
+Фаза 2 (codegen arch)      — в работе (снижает риск блокера Фазы 1)
 Фаза 3 (checker arch)      — параллельно с Фазой 2
 Фаза 4 (диагностики)       — после Фаз 2+3
 Фаза 5 (покрытие)          — параллельно с любой фазой

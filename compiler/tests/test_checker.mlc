@@ -251,5 +251,8 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("infer: has on Map ok",
     check_error_count("fn f(m: Map<string, i32>) -> bool = m.has(\"k\")"), 0))
 
+  results.push(assert_eq_int("infer: ref mut Map uses inner type for builtins",
+    check_error_count("fn f(cache: ref mut Map<string, i32>) -> bool = cache.has(\"k\")"), 0))
+
   results
 end

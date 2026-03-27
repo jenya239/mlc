@@ -66,8 +66,9 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     TyNamed(name)   => Shared.new(TNamed(name)),
     TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),
     TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),
-    TyGeneric(name, targs) => if name == "Result" && targs.length() == 2
-      then Shared.new(TNamed("Result"))
+    TyGeneric(name, targs) =>
+      if name == "ref" && targs.length() == 1 then type_from_annotation(targs[0])
+      else if name == "Result" && targs.length() == 2 then Shared.new(TNamed("Result"))
       else Shared.new(TNamed(name))
       end,
     TyFn(params, ret) => do

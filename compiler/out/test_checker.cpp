@@ -97,6 +97,7 @@ results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: builtin 
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: has on non-Map receiver (i32)"), first_checker_error_line(mlc::String("fn f() -> bool = 1.has(\"k\")")), 1, 19, mlc::String("method has expects a Map receiver")));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("infer: has on sum type is an error"), first_checker_error_line(mlc::String("type Hue = Red | Green\nfn f(x: Hue) -> bool = x.has(\"k\")")), 2, 25, mlc::String("method has expects a Map receiver")));
 results.push_back(test_runner::assert_eq_int(mlc::String("infer: has on Map ok"), check_error_count(mlc::String("fn f(m: Map<string, i32>) -> bool = m.has(\"k\")")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: ref mut Map uses inner type for builtins"), check_error_count(mlc::String("fn f(cache: ref mut Map<string, i32>) -> bool = cache.has(\"k\")")), 0));
 return results;
 }
 
