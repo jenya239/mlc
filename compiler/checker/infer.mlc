@@ -56,6 +56,37 @@ fn type_is_array(type_value: Shared<Type>) -> bool =
 fn type_is_i32(type_value: Shared<Type>) -> bool =
   match type_value { TI32 => true, _ => false }
 
+fn type_is_bool(type_value: Shared<Type>) -> bool =
+  match type_value { TBool => true, _ => false }
+
+fn type_is_string(type_value: Shared<Type>) -> bool =
+  match type_value { TString => true, _ => false }
+
+fn types_allowed_for_binary_plus(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =
+  (type_is_unknown(left_type) || type_is_unknown(right_type)) ||
+  (type_is_i32(left_type) && type_is_i32(right_type)) ||
+  (type_is_string(left_type) && type_is_string(right_type))
+
+fn types_allowed_for_binary_int_only(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =
+  (type_is_unknown(left_type) || type_is_unknown(right_type)) ||
+  (type_is_i32(left_type) && type_is_i32(right_type))
+
+fn infer_binary_operand_diagnostics(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] =
+  if operation == "+" && !type_is_unknown(left_type) && !type_is_unknown(right_type) &&
+     !types_allowed_for_binary_plus(left_type, right_type) then
+    [diagnostic_error(
+      "incompatible operand types for +: " + type_description(left_type) + " and " + type_description(right_type),
+      source_span)]
+  else if (operation == "-" || operation == "*" || operation == "/" || operation == "%") &&
+          !type_is_unknown(left_type) && !type_is_unknown(right_type) &&
+          !types_allowed_for_binary_int_only(left_type, right_type) then
+    [diagnostic_error(
+      "numeric operands required for " + operation + ", got " + type_description(left_type) + " and " + type_description(right_type),
+      source_span)]
+  else
+    []
+  end
+
 fn type_is_function(type_value: Shared<Type>) -> bool =
   match type_value { TFn(_, _) => true, _ => false }
 
@@ -133,16 +164,30 @@ fn infer_expr_identifier(name: string, inference_context: CheckContext) -> Infer
   else infer_ok(Shared.new(TUnknown))
   end
 
-fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
+fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
   const left_result  = infer_expr(left, inference_context)
   const right_result = infer_expr(right, inference_context)
-  left_result.absorb(right_result).with_type(binary_operation_result_type(operation, left_result.inferred_type))
+  const merged       = left_result.absorb(right_result)
+  const operand_errors = infer_binary_operand_diagnostics(
+    operation, left_result.inferred_type, right_result.inferred_type, source_span)
+  InferResult {
+    inferred_type: binary_operation_result_type(operation, left_result.inferred_type),
+    errors: diagnostics_append(merged.errors, operand_errors)
+  }
 end
 
-fn infer_expr_unary(operation: string, inner: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
+fn infer_expr_unary(operation: string, inner: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
   const inner_result = infer_expr(inner, inference_context)
+  const bang_errors: [Diagnostic] =
+    if operation == "!" && !type_is_unknown(inner_result.inferred_type) && !type_is_bool(inner_result.inferred_type) then
+      [diagnostic_error(
+        "operator ! expects bool, got " + type_description(inner_result.inferred_type),
+        source_span)]
+    else
+      []
+    end
   const result_type  = if operation == "!" then Shared.new(TBool) else inner_result.inferred_type end
-  inner_result.with_type(result_type)
+  InferResult { inferred_type: result_type, errors: diagnostics_append(inner_result.errors, bang_errors) }
 end
 
 fn infer_expr_call_for_constructor_name(
@@ -428,8 +473,8 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprUnit(_)                             => infer_expr_unit_literal(),
     ExprExtern(_)                           => infer_expr_extern_placeholder(),
     ExprIdent(name, _)                      => infer_expr_identifier(name, inference_context),
-    ExprBin(operation, left, right, _)    => infer_expr_binary(operation, left, right, inference_context),
-    ExprUn(operation, inner, _)             => infer_expr_unary(operation, inner, inference_context),
+    ExprBin(operation, left, right, span) => infer_expr_binary(operation, left, right, span, inference_context),
+    ExprUn(operation, inner, span)          => infer_expr_unary(operation, inner, span, inference_context),
     ExprCall(function, call_arguments, call_source_span)   => infer_expr_call(function, call_arguments, call_source_span, inference_context),
     ExprMethod(object, method_name, margs, _)  => infer_expr_method(object, method_name, margs, inference_context),
     ExprField(object, field_name, field_source_span) => infer_expr_field(object, field_name, field_source_span, inference_context),

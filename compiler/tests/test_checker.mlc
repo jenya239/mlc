@@ -132,5 +132,23 @@ export fn checker_tests() -> [TestResult] = do
     first_checker_error_line("type R = { a: i32 }\nfn f(x: R) -> i32 = x.missing"),
     "error: undefined field: missing on R at 2:22"))
 
+  results.push(assert_true("infer: string + i32 is an error",
+    check_error_count("fn f() -> i32 = \"a\" + 1") > 0))
+
+  results.push(assert_true("infer: i32 + string is an error",
+    check_error_count("fn f() -> i32 = 1 + \"a\"") > 0))
+
+  results.push(assert_true("infer: string with - is an error",
+    check_error_count("fn f() -> string = \"a\" - \"b\"") > 0))
+
+  results.push(assert_eq_int("infer: string + string still ok",
+    check_error_count("fn f() -> string = \"a\" + \"b\""), 0))
+
+  results.push(assert_true("infer: ! on i32 is an error",
+    check_error_count("fn f() -> bool = !42") > 0))
+
+  results.push(assert_eq_int("infer: ! on bool ok",
+    check_error_count("fn f() -> bool = !false"), 0))
+
   results
 end

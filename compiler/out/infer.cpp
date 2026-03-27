@@ -29,6 +29,16 @@ bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept;
 
+bool type_is_bool(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool type_is_string(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool types_allowed_for_binary_plus(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept;
+
+bool types_allowed_for_binary_int_only(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_binary_operand_diagnostics(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
+
 bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
 
 mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept;
@@ -55,9 +65,9 @@ infer::InferResult infer_expr_extern_placeholder() noexcept;
 
 infer::InferResult infer_expr_identifier(mlc::String name, check_context::CheckContext inference_context) noexcept;
 
-infer::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, check_context::CheckContext inference_context) noexcept;
+infer::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
 
-infer::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, check_context::CheckContext inference_context) noexcept;
+infer::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
 
 infer::InferResult infer_expr_call_for_constructor_name(mlc::String constructor_name, infer::InferResult with_arguments, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept;
 
@@ -143,6 +153,16 @@ bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept{return [
 
 bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TI32>((*type_value))) {  return true; } return false; }();}
 
+bool type_is_bool(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TBool>((*type_value))) {  return true; } return false; }();}
+
+bool type_is_string(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TString>((*type_value))) {  return true; } return false; }();}
+
+bool types_allowed_for_binary_plus(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{return type_is_unknown(left_type) || type_is_unknown(right_type) || type_is_i32(left_type) && type_is_i32(right_type) || type_is_string(left_type) && type_is_string(right_type);}
+
+bool types_allowed_for_binary_int_only(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{return type_is_unknown(left_type) || type_is_unknown(right_type) || type_is_i32(left_type) && type_is_i32(right_type);}
+
+mlc::Array<ast::Diagnostic> infer_binary_operand_diagnostics(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{return operation == mlc::String("+") && !type_is_unknown(left_type) && !type_is_unknown(right_type) && !types_allowed_for_binary_plus(left_type, right_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("incompatible operand types for +: ") + type_description(left_type) + mlc::String(" and ") + type_description(right_type), source_span)} : operation == mlc::String("-") || operation == mlc::String("*") || operation == mlc::String("/") || operation == mlc::String("%") && !type_is_unknown(left_type) && !type_is_unknown(right_type) && !types_allowed_for_binary_int_only(left_type, right_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("numeric operands required for ") + operation + mlc::String(", got ") + type_description(left_type) + mlc::String(" and ") + type_description(right_type), source_span)} : mlc::Array<ast::Diagnostic>{};}
+
 bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TFn>((*type_value))) { auto _v_tfn = std::get<registry::TFn>((*type_value)); auto [_w0, _w1] = _v_tfn; return true; } return false; }();}
 
 mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept{return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { if (std::holds_alternative<registry::TFn>((*function_type))) { auto _v_tfn = std::get<registry::TFn>((*function_type)); auto [parameters, _w0] = _v_tfn; return parameters; } return {}; }();}
@@ -199,16 +219,19 @@ infer::InferResult infer_expr_extern_placeholder() noexcept{return infer_ok(std:
 
 infer::InferResult infer_expr_identifier(mlc::String name, check_context::CheckContext inference_context) noexcept{return inference_context.type_env.has(name) ? infer_ok(inference_context.type_env.get(name)) : registry::TypeRegistry_has_fn(inference_context.registry, name) ? infer_ok(registry::TypeRegistry_fn_type(inference_context.registry, name)) : registry::TypeRegistry_has_ctor(inference_context.registry, name) ? infer_ok(registry::TypeRegistry_ctor_type(inference_context.registry, name)) : infer_ok(std::make_shared<registry::Type>((registry::TUnknown{})));}
 
-infer::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, check_context::CheckContext inference_context) noexcept{
+infer::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult left_result = infer_expr(left, inference_context);
 infer::InferResult right_result = infer_expr(right, inference_context);
-return InferResult_with_type(InferResult_absorb(left_result, right_result), binary_operation_result_type(operation, left_result.inferred_type));
+infer::InferResult merged = InferResult_absorb(left_result, right_result);
+mlc::Array<ast::Diagnostic> operand_errors = infer_binary_operand_diagnostics(operation, left_result.inferred_type, right_result.inferred_type, source_span);
+return infer::InferResult{binary_operation_result_type(operation, left_result.inferred_type), ast::diagnostics_append(merged.errors, operand_errors)};
 }
 
-infer::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, check_context::CheckContext inference_context) noexcept{
+infer::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult inner_result = infer_expr(inner, inference_context);
+mlc::Array<ast::Diagnostic> bang_errors = operation == mlc::String("!") && !type_is_unknown(inner_result.inferred_type) && !type_is_bool(inner_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("operator ! expects bool, got ") + type_description(inner_result.inferred_type), source_span)} : mlc::Array<ast::Diagnostic>{};
 auto result_type = operation == mlc::String("!") ? std::make_shared<registry::Type>((registry::TBool{})) : inner_result.inferred_type;
-return InferResult_with_type(inner_result, result_type);
+return infer::InferResult{result_type, ast::diagnostics_append(inner_result.errors, bang_errors)};
 }
 
 infer::InferResult infer_expr_call_for_constructor_name(mlc::String constructor_name, infer::InferResult with_arguments, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept{
@@ -356,8 +379,8 @@ infer::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_conte
   [&](const ExprUnit& exprunit) -> infer::InferResult { auto [_w0] = exprunit; return infer_expr_unit_literal(); },
   [&](const ExprExtern& exprextern) -> infer::InferResult { auto [_w0] = exprextern; return infer_expr_extern_placeholder(); },
   [&](const ExprIdent& exprident) -> infer::InferResult { auto [name, _w0] = exprident; return infer_expr_identifier(name, inference_context); },
-  [&](const ExprBin& exprbin) -> infer::InferResult { auto [operation, left, right, _w0] = exprbin; return infer_expr_binary(operation, left, right, inference_context); },
-  [&](const ExprUn& exprun) -> infer::InferResult { auto [operation, inner, _w0] = exprun; return infer_expr_unary(operation, inner, inference_context); },
+  [&](const ExprBin& exprbin) -> infer::InferResult { auto [operation, left, right, span] = exprbin; return infer_expr_binary(operation, left, right, span, inference_context); },
+  [&](const ExprUn& exprun) -> infer::InferResult { auto [operation, inner, span] = exprun; return infer_expr_unary(operation, inner, span, inference_context); },
   [&](const ExprCall& exprcall) -> infer::InferResult { auto [function, call_arguments, call_source_span] = exprcall; return infer_expr_call(function, call_arguments, call_source_span, inference_context); },
   [&](const ExprMethod& exprmethod) -> infer::InferResult { auto [object, method_name, margs, _w0] = exprmethod; return infer_expr_method(object, method_name, margs, inference_context); },
   [&](const ExprField& exprfield) -> infer::InferResult { auto [object, field_name, field_source_span] = exprfield; return infer_expr_field(object, field_name, field_source_span, inference_context); },

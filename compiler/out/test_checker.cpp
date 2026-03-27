@@ -72,6 +72,12 @@ results.push_back(test_runner::assert_eq_int(mlc::String("check_with_context: en
 results.push_back(test_runner::assert_eq_int(mlc::String("match: constructor arm binds payload - 0 errors"), check_error_count(mlc::String("type Answer = Yes(i32) | No\nfn value(answer: Answer) -> i32 = match answer | Yes(n) => n | No => 0\n")), 0));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("undefined record field: line and column on field access"), first_checker_error_line(mlc::String("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> i32 = p.z")), 2, 26, mlc::String("undefined field: z on Point")));
 results.push_back(test_runner::assert_eq_str(mlc::String("undefined record field: message text"), first_checker_error_line(mlc::String("type R = { a: i32 }\nfn f(x: R) -> i32 = x.missing")), mlc::String("error: undefined field: missing on R at 2:22")));
+results.push_back(test_runner::assert_true(mlc::String("infer: string + i32 is an error"), check_error_count(mlc::String("fn f() -> i32 = \"a\" + 1")) > 0));
+results.push_back(test_runner::assert_true(mlc::String("infer: i32 + string is an error"), check_error_count(mlc::String("fn f() -> i32 = 1 + \"a\"")) > 0));
+results.push_back(test_runner::assert_true(mlc::String("infer: string with - is an error"), check_error_count(mlc::String("fn f() -> string = \"a\" - \"b\"")) > 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: string + string still ok"), check_error_count(mlc::String("fn f() -> string = \"a\" + \"b\"")), 0));
+results.push_back(test_runner::assert_true(mlc::String("infer: ! on i32 is an error"), check_error_count(mlc::String("fn f() -> bool = !42")) > 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: ! on bool ok"), check_error_count(mlc::String("fn f() -> bool = !false")), 0));
 return results;
 }
 
