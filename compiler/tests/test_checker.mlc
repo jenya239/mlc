@@ -150,5 +150,23 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("infer: ! on bool ok",
     check_error_count("fn f() -> bool = !false"), 0))
 
+  results.push(assert_true("infer: i32 == bool is an error",
+    check_error_count("fn f() -> bool = 1 == true") > 0))
+
+  results.push(assert_true("infer: i32 < string is an error",
+    check_error_count("fn f() -> bool = 1 < \"a\"") > 0))
+
+  results.push(assert_true("infer: bool && i32 is an error",
+    check_error_count("fn f() -> bool = true && 1") > 0))
+
+  results.push(assert_eq_int("infer: i32 ordering ok",
+    check_error_count("fn f() -> bool = 1 < 2"), 0))
+
+  results.push(assert_eq_int("infer: string ordering ok",
+    check_error_count("fn f() -> bool = \"a\" <= \"b\""), 0))
+
+  results.push(assert_eq_int("infer: bool && ok",
+    check_error_count("fn f() -> bool = true && false"), 0))
+
   results
 end

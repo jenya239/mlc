@@ -78,6 +78,12 @@ results.push_back(test_runner::assert_true(mlc::String("infer: string with - is 
 results.push_back(test_runner::assert_eq_int(mlc::String("infer: string + string still ok"), check_error_count(mlc::String("fn f() -> string = \"a\" + \"b\"")), 0));
 results.push_back(test_runner::assert_true(mlc::String("infer: ! on i32 is an error"), check_error_count(mlc::String("fn f() -> bool = !42")) > 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("infer: ! on bool ok"), check_error_count(mlc::String("fn f() -> bool = !false")), 0));
+results.push_back(test_runner::assert_true(mlc::String("infer: i32 == bool is an error"), check_error_count(mlc::String("fn f() -> bool = 1 == true")) > 0));
+results.push_back(test_runner::assert_true(mlc::String("infer: i32 < string is an error"), check_error_count(mlc::String("fn f() -> bool = 1 < \"a\"")) > 0));
+results.push_back(test_runner::assert_true(mlc::String("infer: bool && i32 is an error"), check_error_count(mlc::String("fn f() -> bool = true && 1")) > 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: i32 ordering ok"), check_error_count(mlc::String("fn f() -> bool = 1 < 2")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: string ordering ok"), check_error_count(mlc::String("fn f() -> bool = \"a\" <= \"b\"")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: bool && ok"), check_error_count(mlc::String("fn f() -> bool = true && false")), 0));
 return results;
 }
 
