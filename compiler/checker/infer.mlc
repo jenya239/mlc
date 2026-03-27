@@ -253,8 +253,20 @@ fn receiver_type_is_map(receiver_type: Shared<Type>) -> bool =
 fn type_is_function(type_value: Shared<Type>) -> bool =
   match type_value { TFn(_, _) => true, _ => false }
 
+fn empty_type_parameter_list() -> [Shared<Type>] = []
+
 fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>] =
-  match function_type { TFn(parameters, _) => parameters, _ => [] }
+  match function_type {
+    TFn(parameters, _) => parameters,
+    TI32 => empty_type_parameter_list(),
+    TString => empty_type_parameter_list(),
+    TBool => empty_type_parameter_list(),
+    TUnit => empty_type_parameter_list(),
+    TArray(_) => empty_type_parameter_list(),
+    TShared(_) => empty_type_parameter_list(),
+    TNamed(_) => empty_type_parameter_list(),
+    TUnknown => empty_type_parameter_list()
+  }
 
 fn binary_operation_result_type(operation: string, left_type: Shared<Type>) -> Shared<Type> = do
   if operation == "+" || operation == "-" || operation == "*" || operation == "/" || operation == "%" then
@@ -328,6 +340,36 @@ fn infer_expr_identifier(name: string, inference_context: CheckContext) -> Infer
   else infer_ok(Shared.new(TUnknown))
   end
 
+fn unary_minus_diagnostic(operation: string, inner_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
+  if operation == "-" && !type_is_unknown(inner_type) && !type_is_i32(inner_type) then
+    [diagnostic_error(
+      "unary - expects i32, got " + type_description(inner_type),
+      source_span)]
+  else
+    []
+  end
+end
+
+fn unary_bang_diagnostic(operation: string, inner_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
+  if operation == "!" && !type_is_unknown(inner_type) && !type_is_bool(inner_type) then
+    [diagnostic_error(
+      "operator ! expects bool, got " + type_description(inner_type),
+      source_span)]
+  else
+    []
+  end
+end
+
+fn constructor_arity_diagnostics(expected_length: i32, actual_length: i32, call_source_span: Span) -> [Diagnostic] = do
+  if expected_length != actual_length then
+    [diagnostic_error(
+      "expected " + expected_length.to_string() + " arguments, got " + actual_length.to_string(),
+      call_source_span)]
+  else
+    []
+  end
+end
+
 fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
   const left_result  = infer_expr(left, inference_context)
   const right_result = infer_expr(right, inference_context)
@@ -342,22 +384,8 @@ end
 
 fn infer_expr_unary(operation: string, inner: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
   const inner_result = infer_expr(inner, inference_context)
-  const minus_errors: [Diagnostic] =
-    if operation == "-" && !type_is_unknown(inner_result.inferred_type) && !type_is_i32(inner_result.inferred_type) then
-      [diagnostic_error(
-        "unary - expects i32, got " + type_description(inner_result.inferred_type),
-        source_span)]
-    else
-      []
-    end
-  const bang_errors: [Diagnostic] =
-    if operation == "!" && !type_is_unknown(inner_result.inferred_type) && !type_is_bool(inner_result.inferred_type) then
-      [diagnostic_error(
-        "operator ! expects bool, got " + type_description(inner_result.inferred_type),
-        source_span)]
-    else
-      []
-    end
+  const minus_errors = unary_minus_diagnostic(operation, inner_result.inferred_type, source_span)
+  const bang_errors  = unary_bang_diagnostic(operation, inner_result.inferred_type, source_span)
   const result_type  = if operation == "!" then Shared.new(TBool) else inner_result.inferred_type end
   InferResult {
     inferred_type: result_type,
@@ -373,14 +401,10 @@ fn infer_expr_call_for_constructor_name(
   inference_context: CheckContext
 ) -> InferResult = do
   const constructor_parameter_types = inference_context.registry.ctor_params_for(constructor_name)
-  const call_errors: [Diagnostic] =
-    if constructor_parameter_types.length() != call_arguments.length() then
-      [diagnostic_error(
-        "expected " + constructor_parameter_types.length().to_string() + " arguments, got " + call_arguments.length().to_string(),
-        call_source_span)]
-    else
-      []
-    end
+  const call_errors = constructor_arity_diagnostics(
+    constructor_parameter_types.length(),
+    call_arguments.length(),
+    call_source_span)
   InferResult {
     inferred_type: inference_context.registry.ctor_type(constructor_name),
     errors: diagnostics_append(with_arguments.errors, call_errors)
@@ -395,14 +419,7 @@ fn infer_expr_call_non_constructor_arity_only(
   return_type: Shared<Type>
 ) -> InferResult = do
   const parameter_types = function_parameter_list(function_result.inferred_type)
-  const arity_errors: [Diagnostic] =
-    if parameter_types.length() != call_arguments.length() then
-      [diagnostic_error(
-        "expected " + parameter_types.length().to_string() + " arguments, got " + call_arguments.length().to_string(),
-        call_source_span)]
-    else
-      []
-    end
+  const arity_errors = call_arity_diagnostics(parameter_types.length(), call_arguments.length(), call_source_span)
   InferResult {
     inferred_type: return_type,
     errors: diagnostics_append(base.errors, arity_errors)
@@ -663,6 +680,88 @@ fn infer_builtin_method_arity_diagnostics(
   end
 end
 
+fn call_arity_diagnostics(expected_count: i32, actual_count: i32, call_source_span: Span) -> [Diagnostic] = do
+  if expected_count != actual_count then
+    [diagnostic_error(
+      "expected " + expected_count.to_string() + " arguments, got " + actual_count.to_string(),
+      call_source_span)]
+  else
+    []
+  end
+end
+
+fn method_arity_after_receiver(
+  receiver_errors: [Diagnostic],
+  method_name: string,
+  argument_count: i32,
+  method_span: Span
+) -> [Diagnostic] = do
+  if receiver_errors.length() > 0 then []
+  else infer_builtin_method_arity_diagnostics(method_name, argument_count, method_span)
+  end
+end
+
+fn index_not_array_diagnostic(receiver_type: Shared<Type>, bracket_source_span: Span) -> [Diagnostic] = do
+  if !type_is_unknown(receiver_type) && !type_is_array(receiver_type) then
+    [diagnostic_error(
+      "indexing requires an array, got " + type_description(receiver_type),
+      bracket_source_span)]
+  else
+    []
+  end
+end
+
+fn index_not_i32_diagnostic(index_type: Shared<Type>, bracket_source_span: Span) -> [Diagnostic] = do
+  if !type_is_unknown(index_type) && !type_is_i32(index_type) then
+    [diagnostic_error(
+      "array index must be i32, got " + type_description(index_type),
+      bracket_source_span)]
+  else
+    []
+  end
+end
+
+fn if_branch_mismatch_diagnostic(
+  branches_mismatch: bool,
+  then_type: Shared<Type>,
+  else_type: Shared<Type>,
+  else_expression: Shared<Expr>
+) -> [Diagnostic] = do
+  if branches_mismatch then
+    [diagnostic_error(
+      "if branch types differ: then " + type_description(then_type) + ", else " + type_description(else_type),
+      expr_span(else_expression))]
+  else
+    []
+  end
+end
+
+fn for_loop_range_diagnostic(iterator_type: Shared<Type>, iterator: Shared<Expr>) -> [Diagnostic] = do
+  if !type_is_unknown(iterator_type) && !type_is_array(iterator_type) then
+    [diagnostic_error(
+      "for loop range must be an array, got " + type_description(iterator_type),
+      expr_span(iterator))]
+  else
+    []
+  end
+end
+
+fn match_arm_type_mismatch_diagnostic(
+  arm_index: i32,
+  first_arm_type: Shared<Type>,
+  arm_result_type: Shared<Type>,
+  arm_body: Shared<Expr>
+) -> [Diagnostic] = do
+  if arm_index > 0 && !type_is_unknown(first_arm_type) && !type_is_unknown(arm_result_type) &&
+     !types_structurally_equal(first_arm_type, arm_result_type) then
+    [diagnostic_error(
+      "match arm result type " + type_description(arm_result_type) + " does not match first arm type " + type_description(first_arm_type),
+      expr_span(arm_body))]
+  else
+    []
+  end
+end
+
 fn infer_expr_method(
   object: Shared<Expr>,
   method_name: string,
@@ -673,12 +772,7 @@ fn infer_expr_method(
   const object_result = infer_expr(object, inference_context)
   const receiver_errors = infer_builtin_method_receiver_diagnostics(object_result.inferred_type, method_name, method_span)
   const with_arguments  = infer_arguments_errors(object_result, method_arguments, inference_context)
-  const arity_errors: [Diagnostic] =
-    if receiver_errors.length() > 0 then
-      []
-    else
-      infer_builtin_method_arity_diagnostics(method_name, method_arguments.length(), method_span)
-    end
+  const arity_errors    = method_arity_after_receiver(receiver_errors, method_name, method_arguments.length(), method_span)
   InferResult {
     inferred_type: builtin_method_return_type(method_name),
     errors: diagnostics_append(diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)
@@ -726,22 +820,8 @@ fn infer_expr_index(object: Shared<Expr>, index_expression: Shared<Expr>, bracke
   const object_result = infer_expr(object, inference_context)
   const index_result  = infer_expr(index_expression, inference_context)
   const element_type  = match object_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
-  const extra_not_array: [Diagnostic] =
-    if !type_is_unknown(object_result.inferred_type) && !type_is_array(object_result.inferred_type) then
-      [diagnostic_error(
-        "indexing requires an array, got " + type_description(object_result.inferred_type),
-        bracket_source_span)]
-    else
-      []
-    end
-  const extra_bad_index: [Diagnostic] =
-    if !type_is_unknown(index_result.inferred_type) && !type_is_i32(index_result.inferred_type) then
-      [diagnostic_error(
-        "array index must be i32, got " + type_description(index_result.inferred_type),
-        bracket_source_span)]
-    else
-      []
-    end
+  const extra_not_array = index_not_array_diagnostic(object_result.inferred_type, bracket_source_span)
+  const extra_bad_index = index_not_i32_diagnostic(index_result.inferred_type, bracket_source_span)
   const merged = object_result.absorb(index_result)
   InferResult {
     inferred_type: element_type,
@@ -757,14 +837,8 @@ fn infer_expr_conditional(condition: Shared<Expr>, then_expression: Shared<Expr>
   const branches_mismatch =
     !type_is_unknown(then_result.inferred_type) && !type_is_unknown(else_result.inferred_type) &&
     !types_structurally_equal(then_result.inferred_type, else_result.inferred_type)
-  const branch_errors: [Diagnostic] =
-    if branches_mismatch then
-      [diagnostic_error(
-        "if branch types differ: then " + type_description(then_result.inferred_type) + ", else " + type_description(else_result.inferred_type),
-        expr_span(else_expression))]
-    else
-      []
-    end
+  const branch_errors = if_branch_mismatch_diagnostic(
+    branches_mismatch, then_result.inferred_type, else_result.inferred_type, else_expression)
   InferResult {
     inferred_type: if branches_mismatch then then_result.inferred_type else merged.inferred_type end,
     errors: diagnostics_append(merged.errors, branch_errors)
@@ -785,14 +859,7 @@ end
 
 fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
   const iterator_base = infer_expr(iterator, inference_context)
-  const range_errors: [Diagnostic] =
-    if !type_is_unknown(iterator_base.inferred_type) && !type_is_array(iterator_base.inferred_type) then
-      [diagnostic_error(
-        "for loop range must be an array, got " + type_description(iterator_base.inferred_type),
-        expr_span(iterator))]
-    else
-      []
-    end
+  const range_errors = for_loop_range_diagnostic(iterator_base.inferred_type, iterator)
   const iterator_result = InferResult {
     inferred_type: iterator_base.inferred_type,
     errors: diagnostics_append(iterator_base.errors, range_errors)
@@ -818,15 +885,11 @@ fn infer_expr_match(subject: Shared<Expr>, arms: [Shared<MatchArm>], inference_c
       if arm_index == 0 then arm_result.inferred_type
       else arm_type
       end
-    const arm_mismatch: [Diagnostic] =
-      if arm_index > 0 && !type_is_unknown(arm_type) && !type_is_unknown(arm_result.inferred_type) &&
-         !types_structurally_equal(arm_type, arm_result.inferred_type) then
-        [diagnostic_error(
-          "match arm result type " + type_description(arm_result.inferred_type) + " does not match first arm type " + type_description(arm_type),
-          expr_span(arms[arm_index].body))]
-      else
-        []
-      end
+    const arm_mismatch = match_arm_type_mismatch_diagnostic(
+      arm_index,
+      arm_type,
+      arm_result.inferred_type,
+      arms[arm_index].body)
     collected_errors = diagnostics_append(collected_errors, arm_mismatch)
     arm_index = arm_index + 1
   end

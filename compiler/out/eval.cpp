@@ -190,8 +190,25 @@ int index = 0;
 while (index < field_order.size()){
 {
 mlc::String field_name = field_order[index];
-std::shared_ptr<ast::Expr> override_value = find_field_value(overrides, field_name);
-mlc::String value_string = [&]() -> mlc::String { if (std::holds_alternative<ast::ExprUnit>((*override_value)._)) { auto _v_exprunit = std::get<ast::ExprUnit>((*override_value)._); auto [_w0] = _v_exprunit; return gen_expr(std::make_shared<ast::Expr>(ast::ExprField(base_expr, field_name, ast::span_unknown())), context); } return gen_expr(override_value, context); }();
+mlc::String value_string = mlc::String("");
+bool override_found = false;
+int override_index = 0;
+while (override_index < overrides.size()){
+{
+if (overrides[override_index]->name == field_name){
+{
+value_string = gen_expr(overrides[override_index]->val, context);
+override_found = true;
+}
+}
+override_index = override_index + 1;
+}
+}
+if (!override_found){
+{
+value_string = gen_expr(std::make_shared<ast::Expr>(ast::ExprField(base_expr, field_name, ast::span_unknown())), context);
+}
+}
 parts.push_back(value_string);
 index = index + 1;
 }

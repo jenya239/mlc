@@ -21,6 +21,8 @@ preds::DeclResult parse_import_decl(preds::Parser parser) noexcept;
 
 preds::DeclResult parse_extend_decl(preds::Parser parser) noexcept;
 
+preds::Parser advance_past_optional_self_type(preds::Parser parser_after_self) noexcept;
+
 preds::ParamsResult parse_extend_extern_no_self_params(preds::Parser after_lparen) noexcept;
 
 preds::ParamsResult parse_extend_extern_rest_params(preds::Parser after_lparen, bool leading_self) noexcept;
@@ -210,12 +212,13 @@ methods_state = preds::Parser_advance(methods_state);
 return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclExtend(type_name, trait_name, methods)), preds::Parser_advance(methods_state)};
 }
 
+preds::Parser advance_past_optional_self_type(preds::Parser parser_after_self) noexcept{return preds::TKind_is_colon(preds::Parser_kind(parser_after_self)) ? types::parse_type(preds::Parser_advance(parser_after_self)).parser : parser_after_self;}
+
 preds::ParamsResult parse_extend_extern_no_self_params(preds::Parser after_lparen) noexcept{return preds::TKind_is_rparen(preds::Parser_kind(after_lparen)) ? preds::ParamsResult{{}, preds::Parser_advance(after_lparen)} : parse_params(after_lparen);}
 
 preds::ParamsResult parse_extend_extern_rest_params(preds::Parser after_lparen, bool leading_self) noexcept{return leading_self ? [&]() -> preds::ParamsResult { 
-  preds::Parser after_self = std::move(after_lparen);
-  preds::Parser after_self_skip = preds::TKind_is_rparen(preds::Parser_kind(after_self)) ? after_self : preds::TKind_is_comma(preds::Parser_kind(after_self)) ? preds::Parser_advance(after_self) : preds::Parser_advance(after_self);
-  return preds::TKind_is_rparen(preds::Parser_kind(after_self_skip)) ? preds::ParamsResult{{}, preds::Parser_advance(after_self_skip)} : parse_params(preds::TKind_is_comma(preds::Parser_kind(after_self_skip)) ? preds::Parser_advance(after_self_skip) : after_self_skip);
+  preds::Parser after_self_type = advance_past_optional_self_type(preds::Parser_advance(after_lparen));
+  return preds::TKind_is_rparen(preds::Parser_kind(after_self_type)) ? preds::ParamsResult{{}, preds::Parser_advance(after_self_type)} : parse_params(preds::TKind_is_comma(preds::Parser_kind(after_self_type)) ? preds::Parser_advance(after_self_type) : after_self_type);
  }() : parse_extend_extern_no_self_params(after_lparen);}
 
 preds::DeclResult parse_extend_extern_method(preds::Parser parser, mlc::String type_name) noexcept{
@@ -254,12 +257,11 @@ preds::DeclResult parse_extend_method(preds::Parser parser, mlc::String type_nam
 mlc::String fn_name = preds::TKind_ident(preds::Parser_kind(preds::Parser_advance(parser)));
 mlc::String mangled_name = type_name + mlc::String("_") + fn_name;
 preds::Parser after_lparen = preds::Parser_advance_by(parser, 3);
-preds::Parser after_self = preds::TKind_is_ident(preds::Parser_kind(after_lparen)) && preds::TKind_ident(preds::Parser_kind(after_lparen)) == mlc::String("self") ? after_lparen : preds::Parser_advance(after_lparen);
 std::shared_ptr<ast::Param> self_param = std::make_shared<ast::Param>(ast::Param{mlc::String("self"), false, std::make_shared<ast::TypeExpr>(ast::TyNamed(type_name))});
 mlc::Array<std::shared_ptr<ast::Param>> params = {};
 params.push_back(self_param);
-preds::Parser after_self_skip = preds::TKind_is_rparen(preds::Parser_kind(after_self)) ? after_self : preds::TKind_is_comma(preds::Parser_kind(after_self)) ? preds::Parser_advance(after_self) : preds::Parser_advance(after_self);
-preds::ParamsResult rest_params = preds::TKind_is_rparen(preds::Parser_kind(after_self_skip)) ? preds::ParamsResult{{}, preds::Parser_advance(after_self_skip)} : parse_params(preds::TKind_is_comma(preds::Parser_kind(after_self_skip)) ? preds::Parser_advance(after_self_skip) : after_self_skip);
+preds::Parser rest_start = preds::TKind_is_ident(preds::Parser_kind(after_lparen)) && preds::TKind_ident(preds::Parser_kind(after_lparen)) == mlc::String("self") ? advance_past_optional_self_type(preds::Parser_advance(after_lparen)) : after_lparen;
+preds::ParamsResult rest_params = preds::TKind_is_rparen(preds::Parser_kind(rest_start)) ? preds::ParamsResult{{}, preds::Parser_advance(rest_start)} : parse_params(preds::TKind_is_comma(preds::Parser_kind(rest_start)) ? preds::Parser_advance(rest_start) : rest_start);
 int index = 0;
 while (index < rest_params.params.size()){
 {

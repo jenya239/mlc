@@ -19,6 +19,8 @@ int decl_count(mlc::String source) noexcept;
 
 std::shared_ptr<ast::Decl> first_decl(mlc::String source) noexcept;
 
+std::shared_ptr<ast::Decl> second_decl(mlc::String source) noexcept;
+
 mlc::Array<test_runner::TestResult> parser_tests() noexcept;
 
 ast::Program parse_source(mlc::String source) noexcept{return decls::parse_program(lexer::tokenize(source).tokens);}
@@ -26,6 +28,8 @@ ast::Program parse_source(mlc::String source) noexcept{return decls::parse_progr
 int decl_count(mlc::String source) noexcept{return parse_source(source).decls.size();}
 
 std::shared_ptr<ast::Decl> first_decl(mlc::String source) noexcept{return parse_source(source).decls[0];}
+
+std::shared_ptr<ast::Decl> second_decl(mlc::String source) noexcept{return parse_source(source).decls[1];}
 
 mlc::Array<test_runner::TestResult> parser_tests() noexcept{
 mlc::Array<test_runner::TestResult> results = {};
@@ -42,6 +46,7 @@ results.push_back(test_runner::assert_eq_int(mlc::String("fn with if expr - 1 de
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with for-in - 1 decl"), decl_count(mlc::String("fn f(items: [i32]) -> i32 = do\n  let mut s = 0\n  for x in items do\n    s = s + x\n  end\n  s\nend")), 1));
 results.push_back(test_runner::assert_eq_int(mlc::String("type + fn with match pipe arms - 2 decls"), decl_count(mlc::String("type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0\n")), 2));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with parenthesized lambda - 1 decl"), decl_count(mlc::String("fn f() -> i32 = (() => 7)()")), 1));
+results.push_back(test_runner::assert_true(mlc::String("extend method: self with type and extra param"), [&]() { if (std::holds_alternative<ast::DeclExtend>((*second_decl(mlc::String("type R = { a: i32 }\nextend R {\n  fn m(self: R, x: i32) -> i32 = x\n}"))))) { auto _v_declextend = std::get<ast::DeclExtend>((*second_decl(mlc::String("type R = { a: i32 }\nextend R {\n  fn m(self: R, x: i32) -> i32 = x\n}")))); auto [_w0, _w1, methods] = _v_declextend; return [&]() { if (std::holds_alternative<ast::DeclFn>((*methods[0]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[0])); auto [_w0, _w1, _w2, parameters, _w3, _w4] = _v_declfn; return parameters.size() == 2; } return false; }(); } return false; }()));
 return results;
 }
 

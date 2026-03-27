@@ -61,6 +61,8 @@ bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcep
 
 bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
 
+mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept;
+
 mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept;
 
 std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept;
@@ -84,6 +86,12 @@ infer::InferResult infer_expr_unit_literal() noexcept;
 infer::InferResult infer_expr_extern_placeholder() noexcept;
 
 infer::InferResult infer_expr_identifier(mlc::String name, check_context::CheckContext inference_context) noexcept;
+
+mlc::Array<ast::Diagnostic> unary_minus_diagnostic(mlc::String operation, std::shared_ptr<registry::Type> inner_type, ast::Span source_span) noexcept;
+
+mlc::Array<ast::Diagnostic> unary_bang_diagnostic(mlc::String operation, std::shared_ptr<registry::Type> inner_type, ast::Span source_span) noexcept;
+
+mlc::Array<ast::Diagnostic> constructor_arity_diagnostics(int expected_length, int actual_length, ast::Span call_source_span) noexcept;
 
 infer::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
 
@@ -120,6 +128,20 @@ mlc::Array<ast::Diagnostic> infer_builtin_method_receiver_diagnostics(std::share
 int builtin_method_expected_argument_count(mlc::String method_name) noexcept;
 
 mlc::Array<ast::Diagnostic> infer_builtin_method_arity_diagnostics(mlc::String method_name, int argument_count, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> call_arity_diagnostics(int expected_count, int actual_count, ast::Span call_source_span) noexcept;
+
+mlc::Array<ast::Diagnostic> method_arity_after_receiver(mlc::Array<ast::Diagnostic> receiver_errors, mlc::String method_name, int argument_count, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> index_not_array_diagnostic(std::shared_ptr<registry::Type> receiver_type, ast::Span bracket_source_span) noexcept;
+
+mlc::Array<ast::Diagnostic> index_not_i32_diagnostic(std::shared_ptr<registry::Type> index_type, ast::Span bracket_source_span) noexcept;
+
+mlc::Array<ast::Diagnostic> if_branch_mismatch_diagnostic(bool branches_mismatch, std::shared_ptr<registry::Type> then_type, std::shared_ptr<registry::Type> else_type, std::shared_ptr<ast::Expr> else_expression) noexcept;
+
+mlc::Array<ast::Diagnostic> for_loop_range_diagnostic(std::shared_ptr<registry::Type> iterator_type, std::shared_ptr<ast::Expr> iterator) noexcept;
+
+mlc::Array<ast::Diagnostic> match_arm_type_mismatch_diagnostic(int arm_index, std::shared_ptr<registry::Type> first_arm_type, std::shared_ptr<registry::Type> arm_result_type, std::shared_ptr<ast::Expr> arm_body) noexcept;
 
 infer::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept;
 
@@ -257,7 +279,19 @@ bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcep
 
 bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TFn>((*type_value))) { auto _v_tfn = std::get<registry::TFn>((*type_value)); auto [_w0, _w1] = _v_tfn; return true; } return false; }();}
 
-mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept{return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { if (std::holds_alternative<registry::TFn>((*function_type))) { auto _v_tfn = std::get<registry::TFn>((*function_type)); auto [parameters, _w0] = _v_tfn; return parameters; } return {}; }();}
+mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept{return {};}
+
+mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept{return std::visit(overloaded{
+  [&](const TFn& tfn) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [parameters, _w0] = tfn; return parameters; },
+  [&](const TI32& ti32) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TString& tstring) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TBool& tbool) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TUnit& tunit) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TArray& tarray) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tarray; return empty_type_parameter_list(); },
+  [&](const TShared& tshared) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tshared; return empty_type_parameter_list(); },
+  [&](const TNamed& tnamed) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tnamed; return empty_type_parameter_list(); },
+  [&](const TUnknown& tunknown) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); }
+}, (*function_type));}
 
 std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept{
 return operation == mlc::String("+") || operation == mlc::String("-") || operation == mlc::String("*") || operation == mlc::String("/") || operation == mlc::String("%") ? [&]() { if (std::holds_alternative<registry::TString>((*left_type))) {  return std::make_shared<registry::Type>((registry::TString{})); } return std::make_shared<registry::Type>((registry::TI32{})); }() : operation == mlc::String("=") ? std::make_shared<registry::Type>((registry::TUnit{})) : std::make_shared<registry::Type>((registry::TBool{}));
@@ -311,6 +345,18 @@ infer::InferResult infer_expr_extern_placeholder() noexcept{return infer_ok(std:
 
 infer::InferResult infer_expr_identifier(mlc::String name, check_context::CheckContext inference_context) noexcept{return inference_context.type_env.has(name) ? infer_ok(inference_context.type_env.get(name)) : registry::TypeRegistry_has_fn(inference_context.registry, name) ? infer_ok(registry::TypeRegistry_fn_type(inference_context.registry, name)) : registry::TypeRegistry_has_ctor(inference_context.registry, name) ? infer_ok(registry::TypeRegistry_ctor_type(inference_context.registry, name)) : infer_ok(std::make_shared<registry::Type>((registry::TUnknown{})));}
 
+mlc::Array<ast::Diagnostic> unary_minus_diagnostic(mlc::String operation, std::shared_ptr<registry::Type> inner_type, ast::Span source_span) noexcept{
+return operation == mlc::String("-") && !type_is_unknown(inner_type) && !type_is_i32(inner_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("unary - expects i32, got ") + type_description(inner_type), source_span)} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> unary_bang_diagnostic(mlc::String operation, std::shared_ptr<registry::Type> inner_type, ast::Span source_span) noexcept{
+return operation == mlc::String("!") && !type_is_unknown(inner_type) && !type_is_bool(inner_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("operator ! expects bool, got ") + type_description(inner_type), source_span)} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> constructor_arity_diagnostics(int expected_length, int actual_length, ast::Span call_source_span) noexcept{
+return expected_length != actual_length ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(expected_length) + mlc::String(" arguments, got ") + mlc::to_string(actual_length), call_source_span)} : mlc::Array<ast::Diagnostic>{};
+}
+
 infer::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult left_result = infer_expr(left, inference_context);
 infer::InferResult right_result = infer_expr(right, inference_context);
@@ -321,21 +367,21 @@ return infer::InferResult{binary_operation_result_type(operation, left_result.in
 
 infer::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult inner_result = infer_expr(inner, inference_context);
-mlc::Array<ast::Diagnostic> minus_errors = operation == mlc::String("-") && !type_is_unknown(inner_result.inferred_type) && !type_is_i32(inner_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("unary - expects i32, got ") + type_description(inner_result.inferred_type), source_span)} : mlc::Array<ast::Diagnostic>{};
-mlc::Array<ast::Diagnostic> bang_errors = operation == mlc::String("!") && !type_is_unknown(inner_result.inferred_type) && !type_is_bool(inner_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("operator ! expects bool, got ") + type_description(inner_result.inferred_type), source_span)} : mlc::Array<ast::Diagnostic>{};
+mlc::Array<ast::Diagnostic> minus_errors = unary_minus_diagnostic(operation, inner_result.inferred_type, source_span);
+mlc::Array<ast::Diagnostic> bang_errors = unary_bang_diagnostic(operation, inner_result.inferred_type, source_span);
 auto result_type = operation == mlc::String("!") ? std::make_shared<registry::Type>((registry::TBool{})) : inner_result.inferred_type;
 return infer::InferResult{result_type, ast::diagnostics_append(ast::diagnostics_append(inner_result.errors, minus_errors), bang_errors)};
 }
 
 infer::InferResult infer_expr_call_for_constructor_name(mlc::String constructor_name, infer::InferResult with_arguments, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept{
 mlc::Array<std::shared_ptr<registry::Type>> constructor_parameter_types = registry::TypeRegistry_ctor_params_for(inference_context.registry, constructor_name);
-mlc::Array<ast::Diagnostic> call_errors = constructor_parameter_types.size() != call_arguments.size() ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(constructor_parameter_types.size()) + mlc::String(" arguments, got ") + mlc::to_string(call_arguments.size()), call_source_span)} : mlc::Array<ast::Diagnostic>{};
+mlc::Array<ast::Diagnostic> call_errors = constructor_arity_diagnostics(constructor_parameter_types.size(), call_arguments.size(), call_source_span);
 return infer::InferResult{registry::TypeRegistry_ctor_type(inference_context.registry, constructor_name), ast::diagnostics_append(with_arguments.errors, call_errors)};
 }
 
 infer::InferResult infer_expr_call_non_constructor_arity_only(infer::InferResult base, infer::InferResult function_result, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, std::shared_ptr<registry::Type> return_type) noexcept{
 mlc::Array<std::shared_ptr<registry::Type>> parameter_types = function_parameter_list(function_result.inferred_type);
-mlc::Array<ast::Diagnostic> arity_errors = parameter_types.size() != call_arguments.size() ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(parameter_types.size()) + mlc::String(" arguments, got ") + mlc::to_string(call_arguments.size()), call_source_span)} : mlc::Array<ast::Diagnostic>{};
+mlc::Array<ast::Diagnostic> arity_errors = call_arity_diagnostics(parameter_types.size(), call_arguments.size(), call_source_span);
 return infer::InferResult{return_type, ast::diagnostics_append(base.errors, arity_errors)};
 }
 
@@ -418,11 +464,39 @@ int expected = builtin_method_expected_argument_count(method_name);
 return expected < 0 ? mlc::Array<ast::Diagnostic>{} : argument_count != expected ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(expected) + mlc::String(" arguments, got ") + mlc::to_string(argument_count), method_span)} : mlc::Array<ast::Diagnostic>{};
 }
 
+mlc::Array<ast::Diagnostic> call_arity_diagnostics(int expected_count, int actual_count, ast::Span call_source_span) noexcept{
+return expected_count != actual_count ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(expected_count) + mlc::String(" arguments, got ") + mlc::to_string(actual_count), call_source_span)} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> method_arity_after_receiver(mlc::Array<ast::Diagnostic> receiver_errors, mlc::String method_name, int argument_count, ast::Span method_span) noexcept{
+return receiver_errors.size() > 0 ? mlc::Array<ast::Diagnostic>{} : infer_builtin_method_arity_diagnostics(method_name, argument_count, method_span);
+}
+
+mlc::Array<ast::Diagnostic> index_not_array_diagnostic(std::shared_ptr<registry::Type> receiver_type, ast::Span bracket_source_span) noexcept{
+return !type_is_unknown(receiver_type) && !type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("indexing requires an array, got ") + type_description(receiver_type), bracket_source_span)} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> index_not_i32_diagnostic(std::shared_ptr<registry::Type> index_type, ast::Span bracket_source_span) noexcept{
+return !type_is_unknown(index_type) && !type_is_i32(index_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("array index must be i32, got ") + type_description(index_type), bracket_source_span)} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> if_branch_mismatch_diagnostic(bool branches_mismatch, std::shared_ptr<registry::Type> then_type, std::shared_ptr<registry::Type> else_type, std::shared_ptr<ast::Expr> else_expression) noexcept{
+return branches_mismatch ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("if branch types differ: then ") + type_description(then_type) + mlc::String(", else ") + type_description(else_type), ast::expr_span(else_expression))} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> for_loop_range_diagnostic(std::shared_ptr<registry::Type> iterator_type, std::shared_ptr<ast::Expr> iterator) noexcept{
+return !type_is_unknown(iterator_type) && !type_is_array(iterator_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("for loop range must be an array, got ") + type_description(iterator_type), ast::expr_span(iterator))} : mlc::Array<ast::Diagnostic>{};
+}
+
+mlc::Array<ast::Diagnostic> match_arm_type_mismatch_diagnostic(int arm_index, std::shared_ptr<registry::Type> first_arm_type, std::shared_ptr<registry::Type> arm_result_type, std::shared_ptr<ast::Expr> arm_body) noexcept{
+return arm_index > 0 && !type_is_unknown(first_arm_type) && !type_is_unknown(arm_result_type) && !types_structurally_equal(first_arm_type, arm_result_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("match arm result type ") + type_description(arm_result_type) + mlc::String(" does not match first arm type ") + type_description(first_arm_type), ast::expr_span(arm_body))} : mlc::Array<ast::Diagnostic>{};
+}
+
 infer::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept{
 infer::InferResult object_result = infer_expr(object, inference_context);
 mlc::Array<ast::Diagnostic> receiver_errors = infer_builtin_method_receiver_diagnostics(object_result.inferred_type, method_name, method_span);
 infer::InferResult with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context);
-mlc::Array<ast::Diagnostic> arity_errors = receiver_errors.size() > 0 ? mlc::Array<ast::Diagnostic>{} : infer_builtin_method_arity_diagnostics(method_name, method_arguments.size(), method_span);
+mlc::Array<ast::Diagnostic> arity_errors = method_arity_after_receiver(receiver_errors, method_name, method_arguments.size(), method_span);
 return infer::InferResult{builtin_method_return_type(method_name), ast::diagnostics_append(ast::diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)};
 }
 
@@ -442,8 +516,8 @@ infer::InferResult infer_expr_index(std::shared_ptr<ast::Expr> object, std::shar
 infer::InferResult object_result = infer_expr(object, inference_context);
 infer::InferResult index_result = infer_expr(index_expression, inference_context);
 std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*object_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*object_result.inferred_type)); auto [inner] = _v_tarray; return inner; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
-mlc::Array<ast::Diagnostic> extra_not_array = !type_is_unknown(object_result.inferred_type) && !type_is_array(object_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("indexing requires an array, got ") + type_description(object_result.inferred_type), bracket_source_span)} : mlc::Array<ast::Diagnostic>{};
-mlc::Array<ast::Diagnostic> extra_bad_index = !type_is_unknown(index_result.inferred_type) && !type_is_i32(index_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("array index must be i32, got ") + type_description(index_result.inferred_type), bracket_source_span)} : mlc::Array<ast::Diagnostic>{};
+mlc::Array<ast::Diagnostic> extra_not_array = index_not_array_diagnostic(object_result.inferred_type, bracket_source_span);
+mlc::Array<ast::Diagnostic> extra_bad_index = index_not_i32_diagnostic(index_result.inferred_type, bracket_source_span);
 infer::InferResult merged = InferResult_absorb(object_result, index_result);
 return infer::InferResult{element_type, ast::diagnostics_append(ast::diagnostics_append(merged.errors, extra_not_array), extra_bad_index)};
 }
@@ -454,7 +528,7 @@ infer::InferResult then_result = infer_expr(then_expression, inference_context);
 infer::InferResult else_result = infer_expr(else_expression, inference_context);
 infer::InferResult merged = InferResult_absorb(InferResult_absorb(then_result, condition_result), else_result);
 bool branches_mismatch = !type_is_unknown(then_result.inferred_type) && !type_is_unknown(else_result.inferred_type) && !types_structurally_equal(then_result.inferred_type, else_result.inferred_type);
-mlc::Array<ast::Diagnostic> branch_errors = branches_mismatch ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("if branch types differ: then ") + type_description(then_result.inferred_type) + mlc::String(", else ") + type_description(else_result.inferred_type), ast::expr_span(else_expression))} : mlc::Array<ast::Diagnostic>{};
+mlc::Array<ast::Diagnostic> branch_errors = if_branch_mismatch_diagnostic(branches_mismatch, then_result.inferred_type, else_result.inferred_type, else_expression);
 return infer::InferResult{branches_mismatch ? then_result.inferred_type : merged.inferred_type, ast::diagnostics_append(merged.errors, branch_errors)};
 }
 
@@ -472,7 +546,7 @@ return InferResult_with_type(InferResult_absorb_stmt(condition_result, statement
 
 infer::InferResult infer_expr_for_loop(mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
 infer::InferResult iterator_base = infer_expr(iterator, inference_context);
-mlc::Array<ast::Diagnostic> range_errors = !type_is_unknown(iterator_base.inferred_type) && !type_is_array(iterator_base.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("for loop range must be an array, got ") + type_description(iterator_base.inferred_type), ast::expr_span(iterator))} : mlc::Array<ast::Diagnostic>{};
+mlc::Array<ast::Diagnostic> range_errors = for_loop_range_diagnostic(iterator_base.inferred_type, iterator);
 infer::InferResult iterator_result = infer::InferResult{iterator_base.inferred_type, ast::diagnostics_append(iterator_base.errors, range_errors)};
 std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*iterator_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*iterator_result.inferred_type)); auto [inner] = _v_tarray; return inner; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> inner_environment = inference_context.type_env;
@@ -494,7 +568,7 @@ check_context::CheckContext arm_context = check_context::check_context_new(arm_e
 infer::InferResult arm_result = infer_expr(arms[arm_index]->body, arm_context);
 collected_errors = ast::diagnostics_append(collected_errors, arm_result.errors);
 arm_type = arm_index == 0 ? arm_result.inferred_type : arm_type;
-mlc::Array<ast::Diagnostic> arm_mismatch = arm_index > 0 && !type_is_unknown(arm_type) && !type_is_unknown(arm_result.inferred_type) && !types_structurally_equal(arm_type, arm_result.inferred_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("match arm result type ") + type_description(arm_result.inferred_type) + mlc::String(" does not match first arm type ") + type_description(arm_type), ast::expr_span(arms[arm_index]->body))} : mlc::Array<ast::Diagnostic>{};
+mlc::Array<ast::Diagnostic> arm_mismatch = match_arm_type_mismatch_diagnostic(arm_index, arm_type, arm_result.inferred_type, arms[arm_index]->body);
 collected_errors = ast::diagnostics_append(collected_errors, arm_mismatch);
 arm_index = arm_index + 1;
 }

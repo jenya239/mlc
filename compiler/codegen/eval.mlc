@@ -62,11 +62,19 @@ fn gen_record_update_ordered(base_expr: Shared<Expr>, overrides: [Shared<FieldVa
   let parts: [string] = []; let mut index = 0
   while index < field_order.length() do
     const field_name = field_order[index]
-    const override_value = find_field_value(overrides, field_name)
-    let value_string = match override_value {
-      ExprUnit(_) => gen_expr(Shared.new(ExprField(base_expr, field_name, span_unknown())), context),
-      _        => gen_expr(override_value, context)
-    }
+    let mut value_string = ""
+    let mut override_found = false
+    let mut override_index = 0
+    while override_index < overrides.length() do
+      if overrides[override_index].name == field_name then
+        value_string = gen_expr(overrides[override_index].val, context)
+        override_found = true
+      end
+      override_index = override_index + 1
+    end
+    if !override_found then
+      value_string = gen_expr(Shared.new(ExprField(base_expr, field_name, span_unknown())), context)
+    end
     parts.push(value_string); index = index + 1
   end
   parts.join(", ")

@@ -113,6 +113,13 @@ fn parse_extend_decl(parser: Parser) -> DeclResult = do
 end
 
 // Split helpers: nested if/else in one fn confused self-hosted parse/codegen (extra `}`).
+
+// After the `self` token: skip optional `: Type` before `,` / `)`.
+fn advance_past_optional_self_type(parser_after_self: Parser) -> Parser =
+  if parser_after_self.kind().is_colon() then parse_type(parser_after_self.advance()).parser
+  else parser_after_self
+  end
+
 fn parse_extend_extern_no_self_params(after_lparen: Parser) -> ParamsResult =
   if after_lparen.kind().is_rparen()
     then ParamsResult { params: [], parser: after_lparen.advance() }
@@ -121,14 +128,12 @@ fn parse_extend_extern_no_self_params(after_lparen: Parser) -> ParamsResult =
 
 fn parse_extend_extern_rest_params(after_lparen: Parser, leading_self: bool) -> ParamsResult =
   if leading_self then
-    const after_self = after_lparen
-    const after_self_skip = if after_self.kind().is_rparen() then after_self
-      else if after_self.kind().is_comma() then after_self.advance()
-      else after_self.advance()
-      end
-    if after_self_skip.kind().is_rparen()
-      then ParamsResult { params: [], parser: after_self_skip.advance() }
-      else parse_params(if after_self_skip.kind().is_comma() then after_self_skip.advance() else after_self_skip end)
+    const after_self_type = advance_past_optional_self_type(after_lparen.advance())
+    if after_self_type.kind().is_rparen() then
+      ParamsResult { params: [], parser: after_self_type.advance() }
+    else
+      parse_params(
+        if after_self_type.kind().is_comma() then after_self_type.advance() else after_self_type end)
     end
   else
     parse_extend_extern_no_self_params(after_lparen)
@@ -163,21 +168,17 @@ fn parse_extend_method(parser: Parser, type_name: string) -> DeclResult = do
   const fn_name       = parser.advance().kind().ident()
   const mangled_name  = type_name + "_" + fn_name
   const after_lparen  = parser.advance_by(3)
-  const after_self    = if after_lparen.kind().is_ident() && after_lparen.kind().ident() == "self"
-    then after_lparen
-    else after_lparen.advance()
-    end
   const self_param = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed(type_name)) })
   const params: [Shared<Param>] = []
   params.push(self_param)
-  const after_self_skip = if after_self.kind().is_rparen() then after_self
-    else if after_self.kind().is_comma() then after_self.advance()
-    else after_self.advance()
-    end
-  const rest_params = if after_self_skip.kind().is_rparen()
-    then ParamsResult { params: [], parser: after_self_skip.advance() }
-    else parse_params(if after_self_skip.kind().is_comma() then after_self_skip.advance() else after_self_skip end)
-    end
+  const rest_start = if after_lparen.kind().is_ident() && after_lparen.kind().ident() == "self" then
+    advance_past_optional_self_type(after_lparen.advance())
+  else after_lparen end
+  const rest_params = if rest_start.kind().is_rparen() then
+    ParamsResult { params: [], parser: rest_start.advance() }
+  else
+    parse_params(if rest_start.kind().is_comma() then rest_start.advance() else rest_start end)
+  end
   let mut index = 0
   while index < rest_params.params.length() do
     const rp = rest_params.params[index]
