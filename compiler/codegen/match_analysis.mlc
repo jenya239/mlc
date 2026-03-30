@@ -1,5 +1,6 @@
 import { Expr, MatchArm, Pat } from "../ast"
-import { CodegenContext, context_resolve, cpp_safe, list_contains, expr_returns_shared_sum_visit_ptr } from "./context"
+import { CodegenContext, context_resolve, list_contains, expr_returns_shared_sum_visit_ptr } from "./context"
+import { cpp_safe } from "./cpp_naming"
 
 export fn subject_needs_deref(subject: Shared<Expr>, context: CodegenContext) -> bool = do
   if expr_returns_shared_sum_visit_ptr(subject) then true

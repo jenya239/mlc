@@ -1,6 +1,6 @@
 // C++ fragments for literal expressions (no dependency on gen_expr).
 
-import { escape_str } from "./context"
+import { escape_str } from "./cpp_naming"
 
 export fn gen_integer_literal(integer_value: i32) -> string =
   integer_value.to_string()

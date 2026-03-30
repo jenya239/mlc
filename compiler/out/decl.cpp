@@ -2,6 +2,7 @@
 
 #include "ast.hpp"
 #include "context.hpp"
+#include "cpp_naming.hpp"
 #include "type_gen.hpp"
 #include "eval.hpp"
 
@@ -9,6 +10,7 @@ namespace decl {
 
 using namespace ast;
 using namespace context;
+using namespace cpp_naming;
 using namespace type_gen;
 using namespace eval;
 using namespace ast_tokens;
@@ -59,7 +61,7 @@ mlc::Array<mlc::String> parts = {};
 int index = 0;
 while (index < params.size()){
 {
-parts.push_back(type_gen::type_to_cpp(context, params[index]->typ) + mlc::String(" ") + context::cpp_safe(params[index]->name));
+parts.push_back(type_gen::type_to_cpp(context, params[index]->typ) + mlc::String(" ") + cpp_naming::cpp_safe(params[index]->name));
 index = index + 1;
 }
 }
@@ -67,7 +69,7 @@ return parts.join(mlc::String(", "));
 }
 
 mlc::String gen_fn_proto(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<ast::TypeExpr> return_type, context::CodegenContext context) noexcept{
-mlc::String prefix = context::template_prefix(type_params) + type_gen::requires_clause(type_params, type_bounds);
+mlc::String prefix = cpp_naming::template_prefix(type_params) + type_gen::requires_clause(type_params, type_bounds);
 mlc::String safe_name = context::context_resolve(context, name);
 context::CodegenContext prototype_context = params.size() > 0 && params[0]->name == mlc::String("self") ? [&]() -> context::CodegenContext { if (std::holds_alternative<ast::TyNamed>((*params[0]->typ))) { auto _v_tynamed = std::get<ast::TyNamed>((*params[0]->typ)); auto [type_name] = _v_tynamed; return [&]() -> context::CodegenContext { 
   mlc::String resolved_type = type_name == mlc::String("Self") || type_name == mlc::String("self") ? context.self_type : type_name;
@@ -89,7 +91,7 @@ return params.size() > 0 && params[0]->name == mlc::String("self") ? [&]() -> co
 }
 
 mlc::String gen_fn_decl(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<ast::TypeExpr> return_type, std::shared_ptr<ast::Expr> body, context::CodegenContext context) noexcept{
-mlc::String prefix = context::template_prefix(type_params) + type_gen::requires_clause(type_params, type_bounds);
+mlc::String prefix = cpp_naming::template_prefix(type_params) + type_gen::requires_clause(type_params, type_bounds);
 mlc::String safe_name = context::context_resolve(context, name);
 context::CodegenContext body_context = compute_fn_body_context(name, params, context);
 context::CodegenContext prototype_context = params.size() > 0 && params[0]->name == mlc::String("self") ? body_context : context;
@@ -116,7 +118,7 @@ method_index = method_index + 1;
 }
 }
 mlc::String req_body = req_parts.join(mlc::String("; "));
-return prefix + mlc::String("concept ") + context::cpp_safe(trait_name) + mlc::String(" = requires(const ") + self_param + mlc::String("& self) { ") + req_body + mlc::String("; };\n");
+return prefix + mlc::String("concept ") + cpp_naming::cpp_safe(trait_name) + mlc::String(" = requires(const ") + self_param + mlc::String("& self) { ") + req_body + mlc::String("; };\n");
 }
 
 mlc::String gen_extend_wrapper_protos(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<ast::Decl>> methods, context::CodegenContext context) noexcept{return trait_name.length() == 0 ? mlc::String("") : [&]() -> mlc::String { 
@@ -132,7 +134,7 @@ context::CodegenContext wrapper_context = CodegenContext_for_type_body(context, 
 mlc::String method_name = extract_method_name(mangled, type_name);
 mlc::String ret_cpp = type_gen::type_to_cpp(wrapper_context, ret_type);
 mlc::String params_str = gen_params(wrapper_context, params);
-wrappers = wrappers + ret_cpp + mlc::String(" ") + context::cpp_safe(method_name) + mlc::String("(") + params_str + mlc::String(") noexcept;\n");
+wrappers = wrappers + ret_cpp + mlc::String(" ") + cpp_naming::cpp_safe(method_name) + mlc::String("(") + params_str + mlc::String(") noexcept;\n");
 }
 },
   [&](const auto& _unused) {
@@ -156,11 +158,11 @@ mlc::Array<mlc::String> call_args = {};
 int param_index = 0;
 while (param_index < params.size()){
 {
-call_args.push_back(context::cpp_safe(params[param_index]->name));
+call_args.push_back(cpp_naming::cpp_safe(params[param_index]->name));
 param_index = param_index + 1;
 }
 }
-return mlc::String("inline ") + ret_cpp + mlc::String(" ") + context::cpp_safe(method_name) + mlc::String("(") + params_str + mlc::String(") noexcept { return ") + fn_resolved + mlc::String("(") + call_args.join(mlc::String(", ")) + mlc::String("); }\n");
+return mlc::String("inline ") + ret_cpp + mlc::String(" ") + cpp_naming::cpp_safe(method_name) + mlc::String("(") + params_str + mlc::String(") noexcept { return ") + fn_resolved + mlc::String("(") + call_args.join(mlc::String(", ")) + mlc::String("); }\n");
 }
 
 mlc::String gen_extend_trait_wrappers(mlc::String type_name, mlc::Array<std::shared_ptr<ast::Decl>> methods, context::CodegenContext context) noexcept{
@@ -191,7 +193,7 @@ mlc::String method_name = trait_name.length() > 0 ? extract_method_name(mangled,
 return type_name == mlc::String("i32") && method_name == mlc::String("to_string") && params.size() > 0 ? [&]() -> mlc::String { 
   mlc::String ret_cpp = type_gen::type_to_cpp(context, ret_type);
   mlc::String params_str = gen_params(context, params);
-  return ret_cpp + mlc::String(" ") + context::context_resolve(context, mangled) + mlc::String("(") + params_str + mlc::String(") noexcept { return mlc::to_string(") + context::cpp_safe(params[0]->name) + mlc::String("); }\n");
+  return ret_cpp + mlc::String(" ") + context::context_resolve(context, mangled) + mlc::String("(") + params_str + mlc::String(") noexcept { return mlc::to_string(") + cpp_naming::cpp_safe(params[0]->name) + mlc::String("); }\n");
  }() : mlc::String("");
 }
 
@@ -219,7 +221,7 @@ mlc::String methods_str = method_parts.join(mlc::String(""));
 return trait_name.length() > 0 ? [&]() -> mlc::String { 
   mlc::String trait_wrappers = gen_extend_trait_wrappers(type_name, methods, context);
   mlc::String cpp_type = type_gen::type_name_to_cpp(context, type_name);
-  mlc::String trait_safe = context::cpp_safe(trait_name);
+  mlc::String trait_safe = cpp_naming::cpp_safe(trait_name);
   return methods_str + trait_wrappers + mlc::String("static_assert(") + trait_safe + mlc::String("<") + cpp_type + mlc::String(">, \"") + type_name + mlc::String(" does not implement ") + trait_name + mlc::String("\");\n");
  }() : methods_str;
 }

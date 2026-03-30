@@ -2,11 +2,13 @@
 
 #include "ast.hpp"
 #include "context.hpp"
+#include "cpp_naming.hpp"
 
 namespace type_gen {
 
 using namespace ast;
 using namespace context;
+using namespace cpp_naming;
 using namespace ast_tokens;
 
 mlc::String type_name_to_cpp(context::CodegenContext context, mlc::String type_name) noexcept;
@@ -148,7 +150,7 @@ i = i + 1;
   int i = 0;
   while (i < field_defs.size()){
 {
-parts.push_back(type_to_cpp(context, field_defs[i]->typ) + mlc::String(" ") + context::cpp_safe(field_defs[i]->name) + mlc::String(";"));
+parts.push_back(type_to_cpp(context, field_defs[i]->typ) + mlc::String(" ") + cpp_naming::cpp_safe(field_defs[i]->name) + mlc::String(";"));
 i = i + 1;
 }
 }
@@ -162,7 +164,7 @@ mlc::String gen_single_variant(context::CodegenContext context, mlc::String type
   int i = 0;
   while (i < field_defs.size()){
 {
-parts.push_back(type_to_cpp(context, field_defs[i]->typ) + mlc::String(" ") + context::cpp_safe(field_defs[i]->name) + mlc::String(";"));
+parts.push_back(type_to_cpp(context, field_defs[i]->typ) + mlc::String(" ") + cpp_naming::cpp_safe(field_defs[i]->name) + mlc::String(";"));
 i = i + 1;
 }
 }
@@ -183,7 +185,7 @@ i = i + 1;
 }, (*variant));}
 
 mlc::String gen_adt_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
-mlc::String full_prefix = context::template_prefix(type_params);
+mlc::String full_prefix = cpp_naming::template_prefix(type_params);
 mlc::Array<mlc::String> parts = {};
 mlc::Array<mlc::String> alias_parts = {};
 int index = 0;
@@ -192,7 +194,7 @@ while (index < variants.size()){
 std::shared_ptr<ast::TypeVariant> v = variants[index];
 mlc::String variant_name = context::context_resolve(context, variant_ctor_name(v));
 mlc::Array<mlc::String> used = variant_used_type_params(type_params, v);
-mlc::String var_prefix = context::template_prefix(used);
+mlc::String var_prefix = cpp_naming::template_prefix(used);
 mlc::String var_targs = used.size() > 0 ? mlc::String("<") + used.join(mlc::String(", ")) + mlc::String(">") : mlc::String("");
 alias_parts.push_back(variant_name + var_targs);
 parts.push_back(var_prefix + mlc::String("struct ") + variant_name + mlc::String(";\n"));
@@ -209,7 +211,7 @@ while (i < variants.size()){
 {
 std::shared_ptr<ast::TypeVariant> v = variants[i];
 mlc::Array<mlc::String> used = variant_used_type_params(type_params, v);
-parts.push_back(context::template_prefix(used) + gen_variant_struct(context, type_name, v));
+parts.push_back(cpp_naming::template_prefix(used) + gen_variant_struct(context, type_name, v));
 i = i + 1;
 }
 }
@@ -218,7 +220,7 @@ return parts.join(mlc::String(""));
 
 mlc::String gen_type_decl_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants.size() == 1 ? mlc::String("") : gen_adt_fwd(context, type_name, type_params, variants);}
 
-mlc::String gen_type_decl_body(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants.size() == 1 ? context::template_prefix(type_params) + gen_single_variant(context, type_name, variants[0]) : gen_adt_defs(context, type_name, type_params, variants);}
+mlc::String gen_type_decl_body(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants.size() == 1 ? cpp_naming::template_prefix(type_params) + gen_single_variant(context, type_name, variants[0]) : gen_adt_defs(context, type_name, type_params, variants);}
 
 mlc::String gen_type_decl(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return gen_type_decl_fwd(context, type_name, type_params, variants) + gen_type_decl_body(context, type_name, type_params, variants);}
 
@@ -237,7 +239,7 @@ int k = 0;
 [&]() { 
   while (k < type_bounds[i].size()){
 {
-parts.push_back(context::cpp_safe(type_bounds[i][k]) + mlc::String("<") + type_params[i] + mlc::String(">"));
+parts.push_back(cpp_naming::cpp_safe(type_bounds[i][k]) + mlc::String("<") + type_params[i] + mlc::String(">"));
 k = k + 1;
 }
 }

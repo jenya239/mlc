@@ -2,9 +2,10 @@
 
 import { Program, Decl, TypeVariant, TypeExpr, Param, decl_inner, errs_append } from "../ast"
 import { CodegenContext, CtorTypeInfo,
-         cpp_safe, context_resolve, make_body_context,
+         context_resolve, make_body_context,
          collect_shared_params, collect_shared_array_params, collect_array_elem_types,
          collect_shared_map_params, collect_value_params } from "./context"
+import { cpp_safe } from "./cpp_naming"
 import { type_to_cpp, type_name_to_cpp, gen_type_decl, gen_type_decl_fwd_only, gen_type_decl_body_only,
          template_prefix, requires_clause } from "./type_gen"
 import { gen_fn_body } from "./eval"

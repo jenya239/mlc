@@ -3,11 +3,11 @@
 
 import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, span_unknown } from "../ast"
 import { CodegenContext, CtorTypeInfo, GenStmtsResult, GenStmtResult,
-         context_resolve, cpp_safe, lower_first, map_method, map_builtin,
-         lookup_fields, list_contains, lookup_ctor_type_info,
+         context_resolve, lookup_fields, list_contains, lookup_ctor_type_info,
          context_add_shared, context_add_shared_array,
          update_context_from_statement,
          is_shared_type, is_shared_array_type } from "./context"
+import { cpp_safe, lower_first, map_method, map_builtin } from "./cpp_naming"
 import { type_to_cpp } from "./type_gen"
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from "./literals"
 import { gen_identifier } from "./identifiers"

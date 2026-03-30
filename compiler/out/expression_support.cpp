@@ -2,11 +2,13 @@
 
 #include "ast.hpp"
 #include "context.hpp"
+#include "cpp_naming.hpp"
 
 namespace expression_support {
 
 using namespace ast;
 using namespace context;
+using namespace cpp_naming;
 using namespace ast_tokens;
 
 mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept;
@@ -30,7 +32,7 @@ mlc::String parameter_list = parameters.size() == 0 ? mlc::String("") : [&]() ->
   int index = 0;
   while (index < parameters.size()){
 {
-parts.push_back(mlc::String("auto ") + context::cpp_safe(parameters[index]));
+parts.push_back(mlc::String("auto ") + cpp_naming::cpp_safe(parameters[index]));
 index = index + 1;
 }
 }
@@ -60,7 +62,7 @@ bool is_constructor_call(std::shared_ptr<ast::Expr> function_expr) noexcept{retu
 mlc::String resolve_object_code_in_self_context(mlc::String object_name, context::CodegenContext context) noexcept{
 mlc::Array<mlc::String> self_fields = context::lookup_fields(context.field_orders, context.self_type);
 bool is_known_field = object_name == mlc::String("errors") || object_name == mlc::String("kind") || object_name == mlc::String("tokens") || object_name == mlc::String("line") || object_name == mlc::String("col") || object_name == mlc::String("inferred_type") || object_name == mlc::String("type_env");
-return context::list_contains(self_fields, object_name) || is_known_field ? mlc::String("self.") + context::cpp_safe(object_name) : context::context_resolve(context, context::map_builtin(object_name));
+return context::list_contains(self_fields, object_name) || is_known_field ? mlc::String("self.") + cpp_naming::cpp_safe(object_name) : context::context_resolve(context, cpp_naming::map_builtin(object_name));
 }
 
 mlc::String infer_shared_new_type_name(std::shared_ptr<ast::Expr> argument, context::CodegenContext context) noexcept{

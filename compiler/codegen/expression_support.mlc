@@ -1,7 +1,8 @@
 // Leaf helpers for eval (no gen_expr dependency).
 
 import { Expr, FieldVal, span_unknown } from "../ast"
-import { CodegenContext, context_resolve, cpp_safe, map_builtin, lookup_fields, list_contains } from "./context"
+import { CodegenContext, context_resolve, lookup_fields, list_contains } from "./context"
+import { cpp_safe, map_builtin } from "./cpp_naming"
 
 export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
   const capture = if parameters.length() == 0 then "[]" else "[=]" end

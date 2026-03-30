@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "ast.hpp"
+#include "cpp_naming.hpp"
 
 namespace context {
 
@@ -28,22 +29,6 @@ struct GenModuleOut {mlc::String h;mlc::String c;};
 struct PrecomputedCtx {mlc::Array<std::shared_ptr<context::FieldOrder>> field_orders;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::HashMap<mlc::String, std::shared_ptr<context::LoadItem>> item_index;mlc::Array<std::shared_ptr<context::CtorTypeInfo>> ctor_type_infos;mlc::Array<mlc::String> generic_variants;};
 
 mlc::HashMap<mlc::String, mlc::String> build_qualified(mlc::Array<mlc::String> import_paths, mlc::Array<context::LoadItem> all_items) noexcept;
-
-bool cpp_keyword(mlc::String name) noexcept;
-
-mlc::String cpp_safe(mlc::String name) noexcept;
-
-mlc::String lower_first(mlc::String name) noexcept;
-
-mlc::String map_method(mlc::String method_name) noexcept;
-
-mlc::String map_builtin(mlc::String name) noexcept;
-
-mlc::String escape_str(mlc::String input) noexcept;
-
-mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept;
-
-mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept;
 
 mlc::String context_resolve(context::CodegenContext context, mlc::String name) noexcept;
 

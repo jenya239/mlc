@@ -1,7 +1,8 @@
 // Type expression → C++ string generation.
 
 import { TypeVariant, TypeExpr, Decl, Param } from "../ast"
-import { CodegenContext, CtorTypeInfo, context_resolve, cpp_safe, lower_first, template_prefix, list_contains } from "./context"
+import { CodegenContext, CtorTypeInfo, context_resolve, list_contains } from "./context"
+import { cpp_safe, lower_first, template_prefix } from "./cpp_naming"
 
 export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
   if type_name == "i32" then "int"

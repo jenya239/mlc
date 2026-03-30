@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "context.hpp"
+#include "cpp_naming.hpp"
 
 namespace identifiers {
 

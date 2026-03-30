@@ -5,7 +5,8 @@ import { LoadItem, CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, build_field_orders, build_variant_types_from_decls,
          build_item_index, build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
          build_qualified, build_method_owners_from_decls,
-         cpp_safe, context_resolve, include_lines } from "./context"
+         context_resolve } from "./context"
+import { cpp_safe, include_lines } from "./cpp_naming"
 import { collect_decl_parts, decls_have_main } from "./decl"
 
 export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx =

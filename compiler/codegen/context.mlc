@@ -1,25 +1,11 @@
 // Context types, builders, and pure utilities for the code generator.
 
 import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, Param, FieldDef, decl_inner, errs_append } from "../ast"
+import { path_to_module_base, cpp_keyword, cpp_safe, lower_first, map_method, map_builtin, escape_str, template_prefix, include_lines } from "./cpp_naming"
 
 // --- Module item type --------------------------------------------------------
 
 export type LoadItem = LoadItem { path: string, decls: [Shared<Decl>], imports: [string] }
-
-fn path_to_module_base(path: string) -> string = do
-  let mut last_slash = -1
-  let mut last_dot = path.length()
-  let mut i = 0
-  while i < path.length() do
-    if path.char_at(i) == "/" then last_slash = i
-    else if path.char_at(i) == "." && i > last_slash then last_dot = i
-    end
-    i = i + 1
-  end
-  if last_dot > last_slash then path.substring(last_slash + 1, last_dot - last_slash - 1)
-  else path.substring(last_slash + 1, path.length() - last_slash - 1)
-  end
-end
 
 fn decl_export_names(decl: Shared<Decl>) -> [string] = do
   let names: [string] = []
@@ -144,85 +130,6 @@ export type PrecomputedCtx = PrecomputedCtx {
 }
 
 // --- Identifier utilities ----------------------------------------------------
-
-export fn cpp_keyword(name: string) -> bool =
-  name == "export" || name == "import" || name == "module" || name == "struct" || name == "class"
-  || name == "template" || name == "typename" || name == "const" || name == "return"
-  || name == "if" || name == "else" || name == "for" || name == "while" || name == "do"
-  || name == "switch" || name == "case" || name == "default" || name == "break" || name == "continue"
-  || name == "try" || name == "catch" || name == "throw" || name == "new" || name == "delete"
-  || name == "virtual" || name == "override" || name == "final" || name == "public" || name == "private"
-  || name == "protected" || name == "friend" || name == "static" || name == "extern" || name == "inline"
-  || name == "using" || name == "namespace" || name == "typedef" || name == "enum" || name == "union"
-  || name == "true" || name == "false" || name == "nullptr" || name == "void" || name == "bool"
-  || name == "int" || name == "long" || name == "short" || name == "char" || name == "float" || name == "double"
-  || name == "signed" || name == "unsigned" || name == "auto" || name == "typeid" || name == "sizeof"
-  || name == "and" || name == "or" || name == "not" || name == "xor" || name == "and_eq" || name == "or_eq"
-  || name == "not_eq" || name == "xor_eq" || name == "bitand" || name == "bitor" || name == "compl"
-  || name == "alignas" || name == "alignof" || name == "asm" || name == "concept" || name == "consteval"
-  || name == "constexpr" || name == "constinit" || name == "const_cast" || name == "decltype"
-  || name == "dynamic_cast" || name == "explicit" || name == "mutable" || name == "noexcept"
-  || name == "operator" || name == "reinterpret_cast" || name == "requires" || name == "static_cast"
-  || name == "this" || name == "thread_local" || name == "volatile" || name == "wchar_t"
-
-export fn cpp_safe(name: string) -> string =
-  if cpp_keyword(name) then name + "_" else name end
-
-export fn lower_first(name: string) -> string =
-  if name.length() == 0 then name
-  else name.char_at(0).to_lower() + name.substring(1, name.length())
-  end
-
-export fn map_method(method_name: string) -> string =
-  if method_name == "length" || method_name == "len" then "length"
-  else if method_name == "push" then "push_back"
-  else if method_name == "to_string" then "to_string"
-  else if method_name == "to_int" || method_name == "to_i" then "to_i"
-  else if method_name == "upper" || method_name == "to_upper" then "upper"
-  else if method_name == "lower" || method_name == "to_lower" then "lower"
-  else method_name
-  end
-
-export fn map_builtin(name: string) -> string =
-  if name == "print"   then "mlc::io::print"
-  else if name == "println" then "mlc::io::println"
-  else if name == "exit"    then "mlc::io::exit"
-  else if name == "args"    then "mlc::io::args"
-  else name
-  end
-
-export fn escape_str(input: string) -> string = do
-  let parts: [string] = []; let mut i = 0
-  while i < input.length() do
-    let ch = input.char_at(i)
-    if ch == "\\" then parts.push("\\\\")
-    else if ch == "\"" then parts.push("\\\"")
-    else if ch == "\n" then parts.push("\\n")
-    else if ch == "\r" then parts.push("\\r")
-    else if ch == "\t" then parts.push("\\t")
-    else if ch == "\0" then parts.push("\\0")
-    else parts.push(ch)
-    end
-    i = i + 1
-  end
-  parts.join("")
-end
-
-export fn template_prefix(type_params: [string]) -> string =
-  if type_params.length() > 0 then
-    "template<typename " + type_params.join(", typename ") + ">\n"
-  else ""
-  end
-
-export fn include_lines(import_paths: [string]) -> string = do
-  let lines: [string] = []
-  let mut i = 0
-  while i < import_paths.length() do
-    lines.push("#include \"" + path_to_module_base(import_paths[i]) + ".hpp\"\n")
-    i = i + 1
-  end
-  lines.join("")
-end
 
 // --- Context resolution ------------------------------------------------------
 

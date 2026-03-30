@@ -1,4 +1,5 @@
-import { CodegenContext, context_resolve, cpp_safe, map_builtin, lookup_fields, list_contains } from "./context"
+import { CodegenContext, context_resolve, lookup_fields, list_contains } from "./context"
+import { cpp_safe, map_builtin } from "./cpp_naming"
 
 fn resolve_identifier_in_self_context(name: string, context: CodegenContext) -> string = do
   const self_fields = lookup_fields(context.field_orders, context.self_type)

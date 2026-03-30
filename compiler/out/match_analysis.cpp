@@ -2,11 +2,13 @@
 
 #include "ast.hpp"
 #include "context.hpp"
+#include "cpp_naming.hpp"
 
 namespace match_analysis {
 
 using namespace ast;
 using namespace context;
+using namespace cpp_naming;
 using namespace ast_tokens;
 
 bool subject_needs_deref(std::shared_ptr<ast::Expr> subject, context::CodegenContext context) noexcept;
@@ -29,7 +31,7 @@ mlc::Array<mlc::String> parts = {};
 int index = 0;
 while (index < sub_patterns.size()){
 {
-mlc::String bind_name = [&]() -> mlc::String { if (std::holds_alternative<ast::PatIdent>((*sub_patterns[index]))) { auto _v_patident = std::get<ast::PatIdent>((*sub_patterns[index])); auto [name, _w0] = _v_patident; return context::cpp_safe(name); } return mlc::String("__") + mlc::to_string(index); }();
+mlc::String bind_name = [&]() -> mlc::String { if (std::holds_alternative<ast::PatIdent>((*sub_patterns[index]))) { auto _v_patident = std::get<ast::PatIdent>((*sub_patterns[index])); auto [name, _w0] = _v_patident; return cpp_naming::cpp_safe(name); } return mlc::String("__") + mlc::to_string(index); }();
 parts.push_back(bind_name);
 index = index + 1;
 }

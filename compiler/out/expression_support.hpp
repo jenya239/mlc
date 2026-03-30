@@ -6,6 +6,7 @@
 
 #include "ast.hpp"
 #include "context.hpp"
+#include "cpp_naming.hpp"
 
 namespace expression_support {
 
