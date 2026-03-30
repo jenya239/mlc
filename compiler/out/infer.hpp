@@ -7,6 +7,9 @@
 #include "ast.hpp"
 #include "registry.hpp"
 #include "check_context.hpp"
+#include "type_utils.hpp"
+#include "type_diagnostics.hpp"
+#include "pattern_env.hpp"
 
 namespace infer {
 

@@ -1,0 +1,26 @@
+import { Pat } from "../ast"
+import { Type, TypeRegistry } from "./registry"
+
+export fn env_for_pattern(type_environment: Map<string, Shared<Type>>, pattern: Shared<Pat>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  match pattern {
+    PatIdent(binding_name, _) => do let environment = type_environment; environment.set(binding_name, Shared.new(TUnknown)); environment end,
+    PatCtor(constructor_name, sub_patterns, _) => do
+      const parameter_types = registry.ctor_params_for(constructor_name)
+      let mut current_environment = type_environment; let mut sub_index = 0
+      while sub_index < sub_patterns.length() do
+        const sub_type = if sub_index < parameter_types.length() then parameter_types[sub_index] else Shared.new(TUnknown) end
+        current_environment = env_for_pattern_with_type(current_environment, sub_patterns[sub_index], sub_type, registry)
+        sub_index = sub_index + 1
+      end
+      current_environment
+    end,
+    _ => type_environment
+  }
+end
+
+export fn env_for_pattern_with_type(type_environment: Map<string, Shared<Type>>, pattern: Shared<Pat>, type_value: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  match pattern {
+    PatIdent(binding_name, _) => do let environment = type_environment; environment.set(binding_name, type_value); environment end,
+    _ => env_for_pattern(type_environment, pattern, registry)
+  }
+end

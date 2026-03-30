@@ -1,0 +1,126 @@
+// Pure type predicates and helpers (no Diagnostic dependency).
+
+import { Type, TypeRegistry } from "./registry"
+
+export fn type_description(type_value: Shared<Type>) -> string =
+  match type_value {
+    TI32       => "i32",
+    TString    => "string",
+    TBool      => "bool",
+    TUnit      => "unit",
+    TUnknown   => "unknown",
+    TArray(_)  => "array",
+    TShared(_) => "shared",
+    TNamed(type_name) => type_name,
+    TFn(_, _)  => "function"
+  }
+
+export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> bool =
+  match left {
+    TI32 => match right { TI32 => true, _ => false },
+    TString => match right { TString => true, _ => false },
+    TBool => match right { TBool => true, _ => false },
+    TUnit => match right { TUnit => true, _ => false },
+    TUnknown => match right { TUnknown => true, _ => false },
+    TArray(inner_left) => match right { TArray(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
+    TShared(inner_left) => match right { TShared(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
+    TNamed(left_name) => match right { TNamed(right_name) => left_name == right_name, _ => false },
+    TFn(_, _) => match right { TFn(_, _) => true, _ => false }
+  }
+
+export fn type_is_unknown(type_value: Shared<Type>) -> bool =
+  match type_value { TUnknown => true, _ => false }
+
+export fn type_is_array(type_value: Shared<Type>) -> bool =
+  match type_value { TArray(_) => true, _ => false }
+
+export fn type_is_i32(type_value: Shared<Type>) -> bool =
+  match type_value { TI32 => true, _ => false }
+
+export fn type_is_bool(type_value: Shared<Type>) -> bool =
+  match type_value { TBool => true, _ => false }
+
+export fn type_is_string(type_value: Shared<Type>) -> bool =
+  match type_value { TString => true, _ => false }
+
+export fn types_allowed_for_binary_plus(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =
+  (type_is_unknown(left_type) || type_is_unknown(right_type)) ||
+  (type_is_i32(left_type) && type_is_i32(right_type)) ||
+  (type_is_string(left_type) && type_is_string(right_type))
+
+export fn types_allowed_for_binary_int_only(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =
+  (type_is_unknown(left_type) || type_is_unknown(right_type)) ||
+  (type_is_i32(left_type) && type_is_i32(right_type))
+
+export fn types_allowed_for_ordering(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =
+  (type_is_unknown(left_type) || type_is_unknown(right_type)) ||
+  (type_is_i32(left_type) && type_is_i32(right_type)) ||
+  (type_is_string(left_type) && type_is_string(right_type))
+
+export fn types_allowed_for_logical_and_or(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =
+  (type_is_unknown(left_type) || type_is_unknown(right_type)) ||
+  (type_is_bool(left_type) && type_is_bool(right_type))
+
+export fn receiver_type_is_map(receiver_type: Shared<Type>) -> bool =
+  match receiver_type { TNamed(name) => name == "Map", _ => false }
+
+export fn type_is_function(type_value: Shared<Type>) -> bool =
+  match type_value { TFn(_, _) => true, _ => false }
+
+export fn empty_type_parameter_list() -> [Shared<Type>] = []
+
+export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>] =
+  match function_type {
+    TFn(parameters, _) => parameters,
+    TI32 => empty_type_parameter_list(),
+    TString => empty_type_parameter_list(),
+    TBool => empty_type_parameter_list(),
+    TUnit => empty_type_parameter_list(),
+    TArray(_) => empty_type_parameter_list(),
+    TShared(_) => empty_type_parameter_list(),
+    TNamed(_) => empty_type_parameter_list(),
+    TUnknown => empty_type_parameter_list()
+  }
+
+export fn binary_operation_result_type(operation: string, left_type: Shared<Type>) -> Shared<Type> = do
+  if operation == "+" || operation == "-" || operation == "*" || operation == "/" || operation == "%" then
+    match left_type { TString => Shared.new(TString), _ => Shared.new(TI32) }
+  else if operation == "=" then Shared.new(TUnit)
+  else Shared.new(TBool)
+  end
+end
+
+export fn builtin_method_return_type(method_name: string) -> Shared<Type> = do
+  if method_name == "length" || method_name == "size" || method_name == "to_i" then Shared.new(TI32)
+  else if method_name == "push" || method_name == "set" || method_name == "remove" then Shared.new(TUnit)
+  else if method_name == "keys" || method_name == "values" then Shared.new(TArray(Shared.new(TUnknown)))
+  else if method_name == "char_at" || method_name == "join" || method_name == "to_string"
+       || method_name == "substring" || method_name == "to_lower" then Shared.new(TString)
+  else if method_name == "has" then Shared.new(TBool)
+  else Shared.new(TUnknown)
+  end
+end
+
+export fn field_type_from_object(object_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
+  const type_name = match object_type { TNamed(name) => name, _ => "" }
+  if type_name != "" && registry.has_fields(type_name) then
+    const field_map = registry.fields_for(type_name)
+    if field_map.has(field_name) then field_map.get(field_name) else Shared.new(TUnknown) end
+  else Shared.new(TUnknown)
+  end
+end
+
+export fn builtin_method_expected_argument_count(method_name: string) -> i32 = do
+  if method_name == "push" then 1
+  else if method_name == "set" then 2
+  else if method_name == "length" || method_name == "size" then 0
+  else if method_name == "to_i" || method_name == "to_lower" then 0
+  else if method_name == "char_at" then 1
+  else if method_name == "substring" then 2
+  else if method_name == "join" then 1
+  else if method_name == "to_string" then 0
+  else if method_name == "has" || method_name == "get" || method_name == "remove" then 1
+  else if method_name == "keys" || method_name == "values" then 0
+  else -1
+  end
+end
