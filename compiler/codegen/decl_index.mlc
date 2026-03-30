@@ -1,0 +1,286 @@
+// Module item loading, field order registry, method owner index, and variant builders.
+
+import { Program, Decl, TypeVariant, FieldDef, decl_inner } from "../ast"
+import { path_to_module_base } from "./cpp_naming"
+
+export type LoadItem = LoadItem { path: string, decls: [Shared<Decl>], imports: [string] }
+export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
+
+fn decl_export_names(decl: Shared<Decl>) -> [string] = do
+  let names: [string] = []
+  match decl {
+    DeclExported(d) => do
+      match d {
+        DeclFn(name, _, _, _, _, _) => do names.push(name); () end,
+        DeclType(type_name, _, variants) => do
+          names.push(type_name); let mut variant_index = 0
+          while variant_index < variants.length() do
+            match variants[variant_index] {
+              VarRecord(variant_name, _) => do names.push(variant_name); () end,
+              VarTuple(variant_name, _)  => do names.push(variant_name); () end,
+              VarUnit(variant_name)      => do names.push(variant_name); () end
+            }
+            variant_index = variant_index + 1
+          end; ()
+        end,
+        DeclTrait(name, _, methods) => do
+          names.push(name); let mut mi = 0
+          while mi < methods.length() do
+            match methods[mi] {
+              DeclFn(fn_name, _, _, _, _, _) => do names.push(fn_name); () end,
+              _ => do () end
+            }
+            mi = mi + 1
+          end
+          ()
+        end,
+        DeclExtend(_, _, methods) => do
+          let mut mi = 0
+          while mi < methods.length() do
+            match methods[mi] {
+              DeclFn(fn_name, _, _, _, _, _) => do names.push(fn_name); () end,
+              _ => do () end
+            }
+            mi = mi + 1
+          end; ()
+        end,
+        _ => do () end
+      }; ()
+    end,
+    _ => do () end
+  }
+  names
+end
+
+fn add_exports_to_qualified(qualified: Map<string, string>, imp_path: string, all_items: [LoadItem]) -> Map<string, string> = do
+  const prefix = path_to_module_base(imp_path) + "::"
+  let mut item_i = 0
+  while item_i < all_items.length() do
+    const cur_item = all_items[item_i]
+    if cur_item.path == imp_path then
+      let mut decl_index = 0
+      while decl_index < cur_item.decls.length() do
+        let mut name_index = 0
+        const exp_names = decl_export_names(cur_item.decls[decl_index])
+        while name_index < exp_names.length() do
+          if !qualified.has(exp_names[name_index]) then qualified.set(exp_names[name_index], prefix) end
+          name_index = name_index + 1
+        end
+        decl_index = decl_index + 1
+      end
+    end
+    item_i = item_i + 1
+  end
+  qualified
+end
+
+export fn build_qualified(import_paths: [string], all_items: [LoadItem]) -> Map<string, string> = do
+  let mut qualified: Map<string, string> = Map.new()
+  let mut imp_i = 0
+  while imp_i < import_paths.length() do
+    const imp_path = import_paths[imp_i]
+    qualified = add_exports_to_qualified(qualified, imp_path, all_items)
+    let mut item_i = 0
+    while item_i < all_items.length() do
+      const cur_item = all_items[item_i]
+      if cur_item.path == imp_path then
+        let mut trans_i = 0
+        while trans_i < cur_item.imports.length() do
+          qualified = add_exports_to_qualified(qualified, cur_item.imports[trans_i], all_items)
+          trans_i = trans_i + 1
+        end
+      end
+      item_i = item_i + 1
+    end
+    imp_i = imp_i + 1
+  end
+  qualified
+end
+
+export fn list_contains(list: [string], item: string) -> bool = do
+  let mut found = false; let mut i = 0
+  while i < list.length() && !found do
+    if list[i] == item then found = true end; i = i + 1
+  end
+  found
+end
+
+export fn lookup_fields(orders: [Shared<FieldOrder>], name: string) -> [string] = do
+  let mut result: [string] = []
+  let mut i = 0; let mut found = false
+  while i < orders.length() && !found do
+    if orders[i].type_name == name then
+      result = orders[i].fields
+      found = true
+    end
+    i = i + 1
+  end
+  result
+end
+
+fn extract_method_name(fn_name: string, type_name: string) -> string = do
+  const prefix = type_name + "_"
+  if fn_name.length() > prefix.length() && fn_name.substring(0, prefix.length()) == prefix then
+    fn_name.substring(prefix.length(), fn_name.length() - prefix.length())
+  else fn_name
+  end
+end
+
+export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string, string>) -> Map<string, string> = do
+  let mut i = 0
+  while i < decls.length() do
+    match decl_inner(decls[i]) {
+      DeclTrait(trait_name, _, methods) => do
+        let mut mi = 0
+        while mi < methods.length() do
+          match methods[mi] {
+            DeclFn(fn_name, _, _, _, _, _) => do
+              const unmangled = extract_method_name(fn_name, trait_name)
+              if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
+            end,
+            _ => do end
+          }
+          mi = mi + 1
+        end
+      end,
+      DeclExtend(type_name, _, methods) => do
+        let mut mi = 0
+        while mi < methods.length() do
+          match methods[mi] {
+            DeclFn(fn_name, _, _, _, _, _) => do
+              const unmangled = extract_method_name(fn_name, type_name)
+              if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
+            end,
+            _ => do end
+          }
+          mi = mi + 1
+        end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  owners
+end
+
+export fn build_method_owners_from_decls(decls: [Shared<Decl>]) -> Map<string, string> =
+  add_method_owners_from_decls(decls, Map.new())
+
+export fn build_item_index(all_items: [LoadItem]) -> Map<string, Shared<LoadItem>> = do
+  let item_index: Map<string, Shared<LoadItem>> = Map.new()
+  let mut i = 0
+  while i < all_items.length() do
+    item_index.set(all_items[i].path, Shared.new(all_items[i]))
+    i = i + 1
+  end
+  item_index
+end
+
+export fn build_generic_variants_from_decls(decls: [Shared<Decl>]) -> [string] = do
+  let result: [string] = []; let mut i = 0
+  while i < decls.length() do
+    const inner_decl = decl_inner(decls[i])
+    match inner_decl {
+      DeclType(_, type_params, variants) => do
+        let mut vi = 0
+        while vi < variants.length() do
+          let should_add = type_params.length() > 0
+          let vname = match variants[vi] {
+            VarRecord(n, _) => n,
+            VarTuple(n, _)  => n,
+            VarUnit(n)      => n
+          }
+          if should_add then result.push(vname) else result.push("__skip__") end
+          vi = vi + 1
+        end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  result
+end
+
+export fn build_variant_types_from_decls(decls: [Shared<Decl>]) -> Map<string, string> = do
+  let variant_map: Map<string, string> = Map.new()
+  let mut i = 0
+  while i < decls.length() do
+    const inner_decl = decl_inner(decls[i])
+    match inner_decl {
+      DeclType(type_name, _, variants) => do
+        let mut vi = 0
+        while vi < variants.length() do
+          match variants[vi] {
+            VarRecord(variant_name, _) => variant_map.set(variant_name, type_name),
+            VarTuple(variant_name, _)  => variant_map.set(variant_name, type_name),
+            VarUnit(variant_name)      => variant_map.set(variant_name, type_name)
+          }
+          vi = vi + 1
+        end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  variant_map
+end
+
+export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
+  const orders: [Shared<FieldOrder>] = []
+  let mut i = 0
+  while i < prog.decls.length() do
+    match prog.decls[i] {
+      DeclExported(inner) => match decl_inner(inner) {
+        DeclType(type_name, _, variants) => do
+          let mut vi = 0
+          while vi < variants.length() do
+            match variants[vi] {
+              VarRecord(variant_name, field_defs) => do
+                const field_names: [string] = []; let mut fi = 0
+                while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
+                orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
+                if variants.length() == 1 then
+                  orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
+                end
+                do end
+              end,
+              VarTuple(_, _) => do end,
+              VarUnit(_)     => do end
+            }
+            vi = vi + 1
+          end
+        end,
+        DeclFn(_, _, _, _, _, _)  => do end,
+        DeclTrait(_, _, _)     => do end,
+        DeclExtend(_, _, _)    => do end,
+        DeclImport(_, _)    => do end,
+        DeclExported(_)     => do end
+      },
+      DeclType(type_name, _, variants) => do
+        let mut vi = 0
+        while vi < variants.length() do
+          match variants[vi] {
+            VarRecord(variant_name, field_defs) => do
+              const field_names: [string] = []; let mut fi = 0
+              while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
+              orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
+              if variants.length() == 1 then
+                orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
+              end
+              do end
+            end,
+            VarTuple(_, _) => do end,
+            VarUnit(_)     => do end
+          }
+          vi = vi + 1
+        end
+      end,
+      DeclFn(_, _, _, _, _, _)  => do end,
+      DeclTrait(_, _, _)     => do end,
+      DeclExtend(_, _, _)    => do end,
+      DeclImport(_, _)    => do end
+    }
+    i = i + 1
+  end
+  orders
+end

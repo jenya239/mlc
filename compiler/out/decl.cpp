@@ -79,11 +79,11 @@ return name == mlc::String("main") && params.size() == 0 ? prefix + type_gen::ty
 }
 
 context::CodegenContext compute_fn_body_context(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> params, context::CodegenContext context) noexcept{
-mlc::Array<mlc::String> fn_shared_params = context::collect_shared_params(params);
-mlc::Array<mlc::String> fn_shared_array_params = context::collect_shared_array_params(params);
-mlc::HashMap<mlc::String, mlc::String> fn_array_elem_types = context::collect_array_elem_types(params);
-mlc::Array<mlc::String> fn_shared_map_params = context::collect_shared_map_params(params);
-mlc::Array<mlc::String> fn_value_params = context::collect_value_params(params);
+mlc::Array<mlc::String> fn_shared_params = param_analysis::collect_shared_params(params);
+mlc::Array<mlc::String> fn_shared_array_params = param_analysis::collect_shared_array_params(params);
+mlc::HashMap<mlc::String, mlc::String> fn_array_elem_types = param_analysis::collect_array_elem_types(params);
+mlc::Array<mlc::String> fn_shared_map_params = param_analysis::collect_shared_map_params(params);
+mlc::Array<mlc::String> fn_value_params = param_analysis::collect_value_params(params);
 return params.size() > 0 && params[0]->name == mlc::String("self") ? [&]() -> context::CodegenContext { if (std::holds_alternative<ast::TyNamed>((*params[0]->typ))) { auto _v_tynamed = std::get<ast::TyNamed>((*params[0]->typ)); auto [self_type_name] = _v_tynamed; return [&]() -> context::CodegenContext { 
   mlc::String resolved_type = self_type_name == mlc::String("Self") || self_type_name == mlc::String("self") ? context.self_type : self_type_name;
   return context::make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, resolved_type, fn_value_params, {});

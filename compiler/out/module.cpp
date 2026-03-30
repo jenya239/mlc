@@ -13,15 +13,15 @@ using namespace cpp_naming;
 using namespace decl;
 using namespace ast_tokens;
 
-context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<context::LoadItem> all_items) noexcept;
+context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept;
 
 mlc::String gen_program(ast::Program prog) noexcept;
 
 mlc::String path_to_module_base(mlc::String path) noexcept;
 
-context::GenModuleOut gen_module(context::LoadItem item, mlc::Array<context::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept;
+context::GenModuleOut gen_module(decl_index::LoadItem item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept;
 
-context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<context::LoadItem> all_items) noexcept{return context::PrecomputedCtx{context::build_field_orders(prog), context::build_variant_types_from_decls(prog.decls), context::build_item_index(all_items), context::build_ctor_type_infos_from_decls(prog.decls), context::build_generic_variants_from_decls(prog.decls)};}
+context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept{return context::PrecomputedCtx{decl_index::build_field_orders(prog), decl_index::build_variant_types_from_decls(prog.decls), decl_index::build_item_index(all_items), ctor_info::build_ctor_type_infos_from_decls(prog.decls), decl_index::build_generic_variants_from_decls(prog.decls)};}
 
 mlc::String gen_program(ast::Program prog) noexcept{
 context::CodegenContext context = context::create_codegen_context(prog);
@@ -56,10 +56,10 @@ i = i + 1;
 return last_dot > last_slash ? path.substring(last_slash + 1, last_dot - last_slash - 1) : path.substring(last_slash + 1, path.length() - last_slash - 1);
 }
 
-context::GenModuleOut gen_module(context::LoadItem item, mlc::Array<context::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept{
+context::GenModuleOut gen_module(decl_index::LoadItem item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept{
 mlc::String base = path_to_module_base(item.path);
-mlc::HashMap<mlc::String, mlc::String> qualified = context::build_qualified(item.imports, all_items);
-context::CodegenContext context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, mlc::String(""), context::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants};
+mlc::HashMap<mlc::String, mlc::String> qualified = decl_index::build_qualified(item.imports, all_items);
+context::CodegenContext context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, mlc::String(""), decl_index::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants};
 mlc::String module_namespace = base == mlc::String("main") ? mlc::String("mlc_main") : base;
 bool is_entry = decl::decls_have_main(item.decls);
 mlc::String std_includes = mlc::String("#include \"mlc.hpp\"\n#include <variant>\n\n") + cpp_naming::include_lines(item.imports) + mlc::String("\n");

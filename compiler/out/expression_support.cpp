@@ -60,9 +60,9 @@ return result;
 bool is_constructor_call(std::shared_ptr<ast::Expr> function_expr) noexcept{return [&]() { if (std::holds_alternative<ast::ExprIdent>((*function_expr)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*function_expr)._); auto [name, _w0] = _v_exprident; return name.length() > 0 && name.char_at(0) >= mlc::String("A") && name.char_at(0) <= mlc::String("Z"); } return false; }();}
 
 mlc::String resolve_object_code_in_self_context(mlc::String object_name, context::CodegenContext context) noexcept{
-mlc::Array<mlc::String> self_fields = context::lookup_fields(context.field_orders, context.self_type);
+mlc::Array<mlc::String> self_fields = decl_index::lookup_fields(context.field_orders, context.self_type);
 bool is_known_field = object_name == mlc::String("errors") || object_name == mlc::String("kind") || object_name == mlc::String("tokens") || object_name == mlc::String("line") || object_name == mlc::String("col") || object_name == mlc::String("inferred_type") || object_name == mlc::String("type_env");
-return context::list_contains(self_fields, object_name) || is_known_field ? mlc::String("self.") + cpp_naming::cpp_safe(object_name) : context::context_resolve(context, cpp_naming::map_builtin(object_name));
+return decl_index::list_contains(self_fields, object_name) || is_known_field ? mlc::String("self.") + cpp_naming::cpp_safe(object_name) : context::context_resolve(context, cpp_naming::map_builtin(object_name));
 }
 
 mlc::String infer_shared_new_type_name(std::shared_ptr<ast::Expr> argument, context::CodegenContext context) noexcept{

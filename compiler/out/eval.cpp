@@ -196,8 +196,8 @@ mlc::String gen_arm_ctor(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::
 mlc::String qualified_name = context::context_resolve(context, ctor_name);
 mlc::String lower_name = cpp_naming::cpp_safe(cpp_naming::lower_first(ctor_name));
 mlc::String binding = sub_patterns.size() == 0 ? mlc::String("") : mlc::String("auto [") + match_analysis::pat_bind_names(sub_patterns) + mlc::String("] = ") + lower_name + mlc::String("; ");
-std::shared_ptr<context::CtorTypeInfo> ctor_type_info = context::lookup_ctor_type_info(context.ctor_type_infos, ctor_name);
-bool is_generic = context::list_contains(context.generic_variants, ctor_name);
+std::shared_ptr<ctor_info::CtorTypeInfo> ctor_type_info = ctor_info::lookup_ctor_type_info(context.ctor_type_infos, ctor_name);
+bool is_generic = decl_index::list_contains(context.generic_variants, ctor_name);
 mlc::String type_argument = is_generic ? mlc::String("<auto>") : mlc::String("");
 context::CodegenContext arm_context = std::move(context);
 int index = 0;
@@ -222,7 +222,7 @@ return mlc::String("[&](const ") + qualified_name + type_argument + mlc::String(
 mlc::String gen_arm_record_pattern(mlc::String record_name, mlc::Array<std::shared_ptr<ast::Pat>> field_patterns, std::shared_ptr<ast::Expr> arm_body, context::CodegenContext context) noexcept{
 mlc::String qualified_name = context::context_resolve(context, record_name);
 mlc::String lower_name = cpp_naming::cpp_safe(cpp_naming::lower_first(record_name));
-bool is_generic = context::list_contains(context.generic_variants, record_name);
+bool is_generic = decl_index::list_contains(context.generic_variants, record_name);
 mlc::String type_argument = is_generic ? mlc::String("<auto>") : mlc::String("");
 mlc::String field_bindings = mlc::String("");
 int field_index = 0;
@@ -330,13 +330,13 @@ mlc::String gen_while_expr(std::shared_ptr<ast::Expr> condition, mlc::Array<std:
 mlc::String gen_for_expr(mlc::String variable, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, context::CodegenContext context) noexcept{return mlc::String("[&]() {\nfor (auto ") + cpp_naming::cpp_safe(variable) + mlc::String(" : ") + gen_expr(iterator, context) + mlc::String(") {\n") + gen_stmts_str(statements, context) + mlc::String("}\n}()");}
 
 mlc::String gen_record_expr(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, context::CodegenContext context) noexcept{
-mlc::Array<mlc::String> field_order = context::lookup_fields(context.field_orders, type_name);
+mlc::Array<mlc::String> field_order = decl_index::lookup_fields(context.field_orders, type_name);
 mlc::String values_code = field_order.size() > 0 ? gen_record_ordered(field_values, field_order, context) : gen_record_unordered(field_values, context);
 return context::context_resolve(context, type_name) + mlc::String("{") + values_code + mlc::String("}");
 }
 
 mlc::String gen_record_update_expr(mlc::String type_name, std::shared_ptr<ast::Expr> base_expr, mlc::Array<std::shared_ptr<ast::FieldVal>> overrides, context::CodegenContext context) noexcept{
-mlc::Array<mlc::String> field_order = context::lookup_fields(context.field_orders, type_name);
+mlc::Array<mlc::String> field_order = decl_index::lookup_fields(context.field_orders, type_name);
 return field_order.size() > 0 ? context::context_resolve(context, type_name) + mlc::String("{") + gen_record_update_ordered(base_expr, overrides, field_order, context) + mlc::String("}") : gen_record_update_lazy(base_expr, overrides, context);
 }
 
