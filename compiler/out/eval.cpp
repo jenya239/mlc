@@ -345,21 +345,7 @@ mlc::String inner_code = gen_expr(inner_expr, context);
 return mlc::String("({ auto __q = ") + inner_code + mlc::String("; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })");
 }
 
-mlc::String gen_lambda_expr(mlc::Array<mlc::String> parameters, std::shared_ptr<ast::Expr> body_expr, context::CodegenContext context) noexcept{
-mlc::String capture = parameters.size() == 0 ? mlc::String("[]") : mlc::String("[=]");
-mlc::String parameter_list = parameters.size() == 0 ? mlc::String("") : [&]() -> mlc::String { 
-  mlc::Array<mlc::String> parts = {};
-  int index = 0;
-  while (index < parameters.size()){
-{
-parts.push_back(mlc::String("auto ") + context::cpp_safe(parameters[index]));
-index = index + 1;
-}
-}
-  return parts.join(mlc::String(", "));
- }();
-return capture + mlc::String("(") + parameter_list + mlc::String(") { return ") + gen_expr(body_expr, context) + mlc::String("; }");
-}
+mlc::String gen_lambda_expr(mlc::Array<mlc::String> parameters, std::shared_ptr<ast::Expr> body_expr, context::CodegenContext context) noexcept{return expression_support::cpp_lambda_header_prefix(parameters) + mlc::String(" { return ") + gen_expr(body_expr, context) + mlc::String("; }");}
 
 mlc::String gen_expr(std::shared_ptr<ast::Expr> expr, context::CodegenContext context) noexcept{return std::visit(overloaded{
   [&](const ExprInt& exprint) -> mlc::String { auto [integer_value, _w0] = exprint; return literals::gen_integer_literal(integer_value); },

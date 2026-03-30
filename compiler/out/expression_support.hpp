@@ -12,6 +12,8 @@ namespace expression_support {
 struct Expr;
 struct Stmt;
 
+mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept;
+
 std::shared_ptr<ast::Expr> find_field_value(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::String field_name) noexcept;
 
 bool is_constructor_call(std::shared_ptr<ast::Expr> function_expr) noexcept;

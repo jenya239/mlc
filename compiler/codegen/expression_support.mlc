@@ -3,6 +3,20 @@
 import { Expr, FieldVal, span_unknown } from "../ast"
 import { CodegenContext, context_resolve, cpp_safe, map_builtin, lookup_fields, list_contains } from "./context"
 
+export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
+  const capture = if parameters.length() == 0 then "[]" else "[=]" end
+  const parameter_list = if parameters.length() == 0 then ""
+    else do
+      let parts: [string] = []; let mut index = 0
+      while index < parameters.length() do
+        parts.push("auto " + cpp_safe(parameters[index])); index = index + 1
+      end
+      parts.join(", ")
+    end
+    end
+  capture + "(" + parameter_list + ")"
+end
+
 export fn find_field_value(field_values: [Shared<FieldVal>], field_name: string) -> Shared<Expr> = do
   let mut result: Shared<Expr> = Shared.new(ExprUnit(span_unknown())); let mut index = 0
   while index < field_values.length() do

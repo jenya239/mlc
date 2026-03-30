@@ -9,6 +9,8 @@ using namespace ast;
 using namespace context;
 using namespace ast_tokens;
 
+mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept;
+
 std::shared_ptr<ast::Expr> find_field_value(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::String field_name) noexcept;
 
 bool is_constructor_call(std::shared_ptr<ast::Expr> function_expr) noexcept;
@@ -20,6 +22,22 @@ mlc::String infer_shared_new_type_name(std::shared_ptr<ast::Expr> argument, cont
 mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept;
 
 mlc::String field_access_operator(std::shared_ptr<ast::Expr> object, context::CodegenContext context) noexcept;
+
+mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept{
+mlc::String capture = parameters.size() == 0 ? mlc::String("[]") : mlc::String("[=]");
+mlc::String parameter_list = parameters.size() == 0 ? mlc::String("") : [&]() -> mlc::String { 
+  mlc::Array<mlc::String> parts = {};
+  int index = 0;
+  while (index < parameters.size()){
+{
+parts.push_back(mlc::String("auto ") + context::cpp_safe(parameters[index]));
+index = index + 1;
+}
+}
+  return parts.join(mlc::String(", "));
+ }();
+return capture + mlc::String("(") + parameter_list + mlc::String(")");
+}
 
 std::shared_ptr<ast::Expr> find_field_value(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::String field_name) noexcept{
 std::shared_ptr<ast::Expr> result = std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown()));

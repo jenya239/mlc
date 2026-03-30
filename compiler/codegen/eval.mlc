@@ -12,7 +12,7 @@ import { type_to_cpp } from "./type_gen"
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from "./literals"
 import { gen_identifier } from "./identifiers"
 import { first_arm_needs_deref, pat_bind_names } from "./match_analysis"
-import { find_field_value, is_constructor_call, resolve_object_code_in_self_context, infer_shared_new_type_name, field_access_operator, cpp_function_name_for_file_method } from "./expression_support"
+import { find_field_value, is_constructor_call, resolve_object_code_in_self_context, infer_shared_new_type_name, field_access_operator, cpp_function_name_for_file_method, cpp_lambda_header_prefix } from "./expression_support"
 import { stmts_final_ctx } from "./statement_context"
 
 // --- Context builder methods (intra-module OOP helpers) ----------------------
@@ -281,19 +281,8 @@ fn gen_question_expr(inner_expr: Shared<Expr>, context: CodegenContext) -> strin
   "(\{ auto __q = " + inner_code + "; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; \})"
 end
 
-fn gen_lambda_expr(parameters: [string], body_expr: Shared<Expr>, context: CodegenContext) -> string = do
-  const capture = if parameters.length() == 0 then "[]" else "[=]" end
-  const parameter_list = if parameters.length() == 0 then ""
-    else do
-      let parts: [string] = []; let mut index = 0
-      while index < parameters.length() do
-        parts.push("auto " + cpp_safe(parameters[index])); index = index + 1
-      end
-      parts.join(", ")
-    end
-    end
-  capture + "(" + parameter_list + ") { return " + gen_expr(body_expr, context) + "; }"
-end
+fn gen_lambda_expr(parameters: [string], body_expr: Shared<Expr>, context: CodegenContext) -> string =
+  cpp_lambda_header_prefix(parameters) + " { return " + gen_expr(body_expr, context) + "; }"
 
 // --- Dispatcher --------------------------------------------------------------
 
