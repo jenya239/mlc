@@ -7,6 +7,11 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "type_gen.hpp"
+#include "literals.hpp"
+#include "identifiers.hpp"
+#include "match_analysis.hpp"
+#include "expression_support.hpp"
+#include "statement_context.hpp"
 
 namespace eval {
 
@@ -14,10 +19,6 @@ struct Expr;
 struct Stmt;
 
 mlc::String gen_argument_list(mlc::Array<std::shared_ptr<ast::Expr>> expressions, context::CodegenContext context) noexcept;
-
-bool subject_needs_deref(std::shared_ptr<ast::Expr> subject, context::CodegenContext context) noexcept;
-
-bool first_arm_needs_deref(std::shared_ptr<ast::MatchArm> first_arm, std::shared_ptr<ast::Expr> subject, context::CodegenContext context) noexcept;
 
 mlc::String gen_expr(std::shared_ptr<ast::Expr> expr, context::CodegenContext context) noexcept;
 

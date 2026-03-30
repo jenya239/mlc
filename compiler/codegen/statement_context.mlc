@@ -1,0 +1,11 @@
+import { Stmt } from "../ast"
+import { CodegenContext, update_context_from_statement } from "./context"
+
+export fn stmts_final_ctx(statements: [Shared<Stmt>], context: CodegenContext) -> CodegenContext = do
+  let mut current_context = context; let mut index = 0
+  while index < statements.length() do
+    current_context = update_context_from_statement(statements[index], current_context)
+    index = index + 1
+  end
+  current_context
+end

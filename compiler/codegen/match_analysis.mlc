@@ -1,0 +1,45 @@
+import { Expr, MatchArm, Pat } from "../ast"
+import { CodegenContext, context_resolve, cpp_safe, list_contains, expr_returns_shared_sum_visit_ptr } from "./context"
+
+export fn subject_needs_deref(subject: Shared<Expr>, context: CodegenContext) -> bool = do
+  if expr_returns_shared_sum_visit_ptr(subject) then true
+  else match subject {
+    ExprIdent(name, _) =>
+      if context.match_deref_params.contains(name) then true
+      else if context.shared_params.contains(name) then true
+      else if context.value_params.contains(name) then false
+      else true
+      end,
+    ExprIndex(array_expr, _, _) => match array_expr {
+      ExprIdent(array_name, _) => context.shared_array_params.contains(array_name),
+      _ => true
+    },
+    ExprMethod(_, _, _, _) => false,
+    _ => true
+  }
+  end
+end
+
+export fn first_arm_needs_deref(first_arm: Shared<MatchArm>, subject: Shared<Expr>, context: CodegenContext) -> bool =
+  match first_arm.pat {
+    PatCtor(name, _, _) => do
+      const resolved = context_resolve(context, name)
+      if resolved.length() >= 12 && resolved.substring(0, 12) == "ast_tokens::" then false
+      else if list_contains(context.generic_variants, name) then false
+      else subject_needs_deref(subject, context)
+      end
+    end,
+    _ => subject_needs_deref(subject, context)
+  }
+
+export fn pat_bind_names(sub_patterns: [Shared<Pat>]) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < sub_patterns.length() do
+    const bind_name = match sub_patterns[index] {
+      PatIdent(name, _) => cpp_safe(name),
+      _ => "__" + index.to_string()
+    }
+    parts.push(bind_name); index = index + 1
+  end
+  parts.join(", ")
+end

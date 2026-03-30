@@ -3,12 +3,17 @@
 
 import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, span_unknown } from "../ast"
 import { CodegenContext, CtorTypeInfo, GenStmtsResult, GenStmtResult,
-         context_resolve, cpp_safe, lower_first, map_method, map_builtin, escape_str,
+         context_resolve, cpp_safe, lower_first, map_method, map_builtin,
          lookup_fields, list_contains, lookup_ctor_type_info,
          context_add_shared, context_add_shared_array,
-         expr_returns_shared_sum_visit_ptr, update_context_from_statement,
+         update_context_from_statement,
          is_shared_type, is_shared_array_type } from "./context"
 import { type_to_cpp } from "./type_gen"
+import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from "./literals"
+import { gen_identifier } from "./identifiers"
+import { first_arm_needs_deref, pat_bind_names } from "./match_analysis"
+import { find_field_value, is_constructor_call, resolve_object_code_in_self_context, infer_shared_new_type_name, field_access_operator, cpp_function_name_for_file_method } from "./expression_support"
+import { stmts_final_ctx } from "./statement_context"
 
 // --- Context builder methods (intra-module OOP helpers) ----------------------
 // extend methods are resolved within the eval namespace; do not export.
@@ -31,15 +36,6 @@ export fn gen_argument_list(expressions: [Shared<Expr>], context: CodegenContext
 end
 
 // --- Record helpers ----------------------------------------------------------
-
-fn find_field_value(field_values: [Shared<FieldVal>], field_name: string) -> Shared<Expr> = do
-  let mut result: Shared<Expr> = Shared.new(ExprUnit(span_unknown())); let mut index = 0
-  while index < field_values.length() do
-    if field_values[index].name == field_name then result = field_values[index].val end
-    index = index + 1
-  end
-  result
-end
 
 fn gen_record_ordered(field_values: [Shared<FieldVal>], field_order: [string], context: CodegenContext) -> string = do
   let parts: [string] = []; let mut index = 0
@@ -88,51 +84,6 @@ fn gen_record_update_lazy(base_expr: Shared<Expr>, overrides: [Shared<FieldVal>]
     index = index + 1
   end
   "[&]() { " + parts.join("") + "return __upd; }()"
-end
-
-// --- Match arm / deref detection rules --------------------------------------
-
-export fn subject_needs_deref(subject: Shared<Expr>, context: CodegenContext) -> bool = do
-  if expr_returns_shared_sum_visit_ptr(subject) then true
-  else match subject {
-    ExprIdent(name, _) =>
-      if context.match_deref_params.contains(name) then true
-      else if context.shared_params.contains(name) then true
-      else if context.value_params.contains(name) then false
-      else true
-      end,
-    ExprIndex(array_expr, _, _) => match array_expr {
-      ExprIdent(array_name, _) => context.shared_array_params.contains(array_name),
-      _ => true
-    },
-    ExprMethod(_, _, _, _) => false,
-    _ => true
-  }
-  end
-end
-
-export fn first_arm_needs_deref(first_arm: Shared<MatchArm>, subject: Shared<Expr>, context: CodegenContext) -> bool =
-  match first_arm.pat {
-    PatCtor(name, _, _) => do
-      const resolved = context_resolve(context, name)
-      if resolved.length() >= 12 && resolved.substring(0, 12) == "ast_tokens::" then false
-      else if list_contains(context.generic_variants, name) then false
-      else subject_needs_deref(subject, context)
-      end
-    end,
-    _ => subject_needs_deref(subject, context)
-  }
-
-fn pat_bind_names(sub_patterns: [Shared<Pat>]) -> string = do
-  let parts: [string] = []; let mut index = 0
-  while index < sub_patterns.length() do
-    const bind_name = match sub_patterns[index] {
-      PatIdent(name, _) => cpp_safe(name),
-      _ => "__" + index.to_string()
-    }
-    parts.push(bind_name); index = index + 1
-  end
-  parts.join(", ")
 end
 
 // --- Match arm generation rule ----------------------------------------------
@@ -206,42 +157,6 @@ end
 
 // --- Expression rules (one function per expression form) --------------------
 
-fn gen_integer_literal(integer_value: i32) -> string =
-  integer_value.to_string()
-
-fn gen_string_literal(string_value: string) -> string =
-  "mlc::String(\"" + escape_str(string_value) + "\", " + string_value.length().to_string() + ")"
-
-fn gen_boolean_literal(boolean_value: bool) -> string =
-  if boolean_value then "true" else "false" end
-
-fn gen_unit_literal() -> string = "/* unit */"
-
-fn gen_extern_placeholder() -> string = ""
-
-fn resolve_identifier_in_self_context(name: string, context: CodegenContext) -> string = do
-  const self_fields = lookup_fields(context.field_orders, context.self_type)
-  const is_known_field = name == "errors" || name == "kind" || name == "tokens" || name == "line" || name == "col" || name == "inferred_type" || name == "type_env"
-  if list_contains(self_fields, name) || is_known_field then
-    "self." + cpp_safe(name)
-  else
-    const mapped = map_builtin(name)
-    const resolved = context_resolve(context, mapped)
-    const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
-    if needs_constructor_brace then resolved + "{}" else resolved end
-  end
-end
-
-fn gen_identifier(name: string, context: CodegenContext) -> string =
-  if context.self_type.length() > 0 then
-    resolve_identifier_in_self_context(name, context)
-  else
-    const mapped = map_builtin(name)
-    const resolved = context_resolve(context, mapped)
-    const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
-    if needs_constructor_brace then resolved + "{}" else resolved end
-  end
-
 fn gen_binary_expr(operation: string, left_expr: Shared<Expr>, right_expr: Shared<Expr>, context: CodegenContext) -> string =
   "(" + gen_expr(left_expr, context) + " " + operation + " " + gen_expr(right_expr, context) + ")"
 
@@ -254,25 +169,11 @@ fn gen_call_function_code(function_expr: Shared<Expr>, context: CodegenContext) 
     _ => gen_expr(function_expr, context)
   }
 
-fn is_constructor_call(function_expr: Shared<Expr>) -> bool =
-  match function_expr {
-    ExprIdent(name, _) => name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z",
-    _ => false
-  }
-
 fn gen_call_expr(function_expr: Shared<Expr>, arguments: [Shared<Expr>], context: CodegenContext) -> string = do
   const function_code = gen_call_function_code(function_expr, context)
   const argument_list = gen_argument_list(arguments, context)
   if is_constructor_call(function_expr) then function_code + "\{" + argument_list + "\}"
   else function_code + "(" + argument_list + ")"
-  end
-end
-
-fn resolve_object_code_in_self_context(object_name: string, context: CodegenContext) -> string = do
-  const self_fields = lookup_fields(context.field_orders, context.self_type)
-  const is_known_field = object_name == "errors" || object_name == "kind" || object_name == "tokens" || object_name == "line" || object_name == "col" || object_name == "inferred_type" || object_name == "type_env"
-  if list_contains(self_fields, object_name) || is_known_field then "self." + cpp_safe(object_name)
-  else context_resolve(context, map_builtin(object_name))
   end
 end
 
@@ -285,31 +186,8 @@ fn gen_object_code(object: Shared<Expr>, context: CodegenContext) -> string =
     _ => gen_expr(object, context)
   }
 
-fn infer_shared_new_type_name(argument: Shared<Expr>, context: CodegenContext) -> string = do
-  const raw_type_name = match argument {
-    ExprRecord(name, _, _)  => name,
-    ExprCall(function_expr, _, _) => match function_expr { ExprIdent(name, _) => name, _ => "" },
-    ExprIdent(name, _)      => name,
-    ExprIndex(array_expr, _, _) => match array_expr {
-      ExprIdent(array_name, _) => if context.array_elem_types.has(array_name) then context.array_elem_types.get(array_name) else "" end,
-      _ => ""
-    },
-    _ => ""
-  }
-  const parent_type = if raw_type_name.length() > 0 && context.variant_types.has(raw_type_name)
-                      then context.variant_types.get(raw_type_name)
-                      else raw_type_name
-                      end
-  if parent_type.length() > 0 then context_resolve(context, parent_type) else "auto" end
-end
-
-fn gen_method_file(method_name: string, arguments: [Shared<Expr>], context: CodegenContext) -> string = do
-  const cpp_function = if method_name == "read" then "mlc::file::read_to_string"
-                       else if method_name == "write" then "mlc::file::write_string"
-                       else "mlc::file::" + method_name
-                       end
-  cpp_function + "(" + gen_argument_list(arguments, context) + ")"
-end
+fn gen_method_file(method_name: string, arguments: [Shared<Expr>], context: CodegenContext) -> string =
+  cpp_function_name_for_file_method(method_name) + "(" + gen_argument_list(arguments, context) + ")"
 
 fn gen_method_shared_new(argument: Shared<Expr>, context: CodegenContext) -> string = do
   const argument_code = gen_expr(argument, context)
@@ -348,26 +226,6 @@ fn gen_method_expr(object: Shared<Expr>, method_name: string, arguments: [Shared
     gen_method_builtin(object_code, method_name, arguments, context)
   end
 end
-
-fn field_access_operator(object: Shared<Expr>, context: CodegenContext) -> string =
-  match object {
-    ExprIndex(inner_expr, _, _) => match inner_expr {
-      ExprIdent(array_name, _) =>
-        if context.shared_array_params.contains(array_name) then "->" else "." end,
-      _ => "."
-    },
-    ExprIdent(name, _) =>
-      if context.shared_params.contains(name) then "->" else "." end,
-    ExprMethod(map_object, method_name, _, _) =>
-      if method_name == "get" then
-        match map_object {
-          ExprIdent(map_name, _) =>
-            if context.shared_map_params.contains(map_name) then "->" else "." end,
-          _ => "."
-        }
-      else "." end,
-    _ => "."
-  }
 
 fn gen_field_expr(object: Shared<Expr>, field_name: string, context: CodegenContext) -> string = do
   const object_code = gen_expr(object, context)
@@ -466,15 +324,6 @@ export fn gen_expr(expr: Shared<Expr>, context: CodegenContext) -> string =
   }
 
 // --- Statement generation ----------------------------------------------------
-
-fn stmts_final_ctx(statements: [Shared<Stmt>], context: CodegenContext) -> CodegenContext = do
-  let mut current_context = context; let mut index = 0
-  while index < statements.length() do
-    current_context = update_context_from_statement(statements[index], current_context)
-    index = index + 1
-  end
-  current_context
-end
 
 fn gen_try_unwrap(inner_expr: Shared<Expr>, context: CodegenContext, try_identifier: string, success_line: string) -> string = do
   const inner_code = gen_expr(inner_expr, context)
