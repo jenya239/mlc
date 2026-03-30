@@ -58,8 +58,18 @@ task :test_compiler_mlc do
   sh "#{__dir__}/compiler/tests/build_tests.sh"
 end
 
-desc "test/mlc + тесты compiler/tests (рекомендуемый минимум для self-hosted)"
-task test_self_hosted_stack: %i[test_mlc test_compiler_mlc]
+desc "Сборка mlcc (compiler/build.sh), затем triple-bootstrap (compiler/triple_bootstrap.sh); долго, нужны g++ и ~10+ мин"
+task :triple_bootstrap do
+  sh "#{__dir__}/compiler/build.sh"
+  sh "#{__dir__}/compiler/triple_bootstrap.sh", "#{__dir__}/compiler/out/mlcc"
+end
+
+desc "test/mlc + тесты compiler/tests (рекомендуемый минимум для self-hosted). При MLC_TRIPLE_BOOTSTRAP=1 после этого выполняется triple_bootstrap"
+task test_self_hosted_stack: %i[test_mlc test_compiler_mlc] do
+  if ENV["MLC_TRIPLE_BOOTSTRAP"] == "1"
+    Rake::Task["triple_bootstrap"].invoke
+  end
+end
 
 # Optional RSpec task (only works if rspec gem is available)
 begin

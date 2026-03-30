@@ -7,11 +7,11 @@
 | Компонент | Путь | Состояние |
 |-----------|------|-----------|
 | Bootstrap-компилятор | `lib/mlc/` | Полнофункциональный, эталон семантики |
-| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, 85 тестов проходят |
+| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (≈158 тестов) |
 | Triple-bootstrap | `compiler/triple_bootstrap.sh` | При актуальном `compiler/out/mlcc`: `diff bs2 bs3` пустой (стабильность self-host) |
 | Runtime | `runtime/include/`, `runtime/src/` | C++20, стабильный |
 | Unit-тесты Ruby | `test/mlc/` | 1106 runs, 0 failures |
-| Unit-тесты MLC | `compiler/tests/` | 85 passed, 0 failed |
+| Unit-тесты MLC | `compiler/tests/` | `rake test_compiler_mlc`; опционально `rake triple_bootstrap` или `MLC_TRIPLE_BOOTSTRAP=1 rake test_self_hosted_stack` |
 | E2E тесты mlcc | `compiler/tests/e2e/` | 4 программы, все проходят через mlcc |
 
 ---
@@ -33,7 +33,7 @@
    - `mlcc → /tmp/bs1/` → компиляция → `mlcc2`
    - `mlcc2 → /tmp/bs2/` → компиляция → `mlcc3`
    - `mlcc3 → /tmp/bs3/` → diff `bs2/ bs3/`
-2. Интеграция в `rake test_self_hosted_stack` опциональным флагом
+2. Интеграция: `rake triple_bootstrap`; при `MLC_TRIPLE_BOOTSTRAP=1` — после `test_self_hosted_stack`
 3. Результат зафиксировать в артефакте CI
 
 **Метрика:** `bs2/*.cpp == bs3/*.cpp` для всех модулей `compiler/`.
