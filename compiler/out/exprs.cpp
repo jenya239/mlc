@@ -15,6 +15,8 @@ preds::StmtsResult parse_stmts_until_end(preds::Parser parser) noexcept;
 
 preds::StmtsResult parse_stmts_until_else_end(preds::Parser parser) noexcept;
 
+preds::StmtResult parse_statement_let_const(preds::Parser parser, ast::Span statement_span) noexcept;
+
 preds::StmtResult parse_statement_let(preds::Parser parser) noexcept;
 
 preds::StmtResult parse_statement_const(preds::Parser parser) noexcept;
@@ -159,15 +161,25 @@ state = result.parser;
 return preds::StmtsResult{stmts, state};
 }
 
-preds::StmtResult parse_statement_let(preds::Parser parser) noexcept{
-ast::Span statement_span = preds::Parser_span_at_cursor(parser);
-preds::Parser after_let = preds::Parser_advance(parser);
-bool is_mut = preds::TKind_is_mut(preds::Parser_kind(after_let));
-preds::Parser name_pos = is_mut ? preds::Parser_advance(after_let) : after_let;
+preds::StmtResult parse_statement_let_const(preds::Parser parser, ast::Span statement_span) noexcept{
+preds::Parser name_pos = preds::Parser_advance(parser);
 mlc::String var_name = preds::TKind_ident(preds::Parser_kind(name_pos));
 preds::TypeResult type_result = preds::TKind_is_colon(preds::Parser_kind(preds::Parser_advance(name_pos))) ? types::parse_type(preds::Parser_advance_by(name_pos, 2)) : preds::TypeResult{std::make_shared<ast::TypeExpr>((ast::TyUnit{})), preds::Parser_advance(name_pos)};
 preds::ExprResult value_result = parse_expr(preds::Parser_advance(type_result.parser));
-return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLet(var_name, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetConst(var_name, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+}
+
+preds::StmtResult parse_statement_let(preds::Parser parser) noexcept{
+ast::Span statement_span = preds::Parser_span_at_cursor(parser);
+preds::Parser after_let = preds::Parser_advance(parser);
+return preds::TKind_is_const(preds::Parser_kind(after_let)) ? parse_statement_let_const(after_let, statement_span) : [&]() -> preds::StmtResult { 
+  bool is_mut = preds::TKind_is_mut(preds::Parser_kind(after_let));
+  preds::Parser name_pos = is_mut ? preds::Parser_advance(after_let) : after_let;
+  mlc::String var_name = preds::TKind_ident(preds::Parser_kind(name_pos));
+  preds::TypeResult type_result = preds::TKind_is_colon(preds::Parser_kind(preds::Parser_advance(name_pos))) ? types::parse_type(preds::Parser_advance_by(name_pos, 2)) : preds::TypeResult{std::make_shared<ast::TypeExpr>((ast::TyUnit{})), preds::Parser_advance(name_pos)};
+  preds::ExprResult value_result = parse_expr(preds::Parser_advance(type_result.parser));
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLet(var_name, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+ }();
 }
 
 preds::StmtResult parse_statement_const(preds::Parser parser) noexcept{

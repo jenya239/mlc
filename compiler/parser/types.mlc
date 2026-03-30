@@ -13,9 +13,34 @@ export fn parse_type(parser: Parser) -> TypeResult = do
   end
 end
 
+fn parse_paren_types(parser: Parser) -> TypesResult = do
+  const types: [Shared<TypeExpr>] = []
+  if parser.kind().is_rparen() then
+    TypesResult { types, parser: parser.advance() }
+  else
+    const first = parse_type(parser)
+    types.push(first.type_expr)
+    let mut state = first.parser
+    while state.kind().is_comma() do
+      const next = parse_type(state.advance())
+      types.push(next.type_expr)
+      state = next.parser
+    end
+    TypesResult { types, parser: if state.kind().is_rparen() then state.advance() else state end }
+  end
+end
+
 fn parse_base_type(parser: Parser) -> TypeResult = do
   const kind = parser.kind()
-  if kind.is_lbracket() then
+  if kind.is_lparen() then
+    const paren_types = parse_paren_types(parser.advance())
+    if paren_types.parser.kind().is_arrow() then
+      const ret = parse_type(paren_types.parser.advance())
+      TypeResult { type_expr: Shared.new(TyFn(paren_types.types, ret.type_expr)), parser: ret.parser }
+    else
+      TypeResult { type_expr: Shared.new(TyUnit), parser: paren_types.parser }
+    end
+  else if kind.is_lbracket() then
     const inner = parse_type(parser.advance())
     TypeResult { type_expr: Shared.new(TyArray(inner.type_expr)), parser: inner.parser.advance() }
   else if kind.is_ident() then

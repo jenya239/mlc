@@ -367,6 +367,8 @@ export fn gen_stmt_with_try(stmt: Shared<Stmt>, context: CodegenContext, try_cou
       }
       result
     end,
+    StmtLetConst(name, _, value, _) =>
+      GenStmtResult { output: "constexpr auto " + cpp_safe(name) + " = " + gen_expr(value, context) + ";\n", next_try: try_counter },
     StmtExpr(expression, _) => match expression {
       ExprQuestion(inner_expr, _) => do
         const try_identifier = "__try_" + try_counter.to_string()

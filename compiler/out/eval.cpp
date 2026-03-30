@@ -392,6 +392,7 @@ context::GenStmtResult gen_stmt_with_try(std::shared_ptr<ast::Stmt> stmt, contex
  }(); } return context::GenStmtResult{mlc::String("auto ") + cpp_naming::cpp_safe(name) + mlc::String(" = ") + gen_expr(value, context) + mlc::String(";\n"), try_counter}; }();
   return result;
  }(); },
+  [&](const StmtLetConst& stmtletconst) -> context::GenStmtResult { auto [name, _w0, value, _w1] = stmtletconst; return context::GenStmtResult{mlc::String("constexpr auto ") + cpp_naming::cpp_safe(name) + mlc::String(" = ") + gen_expr(value, context) + mlc::String(";\n"), try_counter}; },
   [&](const StmtExpr& stmtexpr) -> context::GenStmtResult { auto [expression, _w0] = stmtexpr; return [&]() -> context::GenStmtResult { if (std::holds_alternative<ast::ExprQuestion>((*expression)._)) { auto _v_exprquestion = std::get<ast::ExprQuestion>((*expression)._); auto [inner_expr, _w0] = _v_exprquestion; return [&]() -> context::GenStmtResult { 
   mlc::String try_identifier = mlc::String("__try_") + mlc::to_string(try_counter);
   return context::GenStmtResult{gen_try_unwrap(inner_expr, context, try_identifier, mlc::String("/* discard */ (void)std::get<0>(") + try_identifier + mlc::String(").field0;\n")), try_counter + 1};

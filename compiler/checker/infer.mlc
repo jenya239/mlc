@@ -348,6 +348,11 @@ export fn infer_statements(statements: [Shared<Stmt>], inference_context: CheckC
         current_environment.set(binding_name, value_result.inferred_type)
         collected_errors = diagnostics_append(collected_errors, value_result.errors); ()
       end,
+      StmtLetConst(binding_name, _, value_expression, _) => do
+        const value_result = infer_expr(value_expression, check_context_new(current_environment, inference_context.registry))
+        current_environment.set(binding_name, value_result.inferred_type)
+        collected_errors = diagnostics_append(collected_errors, value_result.errors); ()
+      end,
       StmtExpr(expression, _) => do
         const expression_result = infer_expr(expression, check_context_new(current_environment, inference_context.registry))
         collected_errors = diagnostics_append(collected_errors, expression_result.errors); ()

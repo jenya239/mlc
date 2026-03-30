@@ -319,6 +319,12 @@ std::visit(overloaded{
   collected_errors = ast::diagnostics_append(collected_errors, value_result.errors);
   return std::make_tuple();
  }(); },
+  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [binding_name, _w0, value_expression, _w1] = stmtletconst; return [&]() -> std::tuple<> { 
+  infer::InferResult value_result = infer_expr(value_expression, check_context::check_context_new(current_environment, inference_context.registry));
+  current_environment.set(binding_name, value_result.inferred_type);
+  collected_errors = ast::diagnostics_append(collected_errors, value_result.errors);
+  return std::make_tuple();
+ }(); },
   [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expression, _w0] = stmtexpr; return [&]() -> std::tuple<> { 
   infer::InferResult expression_result = infer_expr(expression, check_context::check_context_new(current_environment, inference_context.registry));
   collected_errors = ast::diagnostics_append(collected_errors, expression_result.errors);

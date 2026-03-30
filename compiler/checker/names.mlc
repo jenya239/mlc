@@ -230,6 +230,10 @@ export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], g
         collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
         scope.push(name); ()
       end,
+      StmtLetConst(name, _, value, _) => do
+        collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
+        scope.push(name); ()
+      end,
       StmtExpr(expression, _) => do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
       StmtReturn(expression, _) => do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
       StmtBreak(_)    => do () end,

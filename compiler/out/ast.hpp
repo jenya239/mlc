@@ -51,11 +51,12 @@ struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprIdent, ExprB
 
 
 struct StmtLet {mlc::String field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;ast::Span field4;};
+struct StmtLetConst {mlc::String field0;std::shared_ptr<ast::TypeExpr> field1;std::shared_ptr<ast::Expr> field2;ast::Span field3;};
 struct StmtExpr {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
 struct StmtBreak {ast::Span field0;};
 struct StmtContinue {ast::Span field0;};
 struct StmtReturn {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
-struct Stmt {std::variant<StmtLet, StmtExpr, StmtBreak, StmtContinue, StmtReturn> _;};
+struct Stmt {std::variant<StmtLet, StmtLetConst, StmtExpr, StmtBreak, StmtContinue, StmtReturn> _;};
 
 
 struct Param {mlc::String name;bool is_mut;std::shared_ptr<ast::TypeExpr> typ;};

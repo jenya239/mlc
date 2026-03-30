@@ -8,6 +8,8 @@ using namespace preds;
 
 preds::TypeResult parse_type(preds::Parser parser) noexcept;
 
+preds::TypesResult parse_paren_types(preds::Parser parser) noexcept;
+
 preds::TypeResult parse_base_type(preds::Parser parser) noexcept;
 
 preds::TypesResult parse_type_args(preds::Parser parser) noexcept;
@@ -21,9 +23,32 @@ return preds::TKind_is_arrow(preds::Parser_kind(base.parser)) ? [&]() -> preds::
  }() : base;
 }
 
+preds::TypesResult parse_paren_types(preds::Parser parser) noexcept{
+mlc::Array<std::shared_ptr<ast::TypeExpr>> types = {};
+return preds::TKind_is_rparen(preds::Parser_kind(parser)) ? preds::TypesResult{types, preds::Parser_advance(parser)} : [&]() -> preds::TypesResult { 
+  preds::TypeResult first = parse_type(parser);
+  types.push_back(first.type_expr);
+  preds::Parser state = first.parser;
+  while (preds::TKind_is_comma(preds::Parser_kind(state))){
+{
+preds::TypeResult next = parse_type(preds::Parser_advance(state));
+types.push_back(next.type_expr);
+state = next.parser;
+}
+}
+  return preds::TypesResult{types, preds::TKind_is_rparen(preds::Parser_kind(state)) ? preds::Parser_advance(state) : state};
+ }();
+}
+
 preds::TypeResult parse_base_type(preds::Parser parser) noexcept{
 ast_tokens::TKind kind = preds::Parser_kind(parser);
-return preds::TKind_is_lbracket(kind) ? [&]() -> preds::TypeResult { 
+return preds::TKind_is_lparen(kind) ? [&]() -> preds::TypeResult { 
+  preds::TypesResult paren_types = parse_paren_types(preds::Parser_advance(parser));
+  return preds::TKind_is_arrow(preds::Parser_kind(paren_types.parser)) ? [&]() -> preds::TypeResult { 
+  preds::TypeResult ret = parse_type(preds::Parser_advance(paren_types.parser));
+  return preds::TypeResult{std::make_shared<ast::TypeExpr>(ast::TyFn(paren_types.types, ret.type_expr)), ret.parser};
+ }() : preds::TypeResult{std::make_shared<ast::TypeExpr>((ast::TyUnit{})), paren_types.parser};
+ }() : preds::TKind_is_lbracket(kind) ? [&]() -> preds::TypeResult { 
   preds::TypeResult inner = parse_type(preds::Parser_advance(parser));
   return preds::TypeResult{std::make_shared<ast::TypeExpr>(ast::TyArray(inner.type_expr)), preds::Parser_advance(inner.parser)};
  }() : preds::TKind_is_ident(kind) ? [&]() -> preds::TypeResult { 

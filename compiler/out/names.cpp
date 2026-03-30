@@ -333,6 +333,11 @@ std::visit(overloaded{
   scope.push_back(name);
   return std::make_tuple();
  }(); },
+  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [name, _w0, value, _w1] = stmtletconst; return [&]() -> std::tuple<> { 
+  collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals));
+  scope.push_back(name);
+  return std::make_tuple();
+ }(); },
   [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expression, _w0] = stmtexpr; return [&]() -> std::tuple<> { 
   collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals));
   return std::make_tuple();

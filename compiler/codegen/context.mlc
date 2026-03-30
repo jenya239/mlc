@@ -73,6 +73,7 @@ export fn expr_returns_shared_sum_visit_ptr(e: Shared<Expr>) -> bool =
 
 export fn update_context_from_statement(stmt: Shared<Stmt>, context: CodegenContext) -> CodegenContext =
   match stmt {
+    StmtLetConst(binding_name, _, _, _) => context_add_value(context, binding_name),
     StmtLet(binding_name, _, typ, value, _) =>
       if is_shared_type(typ) then context_add_shared(context, binding_name)
       else if is_shared_array_type(typ) then context_add_shared_array(context, binding_name)
