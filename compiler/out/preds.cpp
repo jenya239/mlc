@@ -227,6 +227,8 @@ preds::Parser Parser_skip_semi(preds::Parser self) noexcept;
 
 ast::Span Parser_span_at_cursor(preds::Parser self) noexcept;
 
+int Parser_prev_line(preds::Parser self) noexcept;
+
 preds::Parser parser_new_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept{return preds::Parser{tokens, 0, source_path};}
 
 preds::Parser parser_new(mlc::Array<ast_tokens::Token> tokens) noexcept{return parser_new_with_source_path(tokens, mlc::String(""));}
@@ -472,6 +474,13 @@ return [&]() -> preds::Parser { if (std::holds_alternative<ast_tokens::Semicolon
 ast::Span Parser_span_at_cursor(preds::Parser self) noexcept{
 ast_tokens::Token tok = self.tokens[self.pos];
 return ast::Span{self.source_path, tok.line, tok.col};
+}
+
+int Parser_prev_line(preds::Parser self) noexcept{
+return self.pos > 0 ? [&]() -> int { 
+  ast_tokens::Token tok = self.tokens[self.pos - 1];
+  return tok.line;
+ }() : 0;
 }
 
 } // namespace preds

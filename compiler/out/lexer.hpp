@@ -10,6 +10,8 @@ namespace lexer {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 ast_tokens::LexOut tokenize(mlc::String source) noexcept;
 

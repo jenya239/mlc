@@ -8,6 +8,8 @@ namespace test_runner {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 struct Pass {mlc::String name;};struct Fail {mlc::String name;mlc::String message;};using TestResult = std::variant<Pass, Fail>;
 

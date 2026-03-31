@@ -7,14 +7,19 @@
 #include "lexer.hpp"
 #include "decls.hpp"
 #include "check.hpp"
+#include "transform.hpp"
+#include "registry.hpp"
 #include "module.hpp"
 #include "context.hpp"
+#include "cpp_naming.hpp"
 #include "ast.hpp"
 
 namespace mlc_main {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 } // namespace mlc_main
 

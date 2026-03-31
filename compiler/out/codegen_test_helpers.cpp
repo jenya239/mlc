@@ -2,6 +2,7 @@
 
 #include "test_runner.hpp"
 #include "ast.hpp"
+#include "semantic_ir.hpp"
 #include "context.hpp"
 #include "eval.hpp"
 #include "type_gen.hpp"
@@ -11,6 +12,7 @@ namespace codegen_test_helpers {
 
 using namespace test_runner;
 using namespace ast;
+using namespace semantic_ir;
 using namespace context;
 using namespace eval;
 using namespace type_gen;
@@ -19,7 +21,7 @@ using namespace ast_tokens;
 
 context::CodegenContext empty_codegen_context() noexcept;
 
-test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<ast::Expr> expr, mlc::String expected_code) noexcept;
+test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<semantic_ir::SExpr> expr, mlc::String expected_code) noexcept;
 
 test_runner::TestResult assert_type_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<ast::TypeExpr> type_expr, mlc::String expected_code) noexcept;
 
@@ -31,7 +33,7 @@ bool string_contains(mlc::String haystack, mlc::String needle) noexcept;
 
 context::CodegenContext empty_codegen_context() noexcept{return context::create_codegen_context(ast_builders::empty_program());}
 
-test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<ast::Expr> expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, eval::gen_expr(expr, context), expected_code);}
+test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<semantic_ir::SExpr> expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, eval::gen_expr(expr, context), expected_code);}
 
 test_runner::TestResult assert_type_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<ast::TypeExpr> type_expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, type_gen::type_to_cpp(context, type_expr), expected_code);}
 

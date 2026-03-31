@@ -1,14 +1,26 @@
 // Unit tests for declaration code generation.
 
 import { TestResult, assert_eq_str, assert_true } from "./test_runner"
-import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, Param, FieldDef } from "../ast"
+import { Program, TypeVariant, Param, FieldDef, TyI32, TyString, TyUnit, span_unknown } from "../ast"
 import { create_codegen_context } from "../codegen/context"
 import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_decl, gen_proto, decls_have_main } from "../codegen/decl"
-import { empty_program, integer_type, string_type, unit_type, named_type,
-         integer_expr, identifier_expr, binary_expr, unit_expr,
-         value_param, function_decl, type_decl, exported_decl,
-         record_variant, tuple_variant, unit_variant, field_definition } from "./ast_builders"
-import { assert_code_contains, assert_expr_generates, empty_codegen_context } from "./codegen_test_helpers"
+import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from "./ast_builders"
+import { assert_code_contains, empty_codegen_context } from "./codegen_test_helpers"
+import { SDecl, SExpr, SExprUnit, SExprIdent, SExprBin, SDeclFn, SDeclType, SDeclExported } from "../semantic_ir"
+import { Type, TI32, TString, TUnit, TUnknown } from "../checker/registry"
+
+fn ti32()  -> Shared<Type> = Shared.new(TI32)
+fn tstr()  -> Shared<Type> = Shared.new(TString)
+fn tunit() -> Shared<Type> = Shared.new(TUnit)
+fn unk()   -> Shared<Type> = Shared.new(TUnknown)
+
+fn make_ident(name: string) -> Shared<SExpr> = Shared.new(SExprIdent(name, unk(), span_unknown()))
+fn make_bin(op: string, left: Shared<SExpr>, right: Shared<SExpr>) -> Shared<SExpr> = Shared.new(SExprBin(op, left, right, unk(), span_unknown()))
+fn make_unit_expr() -> Shared<SExpr> = Shared.new(SExprUnit(tunit(), span_unknown()))
+
+fn iparam(name: string) -> Shared<Param> = Shared.new(Param { name: name, is_mut: false, typ: Shared.new(TyI32) })
+fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SExpr>) -> Shared<SDecl> =
+  Shared.new(SDeclFn(name, [], [], params, return_type, body))
 
 export fn decl_gen_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -17,43 +29,40 @@ export fn decl_gen_tests() -> [TestResult] = do
   // --- gen_fn_proto -----------------------------------------------------------
 
   results.push(assert_eq_str("gen_fn_proto: zero params",
-    gen_fn_proto("compute", [], [], [], unit_type(), context),
+    gen_fn_proto("compute", [], [], [], tunit(), context),
     "void compute() noexcept;\n"))
 
   results.push(assert_eq_str("gen_fn_proto: single i32 param",
-    gen_fn_proto("double_it", [], [], [value_param("value", integer_type())], integer_type(), context),
+    gen_fn_proto("double_it", [], [], [iparam("value")], ti32(), context),
     "int double_it(int value) noexcept;\n"))
 
   results.push(assert_eq_str("gen_fn_proto: two params",
-    gen_fn_proto("add", [], [], [value_param("left", integer_type()), value_param("right", integer_type())], integer_type(), context),
+    gen_fn_proto("add", [], [], [iparam("left"), iparam("right")], ti32(), context),
     "int add(int left, int right) noexcept;\n"))
 
   results.push(assert_eq_str("gen_fn_proto: string return type",
-    gen_fn_proto("greet", [], [], [value_param("name", string_type())], string_type(), context),
+    gen_fn_proto("greet", [], [], [Shared.new(Param { name: "name", is_mut: false, typ: Shared.new(TyString) })], tstr(), context),
     "mlc::String greet(mlc::String name) noexcept;\n"))
 
   // --- gen_fn_decl ------------------------------------------------------------
 
   results.push(assert_eq_str("gen_fn_decl: identity function",
-    gen_fn_decl("identity", [], [], [value_param("value", integer_type())], integer_type(),
-      identifier_expr("value"), context),
+    gen_fn_decl("identity", [], [], [iparam("value")], ti32(), make_ident("value"), context),
     "int identity(int value) noexcept{\nreturn value;\n}\n"))
 
   results.push(assert_eq_str("gen_fn_decl: addition",
-    gen_fn_decl("add", [], [], [value_param("left", integer_type()), value_param("right", integer_type())], integer_type(),
-      binary_expr("+", identifier_expr("left"), identifier_expr("right")), context),
+    gen_fn_decl("add", [], [], [iparam("left"), iparam("right")], ti32(),
+      make_bin("+", make_ident("left"), make_ident("right")), context),
     "int add(int left, int right) noexcept{\nreturn (left + right);\n}\n"))
 
   results.push(assert_eq_str("gen_fn_decl: unit return",
-    gen_fn_decl("nothing", [], [], [], unit_type(), unit_expr(), context),
+    gen_fn_decl("nothing", [], [], [], tunit(), make_unit_expr(), context),
     "void nothing() noexcept{\nreturn /* unit */;\n}\n"))
 
-  // --- gen_decl with DeclFn ---------------------------------------------------
+  // --- gen_decl with SDeclFn ---------------------------------------------------
 
-  const add_decl = function_decl("add",
-    [value_param("left", integer_type()), value_param("right", integer_type())],
-    integer_type(),
-    binary_expr("+", identifier_expr("left"), identifier_expr("right")))
+  const add_decl = fn_decl("add", [iparam("left"), iparam("right")], ti32(),
+    make_bin("+", make_ident("left"), make_ident("right")))
 
   results.push(assert_code_contains("gen_decl DeclFn: contains return type",
     gen_decl(add_decl, context), "int add"))
@@ -61,45 +70,45 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains("gen_decl DeclFn: contains body",
     gen_decl(add_decl, context), "return (left + right)"))
 
-  // --- gen_decl with DeclType -------------------------------------------------
+  // --- gen_decl with SDeclType -------------------------------------------------
 
-  const point_type = type_decl("Point",
-    [record_variant("Point", [field_definition("x", integer_type()), field_definition("y", integer_type())])])
+  const point_type = Shared.new(SDeclType("Point", [],
+    [record_variant("Point", [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])]))
 
   results.push(assert_code_contains("gen_decl DeclType: record struct",
     gen_decl(point_type, context), "Point"))
 
-  const color_type = type_decl("Color",
-    [unit_variant("Red"), unit_variant("Green"), unit_variant("Blue")])
+  const color_type = Shared.new(SDeclType("Color", [],
+    [unit_variant("Red"), unit_variant("Green"), unit_variant("Blue")]))
 
   results.push(assert_code_contains("gen_decl DeclType: unit variants",
     gen_decl(color_type, context), "Red"))
 
-  // --- gen_decl with DeclExported ---------------------------------------------
+  // --- gen_decl with SDeclExported ---------------------------------------------
 
-  const exported_fn = exported_decl(function_decl("square",
-    [value_param("value", integer_type())], integer_type(),
-    binary_expr("*", identifier_expr("value"), identifier_expr("value"))))
+  const exported_fn = Shared.new(SDeclExported(fn_decl("square",
+    [iparam("value")], ti32(),
+    make_bin("*", make_ident("value"), make_ident("value")))))
 
-  results.push(assert_code_contains("gen_decl DeclExported: generates body",
+  results.push(assert_code_contains("gen_decl SDeclExported: generates body",
     gen_decl(exported_fn, context), "int square"))
 
-  results.push(assert_code_contains("gen_decl DeclExported: contains multiplication",
+  results.push(assert_code_contains("gen_decl SDeclExported: contains multiplication",
     gen_decl(exported_fn, context), "value * value"))
 
   // --- gen_proto --------------------------------------------------------------
 
-  results.push(assert_eq_str("gen_proto DeclFn: produces prototype",
+  results.push(assert_eq_str("gen_proto SDeclFn: produces prototype",
     gen_proto(add_decl, context),
     "int add(int left, int right) noexcept;\n"))
 
-  results.push(assert_eq_str("gen_proto DeclType: empty string",
+  results.push(assert_eq_str("gen_proto SDeclType: empty string",
     gen_proto(point_type, context), ""))
 
   // --- decls_have_main --------------------------------------------------------
 
-  const main_decl = function_decl("main", [], unit_type(), unit_expr())
-  const other_decl = function_decl("other", [], unit_type(), unit_expr())
+  const main_decl  = fn_decl("main",  [], tunit(), make_unit_expr())
+  const other_decl = fn_decl("other", [], tunit(), make_unit_expr())
 
   results.push(assert_true("decls_have_main: finds main",
     decls_have_main([main_decl, other_decl])))

@@ -1,27 +1,15 @@
-import { Expr, MatchArm, Pat } from "../ast"
-import { CodegenContext, context_resolve, list_contains, expr_returns_shared_sum_visit_ptr } from "./context"
+import { Pat } from "../ast"
+import { SExpr, SMatchArm, sexpr_type } from "../semantic_ir"
+import { Type } from "../checker/registry"
+import { CodegenContext, context_resolve, list_contains } from "./context"
 import { cpp_safe } from "./cpp_naming"
 
-export fn subject_needs_deref(subject: Shared<Expr>, context: CodegenContext) -> bool = do
-  if expr_returns_shared_sum_visit_ptr(subject) then true
-  else match subject {
-    ExprIdent(name, _) =>
-      if context.match_deref_params.contains(name) then true
-      else if context.shared_params.contains(name) then true
-      else if context.value_params.contains(name) then false
-      else true
-      end,
-    ExprIndex(array_expr, _, _) => match array_expr {
-      ExprIdent(array_name, _) => context.shared_array_params.contains(array_name),
-      _ => true
-    },
-    ExprMethod(_, _, _, _) => false,
-    _ => true
-  }
-  end
-end
+// Determine if the match subject expression should be dereferenced (*subject).
+// A subject needs deref if it holds a shared pointer to a sum type.
+export fn subject_needs_deref(subject: Shared<SExpr>, context: CodegenContext) -> bool =
+  match sexpr_type(subject) { TShared(_) => true, _ => false }
 
-export fn first_arm_needs_deref(first_arm: Shared<MatchArm>, subject: Shared<Expr>, context: CodegenContext) -> bool =
+export fn first_arm_needs_deref(first_arm: Shared<SMatchArm>, subject: Shared<SExpr>, context: CodegenContext) -> bool =
   match first_arm.pat {
     PatCtor(name, _, _) => do
       const resolved = context_resolve(context, name)

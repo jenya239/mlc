@@ -16,6 +16,8 @@ namespace tests_main {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 } // namespace tests_main
 

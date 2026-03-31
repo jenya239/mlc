@@ -1,8 +1,42 @@
 // Type expression → C++ string generation.
 
 import { TypeVariant, TypeExpr, Decl, Param } from "../ast"
+import { Type } from "../checker/registry"
 import { CodegenContext, CtorTypeInfo, context_resolve, list_contains } from "./context"
 import { cpp_safe, lower_first, template_prefix } from "./cpp_naming"
+
+// Converts a semantic Type (from checker/registry) to a C++ type string.
+export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) -> string =
+  match semantic_type {
+    TI32     => "int",
+    TString  => "mlc::String",
+    TBool    => "bool",
+    TUnit    => "void",
+    TUnknown => "auto",
+    TArray(inner)  => "mlc::Array<" + sem_type_to_cpp(context, inner) + ">",
+    TShared(inner) => "std::shared_ptr<" + sem_type_to_cpp(context, inner) + ">",
+    TNamed(type_name)  => context_resolve(context, type_name),
+    TGeneric(type_name, type_args) => do
+      const safe_name =
+        if type_name == "Map" then "mlc::HashMap"
+        else if type_name == "Shared" then "std::shared_ptr"
+        else context_resolve(context, type_name)
+        end
+      if type_args.length() == 0 then safe_name
+      else if type_args.length() == 1 then
+        safe_name + "<" + sem_type_to_cpp(context, type_args[0]) + ">"
+      else
+        safe_name + "<" + sem_type_to_cpp(context, type_args[0]) + ", " + sem_type_to_cpp(context, type_args[1]) + ">"
+      end
+    end,
+    TFn(param_types, return_type) => do
+      let mut parts: [string] = []; let mut i = 0
+      while i < param_types.length() do
+        parts.push(sem_type_to_cpp(context, param_types[i])); i = i + 1
+      end
+      "std::function<" + sem_type_to_cpp(context, return_type) + "(" + parts.join(", ") + ")>"
+    end
+  }
 
 export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
   if type_name == "i32" then "int"

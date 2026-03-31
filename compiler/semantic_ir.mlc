@@ -1,0 +1,123 @@
+// SemanticIR: typed AST. Every expression node carries its resolved Type.
+// Mirrors Ruby's MLC::SemanticIR::Expr hierarchy (nodes.rb).
+// Produced by checker/transform.mlc; consumed by codegen/.
+
+import { Type } from "./checker/registry"
+import { Pat, Span, TypeVariant, Param, Decl } from "./ast"
+
+// Forward-declare SExpr so records referencing it can be defined first.
+export type SMatchArm = SMatchArm { pat: Shared<Pat>, body: Shared<SExpr> }
+export type SFieldVal  = SFieldVal  { name: string, val: Shared<SExpr> }
+
+// --- Typed expression -------------------------------------------------------
+
+export type SExpr =
+  | SExprInt(i32, Shared<Type>, Span)
+  | SExprStr(string, Shared<Type>, Span)
+  | SExprBool(bool, Shared<Type>, Span)
+  | SExprUnit(Shared<Type>, Span)
+  | SExprExtern(Shared<Type>, Span)
+  | SExprIdent(string, Shared<Type>, Span)
+  | SExprBin(string, Shared<SExpr>, Shared<SExpr>, Shared<Type>, Span)
+  | SExprUn(string, Shared<SExpr>, Shared<Type>, Span)
+  | SExprCall(Shared<SExpr>, [Shared<SExpr>], Shared<Type>, Span)
+  | SExprMethod(Shared<SExpr>, string, [Shared<SExpr>], Shared<Type>, Span)
+  | SExprField(Shared<SExpr>, string, Shared<Type>, Span)
+  | SExprIndex(Shared<SExpr>, Shared<SExpr>, Shared<Type>, Span)
+  | SExprIf(Shared<SExpr>, Shared<SExpr>, Shared<SExpr>, Shared<Type>, Span)
+  | SExprBlock([Shared<SStmt>], Shared<SExpr>, Shared<Type>, Span)
+  | SExprWhile(Shared<SExpr>, [Shared<SStmt>], Shared<Type>, Span)
+  | SExprFor(string, Shared<SExpr>, [Shared<SStmt>], Shared<Type>, Span)
+  | SExprMatch(Shared<SExpr>, [Shared<SMatchArm>], Shared<Type>, Span)
+  | SExprRecord(string, [Shared<SFieldVal>], Shared<Type>, Span)
+  | SExprRecordUpdate(string, Shared<SExpr>, [Shared<SFieldVal>], Shared<Type>, Span)
+  | SExprArray([Shared<SExpr>], Shared<Type>, Span)
+  | SExprQuestion(Shared<SExpr>, Shared<Type>, Span)
+  | SExprLambda([string], Shared<SExpr>, Shared<Type>, Span)
+
+// --- Typed statement --------------------------------------------------------
+
+export type SStmt =
+  | SStmtLet(string, bool, Shared<SExpr>, Shared<Type>, Span)
+  | SStmtLetConst(string, Shared<SExpr>, Shared<Type>, Span)
+  | SStmtExpr(Shared<SExpr>, Span)
+  | SStmtReturn(Shared<SExpr>, Span)
+  | SStmtBreak(Span)
+  | SStmtContinue(Span)
+
+// --- Typed declaration ------------------------------------------------------
+
+// Type and trait declarations stay structurally identical to AST;
+// only function bodies switch to SExpr.
+export type SDecl =
+  | SDeclFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SExpr>)
+  | SDeclType(string, [string], [Shared<TypeVariant>])
+  | SDeclTrait(string, [string], [Shared<SDecl>])
+  | SDeclExtend(string, string, [Shared<SDecl>])
+  | SDeclImport(string, [string])
+  | SDeclExported(Shared<SDecl>)
+
+export type SProgram = SProgram { decls: [Shared<SDecl>] }
+
+// Modular load item with typed declarations.
+export type SLoadItem = SLoadItem { path: string, decls: [Shared<SDecl>], imports: [string] }
+
+// --- Helpers ----------------------------------------------------------------
+
+export fn sexpr_type(expression: Shared<SExpr>) -> Shared<Type> =
+  match expression {
+    SExprInt(_, t, _)                  => t,
+    SExprStr(_, t, _)                  => t,
+    SExprBool(_, t, _)                 => t,
+    SExprUnit(t, _)                    => t,
+    SExprExtern(t, _)                  => t,
+    SExprIdent(_, t, _)                => t,
+    SExprBin(_, _, _, t, _)            => t,
+    SExprUn(_, _, t, _)                => t,
+    SExprCall(_, _, t, _)              => t,
+    SExprMethod(_, _, _, t, _)         => t,
+    SExprField(_, _, t, _)             => t,
+    SExprIndex(_, _, t, _)             => t,
+    SExprIf(_, _, _, t, _)             => t,
+    SExprBlock(_, _, t, _)             => t,
+    SExprWhile(_, _, t, _)             => t,
+    SExprFor(_, _, _, t, _)            => t,
+    SExprMatch(_, _, t, _)             => t,
+    SExprRecord(_, _, t, _)            => t,
+    SExprRecordUpdate(_, _, _, t, _)   => t,
+    SExprArray(_, t, _)                => t,
+    SExprQuestion(_, t, _)             => t,
+    SExprLambda(_, _, t, _)            => t
+  }
+
+export fn sexpr_span(expression: Shared<SExpr>) -> Span =
+  match expression {
+    SExprInt(_, _, s)                  => s,
+    SExprStr(_, _, s)                  => s,
+    SExprBool(_, _, s)                 => s,
+    SExprUnit(_, s)                    => s,
+    SExprExtern(_, s)                  => s,
+    SExprIdent(_, _, s)                => s,
+    SExprBin(_, _, _, _, s)            => s,
+    SExprUn(_, _, _, s)                => s,
+    SExprCall(_, _, _, s)              => s,
+    SExprMethod(_, _, _, _, s)         => s,
+    SExprField(_, _, _, s)             => s,
+    SExprIndex(_, _, _, s)             => s,
+    SExprIf(_, _, _, _, s)             => s,
+    SExprBlock(_, _, _, s)             => s,
+    SExprWhile(_, _, _, s)             => s,
+    SExprFor(_, _, _, _, s)            => s,
+    SExprMatch(_, _, _, s)             => s,
+    SExprRecord(_, _, _, s)            => s,
+    SExprRecordUpdate(_, _, _, _, s)   => s,
+    SExprArray(_, _, s)                => s,
+    SExprQuestion(_, _, s)             => s,
+    SExprLambda(_, _, _, s)            => s
+  }
+
+export fn sdecl_inner(declaration: Shared<SDecl>) -> Shared<SDecl> =
+  match declaration {
+    SDeclExported(inner) => inner,
+    _                    => declaration
+  }

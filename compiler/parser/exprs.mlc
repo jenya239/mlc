@@ -337,7 +337,7 @@ fn parse_postfix(parser: Parser) -> ExprResult = do
     if kind.is_dot() then
       const dot_span = state.span_at_cursor()
       const field_name = state.advance().kind().ident()
-      if state.advance_by(2).kind().is_lparen() then
+      if state.advance_by(2).kind().is_lparen() && state.advance_by(2).span_at_cursor().line == state.advance_by(1).span_at_cursor().line then
         const margs = parse_arg_list(state.advance_by(3))
         expr = Shared.new(ExprMethod(expr, field_name, margs.exprs, dot_span))
         state = margs.parser
@@ -345,7 +345,7 @@ fn parse_postfix(parser: Parser) -> ExprResult = do
         expr = Shared.new(ExprField(expr, field_name, dot_span))
         state = state.advance_by(2)
       end
-    else if kind.is_lparen() then
+    else if kind.is_lparen() && state.span_at_cursor().line == state.prev_line() then
       const call_span = state.span_at_cursor()
       const call_args = parse_arg_list(state.advance())
       expr = Shared.new(ExprCall(expr, call_args.exprs, call_span))
@@ -593,6 +593,10 @@ export fn parse_if_expr(parser: Parser) -> ExprResult = do
     if after_else.kind().is_if() || after_else.kind().is_unless() then
       const else_result = parse_if_expr(after_else)
       ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_result.expr, header_span)), parser: else_result.parser }
+    else if after_else.kind().is_do() then
+      const else_block = parse_block(after_else.advance(), header_span)
+      const after_block = if else_block.parser.kind().is_end() then else_block.parser.advance() else else_block.parser end
+      ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_block.expr, header_span)), parser: after_block }
     else
       const else_stmts = parse_stmts_until_end(after_else)
       ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_stmts.to_block_expr(header_span), header_span)), parser: else_stmts.parser }

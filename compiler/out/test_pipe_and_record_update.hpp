@@ -10,11 +10,16 @@
 #include "exprs.hpp"
 #include "lexer.hpp"
 #include "ast.hpp"
+#include "semantic_ir.hpp"
+#include "registry.hpp"
+#include "transform.hpp"
 
 namespace test_pipe_and_record_update {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 mlc::Array<test_runner::TestResult> pipe_and_record_update_tests() noexcept;
 

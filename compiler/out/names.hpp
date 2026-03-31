@@ -10,6 +10,8 @@ namespace names {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 struct NameCheckResult {mlc::Array<ast::Diagnostic> diagnostics;mlc::Array<mlc::String> scope;};
 

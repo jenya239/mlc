@@ -10,6 +10,8 @@ namespace type_utils {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcept;
 

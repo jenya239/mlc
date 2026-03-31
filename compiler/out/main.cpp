@@ -6,8 +6,11 @@
 #include "lexer.hpp"
 #include "decls.hpp"
 #include "check.hpp"
+#include "transform.hpp"
+#include "registry.hpp"
 #include "module.hpp"
 #include "context.hpp"
+#include "cpp_naming.hpp"
 #include "ast.hpp"
 
 namespace mlc_main {
@@ -15,14 +18,17 @@ namespace mlc_main {
 using namespace lexer;
 using namespace decls;
 using namespace check;
+using namespace transform;
+using namespace registry;
 using namespace module;
 using namespace context;
+using namespace cpp_naming;
 using namespace ast;
 using namespace ast_tokens;
 
-struct LoadResult {mlc::Array<context::LoadItem> items;mlc::Array<mlc::String> errors;};
+struct LoadResult {mlc::Array<decl_index::LoadItem> items;mlc::Array<mlc::String> errors;};
 
-struct MergeResult {ast::Program prog;mlc::Array<mlc::String> errors;mlc::Array<context::LoadItem> items;};
+struct MergeResult {ast::Program prog;mlc::Array<mlc::String> errors;mlc::Array<decl_index::LoadItem> items;};
 
 mlc::String dirname(mlc::String path) noexcept;
 
@@ -36,13 +42,11 @@ LoadResult load_module_impl(mlc::String path, mlc::Array<mlc::String> loaded, ml
 
 LoadResult load_module(mlc::String path, mlc::HashMap<mlc::String, LoadResult>& cache) noexcept;
 
-mlc::String path_to_module_base(mlc::String path) noexcept;
-
 MergeResult merge_program(mlc::String entry_path, ast::Program prog) noexcept;
 
 ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept;
 
-mlc::String compile_modular_loop(mlc::Array<context::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept;
+mlc::String compile_modular_loop(mlc::Array<decl_index::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept;
 
 mlc::String format_errs(mlc::String label, mlc::Array<mlc::String> errors) noexcept;
 
@@ -128,7 +132,7 @@ return cache.has(norm_path) ? cache.get(norm_path) : path_in_loaded(norm_path, l
   ast_tokens::LexOut lex = lexer::tokenize(source);
   return ast_tokens::LexOut_has_errors(lex) ? LoadResult{{}, mlc::Array<mlc::String>{mlc::String("lex ") + path + mlc::String(": ") + lex.errors[0]}} : [&]() -> LoadResult { 
   ast::Program prog = decls::parse_program_with_source_path(lex.tokens, norm_path);
-  mlc::Array<context::LoadItem> items = {};
+  mlc::Array<decl_index::LoadItem> items = {};
   mlc::Array<mlc::String> seen = {};
   mlc::Array<std::shared_ptr<ast::Decl>> my_decls = {};
   mlc::Array<mlc::String> my_imports = {};
@@ -145,7 +149,7 @@ return cache.has(norm_path) ? cache.get(norm_path) : path_in_loaded(norm_path, l
   return [&]() { 
   while (dep_i < dep_result.items.size()){
 {
-context::LoadItem item = dep_result.items[dep_i];
+decl_index::LoadItem item = dep_result.items[dep_i];
 if (!path_in_loaded(item.path, seen)){
 {
 seen.push_back(item.path);
@@ -160,7 +164,7 @@ dep_i = dep_i + 1;
 index = index + 1;
 }
 }
-  items.push_back(context::LoadItem{norm_path, my_decls, my_imports});
+  items.push_back(decl_index::LoadItem{norm_path, my_decls, my_imports});
   LoadResult result = LoadResult{items, all_errors};
   cache.set(norm_path, result);
   return result;
@@ -171,34 +175,11 @@ index = index + 1;
 
 LoadResult load_module(mlc::String path, mlc::HashMap<mlc::String, LoadResult>& cache) noexcept{return load_module_impl(path, {}, cache);}
 
-mlc::String path_to_module_base(mlc::String path) noexcept{
-int last_slash = -1;
-int last_dot = path.length();
-int i = 0;
-while (i < path.length()){
-{
-if (path.char_at(i) == mlc::String("/")){
-{
-last_slash = i;
-}
-} else {
-{
-if (path.char_at(i) == mlc::String(".") && i > last_slash){
-last_dot = i;
-}
-}
-}
-i = i + 1;
-}
-}
-return last_dot > last_slash ? path.substring(last_slash + 1, last_dot - last_slash - 1) : path.substring(last_slash + 1, path.length() - last_slash - 1);
-}
-
 MergeResult merge_program(mlc::String entry_path, ast::Program prog) noexcept{
 mlc::Array<std::shared_ptr<ast::Decl>> all_decls = {};
 mlc::Array<mlc::String> all_errors = {};
 mlc::Array<mlc::String> seen_paths = {};
-mlc::Array<context::LoadItem> items_ordered = {};
+mlc::Array<decl_index::LoadItem> items_ordered = {};
 mlc::Array<std::shared_ptr<ast::Decl>> entry_decls = {};
 mlc::Array<mlc::String> entry_imports = {};
 mlc::HashMap<mlc::String, LoadResult> cache = mlc::HashMap<mlc::String, LoadResult>();
@@ -214,7 +195,7 @@ while (index < prog.decls.size()){
   return [&]() { 
   while (dep_i < dep_result.items.size()){
 {
-context::LoadItem item = dep_result.items[dep_i];
+decl_index::LoadItem item = dep_result.items[dep_i];
 if (!path_in_loaded(item.path, seen_paths)){
 {
 seen_paths.push_back(item.path);
@@ -245,7 +226,7 @@ index = index + 1;
 }
 }
 mlc::String norm_entry = resolve_dotdot(entry_path);
-items_ordered.push_back(context::LoadItem{norm_entry, entry_decls, entry_imports});
+items_ordered.push_back(decl_index::LoadItem{norm_entry, entry_decls, entry_imports});
 return MergeResult{ast::Program{all_decls}, all_errors, items_ordered};
 }
 
@@ -258,7 +239,7 @@ return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<
   MergeResult merged = merge_program(entry_path, prog);
   return merged.errors.size() > 0 ? ast::Result<mlc::String, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(merged.errors)) : ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   int n = merged.items.size();
-  context::LoadItem entry_item = merged.items[n - 1];
+  decl_index::LoadItem entry_item = merged.items[n - 1];
   ast::Program entry_prog = ast::Program{entry_item.decls};
   auto __try__checked = check::check_with_context(entry_prog, merged.prog);
   if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try__checked)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try__checked));
@@ -268,14 +249,16 @@ return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<
  }());
 }
 
-mlc::String compile_modular_loop(mlc::Array<context::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept{
+mlc::String compile_modular_loop(mlc::Array<decl_index::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept{
+registry::TypeRegistry registry = registry::build_registry(full_prog);
+mlc::Array<semantic_ir::SLoadItem> s_items = transform::transform_load_items(items, registry);
 context::PrecomputedCtx precomp = module::precompute(full_prog, items);
 int i = 0;
-while (i < items.size()){
+while (i < s_items.size()){
 {
-context::LoadItem item = items[i];
-context::GenModuleOut out = module::gen_module(item, items, full_prog, precomp);
-mlc::String base = path_to_module_base(item.path);
+semantic_ir::SLoadItem s_item = s_items[i];
+context::GenModuleOut out = module::gen_module(s_item, items, full_prog, precomp);
+mlc::String base = cpp_naming::path_to_module_base(s_item.path);
 mlc::String hpp_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + base + mlc::String(".hpp") : base + mlc::String(".hpp");
 mlc::String cpp_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + base + mlc::String(".cpp") : base + mlc::String(".cpp");
 mlc::file::write_string(hpp_path, out.h);

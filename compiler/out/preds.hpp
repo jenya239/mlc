@@ -11,6 +11,8 @@ namespace preds {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 struct Parser {mlc::Array<ast_tokens::Token> tokens;int pos;mlc::String source_path;};
 
@@ -169,6 +171,8 @@ bool Parser_at_eof(preds::Parser self) noexcept;
 preds::Parser Parser_skip_semi(preds::Parser self) noexcept;
 
 ast::Span Parser_span_at_cursor(preds::Parser self) noexcept;
+
+int Parser_prev_line(preds::Parser self) noexcept;
 
 } // namespace preds
 

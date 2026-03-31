@@ -263,7 +263,11 @@ std::shared_ptr<registry::Type> first_element_type = elements.size() > 0 ? infer
 return infer_arguments_errors(infer_ok(std::make_shared<registry::Type>(registry::TArray(first_element_type))), elements, inference_context);
 }
 
-infer::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner, check_context::CheckContext inference_context) noexcept{return infer_expr(inner, inference_context);}
+infer::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner, check_context::CheckContext inference_context) noexcept{
+infer::InferResult inner_result = infer_expr(inner, inference_context);
+std::shared_ptr<registry::Type> ok_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TGeneric>((*inner_result.inferred_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*inner_result.inferred_type)); auto [_w0, type_args] = _v_tgeneric; return type_args.size() > 0 ? type_args[0] : std::make_shared<registry::Type>((registry::TUnknown{})); } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
+return infer::InferResult{ok_type, inner_result.errors};
+}
 
 infer::InferResult infer_expr_lambda(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, check_context::CheckContext inference_context) noexcept{
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> lambda_environment = inference_context.type_env;

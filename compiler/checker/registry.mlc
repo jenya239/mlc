@@ -7,6 +7,7 @@ export type Type =
   | TArray(Shared<Type>)
   | TShared(Shared<Type>)
   | TNamed(string)
+  | TGeneric(string, [Shared<Type>])
   | TFn([Shared<Type>], Shared<Type>)
   | TUnknown
 
@@ -68,8 +69,10 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),
     TyGeneric(name, targs) =>
       if name == "ref" && targs.length() == 1 then type_from_annotation(targs[0])
-      else if name == "Result" && targs.length() == 2 then Shared.new(TNamed("Result"))
-      else Shared.new(TNamed(name))
+      else do
+        let mut typed_args: [Shared<Type>] = []; let mut i = 0
+        while i < targs.length() do typed_args.push(type_from_annotation(targs[i])); i = i + 1 end
+        Shared.new(TGeneric(name, typed_args))
       end,
     TyFn(params, ret) => do
       const param_types: [Shared<Type>] = []; let mut i = 0

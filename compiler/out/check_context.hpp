@@ -10,6 +10,8 @@ namespace check_context {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 struct CheckContext {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;registry::TypeRegistry registry;};
 

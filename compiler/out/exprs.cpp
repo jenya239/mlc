@@ -439,7 +439,7 @@ if (preds::TKind_is_dot(kind)){
 {
 ast::Span dot_span = preds::Parser_span_at_cursor(state);
 mlc::String field_name = preds::TKind_ident(preds::Parser_kind(preds::Parser_advance(state)));
-if (preds::TKind_is_lparen(preds::Parser_kind(preds::Parser_advance_by(state, 2)))){
+if (preds::TKind_is_lparen(preds::Parser_kind(preds::Parser_advance_by(state, 2))) && preds::Parser_span_at_cursor(preds::Parser_advance_by(state, 2)).line == preds::Parser_span_at_cursor(preds::Parser_advance_by(state, 1)).line){
 preds::ExprsResult margs = parse_arg_list(preds::Parser_advance_by(state, 3));
 expr = std::make_shared<ast::Expr>(ast::ExprMethod(expr, field_name, margs.exprs, dot_span));
 state = margs.parser;
@@ -450,7 +450,7 @@ state = preds::Parser_advance_by(state, 2);
 }
 } else {
 {
-if (preds::TKind_is_lparen(kind)){
+if (preds::TKind_is_lparen(kind) && preds::Parser_span_at_cursor(state).line == preds::Parser_prev_line(state)){
 ast::Span call_span = preds::Parser_span_at_cursor(state);
 preds::ExprsResult call_args = parse_arg_list(preds::Parser_advance(state));
 expr = std::make_shared<ast::Expr>(ast::ExprCall(expr, call_args.exprs, call_span));
@@ -688,6 +688,10 @@ return preds::TKind_is_else(preds::Parser_kind(then_result.parser)) ? [&]() -> p
   return preds::TKind_is_if(preds::Parser_kind(after_else)) || preds::TKind_is_unless(preds::Parser_kind(after_else)) ? [&]() -> preds::ExprResult { 
   preds::ExprResult else_result = parse_if_expr(after_else);
   return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprIf(condition, then_expr, else_result.expr, header_span)), else_result.parser};
+ }() : preds::TKind_is_do(preds::Parser_kind(after_else)) ? [&]() -> preds::ExprResult { 
+  preds::ExprResult else_block = parse_block(preds::Parser_advance(after_else), header_span);
+  preds::Parser after_block = preds::TKind_is_end(preds::Parser_kind(else_block.parser)) ? preds::Parser_advance(else_block.parser) : else_block.parser;
+  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprIf(condition, then_expr, else_block.expr, header_span)), after_block};
  }() : [&]() -> preds::ExprResult { 
   preds::StmtsResult else_stmts = parse_stmts_until_end(after_else);
   return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprIf(condition, then_expr, StmtsResult_to_block_expr(else_stmts, header_span), header_span)), else_stmts.parser};

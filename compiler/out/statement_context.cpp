@@ -1,17 +1,16 @@
 #include "statement_context.hpp"
 
-#include "ast.hpp"
+#include "semantic_ir.hpp"
 #include "context.hpp"
 
 namespace statement_context {
 
-using namespace ast;
+using namespace semantic_ir;
 using namespace context;
-using namespace ast_tokens;
 
-context::CodegenContext stmts_final_ctx(mlc::Array<std::shared_ptr<ast::Stmt>> statements, context::CodegenContext context) noexcept;
+context::CodegenContext stmts_final_ctx(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept;
 
-context::CodegenContext stmts_final_ctx(mlc::Array<std::shared_ptr<ast::Stmt>> statements, context::CodegenContext context) noexcept{
+context::CodegenContext stmts_final_ctx(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept{
 context::CodegenContext current_context = std::move(context);
 int index = 0;
 while (index < statements.size()){

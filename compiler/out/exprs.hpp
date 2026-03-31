@@ -12,6 +12,8 @@ namespace exprs {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 preds::StmtsResult parse_stmts_until_end(preds::Parser parser) noexcept;
 

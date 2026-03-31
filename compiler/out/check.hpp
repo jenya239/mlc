@@ -14,6 +14,8 @@ namespace check {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 struct CheckOut {mlc::Array<mlc::String> errors;registry::TypeRegistry registry;};
 

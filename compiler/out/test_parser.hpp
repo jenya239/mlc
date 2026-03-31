@@ -13,6 +13,8 @@ namespace test_parser {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 mlc::Array<test_runner::TestResult> parser_tests() noexcept;
 

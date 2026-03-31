@@ -10,6 +10,8 @@ namespace param_analysis {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 bool is_shared_type(std::shared_ptr<ast::TypeExpr> t) noexcept;
 

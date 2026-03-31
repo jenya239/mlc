@@ -10,6 +10,8 @@ namespace literals {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 mlc::String gen_integer_literal(int integer_value) noexcept;
 

@@ -11,6 +11,8 @@ namespace ctor_info {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 struct CtorTypeInfo {mlc::String name;mlc::Array<int> shared_pos;mlc::Array<int> shared_arr_pos;};
 

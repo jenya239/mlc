@@ -1,6 +1,8 @@
 // Leaf helpers for eval (no gen_expr dependency).
 
-import { Expr, FieldVal, span_unknown } from "../ast"
+import { span_unknown } from "../ast"
+import { SExpr, SFieldVal, SExprUnit, sexpr_type } from "../semantic_ir"
+import { Type } from "../checker/registry"
 import { CodegenContext, context_resolve, lookup_fields, list_contains } from "./context"
 import { cpp_safe, map_builtin } from "./cpp_naming"
 
@@ -18,8 +20,9 @@ export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
   capture + "(" + parameter_list + ")"
 end
 
-export fn find_field_value(field_values: [Shared<FieldVal>], field_name: string) -> Shared<Expr> = do
-  let mut result: Shared<Expr> = Shared.new(ExprUnit(span_unknown())); let mut index = 0
+export fn find_field_value(field_values: [Shared<SFieldVal>], field_name: string) -> Shared<SExpr> = do
+  let mut result: Shared<SExpr> = Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
+  let mut index = 0
   while index < field_values.length() do
     if field_values[index].name == field_name then result = field_values[index].val end
     index = index + 1
@@ -27,9 +30,9 @@ export fn find_field_value(field_values: [Shared<FieldVal>], field_name: string)
   result
 end
 
-export fn is_constructor_call(function_expr: Shared<Expr>) -> bool =
+export fn is_constructor_call(function_expr: Shared<SExpr>) -> bool =
   match function_expr {
-    ExprIdent(name, _) => name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z",
+    SExprIdent(name, _, _) => name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z",
     _ => false
   }
 
@@ -41,22 +44,14 @@ export fn resolve_object_code_in_self_context(object_name: string, context: Code
   end
 end
 
-export fn infer_shared_new_type_name(argument: Shared<Expr>, context: CodegenContext) -> string = do
-  const raw_type_name = match argument {
-    ExprRecord(name, _, _)  => name,
-    ExprCall(function_expr, _, _) => match function_expr { ExprIdent(name, _) => name, _ => "" },
-    ExprIdent(name, _)      => name,
-    ExprIndex(array_expr, _, _) => match array_expr {
-      ExprIdent(array_name, _) => if context.array_elem_types.has(array_name) then context.array_elem_types.get(array_name) else "" end,
-      _ => ""
-    },
-    _ => ""
+// Infer the C++ type name for std::make_shared<T>() from the argument's semantic type.
+export fn infer_shared_new_type_name(argument: Shared<SExpr>, context: CodegenContext) -> string = do
+  const type_name = match sexpr_type(argument) {
+    TNamed(name)   => name,
+    TShared(inner) => match inner { TNamed(name) => name, _ => "" },
+    _              => ""
   }
-  const parent_type = if raw_type_name.length() > 0 && context.variant_types.has(raw_type_name)
-                      then context.variant_types.get(raw_type_name)
-                      else raw_type_name
-                      end
-  if parent_type.length() > 0 then context_resolve(context, parent_type) else "auto" end
+  if type_name.length() > 0 then context_resolve(context, type_name) else "auto" end
 end
 
 export fn cpp_function_name_for_file_method(method_name: string) -> string =
@@ -65,22 +60,6 @@ export fn cpp_function_name_for_file_method(method_name: string) -> string =
   else "mlc::file::" + method_name
   end
 
-export fn field_access_operator(object: Shared<Expr>, context: CodegenContext) -> string =
-  match object {
-    ExprIndex(inner_expr, _, _) => match inner_expr {
-      ExprIdent(array_name, _) =>
-        if context.shared_array_params.contains(array_name) then "->" else "." end,
-      _ => "."
-    },
-    ExprIdent(name, _) =>
-      if context.shared_params.contains(name) then "->" else "." end,
-    ExprMethod(map_object, method_name, _, _) =>
-      if method_name == "get" then
-        match map_object {
-          ExprIdent(map_name, _) =>
-            if context.shared_map_params.contains(map_name) then "->" else "." end,
-          _ => "."
-        }
-      else "." end,
-    _ => "."
-  }
+// Determine whether field access should use -> (shared) or . (value).
+export fn field_access_operator(object: Shared<SExpr>, context: CodegenContext) -> string =
+  match sexpr_type(object) { TShared(_) => "->", _ => "." }

@@ -15,6 +15,8 @@ namespace infer {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 struct InferResult {std::shared_ptr<registry::Type> inferred_type;mlc::Array<ast::Diagnostic> errors;};
 

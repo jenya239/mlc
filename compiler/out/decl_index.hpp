@@ -11,6 +11,8 @@ namespace decl_index {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 struct LoadItem {mlc::String path;mlc::Array<std::shared_ptr<ast::Decl>> decls;mlc::Array<mlc::String> imports;};
 

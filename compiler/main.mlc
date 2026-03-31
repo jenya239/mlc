@@ -1,10 +1,13 @@
-// Entry point. Pipeline: source - tokenize - parse - load imports - check - gen_module (per file)
+// Entry point. Pipeline: source - tokenize - parse - load imports - check - transform - gen_module
 
 import { tokenize } from "./lexer"
 import { parse_program_with_source_path } from "./parser/decls"
 import { check_with_context } from "./checker/check"
+import { transform_load_items } from "./checker/transform"
+import { build_registry } from "./checker/registry"
 import { gen_module, GenModuleOut, precompute } from "./codegen/module"
 import { LoadItem, PrecomputedCtx } from "./codegen/context"
+import { path_to_module_base } from "./codegen/cpp_naming"
 import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from "./ast"
 
 fn dirname(path: string) -> string = do
@@ -122,20 +125,6 @@ fn load_module(path: string, cache: ref mut Map<string, LoadResult>) -> LoadResu
 
 type MergeResult = MergeResult { prog: Program, errors: [string], items: [LoadItem] }
 
-fn path_to_module_base(path: string) -> string = do
-  let mut last_slash = -1
-  let mut last_dot = path.length()
-  let mut i = 0
-  while i < path.length() do
-    if path.char_at(i) == "/" then last_slash = i
-    else if path.char_at(i) == "." && i > last_slash then last_dot = i
-    end
-    i = i + 1
-  end
-  if last_dot > last_slash then path.substring(last_slash + 1, last_dot - last_slash - 1)
-  else path.substring(last_slash + 1, path.length() - last_slash - 1)
-  end
-end
 
 fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
   let all_decls: [Shared<Decl>] = []
@@ -198,12 +187,14 @@ fn compile_modular(entry_path: string, out_dir: string) -> Result<string, [strin
 end
 
 fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) -> string = do
-  const precomp = precompute(full_prog, items)
+  const registry  = build_registry(full_prog)
+  const s_items   = transform_load_items(items, registry)
+  const precomp   = precompute(full_prog, items)
   let mut i = 0
-  while i < items.length() do
-    const item = items[i]
-    const out = gen_module(item, items, full_prog, precomp)
-    const base = path_to_module_base(item.path)
+  while i < s_items.length() do
+    const s_item = s_items[i]
+    const out    = gen_module(s_item, items, full_prog, precomp)
+    const base   = path_to_module_base(s_item.path)
     const hpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".hpp" else base + ".hpp" end
     const cpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".cpp" else base + ".cpp" end
     File.write(hpp_path, out.h)

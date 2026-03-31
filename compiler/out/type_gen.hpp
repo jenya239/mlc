@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "ast.hpp"
+#include "registry.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
 
@@ -12,6 +13,10 @@ namespace type_gen {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
+
+mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept;
 
 mlc::String type_name_to_cpp(context::CodegenContext context, mlc::String type_name) noexcept;
 

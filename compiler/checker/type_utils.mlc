@@ -11,7 +11,8 @@ export fn type_description(type_value: Shared<Type>) -> string =
     TUnknown   => "unknown",
     TArray(_)  => "array",
     TShared(_) => "shared",
-    TNamed(type_name) => type_name,
+    TNamed(type_name)    => type_name,
+    TGeneric(type_name, _) => type_name,
     TFn(_, _)  => "function"
   }
 
@@ -25,6 +26,7 @@ export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> b
     TArray(inner_left) => match right { TArray(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
     TShared(inner_left) => match right { TShared(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
     TNamed(left_name) => match right { TNamed(right_name) => left_name == right_name, _ => false },
+    TGeneric(left_name, _) => match right { TGeneric(right_name, _) => left_name == right_name, _ => false },
     TFn(_, _) => match right { TFn(_, _) => true, _ => false }
   }
 
@@ -62,7 +64,11 @@ export fn types_allowed_for_logical_and_or(left_type: Shared<Type>, right_type: 
   (type_is_bool(left_type) && type_is_bool(right_type))
 
 export fn receiver_type_is_map(receiver_type: Shared<Type>) -> bool =
-  match receiver_type { TNamed(name) => name == "Map", _ => false }
+  match receiver_type {
+    TNamed(name)     => name == "Map",
+    TGeneric(name, _) => name == "Map",
+    _ => false
+  }
 
 export fn type_is_function(type_value: Shared<Type>) -> bool =
   match type_value { TFn(_, _) => true, _ => false }
@@ -79,6 +85,7 @@ export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>]
     TArray(_) => empty_type_parameter_list(),
     TShared(_) => empty_type_parameter_list(),
     TNamed(_) => empty_type_parameter_list(),
+    TGeneric(_, _) => empty_type_parameter_list(),
     TUnknown => empty_type_parameter_list()
   }
 
@@ -102,7 +109,8 @@ export fn builtin_method_return_type(method_name: string) -> Shared<Type> = do
 end
 
 export fn field_type_from_object(object_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
-  const type_name = match object_type { TNamed(name) => name, _ => "" }
+  const inner_type = match object_type { TShared(inner) => inner, _ => object_type }
+  const type_name = match inner_type { TNamed(name) => name, _ => "" }
   if type_name != "" && registry.has_fields(type_name) then
     const field_map = registry.fields_for(type_name)
     if field_map.has(field_name) then field_map.get(field_name) else Shared.new(TUnknown) end

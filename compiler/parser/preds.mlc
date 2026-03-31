@@ -192,4 +192,9 @@ export extend Parser {
     const tok: Token = tokens[pos]
     Span { file: source_path, line: tok.line, column: tok.col }
   end
+  fn prev_line(self) -> i32 = do
+    if pos > 0 then
+      const tok: Token = tokens[pos - 1]; tok.line
+    else 0 end
+  end
 }

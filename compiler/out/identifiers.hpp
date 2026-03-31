@@ -11,6 +11,8 @@ namespace identifiers {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 mlc::String gen_identifier(mlc::String name, context::CodegenContext context) noexcept;
 

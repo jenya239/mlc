@@ -10,6 +10,8 @@ namespace types {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 preds::TypeResult parse_type(preds::Parser parser) noexcept;
 

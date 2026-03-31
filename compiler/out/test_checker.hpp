@@ -13,6 +13,8 @@ namespace test_checker {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 mlc::Array<test_runner::TestResult> checker_tests() noexcept;
 

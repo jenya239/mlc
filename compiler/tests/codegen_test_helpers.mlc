@@ -1,7 +1,8 @@
 // Assertion helpers for codegen unit tests.
 
 import { TestResult, assert_eq_str, assert_true } from "./test_runner"
-import { Program, Expr, TypeExpr } from "../ast"
+import { Program, TypeExpr } from "../ast"
+import { SExpr } from "../semantic_ir"
 import { CodegenContext, create_codegen_context } from "../codegen/context"
 import { gen_expr } from "../codegen/eval"
 import { type_to_cpp } from "../codegen/type_gen"
@@ -10,7 +11,7 @@ import { empty_program } from "./ast_builders"
 export fn empty_codegen_context() -> CodegenContext =
   create_codegen_context(empty_program())
 
-export fn assert_expr_generates(test_name: string, context: CodegenContext, expr: Shared<Expr>, expected_code: string) -> TestResult =
+export fn assert_expr_generates(test_name: string, context: CodegenContext, expr: Shared<SExpr>, expected_code: string) -> TestResult =
   assert_eq_str(test_name, gen_expr(expr, context), expected_code)
 
 export fn assert_type_generates(test_name: string, context: CodegenContext, type_expr: Shared<TypeExpr>, expected_code: string) -> TestResult =

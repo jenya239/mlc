@@ -13,6 +13,8 @@ namespace decls {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 preds::DeclResult parse_decl(preds::Parser parser) noexcept;
 

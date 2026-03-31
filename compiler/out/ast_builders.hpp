@@ -10,6 +10,8 @@ namespace ast_builders {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 ast::Program empty_program() noexcept;
 

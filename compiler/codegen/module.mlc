@@ -1,12 +1,15 @@
 // Module and program level code generation entry points.
 
-import { Program, Decl, errs_append } from "../ast"
+import { Program, errs_append } from "../ast"
+import { SLoadItem } from "../semantic_ir"
+import { build_registry } from "../checker/registry"
+import { transform_load_items } from "../checker/transform"
 import { LoadItem, CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, build_field_orders, build_variant_types_from_decls,
          build_item_index, build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
          build_qualified, build_method_owners_from_decls,
          context_resolve } from "./context"
-import { cpp_safe, include_lines } from "./cpp_naming"
+import { cpp_safe, include_lines, path_to_module_base } from "./cpp_naming"
 import { collect_decl_parts, decls_have_main } from "./decl"
 
 export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx =
@@ -18,45 +21,9 @@ export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx =
     generic_variants: build_generic_variants_from_decls(prog.decls)
   }
 
-export fn gen_program(prog: Program) -> string = do
-  const context = create_codegen_context(prog)
-  const preamble = [
-    "#include \"mlc/core/string.hpp\"\n",
-    "#include \"mlc/core/array.hpp\"\n",
-    "#include \"mlc/core/hashmap.hpp\"\n",
-    "#include \"mlc/core/match.hpp\"\n",
-    "#include \"mlc/io/io.hpp\"\n",
-    "#include \"mlc/io/file.hpp\"\n",
-    "#include <functional>\n",
-    "#include <memory>\n",
-    "#include <variant>\n",
-    "#include <vector>\n\n"
-  ]
-  const type_fwds  = collect_decl_parts(prog.decls, context, 0)
-  const type_defs  = collect_decl_parts(prog.decls, context, 1)
-  const fn_protos  = collect_decl_parts(prog.decls, context, 2)
-  const fn_decls   = collect_decl_parts(prog.decls, context, 3)
-  errs_append(errs_append(errs_append(errs_append(preamble, type_fwds), type_defs), errs_append(fn_protos, ["\n"])), fn_decls).join("")
-end
-
-fn path_to_module_base(path: string) -> string = do
-  let mut last_slash = -1
-  let mut last_dot = path.length()
-  let mut i = 0
-  while i < path.length() do
-    if path.char_at(i) == "/" then last_slash = i
-    else if path.char_at(i) == "." && i > last_slash then last_dot = i
-    end
-    i = i + 1
-  end
-  if last_dot > last_slash then path.substring(last_slash + 1, last_dot - last_slash - 1)
-  else path.substring(last_slash + 1, path.length() - last_slash - 1)
-  end
-end
-
-export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
-  const base = path_to_module_base(item.path)
-  const qualified = build_qualified(item.imports, all_items)
+export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
+  const base = path_to_module_base(s_item.path)
+  const qualified = build_qualified(s_item.imports, all_items)
   const context = CodegenContext {
     field_orders: precomp.field_orders,
     namespace_prefix: "",
@@ -74,12 +41,12 @@ export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program, 
     generic_variants: precomp.generic_variants
   }
   const module_namespace = if base == "main" then "mlc_main" else base end
-  const is_entry = decls_have_main(item.decls)
-  const std_includes = "#include \"mlc.hpp\"\n#include <variant>\n\n" + include_lines(item.imports) + "\n"
-  const type_fwds = collect_decl_parts(item.decls, context, 0)
-  const type_defs = collect_decl_parts(item.decls, context, 1)
-  const fn_protos = collect_decl_parts(item.decls, context, 2)
-  const fn_defs = collect_decl_parts(item.decls, context, 3)
+  const is_entry = decls_have_main(s_item.decls)
+  const std_includes = "#include \"mlc.hpp\"\n#include <variant>\n\n" + include_lines(s_item.imports) + "\n"
+  const type_fwds = collect_decl_parts(s_item.decls, context, 0)
+  const type_defs = collect_decl_parts(s_item.decls, context, 1)
+  const fn_protos = collect_decl_parts(s_item.decls, context, 2)
+  const fn_defs   = collect_decl_parts(s_item.decls, context, 3)
   const guard = base.upper() + "_HPP"
   const header = [
     "#ifndef " + guard + "\n",
@@ -112,3 +79,16 @@ export fn gen_module(item: LoadItem, all_items: [LoadItem], full_prog: Program, 
   ].join("")
   GenModuleOut { h: header, c: impl }
 end
+
+// Convenience: compile a single in-memory Program to a C++ string.
+// Used by tests that build a Program directly.
+export fn gen_program(program: Program) -> string = do
+  const all_items: [LoadItem] = []
+  const precomp   = precompute(program, all_items)
+  const registry  = build_registry(program)
+  const single    = LoadItem { path: "test_main", decls: program.decls, imports: [] }
+  const s_items   = transform_load_items([single], registry)
+  const result    = gen_module(s_items[0], all_items, program, precomp)
+  result.h + result.c
+end
+

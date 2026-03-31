@@ -11,6 +11,8 @@ namespace test_lexer {
 
 struct Expr;
 struct Stmt;
+struct SExpr;
+struct SStmt;
 
 mlc::Array<test_runner::TestResult> lexer_tests() noexcept;
 
