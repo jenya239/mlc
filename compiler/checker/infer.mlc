@@ -1,6 +1,6 @@
 // Type inference: dispatcher and per-expression rule functions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pat, Diagnostic, Span, diagnostic_error, diagnostics_append } from "../ast"
+import { Expr, Stmt, FieldVal, MatchArm, Pat, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span } from "../ast"
 import { Type, TypeRegistry } from "./registry"
 import { CheckContext, check_context_new } from "./check_context"
 import { type_is_unknown, types_structurally_equal, type_is_function, function_parameter_list, binary_operation_result_type, builtin_method_return_type, field_type_from_object } from "./type_utils"
@@ -36,11 +36,25 @@ fn infer_arguments_errors(initial: InferResult, expressions: [Shared<Expr>], inf
   result
 end
 
-fn infer_field_values_errors(initial: InferResult, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult = do
+fn infer_field_values_errors(
+  initial: InferResult,
+  field_values: [Shared<FieldVal>],
+  inference_context: CheckContext,
+  record_type_name_for_fields: string
+) -> InferResult = do
   let mut result = initial
   let mut index = 0
   while index < field_values.length() do
-    result = result.absorb(infer_expr(field_values[index].val, inference_context))
+    const field_value = field_values[index]
+    if record_type_name_for_fields.length() > 0 && inference_context.registry.has_fields(record_type_name_for_fields) then
+      const field_name_errors = infer_expr_field_diagnostics(
+        Shared.new(TNamed(record_type_name_for_fields)),
+        field_value.name,
+        expr_span(field_value.val),
+        inference_context.registry)
+      result = InferResult { inferred_type: result.inferred_type, errors: diagnostics_append(result.errors, field_name_errors) }
+    end
+    result = result.absorb(infer_expr(field_value.val, inference_context))
     index = index + 1
   end
   result
@@ -274,11 +288,11 @@ fn infer_expr_match(subject: Shared<Expr>, arms: [Shared<MatchArm>], inference_c
 end
 
 fn infer_expr_record(type_name: string, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult =
-  infer_field_values_errors(infer_ok(Shared.new(TNamed(type_name))), field_values, inference_context)
+  infer_field_values_errors(infer_ok(Shared.new(TNamed(type_name))), field_values, inference_context, type_name)
 
 fn infer_expr_record_update(type_name: string, base: Shared<Expr>, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult = do
   const base_result = infer_expr(base, inference_context)
-  infer_field_values_errors(base_result.with_type(Shared.new(TNamed(type_name))), field_values, inference_context)
+  infer_field_values_errors(base_result.with_type(Shared.new(TNamed(type_name))), field_values, inference_context, type_name)
 end
 
 fn infer_expr_array_literal(elements: [Shared<Expr>], inference_context: CheckContext) -> InferResult = do

@@ -87,6 +87,9 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("trait bound: param method call - 0 errors",
     check_error_count("type Display { fn to_string(self: Self) -> string }\nfn show<T: Display>(x: T) -> string = x.to_string()"), 0))
 
+  results.push(assert_true("record update: unknown field is an error",
+    check_error_count("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, z: 1 }") > 0))
+
   results.push(assert_true("two undefined names - at least 1 error",
     check_error_count("fn f() -> i32 = foo + bar") > 0))
 

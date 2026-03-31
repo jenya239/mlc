@@ -59,6 +59,7 @@ results.push_back(test_runner::assert_eq_int(mlc::String("let const compile-time
 results.push_back(test_runner::assert_eq_int(mlc::String("nested generic in array type annotation - 0 errors"), check_error_count(mlc::String("type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let items: [Result<i32, string>] = []\n  0\nend")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("record update expression - 0 errors"), check_error_count(mlc::String("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, x: 10 }")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("trait bound: param method call - 0 errors"), check_error_count(mlc::String("type Display { fn to_string(self: Self) -> string }\nfn show<T: Display>(x: T) -> string = x.to_string()")), 0));
+results.push_back(test_runner::assert_true(mlc::String("record update: unknown field is an error"), check_error_count(mlc::String("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, z: 1 }")) > 0));
 results.push_back(test_runner::assert_true(mlc::String("two undefined names - at least 1 error"), check_error_count(mlc::String("fn f() -> i32 = foo + bar")) > 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("builtin print - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  print(\"hi\")\n  0\nend")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with type param - 0 errors"), check_error_count(mlc::String("fn id<T>(x: T) -> T = x")), 0));

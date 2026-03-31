@@ -27,7 +27,7 @@ infer::InferResult infer_ok(std::shared_ptr<registry::Type> type_value) noexcept
 
 infer::InferResult infer_arguments_errors(infer::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept;
 
-infer::InferResult infer_field_values_errors(infer::InferResult initial, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept;
+infer::InferResult infer_field_values_errors(infer::InferResult initial, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context, mlc::String record_type_name_for_fields) noexcept;
 
 infer::InferResult infer_expr_integer_literal() noexcept;
 
@@ -105,12 +105,19 @@ index = index + 1;
 return result;
 }
 
-infer::InferResult infer_field_values_errors(infer::InferResult initial, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept{
+infer::InferResult infer_field_values_errors(infer::InferResult initial, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context, mlc::String record_type_name_for_fields) noexcept{
 infer::InferResult result = std::move(initial);
 int index = 0;
 while (index < field_values.size()){
 {
-result = InferResult_absorb(result, infer_expr(field_values[index]->val, inference_context));
+std::shared_ptr<ast::FieldVal> field_value = field_values[index];
+if (record_type_name_for_fields.length() > 0 && registry::TypeRegistry_has_fields(inference_context.registry, record_type_name_for_fields)){
+{
+mlc::Array<ast::Diagnostic> field_name_errors = type_diagnostics::infer_expr_field_diagnostics(std::make_shared<registry::Type>(registry::TNamed(record_type_name_for_fields)), field_value->name, ast::expr_span(field_value->val), inference_context.registry);
+result = infer::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, field_name_errors)};
+}
+}
+result = InferResult_absorb(result, infer_expr(field_value->val, inference_context));
 index = index + 1;
 }
 }
@@ -251,11 +258,11 @@ arm_index = arm_index + 1;
 return infer::InferResult{arm_type, collected_errors};
 }
 
-infer::InferResult infer_expr_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept{return infer_field_values_errors(infer_ok(std::make_shared<registry::Type>(registry::TNamed(type_name))), field_values, inference_context);}
+infer::InferResult infer_expr_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept{return infer_field_values_errors(infer_ok(std::make_shared<registry::Type>(registry::TNamed(type_name))), field_values, inference_context, type_name);}
 
 infer::InferResult infer_expr_record_update(mlc::String type_name, std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept{
 infer::InferResult base_result = infer_expr(base, inference_context);
-return infer_field_values_errors(InferResult_with_type(base_result, std::make_shared<registry::Type>(registry::TNamed(type_name))), field_values, inference_context);
+return infer_field_values_errors(InferResult_with_type(base_result, std::make_shared<registry::Type>(registry::TNamed(type_name))), field_values, inference_context, type_name);
 }
 
 infer::InferResult infer_expr_array_literal(mlc::Array<std::shared_ptr<ast::Expr>> elements, check_context::CheckContext inference_context) noexcept{
