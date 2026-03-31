@@ -6,7 +6,7 @@ import { create_codegen_context, FieldOrder, map_builtin, map_method } from "../
 import { type_to_cpp, gen_type_decl } from "../codegen/type_gen"
 import { gen_program } from "../codegen/module"
 import { Program, TypeExpr, TypeVariant, DeclType, DeclFn, DeclExported, Param, VarTuple, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, PatInt, PatWild, span_unknown } from "../ast"
-import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtExpr } from "../semantic_ir"
+import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr } from "../semantic_ir"
 import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed } from "../checker/registry"
 
 fn i32_t() -> Shared<Type> = Shared.new(TI32)
@@ -209,6 +209,10 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("ExprBlock",
     gen_expr(Shared.new(SExprBlock(block_stmts, sid("x"), i32_t(), span_unknown())), ctx),
     "[&]() {\nauto x = 1;\nreturn x;\n}()"))
+
+  results.push(assert_eq_str("gen_stmts_str: let const emits constexpr",
+    gen_stmts_str([Shared.new(SStmtLetConst("limit", si(42), i32_t(), span_unknown()))], ctx),
+    "constexpr auto limit = 42;\n"))
 
   // --- ExprRecord ---------------------------------------------------------------
 
