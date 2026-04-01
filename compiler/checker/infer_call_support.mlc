@@ -1,0 +1,70 @@
+// Call / non-constructor inference helpers (no infer_expr dependency).
+
+import { Expr, Span, diagnostic_error, diagnostics_append } from "../ast"
+import { Type } from "./registry"
+import { CheckContext } from "./check_context"
+import { InferResult } from "./infer_result"
+import { constructor_arity_diagnostics, call_arity_diagnostics } from "./type_diagnostics"
+import { function_parameter_list, type_is_function, type_is_unknown } from "./type_utils"
+
+export fn infer_expr_call_for_constructor_name(
+  constructor_name: string,
+  with_arguments: InferResult,
+  call_arguments: [Shared<Expr>],
+  call_source_span: Span,
+  inference_context: CheckContext
+) -> InferResult = do
+  const constructor_parameter_types = inference_context.registry.ctor_params_for(constructor_name)
+  const call_errors = constructor_arity_diagnostics(
+    constructor_parameter_types.length(),
+    call_arguments.length(),
+    call_source_span)
+  InferResult {
+    inferred_type: inference_context.registry.ctor_type(constructor_name),
+    errors: diagnostics_append(with_arguments.errors, call_errors)
+  }
+end
+
+export fn infer_expr_call_non_constructor_arity_only(
+  base: InferResult,
+  function_result: InferResult,
+  call_arguments: [Shared<Expr>],
+  call_source_span: Span,
+  return_type: Shared<Type>
+) -> InferResult = do
+  const parameter_types = function_parameter_list(function_result.inferred_type)
+  const arity_errors = call_arity_diagnostics(parameter_types.length(), call_arguments.length(), call_source_span)
+  InferResult {
+    inferred_type: return_type,
+    errors: diagnostics_append(base.errors, arity_errors)
+  }
+end
+
+export fn infer_expr_call_non_constructor_not_callable(
+  base: InferResult,
+  function_result: InferResult,
+  call_source_span: Span
+) -> InferResult =
+  if type_is_unknown(function_result.inferred_type) then
+    base
+  else
+    InferResult {
+      inferred_type: Shared.new(TUnknown),
+      errors: diagnostics_append(base.errors, [diagnostic_error("called value is not a function", call_source_span)])
+    }
+  end
+
+export fn infer_expr_call_non_constructor(
+  function_result: InferResult,
+  with_arguments: InferResult,
+  call_arguments: [Shared<Expr>],
+  call_source_span: Span
+) -> InferResult = do
+  const return_type = match function_result.inferred_type { TFn(_, return_ty) => return_ty, _ => Shared.new(TUnknown) }
+  const base = InferResult { inferred_type: return_type, errors: with_arguments.errors }
+  if type_is_function(function_result.inferred_type) then
+    infer_expr_call_non_constructor_arity_only(base, function_result, call_arguments, call_source_span, return_type)
+  else
+    infer_expr_call_non_constructor_not_callable(base, function_result, call_source_span)
+  end
+end

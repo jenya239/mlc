@@ -1,28 +1,13 @@
 // Type inference: dispatcher and per-expression rule functions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pat, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span } from "../ast"
+import { Expr, Stmt, FieldVal, MatchArm, Pat, Diagnostic, Span, diagnostics_append, expr_span } from "../ast"
 import { Type, TypeRegistry } from "./registry"
 import { CheckContext, check_context_new } from "./check_context"
-import { type_is_unknown, types_structurally_equal, type_is_function, function_parameter_list, binary_operation_result_type, builtin_method_return_type, field_type_from_object } from "./type_utils"
-import { infer_binary_operand_diagnostics, unary_minus_diagnostic, unary_bang_diagnostic, constructor_arity_diagnostics, infer_builtin_method_receiver_diagnostics, call_arity_diagnostics, method_arity_after_receiver, index_not_array_diagnostic, index_not_i32_diagnostic, if_branch_mismatch_diagnostic, for_loop_range_diagnostic, match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
+import { InferResult, StmtInferResult, infer_ok } from "./infer_result"
+import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
+import { type_is_unknown, types_structurally_equal, binary_operation_result_type, builtin_method_return_type, field_type_from_object } from "./type_utils"
+import { infer_binary_operand_diagnostics, unary_minus_diagnostic, unary_bang_diagnostic, infer_builtin_method_receiver_diagnostics, method_arity_after_receiver, index_not_array_diagnostic, index_not_i32_diagnostic, if_branch_mismatch_diagnostic, for_loop_range_diagnostic, match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
 import { env_for_pattern } from "./pattern_env"
-
-export type InferResult     = InferResult     { inferred_type: Shared<Type>,             errors: [Diagnostic] }
-export type StmtInferResult = StmtInferResult { type_env:      Map<string, Shared<Type>>, errors: [Diagnostic] }
-
-extend InferResult {
-  fn with_type(self, new_type: Shared<Type>) -> InferResult =
-    InferResult { inferred_type: new_type, errors }
-
-  fn absorb(self, other: InferResult) -> InferResult =
-    InferResult { inferred_type, errors: diagnostics_append(errors, other.errors) }
-
-  fn absorb_stmt(self, statement_result: StmtInferResult) -> InferResult =
-    InferResult { inferred_type, errors: diagnostics_append(statement_result.errors, errors) }
-}
-
-fn infer_ok(type_value: Shared<Type>) -> InferResult =
-  InferResult { inferred_type: type_value, errors: [] }
 
 // --- Argument / field-value error accumulators ------------------------------
 
@@ -105,68 +90,6 @@ fn infer_expr_unary(operation: string, inner: Shared<Expr>, source_span: Span, i
     inferred_type: result_type,
     errors: diagnostics_append(diagnostics_append(inner_result.errors, minus_errors), bang_errors)
   }
-end
-
-fn infer_expr_call_for_constructor_name(
-  constructor_name: string,
-  with_arguments: InferResult,
-  call_arguments: [Shared<Expr>],
-  call_source_span: Span,
-  inference_context: CheckContext
-) -> InferResult = do
-  const constructor_parameter_types = inference_context.registry.ctor_params_for(constructor_name)
-  const call_errors = constructor_arity_diagnostics(
-    constructor_parameter_types.length(),
-    call_arguments.length(),
-    call_source_span)
-  InferResult {
-    inferred_type: inference_context.registry.ctor_type(constructor_name),
-    errors: diagnostics_append(with_arguments.errors, call_errors)
-  }
-end
-
-fn infer_expr_call_non_constructor_arity_only(
-  base: InferResult,
-  function_result: InferResult,
-  call_arguments: [Shared<Expr>],
-  call_source_span: Span,
-  return_type: Shared<Type>
-) -> InferResult = do
-  const parameter_types = function_parameter_list(function_result.inferred_type)
-  const arity_errors = call_arity_diagnostics(parameter_types.length(), call_arguments.length(), call_source_span)
-  InferResult {
-    inferred_type: return_type,
-    errors: diagnostics_append(base.errors, arity_errors)
-  }
-end
-
-fn infer_expr_call_non_constructor_not_callable(
-  base: InferResult,
-  function_result: InferResult,
-  call_source_span: Span
-) -> InferResult =
-  if type_is_unknown(function_result.inferred_type) then
-    base
-  else
-    InferResult {
-      inferred_type: Shared.new(TUnknown),
-      errors: diagnostics_append(base.errors, [diagnostic_error("called value is not a function", call_source_span)])
-    }
-  end
-
-fn infer_expr_call_non_constructor(
-  function_result: InferResult,
-  with_arguments: InferResult,
-  call_arguments: [Shared<Expr>],
-  call_source_span: Span
-) -> InferResult = do
-  const return_type = match function_result.inferred_type { TFn(_, return_ty) => return_ty, _ => Shared.new(TUnknown) }
-  const base = with_arguments.with_type(return_type)
-  if type_is_function(function_result.inferred_type) then
-    infer_expr_call_non_constructor_arity_only(base, function_result, call_arguments, call_source_span, return_type)
-  else
-    infer_expr_call_non_constructor_not_callable(base, function_result, call_source_span)
-  end
 end
 
 fn infer_expr_call(function: Shared<Expr>, call_arguments: [Shared<Expr>], call_source_span: Span, inference_context: CheckContext) -> InferResult = do

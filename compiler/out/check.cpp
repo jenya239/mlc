@@ -54,7 +54,7 @@ parameter_index = parameter_index + 1;
 }
   all_diagnostics = ast::diagnostics_append(all_diagnostics, names::check_names_expr(body, locals, globals));
   check_context::CheckContext inference_context = check_context::check_context_new(type_environment, registry);
-  infer::InferResult inference_result = infer::infer_expr(body, inference_context);
+  infer_result::InferResult inference_result = infer::infer_expr(body, inference_context);
   all_diagnostics = ast::diagnostics_append(all_diagnostics, inference_result.errors);
   return std::make_tuple();
  }(); },

@@ -1,0 +1,21 @@
+// Inference result types, extend helpers, and infer_ok (no infer_expr dependency).
+
+import { Type } from "./registry"
+import { Diagnostic, diagnostics_append } from "../ast"
+
+export type InferResult     = InferResult     { inferred_type: Shared<Type>,             errors: [Diagnostic] }
+export type StmtInferResult = StmtInferResult { type_env:      Map<string, Shared<Type>>, errors: [Diagnostic] }
+
+extend InferResult {
+  fn with_type(self: InferResult, new_type: Shared<Type>) -> InferResult =
+    InferResult { inferred_type: new_type, errors: self.errors }
+
+  fn absorb(self: InferResult, other: InferResult) -> InferResult =
+    InferResult { inferred_type: self.inferred_type, errors: diagnostics_append(self.errors, other.errors) }
+
+  fn absorb_stmt(self: InferResult, statement_result: StmtInferResult) -> InferResult =
+    InferResult { inferred_type: self.inferred_type, errors: diagnostics_append(statement_result.errors, self.errors) }
+}
+
+export fn infer_ok(type_value: Shared<Type>) -> InferResult =
+  InferResult { inferred_type: type_value, errors: [] }
