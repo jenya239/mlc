@@ -24,7 +24,7 @@ MLC — компилятор языка программирования. Цел
 | Путь | `lib/mlc/` | `compiler/` |
 | Сборка | — (интерпретатор) | `compiler/build.sh` → `compiler/out/mlcc` |
 | Пайплайн | `MLC → SemanticIR → C++ AST DSL → C++ source` | `MLC → AST → checker → codegen → C++ source` |
-| Тесты | `rake test_mlc` (1106 runs) | `rake test_compiler_mlc` (85 tests) |
+| Тесты | `rake test_mlc` (1106 runs) | `rake test_compiler_mlc` (≈164 теста) |
 | Статус | Эталон, полный стек | Компилирует весь `compiler/`, E2E работает |
 
 ### Ключевые компоненты
@@ -40,7 +40,7 @@ MLC — компилятор языка программирования. Цел
 | Registries | `lib/mlc/registries/` | TypeRegistry, FunctionRegistry |
 | Self-hosted lexer/parser | `compiler/lexer.mlc`, `compiler/parser/` | — |
 | Self-hosted checker | `compiler/checker/` | names.mlc, infer.mlc, registry.mlc |
-| Self-hosted codegen | `compiler/codegen.mlc` | → C++20 |
+| Self-hosted codegen | `compiler/codegen/` (`module.mlc`, `eval.mlc`, `decl.mlc`, …) | → C++20 |
 | E2E тесты mlcc | `compiler/tests/e2e/` | 4 программы через mlcc |
 
 ### Паттерны проекта (Ruby-компилятор)
@@ -52,9 +52,9 @@ MLC — компилятор языка программирования. Цел
 
 ### Целевые паттерны self-hosted (roadmap Фаза 2)
 
-- Разбивка `compiler/codegen.mlc` (1655 строк) на модули: `codegen/context.mlc`, `codegen/expr.mlc`, `codegen/decl.mlc`, `codegen/type.mlc`, `codegen/pattern.mlc`
-- Каждый модуль — отдельный сервис, публичный интерфейс через `export fn`
-- Checker разбить аналогично: `checker/types.mlc`, `checker/expr_checker.mlc`, `checker/context.mlc`
+- Codegen уже каталог `compiler/codegen/`; дальнейшее — вынос из крупных файлов (в т.ч. `eval.mlc`) по одному коммиту.
+- Каждый модуль — `export fn` для публичного API.
+- Checker: по мере разбиения избегать циклических импортов с `infer.mlc`; при «Unknown identifier» во вложенных областях — `import * as alias` и `alias.foo`.
 
 ### Синтаксис MLC
 

@@ -12,6 +12,14 @@
 - Любое расхождение Ruby vs `compiler/out/mlcc` — баг self-hosted до доказательства обратного.
 - Новая фича языка: Ruby-реализация + Ruby-тест первичны; затем перенос в `compiler/` + MLC-тест.
 
+### Импорты в `compiler/` при SemanticGen (Ruby)
+
+Модули собираются через `MLC::Common::ModularCompilation::ModularCompiler`: на каждый `.mlc` проходит Ruby SemanticGen. В **телах** `do … end` и в **правых частях** веток `match` имена из `import { name } from "./mod"` часто **не видны** инференсу (`Unknown identifier` на `name`).
+
+**Паттерн:** `import * as alias from "./mod"` и вызовы `alias.name(…)` (см. `checker/infer.mlc` с `infer_literal_helpers`, `infer_operand_combine`). Либо не вызывать импортированные функции из таких вложенных областей.
+
+Для межмодульных C++-прототипов неэкспортируемых функций см. `lib/mlc/backends/cpp/header_generator.rb`.
+
 ---
 
 ## Текущий статус (март 2026)

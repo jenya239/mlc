@@ -116,7 +116,7 @@ compiler/           — self-hosted компилятор (MLC-исходники
   lexer.mlc         — лексер
   parser/           — парсер (exprs, decls, types, preds)
   checker/          — name resolution, type inference, registry
-  codegen.mlc       — генерация C++
+  codegen/          — генерация C++ (module, eval, decl, …)
   out/              — скомпилированный mlcc (бинарник + C++)
 lib/mlc/            — Ruby bootstrap-компилятор (эталон и резерв, не удаляется)
 runtime/            — C++20 runtime

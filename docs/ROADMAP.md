@@ -7,7 +7,7 @@
 | Компонент | Путь | Состояние |
 |-----------|------|-----------|
 | Bootstrap-компилятор | `lib/mlc/` | Полнофункциональный, эталон семантики |
-| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (≈158 тестов) |
+| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (≈164 теста) |
 | Triple-bootstrap | `compiler/triple_bootstrap.sh` | При актуальном `compiler/out/mlcc`: `diff bs2 bs3` пустой (стабильность self-host) |
 | Runtime | `runtime/include/`, `runtime/src/` | C++20, стабильный |
 | Unit-тесты Ruby | `test/mlc/` | 1106 runs, 0 failures |
@@ -42,11 +42,9 @@
 
 ## Фаза 2 — Архитектура codegen
 
-### Проблема
+### Проблема (обновление)
 
-`compiler/codegen.mlc` — 1655 строк, один файл.  
-`gen_expr` — 500+ строк, 30+ веток `match`.  
-Нет изоляции логики по AST-узлам.
+Монолит `compiler/codegen.mlc` снят: код в каталоге `compiler/codegen/`. Крупные узлы остаются в `eval.mlc` и др.; дальше — механический вынос правил из `eval.mlc` / `decl.mlc` при необходимости.
 
 ### Цель
 
