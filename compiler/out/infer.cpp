@@ -5,6 +5,8 @@
 #include "check_context.hpp"
 #include "infer_result.hpp"
 #include "infer_literals.hpp"
+#include "infer_for_support.hpp"
+#include "infer_question_expression.hpp"
 #include "infer_call_support.hpp"
 #include "type_utils.hpp"
 #include "type_diagnostics.hpp"
@@ -17,6 +19,8 @@ using namespace registry;
 using namespace check_context;
 using namespace infer_result;
 using namespace infer_literals;
+using namespace infer_for_support;
+using namespace infer_question_expression;
 using namespace infer_call_support;
 using namespace type_utils;
 using namespace type_diagnostics;
@@ -170,9 +174,8 @@ return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt
 
 infer_result::InferResult infer_expr_for_loop(mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult iterator_base = infer_expr(iterator, inference_context);
-mlc::Array<ast::Diagnostic> range_errors = type_diagnostics::for_loop_range_diagnostic(iterator_base.inferred_type, iterator);
-infer_result::InferResult iterator_result = infer_result::InferResult{iterator_base.inferred_type, ast::diagnostics_append(iterator_base.errors, range_errors)};
-std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*iterator_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*iterator_result.inferred_type)); auto [inner] = _v_tarray; return inner; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
+infer_result::InferResult iterator_result = infer_for_support::infer_for_iterator_with_range_rules(iterator_base, iterator);
+std::shared_ptr<registry::Type> element_type = infer_for_support::element_type_for_for_iterator(iterator_result.inferred_type);
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> inner_environment = inference_context.type_env;
 inner_environment.set(variable_name, element_type);
 check_context::CheckContext loop_context = check_context::check_context_new(inner_environment, inference_context.registry);
@@ -212,11 +215,7 @@ std::shared_ptr<registry::Type> first_element_type = elements.size() > 0 ? infer
 return infer_arguments_errors(infer_result::infer_ok(std::make_shared<registry::Type>(registry::TArray(first_element_type))), elements, inference_context);
 }
 
-infer_result::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner, check_context::CheckContext inference_context) noexcept{
-infer_result::InferResult inner_result = infer_expr(inner, inference_context);
-std::shared_ptr<registry::Type> ok_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TGeneric>((*inner_result.inferred_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*inner_result.inferred_type)); auto [_w0, type_args] = _v_tgeneric; return type_args.size() > 0 ? type_args[0] : std::make_shared<registry::Type>((registry::TUnknown{})); } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
-return infer_result::InferResult{ok_type, inner_result.errors};
-}
+infer_result::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner, check_context::CheckContext inference_context) noexcept{return infer_question_expression::infer_question_from_inner_result(infer_expr(inner, inference_context));}
 
 infer_result::InferResult infer_expr_lambda(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, check_context::CheckContext inference_context) noexcept{
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> lambda_environment = inference_context.type_env;

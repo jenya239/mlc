@@ -1,0 +1,15 @@
+// For-loop iterator: range diagnostic merge and element type from iterator type.
+
+import { Expr, diagnostics_append } from "../ast"
+import { InferResult } from "./infer_result"
+import { Type } from "./registry"
+import { for_loop_range_diagnostic } from "./type_diagnostics"
+
+export fn infer_for_iterator_with_range_rules(iterator_base: InferResult, iterator_expression: Shared<Expr>) -> InferResult =
+  InferResult {
+    inferred_type: iterator_base.inferred_type,
+    errors: diagnostics_append(iterator_base.errors, for_loop_range_diagnostic(iterator_base.inferred_type, iterator_expression))
+  }
+
+export fn element_type_for_for_iterator(iterator_type: Shared<Type>) -> Shared<Type> =
+  match iterator_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }

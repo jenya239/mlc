@@ -5,9 +5,11 @@ import { Type, TypeRegistry } from "./registry"
 import { CheckContext, check_context_new } from "./check_context"
 import { InferResult, StmtInferResult, infer_ok } from "./infer_result"
 import * as infer_literal_helpers from "./infer_literals"
+import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } from "./infer_for_support"
+import { infer_question_from_inner_result } from "./infer_question_expression"
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
 import { type_is_unknown, types_structurally_equal, binary_operation_result_type, builtin_method_return_type, field_type_from_object } from "./type_utils"
-import { infer_binary_operand_diagnostics, unary_minus_diagnostic, unary_bang_diagnostic, infer_builtin_method_receiver_diagnostics, method_arity_after_receiver, index_not_array_diagnostic, index_not_i32_diagnostic, if_branch_mismatch_diagnostic, for_loop_range_diagnostic, match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
+import { infer_binary_operand_diagnostics, unary_minus_diagnostic, unary_bang_diagnostic, infer_builtin_method_receiver_diagnostics, method_arity_after_receiver, index_not_array_diagnostic, index_not_i32_diagnostic, if_branch_mismatch_diagnostic, match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
 import { env_for_pattern } from "./pattern_env"
 
 // --- Argument / field-value error accumulators ------------------------------
@@ -159,12 +161,8 @@ end
 
 fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
   const iterator_base = infer_expr(iterator, inference_context)
-  const range_errors = for_loop_range_diagnostic(iterator_base.inferred_type, iterator)
-  const iterator_result = InferResult {
-    inferred_type: iterator_base.inferred_type,
-    errors: diagnostics_append(iterator_base.errors, range_errors)
-  }
-  const element_type    = match iterator_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+  const iterator_result = infer_for_iterator_with_range_rules(iterator_base, iterator)
+  const element_type    = element_type_for_for_iterator(iterator_result.inferred_type)
   const inner_environment = inference_context.type_env; inner_environment.set(variable_name, element_type)
   const loop_context    = check_context_new(inner_environment, inference_context.registry)
   const statements_result = infer_statements(statements, loop_context)
@@ -212,14 +210,8 @@ fn infer_expr_array_literal(elements: [Shared<Expr>], inference_context: CheckCo
   infer_arguments_errors(infer_ok(Shared.new(TArray(first_element_type))), elements, inference_context)
 end
 
-fn infer_expr_question(inner: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
-  const inner_result = infer_expr(inner, inference_context)
-  const ok_type = match inner_result.inferred_type {
-    TGeneric(_, type_args) => if type_args.length() > 0 then type_args[0] else Shared.new(TUnknown) end,
-    _ => Shared.new(TUnknown)
-  }
-  InferResult { inferred_type: ok_type, errors: inner_result.errors }
-end
+fn infer_expr_question(inner: Shared<Expr>, inference_context: CheckContext) -> InferResult =
+  infer_question_from_inner_result(infer_expr(inner, inference_context))
 
 fn infer_expr_lambda(parameter_names: [string], body: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
   let lambda_environment = inference_context.type_env

@@ -1,0 +1,13 @@
+// Result unwrap (?): Ok type from Result-like generic in inferred inner type.
+
+import { InferResult } from "./infer_result"
+import { Type } from "./registry"
+
+export fn infer_question_from_inner_result(inner_result: InferResult) -> InferResult = do
+  const ok_type = match inner_result.inferred_type {
+    TGeneric(_, type_arguments) =>
+      if type_arguments.length() > 0 then type_arguments[0] else Shared.new(TUnknown) end,
+    _ => Shared.new(TUnknown)
+  }
+  InferResult { inferred_type: ok_type, errors: inner_result.errors }
+end
