@@ -11,8 +11,8 @@
 #include "infer_literals.hpp"
 #include "infer_for_support.hpp"
 #include "infer_question_expression.hpp"
+#include "infer_operand_combine.hpp"
 #include "infer_call_support.hpp"
-#include "type_utils.hpp"
 #include "type_diagnostics.hpp"
 #include "pattern_env.hpp"
 

@@ -7,8 +7,8 @@
 #include "infer_literals.hpp"
 #include "infer_for_support.hpp"
 #include "infer_question_expression.hpp"
+#include "infer_operand_combine.hpp"
 #include "infer_call_support.hpp"
-#include "type_utils.hpp"
 #include "type_diagnostics.hpp"
 #include "pattern_env.hpp"
 
@@ -21,8 +21,8 @@ using namespace infer_result;
 using namespace infer_literals;
 using namespace infer_for_support;
 using namespace infer_question_expression;
+using namespace infer_operand_combine;
 using namespace infer_call_support;
-using namespace type_utils;
 using namespace type_diagnostics;
 using namespace pattern_env;
 using namespace ast_tokens;
@@ -105,18 +105,10 @@ infer_result::InferResult infer_expr_identifier(mlc::String name, check_context:
 infer_result::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult left_result = infer_expr(left, inference_context);
 infer_result::InferResult right_result = infer_expr(right, inference_context);
-infer_result::InferResult merged = infer_result::InferResult_absorb(left_result, right_result);
-mlc::Array<ast::Diagnostic> operand_errors = type_diagnostics::infer_binary_operand_diagnostics(operation, left_result.inferred_type, right_result.inferred_type, source_span);
-return infer_result::InferResult{type_utils::binary_operation_result_type(operation, left_result.inferred_type), ast::diagnostics_append(merged.errors, operand_errors)};
+return infer_operand_combine::infer_binary_from_operand_results(operation, left_result, right_result, source_span);
 }
 
-infer_result::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
-infer_result::InferResult inner_result = infer_expr(inner, inference_context);
-mlc::Array<ast::Diagnostic> minus_errors = type_diagnostics::unary_minus_diagnostic(operation, inner_result.inferred_type, source_span);
-mlc::Array<ast::Diagnostic> bang_errors = type_diagnostics::unary_bang_diagnostic(operation, inner_result.inferred_type, source_span);
-auto result_type = operation == mlc::String("!") ? std::make_shared<registry::Type>((registry::TBool{})) : inner_result.inferred_type;
-return infer_result::InferResult{result_type, ast::diagnostics_append(ast::diagnostics_append(inner_result.errors, minus_errors), bang_errors)};
-}
+infer_result::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept{return infer_operand_combine::infer_unary_from_inner_result(operation, infer_expr(inner, inference_context), source_span);}
 
 infer_result::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult function_result = infer_expr(function, inference_context);
@@ -127,38 +119,15 @@ return callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(inferen
 
 infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult object_result = infer_expr(object, inference_context);
-mlc::Array<ast::Diagnostic> receiver_errors = type_diagnostics::infer_builtin_method_receiver_diagnostics(object_result.inferred_type, method_name, method_span);
 infer_result::InferResult with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context);
-mlc::Array<ast::Diagnostic> arity_errors = type_diagnostics::method_arity_after_receiver(receiver_errors, method_name, method_arguments.size(), method_span);
-return infer_result::InferResult{type_utils::builtin_method_return_type(method_name), ast::diagnostics_append(ast::diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)};
+return infer_operand_combine::infer_method_from_object_and_arguments(object_result, with_arguments, method_name, method_span, method_arguments.size());
 }
 
-infer_result::InferResult infer_expr_field(std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span field_source_span, check_context::CheckContext inference_context) noexcept{
-infer_result::InferResult object_result = infer_expr(object, inference_context);
-std::shared_ptr<registry::Type> resolved_field_type = type_utils::field_type_from_object(object_result.inferred_type, field_name, inference_context.registry);
-mlc::Array<ast::Diagnostic> attached = type_diagnostics::infer_expr_field_diagnostics(object_result.inferred_type, field_name, field_source_span, inference_context.registry);
-return infer_result::InferResult{resolved_field_type, ast::diagnostics_append(object_result.errors, attached)};
-}
+infer_result::InferResult infer_expr_field(std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span field_source_span, check_context::CheckContext inference_context) noexcept{return infer_operand_combine::infer_field_from_object_result(infer_expr(object, inference_context), field_name, field_source_span, inference_context.registry);}
 
-infer_result::InferResult infer_expr_index(std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, ast::Span bracket_source_span, check_context::CheckContext inference_context) noexcept{
-infer_result::InferResult object_result = infer_expr(object, inference_context);
-infer_result::InferResult index_result = infer_expr(index_expression, inference_context);
-std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*object_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*object_result.inferred_type)); auto [inner] = _v_tarray; return inner; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
-mlc::Array<ast::Diagnostic> extra_not_array = type_diagnostics::index_not_array_diagnostic(object_result.inferred_type, bracket_source_span);
-mlc::Array<ast::Diagnostic> extra_bad_index = type_diagnostics::index_not_i32_diagnostic(index_result.inferred_type, bracket_source_span);
-infer_result::InferResult merged = infer_result::InferResult_absorb(object_result, index_result);
-return infer_result::InferResult{element_type, ast::diagnostics_append(ast::diagnostics_append(merged.errors, extra_not_array), extra_bad_index)};
-}
+infer_result::InferResult infer_expr_index(std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, ast::Span bracket_source_span, check_context::CheckContext inference_context) noexcept{return infer_operand_combine::infer_index_from_operand_results(infer_expr(object, inference_context), infer_expr(index_expression, inference_context), bracket_source_span);}
 
-infer_result::InferResult infer_expr_conditional(std::shared_ptr<ast::Expr> condition, std::shared_ptr<ast::Expr> then_expression, std::shared_ptr<ast::Expr> else_expression, check_context::CheckContext inference_context) noexcept{
-infer_result::InferResult condition_result = infer_expr(condition, inference_context);
-infer_result::InferResult then_result = infer_expr(then_expression, inference_context);
-infer_result::InferResult else_result = infer_expr(else_expression, inference_context);
-infer_result::InferResult merged = infer_result::InferResult_absorb(infer_result::InferResult_absorb(then_result, condition_result), else_result);
-bool branches_mismatch = !type_utils::type_is_unknown(then_result.inferred_type) && !type_utils::type_is_unknown(else_result.inferred_type) && !type_utils::types_structurally_equal(then_result.inferred_type, else_result.inferred_type);
-mlc::Array<ast::Diagnostic> branch_errors = type_diagnostics::if_branch_mismatch_diagnostic(branches_mismatch, then_result.inferred_type, else_result.inferred_type, else_expression);
-return infer_result::InferResult{branches_mismatch ? then_result.inferred_type : merged.inferred_type, ast::diagnostics_append(merged.errors, branch_errors)};
-}
+infer_result::InferResult infer_expr_conditional(std::shared_ptr<ast::Expr> condition, std::shared_ptr<ast::Expr> then_expression, std::shared_ptr<ast::Expr> else_expression, check_context::CheckContext inference_context) noexcept{return infer_operand_combine::infer_conditional_from_branch_results(infer_expr(condition, inference_context), infer_expr(then_expression, inference_context), infer_expr(else_expression, inference_context), else_expression);}
 
 infer_result::InferResult infer_expr_block(mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result_expression, check_context::CheckContext inference_context) noexcept{
 infer_result::StmtInferResult statements_result = infer_statements(statements, inference_context);

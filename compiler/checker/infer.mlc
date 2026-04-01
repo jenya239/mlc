@@ -1,15 +1,15 @@
 // Type inference: dispatcher and per-expression rule functions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pat, Diagnostic, Span, diagnostics_append, expr_span } from "../ast"
-import { Type, TypeRegistry } from "./registry"
+import { Expr, Stmt, FieldVal, MatchArm, Diagnostic, Span, diagnostics_append, expr_span } from "../ast"
+import { Type } from "./registry"
 import { CheckContext, check_context_new } from "./check_context"
 import { InferResult, StmtInferResult, infer_ok } from "./infer_result"
 import * as infer_literal_helpers from "./infer_literals"
 import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } from "./infer_for_support"
 import { infer_question_from_inner_result } from "./infer_question_expression"
+import * as infer_operand_combine from "./infer_operand_combine"
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
-import { type_is_unknown, types_structurally_equal, binary_operation_result_type, builtin_method_return_type, field_type_from_object } from "./type_utils"
-import { infer_binary_operand_diagnostics, unary_minus_diagnostic, unary_bang_diagnostic, infer_builtin_method_receiver_diagnostics, method_arity_after_receiver, index_not_array_diagnostic, index_not_i32_diagnostic, if_branch_mismatch_diagnostic, match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
+import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
 import { env_for_pattern } from "./pattern_env"
 
 // --- Argument / field-value error accumulators ------------------------------
@@ -60,25 +60,11 @@ fn infer_expr_identifier(name: string, inference_context: CheckContext) -> Infer
 fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
   const left_result  = infer_expr(left, inference_context)
   const right_result = infer_expr(right, inference_context)
-  const merged       = left_result.absorb(right_result)
-  const operand_errors = infer_binary_operand_diagnostics(
-    operation, left_result.inferred_type, right_result.inferred_type, source_span)
-  InferResult {
-    inferred_type: binary_operation_result_type(operation, left_result.inferred_type),
-    errors: diagnostics_append(merged.errors, operand_errors)
-  }
+  infer_operand_combine.infer_binary_from_operand_results(operation, left_result, right_result, source_span)
 end
 
-fn infer_expr_unary(operation: string, inner: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
-  const inner_result = infer_expr(inner, inference_context)
-  const minus_errors = unary_minus_diagnostic(operation, inner_result.inferred_type, source_span)
-  const bang_errors  = unary_bang_diagnostic(operation, inner_result.inferred_type, source_span)
-  const result_type  = if operation == "!" then Shared.new(TBool) else inner_result.inferred_type end
-  InferResult {
-    inferred_type: result_type,
-    errors: diagnostics_append(diagnostics_append(inner_result.errors, minus_errors), bang_errors)
-  }
-end
+fn infer_expr_unary(operation: string, inner: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult =
+  infer_operand_combine.infer_unary_from_inner_result(operation, infer_expr(inner, inference_context), source_span)
 
 fn infer_expr_call(function: Shared<Expr>, call_arguments: [Shared<Expr>], call_source_span: Span, inference_context: CheckContext) -> InferResult = do
   const function_result = infer_expr(function, inference_context)
@@ -102,50 +88,30 @@ fn infer_expr_method(
   inference_context: CheckContext
 ) -> InferResult = do
   const object_result = infer_expr(object, inference_context)
-  const receiver_errors = infer_builtin_method_receiver_diagnostics(object_result.inferred_type, method_name, method_span)
-  const with_arguments  = infer_arguments_errors(object_result, method_arguments, inference_context)
-  const arity_errors    = method_arity_after_receiver(receiver_errors, method_name, method_arguments.length(), method_span)
-  InferResult {
-    inferred_type: builtin_method_return_type(method_name),
-    errors: diagnostics_append(diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)
-  }
+  const with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context)
+  infer_operand_combine.infer_method_from_object_and_arguments(
+    object_result,
+    with_arguments,
+    method_name,
+    method_span,
+    method_arguments.length())
 end
 
-fn infer_expr_field(object: Shared<Expr>, field_name: string, field_source_span: Span, inference_context: CheckContext) -> InferResult = do
-  const object_result = infer_expr(object, inference_context)
-  const resolved_field_type = field_type_from_object(object_result.inferred_type, field_name, inference_context.registry)
-  const attached = infer_expr_field_diagnostics(object_result.inferred_type, field_name, field_source_span, inference_context.registry)
-  InferResult { inferred_type: resolved_field_type, errors: diagnostics_append(object_result.errors, attached) }
-end
+fn infer_expr_field(object: Shared<Expr>, field_name: string, field_source_span: Span, inference_context: CheckContext) -> InferResult =
+  infer_operand_combine.infer_field_from_object_result(infer_expr(object, inference_context), field_name, field_source_span, inference_context.registry)
 
-fn infer_expr_index(object: Shared<Expr>, index_expression: Shared<Expr>, bracket_source_span: Span, inference_context: CheckContext) -> InferResult = do
-  const object_result = infer_expr(object, inference_context)
-  const index_result  = infer_expr(index_expression, inference_context)
-  const element_type  = match object_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
-  const extra_not_array = index_not_array_diagnostic(object_result.inferred_type, bracket_source_span)
-  const extra_bad_index = index_not_i32_diagnostic(index_result.inferred_type, bracket_source_span)
-  const merged = object_result.absorb(index_result)
-  InferResult {
-    inferred_type: element_type,
-    errors: diagnostics_append(diagnostics_append(merged.errors, extra_not_array), extra_bad_index)
-  }
-end
+fn infer_expr_index(object: Shared<Expr>, index_expression: Shared<Expr>, bracket_source_span: Span, inference_context: CheckContext) -> InferResult =
+  infer_operand_combine.infer_index_from_operand_results(
+    infer_expr(object, inference_context),
+    infer_expr(index_expression, inference_context),
+    bracket_source_span)
 
-fn infer_expr_conditional(condition: Shared<Expr>, then_expression: Shared<Expr>, else_expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
-  const condition_result = infer_expr(condition, inference_context)
-  const then_result      = infer_expr(then_expression, inference_context)
-  const else_result      = infer_expr(else_expression, inference_context)
-  const merged           = then_result.absorb(condition_result).absorb(else_result)
-  const branches_mismatch =
-    !type_is_unknown(then_result.inferred_type) && !type_is_unknown(else_result.inferred_type) &&
-    !types_structurally_equal(then_result.inferred_type, else_result.inferred_type)
-  const branch_errors = if_branch_mismatch_diagnostic(
-    branches_mismatch, then_result.inferred_type, else_result.inferred_type, else_expression)
-  InferResult {
-    inferred_type: if branches_mismatch then then_result.inferred_type else merged.inferred_type end,
-    errors: diagnostics_append(merged.errors, branch_errors)
-  }
-end
+fn infer_expr_conditional(condition: Shared<Expr>, then_expression: Shared<Expr>, else_expression: Shared<Expr>, inference_context: CheckContext) -> InferResult =
+  infer_operand_combine.infer_conditional_from_branch_results(
+    infer_expr(condition, inference_context),
+    infer_expr(then_expression, inference_context),
+    infer_expr(else_expression, inference_context),
+    else_expression)
 
 fn infer_expr_block(statements: [Shared<Stmt>], result_expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
   const statements_result = infer_statements(statements, inference_context)

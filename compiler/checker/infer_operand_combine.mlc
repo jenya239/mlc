@@ -1,0 +1,107 @@
+// Combine InferResult values after subexpressions are inferred (no infer_expr).
+
+import { Expr, Span, diagnostics_append } from "../ast"
+import { InferResult } from "./infer_result"
+import { Type, TypeRegistry } from "./registry"
+import {
+  type_is_unknown,
+  types_structurally_equal,
+  binary_operation_result_type,
+  builtin_method_return_type,
+  field_type_from_object
+} from "./type_utils"
+import {
+  infer_binary_operand_diagnostics,
+  unary_minus_diagnostic,
+  unary_bang_diagnostic,
+  infer_builtin_method_receiver_diagnostics,
+  method_arity_after_receiver,
+  index_not_array_diagnostic,
+  index_not_i32_diagnostic,
+  if_branch_mismatch_diagnostic,
+  infer_expr_field_diagnostics
+} from "./type_diagnostics"
+
+export fn infer_binary_from_operand_results(
+  operation: string,
+  left_result: InferResult,
+  right_result: InferResult,
+  source_span: Span
+) -> InferResult = do
+  const merged = left_result.absorb(right_result)
+  const operand_errors = infer_binary_operand_diagnostics(
+    operation, left_result.inferred_type, right_result.inferred_type, source_span)
+  InferResult {
+    inferred_type: binary_operation_result_type(operation, left_result.inferred_type),
+    errors: diagnostics_append(merged.errors, operand_errors)
+  }
+end
+
+export fn infer_unary_from_inner_result(operation: string, inner_result: InferResult, source_span: Span) -> InferResult = do
+  const minus_errors = unary_minus_diagnostic(operation, inner_result.inferred_type, source_span)
+  const bang_errors  = unary_bang_diagnostic(operation, inner_result.inferred_type, source_span)
+  const result_type  = if operation == "!" then Shared.new(TBool) else inner_result.inferred_type end
+  InferResult {
+    inferred_type: result_type,
+    errors: diagnostics_append(diagnostics_append(inner_result.errors, minus_errors), bang_errors)
+  }
+end
+
+export fn infer_index_from_operand_results(
+  object_result: InferResult,
+  index_result: InferResult,
+  bracket_source_span: Span
+) -> InferResult = do
+  const element_type = match object_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+  const extra_not_array = index_not_array_diagnostic(object_result.inferred_type, bracket_source_span)
+  const extra_bad_index = index_not_i32_diagnostic(index_result.inferred_type, bracket_source_span)
+  const merged = object_result.absorb(index_result)
+  InferResult {
+    inferred_type: element_type,
+    errors: diagnostics_append(diagnostics_append(merged.errors, extra_not_array), extra_bad_index)
+  }
+end
+
+export fn infer_conditional_from_branch_results(
+  condition_result: InferResult,
+  then_result: InferResult,
+  else_result: InferResult,
+  else_expression: Shared<Expr>
+) -> InferResult = do
+  const merged = then_result.absorb(condition_result).absorb(else_result)
+  const branches_mismatch =
+    !type_is_unknown(then_result.inferred_type) && !type_is_unknown(else_result.inferred_type) &&
+    !types_structurally_equal(then_result.inferred_type, else_result.inferred_type)
+  const branch_errors = if_branch_mismatch_diagnostic(
+    branches_mismatch, then_result.inferred_type, else_result.inferred_type, else_expression)
+  InferResult {
+    inferred_type: if branches_mismatch then then_result.inferred_type else merged.inferred_type end,
+    errors: diagnostics_append(merged.errors, branch_errors)
+  }
+end
+
+export fn infer_field_from_object_result(
+  object_result: InferResult,
+  field_name: string,
+  field_source_span: Span,
+  registry: TypeRegistry
+) -> InferResult = do
+  const resolved_field_type = field_type_from_object(object_result.inferred_type, field_name, registry)
+  const attached = infer_expr_field_diagnostics(object_result.inferred_type, field_name, field_source_span, registry)
+  InferResult { inferred_type: resolved_field_type, errors: diagnostics_append(object_result.errors, attached) }
+end
+
+export fn infer_method_from_object_and_arguments(
+  object_result: InferResult,
+  with_arguments: InferResult,
+  method_name: string,
+  method_span: Span,
+  argument_count: i32
+) -> InferResult = do
+  const receiver_errors = infer_builtin_method_receiver_diagnostics(object_result.inferred_type, method_name, method_span)
+  const arity_errors    = method_arity_after_receiver(receiver_errors, method_name, argument_count, method_span)
+  InferResult {
+    inferred_type: builtin_method_return_type(method_name),
+    errors: diagnostics_append(diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)
+  }
+end
