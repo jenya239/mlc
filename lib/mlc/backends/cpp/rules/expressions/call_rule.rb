@@ -464,9 +464,9 @@ module MLC
                 )
 
               when "map", "filter", "any", "all", "none", "find", "find_index",
-                   "contains", "index_of", "reverse", "sort", "enumerate",
+                   "contains", "index_of", "sort", "enumerate",
                    "concat", "append", "zip", "sort_by", "take", "drop",
-                   "first_n", "last_n", "flat_map", "each",
+                   "each",
                    "uniq", "uniq_by", "group_by", "partition", "flatten",
                    "min", "max"
                 args = call.args.map { |a| lower_expression(a) }

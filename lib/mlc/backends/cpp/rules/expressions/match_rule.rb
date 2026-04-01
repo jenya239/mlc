@@ -197,7 +197,6 @@ module MLC
               variant = variants.find { |v| v[:name] == variant_name }
               return nil unless variant
 
-              variant_idx = variants.index(variant)
               type_args = scrutinee_type.type_args
 
               # Build template args using only this variant's own type params (per-variant params).

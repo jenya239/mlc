@@ -266,9 +266,7 @@ module MLC
         def assignment_lhs_ahead?
           # Scan ahead to check if we have: identifier[...]= or identifier.field=
           return false unless current.type == :IDENTIFIER
-          # Simple lookahead: peek at tokens after identifier
-          pos = @pos
-          # We're at IDENTIFIER, peek is next
+          # We're at IDENTIFIER; peek is next token after identifier
           tok1 = peek # token after identifier
           return false unless tok1
           if tok1.type == :LBRACKET

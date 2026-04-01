@@ -835,16 +835,6 @@ module MLC
         end
       end
 
-      # Error propagation: expr?
-      class TryExpr < Expr
-        attr_reader :operand
-
-        def initialize(operand:, origin: nil)
-          super(kind: :try, data: { operand: operand }, origin: origin)
-          @operand = operand
-        end
-      end
-
       # Function type
       class FunctionType < Type
         attr_reader :param_types, :ret_type

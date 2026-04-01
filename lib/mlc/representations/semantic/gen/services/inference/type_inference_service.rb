@@ -321,10 +321,10 @@ module MLC
                   trait_info = @trait_registry.get_trait(object_type.name)
                   if trait_info
                     trait_method = trait_info.trait_methods.find { |m| m[:name] == member }
-                  if trait_method
-                    raw_params = Array(trait_method[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
-                    params = raw_params.map { |p| { name: (p.respond_to?(:name) ? p.name : p[:name]), type: (p.respond_to?(:type) ? p.type : p[:type]) } }
-                    return SemanticIR::Builder.function_type(params, trait_method[:ret_type])
+                    if trait_method
+                      raw_params = Array(trait_method[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
+                      params = raw_params.map { |p| { name: (p.respond_to?(:name) ? p.name : p[:name]), type: (p.respond_to?(:type) ? p.type : p[:type]) } }
+                      return SemanticIR::Builder.function_type(params, trait_method[:ret_type])
                     end
                     type_error("Unknown method '#{member}' for trait #{object_type.name}", node: node)
                   end

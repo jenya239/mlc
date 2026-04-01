@@ -60,7 +60,7 @@ class ModularCompilationE2ETest < Minitest::Test
     result = MLC.build_project(entry_path: File.join(src_dir, "app.mlc"), out_dir: out_dir, root_dir: src_dir)
 
     assert File.exist?(result[:binary])
-    stdout, stderr, status = Open3.capture3(result[:binary])
+    _stdout, stderr, status = Open3.capture3(result[:binary])
     assert_equal 1, status.exitstatus, "run failed: #{stderr}"
   end
 
@@ -75,7 +75,7 @@ class ModularCompilationE2ETest < Minitest::Test
     MLC
 
     cli = File.expand_path("../../bin/mlc", __dir__)
-    stdout, stderr, status = Open3.capture3(
+    _stdout, stderr, status = Open3.capture3(
       "bundle", "exec", "ruby", cli, "--emit-cpp", "-o", out_dir, File.join(src_dir, "app.mlc"),
       chdir: File.expand_path("../..", __dir__)
     )
