@@ -4,6 +4,7 @@ import { Expr, Stmt, FieldVal, MatchArm, Pat, Diagnostic, Span, diagnostics_appe
 import { Type, TypeRegistry } from "./registry"
 import { CheckContext, check_context_new } from "./check_context"
 import { InferResult, StmtInferResult, infer_ok } from "./infer_result"
+import * as infer_literal_helpers from "./infer_literals"
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
 import { type_is_unknown, types_structurally_equal, binary_operation_result_type, builtin_method_return_type, field_type_from_object } from "./type_utils"
 import { infer_binary_operand_diagnostics, unary_minus_diagnostic, unary_bang_diagnostic, infer_builtin_method_receiver_diagnostics, method_arity_after_receiver, index_not_array_diagnostic, index_not_i32_diagnostic, if_branch_mismatch_diagnostic, for_loop_range_diagnostic, match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
@@ -46,21 +47,6 @@ fn infer_field_values_errors(
 end
 
 // --- Expression rule functions ----------------------------------------------
-
-fn infer_expr_integer_literal() -> InferResult =
-  infer_ok(Shared.new(TI32))
-
-fn infer_expr_string_literal() -> InferResult =
-  infer_ok(Shared.new(TString))
-
-fn infer_expr_boolean_literal() -> InferResult =
-  infer_ok(Shared.new(TBool))
-
-fn infer_expr_unit_literal() -> InferResult =
-  infer_ok(Shared.new(TUnit))
-
-fn infer_expr_extern_placeholder() -> InferResult =
-  infer_ok(Shared.new(TUnit))
 
 fn infer_expr_identifier(name: string, inference_context: CheckContext) -> InferResult =
   if inference_context.type_env.has(name) then infer_ok(inference_context.type_env.get(name))
@@ -253,11 +239,11 @@ end
 
 export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) -> InferResult =
   match expression {
-    ExprInt(_, _)                           => infer_expr_integer_literal(),
-    ExprStr(_, _)                           => infer_expr_string_literal(),
-    ExprBool(_, _)                          => infer_expr_boolean_literal(),
-    ExprUnit(_)                             => infer_expr_unit_literal(),
-    ExprExtern(_)                           => infer_expr_extern_placeholder(),
+    ExprInt(_, _)                           => infer_literal_helpers.infer_expr_integer_literal(),
+    ExprStr(_, _)                           => infer_literal_helpers.infer_expr_string_literal(),
+    ExprBool(_, _)                          => infer_literal_helpers.infer_expr_boolean_literal(),
+    ExprUnit(_)                             => infer_literal_helpers.infer_expr_unit_literal(),
+    ExprExtern(_)                           => infer_literal_helpers.infer_expr_extern_placeholder(),
     ExprIdent(name, _)                      => infer_expr_identifier(name, inference_context),
     ExprBin(operation, left, right, span) => infer_expr_binary(operation, left, right, span, inference_context),
     ExprUn(operation, inner, span)          => infer_expr_unary(operation, inner, span, inference_context),

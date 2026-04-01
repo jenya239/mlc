@@ -1,0 +1,18 @@
+// Literal and placeholder expression inference (no CheckContext).
+
+import { InferResult, infer_ok } from "./infer_result"
+
+export fn infer_expr_integer_literal() -> InferResult =
+  infer_ok(Shared.new(TI32))
+
+export fn infer_expr_string_literal() -> InferResult =
+  infer_ok(Shared.new(TString))
+
+export fn infer_expr_boolean_literal() -> InferResult =
+  infer_ok(Shared.new(TBool))
+
+export fn infer_expr_unit_literal() -> InferResult =
+  infer_ok(Shared.new(TUnit))
+
+export fn infer_expr_extern_placeholder() -> InferResult =
+  infer_ok(Shared.new(TUnit))

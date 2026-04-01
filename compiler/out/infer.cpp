@@ -4,6 +4,7 @@
 #include "registry.hpp"
 #include "check_context.hpp"
 #include "infer_result.hpp"
+#include "infer_literals.hpp"
 #include "infer_call_support.hpp"
 #include "type_utils.hpp"
 #include "type_diagnostics.hpp"
@@ -15,6 +16,7 @@ using namespace ast;
 using namespace registry;
 using namespace check_context;
 using namespace infer_result;
+using namespace infer_literals;
 using namespace infer_call_support;
 using namespace type_utils;
 using namespace type_diagnostics;
@@ -24,16 +26,6 @@ using namespace ast_tokens;
 infer_result::InferResult infer_arguments_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_field_values_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context, mlc::String record_type_name_for_fields) noexcept;
-
-infer_result::InferResult infer_expr_integer_literal() noexcept;
-
-infer_result::InferResult infer_expr_string_literal() noexcept;
-
-infer_result::InferResult infer_expr_boolean_literal() noexcept;
-
-infer_result::InferResult infer_expr_unit_literal() noexcept;
-
-infer_result::InferResult infer_expr_extern_placeholder() noexcept;
 
 infer_result::InferResult infer_expr_identifier(mlc::String name, check_context::CheckContext inference_context) noexcept;
 
@@ -103,16 +95,6 @@ index = index + 1;
 }
 return result;
 }
-
-infer_result::InferResult infer_expr_integer_literal() noexcept{return infer_result::infer_ok(std::make_shared<registry::Type>((registry::TI32{})));}
-
-infer_result::InferResult infer_expr_string_literal() noexcept{return infer_result::infer_ok(std::make_shared<registry::Type>((registry::TString{})));}
-
-infer_result::InferResult infer_expr_boolean_literal() noexcept{return infer_result::infer_ok(std::make_shared<registry::Type>((registry::TBool{})));}
-
-infer_result::InferResult infer_expr_unit_literal() noexcept{return infer_result::infer_ok(std::make_shared<registry::Type>((registry::TUnit{})));}
-
-infer_result::InferResult infer_expr_extern_placeholder() noexcept{return infer_result::infer_ok(std::make_shared<registry::Type>((registry::TUnit{})));}
 
 infer_result::InferResult infer_expr_identifier(mlc::String name, check_context::CheckContext inference_context) noexcept{return inference_context.type_env.has(name) ? infer_result::infer_ok(inference_context.type_env.get(name)) : registry::TypeRegistry_has_fn(inference_context.registry, name) ? infer_result::infer_ok(registry::TypeRegistry_fn_type(inference_context.registry, name)) : registry::TypeRegistry_has_ctor(inference_context.registry, name) ? infer_result::infer_ok(registry::TypeRegistry_ctor_type(inference_context.registry, name)) : infer_result::infer_ok(std::make_shared<registry::Type>((registry::TUnknown{})));}
 
@@ -253,11 +235,11 @@ return infer_result::infer_ok(std::make_shared<registry::Type>(registry::TFn(par
 }
 
 infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept{return std::visit(overloaded{
-  [&](const ExprInt& exprint) -> infer_result::InferResult { auto [_w0, _w1] = exprint; return infer_expr_integer_literal(); },
-  [&](const ExprStr& exprstr) -> infer_result::InferResult { auto [_w0, _w1] = exprstr; return infer_expr_string_literal(); },
-  [&](const ExprBool& exprbool) -> infer_result::InferResult { auto [_w0, _w1] = exprbool; return infer_expr_boolean_literal(); },
-  [&](const ExprUnit& exprunit) -> infer_result::InferResult { auto [_w0] = exprunit; return infer_expr_unit_literal(); },
-  [&](const ExprExtern& exprextern) -> infer_result::InferResult { auto [_w0] = exprextern; return infer_expr_extern_placeholder(); },
+  [&](const ExprInt& exprint) -> infer_result::InferResult { auto [_w0, _w1] = exprint; return infer_literals::infer_expr_integer_literal(); },
+  [&](const ExprStr& exprstr) -> infer_result::InferResult { auto [_w0, _w1] = exprstr; return infer_literals::infer_expr_string_literal(); },
+  [&](const ExprBool& exprbool) -> infer_result::InferResult { auto [_w0, _w1] = exprbool; return infer_literals::infer_expr_boolean_literal(); },
+  [&](const ExprUnit& exprunit) -> infer_result::InferResult { auto [_w0] = exprunit; return infer_literals::infer_expr_unit_literal(); },
+  [&](const ExprExtern& exprextern) -> infer_result::InferResult { auto [_w0] = exprextern; return infer_literals::infer_expr_extern_placeholder(); },
   [&](const ExprIdent& exprident) -> infer_result::InferResult { auto [name, _w0] = exprident; return infer_expr_identifier(name, inference_context); },
   [&](const ExprBin& exprbin) -> infer_result::InferResult { auto [operation, left, right, span] = exprbin; return infer_expr_binary(operation, left, right, span, inference_context); },
   [&](const ExprUn& exprun) -> infer_result::InferResult { auto [operation, inner, span] = exprun; return infer_expr_unary(operation, inner, span, inference_context); },
