@@ -44,7 +44,7 @@
 
 ### Проблема (обновление)
 
-Монолит `compiler/codegen.mlc` снят: код в каталоге `compiler/codegen/`. Крупные узлы остаются в `eval.mlc` и др.; дальше — механический вынос правил из `eval.mlc` / `decl.mlc` при необходимости.
+Монолит `compiler/codegen.mlc` снят: код в каталоге `compiler/codegen/`. Взаимная рекурсия `gen_expr` ↔ `gen_stmts_str` остаётся в **`eval.mlc`** (граф модулей не допускает циклов). Слой **`expr.mlc`** — только сборка C++-строк из уже сгенерированных подвыражений (`import * as …` из `eval.mlc`).
 
 ### Цель
 
@@ -53,7 +53,7 @@
 ```
 compiler/codegen/
   context.mlc          # CodegenContext, PrecomputedCtx, builder-функции
-  expr.mlc             # gen_expr разбит на fn per-ExprXxx
+  expr.mlc             # фрагменты C++ (тернарный оператор, IIFE, std::visit, вызовы); обход SExpr в eval.mlc
   decl.mlc             # gen_decl, gen_proto, collect_decl_parts
   type.mlc             # gen_type, gen_adt_fwd, gen_adt_defs
   pattern.mlc          # gen_arm, gen_pattern

@@ -1,0 +1,81 @@
+// Pre-rendered C++ substrings for expressions and related statement fragments.
+// Mutual recursion (gen_expr <-> gen_stmts_str) stays in eval.mlc; this module has no SExpr traversal.
+
+export fn parenthesized_binary(left_code: string, operation: string, right_code: string) -> string =
+  "(" + left_code + " " + operation + " " + right_code + ")"
+
+export fn parenthesized_unary(operation: string, inner_code: string) -> string =
+  "(" + operation + inner_code + ")"
+
+export fn ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
+  "(" + condition_code + " ? " + then_code + " : " + else_code + ")"
+
+export fn index_subscript(object_code: string, index_code: string) -> string =
+  object_code + "[" + index_code + "]"
+
+export fn array_literal(argument_list: string) -> string =
+  if argument_list.length() == 0 then "\{\}" else "mlc::Array\{" + argument_list + "\}" end
+
+export fn question_try_result(inner_code: string) -> string =
+  "(\{ auto __q = " + inner_code + "; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; \})"
+
+export fn block_as_immediate_invoked_function_expression(body_statements_and_return: string) -> string =
+  "[&]() \{\n" + body_statements_and_return + "\}()"
+
+export fn while_loop_immediate_invoked_function_expression(condition_code: string, body_statements: string) -> string =
+  "[&]() \{\nwhile (" + condition_code + ") \{\n" + body_statements + "\}\n\}()"
+
+export fn for_loop_immediate_invoked_function_expression(
+  variable_cpp_safe: string,
+  iterator_code: string,
+  body_statements: string
+) -> string =
+  "[&]() \{\nfor (auto " + variable_cpp_safe + " : " + iterator_code + ") \{\n" + body_statements + "\}\n\}()"
+
+export fn std_visit_match_expression(arm_lambdas: string, visit_subject: string) -> string =
+  "std::visit(overloaded\{" + arm_lambdas + "\n\}, " + visit_subject + ")"
+
+export fn match_arm_wild_or_unit_return(return_expression_code: string) -> string =
+  "[&](const auto& __v) \{ return " + return_expression_code + "; \}"
+
+export fn match_arm_binding_identifier(parameter_cpp_safe: string, return_expression_code: string) -> string =
+  "[&](const auto& " + parameter_cpp_safe + ") \{ return " + return_expression_code + "; \}"
+
+export fn match_arm_constructed_value(
+  const_reference_parameter: string,
+  binding_prefix: string,
+  return_expression_code: string
+) -> string =
+  "[&](" + const_reference_parameter + ") \{ " + binding_prefix + "return " + return_expression_code + "; \}"
+
+export fn record_initializer(type_resolved: string, values_comma_separated: string) -> string =
+  type_resolved + "\{" + values_comma_separated + "\}"
+
+export fn record_update_lazy_closure(initializer_and_assignments: string) -> string =
+  "[&]() \{ " + initializer_and_assignments + "return __upd; \}()"
+
+export fn function_call_parentheses(callee_code: string, argument_list: string) -> string =
+  callee_code + "(" + argument_list + ")"
+
+export fn constructor_call_braces(constructor_code: string, argument_list: string) -> string =
+  constructor_code + "\{" + argument_list + "\}"
+
+export fn field_access(object_code: string, access_operator: string, field_cpp_safe: string) -> string =
+  object_code + access_operator + field_cpp_safe
+
+export fn lambda_with_return(header_code: string, return_expression_code: string) -> string =
+  header_code + " { return " + return_expression_code + "; }"
+
+export fn assignment_statement(left_code: string, right_code: string) -> string =
+  left_code + " = " + right_code + ";\n"
+
+export fn expression_operation_statement(operation: string, left_code: string, right_code: string) -> string =
+  "(" + left_code + " " + operation + " " + right_code + ");\n"
+
+export fn suffix_semicolon_newline(expression_code: string) -> string =
+  expression_code + ";\n"
+
+export fn try_unwrap_result_block(result_variable: string, inner_code: string, success_line: string) -> string =
+  "auto " + result_variable + " = " + inner_code + ";\n" +
+  "if (std::get_if<1>(&" + result_variable + ")) return *std::get_if<1>(&" + result_variable + ");\n" +
+  success_line

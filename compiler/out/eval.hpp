@@ -15,6 +15,7 @@
 #include "match_analysis.hpp"
 #include "expression_support.hpp"
 #include "statement_context.hpp"
+#include "expr.hpp"
 
 namespace eval {
 

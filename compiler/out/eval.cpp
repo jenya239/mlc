@@ -11,6 +11,7 @@
 #include "match_analysis.hpp"
 #include "expression_support.hpp"
 #include "statement_context.hpp"
+#include "expr.hpp"
 
 namespace eval {
 
@@ -25,6 +26,7 @@ using namespace identifiers;
 using namespace match_analysis;
 using namespace expression_support;
 using namespace statement_context;
+using namespace expr;
 using namespace ast_tokens;
 
 context::CodegenContext codegen_context_with_shared_binding(context::CodegenContext arm_context, mlc::String binding_name) noexcept;
@@ -197,7 +199,7 @@ parts.push_back(mlc::String("__upd.") + cpp_naming::cpp_safe(overrides[index]->n
 index = index + 1;
 }
 }
-return mlc::String("[&]() { ") + parts.join(mlc::String("")) + mlc::String("return __upd; }()");
+return expr::record_update_lazy_closure(parts.join(mlc::String("")));
 }
 
 mlc::String gen_arm_ctor(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::Pat>> sub_patterns, std::shared_ptr<semantic_ir::SExpr> arm_body, context::CodegenContext context) noexcept{
@@ -224,7 +226,7 @@ arm_context = codegen_context_with_shared_array_binding(arm_context, pattern_nam
 index = index + 1;
 }
 }
-return mlc::String("[&](const ") + qualified_name + type_argument + mlc::String("& ") + lower_name + mlc::String(") { ") + binding + mlc::String("return ") + gen_expr(arm_body, arm_context) + mlc::String("; }");
+return expr::match_arm_constructed_value(mlc::String("const ") + qualified_name + type_argument + mlc::String("& ") + lower_name, binding, gen_expr(arm_body, arm_context));
 }
 
 mlc::String gen_arm_record_pattern(mlc::String record_name, mlc::Array<std::shared_ptr<ast::Pat>> field_patterns, std::shared_ptr<semantic_ir::SExpr> arm_body, context::CodegenContext context) noexcept{
@@ -251,16 +253,16 @@ field_bindings = field_bindings + mlc::String("const auto& ") + cpp_naming::cpp_
 field_index = field_index + 1;
 }
 }
-return mlc::String("[&](const ") + qualified_name + type_argument + mlc::String("& ") + lower_name + mlc::String(") { ") + field_bindings + mlc::String("return ") + gen_expr(arm_body, context) + mlc::String("; }");
+return expr::match_arm_constructed_value(mlc::String("const ") + qualified_name + type_argument + mlc::String("& ") + lower_name, field_bindings, gen_expr(arm_body, context));
 }
 
 mlc::String gen_arm(std::shared_ptr<semantic_ir::SMatchArm> arm, context::CodegenContext context) noexcept{return std::visit(overloaded{
-  [&](const PatWild& patwild) -> mlc::String { auto [_w0] = patwild; return mlc::String("[&](const auto& __v) { return ") + gen_expr(arm->body, context) + mlc::String("; }"); },
-  [&](const PatUnit& patunit) -> mlc::String { auto [_w0] = patunit; return mlc::String("[&](const auto& __v) { return ") + gen_expr(arm->body, context) + mlc::String("; }"); },
-  [&](const PatBool& patbool) -> mlc::String { auto [_w0, _w1] = patbool; return mlc::String("[&](const auto& __v) { return ") + gen_expr(arm->body, context) + mlc::String("; }"); },
-  [&](const PatInt& patint) -> mlc::String { auto [_w0, _w1] = patint; return mlc::String("[&](const auto& __v) { return ") + gen_expr(arm->body, context) + mlc::String("; }"); },
-  [&](const PatStr& patstr) -> mlc::String { auto [_w0, _w1] = patstr; return mlc::String("[&](const auto& __v) { return ") + gen_expr(arm->body, context) + mlc::String("; }"); },
-  [&](const PatIdent& patident) -> mlc::String { auto [name, _w0] = patident; return mlc::String("[&](const auto& ") + cpp_naming::cpp_safe(name) + mlc::String(") { return ") + gen_expr(arm->body, context) + mlc::String("; }"); },
+  [&](const PatWild& patwild) -> mlc::String { auto [_w0] = patwild; return expr::match_arm_wild_or_unit_return(gen_expr(arm->body, context)); },
+  [&](const PatUnit& patunit) -> mlc::String { auto [_w0] = patunit; return expr::match_arm_wild_or_unit_return(gen_expr(arm->body, context)); },
+  [&](const PatBool& patbool) -> mlc::String { auto [_w0, _w1] = patbool; return expr::match_arm_wild_or_unit_return(gen_expr(arm->body, context)); },
+  [&](const PatInt& patint) -> mlc::String { auto [_w0, _w1] = patint; return expr::match_arm_wild_or_unit_return(gen_expr(arm->body, context)); },
+  [&](const PatStr& patstr) -> mlc::String { auto [_w0, _w1] = patstr; return expr::match_arm_wild_or_unit_return(gen_expr(arm->body, context)); },
+  [&](const PatIdent& patident) -> mlc::String { auto [name, _w0] = patident; return expr::match_arm_binding_identifier(cpp_naming::cpp_safe(name), gen_expr(arm->body, context)); },
   [&](const PatCtor& patctor) -> mlc::String { auto [name, sub_patterns, _w0] = patctor; return gen_arm_ctor(name, sub_patterns, arm->body, context); },
   [&](const PatRecord& patrecord) -> mlc::String { auto [name, field_patterns, _w0] = patrecord; return gen_arm_record_pattern(name, field_patterns, arm->body, context); }
 }, (*arm->pat));}
@@ -277,24 +279,24 @@ index = index + 1;
 mlc::String subject_code = gen_expr(subject, context);
 bool needs_deref = arms.size() > 0 ? match_analysis::first_arm_needs_deref(arms[0], subject, context) : true;
 mlc::String visit_subject = needs_deref ? mlc::String("(*") + subject_code + mlc::String(")") : subject_code;
-return mlc::String("std::visit(overloaded{") + parts.join(mlc::String(",\n")) + mlc::String("\n}, ") + visit_subject + mlc::String(")");
+return expr::std_visit_match_expression(parts.join(mlc::String(",\n")), visit_subject);
 }
 
-mlc::String gen_binary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expr, std::shared_ptr<semantic_ir::SExpr> right_expr, context::CodegenContext context) noexcept{return mlc::String("(") + gen_expr(left_expr, context) + mlc::String(" ") + operation + mlc::String(" ") + gen_expr(right_expr, context) + mlc::String(")");}
+mlc::String gen_binary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expr, std::shared_ptr<semantic_ir::SExpr> right_expr, context::CodegenContext context) noexcept{return expr::parenthesized_binary(gen_expr(left_expr, context), operation, gen_expr(right_expr, context));}
 
-mlc::String gen_unary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> inner_expr, context::CodegenContext context) noexcept{return mlc::String("(") + operation + gen_expr(inner_expr, context) + mlc::String(")");}
+mlc::String gen_unary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> inner_expr, context::CodegenContext context) noexcept{return expr::parenthesized_unary(operation, gen_expr(inner_expr, context));}
 
 mlc::String gen_call_function_code(std::shared_ptr<semantic_ir::SExpr> function_expr, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIdent>((*function_expr)._)) { auto _v_sexprident = std::get<semantic_ir::SExprIdent>((*function_expr)._); auto [name, _w0, _w1] = _v_sexprident; return context::context_resolve(context, cpp_naming::map_builtin(name)); } return gen_expr(function_expr, context); }();}
 
 mlc::String gen_call_expr(std::shared_ptr<semantic_ir::SExpr> function_expr, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{
 mlc::String function_code = gen_call_function_code(function_expr, context);
 mlc::String argument_list = gen_argument_list(arguments, context);
-return expression_support::is_constructor_call(function_expr) ? function_code + mlc::String("{") + argument_list + mlc::String("}") : function_code + mlc::String("(") + argument_list + mlc::String(")");
+return expression_support::is_constructor_call(function_expr) ? expr::constructor_call_braces(function_code, argument_list) : expr::function_call_parentheses(function_code, argument_list);
 }
 
 mlc::String gen_object_code(std::shared_ptr<semantic_ir::SExpr> object, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIdent>((*object)._)) { auto _v_sexprident = std::get<semantic_ir::SExprIdent>((*object)._); auto [name, _w0, _w1] = _v_sexprident; return context.self_type.length() > 0 ? expression_support::resolve_object_code_in_self_context(name, context) : context::context_resolve(context, cpp_naming::map_builtin(name)); } return gen_expr(object, context); }();}
 
-mlc::String gen_method_file(mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{return expression_support::cpp_function_name_for_file_method(method_name) + mlc::String("(") + gen_argument_list(arguments, context) + mlc::String(")");}
+mlc::String gen_method_file(mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{return expr::function_call_parentheses(expression_support::cpp_function_name_for_file_method(method_name), gen_argument_list(arguments, context));}
 
 mlc::String gen_method_shared_new(std::shared_ptr<semantic_ir::SExpr> argument, context::CodegenContext context) noexcept{
 mlc::String argument_code = gen_expr(argument, context);
@@ -305,17 +307,17 @@ return mlc::String("std::make_shared<") + type_name + mlc::String(">(") + argume
 mlc::String gen_method_owner_call(mlc::String object_code, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{
 mlc::String mangled_name = context.method_owners.get(method_name);
 mlc::String function_name = context::context_resolve(context, mangled_name);
-return arguments.size() == 0 ? function_name + mlc::String("(") + object_code + mlc::String(")") : function_name + mlc::String("(") + object_code + mlc::String(", ") + gen_argument_list(arguments, context) + mlc::String(")");
+return arguments.size() == 0 ? expr::function_call_parentheses(function_name, object_code) : expr::function_call_parentheses(function_name, object_code + mlc::String(", ") + gen_argument_list(arguments, context));
 }
 
 mlc::String gen_method_builtin(mlc::String object_code, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{
-mlc::String call_base = object_code + mlc::String(".") + cpp_naming::map_method(method_name) + mlc::String("(");
-return arguments.size() == 0 ? call_base + mlc::String(")") : call_base + gen_argument_list(arguments, context) + mlc::String(")");
+mlc::String call_base = object_code + mlc::String(".") + cpp_naming::map_method(method_name);
+return arguments.size() == 0 ? expr::function_call_parentheses(call_base, mlc::String("")) : expr::function_call_parentheses(call_base, gen_argument_list(arguments, context));
 }
 
 mlc::String gen_method_namespace_alias(mlc::String static_prefix, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{
-mlc::String call_base = static_prefix + cpp_naming::map_method(method_name) + mlc::String("(");
-return arguments.size() == 0 ? call_base + mlc::String(")") : call_base + gen_argument_list(arguments, context) + mlc::String(")");
+mlc::String call_base = static_prefix + cpp_naming::map_method(method_name);
+return arguments.size() == 0 ? expr::function_call_parentheses(call_base, mlc::String("")) : expr::function_call_parentheses(call_base, gen_argument_list(arguments, context));
 }
 
 mlc::String gen_method_expr_after_object(mlc::String object_code, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{return object_code == mlc::String("File") ? gen_method_file(method_name, arguments, context) : object_code == mlc::String("Map") && method_name == mlc::String("new") ? mlc::String("{}") : object_code == mlc::String("Shared") && method_name == mlc::String("new") && arguments.size() == 1 ? gen_method_shared_new(arguments[0], context) : method_name == mlc::String("to_string") && arguments.size() == 0 ? mlc::String("mlc::to_string(") + object_code + mlc::String(")") : context.method_owners.has(method_name) ? gen_method_owner_call(object_code, method_name, arguments, context) : gen_method_builtin(object_code, method_name, arguments, context);}
@@ -325,41 +327,41 @@ mlc::String gen_method_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::Str
 mlc::String gen_field_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, context::CodegenContext context) noexcept{
 mlc::String object_code = gen_expr(object, context);
 mlc::String operator_ = expression_support::field_access_operator(object, context);
-return object_code + operator_ + cpp_naming::cpp_safe(field_name);
+return expr::field_access(object_code, operator_, cpp_naming::cpp_safe(field_name));
 }
 
-mlc::String gen_index_expr(std::shared_ptr<semantic_ir::SExpr> object, std::shared_ptr<semantic_ir::SExpr> index_expr, context::CodegenContext context) noexcept{return gen_expr(object, context) + mlc::String("[") + gen_expr(index_expr, context) + mlc::String("]");}
+mlc::String gen_index_expr(std::shared_ptr<semantic_ir::SExpr> object, std::shared_ptr<semantic_ir::SExpr> index_expr, context::CodegenContext context) noexcept{return expr::index_subscript(gen_expr(object, context), gen_expr(index_expr, context));}
 
-mlc::String gen_if_expr(std::shared_ptr<semantic_ir::SExpr> condition, std::shared_ptr<semantic_ir::SExpr> then_expr, std::shared_ptr<semantic_ir::SExpr> else_expr, context::CodegenContext context) noexcept{return mlc::String("(") + gen_expr(condition, context) + mlc::String(" ? ") + gen_expr(then_expr, context) + mlc::String(" : ") + gen_expr(else_expr, context) + mlc::String(")");}
+mlc::String gen_if_expr(std::shared_ptr<semantic_ir::SExpr> condition, std::shared_ptr<semantic_ir::SExpr> then_expr, std::shared_ptr<semantic_ir::SExpr> else_expr, context::CodegenContext context) noexcept{return expr::ternary_conditional(gen_expr(condition, context), gen_expr(then_expr, context), gen_expr(else_expr, context));}
 
 mlc::String gen_block_expr(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<semantic_ir::SExpr> result_expr, context::CodegenContext context) noexcept{return statements.size() == 0 ? gen_expr(result_expr, context) : [&]() -> mlc::String { 
   mlc::String body = gen_stmts_str(statements, context) + mlc::String("return ") + gen_expr(result_expr, statement_context::stmts_final_ctx(statements, context)) + mlc::String(";\n");
-  return mlc::String("[&]() {\n") + body + mlc::String("}()");
+  return expr::block_as_immediate_invoked_function_expression(body);
  }();}
 
-mlc::String gen_while_expr(std::shared_ptr<semantic_ir::SExpr> condition, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept{return mlc::String("[&]() {\nwhile (") + gen_expr(condition, context) + mlc::String(") {\n") + gen_stmts_str(statements, context) + mlc::String("}\n}()");}
+mlc::String gen_while_expr(std::shared_ptr<semantic_ir::SExpr> condition, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept{return expr::while_loop_immediate_invoked_function_expression(gen_expr(condition, context), gen_stmts_str(statements, context));}
 
-mlc::String gen_for_expr(mlc::String variable, std::shared_ptr<semantic_ir::SExpr> iterator, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept{return mlc::String("[&]() {\nfor (auto ") + cpp_naming::cpp_safe(variable) + mlc::String(" : ") + gen_expr(iterator, context) + mlc::String(") {\n") + gen_stmts_str(statements, context) + mlc::String("}\n}()");}
+mlc::String gen_for_expr(mlc::String variable, std::shared_ptr<semantic_ir::SExpr> iterator, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept{return expr::for_loop_immediate_invoked_function_expression(cpp_naming::cpp_safe(variable), gen_expr(iterator, context), gen_stmts_str(statements, context));}
 
 mlc::String gen_record_expr(mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, context::CodegenContext context) noexcept{
 mlc::Array<mlc::String> field_order = decl_index::lookup_fields(context.field_orders, type_name);
 mlc::String values_code = field_order.size() > 0 ? gen_record_ordered(field_values, field_order, context) : gen_record_unordered(field_values, context);
-return context::context_resolve(context, type_name) + mlc::String("{") + values_code + mlc::String("}");
+return expr::record_initializer(context::context_resolve(context, type_name), values_code);
 }
 
 mlc::String gen_record_update_expr(mlc::String type_name, std::shared_ptr<semantic_ir::SExpr> base_expr, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> overrides, context::CodegenContext context) noexcept{
 mlc::Array<mlc::String> field_order = decl_index::lookup_fields(context.field_orders, type_name);
-return field_order.size() > 0 ? context::context_resolve(context, type_name) + mlc::String("{") + gen_record_update_ordered(base_expr, overrides, field_order, context) + mlc::String("}") : gen_record_update_lazy(base_expr, overrides, context);
+return field_order.size() > 0 ? expr::record_initializer(context::context_resolve(context, type_name), gen_record_update_ordered(base_expr, overrides, field_order, context)) : gen_record_update_lazy(base_expr, overrides, context);
 }
 
-mlc::String gen_array_expr(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context) noexcept{return elements.size() == 0 ? mlc::String("{}") : mlc::String("mlc::Array{") + gen_argument_list(elements, context) + mlc::String("}");}
+mlc::String gen_array_expr(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context) noexcept{return expr::array_literal(gen_argument_list(elements, context));}
 
 mlc::String gen_question_expr(std::shared_ptr<semantic_ir::SExpr> inner_expr, context::CodegenContext context) noexcept{
 mlc::String inner_code = gen_expr(inner_expr, context);
-return mlc::String("({ auto __q = ") + inner_code + mlc::String("; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })");
+return expr::question_try_result(inner_code);
 }
 
-mlc::String gen_lambda_expr(mlc::Array<mlc::String> parameters, std::shared_ptr<semantic_ir::SExpr> body_expr, context::CodegenContext context) noexcept{return expression_support::cpp_lambda_header_prefix(parameters) + mlc::String(" { return ") + gen_expr(body_expr, context) + mlc::String("; }");}
+mlc::String gen_lambda_expr(mlc::Array<mlc::String> parameters, std::shared_ptr<semantic_ir::SExpr> body_expr, context::CodegenContext context) noexcept{return expr::lambda_with_return(expression_support::cpp_lambda_header_prefix(parameters), gen_expr(body_expr, context));}
 
 mlc::String gen_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context) noexcept{return std::visit(overloaded{
   [&](const SExprInt& sexprint) -> mlc::String { auto [integer_value, _w0, _w1] = sexprint; return literals::gen_integer_literal(integer_value); },
@@ -388,7 +390,7 @@ mlc::String gen_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenC
 
 mlc::String gen_try_unwrap(std::shared_ptr<semantic_ir::SExpr> inner_expr, context::CodegenContext context, mlc::String try_identifier, mlc::String success_line) noexcept{
 mlc::String inner_code = gen_expr(inner_expr, context);
-return mlc::String("auto ") + try_identifier + mlc::String(" = ") + inner_code + mlc::String(";\n") + mlc::String("if (std::get_if<1>(&") + try_identifier + mlc::String(")) return *std::get_if<1>(&") + try_identifier + mlc::String(");\n") + success_line;
+return expr::try_unwrap_result_block(try_identifier, inner_code, success_line);
 }
 
 context::GenStmtResult gen_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context, int try_counter) noexcept{return std::visit(overloaded{
@@ -396,7 +398,7 @@ context::GenStmtResult gen_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> stm
   mlc::String try_identifier = mlc::String("__try_") + mlc::to_string(try_counter);
   int next_counter = try_counter + 1;
   context::GenStmtResult result = [&]() -> context::GenStmtResult { if (std::holds_alternative<semantic_ir::SExprQuestion>((*value)._)) { auto _v_sexprquestion = std::get<semantic_ir::SExprQuestion>((*value)._); auto [inner_expr, _w0, _w1] = _v_sexprquestion; return context::GenStmtResult{gen_try_unwrap(inner_expr, context, try_identifier, mlc::String("auto ") + cpp_naming::cpp_safe(name) + mlc::String(" = std::get<0>(") + try_identifier + mlc::String(").field0;\n")), next_counter}; } if (std::holds_alternative<semantic_ir::SExprArray>((*value)._)) { auto _v_sexprarray = std::get<semantic_ir::SExprArray>((*value)._); auto [elements, array_type, _w0] = _v_sexprarray; return [&]() -> context::GenStmtResult { 
-  mlc::String value_code = elements.size() == 0 ? [&]() -> mlc::String { if (std::holds_alternative<registry::TArray>((*array_type))) { auto _v_tarray = std::get<registry::TArray>((*array_type)); auto [inner_type] = _v_tarray; return mlc::String("mlc::Array<") + type_gen::sem_type_to_cpp(context, inner_type) + mlc::String(">{}"); } return mlc::String("mlc::Array<mlc::String>{}"); }() : mlc::String("mlc::Array{") + gen_argument_list(elements, context) + mlc::String("}");
+  mlc::String value_code = elements.size() == 0 ? [&]() -> mlc::String { if (std::holds_alternative<registry::TArray>((*array_type))) { auto _v_tarray = std::get<registry::TArray>((*array_type)); auto [inner_type] = _v_tarray; return mlc::String("mlc::Array<") + type_gen::sem_type_to_cpp(context, inner_type) + mlc::String(">{}"); } return mlc::String("mlc::Array<mlc::String>{}"); }() : expr::constructor_call_braces(mlc::String("mlc::Array"), gen_argument_list(elements, context));
   return context::GenStmtResult{mlc::String("auto ") + cpp_naming::cpp_safe(name) + mlc::String(" = ") + value_code + mlc::String(";\n"), try_counter};
  }(); } if (std::holds_alternative<semantic_ir::SExprMethod>((*value)._)) { auto _v_sexprmethod = std::get<semantic_ir::SExprMethod>((*value)._); auto [map_object, method_name, _w0, _w1, _w2] = _v_sexprmethod; return [&]() -> context::GenStmtResult { 
   mlc::String value_code = method_name == mlc::String("new") ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIdent>((*map_object)._)) { auto _v_sexprident = std::get<semantic_ir::SExprIdent>((*map_object)._); auto [object_name, _w0, _w1] = _v_sexprident; return object_name == mlc::String("Map") ? [&]() -> mlc::String { if (std::holds_alternative<registry::TGeneric>((*value_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*value_type)); auto [type_name, type_args] = _v_tgeneric; return type_name == mlc::String("Map") && type_args.size() == 2 ? mlc::String("mlc::HashMap<") + type_gen::sem_type_to_cpp(context, type_args[0]) + mlc::String(", ") + type_gen::sem_type_to_cpp(context, type_args[1]) + mlc::String(">()") : gen_expr(value, context); } return gen_expr(value, context); }() : gen_expr(value, context); } return gen_expr(value, context); }() : gen_expr(value, context);
@@ -417,7 +419,7 @@ context::GenStmtResult gen_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> stm
  }(); } return context::GenStmtResult{mlc::String("return ") + gen_expr(expression, context) + mlc::String(";\n"), try_counter}; }(); }
 }, (*stmt)._);}
 
-mlc::String gen_stmt_expr(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprBin>((*expression)._)) { auto _v_sexprbin = std::get<semantic_ir::SExprBin>((*expression)._); auto [operation, left_expr, right_expr, _w0, _w1] = _v_sexprbin; return operation == mlc::String("=") ? gen_expr(left_expr, context) + mlc::String(" = ") + gen_expr(right_expr, context) + mlc::String(";\n") : mlc::String("(") + gen_expr(left_expr, context) + mlc::String(" ") + operation + mlc::String(" ") + gen_expr(right_expr, context) + mlc::String(");\n"); } if (std::holds_alternative<semantic_ir::SExprIf>((*expression)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expression)._); auto [condition, then_expr, else_expr, _w0, _w1] = _v_sexprif; return [&]() -> mlc::String { 
+mlc::String gen_stmt_expr(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprBin>((*expression)._)) { auto _v_sexprbin = std::get<semantic_ir::SExprBin>((*expression)._); auto [operation, left_expr, right_expr, _w0, _w1] = _v_sexprbin; return operation == mlc::String("=") ? expr::assignment_statement(gen_expr(left_expr, context), gen_expr(right_expr, context)) : expr::expression_operation_statement(operation, gen_expr(left_expr, context), gen_expr(right_expr, context)); } if (std::holds_alternative<semantic_ir::SExprIf>((*expression)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expression)._); auto [condition, then_expr, else_expr, _w0, _w1] = _v_sexprif; return [&]() -> mlc::String { 
   mlc::String output = mlc::String("if (") + gen_expr(condition, context) + mlc::String(") {\n") + gen_block_body(then_expr, context) + mlc::String("}");
   mlc::String else_string = [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprUnit>((*else_expr)._)) { auto _v_sexprunit = std::get<semantic_ir::SExprUnit>((*else_expr)._); auto [_w0, _w1] = _v_sexprunit; return mlc::String(""); } if (std::holds_alternative<semantic_ir::SExprBlock>((*else_expr)._)) { auto _v_sexprblock = std::get<semantic_ir::SExprBlock>((*else_expr)._); auto [statements, result_expr, _w0, _w1] = _v_sexprblock; return statements.size() == 0 ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprUnit>((*result_expr)._)) { auto _v_sexprunit = std::get<semantic_ir::SExprUnit>((*result_expr)._); auto [_w0, _w1] = _v_sexprunit; return mlc::String(""); } return mlc::String(" else {\n") + gen_block_body(else_expr, context) + mlc::String("}"); }() : mlc::String(" else {\n") + gen_block_body(else_expr, context) + mlc::String("}"); } if (std::holds_alternative<semantic_ir::SExprIf>((*else_expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*else_expr)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return mlc::String(" else ") + gen_stmt_expr(else_expr, context); } return mlc::String(" else {\n") + gen_block_body(else_expr, context) + mlc::String("}"); }();
   if (else_string.length() > 0){
@@ -430,7 +432,7 @@ output = output + else_string;
   mlc::String statements_code = gen_stmts_str(statements, context);
   mlc::String result_code = gen_expr(result_expr, statement_context::stmts_final_ctx(statements, context));
   return result_code == mlc::String("/* unit */") ? statements_code : statements_code + result_code + mlc::String(";\n");
- }(); } return gen_expr(expression, context) + mlc::String(";\n"); }();}
+ }(); } return expr::suffix_semicolon_newline(gen_expr(expression, context)); }();}
 
 mlc::String gen_block_body(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprBlock>((*expr)._)) { auto _v_sexprblock = std::get<semantic_ir::SExprBlock>((*expr)._); auto [statements, result_expr, _w0, _w1] = _v_sexprblock; return [&]() -> mlc::String { 
   mlc::String statements_code = gen_stmts_str(statements, context);
@@ -439,7 +441,7 @@ mlc::String gen_block_body(std::shared_ptr<semantic_ir::SExpr> expr, context::Co
   mlc::String result_code = gen_expr(result_expr, final_context);
   return result_code == mlc::String("/* unit */") ? statements_code : statements_code + result_code + mlc::String(";\n");
  }(); }();
- }(); } if (std::holds_alternative<semantic_ir::SExprIf>((*expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expr)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return gen_stmt_expr(expr, context); } return gen_expr(expr, context) + mlc::String(";\n"); }();}
+ }(); } if (std::holds_alternative<semantic_ir::SExprIf>((*expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expr)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return gen_stmt_expr(expr, context); } return expr::suffix_semicolon_newline(gen_expr(expr, context)); }();}
 
 context::GenStmtsResult gen_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter) noexcept{
 mlc::Array<mlc::String> parts = {};
