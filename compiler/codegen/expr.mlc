@@ -1,5 +1,6 @@
 // Pre-rendered C++ substrings for expressions and related statement fragments.
 // Mutual recursion (gen_expr <-> gen_stmts_str) stays in eval.mlc; this module has no SExpr traversal.
+// Export names must not collide with other compiler modules (single global symbol namespace).
 
 export fn parenthesized_binary(left_code: string, operation: string, right_code: string) -> string =
   "(" + left_code + " " + operation + " " + right_code + ")"
@@ -79,3 +80,48 @@ export fn try_unwrap_result_block(result_variable: string, inner_code: string, s
   "auto " + result_variable + " = " + inner_code + ";\n" +
   "if (std::get_if<1>(&" + result_variable + ")) return *std::get_if<1>(&" + result_variable + ");\n" +
   success_line
+
+export fn auto_binding_statement(binding_cpp_safe: string, value_code: string) -> string =
+  "auto " + binding_cpp_safe + " = " + value_code + ";\n"
+
+export fn constexpr_auto_binding_statement(binding_cpp_safe: string, value_code: string) -> string =
+  "constexpr auto " + binding_cpp_safe + " = " + value_code + ";\n"
+
+export fn return_line(expression_code: string) -> string =
+  "return " + expression_code + ";\n"
+
+export fn if_brace_block(condition_code: string, inner_statements: string) -> string =
+  "if (" + condition_code + ") \{\n" + inner_statements + "\}"
+
+export fn else_brace_block(inner_statements: string) -> string =
+  " else \{\n" + inner_statements + "\}"
+
+export fn else_fragment_raw(raw_else_suffix: string) -> string =
+  " else " + raw_else_suffix
+
+export fn while_loop_statement(condition_code: string, body_statements: string) -> string =
+  "while (" + condition_code + ") \{\n" + body_statements + "\}\n"
+
+export fn for_loop_statement(variable_cpp_safe: string, iterator_code: string, body_statements: string) -> string =
+  "for (auto " + variable_cpp_safe + " : " + iterator_code + ") \{\n" + body_statements + "\}\n"
+
+export fn break_line() -> string =
+  "break;\n"
+
+export fn continue_line() -> string =
+  "continue;\n"
+
+export fn let_from_try_ok_field0(binding_cpp_safe: string, try_variable: string) -> string =
+  "auto " + binding_cpp_safe + " = std::get<0>(" + try_variable + ").field0;\n"
+
+export fn discard_try_ok_field0_statement(try_variable: string) -> string =
+  "/* discard */ (void)std::get<0>(" + try_variable + ").field0;\n"
+
+export fn return_try_ok_field0_statement(try_variable: string) -> string =
+  "return std::get<0>(" + try_variable + ").field0;\n"
+
+export fn if_always_true_block(inner_statements: string) -> string =
+  "if (true) \{\n" + inner_statements + "\}\n"
+
+export fn fragment_with_newline(fragment: string) -> string =
+  fragment + "\n"

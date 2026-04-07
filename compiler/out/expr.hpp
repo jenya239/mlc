@@ -57,6 +57,36 @@ mlc::String suffix_semicolon_newline(mlc::String expression_code) noexcept;
 
 mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line) noexcept;
 
+mlc::String auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept;
+
+mlc::String constexpr_auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept;
+
+mlc::String return_line(mlc::String expression_code) noexcept;
+
+mlc::String if_brace_block(mlc::String condition_code, mlc::String inner_statements) noexcept;
+
+mlc::String else_brace_block(mlc::String inner_statements) noexcept;
+
+mlc::String else_fragment_raw(mlc::String raw_else_suffix) noexcept;
+
+mlc::String while_loop_statement(mlc::String condition_code, mlc::String body_statements) noexcept;
+
+mlc::String for_loop_statement(mlc::String variable_cpp_safe, mlc::String iterator_code, mlc::String body_statements) noexcept;
+
+mlc::String break_line() noexcept;
+
+mlc::String continue_line() noexcept;
+
+mlc::String let_from_try_ok_field0(mlc::String binding_cpp_safe, mlc::String try_variable) noexcept;
+
+mlc::String discard_try_ok_field0_statement(mlc::String try_variable) noexcept;
+
+mlc::String return_try_ok_field0_statement(mlc::String try_variable) noexcept;
+
+mlc::String if_always_true_block(mlc::String inner_statements) noexcept;
+
+mlc::String fragment_with_newline(mlc::String fragment) noexcept;
+
 } // namespace expr
 
 #endif // EXPR_HPP

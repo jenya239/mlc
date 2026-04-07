@@ -359,7 +359,11 @@ export fn gen_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_co
       const result = match value {
         SExprQuestion(inner_expr, _, _) =>
           GenStmtResult {
-            output: gen_try_unwrap(inner_expr, context, try_identifier, "auto " + cpp_safe(name) + " = std::get<0>(" + try_identifier + ").field0;\n"),
+            output: gen_try_unwrap(
+              inner_expr,
+              context,
+              try_identifier,
+              expression_output.let_from_try_ok_field0(cpp_safe(name), try_identifier)),
             next_try: next_counter
           },
         SExprArray(elements, array_type, _) => do
@@ -370,7 +374,10 @@ export fn gen_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_co
             }
           else expression_output.constructor_call_braces("mlc::Array", gen_argument_list(elements, context))
           end
-          GenStmtResult { output: "auto " + cpp_safe(name) + " = " + value_code + ";\n", next_try: try_counter }
+          GenStmtResult {
+            output: expression_output.auto_binding_statement(cpp_safe(name), value_code),
+            next_try: try_counter
+          }
         end,
         SExprMethod(map_object, method_name, _, _, _) => do
           const value_code = if method_name == "new" then
@@ -391,35 +398,55 @@ export fn gen_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_co
             }
           else gen_expr(value, context)
           end
-          GenStmtResult { output: "auto " + cpp_safe(name) + " = " + value_code + ";\n", next_try: try_counter }
+          GenStmtResult {
+            output: expression_output.auto_binding_statement(cpp_safe(name), value_code),
+            next_try: try_counter
+          }
         end,
-        _ => GenStmtResult { output: "auto " + cpp_safe(name) + " = " + gen_expr(value, context) + ";\n", next_try: try_counter }
+        _ => GenStmtResult {
+          output: expression_output.auto_binding_statement(cpp_safe(name), gen_expr(value, context)),
+          next_try: try_counter
+        }
       }
       result
     end,
     SStmtLetConst(name, value, _, _) =>
-      GenStmtResult { output: "constexpr auto " + cpp_safe(name) + " = " + gen_expr(value, context) + ";\n", next_try: try_counter },
+      GenStmtResult {
+        output: expression_output.constexpr_auto_binding_statement(cpp_safe(name), gen_expr(value, context)),
+        next_try: try_counter
+      },
     SStmtExpr(expression, _) => match expression {
       SExprQuestion(inner_expr, _, _) => do
         const try_identifier = "__try_" + try_counter.to_string()
         GenStmtResult {
-          output: gen_try_unwrap(inner_expr, context, try_identifier, "/* discard */ (void)std::get<0>(" + try_identifier + ").field0;\n"),
+          output: gen_try_unwrap(
+            inner_expr,
+            context,
+            try_identifier,
+            expression_output.discard_try_ok_field0_statement(try_identifier)),
           next_try: try_counter + 1
         }
       end,
       _ => GenStmtResult { output: gen_stmt_expr(expression, context), next_try: try_counter }
     },
-    SStmtBreak(_)    => GenStmtResult { output: "break;\n", next_try: try_counter },
-    SStmtContinue(_) => GenStmtResult { output: "continue;\n", next_try: try_counter },
+    SStmtBreak(_)    => GenStmtResult { output: expression_output.break_line(), next_try: try_counter },
+    SStmtContinue(_) => GenStmtResult { output: expression_output.continue_line(), next_try: try_counter },
     SStmtReturn(expression, _) => match expression {
       SExprQuestion(inner_expr, _, _) => do
         const try_identifier = "__try_ret_" + try_counter.to_string()
         GenStmtResult {
-          output: gen_try_unwrap(inner_expr, context, try_identifier, "return std::get<0>(" + try_identifier + ").field0;\n"),
+          output: gen_try_unwrap(
+            inner_expr,
+            context,
+            try_identifier,
+            expression_output.return_try_ok_field0_statement(try_identifier)),
           next_try: try_counter + 1
         }
       end,
-      _ => GenStmtResult { output: "return " + gen_expr(expression, context) + ";\n", next_try: try_counter }
+      _ => GenStmtResult {
+        output: expression_output.return_line(gen_expr(expression, context)),
+        next_try: try_counter
+      }
     }
   }
 
@@ -435,24 +462,35 @@ fn gen_stmt_expr(expression: Shared<SExpr>, context: CodegenContext) -> string =
           gen_expr(right_expr, context))
       end,
     SExprIf(condition, then_expr, else_expr, _, _) => do
-      let mut output = "if (" + gen_expr(condition, context) + ") \{\n" + gen_block_body(then_expr, context) + "\}"
+      let mut output = expression_output.if_brace_block(
+        gen_expr(condition, context),
+        gen_block_body(then_expr, context))
       const else_string = match else_expr {
         SExprUnit(_, _)                             => "",
         SExprBlock(statements, result_expr, _, _) =>
           if statements.length() == 0 then
-            match result_expr { SExprUnit(_, _) => "", _ => " else \{\n" + gen_block_body(else_expr, context) + "\}" }
-          else " else \{\n" + gen_block_body(else_expr, context) + "\}"
+            match result_expr {
+              SExprUnit(_, _) => "",
+              _ => expression_output.else_brace_block(gen_block_body(else_expr, context))
+            }
+          else expression_output.else_brace_block(gen_block_body(else_expr, context))
           end,
-        SExprIf(_, _, _, _, _)                      => " else " + gen_stmt_expr(else_expr, context),
-        _                                           => " else \{\n" + gen_block_body(else_expr, context) + "\}"
+        SExprIf(_, _, _, _, _) =>
+          expression_output.else_fragment_raw(gen_stmt_expr(else_expr, context)),
+        _ => expression_output.else_brace_block(gen_block_body(else_expr, context))
       }
       if else_string.length() > 0 then output = output + else_string end
-      output + "\n"
+      expression_output.fragment_with_newline(output)
     end,
     SExprWhile(condition, statements, _, _) =>
-      "while (" + gen_expr(condition, context) + ") \{\n" + gen_stmts_str(statements, context) + "\}\n",
+      expression_output.while_loop_statement(
+        gen_expr(condition, context),
+        gen_stmts_str(statements, context)),
     SExprFor(variable, iterator, statements, _, _) =>
-      "for (auto " + cpp_safe(variable) + " : " + gen_expr(iterator, context) + ") \{\n" + gen_stmts_str(statements, context) + "\}\n",
+      expression_output.for_loop_statement(
+        cpp_safe(variable),
+        gen_expr(iterator, context),
+        gen_stmts_str(statements, context)),
     SExprBlock(statements, result_expr, _, _) => do
       const statements_code = gen_stmts_str(statements, context)
       const result_code = gen_expr(result_expr, stmts_final_ctx(statements, context))
@@ -502,16 +540,18 @@ end
 fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
   match expr {
     SExprIf(condition, then_expr, else_expr, _, _) => do
-      let mut output = "if (" + gen_expr(condition, context) + ") \{\n" + gen_return_body(then_expr, context) + "\}"
+      let mut output = expression_output.if_brace_block(
+        gen_expr(condition, context),
+        gen_return_body(then_expr, context))
       const else_string = match else_expr {
         SExprUnit(_, _)        => "",
-        SExprIf(_, _, _, _, _) => " else " + gen_return_if_stmt(else_expr, context),
-        _                      => " else \{\n" + gen_return_body(else_expr, context) + "\}"
+        SExprIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expr, context)),
+        _                      => expression_output.else_brace_block(gen_return_body(else_expr, context))
       }
       if else_string.length() > 0 then output = output + else_string end
-      output + "\n"
+      expression_output.fragment_with_newline(output)
     end,
-    _ => "if (true) \{\n" + gen_return_body(expr, context) + "\}\n"
+    _ => expression_output.if_always_true_block(gen_return_body(expr, context))
   }
 
 export fn gen_return_body(expr: Shared<SExpr>, context: CodegenContext) -> string =
@@ -522,30 +562,41 @@ export fn gen_return_body(expr: Shared<SExpr>, context: CodegenContext) -> strin
       match result_expr {
         SExprQuestion(inner_expr, _, _) => do
           const try_identifier = "__try_ret"
-          statements_code + gen_try_unwrap(inner_expr, final_context, try_identifier, "return std::get<0>(" + try_identifier + ").field0;\n")
+          statements_code + gen_try_unwrap(
+            inner_expr,
+            final_context,
+            try_identifier,
+            expression_output.return_try_ok_field0_statement(try_identifier))
         end,
         SExprUnit(_, _)        => statements_code,
         SExprIf(_, _, _, _, _) => statements_code + gen_return_body(result_expr, final_context),
         SExprMatch(_, _, _, _) => statements_code + gen_return_body(result_expr, final_context),
         SExprBlock(_, _, _, _) => statements_code + gen_return_body(result_expr, final_context),
-        _                      => statements_code + "return " + gen_expr(result_expr, final_context) + ";\n"
+        _ =>
+          statements_code + expression_output.return_line(gen_expr(result_expr, final_context))
       }
     end,
     SExprIf(condition, then_expr, else_expr, _, _) => do
-      let mut output = "if (" + gen_expr(condition, context) + ") \{\n" + gen_return_body(then_expr, context) + "\}"
+      let mut output = expression_output.if_brace_block(
+        gen_expr(condition, context),
+        gen_return_body(then_expr, context))
       const else_string = match else_expr {
         SExprUnit(_, _)        => "",
-        SExprIf(_, _, _, _, _) => " else " + gen_return_if_stmt(else_expr, context),
-        _                      => " else \{\n" + gen_return_body(else_expr, context) + "\}"
+        SExprIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expr, context)),
+        _                      => expression_output.else_brace_block(gen_return_body(else_expr, context))
       }
       if else_string.length() > 0 then output = output + else_string end
-      output + "\n"
+      expression_output.fragment_with_newline(output)
     end,
     SExprQuestion(inner_expr, _, _) => do
       const try_identifier = "__try_ret"
-      gen_try_unwrap(inner_expr, context, try_identifier, "return std::get<0>(" + try_identifier + ").field0;\n")
+      gen_try_unwrap(
+        inner_expr,
+        context,
+        try_identifier,
+        expression_output.return_try_ok_field0_statement(try_identifier))
     end,
-    _ => "return " + gen_expr(expr, context) + ";\n"
+    _ => expression_output.return_line(gen_expr(expr, context))
   }
 
 export fn gen_fn_body(body_expr: Shared<SExpr>, context: CodegenContext) -> string =

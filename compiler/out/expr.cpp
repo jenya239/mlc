@@ -48,6 +48,36 @@ mlc::String suffix_semicolon_newline(mlc::String expression_code) noexcept;
 
 mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line) noexcept;
 
+mlc::String auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept;
+
+mlc::String constexpr_auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept;
+
+mlc::String return_line(mlc::String expression_code) noexcept;
+
+mlc::String if_brace_block(mlc::String condition_code, mlc::String inner_statements) noexcept;
+
+mlc::String else_brace_block(mlc::String inner_statements) noexcept;
+
+mlc::String else_fragment_raw(mlc::String raw_else_suffix) noexcept;
+
+mlc::String while_loop_statement(mlc::String condition_code, mlc::String body_statements) noexcept;
+
+mlc::String for_loop_statement(mlc::String variable_cpp_safe, mlc::String iterator_code, mlc::String body_statements) noexcept;
+
+mlc::String break_line() noexcept;
+
+mlc::String continue_line() noexcept;
+
+mlc::String let_from_try_ok_field0(mlc::String binding_cpp_safe, mlc::String try_variable) noexcept;
+
+mlc::String discard_try_ok_field0_statement(mlc::String try_variable) noexcept;
+
+mlc::String return_try_ok_field0_statement(mlc::String try_variable) noexcept;
+
+mlc::String if_always_true_block(mlc::String inner_statements) noexcept;
+
+mlc::String fragment_with_newline(mlc::String fragment) noexcept;
+
 mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept{return mlc::String("(") + left_code + mlc::String(" ") + operation + mlc::String(" ") + right_code + mlc::String(")");}
 
 mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) noexcept{return mlc::String("(") + operation + inner_code + mlc::String(")");}
@@ -93,5 +123,35 @@ mlc::String expression_operation_statement(mlc::String operation, mlc::String le
 mlc::String suffix_semicolon_newline(mlc::String expression_code) noexcept{return expression_code + mlc::String(";\n");}
 
 mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line) noexcept{return mlc::String("auto ") + result_variable + mlc::String(" = ") + inner_code + mlc::String(";\n") + mlc::String("if (std::get_if<1>(&") + result_variable + mlc::String(")) return *std::get_if<1>(&") + result_variable + mlc::String(");\n") + success_line;}
+
+mlc::String auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept{return mlc::String("auto ") + binding_cpp_safe + mlc::String(" = ") + value_code + mlc::String(";\n");}
+
+mlc::String constexpr_auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept{return mlc::String("constexpr auto ") + binding_cpp_safe + mlc::String(" = ") + value_code + mlc::String(";\n");}
+
+mlc::String return_line(mlc::String expression_code) noexcept{return mlc::String("return ") + expression_code + mlc::String(";\n");}
+
+mlc::String if_brace_block(mlc::String condition_code, mlc::String inner_statements) noexcept{return mlc::String("if (") + condition_code + mlc::String(") {\n") + inner_statements + mlc::String("}");}
+
+mlc::String else_brace_block(mlc::String inner_statements) noexcept{return mlc::String(" else {\n") + inner_statements + mlc::String("}");}
+
+mlc::String else_fragment_raw(mlc::String raw_else_suffix) noexcept{return mlc::String(" else ") + raw_else_suffix;}
+
+mlc::String while_loop_statement(mlc::String condition_code, mlc::String body_statements) noexcept{return mlc::String("while (") + condition_code + mlc::String(") {\n") + body_statements + mlc::String("}\n");}
+
+mlc::String for_loop_statement(mlc::String variable_cpp_safe, mlc::String iterator_code, mlc::String body_statements) noexcept{return mlc::String("for (auto ") + variable_cpp_safe + mlc::String(" : ") + iterator_code + mlc::String(") {\n") + body_statements + mlc::String("}\n");}
+
+mlc::String break_line() noexcept{return mlc::String("break;\n");}
+
+mlc::String continue_line() noexcept{return mlc::String("continue;\n");}
+
+mlc::String let_from_try_ok_field0(mlc::String binding_cpp_safe, mlc::String try_variable) noexcept{return mlc::String("auto ") + binding_cpp_safe + mlc::String(" = std::get<0>(") + try_variable + mlc::String(").field0;\n");}
+
+mlc::String discard_try_ok_field0_statement(mlc::String try_variable) noexcept{return mlc::String("/* discard */ (void)std::get<0>(") + try_variable + mlc::String(").field0;\n");}
+
+mlc::String return_try_ok_field0_statement(mlc::String try_variable) noexcept{return mlc::String("return std::get<0>(") + try_variable + mlc::String(").field0;\n");}
+
+mlc::String if_always_true_block(mlc::String inner_statements) noexcept{return mlc::String("if (true) {\n") + inner_statements + mlc::String("}\n");}
+
+mlc::String fragment_with_newline(mlc::String fragment) noexcept{return fragment + mlc::String("\n");}
 
 } // namespace expr
