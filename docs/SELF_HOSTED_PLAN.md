@@ -27,14 +27,14 @@
 | Задача | Статус |
 |--------|--------|
 | `compiler/` компилирует весь `compiler/` | ✓ |
-| ≈183 unit-тестов (`compiler/tests/`) проходят | ✓ |
+| 184 unit-теста (`compiler/tests/`) проходят | ✓ |
 | 4 E2E программы (`compiler/tests/e2e/`) проходят через mlcc | ✓ |
 | Ruby unit-тесты: 1106 runs, 0 failures | ✓ |
 | `Result<T,E>` + `?` оператор | ✓ |
 | Triple-bootstrap (`compiler/triple_bootstrap.sh`, mlcc3 == mlcc2) | ✓ при актуальном `compiler/out/mlcc` |
 | Generics с bounds, trait dispatch в `compiler/` | частично (`test_checker`, `test_decl_gen`) |
 | Диагностики с позицией (файл:строка:колонка) | нет |
-| CI конфиг | нет |
+| CI конфиг | ✓ (`.github/workflows/ci.yml`: `test_mlc`, `compiler/tests/build_tests.sh`, `compiler/build.sh`) |
 
 ---
 

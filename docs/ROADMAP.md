@@ -7,7 +7,7 @@
 | Компонент | Путь | Состояние |
 |-----------|------|-----------|
 | Bootstrap-компилятор | `lib/mlc/` | Полнофункциональный, эталон семантики |
-| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (≈183 теста) |
+| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (184 теста) |
 | Triple-bootstrap | `compiler/triple_bootstrap.sh` | При актуальном `compiler/out/mlcc`: `diff bs2 bs3` пустой (стабильность self-host) |
 | Runtime | `runtime/include/`, `runtime/src/` | C++20, стабильный |
 | Unit-тесты Ruby | `test/mlc/` | 1106 runs, 0 failures |

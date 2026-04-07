@@ -17,3 +17,7 @@ build/mlc_stdin_*
 misc/examples/out_minimal/obj/
 misc/examples/out_minimal/minimal
 perf.data
+
+# Случайные фрагменты сборки в корневом out/ (не путать с compiler/out/)
+/out/test_*.cpp
+/out/test_*.hpp

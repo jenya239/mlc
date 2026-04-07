@@ -439,4 +439,4 @@ type Functor<F<_>> {
 
 Реализация в `compiler/` не опережает Ruby-эталон. Если поведение расходится — эталон в Ruby.
 
-Статус реализованных фич: `compiler/tests/` — порядка 183 тестов (`rake test_compiler_mlc`), `test/mlc/` — 1106 runs.
+Статус реализованных фич: `compiler/tests/` — 184 теста (`rake test_compiler_mlc`), `test/mlc/` — 1106 runs.
