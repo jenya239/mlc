@@ -3,7 +3,14 @@
 import { Program, Decl, TypeVariant, FieldDef, decl_inner } from "../ast"
 import { path_to_module_base } from "./cpp_naming"
 
-export type LoadItem = LoadItem { path: string, decls: [Shared<Decl>], imports: [string] }
+export type NamespaceImportAlias = NamespaceImportAlias { alias: string, module_path: string }
+
+export type LoadItem = LoadItem {
+  path: string,
+  decls: [Shared<Decl>],
+  imports: [string],
+  namespace_import_aliases: [NamespaceImportAlias]
+}
 export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 
 fn decl_export_names(decl: Shared<Decl>) -> [string] = do
@@ -72,6 +79,17 @@ fn add_exports_to_qualified(qualified: Map<string, string>, imp_path: string, al
     item_i = item_i + 1
   end
   qualified
+end
+
+export fn build_namespace_alias_prefixes(aliases: [NamespaceImportAlias]) -> Map<string, string> = do
+  let mut prefixes: Map<string, string> = Map.new()
+  let mut index = 0
+  while index < aliases.length() do
+    const entry = aliases[index]
+    prefixes.set(entry.alias, path_to_module_base(entry.module_path) + "::")
+    index = index + 1
+  end
+  prefixes
 end
 
 export fn build_qualified(import_paths: [string], all_items: [LoadItem]) -> Map<string, string> = do

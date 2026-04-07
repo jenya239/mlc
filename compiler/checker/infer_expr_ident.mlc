@@ -1,0 +1,12 @@
+// Identifier resolution for expression inference (no calls to infer_expr).
+
+import { CheckContext } from "./check_context"
+import { InferResult, infer_ok } from "./infer_result"
+import { Type, TUnknown } from "./registry"
+
+export fn infer_expr_identifier(name: string, inference_context: CheckContext) -> InferResult =
+  if inference_context.type_env.has(name) then infer_ok(inference_context.type_env.get(name))
+  else if inference_context.registry.has_fn(name) then infer_ok(inference_context.registry.fn_type(name))
+  else if inference_context.registry.has_ctor(name) then infer_ok(inference_context.registry.ctor_type(name))
+  else infer_ok(Shared.new(TUnknown))
+  end

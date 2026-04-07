@@ -56,7 +56,9 @@ struct SDeclFn;struct SDeclType;struct SDeclTrait;struct SDeclExtend;struct SDec
 
 struct SProgram {mlc::Array<std::shared_ptr<semantic_ir::SDecl>> decls;};
 
-struct SLoadItem {mlc::String path;mlc::Array<std::shared_ptr<semantic_ir::SDecl>> decls;mlc::Array<mlc::String> imports;};
+struct SNamespaceImportAlias {mlc::String alias;mlc::String module_path;};
+
+struct SLoadItem {mlc::String path;mlc::Array<std::shared_ptr<semantic_ir::SDecl>> decls;mlc::Array<mlc::String> imports;mlc::Array<semantic_ir::SNamespaceImportAlias> namespace_import_aliases;};
 
 std::shared_ptr<registry::Type> sexpr_type(std::shared_ptr<semantic_ir::SExpr> expression) noexcept;
 

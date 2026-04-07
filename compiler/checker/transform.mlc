@@ -7,8 +7,8 @@ import { Type, TypeRegistry, type_from_annotation, empty_registry } from "./regi
 import { binary_operation_result_type, builtin_method_return_type, field_type_from_object,
          function_parameter_list, type_is_function } from "./type_utils"
 import { env_for_pattern } from "./pattern_env"
-import { SExpr, SStmt, SMatchArm, SFieldVal, SDecl, SProgram, SLoadItem, sexpr_type } from "../semantic_ir"
-import { LoadItem } from "../codegen/decl_index"
+import { SExpr, SStmt, SMatchArm, SFieldVal, SDecl, SProgram, SLoadItem, SNamespaceImportAlias, sexpr_type } from "../semantic_ir"
+import { LoadItem, NamespaceImportAlias } from "../codegen/decl_index"
 
 // --- Context ----------------------------------------------------------------
 
@@ -330,13 +330,29 @@ end
 export fn transform_program(program: Program, registry: TypeRegistry) -> SProgram =
   SProgram { decls: transform_decls(program.decls, registry) }
 
+fn to_semantic_namespace_aliases(items: [NamespaceImportAlias]) -> [SNamespaceImportAlias] = do
+  let mut result: [SNamespaceImportAlias] = []
+  let mut index = 0
+  while index < items.length() do
+    const entry = items[index]
+    result.push(SNamespaceImportAlias { alias: entry.alias, module_path: entry.module_path })
+    index = index + 1
+  end
+  result
+end
+
 export fn transform_load_items(items: [LoadItem], registry: TypeRegistry) -> [SLoadItem] = do
   let mut result: [SLoadItem] = []
   let mut index = 0
   while index < items.length() do
     const item = items[index]
     const typed_decls = transform_decls(item.decls, registry)
-    result.push(SLoadItem { path: item.path, decls: typed_decls, imports: item.imports })
+    result.push(SLoadItem {
+      path: item.path,
+      decls: typed_decls,
+      imports: item.imports,
+      namespace_import_aliases: to_semantic_namespace_aliases(item.namespace_import_aliases)
+    })
     index = index + 1
   end
   result

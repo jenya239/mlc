@@ -61,6 +61,8 @@ results.push_back(test_runner::assert_eq_str(mlc::String("Point { ...p, x: 10 } 
 mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> two_overrides = mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>>{std::make_shared<semantic_ir::SFieldVal>(semantic_ir::SFieldVal{mlc::String("x"), si(0)}), std::make_shared<semantic_ir::SFieldVal>(semantic_ir::SFieldVal{mlc::String("y"), si(0)})};
 std::shared_ptr<semantic_ir::SExpr> all_overrides_expr = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprRecordUpdate(mlc::String("Point"), base_expr, two_overrides, point_type, ast::span_unknown()));
 results.push_back(test_runner::assert_eq_str(mlc::String("Point { ...p, x: 0, y: 0 } - Point{0, 0}"), eval::gen_expr(all_overrides_expr, ctx_point), mlc::String("Point{0, 0}")));
+std::shared_ptr<semantic_ir::SExpr> lazy_update = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprRecordUpdate(mlc::String("Point"), base_expr, override_fields, point_type, ast::span_unknown()));
+results.push_back(test_runner::assert_true(mlc::String("record update without field order registry uses lazy block"), eval::gen_expr(lazy_update, ctx).contains(mlc::String("__upd"))));
 ast_tokens::LexOut spread_tokens = lexer::tokenize(mlc::String("..."));
 results.push_back(test_runner::assert_eq_int(mlc::String("'...' - 2 tokens (Spread + Eof)"), spread_tokens.tokens.size(), 2));
 int first_token_is_spread = [&]() { if (std::holds_alternative<ast_tokens::Spread>(spread_tokens.tokens[0].kind)) {  return 1; } return 0; }();

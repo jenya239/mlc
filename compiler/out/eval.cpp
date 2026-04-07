@@ -67,6 +67,10 @@ mlc::String gen_method_owner_call(mlc::String object_code, mlc::String method_na
 
 mlc::String gen_method_builtin(mlc::String object_code, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept;
 
+mlc::String gen_method_namespace_alias(mlc::String static_prefix, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept;
+
+mlc::String gen_method_expr_after_object(mlc::String object_code, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept;
+
 mlc::String gen_method_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept;
 
 mlc::String gen_field_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, context::CodegenContext context) noexcept;
@@ -309,10 +313,14 @@ mlc::String call_base = object_code + mlc::String(".") + cpp_naming::map_method(
 return arguments.size() == 0 ? call_base + mlc::String(")") : call_base + gen_argument_list(arguments, context) + mlc::String(")");
 }
 
-mlc::String gen_method_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{
-mlc::String object_code = gen_object_code(object, context);
-return object_code == mlc::String("File") ? gen_method_file(method_name, arguments, context) : object_code == mlc::String("Map") && method_name == mlc::String("new") ? mlc::String("{}") : object_code == mlc::String("Shared") && method_name == mlc::String("new") && arguments.size() == 1 ? gen_method_shared_new(arguments[0], context) : method_name == mlc::String("to_string") && arguments.size() == 0 ? mlc::String("mlc::to_string(") + object_code + mlc::String(")") : context.method_owners.has(method_name) ? gen_method_owner_call(object_code, method_name, arguments, context) : gen_method_builtin(object_code, method_name, arguments, context);
+mlc::String gen_method_namespace_alias(mlc::String static_prefix, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{
+mlc::String call_base = static_prefix + cpp_naming::map_method(method_name) + mlc::String("(");
+return arguments.size() == 0 ? call_base + mlc::String(")") : call_base + gen_argument_list(arguments, context) + mlc::String(")");
 }
+
+mlc::String gen_method_expr_after_object(mlc::String object_code, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{return object_code == mlc::String("File") ? gen_method_file(method_name, arguments, context) : object_code == mlc::String("Map") && method_name == mlc::String("new") ? mlc::String("{}") : object_code == mlc::String("Shared") && method_name == mlc::String("new") && arguments.size() == 1 ? gen_method_shared_new(arguments[0], context) : method_name == mlc::String("to_string") && arguments.size() == 0 ? mlc::String("mlc::to_string(") + object_code + mlc::String(")") : context.method_owners.has(method_name) ? gen_method_owner_call(object_code, method_name, arguments, context) : gen_method_builtin(object_code, method_name, arguments, context);}
+
+mlc::String gen_method_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIdent>((*object)._)) { auto _v_sexprident = std::get<semantic_ir::SExprIdent>((*object)._); auto [object_name, _w0, _w1] = _v_sexprident; return context.namespace_alias_prefixes.has(object_name) ? gen_method_namespace_alias(context.namespace_alias_prefixes.get(object_name), method_name, arguments, context) : gen_method_expr_after_object(gen_object_code(object, context), method_name, arguments, context); } return gen_method_expr_after_object(gen_object_code(object, context), method_name, arguments, context); }();}
 
 mlc::String gen_field_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, context::CodegenContext context) noexcept{
 mlc::String object_code = gen_expr(object, context);

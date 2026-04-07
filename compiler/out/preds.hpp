@@ -104,6 +104,8 @@ bool TKind_is_extend(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_import(ast_tokens::TKind self) noexcept;
 
+bool TKind_is_as(ast_tokens::TKind self) noexcept;
+
 bool TKind_is_from(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_eof(ast_tokens::TKind self) noexcept;

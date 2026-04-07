@@ -7,7 +7,7 @@
 | Компонент | Путь | Состояние |
 |-----------|------|-----------|
 | Bootstrap-компилятор | `lib/mlc/` | Полнофункциональный, эталон семантики |
-| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (≈164 теста) |
+| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (≈183 теста) |
 | Triple-bootstrap | `compiler/triple_bootstrap.sh` | При актуальном `compiler/out/mlcc`: `diff bs2 bs3` пустой (стабильность self-host) |
 | Runtime | `runtime/include/`, `runtime/src/` | C++20, стабильный |
 | Unit-тесты Ruby | `test/mlc/` | 1106 runs, 0 failures |
@@ -34,7 +34,7 @@
    - `mlcc2 → /tmp/bs2/` → компиляция → `mlcc3`
    - `mlcc3 → /tmp/bs3/` → diff `bs2/ bs3/`
 2. Интеграция: `rake triple_bootstrap`; при `MLC_TRIPLE_BOOTSTRAP=1` — после `test_self_hosted_stack`
-3. Результат зафиксировать в артефакте CI
+3. Продвинутый контроль: `compiler/build.sh` в `.github/workflows/ci.yml`; triple-bootstrap по желанию локально или в отдельном джобе (долго).
 
 **Метрика:** `bs2/*.cpp == bs3/*.cpp` для всех модулей `compiler/`.
 
@@ -86,7 +86,8 @@ compiler/checker/
   expr_checker.mlc     # check_expr разбит на fn per-ExprXxx
   decl_checker.mlc     # check_decl, collect_globals
   context.mlc          # CheckContext (env, return_type, errors)
-  infer.mlc            # точка входа: check(), check_with_context()
+  infer_expr_ident.mlc # разрешение ExprIdent (env, fn, ctor); без вызова infer_expr
+  infer.mlc            # infer_expr, infer_statements — диспетчер и остальные правила
 ```
 
 ---
@@ -109,13 +110,13 @@ compiler/checker/
 
 | Фича | Ruby-тест | MLC-тест | Статус |
 |------|-----------|----------|--------|
-| Generics с type bounds (`T: Display`) | есть | нет | нужен |
-| Trait dispatch (`extend Type : Trait`) | есть | нет | нужен |
+| Generics с type bounds (`T: Display`) | есть | есть (`test_checker`) | расширять покрытие |
+| Trait dispatch (`extend Type : Trait`) | есть | есть (`test_checker`, разбор `extend`) | расширять покрытие |
 | Lambdas (`x => x + 1`) | есть | есть (`test_checker`) | расширять по мере фич |
-| Record update (`{ old \| field: val }`) | есть | частично | расширить |
-| `let const` (constexpr) | есть | нет | нужен |
-| Вложенные generics (`Array<Result<T,E>>`) | есть | нет | нужен |
-| Multiline string literals | нет | нет | зафиксировать |
+| Record update (`{ old \| field: val }`) | есть | частично (`test_pipe_and_record_update`, упорядоченный + lazy codegen) | расширить checker/parser |
+| `let const` (constexpr) | есть | есть (`test_checker`, `test_codegen`) | расширять |
+| Вложенные generics (`Array<Result<T,E>>`) | есть | есть (`test_checker`) | расширять |
+| Multiline string literals (исходник с реальным переводом строки внутри `"…"`) | нет | нет | в строке только `\\n` и др. escapes; см. `test_lexer` |
 
 Порядок: сначала тест в `compiler/tests/`, затем фикс в `compiler/`.
 

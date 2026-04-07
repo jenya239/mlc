@@ -41,6 +41,8 @@ mlc::Array<std::shared_ptr<semantic_ir::SDecl>> transform_decls(mlc::Array<std::
 
 semantic_ir::SProgram transform_program(ast::Program program, registry::TypeRegistry registry) noexcept;
 
+mlc::Array<semantic_ir::SNamespaceImportAlias> to_semantic_namespace_aliases(mlc::Array<decl_index::NamespaceImportAlias> items) noexcept;
+
 mlc::Array<semantic_ir::SLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry) noexcept;
 
 transform::TransformContext transform_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env, registry::TypeRegistry registry) noexcept{return transform::TransformContext{type_env, registry};}
@@ -280,6 +282,19 @@ return result;
 
 semantic_ir::SProgram transform_program(ast::Program program, registry::TypeRegistry registry) noexcept{return semantic_ir::SProgram{transform_decls(program.decls, registry)};}
 
+mlc::Array<semantic_ir::SNamespaceImportAlias> to_semantic_namespace_aliases(mlc::Array<decl_index::NamespaceImportAlias> items) noexcept{
+mlc::Array<semantic_ir::SNamespaceImportAlias> result = {};
+int index = 0;
+while (index < items.size()){
+{
+decl_index::NamespaceImportAlias entry = items[index];
+result.push_back(semantic_ir::SNamespaceImportAlias{entry.alias, entry.module_path});
+index = index + 1;
+}
+}
+return result;
+}
+
 mlc::Array<semantic_ir::SLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry) noexcept{
 mlc::Array<semantic_ir::SLoadItem> result = {};
 int index = 0;
@@ -287,7 +302,7 @@ while (index < items.size()){
 {
 decl_index::LoadItem item = items[index];
 mlc::Array<std::shared_ptr<semantic_ir::SDecl>> typed_decls = transform_decls(item.decls, registry);
-result.push_back(semantic_ir::SLoadItem{item.path, typed_decls, item.imports});
+result.push_back(semantic_ir::SLoadItem{item.path, typed_decls, item.imports, to_semantic_namespace_aliases(item.namespace_import_aliases)});
 index = index + 1;
 }
 }

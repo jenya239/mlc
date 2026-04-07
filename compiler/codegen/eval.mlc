@@ -209,8 +209,14 @@ fn gen_method_builtin(object_code: string, method_name: string, arguments: [Shar
   end
 end
 
-fn gen_method_expr(object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext) -> string = do
-  const object_code = gen_object_code(object, context)
+fn gen_method_namespace_alias(static_prefix: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext) -> string = do
+  const call_base = static_prefix + map_method(method_name) + "("
+  if arguments.length() == 0 then call_base + ")"
+  else call_base + gen_argument_list(arguments, context) + ")"
+  end
+end
+
+fn gen_method_expr_after_object(object_code: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext) -> string =
   if object_code == "File" then
     gen_method_file(method_name, arguments, context)
   else if object_code == "Map" && method_name == "new" then
@@ -224,7 +230,17 @@ fn gen_method_expr(object: Shared<SExpr>, method_name: string, arguments: [Share
   else
     gen_method_builtin(object_code, method_name, arguments, context)
   end
-end
+
+fn gen_method_expr(object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext) -> string =
+  match object {
+    SExprIdent(object_name, _, _) =>
+      if context.namespace_alias_prefixes.has(object_name) then
+        gen_method_namespace_alias(context.namespace_alias_prefixes.get(object_name), method_name, arguments, context)
+      else
+        gen_method_expr_after_object(gen_object_code(object, context), method_name, arguments, context)
+      end,
+    _ => gen_method_expr_after_object(gen_object_code(object, context), method_name, arguments, context)
+  }
 
 fn gen_field_expr(object: Shared<SExpr>, field_name: string, context: CodegenContext) -> string = do
   const object_code = gen_expr(object, context)

@@ -1,13 +1,20 @@
 // Unit tests for the lexer (tokenize function).
 
-import { TestResult, assert_eq_int } from "./test_runner"
+import { TestResult, assert_eq_int, assert_eq_str, assert_true } from "./test_runner"
 import { tokenize } from "../lexer"
+import { TKind, LStr } from "../ast_tokens"
 
 fn lex_token_count(source: string) -> i32 =
   tokenize(source).tokens.length()
 
 fn lex_first_kind(source: string) -> TKind =
   tokenize(source).tokens[0].kind
+
+fn lex_first_string(source: string) -> string =
+  match tokenize(source).tokens[0].kind {
+    LStr(text) => text,
+    _ => ""
+  }
 
 fn lex_error_count(source: string) -> i32 =
   tokenize(source).errors.length()
@@ -28,6 +35,12 @@ export fn lexer_tests() -> [TestResult] = do
 
   results.push(assert_eq_int("integer literal - 2 tokens",         lex_token_count("42"),      2))
   results.push(assert_eq_int("string literal - 2 tokens",          lex_token_count("\"hi\""),  2))
+  results.push(assert_eq_str("string literal decodes escaped newline",
+    lex_first_string("\"a\\nb\""), "a\nb"))
+  results.push(assert_eq_str("string literal decodes escaped quote",
+    lex_first_string("\"say \\\"hi\\\"\""), "say \"hi\""))
+  results.push(assert_true("unterminated double-quoted string yields lex error",
+    lex_error_count("\"no closing quote") > 0))
   results.push(assert_eq_int("identifier - 2 tokens",              lex_token_count("foo"),     2))
 
   results.push(assert_eq_int("no lex errors on valid source",       lex_error_count("fn f() -> i32 = 42"), 0))

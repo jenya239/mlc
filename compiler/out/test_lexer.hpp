@@ -6,6 +6,7 @@
 
 #include "test_runner.hpp"
 #include "lexer.hpp"
+#include "ast_tokens.hpp"
 
 namespace test_lexer {
 

@@ -13,6 +13,8 @@ mlc::Array<mlc::String> decl_export_names(std::shared_ptr<ast::Decl> decl) noexc
 
 mlc::HashMap<mlc::String, mlc::String> add_exports_to_qualified(mlc::HashMap<mlc::String, mlc::String> qualified, mlc::String imp_path, mlc::Array<decl_index::LoadItem> all_items) noexcept;
 
+mlc::HashMap<mlc::String, mlc::String> build_namespace_alias_prefixes(mlc::Array<decl_index::NamespaceImportAlias> aliases) noexcept;
+
 mlc::HashMap<mlc::String, mlc::String> build_qualified(mlc::Array<mlc::String> import_paths, mlc::Array<decl_index::LoadItem> all_items) noexcept;
 
 bool list_contains(mlc::Array<mlc::String> list, mlc::String item) noexcept;
@@ -127,6 +129,19 @@ item_i = item_i + 1;
 }
 }
 return qualified;
+}
+
+mlc::HashMap<mlc::String, mlc::String> build_namespace_alias_prefixes(mlc::Array<decl_index::NamespaceImportAlias> aliases) noexcept{
+mlc::HashMap<mlc::String, mlc::String> prefixes = mlc::HashMap<mlc::String, mlc::String>();
+int index = 0;
+while (index < aliases.size()){
+{
+decl_index::NamespaceImportAlias entry = aliases[index];
+prefixes.set(entry.alias, cpp_naming::path_to_module_base(entry.module_path) + mlc::String("::"));
+index = index + 1;
+}
+}
+return prefixes;
 }
 
 mlc::HashMap<mlc::String, mlc::String> build_qualified(mlc::Array<mlc::String> import_paths, mlc::Array<decl_index::LoadItem> all_items) noexcept{

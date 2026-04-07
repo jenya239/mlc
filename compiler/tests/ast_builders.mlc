@@ -119,8 +119,8 @@ export fn return_statement(value_expr: Shared<Expr>) -> Shared<Stmt> =
 
 // --- Param builder -----------------------------------------------------------
 
-export fn value_param(param_name: string, param_type: Shared<TypeExpr>) -> Shared<Param> =
-  Shared.new(Param { name: param_name, is_mut: false, typ: param_type })
+export fn value_param(parameter_name: string, parameter_type: Shared<TypeExpr>) -> Shared<Param> =
+  Shared.new(Param { name: parameter_name, is_mut: false, typ: parameter_type })
 
 // --- Declaration builders ----------------------------------------------------
 

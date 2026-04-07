@@ -39,6 +39,8 @@ std::shared_ptr<ast::Param> iparam(mlc::String name) noexcept;
 
 std::shared_ptr<semantic_ir::SDecl> fn_decl(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SExpr> body) noexcept;
 
+std::shared_ptr<semantic_ir::SExpr> make_str_expr(mlc::String text) noexcept;
+
 mlc::Array<test_runner::TestResult> decl_gen_tests() noexcept;
 
 std::shared_ptr<registry::Type> ti32() noexcept{return std::make_shared<registry::Type>((registry::TI32{}));}
@@ -59,6 +61,8 @@ std::shared_ptr<ast::Param> iparam(mlc::String name) noexcept{return std::make_s
 
 std::shared_ptr<semantic_ir::SDecl> fn_decl(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SExpr> body) noexcept{return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn(name, {}, {}, params, return_type, body));}
 
+std::shared_ptr<semantic_ir::SExpr> make_str_expr(mlc::String text) noexcept{return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprStr(text, tstr(), ast::span_unknown()));}
+
 mlc::Array<test_runner::TestResult> decl_gen_tests() noexcept{
 mlc::Array<test_runner::TestResult> results = {};
 context::CodegenContext context = codegen_test_helpers::empty_codegen_context();
@@ -76,6 +80,15 @@ std::shared_ptr<semantic_ir::SDecl> point_type = std::make_shared<semantic_ir::S
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_decl DeclType: record struct"), decl::gen_decl(point_type, context), mlc::String("Point")));
 std::shared_ptr<semantic_ir::SDecl> color_type = std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclType(mlc::String("Color"), {}, mlc::Array<std::shared_ptr<ast::TypeVariant>>{ast_builders::unit_variant(mlc::String("Red")), ast_builders::unit_variant(mlc::String("Green")), ast_builders::unit_variant(mlc::String("Blue"))}));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_decl DeclType: unit variants"), decl::gen_decl(color_type, context), mlc::String("Red")));
+std::shared_ptr<ast::Param> display_self = std::make_shared<ast::Param>(ast::Param{mlc::String("self"), false, std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("Display")))});
+std::shared_ptr<semantic_ir::SDecl> display_method = fn_decl(mlc::String("Display_to_string"), mlc::Array<std::shared_ptr<ast::Param>>{display_self}, tstr(), make_unit_expr());
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_trait_decl: concept keyword"), decl::gen_trait_decl(context, mlc::String("Display"), {}, mlc::Array<std::shared_ptr<semantic_ir::SDecl>>{display_method}), mlc::String("concept")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_trait_decl: trait identifier"), decl::gen_trait_decl(context, mlc::String("Display"), {}, mlc::Array<std::shared_ptr<semantic_ir::SDecl>>{display_method}), mlc::String("Display")));
+std::shared_ptr<ast::Param> color_self = std::make_shared<ast::Param>(ast::Param{mlc::String("self"), false, std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("Color")))});
+std::shared_ptr<semantic_ir::SDecl> color_to_string = fn_decl(mlc::String("Color_to_string"), mlc::Array<std::shared_ptr<ast::Param>>{color_self}, tstr(), make_str_expr(mlc::String("red")));
+std::shared_ptr<semantic_ir::SDecl> extend_display_for_color = std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclExtend(mlc::String("Color"), mlc::String("Display"), mlc::Array<std::shared_ptr<semantic_ir::SDecl>>{color_to_string}));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_decl SDeclExtend: static_assert implements trait"), decl::gen_decl(extend_display_for_color, context), mlc::String("static_assert")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_decl SDeclExtend: trait name in assert"), decl::gen_decl(extend_display_for_color, context), mlc::String("Display")));
 std::shared_ptr<semantic_ir::SDecl> exported_fn = std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclExported(fn_decl(mlc::String("square"), mlc::Array<std::shared_ptr<ast::Param>>{iparam(mlc::String("value"))}, ti32(), make_bin(mlc::String("*"), make_ident(mlc::String("value")), make_ident(mlc::String("value"))))));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_decl SDeclExported: generates body"), decl::gen_decl(exported_fn, context), mlc::String("int square")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_decl SDeclExported: contains multiplication"), decl::gen_decl(exported_fn, context), mlc::String("value * value")));

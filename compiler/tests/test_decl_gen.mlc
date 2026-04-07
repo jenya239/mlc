@@ -1,12 +1,12 @@
 // Unit tests for declaration code generation.
 
 import { TestResult, assert_eq_str, assert_true } from "./test_runner"
-import { Program, TypeVariant, Param, FieldDef, TyI32, TyString, TyUnit, span_unknown } from "../ast"
+import { Program, TypeVariant, Param, FieldDef, TyI32, TyString, TyUnit, TyNamed, span_unknown } from "../ast"
 import { create_codegen_context } from "../codegen/context"
 import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_decl, gen_proto, decls_have_main } from "../codegen/decl"
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from "./ast_builders"
 import { assert_code_contains, empty_codegen_context } from "./codegen_test_helpers"
-import { SDecl, SExpr, SExprUnit, SExprIdent, SExprBin, SDeclFn, SDeclType, SDeclExported } from "../semantic_ir"
+import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SDeclFn, SDeclType, SDeclExported, SDeclExtend } from "../semantic_ir"
 import { Type, TI32, TString, TUnit, TUnknown } from "../checker/registry"
 
 fn ti32()  -> Shared<Type> = Shared.new(TI32)
@@ -21,6 +21,8 @@ fn make_unit_expr() -> Shared<SExpr> = Shared.new(SExprUnit(tunit(), span_unknow
 fn iparam(name: string) -> Shared<Param> = Shared.new(Param { name: name, is_mut: false, typ: Shared.new(TyI32) })
 fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SExpr>) -> Shared<SDecl> =
   Shared.new(SDeclFn(name, [], [], params, return_type, body))
+
+fn make_str_expr(text: string) -> Shared<SExpr> = Shared.new(SExprStr(text, tstr(), span_unknown()))
 
 export fn decl_gen_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -83,6 +85,23 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   results.push(assert_code_contains("gen_decl DeclType: unit variants",
     gen_decl(color_type, context), "Red"))
+
+  // --- gen_trait_decl + SDeclExtend --------------------------------------------
+
+  const display_self = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed("Display")) })
+  const display_method = fn_decl("Display_to_string", [display_self], tstr(), make_unit_expr())
+  results.push(assert_code_contains("gen_trait_decl: concept keyword",
+    gen_trait_decl(context, "Display", [], [display_method]), "concept"))
+  results.push(assert_code_contains("gen_trait_decl: trait identifier",
+    gen_trait_decl(context, "Display", [], [display_method]), "Display"))
+
+  const color_self = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed("Color")) })
+  const color_to_string = fn_decl("Color_to_string", [color_self], tstr(), make_str_expr("red"))
+  const extend_display_for_color = Shared.new(SDeclExtend("Color", "Display", [color_to_string]))
+  results.push(assert_code_contains("gen_decl SDeclExtend: static_assert implements trait",
+    gen_decl(extend_display_for_color, context), "static_assert"))
+  results.push(assert_code_contains("gen_decl SDeclExtend: trait name in assert",
+    gen_decl(extend_display_for_color, context), "Display"))
 
   // --- gen_decl with SDeclExported ---------------------------------------------
 

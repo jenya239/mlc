@@ -4,6 +4,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "transform.hpp"
+#include "decl_index.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "decl.hpp"
@@ -14,10 +15,13 @@ using namespace ast;
 using namespace semantic_ir;
 using namespace registry;
 using namespace transform;
+using namespace decl_index;
 using namespace context;
 using namespace cpp_naming;
 using namespace decl;
 using namespace ast_tokens;
+
+mlc::Array<decl_index::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SNamespaceImportAlias> items) noexcept;
 
 context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept;
 
@@ -25,12 +29,27 @@ context::GenModuleOut gen_module(semantic_ir::SLoadItem s_item, mlc::Array<decl_
 
 mlc::String gen_program(ast::Program program) noexcept;
 
+mlc::Array<decl_index::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SNamespaceImportAlias> items) noexcept{
+mlc::Array<decl_index::NamespaceImportAlias> result = {};
+int index = 0;
+while (index < items.size()){
+{
+semantic_ir::SNamespaceImportAlias entry = items[index];
+result.push_back(decl_index::NamespaceImportAlias{entry.alias, entry.module_path});
+index = index + 1;
+}
+}
+return result;
+}
+
 context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept{return context::PrecomputedCtx{decl_index::build_field_orders(prog), decl_index::build_variant_types_from_decls(prog.decls), decl_index::build_item_index(all_items), ctor_info::build_ctor_type_infos_from_decls(prog.decls), decl_index::build_generic_variants_from_decls(prog.decls)};}
 
 context::GenModuleOut gen_module(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept{
 mlc::String base = cpp_naming::path_to_module_base(s_item.path);
+mlc::Array<semantic_ir::SNamespaceImportAlias> namespace_aliases = s_item.namespace_import_aliases;
 mlc::HashMap<mlc::String, mlc::String> qualified = decl_index::build_qualified(s_item.imports, all_items);
-context::CodegenContext context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, mlc::String(""), decl_index::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants};
+mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes = decl_index::build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases));
+context::CodegenContext context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, namespace_alias_prefixes, mlc::String(""), decl_index::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants};
 mlc::String module_namespace = base == mlc::String("main") ? mlc::String("mlc_main") : base;
 bool is_entry = decl::decls_have_main(s_item.decls);
 mlc::String std_includes = mlc::String("#include \"mlc.hpp\"\n#include <variant>\n\n") + cpp_naming::include_lines(s_item.imports) + mlc::String("\n");
@@ -49,7 +68,7 @@ mlc::String gen_program(ast::Program program) noexcept{
 mlc::Array<decl_index::LoadItem> all_items = {};
 context::PrecomputedCtx precomp = precompute(program, all_items);
 registry::TypeRegistry registry = registry::build_registry(program);
-decl_index::LoadItem single = decl_index::LoadItem{mlc::String("test_main"), program.decls, {}};
+decl_index::LoadItem single = decl_index::LoadItem{mlc::String("test_main"), program.decls, {}, {}};
 mlc::Array<semantic_ir::SLoadItem> s_items = transform::transform_load_items(mlc::Array<decl_index::LoadItem>{single}, registry);
 context::GenModuleOut result = gen_module(s_items[0], all_items, program, precomp);
 return result.h + result.c;

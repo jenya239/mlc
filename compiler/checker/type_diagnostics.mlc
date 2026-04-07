@@ -339,8 +339,6 @@ export fn method_arity_after_receiver(receiver_errors: [Diagnostic], method_name
   end
 end
 
-// --- Indexing, conditional, loop, match diagnostics -------------------------
-
 export fn index_not_array_diagnostic(receiver_type: Shared<Type>, bracket_source_span: Span) -> [Diagnostic] = do
   if !type_is_unknown(receiver_type) && !type_is_array(receiver_type) then
     [diagnostic_error(

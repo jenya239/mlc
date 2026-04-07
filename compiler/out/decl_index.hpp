@@ -14,9 +14,13 @@ struct Stmt;
 struct SExpr;
 struct SStmt;
 
-struct LoadItem {mlc::String path;mlc::Array<std::shared_ptr<ast::Decl>> decls;mlc::Array<mlc::String> imports;};
+struct NamespaceImportAlias {mlc::String alias;mlc::String module_path;};
+
+struct LoadItem {mlc::String path;mlc::Array<std::shared_ptr<ast::Decl>> decls;mlc::Array<mlc::String> imports;mlc::Array<decl_index::NamespaceImportAlias> namespace_import_aliases;};
 
 struct FieldOrder {mlc::String type_name;mlc::Array<mlc::String> fields;};
+
+mlc::HashMap<mlc::String, mlc::String> build_namespace_alias_prefixes(mlc::Array<decl_index::NamespaceImportAlias> aliases) noexcept;
 
 mlc::HashMap<mlc::String, mlc::String> build_qualified(mlc::Array<mlc::String> import_paths, mlc::Array<decl_index::LoadItem> all_items) noexcept;
 

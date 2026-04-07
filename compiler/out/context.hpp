@@ -19,7 +19,7 @@ struct Stmt;
 struct SExpr;
 struct SStmt;
 
-struct CodegenContext {mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders;mlc::String namespace_prefix;mlc::HashMap<mlc::String, mlc::String> qualified;mlc::String self_type;mlc::HashMap<mlc::String, mlc::String> method_owners;mlc::Array<mlc::String> shared_params;mlc::Array<mlc::String> shared_array_params;mlc::HashMap<mlc::String, mlc::String> array_elem_types;mlc::Array<mlc::String> shared_map_params;mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_infos;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::Array<mlc::String> value_params;mlc::Array<mlc::String> match_deref_params;mlc::Array<mlc::String> generic_variants;};
+struct CodegenContext {mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders;mlc::String namespace_prefix;mlc::HashMap<mlc::String, mlc::String> qualified;mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes;mlc::String self_type;mlc::HashMap<mlc::String, mlc::String> method_owners;mlc::Array<mlc::String> shared_params;mlc::Array<mlc::String> shared_array_params;mlc::HashMap<mlc::String, mlc::String> array_elem_types;mlc::Array<mlc::String> shared_map_params;mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_infos;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::Array<mlc::String> value_params;mlc::Array<mlc::String> match_deref_params;mlc::Array<mlc::String> generic_variants;};
 
 struct GenStmtsResult {mlc::String code;int next_try;};
 
@@ -44,6 +44,8 @@ context::CodegenContext context_add_match_deref(context::CodegenContext context,
 context::CodegenContext update_context_from_statement(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context) noexcept;
 
 context::CodegenContext create_codegen_context(ast::Program prog) noexcept;
+
+context::CodegenContext context_with_namespace_alias_prefixes(context::CodegenContext base, mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes) noexcept;
 
 } // namespace context
 

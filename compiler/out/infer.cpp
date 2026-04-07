@@ -10,6 +10,7 @@
 #include "infer_operand_combine.hpp"
 #include "infer_call_support.hpp"
 #include "type_diagnostics.hpp"
+#include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
 
 namespace infer {
@@ -24,14 +25,13 @@ using namespace infer_question_expression;
 using namespace infer_operand_combine;
 using namespace infer_call_support;
 using namespace type_diagnostics;
+using namespace infer_expr_ident;
 using namespace pattern_env;
 using namespace ast_tokens;
 
 infer_result::InferResult infer_arguments_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_field_values_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context, mlc::String record_type_name_for_fields) noexcept;
-
-infer_result::InferResult infer_expr_identifier(mlc::String name, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
 
@@ -99,8 +99,6 @@ index = index + 1;
 }
 return result;
 }
-
-infer_result::InferResult infer_expr_identifier(mlc::String name, check_context::CheckContext inference_context) noexcept{return inference_context.type_env.has(name) ? infer_result::infer_ok(inference_context.type_env.get(name)) : registry::TypeRegistry_has_fn(inference_context.registry, name) ? infer_result::infer_ok(registry::TypeRegistry_fn_type(inference_context.registry, name)) : registry::TypeRegistry_has_ctor(inference_context.registry, name) ? infer_result::infer_ok(registry::TypeRegistry_ctor_type(inference_context.registry, name)) : infer_result::infer_ok(std::make_shared<registry::Type>((registry::TUnknown{})));}
 
 infer_result::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult left_result = infer_expr(left, inference_context);
@@ -208,7 +206,7 @@ infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, chec
   [&](const ExprBool& exprbool) -> infer_result::InferResult { auto [_w0, _w1] = exprbool; return infer_literals::infer_expr_boolean_literal(); },
   [&](const ExprUnit& exprunit) -> infer_result::InferResult { auto [_w0] = exprunit; return infer_literals::infer_expr_unit_literal(); },
   [&](const ExprExtern& exprextern) -> infer_result::InferResult { auto [_w0] = exprextern; return infer_literals::infer_expr_extern_placeholder(); },
-  [&](const ExprIdent& exprident) -> infer_result::InferResult { auto [name, _w0] = exprident; return infer_expr_identifier(name, inference_context); },
+  [&](const ExprIdent& exprident) -> infer_result::InferResult { auto [name, _w0] = exprident; return infer_expr_ident::infer_expr_identifier(name, inference_context); },
   [&](const ExprBin& exprbin) -> infer_result::InferResult { auto [operation, left, right, span] = exprbin; return infer_expr_binary(operation, left, right, span, inference_context); },
   [&](const ExprUn& exprun) -> infer_result::InferResult { auto [operation, inner, span] = exprun; return infer_expr_unary(operation, inner, span, inference_context); },
   [&](const ExprCall& exprcall) -> infer_result::InferResult { auto [function, call_arguments, call_source_span] = exprcall; return infer_expr_call(function, call_arguments, call_source_span, inference_context); },

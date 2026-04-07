@@ -126,6 +126,13 @@ if (preds::TKind_is_op(preds::Parser_kind(state)) && preds::TKind_op_val(preds::
 {
 symbols.push_back(mlc::String("*"));
 state = preds::Parser_advance(state);
+if (preds::TKind_is_as(preds::Parser_kind(state))){
+state = preds::Parser_advance(state);
+if (preds::TKind_is_ident(preds::Parser_kind(state))){
+symbols.push_back(preds::TKind_ident(preds::Parser_kind(state)));
+state = preds::Parser_advance(state);
+}
+}
 }
 } else {
 {

@@ -1,9 +1,10 @@
 // Module and program level code generation entry points.
 
 import { Program, errs_append } from "../ast"
-import { SLoadItem } from "../semantic_ir"
+import { SLoadItem, SNamespaceImportAlias } from "../semantic_ir"
 import { build_registry } from "../checker/registry"
 import { transform_load_items } from "../checker/transform"
+import { NamespaceImportAlias, build_namespace_alias_prefixes } from "./decl_index"
 import { LoadItem, CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, build_field_orders, build_variant_types_from_decls,
          build_item_index, build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
@@ -11,6 +12,17 @@ import { LoadItem, CodegenContext, PrecomputedCtx, GenModuleOut,
          context_resolve } from "./context"
 import { cpp_safe, include_lines, path_to_module_base } from "./cpp_naming"
 import { collect_decl_parts, decls_have_main } from "./decl"
+
+fn namespace_aliases_mapped(items: [SNamespaceImportAlias]) -> [NamespaceImportAlias] = do
+  let mut result: [NamespaceImportAlias] = []
+  let mut index = 0
+  while index < items.length() do
+    const entry = items[index]
+    result.push(NamespaceImportAlias { alias: entry.alias, module_path: entry.module_path })
+    index = index + 1
+  end
+  result
+end
 
 export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx =
   PrecomputedCtx {
@@ -23,11 +35,14 @@ export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx =
 
 export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
   const base = path_to_module_base(s_item.path)
+  const namespace_aliases = s_item.namespace_import_aliases
   const qualified = build_qualified(s_item.imports, all_items)
+  const namespace_alias_prefixes = build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases))
   const context = CodegenContext {
     field_orders: precomp.field_orders,
     namespace_prefix: "",
     qualified: qualified,
+    namespace_alias_prefixes: namespace_alias_prefixes,
     self_type: "",
     method_owners: build_method_owners_from_decls(full_prog.decls),
     shared_params: [],
@@ -86,7 +101,7 @@ export fn gen_program(program: Program) -> string = do
   const all_items: [LoadItem] = []
   const precomp   = precompute(program, all_items)
   const registry  = build_registry(program)
-  const single    = LoadItem { path: "test_main", decls: program.decls, imports: [] }
+  const single    = LoadItem { path: "test_main", decls: program.decls, imports: [], namespace_import_aliases: [] }
   const s_items   = transform_load_items([single], registry)
   const result    = gen_module(s_items[0], all_items, program, precomp)
   result.h + result.c

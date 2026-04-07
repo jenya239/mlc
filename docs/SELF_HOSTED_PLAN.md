@@ -1,7 +1,7 @@
 # Self-hosted compiler: политика и текущий статус
 
 Дата: март 2026.  
-Детальный roadmap: `docs/ROADMAP.md`.
+Детальный roadmap: `docs/ROADMAP.md`. Чек-листы разработки и стабильности: `docs/DEVELOPMENT_CHECKLISTS.md`.
 
 ---
 
@@ -27,12 +27,12 @@
 | Задача | Статус |
 |--------|--------|
 | `compiler/` компилирует весь `compiler/` | ✓ |
-| ≈164 unit-теста (`compiler/tests/`) проходят | ✓ |
+| ≈183 unit-тестов (`compiler/tests/`) проходят | ✓ |
 | 4 E2E программы (`compiler/tests/e2e/`) проходят через mlcc | ✓ |
 | Ruby unit-тесты: 1106 runs, 0 failures | ✓ |
 | `Result<T,E>` + `?` оператор | ✓ |
-| Triple-bootstrap (mlcc3 == mlcc2) | не проверялось |
-| Generics с bounds, trait dispatch в `compiler/` | нет |
+| Triple-bootstrap (`compiler/triple_bootstrap.sh`, mlcc3 == mlcc2) | ✓ при актуальном `compiler/out/mlcc` |
+| Generics с bounds, trait dispatch в `compiler/` | частично (`test_checker`, `test_decl_gen`) |
 | Диагностики с позицией (файл:строка:колонка) | нет |
 | CI конфиг | нет |
 

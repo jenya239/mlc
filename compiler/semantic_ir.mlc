@@ -60,7 +60,14 @@ export type SDecl =
 export type SProgram = SProgram { decls: [Shared<SDecl>] }
 
 // Modular load item with typed declarations.
-export type SLoadItem = SLoadItem { path: string, decls: [Shared<SDecl>], imports: [string] }
+export type SNamespaceImportAlias = SNamespaceImportAlias { alias: string, module_path: string }
+
+export type SLoadItem = SLoadItem {
+  path: string,
+  decls: [Shared<SDecl>],
+  imports: [string],
+  namespace_import_aliases: [SNamespaceImportAlias]
+}
 
 // --- Helpers ----------------------------------------------------------------
 

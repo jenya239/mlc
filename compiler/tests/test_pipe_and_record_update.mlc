@@ -1,6 +1,6 @@
 // Tests for pipe operator desugaring and record update codegen.
 
-import { TestResult, assert_eq_int, assert_eq_str } from "./test_runner"
+import { TestResult, assert_eq_int, assert_eq_str, assert_true } from "./test_runner"
 import { gen_expr } from "../codegen/eval"
 import { create_codegen_context } from "../codegen/context"
 import { pipe_desugar } from "../parser/exprs"
@@ -69,6 +69,10 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   results.push(assert_eq_str("Point { ...p, x: 0, y: 0 } - Point{0, 0}",
     gen_expr(all_overrides_expr, ctx_point),
     "Point{0, 0}"))
+
+  const lazy_update = Shared.new(SExprRecordUpdate("Point", base_expr, override_fields, point_type, span_unknown()))
+  results.push(assert_true("record update without field order registry uses lazy block",
+    gen_expr(lazy_update, ctx).contains("__upd")))
 
   // -- Lexer tokenizes ... as Spread ----------------------------------------
 

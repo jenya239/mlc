@@ -2,15 +2,19 @@
 
 #include "test_runner.hpp"
 #include "lexer.hpp"
+#include "ast_tokens.hpp"
 
 namespace test_lexer {
 
 using namespace test_runner;
 using namespace lexer;
+using namespace ast_tokens;
 
 int lex_token_count(mlc::String source) noexcept;
 
 ast_tokens::TKind lex_first_kind(mlc::String source) noexcept;
+
+mlc::String lex_first_string(mlc::String source) noexcept;
 
 int lex_error_count(mlc::String source) noexcept;
 
@@ -19,6 +23,8 @@ mlc::Array<test_runner::TestResult> lexer_tests() noexcept;
 int lex_token_count(mlc::String source) noexcept{return lexer::tokenize(source).tokens.size();}
 
 ast_tokens::TKind lex_first_kind(mlc::String source) noexcept{return lexer::tokenize(source).tokens[0].kind;}
+
+mlc::String lex_first_string(mlc::String source) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LStr>(lexer::tokenize(source).tokens[0].kind)) { auto _v_lstr = std::get<ast_tokens::LStr>(lexer::tokenize(source).tokens[0].kind); auto [text] = _v_lstr; return text; } return mlc::String(""); }();}
 
 int lex_error_count(mlc::String source) noexcept{return lexer::tokenize(source).errors.size();}
 
@@ -35,6 +41,9 @@ results.push_back(test_runner::assert_eq_int(mlc::String("'match' - 2 tokens"), 
 results.push_back(test_runner::assert_eq_int(mlc::String("'end' - 2 tokens"), lex_token_count(mlc::String("end")), 2));
 results.push_back(test_runner::assert_eq_int(mlc::String("integer literal - 2 tokens"), lex_token_count(mlc::String("42")), 2));
 results.push_back(test_runner::assert_eq_int(mlc::String("string literal - 2 tokens"), lex_token_count(mlc::String("\"hi\"")), 2));
+results.push_back(test_runner::assert_eq_str(mlc::String("string literal decodes escaped newline"), lex_first_string(mlc::String("\"a\\nb\"")), mlc::String("a\nb")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string literal decodes escaped quote"), lex_first_string(mlc::String("\"say \\\"hi\\\"\"")), mlc::String("say \"hi\"")));
+results.push_back(test_runner::assert_true(mlc::String("unterminated double-quoted string yields lex error"), lex_error_count(mlc::String("\"no closing quote")) > 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("identifier - 2 tokens"), lex_token_count(mlc::String("foo")), 2));
 results.push_back(test_runner::assert_eq_int(mlc::String("no lex errors on valid source"), lex_error_count(mlc::String("fn f() -> i32 = 42")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn decl - correct token count"), lex_token_count(mlc::String("fn f() -> i32 = 42")), 9));

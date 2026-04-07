@@ -2,7 +2,7 @@
 
 import { TestResult, assert_eq_str } from "./test_runner"
 import { gen_expr, gen_argument_list, gen_stmts_str } from "../codegen/eval"
-import { create_codegen_context, FieldOrder, map_builtin, map_method } from "../codegen/context"
+import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from "../codegen/context"
 import { type_to_cpp, gen_type_decl } from "../codegen/type_gen"
 import { gen_program } from "../codegen/module"
 import { Program, TypeExpr, TypeVariant, DeclType, DeclFn, DeclExported, Param, VarTuple, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, PatInt, PatWild, span_unknown } from "../ast"
@@ -181,6 +181,13 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("ExprMethod length",
     gen_expr(Shared.new(SExprMethod(sid("arr"), "length", empty_arr, i32_t(), span_unknown())), ctx),
     "arr.length()"))
+
+  let namespace_alias_prefixes: Map<string, string> = Map.new()
+  namespace_alias_prefixes.set("helpers", "infer_literals::")
+  const context_with_aliases = context_with_namespace_alias_prefixes(ctx, namespace_alias_prefixes)
+  results.push(assert_eq_str("ExprMethod on import-as alias emits namespace::fn()",
+    gen_expr(Shared.new(SExprMethod(sid("helpers"), "infer_expr_integer_literal", empty_arr, unk_t(), span_unknown())), context_with_aliases),
+    "infer_literals::infer_expr_integer_literal()"))
 
   // --- ExprMatch ----------------------------------------------------------------
 

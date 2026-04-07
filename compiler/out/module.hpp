@@ -8,6 +8,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "transform.hpp"
+#include "decl_index.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "decl.hpp"

@@ -12,6 +12,7 @@ export type CodegenContext = CodegenContext {
   field_orders: [Shared<FieldOrder>],
   namespace_prefix: string,
   qualified: Map<string, string>,
+  namespace_alias_prefixes: Map<string, string>,
   self_type: string,
   method_owners: Map<string, string>,
   shared_params: [string],
@@ -42,7 +43,7 @@ export fn context_resolve(context: CodegenContext, name: string) -> string =
   end
 
 export fn make_body_context(base: CodegenContext, shared_params: [string], shared_array_params: [string], array_elem_types: Map<string, string>, shared_map_params: [string], self_type: string, value_params: [string], match_deref_params: [string]) -> CodegenContext =
-  CodegenContext { field_orders: base.field_orders, namespace_prefix: base.namespace_prefix, qualified: base.qualified, self_type: self_type, method_owners: base.method_owners, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, ctor_type_infos: base.ctor_type_infos, variant_types: base.variant_types, value_params: value_params, match_deref_params: match_deref_params, generic_variants: base.generic_variants }
+  CodegenContext { field_orders: base.field_orders, namespace_prefix: base.namespace_prefix, qualified: base.qualified, namespace_alias_prefixes: base.namespace_alias_prefixes, self_type: self_type, method_owners: base.method_owners, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, ctor_type_infos: base.ctor_type_infos, variant_types: base.variant_types, value_params: value_params, match_deref_params: match_deref_params, generic_variants: base.generic_variants }
 
 export fn context_add_shared(context: CodegenContext, name: string) -> CodegenContext = do
   let new_shared_params = context.shared_params; new_shared_params.push(name)
@@ -83,6 +84,7 @@ export fn create_codegen_context(prog: Program) -> CodegenContext =
     field_orders: build_field_orders(prog),
     namespace_prefix: "",
     qualified: Map.new(),
+    namespace_alias_prefixes: Map.new(),
     self_type: "",
     method_owners: build_method_owners_from_decls(prog.decls),
     shared_params: [],
@@ -94,4 +96,26 @@ export fn create_codegen_context(prog: Program) -> CodegenContext =
     value_params: [],
     match_deref_params: [],
     generic_variants: build_generic_variants_from_decls(prog.decls)
+  }
+
+export fn context_with_namespace_alias_prefixes(
+  base: CodegenContext,
+  namespace_alias_prefixes: Map<string, string>
+) -> CodegenContext =
+  CodegenContext {
+    field_orders: base.field_orders,
+    namespace_prefix: base.namespace_prefix,
+    qualified: base.qualified,
+    namespace_alias_prefixes: namespace_alias_prefixes,
+    self_type: base.self_type,
+    method_owners: base.method_owners,
+    shared_params: base.shared_params,
+    shared_array_params: base.shared_array_params,
+    array_elem_types: base.array_elem_types,
+    shared_map_params: base.shared_map_params,
+    ctor_type_infos: base.ctor_type_infos,
+    variant_types: base.variant_types,
+    value_params: base.value_params,
+    match_deref_params: base.match_deref_params,
+    generic_variants: base.generic_variants
   }

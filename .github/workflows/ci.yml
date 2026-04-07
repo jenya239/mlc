@@ -25,3 +25,6 @@ jobs:
 
       - name: Self-hosted compiler tests
         run: compiler/tests/build_tests.sh
+
+      - name: Build mlcc (modular compiler via Ruby)
+        run: compiler/build.sh

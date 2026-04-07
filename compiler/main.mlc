@@ -7,6 +7,7 @@ import { transform_load_items } from "./checker/transform"
 import { build_registry } from "./checker/registry"
 import { gen_module, GenModuleOut, precompute } from "./codegen/module"
 import { LoadItem, PrecomputedCtx } from "./codegen/context"
+import { NamespaceImportAlias } from "./codegen/decl_index"
 import { path_to_module_base } from "./codegen/cpp_naming"
 import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from "./ast"
 
@@ -87,13 +88,17 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
     let seen: [string] = []
     let my_decls: [Shared<Decl>] = []
     let my_imports: [string] = []
+    let my_namespace_import_aliases: [NamespaceImportAlias] = []
     let mut all_errors: [string] = []
     let mut index = 0
     while index < prog.decls.length() do
       match prog.decls[index] {
-        DeclImport(import_path, _) => do
+        DeclImport(import_path, symbols) => do
           const resolved = resolve_dotdot(resolve_import_path(path, import_path))
           my_imports.push(resolved)
+          if symbols.length() >= 2 && symbols[0] == "*" then
+            my_namespace_import_aliases.push(NamespaceImportAlias { alias: symbols[1], module_path: resolved })
+          end
           const dep_result = load_module_impl(resolved, cur_loaded, cache)
           all_errors = errs_append(all_errors, dep_result.errors)
           let mut dep_i = 0
@@ -111,7 +116,12 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
       }
       index = index + 1
     end
-    items.push(LoadItem { path: norm_path, decls: my_decls, imports: my_imports })
+    items.push(LoadItem {
+      path: norm_path,
+      decls: my_decls,
+      imports: my_imports,
+      namespace_import_aliases: my_namespace_import_aliases
+    })
     const result = LoadResult { items: items, errors: all_errors }
     cache.set(norm_path, result)
     result
@@ -133,13 +143,17 @@ fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
   let items_ordered: [LoadItem] = []
   let entry_decls: [Shared<Decl>] = []
   let entry_imports: [string] = []
+  let entry_namespace_import_aliases: [NamespaceImportAlias] = []
   let cache: Map<string, LoadResult> = Map.new()
   let mut index = 0
   while index < prog.decls.length() do
     match prog.decls[index] {
-      DeclImport(path, _) => do
+      DeclImport(path, symbols) => do
         const resolved = resolve_dotdot(resolve_import_path(entry_path, path))
         entry_imports.push(resolved)
+        if symbols.length() >= 2 && symbols[0] == "*" then
+          entry_namespace_import_aliases.push(NamespaceImportAlias { alias: symbols[1], module_path: resolved })
+        end
         const dep_result = load_module(resolved, cache)
         all_errors = errs_append(all_errors, dep_result.errors)
         let mut dep_i = 0
@@ -162,7 +176,12 @@ fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
     index = index + 1
   end
   const norm_entry = resolve_dotdot(entry_path)
-  items_ordered.push(LoadItem { path: norm_entry, decls: entry_decls, imports: entry_imports })
+  items_ordered.push(LoadItem {
+    path: norm_entry,
+    decls: entry_decls,
+    imports: entry_imports,
+    namespace_import_aliases: entry_namespace_import_aliases
+  })
   MergeResult { prog: Program { decls: all_decls }, errors: all_errors, items: items_ordered }
 end
 

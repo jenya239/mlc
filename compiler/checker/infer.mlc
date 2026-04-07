@@ -10,6 +10,7 @@ import { infer_question_from_inner_result } from "./infer_question_expression"
 import * as infer_operand_combine from "./infer_operand_combine"
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
 import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
+import { infer_expr_identifier } from "./infer_expr_ident"
 import { env_for_pattern } from "./pattern_env"
 
 // --- Argument / field-value error accumulators ------------------------------
@@ -49,13 +50,6 @@ fn infer_field_values_errors(
 end
 
 // --- Expression rule functions ----------------------------------------------
-
-fn infer_expr_identifier(name: string, inference_context: CheckContext) -> InferResult =
-  if inference_context.type_env.has(name) then infer_ok(inference_context.type_env.get(name))
-  else if inference_context.registry.has_fn(name) then infer_ok(inference_context.registry.fn_type(name))
-  else if inference_context.registry.has_ctor(name) then infer_ok(inference_context.registry.ctor_type(name))
-  else infer_ok(Shared.new(TUnknown))
-  end
 
 fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
   const left_result  = infer_expr(left, inference_context)

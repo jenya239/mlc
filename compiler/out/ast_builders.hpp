@@ -89,7 +89,7 @@ std::shared_ptr<ast::Stmt> expression_statement(std::shared_ptr<ast::Expr> expr)
 
 std::shared_ptr<ast::Stmt> return_statement(std::shared_ptr<ast::Expr> value_expr) noexcept;
 
-std::shared_ptr<ast::Param> value_param(mlc::String param_name, std::shared_ptr<ast::TypeExpr> param_type) noexcept;
+std::shared_ptr<ast::Param> value_param(mlc::String parameter_name, std::shared_ptr<ast::TypeExpr> parameter_type) noexcept;
 
 std::shared_ptr<ast::Decl> function_decl(mlc::String function_name, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::TypeExpr> return_type, std::shared_ptr<ast::Expr> body_expr) noexcept;
 

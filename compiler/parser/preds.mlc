@@ -140,6 +140,7 @@ export extend TKind {
   fn is_extern(self)   -> bool = match self { KExtern   => true, _ => false }
   fn is_extend(self)   -> bool = match self { KExtend   => true, _ => false }
   fn is_import(self)   -> bool = match self { KImport   => true, _ => false }
+  fn is_as(self)       -> bool = match self { KAs       => true, _ => false }
   fn is_from(self)     -> bool = match self { KFrom     => true, _ => false }
   fn is_eof(self)      -> bool = match self { Eof       => true, _ => false }
   fn is_ident(self)    -> bool = match self { Ident(_)  => true, _ => false }

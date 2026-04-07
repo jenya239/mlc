@@ -159,6 +159,8 @@ bool TKind_is_extend(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_import(ast_tokens::TKind self) noexcept;
 
+bool TKind_is_as(ast_tokens::TKind self) noexcept;
+
 bool TKind_is_from(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_eof(ast_tokens::TKind self) noexcept;
@@ -392,6 +394,8 @@ bool TKind_is_extern(ast_tokens::TKind self) noexcept{return [&]() { if (std::ho
 bool TKind_is_extend(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KExtend>(self)) {  return true; } return false; }();}
 
 bool TKind_is_import(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KImport>(self)) {  return true; } return false; }();}
+
+bool TKind_is_as(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KAs>(self)) {  return true; } return false; }();}
 
 bool TKind_is_from(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KFrom>(self)) {  return true; } return false; }();}
 

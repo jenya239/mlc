@@ -59,6 +59,13 @@ fn parse_import_decl(parser: Parser) -> DeclResult = do
   if state.kind().is_op() && state.kind().op_val() == "*" then
     symbols.push("*")
     state = state.advance()
+    if state.kind().is_as() then
+      state = state.advance()
+      if state.kind().is_ident() then
+        symbols.push(state.kind().ident())
+        state = state.advance()
+      end
+    end
   else if state.kind().is_lbrace() then
     state = state.advance()
     while state.kind().is_ident() || (state.kind().is_op() && state.kind().op_val() == "*") do

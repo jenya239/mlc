@@ -10,6 +10,7 @@
 #include "registry.hpp"
 #include "module.hpp"
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "cpp_naming.hpp"
 #include "ast.hpp"
 
@@ -22,6 +23,7 @@ using namespace transform;
 using namespace registry;
 using namespace module;
 using namespace context;
+using namespace decl_index;
 using namespace cpp_naming;
 using namespace ast;
 using namespace ast_tokens;
@@ -136,13 +138,19 @@ return cache.has(norm_path) ? cache.get(norm_path) : path_in_loaded(norm_path, l
   mlc::Array<mlc::String> seen = {};
   mlc::Array<std::shared_ptr<ast::Decl>> my_decls = {};
   mlc::Array<mlc::String> my_imports = {};
+  mlc::Array<decl_index::NamespaceImportAlias> my_namespace_import_aliases = {};
   mlc::Array<mlc::String> all_errors = {};
   int index = 0;
   while (index < prog.decls.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclImport>((*prog.decls[index]))) { auto _v_declimport = std::get<ast::DeclImport>((*prog.decls[index])); auto [import_path, _w0] = _v_declimport; return [&]() { 
+[&]() -> void { if (std::holds_alternative<ast::DeclImport>((*prog.decls[index]))) { auto _v_declimport = std::get<ast::DeclImport>((*prog.decls[index])); auto [import_path, symbols] = _v_declimport; return [&]() { 
   mlc::String resolved = resolve_dotdot(resolve_import_path(path, import_path));
   my_imports.push_back(resolved);
+  if (symbols.size() >= 2 && symbols[0] == mlc::String("*")){
+{
+my_namespace_import_aliases.push_back(decl_index::NamespaceImportAlias{symbols[1], resolved});
+}
+}
   LoadResult dep_result = load_module_impl(resolved, cur_loaded, cache);
   all_errors = ast::errs_append(all_errors, dep_result.errors);
   int dep_i = 0;
@@ -164,7 +172,7 @@ dep_i = dep_i + 1;
 index = index + 1;
 }
 }
-  items.push_back(decl_index::LoadItem{norm_path, my_decls, my_imports});
+  items.push_back(decl_index::LoadItem{norm_path, my_decls, my_imports, my_namespace_import_aliases});
   LoadResult result = LoadResult{items, all_errors};
   cache.set(norm_path, result);
   return result;
@@ -182,13 +190,19 @@ mlc::Array<mlc::String> seen_paths = {};
 mlc::Array<decl_index::LoadItem> items_ordered = {};
 mlc::Array<std::shared_ptr<ast::Decl>> entry_decls = {};
 mlc::Array<mlc::String> entry_imports = {};
+mlc::Array<decl_index::NamespaceImportAlias> entry_namespace_import_aliases = {};
 mlc::HashMap<mlc::String, LoadResult> cache = mlc::HashMap<mlc::String, LoadResult>();
 int index = 0;
 while (index < prog.decls.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclImport>((*prog.decls[index]))) { auto _v_declimport = std::get<ast::DeclImport>((*prog.decls[index])); auto [path, _w0] = _v_declimport; return [&]() { 
+[&]() -> void { if (std::holds_alternative<ast::DeclImport>((*prog.decls[index]))) { auto _v_declimport = std::get<ast::DeclImport>((*prog.decls[index])); auto [path, symbols] = _v_declimport; return [&]() { 
   mlc::String resolved = resolve_dotdot(resolve_import_path(entry_path, path));
   entry_imports.push_back(resolved);
+  if (symbols.size() >= 2 && symbols[0] == mlc::String("*")){
+{
+entry_namespace_import_aliases.push_back(decl_index::NamespaceImportAlias{symbols[1], resolved});
+}
+}
   LoadResult dep_result = load_module(resolved, cache);
   all_errors = ast::errs_append(all_errors, dep_result.errors);
   int dep_i = 0;
@@ -226,7 +240,7 @@ index = index + 1;
 }
 }
 mlc::String norm_entry = resolve_dotdot(entry_path);
-items_ordered.push_back(decl_index::LoadItem{norm_entry, entry_decls, entry_imports});
+items_ordered.push_back(decl_index::LoadItem{norm_entry, entry_decls, entry_imports, entry_namespace_import_aliases});
 return MergeResult{ast::Program{all_decls}, all_errors, items_ordered};
 }
 

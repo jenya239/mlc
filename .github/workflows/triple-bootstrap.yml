@@ -1,0 +1,25 @@
+# Долгая проверка: mlcc → bs1 → g++ → mlcc2 → bs2 → mlcc3 → bs3 → diff(bs2, bs3).
+# Запуск только вручную (workflow_dispatch).
+name: Triple bootstrap
+
+on:
+  workflow_dispatch:
+
+jobs:
+  triple-bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install g++
+        run: sudo apt-get update && sudo apt-get install -y g++
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Build mlcc (Ruby modular compiler)
+        run: compiler/build.sh
+
+      - name: Triple-bootstrap (bs2 must equal bs3)
+        run: compiler/triple_bootstrap.sh compiler/out/mlcc

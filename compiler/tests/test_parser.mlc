@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from "./test_runner"
 import { tokenize } from "../lexer"
 import { parse_program } from "../parser/decls"
-import { Decl, DeclFn, DeclType, DeclExtend } from "../ast"
+import { Decl, DeclFn, DeclType, DeclExtend, DeclImport } from "../ast"
 
 fn parse_source(source: string) -> Program =
   parse_program(tokenize(source).tokens)
@@ -72,6 +72,32 @@ export fn parser_tests() -> [TestResult] = do
           DeclFn(_, _, _, parameters, _, _) => parameters.length() == 2,
           _ => false
         },
+      _ => false
+    }))
+
+  results.push(assert_eq_int("import star-as - 1 decl",
+    decl_count("import * as helpers from \"./infer_literals.mlc\""), 1))
+
+  results.push(assert_true("import star-as: path and symbols",
+    match first_decl("import * as helpers from \"./infer_literals.mlc\"") {
+      DeclImport(path, symbols) =>
+        path == "./infer_literals.mlc" && symbols.length() == 2 && symbols[0] == "*" && symbols[1] == "helpers",
+      _ => false
+    }))
+
+  results.push(assert_eq_int("import named list - 1 decl",
+    decl_count("import { foo, bar } from \"./mod.mlc\""), 1))
+
+  results.push(assert_true("import named list: path and symbols order",
+    match first_decl("import { foo, bar } from \"./mod.mlc\"") {
+      DeclImport(path, symbols) =>
+        path == "./mod.mlc" && symbols.length() == 2 && symbols[0] == "foo" && symbols[1] == "bar",
+      _ => false
+    }))
+
+  results.push(assert_true("import single name in braces",
+    match first_decl("import { only } from \"./one.mlc\"") {
+      DeclImport(path, symbols) => path == "./one.mlc" && symbols.length() == 1 && symbols[0] == "only",
       _ => false
     }))
 
