@@ -78,6 +78,34 @@ mlc::String if_always_true_block(mlc::String inner_statements) noexcept;
 
 mlc::String fragment_with_newline(mlc::String fragment) noexcept;
 
+mlc::String tuple_destructure_binding(mlc::String binding_names_csv, mlc::String source_name) noexcept;
+
+mlc::String record_pattern_field_binding(mlc::String field_cpp_safe, mlc::String variant_lower_name) noexcept;
+
+mlc::String record_update_base_prefix(mlc::String expression_code) noexcept;
+
+mlc::String mutable_member_assignment(mlc::String receiver, mlc::String member_cpp_safe, mlc::String value_code) noexcept;
+
+mlc::String pointer_dereference_parenthesized(mlc::String expression_code) noexcept;
+
+mlc::String visit_subject_for_match(mlc::String expression_code, bool needs_dereference) noexcept;
+
+mlc::String make_shared_call(mlc::String element_type, mlc::String argument_code) noexcept;
+
+mlc::String runtime_to_string_call(mlc::String expression_code) noexcept;
+
+mlc::String empty_map_initializer() noexcept;
+
+mlc::String block_immediate_function_return_fragment(mlc::String return_expression_code) noexcept;
+
+mlc::String append_trailing_expression_statement(mlc::String statements_code, mlc::String expression_code) noexcept;
+
+mlc::String hash_map_empty_instantiation(mlc::String key_type_cpp, mlc::String value_type_cpp) noexcept;
+
+mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept;
+
+mlc::String array_string_fallback_empty() noexcept;
+
 mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept{return mlc::String("(") + left_code + mlc::String(" ") + operation + mlc::String(" ") + right_code + mlc::String(")");}
 
 mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) noexcept{return mlc::String("(") + operation + inner_code + mlc::String(")");}
@@ -153,5 +181,33 @@ mlc::String return_try_ok_field0_statement(mlc::String try_variable) noexcept{re
 mlc::String if_always_true_block(mlc::String inner_statements) noexcept{return mlc::String("if (true) {\n") + inner_statements + mlc::String("}\n");}
 
 mlc::String fragment_with_newline(mlc::String fragment) noexcept{return fragment + mlc::String("\n");}
+
+mlc::String tuple_destructure_binding(mlc::String binding_names_csv, mlc::String source_name) noexcept{return mlc::String("auto [") + binding_names_csv + mlc::String("] = ") + source_name + mlc::String("; ");}
+
+mlc::String record_pattern_field_binding(mlc::String field_cpp_safe, mlc::String variant_lower_name) noexcept{return mlc::String("const auto& ") + field_cpp_safe + mlc::String(" = ") + variant_lower_name + mlc::String(".") + field_cpp_safe + mlc::String("; ");}
+
+mlc::String record_update_base_prefix(mlc::String expression_code) noexcept{return mlc::String("auto __upd = ") + expression_code + mlc::String("; ");}
+
+mlc::String mutable_member_assignment(mlc::String receiver, mlc::String member_cpp_safe, mlc::String value_code) noexcept{return receiver + mlc::String(".") + member_cpp_safe + mlc::String(" = ") + value_code + mlc::String("; ");}
+
+mlc::String pointer_dereference_parenthesized(mlc::String expression_code) noexcept{return mlc::String("(*") + expression_code + mlc::String(")");}
+
+mlc::String visit_subject_for_match(mlc::String expression_code, bool needs_dereference) noexcept{return needs_dereference ? pointer_dereference_parenthesized(expression_code) : expression_code;}
+
+mlc::String make_shared_call(mlc::String element_type, mlc::String argument_code) noexcept{return mlc::String("std::make_shared<") + element_type + mlc::String(">(") + argument_code + mlc::String(")");}
+
+mlc::String runtime_to_string_call(mlc::String expression_code) noexcept{return mlc::String("mlc::to_string(") + expression_code + mlc::String(")");}
+
+mlc::String empty_map_initializer() noexcept{return mlc::String("{}");}
+
+mlc::String block_immediate_function_return_fragment(mlc::String return_expression_code) noexcept{return mlc::String("return ") + return_expression_code + mlc::String(";\n");}
+
+mlc::String append_trailing_expression_statement(mlc::String statements_code, mlc::String expression_code) noexcept{return statements_code + expression_code + mlc::String(";\n");}
+
+mlc::String hash_map_empty_instantiation(mlc::String key_type_cpp, mlc::String value_type_cpp) noexcept{return mlc::String("mlc::HashMap<") + key_type_cpp + mlc::String(", ") + value_type_cpp + mlc::String(">()");}
+
+mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept{return mlc::String("mlc::Array<") + element_type_cpp + mlc::String(">{}");}
+
+mlc::String array_string_fallback_empty() noexcept{return mlc::String("mlc::Array<mlc::String>{}");}
 
 } // namespace expr

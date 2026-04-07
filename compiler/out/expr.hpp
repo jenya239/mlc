@@ -87,6 +87,34 @@ mlc::String if_always_true_block(mlc::String inner_statements) noexcept;
 
 mlc::String fragment_with_newline(mlc::String fragment) noexcept;
 
+mlc::String tuple_destructure_binding(mlc::String binding_names_csv, mlc::String source_name) noexcept;
+
+mlc::String record_pattern_field_binding(mlc::String field_cpp_safe, mlc::String variant_lower_name) noexcept;
+
+mlc::String record_update_base_prefix(mlc::String expression_code) noexcept;
+
+mlc::String mutable_member_assignment(mlc::String receiver, mlc::String member_cpp_safe, mlc::String value_code) noexcept;
+
+mlc::String pointer_dereference_parenthesized(mlc::String expression_code) noexcept;
+
+mlc::String visit_subject_for_match(mlc::String expression_code, bool needs_dereference) noexcept;
+
+mlc::String make_shared_call(mlc::String element_type, mlc::String argument_code) noexcept;
+
+mlc::String runtime_to_string_call(mlc::String expression_code) noexcept;
+
+mlc::String empty_map_initializer() noexcept;
+
+mlc::String block_immediate_function_return_fragment(mlc::String return_expression_code) noexcept;
+
+mlc::String append_trailing_expression_statement(mlc::String statements_code, mlc::String expression_code) noexcept;
+
+mlc::String hash_map_empty_instantiation(mlc::String key_type_cpp, mlc::String value_type_cpp) noexcept;
+
+mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept;
+
+mlc::String array_string_fallback_empty() noexcept;
+
 } // namespace expr
 
 #endif // EXPR_HPP

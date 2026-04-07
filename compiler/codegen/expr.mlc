@@ -125,3 +125,45 @@ export fn if_always_true_block(inner_statements: string) -> string =
 
 export fn fragment_with_newline(fragment: string) -> string =
   fragment + "\n"
+
+export fn tuple_destructure_binding(binding_names_csv: string, source_name: string) -> string =
+  "auto [" + binding_names_csv + "] = " + source_name + "; "
+
+export fn record_pattern_field_binding(field_cpp_safe: string, variant_lower_name: string) -> string =
+  "const auto& " + field_cpp_safe + " = " + variant_lower_name + "." + field_cpp_safe + "; "
+
+export fn record_update_base_prefix(expression_code: string) -> string =
+  "auto __upd = " + expression_code + "; "
+
+export fn mutable_member_assignment(receiver: string, member_cpp_safe: string, value_code: string) -> string =
+  receiver + "." + member_cpp_safe + " = " + value_code + "; "
+
+export fn pointer_dereference_parenthesized(expression_code: string) -> string =
+  "(*" + expression_code + ")"
+
+export fn visit_subject_for_match(expression_code: string, needs_dereference: bool) -> string =
+  if needs_dereference then pointer_dereference_parenthesized(expression_code) else expression_code end
+
+export fn make_shared_call(element_type: string, argument_code: string) -> string =
+  "std::make_shared<" + element_type + ">(" + argument_code + ")"
+
+export fn runtime_to_string_call(expression_code: string) -> string =
+  "mlc::to_string(" + expression_code + ")"
+
+export fn empty_map_initializer() -> string =
+  "\{\}"
+
+export fn block_immediate_function_return_fragment(return_expression_code: string) -> string =
+  "return " + return_expression_code + ";\n"
+
+export fn append_trailing_expression_statement(statements_code: string, expression_code: string) -> string =
+  statements_code + expression_code + ";\n"
+
+export fn hash_map_empty_instantiation(key_type_cpp: string, value_type_cpp: string) -> string =
+  "mlc::HashMap<" + key_type_cpp + ", " + value_type_cpp + ">()"
+
+export fn typed_array_empty(element_type_cpp: string) -> string =
+  "mlc::Array<" + element_type_cpp + ">\{\}"
+
+export fn array_string_fallback_empty() -> string =
+  "mlc::Array<mlc::String>\{\}"

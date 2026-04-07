@@ -77,10 +77,13 @@ fn gen_record_update_ordered(base_expr: Shared<SExpr>, overrides: [Shared<SField
 end
 
 fn gen_record_update_lazy(base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], context: CodegenContext) -> string = do
-  let parts: [string] = ["auto __upd = " + gen_expr(base_expr, context) + "; "]
+  let parts: [string] = [expression_output.record_update_base_prefix(gen_expr(base_expr, context))]
   let mut index = 0
   while index < overrides.length() do
-    parts.push("__upd." + cpp_safe(overrides[index].name) + " = " + gen_expr(overrides[index].val, context) + "; ")
+    parts.push(expression_output.mutable_member_assignment(
+      "__upd",
+      cpp_safe(overrides[index].name),
+      gen_expr(overrides[index].val, context)))
     index = index + 1
   end
   expression_output.record_update_lazy_closure(parts.join(""))
@@ -93,7 +96,7 @@ fn gen_arm_ctor(ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared
   const lower_name = cpp_safe(lower_first(ctor_name))
   const binding =
     if sub_patterns.length() == 0 then ""
-    else "auto [" + pat_bind_names(sub_patterns) + "] = " + lower_name + "; "
+    else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), lower_name)
     end
   const ctor_type_info: Shared<CtorTypeInfo> = lookup_ctor_type_info(context.ctor_type_infos, ctor_name)
   const is_generic = list_contains(context.generic_variants, ctor_name)
@@ -128,7 +131,7 @@ fn gen_arm_record_pattern(record_name: string, field_patterns: [Shared<Pat>], ar
   while field_index < field_patterns.length() do
     match field_patterns[field_index] {
       PatIdent(field_name, _) => do
-        field_bindings = field_bindings + "const auto& " + cpp_safe(field_name) + " = " + lower_name + "." + cpp_safe(field_name) + "; "
+        field_bindings = field_bindings + expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name)
       end,
       _ => do end
     }
@@ -157,8 +160,9 @@ fn gen_match(subject: Shared<SExpr>, arms: [Shared<SMatchArm>], context: Codegen
   while index < arms.length() do parts.push(gen_arm(arms[index], context)); index = index + 1 end
   const subject_code = gen_expr(subject, context)
   const needs_deref = if arms.length() > 0 then first_arm_needs_deref(arms[0], subject, context) else true end
-  const visit_subject = if needs_deref then "(*" + subject_code + ")" else subject_code end
-  expression_output.std_visit_match_expression(parts.join(",\n"), visit_subject)
+  expression_output.std_visit_match_expression(
+    parts.join(",\n"),
+    expression_output.visit_subject_for_match(subject_code, needs_deref))
 end
 
 // --- Expression rules (one function per expression form) --------------------
@@ -229,11 +233,11 @@ fn gen_method_expr_after_object(object_code: string, method_name: string, argume
   if object_code == "File" then
     gen_method_file(method_name, arguments, context)
   else if object_code == "Map" && method_name == "new" then
-    "\{\}"
+    expression_output.empty_map_initializer()
   else if object_code == "Shared" && method_name == "new" && arguments.length() == 1 then
     gen_method_shared_new(arguments[0], context)
   else if method_name == "to_string" && arguments.length() == 0 then
-    "mlc::to_string(" + object_code + ")"
+    expression_output.runtime_to_string_call(object_code)
   else if context.method_owners.has(method_name) then
     gen_method_owner_call(object_code, method_name, arguments, context)
   else
@@ -270,7 +274,10 @@ fn gen_block_expr(statements: [Shared<SStmt>], result_expr: Shared<SExpr>, conte
   if statements.length() == 0 then
     gen_expr(result_expr, context)
   else
-    const body = gen_stmts_str(statements, context) + "return " + gen_expr(result_expr, stmts_final_ctx(statements, context)) + ";\n"
+    const body =
+      gen_stmts_str(statements, context) +
+      expression_output.block_immediate_function_return_fragment(
+        gen_expr(result_expr, stmts_final_ctx(statements, context)))
     expression_output.block_as_immediate_invoked_function_expression(body)
   end
 
@@ -369,8 +376,9 @@ export fn gen_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_co
         SExprArray(elements, array_type, _) => do
           const value_code = if elements.length() == 0 then
             match array_type {
-              TArray(inner_type) => "mlc::Array<" + sem_type_to_cpp(context, inner_type) + ">\{\}",
-              _                  => "mlc::Array<mlc::String>\{\}"
+              TArray(inner_type) =>
+                expression_output.typed_array_empty(sem_type_to_cpp(context, inner_type)),
+              _ => expression_output.array_string_fallback_empty()
             }
           else expression_output.constructor_call_braces("mlc::Array", gen_argument_list(elements, context))
           end
@@ -387,7 +395,9 @@ export fn gen_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_co
                   match value_type {
                     TGeneric(type_name, type_args) =>
                       if type_name == "Map" && type_args.length() == 2 then
-                        "mlc::HashMap<" + sem_type_to_cpp(context, type_args[0]) + ", " + sem_type_to_cpp(context, type_args[1]) + ">()"
+                        expression_output.hash_map_empty_instantiation(
+                          sem_type_to_cpp(context, type_args[0]),
+                          sem_type_to_cpp(context, type_args[1]))
                       else gen_expr(value, context)
                       end,
                     _ => gen_expr(value, context)
@@ -494,7 +504,9 @@ fn gen_stmt_expr(expression: Shared<SExpr>, context: CodegenContext) -> string =
     SExprBlock(statements, result_expr, _, _) => do
       const statements_code = gen_stmts_str(statements, context)
       const result_code = gen_expr(result_expr, stmts_final_ctx(statements, context))
-      if result_code == "/* unit */" then statements_code else statements_code + result_code + ";\n" end
+      if result_code == "/* unit */" then statements_code
+      else expression_output.append_trailing_expression_statement(statements_code, result_code)
+      end
     end,
     _ => expression_output.suffix_semicolon_newline(gen_expr(expression, context))
   }
@@ -509,7 +521,9 @@ fn gen_block_body(expr: Shared<SExpr>, context: CodegenContext) -> string =
         SExprUnit(_, _)        => statements_code,
         _ => do
           const result_code = gen_expr(result_expr, final_context)
-          if result_code == "/* unit */" then statements_code else statements_code + result_code + ";\n" end
+          if result_code == "/* unit */" then statements_code
+          else expression_output.append_trailing_expression_statement(statements_code, result_code)
+          end
         end
       }
     end,
