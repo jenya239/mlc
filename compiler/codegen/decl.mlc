@@ -11,6 +11,7 @@ import { cpp_safe } from "./cpp_naming"
 import { type_to_cpp, sem_type_to_cpp, type_name_to_cpp, gen_type_decl, gen_type_decl_fwd_only, gen_type_decl_body_only,
          template_prefix, requires_clause } from "./type_gen"
 import { gen_fn_body } from "./eval"
+import * as expression_output from "./expr"
 
 // --- Context builder methods -------------------------------------------------
 
@@ -53,9 +54,15 @@ export fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[strin
     }
   else context end
   if name == "main" && params.length() == 0 then
-    prefix + sem_type_to_cpp(prototype_context, return_type) + " " + safe_name + "(int argc, char** argv) noexcept;\n"
+    prefix + expression_output.noexcept_function_prototype(
+      sem_type_to_cpp(prototype_context, return_type),
+      safe_name,
+      expression_output.main_program_parameter_list())
   else
-    prefix + sem_type_to_cpp(prototype_context, return_type) + " " + safe_name + "(" + gen_params(prototype_context, params) + ") noexcept;\n"
+    prefix + expression_output.noexcept_function_prototype(
+      sem_type_to_cpp(prototype_context, return_type),
+      safe_name,
+      gen_params(prototype_context, params))
   end
 end
 
@@ -85,10 +92,16 @@ export fn gen_fn_decl(name: string, type_params: [string], type_bounds: [[string
   const prototype_context = if params.length() > 0 && params[0].name == "self" then body_context else context end
   if name == "main" && params.length() == 0 then
     const preamble = "mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n"
-    prefix + sem_type_to_cpp(prototype_context, return_type) + " " + safe_name + "(int argc, char** argv) noexcept\{\n" +
+    prefix + expression_output.noexcept_function_body_open(
+      sem_type_to_cpp(prototype_context, return_type),
+      safe_name,
+      expression_output.main_program_parameter_list()) +
     preamble + gen_fn_body(body, body_context) + "\}\n"
   else
-    prefix + sem_type_to_cpp(prototype_context, return_type) + " " + safe_name + "(" + gen_params(prototype_context, params) + ") noexcept\{\n" +
+    prefix + expression_output.noexcept_function_body_open(
+      sem_type_to_cpp(prototype_context, return_type),
+      safe_name,
+      gen_params(prototype_context, params)) +
     gen_fn_body(body, body_context) + "\}\n"
   end
 end
@@ -129,7 +142,10 @@ fn gen_extend_wrapper_protos(type_name: string, trait_name: string, methods: [Sh
           const method_name = extract_method_name(mangled, type_name)
           const ret_cpp = sem_type_to_cpp(wrapper_context, ret_type)
           const params_str = gen_params(wrapper_context, params)
-          wrappers = wrappers + ret_cpp + " " + cpp_safe(method_name) + "(" + params_str + ") noexcept;\n"
+          wrappers = wrappers + expression_output.noexcept_function_prototype(
+            ret_cpp,
+            cpp_safe(method_name),
+            params_str)
         end,
         _ => do end
       }
@@ -149,7 +165,12 @@ fn gen_extend_trait_wrapper(type_name: string, mangled: string, params: [Shared<
     call_args.push(cpp_safe(params[param_index].name))
     param_index = param_index + 1
   end
-  "inline " + ret_cpp + " " + cpp_safe(method_name) + "(" + params_str + ") noexcept { return " + fn_resolved + "(" + call_args.join(", ") + "); }\n"
+  expression_output.inline_noexcept_forwarding_call(
+    ret_cpp,
+    cpp_safe(method_name),
+    params_str,
+    fn_resolved,
+    call_args.join(", "))
 end
 
 fn gen_extend_trait_wrappers(type_name: string, methods: [Shared<SDecl>], context: CodegenContext) -> string = do
@@ -168,9 +189,15 @@ end
 fn gen_extend_extern_method(mangled: string, type_name: string, params: [Shared<Param>], ret_type: Shared<Type>, trait_name: string, context: CodegenContext) -> string = do
   const method_name = if trait_name.length() > 0 then extract_method_name(mangled, type_name) else "" end
   if type_name == "i32" && method_name == "to_string" && params.length() > 0 then
-    const ret_cpp = sem_type_to_cpp(context, ret_type)
-    const params_str = gen_params(context, params)
-    ret_cpp + " " + context_resolve(context, mangled) + "(" + params_str + ") noexcept { return mlc::to_string(" + cpp_safe(params[0].name) + "); }\n"
+    do
+      const ret_cpp = sem_type_to_cpp(context, ret_type)
+      const params_str = gen_params(context, params)
+      expression_output.noexcept_one_line_returning_function(
+        ret_cpp,
+        context_resolve(context, mangled),
+        params_str,
+        expression_output.runtime_to_string_call(cpp_safe(params[0].name)))
+    end
   else ""
   end
 end

@@ -11,6 +11,7 @@
 #include "cpp_naming.hpp"
 #include "type_gen.hpp"
 #include "eval.hpp"
+#include "expr.hpp"
 
 namespace decl {
 

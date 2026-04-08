@@ -121,6 +121,18 @@ mlc::String dot_member_access(mlc::String receiver_code, mlc::String member_code
 
 mlc::String comma_separated_pair(mlc::String first_code, mlc::String second_code) noexcept;
 
+mlc::String prefix_with_optional_suffix(mlc::String prefix, mlc::String optional_suffix) noexcept;
+
+mlc::String main_program_parameter_list() noexcept;
+
+mlc::String noexcept_function_prototype(mlc::String return_type_cpp, mlc::String name_cpp, mlc::String parameter_list) noexcept;
+
+mlc::String noexcept_function_body_open(mlc::String return_type_cpp, mlc::String name_cpp, mlc::String parameter_list) noexcept;
+
+mlc::String inline_noexcept_forwarding_call(mlc::String return_type_cpp, mlc::String method_name_cpp, mlc::String parameter_list, mlc::String callee_code, mlc::String call_argument_list) noexcept;
+
+mlc::String noexcept_one_line_returning_function(mlc::String return_type_cpp, mlc::String name_cpp, mlc::String parameter_list, mlc::String return_expression_code) noexcept;
+
 } // namespace expr
 
 #endif // EXPR_HPP

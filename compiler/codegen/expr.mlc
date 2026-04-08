@@ -180,3 +180,33 @@ export fn dot_member_access(receiver_code: string, member_code: string) -> strin
 
 export fn comma_separated_pair(first_code: string, second_code: string) -> string =
   first_code + ", " + second_code
+
+export fn prefix_with_optional_suffix(prefix: string, optional_suffix: string) -> string =
+  if optional_suffix.length() > 0 then prefix + optional_suffix else prefix end
+
+export fn main_program_parameter_list() -> string =
+  "int argc, char** argv"
+
+export fn noexcept_function_prototype(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
+  return_type_cpp + " " + name_cpp + "(" + parameter_list + ") noexcept;\n"
+
+export fn noexcept_function_body_open(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
+  return_type_cpp + " " + name_cpp + "(" + parameter_list + ") noexcept\{\n"
+
+export fn inline_noexcept_forwarding_call(
+  return_type_cpp: string,
+  method_name_cpp: string,
+  parameter_list: string,
+  callee_code: string,
+  call_argument_list: string
+) -> string =
+  "inline " + return_type_cpp + " " + method_name_cpp + "(" + parameter_list +
+  ") noexcept { return " + callee_code + "(" + call_argument_list + "); }\n"
+
+export fn noexcept_one_line_returning_function(
+  return_type_cpp: string,
+  name_cpp: string,
+  parameter_list: string,
+  return_expression_code: string
+) -> string =
+  return_type_cpp + " " + name_cpp + "(" + parameter_list + ") noexcept { return " + return_expression_code + "; }\n"

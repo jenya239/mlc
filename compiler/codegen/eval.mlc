@@ -491,8 +491,7 @@ fn gen_stmt_expr(expression: Shared<SExpr>, context: CodegenContext) -> string =
           expression_output.else_fragment_raw(gen_stmt_expr(else_expr, context)),
         _ => expression_output.else_brace_block(gen_block_body(else_expr, context))
       }
-      if else_string.length() > 0 then output = output + else_string end
-      expression_output.fragment_with_newline(output)
+      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
     end,
     SExprWhile(condition, statements, _, _) =>
       expression_output.while_loop_statement(
@@ -564,8 +563,7 @@ fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
         SExprIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expr, context)),
         _                      => expression_output.else_brace_block(gen_return_body(else_expr, context))
       }
-      if else_string.length() > 0 then output = output + else_string end
-      expression_output.fragment_with_newline(output)
+      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
     end,
     _ => expression_output.if_always_true_block(gen_return_body(expr, context))
   }
@@ -601,8 +599,7 @@ export fn gen_return_body(expr: Shared<SExpr>, context: CodegenContext) -> strin
         SExprIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expr, context)),
         _                      => expression_output.else_brace_block(gen_return_body(else_expr, context))
       }
-      if else_string.length() > 0 then output = output + else_string end
-      expression_output.fragment_with_newline(output)
+      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
     end,
     SExprQuestion(inner_expr, _, _) => do
       const try_identifier = "__try_ret"

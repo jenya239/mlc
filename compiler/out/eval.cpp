@@ -421,12 +421,7 @@ context::GenStmtResult gen_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> stm
 mlc::String gen_stmt_expr(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprBin>((*expression)._)) { auto _v_sexprbin = std::get<semantic_ir::SExprBin>((*expression)._); auto [operation, left_expr, right_expr, _w0, _w1] = _v_sexprbin; return operation == mlc::String("=") ? expr::assignment_statement(gen_expr(left_expr, context), gen_expr(right_expr, context)) : expr::expression_operation_statement(operation, gen_expr(left_expr, context), gen_expr(right_expr, context)); } if (std::holds_alternative<semantic_ir::SExprIf>((*expression)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expression)._); auto [condition, then_expr, else_expr, _w0, _w1] = _v_sexprif; return [&]() -> mlc::String { 
   mlc::String output = expr::if_brace_block(gen_expr(condition, context), gen_block_body(then_expr, context));
   mlc::String else_string = [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprUnit>((*else_expr)._)) { auto _v_sexprunit = std::get<semantic_ir::SExprUnit>((*else_expr)._); auto [_w0, _w1] = _v_sexprunit; return mlc::String(""); } if (std::holds_alternative<semantic_ir::SExprBlock>((*else_expr)._)) { auto _v_sexprblock = std::get<semantic_ir::SExprBlock>((*else_expr)._); auto [statements, result_expr, _w0, _w1] = _v_sexprblock; return statements.size() == 0 ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprUnit>((*result_expr)._)) { auto _v_sexprunit = std::get<semantic_ir::SExprUnit>((*result_expr)._); auto [_w0, _w1] = _v_sexprunit; return mlc::String(""); } return expr::else_brace_block(gen_block_body(else_expr, context)); }() : expr::else_brace_block(gen_block_body(else_expr, context)); } if (std::holds_alternative<semantic_ir::SExprIf>((*else_expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*else_expr)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return expr::else_fragment_raw(gen_stmt_expr(else_expr, context)); } return expr::else_brace_block(gen_block_body(else_expr, context)); }();
-  if (else_string.length() > 0){
-{
-output = output + else_string;
-}
-}
-  return expr::fragment_with_newline(output);
+  return expr::fragment_with_newline(expr::prefix_with_optional_suffix(output, else_string));
  }(); } if (std::holds_alternative<semantic_ir::SExprWhile>((*expression)._)) { auto _v_sexprwhile = std::get<semantic_ir::SExprWhile>((*expression)._); auto [condition, statements, _w0, _w1] = _v_sexprwhile; return expr::while_loop_statement(gen_expr(condition, context), gen_stmts_str(statements, context)); } if (std::holds_alternative<semantic_ir::SExprFor>((*expression)._)) { auto _v_sexprfor = std::get<semantic_ir::SExprFor>((*expression)._); auto [variable, iterator, statements, _w0, _w1] = _v_sexprfor; return expr::for_loop_statement(cpp_naming::cpp_safe(variable), gen_expr(iterator, context), gen_stmts_str(statements, context)); } if (std::holds_alternative<semantic_ir::SExprBlock>((*expression)._)) { auto _v_sexprblock = std::get<semantic_ir::SExprBlock>((*expression)._); auto [statements, result_expr, _w0, _w1] = _v_sexprblock; return [&]() -> mlc::String { 
   mlc::String statements_code = gen_stmts_str(statements, context);
   mlc::String result_code = gen_expr(result_expr, statement_context::stmts_final_ctx(statements, context));
@@ -467,12 +462,7 @@ return result.code;
 mlc::String gen_return_if_stmt(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIf>((*expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expr)._); auto [condition, then_expr, else_expr, _w0, _w1] = _v_sexprif; return [&]() -> mlc::String { 
   mlc::String output = expr::if_brace_block(gen_expr(condition, context), gen_return_body(then_expr, context));
   mlc::String else_string = [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprUnit>((*else_expr)._)) { auto _v_sexprunit = std::get<semantic_ir::SExprUnit>((*else_expr)._); auto [_w0, _w1] = _v_sexprunit; return mlc::String(""); } if (std::holds_alternative<semantic_ir::SExprIf>((*else_expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*else_expr)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return expr::else_fragment_raw(gen_return_if_stmt(else_expr, context)); } return expr::else_brace_block(gen_return_body(else_expr, context)); }();
-  if (else_string.length() > 0){
-{
-output = output + else_string;
-}
-}
-  return expr::fragment_with_newline(output);
+  return expr::fragment_with_newline(expr::prefix_with_optional_suffix(output, else_string));
  }(); } return expr::if_always_true_block(gen_return_body(expr, context)); }();}
 
 mlc::String gen_return_body(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprBlock>((*expr)._)) { auto _v_sexprblock = std::get<semantic_ir::SExprBlock>((*expr)._); auto [statements, result_expr, _w0, _w1] = _v_sexprblock; return [&]() -> mlc::String { 
@@ -485,12 +475,7 @@ mlc::String gen_return_body(std::shared_ptr<semantic_ir::SExpr> expr, context::C
  }(); } if (std::holds_alternative<semantic_ir::SExprIf>((*expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expr)._); auto [condition, then_expr, else_expr, _w0, _w1] = _v_sexprif; return [&]() -> mlc::String { 
   mlc::String output = expr::if_brace_block(gen_expr(condition, context), gen_return_body(then_expr, context));
   mlc::String else_string = [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprUnit>((*else_expr)._)) { auto _v_sexprunit = std::get<semantic_ir::SExprUnit>((*else_expr)._); auto [_w0, _w1] = _v_sexprunit; return mlc::String(""); } if (std::holds_alternative<semantic_ir::SExprIf>((*else_expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*else_expr)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return expr::else_fragment_raw(gen_return_if_stmt(else_expr, context)); } return expr::else_brace_block(gen_return_body(else_expr, context)); }();
-  if (else_string.length() > 0){
-{
-output = output + else_string;
-}
-}
-  return expr::fragment_with_newline(output);
+  return expr::fragment_with_newline(expr::prefix_with_optional_suffix(output, else_string));
  }(); } if (std::holds_alternative<semantic_ir::SExprQuestion>((*expr)._)) { auto _v_sexprquestion = std::get<semantic_ir::SExprQuestion>((*expr)._); auto [inner_expr, _w0, _w1] = _v_sexprquestion; return [&]() -> mlc::String { 
   mlc::String try_identifier = mlc::String("__try_ret");
   return gen_try_unwrap(inner_expr, context, try_identifier, expr::return_try_ok_field0_statement(try_identifier));
