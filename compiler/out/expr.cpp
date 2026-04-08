@@ -106,6 +106,12 @@ mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept;
 
 mlc::String array_string_fallback_empty() noexcept;
 
+mlc::String match_lambda_const_reference_parameter(mlc::String resolved_type_name, mlc::String generic_angle_bracket_argument, mlc::String binding_name_cpp_safe) noexcept;
+
+mlc::String dot_member_access(mlc::String receiver_code, mlc::String member_code) noexcept;
+
+mlc::String comma_separated_pair(mlc::String first_code, mlc::String second_code) noexcept;
+
 mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept{return mlc::String("(") + left_code + mlc::String(" ") + operation + mlc::String(" ") + right_code + mlc::String(")");}
 
 mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) noexcept{return mlc::String("(") + operation + inner_code + mlc::String(")");}
@@ -209,5 +215,11 @@ mlc::String hash_map_empty_instantiation(mlc::String key_type_cpp, mlc::String v
 mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept{return mlc::String("mlc::Array<") + element_type_cpp + mlc::String(">{}");}
 
 mlc::String array_string_fallback_empty() noexcept{return mlc::String("mlc::Array<mlc::String>{}");}
+
+mlc::String match_lambda_const_reference_parameter(mlc::String resolved_type_name, mlc::String generic_angle_bracket_argument, mlc::String binding_name_cpp_safe) noexcept{return mlc::String("const ") + resolved_type_name + generic_angle_bracket_argument + mlc::String("& ") + binding_name_cpp_safe;}
+
+mlc::String dot_member_access(mlc::String receiver_code, mlc::String member_code) noexcept{return receiver_code + mlc::String(".") + member_code;}
+
+mlc::String comma_separated_pair(mlc::String first_code, mlc::String second_code) noexcept{return first_code + mlc::String(", ") + second_code;}
 
 } // namespace expr

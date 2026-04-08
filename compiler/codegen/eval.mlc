@@ -117,7 +117,7 @@ fn gen_arm_ctor(ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared
     index = index + 1
   end
   expression_output.match_arm_constructed_value(
-    "const " + qualified_name + type_argument + "& " + lower_name,
+    expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
     binding,
     gen_expr(arm_body, arm_context))
 end
@@ -138,7 +138,7 @@ fn gen_arm_record_pattern(record_name: string, field_patterns: [Shared<Pat>], ar
     field_index = field_index + 1
   end
   expression_output.match_arm_constructed_value(
-    "const " + qualified_name + type_argument + "& " + lower_name,
+    expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
     field_bindings,
     gen_expr(arm_body, context))
 end
@@ -204,19 +204,21 @@ fn gen_method_file(method_name: string, arguments: [Shared<SExpr>], context: Cod
 fn gen_method_shared_new(argument: Shared<SExpr>, context: CodegenContext) -> string = do
   const argument_code = gen_expr(argument, context)
   const type_name = infer_shared_new_type_name(argument, context)
-  "std::make_shared<" + type_name + ">(" + argument_code + ")"
+  expression_output.make_shared_call(type_name, argument_code)
 end
 
 fn gen_method_owner_call(object_code: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext) -> string = do
   const mangled_name = context.method_owners.get(method_name)
   const function_name = context_resolve(context, mangled_name)
   if arguments.length() == 0 then expression_output.function_call_parentheses(function_name, object_code)
-  else expression_output.function_call_parentheses(function_name, object_code + ", " + gen_argument_list(arguments, context))
+  else expression_output.function_call_parentheses(
+    function_name,
+    expression_output.comma_separated_pair(object_code, gen_argument_list(arguments, context)))
   end
 end
 
 fn gen_method_builtin(object_code: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext) -> string = do
-  const call_base = object_code + "." + map_method(method_name)
+  const call_base = expression_output.dot_member_access(object_code, map_method(method_name))
   if arguments.length() == 0 then expression_output.function_call_parentheses(call_base, "")
   else expression_output.function_call_parentheses(call_base, gen_argument_list(arguments, context))
   end
@@ -504,7 +506,7 @@ fn gen_stmt_expr(expression: Shared<SExpr>, context: CodegenContext) -> string =
     SExprBlock(statements, result_expr, _, _) => do
       const statements_code = gen_stmts_str(statements, context)
       const result_code = gen_expr(result_expr, stmts_final_ctx(statements, context))
-      if result_code == "/* unit */" then statements_code
+      if result_code == gen_unit_literal() then statements_code
       else expression_output.append_trailing_expression_statement(statements_code, result_code)
       end
     end,
@@ -521,7 +523,7 @@ fn gen_block_body(expr: Shared<SExpr>, context: CodegenContext) -> string =
         SExprUnit(_, _)        => statements_code,
         _ => do
           const result_code = gen_expr(result_expr, final_context)
-          if result_code == "/* unit */" then statements_code
+          if result_code == gen_unit_literal() then statements_code
           else expression_output.append_trailing_expression_statement(statements_code, result_code)
           end
         end

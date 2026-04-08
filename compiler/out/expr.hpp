@@ -115,6 +115,12 @@ mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept;
 
 mlc::String array_string_fallback_empty() noexcept;
 
+mlc::String match_lambda_const_reference_parameter(mlc::String resolved_type_name, mlc::String generic_angle_bracket_argument, mlc::String binding_name_cpp_safe) noexcept;
+
+mlc::String dot_member_access(mlc::String receiver_code, mlc::String member_code) noexcept;
+
+mlc::String comma_separated_pair(mlc::String first_code, mlc::String second_code) noexcept;
+
 } // namespace expr
 
 #endif // EXPR_HPP

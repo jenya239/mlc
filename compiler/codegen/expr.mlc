@@ -167,3 +167,16 @@ export fn typed_array_empty(element_type_cpp: string) -> string =
 
 export fn array_string_fallback_empty() -> string =
   "mlc::Array<mlc::String>\{\}"
+
+export fn match_lambda_const_reference_parameter(
+  resolved_type_name: string,
+  generic_angle_bracket_argument: string,
+  binding_name_cpp_safe: string
+) -> string =
+  "const " + resolved_type_name + generic_angle_bracket_argument + "& " + binding_name_cpp_safe
+
+export fn dot_member_access(receiver_code: string, member_code: string) -> string =
+  receiver_code + "." + member_code
+
+export fn comma_separated_pair(first_code: string, second_code: string) -> string =
+  first_code + ", " + second_code
