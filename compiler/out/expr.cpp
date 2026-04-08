@@ -124,6 +124,10 @@ mlc::String inline_noexcept_forwarding_call(mlc::String return_type_cpp, mlc::St
 
 mlc::String noexcept_one_line_returning_function(mlc::String return_type_cpp, mlc::String name_cpp, mlc::String parameter_list, mlc::String return_expression_code) noexcept;
 
+mlc::String parameter_declaration_item(mlc::String type_expression_cpp, mlc::String binding_name_cpp) noexcept;
+
+mlc::String block_close_newline() noexcept;
+
 mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept{return mlc::String("(") + left_code + mlc::String(" ") + operation + mlc::String(" ") + right_code + mlc::String(")");}
 
 mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) noexcept{return mlc::String("(") + operation + inner_code + mlc::String(")");}
@@ -245,5 +249,9 @@ mlc::String noexcept_function_body_open(mlc::String return_type_cpp, mlc::String
 mlc::String inline_noexcept_forwarding_call(mlc::String return_type_cpp, mlc::String method_name_cpp, mlc::String parameter_list, mlc::String callee_code, mlc::String call_argument_list) noexcept{return mlc::String("inline ") + return_type_cpp + mlc::String(" ") + method_name_cpp + mlc::String("(") + parameter_list + mlc::String(") noexcept { return ") + callee_code + mlc::String("(") + call_argument_list + mlc::String("); }\n");}
 
 mlc::String noexcept_one_line_returning_function(mlc::String return_type_cpp, mlc::String name_cpp, mlc::String parameter_list, mlc::String return_expression_code) noexcept{return return_type_cpp + mlc::String(" ") + name_cpp + mlc::String("(") + parameter_list + mlc::String(") noexcept { return ") + return_expression_code + mlc::String("; }\n");}
+
+mlc::String parameter_declaration_item(mlc::String type_expression_cpp, mlc::String binding_name_cpp) noexcept{return type_expression_cpp + mlc::String(" ") + binding_name_cpp;}
+
+mlc::String block_close_newline() noexcept{return mlc::String("}\n");}
 
 } // namespace expr

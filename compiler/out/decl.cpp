@@ -67,7 +67,7 @@ mlc::Array<mlc::String> parts = {};
 int index = 0;
 while (index < params.size()){
 {
-parts.push_back(type_gen::type_to_cpp(context, params[index]->typ) + mlc::String(" ") + cpp_naming::cpp_safe(params[index]->name));
+parts.push_back(expr::parameter_declaration_item(type_gen::type_to_cpp(context, params[index]->typ), cpp_naming::cpp_safe(params[index]->name)));
 index = index + 1;
 }
 }
@@ -103,8 +103,8 @@ context::CodegenContext body_context = compute_fn_body_context(name, params, con
 context::CodegenContext prototype_context = params.size() > 0 && params[0]->name == mlc::String("self") ? body_context : context;
 return name == mlc::String("main") && params.size() == 0 ? [&]() -> mlc::String { 
   mlc::String preamble = mlc::String("mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n");
-  return prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, expr::main_program_parameter_list()) + preamble + eval::gen_fn_body(body, body_context) + mlc::String("}\n");
- }() : prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, gen_params(prototype_context, params)) + eval::gen_fn_body(body, body_context) + mlc::String("}\n");
+  return prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, expr::main_program_parameter_list()) + preamble + eval::gen_fn_body(body, body_context) + expr::block_close_newline();
+ }() : prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, gen_params(prototype_context, params)) + eval::gen_fn_body(body, body_context) + expr::block_close_newline();
 }
 
 mlc::String gen_trait_decl(context::CodegenContext context, mlc::String trait_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept{

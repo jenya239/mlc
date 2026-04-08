@@ -210,3 +210,9 @@ export fn noexcept_one_line_returning_function(
   return_expression_code: string
 ) -> string =
   return_type_cpp + " " + name_cpp + "(" + parameter_list + ") noexcept { return " + return_expression_code + "; }\n"
+
+export fn parameter_declaration_item(type_expression_cpp: string, binding_name_cpp: string) -> string =
+  type_expression_cpp + " " + binding_name_cpp
+
+export fn block_close_newline() -> string =
+  "\}\n"

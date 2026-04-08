@@ -133,6 +133,10 @@ mlc::String inline_noexcept_forwarding_call(mlc::String return_type_cpp, mlc::St
 
 mlc::String noexcept_one_line_returning_function(mlc::String return_type_cpp, mlc::String name_cpp, mlc::String parameter_list, mlc::String return_expression_code) noexcept;
 
+mlc::String parameter_declaration_item(mlc::String type_expression_cpp, mlc::String binding_name_cpp) noexcept;
+
+mlc::String block_close_newline() noexcept;
+
 } // namespace expr
 
 #endif // EXPR_HPP

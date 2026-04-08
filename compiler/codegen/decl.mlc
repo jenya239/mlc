@@ -33,7 +33,9 @@ end
 export fn gen_params(context: CodegenContext, params: [Shared<Param>]) -> string = do
   let parts: [string] = []; let mut index = 0
   while index < params.length() do
-    parts.push(type_to_cpp(context, params[index].typ) + " " + cpp_safe(params[index].name))
+    parts.push(expression_output.parameter_declaration_item(
+      type_to_cpp(context, params[index].typ),
+      cpp_safe(params[index].name)))
     index = index + 1
   end
   parts.join(", ")
@@ -96,13 +98,13 @@ export fn gen_fn_decl(name: string, type_params: [string], type_bounds: [[string
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
       expression_output.main_program_parameter_list()) +
-    preamble + gen_fn_body(body, body_context) + "\}\n"
+    preamble + gen_fn_body(body, body_context) + expression_output.block_close_newline()
   else
     prefix + expression_output.noexcept_function_body_open(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
       gen_params(prototype_context, params)) +
-    gen_fn_body(body, body_context) + "\}\n"
+    gen_fn_body(body, body_context) + expression_output.block_close_newline()
   end
 end
 
