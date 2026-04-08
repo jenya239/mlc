@@ -165,6 +165,28 @@ mlc::String struct_tuple_field_declaration(mlc::String element_type_cpp, mlc::St
 
 mlc::String struct_named_field_declaration(mlc::String field_type_cpp, mlc::String field_name_cpp_safe) noexcept;
 
+mlc::String include_guard_ifndef_line(mlc::String guard_macro) noexcept;
+
+mlc::String include_guard_define_line(mlc::String guard_macro) noexcept;
+
+mlc::String include_guard_endif_comment_line(mlc::String guard_macro) noexcept;
+
+mlc::String namespace_open_line(mlc::String namespace_identifier) noexcept;
+
+mlc::String namespace_close_comment_line(mlc::String namespace_identifier) noexcept;
+
+mlc::String implementation_define_main_as_user_main_line() noexcept;
+
+mlc::String implementation_include_quotefile_line(mlc::String header_filename) noexcept;
+
+mlc::String bootstrap_host_main_calling_namespaced_user_main(mlc::String qualified_namespace) noexcept;
+
+mlc::String cpp_template_typename_header_line(mlc::String template_parameter_list) noexcept;
+
+mlc::String concept_requires_expression_method_returns_convertible(mlc::String method_name, mlc::String destination_type_cpp) noexcept;
+
+mlc::String trait_concept_requires_definition_line(mlc::String template_header, mlc::String trait_cpp_safe, mlc::String self_parameter_name, mlc::String requires_expressions_semicolon_separated) noexcept;
+
 } // namespace expr
 
 #endif // EXPR_HPP

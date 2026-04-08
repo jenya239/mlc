@@ -113,7 +113,7 @@ end
 export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_params: [string], methods: [Shared<SDecl>]) -> string = do
   const self_param = if type_params.length() > 0 then type_params[0] else "T" end
   const tparam = if type_params.length() > 0 then type_params.join(", ") else "T" end
-  const prefix = "template<typename " + tparam + ">\n"
+  const template_header = expression_output.cpp_template_typename_header_line(tparam)
   let req_parts: [string] = []
   let mut method_index = 0
   while method_index < methods.length() do
@@ -121,14 +121,18 @@ export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_param
       SDeclFn(mangled, _, _, params, ret_type, _) => do
         const method_name = extract_method_name(mangled, trait_name)
         const ret_cpp = type_to_cpp(context, Shared.new(TyUnit))
-        req_parts.push("{ " + method_name + "(self) } -> std::convertible_to<" + ret_cpp + ">")
+        req_parts.push(expression_output.concept_requires_expression_method_returns_convertible(method_name, ret_cpp))
       end,
       _ => do end
     }
     method_index = method_index + 1
   end
   const req_body = req_parts.join("; ")
-  prefix + "concept " + cpp_safe(trait_name) + " = requires(const " + self_param + "& self) { " + req_body + "; };\n"
+  expression_output.trait_concept_requires_definition_line(
+    template_header,
+    cpp_safe(trait_name),
+    self_param,
+    req_body)
 end
 
 // --- Extend block declaration ------------------------------------------------

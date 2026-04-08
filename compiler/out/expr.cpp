@@ -156,6 +156,28 @@ mlc::String struct_tuple_field_declaration(mlc::String element_type_cpp, mlc::St
 
 mlc::String struct_named_field_declaration(mlc::String field_type_cpp, mlc::String field_name_cpp_safe) noexcept;
 
+mlc::String include_guard_ifndef_line(mlc::String guard_macro) noexcept;
+
+mlc::String include_guard_define_line(mlc::String guard_macro) noexcept;
+
+mlc::String include_guard_endif_comment_line(mlc::String guard_macro) noexcept;
+
+mlc::String namespace_open_line(mlc::String namespace_identifier) noexcept;
+
+mlc::String namespace_close_comment_line(mlc::String namespace_identifier) noexcept;
+
+mlc::String implementation_define_main_as_user_main_line() noexcept;
+
+mlc::String implementation_include_quotefile_line(mlc::String header_filename) noexcept;
+
+mlc::String bootstrap_host_main_calling_namespaced_user_main(mlc::String qualified_namespace) noexcept;
+
+mlc::String cpp_template_typename_header_line(mlc::String template_parameter_list) noexcept;
+
+mlc::String concept_requires_expression_method_returns_convertible(mlc::String method_name, mlc::String destination_type_cpp) noexcept;
+
+mlc::String trait_concept_requires_definition_line(mlc::String template_header, mlc::String trait_cpp_safe, mlc::String self_parameter_name, mlc::String requires_expressions_semicolon_separated) noexcept;
+
 mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept{return mlc::String("(") + left_code + mlc::String(" ") + operation + mlc::String(" ") + right_code + mlc::String(")");}
 
 mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) noexcept{return mlc::String("(") + operation + inner_code + mlc::String(")");}
@@ -309,5 +331,27 @@ mlc::String concept_trait_constraint_on_type_parameter(mlc::String trait_name_cp
 mlc::String struct_tuple_field_declaration(mlc::String element_type_cpp, mlc::String field_index_text) noexcept{return element_type_cpp + mlc::String(" field") + field_index_text + mlc::String(";");}
 
 mlc::String struct_named_field_declaration(mlc::String field_type_cpp, mlc::String field_name_cpp_safe) noexcept{return field_type_cpp + mlc::String(" ") + field_name_cpp_safe + mlc::String(";");}
+
+mlc::String include_guard_ifndef_line(mlc::String guard_macro) noexcept{return mlc::String("#ifndef ") + guard_macro + mlc::String("\n");}
+
+mlc::String include_guard_define_line(mlc::String guard_macro) noexcept{return mlc::String("#define ") + guard_macro + mlc::String("\n");}
+
+mlc::String include_guard_endif_comment_line(mlc::String guard_macro) noexcept{return mlc::String("#endif // ") + guard_macro + mlc::String("\n");}
+
+mlc::String namespace_open_line(mlc::String namespace_identifier) noexcept{return mlc::String("namespace ") + namespace_identifier + mlc::String(" {\n");}
+
+mlc::String namespace_close_comment_line(mlc::String namespace_identifier) noexcept{return mlc::String("} // namespace ") + namespace_identifier + mlc::String("\n");}
+
+mlc::String implementation_define_main_as_user_main_line() noexcept{return mlc::String("#define main mlc_user_main\n");}
+
+mlc::String implementation_include_quotefile_line(mlc::String header_filename) noexcept{return mlc::String("#include \"") + header_filename + mlc::String("\"\n");}
+
+mlc::String bootstrap_host_main_calling_namespaced_user_main(mlc::String qualified_namespace) noexcept{return mlc::String("\n#undef main\n\n") + mlc::String("static void mlc_cli_set_args(int argc, char** argv) {\n") + mlc::String("  std::vector<mlc::String> arguments;\n") + mlc::String("  arguments.reserve(argc > 0 ? argc - 1 : 0);\n") + mlc::String("  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n") + mlc::String("  mlc::io::set_args(std::move(arguments));\n") + mlc::String("}\n\n") + mlc::String("int main(int argc, char** argv) {\n") + mlc::String("  mlc_cli_set_args(argc, argv);\n") + mlc::String("  return ::") + qualified_namespace + mlc::String("::mlc_user_main(argc, argv);\n") + mlc::String("}\n");}
+
+mlc::String cpp_template_typename_header_line(mlc::String template_parameter_list) noexcept{return mlc::String("template<typename ") + template_parameter_list + mlc::String(">\n");}
+
+mlc::String concept_requires_expression_method_returns_convertible(mlc::String method_name, mlc::String destination_type_cpp) noexcept{return mlc::String("{ ") + method_name + mlc::String("(self) } -> std::convertible_to<") + destination_type_cpp + mlc::String(">");}
+
+mlc::String trait_concept_requires_definition_line(mlc::String template_header, mlc::String trait_cpp_safe, mlc::String self_parameter_name, mlc::String requires_expressions_semicolon_separated) noexcept{return template_header + mlc::String("concept ") + trait_cpp_safe + mlc::String(" = requires(const ") + self_parameter_name + mlc::String("& self) { ") + requires_expressions_semicolon_separated + mlc::String("; };\n");}
 
 } // namespace expr

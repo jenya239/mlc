@@ -12,6 +12,7 @@ import { LoadItem, CodegenContext, PrecomputedCtx, GenModuleOut,
          context_resolve } from "./context"
 import { cpp_safe, include_lines, path_to_module_base } from "./cpp_naming"
 import { collect_decl_parts, decls_have_main } from "./decl"
+import * as expression_output from "./expr"
 
 fn namespace_aliases_mapped(items: [SNamespaceImportAlias]) -> [NamespaceImportAlias] = do
   let mut result: [NamespaceImportAlias] = []
@@ -64,32 +65,32 @@ export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Progra
   const fn_defs   = collect_decl_parts(s_item.decls, context, 3)
   const guard = base.upper() + "_HPP"
   const header = [
-    "#ifndef " + guard + "\n",
-    "#define " + guard + "\n",
+    expression_output.include_guard_ifndef_line(guard),
+    expression_output.include_guard_define_line(guard),
     "\n",
     std_includes,
-    "namespace " + module_namespace + " {\n",
+    expression_output.namespace_open_line(module_namespace),
     "\n",
     type_fwds.join(""),
     type_defs.join(""),
     fn_protos.join(""),
     "\n",
-    "} // namespace " + module_namespace + "\n",
+    expression_output.namespace_close_comment_line(module_namespace),
     "\n",
-    "#endif // " + guard + "\n"
+    expression_output.include_guard_endif_comment_line(guard)
   ].join("")
   const cli_wrapper = if is_entry then
-    "\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::" + module_namespace + "::mlc_user_main(argc, argv);\n}\n"
+    expression_output.bootstrap_host_main_calling_namespaced_user_main(module_namespace)
     else "" end
   const impl = [
-    "#define main mlc_user_main\n",
-    "#include \"" + base + ".hpp\"\n",
+    expression_output.implementation_define_main_as_user_main_line(),
+    expression_output.implementation_include_quotefile_line(base + ".hpp"),
     "\n",
-    "namespace " + module_namespace + " {\n",
+    expression_output.namespace_open_line(module_namespace),
     "\n",
     fn_defs.join(""),
     "\n",
-    "} // namespace " + module_namespace + "\n",
+    expression_output.namespace_close_comment_line(module_namespace),
     cli_wrapper
   ].join("")
   GenModuleOut { h: header, c: impl }

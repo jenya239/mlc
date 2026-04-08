@@ -8,6 +8,7 @@
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "decl.hpp"
+#include "expr.hpp"
 
 namespace module {
 
@@ -19,6 +20,7 @@ using namespace decl_index;
 using namespace context;
 using namespace cpp_naming;
 using namespace decl;
+using namespace expr;
 using namespace ast_tokens;
 
 mlc::Array<decl_index::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SNamespaceImportAlias> items) noexcept;
@@ -58,9 +60,9 @@ mlc::Array<mlc::String> type_defs = decl::collect_decl_parts(s_item.decls, conte
 mlc::Array<mlc::String> fn_protos = decl::collect_decl_parts(s_item.decls, context, 2);
 mlc::Array<mlc::String> fn_defs = decl::collect_decl_parts(s_item.decls, context, 3);
 mlc::String guard = base.upper() + mlc::String("_HPP");
-mlc::String header = mlc::Array<mlc::String>{mlc::String("#ifndef ") + guard + mlc::String("\n"), mlc::String("#define ") + guard + mlc::String("\n"), mlc::String("\n"), std_includes, mlc::String("namespace ") + module_namespace + mlc::String(" {\n"), mlc::String("\n"), type_fwds.join(mlc::String("")), type_defs.join(mlc::String("")), fn_protos.join(mlc::String("")), mlc::String("\n"), mlc::String("} // namespace ") + module_namespace + mlc::String("\n"), mlc::String("\n"), mlc::String("#endif // ") + guard + mlc::String("\n")}.join(mlc::String(""));
-mlc::String cli_wrapper = is_entry ? mlc::String("\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::") + module_namespace + mlc::String("::mlc_user_main(argc, argv);\n}\n") : mlc::String("");
-mlc::String impl = mlc::Array<mlc::String>{mlc::String("#define main mlc_user_main\n"), mlc::String("#include \"") + base + mlc::String(".hpp\"\n"), mlc::String("\n"), mlc::String("namespace ") + module_namespace + mlc::String(" {\n"), mlc::String("\n"), fn_defs.join(mlc::String("")), mlc::String("\n"), mlc::String("} // namespace ") + module_namespace + mlc::String("\n"), cli_wrapper}.join(mlc::String(""));
+mlc::String header = mlc::Array<mlc::String>{expr::include_guard_ifndef_line(guard), expr::include_guard_define_line(guard), mlc::String("\n"), std_includes, expr::namespace_open_line(module_namespace), mlc::String("\n"), type_fwds.join(mlc::String("")), type_defs.join(mlc::String("")), fn_protos.join(mlc::String("")), mlc::String("\n"), expr::namespace_close_comment_line(module_namespace), mlc::String("\n"), expr::include_guard_endif_comment_line(guard)}.join(mlc::String(""));
+mlc::String cli_wrapper = is_entry ? expr::bootstrap_host_main_calling_namespaced_user_main(module_namespace) : mlc::String("");
+mlc::String impl = mlc::Array<mlc::String>{expr::implementation_define_main_as_user_main_line(), expr::implementation_include_quotefile_line(base + mlc::String(".hpp")), mlc::String("\n"), expr::namespace_open_line(module_namespace), mlc::String("\n"), fn_defs.join(mlc::String("")), mlc::String("\n"), expr::namespace_close_comment_line(module_namespace), cli_wrapper}.join(mlc::String(""));
 return context::GenModuleOut{header, impl};
 }
 

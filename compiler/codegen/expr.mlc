@@ -268,3 +268,54 @@ export fn struct_tuple_field_declaration(element_type_cpp: string, field_index_t
 
 export fn struct_named_field_declaration(field_type_cpp: string, field_name_cpp_safe: string) -> string =
   field_type_cpp + " " + field_name_cpp_safe + ";"
+
+// --- Header / module shell (no traversal)
+
+export fn include_guard_ifndef_line(guard_macro: string) -> string =
+  "#ifndef " + guard_macro + "\n"
+
+export fn include_guard_define_line(guard_macro: string) -> string =
+  "#define " + guard_macro + "\n"
+
+export fn include_guard_endif_comment_line(guard_macro: string) -> string =
+  "#endif // " + guard_macro + "\n"
+
+export fn namespace_open_line(namespace_identifier: string) -> string =
+  "namespace " + namespace_identifier + " {\n"
+
+export fn namespace_close_comment_line(namespace_identifier: string) -> string =
+  "} // namespace " + namespace_identifier + "\n"
+
+export fn implementation_define_main_as_user_main_line() -> string =
+  "#define main mlc_user_main\n"
+
+export fn implementation_include_quotefile_line(header_filename: string) -> string =
+  "#include \"" + header_filename + "\"\n"
+
+export fn bootstrap_host_main_calling_namespaced_user_main(qualified_namespace: string) -> string =
+  "\n#undef main\n\n" +
+  "static void mlc_cli_set_args(int argc, char** argv) {\n" +
+  "  std::vector<mlc::String> arguments;\n" +
+  "  arguments.reserve(argc > 0 ? argc - 1 : 0);\n" +
+  "  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n" +
+  "  mlc::io::set_args(std::move(arguments));\n" +
+  "}\n\n" +
+  "int main(int argc, char** argv) {\n" +
+  "  mlc_cli_set_args(argc, argv);\n" +
+  "  return ::" + qualified_namespace + "::mlc_user_main(argc, argv);\n" +
+  "}\n"
+
+export fn cpp_template_typename_header_line(template_parameter_list: string) -> string =
+  "template<typename " + template_parameter_list + ">\n"
+
+export fn concept_requires_expression_method_returns_convertible(method_name: string, destination_type_cpp: string) -> string =
+  "{ " + method_name + "(self) } -> std::convertible_to<" + destination_type_cpp + ">"
+
+export fn trait_concept_requires_definition_line(
+  template_header: string,
+  trait_cpp_safe: string,
+  self_parameter_name: string,
+  requires_expressions_semicolon_separated: string
+) -> string =
+  template_header + "concept " + trait_cpp_safe + " = requires(const " + self_parameter_name +
+  "& self) { " + requires_expressions_semicolon_separated + "; };\n"

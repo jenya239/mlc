@@ -12,6 +12,7 @@
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "decl.hpp"
+#include "expr.hpp"
 
 namespace module {
 

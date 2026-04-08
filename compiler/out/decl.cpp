@@ -110,7 +110,7 @@ return name == mlc::String("main") && params.size() == 0 ? [&]() -> mlc::String 
 mlc::String gen_trait_decl(context::CodegenContext context, mlc::String trait_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept{
 mlc::String self_param = type_params.size() > 0 ? type_params[0] : mlc::String("T");
 mlc::String tparam = type_params.size() > 0 ? type_params.join(mlc::String(", ")) : mlc::String("T");
-mlc::String prefix = mlc::String("template<typename ") + tparam + mlc::String(">\n");
+mlc::String template_header = expr::cpp_template_typename_header_line(tparam);
 mlc::Array<mlc::String> req_parts = {};
 int method_index = 0;
 while (method_index < methods.size()){
@@ -118,13 +118,13 @@ while (method_index < methods.size()){
 [&]() -> void { if (std::holds_alternative<semantic_ir::SDeclFn>((*methods[method_index]))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*methods[method_index])); auto [mangled, _w0, _w1, params, ret_type, _w2] = _v_sdeclfn; return [&]() { 
   mlc::String method_name = extract_method_name(mangled, trait_name);
   mlc::String ret_cpp = type_gen::type_to_cpp(context, std::make_shared<ast::TypeExpr>((ast::TyUnit{})));
-  return req_parts.push_back(mlc::String("{ ") + method_name + mlc::String("(self) } -> std::convertible_to<") + ret_cpp + mlc::String(">"));
+  return req_parts.push_back(expr::concept_requires_expression_method_returns_convertible(method_name, ret_cpp));
  }(); } return; }();
 method_index = method_index + 1;
 }
 }
 mlc::String req_body = req_parts.join(mlc::String("; "));
-return prefix + mlc::String("concept ") + cpp_naming::cpp_safe(trait_name) + mlc::String(" = requires(const ") + self_param + mlc::String("& self) { ") + req_body + mlc::String("; };\n");
+return expr::trait_concept_requires_definition_line(template_header, cpp_naming::cpp_safe(trait_name), self_param, req_body);
 }
 
 mlc::String gen_extend_wrapper_protos(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context) noexcept{return trait_name.length() == 0 ? mlc::String("") : [&]() -> mlc::String { 
