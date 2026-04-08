@@ -178,6 +178,10 @@ mlc::String concept_requires_expression_method_returns_convertible(mlc::String m
 
 mlc::String trait_concept_requires_definition_line(mlc::String template_header, mlc::String trait_cpp_safe, mlc::String self_parameter_name, mlc::String requires_expressions_semicolon_separated) noexcept;
 
+mlc::String user_main_arguments_copy_into_runtime_statement() noexcept;
+
+mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept;
+
 mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept{return mlc::String("(") + left_code + mlc::String(" ") + operation + mlc::String(" ") + right_code + mlc::String(")");}
 
 mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) noexcept{return mlc::String("(") + operation + inner_code + mlc::String(")");}
@@ -353,5 +357,9 @@ mlc::String cpp_template_typename_header_line(mlc::String template_parameter_lis
 mlc::String concept_requires_expression_method_returns_convertible(mlc::String method_name, mlc::String destination_type_cpp) noexcept{return mlc::String("{ ") + method_name + mlc::String("(self) } -> std::convertible_to<") + destination_type_cpp + mlc::String(">");}
 
 mlc::String trait_concept_requires_definition_line(mlc::String template_header, mlc::String trait_cpp_safe, mlc::String self_parameter_name, mlc::String requires_expressions_semicolon_separated) noexcept{return template_header + mlc::String("concept ") + trait_cpp_safe + mlc::String(" = requires(const ") + self_parameter_name + mlc::String("& self) { ") + requires_expressions_semicolon_separated + mlc::String("; };\n");}
+
+mlc::String user_main_arguments_copy_into_runtime_statement() noexcept{return mlc::String("mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n");}
+
+mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept{return mlc::String("static_assert(") + concept_cpp_safe + mlc::String("<") + type_cpp + mlc::String(">, \"") + diagnostic_message_inside_cpp_string_literal + mlc::String("\");\n");}
 
 } // namespace expr

@@ -102,7 +102,7 @@ mlc::String safe_name = context::context_resolve(context, name);
 context::CodegenContext body_context = compute_fn_body_context(name, params, context);
 context::CodegenContext prototype_context = params.size() > 0 && params[0]->name == mlc::String("self") ? body_context : context;
 return name == mlc::String("main") && params.size() == 0 ? [&]() -> mlc::String { 
-  mlc::String preamble = mlc::String("mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n");
+  mlc::String preamble = expr::user_main_arguments_copy_into_runtime_statement();
   return prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, expr::main_program_parameter_list()) + preamble + eval::gen_fn_body(body, body_context) + expr::block_close_newline();
  }() : prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, gen_params(prototype_context, params)) + eval::gen_fn_body(body, body_context) + expr::block_close_newline();
 }
@@ -228,7 +228,7 @@ return trait_name.length() > 0 ? [&]() -> mlc::String {
   mlc::String trait_wrappers = gen_extend_trait_wrappers(type_name, methods, context);
   mlc::String cpp_type = type_gen::type_name_to_cpp(context, type_name);
   mlc::String trait_safe = cpp_naming::cpp_safe(trait_name);
-  return methods_str + trait_wrappers + mlc::String("static_assert(") + trait_safe + mlc::String("<") + cpp_type + mlc::String(">, \"") + type_name + mlc::String(" does not implement ") + trait_name + mlc::String("\");\n");
+  return methods_str + trait_wrappers + expr::static_assert_concept_for_type_line(trait_safe, cpp_type, type_name + mlc::String(" does not implement ") + trait_name);
  }() : methods_str;
 }
 

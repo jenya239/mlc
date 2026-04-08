@@ -187,6 +187,10 @@ mlc::String concept_requires_expression_method_returns_convertible(mlc::String m
 
 mlc::String trait_concept_requires_definition_line(mlc::String template_header, mlc::String trait_cpp_safe, mlc::String self_parameter_name, mlc::String requires_expressions_semicolon_separated) noexcept;
 
+mlc::String user_main_arguments_copy_into_runtime_statement() noexcept;
+
+mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept;
+
 } // namespace expr
 
 #endif // EXPR_HPP

@@ -93,7 +93,7 @@ export fn gen_fn_decl(name: string, type_params: [string], type_bounds: [[string
   const body_context = compute_fn_body_context(name, params, context)
   const prototype_context = if params.length() > 0 && params[0].name == "self" then body_context else context end
   if name == "main" && params.length() == 0 then
-    const preamble = "mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n"
+    const preamble = expression_output.user_main_arguments_copy_into_runtime_statement()
     prefix + expression_output.noexcept_function_body_open(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
@@ -236,7 +236,10 @@ fn gen_decl_extend(type_name: string, trait_name: string, methods: [Shared<SDecl
     const trait_wrappers = gen_extend_trait_wrappers(type_name, methods, context)
     const cpp_type = type_name_to_cpp(context, type_name)
     const trait_safe = cpp_safe(trait_name)
-    methods_str + trait_wrappers + "static_assert(" + trait_safe + "<" + cpp_type + ">, \"" + type_name + " does not implement " + trait_name + "\");\n"
+    methods_str + trait_wrappers + expression_output.static_assert_concept_for_type_line(
+      trait_safe,
+      cpp_type,
+      type_name + " does not implement " + trait_name)
   else
     methods_str
   end

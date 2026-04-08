@@ -319,3 +319,14 @@ export fn trait_concept_requires_definition_line(
 ) -> string =
   template_header + "concept " + trait_cpp_safe + " = requires(const " + self_parameter_name +
   "& self) { " + requires_expressions_semicolon_separated + "; };\n"
+
+export fn user_main_arguments_copy_into_runtime_statement() -> string =
+  "mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n"
+
+export fn static_assert_concept_for_type_line(
+  concept_cpp_safe: string,
+  type_cpp: string,
+  diagnostic_message_inside_cpp_string_literal: string
+) -> string =
+  "static_assert(" + concept_cpp_safe + "<" + type_cpp + ">, \"" +
+  diagnostic_message_inside_cpp_string_literal + "\");\n"
