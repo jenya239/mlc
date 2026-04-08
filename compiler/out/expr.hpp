@@ -165,6 +165,8 @@ mlc::String struct_tuple_field_declaration(mlc::String element_type_cpp, mlc::St
 
 mlc::String struct_named_field_declaration(mlc::String field_type_cpp, mlc::String field_name_cpp_safe) noexcept;
 
+mlc::String standard_translation_unit_runtime_headers() noexcept;
+
 mlc::String include_guard_ifndef_line(mlc::String guard_macro) noexcept;
 
 mlc::String include_guard_define_line(mlc::String guard_macro) noexcept;

@@ -54,7 +54,7 @@ mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes = decl_index::bu
 context::CodegenContext context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, namespace_alias_prefixes, mlc::String(""), decl_index::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants};
 mlc::String module_namespace = base == mlc::String("main") ? mlc::String("mlc_main") : base;
 bool is_entry = decl::decls_have_main(s_item.decls);
-mlc::String std_includes = mlc::String("#include \"mlc.hpp\"\n#include <variant>\n\n") + cpp_naming::include_lines(s_item.imports) + mlc::String("\n");
+mlc::String std_includes = expr::standard_translation_unit_runtime_headers() + cpp_naming::include_lines(s_item.imports) + mlc::String("\n");
 mlc::Array<mlc::String> type_fwds = decl::collect_decl_parts(s_item.decls, context, 0);
 mlc::Array<mlc::String> type_defs = decl::collect_decl_parts(s_item.decls, context, 1);
 mlc::Array<mlc::String> fn_protos = decl::collect_decl_parts(s_item.decls, context, 2);

@@ -271,6 +271,9 @@ export fn struct_named_field_declaration(field_type_cpp: string, field_name_cpp_
 
 // --- Header / module shell (no traversal)
 
+export fn standard_translation_unit_runtime_headers() -> string =
+  "#include \"mlc.hpp\"\n#include <variant>\n\n"
+
 export fn include_guard_ifndef_line(guard_macro: string) -> string =
   "#ifndef " + guard_macro + "\n"
 

@@ -58,7 +58,7 @@ export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Progra
   }
   const module_namespace = if base == "main" then "mlc_main" else base end
   const is_entry = decls_have_main(s_item.decls)
-  const std_includes = "#include \"mlc.hpp\"\n#include <variant>\n\n" + include_lines(s_item.imports) + "\n"
+  const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(s_item.imports) + "\n"
   const type_fwds = collect_decl_parts(s_item.decls, context, 0)
   const type_defs = collect_decl_parts(s_item.decls, context, 1)
   const fn_protos = collect_decl_parts(s_item.decls, context, 2)
