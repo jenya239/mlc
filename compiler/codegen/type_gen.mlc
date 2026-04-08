@@ -4,6 +4,7 @@ import { TypeVariant, TypeExpr, Decl, Param } from "../ast"
 import { Type } from "../checker/registry"
 import { CodegenContext, CtorTypeInfo, context_resolve, list_contains } from "./context"
 import { cpp_safe, lower_first, template_prefix } from "./cpp_naming"
+import * as expression_output from "./expr"
 
 // Converts a semantic Type (from checker/registry) to a C++ type string.
 export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) -> string =
@@ -13,8 +14,8 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TBool    => "bool",
     TUnit    => "void",
     TUnknown => "auto",
-    TArray(inner)  => "mlc::Array<" + sem_type_to_cpp(context, inner) + ">",
-    TShared(inner) => "std::shared_ptr<" + sem_type_to_cpp(context, inner) + ">",
+    TArray(inner)  => expression_output.cpp_array_type_element(sem_type_to_cpp(context, inner)),
+    TShared(inner) => expression_output.cpp_shared_pointer_type(sem_type_to_cpp(context, inner)),
     TNamed(type_name)  => context_resolve(context, type_name),
     TGeneric(type_name, type_args) => do
       const safe_name =
@@ -24,9 +25,13 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
         end
       if type_args.length() == 0 then safe_name
       else if type_args.length() == 1 then
-        safe_name + "<" + sem_type_to_cpp(context, type_args[0]) + ">"
+        expression_output.cpp_template_single_type_argument(safe_name, sem_type_to_cpp(context, type_args[0]))
       else
-        safe_name + "<" + sem_type_to_cpp(context, type_args[0]) + ", " + sem_type_to_cpp(context, type_args[1]) + ">"
+        expression_output.cpp_template_two_type_arguments(
+          safe_name,
+          sem_type_to_cpp(context, type_args[0]),
+          sem_type_to_cpp(context, type_args[1])
+        )
       end
     end,
     TFn(param_types, return_type) => do
@@ -34,7 +39,7 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
       while i < param_types.length() do
         parts.push(sem_type_to_cpp(context, param_types[i])); i = i + 1
       end
-      "std::function<" + sem_type_to_cpp(context, return_type) + "(" + parts.join(", ") + ")>"
+      expression_output.cpp_std_function_type(sem_type_to_cpp(context, return_type), parts.join(", "))
     end
   }
 
@@ -55,19 +60,25 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
     TyBool    => "bool",
     TyUnit    => "void",
     TyNamed(name)   => type_name_to_cpp(context, name),
-    TyArray(inner)  => "mlc::Array<" + type_to_cpp(context, inner) + ">",
-    TyShared(inner) => "std::shared_ptr<" + type_to_cpp(context, inner) + ">",
+    TyArray(inner)  => expression_output.cpp_array_type_element(type_to_cpp(context, inner)),
+    TyShared(inner) => expression_output.cpp_shared_pointer_type(type_to_cpp(context, inner)),
     TyGeneric(name, targs) => do
       if name == "ref" && targs.length() == 1 then
-        type_to_cpp(context, targs[0]) + "&"
+        expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, targs[0]))
       else
         const safe = if name == "Map" then "mlc::HashMap"
                      else if name == "Shared" then "std::shared_ptr"
                      else context_resolve(context, name)
                      end
         if targs.length() == 0 then safe
-        else if targs.length() == 1 then safe + "<" + type_to_cpp(context, targs[0]) + ">"
-        else safe + "<" + type_to_cpp(context, targs[0]) + ", " + type_to_cpp(context, targs[1]) + ">"
+        else if targs.length() == 1 then
+          expression_output.cpp_template_single_type_argument(safe, type_to_cpp(context, targs[0]))
+        else
+          expression_output.cpp_template_two_type_arguments(
+            safe,
+            type_to_cpp(context, targs[0]),
+            type_to_cpp(context, targs[1])
+          )
         end
       end
     end,
@@ -76,7 +87,7 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
       while i < params.length() do
         param_types.push(type_to_cpp(context, params[i])); i = i + 1
       end
-      "std::function<" + type_to_cpp(context, ret) + "(" + param_types.join(", ") + ")>"
+      expression_output.cpp_std_function_type(type_to_cpp(context, ret), param_types.join(", "))
     end
   }
 
@@ -130,20 +141,20 @@ export fn variant_ctor_name(variant: Shared<TypeVariant>) -> string =
 
 fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
   match variant {
-    VarUnit(name) => "struct " + context_resolve(context, name) + " \{\};\n",
+    VarUnit(name) => expression_output.struct_empty_definition(context_resolve(context, name)),
     VarTuple(name, field_types) => do
       let parts: [string] = []; let mut i = 0
       while i < field_types.length() do
-        parts.push(type_to_cpp(context, field_types[i]) + " field" + i.to_string() + ";"); i = i + 1
+        parts.push(expression_output.struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), i.to_string())); i = i + 1
       end
-      "struct " + context_resolve(context, name) + " \{" + parts.join("") + "\};\n"
+      expression_output.struct_with_inline_members_definition(context_resolve(context, name), parts.join(""))
     end,
     VarRecord(name, field_defs) => do
       let parts: [string] = []; let mut i = 0
       while i < field_defs.length() do
-        parts.push(type_to_cpp(context, field_defs[i].typ) + " " + cpp_safe(field_defs[i].name) + ";"); i = i + 1
+        parts.push(expression_output.struct_named_field_declaration(type_to_cpp(context, field_defs[i].typ), cpp_safe(field_defs[i].name))); i = i + 1
       end
-      "struct " + context_resolve(context, name) + " \{" + parts.join("") + "\};\n"
+      expression_output.struct_with_inline_members_definition(context_resolve(context, name), parts.join(""))
     end
   }
 
@@ -152,18 +163,18 @@ fn gen_single_variant(context: CodegenContext, type_name: string, variant: Share
     VarRecord(_, field_defs) => do
       let parts: [string] = []; let mut i = 0
       while i < field_defs.length() do
-        parts.push(type_to_cpp(context, field_defs[i].typ) + " " + cpp_safe(field_defs[i].name) + ";"); i = i + 1
+        parts.push(expression_output.struct_named_field_declaration(type_to_cpp(context, field_defs[i].typ), cpp_safe(field_defs[i].name))); i = i + 1
       end
-      "struct " + context_resolve(context, type_name) + " \{" + parts.join("") + "\};\n"
+      expression_output.struct_with_inline_members_definition(context_resolve(context, type_name), parts.join(""))
     end,
     VarTuple(_, field_types) => do
       let parts: [string] = []; let mut i = 0
       while i < field_types.length() do
-        parts.push(type_to_cpp(context, field_types[i]) + " field" + i.to_string() + ";"); i = i + 1
+        parts.push(expression_output.struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), i.to_string())); i = i + 1
       end
-      "struct " + context_resolve(context, type_name) + " \{" + parts.join("") + "\};\n"
+      expression_output.struct_with_inline_members_definition(context_resolve(context, type_name), parts.join(""))
     end,
-    VarUnit(_) => "struct " + context_resolve(context, type_name) + " \{\};\n"
+    VarUnit(_) => expression_output.struct_empty_definition(context_resolve(context, type_name))
   }
 
 export fn gen_adt_fwd(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
@@ -176,10 +187,15 @@ export fn gen_adt_fwd(context: CodegenContext, type_name: string, type_params: [
     const var_prefix = template_prefix(used)
     const var_targs  = if used.length() > 0 then "<" + used.join(", ") + ">" else "" end
     alias_parts.push(variant_name + var_targs)
-    parts.push(var_prefix + "struct " + variant_name + ";\n")
+    parts.push(expression_output.struct_forward_declaration_line(var_prefix, variant_name))
     index = index + 1
   end
-  parts.join("") + full_prefix + "using " + context_resolve(context, type_name) + " = std::variant<" + alias_parts.join(", ") + ">;\n"
+  parts.join("") +
+    expression_output.variant_using_alias_definition_line(
+      full_prefix,
+      context_resolve(context, type_name),
+      alias_parts.join(", ")
+    )
 end
 
 export fn gen_adt_defs(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
@@ -222,11 +238,11 @@ export fn requires_clause(type_params: [string], type_bounds: [[string]]) -> str
     if i < type_bounds.length() then
       let mut k = 0
       while k < type_bounds[i].length() do
-        parts.push(cpp_safe(type_bounds[i][k]) + "<" + type_params[i] + ">")
+        parts.push(expression_output.concept_trait_constraint_on_type_parameter(cpp_safe(type_bounds[i][k]), type_params[i]))
         k = k + 1
       end
     end
     i = i + 1
   end
-  if parts.length() > 0 then "requires " + parts.join(" && ") + "\n" else "" end
+  if parts.length() > 0 then expression_output.concept_requires_clause_line(parts.join(" && ")) else "" end
 end

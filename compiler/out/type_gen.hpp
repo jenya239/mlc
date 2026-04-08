@@ -8,6 +8,7 @@
 #include "registry.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
+#include "expr.hpp"
 
 namespace type_gen {
 

@@ -216,3 +216,55 @@ export fn parameter_declaration_item(type_expression_cpp: string, binding_name_c
 
 export fn block_close_newline() -> string =
   "\}\n"
+
+// --- C++ type spelling (no CodegenContext; callers pass resolved names / inner spellings)
+
+export fn cpp_array_type_element(inner_type_cpp: string) -> string =
+  "mlc::Array<" + inner_type_cpp + ">"
+
+export fn cpp_shared_pointer_type(inner_type_cpp: string) -> string =
+  "std::shared_ptr<" + inner_type_cpp + ">"
+
+export fn cpp_template_single_type_argument(template_name_cpp: string, type_argument_cpp: string) -> string =
+  template_name_cpp + "<" + type_argument_cpp + ">"
+
+export fn cpp_template_two_type_arguments(
+  template_name_cpp: string,
+  first_type_argument_cpp: string,
+  second_type_argument_cpp: string
+) -> string =
+  template_name_cpp + "<" + comma_separated_pair(first_type_argument_cpp, second_type_argument_cpp) + ">"
+
+export fn cpp_std_function_type(return_type_cpp: string, parameter_types_csv: string) -> string =
+  "std::function<" + return_type_cpp + "(" + parameter_types_csv + ")>"
+
+export fn cpp_lvalue_reference_suffix(inner_type_cpp: string) -> string =
+  inner_type_cpp + "&"
+
+export fn struct_empty_definition(resolved_struct_name: string) -> string =
+  "struct " + resolved_struct_name + " \{\};\n"
+
+export fn struct_with_inline_members_definition(resolved_struct_name: string, member_declarations_concatenated: string) -> string =
+  "struct " + resolved_struct_name + " \{" + member_declarations_concatenated + "\};\n"
+
+export fn struct_forward_declaration_line(template_prefix_before_keyword: string, resolved_struct_name: string) -> string =
+  template_prefix_before_keyword + "struct " + resolved_struct_name + ";\n"
+
+export fn variant_using_alias_definition_line(
+  template_prefix_before_using: string,
+  resolved_alias_name: string,
+  variant_alternatives_csv: string
+) -> string =
+  template_prefix_before_using + "using " + resolved_alias_name + " = std::variant<" + variant_alternatives_csv + ">;\n"
+
+export fn concept_requires_clause_line(requires_predicates_joined: string) -> string =
+  "requires " + requires_predicates_joined + "\n"
+
+export fn concept_trait_constraint_on_type_parameter(trait_name_cpp_safe: string, type_parameter_name: string) -> string =
+  trait_name_cpp_safe + "<" + type_parameter_name + ">"
+
+export fn struct_tuple_field_declaration(element_type_cpp: string, field_index_text: string) -> string =
+  element_type_cpp + " field" + field_index_text + ";"
+
+export fn struct_named_field_declaration(field_type_cpp: string, field_name_cpp_safe: string) -> string =
+  field_type_cpp + " " + field_name_cpp_safe + ";"

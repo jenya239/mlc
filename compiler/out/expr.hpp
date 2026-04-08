@@ -137,6 +137,34 @@ mlc::String parameter_declaration_item(mlc::String type_expression_cpp, mlc::Str
 
 mlc::String block_close_newline() noexcept;
 
+mlc::String cpp_array_type_element(mlc::String inner_type_cpp) noexcept;
+
+mlc::String cpp_shared_pointer_type(mlc::String inner_type_cpp) noexcept;
+
+mlc::String cpp_template_single_type_argument(mlc::String template_name_cpp, mlc::String type_argument_cpp) noexcept;
+
+mlc::String cpp_template_two_type_arguments(mlc::String template_name_cpp, mlc::String first_type_argument_cpp, mlc::String second_type_argument_cpp) noexcept;
+
+mlc::String cpp_std_function_type(mlc::String return_type_cpp, mlc::String parameter_types_csv) noexcept;
+
+mlc::String cpp_lvalue_reference_suffix(mlc::String inner_type_cpp) noexcept;
+
+mlc::String struct_empty_definition(mlc::String resolved_struct_name) noexcept;
+
+mlc::String struct_with_inline_members_definition(mlc::String resolved_struct_name, mlc::String member_declarations_concatenated) noexcept;
+
+mlc::String struct_forward_declaration_line(mlc::String template_prefix_before_keyword, mlc::String resolved_struct_name) noexcept;
+
+mlc::String variant_using_alias_definition_line(mlc::String template_prefix_before_using, mlc::String resolved_alias_name, mlc::String variant_alternatives_csv) noexcept;
+
+mlc::String concept_requires_clause_line(mlc::String requires_predicates_joined) noexcept;
+
+mlc::String concept_trait_constraint_on_type_parameter(mlc::String trait_name_cpp_safe, mlc::String type_parameter_name) noexcept;
+
+mlc::String struct_tuple_field_declaration(mlc::String element_type_cpp, mlc::String field_index_text) noexcept;
+
+mlc::String struct_named_field_declaration(mlc::String field_type_cpp, mlc::String field_name_cpp_safe) noexcept;
+
 } // namespace expr
 
 #endif // EXPR_HPP

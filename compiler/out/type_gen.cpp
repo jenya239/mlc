@@ -4,6 +4,7 @@
 #include "registry.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
+#include "expr.hpp"
 
 namespace type_gen {
 
@@ -11,6 +12,7 @@ using namespace ast;
 using namespace registry;
 using namespace context;
 using namespace cpp_naming;
+using namespace expr;
 using namespace ast_tokens;
 
 mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept;
@@ -55,12 +57,12 @@ mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<reg
   [&](const TBool& tbool) -> mlc::String { return mlc::String("bool"); },
   [&](const TUnit& tunit) -> mlc::String { return mlc::String("void"); },
   [&](const TUnknown& tunknown) -> mlc::String { return mlc::String("auto"); },
-  [&](const TArray& tarray) -> mlc::String { auto [inner] = tarray; return mlc::String("mlc::Array<") + sem_type_to_cpp(context, inner) + mlc::String(">"); },
-  [&](const TShared& tshared) -> mlc::String { auto [inner] = tshared; return mlc::String("std::shared_ptr<") + sem_type_to_cpp(context, inner) + mlc::String(">"); },
+  [&](const TArray& tarray) -> mlc::String { auto [inner] = tarray; return expr::cpp_array_type_element(sem_type_to_cpp(context, inner)); },
+  [&](const TShared& tshared) -> mlc::String { auto [inner] = tshared; return expr::cpp_shared_pointer_type(sem_type_to_cpp(context, inner)); },
   [&](const TNamed& tnamed) -> mlc::String { auto [type_name] = tnamed; return context::context_resolve(context, type_name); },
   [&](const TGeneric& tgeneric) -> mlc::String { auto [type_name, type_args] = tgeneric; return [&]() -> mlc::String { 
   mlc::String safe_name = type_name == mlc::String("Map") ? mlc::String("mlc::HashMap") : type_name == mlc::String("Shared") ? mlc::String("std::shared_ptr") : context::context_resolve(context, type_name);
-  return type_args.size() == 0 ? safe_name : type_args.size() == 1 ? safe_name + mlc::String("<") + sem_type_to_cpp(context, type_args[0]) + mlc::String(">") : safe_name + mlc::String("<") + sem_type_to_cpp(context, type_args[0]) + mlc::String(", ") + sem_type_to_cpp(context, type_args[1]) + mlc::String(">");
+  return type_args.size() == 0 ? safe_name : type_args.size() == 1 ? expr::cpp_template_single_type_argument(safe_name, sem_type_to_cpp(context, type_args[0])) : expr::cpp_template_two_type_arguments(safe_name, sem_type_to_cpp(context, type_args[0]), sem_type_to_cpp(context, type_args[1]));
  }(); },
   [&](const TFn& tfn) -> mlc::String { auto [param_types, return_type] = tfn; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
@@ -71,7 +73,7 @@ parts.push_back(sem_type_to_cpp(context, param_types[i]));
 i = i + 1;
 }
 }
-  return mlc::String("std::function<") + sem_type_to_cpp(context, return_type) + mlc::String("(") + parts.join(mlc::String(", ")) + mlc::String(")>");
+  return expr::cpp_std_function_type(sem_type_to_cpp(context, return_type), parts.join(mlc::String(", ")));
  }(); }
 }, (*semantic_type));}
 
@@ -83,11 +85,11 @@ mlc::String type_to_cpp(context::CodegenContext context, std::shared_ptr<ast::Ty
   [&](const TyBool& tybool) -> mlc::String { return mlc::String("bool"); },
   [&](const TyUnit& tyunit) -> mlc::String { return mlc::String("void"); },
   [&](const TyNamed& tynamed) -> mlc::String { auto [name] = tynamed; return type_name_to_cpp(context, name); },
-  [&](const TyArray& tyarray) -> mlc::String { auto [inner] = tyarray; return mlc::String("mlc::Array<") + type_to_cpp(context, inner) + mlc::String(">"); },
-  [&](const TyShared& tyshared) -> mlc::String { auto [inner] = tyshared; return mlc::String("std::shared_ptr<") + type_to_cpp(context, inner) + mlc::String(">"); },
-  [&](const TyGeneric& tygeneric) -> mlc::String { auto [name, targs] = tygeneric; return name == mlc::String("ref") && targs.size() == 1 ? type_to_cpp(context, targs[0]) + mlc::String("&") : [&]() -> mlc::String { 
+  [&](const TyArray& tyarray) -> mlc::String { auto [inner] = tyarray; return expr::cpp_array_type_element(type_to_cpp(context, inner)); },
+  [&](const TyShared& tyshared) -> mlc::String { auto [inner] = tyshared; return expr::cpp_shared_pointer_type(type_to_cpp(context, inner)); },
+  [&](const TyGeneric& tygeneric) -> mlc::String { auto [name, targs] = tygeneric; return name == mlc::String("ref") && targs.size() == 1 ? expr::cpp_lvalue_reference_suffix(type_to_cpp(context, targs[0])) : [&]() -> mlc::String { 
   mlc::String safe = name == mlc::String("Map") ? mlc::String("mlc::HashMap") : name == mlc::String("Shared") ? mlc::String("std::shared_ptr") : context::context_resolve(context, name);
-  return targs.size() == 0 ? safe : targs.size() == 1 ? safe + mlc::String("<") + type_to_cpp(context, targs[0]) + mlc::String(">") : safe + mlc::String("<") + type_to_cpp(context, targs[0]) + mlc::String(", ") + type_to_cpp(context, targs[1]) + mlc::String(">");
+  return targs.size() == 0 ? safe : targs.size() == 1 ? expr::cpp_template_single_type_argument(safe, type_to_cpp(context, targs[0])) : expr::cpp_template_two_type_arguments(safe, type_to_cpp(context, targs[0]), type_to_cpp(context, targs[1]));
  }(); },
   [&](const TyFn& tyfn) -> mlc::String { auto [params, ret] = tyfn; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> param_types = {};
@@ -98,7 +100,7 @@ param_types.push_back(type_to_cpp(context, params[i]));
 i = i + 1;
 }
 }
-  return mlc::String("std::function<") + type_to_cpp(context, ret) + mlc::String("(") + param_types.join(mlc::String(", ")) + mlc::String(")>");
+  return expr::cpp_std_function_type(type_to_cpp(context, ret), param_types.join(mlc::String(", ")));
  }(); }
 }, (*type_expr));}
 
@@ -163,28 +165,28 @@ mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcep
 }, (*variant));}
 
 mlc::String gen_variant_struct(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
-  [&](const VarUnit& varunit) -> mlc::String { auto [name] = varunit; return mlc::String("struct ") + context::context_resolve(context, name) + mlc::String(" {};\n"); },
+  [&](const VarUnit& varunit) -> mlc::String { auto [name] = varunit; return expr::struct_empty_definition(context::context_resolve(context, name)); },
   [&](const VarTuple& vartuple) -> mlc::String { auto [name, field_types] = vartuple; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int i = 0;
   while (i < field_types.size()){
 {
-parts.push_back(type_to_cpp(context, field_types[i]) + mlc::String(" field") + mlc::to_string(i) + mlc::String(";"));
+parts.push_back(expr::struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), mlc::to_string(i)));
 i = i + 1;
 }
 }
-  return mlc::String("struct ") + context::context_resolve(context, name) + mlc::String(" {") + parts.join(mlc::String("")) + mlc::String("};\n");
+  return expr::struct_with_inline_members_definition(context::context_resolve(context, name), parts.join(mlc::String("")));
  }(); },
   [&](const VarRecord& varrecord) -> mlc::String { auto [name, field_defs] = varrecord; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int i = 0;
   while (i < field_defs.size()){
 {
-parts.push_back(type_to_cpp(context, field_defs[i]->typ) + mlc::String(" ") + cpp_naming::cpp_safe(field_defs[i]->name) + mlc::String(";"));
+parts.push_back(expr::struct_named_field_declaration(type_to_cpp(context, field_defs[i]->typ), cpp_naming::cpp_safe(field_defs[i]->name)));
 i = i + 1;
 }
 }
-  return mlc::String("struct ") + context::context_resolve(context, name) + mlc::String(" {") + parts.join(mlc::String("")) + mlc::String("};\n");
+  return expr::struct_with_inline_members_definition(context::context_resolve(context, name), parts.join(mlc::String("")));
  }(); }
 }, (*variant));}
 
@@ -194,24 +196,24 @@ mlc::String gen_single_variant(context::CodegenContext context, mlc::String type
   int i = 0;
   while (i < field_defs.size()){
 {
-parts.push_back(type_to_cpp(context, field_defs[i]->typ) + mlc::String(" ") + cpp_naming::cpp_safe(field_defs[i]->name) + mlc::String(";"));
+parts.push_back(expr::struct_named_field_declaration(type_to_cpp(context, field_defs[i]->typ), cpp_naming::cpp_safe(field_defs[i]->name)));
 i = i + 1;
 }
 }
-  return mlc::String("struct ") + context::context_resolve(context, type_name) + mlc::String(" {") + parts.join(mlc::String("")) + mlc::String("};\n");
+  return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), parts.join(mlc::String("")));
  }(); },
   [&](const VarTuple& vartuple) -> mlc::String { auto [_w0, field_types] = vartuple; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int i = 0;
   while (i < field_types.size()){
 {
-parts.push_back(type_to_cpp(context, field_types[i]) + mlc::String(" field") + mlc::to_string(i) + mlc::String(";"));
+parts.push_back(expr::struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), mlc::to_string(i)));
 i = i + 1;
 }
 }
-  return mlc::String("struct ") + context::context_resolve(context, type_name) + mlc::String(" {") + parts.join(mlc::String("")) + mlc::String("};\n");
+  return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), parts.join(mlc::String("")));
  }(); },
-  [&](const VarUnit& varunit) -> mlc::String { auto [_w0] = varunit; return mlc::String("struct ") + context::context_resolve(context, type_name) + mlc::String(" {};\n"); }
+  [&](const VarUnit& varunit) -> mlc::String { auto [_w0] = varunit; return expr::struct_empty_definition(context::context_resolve(context, type_name)); }
 }, (*variant));}
 
 mlc::String gen_adt_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
@@ -227,11 +229,11 @@ mlc::Array<mlc::String> used = variant_used_type_params(type_params, v);
 mlc::String var_prefix = cpp_naming::template_prefix(used);
 mlc::String var_targs = used.size() > 0 ? mlc::String("<") + used.join(mlc::String(", ")) + mlc::String(">") : mlc::String("");
 alias_parts.push_back(variant_name + var_targs);
-parts.push_back(var_prefix + mlc::String("struct ") + variant_name + mlc::String(";\n"));
+parts.push_back(expr::struct_forward_declaration_line(var_prefix, variant_name));
 index = index + 1;
 }
 }
-return parts.join(mlc::String("")) + full_prefix + mlc::String("using ") + context::context_resolve(context, type_name) + mlc::String(" = std::variant<") + alias_parts.join(mlc::String(", ")) + mlc::String(">;\n");
+return parts.join(mlc::String("")) + expr::variant_using_alias_definition_line(full_prefix, context::context_resolve(context, type_name), alias_parts.join(mlc::String(", ")));
 }
 
 mlc::String gen_adt_defs(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
@@ -269,7 +271,7 @@ int k = 0;
 [&]() { 
   while (k < type_bounds[i].size()){
 {
-parts.push_back(cpp_naming::cpp_safe(type_bounds[i][k]) + mlc::String("<") + type_params[i] + mlc::String(">"));
+parts.push_back(expr::concept_trait_constraint_on_type_parameter(cpp_naming::cpp_safe(type_bounds[i][k]), type_params[i]));
 k = k + 1;
 }
 }
@@ -279,7 +281,7 @@ k = k + 1;
 i = i + 1;
 }
 }
-return parts.size() > 0 ? mlc::String("requires ") + parts.join(mlc::String(" && ")) + mlc::String("\n") : mlc::String("");
+return parts.size() > 0 ? expr::concept_requires_clause_line(parts.join(mlc::String(" && "))) : mlc::String("");
 }
 
 } // namespace type_gen
