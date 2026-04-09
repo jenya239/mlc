@@ -54,8 +54,25 @@ export fn empty_registry() -> TypeRegistry = do
   err_params.push(Shared.new(TUnknown))
   ctor_params.set("Ok",  ok_params)
   ctor_params.set("Err", err_params)
-  TypeRegistry { fn_types: Map.new(), ctor_types: ctor_types,
-                 ctor_params: ctor_params, field_types: Map.new() }
+  const builtin_function_types: Map<string, Shared<Type>> = Map.new()
+  builtin_function_types.set(
+    "print",
+    Shared.new(TFn([Shared.new(TString)], Shared.new(TUnit))))
+  builtin_function_types.set(
+    "println",
+    Shared.new(TFn([Shared.new(TString)], Shared.new(TUnit))))
+  builtin_function_types.set(
+    "exit",
+    Shared.new(TFn([Shared.new(TI32)], Shared.new(TUnit))))
+  builtin_function_types.set(
+    "args",
+    Shared.new(TFn([], Shared.new(TArray(Shared.new(TString))))))
+  TypeRegistry {
+    fn_types: builtin_function_types,
+    ctor_types: ctor_types,
+    ctor_params: ctor_params,
+    field_types: Map.new()
+  }
 end
 
 export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =

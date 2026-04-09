@@ -104,6 +104,9 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("builtin print - 0 errors",
     check_error_count("fn f() -> i32 = do\n  print(\"hi\")\n  0\nend"), 0))
 
+  results.push(assert_true("builtin print wrong arity - error",
+    check_error_count("fn f() -> i32 = do\n  print()\n  0\nend") > 0))
+
   results.push(assert_eq_int("fn with type param - 0 errors",
     check_error_count("fn id<T>(x: T) -> T = x"), 0))
 
