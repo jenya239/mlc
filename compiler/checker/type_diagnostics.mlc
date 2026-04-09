@@ -333,6 +333,28 @@ export fn call_arity_diagnostics(expected_count: i32, actual_count: i32, call_so
   end
 end
 
+export fn call_positional_argument_type_diagnostics(
+  parameter_types: [Shared<Type>],
+  argument_inferred_types: [Shared<Type>],
+  argument_expressions: [Shared<Expr>]
+) -> [Diagnostic] = do
+  let collected: [Diagnostic] = []
+  let mut index = 0
+  while index < parameter_types.length() && index < argument_inferred_types.length() do
+    const expected_parameter_type = parameter_types[index]
+    const actual_argument_type = argument_inferred_types[index]
+    if !type_is_unknown(expected_parameter_type) && !type_is_unknown(actual_argument_type) &&
+       !types_structurally_equal(expected_parameter_type, actual_argument_type) then
+      collected.push(diagnostic_error(
+        "argument " + (index + 1).to_string() + " expects " + type_description(expected_parameter_type) +
+        ", got " + type_description(actual_argument_type),
+        expr_span(argument_expressions[index])))
+    end
+    index = index + 1
+  end
+  collected
+end
+
 export fn method_arity_after_receiver(receiver_errors: [Diagnostic], method_name: string, argument_count: i32, method_span: Span) -> [Diagnostic] = do
   if receiver_errors.length() > 0 then []
   else infer_builtin_method_arity_diagnostics(method_name, argument_count, method_span)

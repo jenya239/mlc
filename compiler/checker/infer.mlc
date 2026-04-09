@@ -9,7 +9,8 @@ import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } fr
 import { infer_question_from_inner_result } from "./infer_question_expression"
 import * as infer_operand_combine from "./infer_operand_combine"
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
-import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
+import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics, call_positional_argument_type_diagnostics } from "./type_diagnostics"
+import { function_parameter_list, type_is_function } from "./type_utils"
 import { infer_expr_identifier } from "./infer_expr_ident"
 import { env_for_pattern } from "./pattern_env"
 
@@ -60,17 +61,70 @@ end
 fn infer_expr_unary(operation: string, inner: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult =
   infer_operand_combine.infer_unary_from_inner_result(operation, infer_expr(inner, inference_context), source_span)
 
+fn infer_call_should_check_positional_argument_types(
+  function_expression: Shared<Expr>,
+  registry_function_name: string,
+  inference_context: CheckContext
+) -> bool =
+  if registry_function_name != "" && inference_context.registry.has_fn(registry_function_name) then
+    inference_context.registry.function_type_parameter_count(registry_function_name) == 0
+  else
+    true
+  end
+
 fn infer_expr_call(function: Shared<Expr>, call_arguments: [Shared<Expr>], call_source_span: Span, inference_context: CheckContext) -> InferResult = do
   const function_result = infer_expr(function, inference_context)
-  const with_arguments  = infer_arguments_errors(function_result, call_arguments, inference_context)
+  let mut collected_errors = function_result.errors
+  const argument_inferred_types: [Shared<Type>] = []
+  let mut argument_index = 0
+  while argument_index < call_arguments.length() do
+    const argument_inference = infer_expr(call_arguments[argument_index], inference_context)
+    collected_errors = diagnostics_append(collected_errors, argument_inference.errors)
+    argument_inferred_types.push(argument_inference.inferred_type)
+    argument_index = argument_index + 1
+  end
+  const with_arguments = InferResult { inferred_type: function_result.inferred_type, errors: collected_errors }
   const callee_name = match function {
     ExprIdent(name, _) => name,
     _ => ""
   }
   if callee_name != "" && inference_context.registry.has_ctor(callee_name) then
-    infer_expr_call_for_constructor_name(callee_name, with_arguments, call_arguments, call_source_span, inference_context)
+    const constructor_output = infer_expr_call_for_constructor_name(
+      callee_name, with_arguments, call_arguments, call_source_span, inference_context)
+    const constructor_parameter_types = inference_context.registry.ctor_params_for(callee_name)
+    if constructor_parameter_types.length() == call_arguments.length() &&
+       !inference_context.registry.constructor_is_polymorphic_variant(callee_name) then
+      InferResult {
+        inferred_type: constructor_output.inferred_type,
+        errors: diagnostics_append(
+          constructor_output.errors,
+          call_positional_argument_type_diagnostics(
+            constructor_parameter_types,
+            argument_inferred_types,
+            call_arguments))
+      }
+    else
+      constructor_output
+    end
   else
-    infer_expr_call_non_constructor(function_result, with_arguments, call_arguments, call_source_span)
+    const non_constructor_output = infer_expr_call_non_constructor(
+      function_result, with_arguments, call_arguments, call_source_span)
+    const callee_parameter_types = function_parameter_list(function_result.inferred_type)
+    if type_is_function(function_result.inferred_type) &&
+       callee_parameter_types.length() == call_arguments.length() &&
+       infer_call_should_check_positional_argument_types(function, callee_name, inference_context) then
+      InferResult {
+        inferred_type: non_constructor_output.inferred_type,
+        errors: diagnostics_append(
+          non_constructor_output.errors,
+          call_positional_argument_type_diagnostics(
+            callee_parameter_types,
+            argument_inferred_types,
+            call_arguments))
+      }
+    else
+      non_constructor_output
+    end
   end
 end
 

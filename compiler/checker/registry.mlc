@@ -15,8 +15,10 @@ export type Type =
 
 export type TypeRegistry = TypeRegistry {
   fn_types:    Map<string, Shared<Type>>,
+  function_type_parameter_counts: Map<string, i32>,
   ctor_types:  Map<string, Shared<Type>>,
   ctor_params: Map<string, [Shared<Type>]>,
+  polymorphic_constructors: Map<string, bool>,
   field_types: Map<string, Map<string, Shared<Type>>>
 }
 
@@ -27,6 +29,9 @@ export extend TypeRegistry {
   fn has_fn(self, name: string) -> bool =
     fn_types.has(name)
 
+  fn function_type_parameter_count(self, name: string) -> i32 =
+    if self.function_type_parameter_counts.has(name) then self.function_type_parameter_counts.get(name) else 0 end
+
   fn ctor_type(self, name: string) -> Shared<Type> =
     ctor_types.get(name)
 
@@ -35,6 +40,9 @@ export extend TypeRegistry {
 
   fn ctor_params_for(self, name: string) -> [Shared<Type>] =
     if ctor_params.has(name) then ctor_params.get(name) else [] end
+
+  fn constructor_is_polymorphic_variant(self, constructor_name: string) -> bool =
+    if self.polymorphic_constructors.has(constructor_name) then self.polymorphic_constructors.get(constructor_name) else false end
 
   fn fields_for(self, type_name: string) -> Map<string, Shared<Type>> =
     field_types.get(type_name)
@@ -69,8 +77,10 @@ export fn empty_registry() -> TypeRegistry = do
     Shared.new(TFn([], Shared.new(TArray(Shared.new(TString))))))
   TypeRegistry {
     fn_types: builtin_function_types,
+    function_type_parameter_counts: Map.new(),
     ctor_types: ctor_types,
     ctor_params: ctor_params,
+    polymorphic_constructors: Map.new(),
     field_types: Map.new()
   }
 end
@@ -118,19 +128,22 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       registry
     end,
     DeclExtend(_, _, _) => registry,
-    DeclFn(name, _, _, params, return_type, _) => do
+    DeclFn(name, type_parameters, _, params, return_type, _) => do
       const param_types: [Shared<Type>] = []
       let mut i = 0
       while i < params.length() do
         param_types.push(type_from_annotation(param_typ(params[i]))); i = i + 1
       end
       registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
+      registry.function_type_parameter_counts.set(name, type_parameters.length())
       registry
     end,
-    DeclType(type_name, _, variants) => do
+    DeclType(type_name, type_parameters, variants) => do
+      const type_declaration_has_type_parameters = type_parameters.length() > 0
       let mut i = 0
       while i < variants.length() do
-        registry = register_variant(registry, type_name, variants[i]); i = i + 1
+        registry = register_variant(registry, type_name, variants[i], type_declaration_has_type_parameters)
+        i = i + 1
       end
       registry
     end,
@@ -139,12 +152,18 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
   }
 end
 
-fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shared<TypeVariant>) -> TypeRegistry = do
+fn register_variant(
+  mut registry: TypeRegistry,
+  type_name: string,
+  variant: Shared<TypeVariant>,
+  type_declaration_has_type_parameters: bool
+) -> TypeRegistry = do
   const result_type = Shared.new(TNamed(type_name))
   match variant {
     VarUnit(variant_name) => do
       registry.ctor_types.set(variant_name, result_type)
       registry.ctor_params.set(variant_name, [])
+      if type_declaration_has_type_parameters then registry.polymorphic_constructors.set(variant_name, true) end
       registry
     end,
     VarTuple(variant_name, field_types) => do
@@ -155,6 +174,7 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
       end
       registry.ctor_types.set(variant_name, result_type)
       registry.ctor_params.set(variant_name, field_type_list)
+      if type_declaration_has_type_parameters then registry.polymorphic_constructors.set(variant_name, true) end
       registry
     end,
     VarRecord(variant_name, field_defs) => do
@@ -167,6 +187,7 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
       registry.ctor_params.set(variant_name, [])
       registry.field_types.set(variant_name, field_map)
       registry.field_types.set(type_name, field_map)
+      if type_declaration_has_type_parameters then registry.polymorphic_constructors.set(variant_name, true) end
       registry
     end
   }

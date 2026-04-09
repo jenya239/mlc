@@ -71,6 +71,8 @@ results.push_back(test_runner::assert_true(mlc::String("record update: unknown f
 results.push_back(test_runner::assert_true(mlc::String("two undefined names - at least 1 error"), check_error_count(mlc::String("fn f() -> i32 = foo + bar")) > 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("builtin print - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  print(\"hi\")\n  0\nend")), 0));
 results.push_back(test_runner::assert_true(mlc::String("builtin print wrong arity - error"), check_error_count(mlc::String("fn f() -> i32 = do\n  print()\n  0\nend")) > 0));
+results.push_back(test_runner::assert_true(mlc::String("builtin print wrong argument type - error"), check_error_count(mlc::String("fn f() -> i32 = do\n  print(42)\n  0\nend")) > 0));
+results.push_back(test_runner::assert_true(mlc::String("monomorphic call wrong argument type - error"), check_error_count(mlc::String("fn g(x: i32) -> i32 = x\nfn f() -> i32 = g(\"a\")")) > 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with type param - 0 errors"), check_error_count(mlc::String("fn id<T>(x: T) -> T = x")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with type param and bound - 0 errors"), check_error_count(mlc::String("type Display { fn to_string(self: Self) -> string }\nfn id<T: Display>(x: T) -> T = x")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("call generic fn - 0 errors"), check_error_count(mlc::String("fn id<T>(x: T) -> T = x\nfn f() -> i32 = id(42)")), 0));

@@ -107,6 +107,12 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true("builtin print wrong arity - error",
     check_error_count("fn f() -> i32 = do\n  print()\n  0\nend") > 0))
 
+  results.push(assert_true("builtin print wrong argument type - error",
+    check_error_count("fn f() -> i32 = do\n  print(42)\n  0\nend") > 0))
+
+  results.push(assert_true("monomorphic call wrong argument type - error",
+    check_error_count("fn g(x: i32) -> i32 = x\nfn f() -> i32 = g(\"a\")") > 0))
+
   results.push(assert_eq_int("fn with type param - 0 errors",
     check_error_count("fn id<T>(x: T) -> T = x"), 0))
 
