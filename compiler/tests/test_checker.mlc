@@ -125,6 +125,9 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("call generic fn - 0 errors",
     check_error_count("fn id<T>(x: T) -> T = x\nfn f() -> i32 = id(42)"), 0))
 
+  results.push(assert_true("generic fn two params same T - conflicting args error",
+    check_error_count("fn pair<T>(a: T, b: T) -> T = a\nfn f() -> i32 = pair(1, \"x\")") > 0))
+
   results.push(assert_eq_int("trait decl + extend impl - 0 errors",
     check_error_count("type Display { fn to_string(self: Self) -> string }\ntype Color = Red | Green\nextend Color : Display { fn to_string(self: Color) -> string = \"Red\" }"), 0))
 

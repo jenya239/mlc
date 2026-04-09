@@ -24,7 +24,7 @@ MLC — компилятор языка программирования. Цел
 | Путь | `lib/mlc/` | `compiler/` |
 | Сборка | — (интерпретатор) | `compiler/build.sh` → `compiler/out/mlcc` |
 | Пайплайн | `MLC → SemanticIR → C++ AST DSL → C++ source` | `MLC → AST → checker → codegen → C++ source` |
-| Тесты | `rake test_mlc` (1106 runs) | `rake test_compiler_mlc` (184 теста) |
+| Тесты | `rake test_mlc` (1106 runs) | `rake test_compiler_mlc` (192 теста) |
 | Статус | Эталон, полный стек | Компилирует весь `compiler/`, E2E работает |
 
 ### Ключевые компоненты
@@ -84,7 +84,7 @@ bundle exec rake test_mlc                            # test/mlc/** (быстро
 bundle exec rake test_unit                           # весь test/ кроме integration
 
 # Self-hosted: тесты
-bundle exec rake test_compiler_mlc                  # compiler/tests/ → 184 теста
+bundle exec rake test_compiler_mlc                  # compiler/tests/ → 192 теста
 bundle exec rake test_self_hosted_stack             # test_mlc + test_compiler_mlc
 compiler/tests/e2e/run_e2e.sh [mlcc_binary]         # E2E: 4 программы
 compiler/tests/build_tests_self.sh [mlcc_binary]    # unit-тесты через self-hosted бинарь

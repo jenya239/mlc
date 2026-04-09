@@ -27,8 +27,6 @@ mlc::Array<ast::Diagnostic> infer_builtin_method_receiver_diagnostics(std::share
 
 mlc::Array<ast::Diagnostic> call_arity_diagnostics(int expected_count, int actual_count, ast::Span call_source_span) noexcept;
 
-mlc::Array<ast::Diagnostic> call_positional_argument_type_diagnostics(mlc::Array<std::shared_ptr<registry::Type>> parameter_types, mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types, mlc::Array<std::shared_ptr<ast::Expr>> argument_expressions) noexcept;
-
 mlc::Array<ast::Diagnostic> method_arity_after_receiver(mlc::Array<ast::Diagnostic> receiver_errors, mlc::String method_name, int argument_count, ast::Span method_span) noexcept;
 
 mlc::Array<ast::Diagnostic> index_not_array_diagnostic(std::shared_ptr<registry::Type> receiver_type, ast::Span bracket_source_span) noexcept;

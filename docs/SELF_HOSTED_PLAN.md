@@ -27,7 +27,7 @@
 | Задача | Статус |
 |--------|--------|
 | `compiler/` компилирует весь `compiler/` | ✓ |
-| 184 unit-теста (`compiler/tests/`) проходят | ✓ |
+| 192 unit-теста (`compiler/tests/`) проходят | ✓ |
 | 4 E2E программы (`compiler/tests/e2e/`) проходят через mlcc | ✓ |
 | Ruby unit-тесты: 1106 runs, 0 failures | ✓ |
 | `Result<T,E>` + `?` оператор | ✓ |

@@ -55,8 +55,6 @@ mlc::Array<ast::Diagnostic> infer_builtin_method_arity_diagnostics(mlc::String m
 
 mlc::Array<ast::Diagnostic> call_arity_diagnostics(int expected_count, int actual_count, ast::Span call_source_span) noexcept;
 
-mlc::Array<ast::Diagnostic> call_positional_argument_type_diagnostics(mlc::Array<std::shared_ptr<registry::Type>> parameter_types, mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types, mlc::Array<std::shared_ptr<ast::Expr>> argument_expressions) noexcept;
-
 mlc::Array<ast::Diagnostic> method_arity_after_receiver(mlc::Array<ast::Diagnostic> receiver_errors, mlc::String method_name, int argument_count, ast::Span method_span) noexcept;
 
 mlc::Array<ast::Diagnostic> index_not_array_diagnostic(std::shared_ptr<registry::Type> receiver_type, ast::Span bracket_source_span) noexcept;
@@ -191,24 +189,6 @@ return expected < 0 ? mlc::Array<ast::Diagnostic>{} : argument_count != expected
 
 mlc::Array<ast::Diagnostic> call_arity_diagnostics(int expected_count, int actual_count, ast::Span call_source_span) noexcept{
 return expected_count != actual_count ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(expected_count) + mlc::String(" arguments, got ") + mlc::to_string(actual_count), call_source_span)} : mlc::Array<ast::Diagnostic>{};
-}
-
-mlc::Array<ast::Diagnostic> call_positional_argument_type_diagnostics(mlc::Array<std::shared_ptr<registry::Type>> parameter_types, mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types, mlc::Array<std::shared_ptr<ast::Expr>> argument_expressions) noexcept{
-mlc::Array<ast::Diagnostic> collected = {};
-int index = 0;
-while (index < parameter_types.size() && index < argument_inferred_types.size()){
-{
-std::shared_ptr<registry::Type> expected_parameter_type = parameter_types[index];
-std::shared_ptr<registry::Type> actual_argument_type = argument_inferred_types[index];
-if (!type_utils::type_is_unknown(expected_parameter_type) && !type_utils::type_is_unknown(actual_argument_type) && !type_utils::types_structurally_equal(expected_parameter_type, actual_argument_type)){
-{
-collected.push_back(ast::diagnostic_error(mlc::String("argument ") + mlc::to_string(index + 1) + mlc::String(" expects ") + type_utils::type_description(expected_parameter_type) + mlc::String(", got ") + type_utils::type_description(actual_argument_type), ast::expr_span(argument_expressions[index])));
-}
-}
-index = index + 1;
-}
-}
-return collected;
 }
 
 mlc::Array<ast::Diagnostic> method_arity_after_receiver(mlc::Array<ast::Diagnostic> receiver_errors, mlc::String method_name, int argument_count, ast::Span method_span) noexcept{

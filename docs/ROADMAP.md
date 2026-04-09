@@ -7,7 +7,7 @@
 | Компонент | Путь | Состояние |
 |-----------|------|-----------|
 | Bootstrap-компилятор | `lib/mlc/` | Полнофункциональный, эталон семантики |
-| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (184 теста) |
+| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (192 теста) |
 | Triple-bootstrap | `compiler/triple_bootstrap.sh` | При актуальном `compiler/out/mlcc`: `diff bs2 bs3` пустой (стабильность self-host) |
 | Runtime | `runtime/include/`, `runtime/src/` | C++20, стабильный |
 | Unit-тесты Ruby | `test/mlc/` | 1106 runs, 0 failures |
@@ -82,12 +82,13 @@ compiler/codegen/
 
 ```
 compiler/checker/
-  types.mlc            # операции над TypeExpr: unify, substitute, occurs_check
-  expr_checker.mlc     # check_expr разбит на fn per-ExprXxx
-  decl_checker.mlc     # check_decl, collect_globals
-  context.mlc          # CheckContext (env, return_type, errors)
-  infer_expr_ident.mlc # разрешение ExprIdent (env, fn, ctor); без вызова infer_expr
-  infer.mlc            # infer_expr, infer_statements — диспетчер и остальные правила
+  types.mlc                 # операции над TypeExpr: unify, substitute, occurs_check
+  call_argument_unify.mlc   # согласование фактических аргументов с ожидаемыми типами и параметрами типа вызываемой fn / ctor
+  expr_checker.mlc          # check_expr разбит на fn per-ExprXxx
+  decl_checker.mlc          # check_decl, collect_globals
+  context.mlc               # CheckContext (env, return_type, errors)
+  infer_expr_ident.mlc      # разрешение ExprIdent (env, fn, ctor); без вызова infer_expr
+  infer.mlc                 # infer_expr, infer_statements — диспетчер и остальные правила
 ```
 
 ---
@@ -96,7 +97,7 @@ compiler/checker/
 
 В self-hosted цепочке: `Span` и `Diagnostic` в `compiler/ast.mlc`; checker накапливает `[Diagnostic]` с позициями из AST (например `expr_span`, спаны вызова / поля / индекса).
 
-В `compiler/checker/infer.mlc` среди прочего: арность вызова для `TFn` и конструктора; «called value is not a function»; поля записи и доступ к не-записи / массиву; индексация (не массив; индекс не `i32`); расхождение типов веток `if`; согласованность типов рук `match`; диапазон `for` не массив.
+В `compiler/checker/infer.mlc` среди прочего: арность вызова для `TFn` и конструктора; согласованность позиционных аргументов с параметрами типа на всём вызове (`call_argument_unify.mlc`, общая подстановка в `Map`); «called value is not a function»; поля записи и доступ к не-записи / массиву; индексация (не массив; индекс не `i32`); расхождение типов веток `if`; согласованность типов рук `match`; диапазон `for` не массив.
 
 Тесты позиций и текста: `assert_diagnostic_at` в `compiler/tests/test_checker.mlc`.
 
