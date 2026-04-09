@@ -5,7 +5,7 @@ import { Type } from "./registry"
 import { CheckContext } from "./check_context"
 import { InferResult } from "./infer_result"
 import { constructor_arity_diagnostics, call_arity_diagnostics } from "./type_diagnostics"
-import { function_parameter_list, type_is_function, type_is_unknown } from "./type_utils"
+import { function_parameter_list, type_is_function, type_is_unknown, type_description } from "./type_utils"
 
 export fn infer_expr_call_for_constructor_name(
   constructor_name: string,
@@ -50,7 +50,10 @@ export fn infer_expr_call_non_constructor_not_callable(
   else
     InferResult {
       inferred_type: Shared.new(TUnknown),
-      errors: diagnostics_append(base.errors, [diagnostic_error("called value is not a function", call_source_span)])
+      errors: diagnostics_append(base.errors, [
+        diagnostic_error(
+          "called value is not a function (got " + type_description(function_result.inferred_type) + ")",
+          call_source_span)])
     }
   end
 

@@ -20,6 +20,8 @@ mlc::String first_checker_error_line(mlc::String source) noexcept;
 
 mlc::String first_checker_error_line_with_path(mlc::String source, mlc::String source_path) noexcept;
 
+bool checker_first_error_contains_nonfunction_i32(mlc::String program_source) noexcept;
+
 mlc::Array<test_runner::TestResult> checker_tests() noexcept;
 
 int check_error_count(mlc::String source) noexcept{return std::visit(overloaded{
@@ -42,10 +44,16 @@ mlc::String first_checker_error_line_with_path(mlc::String source, mlc::String s
   [&](const ast::Ok<check::CheckOut>& ok) -> mlc::String { auto [_w0] = ok; return mlc::String(""); }
 }, check::check(decls::parse_program_with_source_path(lexer::tokenize(source).tokens, source_path)));}
 
+bool checker_first_error_contains_nonfunction_i32(mlc::String program_source) noexcept{
+mlc::String line = first_checker_error_line(program_source);
+return line.contains(mlc::String("called value is not a function")) && line.contains(mlc::String("(got i32)"));
+}
+
 mlc::Array<test_runner::TestResult> checker_tests() noexcept{
 mlc::Array<test_runner::TestResult> results = {};
 results.push_back(test_runner::assert_eq_int(mlc::String("empty program - 0 errors"), check_error_count(mlc::String("")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn returning literal - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = 42")), 0));
+results.push_back(test_runner::assert_true(mlc::String("integer literal called like function - diagnostic names type"), checker_first_error_contains_nonfunction_i32(mlc::String("fn f() -> i32 = 42()"))));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn using its own param - 0 errors"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn calling another fn - 0 errors"), check_error_count(mlc::String("fn add(x: i32, y: i32) -> i32 = x + y\nfn main() -> i32 = add(1, 2)")), 0));
 results.push_back(test_runner::assert_true(mlc::String("undefined name - at least 1 error"), check_error_count(mlc::String("fn f() -> i32 = undefined_name")) > 0));
