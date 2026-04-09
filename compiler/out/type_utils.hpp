@@ -21,12 +21,6 @@ bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept;
 
-std::shared_ptr<registry::Type> array_element_type_from_array_type(std::shared_ptr<registry::Type> array_type) noexcept;
-
-bool type_is_shared_pointer(std::shared_ptr<registry::Type> type_value) noexcept;
-
-std::shared_ptr<registry::Type> shared_pointer_inner_type(std::shared_ptr<registry::Type> shared_pointer_type) noexcept;
-
 bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool type_is_bool(std::shared_ptr<registry::Type> type_value) noexcept;

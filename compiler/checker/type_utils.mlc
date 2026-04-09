@@ -36,15 +36,6 @@ export fn type_is_unknown(type_value: Shared<Type>) -> bool =
 export fn type_is_array(type_value: Shared<Type>) -> bool =
   match type_value { TArray(_) => true, _ => false }
 
-export fn array_element_type_from_array_type(array_type: Shared<Type>) -> Shared<Type> =
-  match array_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
-
-export fn type_is_shared_pointer(type_value: Shared<Type>) -> bool =
-  match type_value { TShared(_) => true, _ => false }
-
-export fn shared_pointer_inner_type(shared_pointer_type: Shared<Type>) -> Shared<Type> =
-  match shared_pointer_type { TShared(inner) => inner, _ => Shared.new(TUnknown) }
-
 export fn type_is_i32(type_value: Shared<Type>) -> bool =
   match type_value { TI32 => true, _ => false }
 

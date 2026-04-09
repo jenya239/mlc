@@ -7,6 +7,7 @@
 #include "ast.hpp"
 #include "registry.hpp"
 #include "type_utils.hpp"
+#include "semantic_type_structure.hpp"
 
 namespace call_argument_unify {
 

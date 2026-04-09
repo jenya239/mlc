@@ -6,11 +6,9 @@ import {
   type_description,
   types_structurally_equal,
   type_is_unknown,
-  type_is_array,
-  array_element_type_from_array_type,
-  type_is_shared_pointer,
-  shared_pointer_inner_type
+  type_is_array
 } from "./type_utils"
+import * as semantic_type_structure from "./semantic_type_structure"
 
 fn empty_diagnostic_list() -> [Diagnostic] = do
   let empty_list: [Diagnostic] = []
@@ -51,10 +49,10 @@ fn unify_expected_and_actual_argument_types(
           diagnostic_span)]
       end,
     TShared(inner_expected) =>
-      if type_is_shared_pointer(actual_type) then
+      if semantic_type_structure.type_is_shared_pointer(actual_type) then
         unify_expected_and_actual_argument_types(
           inner_expected,
-          shared_pointer_inner_type(actual_type),
+          semantic_type_structure.shared_pointer_inner_type(actual_type),
           type_parameter_names,
           substitution,
           diagnostic_span)

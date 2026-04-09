@@ -29,10 +29,6 @@ using namespace statement_context;
 using namespace expr;
 using namespace ast_tokens;
 
-context::CodegenContext codegen_context_with_shared_binding(context::CodegenContext arm_context, mlc::String binding_name) noexcept;
-
-context::CodegenContext codegen_context_with_shared_array_binding(context::CodegenContext arm_context, mlc::String binding_name) noexcept;
-
 mlc::String gen_argument_list(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> expressions, context::CodegenContext context) noexcept;
 
 mlc::String gen_record_ordered(mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, mlc::Array<mlc::String> field_order, context::CodegenContext context) noexcept;
@@ -116,10 +112,6 @@ mlc::String gen_return_if_stmt(std::shared_ptr<semantic_ir::SExpr> expr, context
 mlc::String gen_return_body(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context) noexcept;
 
 mlc::String gen_fn_body(std::shared_ptr<semantic_ir::SExpr> body_expr, context::CodegenContext context) noexcept;
-
-context::CodegenContext codegen_context_with_shared_binding(context::CodegenContext arm_context, mlc::String binding_name) noexcept{return context::context_add_shared(arm_context, binding_name);}
-
-context::CodegenContext codegen_context_with_shared_array_binding(context::CodegenContext arm_context, mlc::String binding_name) noexcept{return context::context_add_shared_array(arm_context, binding_name);}
 
 mlc::String gen_argument_list(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> expressions, context::CodegenContext context) noexcept{
 mlc::Array<mlc::String> parts = {};
@@ -216,11 +208,11 @@ while (index < sub_patterns.size()){
 [&]() -> void { if (std::holds_alternative<ast::PatIdent>((*sub_patterns[index]))) { auto _v_patident = std::get<ast::PatIdent>((*sub_patterns[index])); auto [pattern_name, _w0] = _v_patident; return [&]() { 
   if (ctor_type_info->shared_pos.contains(index)){
 {
-arm_context = codegen_context_with_shared_binding(arm_context, pattern_name);
+arm_context = context::context_add_shared(arm_context, pattern_name);
 }
 }
   if (ctor_type_info->shared_arr_pos.contains(index)){
-arm_context = codegen_context_with_shared_array_binding(arm_context, pattern_name);
+arm_context = context::context_add_shared_array(arm_context, pattern_name);
 }
  }(); } return; }();
 index = index + 1;

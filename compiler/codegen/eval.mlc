@@ -17,14 +17,6 @@ import { find_field_value, is_constructor_call, resolve_object_code_in_self_cont
 import { stmts_final_ctx } from "./statement_context"
 import * as expression_output from "./expr"
 
-// Wrappers: match arm helpers use parameter name `context`, which shadows the C++
-// namespace `context`, so do not call context::CodegenContext_with_* from extend here.
-fn codegen_context_with_shared_binding(arm_context: CodegenContext, binding_name: string) -> CodegenContext =
-  context_add_shared(arm_context, binding_name)
-
-fn codegen_context_with_shared_array_binding(arm_context: CodegenContext, binding_name: string) -> CodegenContext =
-  context_add_shared_array(arm_context, binding_name)
-
 // --- Argument list helper ----------------------------------------------------
 
 export fn gen_argument_list(expressions: [Shared<SExpr>], context: CodegenContext) -> string = do
@@ -106,10 +98,10 @@ fn gen_arm_ctor(ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared
     match sub_patterns[index] {
       PatIdent(pattern_name, _) => do
         if ctor_type_info.shared_pos.contains(index) then
-          arm_context = codegen_context_with_shared_binding(arm_context, pattern_name)
+          arm_context = context_add_shared(arm_context, pattern_name)
         end
         if ctor_type_info.shared_arr_pos.contains(index) then
-          arm_context = codegen_context_with_shared_array_binding(arm_context, pattern_name)
+          arm_context = context_add_shared_array(arm_context, pattern_name)
         end
       end,
       _ => do end
