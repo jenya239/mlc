@@ -39,6 +39,10 @@ export fn lexer_tests() -> [TestResult] = do
     lex_first_string("\"a\\nb\""), "a\nb"))
   results.push(assert_eq_str("string literal decodes escaped quote",
     lex_first_string("\"say \\\"hi\\\"\""), "say \"hi\""))
+  results.push(assert_eq_int("multiline double-quoted string - 2 tokens (LStr + Eof)",
+    lex_token_count("\"a\nb\""), 2))
+  results.push(assert_eq_str("multiline double-quoted string literal preserves embedded newline",
+    lex_first_string("\"a\nb\""), "a\nb"))
   results.push(assert_true("unterminated double-quoted string yields lex error",
     lex_error_count("\"no closing quote") > 0))
   results.push(assert_eq_int("identifier - 2 tokens",              lex_token_count("foo"),     2))

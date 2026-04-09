@@ -43,6 +43,8 @@ results.push_back(test_runner::assert_eq_int(mlc::String("integer literal - 2 to
 results.push_back(test_runner::assert_eq_int(mlc::String("string literal - 2 tokens"), lex_token_count(mlc::String("\"hi\"")), 2));
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal decodes escaped newline"), lex_first_string(mlc::String("\"a\\nb\"")), mlc::String("a\nb")));
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal decodes escaped quote"), lex_first_string(mlc::String("\"say \\\"hi\\\"\"")), mlc::String("say \"hi\"")));
+results.push_back(test_runner::assert_eq_int(mlc::String("multiline double-quoted string - 2 tokens (LStr + Eof)"), lex_token_count(mlc::String("\"a\nb\"")), 2));
+results.push_back(test_runner::assert_eq_str(mlc::String("multiline double-quoted string literal preserves embedded newline"), lex_first_string(mlc::String("\"a\nb\"")), mlc::String("a\nb")));
 results.push_back(test_runner::assert_true(mlc::String("unterminated double-quoted string yields lex error"), lex_error_count(mlc::String("\"no closing quote")) > 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("identifier - 2 tokens"), lex_token_count(mlc::String("foo")), 2));
 results.push_back(test_runner::assert_eq_int(mlc::String("no lex errors on valid source"), lex_error_count(mlc::String("fn f() -> i32 = 42")), 0));
