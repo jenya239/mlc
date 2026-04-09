@@ -113,6 +113,9 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true("monomorphic call wrong argument type - error",
     check_error_count("fn g(x: i32) -> i32 = x\nfn f() -> i32 = g(\"a\")") > 0))
 
+  results.push(assert_true("tuple variant constructor wrong payload type - error",
+    check_error_count("type Msg = Num(i32) | Empty\nfn f() -> Msg = Num(\"x\")") > 0))
+
   results.push(assert_eq_int("fn with type param - 0 errors",
     check_error_count("fn id<T>(x: T) -> T = x"), 0))
 
