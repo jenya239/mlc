@@ -3,9 +3,8 @@
 import { Expr, Span, diagnostics_append } from "../ast"
 import { InferResult } from "./infer_result"
 import { Type, TypeRegistry } from "./registry"
+import { type_is_unknown, types_structurally_equal } from "./semantic_type_structure"
 import {
-  type_is_unknown,
-  types_structurally_equal,
   binary_operation_result_type,
   builtin_method_return_type,
   field_type_from_object

@@ -11,6 +11,7 @@
 #include "type_diagnostics.hpp"
 #include "type_utils.hpp"
 #include "semantic_type_structure.hpp"
+#include "semantic_type_structure.hpp"
 
 namespace infer_call_support {
 

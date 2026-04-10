@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "registry.hpp"
+#include "semantic_type_structure.hpp"
 
 namespace type_utils {
 
@@ -14,10 +15,6 @@ struct SExpr;
 struct SStmt;
 
 mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcept;
-
-bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept;
-
-bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept;
 

@@ -5,7 +5,8 @@ import { Type } from "./registry"
 import { CheckContext } from "./check_context"
 import { InferResult } from "./infer_result"
 import { constructor_arity_diagnostics, call_arity_diagnostics } from "./type_diagnostics"
-import { type_is_unknown, type_description } from "./type_utils"
+import { type_description } from "./type_utils"
+import { type_is_unknown } from "./semantic_type_structure"
 import { function_parameter_list, type_is_function } from "./semantic_type_structure"
 
 export fn infer_expr_call_for_constructor_name(

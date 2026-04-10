@@ -7,6 +7,7 @@
 #include "ast.hpp"
 #include "infer_result.hpp"
 #include "registry.hpp"
+#include "semantic_type_structure.hpp"
 #include "type_utils.hpp"
 #include "type_diagnostics.hpp"
 

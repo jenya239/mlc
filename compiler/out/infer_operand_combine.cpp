@@ -3,6 +3,7 @@
 #include "ast.hpp"
 #include "infer_result.hpp"
 #include "registry.hpp"
+#include "semantic_type_structure.hpp"
 #include "type_utils.hpp"
 #include "type_diagnostics.hpp"
 
@@ -11,6 +12,7 @@ namespace infer_operand_combine {
 using namespace ast;
 using namespace infer_result;
 using namespace registry;
+using namespace semantic_type_structure;
 using namespace type_utils;
 using namespace type_diagnostics;
 using namespace ast_tokens;
@@ -50,7 +52,7 @@ return infer_result::InferResult{element_type, ast::diagnostics_append(ast::diag
 
 infer_result::InferResult infer_conditional_from_branch_results(infer_result::InferResult condition_result, infer_result::InferResult then_result, infer_result::InferResult else_result, std::shared_ptr<ast::Expr> else_expression) noexcept{
 infer_result::InferResult merged = infer_result::InferResult_absorb(infer_result::InferResult_absorb(then_result, condition_result), else_result);
-bool branches_mismatch = !type_utils::type_is_unknown(then_result.inferred_type) && !type_utils::type_is_unknown(else_result.inferred_type) && !type_utils::types_structurally_equal(then_result.inferred_type, else_result.inferred_type);
+bool branches_mismatch = !semantic_type_structure::type_is_unknown(then_result.inferred_type) && !semantic_type_structure::type_is_unknown(else_result.inferred_type) && !semantic_type_structure::types_structurally_equal(then_result.inferred_type, else_result.inferred_type);
 mlc::Array<ast::Diagnostic> branch_errors = type_diagnostics::if_branch_mismatch_diagnostic(branches_mismatch, then_result.inferred_type, else_result.inferred_type, else_expression);
 return infer_result::InferResult{branches_mismatch ? then_result.inferred_type : merged.inferred_type, ast::diagnostics_append(merged.errors, branch_errors)};
 }

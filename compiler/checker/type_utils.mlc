@@ -1,6 +1,7 @@
 // Pure type predicates and helpers (no Diagnostic dependency).
 
 import { Type, TypeRegistry } from "./registry"
+import { type_is_unknown } from "./semantic_type_structure"
 
 export fn type_description(type_value: Shared<Type>) -> string =
   match type_value {
@@ -15,23 +16,6 @@ export fn type_description(type_value: Shared<Type>) -> string =
     TGeneric(type_name, _) => type_name,
     TFn(_, _)  => "function"
   }
-
-export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> bool =
-  match left {
-    TI32 => match right { TI32 => true, _ => false },
-    TString => match right { TString => true, _ => false },
-    TBool => match right { TBool => true, _ => false },
-    TUnit => match right { TUnit => true, _ => false },
-    TUnknown => match right { TUnknown => true, _ => false },
-    TArray(inner_left) => match right { TArray(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
-    TShared(inner_left) => match right { TShared(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
-    TNamed(left_name) => match right { TNamed(right_name) => left_name == right_name, _ => false },
-    TGeneric(left_name, _) => match right { TGeneric(right_name, _) => left_name == right_name, _ => false },
-    TFn(_, _) => match right { TFn(_, _) => true, _ => false }
-  }
-
-export fn type_is_unknown(type_value: Shared<Type>) -> bool =
-  match type_value { TUnknown => true, _ => false }
 
 export fn type_is_i32(type_value: Shared<Type>) -> bool =
   match type_value { TI32 => true, _ => false }
