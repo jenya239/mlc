@@ -5,8 +5,7 @@ import { Type } from "./registry"
 import {
   type_description,
   types_structurally_equal,
-  type_is_unknown,
-  type_is_array
+  type_is_unknown
 } from "./type_utils"
 import * as semantic_type_structure from "./semantic_type_structure"
 
@@ -36,7 +35,7 @@ fn unify_expected_and_actual_argument_types(
   else if type_is_unknown(expected_type) then empty_diagnostic_list()
   else match expected_type {
     TArray(inner_expected) =>
-      if type_is_array(actual_type) then
+      if semantic_type_structure.type_is_array(actual_type) then
         unify_expected_and_actual_argument_types(
           inner_expected,
           array_element_type_from_array_type(actual_type),

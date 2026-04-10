@@ -3,12 +3,14 @@
 #include "ast.hpp"
 #include "registry.hpp"
 #include "type_utils.hpp"
+#include "semantic_type_structure.hpp"
 
 namespace type_diagnostics {
 
 using namespace ast;
 using namespace registry;
 using namespace type_utils;
+using namespace semantic_type_structure;
 using namespace ast_tokens;
 
 mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_addition(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
@@ -128,15 +130,15 @@ return expected_length != actual_length ? mlc::Array<ast::Diagnostic>{ast::diagn
 }
 
 mlc::Array<ast::Diagnostic> infer_method_receiver_push(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
-return method_name == mlc::String("push") ? !type_utils::type_is_unknown(receiver_type) && !type_utils::type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method push expects an array receiver, got ") + type_utils::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+return method_name == mlc::String("push") ? !type_utils::type_is_unknown(receiver_type) && !semantic_type_structure::type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method push expects an array receiver, got ") + type_utils::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
 }
 
 mlc::Array<ast::Diagnostic> infer_method_receiver_set(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
-return method_name == mlc::String("set") ? !type_utils::type_is_unknown(receiver_type) && !type_utils::type_is_array(receiver_type) && !type_utils::receiver_type_is_map(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method set expects an array or Map receiver, got ") + type_utils::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+return method_name == mlc::String("set") ? !type_utils::type_is_unknown(receiver_type) && !semantic_type_structure::type_is_array(receiver_type) && !type_utils::receiver_type_is_map(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method set expects an array or Map receiver, got ") + type_utils::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
 }
 
 mlc::Array<ast::Diagnostic> infer_method_receiver_length_or_size(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
-return method_name == mlc::String("length") || method_name == mlc::String("size") ? !type_utils::type_is_unknown(receiver_type) && !type_utils::type_is_string(receiver_type) && !type_utils::type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("methods length and size apply to string or array; receiver is ") + type_utils::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+return method_name == mlc::String("length") || method_name == mlc::String("size") ? !type_utils::type_is_unknown(receiver_type) && !type_utils::type_is_string(receiver_type) && !semantic_type_structure::type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("methods length and size apply to string or array; receiver is ") + type_utils::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
 }
 
 mlc::Array<ast::Diagnostic> infer_method_receiver_to_integer_string_only(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
@@ -148,7 +150,7 @@ return method_name == mlc::String("char_at") || method_name == mlc::String("subs
 }
 
 mlc::Array<ast::Diagnostic> infer_method_receiver_join(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
-return method_name == mlc::String("join") ? !type_utils::type_is_unknown(receiver_type) && !type_utils::type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method join expects an array receiver, got ") + type_utils::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+return method_name == mlc::String("join") ? !type_utils::type_is_unknown(receiver_type) && !semantic_type_structure::type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method join expects an array receiver, got ") + type_utils::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
 }
 
 mlc::Array<ast::Diagnostic> infer_method_receiver_has(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
@@ -196,7 +198,7 @@ return receiver_errors.size() > 0 ? mlc::Array<ast::Diagnostic>{} : infer_builti
 }
 
 mlc::Array<ast::Diagnostic> index_not_array_diagnostic(std::shared_ptr<registry::Type> receiver_type, ast::Span bracket_source_span) noexcept{
-return !type_utils::type_is_unknown(receiver_type) && !type_utils::type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("indexing requires an array, got ") + type_utils::type_description(receiver_type), bracket_source_span)} : mlc::Array<ast::Diagnostic>{};
+return !type_utils::type_is_unknown(receiver_type) && !semantic_type_structure::type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("indexing requires an array, got ") + type_utils::type_description(receiver_type), bracket_source_span)} : mlc::Array<ast::Diagnostic>{};
 }
 
 mlc::Array<ast::Diagnostic> index_not_i32_diagnostic(std::shared_ptr<registry::Type> index_type, ast::Span bracket_source_span) noexcept{
@@ -208,7 +210,7 @@ return branches_mismatch ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc
 }
 
 mlc::Array<ast::Diagnostic> for_loop_range_diagnostic(std::shared_ptr<registry::Type> iterator_type, std::shared_ptr<ast::Expr> iterator) noexcept{
-return !type_utils::type_is_unknown(iterator_type) && !type_utils::type_is_array(iterator_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("for loop range must be an array, got ") + type_utils::type_description(iterator_type), ast::expr_span(iterator))} : mlc::Array<ast::Diagnostic>{};
+return !type_utils::type_is_unknown(iterator_type) && !semantic_type_structure::type_is_array(iterator_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("for loop range must be an array, got ") + type_utils::type_description(iterator_type), ast::expr_span(iterator))} : mlc::Array<ast::Diagnostic>{};
 }
 
 mlc::Array<ast::Diagnostic> match_arm_type_mismatch_diagnostic(int arm_index, std::shared_ptr<registry::Type> first_arm_type, std::shared_ptr<registry::Type> arm_result_type, std::shared_ptr<ast::Expr> arm_body) noexcept{
@@ -217,7 +219,7 @@ return arm_index > 0 && !type_utils::type_is_unknown(first_arm_type) && !type_ut
 
 mlc::Array<ast::Diagnostic> infer_expr_field_diagnostics(std::shared_ptr<registry::Type> object_type, mlc::String field_name, ast::Span field_source_span, registry::TypeRegistry registry) noexcept{
 mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*object_type))) { auto _v_tnamed = std::get<registry::TNamed>((*object_type)); auto [name] = _v_tnamed; return name; } return mlc::String(""); }();
-return type_name != mlc::String("") && registry::TypeRegistry_has_fields(registry, type_name) ? !registry::TypeRegistry_fields_for(registry, type_name).has(field_name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("undefined field: ") + field_name + mlc::String(" on ") + type_name, field_source_span)} : mlc::Array<ast::Diagnostic>{} : !type_utils::type_is_unknown(object_type) ? type_name != mlc::String("") && !registry::TypeRegistry_has_fields(registry, type_name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("field access needs a record type; ") + type_name + mlc::String(" is not one"), field_source_span)} : type_utils::type_is_array(object_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("array value has no record fields for .") + field_name, field_source_span)} : !type_utils::type_is_function(object_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("field access on value without record fields: ") + type_utils::type_description(object_type), field_source_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+return type_name != mlc::String("") && registry::TypeRegistry_has_fields(registry, type_name) ? !registry::TypeRegistry_fields_for(registry, type_name).has(field_name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("undefined field: ") + field_name + mlc::String(" on ") + type_name, field_source_span)} : mlc::Array<ast::Diagnostic>{} : !type_utils::type_is_unknown(object_type) ? type_name != mlc::String("") && !registry::TypeRegistry_has_fields(registry, type_name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("field access needs a record type; ") + type_name + mlc::String(" is not one"), field_source_span)} : semantic_type_structure::type_is_array(object_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("array value has no record fields for .") + field_name, field_source_span)} : !type_utils::type_is_function(object_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("field access on value without record fields: ") + type_utils::type_description(object_type), field_source_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
 }
 
 } // namespace type_diagnostics

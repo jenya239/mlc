@@ -33,9 +33,6 @@ export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> b
 export fn type_is_unknown(type_value: Shared<Type>) -> bool =
   match type_value { TUnknown => true, _ => false }
 
-export fn type_is_array(type_value: Shared<Type>) -> bool =
-  match type_value { TArray(_) => true, _ => false }
-
 export fn type_is_i32(type_value: Shared<Type>) -> bool =
   match type_value { TI32 => true, _ => false }
 

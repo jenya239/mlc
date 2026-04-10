@@ -82,7 +82,7 @@ compiler/codegen/
 
 ```
 compiler/checker/
-  semantic_type_structure.mlc # операции над Type (доступ к внутренностям TArray/TShared); далее unify/substitute над TypeExpr
+  semantic_type_structure.mlc # предикаты и проекции формы Type (TArray/TShared и др.); далее unify/substitute над TypeExpr
   call_argument_unify.mlc   # согласование фактических аргументов с ожидаемыми типами и параметрами типа вызываемой fn / ctor
   expr_checker.mlc          # check_expr разбит на fn per-ExprXxx
   decl_checker.mlc          # check_decl, collect_globals

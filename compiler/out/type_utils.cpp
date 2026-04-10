@@ -12,8 +12,6 @@ bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_
 
 bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
 
-bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept;
-
 bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool type_is_bool(std::shared_ptr<registry::Type> type_value) noexcept;
@@ -71,8 +69,6 @@ bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_
 }, (*left));}
 
 bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TUnknown>((*type_value))) {  return true; } return false; }();}
-
-bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TArray>((*type_value))) { auto _v_tarray = std::get<registry::TArray>((*type_value)); auto [_w0] = _v_tarray; return true; } return false; }();}
 
 bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TI32>((*type_value))) {  return true; } return false; }();}
 
