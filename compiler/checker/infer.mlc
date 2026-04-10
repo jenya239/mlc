@@ -11,7 +11,7 @@ import * as infer_operand_combine from "./infer_operand_combine"
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
 import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
 import { call_argument_unification_diagnostics } from "./call_argument_unify"
-import { function_parameter_list, type_is_function } from "./type_utils"
+import { function_parameter_list, type_is_function } from "./semantic_type_structure"
 import { infer_expr_identifier } from "./infer_expr_ident"
 import { env_for_pattern } from "./pattern_env"
 

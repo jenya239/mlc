@@ -3,6 +3,7 @@
 #include "ast.hpp"
 #include "registry.hpp"
 #include "type_utils.hpp"
+#include "semantic_type_structure.hpp"
 #include "pattern_env.hpp"
 #include "semantic_ir.hpp"
 #include "decl_index.hpp"
@@ -12,6 +13,7 @@ namespace transform {
 using namespace ast;
 using namespace registry;
 using namespace type_utils;
+using namespace semantic_type_structure;
 using namespace pattern_env;
 using namespace semantic_ir;
 using namespace decl_index;

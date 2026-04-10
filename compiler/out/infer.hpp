@@ -15,7 +15,7 @@
 #include "infer_call_support.hpp"
 #include "type_diagnostics.hpp"
 #include "call_argument_unify.hpp"
-#include "type_utils.hpp"
+#include "semantic_type_structure.hpp"
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
 

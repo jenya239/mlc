@@ -35,12 +35,6 @@ bool types_allowed_for_logical_and_or(std::shared_ptr<registry::Type> left_type,
 
 bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcept;
 
-bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
-
-mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept;
-
-mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept;
-
 std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept;
 
 std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_name) noexcept;

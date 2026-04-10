@@ -11,7 +11,7 @@
 #include "infer_call_support.hpp"
 #include "type_diagnostics.hpp"
 #include "call_argument_unify.hpp"
-#include "type_utils.hpp"
+#include "semantic_type_structure.hpp"
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
 
@@ -28,7 +28,7 @@ using namespace infer_operand_combine;
 using namespace infer_call_support;
 using namespace type_diagnostics;
 using namespace call_argument_unify;
-using namespace type_utils;
+using namespace semantic_type_structure;
 using namespace infer_expr_ident;
 using namespace pattern_env;
 using namespace ast_tokens;
@@ -135,12 +135,12 @@ return callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(inferen
   return constructor_parameter_types.size() == call_arguments.size() ? infer_result::InferResult{constructor_output.inferred_type, ast::diagnostics_append(constructor_output.errors, call_argument_unify::call_argument_unification_diagnostics(constructor_parameter_types, argument_inferred_types, constructor_type_parameter_names, call_arguments))} : constructor_output;
  }() : [&]() -> infer_result::InferResult { 
   infer_result::InferResult non_constructor_output = infer_call_support::infer_expr_call_non_constructor(function_result, with_arguments, call_arguments, call_source_span);
-  mlc::Array<std::shared_ptr<registry::Type>> callee_parameter_types = type_utils::function_parameter_list(function_result.inferred_type);
+  mlc::Array<std::shared_ptr<registry::Type>> callee_parameter_types = semantic_type_structure::function_parameter_list(function_result.inferred_type);
   mlc::Array<mlc::String> callee_type_parameter_names = callee_name != mlc::String("") && registry::TypeRegistry_has_fn(inference_context.registry, callee_name) ? registry::TypeRegistry_registered_function_type_parameter_names(inference_context.registry, callee_name) : [&]() -> mlc::Array<mlc::String> { 
   mlc::Array<mlc::String> empty_callee_type_names = {};
   return empty_callee_type_names;
  }();
-  return type_utils::type_is_function(function_result.inferred_type) && callee_parameter_types.size() == call_arguments.size() ? infer_result::InferResult{non_constructor_output.inferred_type, ast::diagnostics_append(non_constructor_output.errors, call_argument_unify::call_argument_unification_diagnostics(callee_parameter_types, argument_inferred_types, callee_type_parameter_names, call_arguments))} : non_constructor_output;
+  return semantic_type_structure::type_is_function(function_result.inferred_type) && callee_parameter_types.size() == call_arguments.size() ? infer_result::InferResult{non_constructor_output.inferred_type, ast::diagnostics_append(non_constructor_output.errors, call_argument_unify::call_argument_unification_diagnostics(callee_parameter_types, argument_inferred_types, callee_type_parameter_names, call_arguments))} : non_constructor_output;
  }();
 }
 

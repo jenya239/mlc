@@ -2,8 +2,8 @@
 
 import { Expr, Diagnostic, Span, diagnostic_error, expr_span } from "../ast"
 import { Type, TypeRegistry } from "./registry"
-import { type_description, types_structurally_equal, type_is_unknown, type_is_i32, type_is_bool, type_is_string, types_allowed_for_binary_plus, types_allowed_for_binary_int_only, types_allowed_for_ordering, types_allowed_for_logical_and_or, receiver_type_is_map, type_is_function, builtin_method_expected_argument_count } from "./type_utils"
-import { type_is_array } from "./semantic_type_structure"
+import { type_description, types_structurally_equal, type_is_unknown, type_is_i32, type_is_bool, type_is_string, types_allowed_for_binary_plus, types_allowed_for_binary_int_only, types_allowed_for_ordering, types_allowed_for_logical_and_or, receiver_type_is_map, builtin_method_expected_argument_count } from "./type_utils"
+import { type_is_array, type_is_function } from "./semantic_type_structure"
 
 // --- Binary operand diagnostics ---------------------------------------------
 

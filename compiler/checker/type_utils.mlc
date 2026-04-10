@@ -67,25 +67,6 @@ export fn receiver_type_is_map(receiver_type: Shared<Type>) -> bool =
     _ => false
   }
 
-export fn type_is_function(type_value: Shared<Type>) -> bool =
-  match type_value { TFn(_, _) => true, _ => false }
-
-export fn empty_type_parameter_list() -> [Shared<Type>] = []
-
-export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>] =
-  match function_type {
-    TFn(parameters, _) => parameters,
-    TI32 => empty_type_parameter_list(),
-    TString => empty_type_parameter_list(),
-    TBool => empty_type_parameter_list(),
-    TUnit => empty_type_parameter_list(),
-    TArray(_) => empty_type_parameter_list(),
-    TShared(_) => empty_type_parameter_list(),
-    TNamed(_) => empty_type_parameter_list(),
-    TGeneric(_, _) => empty_type_parameter_list(),
-    TUnknown => empty_type_parameter_list()
-  }
-
 export fn binary_operation_result_type(operation: string, left_type: Shared<Type>) -> Shared<Type> = do
   if operation == "+" || operation == "-" || operation == "*" || operation == "/" || operation == "%" then
     match left_type { TString => Shared.new(TString), _ => Shared.new(TI32) }
