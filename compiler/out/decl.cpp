@@ -6,7 +6,7 @@
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "type_gen.hpp"
-#include "eval.hpp"
+#include "return_body.hpp"
 #include "expr.hpp"
 
 namespace decl {
@@ -17,7 +17,7 @@ using namespace registry;
 using namespace context;
 using namespace cpp_naming;
 using namespace type_gen;
-using namespace eval;
+using namespace return_body;
 using namespace expr;
 using namespace ast_tokens;
 
@@ -103,8 +103,8 @@ context::CodegenContext body_context = compute_fn_body_context(name, params, con
 context::CodegenContext prototype_context = params.size() > 0 && params[0]->name == mlc::String("self") ? body_context : context;
 return name == mlc::String("main") && params.size() == 0 ? [&]() -> mlc::String { 
   mlc::String preamble = expr::user_main_arguments_copy_into_runtime_statement();
-  return prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, expr::main_program_parameter_list()) + preamble + eval::gen_fn_body(body, body_context) + expr::block_close_newline();
- }() : prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, gen_params(prototype_context, params)) + eval::gen_fn_body(body, body_context) + expr::block_close_newline();
+  return prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, expr::main_program_parameter_list()) + preamble + return_body::gen_fn_body(body, body_context) + expr::block_close_newline();
+ }() : prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, gen_params(prototype_context, params)) + return_body::gen_fn_body(body, body_context) + expr::block_close_newline();
 }
 
 mlc::String gen_trait_decl(context::CodegenContext context, mlc::String trait_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept{

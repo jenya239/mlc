@@ -347,7 +347,7 @@ export fn gen_expr(expr: Shared<SExpr>, context: CodegenContext) -> string =
 
 // --- Statement generation ----------------------------------------------------
 
-fn gen_try_unwrap(inner_expr: Shared<SExpr>, context: CodegenContext, try_identifier: string, success_line: string) -> string = do
+export fn gen_try_unwrap(inner_expr: Shared<SExpr>, context: CodegenContext, try_identifier: string, success_line: string) -> string = do
   const inner_code = gen_expr(inner_expr, context)
   expression_output.try_unwrap_result_block(try_identifier, inner_code, success_line)
 end
@@ -542,67 +542,3 @@ export fn gen_stmts_str(statements: [Shared<SStmt>], context: CodegenContext) ->
   result.code
 end
 
-// --- Return body generation --------------------------------------------------
-
-fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
-  match expr {
-    SExprIf(condition, then_expr, else_expr, _, _) => do
-      let mut output = expression_output.if_brace_block(
-        gen_expr(condition, context),
-        gen_return_body(then_expr, context))
-      const else_string = match else_expr {
-        SExprUnit(_, _)        => "",
-        SExprIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expr, context)),
-        _                      => expression_output.else_brace_block(gen_return_body(else_expr, context))
-      }
-      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
-    end,
-    _ => expression_output.if_always_true_block(gen_return_body(expr, context))
-  }
-
-export fn gen_return_body(expr: Shared<SExpr>, context: CodegenContext) -> string =
-  match expr {
-    SExprBlock(statements, result_expr, _, _) => do
-      const final_context   = stmts_final_ctx(statements, context)
-      const statements_code = gen_stmts_str(statements, context)
-      match result_expr {
-        SExprQuestion(inner_expr, _, _) => do
-          const try_identifier = "__try_ret"
-          statements_code + gen_try_unwrap(
-            inner_expr,
-            final_context,
-            try_identifier,
-            expression_output.return_try_ok_field0_statement(try_identifier))
-        end,
-        SExprUnit(_, _)        => statements_code,
-        SExprIf(_, _, _, _, _) => statements_code + gen_return_body(result_expr, final_context),
-        SExprMatch(_, _, _, _) => statements_code + gen_return_body(result_expr, final_context),
-        SExprBlock(_, _, _, _) => statements_code + gen_return_body(result_expr, final_context),
-        _ =>
-          statements_code + expression_output.return_line(gen_expr(result_expr, final_context))
-      }
-    end,
-    SExprIf(condition, then_expr, else_expr, _, _) => do
-      let mut output = expression_output.if_brace_block(
-        gen_expr(condition, context),
-        gen_return_body(then_expr, context))
-      const else_string = match else_expr {
-        SExprUnit(_, _)        => "",
-        SExprIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expr, context)),
-        _                      => expression_output.else_brace_block(gen_return_body(else_expr, context))
-      }
-      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
-    end,
-    SExprQuestion(inner_expr, _, _) => do
-      const try_identifier = "__try_ret"
-      gen_try_unwrap(
-        inner_expr,
-        context,
-        try_identifier,
-        expression_output.return_try_ok_field0_statement(try_identifier))
-    end,
-    _ => expression_output.return_line(gen_expr(expr, context))
-  }
-
-export fn gen_fn_body(body_expr: Shared<SExpr>, context: CodegenContext) -> string =
-  gen_return_body(body_expr, context)
