@@ -4,7 +4,6 @@
 #include "infer_result.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
-#include "type_utils.hpp"
 #include "type_diagnostics.hpp"
 
 namespace infer_operand_combine {
@@ -13,7 +12,6 @@ using namespace ast;
 using namespace infer_result;
 using namespace registry;
 using namespace semantic_type_structure;
-using namespace type_utils;
 using namespace type_diagnostics;
 using namespace ast_tokens;
 
@@ -32,7 +30,7 @@ infer_result::InferResult infer_method_from_object_and_arguments(infer_result::I
 infer_result::InferResult infer_binary_from_operand_results(mlc::String operation, infer_result::InferResult left_result, infer_result::InferResult right_result, ast::Span source_span) noexcept{
 infer_result::InferResult merged = infer_result::InferResult_absorb(left_result, right_result);
 mlc::Array<ast::Diagnostic> operand_errors = type_diagnostics::infer_binary_operand_diagnostics(operation, left_result.inferred_type, right_result.inferred_type, source_span);
-return infer_result::InferResult{type_utils::binary_operation_result_type(operation, left_result.inferred_type), ast::diagnostics_append(merged.errors, operand_errors)};
+return infer_result::InferResult{semantic_type_structure::binary_operation_result_type(operation, left_result.inferred_type), ast::diagnostics_append(merged.errors, operand_errors)};
 }
 
 infer_result::InferResult infer_unary_from_inner_result(mlc::String operation, infer_result::InferResult inner_result, ast::Span source_span) noexcept{
@@ -58,7 +56,7 @@ return infer_result::InferResult{branches_mismatch ? then_result.inferred_type :
 }
 
 infer_result::InferResult infer_field_from_object_result(infer_result::InferResult object_result, mlc::String field_name, ast::Span field_source_span, registry::TypeRegistry registry) noexcept{
-std::shared_ptr<registry::Type> resolved_field_type = type_utils::field_type_from_object(object_result.inferred_type, field_name, registry);
+std::shared_ptr<registry::Type> resolved_field_type = registry::field_type_from_object(object_result.inferred_type, field_name, registry);
 mlc::Array<ast::Diagnostic> attached = type_diagnostics::infer_expr_field_diagnostics(object_result.inferred_type, field_name, field_source_span, registry);
 return infer_result::InferResult{resolved_field_type, ast::diagnostics_append(object_result.errors, attached)};
 }
@@ -66,7 +64,7 @@ return infer_result::InferResult{resolved_field_type, ast::diagnostics_append(ob
 infer_result::InferResult infer_method_from_object_and_arguments(infer_result::InferResult object_result, infer_result::InferResult with_arguments, mlc::String method_name, ast::Span method_span, int argument_count) noexcept{
 mlc::Array<ast::Diagnostic> receiver_errors = type_diagnostics::infer_builtin_method_receiver_diagnostics(object_result.inferred_type, method_name, method_span);
 mlc::Array<ast::Diagnostic> arity_errors = type_diagnostics::method_arity_after_receiver(receiver_errors, method_name, argument_count, method_span);
-return infer_result::InferResult{type_utils::builtin_method_return_type(method_name), ast::diagnostics_append(ast::diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)};
+return infer_result::InferResult{semantic_type_structure::builtin_method_return_type(method_name), ast::diagnostics_append(ast::diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)};
 }
 
 } // namespace infer_operand_combine

@@ -191,3 +191,13 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
     end
   }
 end
+
+export fn field_type_from_object(object_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
+  const inner_type = match object_type { TShared(inner) => inner, _ => object_type }
+  const type_name = match inner_type { TNamed(name) => name, _ => "" }
+  if type_name != "" && registry.has_fields(type_name) then
+    const field_map = registry.fields_for(type_name)
+    if field_map.has(field_name) then field_map.get(field_name) else Shared.new(TUnknown) end
+  else Shared.new(TUnknown)
+  end
+end

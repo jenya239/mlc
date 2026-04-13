@@ -2,7 +2,6 @@
 
 import { Expr, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span } from "../ast"
 import { Type } from "./registry"
-import { type_description } from "./type_utils"
 import * as semantic_type_structure from "./semantic_type_structure"
 
 fn empty_diagnostic_list() -> [Diagnostic] = do
@@ -34,13 +33,13 @@ fn unify_expected_and_actual_argument_types(
       if semantic_type_structure.type_is_array(actual_type) then
         unify_expected_and_actual_argument_types(
           inner_expected,
-          array_element_type_from_array_type(actual_type),
+          semantic_type_structure.array_element_type_from_array_type(actual_type),
           type_parameter_names,
           substitution,
           diagnostic_span)
       else
         [diagnostic_error(
-          "argument expects " + type_description(expected_type) + ", got " + type_description(actual_type),
+          "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
           diagnostic_span)]
       end,
     TShared(inner_expected) =>
@@ -53,7 +52,7 @@ fn unify_expected_and_actual_argument_types(
           diagnostic_span)
       else
         [diagnostic_error(
-          "argument expects " + type_description(expected_type) + ", got " + type_description(actual_type),
+          "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
           diagnostic_span)]
       end,
     TNamed(name) =>
@@ -74,14 +73,14 @@ fn unify_expected_and_actual_argument_types(
       else if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
       else
         [diagnostic_error(
-          "argument expects " + type_description(expected_type) + ", got " + type_description(actual_type),
+          "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
           diagnostic_span)]
       end,
     _ =>
       if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
       else
         [diagnostic_error(
-          "argument expects " + type_description(expected_type) + ", got " + type_description(actual_type),
+          "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
           diagnostic_span)]
       end
   }

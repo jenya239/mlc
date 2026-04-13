@@ -3,9 +3,8 @@
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
 import { Expr, Stmt, FieldVal, MatchArm, Pat, Decl, Param, TypeVariant, Program, span_unknown } from "../ast"
-import { Type, TypeRegistry, type_from_annotation, empty_registry } from "./registry"
-import { binary_operation_result_type, builtin_method_return_type, field_type_from_object } from "./type_utils"
-import { function_parameter_list, type_is_function } from "./semantic_type_structure"
+import { Type, TypeRegistry, type_from_annotation, empty_registry, field_type_from_object } from "./registry"
+import { binary_operation_result_type, builtin_method_return_type, function_parameter_list, type_is_function } from "./semantic_type_structure"
 import { env_for_pattern } from "./pattern_env"
 import { SExpr, SStmt, SMatchArm, SFieldVal, SDecl, SProgram, SLoadItem, SNamespaceImportAlias, sexpr_type } from "../semantic_ir"
 import { LoadItem, NamespaceImportAlias } from "../codegen/decl_index"

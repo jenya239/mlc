@@ -2,13 +2,8 @@
 
 import { Expr, Span, diagnostics_append } from "../ast"
 import { InferResult } from "./infer_result"
-import { Type, TypeRegistry } from "./registry"
-import { type_is_unknown, types_structurally_equal } from "./semantic_type_structure"
-import {
-  binary_operation_result_type,
-  builtin_method_return_type,
-  field_type_from_object
-} from "./type_utils"
+import { Type, TypeRegistry, field_type_from_object } from "./registry"
+import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from "./semantic_type_structure"
 import {
   infer_binary_operand_diagnostics,
   unary_minus_diagnostic,

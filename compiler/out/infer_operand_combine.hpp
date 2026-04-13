@@ -8,7 +8,6 @@
 #include "infer_result.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
-#include "type_utils.hpp"
 #include "type_diagnostics.hpp"
 
 namespace infer_operand_combine {
