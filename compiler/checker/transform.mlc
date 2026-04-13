@@ -2,12 +2,11 @@
 // Mirrors infer_expr but produces typed Shared<SExpr> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pat, Decl, Param, TypeVariant, Program, span_unknown } from "../ast"
+import { Expr, Stmt, FieldVal, MatchArm, Pat, span_unknown } from "../ast"
 import { Type, TypeRegistry, type_from_annotation, empty_registry, field_type_from_object } from "./registry"
 import { binary_operation_result_type, builtin_method_return_type, function_parameter_list, type_is_function } from "./semantic_type_structure"
 import { env_for_pattern } from "./pattern_env"
-import { SExpr, SStmt, SMatchArm, SFieldVal, SDecl, SProgram, SLoadItem, SNamespaceImportAlias, sexpr_type } from "../semantic_ir"
-import { LoadItem, NamespaceImportAlias } from "../codegen/decl_index"
+import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from "../semantic_ir"
 
 // --- Context ----------------------------------------------------------------
 
@@ -284,75 +283,3 @@ export fn transform_stmts(statements: [Shared<Stmt>], transform_context: Transfo
   TransformStmtsResult { statements: typed_statements, type_env: current_env }
 end
 
-// --- Declaration transform --------------------------------------------------
-
-fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<SDecl> =
-  match declaration {
-    DeclFn(name, type_params, trait_bounds, params, return_type_expr, body) => do
-      let mut param_env: Map<string, Shared<Type>> = Map.new()
-      let mut index = 0
-      while index < params.length() do
-        param_env.set(params[index].name, type_from_annotation(params[index].typ))
-        index = index + 1
-      end
-      const return_type      = type_from_annotation(return_type_expr)
-      const initial_context  = transform_context_new(param_env, registry)
-      const typed_body       = transform_expr(body, initial_context)
-      Shared.new(SDeclFn(name, type_params, trait_bounds, params, return_type, typed_body))
-    end,
-    DeclType(type_name, type_params, variants) =>
-      Shared.new(SDeclType(type_name, type_params, variants)),
-    DeclTrait(trait_name, type_params, methods) => do
-      const typed_methods = transform_decls(methods, registry)
-      Shared.new(SDeclTrait(trait_name, type_params, typed_methods))
-    end,
-    DeclExtend(type_name, trait_name, methods) => do
-      const typed_methods = transform_decls(methods, registry)
-      Shared.new(SDeclExtend(type_name, trait_name, typed_methods))
-    end,
-    DeclImport(path, names) => Shared.new(SDeclImport(path, names)),
-    DeclExported(inner)     => Shared.new(SDeclExported(transform_decl(inner, registry)))
-  }
-
-fn transform_decls(declarations: [Shared<Decl>], registry: TypeRegistry) -> [Shared<SDecl>] = do
-  let mut result: [Shared<SDecl>] = []
-  let mut index = 0
-  while index < declarations.length() do
-    result.push(transform_decl(declarations[index], registry))
-    index = index + 1
-  end
-  result
-end
-
-// --- Program and item transforms --------------------------------------------
-
-export fn transform_program(program: Program, registry: TypeRegistry) -> SProgram =
-  SProgram { decls: transform_decls(program.decls, registry) }
-
-fn to_semantic_namespace_aliases(items: [NamespaceImportAlias]) -> [SNamespaceImportAlias] = do
-  let mut result: [SNamespaceImportAlias] = []
-  let mut index = 0
-  while index < items.length() do
-    const entry = items[index]
-    result.push(SNamespaceImportAlias { alias: entry.alias, module_path: entry.module_path })
-    index = index + 1
-  end
-  result
-end
-
-export fn transform_load_items(items: [LoadItem], registry: TypeRegistry) -> [SLoadItem] = do
-  let mut result: [SLoadItem] = []
-  let mut index = 0
-  while index < items.length() do
-    const item = items[index]
-    const typed_decls = transform_decls(item.decls, registry)
-    result.push(SLoadItem {
-      path: item.path,
-      decls: typed_decls,
-      imports: item.imports,
-      namespace_import_aliases: to_semantic_namespace_aliases(item.namespace_import_aliases)
-    })
-    index = index + 1
-  end
-  result
-end

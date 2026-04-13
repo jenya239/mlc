@@ -7,7 +7,7 @@
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "registry.hpp"
-#include "transform.hpp"
+#include "transform_decl.hpp"
 #include "decl_index.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"

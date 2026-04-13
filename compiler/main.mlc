@@ -3,7 +3,7 @@
 import { tokenize } from "./lexer"
 import { parse_program_with_source_path } from "./parser/decls"
 import { check_with_context } from "./checker/check"
-import { transform_load_items } from "./checker/transform"
+import { transform_load_items } from "./checker/transform_decl"
 import { build_registry } from "./checker/registry"
 import { gen_module, GenModuleOut, precompute } from "./codegen/module"
 import { LoadItem, PrecomputedCtx } from "./codegen/context"

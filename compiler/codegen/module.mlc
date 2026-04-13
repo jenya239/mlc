@@ -3,7 +3,7 @@
 import { Program, errs_append } from "../ast"
 import { SLoadItem, SNamespaceImportAlias } from "../semantic_ir"
 import { build_registry } from "../checker/registry"
-import { transform_load_items } from "../checker/transform"
+import { transform_load_items } from "../checker/transform_decl"
 import { NamespaceImportAlias, build_namespace_alias_prefixes } from "./decl_index"
 import { LoadItem, CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, build_field_orders, build_variant_types_from_decls,

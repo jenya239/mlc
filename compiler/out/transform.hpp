@@ -9,7 +9,6 @@
 #include "semantic_type_structure.hpp"
 #include "pattern_env.hpp"
 #include "semantic_ir.hpp"
-#include "decl_index.hpp"
 
 namespace transform {
 
@@ -27,10 +26,6 @@ transform::TransformContext empty_transform_context() noexcept;
 std::shared_ptr<semantic_ir::SExpr> transform_expr(std::shared_ptr<ast::Expr> expression, transform::TransformContext transform_context) noexcept;
 
 transform::TransformStmtsResult transform_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> statements, transform::TransformContext transform_context) noexcept;
-
-semantic_ir::SProgram transform_program(ast::Program program, registry::TypeRegistry registry) noexcept;
-
-mlc::Array<semantic_ir::SLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry) noexcept;
 
 } // namespace transform
 

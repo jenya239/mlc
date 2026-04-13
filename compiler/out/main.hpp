@@ -7,7 +7,7 @@
 #include "lexer.hpp"
 #include "decls.hpp"
 #include "check.hpp"
-#include "transform.hpp"
+#include "transform_decl.hpp"
 #include "registry.hpp"
 #include "module.hpp"
 #include "context.hpp"

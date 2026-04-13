@@ -1,0 +1,77 @@
+// Declaration, program, and load-item AST → SemanticIR transforms.
+// Not called back by transform_expr/transform_stmts; imports from transform.mlc.
+
+import { Decl, TypeVariant, Param, Program } from "../ast"
+import { Type, TypeRegistry, type_from_annotation } from "./registry"
+import { SDecl, SProgram, SLoadItem, SNamespaceImportAlias } from "../semantic_ir"
+import { LoadItem, NamespaceImportAlias } from "../codegen/decl_index"
+import { TransformContext, transform_expr } from "./transform"
+
+fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<SDecl> =
+  match declaration {
+    DeclFn(name, type_params, trait_bounds, params, return_type_expr, body) => do
+      let mut param_env: Map<string, Shared<Type>> = Map.new()
+      let mut index = 0
+      while index < params.length() do
+        param_env.set(params[index].name, type_from_annotation(params[index].typ))
+        index = index + 1
+      end
+      const return_type      = type_from_annotation(return_type_expr)
+      const initial_context  = TransformContext { type_env: param_env, registry }
+      const typed_body       = transform_expr(body, initial_context)
+      Shared.new(SDeclFn(name, type_params, trait_bounds, params, return_type, typed_body))
+    end,
+    DeclType(type_name, type_params, variants) =>
+      Shared.new(SDeclType(type_name, type_params, variants)),
+    DeclTrait(trait_name, type_params, methods) => do
+      const typed_methods = transform_decls(methods, registry)
+      Shared.new(SDeclTrait(trait_name, type_params, typed_methods))
+    end,
+    DeclExtend(type_name, trait_name, methods) => do
+      const typed_methods = transform_decls(methods, registry)
+      Shared.new(SDeclExtend(type_name, trait_name, typed_methods))
+    end,
+    DeclImport(path, names) => Shared.new(SDeclImport(path, names)),
+    DeclExported(inner)     => Shared.new(SDeclExported(transform_decl(inner, registry)))
+  }
+
+fn transform_decls(declarations: [Shared<Decl>], registry: TypeRegistry) -> [Shared<SDecl>] = do
+  let mut result: [Shared<SDecl>] = []
+  let mut index = 0
+  while index < declarations.length() do
+    result.push(transform_decl(declarations[index], registry))
+    index = index + 1
+  end
+  result
+end
+
+export fn transform_program(program: Program, registry: TypeRegistry) -> SProgram =
+  SProgram { decls: transform_decls(program.decls, registry) }
+
+fn to_semantic_namespace_aliases(items: [NamespaceImportAlias]) -> [SNamespaceImportAlias] = do
+  let mut result: [SNamespaceImportAlias] = []
+  let mut index = 0
+  while index < items.length() do
+    const entry = items[index]
+    result.push(SNamespaceImportAlias { alias: entry.alias, module_path: entry.module_path })
+    index = index + 1
+  end
+  result
+end
+
+export fn transform_load_items(items: [LoadItem], registry: TypeRegistry) -> [SLoadItem] = do
+  let mut result: [SLoadItem] = []
+  let mut index = 0
+  while index < items.length() do
+    const item = items[index]
+    const typed_decls = transform_decls(item.decls, registry)
+    result.push(SLoadItem {
+      path: item.path,
+      decls: typed_decls,
+      imports: item.imports,
+      namespace_import_aliases: to_semantic_namespace_aliases(item.namespace_import_aliases)
+    })
+    index = index + 1
+  end
+  result
+end
