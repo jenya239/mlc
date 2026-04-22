@@ -5,7 +5,8 @@
 import { Expr, Stmt, FieldVal, MatchArm, Pat, span_unknown } from "../ast"
 import { Type, TypeRegistry, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
 import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, function_parameter_list, type_is_function } from "./semantic_type_structure"
-import { env_for_pattern } from "./pattern_env"
+import { env_for_pattern_substituted } from "./pattern_env"
+import { substitute_type } from "./semantic_type_structure"
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from "../semantic_ir"
 
 // --- Context ----------------------------------------------------------------
@@ -61,11 +62,26 @@ fn transform_field_vals(field_values: [Shared<FieldVal>], transform_context: Tra
   result
 end
 
-fn transform_match_arms(arms: [Shared<MatchArm>], transform_context: TransformContext) -> [Shared<SMatchArm>] = do
+fn build_transform_substitution(subject_type: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  const substitution: Map<string, Shared<Type>> = Map.new()
+  match subject_type {
+    TGeneric(type_name, type_args) => do
+      const param_names = registry.algebraic_decl_type_parameter_names_for(type_name)
+      let mut i = 0
+      while i < param_names.length() && i < type_args.length() do
+        substitution.set(param_names[i], type_args[i]); i = i + 1
+      end
+    end,
+    _ => do end
+  }
+  substitution
+end
+
+fn transform_match_arms(arms: [Shared<MatchArm>], transform_context: TransformContext, substitution: Map<string, Shared<Type>>) -> [Shared<SMatchArm>] = do
   let mut result: [Shared<SMatchArm>] = []
   let mut index = 0
   while index < arms.length() do
-    const arm_env     = env_for_pattern(transform_context.type_env, arms[index].pat, transform_context.registry)
+    const arm_env     = env_for_pattern_substituted(transform_context.type_env, arms[index].pat, transform_context.registry, substitution)
     const arm_context = transform_context_with_env(transform_context, arm_env)
     const typed_body  = transform_expr(arms[index].body, arm_context)
     result.push(Shared.new(SMatchArm { pat: arms[index].pat, body: typed_body }))
@@ -188,7 +204,8 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     ExprMatch(subject, arms, source_span) => do
       const typed_subject = transform_expr(subject, transform_context)
-      const typed_arms    = transform_match_arms(arms, transform_context)
+      const substitution  = build_transform_substitution(sexpr_type(typed_subject), transform_context.registry)
+      const typed_arms    = transform_match_arms(arms, transform_context, substitution)
       const result_type   = if typed_arms.length() > 0 then sexpr_type(typed_arms[0].body) else Shared.new(TUnknown) end
       Shared.new(SExprMatch(typed_subject, typed_arms, result_type, source_span))
     end,

@@ -4,6 +4,7 @@
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
 #include "pattern_env.hpp"
+#include "semantic_type_structure.hpp"
 #include "semantic_ir.hpp"
 
 namespace transform {
@@ -12,6 +13,7 @@ using namespace ast;
 using namespace registry;
 using namespace semantic_type_structure;
 using namespace pattern_env;
+using namespace semantic_type_structure;
 using namespace semantic_ir;
 using namespace ast_tokens;
 
@@ -27,7 +29,9 @@ mlc::Array<std::shared_ptr<semantic_ir::SExpr>> transform_exprs(mlc::Array<std::
 
 mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> transform_field_vals(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, transform::TransformContext transform_context) noexcept;
 
-mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> transform_match_arms(mlc::Array<std::shared_ptr<ast::MatchArm>> arms, transform::TransformContext transform_context) noexcept;
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> build_transform_substitution(std::shared_ptr<registry::Type> subject_type, registry::TypeRegistry registry) noexcept;
+
+mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> transform_match_arms(mlc::Array<std::shared_ptr<ast::MatchArm>> arms, transform::TransformContext transform_context, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
 
 std::shared_ptr<semantic_ir::SExpr> transform_expr(std::shared_ptr<ast::Expr> expression, transform::TransformContext transform_context) noexcept;
 
@@ -66,12 +70,29 @@ index = index + 1;
 return result;
 }
 
-mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> transform_match_arms(mlc::Array<std::shared_ptr<ast::MatchArm>> arms, transform::TransformContext transform_context) noexcept{
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> build_transform_substitution(std::shared_ptr<registry::Type> subject_type, registry::TypeRegistry registry) noexcept{
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
+[&]() -> void { if (std::holds_alternative<registry::TGeneric>((*subject_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*subject_type)); auto [type_name, type_args] = _v_tgeneric; return [&]() { 
+  mlc::Array<mlc::String> param_names = registry::TypeRegistry_algebraic_decl_type_parameter_names_for(registry, type_name);
+  int i = 0;
+  return [&]() { 
+  while (i < param_names.size() && i < type_args.size()){
+{
+substitution.set(param_names[i], type_args[i]);
+i = i + 1;
+}
+}
+ }();
+ }(); } return; }();
+return substitution;
+}
+
+mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> transform_match_arms(mlc::Array<std::shared_ptr<ast::MatchArm>> arms, transform::TransformContext transform_context, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
 mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> result = {};
 int index = 0;
 while (index < arms.size()){
 {
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> arm_env = pattern_env::env_for_pattern(transform_context.type_env, arms[index]->pat, transform_context.registry);
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> arm_env = pattern_env::env_for_pattern_substituted(transform_context.type_env, arms[index]->pat, transform_context.registry, substitution);
 transform::TransformContext arm_context = transform_context_with_env(transform_context, arm_env);
 std::shared_ptr<semantic_ir::SExpr> typed_body = transform_expr(arms[index]->body, arm_context);
 result.push_back(std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{arms[index]->pat, typed_body}));
@@ -140,7 +161,8 @@ std::shared_ptr<semantic_ir::SExpr> transform_expr(std::shared_ptr<ast::Expr> ex
   return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprFor(variable_name, typed_iterator, stmts_result.statements, std::make_shared<registry::Type>((registry::TUnit{})), source_span));
  }(); } if (std::holds_alternative<ast::ExprMatch>((*expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*expression)._); auto [subject, arms, source_span] = _v_exprmatch; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   std::shared_ptr<semantic_ir::SExpr> typed_subject = transform_expr(subject, transform_context);
-  mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> typed_arms = transform_match_arms(arms, transform_context);
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution = build_transform_substitution(semantic_ir::sexpr_type(typed_subject), transform_context.registry);
+  mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> typed_arms = transform_match_arms(arms, transform_context, substitution);
   std::shared_ptr<registry::Type> result_type = typed_arms.size() > 0 ? semantic_ir::sexpr_type(typed_arms[0]->body) : std::make_shared<registry::Type>((registry::TUnknown{}));
   return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMatch(typed_subject, typed_arms, result_type, source_span));
  }(); } if (std::holds_alternative<ast::ExprRecord>((*expression)._)) { auto _v_exprrecord = std::get<ast::ExprRecord>((*expression)._); auto [type_name, field_values, source_span] = _v_exprrecord; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
