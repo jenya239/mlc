@@ -1,0 +1,223 @@
+// Statement code generation. gen_expr_fn injected as a function parameter to
+// break the import cycle with expr_eval.mlc. Private helpers thread gen_expr_fn
+// through; recursive eval_stmts_str calls go directly (same module).
+
+import { SExpr, SStmt, SExprUnit } from "../semantic_ir"
+import { Type } from "../checker/registry"
+import { CodegenContext, GenStmtsResult, GenStmtResult,
+         update_context_from_statement } from "./context"
+import { cpp_safe } from "./cpp_naming"
+import { sem_type_to_cpp } from "./type_gen"
+import { gen_unit_literal } from "./literals"
+import { stmts_final_ctx } from "./statement_context"
+import * as expression_output from "./expr"
+
+// --- Try unwrap helper -------------------------------------------------------
+
+export fn eval_try_unwrap(inner_expr: Shared<SExpr>, context: CodegenContext, try_identifier: string, success_line: string, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string = do
+  const inner_code = gen_expr_fn(inner_expr, context)
+  expression_output.try_unwrap_result_block(try_identifier, inner_code, success_line)
+end
+
+// --- Statement generation ----------------------------------------------------
+
+fn eval_block_body(expr: Shared<SExpr>, context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string =
+  match expr {
+    SExprBlock(statements, result_expr, _, _) => do
+      const statements_code = eval_stmts_str(statements, context, gen_expr_fn)
+      const final_context   = stmts_final_ctx(statements, context)
+      match result_expr {
+        SExprIf(_, _, _, _, _) => statements_code + eval_stmt_expr(result_expr, final_context, gen_expr_fn),
+        SExprUnit(_, _)        => statements_code,
+        _ => do
+          const result_code = gen_expr_fn(result_expr, final_context)
+          if result_code == gen_unit_literal() then statements_code
+          else expression_output.append_trailing_expression_statement(statements_code, result_code)
+          end
+        end
+      }
+    end,
+    SExprIf(_, _, _, _, _) => eval_stmt_expr(expr, context, gen_expr_fn),
+    _ => expression_output.suffix_semicolon_newline(gen_expr_fn(expr, context))
+  }
+
+fn eval_stmt_expr(expression: Shared<SExpr>, context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string =
+  match expression {
+    SExprBin(operation, left_expr, right_expr, _, _) =>
+      if operation == "=" then
+        expression_output.assignment_statement(gen_expr_fn(left_expr, context), gen_expr_fn(right_expr, context))
+      else
+        expression_output.expression_operation_statement(
+          operation,
+          gen_expr_fn(left_expr, context),
+          gen_expr_fn(right_expr, context))
+      end,
+    SExprIf(condition, then_expr, else_expr, _, _) => do
+      let mut output = expression_output.if_brace_block(
+        gen_expr_fn(condition, context),
+        eval_block_body(then_expr, context, gen_expr_fn))
+      const else_string = match else_expr {
+        SExprUnit(_, _)                             => "",
+        SExprBlock(statements, result_expr, _, _) =>
+          if statements.length() == 0 then
+            match result_expr {
+              SExprUnit(_, _) => "",
+              _ => expression_output.else_brace_block(eval_block_body(else_expr, context, gen_expr_fn))
+            }
+          else expression_output.else_brace_block(eval_block_body(else_expr, context, gen_expr_fn))
+          end,
+        SExprIf(_, _, _, _, _) =>
+          expression_output.else_fragment_raw(eval_stmt_expr(else_expr, context, gen_expr_fn)),
+        _ => expression_output.else_brace_block(eval_block_body(else_expr, context, gen_expr_fn))
+      }
+      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
+    end,
+    SExprWhile(condition, statements, _, _) =>
+      expression_output.while_loop_statement(
+        gen_expr_fn(condition, context),
+        eval_stmts_str(statements, context, gen_expr_fn)),
+    SExprFor(variable, iterator, statements, _, _) =>
+      expression_output.for_loop_statement(
+        cpp_safe(variable),
+        gen_expr_fn(iterator, context),
+        eval_stmts_str(statements, context, gen_expr_fn)),
+    SExprBlock(statements, result_expr, _, _) => do
+      const statements_code = eval_stmts_str(statements, context, gen_expr_fn)
+      const result_code = gen_expr_fn(result_expr, stmts_final_ctx(statements, context))
+      if result_code == gen_unit_literal() then statements_code
+      else expression_output.append_trailing_expression_statement(statements_code, result_code)
+      end
+    end,
+    _ => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
+  }
+
+fn eval_elements_code(elements: [Shared<SExpr>], context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < elements.length() do
+    parts.push(gen_expr_fn(elements[index], context)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> GenStmtResult =
+  match stmt {
+    SStmtLet(name, _, value, value_type, _) => do
+      const try_identifier = "__try_" + try_counter.to_string()
+      const next_counter = try_counter + 1
+      const result = match value {
+        SExprQuestion(inner_expr, _, _) =>
+          GenStmtResult {
+            output: eval_try_unwrap(
+              inner_expr,
+              context,
+              try_identifier,
+              expression_output.let_from_try_ok_field0(cpp_safe(name), try_identifier),
+              gen_expr_fn),
+            next_try: next_counter
+          },
+        SExprArray(elements, array_type, _) => do
+          const value_code = if elements.length() == 0 then
+            match array_type {
+              TArray(inner_type) =>
+                expression_output.typed_array_empty(sem_type_to_cpp(context, inner_type)),
+              _ => expression_output.array_string_fallback_empty()
+            }
+          else expression_output.constructor_call_braces("mlc::Array", eval_elements_code(elements, context, gen_expr_fn))
+          end
+          GenStmtResult {
+            output: expression_output.auto_binding_statement(cpp_safe(name), value_code),
+            next_try: try_counter
+          }
+        end,
+        SExprMethod(map_object, method_name, _, _, _) => do
+          const value_code = if method_name == "new" then
+            match map_object {
+              SExprIdent(object_name, _, _) =>
+                if object_name == "Map" then
+                  match value_type {
+                    TGeneric(type_name, type_args) =>
+                      if type_name == "Map" && type_args.length() == 2 then
+                        expression_output.hash_map_empty_instantiation(
+                          sem_type_to_cpp(context, type_args[0]),
+                          sem_type_to_cpp(context, type_args[1]))
+                      else gen_expr_fn(value, context)
+                      end,
+                    _ => gen_expr_fn(value, context)
+                  }
+                else gen_expr_fn(value, context)
+                end,
+              _ => gen_expr_fn(value, context)
+            }
+          else gen_expr_fn(value, context)
+          end
+          GenStmtResult {
+            output: expression_output.auto_binding_statement(cpp_safe(name), value_code),
+            next_try: try_counter
+          }
+        end,
+        _ => GenStmtResult {
+          output: expression_output.auto_binding_statement(cpp_safe(name), gen_expr_fn(value, context)),
+          next_try: try_counter
+        }
+      }
+      result
+    end,
+    SStmtLetConst(name, value, _, _) =>
+      GenStmtResult {
+        output: expression_output.constexpr_auto_binding_statement(cpp_safe(name), gen_expr_fn(value, context)),
+        next_try: try_counter
+      },
+    SStmtExpr(expression, _) => match expression {
+      SExprQuestion(inner_expr, _, _) => do
+        const try_identifier = "__try_" + try_counter.to_string()
+        GenStmtResult {
+          output: eval_try_unwrap(
+            inner_expr,
+            context,
+            try_identifier,
+            expression_output.discard_try_ok_field0_statement(try_identifier),
+            gen_expr_fn),
+          next_try: try_counter + 1
+        }
+      end,
+      _ => GenStmtResult { output: eval_stmt_expr(expression, context, gen_expr_fn), next_try: try_counter }
+    },
+    SStmtBreak(_)    => GenStmtResult { output: expression_output.break_line(), next_try: try_counter },
+    SStmtContinue(_) => GenStmtResult { output: expression_output.continue_line(), next_try: try_counter },
+    SStmtReturn(expression, _) => match expression {
+      SExprQuestion(inner_expr, _, _) => do
+        const try_identifier = "__try_ret_" + try_counter.to_string()
+        GenStmtResult {
+          output: eval_try_unwrap(
+            inner_expr,
+            context,
+            try_identifier,
+            expression_output.return_try_ok_field0_statement(try_identifier),
+            gen_expr_fn),
+          next_try: try_counter + 1
+        }
+      end,
+      _ => GenStmtResult {
+        output: expression_output.return_line(gen_expr_fn(expression, context)),
+        next_try: try_counter
+      }
+    }
+  }
+
+export fn eval_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> GenStmtsResult = do
+  let parts: [string] = []; let mut index = 0
+  let mut current_context = context; let mut counter = try_counter
+  while index < statements.length() do
+    const result = eval_stmt_with_try(statements[index], current_context, counter, gen_expr_fn)
+    parts.push(result.output)
+    counter = result.next_try
+    current_context = update_context_from_statement(statements[index], current_context)
+    index = index + 1
+  end
+  GenStmtsResult { code: parts.join(""), next_try: counter }
+end
+
+export fn eval_stmts_str(statements: [Shared<SStmt>], context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string = do
+  const result = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
+  result.code
+end

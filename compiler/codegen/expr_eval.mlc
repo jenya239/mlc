@@ -1,0 +1,346 @@
+// Expression code generation. gen_stmts injected as a function parameter to
+// break the import cycle with stmt_eval.mlc. Private helpers thread gen_stmts
+// through; recursive eval_expr calls go directly (same module).
+
+import { Pat, span_unknown } from "../ast"
+import { SExpr, SStmt, SFieldVal, SMatchArm, sexpr_type } from "../semantic_ir"
+import { Type } from "../checker/registry"
+import { CodegenContext, CtorTypeInfo,
+         context_resolve, lookup_fields, list_contains, lookup_ctor_type_info,
+         context_add_shared, context_add_shared_array } from "./context"
+import { cpp_safe, lower_first, map_method, map_builtin } from "./cpp_naming"
+import { sem_type_to_cpp } from "./type_gen"
+import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from "./literals"
+import { gen_identifier } from "./identifiers"
+import { first_arm_needs_deref, pat_bind_names } from "./match_analysis"
+import { find_field_value, is_constructor_call, resolve_object_code_in_self_context, infer_shared_new_type_name, field_access_operator, cpp_function_name_for_file_method, cpp_lambda_header_prefix } from "./expression_support"
+import { stmts_final_ctx } from "./statement_context"
+import * as expression_output from "./expr"
+
+// --- Argument list -----------------------------------------------------------
+
+export fn eval_argument_list(expressions: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < expressions.length() do
+    parts.push(eval_expr(expressions[index], context, gen_stmts)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+// --- Record helpers ----------------------------------------------------------
+
+fn gen_record_ordered(field_values: [Shared<SFieldVal>], field_order: [string], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < field_order.length() do
+    let value = find_field_value(field_values, field_order[index])
+    parts.push(eval_expr(value, context, gen_stmts)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_record_unordered(field_values: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < field_values.length() do
+    parts.push(eval_expr(field_values[index].val, context, gen_stmts)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_record_update_ordered(base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], field_order: [string], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < field_order.length() do
+    const field_name = field_order[index]
+    let mut value_string = ""
+    let mut override_found = false
+    let mut override_index = 0
+    while override_index < overrides.length() do
+      if overrides[override_index].name == field_name then
+        value_string = eval_expr(overrides[override_index].val, context, gen_stmts)
+        override_found = true
+      end
+      override_index = override_index + 1
+    end
+    if !override_found then
+      value_string = eval_expr(Shared.new(SExprField(base_expr, field_name, Shared.new(TUnknown), span_unknown())), context, gen_stmts)
+    end
+    parts.push(value_string); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_record_update_lazy(base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  let parts: [string] = [expression_output.record_update_base_prefix(eval_expr(base_expr, context, gen_stmts))]
+  let mut index = 0
+  while index < overrides.length() do
+    parts.push(expression_output.mutable_member_assignment(
+      "__upd",
+      cpp_safe(overrides[index].name),
+      eval_expr(overrides[index].val, context, gen_stmts)))
+    index = index + 1
+  end
+  expression_output.record_update_lazy_closure(parts.join(""))
+end
+
+// --- Match arm generation ----------------------------------------------------
+
+fn gen_arm_ctor(ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const qualified_name = context_resolve(context, ctor_name)
+  const lower_name = cpp_safe(lower_first(ctor_name))
+  const binding =
+    if sub_patterns.length() == 0 then ""
+    else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), lower_name)
+    end
+  const ctor_type_info: Shared<CtorTypeInfo> = lookup_ctor_type_info(context.ctor_type_infos, ctor_name)
+  const is_generic = list_contains(context.generic_variants, ctor_name)
+  const type_argument = if is_generic then "<auto>" else "" end
+  let mut arm_context = context; let mut index = 0
+  while index < sub_patterns.length() do
+    match sub_patterns[index] {
+      PatIdent(pattern_name, _) => do
+        if ctor_type_info.shared_pos.contains(index) then
+          arm_context = context_add_shared(arm_context, pattern_name)
+        end
+        if ctor_type_info.shared_arr_pos.contains(index) then
+          arm_context = context_add_shared_array(arm_context, pattern_name)
+        end
+      end,
+      _ => do end
+    }
+    index = index + 1
+  end
+  expression_output.match_arm_constructed_value(
+    expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
+    binding,
+    eval_expr(arm_body, arm_context, gen_stmts))
+end
+
+fn gen_arm_record_pattern(record_name: string, field_patterns: [Shared<Pat>], arm_body: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const qualified_name = context_resolve(context, record_name)
+  const lower_name = cpp_safe(lower_first(record_name))
+  const is_generic = list_contains(context.generic_variants, record_name)
+  const type_argument = if is_generic then "<auto>" else "" end
+  let mut field_bindings = ""; let mut field_index = 0
+  while field_index < field_patterns.length() do
+    match field_patterns[field_index] {
+      PatIdent(field_name, _) => do
+        field_bindings = field_bindings + expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name)
+      end,
+      _ => do end
+    }
+    field_index = field_index + 1
+  end
+  expression_output.match_arm_constructed_value(
+    expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
+    field_bindings,
+    eval_expr(arm_body, context, gen_stmts))
+end
+
+fn gen_arm(arm: Shared<SMatchArm>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  match arm.pat {
+    PatWild(_)        => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
+    PatUnit(_)        => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
+    PatBool(_, _)     => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
+    PatInt(_, _)      => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
+    PatStr(_, _)      => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
+    PatIdent(name, _) => expression_output.match_arm_binding_identifier(cpp_safe(name), eval_expr(arm.body, context, gen_stmts)),
+    PatCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts),
+    PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts)
+  }
+
+fn gen_match(subject: Shared<SExpr>, arms: [Shared<SMatchArm>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < arms.length() do parts.push(gen_arm(arms[index], context, gen_stmts)); index = index + 1 end
+  const subject_code = eval_expr(subject, context, gen_stmts)
+  const needs_deref = if arms.length() > 0 then first_arm_needs_deref(arms[0], subject, context) else true end
+  expression_output.std_visit_match_expression(
+    parts.join(",\n"),
+    expression_output.visit_subject_for_match(subject_code, needs_deref))
+end
+
+// --- Expression rules --------------------------------------------------------
+
+fn gen_binary_expr(operation: string, left_expr: Shared<SExpr>, right_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expression_output.parenthesized_binary(eval_expr(left_expr, context, gen_stmts), operation, eval_expr(right_expr, context, gen_stmts))
+
+fn gen_unary_expr(operation: string, inner_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expression_output.parenthesized_unary(operation, eval_expr(inner_expr, context, gen_stmts))
+
+fn gen_call_function_code(function_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  match function_expr {
+    SExprIdent(name, _, _) => context_resolve(context, map_builtin(name)),
+    _ => eval_expr(function_expr, context, gen_stmts)
+  }
+
+fn gen_call_expr(function_expr: Shared<SExpr>, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const function_code = gen_call_function_code(function_expr, context, gen_stmts)
+  const argument_list = eval_argument_list(arguments, context, gen_stmts)
+  if is_constructor_call(function_expr) then expression_output.constructor_call_braces(function_code, argument_list)
+  else expression_output.function_call_parentheses(function_code, argument_list)
+  end
+end
+
+fn gen_object_code(object: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  match object {
+    SExprIdent(name, _, _) =>
+      if context.self_type.length() > 0 then resolve_object_code_in_self_context(name, context)
+      else context_resolve(context, map_builtin(name))
+      end,
+    _ => eval_expr(object, context, gen_stmts)
+  }
+
+fn gen_method_file(method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expression_output.function_call_parentheses(
+    cpp_function_name_for_file_method(method_name),
+    eval_argument_list(arguments, context, gen_stmts))
+
+fn gen_method_shared_new(argument: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const argument_code = eval_expr(argument, context, gen_stmts)
+  const type_name = infer_shared_new_type_name(argument, context)
+  expression_output.make_shared_call(type_name, argument_code)
+end
+
+fn gen_method_owner_call(object_code: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const mangled_name = context.method_owners.get(method_name)
+  const function_name = context_resolve(context, mangled_name)
+  if arguments.length() == 0 then expression_output.function_call_parentheses(function_name, object_code)
+  else expression_output.function_call_parentheses(
+    function_name,
+    expression_output.comma_separated_pair(object_code, eval_argument_list(arguments, context, gen_stmts)))
+  end
+end
+
+fn gen_method_builtin(object_code: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const call_base = expression_output.dot_member_access(object_code, map_method(method_name))
+  if arguments.length() == 0 then expression_output.function_call_parentheses(call_base, "")
+  else expression_output.function_call_parentheses(call_base, eval_argument_list(arguments, context, gen_stmts))
+  end
+end
+
+fn gen_method_namespace_alias(static_prefix: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const call_base = static_prefix + map_method(method_name)
+  if arguments.length() == 0 then expression_output.function_call_parentheses(call_base, "")
+  else expression_output.function_call_parentheses(call_base, eval_argument_list(arguments, context, gen_stmts))
+  end
+end
+
+fn gen_method_expr_after_object(object_code: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  if object_code == "File" then
+    gen_method_file(method_name, arguments, context, gen_stmts)
+  else if object_code == "Map" && method_name == "new" then
+    expression_output.empty_map_initializer()
+  else if object_code == "Shared" && method_name == "new" && arguments.length() == 1 then
+    gen_method_shared_new(arguments[0], context, gen_stmts)
+  else if method_name == "to_string" && arguments.length() == 0 then
+    expression_output.runtime_to_string_call(object_code)
+  else if context.method_owners.has(method_name) then
+    gen_method_owner_call(object_code, method_name, arguments, context, gen_stmts)
+  else
+    gen_method_builtin(object_code, method_name, arguments, context, gen_stmts)
+  end
+
+fn gen_method_expr(object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  match object {
+    SExprIdent(object_name, _, _) =>
+      if context.namespace_alias_prefixes.has(object_name) then
+        gen_method_namespace_alias(context.namespace_alias_prefixes.get(object_name), method_name, arguments, context, gen_stmts)
+      else
+        gen_method_expr_after_object(gen_object_code(object, context, gen_stmts), method_name, arguments, context, gen_stmts)
+      end,
+    _ => gen_method_expr_after_object(gen_object_code(object, context, gen_stmts), method_name, arguments, context, gen_stmts)
+  }
+
+fn gen_field_expr(object: Shared<SExpr>, field_name: string, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const object_code = eval_expr(object, context, gen_stmts)
+  const operator = field_access_operator(object, context)
+  expression_output.field_access(object_code, operator, cpp_safe(field_name))
+end
+
+fn gen_index_expr(object: Shared<SExpr>, index_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expression_output.index_subscript(eval_expr(object, context, gen_stmts), eval_expr(index_expr, context, gen_stmts))
+
+fn gen_if_expr(condition: Shared<SExpr>, then_expr: Shared<SExpr>, else_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expression_output.ternary_conditional(
+    eval_expr(condition, context, gen_stmts),
+    eval_expr(then_expr, context, gen_stmts),
+    eval_expr(else_expr, context, gen_stmts))
+
+fn gen_block_expr(statements: [Shared<SStmt>], result_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  if statements.length() == 0 then
+    eval_expr(result_expr, context, gen_stmts)
+  else
+    const body =
+      gen_stmts(statements, context) +
+      expression_output.block_immediate_function_return_fragment(
+        eval_expr(result_expr, stmts_final_ctx(statements, context), gen_stmts))
+    expression_output.block_as_immediate_invoked_function_expression(body)
+  end
+
+fn gen_while_expr(condition: Shared<SExpr>, statements: [Shared<SStmt>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expression_output.while_loop_immediate_invoked_function_expression(
+    eval_expr(condition, context, gen_stmts),
+    gen_stmts(statements, context))
+
+fn gen_for_expr(variable: string, iterator: Shared<SExpr>, statements: [Shared<SStmt>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expression_output.for_loop_immediate_invoked_function_expression(
+    cpp_safe(variable),
+    eval_expr(iterator, context, gen_stmts),
+    gen_stmts(statements, context))
+
+fn gen_record_expr(type_name: string, field_values: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const field_order = lookup_fields(context.field_orders, type_name)
+  const values_code = if field_order.length() > 0
+                      then gen_record_ordered(field_values, field_order, context, gen_stmts)
+                      else gen_record_unordered(field_values, context, gen_stmts)
+                      end
+  expression_output.record_initializer(context_resolve(context, type_name), values_code)
+end
+
+fn gen_record_update_expr(type_name: string, base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const field_order = lookup_fields(context.field_orders, type_name)
+  if field_order.length() > 0 then
+    expression_output.record_initializer(
+      context_resolve(context, type_name),
+      gen_record_update_ordered(base_expr, overrides, field_order, context, gen_stmts))
+  else
+    gen_record_update_lazy(base_expr, overrides, context, gen_stmts)
+  end
+end
+
+fn gen_array_expr(elements: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expression_output.array_literal(eval_argument_list(elements, context, gen_stmts))
+
+fn gen_question_expr(inner_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const inner_code = eval_expr(inner_expr, context, gen_stmts)
+  expression_output.question_try_result(inner_code)
+end
+
+fn gen_lambda_expr(parameters: [string], body_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expression_output.lambda_with_return(cpp_lambda_header_prefix(parameters), eval_expr(body_expr, context, gen_stmts))
+
+// --- Dispatcher --------------------------------------------------------------
+
+export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  match expr {
+    SExprInt(integer_value, _, _)                          => gen_integer_literal(integer_value),
+    SExprStr(string_value, _, _)                           => gen_string_literal(string_value),
+    SExprBool(boolean_value, _, _)                         => gen_boolean_literal(boolean_value),
+    SExprUnit(_, _)                                        => gen_unit_literal(),
+    SExprExtern(_, _)                                      => gen_extern_placeholder(),
+    SExprIdent(name, _, _)                                 => gen_identifier(name, context),
+    SExprBin(operation, left_expr, right_expr, _, _)       => gen_binary_expr(operation, left_expr, right_expr, context, gen_stmts),
+    SExprUn(operation, inner_expr, _, _)                   => gen_unary_expr(operation, inner_expr, context, gen_stmts),
+    SExprCall(function_expr, arguments, _, _)              => gen_call_expr(function_expr, arguments, context, gen_stmts),
+    SExprMethod(object, method_name, arguments, _, _)      => gen_method_expr(object, method_name, arguments, context, gen_stmts),
+    SExprField(object, field_name, _, _)                   => gen_field_expr(object, field_name, context, gen_stmts),
+    SExprIndex(object, index_expr, _, _)                   => gen_index_expr(object, index_expr, context, gen_stmts),
+    SExprIf(condition, then_expr, else_expr, _, _)         => gen_if_expr(condition, then_expr, else_expr, context, gen_stmts),
+    SExprBlock(statements, result_expr, _, _)              => gen_block_expr(statements, result_expr, context, gen_stmts),
+    SExprWhile(condition, statements, _, _)                => gen_while_expr(condition, statements, context, gen_stmts),
+    SExprFor(variable, iterator, statements, _, _)         => gen_for_expr(variable, iterator, statements, context, gen_stmts),
+    SExprMatch(subject, arms, _, _)                        => gen_match(subject, arms, context, gen_stmts),
+    SExprRecord(type_name, field_values, _, _)             => gen_record_expr(type_name, field_values, context, gen_stmts),
+    SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts),
+    SExprArray(elements, _, _)                             => gen_array_expr(elements, context, gen_stmts),
+    SExprQuestion(inner_expr, _, _)                        => gen_question_expr(inner_expr, context, gen_stmts),
+    SExprLambda(parameters, body_expr, _, _)               => gen_lambda_expr(parameters, body_expr, context, gen_stmts)
+  }
