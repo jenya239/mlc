@@ -48,6 +48,8 @@ std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_na
 
 int builtin_method_expected_argument_count(mlc::String method_name) noexcept;
 
+std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
 bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept{return std::visit(overloaded{
   [&](const TI32& ti32) -> bool { return [&]() { if (std::holds_alternative<registry::TI32>((*right))) {  return true; } return false; }(); },
   [&](const TString& tstring) -> bool { return [&]() { if (std::holds_alternative<registry::TString>((*right))) {  return true; } return false; }(); },
@@ -128,5 +130,7 @@ return method_name == mlc::String("length") || method_name == mlc::String("size"
 int builtin_method_expected_argument_count(mlc::String method_name) noexcept{
 return method_name == mlc::String("push") ? 1 : method_name == mlc::String("set") ? 2 : method_name == mlc::String("length") || method_name == mlc::String("size") ? 0 : method_name == mlc::String("to_i") || method_name == mlc::String("to_lower") ? 0 : method_name == mlc::String("char_at") ? 1 : method_name == mlc::String("substring") ? 2 : method_name == mlc::String("join") ? 1 : method_name == mlc::String("to_string") ? 0 : method_name == mlc::String("has") || method_name == mlc::String("get") || method_name == mlc::String("remove") ? 1 : method_name == mlc::String("keys") || method_name == mlc::String("values") ? 0 : -1;
 }
+
+std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TNamed>((*type_value))) { auto _v_tnamed = std::get<registry::TNamed>((*type_value)); auto [name] = _v_tnamed; return substitution.has(name) ? substitution.get(name) : type_value; } return type_value; }();}
 
 } // namespace semantic_type_structure

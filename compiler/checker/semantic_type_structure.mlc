@@ -131,3 +131,9 @@ export fn builtin_method_expected_argument_count(method_name: string) -> i32 = d
   else -1
   end
 end
+
+export fn substitute_type(type_value: Shared<Type>, substitution: Map<string, Shared<Type>>) -> Shared<Type> =
+  match type_value {
+    TNamed(name) => if substitution.has(name) then substitution.get(name) else type_value end,
+    _ => type_value
+  }

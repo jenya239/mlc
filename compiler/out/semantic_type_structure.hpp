@@ -55,6 +55,8 @@ std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_na
 
 int builtin_method_expected_argument_count(mlc::String method_name) noexcept;
 
+std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
 } // namespace semantic_type_structure
 
 #endif // SEMANTIC_TYPE_STRUCTURE_HPP
