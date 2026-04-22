@@ -135,7 +135,13 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       end
       registry
     end,
-    DeclExtend(_, _, _) => registry,
+    DeclExtend(_, _, methods) => do
+      let mut i = 0
+      while i < methods.length() do
+        registry = register_decl(registry, methods[i]); i = i + 1
+      end
+      registry
+    end,
     DeclFn(name, type_parameters, _, params, return_type, _) => do
       const param_types: [Shared<Type>] = []
       let mut i = 0
@@ -199,5 +205,18 @@ export fn field_type_from_object(object_type: Shared<Type>, field_name: string, 
     const field_map = registry.fields_for(type_name)
     if field_map.has(field_name) then field_map.get(field_name) else Shared.new(TUnknown) end
   else Shared.new(TUnknown)
+  end
+end
+
+export fn method_return_type_from_object(object_type: Shared<Type>, method_name: string, registry: TypeRegistry) -> Shared<Type> = do
+  const inner_type = match object_type { TShared(inner) => inner, _ => object_type }
+  const type_name = match inner_type { TNamed(name) => name, _ => "" }
+  if type_name == "" then Shared.new(TUnknown)
+  else
+    const mangled = type_name + "_" + method_name
+    if registry.has_fn(mangled) then
+      match registry.fn_type(mangled) { TFn(_, return_type) => return_type, _ => Shared.new(TUnknown) }
+    else Shared.new(TUnknown)
+    end
   end
 end

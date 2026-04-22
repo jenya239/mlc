@@ -144,7 +144,8 @@ fn infer_expr_method(
     with_arguments,
     method_name,
     method_span,
-    method_arguments.length())
+    method_arguments.length(),
+    inference_context.registry)
 end
 
 fn infer_expr_field(object: Shared<Expr>, field_name: string, field_source_span: Span, inference_context: CheckContext) -> InferResult =

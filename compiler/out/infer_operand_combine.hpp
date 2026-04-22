@@ -27,7 +27,7 @@ infer_result::InferResult infer_conditional_from_branch_results(infer_result::In
 
 infer_result::InferResult infer_field_from_object_result(infer_result::InferResult object_result, mlc::String field_name, ast::Span field_source_span, registry::TypeRegistry registry) noexcept;
 
-infer_result::InferResult infer_method_from_object_and_arguments(infer_result::InferResult object_result, infer_result::InferResult with_arguments, mlc::String method_name, ast::Span method_span, int argument_count) noexcept;
+infer_result::InferResult infer_method_from_object_and_arguments(infer_result::InferResult object_result, infer_result::InferResult with_arguments, mlc::String method_name, ast::Span method_span, int argument_count, registry::TypeRegistry registry) noexcept;
 
 } // namespace infer_operand_combine
 

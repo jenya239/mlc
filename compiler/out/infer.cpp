@@ -147,7 +147,7 @@ return callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(inferen
 infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult object_result = infer_expr(object, inference_context);
 infer_result::InferResult with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context);
-return infer_operand_combine::infer_method_from_object_and_arguments(object_result, with_arguments, method_name, method_span, method_arguments.size());
+return infer_operand_combine::infer_method_from_object_and_arguments(object_result, with_arguments, method_name, method_span, method_arguments.size(), inference_context.registry);
 }
 
 infer_result::InferResult infer_expr_field(std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span field_source_span, check_context::CheckContext inference_context) noexcept{return infer_operand_combine::infer_field_from_object_result(infer_expr(object, inference_context), field_name, field_source_span, inference_context.registry);}

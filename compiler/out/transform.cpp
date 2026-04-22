@@ -102,7 +102,8 @@ std::shared_ptr<semantic_ir::SExpr> transform_expr(std::shared_ptr<ast::Expr> ex
  }(); } if (std::holds_alternative<ast::ExprMethod>((*expression)._)) { auto _v_exprmethod = std::get<ast::ExprMethod>((*expression)._); auto [object, method_name, method_arguments, source_span] = _v_exprmethod; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   std::shared_ptr<semantic_ir::SExpr> typed_object = transform_expr(object, transform_context);
   mlc::Array<std::shared_ptr<semantic_ir::SExpr>> typed_args = transform_exprs(method_arguments, transform_context);
-  std::shared_ptr<registry::Type> result_type = semantic_type_structure::builtin_method_return_type(method_name);
+  std::shared_ptr<registry::Type> builtin_type = semantic_type_structure::builtin_method_return_type(method_name);
+  std::shared_ptr<registry::Type> result_type = semantic_type_structure::type_is_unknown(builtin_type) ? registry::method_return_type_from_object(semantic_ir::sexpr_type(typed_object), method_name, transform_context.registry) : builtin_type;
   return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(typed_object, method_name, typed_args, result_type, source_span));
  }(); } if (std::holds_alternative<ast::ExprField>((*expression)._)) { auto _v_exprfield = std::get<ast::ExprField>((*expression)._); auto [object, field_name, source_span] = _v_exprfield; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   std::shared_ptr<semantic_ir::SExpr> typed_object = transform_expr(object, transform_context);

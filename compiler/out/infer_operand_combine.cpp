@@ -25,7 +25,7 @@ infer_result::InferResult infer_conditional_from_branch_results(infer_result::In
 
 infer_result::InferResult infer_field_from_object_result(infer_result::InferResult object_result, mlc::String field_name, ast::Span field_source_span, registry::TypeRegistry registry) noexcept;
 
-infer_result::InferResult infer_method_from_object_and_arguments(infer_result::InferResult object_result, infer_result::InferResult with_arguments, mlc::String method_name, ast::Span method_span, int argument_count) noexcept;
+infer_result::InferResult infer_method_from_object_and_arguments(infer_result::InferResult object_result, infer_result::InferResult with_arguments, mlc::String method_name, ast::Span method_span, int argument_count, registry::TypeRegistry registry) noexcept;
 
 infer_result::InferResult infer_binary_from_operand_results(mlc::String operation, infer_result::InferResult left_result, infer_result::InferResult right_result, ast::Span source_span) noexcept{
 infer_result::InferResult merged = infer_result::InferResult_absorb(left_result, right_result);
@@ -61,10 +61,12 @@ mlc::Array<ast::Diagnostic> attached = type_diagnostics::infer_expr_field_diagno
 return infer_result::InferResult{resolved_field_type, ast::diagnostics_append(object_result.errors, attached)};
 }
 
-infer_result::InferResult infer_method_from_object_and_arguments(infer_result::InferResult object_result, infer_result::InferResult with_arguments, mlc::String method_name, ast::Span method_span, int argument_count) noexcept{
+infer_result::InferResult infer_method_from_object_and_arguments(infer_result::InferResult object_result, infer_result::InferResult with_arguments, mlc::String method_name, ast::Span method_span, int argument_count, registry::TypeRegistry registry) noexcept{
 mlc::Array<ast::Diagnostic> receiver_errors = type_diagnostics::infer_builtin_method_receiver_diagnostics(object_result.inferred_type, method_name, method_span);
 mlc::Array<ast::Diagnostic> arity_errors = type_diagnostics::method_arity_after_receiver(receiver_errors, method_name, argument_count, method_span);
-return infer_result::InferResult{semantic_type_structure::builtin_method_return_type(method_name), ast::diagnostics_append(ast::diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)};
+std::shared_ptr<registry::Type> builtin_type = semantic_type_structure::builtin_method_return_type(method_name);
+std::shared_ptr<registry::Type> inferred_type = semantic_type_structure::type_is_unknown(builtin_type) ? registry::method_return_type_from_object(object_result.inferred_type, method_name, registry) : builtin_type;
+return infer_result::InferResult{inferred_type, ast::diagnostics_append(ast::diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)};
 }
 
 } // namespace infer_operand_combine

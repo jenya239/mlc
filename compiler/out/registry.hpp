@@ -43,6 +43,8 @@ registry::TypeRegistry build_registry(ast::Program prog) noexcept;
 
 std::shared_ptr<registry::Type> field_type_from_object(std::shared_ptr<registry::Type> object_type, mlc::String field_name, registry::TypeRegistry registry) noexcept;
 
+std::shared_ptr<registry::Type> method_return_type_from_object(std::shared_ptr<registry::Type> object_type, mlc::String method_name, registry::TypeRegistry registry) noexcept;
+
 } // namespace registry
 
 #endif // REGISTRY_HPP

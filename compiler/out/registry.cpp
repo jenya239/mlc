@@ -37,6 +37,8 @@ registry::TypeRegistry register_variant(registry::TypeRegistry registry, mlc::St
 
 std::shared_ptr<registry::Type> field_type_from_object(std::shared_ptr<registry::Type> object_type, mlc::String field_name, registry::TypeRegistry registry) noexcept;
 
+std::shared_ptr<registry::Type> method_return_type_from_object(std::shared_ptr<registry::Type> object_type, mlc::String method_name, registry::TypeRegistry registry) noexcept;
+
 std::shared_ptr<registry::Type> TypeRegistry_fn_type(registry::TypeRegistry self, mlc::String name) noexcept{return self.fn_types.get(name);}
 
 bool TypeRegistry_has_fn(registry::TypeRegistry self, mlc::String name) noexcept{return self.fn_types.has(name);}
@@ -126,7 +128,16 @@ i = i + 1;
 }
   return registry;
  }(); },
-  [&](const DeclExtend& declextend) -> registry::TypeRegistry { auto [_w0, _w1, _w2] = declextend; return registry; },
+  [&](const DeclExtend& declextend) -> registry::TypeRegistry { auto [_w0, _w1, methods] = declextend; return [&]() -> registry::TypeRegistry { 
+  int i = 0;
+  while (i < methods.size()){
+{
+registry = register_decl(registry, methods[i]);
+i = i + 1;
+}
+}
+  return registry;
+ }(); },
   [&](const DeclFn& declfn) -> registry::TypeRegistry { auto [name, type_parameters, _w0, params, return_type, _w1] = declfn; return [&]() -> registry::TypeRegistry { 
   mlc::Array<std::shared_ptr<registry::Type>> param_types = {};
   int i = 0;
@@ -202,6 +213,15 @@ return type_name != mlc::String("") && TypeRegistry_has_fields(registry, type_na
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> field_map = TypeRegistry_fields_for(registry, type_name);
   return field_map.has(field_name) ? field_map.get(field_name) : std::make_shared<registry::Type>((registry::TUnknown{}));
  }() : std::make_shared<registry::Type>((registry::TUnknown{}));
+}
+
+std::shared_ptr<registry::Type> method_return_type_from_object(std::shared_ptr<registry::Type> object_type, mlc::String method_name, registry::TypeRegistry registry) noexcept{
+std::shared_ptr<registry::Type> inner_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TShared>((*object_type))) { auto _v_tshared = std::get<registry::TShared>((*object_type)); auto [inner] = _v_tshared; return inner; } return object_type; }();
+mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*inner_type))) { auto _v_tnamed = std::get<registry::TNamed>((*inner_type)); auto [name] = _v_tnamed; return name; } return mlc::String(""); }();
+return type_name == mlc::String("") ? std::make_shared<registry::Type>((registry::TUnknown{})) : [&]() -> std::shared_ptr<registry::Type> { 
+  mlc::String mangled = type_name + mlc::String("_") + method_name;
+  return TypeRegistry_has_fn(registry, mangled) ? [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TFn>((*TypeRegistry_fn_type(registry, mangled)))) { auto _v_tfn = std::get<registry::TFn>((*TypeRegistry_fn_type(registry, mangled))); auto [_w0, return_type] = _v_tfn; return return_type; } return std::make_shared<registry::Type>((registry::TUnknown{})); }() : std::make_shared<registry::Type>((registry::TUnknown{}));
+ }();
 }
 
 } // namespace registry

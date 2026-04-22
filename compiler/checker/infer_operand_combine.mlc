@@ -2,7 +2,7 @@
 
 import { Expr, Span, diagnostics_append } from "../ast"
 import { InferResult } from "./infer_result"
-import { Type, TypeRegistry, field_type_from_object } from "./registry"
+import { Type, TypeRegistry, field_type_from_object, method_return_type_from_object } from "./registry"
 import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from "./semantic_type_structure"
 import {
   infer_binary_operand_diagnostics,
@@ -90,12 +90,19 @@ export fn infer_method_from_object_and_arguments(
   with_arguments: InferResult,
   method_name: string,
   method_span: Span,
-  argument_count: i32
+  argument_count: i32,
+  registry: TypeRegistry
 ) -> InferResult = do
   const receiver_errors = infer_builtin_method_receiver_diagnostics(object_result.inferred_type, method_name, method_span)
   const arity_errors    = method_arity_after_receiver(receiver_errors, method_name, argument_count, method_span)
+  const builtin_type    = builtin_method_return_type(method_name)
+  const inferred_type   =
+    if type_is_unknown(builtin_type) then
+      method_return_type_from_object(object_result.inferred_type, method_name, registry)
+    else builtin_type
+    end
   InferResult {
-    inferred_type: builtin_method_return_type(method_name),
+    inferred_type: inferred_type,
     errors: diagnostics_append(diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)
   }
 end
