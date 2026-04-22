@@ -101,6 +101,10 @@ preds::ExprResult parse_primary_unit_fallback(preds::Parser parser) noexcept;
 
 preds::ExprResult parse_primary(preds::Parser parser) noexcept;
 
+bool looks_like_typed_lambda_params(preds::Parser parser) noexcept;
+
+preds::NamesResult parse_typed_lambda_params(preds::Parser parser) noexcept;
+
 bool looks_like_lambda_params(preds::Parser parser) noexcept;
 
 preds::NamesResult parse_lambda_params(preds::Parser parser) noexcept;
@@ -543,7 +547,11 @@ return preds::TKind_is_rparen(preds::Parser_kind(preds::Parser_advance(parser)))
   mlc::Array<mlc::String> params = {};
   preds::ExprResult body = parse_expr(preds::Parser_advance_by(parser, 3));
   return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprLambda(params, body.expr, open_paren_span)), body.parser};
- }() : preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprUnit(open_paren_span)), preds::Parser_advance_by(parser, 2)} : looks_like_lambda_params(preds::Parser_advance(parser)) ? [&]() -> preds::ExprResult { 
+ }() : preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprUnit(open_paren_span)), preds::Parser_advance_by(parser, 2)} : looks_like_typed_lambda_params(preds::Parser_advance(parser)) ? [&]() -> preds::ExprResult { 
+  preds::NamesResult param_result = parse_typed_lambda_params(preds::Parser_advance(parser));
+  preds::ExprResult body = parse_expr(preds::Parser_advance(param_result.parser));
+  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprLambda(param_result.exprs, body.expr, open_paren_span)), body.parser};
+ }() : looks_like_lambda_params(preds::Parser_advance(parser)) ? [&]() -> preds::ExprResult { 
   preds::NamesResult param_result = parse_lambda_params(preds::Parser_advance(parser));
   preds::ExprResult body = parse_expr(preds::Parser_advance(param_result.parser));
   return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprLambda(param_result.exprs, body.expr, open_paren_span)), body.parser};
@@ -607,6 +615,23 @@ return preds::TKind_is_int(kind) ? parse_primary_integer_literal(parser, preds::
   ast::Span bracket_span = preds::Parser_span_at_cursor(parser);
   return parse_array_lit(preds::Parser_advance(parser), bracket_span);
  }() : preds::TKind_is_if(kind) || preds::TKind_is_unless(kind) ? parse_primary_if_or_unless(parser) : preds::TKind_is_do(kind) ? parse_primary_do_block(parser) : preds::TKind_is_while(kind) ? parse_primary_while_loop(parser) : preds::TKind_is_for(kind) ? parse_primary_for_loop(parser) : preds::TKind_is_match(kind) ? parse_primary_match(parser) : preds::TKind_is_return(kind) ? parse_primary_return_as_block(parser) : preds::TKind_is_ident(kind) ? parse_primary_identifier(parser, preds::TKind_ident(kind)) : parse_primary_unit_fallback(parser);
+}
+
+bool looks_like_typed_lambda_params(preds::Parser parser) noexcept{return preds::TKind_is_ident(preds::Parser_kind(parser)) && preds::TKind_is_colon(preds::Parser_kind(preds::Parser_advance(parser)));}
+
+preds::NamesResult parse_typed_lambda_params(preds::Parser parser) noexcept{
+mlc::Array<mlc::String> names = {};
+preds::Parser state = std::move(parser);
+names.push_back(preds::TKind_ident(preds::Parser_kind(state)));
+state = types::parse_type(preds::Parser_advance_by(state, 2)).parser;
+while (preds::TKind_is_comma(preds::Parser_kind(state))){
+{
+state = preds::Parser_advance(state);
+names.push_back(preds::TKind_ident(preds::Parser_kind(state)));
+state = types::parse_type(preds::Parser_advance_by(state, 2)).parser;
+}
+}
+return preds::NamesResult{names, preds::Parser_advance(state)};
 }
 
 bool looks_like_lambda_params(preds::Parser parser) noexcept{

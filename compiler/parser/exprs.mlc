@@ -437,6 +437,10 @@ fn parse_primary_parenthesized(parser: Parser) -> ExprResult = do
     else
       ExprResult { expr: Shared.new(ExprUnit(open_paren_span)), parser: parser.advance_by(2) }
     end
+  else if looks_like_typed_lambda_params(parser.advance()) then
+    const param_result = parse_typed_lambda_params(parser.advance())
+    const body = parse_expr(param_result.parser.advance())
+    ExprResult { expr: Shared.new(ExprLambda(param_result.exprs, body.expr, open_paren_span)), parser: body.parser }
   else if looks_like_lambda_params(parser.advance()) then
     const param_result = parse_lambda_params(parser.advance())
     const body = parse_expr(param_result.parser.advance())
@@ -519,6 +523,24 @@ fn parse_primary(parser: Parser) -> ExprResult = do
   else if kind.is_ident() then parse_primary_identifier(parser, kind.ident())
   else parse_primary_unit_fallback(parser)
   end
+end
+
+// Check if parser (after `(`) looks like typed lambda params: IDENT : Type (, IDENT : Type)* ) =>
+fn looks_like_typed_lambda_params(parser: Parser) -> bool =
+  parser.kind().is_ident() && parser.advance().kind().is_colon()
+
+// Parse typed lambda params: IDENT : Type (, IDENT : Type)* ) - stops AFTER `)`
+fn parse_typed_lambda_params(parser: Parser) -> NamesResult = do
+  const names: [string] = []
+  let mut state = parser
+  names.push(state.kind().ident())
+  state = parse_type(state.advance_by(2)).parser
+  while state.kind().is_comma() do
+    state = state.advance()
+    names.push(state.kind().ident())
+    state = parse_type(state.advance_by(2)).parser
+  end
+  NamesResult { exprs: names, parser: state.advance() }
 end
 
 // Check if parser (after `(`) looks like lambda params: IDENT (, IDENT)* ) =>
