@@ -1,0 +1,148 @@
+// Builtin method receiver type diagnostic builders.
+
+import { Diagnostic, Span, diagnostic_error } from "../ast"
+import { Type } from "./registry"
+import * as semantic_type_structure from "./semantic_type_structure"
+
+fn infer_method_receiver_push(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
+  if method_name == "push" then
+    if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.type_is_array(receiver_type) then
+      [diagnostic_error(
+        "method push expects an array receiver, got " + semantic_type_structure.type_description(receiver_type),
+        method_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_method_receiver_set(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
+  if method_name == "set" then
+    if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.type_is_array(receiver_type) && !semantic_type_structure.receiver_type_is_map(receiver_type) then
+      [diagnostic_error(
+        "method set expects an array or Map receiver, got " + semantic_type_structure.type_description(receiver_type),
+        method_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_method_receiver_length_or_size(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
+  if method_name == "length" || method_name == "size" then
+    if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.type_is_string(receiver_type) && !semantic_type_structure.type_is_array(receiver_type) then
+      [diagnostic_error(
+        "methods length and size apply to string or array; receiver is " + semantic_type_structure.type_description(receiver_type),
+        method_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_method_receiver_to_integer_string_only(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
+  if method_name == "to_i" then
+    if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.type_is_string(receiver_type) then
+      [diagnostic_error(
+        "method to_i expects a string receiver, got " + semantic_type_structure.type_description(receiver_type),
+        method_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_method_receiver_string_only_methods(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
+  if method_name == "char_at" || method_name == "substring" || method_name == "to_lower" then
+    if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.type_is_string(receiver_type) then
+      [diagnostic_error(
+        "method " + method_name + " expects a string receiver, got " + semantic_type_structure.type_description(receiver_type),
+        method_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_method_receiver_join(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
+  if method_name == "join" then
+    if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.type_is_array(receiver_type) then
+      [diagnostic_error(
+        "method join expects an array receiver, got " + semantic_type_structure.type_description(receiver_type),
+        method_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_method_receiver_has(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
+  if method_name == "has" then
+    if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.receiver_type_is_map(receiver_type) then
+      [diagnostic_error(
+        "method has expects a Map receiver, got " + semantic_type_structure.type_description(receiver_type),
+        method_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_method_receiver_get_remove_keys_values(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
+  if method_name == "get" || method_name == "remove" || method_name == "keys" || method_name == "values" then
+    if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.receiver_type_is_map(receiver_type) then
+      [diagnostic_error(
+        "method " + method_name + " expects a Map receiver, got " + semantic_type_structure.type_description(receiver_type),
+        method_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+export fn infer_builtin_method_receiver_diagnostics(receiver_type: Shared<Type>, method_name: string, method_span: Span) -> [Diagnostic] = do
+  const from_push = infer_method_receiver_push(method_name, receiver_type, method_span)
+  if from_push.length() > 0 then from_push
+  else
+    const from_set = infer_method_receiver_set(method_name, receiver_type, method_span)
+    if from_set.length() > 0 then from_set
+    else
+      const from_length = infer_method_receiver_length_or_size(method_name, receiver_type, method_span)
+      if from_length.length() > 0 then from_length
+      else
+        const from_to_i = infer_method_receiver_to_integer_string_only(method_name, receiver_type, method_span)
+        if from_to_i.length() > 0 then from_to_i
+        else
+          const from_string_ops = infer_method_receiver_string_only_methods(method_name, receiver_type, method_span)
+          if from_string_ops.length() > 0 then from_string_ops
+          else
+            const from_join = infer_method_receiver_join(method_name, receiver_type, method_span)
+            if from_join.length() > 0 then from_join
+            else
+              const from_map_access = infer_method_receiver_get_remove_keys_values(method_name, receiver_type, method_span)
+              if from_map_access.length() > 0 then from_map_access
+              else infer_method_receiver_has(method_name, receiver_type, method_span)
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+end

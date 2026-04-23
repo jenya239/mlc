@@ -4,11 +4,11 @@ import { Expr, Span, diagnostics_append } from "../ast"
 import { InferResult } from "./infer_result"
 import { Type, TypeRegistry, field_type_from_object, method_return_type_from_object } from "./registry"
 import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from "./semantic_type_structure"
+import { infer_binary_operand_diagnostics } from "./binary_diagnostics"
+import { infer_builtin_method_receiver_diagnostics } from "./method_receiver_diagnostics"
 import {
-  infer_binary_operand_diagnostics,
   unary_minus_diagnostic,
   unary_bang_diagnostic,
-  infer_builtin_method_receiver_diagnostics,
   method_arity_after_receiver,
   index_not_array_diagnostic,
   index_not_i32_diagnostic,

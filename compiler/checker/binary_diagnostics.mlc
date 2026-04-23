@@ -1,0 +1,132 @@
+// Binary operator diagnostic builders.
+
+import { Diagnostic, Span, diagnostic_error } from "../ast"
+import { Type } from "./registry"
+import * as semantic_type_structure from "./semantic_type_structure"
+
+fn infer_binary_diagnostic_for_addition(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] =
+  if operation == "+" && !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
+     !semantic_type_structure.types_allowed_for_binary_plus(left_type, right_type) then
+    [diagnostic_error(
+      "incompatible operand types for +: " + semantic_type_structure.type_description(left_type) + " and " + semantic_type_structure.type_description(right_type),
+      source_span)]
+  else
+    []
+  end
+
+fn infer_binary_diagnostic_for_int_arithmetic(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
+  if operation == "-" || operation == "*" || operation == "/" || operation == "%" then
+    if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
+       !semantic_type_structure.types_allowed_for_binary_int_only(left_type, right_type) then
+      [diagnostic_error(
+        "numeric operands required for " + operation + ", got " + semantic_type_structure.type_description(left_type) + " and " + semantic_type_structure.type_description(right_type),
+        source_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_binary_diagnostic_for_equality(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
+  if operation == "==" || operation == "!=" then
+    if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
+       !semantic_type_structure.types_structurally_equal(left_type, right_type) then
+      [diagnostic_error(
+        "incompatible types for " + operation + ": " + semantic_type_structure.type_description(left_type) + " and " + semantic_type_structure.type_description(right_type),
+        source_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_binary_diagnostic_for_ordering(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
+  if operation == "<" || operation == ">" || operation == "<=" || operation == ">=" then
+    if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
+       !semantic_type_structure.types_allowed_for_ordering(left_type, right_type) then
+      [diagnostic_error(
+        "ordering requires i32 or string operands of the same kind, got " + semantic_type_structure.type_description(left_type) + " and " + semantic_type_structure.type_description(right_type),
+        source_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_binary_diagnostic_for_logical(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
+  if operation == "&&" || operation == "||" then
+    if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
+       !semantic_type_structure.types_allowed_for_logical_and_or(left_type, right_type) then
+      [diagnostic_error(
+        "logical operators require bool operands, got " + semantic_type_structure.type_description(left_type) + " and " + semantic_type_structure.type_description(right_type),
+        source_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_binary_diagnostic_for_bitwise(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
+  if operation == "&" || operation == "|" || operation == "^" then
+    if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
+       !semantic_type_structure.types_allowed_for_binary_int_only(left_type, right_type) then
+      [diagnostic_error(
+        "bitwise " + operation + " requires i32 operands, got " + semantic_type_structure.type_description(left_type) + " and " + semantic_type_structure.type_description(right_type),
+        source_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+fn infer_binary_diagnostic_for_shift(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
+  if operation == "<<" || operation == ">>" then
+    if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
+       !semantic_type_structure.types_allowed_for_binary_int_only(left_type, right_type) then
+      [diagnostic_error(
+        "shift requires i32 operands, got " + semantic_type_structure.type_description(left_type) + " and " + semantic_type_structure.type_description(right_type),
+        source_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
+export fn infer_binary_operand_diagnostics(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
+  const from_addition = infer_binary_diagnostic_for_addition(operation, left_type, right_type, source_span)
+  if from_addition.length() > 0 then from_addition
+  else
+    const from_int_arithmetic = infer_binary_diagnostic_for_int_arithmetic(operation, left_type, right_type, source_span)
+    if from_int_arithmetic.length() > 0 then from_int_arithmetic
+    else
+      const from_equality = infer_binary_diagnostic_for_equality(operation, left_type, right_type, source_span)
+      if from_equality.length() > 0 then from_equality
+      else
+        const from_ordering = infer_binary_diagnostic_for_ordering(operation, left_type, right_type, source_span)
+        if from_ordering.length() > 0 then from_ordering
+        else
+          const from_logical = infer_binary_diagnostic_for_logical(operation, left_type, right_type, source_span)
+          if from_logical.length() > 0 then from_logical
+          else
+            const from_bitwise = infer_binary_diagnostic_for_bitwise(operation, left_type, right_type, source_span)
+            if from_bitwise.length() > 0 then from_bitwise
+            else infer_binary_diagnostic_for_shift(operation, left_type, right_type, source_span)
+            end
+          end
+        end
+      end
+    end
+  end
+end
