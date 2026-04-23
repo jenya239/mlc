@@ -1,18 +1,18 @@
 # MLC Roadmap
 
-Дата: март 2026.
+Дата: апрель 2026.
 
 ## Текущее состояние
 
 | Компонент | Путь | Состояние |
 |-----------|------|-----------|
 | Bootstrap-компилятор | `lib/mlc/` | Полнофункциональный, эталон семантики |
-| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (192 теста) |
+| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (224 теста) |
 | Triple-bootstrap | `compiler/triple_bootstrap.sh` | При актуальном `compiler/out/mlcc`: `diff bs2 bs3` пустой (стабильность self-host) |
 | Runtime | `runtime/include/`, `runtime/src/` | C++20, стабильный |
 | Unit-тесты Ruby | `test/mlc/` | 1106 runs, 0 failures |
 | Unit-тесты MLC | `compiler/tests/` | `rake test_compiler_mlc`; опционально `rake triple_bootstrap` или `MLC_TRIPLE_BOOTSTRAP=1 rake test_self_hosted_stack` |
-| E2E тесты mlcc | `compiler/tests/e2e/` | 4 программы, все проходят через mlcc |
+| E2E тесты mlcc | `compiler/tests/e2e/` | 5 программ (hello, fibonacci, result, sum_types, record_update), все проходят |
 
 ---
 
@@ -93,15 +93,15 @@ compiler/checker/
 
 ---
 
-## Фаза 4 — Диагностики
+## Фаза 4 — Диагностики ✓ ВЫПОЛНЕНО
 
-В self-hosted цепочке: `Span` и `Diagnostic` в `compiler/ast.mlc`; checker накапливает `[Diagnostic]` с позициями из AST (например `expr_span`, спаны вызова / поля / индекса).
+В self-hosted цепочке: `Span` и `Diagnostic` в `compiler/ast.mlc`; checker накапливает `[Diagnostic]` с позициями из AST.
 
-В `compiler/checker/infer.mlc` среди прочего: арность вызова для `TFn` и конструктора; согласованность позиционных аргументов с параметрами типа на всём вызове (`call_argument_unify.mlc`, общая подстановка в `Map`); «called value is not a function»; поля записи и доступ к не-записи / массиву; индексация (не массив; индекс не `i32`); расхождение типов веток `if`; согласованность типов рук `match`; диапазон `for` не массив.
+Реализовано: арность вызова для `TFn` и конструктора; согласованность аргументов с параметрами типа (`call_argument_unify.mlc`); «called value is not a function»; поля записи и доступ к не-записи / массиву; индексация; расхождение типов веток `if`; типы рук `match`; диапазон `for`; тип поля в record-конструкторе; тип return. Trait bounds при вызове generic fn.
 
-Тесты позиций и текста: `assert_diagnostic_at` в `compiler/tests/test_checker.mlc`.
+Тесты: `assert_diagnostic_at` в `compiler/tests/test_checker.mlc` (224 unit-теста).
 
-Дальше: больше узлов и сообщений; при желании единый формат вывода как у Ruby-компилятора.
+Дальше: единый формат вывода диагностик как у Ruby-компилятора; больше специализированных сообщений.
 
 ---
 
@@ -111,13 +111,16 @@ compiler/checker/
 
 | Фича | Ruby-тест | MLC-тест | Статус |
 |------|-----------|----------|--------|
-| Generics с type bounds (`T: Display`) | есть | есть (`test_checker`) | расширять покрытие |
-| Trait dispatch (`extend Type : Trait`) | есть | есть (`test_checker`, разбор `extend`) | расширять покрытие |
+| Generics с type bounds (`T: Display`) | есть | есть (`test_checker`, checker validates at call site) | ✓ |
+| Trait dispatch (`extend Type : Trait`) | есть | есть (`test_checker`, `record_update` E2E) | ✓ |
+| Trait bound check at call site | есть | есть (`test_checker`, `trait_bound_diagnostics`) | ✓ |
 | Lambdas (`x => x + 1`) | есть | есть (`test_checker`) | расширять по мере фич |
-| Record update (`{ old \| field: val }`) | есть | частично (`test_pipe_and_record_update`, упорядоченный + lazy codegen) | расширить checker/parser |
-| `let const` (constexpr) | есть | есть (`test_checker`, `test_codegen`) | расширять |
-| Вложенные generics (`Array<Result<T,E>>`) | есть | есть (`test_checker`) | расширять |
-| Multiline string literals (исходник с реальным переводом строки внутри `"…"`) | нет | нет | в строке только `\\n` и др. escapes; см. `test_lexer` |
+| Record update (`Point { ...p, x: 10 }`) | есть | есть (`test_checker`, E2E `record_update`) | ✓ |
+| User-defined `to_string` (не shadowed builtin) | нет | E2E `record_update` | ✓ исправлен баг |
+| `let const` (constexpr) | есть | есть (`test_checker`, `test_codegen`) | ✓ |
+| Вложенные generics (`Array<Result<T,E>>`) | есть | есть (`test_checker`) | ✓ |
+| Multiline string literals (реальный `\n` в строке) | нет | есть (`test_checker`, `test_codegen`) | ✓ |
+| Return type mismatch diagnostic | нет | есть (`test_checker`) | ✓ |
 
 Порядок: сначала тест в `compiler/tests/`, затем фикс в `compiler/`.
 
