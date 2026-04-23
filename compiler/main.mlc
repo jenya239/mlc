@@ -243,6 +243,6 @@ fn main() -> i32 = do
     else "out" end
   match compile_modular(entry_path, out_dir) {
     Ok(_) => 0,
-    Err(errors) => do print(format_errs("error", errors)); exit(1) end
+    Err(errors) => do print(format_errs("error", errors)); exit(1); 0 end
   }
 end
