@@ -265,5 +265,23 @@ export fn codegen_tests() -> [TestResult] = do
     gen_type_decl(ctx, "Result", result_type_params, result_variants),
     expected_fwd + expected_body))
 
+  // -- Multiline string literal codegen ------------------------------------
+
+  results.push(assert_eq_str("string literal with embedded newline - escapes to \\n in C++",
+    gen_expr(ss("hello\nworld"), ctx),
+    "mlc::String(\"hello\\nworld\", 11)"))
+
+  results.push(assert_eq_str("string literal with tab - escapes to \\t",
+    gen_expr(ss("a\tb"), ctx),
+    "mlc::String(\"a\\tb\", 3)"))
+
+  results.push(assert_eq_str("string literal with backslash - escapes to \\\\",
+    gen_expr(ss("a\\b"), ctx),
+    "mlc::String(\"a\\\\b\", 3)"))
+
+  results.push(assert_eq_str("string literal with double quote - escapes to \\\"",
+    gen_expr(ss("say \"hi\""), ctx),
+    "mlc::String(\"say \\\"hi\\\"\", 8)"))
+
   results
 end

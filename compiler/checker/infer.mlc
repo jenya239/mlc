@@ -1,6 +1,6 @@
 // Type inference: dispatcher and per-expression rule functions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Diagnostic, Span, diagnostics_append, expr_span } from "../ast"
+import { Expr, Stmt, FieldVal, MatchArm, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span } from "../ast"
 import { Type } from "./registry"
 import { CheckContext, check_context_new } from "./check_context"
 import { InferResult, StmtInferResult, infer_ok } from "./infer_result"
@@ -11,7 +11,8 @@ import * as infer_operand_combine from "./infer_operand_combine"
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
 import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
 import { call_argument_unification_diagnostics } from "./call_argument_unify"
-import { function_parameter_list, type_is_function } from "./semantic_type_structure"
+import { function_parameter_list, type_is_function, types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
+import { field_type_from_object } from "./registry"
 import { infer_expr_identifier } from "./infer_expr_ident"
 import { env_for_pattern, env_for_pattern_substituted } from "./pattern_env"
 
@@ -37,7 +38,8 @@ fn infer_field_values_errors(
   let mut index = 0
   while index < field_values.length() do
     const field_value = field_values[index]
-    if record_type_name_for_fields.length() > 0 && inference_context.registry.has_fields(record_type_name_for_fields) then
+    const has_fields = record_type_name_for_fields.length() > 0 && inference_context.registry.has_fields(record_type_name_for_fields)
+    if has_fields then
       const field_name_errors = infer_expr_field_diagnostics(
         Shared.new(TNamed(record_type_name_for_fields)),
         field_value.name,
@@ -45,7 +47,23 @@ fn infer_field_values_errors(
         inference_context.registry)
       result = InferResult { inferred_type: result.inferred_type, errors: diagnostics_append(result.errors, field_name_errors) }
     end
-    result = result.absorb(infer_expr(field_value.val, inference_context))
+    const value_result = infer_expr(field_value.val, inference_context)
+    if has_fields then
+      const expected_type = field_type_from_object(Shared.new(TNamed(record_type_name_for_fields)), field_value.name, inference_context.registry)
+      const actual_type = value_result.inferred_type
+      const type_mismatch = !type_is_unknown(expected_type) && !type_is_unknown(actual_type) && !types_structurally_equal(expected_type, actual_type)
+      const type_errors: [Diagnostic] = if type_mismatch then
+        [diagnostic_error(
+          "field " + field_value.name + ": expected " + type_description(expected_type) + ", got " + type_description(actual_type),
+          expr_span(field_value.val))]
+      else [] end
+      result = InferResult {
+        inferred_type: result.inferred_type,
+        errors: diagnostics_append(diagnostics_append(result.errors, value_result.errors), type_errors)
+      }
+    else
+      result = result.absorb(value_result)
+    end
     index = index + 1
   end
   result

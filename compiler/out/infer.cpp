@@ -12,6 +12,7 @@
 #include "type_diagnostics.hpp"
 #include "call_argument_unify.hpp"
 #include "semantic_type_structure.hpp"
+#include "registry.hpp"
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
 
@@ -29,6 +30,7 @@ using namespace infer_call_support;
 using namespace type_diagnostics;
 using namespace call_argument_unify;
 using namespace semantic_type_structure;
+using namespace registry;
 using namespace infer_expr_ident;
 using namespace pattern_env;
 using namespace ast_tokens;
@@ -93,13 +95,27 @@ int index = 0;
 while (index < field_values.size()){
 {
 std::shared_ptr<ast::FieldVal> field_value = field_values[index];
-if (record_type_name_for_fields.length() > 0 && registry::TypeRegistry_has_fields(inference_context.registry, record_type_name_for_fields)){
+bool has_fields = record_type_name_for_fields.length() > 0 && registry::TypeRegistry_has_fields(inference_context.registry, record_type_name_for_fields);
+if (has_fields){
 {
 mlc::Array<ast::Diagnostic> field_name_errors = type_diagnostics::infer_expr_field_diagnostics(std::make_shared<registry::Type>(registry::TNamed(record_type_name_for_fields)), field_value->name, ast::expr_span(field_value->val), inference_context.registry);
 result = infer_result::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, field_name_errors)};
 }
 }
-result = infer_result::InferResult_absorb(result, infer_expr(field_value->val, inference_context));
+infer_result::InferResult value_result = infer_expr(field_value->val, inference_context);
+if (has_fields){
+{
+std::shared_ptr<registry::Type> expected_type = registry::field_type_from_object(std::make_shared<registry::Type>(registry::TNamed(record_type_name_for_fields)), field_value->name, inference_context.registry);
+std::shared_ptr<registry::Type> actual_type = value_result.inferred_type;
+bool type_mismatch = !semantic_type_structure::type_is_unknown(expected_type) && !semantic_type_structure::type_is_unknown(actual_type) && !semantic_type_structure::types_structurally_equal(expected_type, actual_type);
+mlc::Array<ast::Diagnostic> type_errors = type_mismatch ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("field ") + field_value->name + mlc::String(": expected ") + semantic_type_structure::type_description(expected_type) + mlc::String(", got ") + semantic_type_structure::type_description(actual_type), ast::expr_span(field_value->val))} : mlc::Array<ast::Diagnostic>{};
+result = infer_result::InferResult{result.inferred_type, ast::diagnostics_append(ast::diagnostics_append(result.errors, value_result.errors), type_errors)};
+}
+} else {
+{
+result = infer_result::InferResult_absorb(result, value_result);
+}
+}
 index = index + 1;
 }
 }

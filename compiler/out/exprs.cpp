@@ -718,8 +718,9 @@ return preds::TKind_is_else(preds::Parser_kind(then_result.parser)) ? [&]() -> p
   preds::Parser after_block = preds::TKind_is_end(preds::Parser_kind(else_block.parser)) ? preds::Parser_advance(else_block.parser) : else_block.parser;
   return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprIf(condition, then_expr, else_block.expr, header_span)), after_block};
  }() : [&]() -> preds::ExprResult { 
+  ast::Span else_span = preds::Parser_span_at_cursor(after_else);
   preds::StmtsResult else_stmts = parse_stmts_until_end(after_else);
-  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprIf(condition, then_expr, StmtsResult_to_block_expr(else_stmts, header_span), header_span)), else_stmts.parser};
+  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprIf(condition, then_expr, StmtsResult_to_block_expr(else_stmts, else_span), header_span)), else_stmts.parser};
  }();
  }() : preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprIf(condition, then_expr, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())), header_span)), preds::Parser_advance(then_result.parser)};
 }

@@ -149,6 +149,10 @@ mlc::Array<std::shared_ptr<ast::TypeVariant>> result_variants = mlc::Array<std::
 mlc::String expected_fwd = mlc::String("template<typename T>\nstruct Ok;\n") + mlc::String("template<typename E>\nstruct Err;\n") + mlc::String("template<typename T, typename E>\nusing Result = std::variant<Ok<T>, Err<E>>;\n");
 mlc::String expected_body = mlc::String("template<typename T>\nstruct Ok {T field0;};\n") + mlc::String("template<typename E>\nstruct Err {E field0;};\n");
 results.push_back(test_runner::assert_eq_str(mlc::String("generic type Result<T,E> = Ok(T) | Err(E) codegen"), type_gen::gen_type_decl(ctx, mlc::String("Result"), result_type_params, result_variants), expected_fwd + expected_body));
+results.push_back(test_runner::assert_eq_str(mlc::String("string literal with embedded newline - escapes to \\n in C++"), eval::gen_expr(ss(mlc::String("hello\nworld")), ctx), mlc::String("mlc::String(\"hello\\nworld\", 11)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string literal with tab - escapes to \\t"), eval::gen_expr(ss(mlc::String("a\tb")), ctx), mlc::String("mlc::String(\"a\\tb\", 3)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string literal with backslash - escapes to \\\\"), eval::gen_expr(ss(mlc::String("a\\b")), ctx), mlc::String("mlc::String(\"a\\\\b\", 3)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string literal with double quote - escapes to \\\""), eval::gen_expr(ss(mlc::String("say \"hi\"")), ctx), mlc::String("mlc::String(\"say \\\"hi\\\"\", 8)")));
 return results;
 }
 

@@ -95,8 +95,35 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("trait bound: param method call - 0 errors",
     check_error_count("type Display { fn to_string(self: Self) -> string }\nfn show<T: Display>(x: T) -> string = x.to_string()"), 0))
 
-  results.push(assert_true("record update: unknown field is an error",
-    check_error_count("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, z: 1 }") > 0))
+  results.push(assert_diagnostic_at(
+    "record update: unknown field — position on field value",
+    first_checker_error_line("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, z: 1 }"),
+    2,
+    44,
+    "undefined field: z on Point"))
+
+  results.push(assert_diagnostic_at(
+    "record constructor: unknown field — position on field value",
+    first_checker_error_line("type Point = { x: i32, y: i32 }\nfn f() -> Point = Point { x: 1, z: 1 }"),
+    2,
+    36,
+    "undefined field: z on Point"))
+
+  results.push(assert_diagnostic_at(
+    "record constructor: field type mismatch — position on field value",
+    first_checker_error_line("type Point = { x: i32, y: i32 }\nfn f() -> Point = Point { x: \"wrong\", y: 0 }"),
+    2,
+    30,
+    "field x: expected i32, got string"))
+
+  results.push(assert_eq_int("record constructor: correct field types — 0 errors",
+    check_error_count("type Point = { x: i32, y: i32 }\nfn f() -> Point = Point { x: 1, y: 2 }"), 0))
+
+  results.push(assert_eq_int("multiline string literal in source — 0 checker errors",
+    check_error_count("fn f() -> string = \"hello\nworld\""), 0))
+
+  results.push(assert_eq_int("string with escaped newline in source — 0 checker errors",
+    check_error_count("fn f() -> string = \"a\\nb\""), 0))
 
   results.push(assert_true("two undefined names - at least 1 error",
     check_error_count("fn f() -> i32 = foo + bar") > 0))
@@ -136,6 +163,12 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int("lambda expr - 0 errors",
     check_error_count("fn f() -> i32 = do\n  const g = x => x + 1\n  g(41)\nend"), 0))
+
+  results.push(assert_eq_int("typed lambda param — 0 errors",
+    check_error_count("fn f() -> i32 = do\n  const g = (x: i32) => x + 1\n  g(41)\nend"), 0))
+
+  results.push(assert_eq_int("typed lambda two params — 0 errors",
+    check_error_count("fn f() -> i32 = do\n  const g = (x: i32, y: i32) => x + y\n  g(1, 2)\nend"), 0))
 
   results.push(assert_eq_int("Ok/Err/Result as known globals - 0 errors",
     check_error_count("fn f() -> i32 = do\n  const r = Ok(42)\n  0\nend"), 0))
@@ -284,11 +317,40 @@ export fn checker_tests() -> [TestResult] = do
     26,
     "expected 1 arguments, got 0"))
 
-  results.push(assert_true("infer: user function call too few arguments",
-    first_checker_error_line("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f()").contains("expected 1 arguments, got 0")))
+  results.push(assert_diagnostic_at(
+    "infer: user function call too few arguments — position on ( of call",
+    first_checker_error_line("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f()"),
+    2,
+    18,
+    "expected 1 arguments, got 0"))
 
-  results.push(assert_true("infer: user function call too many arguments",
-    first_checker_error_line("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(1, 2)").contains("expected 1 arguments, got 2")))
+  results.push(assert_diagnostic_at(
+    "infer: user function call too many arguments — position on ( of call",
+    first_checker_error_line("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(1, 2)"),
+    2,
+    18,
+    "expected 1 arguments, got 2"))
+
+  results.push(assert_diagnostic_at(
+    "infer: user function call argument type mismatch — position on argument",
+    first_checker_error_line("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(\"str\")"),
+    2,
+    19,
+    "argument expects i32, got string"))
+
+  results.push(assert_diagnostic_at(
+    "infer: called value is not a function — position on ( of call",
+    first_checker_error_line("fn f() -> i32 = 42()"),
+    1,
+    19,
+    "called value is not a function (got i32)"))
+
+  results.push(assert_diagnostic_at(
+    "infer: field access on i32 — position on dot",
+    first_checker_error_line("type P = { x: i32 }\nfn f(p: i32) -> i32 = p.x"),
+    2,
+    24,
+    "field access on value without record fields: i32"))
 
   results.push(assert_diagnostic_at(
     "infer: has on non-Map receiver (i32)",
@@ -309,6 +371,75 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int("infer: ref mut Map uses inner type for builtins",
     check_error_count("fn f(cache: ref mut Map<string, i32>) -> bool = cache.has(\"k\")"), 0))
+
+  // --- if branch type mismatch -----------------------------------------------
+
+  results.push(assert_diagnostic_at(
+    "infer: if branch type mismatch — position on else expression",
+    first_checker_error_line("fn f() -> i32 = if true then 1 else \"x\" end"),
+    1,
+    37,
+    "if branch types differ"))
+
+  results.push(assert_eq_int("infer: if branch same type — 0 errors",
+    check_error_count("fn f() -> i32 = if true then 1 else 2 end"), 0))
+
+  // --- match arm type mismatch -----------------------------------------------
+
+  results.push(assert_diagnostic_at(
+    "infer: match arm type mismatch — position on mismatched arm body",
+    first_checker_error_line("fn f() -> i32 = match 1 { _ => 0, _ => \"x\" }"),
+    1,
+    40,
+    "match arm result type"))
+
+  results.push(assert_eq_int("infer: match arms same type — 0 errors",
+    check_error_count("fn f() -> i32 = match 1 { _ => 0, _ => 1 }"), 0))
+
+  // --- for loop range type ---------------------------------------------------
+
+  results.push(assert_diagnostic_at(
+    "infer: for loop range not array — position on iterator",
+    first_checker_error_line("fn f() -> i32 = do for x in 42 do end; 0 end"),
+    1,
+    29,
+    "for loop range must be an array"))
+
+  results.push(assert_eq_int("infer: for loop range array — 0 errors",
+    check_error_count("fn f(a: [i32]) -> i32 = do for x in a do end; 0 end"), 0))
+
+  // --- index diagnostics -----------------------------------------------------
+
+  results.push(assert_diagnostic_at(
+    "infer: index on non-array — position on bracket",
+    first_checker_error_line("fn f() -> i32 = 42[0]"),
+    1,
+    19,
+    "indexing requires an array"))
+
+  results.push(assert_diagnostic_at(
+    "infer: index with non-i32 — position on bracket",
+    first_checker_error_line("fn f(a: [i32]) -> i32 = a[\"key\"]"),
+    1,
+    26,
+    "array index must be i32"))
+
+  results.push(assert_eq_int("infer: valid array index — 0 errors",
+    check_error_count("fn f(a: [i32]) -> i32 = a[0]"), 0))
+
+  // --- binary operator type mismatch -----------------------------------------
+
+  results.push(assert_true("infer: binary + type mismatch produces error",
+    first_checker_error_line("fn f() -> i32 = 1 + true").contains("incompatible operand types for +")))
+
+  results.push(assert_true("infer: binary == type mismatch produces error",
+    first_checker_error_line("fn f() -> bool = 1 == \"x\"").contains("incompatible types for ==")))
+
+  results.push(assert_true("infer: binary < on bool produces error",
+    first_checker_error_line("fn f() -> bool = true < false").contains("ordering requires i32 or string")))
+
+  results.push(assert_eq_int("infer: binary + string concat — 0 errors",
+    check_error_count("fn f() -> string = \"a\" + \"b\""), 0))
 
   results
 end

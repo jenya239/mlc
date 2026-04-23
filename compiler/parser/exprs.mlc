@@ -620,8 +620,9 @@ export fn parse_if_expr(parser: Parser) -> ExprResult = do
       const after_block = if else_block.parser.kind().is_end() then else_block.parser.advance() else else_block.parser end
       ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_block.expr, header_span)), parser: after_block }
     else
+      const else_span = after_else.span_at_cursor()
       const else_stmts = parse_stmts_until_end(after_else)
-      ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_stmts.to_block_expr(header_span), header_span)), parser: else_stmts.parser }
+      ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_stmts.to_block_expr(else_span), header_span)), parser: else_stmts.parser }
     end
   else
     ExprResult {

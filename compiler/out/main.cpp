@@ -310,7 +310,8 @@ return std::visit(overloaded{
   [&](const ast::Ok<mlc::String>& ok) -> int { auto [_w0] = ok; return 0; },
   [&](const ast::Err<mlc::Array<mlc::String>>& err) -> int { auto [errors] = err; return [&]() -> int { 
   mlc::io::print(format_errs(mlc::String("error"), errors));
-  return mlc::io::exit(1);
+  mlc::io::exit(1);
+  return 0;
  }(); }
 }, compile_modular(entry_path, out_dir));
 }

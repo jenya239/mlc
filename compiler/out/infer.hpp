@@ -16,6 +16,7 @@
 #include "type_diagnostics.hpp"
 #include "call_argument_unify.hpp"
 #include "semantic_type_structure.hpp"
+#include "registry.hpp"
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
 
