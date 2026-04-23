@@ -53,6 +53,9 @@ mlc::Array<test_runner::TestResult> checker_tests() noexcept{
 mlc::Array<test_runner::TestResult> results = {};
 results.push_back(test_runner::assert_eq_int(mlc::String("empty program - 0 errors"), check_error_count(mlc::String("")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn returning literal - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = 42")), 0));
+results.push_back(test_runner::assert_true(mlc::String("fn return type mismatch — error"), first_checker_error_line(mlc::String("fn f() -> i32 = \"hello\"")).contains(mlc::String("return type: expected i32, got string"))));
+results.push_back(test_runner::assert_eq_int(mlc::String("fn return type matches — 0 errors"), check_error_count(mlc::String("fn f() -> string = \"hello\"")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("fn generic return T — 0 errors"), check_error_count(mlc::String("fn id<T>(x: T) -> T = x")), 0));
 results.push_back(test_runner::assert_true(mlc::String("integer literal called like function - diagnostic names type"), checker_first_error_contains_nonfunction_i32(mlc::String("fn f() -> i32 = 42()"))));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn using its own param - 0 errors"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn calling another fn - 0 errors"), check_error_count(mlc::String("fn add(x: i32, y: i32) -> i32 = x + y\nfn main() -> i32 = add(1, 2)")), 0));

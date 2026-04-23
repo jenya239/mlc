@@ -1,11 +1,28 @@
 // Checker entry: name resolution + type inference over a program (or entry slice).
 
 import { Program, Result, decl_inner, param_name, param_typ,
-         Diagnostic, diagnostics_append, diagnostics_to_strings } from "../ast"
+         Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span } from "../ast"
 import { collect_globals, check_names_expr } from "./names"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
 import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
+import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
+
+// Returns true only for types that are definitively resolved (not type variables or
+// uninstantiated generics). TNamed is checkable only when the registry knows it as a
+// concrete record/ADT name; otherwise it could be an unresolved type parameter.
+fn type_is_checkable(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
+  match type_value {
+    TI32        => true,
+    TString     => true,
+    TBool       => true,
+    TUnit       => true,
+    TArray(_)   => true,
+    TFn(_, _)   => true,
+    TShared(_)  => true,
+    TNamed(name) => registry.has_fields(name),
+    _           => false
+  }
 
 export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
 
@@ -20,7 +37,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
   let mut declaration_index = 0
   while declaration_index < entry.decls.length() do
     match decl_inner(entry.decls[declaration_index]) {
-      DeclFn(_, type_parameters, _, parameters, _, body) => do
+      DeclFn(_, type_parameters, _, parameters, return_type_annotation, body) => do
         const locals: [string] = []
         let mut type_parameter_index = 0
         while type_parameter_index < type_parameters.length() do
@@ -38,7 +55,17 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         all_diagnostics = diagnostics_append(all_diagnostics, check_names_expr(body, locals, globals))
         const inference_context = check_context_new(type_environment, registry)
         const inference_result = infer_expr(body, inference_context)
-        all_diagnostics = diagnostics_append(all_diagnostics, inference_result.errors); ()
+        const expected_type = type_from_annotation(return_type_annotation)
+        const actual_type = inference_result.inferred_type
+        const return_type_errors: [Diagnostic] =
+          if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_structurally_equal(expected_type, actual_type) then
+            [diagnostic_error(
+              "return type: expected " + type_description(expected_type) + ", got " + type_description(actual_type),
+              expr_span(body))]
+          else [] end
+        all_diagnostics = diagnostics_append(
+          diagnostics_append(all_diagnostics, inference_result.errors),
+          return_type_errors); ()
       end,
       DeclType(_, _, _)    => do () end,
       DeclTrait(_, _, _)   => do () end,

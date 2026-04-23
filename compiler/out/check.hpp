@@ -9,6 +9,7 @@
 #include "registry.hpp"
 #include "infer.hpp"
 #include "check_context.hpp"
+#include "semantic_type_structure.hpp"
 
 namespace check {
 

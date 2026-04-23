@@ -5,6 +5,7 @@
 #include "registry.hpp"
 #include "infer.hpp"
 #include "check_context.hpp"
+#include "semantic_type_structure.hpp"
 
 namespace check {
 
@@ -13,7 +14,10 @@ using namespace names;
 using namespace registry;
 using namespace infer;
 using namespace check_context;
+using namespace semantic_type_structure;
 using namespace ast_tokens;
+
+bool type_is_checkable(std::shared_ptr<registry::Type> type_value, registry::TypeRegistry registry) noexcept;
 
 bool CheckOut_has_errors(check::CheckOut self) noexcept;
 
@@ -22,6 +26,8 @@ ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept;
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check(ast::Program program) noexcept;
+
+bool type_is_checkable(std::shared_ptr<registry::Type> type_value, registry::TypeRegistry registry) noexcept{return [&]() { if (std::holds_alternative<registry::TI32>((*type_value))) {  return true; } if (std::holds_alternative<registry::TString>((*type_value))) {  return true; } if (std::holds_alternative<registry::TBool>((*type_value))) {  return true; } if (std::holds_alternative<registry::TUnit>((*type_value))) {  return true; } if (std::holds_alternative<registry::TArray>((*type_value))) { auto _v_tarray = std::get<registry::TArray>((*type_value)); auto [_w0] = _v_tarray; return true; } if (std::holds_alternative<registry::TFn>((*type_value))) { auto _v_tfn = std::get<registry::TFn>((*type_value)); auto [_w0, _w1] = _v_tfn; return true; } if (std::holds_alternative<registry::TShared>((*type_value))) { auto _v_tshared = std::get<registry::TShared>((*type_value)); auto [_w0] = _v_tshared; return true; } if (std::holds_alternative<registry::TNamed>((*type_value))) { auto _v_tnamed = std::get<registry::TNamed>((*type_value)); auto [name] = _v_tnamed; return registry::TypeRegistry_has_fields(registry, name); } return false; }();}
 
 bool CheckOut_has_errors(check::CheckOut self) noexcept{return self.errors.size() > 0;}
 
@@ -33,7 +39,7 @@ int declaration_index = 0;
 while (declaration_index < entry.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, type_parameters, _w1, parameters, _w2, body] = declfn; return [&]() -> std::tuple<> { 
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, type_parameters, _w1, parameters, return_type_annotation, body] = declfn; return [&]() -> std::tuple<> { 
   mlc::Array<mlc::String> locals = {};
   int type_parameter_index = 0;
   while (type_parameter_index < type_parameters.size()){
@@ -55,7 +61,10 @@ parameter_index = parameter_index + 1;
   all_diagnostics = ast::diagnostics_append(all_diagnostics, names::check_names_expr(body, locals, globals));
   check_context::CheckContext inference_context = check_context::check_context_new(type_environment, registry);
   infer_result::InferResult inference_result = infer::infer_expr(body, inference_context);
-  all_diagnostics = ast::diagnostics_append(all_diagnostics, inference_result.errors);
+  std::shared_ptr<registry::Type> expected_type = registry::type_from_annotation(return_type_annotation);
+  std::shared_ptr<registry::Type> actual_type = inference_result.inferred_type;
+  mlc::Array<ast::Diagnostic> return_type_errors = type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !semantic_type_structure::types_structurally_equal(expected_type, actual_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("return type: expected ") + semantic_type_structure::type_description(expected_type) + mlc::String(", got ") + semantic_type_structure::type_description(actual_type), ast::expr_span(body))} : mlc::Array<ast::Diagnostic>{};
+  all_diagnostics = ast::diagnostics_append(ast::diagnostics_append(all_diagnostics, inference_result.errors), return_type_errors);
   return std::make_tuple();
  }(); },
   [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1, _w2] = decltype_; return std::make_tuple(); },

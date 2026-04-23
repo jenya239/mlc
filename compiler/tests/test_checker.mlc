@@ -43,6 +43,15 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("fn returning literal - 0 errors",
     check_error_count("fn f() -> i32 = 42"), 0))
 
+  results.push(assert_true("fn return type mismatch — error",
+    first_checker_error_line("fn f() -> i32 = \"hello\"").contains("return type: expected i32, got string")))
+
+  results.push(assert_eq_int("fn return type matches — 0 errors",
+    check_error_count("fn f() -> string = \"hello\""), 0))
+
+  results.push(assert_eq_int("fn generic return T — 0 errors",
+    check_error_count("fn id<T>(x: T) -> T = x"), 0))
+
   results.push(assert_true("integer literal called like function - diagnostic names type",
     checker_first_error_contains_nonfunction_i32("fn f() -> i32 = 42()")))
 
