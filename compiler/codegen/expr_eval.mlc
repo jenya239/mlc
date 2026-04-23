@@ -223,31 +223,48 @@ fn gen_method_namespace_alias(static_prefix: string, method_name: string, argume
   end
 end
 
-fn gen_method_expr_after_object(object_code: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+fn object_type_name_for_dispatch(type_value: Shared<Type>) -> string =
+  match type_value {
+    TI32    => "i32",
+    TString => "string",
+    TBool   => "bool",
+    TNamed(name) => name,
+    TShared(inner) => match inner { TNamed(name) => name, _ => "" },
+    _ => ""
+  }
+
+fn is_user_defined_method_for_type(method_name: string, type_name: string, context: CodegenContext) -> bool =
+  context.method_owners.has(method_name) &&
+  type_name != "" &&
+  context.method_owners.get(method_name) == type_name + "_" + method_name
+
+fn gen_method_expr_after_object(object_code: string, object_type_name: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   if object_code == "File" then
     gen_method_file(method_name, arguments, context, gen_stmts)
   else if object_code == "Map" && method_name == "new" then
     expression_output.empty_map_initializer()
   else if object_code == "Shared" && method_name == "new" && arguments.length() == 1 then
     gen_method_shared_new(arguments[0], context, gen_stmts)
+  else if is_user_defined_method_for_type(method_name, object_type_name, context) then
+    gen_method_owner_call(object_code, method_name, arguments, context, gen_stmts)
   else if method_name == "to_string" && arguments.length() == 0 then
     expression_output.runtime_to_string_call(object_code)
-  else if context.method_owners.has(method_name) then
-    gen_method_owner_call(object_code, method_name, arguments, context, gen_stmts)
   else
     gen_method_builtin(object_code, method_name, arguments, context, gen_stmts)
   end
 
-fn gen_method_expr(object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+fn gen_method_expr(object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const object_type_name = object_type_name_for_dispatch(sexpr_type(object))
   match object {
     SExprIdent(object_name, _, _) =>
       if context.namespace_alias_prefixes.has(object_name) then
         gen_method_namespace_alias(context.namespace_alias_prefixes.get(object_name), method_name, arguments, context, gen_stmts)
       else
-        gen_method_expr_after_object(gen_object_code(object, context, gen_stmts), method_name, arguments, context, gen_stmts)
+        gen_method_expr_after_object(gen_object_code(object, context, gen_stmts), object_type_name, method_name, arguments, context, gen_stmts)
       end,
-    _ => gen_method_expr_after_object(gen_object_code(object, context, gen_stmts), method_name, arguments, context, gen_stmts)
+    _ => gen_method_expr_after_object(gen_object_code(object, context, gen_stmts), object_type_name, method_name, arguments, context, gen_stmts)
   }
+end
 
 fn gen_field_expr(object: Shared<SExpr>, field_name: string, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
   const object_code = eval_expr(object, context, gen_stmts)

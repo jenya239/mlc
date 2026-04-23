@@ -1,0 +1,18 @@
+type Point = { x: i32, y: i32 }
+
+extend Point {
+  fn to_string(self: Point) -> string =
+    "(" + self.x.to_string() + ", " + self.y.to_string() + ")"
+}
+
+fn move_x(p: Point, dx: i32) -> Point = Point { ...p, x: p.x + dx }
+
+fn main() -> i32 = do
+  const origin = Point { x: 0, y: 0 }
+  const moved = move_x(origin, 5)
+  const moved_again = Point { ...moved, y: 3 }
+  println(origin.to_string())
+  println(moved.to_string())
+  println(moved_again.to_string())
+  0
+end
