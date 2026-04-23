@@ -104,6 +104,12 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("trait bound: param method call - 0 errors",
     check_error_count("type Display { fn to_string(self: Self) -> string }\nfn show<T: Display>(x: T) -> string = x.to_string()"), 0))
 
+  results.push(assert_eq_int("trait bound: call with implementing type — 0 errors",
+    check_error_count("type Display { fn show(self: Self) -> string }\nextend i32 : Display { fn show(self: i32) -> string = self.to_string() }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)"), 0))
+
+  results.push(assert_true("trait bound: call with non-implementing type — error",
+    first_checker_error_line("type Display { fn show(self: Self) -> string }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)").contains("does not implement Display")))
+
   results.push(assert_diagnostic_at(
     "record update: unknown field — position on field value",
     first_checker_error_line("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, z: 1 }"),

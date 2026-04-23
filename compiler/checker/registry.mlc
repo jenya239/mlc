@@ -16,10 +16,12 @@ export type Type =
 export type TypeRegistry = TypeRegistry {
   fn_types:    Map<string, Shared<Type>>,
   function_type_parameter_names: Map<string, [string]>,
+  function_trait_bounds: Map<string, [[string]]>,
   ctor_types:  Map<string, Shared<Type>>,
   ctor_params: Map<string, [Shared<Type>]>,
   algebraic_decl_type_parameter_names: Map<string, [string]>,
-  field_types: Map<string, Map<string, Shared<Type>>>
+  field_types: Map<string, Map<string, Shared<Type>>>,
+  trait_impls: Map<string, [string]>
 }
 
 export extend TypeRegistry {
@@ -57,6 +59,21 @@ export extend TypeRegistry {
 
   fn has_fields(self, type_name: string) -> bool =
     field_types.has(type_name)
+
+  fn type_implements_trait(self, type_name: string, trait_name: string) -> bool =
+    if trait_impls.has(type_name) then
+      let mut index = 0; let mut found = false
+      const impls = trait_impls.get(type_name)
+      while index < impls.length() && !found do
+        if impls[index] == trait_name then found = true end
+        index = index + 1
+      end
+      found
+    else false end
+
+  fn fn_trait_bounds(self, fn_name: string) -> [[string]] =
+    if function_trait_bounds.has(fn_name) then function_trait_bounds.get(fn_name)
+    else do const empty_bounds: [[string]] = []; empty_bounds end end
 }
 
 export fn empty_registry() -> TypeRegistry = do
@@ -86,10 +103,12 @@ export fn empty_registry() -> TypeRegistry = do
   TypeRegistry {
     fn_types: builtin_function_types,
     function_type_parameter_names: Map.new(),
+    function_trait_bounds: Map.new(),
     ctor_types: ctor_types,
     ctor_params: ctor_params,
     algebraic_decl_type_parameter_names: Map.new(),
-    field_types: Map.new()
+    field_types: Map.new(),
+    trait_impls: Map.new()
   }
 end
 
@@ -135,14 +154,21 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       end
       registry
     end,
-    DeclExtend(_, _, methods) => do
+    DeclExtend(type_name, trait_name, methods) => do
+      if trait_name.length() > 0 then
+        const existing: [string] =
+          if registry.trait_impls.has(type_name) then registry.trait_impls.get(type_name)
+          else do const empty: [string] = []; empty end end
+        existing.push(trait_name)
+        registry.trait_impls.set(type_name, existing)
+      end
       let mut i = 0
       while i < methods.length() do
         registry = register_decl(registry, methods[i]); i = i + 1
       end
       registry
     end,
-    DeclFn(name, type_parameters, _, params, return_type, _) => do
+    DeclFn(name, type_parameters, trait_bounds, params, return_type, _) => do
       const param_types: [Shared<Type>] = []
       let mut i = 0
       while i < params.length() do
@@ -150,6 +176,7 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       end
       registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
       registry.function_type_parameter_names.set(name, type_parameters)
+      if trait_bounds.length() > 0 then registry.function_trait_bounds.set(name, trait_bounds) end
       registry
     end,
     DeclType(type_name, type_parameters, variants) => do

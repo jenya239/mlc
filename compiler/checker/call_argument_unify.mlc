@@ -1,6 +1,6 @@
 // Call-site argument checking with type-parameter substitution (unification).
 
-import { Expr, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span } from "../ast"
+import { Expr, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span, span_unknown } from "../ast"
 import { Type } from "./registry"
 import * as semantic_type_structure from "./semantic_type_structure"
 
@@ -87,6 +87,25 @@ fn unify_expected_and_actual_argument_types(
   end
 end
     
+export fn build_call_type_substitution(
+  expected_parameter_types: [Shared<Type>],
+  actual_argument_types: [Shared<Type>],
+  type_parameter_names: [string]
+) -> Map<string, Shared<Type>> = do
+  let substitution: Map<string, Shared<Type>> = Map.new()
+  let mut index = 0
+  while index < expected_parameter_types.length() && index < actual_argument_types.length() do
+    unify_expected_and_actual_argument_types(
+      expected_parameter_types[index],
+      actual_argument_types[index],
+      type_parameter_names,
+      substitution,
+      span_unknown())
+    index = index + 1
+  end
+  substitution
+end
+
 export fn call_argument_unification_diagnostics(
   expected_parameter_types: [Shared<Type>],
   actual_argument_types: [Shared<Type>],
