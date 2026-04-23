@@ -1,0 +1,161 @@
+// Trait and extend block code generation (helpers shared with decl.mlc).
+
+import { TypeVariant, TypeExpr, Param } from "../ast"
+import { SDecl, SExpr, SExprExtern } from "../semantic_ir"
+import { Type } from "../checker/registry"
+import { CodegenContext, make_body_context } from "./context"
+import { cpp_safe } from "./cpp_naming"
+import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp } from "./type_gen"
+import * as expression_output from "./expr"
+
+export fn extract_method_name(fn_name: string, type_name: string) -> string = do
+  const prefix = type_name + "_"
+  if fn_name.length() > prefix.length() && fn_name.substring(0, prefix.length()) == prefix then
+    fn_name.substring(prefix.length(), fn_name.length() - prefix.length())
+  else fn_name
+  end
+end
+
+export fn gen_params(context: CodegenContext, params: [Shared<Param>]) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < params.length() do
+    parts.push(expression_output.parameter_declaration_item(
+      type_to_cpp(context, params[index].typ),
+      cpp_safe(params[index].name)))
+    index = index + 1
+  end
+  parts.join(", ")
+end
+
+export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_params: [string], methods: [Shared<SDecl>]) -> string = do
+  const self_param = if type_params.length() > 0 then type_params[0] else "T" end
+  const tparam = if type_params.length() > 0 then type_params.join(", ") else "T" end
+  const template_header = expression_output.cpp_template_typename_header_line(tparam)
+  let req_parts: [string] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SDeclFn(mangled, _, _, params, ret_type, _) => do
+        const method_name = extract_method_name(mangled, trait_name)
+        const ret_cpp = type_to_cpp(context, Shared.new(TyUnit))
+        req_parts.push(expression_output.concept_requires_expression_method_returns_convertible(method_name, ret_cpp))
+      end,
+      _ => do end
+    }
+    method_index = method_index + 1
+  end
+  const req_body = req_parts.join("; ")
+  expression_output.trait_concept_requires_definition_line(
+    template_header,
+    cpp_safe(trait_name),
+    self_param,
+    req_body)
+end
+
+export fn gen_extend_wrapper_protos(type_name: string, trait_name: string, methods: [Shared<SDecl>], context: CodegenContext) -> string =
+  if trait_name.length() == 0 then ""
+  else
+    let mut wrappers = ""; let mut method_index = 0
+    while method_index < methods.length() do
+      match methods[method_index] {
+        SDeclFn(mangled, _, _, params, ret_type, _) => do
+          const wrapper_context = make_body_context(context, [], [], Map.new(), [], type_name, [], [])
+          const method_name = extract_method_name(mangled, type_name)
+          const ret_cpp = sem_type_to_cpp(wrapper_context, ret_type)
+          const params_str = gen_params(wrapper_context, params)
+          wrappers = wrappers + expression_output.noexcept_function_prototype(
+            ret_cpp,
+            cpp_safe(method_name),
+            params_str)
+        end,
+        _ => do end
+      }
+      method_index = method_index + 1
+    end
+    wrappers
+  end
+
+fn gen_extend_trait_wrapper(type_name: string, mangled: string, params: [Shared<Param>], ret_type: Shared<Type>, context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string) -> string = do
+  const wrapper_context = make_body_context(context, [], [], Map.new(), [], type_name, [], [])
+  const method_name = extract_method_name(mangled, type_name)
+  const ret_cpp = sem_type_to_cpp(wrapper_context, ret_type)
+  const fn_resolved = context_resolve_fn(context, mangled)
+  const params_str = gen_params(wrapper_context, params)
+  let call_args: [string] = []; let mut param_index = 0
+  while param_index < params.length() do
+    call_args.push(cpp_safe(params[param_index].name))
+    param_index = param_index + 1
+  end
+  expression_output.inline_noexcept_forwarding_call(
+    ret_cpp,
+    cpp_safe(method_name),
+    params_str,
+    fn_resolved,
+    call_args.join(", "))
+end
+
+fn gen_extend_trait_wrappers(type_name: string, methods: [Shared<SDecl>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string) -> string = do
+  let mut wrappers = ""; let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SDeclFn(mangled, _, _, params, ret_type, _) =>
+        do wrappers = wrappers + gen_extend_trait_wrapper(type_name, mangled, params, ret_type, context, context_resolve_fn) end,
+      _ => do end
+    }
+    method_index = method_index + 1
+  end
+  wrappers
+end
+
+fn gen_extend_extern_method(mangled: string, type_name: string, params: [Shared<Param>], ret_type: Shared<Type>, trait_name: string, context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string) -> string = do
+  const method_name = if trait_name.length() > 0 then extract_method_name(mangled, type_name) else "" end
+  if type_name == "i32" && method_name == "to_string" && params.length() > 0 then
+    do
+      const ret_cpp = sem_type_to_cpp(context, ret_type)
+      const params_str = gen_params(context, params)
+      expression_output.noexcept_one_line_returning_function(
+        ret_cpp,
+        context_resolve_fn(context, mangled),
+        params_str,
+        expression_output.runtime_to_string_call(cpp_safe(params[0].name)))
+    end
+  else ""
+  end
+end
+
+fn gen_extend_method_parts(type_name: string, trait_name: string, methods: [Shared<SDecl>], extend_context: CodegenContext, context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SDecl>, CodegenContext) -> string) -> [string] = do
+  let parts: [string] = []; let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SDeclFn(mangled, _, _, params, ret_type, body) => do
+        match body {
+          SExprExtern(_, _) => do
+            const generated = gen_extend_extern_method(mangled, type_name, params, ret_type, trait_name, context, context_resolve_fn)
+            if generated.length() > 0 then parts.push(generated) end
+          end,
+          _ => parts.push(gen_decl_fn(methods[method_index], extend_context))
+        }
+      end,
+      _ => parts.push(gen_decl_fn(methods[method_index], extend_context))
+    }
+    method_index = method_index + 1
+  end
+  parts
+end
+
+export fn gen_decl_extend(type_name: string, trait_name: string, methods: [Shared<SDecl>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SDecl>, CodegenContext) -> string) -> string = do
+  const extend_context = make_body_context(context, [], [], Map.new(), [], type_name, [], [])
+  const method_parts = gen_extend_method_parts(type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn)
+  const methods_str = method_parts.join("")
+  if trait_name.length() > 0 then
+    const trait_wrappers = gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn)
+    const cpp_type = type_name_to_cpp(context, type_name)
+    const trait_safe = cpp_safe(trait_name)
+    methods_str + trait_wrappers + expression_output.static_assert_concept_for_type_line(
+      trait_safe,
+      cpp_type,
+      type_name + " does not implement " + trait_name)
+  else
+    methods_str
+  end
+end
