@@ -9,6 +9,7 @@
 #include "registry.hpp"
 #include "cpp_naming.hpp"
 #include "decl_index.hpp"
+#include "type_index.hpp"
 #include "ctor_info.hpp"
 #include "param_analysis.hpp"
 

@@ -1,0 +1,162 @@
+// Type metadata index builders: method owners, variant types, field orders.
+// Operates on the AST declaration list without any codegen dependencies.
+
+import { Program, Decl, decl_inner } from "../ast"
+import { FieldOrder } from "./decl_index"
+
+fn extract_method_name(fn_name: string, type_name: string) -> string = do
+  const prefix = type_name + "_"
+  if fn_name.length() > prefix.length() && fn_name.substring(0, prefix.length()) == prefix then
+    fn_name.substring(prefix.length(), fn_name.length() - prefix.length())
+  else fn_name
+  end
+end
+
+export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string, string>) -> Map<string, string> = do
+  let mut i = 0
+  while i < decls.length() do
+    match decl_inner(decls[i]) {
+      DeclTrait(trait_name, _, methods) => do
+        let mut mi = 0
+        while mi < methods.length() do
+          match methods[mi] {
+            DeclFn(fn_name, _, _, _, _, _) => do
+              const unmangled = extract_method_name(fn_name, trait_name)
+              if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
+            end,
+            _ => do end
+          }
+          mi = mi + 1
+        end
+      end,
+      DeclExtend(type_name, _, methods) => do
+        let mut mi = 0
+        while mi < methods.length() do
+          match methods[mi] {
+            DeclFn(fn_name, _, _, _, _, _) => do
+              const unmangled = extract_method_name(fn_name, type_name)
+              if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
+            end,
+            _ => do end
+          }
+          mi = mi + 1
+        end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  owners
+end
+
+export fn build_method_owners_from_decls(decls: [Shared<Decl>]) -> Map<string, string> =
+  add_method_owners_from_decls(decls, Map.new())
+
+export fn build_generic_variants_from_decls(decls: [Shared<Decl>]) -> [string] = do
+  let result: [string] = []; let mut i = 0
+  while i < decls.length() do
+    const inner_decl = decl_inner(decls[i])
+    match inner_decl {
+      DeclType(_, type_params, variants) => do
+        let mut vi = 0
+        while vi < variants.length() do
+          let should_add = type_params.length() > 0
+          let vname = match variants[vi] {
+            VarRecord(n, _) => n,
+            VarTuple(n, _)  => n,
+            VarUnit(n)      => n
+          }
+          if should_add then result.push(vname) else result.push("__skip__") end
+          vi = vi + 1
+        end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  result
+end
+
+export fn build_variant_types_from_decls(decls: [Shared<Decl>]) -> Map<string, string> = do
+  let variant_map: Map<string, string> = Map.new()
+  let mut i = 0
+  while i < decls.length() do
+    const inner_decl = decl_inner(decls[i])
+    match inner_decl {
+      DeclType(type_name, _, variants) => do
+        let mut vi = 0
+        while vi < variants.length() do
+          match variants[vi] {
+            VarRecord(variant_name, _) => variant_map.set(variant_name, type_name),
+            VarTuple(variant_name, _)  => variant_map.set(variant_name, type_name),
+            VarUnit(variant_name)      => variant_map.set(variant_name, type_name)
+          }
+          vi = vi + 1
+        end
+      end,
+      _ => do end
+    }
+    i = i + 1
+  end
+  variant_map
+end
+
+export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
+  const orders: [Shared<FieldOrder>] = []
+  let mut i = 0
+  while i < prog.decls.length() do
+    match prog.decls[i] {
+      DeclExported(inner) => match decl_inner(inner) {
+        DeclType(type_name, _, variants) => do
+          let mut vi = 0
+          while vi < variants.length() do
+            match variants[vi] {
+              VarRecord(variant_name, field_defs) => do
+                const field_names: [string] = []; let mut fi = 0
+                while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
+                orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
+                if variants.length() == 1 then
+                  orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
+                end
+                do end
+              end,
+              VarTuple(_, _) => do end,
+              VarUnit(_)     => do end
+            }
+            vi = vi + 1
+          end
+        end,
+        DeclFn(_, _, _, _, _, _) => do end,
+        DeclTrait(_, _, _)       => do end,
+        DeclExtend(_, _, _)      => do end,
+        DeclImport(_, _)         => do end,
+        DeclExported(_)          => do end
+      },
+      DeclType(type_name, _, variants) => do
+        let mut vi = 0
+        while vi < variants.length() do
+          match variants[vi] {
+            VarRecord(variant_name, field_defs) => do
+              const field_names: [string] = []; let mut fi = 0
+              while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
+              orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
+              if variants.length() == 1 then
+                orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
+              end
+              do end
+            end,
+            VarTuple(_, _) => do end,
+            VarUnit(_)     => do end
+          }
+          vi = vi + 1
+        end
+      end,
+      DeclFn(_, _, _, _, _, _) => do end,
+      DeclTrait(_, _, _)       => do end,
+      DeclExtend(_, _, _)      => do end,
+      DeclImport(_, _)         => do end
+    }
+    i = i + 1
+  end
+  orders
+end

@@ -44,14 +44,14 @@ index = index + 1;
 return result;
 }
 
-context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept{return context::PrecomputedCtx{decl_index::build_field_orders(prog), decl_index::build_variant_types_from_decls(prog.decls), decl_index::build_item_index(all_items), ctor_info::build_ctor_type_infos_from_decls(prog.decls), decl_index::build_generic_variants_from_decls(prog.decls)};}
+context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept{return context::PrecomputedCtx{type_index::build_field_orders(prog), type_index::build_variant_types_from_decls(prog.decls), decl_index::build_item_index(all_items), ctor_info::build_ctor_type_infos_from_decls(prog.decls), type_index::build_generic_variants_from_decls(prog.decls)};}
 
 context::GenModuleOut gen_module(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept{
 mlc::String base = cpp_naming::path_to_module_base(s_item.path);
 mlc::Array<semantic_ir::SNamespaceImportAlias> namespace_aliases = s_item.namespace_import_aliases;
 mlc::HashMap<mlc::String, mlc::String> qualified = decl_index::build_qualified(s_item.imports, all_items);
 mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes = decl_index::build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases));
-context::CodegenContext context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, namespace_alias_prefixes, mlc::String(""), decl_index::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants};
+context::CodegenContext context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, namespace_alias_prefixes, mlc::String(""), type_index::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants};
 mlc::String module_namespace = base == mlc::String("main") ? mlc::String("mlc_main") : base;
 bool is_entry = decl::decls_have_main(s_item.decls);
 mlc::String std_includes = expr::standard_translation_unit_runtime_headers() + cpp_naming::include_lines(s_item.imports) + mlc::String("\n");
