@@ -20,6 +20,7 @@
 #include "registry.hpp"
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
+#include "infer_match.hpp"
 
 namespace infer {
 

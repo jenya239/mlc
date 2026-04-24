@@ -13,8 +13,6 @@ mlc::Array<mlc::String> pattern_bindings(std::shared_ptr<ast::Pat> pattern) noex
 
 mlc::Array<mlc::String> collect_pattern_bindings(std::shared_ptr<ast::Pat> pattern, mlc::Array<mlc::String> accumulator) noexcept;
 
-mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept;
-
 mlc::Array<ast::Diagnostic> check_names_identifier(mlc::String name, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals, ast::Span source_span) noexcept;
 
 mlc::Array<ast::Diagnostic> check_names_binary_expression(std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
@@ -101,76 +99,6 @@ index = index + 1;
 }
   return accumulator;
  }(); } return accumulator; }();
-}
-
-mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
-mlc::HashMap<mlc::String, bool> names = mlc::HashMap<mlc::String, bool>();
-names.set(mlc::String("true"), true);
-names.set(mlc::String("false"), true);
-names.set(mlc::String("exit"), true);
-names.set(mlc::String("print"), true);
-names.set(mlc::String("println"), true);
-names.set(mlc::String("args"), true);
-names.set(mlc::String("File"), true);
-names.set(mlc::String("Shared"), true);
-names.set(mlc::String("Map"), true);
-names.set(mlc::String("Ok"), true);
-names.set(mlc::String("Err"), true);
-names.set(mlc::String("Result"), true);
-int index = 0;
-while (index < program.decls.size()){
-{
-std::visit(overloaded{
-  [&](const DeclFn& declfn) -> std::tuple<> { auto [name, _w0, _w1, _w2, _w3, _w4] = declfn; return [&]() -> std::tuple<> { 
-  names.set(name, true);
-  return std::make_tuple();
- }(); },
-  [&](const DeclType& decltype_) -> std::tuple<> { auto [name, _w0, variants] = decltype_; return [&]() -> std::tuple<> { 
-  names.set(name, true);
-  int variant_index = 0;
-  while (variant_index < variants.size()){
-{
-std::visit(overloaded{
-  [&](const VarUnit& varunit) -> std::tuple<> { auto [variant_name] = varunit; return [&]() -> std::tuple<> { 
-  names.set(variant_name, true);
-  return std::make_tuple();
- }(); },
-  [&](const VarTuple& vartuple) -> std::tuple<> { auto [variant_name, _w0] = vartuple; return [&]() -> std::tuple<> { 
-  names.set(variant_name, true);
-  return std::make_tuple();
- }(); },
-  [&](const VarRecord& varrecord) -> std::tuple<> { auto [variant_name, _w0] = varrecord; return [&]() -> std::tuple<> { 
-  names.set(variant_name, true);
-  return std::make_tuple();
- }(); }
-}, (*variants[variant_index]));
-variant_index = variant_index + 1;
-}
-}
-  return std::make_tuple();
- }(); },
-  [&](const DeclTrait& decltrait) -> std::tuple<> { auto [name, _w0, methods] = decltrait; return [&]() -> std::tuple<> { 
-  names.set(name, true);
-  int method_index = 0;
-  while (method_index < methods.size()){
-{
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [function_name, _w0, _w1, _w2, _w3, _w4] = _v_declfn; return [&]() -> std::tuple<> { 
-  names.set(function_name, true);
-  return std::make_tuple();
- }(); } return std::make_tuple(); }();
-method_index = method_index + 1;
-}
-}
-  return std::make_tuple();
- }(); },
-  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1, _w2] = declextend; return std::make_tuple(); },
-  [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
-  [&](const DeclExported& declexported) -> std::tuple<> { auto [_w0] = declexported; return std::make_tuple(); }
-}, (*ast::decl_inner(program.decls[index])));
-index = index + 1;
-}
-}
-return names;
 }
 
 mlc::Array<ast::Diagnostic> check_names_identifier(mlc::String name, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals, ast::Span source_span) noexcept{

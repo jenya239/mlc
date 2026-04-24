@@ -17,6 +17,8 @@ using namespace check_context;
 using namespace semantic_type_structure;
 using namespace ast_tokens;
 
+mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept;
+
 bool type_is_checkable(std::shared_ptr<registry::Type> type_value, registry::TypeRegistry registry) noexcept;
 
 bool CheckOut_has_errors(check::CheckOut self) noexcept;
@@ -27,12 +29,82 @@ ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Pr
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check(ast::Program program) noexcept;
 
+mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
+mlc::HashMap<mlc::String, bool> names = mlc::HashMap<mlc::String, bool>();
+names.set(mlc::String("true"), true);
+names.set(mlc::String("false"), true);
+names.set(mlc::String("exit"), true);
+names.set(mlc::String("print"), true);
+names.set(mlc::String("println"), true);
+names.set(mlc::String("args"), true);
+names.set(mlc::String("File"), true);
+names.set(mlc::String("Shared"), true);
+names.set(mlc::String("Map"), true);
+names.set(mlc::String("Ok"), true);
+names.set(mlc::String("Err"), true);
+names.set(mlc::String("Result"), true);
+int index = 0;
+while (index < program.decls.size()){
+{
+std::visit(overloaded{
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [name, _w0, _w1, _w2, _w3, _w4] = declfn; return [&]() -> std::tuple<> { 
+  names.set(name, true);
+  return std::make_tuple();
+ }(); },
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [name, _w0, variants] = decltype_; return [&]() -> std::tuple<> { 
+  names.set(name, true);
+  int variant_index = 0;
+  while (variant_index < variants.size()){
+{
+std::visit(overloaded{
+  [&](const VarUnit& varunit) -> std::tuple<> { auto [variant_name] = varunit; return [&]() -> std::tuple<> { 
+  names.set(variant_name, true);
+  return std::make_tuple();
+ }(); },
+  [&](const VarTuple& vartuple) -> std::tuple<> { auto [variant_name, _w0] = vartuple; return [&]() -> std::tuple<> { 
+  names.set(variant_name, true);
+  return std::make_tuple();
+ }(); },
+  [&](const VarRecord& varrecord) -> std::tuple<> { auto [variant_name, _w0] = varrecord; return [&]() -> std::tuple<> { 
+  names.set(variant_name, true);
+  return std::make_tuple();
+ }(); }
+}, (*variants[variant_index]));
+variant_index = variant_index + 1;
+}
+}
+  return std::make_tuple();
+ }(); },
+  [&](const DeclTrait& decltrait) -> std::tuple<> { auto [name, _w0, methods] = decltrait; return [&]() -> std::tuple<> { 
+  names.set(name, true);
+  int method_index = 0;
+  while (method_index < methods.size()){
+{
+[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [function_name, _w0, _w1, _w2, _w3, _w4] = _v_declfn; return [&]() -> std::tuple<> { 
+  names.set(function_name, true);
+  return std::make_tuple();
+ }(); } return std::make_tuple(); }();
+method_index = method_index + 1;
+}
+}
+  return std::make_tuple();
+ }(); },
+  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1, _w2] = declextend; return std::make_tuple(); },
+  [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
+  [&](const DeclExported& declexported) -> std::tuple<> { auto [_w0] = declexported; return std::make_tuple(); }
+}, (*ast::decl_inner(program.decls[index])));
+index = index + 1;
+}
+}
+return names;
+}
+
 bool type_is_checkable(std::shared_ptr<registry::Type> type_value, registry::TypeRegistry registry) noexcept{return [&]() { if (std::holds_alternative<registry::TI32>((*type_value))) {  return true; } if (std::holds_alternative<registry::TString>((*type_value))) {  return true; } if (std::holds_alternative<registry::TBool>((*type_value))) {  return true; } if (std::holds_alternative<registry::TUnit>((*type_value))) {  return true; } if (std::holds_alternative<registry::TArray>((*type_value))) { auto _v_tarray = std::get<registry::TArray>((*type_value)); auto [_w0] = _v_tarray; return true; } if (std::holds_alternative<registry::TFn>((*type_value))) { auto _v_tfn = std::get<registry::TFn>((*type_value)); auto [_w0, _w1] = _v_tfn; return true; } if (std::holds_alternative<registry::TShared>((*type_value))) { auto _v_tshared = std::get<registry::TShared>((*type_value)); auto [_w0] = _v_tshared; return true; } if (std::holds_alternative<registry::TNamed>((*type_value))) { auto _v_tnamed = std::get<registry::TNamed>((*type_value)); auto [name] = _v_tnamed; return registry::TypeRegistry_has_fields(registry, name); } return false; }();}
 
 bool CheckOut_has_errors(check::CheckOut self) noexcept{return self.errors.size() > 0;}
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full(ast::Program entry, ast::Program full_program) noexcept{
-mlc::HashMap<mlc::String, bool> globals = names::collect_globals(full_program);
+mlc::HashMap<mlc::String, bool> globals = collect_globals(full_program);
 registry::TypeRegistry registry = registry::build_registry(full_program);
 mlc::Array<ast::Diagnostic> all_diagnostics = {};
 int declaration_index = 0;

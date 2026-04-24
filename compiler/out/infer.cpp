@@ -16,6 +16,7 @@
 #include "registry.hpp"
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
+#include "infer_match.hpp"
 
 namespace infer {
 
@@ -35,6 +36,7 @@ using namespace semantic_type_structure;
 using namespace registry;
 using namespace infer_expr_ident;
 using namespace pattern_env;
+using namespace infer_match;
 using namespace ast_tokens;
 
 infer_result::InferResult infer_arguments_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept;
@@ -60,10 +62,6 @@ infer_result::InferResult infer_expr_block(mlc::Array<std::shared_ptr<ast::Stmt>
 infer_result::InferResult infer_expr_while_loop(std::shared_ptr<ast::Expr> condition, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_for_loop(mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
-
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> build_match_substitution(std::shared_ptr<registry::Type> subject_type, check_context::CheckContext context) noexcept;
-
-infer_result::InferResult infer_expr_match(std::shared_ptr<ast::Expr> subject, mlc::Array<std::shared_ptr<ast::MatchArm>> arms, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept;
 
@@ -203,44 +201,6 @@ infer_result::StmtInferResult statements_result = infer_statements(statements, l
 return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt(iterator_result, statements_result), std::make_shared<registry::Type>((registry::TUnit{})));
 }
 
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> build_match_substitution(std::shared_ptr<registry::Type> subject_type, check_context::CheckContext context) noexcept{
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
-[&]() -> void { if (std::holds_alternative<registry::TGeneric>((*subject_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*subject_type)); auto [type_name, type_args] = _v_tgeneric; return [&]() { 
-  mlc::Array<mlc::String> param_names = registry::TypeRegistry_algebraic_decl_type_parameter_names_for(context.registry, type_name);
-  int i = 0;
-  return [&]() { 
-  while (i < param_names.size() && i < type_args.size()){
-{
-substitution.set(param_names[i], type_args[i]);
-i = i + 1;
-}
-}
- }();
- }(); } return; }();
-return substitution;
-}
-
-infer_result::InferResult infer_expr_match(std::shared_ptr<ast::Expr> subject, mlc::Array<std::shared_ptr<ast::MatchArm>> arms, check_context::CheckContext inference_context) noexcept{
-infer_result::InferResult subject_result = infer_expr(subject, inference_context);
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution = build_match_substitution(subject_result.inferred_type, inference_context);
-mlc::Array<ast::Diagnostic> collected_errors = subject_result.errors;
-std::shared_ptr<registry::Type> arm_type = std::make_shared<registry::Type>((registry::TUnknown{}));
-int arm_index = 0;
-while (arm_index < arms.size()){
-{
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> arm_environment = pattern_env::env_for_pattern_substituted(inference_context.type_env, arms[arm_index]->pat, inference_context.registry, substitution);
-check_context::CheckContext arm_context = check_context::check_context_new(arm_environment, inference_context.registry);
-infer_result::InferResult arm_result = infer_expr(arms[arm_index]->body, arm_context);
-collected_errors = ast::diagnostics_append(collected_errors, arm_result.errors);
-arm_type = arm_index == 0 ? arm_result.inferred_type : arm_type;
-mlc::Array<ast::Diagnostic> arm_mismatch = type_diagnostics::match_arm_type_mismatch_diagnostic(arm_index, arm_type, arm_result.inferred_type, arms[arm_index]->body);
-collected_errors = ast::diagnostics_append(collected_errors, arm_mismatch);
-arm_index = arm_index + 1;
-}
-}
-return infer_result::InferResult{arm_type, collected_errors};
-}
-
 infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept{return infer_field_values_errors(infer_result::infer_ok(std::make_shared<registry::Type>(registry::TNamed(type_name))), field_values, inference_context, type_name);}
 
 infer_result::InferResult infer_expr_record_update(mlc::String type_name, std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept{
@@ -288,7 +248,7 @@ infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, chec
   [&](const ExprBlock& exprblock) -> infer_result::InferResult { auto [statements, result, _w0] = exprblock; return infer_expr_block(statements, result, inference_context); },
   [&](const ExprWhile& exprwhile) -> infer_result::InferResult { auto [condition, statements, _w0] = exprwhile; return infer_expr_while_loop(condition, statements, inference_context); },
   [&](const ExprFor& exprfor) -> infer_result::InferResult { auto [variable, iterator, statements, _w0] = exprfor; return infer_expr_for_loop(variable, iterator, statements, inference_context); },
-  [&](const ExprMatch& exprmatch) -> infer_result::InferResult { auto [subject, arms, _w0] = exprmatch; return infer_expr_match(subject, arms, inference_context); },
+  [&](const ExprMatch& exprmatch) -> infer_result::InferResult { auto [subject, arms, _w0] = exprmatch; return infer_match::infer_expr_match(subject, arms, inference_context, infer_expr); },
   [&](const ExprRecord& exprrecord) -> infer_result::InferResult { auto [name, field_vals, _w0] = exprrecord; return infer_expr_record(name, field_vals, inference_context); },
   [&](const ExprRecordUpdate& exprrecordupdate) -> infer_result::InferResult { auto [name, base, field_vals, _w0] = exprrecordupdate; return infer_expr_record_update(name, base, field_vals, inference_context); },
   [&](const ExprArray& exprarray) -> infer_result::InferResult { auto [elements, _w0] = exprarray; return infer_expr_array_literal(elements, inference_context); },

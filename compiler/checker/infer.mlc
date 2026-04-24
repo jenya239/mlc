@@ -15,7 +15,8 @@ import { trait_bound_diagnostics } from "./infer_trait_bounds"
 import { function_parameter_list, type_is_function, types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
 import { field_type_from_object } from "./registry"
 import { infer_expr_identifier } from "./infer_expr_ident"
-import { env_for_pattern, env_for_pattern_substituted } from "./pattern_env"
+import { env_for_pattern } from "./pattern_env"
+import { infer_expr_match } from "./infer_match"
 
 // --- Argument / field-value error accumulators ------------------------------
 
@@ -206,46 +207,6 @@ fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements
   iterator_result.absorb_stmt(statements_result).with_type(Shared.new(TUnit))
 end
 
-fn build_match_substitution(subject_type: Shared<Type>, context: CheckContext) -> Map<string, Shared<Type>> = do
-  const substitution: Map<string, Shared<Type>> = Map.new()
-  match subject_type {
-    TGeneric(type_name, type_args) => do
-      const param_names = context.registry.algebraic_decl_type_parameter_names_for(type_name)
-      let mut i = 0
-      while i < param_names.length() && i < type_args.length() do
-        substitution.set(param_names[i], type_args[i]); i = i + 1
-      end
-    end,
-    _ => do end
-  }
-  substitution
-end
-
-fn infer_expr_match(subject: Shared<Expr>, arms: [Shared<MatchArm>], inference_context: CheckContext) -> InferResult = do
-  const subject_result = infer_expr(subject, inference_context)
-  const substitution = build_match_substitution(subject_result.inferred_type, inference_context)
-  let mut collected_errors = subject_result.errors
-  let mut arm_type: Shared<Type> = Shared.new(TUnknown)
-  let mut arm_index = 0
-  while arm_index < arms.length() do
-    const arm_environment = env_for_pattern_substituted(inference_context.type_env, arms[arm_index].pat, inference_context.registry, substitution)
-    const arm_context     = check_context_new(arm_environment, inference_context.registry)
-    const arm_result      = infer_expr(arms[arm_index].body, arm_context)
-    collected_errors = diagnostics_append(collected_errors, arm_result.errors)
-    arm_type =
-      if arm_index == 0 then arm_result.inferred_type
-      else arm_type
-      end
-    const arm_mismatch = match_arm_type_mismatch_diagnostic(
-      arm_index,
-      arm_type,
-      arm_result.inferred_type,
-      arms[arm_index].body)
-    collected_errors = diagnostics_append(collected_errors, arm_mismatch)
-    arm_index = arm_index + 1
-  end
-  InferResult { inferred_type: arm_type, errors: collected_errors }
-end
 
 fn infer_expr_record(type_name: string, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult =
   infer_field_values_errors(infer_ok(Shared.new(TNamed(type_name))), field_values, inference_context, type_name)
@@ -301,7 +262,7 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprBlock(statements, result, _)        => infer_expr_block(statements, result, inference_context),
     ExprWhile(condition, statements, _)     => infer_expr_while_loop(condition, statements, inference_context),
     ExprFor(variable, iterator, statements, _) => infer_expr_for_loop(variable, iterator, statements, inference_context),
-    ExprMatch(subject, arms, _)             => infer_expr_match(subject, arms, inference_context),
+    ExprMatch(subject, arms, _)             => infer_expr_match(subject, arms, inference_context, infer_expr),
     ExprRecord(name, field_vals, _)         => infer_expr_record(name, field_vals, inference_context),
     ExprRecordUpdate(name, base, field_vals, _) => infer_expr_record_update(name, base, field_vals, inference_context),
     ExprArray(elements, _)                  => infer_expr_array_literal(elements, inference_context),

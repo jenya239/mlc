@@ -1,12 +1,54 @@
 // Checker entry: name resolution + type inference over a program (or entry slice).
 
-import { Program, Result, decl_inner, param_name, param_typ,
+import { Program, Decl, Result, decl_inner, param_name, param_typ,
          Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span } from "../ast"
-import { collect_globals, check_names_expr } from "./names"
+import { check_names_expr } from "./names"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
 import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
 import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
+
+fn collect_globals(program: Program) -> Map<string, bool> = do
+  let names: Map<string, bool> = Map.new()
+  names.set("true", true); names.set("false", true); names.set("exit", true)
+  names.set("print", true); names.set("println", true); names.set("args", true)
+  names.set("File", true); names.set("Shared", true); names.set("Map", true)
+  names.set("Ok", true); names.set("Err", true); names.set("Result", true)
+  let mut index = 0
+  while index < program.decls.length() do
+    match decl_inner(program.decls[index]) {
+      DeclFn(name, _, _, _, _, _) => do names.set(name, true); () end,
+      DeclType(name, _, variants) => do
+        names.set(name, true); let mut variant_index = 0
+        while variant_index < variants.length() do
+          match variants[variant_index] {
+            VarUnit(variant_name)      => do names.set(variant_name, true); () end,
+            VarTuple(variant_name, _)  => do names.set(variant_name, true); () end,
+            VarRecord(variant_name, _) => do names.set(variant_name, true); () end
+          }
+          variant_index = variant_index + 1
+        end; ()
+      end,
+      DeclTrait(name, _, methods) => do
+        names.set(name, true)
+        let mut method_index = 0
+        while method_index < methods.length() do
+          match methods[method_index] {
+            DeclFn(function_name, _, _, _, _, _) => do names.set(function_name, true); () end,
+            _ => do () end
+          }
+          method_index = method_index + 1
+        end
+        ()
+      end,
+      DeclExtend(_, _, _) => do () end,
+      DeclImport(_, _) => do () end,
+      DeclExported(_)  => do () end
+    }
+    index = index + 1
+  end
+  names
+end
 
 // Returns true only for types that are definitively resolved (not type variables or
 // uninstantiated generics). TNamed is checkable only when the registry knows it as a
