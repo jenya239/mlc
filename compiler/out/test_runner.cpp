@@ -19,10 +19,10 @@ test_runner::TestResult assert_eq_int(mlc::String test_name, int actual, int exp
 test_runner::TestResult assert_eq_str(mlc::String test_name, mlc::String actual, mlc::String expected) noexcept{return actual == expected ? test_runner::TestResult(Pass{test_name}) : test_runner::TestResult(Fail{test_name, mlc::String("expected '") + expected + mlc::String("', got '") + actual + mlc::String("'")});}
 
 test_runner::TestResult assert_diagnostic_at(mlc::String test_name, mlc::String formatted_diagnostic, int expected_line, int expected_column, mlc::String message_needle) noexcept{
-mlc::String position_suffix = mlc::String(" at ") + mlc::to_string(expected_line) + mlc::String(":") + mlc::to_string(expected_column);
+mlc::String position_part = mlc::to_string(expected_line) + mlc::String(":") + mlc::to_string(expected_column) + mlc::String(": ");
 bool has_message = formatted_diagnostic.contains(message_needle);
-bool has_position = formatted_diagnostic.length() >= position_suffix.length() && formatted_diagnostic.substring(formatted_diagnostic.length() - position_suffix.length(), position_suffix.length()) == position_suffix;
-return has_message && has_position ? test_runner::TestResult(Pass{test_name}) : test_runner::TestResult(Fail{test_name, mlc::String("expected needle '") + message_needle + mlc::String("' and suffix '") + position_suffix + mlc::String("', got '") + formatted_diagnostic + mlc::String("'")});
+bool has_position = formatted_diagnostic.contains(position_part);
+return has_message && has_position ? test_runner::TestResult(Pass{test_name}) : test_runner::TestResult(Fail{test_name, mlc::String("expected needle '") + message_needle + mlc::String("' and position '") + position_part + mlc::String("', got '") + formatted_diagnostic + mlc::String("'")});
 }
 
 mlc::String run_all(mlc::Array<test_runner::TestResult> results) noexcept{

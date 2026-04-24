@@ -3,6 +3,7 @@
 import { Program, Decl, Result, decl_inner, param_name, param_typ,
          Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span } from "../ast"
 import { check_names_expr } from "./names"
+import { check_fn_body_mutations } from "./check_mutations"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
 import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
@@ -95,6 +96,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
           parameter_index = parameter_index + 1
         end
         all_diagnostics = diagnostics_append(all_diagnostics, check_names_expr(body, locals, globals))
+        all_diagnostics = diagnostics_append(all_diagnostics, check_fn_body_mutations(parameters, body))
         const inference_context = check_context_new(type_environment, registry)
         const inference_result = infer_expr(body, inference_context)
         const expected_type = type_from_annotation(return_type_annotation)

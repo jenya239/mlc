@@ -17,12 +17,14 @@ export fn diagnostic_error(message: string, span: Span) -> Diagnostic =
   diagnostic_new("error", message, span)
 
 export fn diagnostic_format(diagnostic: Diagnostic) -> string = do
-  const where_part = if diagnostic.span.file.length() > 0 then
-    diagnostic.span.file + ":" + diagnostic.span.line.to_string() + ":" + diagnostic.span.column.to_string()
+  const message_part = diagnostic.severity + ": " + diagnostic.message
+  if diagnostic.span.line > 0 && diagnostic.span.file.length() > 0 then
+    diagnostic.span.file + ":" + diagnostic.span.line.to_string() + ":" + diagnostic.span.column.to_string() + ": " + message_part
+  else if diagnostic.span.line > 0 then
+    diagnostic.span.line.to_string() + ":" + diagnostic.span.column.to_string() + ": " + message_part
   else
-    diagnostic.span.line.to_string() + ":" + diagnostic.span.column.to_string()
+    message_part
   end
-  diagnostic.severity + ": " + diagnostic.message + " at " + where_part
 end
 
 export fn diagnostics_append(mut destination: [Diagnostic], source: [Diagnostic]) -> [Diagnostic] = do

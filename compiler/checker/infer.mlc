@@ -224,8 +224,8 @@ fn infer_expr_array_literal(elements: [Shared<Expr>], inference_context: CheckCo
   infer_arguments_errors(infer_ok(Shared.new(TArray(first_element_type))), elements, inference_context)
 end
 
-fn infer_expr_question(inner: Shared<Expr>, inference_context: CheckContext) -> InferResult =
-  infer_question_from_inner_result(infer_expr(inner, inference_context))
+fn infer_expr_question(inner: Shared<Expr>, question_span: Span, inference_context: CheckContext) -> InferResult =
+  infer_question_from_inner_result(infer_expr(inner, inference_context), question_span)
 
 fn infer_expr_lambda(parameter_names: [string], body: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
   let lambda_environment = inference_context.type_env
@@ -266,7 +266,7 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprRecord(name, field_vals, _)         => infer_expr_record(name, field_vals, inference_context),
     ExprRecordUpdate(name, base, field_vals, _) => infer_expr_record_update(name, base, field_vals, inference_context),
     ExprArray(elements, _)                  => infer_expr_array_literal(elements, inference_context),
-    ExprQuestion(inner, _)                  => infer_expr_question(inner, inference_context),
+    ExprQuestion(inner, question_span)      => infer_expr_question(inner, question_span, inference_context),
     ExprLambda(params, body, _)             => infer_expr_lambda(params, body, inference_context)
   }
 

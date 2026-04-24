@@ -62,7 +62,7 @@ results.push_back(test_runner::assert_eq_int(mlc::String("fn calling another fn 
 results.push_back(test_runner::assert_true(mlc::String("undefined name - at least 1 error"), check_error_count(mlc::String("fn f() -> i32 = undefined_name")) > 0));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("undefined ident: line and column (single line body)"), first_checker_error_line(mlc::String("fn f() -> i32 = badident")), 1, 17, mlc::String("undefined: badident")));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("undefined ident: line and column (next line, indented)"), first_checker_error_line(mlc::String("fn f() -> i32 =\n  badident")), 2, 3, mlc::String("undefined: badident")));
-results.push_back(test_runner::assert_eq_str(mlc::String("undefined ident: diagnostic includes source path"), first_checker_error_line_with_path(mlc::String("fn f() -> i32 = badident"), mlc::String("unit.mlc")), mlc::String("error: undefined: badident at unit.mlc:1:17")));
+results.push_back(test_runner::assert_eq_str(mlc::String("undefined ident: diagnostic includes source path"), first_checker_error_line_with_path(mlc::String("fn f() -> i32 = badident"), mlc::String("unit.mlc")), mlc::String("unit.mlc:1:17: error: undefined: badident")));
 results.push_back(test_runner::assert_eq_int(mlc::String("type decl with variants - 0 errors"), check_error_count(mlc::String("type Color = Red | Green | Blue")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn returning bool - 0 errors"), check_error_count(mlc::String("fn f() -> bool = true")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with const binding - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  const x = 1\n  x\nend")), 0));
@@ -105,7 +105,7 @@ results.push_back(test_runner::assert_eq_int(mlc::String("match: constructor arm
 results.push_back(test_runner::assert_true(mlc::String("match: arm result type must match first arm"), first_checker_error_line(mlc::String("fn f(flag: bool) -> i32 = match flag | true => 1 | false => \"no\"")).contains(mlc::String("match arm result type"))));
 results.push_back(test_runner::assert_true(mlc::String("if: then and else branch types must match"), first_checker_error_line(mlc::String("fn f(flag: bool) -> i32 = if flag then 1 else \"no\" end")).contains(mlc::String("if branch types differ"))));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("undefined record field: line and column on field access"), first_checker_error_line(mlc::String("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> i32 = p.z")), 2, 26, mlc::String("undefined field: z on Point")));
-results.push_back(test_runner::assert_eq_str(mlc::String("undefined record field: message text"), first_checker_error_line(mlc::String("type R = { a: i32 }\nfn f(x: R) -> i32 = x.missing")), mlc::String("error: undefined field: missing on R at 2:22")));
+results.push_back(test_runner::assert_eq_str(mlc::String("undefined record field: message text"), first_checker_error_line(mlc::String("type R = { a: i32 }\nfn f(x: R) -> i32 = x.missing")), mlc::String("2:22: error: undefined field: missing on R")));
 results.push_back(test_runner::assert_true(mlc::String("infer: string + i32 is an error"), check_error_count(mlc::String("fn f() -> i32 = \"a\" + 1")) > 0));
 results.push_back(test_runner::assert_true(mlc::String("infer: i32 + string is an error"), check_error_count(mlc::String("fn f() -> i32 = 1 + \"a\"")) > 0));
 results.push_back(test_runner::assert_true(mlc::String("infer: string with - is an error"), check_error_count(mlc::String("fn f() -> string = \"a\" - \"b\"")) > 0));
@@ -150,6 +150,9 @@ results.push_back(test_runner::assert_true(mlc::String("infer: binary + type mis
 results.push_back(test_runner::assert_true(mlc::String("infer: binary == type mismatch produces error"), first_checker_error_line(mlc::String("fn f() -> bool = 1 == \"x\"")).contains(mlc::String("incompatible types for =="))));
 results.push_back(test_runner::assert_true(mlc::String("infer: binary < on bool produces error"), first_checker_error_line(mlc::String("fn f() -> bool = true < false")).contains(mlc::String("ordering requires i32 or string"))));
 results.push_back(test_runner::assert_eq_int(mlc::String("infer: binary + string concat — 0 errors"), check_error_count(mlc::String("fn f() -> string = \"a\" + \"b\"")), 0));
+results.push_back(test_runner::assert_true(mlc::String("mutation: assign to immutable binding produces error"), first_checker_error_line(mlc::String("fn f() -> i32 = do let x = 1; x = 2; x end")).contains(mlc::String("cannot assign to immutable binding: x"))));
+results.push_back(test_runner::assert_eq_int(mlc::String("mutation: assign to let mut binding — 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do let mut x = 1; x = 2; x end")), 0));
+results.push_back(test_runner::assert_true(mlc::String("question: ? on non-Result produces error"), first_checker_error_line(mlc::String("fn f() -> i32 = do let x: i32 = 42; x? end")).contains(mlc::String("? operator requires a Result type"))));
 return results;
 }
 

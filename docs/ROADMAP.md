@@ -7,7 +7,7 @@
 | Компонент | Путь | Состояние |
 |-----------|------|-----------|
 | Bootstrap-компилятор | `lib/mlc/` | Полнофункциональный, эталон семантики |
-| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (224 теста) |
+| Self-hosted компилятор | `compiler/` | Компилирует весь `compiler/`, `rake test_compiler_mlc` (227 тестов) |
 | Triple-bootstrap | `compiler/triple_bootstrap.sh` | При актуальном `compiler/out/mlcc`: `diff bs2 bs3` пустой (стабильность self-host) |
 | Runtime | `runtime/include/`, `runtime/src/` | C++20, стабильный |
 | Unit-тесты Ruby | `test/mlc/` | 1106 runs, 0 failures |
@@ -40,7 +40,7 @@
 
 ---
 
-## Фаза 2 — Архитектура codegen
+## Фаза 2 — Архитектура codegen ✓ ВЫПОЛНЕНО
 
 ### Проблема (обновление)
 
@@ -101,7 +101,7 @@ compiler/checker/
 
 Тесты: `assert_diagnostic_at` в `compiler/tests/test_checker.mlc` (224 unit-теста).
 
-Дальше: единый формат вывода диагностик как у Ruby-компилятора; больше специализированных сообщений.
+Добавлено: GCC-style формат `file:line:col: severity: message`; `?` на не-Result типе; проверка присвоения иммутабельным биндингам (`check_mutations.mlc`).
 
 ---
 
@@ -130,7 +130,7 @@ compiler/checker/
 
 ```
 Фаза 1 (triple-bootstrap)  — скрипт; критерий `bs2 == bs3` выполняется после правок парсера extend/`self: T` и emit infer (вспомогательные fn вместо тернарников с `[]`)
-Фаза 2 (codegen arch)      — в работе (снижает риск блокера Фазы 1)
+Фаза 2 (codegen arch)      — ✓ ВЫПОЛНЕНО
 Фаза 3 (checker arch)      — параллельно с Фазой 2
 Фаза 4 (диагностики)       — после Фаз 2+3
 Фаза 5 (покрытие)          — параллельно с любой фазой

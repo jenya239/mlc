@@ -25,18 +25,13 @@ export fn assert_diagnostic_at(
   expected_column: i32,
   message_needle: string
 ) -> TestResult = do
-  const position_suffix = " at " + expected_line.to_string() + ":" + expected_column.to_string()
+  const position_part = expected_line.to_string() + ":" + expected_column.to_string() + ": "
   const has_message = formatted_diagnostic.contains(message_needle)
-  const has_position =
-    formatted_diagnostic.length() >= position_suffix.length() &&
-    formatted_diagnostic.substring(
-      formatted_diagnostic.length() - position_suffix.length(),
-      position_suffix.length()
-    ) == position_suffix
+  const has_position = formatted_diagnostic.contains(position_part)
   if has_message && has_position then Pass { name: test_name }
   else Fail {
     name: test_name,
-    message: "expected needle '" + message_needle + "' and suffix '" + position_suffix + "', got '" + formatted_diagnostic + "'"
+    message: "expected needle '" + message_needle + "' and position '" + position_part + "', got '" + formatted_diagnostic + "'"
   }
   end
 end

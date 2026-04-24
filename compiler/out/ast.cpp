@@ -43,8 +43,8 @@ ast::Diagnostic diagnostic_new(mlc::String severity, mlc::String message, ast::S
 ast::Diagnostic diagnostic_error(mlc::String message, ast::Span span) noexcept{return diagnostic_new(mlc::String("error"), message, span);}
 
 mlc::String diagnostic_format(ast::Diagnostic diagnostic) noexcept{
-mlc::String where_part = diagnostic.span.file.length() > 0 ? diagnostic.span.file + mlc::String(":") + mlc::to_string(diagnostic.span.line) + mlc::String(":") + mlc::to_string(diagnostic.span.column) : mlc::to_string(diagnostic.span.line) + mlc::String(":") + mlc::to_string(diagnostic.span.column);
-return diagnostic.severity + mlc::String(": ") + diagnostic.message + mlc::String(" at ") + where_part;
+mlc::String message_part = diagnostic.severity + mlc::String(": ") + diagnostic.message;
+return diagnostic.span.line > 0 && diagnostic.span.file.length() > 0 ? diagnostic.span.file + mlc::String(":") + mlc::to_string(diagnostic.span.line) + mlc::String(":") + mlc::to_string(diagnostic.span.column) + mlc::String(": ") + message_part : diagnostic.span.line > 0 ? mlc::to_string(diagnostic.span.line) + mlc::String(":") + mlc::to_string(diagnostic.span.column) + mlc::String(": ") + message_part : message_part;
 }
 
 mlc::Array<ast::Diagnostic> diagnostics_append(mlc::Array<ast::Diagnostic> destination, mlc::Array<ast::Diagnostic> source) noexcept{

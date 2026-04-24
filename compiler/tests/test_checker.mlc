@@ -81,7 +81,7 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_str(
     "undefined ident: diagnostic includes source path",
     first_checker_error_line_with_path("fn f() -> i32 = badident", "unit.mlc"),
-    "error: undefined: badident at unit.mlc:1:17"))
+    "unit.mlc:1:17: error: undefined: badident"))
 
   results.push(assert_eq_int("type decl with variants - 0 errors",
     check_error_count("type Color = Red | Green | Blue"), 0))
@@ -228,7 +228,7 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_str(
     "undefined record field: message text",
     first_checker_error_line("type R = { a: i32 }\nfn f(x: R) -> i32 = x.missing"),
-    "error: undefined field: missing on R at 2:22"))
+    "2:22: error: undefined field: missing on R"))
 
   results.push(assert_true("infer: string + i32 is an error",
     check_error_count("fn f() -> i32 = \"a\" + 1") > 0))
@@ -455,6 +455,15 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int("infer: binary + string concat — 0 errors",
     check_error_count("fn f() -> string = \"a\" + \"b\""), 0))
+
+  results.push(assert_true("mutation: assign to immutable binding produces error",
+    first_checker_error_line("fn f() -> i32 = do let x = 1; x = 2; x end").contains("cannot assign to immutable binding: x")))
+
+  results.push(assert_eq_int("mutation: assign to let mut binding — 0 errors",
+    check_error_count("fn f() -> i32 = do let mut x = 1; x = 2; x end"), 0))
+
+  results.push(assert_true("question: ? on non-Result produces error",
+    first_checker_error_line("fn f() -> i32 = do let x: i32 = 42; x? end").contains("? operator requires a Result type")))
 
   results
 end

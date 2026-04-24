@@ -6,6 +6,7 @@
 
 #include "ast.hpp"
 #include "names.hpp"
+#include "check_mutations.hpp"
 #include "registry.hpp"
 #include "infer.hpp"
 #include "check_context.hpp"

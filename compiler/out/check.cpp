@@ -2,6 +2,7 @@
 
 #include "ast.hpp"
 #include "names.hpp"
+#include "check_mutations.hpp"
 #include "registry.hpp"
 #include "infer.hpp"
 #include "check_context.hpp"
@@ -11,6 +12,7 @@ namespace check {
 
 using namespace ast;
 using namespace names;
+using namespace check_mutations;
 using namespace registry;
 using namespace infer;
 using namespace check_context;
@@ -131,6 +133,7 @@ parameter_index = parameter_index + 1;
 }
 }
   all_diagnostics = ast::diagnostics_append(all_diagnostics, names::check_names_expr(body, locals, globals));
+  all_diagnostics = ast::diagnostics_append(all_diagnostics, check_mutations::check_fn_body_mutations(parameters, body));
   check_context::CheckContext inference_context = check_context::check_context_new(type_environment, registry);
   infer_result::InferResult inference_result = infer::infer_expr(body, inference_context);
   std::shared_ptr<registry::Type> expected_type = registry::type_from_annotation(return_type_annotation);
