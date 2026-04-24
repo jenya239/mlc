@@ -8,11 +8,9 @@
 #include "infer_for_support.hpp"
 #include "infer_question_expression.hpp"
 #include "infer_operand_combine.hpp"
-#include "infer_call_support.hpp"
 #include "type_diagnostics.hpp"
-#include "call_argument_unify.hpp"
-#include "infer_trait_bounds.hpp"
 #include "semantic_type_structure.hpp"
+#include "infer_call.hpp"
 #include "registry.hpp"
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
@@ -28,11 +26,9 @@ using namespace infer_literals;
 using namespace infer_for_support;
 using namespace infer_question_expression;
 using namespace infer_operand_combine;
-using namespace infer_call_support;
 using namespace type_diagnostics;
-using namespace call_argument_unify;
-using namespace infer_trait_bounds;
 using namespace semantic_type_structure;
+using namespace infer_call;
 using namespace registry;
 using namespace infer_expr_ident;
 using namespace pattern_env;
@@ -46,8 +42,6 @@ infer_result::InferResult infer_field_values_errors(infer_result::InferResult in
 infer_result::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
-
-infer_result::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept;
 
@@ -130,42 +124,6 @@ return infer_operand_combine::infer_binary_from_operand_results(operation, left_
 
 infer_result::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept{return infer_operand_combine::infer_unary_from_inner_result(operation, infer_expr(inner, inference_context), source_span);}
 
-infer_result::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept{
-infer_result::InferResult function_result = infer_expr(function, inference_context);
-mlc::Array<ast::Diagnostic> collected_errors = function_result.errors;
-mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types = {};
-int argument_index = 0;
-while (argument_index < call_arguments.size()){
-{
-infer_result::InferResult argument_inference = infer_expr(call_arguments[argument_index], inference_context);
-collected_errors = ast::diagnostics_append(collected_errors, argument_inference.errors);
-argument_inferred_types.push_back(argument_inference.inferred_type);
-argument_index = argument_index + 1;
-}
-}
-infer_result::InferResult with_arguments = infer_result::InferResult{function_result.inferred_type, collected_errors};
-mlc::String callee_name = [&]() -> mlc::String { if (std::holds_alternative<ast::ExprIdent>((*function)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*function)._); auto [name, _w0] = _v_exprident; return name; } return mlc::String(""); }();
-return callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(inference_context.registry, callee_name) ? [&]() -> infer_result::InferResult { 
-  infer_result::InferResult constructor_output = infer_call_support::infer_expr_call_for_constructor_name(callee_name, with_arguments, call_arguments, call_source_span, inference_context);
-  mlc::Array<std::shared_ptr<registry::Type>> constructor_parameter_types = registry::TypeRegistry_ctor_params_for(inference_context.registry, callee_name);
-  mlc::String algebraic_type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*registry::TypeRegistry_ctor_type(inference_context.registry, callee_name)))) { auto _v_tnamed = std::get<registry::TNamed>((*registry::TypeRegistry_ctor_type(inference_context.registry, callee_name))); auto [parent_name] = _v_tnamed; return parent_name; } return mlc::String(""); }();
-  mlc::Array<mlc::String> constructor_type_parameter_names = registry::TypeRegistry_algebraic_decl_type_parameter_names_for(inference_context.registry, algebraic_type_name);
-  return constructor_parameter_types.size() == call_arguments.size() ? infer_result::InferResult{constructor_output.inferred_type, ast::diagnostics_append(constructor_output.errors, call_argument_unify::call_argument_unification_diagnostics(constructor_parameter_types, argument_inferred_types, constructor_type_parameter_names, call_arguments))} : constructor_output;
- }() : [&]() -> infer_result::InferResult { 
-  infer_result::InferResult non_constructor_output = infer_call_support::infer_expr_call_non_constructor(function_result, with_arguments, call_arguments, call_source_span);
-  mlc::Array<std::shared_ptr<registry::Type>> callee_parameter_types = semantic_type_structure::function_parameter_list(function_result.inferred_type);
-  mlc::Array<mlc::String> callee_type_parameter_names = callee_name != mlc::String("") && registry::TypeRegistry_has_fn(inference_context.registry, callee_name) ? registry::TypeRegistry_registered_function_type_parameter_names(inference_context.registry, callee_name) : [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> empty_callee_type_names = {};
-  return empty_callee_type_names;
- }();
-  return semantic_type_structure::type_is_function(function_result.inferred_type) && callee_parameter_types.size() == call_arguments.size() ? [&]() -> infer_result::InferResult { 
-  mlc::Array<ast::Diagnostic> unification_errors = call_argument_unify::call_argument_unification_diagnostics(callee_parameter_types, argument_inferred_types, callee_type_parameter_names, call_arguments);
-  mlc::Array<ast::Diagnostic> bound_errors = infer_trait_bounds::trait_bound_diagnostics(callee_name, callee_parameter_types, argument_inferred_types, callee_type_parameter_names, call_source_span, inference_context);
-  return infer_result::InferResult{non_constructor_output.inferred_type, ast::diagnostics_append(ast::diagnostics_append(non_constructor_output.errors, unification_errors), bound_errors)};
- }() : non_constructor_output;
- }();
-}
-
 infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult object_result = infer_expr(object, inference_context);
 infer_result::InferResult with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context);
@@ -240,7 +198,7 @@ infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, chec
   [&](const ExprIdent& exprident) -> infer_result::InferResult { auto [name, _w0] = exprident; return infer_expr_ident::infer_expr_identifier(name, inference_context); },
   [&](const ExprBin& exprbin) -> infer_result::InferResult { auto [operation, left, right, span] = exprbin; return infer_expr_binary(operation, left, right, span, inference_context); },
   [&](const ExprUn& exprun) -> infer_result::InferResult { auto [operation, inner, span] = exprun; return infer_expr_unary(operation, inner, span, inference_context); },
-  [&](const ExprCall& exprcall) -> infer_result::InferResult { auto [function, call_arguments, call_source_span] = exprcall; return infer_expr_call(function, call_arguments, call_source_span, inference_context); },
+  [&](const ExprCall& exprcall) -> infer_result::InferResult { auto [function, call_arguments, call_source_span] = exprcall; return infer_call::infer_expr_call(function, call_arguments, call_source_span, inference_context, infer_expr); },
   [&](const ExprMethod& exprmethod) -> infer_result::InferResult { auto [object, method_name, margs, method_span] = exprmethod; return infer_expr_method(object, method_name, margs, method_span, inference_context); },
   [&](const ExprField& exprfield) -> infer_result::InferResult { auto [object, field_name, field_source_span] = exprfield; return infer_expr_field(object, field_name, field_source_span, inference_context); },
   [&](const ExprIndex& exprindex) -> infer_result::InferResult { auto [object, index_expression, bracket_source_span] = exprindex; return infer_expr_index(object, index_expression, bracket_source_span, inference_context); },

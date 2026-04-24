@@ -8,11 +8,9 @@ import * as infer_literal_helpers from "./infer_literals"
 import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } from "./infer_for_support"
 import { infer_question_from_inner_result } from "./infer_question_expression"
 import * as infer_operand_combine from "./infer_operand_combine"
-import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
 import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
-import { call_argument_unification_diagnostics } from "./call_argument_unify"
-import { trait_bound_diagnostics } from "./infer_trait_bounds"
-import { function_parameter_list, type_is_function, types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
+import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
+import { infer_expr_call } from "./infer_call"
 import { field_type_from_object } from "./registry"
 import { infer_expr_identifier } from "./infer_expr_ident"
 import { env_for_pattern } from "./pattern_env"
@@ -81,75 +79,6 @@ end
 
 fn infer_expr_unary(operation: string, inner: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult =
   infer_operand_combine.infer_unary_from_inner_result(operation, infer_expr(inner, inference_context), source_span)
-
-fn infer_expr_call(function: Shared<Expr>, call_arguments: [Shared<Expr>], call_source_span: Span, inference_context: CheckContext) -> InferResult = do
-  const function_result = infer_expr(function, inference_context)
-  let mut collected_errors = function_result.errors
-  const argument_inferred_types: [Shared<Type>] = []
-  let mut argument_index = 0
-  while argument_index < call_arguments.length() do
-    const argument_inference = infer_expr(call_arguments[argument_index], inference_context)
-    collected_errors = diagnostics_append(collected_errors, argument_inference.errors)
-    argument_inferred_types.push(argument_inference.inferred_type)
-    argument_index = argument_index + 1
-  end
-  const with_arguments = InferResult { inferred_type: function_result.inferred_type, errors: collected_errors }
-  const callee_name = match function {
-    ExprIdent(name, _) => name,
-    _ => ""
-  }
-  if callee_name != "" && inference_context.registry.has_ctor(callee_name) then
-    const constructor_output = infer_expr_call_for_constructor_name(
-      callee_name, with_arguments, call_arguments, call_source_span, inference_context)
-    const constructor_parameter_types = inference_context.registry.ctor_params_for(callee_name)
-    const algebraic_type_name = match inference_context.registry.ctor_type(callee_name) {
-      TNamed(parent_name) => parent_name,
-      _ => ""
-    }
-    const constructor_type_parameter_names =
-      inference_context.registry.algebraic_decl_type_parameter_names_for(algebraic_type_name)
-    if constructor_parameter_types.length() == call_arguments.length() then
-      InferResult {
-        inferred_type: constructor_output.inferred_type,
-        errors: diagnostics_append(
-          constructor_output.errors,
-          call_argument_unification_diagnostics(
-            constructor_parameter_types,
-            argument_inferred_types,
-            constructor_type_parameter_names,
-            call_arguments))
-      }
-    else
-      constructor_output
-    end
-  else
-    const non_constructor_output = infer_expr_call_non_constructor(
-      function_result, with_arguments, call_arguments, call_source_span)
-    const callee_parameter_types = function_parameter_list(function_result.inferred_type)
-    const callee_type_parameter_names =
-      if callee_name != "" && inference_context.registry.has_fn(callee_name) then
-        inference_context.registry.registered_function_type_parameter_names(callee_name)
-      else
-        do const empty_callee_type_names: [string] = []; empty_callee_type_names end
-      end
-    if type_is_function(function_result.inferred_type) &&
-       callee_parameter_types.length() == call_arguments.length() then
-      const unification_errors = call_argument_unification_diagnostics(
-        callee_parameter_types, argument_inferred_types, callee_type_parameter_names, call_arguments)
-      const bound_errors = trait_bound_diagnostics(
-        callee_name, callee_parameter_types, argument_inferred_types,
-        callee_type_parameter_names, call_source_span, inference_context)
-      InferResult {
-        inferred_type: non_constructor_output.inferred_type,
-        errors: diagnostics_append(
-          diagnostics_append(non_constructor_output.errors, unification_errors),
-          bound_errors)
-      }
-    else
-      non_constructor_output
-    end
-  end
-end
 
 fn infer_expr_method(
   object: Shared<Expr>,
@@ -253,7 +182,7 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprIdent(name, _)                      => infer_expr_identifier(name, inference_context),
     ExprBin(operation, left, right, span) => infer_expr_binary(operation, left, right, span, inference_context),
     ExprUn(operation, inner, span)          => infer_expr_unary(operation, inner, span, inference_context),
-    ExprCall(function, call_arguments, call_source_span)   => infer_expr_call(function, call_arguments, call_source_span, inference_context),
+    ExprCall(function, call_arguments, call_source_span)   => infer_expr_call(function, call_arguments, call_source_span, inference_context, infer_expr),
     ExprMethod(object, method_name, margs, method_span) =>
       infer_expr_method(object, method_name, margs, method_span, inference_context),
     ExprField(object, field_name, field_source_span) => infer_expr_field(object, field_name, field_source_span, inference_context),
