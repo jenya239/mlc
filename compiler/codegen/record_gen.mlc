@@ -1,0 +1,84 @@
+// Record and record-update code generation.
+// eval_expr_fn injected to break the import cycle with expr_eval.mlc.
+
+import { SExpr, SStmt, SFieldVal } from "../semantic_ir"
+import { Type, TUnknown } from "../checker/registry"
+import { CodegenContext, lookup_fields, context_resolve } from "./context"
+import { find_field_value } from "./expression_support"
+import { cpp_safe } from "./cpp_naming"
+import { span_unknown } from "../ast"
+import * as expression_output from "./expr"
+
+type EvalExprFn = (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+
+fn gen_record_ordered(field_values: [Shared<SFieldVal>], field_order: [string], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < field_order.length() do
+    let value = find_field_value(field_values, field_order[index])
+    parts.push(eval_expr_fn(value, context, gen_stmts)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_record_unordered(field_values: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < field_values.length() do
+    parts.push(eval_expr_fn(field_values[index].val, context, gen_stmts)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_record_update_ordered(base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], field_order: [string], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < field_order.length() do
+    const field_name = field_order[index]
+    let mut value_string = ""
+    let mut override_found = false
+    let mut override_index = 0
+    while override_index < overrides.length() do
+      if overrides[override_index].name == field_name then
+        value_string = eval_expr_fn(overrides[override_index].val, context, gen_stmts)
+        override_found = true
+      end
+      override_index = override_index + 1
+    end
+    if !override_found then
+      value_string = eval_expr_fn(Shared.new(SExprField(base_expr, field_name, Shared.new(TUnknown), span_unknown())), context, gen_stmts)
+    end
+    parts.push(value_string); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_record_update_lazy(base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  let parts: [string] = [expression_output.record_update_base_prefix(eval_expr_fn(base_expr, context, gen_stmts))]
+  let mut index = 0
+  while index < overrides.length() do
+    parts.push(expression_output.mutable_member_assignment(
+      "__upd",
+      cpp_safe(overrides[index].name),
+      eval_expr_fn(overrides[index].val, context, gen_stmts)))
+    index = index + 1
+  end
+  expression_output.record_update_lazy_closure(parts.join(""))
+end
+
+export fn gen_record_expr(type_name: string, field_values: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  const field_order = lookup_fields(context.field_orders, type_name)
+  const values_code = if field_order.length() > 0
+                      then gen_record_ordered(field_values, field_order, context, gen_stmts, eval_expr_fn)
+                      else gen_record_unordered(field_values, context, gen_stmts, eval_expr_fn)
+                      end
+  expression_output.record_initializer(context_resolve(context, type_name), values_code)
+end
+
+export fn gen_record_update_expr(type_name: string, base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  const field_order = lookup_fields(context.field_orders, type_name)
+  if field_order.length() > 0 then
+    expression_output.record_initializer(
+      context_resolve(context, type_name),
+      gen_record_update_ordered(base_expr, overrides, field_order, context, gen_stmts, eval_expr_fn))
+  else
+    gen_record_update_lazy(base_expr, overrides, context, gen_stmts, eval_expr_fn)
+  end
+end

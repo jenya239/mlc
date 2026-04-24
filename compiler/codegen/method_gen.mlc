@@ -1,0 +1,108 @@
+// Method call code generation.
+// eval_expr_fn injected to break the import cycle with expr_eval.mlc.
+
+import { SExpr, SStmt, sexpr_type } from "../semantic_ir"
+import { Type, TI32, TString, TBool, TNamed, TShared } from "../checker/registry"
+import { CodegenContext, context_resolve, context_add_shared } from "./context"
+import { cpp_safe, map_method, map_builtin } from "./cpp_naming"
+import { resolve_object_code_in_self_context, infer_shared_new_type_name,
+         cpp_function_name_for_file_method } from "./expression_support"
+import * as expression_output from "./expr"
+
+type EvalExprFn = (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+
+fn gen_arg_list(arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < arguments.length() do
+    parts.push(eval_expr_fn(arguments[index], context, gen_stmts)); index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn gen_object_code(object: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string =
+  match object {
+    SExprIdent(name, _, _) =>
+      if context.self_type.length() > 0 then resolve_object_code_in_self_context(name, context)
+      else context_resolve(context, map_builtin(name))
+      end,
+    _ => eval_expr_fn(object, context, gen_stmts)
+  }
+
+fn gen_method_file(method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string =
+  expression_output.function_call_parentheses(
+    cpp_function_name_for_file_method(method_name),
+    gen_arg_list(arguments, context, gen_stmts, eval_expr_fn))
+
+fn gen_method_shared_new(argument: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  const argument_code = eval_expr_fn(argument, context, gen_stmts)
+  const type_name = infer_shared_new_type_name(argument, context)
+  expression_output.make_shared_call(type_name, argument_code)
+end
+
+fn gen_method_owner_call(object_code: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  const mangled_name = context.method_owners.get(method_name)
+  const function_name = context_resolve(context, mangled_name)
+  if arguments.length() == 0 then expression_output.function_call_parentheses(function_name, object_code)
+  else expression_output.function_call_parentheses(
+    function_name,
+    expression_output.comma_separated_pair(object_code, gen_arg_list(arguments, context, gen_stmts, eval_expr_fn)))
+  end
+end
+
+fn gen_method_builtin(object_code: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  const call_base = expression_output.dot_member_access(object_code, map_method(method_name))
+  if arguments.length() == 0 then expression_output.function_call_parentheses(call_base, "")
+  else expression_output.function_call_parentheses(call_base, gen_arg_list(arguments, context, gen_stmts, eval_expr_fn))
+  end
+end
+
+fn gen_method_namespace_alias(static_prefix: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  const call_base = static_prefix + map_method(method_name)
+  if arguments.length() == 0 then expression_output.function_call_parentheses(call_base, "")
+  else expression_output.function_call_parentheses(call_base, gen_arg_list(arguments, context, gen_stmts, eval_expr_fn))
+  end
+end
+
+fn object_type_name_for_dispatch(type_value: Shared<Type>) -> string =
+  match type_value {
+    TI32    => "i32",
+    TString => "string",
+    TBool   => "bool",
+    TNamed(name) => name,
+    TShared(inner) => match inner { TNamed(name) => name, _ => "" },
+    _ => ""
+  }
+
+fn is_user_defined_method_for_type(method_name: string, type_name: string, context: CodegenContext) -> bool =
+  context.method_owners.has(method_name) &&
+  type_name != "" &&
+  context.method_owners.get(method_name) == type_name + "_" + method_name
+
+fn gen_method_expr_after_object(object_code: string, object_type_name: string, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string =
+  if object_code == "File" then
+    gen_method_file(method_name, arguments, context, gen_stmts, eval_expr_fn)
+  else if object_code == "Map" && method_name == "new" then
+    expression_output.empty_map_initializer()
+  else if object_code == "Shared" && method_name == "new" && arguments.length() == 1 then
+    gen_method_shared_new(arguments[0], context, gen_stmts, eval_expr_fn)
+  else if is_user_defined_method_for_type(method_name, object_type_name, context) then
+    gen_method_owner_call(object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+  else if method_name == "to_string" && arguments.length() == 0 then
+    expression_output.runtime_to_string_call(object_code)
+  else
+    gen_method_builtin(object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+  end
+
+export fn gen_method_expr(object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
+  const object_type_name = object_type_name_for_dispatch(sexpr_type(object))
+  const object_code = gen_object_code(object, context, gen_stmts, eval_expr_fn)
+  match object {
+    SExprIdent(object_name, _, _) =>
+      if context.namespace_alias_prefixes.has(object_name) then
+        gen_method_namespace_alias(context.namespace_alias_prefixes.get(object_name), method_name, arguments, context, gen_stmts, eval_expr_fn)
+      else
+        gen_method_expr_after_object(object_code, object_type_name, method_name, arguments, context, gen_stmts, eval_expr_fn)
+      end,
+    _ => gen_method_expr_after_object(object_code, object_type_name, method_name, arguments, context, gen_stmts, eval_expr_fn)
+  }
+end

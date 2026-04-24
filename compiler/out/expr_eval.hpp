@@ -4,16 +4,15 @@
 #include "mlc.hpp"
 #include <variant>
 
-#include "ast.hpp"
 #include "semantic_ir.hpp"
-#include "registry.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
-#include "type_gen.hpp"
 #include "literals.hpp"
 #include "identifiers.hpp"
 #include "expression_support.hpp"
 #include "match_gen.hpp"
+#include "record_gen.hpp"
+#include "method_gen.hpp"
 #include "statement_context.hpp"
 #include "expr.hpp"
 
