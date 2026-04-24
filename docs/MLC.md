@@ -1,0 +1,483 @@
+# MLC — язык программирования
+
+Апрель 2026.
+
+MLC компилируется в C++20. Цель: self-hosted компилятор, в котором mlcc написан на самом MLC — не хуже по выразительности, чем текущая Ruby-версия.
+
+---
+
+## Принципы
+
+1. **Неизменяемость по умолчанию.** `let` и `const` — неизменяемые. Мутация требует явного `let mut`.
+2. **Ошибки через типы.** Нет исключений. `Result<T, E>` — единственный способ выражать сбой.
+3. **Нет null.** Отсутствие значения — `Option<T>`.
+4. **Явное управление ресурсами.** `Shared<T>` = ref-counted, `Owned<T>` = unique. COW-коллекции.
+5. **Нет наследования.** Трейты + `extend` + composition вместо иерархии классов.
+6. **Сахар только там, где десугаринг очевиден.** Никакой магии.
+7. **Нулевой runtime overhead.** Каждая конструкция транслируется в идиоматичный C++20 без виртуальных вызовов и аллокаций там, где их нет в C++.
+
+---
+
+## Текущее состояние (реализовано)
+
+### Типы и выражения
+
+```mlc
+type Point = { x: i32, y: i32 }                          // record
+type Shape = Circle(i32) | Rect(i32, i32) | Empty         // sum type
+type Result<T, E> = Ok(T) | Err(E)                        // generic sum type
+type Option<T>   = Some(T) | None
+
+fn area(s: Shape) -> i32 =
+  match s {
+    Circle(r)    => r * r * 3,
+    Rect(w, h)   => w * h,
+    Empty        => 0
+  }
+```
+
+### Что работает
+
+| Фича | Статус |
+|------|--------|
+| Records, sum types, generics | ✓ |
+| `match` с деструктуризацией | ✓ |
+| `extend Type`, `extend Type : Trait` | ✓ |
+| Generic trait bounds (`T: Display`) | ✓ |
+| `Result<T,E>` + `?` оператор | ✓ |
+| `Shared<T>`, COW Array, HashMap | ✓ |
+| Lambdas, `\|>` pipe | ✓ |
+| Модули, `import`/`export` | ✓ |
+| Диагностики с позицией (GCC-style) | ✓ |
+| Проверка иммутабельности при присвоении | ✓ |
+| Triple-bootstrap стабильность | ✓ |
+
+### Что не работает / не реализовано в mlcc
+
+Текущий mlcc имеет 210 `while`-циклов с ручными индексами, 0 pipeline-вызовов, 13 uses of `extend` на 5200 строк. Причина: язык не даёт инструментов для идиоматичного кода.
+
+---
+
+## Фаза A — Критический минимум (HOF + комбинаторы)
+
+*Без этого нельзя писать mlcc в нефункциональном стиле.*
+
+### A1. Array HOF
+
+**Проблема.** 80% `while`-циклов в mlcc — это map/filter/fold вручную.
+
+```mlc
+// Сейчас
+let mut result: [string] = []; let mut i = 0
+while i < decls.length() do result.push(gen_decl(decls[i])); i = i + 1 end
+
+// После A1
+decls.map(d => gen_decl(d))
+```
+
+**Методы:** `map`, `filter`, `fold`, `flat_map`, `any`, `all`, `find`, `find_index`,
+`sort_by`, `group_by`, `zip`, `enumerate`, `flat`, `take`, `drop`, `sum`, `join`.
+
+**C++ трансляция:** `std::transform`, `std::copy_if`, range-for, `std::sort` с компаратором.
+Без аллокаций при известном размере — `reserve` по длине источника. Чистое C++20.
+
+**Тип:** `[T].map(T -> U) -> [U]`, `[T].filter(T -> bool) -> [T]`,
+`[T].fold<U>(U, (U, T) -> U) -> U`.
+
+**Checker:** новые правила в `builtin_method_return_type` для каждого метода с выводом
+параметра типа из типа лямбды.
+
+---
+
+### A2. Result и Option комбинаторы
+
+**Проблема.** Единственный способ цепочки — вложенные `match` или несколько `?`.
+
+```mlc
+// Сейчас
+let parsed = parse(source)?
+let checked = check(parsed)?
+let output = codegen(checked)
+
+// После A2 — railway-oriented
+parse(source)
+  .and_then(check)
+  .map(codegen)
+  .map_err(format_error)
+```
+
+**Result методы:** `map(T -> U) -> Result<U,E>`, `map_err(E -> F) -> Result<T,F>`,
+`and_then(T -> Result<U,E>) -> Result<U,E>`, `or_else(E -> Result<T,F>) -> Result<T,F>`,
+`unwrap_or(T) -> T`, `unwrap_or_else(E -> T) -> T`, `ok() -> Option<T>`.
+
+**Option методы:** `map(T -> U) -> Option<U>`, `and_then(T -> Option<U>) -> Option<U>`,
+`or_else(() -> Option<T>) -> Option<T>`, `unwrap_or(T) -> T`, `filter(T -> bool) -> Option<T>`,
+`ok_or(E) -> Result<T,E>`.
+
+**C++ трансляция:** методы на `std::variant<Ok<T>,Err<E>>`. `map` —
+`std::visit` с `if holds_alternative<Ok>`. Нет overhead по сравнению с ручным match.
+
+**Checker:** методы типа `and_then` требуют вывода возвращаемого типа из типа лямбды.
+Новое правило в `infer_method_from_object_and_arguments` для `TGeneric("Result", ...)` и
+`TGeneric("Option", ...)`.
+
+---
+
+### A3. Деструктуризация в `let`
+
+**Проблема.** Нельзя распаковать record или tuple в переменные.
+
+```mlc
+let { x, y } = point               // record деструктуризация
+let [head, ...tail] = items         // array head/tail
+let Ok(value) = result              // sum type (panic если Err — только с exhaustive check)
+let (a, b) = pair                   // tuple
+```
+
+**C++ трансляция:** `auto& [x, y] = point;` — C++17 structured bindings. Прямое соответствие.
+
+**Checker:** расширение `StmtLet` — вместо имени, паттерн в левой части.
+
+---
+
+### A4. Значения по умолчанию для параметров
+
+**Проблема.** Каждый вариант функции с опциональным аргументом требует отдельной функции.
+
+```mlc
+fn format(value: string, width: i32 = 0, pad: string = " ") -> string = ...
+fn connect(host: string, port: i32 = 5432, timeout: i32 = 30) -> Result<Conn, Error> = ...
+```
+
+**C++ трансляция:** `default` параметры в C++ — прямое соответствие.
+
+**Ограничение:** значение по умолчанию — compile-time константа или вызов без side effects.
+Параметры с дефолтами — только в конце списка.
+
+---
+
+### A5. Строковая интерполяция
+
+**Проблема.** `"x = " + x.to_string() + ", y = " + y.to_string()` — нечитаемо.
+
+```mlc
+f"x = {x}, y = {y}"                 // вычисляется через .to_string() для каждого выражения
+f"result: {if ok then \"ok\" else \"fail\" end}"  // произвольные выражения
+```
+
+**C++ трансляция:** `mlc::format("x = {}, y = {}", x, y)` или конкатенация строк.
+Каждое `{expr}` вызывает `mlc::to_string(expr)`.
+
+**Ограничение:** `{expr}` — тип должен реализовывать `Display` (иметь `to_string`).
+
+---
+
+## Фаза B — Производительность разработки (derive, деструктуризация паттернов)
+
+### B1. `derive` — автогенерация трейтов
+
+**Проблема.** Каждый тип-запись требует ручной реализации `to_string`, `==`, comparisons.
+В mlcc ~30 таких функций написаны вручную.
+
+```mlc
+type Span = { file: string, line: i32, col: i32 } derive { Display, Eq, Ord, Hash }
+type Token = Ident(string) | Int(i64) | Str(string) derive { Display, Eq }
+```
+
+**Что генерируется:**
+
+| Трейт | Что генерирует |
+|-------|----------------|
+| `Display` | `to_string` через конкатенацию полей или имён вариантов |
+| `Eq` | `==` по всем полям структурно |
+| `Ord` | лексикографическое сравнение полей |
+| `Hash` | хеш через поля (для HashMap ключей) |
+| `Clone` | глубокое копирование (Shared<T> — инкремент ref-count) |
+
+**C++ трансляция:** генерация `operator==`, `operator<`, `std::hash<T>` специализации,
+метода `to_string`. Всё — compile-time, zero overhead.
+
+**Реализация:** codegen-правило в `compiler/codegen/decl.mlc` для `DeclType` с `derive`.
+
+---
+
+### B2. `or` паттерны в `match` расширенные
+
+Сейчас: `A | B => expr` работает только для unit-вариантов.
+После B2: `Circle(r) | Square(r) => r * r * PI` — биндинг одинакового имени.
+
+---
+
+### B3. Exhaustive `let` для sum types
+
+```mlc
+// Вместо match с одним arm
+let Some(value) = optional else return Err("not found") end
+let Ok(data) = result else |e| return Err(e) end
+```
+
+`else` — обязательная ветка для non-exhaustive деструктуризации. Без `else` — compile error.
+
+**C++ трансляция:** `if (!holds_alternative<Some>(optional)) { return Err("not found"); } auto& value = get<Some>(optional)._0;`
+
+---
+
+## Фаза C — Типобезопасность и архитектурные паттерны
+
+### C1. Phantom types
+
+**Проблема.** Нельзя запретить вызов функции с AST нужной фазы на уровне типов.
+
+```mlc
+type Unvalidated
+type Validated
+type Compiled
+
+type Ast<Phase> = Ast { decls: [Shared<Decl>] }       // Phase — phantom, не в полях
+
+fn parse(source: string) -> Result<Ast<Unvalidated>, Error> = ...
+fn check(ast: Ast<Unvalidated>) -> Result<Ast<Validated>, Error> = ...
+fn codegen(ast: Ast<Validated>) -> Ast<Compiled> = ...
+
+// Ошибка компиляции:
+codegen(parse(source)?)     // Ast<Unvalidated> передан в Ast<Validated>
+```
+
+**C++ трансляция:** `template<typename Phase> struct Ast { ... };` — Phase не используется в
+полях, только в типовых параметрах. C++ поддерживает phantom type parameters нативно.
+
+**Checker:** phantom type parameters — параметры типа, не упомянутые в полях. Сейчас
+checker требует, чтобы все type params встречались в полях. Нужно снять это ограничение.
+
+---
+
+### C2. Smart constructors — `private` варианты конструктора
+
+```mlc
+type Email = private Email { raw: string }
+
+extend Email {
+  fn parse(input: string) -> Result<Email, string> =
+    if input.contains("@") then Ok(Email { raw: input })
+    else Err("invalid email: " + input)
+    end
+
+  fn value(self: Email) -> string = self.raw
+}
+
+// За пределами модуля — только Email.parse(), прямой Email { raw: ... } запрещён.
+```
+
+**C++ трансляция:** приватный конструктор в struct + `friend` функция или factory.
+
+---
+
+### C3. Именованные аргументы (keyword arguments)
+
+```mlc
+fn connect(host: string, port: i32, timeout: i32) -> Result<Conn, Error> = ...
+
+// Вызов:
+connect(host: "localhost", port: 5432, timeout: 30)
+connect("localhost", port: 5432, timeout: 30)  // можно смешивать с позиционными
+```
+
+**C++ трансляция:** именованные аргументы нет в C++, но при трансляции порядок аргументов
+фиксирован — это просто синтаксическое соответствие позиционным параметрам. Нет overhead.
+
+---
+
+### C4. Числовая башня
+
+Только `i32` — блокирует реальный ввод/вывод, работу с файлами, размеры буферов.
+
+| Тип | Назначение | C++ |
+|-----|-----------|-----|
+| `i32` | стандартный (текущий) | `int32_t` |
+| `i64` | timestamp, размеры файлов | `int64_t` |
+| `u8` | байты, протоколы | `uint8_t` |
+| `usize` | индексы, смещения | `size_t` |
+| `f64` | вещественная арифметика | `double` |
+| `char` | Unicode codepoint | `char32_t` |
+
+Литеральные суффиксы: `42i64`, `3.14f64`, `0xFFu8`. Без суффикса — вывод из контекста или `i32`.
+
+---
+
+### C5. `with` — resource management / RAII
+
+```mlc
+type Drop {
+  fn drop(self: mut Self) -> unit
+}
+
+with File.open(path)? as file do
+  file.write(header)?
+  file.write(body)?
+end   // file.drop() вызывается автоматически, в том числе при раннем return/?
+```
+
+**C++ трансляция:** RAII wrapper — деструктор вызывает `drop`. Идиоматичный C++.
+`with` — синтаксический сахар над RAII scope-guard.
+
+---
+
+## Фаза D — Продвинутая типовая система
+
+### D1. Ассоциированные типы в трейтах
+
+Необходимы для `Iterator` без type-explosion.
+
+```mlc
+trait Iterator {
+  type Item
+  fn next(self: mut Self) -> Option<Self.Item>
+}
+
+trait Collect {
+  type Output<T>
+  fn collect<I: Iterator>(iter: I) -> Self.Output<I.Item>
+}
+
+// Использование:
+fn map<I: Iterator, B>(iter: I, f: I.Item -> B) -> MapIter<I, B> = ...
+```
+
+**C++ трансляция:** `using Item = T;` в struct, доступ через `typename I::Item`.
+C++ идиоматично поддерживает это через type members.
+
+---
+
+### D2. Трейты операторов (оператор-перегрузка через трейты)
+
+```mlc
+trait Add<Rhs> {
+  type Output
+  fn add(self: Self, rhs: Rhs) -> Self.Output
+}
+
+type Vec2 = { x: f64, y: f64 }
+extend Vec2 : Add<Vec2> {
+  type Output = Vec2
+  fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y }
+}
+
+let v3 = v1 + v2   // десугарируется в Add_add(v1, v2)
+```
+
+**C++ трансляция:** `operator+` в struct. Прямое соответствие.
+
+---
+
+### D3. `impl Trait` в позиции параметра (structural typing lite)
+
+```mlc
+fn print_all(items: [impl Display]) -> unit =
+  items.map(x => println(x.to_string())).fold((), (_, _) => ())
+
+fn process(handler: impl Fn(Request) -> Response) -> Server = ...
+```
+
+`impl Trait` принимает любой тип, реализующий трейт, без явного `extend` для каждого
+пользователя. Statically dispatched.
+
+**C++ трансляция:** `template<typename T> requires Display<T>` — C++20 concepts.
+Нет vtable, нет overhead, полностью статично.
+
+---
+
+### D4. Multiline `where` для сложных bounds
+
+```mlc
+fn serialize<T>(value: T) -> string
+  where T: Display + Eq + Clone
+= ...
+
+fn merge<K, V>(maps: [Map<K, V>]) -> Map<K, V>
+  where K: Eq + Hash + Clone, V: Clone
+= ...
+```
+
+**C++ трансляция:** `requires (Display<T> && Eq<T> && Clone<T>)` — C++20 concepts.
+
+---
+
+## Что не войдёт в язык
+
+| Конструкция | Причина |
+|-------------|---------|
+| Наследование классов | Трейты + composition достаточно. Fragile base class problem. |
+| Null / nil | `Option<T>`. |
+| Исключения | `Result<T,E>`. |
+| Implicit conversion | Явное приведение через функции. |
+| Reflection / introspection | Нарушает статическую верифицируемость. |
+| `any` / `dynamic` | Отдельный unsafe-контекст, не встроенный тип. |
+| Higher-kinded types (HKT) | C++ template template parameters — слишком сложная трансляция без гарантированного нулевого overhead. Пересмотреть после D1. |
+| Система эффектов | Правильная реализация требует CPS или continuations — нет прямого C++ аналога. Долгосрочно. |
+| Monkey patching / открытые классы | `extend` в MLC статический. |
+| Varargs | `Array<T>` явный параметр достаточен. |
+
+---
+
+## Таблица C++ трансляции (фичи → C++20)
+
+| Фича MLC | C++20 |
+|----------|-------|
+| `[T].map(f)` | `std::transform` + `std::vector` |
+| `[T].filter(p)` | `std::copy_if` |
+| `[T].fold(z, f)` | `std::accumulate` |
+| `Result<T,E>.and_then(f)` | метод на `std::variant` |
+| `derive { Display }` | генерация `to_string()` |
+| `derive { Eq }` | `operator==` |
+| `derive { Ord }` | `operator<=>` (spaceship) |
+| `derive { Hash }` | `std::hash<T>` специализация |
+| Phantom types | `template<typename Phase>` struct |
+| `private` constructor | `private:` в struct + factory |
+| `with` block | RAII scope guard |
+| Associated types | `using Item = T` в struct |
+| `impl Trait` param | `template<T> requires Concept<T>` |
+| `where` clause | `requires (A<T> && B<T>)` |
+| Operator overloading | `operator+`, `operator==`, etc. |
+| Named args | позиционные (compile-time соответствие) |
+| Default args | C++ default parameter values |
+| `f"..."` interpolation | `mlc::format(...)` |
+| Destructuring `let` | C++17 structured bindings |
+| Numeric types i64/f64 | `int64_t`, `double`, etc. |
+
+---
+
+## Приоритет реализации
+
+```
+A1  Array HOF              — убирает 80% while-циклов. Фундамент.
+A2  Result/Option chain    — убирает вложенные match. Фундамент.
+A3  let деструктуризация   — нужна для идиоматичного кода.
+A4  Default args           — нужны для API mlcc.
+A5  Строковая интерполяция — QOL, без неё всё читается плохо.
+B1  derive                 — убирает boilerplate из mlcc.
+B3  Exhaustive let / else  — type-safe unwrap без полного match.
+C1  Phantom types          — type-safe compiler phases.
+C2  Smart constructors     — encapsulation.
+C4  Числовая башня         — i64 нужен для реального ввода/вывода.
+C5  with / Drop            — resource management.
+D1  Associated types       — Iterator, Collect.
+D2  Operator overloading   — после D1.
+D3  impl Trait             — после D1.
+D4  where clause           — после D3.
+C3  Named args             — низкий приоритет.
+```
+
+**Критерий "не хуже Ruby":** A1 + A2 + A3 + A4 + B1. После них mlcc можно переписать
+без процедурных паттернов.
+
+---
+
+## Процесс реализации
+
+Каждая фича:
+1. Спецификация в этом документе (синтаксис, десугаринг, C++ выход).
+2. Ruby-реализация в `lib/mlc/` + тест в `test/mlc/`.
+3. MLC-реализация в `compiler/` + тест в `compiler/tests/`.
+4. Синхронизация `compiler/out/` через `compiler/build.sh`.
+
+Ruby-эталон не опережается. Если поведение расходится — эталон в Ruby.
