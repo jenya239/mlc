@@ -19,11 +19,11 @@ fn transform_context_new(type_env: Map<string, Shared<Type>>, registry: TypeRegi
 export fn empty_transform_context() -> TransformContext =
   TransformContext { type_env: Map.new(), registry: empty_registry() }
 
-fn transform_context_with_env(base: TransformContext, type_env: Map<string, Shared<Type>>) -> TransformContext =
+export fn transform_context_with_env(base: TransformContext, type_env: Map<string, Shared<Type>>) -> TransformContext =
   TransformContext { type_env, registry: base.registry }
 
 // Coerce an SExpr to a target type, primarily for empty arrays.
-fn coerce_expr_to_type(expression: Shared<SExpr>, target_type: Shared<Type>) -> Shared<SExpr> =
+export fn coerce_expr_to_type(expression: Shared<SExpr>, target_type: Shared<Type>) -> Shared<SExpr> =
   match expression {
     SExprArray(elements, _, source_span) =>
       if elements.length() == 0 then Shared.new(SExprArray(elements, target_type, source_span))
@@ -41,21 +41,21 @@ export type TransformStmtsResult = TransformStmtsResult {
 
 // --- Helpers ----------------------------------------------------------------
 
-fn transform_exprs(expressions: [Shared<Expr>], transform_context: TransformContext) -> [Shared<SExpr>] = do
+fn transform_exprs(expressions: [Shared<Expr>], transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SExpr>] = do
   let mut result: [Shared<SExpr>] = []
   let mut index = 0
   while index < expressions.length() do
-    result.push(transform_expr(expressions[index], transform_context))
+    result.push(transform_expr(expressions[index], transform_context, stmts_fn))
     index = index + 1
   end
   result
 end
 
-fn transform_field_vals(field_values: [Shared<FieldVal>], transform_context: TransformContext) -> [Shared<SFieldVal>] = do
+fn transform_field_vals(field_values: [Shared<FieldVal>], transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SFieldVal>] = do
   let mut result: [Shared<SFieldVal>] = []
   let mut index = 0
   while index < field_values.length() do
-    const typed_val = transform_expr(field_values[index].val, transform_context)
+    const typed_val = transform_expr(field_values[index].val, transform_context, stmts_fn)
     result.push(Shared.new(SFieldVal { name: field_values[index].name, val: typed_val }))
     index = index + 1
   end
@@ -77,13 +77,13 @@ fn build_transform_substitution(subject_type: Shared<Type>, registry: TypeRegist
   substitution
 end
 
-fn transform_match_arms(arms: [Shared<MatchArm>], transform_context: TransformContext, substitution: Map<string, Shared<Type>>) -> [Shared<SMatchArm>] = do
+fn transform_match_arms(arms: [Shared<MatchArm>], transform_context: TransformContext, substitution: Map<string, Shared<Type>>, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SMatchArm>] = do
   let mut result: [Shared<SMatchArm>] = []
   let mut index = 0
   while index < arms.length() do
     const arm_env     = env_for_pattern_substituted(transform_context.type_env, arms[index].pat, transform_context.registry, substitution)
     const arm_context = transform_context_with_env(transform_context, arm_env)
-    const typed_body  = transform_expr(arms[index].body, arm_context)
+    const typed_body  = transform_expr(arms[index].body, arm_context, stmts_fn)
     result.push(Shared.new(SMatchArm { pat: arms[index].pat, body: typed_body }))
     index = index + 1
   end
@@ -92,7 +92,7 @@ end
 
 // --- Expression transform ---------------------------------------------------
 
-export fn transform_expr(expression: Shared<Expr>, transform_context: TransformContext) -> Shared<SExpr> =
+export fn transform_expr(expression: Shared<Expr>, transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SExpr> =
   match expression {
     ExprInt(value, source_span) =>
       Shared.new(SExprInt(value, Shared.new(TI32), source_span)),
@@ -120,21 +120,21 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     end,
 
     ExprBin(operation, left, right, source_span) => do
-      const typed_left  = transform_expr(left,  transform_context)
-      const typed_right = transform_expr(right, transform_context)
+      const typed_left  = transform_expr(left,  transform_context, stmts_fn)
+      const typed_right = transform_expr(right, transform_context, stmts_fn)
       const result_type = binary_operation_result_type(operation, sexpr_type(typed_left))
       Shared.new(SExprBin(operation, typed_left, typed_right, result_type, source_span))
     end,
 
     ExprUn(operation, inner, source_span) => do
-      const typed_inner = transform_expr(inner, transform_context)
+      const typed_inner = transform_expr(inner, transform_context, stmts_fn)
       const result_type = if operation == "!" then Shared.new(TBool) else sexpr_type(typed_inner) end
       Shared.new(SExprUn(operation, typed_inner, result_type, source_span))
     end,
 
     ExprCall(function, call_arguments, source_span) => do
-      const typed_fn   = transform_expr(function, transform_context)
-      const typed_args = transform_exprs(call_arguments, transform_context)
+      const typed_fn   = transform_expr(function, transform_context, stmts_fn)
+      const typed_args = transform_exprs(call_arguments, transform_context, stmts_fn)
       const callee_name = match function { ExprIdent(name, _) => name, _ => "" }
       const result_type =
         if callee_name != "" && transform_context.registry.has_ctor(callee_name) then
@@ -146,8 +146,8 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     end,
 
     ExprMethod(object, method_name, method_arguments, source_span) => do
-      const typed_object = transform_expr(object, transform_context)
-      const typed_args   = transform_exprs(method_arguments, transform_context)
+      const typed_object = transform_expr(object, transform_context, stmts_fn)
+      const typed_args   = transform_exprs(method_arguments, transform_context, stmts_fn)
       const builtin_type = builtin_method_return_type(method_name)
       const result_type  =
         if type_is_unknown(builtin_type) then
@@ -158,71 +158,71 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     end,
 
     ExprField(object, field_name, source_span) => do
-      const typed_object = transform_expr(object, transform_context)
+      const typed_object = transform_expr(object, transform_context, stmts_fn)
       const result_type  = field_type_from_object(sexpr_type(typed_object), field_name, transform_context.registry)
       Shared.new(SExprField(typed_object, field_name, result_type, source_span))
     end,
 
     ExprIndex(object, index_expression, source_span) => do
-      const typed_object = transform_expr(object, transform_context)
-      const typed_index  = transform_expr(index_expression, transform_context)
+      const typed_object = transform_expr(object, transform_context, stmts_fn)
+      const typed_index  = transform_expr(index_expression, transform_context, stmts_fn)
       const element_type = match sexpr_type(typed_object) { TArray(inner) => inner, _ => Shared.new(TUnknown) }
       Shared.new(SExprIndex(typed_object, typed_index, element_type, source_span))
     end,
 
     ExprIf(condition, then_expression, else_expression, source_span) => do
-      const typed_condition = transform_expr(condition, transform_context)
-      const typed_then      = transform_expr(then_expression, transform_context)
-      const typed_else      = transform_expr(else_expression, transform_context)
+      const typed_condition = transform_expr(condition, transform_context, stmts_fn)
+      const typed_then      = transform_expr(then_expression, transform_context, stmts_fn)
+      const typed_else      = transform_expr(else_expression, transform_context, stmts_fn)
       const result_type     = sexpr_type(typed_then)
       Shared.new(SExprIf(typed_condition, typed_then, typed_else, result_type, source_span))
     end,
 
     ExprBlock(statements, result, source_span) => do
-      const stmts_result = transform_stmts(statements, transform_context)
+      const stmts_result = stmts_fn(statements, transform_context)
       const body_context = transform_context_with_env(transform_context, stmts_result.type_env)
-      const typed_result = transform_expr(result, body_context)
+      const typed_result = transform_expr(result, body_context, stmts_fn)
       const result_type  = sexpr_type(typed_result)
       Shared.new(SExprBlock(stmts_result.statements, typed_result, result_type, source_span))
     end,
 
     ExprWhile(condition, statements, source_span) => do
-      const typed_condition = transform_expr(condition, transform_context)
-      const stmts_result    = transform_stmts(statements, transform_context)
+      const typed_condition = transform_expr(condition, transform_context, stmts_fn)
+      const stmts_result    = stmts_fn(statements, transform_context)
       Shared.new(SExprWhile(typed_condition, stmts_result.statements, Shared.new(TUnit), source_span))
     end,
 
     ExprFor(variable_name, iterator, statements, source_span) => do
-      const typed_iterator = transform_expr(iterator, transform_context)
+      const typed_iterator = transform_expr(iterator, transform_context, stmts_fn)
       const element_type   = match sexpr_type(typed_iterator) { TArray(inner) => inner, _ => Shared.new(TUnknown) }
       let inner_env = transform_context.type_env
       inner_env.set(variable_name, element_type)
       const loop_context   = transform_context_with_env(transform_context, inner_env)
-      const stmts_result   = transform_stmts(statements, loop_context)
+      const stmts_result   = stmts_fn(statements, loop_context)
       Shared.new(SExprFor(variable_name, typed_iterator, stmts_result.statements, Shared.new(TUnit), source_span))
     end,
 
     ExprMatch(subject, arms, source_span) => do
-      const typed_subject = transform_expr(subject, transform_context)
+      const typed_subject = transform_expr(subject, transform_context, stmts_fn)
       const substitution  = build_transform_substitution(sexpr_type(typed_subject), transform_context.registry)
-      const typed_arms    = transform_match_arms(arms, transform_context, substitution)
+      const typed_arms    = transform_match_arms(arms, transform_context, substitution, stmts_fn)
       const result_type   = if typed_arms.length() > 0 then sexpr_type(typed_arms[0].body) else Shared.new(TUnknown) end
       Shared.new(SExprMatch(typed_subject, typed_arms, result_type, source_span))
     end,
 
     ExprRecord(type_name, field_values, source_span) => do
-      const typed_fields = transform_field_vals(field_values, transform_context)
+      const typed_fields = transform_field_vals(field_values, transform_context, stmts_fn)
       Shared.new(SExprRecord(type_name, typed_fields, Shared.new(TNamed(type_name)), source_span))
     end,
 
     ExprRecordUpdate(type_name, base, field_values, source_span) => do
-      const typed_base   = transform_expr(base, transform_context)
-      const typed_fields = transform_field_vals(field_values, transform_context)
+      const typed_base   = transform_expr(base, transform_context, stmts_fn)
+      const typed_fields = transform_field_vals(field_values, transform_context, stmts_fn)
       Shared.new(SExprRecordUpdate(type_name, typed_base, typed_fields, Shared.new(TNamed(type_name)), source_span))
     end,
 
     ExprArray(elements, source_span) => do
-      const typed_elements = transform_exprs(elements, transform_context)
+      const typed_elements = transform_exprs(elements, transform_context, stmts_fn)
       const element_type   = if typed_elements.length() > 0
         then sexpr_type(typed_elements[0])
         else Shared.new(TUnknown)
@@ -231,7 +231,7 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     end,
 
     ExprQuestion(inner, source_span) => do
-      const typed_inner  = transform_expr(inner, transform_context)
+      const typed_inner  = transform_expr(inner, transform_context, stmts_fn)
       const inner_type   = sexpr_type(typed_inner)
       const unwrapped_type = match inner_type {
         TGeneric(_, type_args) => if type_args.length() > 0 then type_args[0] else Shared.new(TUnknown) end,
@@ -250,58 +250,11 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
         parameter_index = parameter_index + 1
       end
       const lambda_context = transform_context_with_env(transform_context, lambda_env)
-      const typed_body     = transform_expr(body, lambda_context)
+      const typed_body     = transform_expr(body, lambda_context, stmts_fn)
       const function_type  = Shared.new(TFn(parameter_types, sexpr_type(typed_body)))
       Shared.new(SExprLambda(parameter_names, typed_body, function_type, source_span))
     end,
 
     _ => Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
   }
-
-// --- Statement transform ----------------------------------------------------
-
-export fn transform_stmts(statements: [Shared<Stmt>], transform_context: TransformContext) -> TransformStmtsResult = do
-  let mut typed_statements: [Shared<SStmt>] = []
-  let current_env = transform_context.type_env
-  let mut statement_index = 0
-  while statement_index < statements.length() do
-    const current_context = transform_context_with_env(transform_context, current_env)
-    match statements[statement_index] {
-      StmtLet(binding_name, is_mut, annotation, value_expression, source_span) => do
-        const annotated_type = type_from_annotation(annotation)
-        const typed_value   = transform_expr(value_expression, current_context)
-        const inferred_type = sexpr_type(typed_value)
-        const value_type    = match annotated_type { TUnit => inferred_type, _ => annotated_type }
-        current_env.set(binding_name, value_type)
-        const coerced_value = coerce_expr_to_type(typed_value, value_type)
-        typed_statements.push(Shared.new(SStmtLet(binding_name, is_mut, coerced_value, value_type, source_span)))
-        ()
-      end,
-      StmtLetConst(binding_name, annotation, value_expression, source_span) => do
-        const annotated_type = type_from_annotation(annotation)
-        const typed_value   = transform_expr(value_expression, current_context)
-        const inferred_type = sexpr_type(typed_value)
-        const value_type    = match annotated_type { TUnit => inferred_type, _ => annotated_type }
-        current_env.set(binding_name, value_type)
-        const coerced_value = coerce_expr_to_type(typed_value, value_type)
-        typed_statements.push(Shared.new(SStmtLetConst(binding_name, coerced_value, value_type, source_span)))
-        ()
-      end,
-      StmtExpr(expression, source_span) => do
-        const typed_expr = transform_expr(expression, current_context)
-        typed_statements.push(Shared.new(SStmtExpr(typed_expr, source_span)))
-        ()
-      end,
-      StmtReturn(return_expression, source_span) => do
-        const typed_return = transform_expr(return_expression, current_context)
-        typed_statements.push(Shared.new(SStmtReturn(typed_return, source_span)))
-        ()
-      end,
-      StmtBreak(source_span)    => do typed_statements.push(Shared.new(SStmtBreak(source_span)));    () end,
-      StmtContinue(source_span) => do typed_statements.push(Shared.new(SStmtContinue(source_span))); () end
-    }
-    statement_index = statement_index + 1
-  end
-  TransformStmtsResult { statements: typed_statements, type_env: current_env }
-end
 

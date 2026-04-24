@@ -13,6 +13,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "transform.hpp"
+#include "transform_stmts.hpp"
 
 namespace test_pipe_and_record_update {
 

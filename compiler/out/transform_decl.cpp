@@ -5,6 +5,7 @@
 #include "semantic_ir.hpp"
 #include "decl_index.hpp"
 #include "transform.hpp"
+#include "transform_stmts.hpp"
 
 namespace transform_decl {
 
@@ -13,6 +14,7 @@ using namespace registry;
 using namespace semantic_ir;
 using namespace decl_index;
 using namespace transform;
+using namespace transform_stmts;
 using namespace ast_tokens;
 
 std::shared_ptr<semantic_ir::SDecl> transform_decl(std::shared_ptr<ast::Decl> declaration, registry::TypeRegistry registry) noexcept;
@@ -37,7 +39,7 @@ index = index + 1;
 }
   std::shared_ptr<registry::Type> return_type = registry::type_from_annotation(return_type_expr);
   transform::TransformContext initial_context = transform::TransformContext{param_env, registry};
-  std::shared_ptr<semantic_ir::SExpr> typed_body = transform::transform_expr(body, initial_context);
+  std::shared_ptr<semantic_ir::SExpr> typed_body = transform::transform_expr(body, initial_context, [](mlc::Array<std::shared_ptr<ast::Stmt>> stmts, transform::TransformContext ctx)  { return transform_stmts::transform_stmts(stmts, ctx); });
   return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn(name, type_params, trait_bounds, params, return_type, typed_body));
  }(); },
   [&](const DeclType& decltype_) -> std::shared_ptr<semantic_ir::SDecl> { auto [type_name, type_params, variants] = decltype_; return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclType(type_name, type_params, variants)); },

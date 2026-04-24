@@ -9,6 +9,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "transform.hpp"
+#include "transform_stmts.hpp"
 
 namespace test_pipe_and_record_update {
 
@@ -21,6 +22,7 @@ using namespace ast;
 using namespace semantic_ir;
 using namespace registry;
 using namespace transform;
+using namespace transform_stmts;
 using namespace ast_tokens;
 
 std::shared_ptr<semantic_ir::SExpr> sid(mlc::String name) noexcept;
@@ -41,15 +43,15 @@ transform::TransformContext tctx = transform::empty_transform_context();
 std::shared_ptr<ast::Expr> left_expr = std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("x"), ast::span_unknown()));
 std::shared_ptr<ast::Expr> right_fn = std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("double"), ast::span_unknown()));
 std::shared_ptr<ast::Expr> plain_pipe = exprs::pipe_desugar(left_expr, right_fn);
-results.push_back(test_runner::assert_eq_str(mlc::String("pipe x |> double - double_(x)"), eval::gen_expr(transform::transform_expr(plain_pipe, tctx), ctx), mlc::String("double_(x)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("pipe x |> double - double_(x)"), eval::gen_expr(transform::transform_expr(plain_pipe, tctx, [](mlc::Array<std::shared_ptr<ast::Stmt>> stmts, transform::TransformContext ctx2)  { return transform_stmts::transform_stmts(stmts, ctx2); }), ctx), mlc::String("double_(x)")));
 mlc::Array<std::shared_ptr<ast::Expr>> right_call_args = mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprInt(5, ast::span_unknown()))};
 std::shared_ptr<ast::Expr> right_call = std::make_shared<ast::Expr>(ast::ExprCall(std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("add"), ast::span_unknown())), right_call_args, ast::span_unknown()));
 std::shared_ptr<ast::Expr> partial_pipe = exprs::pipe_desugar(left_expr, right_call);
-results.push_back(test_runner::assert_eq_str(mlc::String("pipe x |> add(5) - add(x, 5)"), eval::gen_expr(transform::transform_expr(partial_pipe, tctx), ctx), mlc::String("add(x, 5)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("pipe x |> add(5) - add(x, 5)"), eval::gen_expr(transform::transform_expr(partial_pipe, tctx, [](mlc::Array<std::shared_ptr<ast::Stmt>> stmts, transform::TransformContext ctx2)  { return transform_stmts::transform_stmts(stmts, ctx2); }), ctx), mlc::String("add(x, 5)")));
 mlc::Array<std::shared_ptr<ast::Expr>> right_multi_args = mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprInt(3, ast::span_unknown())), std::make_shared<ast::Expr>(ast::ExprInt(4, ast::span_unknown()))};
 std::shared_ptr<ast::Expr> right_multi_call = std::make_shared<ast::Expr>(ast::ExprCall(std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("clamp"), ast::span_unknown())), right_multi_args, ast::span_unknown()));
 std::shared_ptr<ast::Expr> multi_partial_pipe = exprs::pipe_desugar(left_expr, right_multi_call);
-results.push_back(test_runner::assert_eq_str(mlc::String("pipe x |> clamp(3, 4) - clamp(x, 3, 4)"), eval::gen_expr(transform::transform_expr(multi_partial_pipe, tctx), ctx), mlc::String("clamp(x, 3, 4)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("pipe x |> clamp(3, 4) - clamp(x, 3, 4)"), eval::gen_expr(transform::transform_expr(multi_partial_pipe, tctx, [](mlc::Array<std::shared_ptr<ast::Stmt>> stmts, transform::TransformContext ctx2)  { return transform_stmts::transform_stmts(stmts, ctx2); }), ctx), mlc::String("clamp(x, 3, 4)")));
 std::shared_ptr<ast::Decl> point_decl = std::make_shared<ast::Decl>(ast::DeclType(mlc::String("Point"), {}, mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarRecord(mlc::String("Point"), mlc::Array<std::shared_ptr<ast::FieldDef>>{std::make_shared<ast::FieldDef>(ast::FieldDef{mlc::String("x"), std::make_shared<ast::TypeExpr>((ast::TyI32{}))}), std::make_shared<ast::FieldDef>(ast::FieldDef{mlc::String("y"), std::make_shared<ast::TypeExpr>((ast::TyI32{}))})}))}));
 ast::Program point_prog = ast::Program{mlc::Array<std::shared_ptr<ast::Decl>>{point_decl}};
 context::CodegenContext ctx_point = context::create_codegen_context(point_prog);

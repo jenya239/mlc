@@ -9,6 +9,7 @@
 #include "semantic_ir.hpp"
 #include "decl_index.hpp"
 #include "transform.hpp"
+#include "transform_stmts.hpp"
 
 namespace transform_decl {
 

@@ -5,10 +5,11 @@ import { gen_expr } from "../codegen/eval"
 import { create_codegen_context } from "../codegen/context"
 import { pipe_desugar } from "../parser/exprs"
 import { tokenize } from "../lexer"
-import { Program, Expr, DeclType, VarRecord, FieldDef, TyI32, ExprIdent, ExprCall, ExprInt, span_unknown } from "../ast"
+import { Program, Expr, Stmt, DeclType, VarRecord, FieldDef, TyI32, ExprIdent, ExprCall, ExprInt, span_unknown } from "../ast"
 import { SExpr, SFieldVal, SExprInt, SExprIdent, SExprRecordUpdate } from "../semantic_ir"
 import { Type, TNamed, TI32, TUnknown } from "../checker/registry"
-import { transform_expr, empty_transform_context } from "../checker/transform"
+import { transform_expr, empty_transform_context, TransformContext, TransformStmtsResult } from "../checker/transform"
+import { transform_stmts } from "../checker/transform_stmts"
 
 fn sid(name: string) -> Shared<SExpr> = Shared.new(SExprIdent(name, Shared.new(TUnknown), span_unknown()))
 fn si(v: i32) -> Shared<SExpr> = Shared.new(SExprInt(v, Shared.new(TI32), span_unknown()))
@@ -25,21 +26,21 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   const right_fn   = Shared.new(ExprIdent("double", span_unknown()))
   const plain_pipe = pipe_desugar(left_expr, right_fn)
   results.push(assert_eq_str("pipe x |> double - double_(x)",
-    gen_expr(transform_expr(plain_pipe, tctx), ctx),
+    gen_expr(transform_expr(plain_pipe, tctx, (stmts: [Shared<Stmt>], ctx2: TransformContext) => transform_stmts(stmts, ctx2)), ctx),
     "double_(x)"))
 
   const right_call_args: [Shared<Expr>] = [Shared.new(ExprInt(5, span_unknown()))]
   const right_call   = Shared.new(ExprCall(Shared.new(ExprIdent("add", span_unknown())), right_call_args, span_unknown()))
   const partial_pipe = pipe_desugar(left_expr, right_call)
   results.push(assert_eq_str("pipe x |> add(5) - add(x, 5)",
-    gen_expr(transform_expr(partial_pipe, tctx), ctx),
+    gen_expr(transform_expr(partial_pipe, tctx, (stmts: [Shared<Stmt>], ctx2: TransformContext) => transform_stmts(stmts, ctx2)), ctx),
     "add(x, 5)"))
 
   const right_multi_args: [Shared<Expr>] = [Shared.new(ExprInt(3, span_unknown())), Shared.new(ExprInt(4, span_unknown()))]
   const right_multi_call  = Shared.new(ExprCall(Shared.new(ExprIdent("clamp", span_unknown())), right_multi_args, span_unknown()))
   const multi_partial_pipe = pipe_desugar(left_expr, right_multi_call)
   results.push(assert_eq_str("pipe x |> clamp(3, 4) - clamp(x, 3, 4)",
-    gen_expr(transform_expr(multi_partial_pipe, tctx), ctx),
+    gen_expr(transform_expr(multi_partial_pipe, tctx, (stmts: [Shared<Stmt>], ctx2: TransformContext) => transform_stmts(stmts, ctx2)), ctx),
     "clamp(x, 3, 4)"))
 
   // -- Record update codegen ------------------------------------------------

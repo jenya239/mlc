@@ -1,0 +1,57 @@
+// Statement AST → SemanticIR transform.
+// Imports transform_expr from transform.mlc and passes itself as stmts_fn,
+// mirroring the gen_stmts / eval_expr pattern in codegen.
+
+import { Stmt } from "../ast"
+import { Type, type_from_annotation } from "./registry"
+import { SStmt, SExpr, sexpr_type } from "../semantic_ir"
+import { TransformContext, TransformStmtsResult,
+         transform_expr, transform_context_with_env, coerce_expr_to_type } from "./transform"
+
+export fn transform_stmts(
+  statements: [Shared<Stmt>],
+  transform_context: TransformContext
+) -> TransformStmtsResult = do
+  let mut typed_statements: [Shared<SStmt>] = []
+  const current_env = transform_context.type_env
+  let mut statement_index = 0
+  while statement_index < statements.length() do
+    const current_context = transform_context_with_env(transform_context, current_env)
+    match statements[statement_index] {
+      StmtLet(binding_name, is_mut, annotation, value_expression, source_span) => do
+        const annotated_type = type_from_annotation(annotation)
+        const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
+        const inferred_type  = sexpr_type(typed_value)
+        const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
+        current_env.set(binding_name, value_type)
+        const coerced_value = coerce_expr_to_type(typed_value, value_type)
+        typed_statements.push(Shared.new(SStmtLet(binding_name, is_mut, coerced_value, value_type, source_span)))
+        ()
+      end,
+      StmtLetConst(binding_name, annotation, value_expression, source_span) => do
+        const annotated_type = type_from_annotation(annotation)
+        const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
+        const inferred_type  = sexpr_type(typed_value)
+        const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
+        current_env.set(binding_name, value_type)
+        const coerced_value = coerce_expr_to_type(typed_value, value_type)
+        typed_statements.push(Shared.new(SStmtLetConst(binding_name, coerced_value, value_type, source_span)))
+        ()
+      end,
+      StmtExpr(expression, source_span) => do
+        const typed_expr = transform_expr(expression, current_context, transform_stmts)
+        typed_statements.push(Shared.new(SStmtExpr(typed_expr, source_span)))
+        ()
+      end,
+      StmtReturn(return_expression, source_span) => do
+        const typed_return = transform_expr(return_expression, current_context, transform_stmts)
+        typed_statements.push(Shared.new(SStmtReturn(typed_return, source_span)))
+        ()
+      end,
+      StmtBreak(source_span)    => do typed_statements.push(Shared.new(SStmtBreak(source_span)));    () end,
+      StmtContinue(source_span) => do typed_statements.push(Shared.new(SStmtContinue(source_span))); () end
+    }
+    statement_index = statement_index + 1
+  end
+  TransformStmtsResult { statements: typed_statements, type_env: current_env }
+end
