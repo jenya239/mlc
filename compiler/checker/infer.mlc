@@ -10,77 +10,12 @@ import { infer_question_from_inner_result } from "./infer_question_expression"
 import * as infer_operand_combine from "./infer_operand_combine"
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor } from "./infer_call_support"
 import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
-import { call_argument_unification_diagnostics, build_call_type_substitution } from "./call_argument_unify"
+import { call_argument_unification_diagnostics } from "./call_argument_unify"
+import { trait_bound_diagnostics } from "./infer_trait_bounds"
 import { function_parameter_list, type_is_function, types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
 import { field_type_from_object } from "./registry"
 import { infer_expr_identifier } from "./infer_expr_ident"
 import { env_for_pattern, env_for_pattern_substituted } from "./pattern_env"
-
-// --- Trait bound checking ---------------------------------------------------
-
-fn type_name_for_bound_check(type_value: Shared<Type>) -> string =
-  match type_value {
-    TI32    => "i32",
-    TString => "string",
-    TBool   => "bool",
-    TNamed(name) => name,
-    _ => ""
-  }
-
-fn check_one_type_param_bounds(
-  type_param: string,
-  bounds: [string],
-  substitution: Map<string, Shared<Type>>,
-  call_source_span: Span,
-  inference_context: CheckContext
-) -> [Diagnostic] = do
-  let mut param_errors: [Diagnostic] = []
-  if substitution.has(type_param) then
-    const actual_type = substitution.get(type_param)
-    const actual_name = type_name_for_bound_check(actual_type)
-    if actual_name != "" then
-      let mut trait_index = 0
-      while trait_index < bounds.length() do
-        const required_trait = bounds[trait_index]
-        if !inference_context.registry.type_implements_trait(actual_name, required_trait) then
-          param_errors = diagnostics_append(param_errors, [diagnostic_error(
-            "type " + actual_name + " does not implement " + required_trait,
-            call_source_span)])
-        end
-        trait_index = trait_index + 1
-      end
-    end
-  end
-  param_errors
-end
-
-fn trait_bound_diagnostics(
-  callee_name: string,
-  callee_parameter_types: [Shared<Type>],
-  argument_inferred_types: [Shared<Type>],
-  callee_type_parameter_names: [string],
-  call_source_span: Span,
-  inference_context: CheckContext
-) -> [Diagnostic] = do
-  const bounds_per_param = inference_context.registry.fn_trait_bounds(callee_name)
-  if bounds_per_param.length() == 0 then
-    do const empty_bound_errors: [Diagnostic] = []; empty_bound_errors end
-  else
-    const substitution = build_call_type_substitution(
-      callee_parameter_types, argument_inferred_types, callee_type_parameter_names)
-    let mut bound_errors: [Diagnostic] = []
-    let mut param_index = 0
-    while param_index < callee_type_parameter_names.length() && param_index < bounds_per_param.length() do
-      const type_param = callee_type_parameter_names[param_index]
-      const bounds = bounds_per_param[param_index]
-      bound_errors = diagnostics_append(
-        bound_errors,
-        check_one_type_param_bounds(type_param, bounds, substitution, call_source_span, inference_context))
-      param_index = param_index + 1
-    end
-    bound_errors
-  end
-end
 
 // --- Argument / field-value error accumulators ------------------------------
 

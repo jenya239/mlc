@@ -15,6 +15,7 @@
 #include "infer_call_support.hpp"
 #include "type_diagnostics.hpp"
 #include "call_argument_unify.hpp"
+#include "infer_trait_bounds.hpp"
 #include "semantic_type_structure.hpp"
 #include "registry.hpp"
 #include "infer_expr_ident.hpp"
