@@ -12,8 +12,8 @@ import { cpp_safe, lower_first, map_method, map_builtin } from "./cpp_naming"
 import { sem_type_to_cpp } from "./type_gen"
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from "./literals"
 import { gen_identifier } from "./identifiers"
-import { first_arm_needs_deref, pat_bind_names } from "./match_analysis"
 import { find_field_value, is_constructor_call, resolve_object_code_in_self_context, infer_shared_new_type_name, field_access_operator, cpp_function_name_for_file_method, cpp_lambda_header_prefix } from "./expression_support"
+import { gen_arm, gen_match } from "./match_gen"
 import { stmts_final_ctx } from "./statement_context"
 import * as expression_output from "./expr"
 
@@ -82,80 +82,6 @@ fn gen_record_update_lazy(base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal
 end
 
 // --- Match arm generation ----------------------------------------------------
-
-fn gen_arm_ctor(ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
-  const qualified_name = context_resolve(context, ctor_name)
-  const lower_name = cpp_safe(lower_first(ctor_name))
-  const binding =
-    if sub_patterns.length() == 0 then ""
-    else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), lower_name)
-    end
-  const ctor_type_info: Shared<CtorTypeInfo> = lookup_ctor_type_info(context.ctor_type_infos, ctor_name)
-  const is_generic = list_contains(context.generic_variants, ctor_name)
-  const type_argument = if is_generic then "<auto>" else "" end
-  let mut arm_context = context; let mut index = 0
-  while index < sub_patterns.length() do
-    match sub_patterns[index] {
-      PatIdent(pattern_name, _) => do
-        if ctor_type_info.shared_pos.contains(index) then
-          arm_context = context_add_shared(arm_context, pattern_name)
-        end
-        if ctor_type_info.shared_arr_pos.contains(index) then
-          arm_context = context_add_shared_array(arm_context, pattern_name)
-        end
-      end,
-      _ => do end
-    }
-    index = index + 1
-  end
-  expression_output.match_arm_constructed_value(
-    expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
-    binding,
-    eval_expr(arm_body, arm_context, gen_stmts))
-end
-
-fn gen_arm_record_pattern(record_name: string, field_patterns: [Shared<Pat>], arm_body: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
-  const qualified_name = context_resolve(context, record_name)
-  const lower_name = cpp_safe(lower_first(record_name))
-  const is_generic = list_contains(context.generic_variants, record_name)
-  const type_argument = if is_generic then "<auto>" else "" end
-  let mut field_bindings = ""; let mut field_index = 0
-  while field_index < field_patterns.length() do
-    match field_patterns[field_index] {
-      PatIdent(field_name, _) => do
-        field_bindings = field_bindings + expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name)
-      end,
-      _ => do end
-    }
-    field_index = field_index + 1
-  end
-  expression_output.match_arm_constructed_value(
-    expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
-    field_bindings,
-    eval_expr(arm_body, context, gen_stmts))
-end
-
-fn gen_arm(arm: Shared<SMatchArm>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
-  match arm.pat {
-    PatWild(_)        => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
-    PatUnit(_)        => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
-    PatBool(_, _)     => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
-    PatInt(_, _)      => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
-    PatStr(_, _)      => expression_output.match_arm_wild_or_unit_return(eval_expr(arm.body, context, gen_stmts)),
-    PatIdent(name, _) => expression_output.match_arm_binding_identifier(cpp_safe(name), eval_expr(arm.body, context, gen_stmts)),
-    PatCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts),
-    PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts)
-  }
-
-fn gen_match(subject: Shared<SExpr>, arms: [Shared<SMatchArm>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
-  let parts: [string] = []; let mut index = 0
-  while index < arms.length() do parts.push(gen_arm(arms[index], context, gen_stmts)); index = index + 1 end
-  const subject_code = eval_expr(subject, context, gen_stmts)
-  const needs_deref = if arms.length() > 0 then first_arm_needs_deref(arms[0], subject, context) else true end
-  expression_output.std_visit_match_expression(
-    parts.join(",\n"),
-    expression_output.visit_subject_for_match(subject_code, needs_deref))
-end
 
 // --- Expression rules --------------------------------------------------------
 
@@ -354,7 +280,7 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprBlock(statements, result_expr, _, _)              => gen_block_expr(statements, result_expr, context, gen_stmts),
     SExprWhile(condition, statements, _, _)                => gen_while_expr(condition, statements, context, gen_stmts),
     SExprFor(variable, iterator, statements, _, _)         => gen_for_expr(variable, iterator, statements, context, gen_stmts),
-    SExprMatch(subject, arms, _, _)                        => gen_match(subject, arms, context, gen_stmts),
+    SExprMatch(subject, arms, _, _)                        => gen_match(subject, arms, context, gen_stmts, eval_expr),
     SExprRecord(type_name, field_values, _, _)             => gen_record_expr(type_name, field_values, context, gen_stmts),
     SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts),
     SExprArray(elements, _, _)                             => gen_array_expr(elements, context, gen_stmts),

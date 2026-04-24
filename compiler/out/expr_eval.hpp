@@ -12,8 +12,8 @@
 #include "type_gen.hpp"
 #include "literals.hpp"
 #include "identifiers.hpp"
-#include "match_analysis.hpp"
 #include "expression_support.hpp"
+#include "match_gen.hpp"
 #include "statement_context.hpp"
 #include "expr.hpp"
 
