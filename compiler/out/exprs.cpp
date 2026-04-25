@@ -3,6 +3,7 @@
 #include "preds.hpp"
 #include "types.hpp"
 #include "ast.hpp"
+#include "ast_tokens.hpp"
 
 namespace exprs {
 
@@ -10,12 +11,19 @@ using namespace preds;
 using namespace types;
 using namespace ast;
 using namespace ast_tokens;
+using namespace ast_tokens;
 
 preds::StmtsResult parse_stmts_until_end(preds::Parser parser) noexcept;
 
 preds::StmtsResult parse_stmts_until_else_end(preds::Parser parser) noexcept;
 
 preds::StmtResult parse_statement_let_const(preds::Parser parser, ast::Span statement_span) noexcept;
+
+ast_tokens::TKind parser_next_kind(preds::Parser p) noexcept;
+
+preds::TypeResult parse_after_let_pattern(preds::Parser parser) noexcept;
+
+preds::PatResult parse_array_pattern(preds::Parser parser, ast::Span bracket_span) noexcept;
 
 preds::StmtResult parse_statement_let(preds::Parser parser) noexcept;
 
@@ -173,16 +181,89 @@ preds::ExprResult value_result = parse_expr(preds::Parser_advance(type_result.pa
 return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetConst(var_name, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
 }
 
+ast_tokens::TKind parser_next_kind(preds::Parser p) noexcept{
+return p.pos + 1 >= p.tokens.size() ? ast_tokens::TKind((ast_tokens::Eof{})) : ast_tokens::TKind(p.tokens[p.pos + 1].kind);
+}
+
+preds::TypeResult parse_after_let_pattern(preds::Parser parser) noexcept{
+return preds::TKind_is_colon(preds::Parser_kind(parser)) ? [&]() -> preds::TypeResult { 
+  preds::TypeResult tr = types::parse_type(preds::Parser_advance(parser));
+  return preds::TKind_is_equal(preds::Parser_kind(tr.parser)) ? preds::TypeResult{tr.type_expr, preds::Parser_advance(tr.parser)} : preds::TypeResult{tr.type_expr, tr.parser};
+ }() : preds::TKind_is_equal(preds::Parser_kind(parser)) ? preds::TypeResult{std::make_shared<ast::TypeExpr>((ast::TyUnit{})), preds::Parser_advance(parser)} : preds::TypeResult{std::make_shared<ast::TypeExpr>((ast::TyUnit{})), parser};
+}
+
+preds::PatResult parse_array_pattern(preds::Parser parser, ast::Span bracket_span) noexcept{
+return preds::TKind_is_rbracket(preds::Parser_kind(parser)) ? preds::PatResult{std::make_shared<ast::Pat>(ast::PatArray({}, mlc::String(""), bracket_span)), preds::Parser_advance(parser)} : [&]() -> preds::PatResult { 
+  preds::PatResult first = parse_pat(parser);
+  mlc::Array<std::shared_ptr<ast::Pat>> pats = {};
+  pats.push_back(first.pat);
+  preds::Parser st = first.parser;
+  mlc::String rest = mlc::String("");
+  while (preds::TKind_is_comma(preds::Parser_kind(st))){
+{
+st = preds::Parser_advance(st);
+if (preds::TKind_is_spread(preds::Parser_kind(st))){
+{
+st = preds::Parser_advance(st);
+if (preds::TKind_is_ident(preds::Parser_kind(st))){
+{
+rest = preds::TKind_ident(preds::Parser_kind(st));
+st = preds::Parser_advance(st);
+}
+}
+break;
+}
+} else {
+{
+preds::PatResult nxt = parse_pat(st);
+pats.push_back(nxt.pat);
+st = nxt.parser;
+}
+}
+}
+}
+  return preds::TKind_is_rbracket(preds::Parser_kind(st)) ? preds::PatResult{std::make_shared<ast::Pat>(ast::PatArray(pats, rest, bracket_span)), preds::Parser_advance(st)} : preds::PatResult{std::make_shared<ast::Pat>(ast::PatArray(pats, rest, bracket_span)), st};
+ }();
+}
+
 preds::StmtResult parse_statement_let(preds::Parser parser) noexcept{
 ast::Span statement_span = preds::Parser_span_at_cursor(parser);
 preds::Parser after_let = preds::Parser_advance(parser);
 return preds::TKind_is_const(preds::Parser_kind(after_let)) ? parse_statement_let_const(after_let, statement_span) : [&]() -> preds::StmtResult { 
   bool is_mut = preds::TKind_is_mut(preds::Parser_kind(after_let));
   preds::Parser name_pos = is_mut ? preds::Parser_advance(after_let) : after_let;
-  mlc::String var_name = preds::TKind_ident(preds::Parser_kind(name_pos));
+  ast_tokens::TKind k0 = preds::Parser_kind(name_pos);
+  return preds::TKind_is_lparen(k0) ? [&]() -> preds::StmtResult { 
+  ast::Span paren_span = preds::Parser_span_at_cursor(name_pos);
+  preds::PatsResult inner = parse_pat_args(preds::Parser_advance(name_pos));
+  std::shared_ptr<ast::Pat> pat = std::make_shared<ast::Pat>(ast::PatTuple(inner.pats, paren_span));
+  preds::TypeResult type_result = parse_after_let_pattern(inner.parser);
+  preds::ExprResult value_result = parse_expr(type_result.parser);
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+ }() : preds::TKind_is_lbracket(k0) ? [&]() -> preds::StmtResult { 
+  ast::Span br_span = preds::Parser_span_at_cursor(name_pos);
+  preds::PatResult ar = parse_array_pattern(preds::Parser_advance(name_pos), br_span);
+  preds::TypeResult type_result = parse_after_let_pattern(ar.parser);
+  preds::ExprResult value_result = parse_expr(type_result.parser);
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(ar.pat, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+ }() : preds::TKind_is_lbrace(k0) ? [&]() -> preds::StmtResult { 
+  ast::Span br_span = preds::Parser_span_at_cursor(name_pos);
+  preds::PatsResult fr = parse_record_pat_fields(preds::Parser_advance(name_pos));
+  std::shared_ptr<ast::Pat> pat = std::make_shared<ast::Pat>(ast::PatRecord(mlc::String(""), fr.pats, br_span));
+  preds::TypeResult type_result = parse_after_let_pattern(fr.parser);
+  preds::ExprResult value_result = parse_expr(type_result.parser);
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+ }() : preds::TKind_is_ident(k0) && preds::is_ctor_name(preds::TKind_ident(k0)) && preds::TKind_is_lparen(parser_next_kind(name_pos)) ? [&]() -> preds::StmtResult { 
+  preds::PatResult pr = parse_pattern_identifier_branch(name_pos, preds::TKind_ident(k0));
+  preds::TypeResult type_result = parse_after_let_pattern(pr.parser);
+  preds::ExprResult value_result = parse_expr(type_result.parser);
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(pr.pat, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+ }() : preds::TKind_is_ident(k0) ? [&]() -> preds::StmtResult { 
+  mlc::String var_name = preds::TKind_ident(k0);
   preds::TypeResult type_result = preds::TKind_is_colon(preds::Parser_kind(preds::Parser_advance(name_pos))) ? types::parse_type(preds::Parser_advance_by(name_pos, 2)) : preds::TypeResult{std::make_shared<ast::TypeExpr>((ast::TyUnit{})), preds::Parser_advance(name_pos)};
   preds::ExprResult value_result = parse_expr(preds::Parser_advance(type_result.parser));
   return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLet(var_name, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+ }() : preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtExpr(std::make_shared<ast::Expr>(ast::ExprUnit(preds::Parser_span_at_cursor(name_pos))), statement_span)), name_pos};
  }();
 }
 
@@ -556,8 +637,20 @@ return preds::TKind_is_rparen(preds::Parser_kind(preds::Parser_advance(parser)))
   preds::ExprResult body = parse_expr(preds::Parser_advance(param_result.parser));
   return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprLambda(param_result.exprs, body.expr, open_paren_span)), body.parser};
  }() : [&]() -> preds::ExprResult { 
-  preds::ExprResult inner = parse_expr(preds::Parser_advance(parser));
-  return preds::ExprResult{inner.expr, preds::Parser_advance(inner.parser)};
+  preds::ExprResult e0 = parse_expr(preds::Parser_advance(parser));
+  return preds::TKind_is_comma(preds::Parser_kind(e0.parser)) ? [&]() -> preds::ExprResult { 
+  mlc::Array<std::shared_ptr<ast::Expr>> elts = {};
+  elts.push_back(e0.expr);
+  preds::Parser st = e0.parser;
+  while (preds::TKind_is_comma(preds::Parser_kind(st))){
+{
+preds::ExprResult en = parse_expr(preds::Parser_advance(st));
+elts.push_back(en.expr);
+st = en.parser;
+}
+}
+  return preds::TKind_is_rparen(preds::Parser_kind(st)) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprTuple(elts, open_paren_span)), preds::Parser_advance(st)} : preds::ExprResult{e0.expr, e0.parser};
+ }() : preds::ExprResult{e0.expr, preds::Parser_advance(e0.parser)};
  }();
 }
 

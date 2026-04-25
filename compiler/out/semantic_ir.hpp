@@ -38,18 +38,20 @@ struct SExprMatch {std::shared_ptr<semantic_ir::SExpr> field0;mlc::Array<std::sh
 struct SExprRecord {mlc::String field0;mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
 struct SExprRecordUpdate {mlc::String field0;std::shared_ptr<semantic_ir::SExpr> field1;mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
 struct SExprArray {mlc::Array<std::shared_ptr<semantic_ir::SExpr>> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SExprTuple {mlc::Array<std::shared_ptr<semantic_ir::SExpr>> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
 struct SExprQuestion {std::shared_ptr<semantic_ir::SExpr> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
 struct SExprLambda {mlc::Array<mlc::String> field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExpr {std::variant<SExprInt, SExprStr, SExprBool, SExprUnit, SExprExtern, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprFor, SExprMatch, SExprRecord, SExprRecordUpdate, SExprArray, SExprQuestion, SExprLambda> _;};
+struct SExpr {std::variant<SExprInt, SExprStr, SExprBool, SExprUnit, SExprExtern, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprFor, SExprMatch, SExprRecord, SExprRecordUpdate, SExprArray, SExprTuple, SExprQuestion, SExprLambda> _;};
 
 
 struct SStmtLet {mlc::String field0;bool field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SStmtLetPat {std::shared_ptr<ast::Pat> field0;bool field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
 struct SStmtLetConst {mlc::String field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
 struct SStmtExpr {std::shared_ptr<semantic_ir::SExpr> field0;ast::Span field1;};
 struct SStmtReturn {std::shared_ptr<semantic_ir::SExpr> field0;ast::Span field1;};
 struct SStmtBreak {ast::Span field0;};
 struct SStmtContinue {ast::Span field0;};
-struct SStmt {std::variant<SStmtLet, SStmtLetConst, SStmtExpr, SStmtReturn, SStmtBreak, SStmtContinue> _;};
+struct SStmt {std::variant<SStmtLet, SStmtLetPat, SStmtLetConst, SStmtExpr, SStmtReturn, SStmtBreak, SStmtContinue> _;};
 
 
 struct SDeclFn;struct SDeclType;struct SDeclTrait;struct SDeclExtend;struct SDeclImport;struct SDeclExported;using SDecl = std::variant<SDeclFn, SDeclType, SDeclTrait, SDeclExtend, SDeclImport, SDeclExported>;struct SDeclFn {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<mlc::Array<mlc::String>> field2;mlc::Array<std::shared_ptr<ast::Param>> field3;std::shared_ptr<registry::Type> field4;std::shared_ptr<semantic_ir::SExpr> field5;};struct SDeclType {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<ast::TypeVariant>> field2;};struct SDeclTrait {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<semantic_ir::SDecl>> field2;};struct SDeclExtend {mlc::String field0;mlc::String field1;mlc::Array<std::shared_ptr<semantic_ir::SDecl>> field2;};struct SDeclImport {mlc::String field0;mlc::Array<mlc::String> field1;};struct SDeclExported {std::shared_ptr<semantic_ir::SDecl> field0;};

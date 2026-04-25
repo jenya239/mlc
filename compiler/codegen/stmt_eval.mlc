@@ -3,6 +3,7 @@
 // through; recursive eval_stmts_str calls go directly (same module).
 
 import { SExpr, SStmt, SExprUnit } from "../semantic_ir"
+import { gen_let_pattern_statement } from "./let_pat"
 import { Type } from "../checker/registry"
 import { CodegenContext, GenStmtsResult, GenStmtResult,
          update_context_from_statement } from "./context"
@@ -162,6 +163,11 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
       }
       result
     end,
+    SStmtLetPat(pat, _, value, value_type, _) =>
+      GenStmtResult {
+        output: gen_let_pattern_statement(pat, value, value_type, context, gen_expr_fn),
+        next_try: try_counter
+      },
     SStmtLetConst(name, value, _, _) =>
       GenStmtResult {
         output: expression_output.constexpr_auto_binding_statement(cpp_safe(name), gen_expr_fn(value, context)),

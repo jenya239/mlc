@@ -227,32 +227,50 @@ module MLC
           end
         end
 
-        # Parse array pattern: [], [x], [x, y], [x, y, z]
-        # Handles empty arrays and arrays with pattern elements
-        # Examples: [], [_], [x, y], [1, 2, 3], [Some(x), None]
+        # Parse array pattern: [], [x], [x, y], [head, ...tail], [...tail]
+        # Handles empty arrays, fixed elements, and optional rest binding after `...`
         def parse_array_pattern
           lbracket_token = consume(:LBRACKET)
 
-          # Empty array pattern: []
+          # [] or [...tail] or [a, b, ...rest]
           if current.type == :RBRACKET
             consume(:RBRACKET)
             return with_origin(lbracket_token) do
-              MLC::Source::AST::Pattern.new(kind: :array, data: { elements: [] })
+              MLC::Source::AST::Pattern.new(kind: :array, data: { elements: [], rest: nil })
             end
           end
 
-          # Parse element patterns
-          elements = []
-          while current.type != :RBRACKET
-            elements << parse_pattern
-            break unless current.type == :COMMA
+          if current.type == :SPREAD
+            consume(:SPREAD)
+            rest = consume(:IDENTIFIER).value
+            consume(:RBRACKET)
+            return with_origin(lbracket_token) do
+              MLC::Source::AST::Pattern.new(kind: :array, data: { elements: [], rest: rest })
+            end
+          end
 
-            consume(:COMMA)
+          elements = []
+          rest = nil
+          loop do
+            elements << parse_pattern
+            if current.type == :COMMA
+              consume(:COMMA)
+              if current.type == :SPREAD
+                consume(:SPREAD)
+                rest = consume(:IDENTIFIER).value
+                break
+              end
+              if current.type == :RBRACKET
+                break
+              end
+            else
+              break
+            end
           end
 
           consume(:RBRACKET)
           with_origin(lbracket_token) do
-            MLC::Source::AST::Pattern.new(kind: :array, data: { elements: elements })
+            MLC::Source::AST::Pattern.new(kind: :array, data: { elements: elements, rest: rest })
           end
         end
 

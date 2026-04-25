@@ -87,7 +87,9 @@ export fn gen_arm(
     PatStr(_, _)      => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
     PatIdent(name, _) => expression_output.match_arm_binding_identifier(cpp_safe(name), eval_expr_fn(arm.body, context, gen_stmts)),
     PatCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_fn),
-    PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts, eval_expr_fn)
+    PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts, eval_expr_fn),
+    PatTuple(_, _)                     => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
+    PatArray(_, _, _)                  => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
   }
 
 export fn gen_match(

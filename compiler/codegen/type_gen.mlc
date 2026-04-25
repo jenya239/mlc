@@ -23,6 +23,15 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TArray(inner)  => expression_output.cpp_array_type_element(sem_type_to_cpp(context, inner)),
     TShared(inner) => expression_output.cpp_shared_pointer_type(sem_type_to_cpp(context, inner)),
     TNamed(type_name)  => context_resolve(context, type_name),
+    TTuple(ts) => do
+      let mut tparts: [string] = []
+      let mut ti = 0
+      while ti < ts.length() do
+        tparts.push(sem_type_to_cpp(context, ts[ti]))
+        ti = ti + 1
+      end
+      "std::tuple<" + tparts.join(", ") + ">"
+    end,
     TPair(left, right) =>
       "std::pair<" + sem_type_to_cpp(context, left) + ", " + sem_type_to_cpp(context, right) + ">",
     TGeneric(type_name, type_args) =>

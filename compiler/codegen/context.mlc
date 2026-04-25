@@ -1,6 +1,6 @@
 // Context types and mutation for the code generator.
 
-import { Program } from "../ast"
+import { Program, Pat } from "../ast"
 import { SStmt, SExpr, sexpr_type } from "../semantic_ir"
 import { Type } from "../checker/registry"
 import { cpp_safe } from "./cpp_naming"
@@ -66,6 +66,41 @@ export fn context_add_match_deref(context: CodegenContext, name: string) -> Code
   make_body_context(context, context.shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, context.value_params, md)
 end
 
+fn collect_pat_bind_names_for_context(pat: Shared<Pat>, mut accumulator: [string]) -> [string] = do
+  match pat {
+    PatIdent(n, _) => do accumulator.push(n); accumulator end,
+    PatCtor(_, subs, _) => do
+      let mut j = 0
+      while j < subs.length() do
+        accumulator = collect_pat_bind_names_for_context(subs[j], accumulator); j = j + 1
+      end
+      accumulator
+    end,
+    PatRecord(_, fps, _) => do
+      let mut j = 0
+      while j < fps.length() do
+        accumulator = collect_pat_bind_names_for_context(fps[j], accumulator); j = j + 1
+      end
+      accumulator
+    end,
+    PatTuple(subs, _) => do
+      let mut j = 0
+      while j < subs.length() do
+        accumulator = collect_pat_bind_names_for_context(subs[j], accumulator); j = j + 1
+      end
+      accumulator
+    end,
+    PatArray(subs, rest, _) => do
+      let mut j = 0
+      while j < subs.length() do
+        accumulator = collect_pat_bind_names_for_context(subs[j], accumulator); j = j + 1
+      end
+      if rest != "" && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
+    end,
+    _ => accumulator
+  }
+end
+
 // Update codegen context based on a typed statement's binding type.
 // With SStmt, the type is embedded — no TypeExpr heuristics needed.
 export fn update_context_from_statement(stmt: Shared<SStmt>, context: CodegenContext) -> CodegenContext =
@@ -77,6 +112,14 @@ export fn update_context_from_statement(stmt: Shared<SStmt>, context: CodegenCon
         TArray(inner)   => match inner { TShared(_) => context_add_shared_array(context, binding_name), _ => context_add_value(context, binding_name) },
         _               => context_add_value(context, binding_name)
       },
+    SStmtLetPat(pat, _, _, _, _) => do
+      const names = collect_pat_bind_names_for_context(pat, [])
+      let mut c = context; let mut k = 0
+      while k < names.length() do
+        c = context_add_value(c, names[k]); k = k + 1
+      end
+      c
+    end,
     _ => context
   }
 

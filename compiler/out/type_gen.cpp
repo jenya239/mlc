@@ -64,6 +64,17 @@ mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<reg
   [&](const TArray& tarray) -> mlc::String { auto [inner] = tarray; return expr::cpp_array_type_element(sem_type_to_cpp(context, inner)); },
   [&](const TShared& tshared) -> mlc::String { auto [inner] = tshared; return expr::cpp_shared_pointer_type(sem_type_to_cpp(context, inner)); },
   [&](const TNamed& tnamed) -> mlc::String { auto [type_name] = tnamed; return context::context_resolve(context, type_name); },
+  [&](const TTuple& ttuple) -> mlc::String { auto [ts] = ttuple; return [&]() -> mlc::String { 
+  mlc::Array<mlc::String> tparts = {};
+  int ti = 0;
+  while (ti < ts.size()){
+{
+tparts.push_back(sem_type_to_cpp(context, ts[ti]));
+ti = ti + 1;
+}
+}
+  return mlc::String("std::tuple<") + tparts.join(mlc::String(", ")) + mlc::String(">");
+ }(); },
   [&](const TPair& tpair) -> mlc::String { auto [left, right] = tpair; return mlc::String("std::pair<") + sem_type_to_cpp(context, left) + mlc::String(", ") + sem_type_to_cpp(context, right) + mlc::String(">"); },
   [&](const TGeneric& tgeneric) -> mlc::String { auto [type_name, type_args] = tgeneric; return type_name == mlc::String("Option") && type_args.size() == 1 ? mlc::String("std::optional<") + sem_type_to_cpp(context, type_args[0]) + mlc::String(">") : type_args.size() == 0 ? cpp_generic_base_name(context, type_name) : type_args.size() == 1 ? expr::cpp_template_single_type_argument(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_args[0])) : expr::cpp_template_two_type_arguments(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_args[0]), sem_type_to_cpp(context, type_args[1])); },
   [&](const TFn& tfn) -> mlc::String { auto [param_types, return_type] = tfn; return [&]() -> mlc::String { 

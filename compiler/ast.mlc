@@ -65,6 +65,8 @@ export type Pat =
   | PatBool(bool, Span) | PatUnit(Span)
   | PatCtor(string, [Shared<Pat>], Span)
   | PatRecord(string, [Shared<Pat>], Span)
+  | PatTuple([Shared<Pat>], Span)
+  | PatArray([Shared<Pat>], string, Span)
 
 export type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
 export type MatchArm = MatchArm { pat: Shared<Pat>, body: Shared<Expr> }
@@ -87,6 +89,7 @@ export type Expr =
   | ExprRecord(string, [Shared<FieldVal>], Span)
   | ExprRecordUpdate(string, Shared<Expr>, [Shared<FieldVal>], Span)
   | ExprArray([Shared<Expr>], Span)
+  | ExprTuple([Shared<Expr>], Span)
   | ExprQuestion(Shared<Expr>, Span)
   | ExprExtern(Span)
   | ExprLambda([string], Shared<Expr>, Span)
@@ -112,6 +115,7 @@ export fn expr_span(expression: Shared<Expr>) -> Span =
     ExprRecord(_, _, source_span)  => source_span,
     ExprRecordUpdate(_, _, _, source_span) => source_span,
     ExprArray(_, source_span)      => source_span,
+    ExprTuple(_, source_span)      => source_span,
     ExprQuestion(_, source_span)   => source_span,
     ExprExtern(source_span)         => source_span,
     ExprLambda(_, _, source_span)  => source_span,
@@ -120,6 +124,7 @@ export fn expr_span(expression: Shared<Expr>) -> Span =
 
 export type Stmt =
   | StmtLet(string, bool, Shared<TypeExpr>, Shared<Expr>, Span)
+  | StmtLetPat(Shared<Pat>, bool, Shared<TypeExpr>, Shared<Expr>, Span)
   | StmtLetConst(string, Shared<TypeExpr>, Shared<Expr>, Span)
   | StmtExpr(Shared<Expr>, Span)
   | StmtBreak(Span) | StmtContinue(Span) | StmtReturn(Shared<Expr>, Span)
@@ -127,6 +132,7 @@ export type Stmt =
 export fn stmt_span(statement: Shared<Stmt>) -> Span =
   match statement {
     StmtLet(_, _, _, _, source_span)  => source_span,
+    StmtLetPat(_, _, _, _, source_span) => source_span,
     StmtLetConst(_, _, _, source_span) => source_span,
     StmtExpr(_, source_span)           => source_span,
     StmtBreak(source_span)             => source_span,
@@ -144,6 +150,8 @@ export fn pat_span(pattern: Shared<Pat>) -> Span =
     PatUnit(source_span)                    => source_span,
     PatCtor(_, _, source_span)              => source_span,
     PatRecord(_, _, source_span)            => source_span,
+    PatTuple(_, source_span)                => source_span,
+    PatArray(_, _, source_span)             => source_span,
   }
 
 export type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr> }

@@ -1,0 +1,93 @@
+// let-pattern: extend type environment from pattern + RHS type (A3).
+
+import { Pat, span_unknown } from "../ast"
+import { Type, TypeRegistry, field_type_from_object } from "./registry"
+import { env_for_pattern_substituted } from "./pattern_env"
+
+fn build_let_substitution(value_type: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  const substitution: Map<string, Shared<Type>> = Map.new()
+  match value_type {
+    TGeneric(type_name, type_args) => do
+      const param_names = registry.algebraic_decl_type_parameter_names_for(type_name)
+      let mut i = 0
+      while i < param_names.length() && i < type_args.length() do
+        substitution.set(param_names[i], type_args[i]); i = i + 1
+      end
+    end,
+    _ => do end
+  }
+  substitution
+end
+
+fn apply_let_pattern_to_env(
+  pat: Shared<Pat>,
+  value_type: Shared<Type>,
+  base_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> = do
+  match pat {
+    PatWild(_) => base_env,
+    PatIdent(n, _) => do const u = base_env; u.set(n, value_type); u end,
+    PatTuple(subs, _) => do
+      match value_type {
+        TTuple(ts) =>
+          if subs.length() != ts.length() then base_env
+          else
+            let mut acc = base_env
+            let mut j = 0
+            while j < subs.length() do
+              acc = apply_let_pattern_to_env(subs[j], ts[j], acc, registry)
+              j = j + 1
+            end
+            acc
+          end,
+        TPair(fst, snd) =>
+          if subs.length() != 2 then base_env
+          else
+            const e0 = apply_let_pattern_to_env(subs[0], fst, base_env, registry)
+            apply_let_pattern_to_env(subs[1], snd, e0, registry)
+          end,
+        _ => base_env
+      }
+    end,
+    PatArray(subs, rest, _) => do
+      match value_type {
+        TArray(et) => do
+          let mut acc = base_env; let mut i = 0
+          while i < subs.length() do
+            acc = apply_let_pattern_to_env(subs[i], et, acc, registry); i = i + 1
+          end
+          if rest != "" then do acc.set(rest, value_type); acc end else acc end
+        end,
+        _ => base_env
+      }
+    end,
+    PatRecord(rec_name, field_pats, _) => do
+      if rec_name != "" then
+        base_env
+      else
+        let mut acc = base_env; let mut i = 0
+        while i < field_pats.length() do
+          const fp = field_pats[i]
+          const field_name = match fp { PatIdent(n, _) => n, _ => "" }
+          if field_name != "" then
+            const ft = field_type_from_object(value_type, field_name, registry)
+            acc = apply_let_pattern_to_env(fp, ft, acc, registry)
+          end
+          i = i + 1
+        end
+        acc
+      end
+    end,
+    PatCtor(_, _, _) => env_for_pattern_substituted(base_env, pat, registry, build_let_substitution(value_type, registry)),
+    _ => base_env
+  }
+end
+
+export fn infer_let_pattern_env(
+  pat: Shared<Pat>,
+  value_type: Shared<Type>,
+  base_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> =
+  apply_let_pattern_to_env(pat, value_type, base_env, registry)

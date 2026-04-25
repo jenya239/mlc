@@ -8,6 +8,7 @@
 #include "registry.hpp"
 #include "semantic_ir.hpp"
 #include "transform.hpp"
+#include "let_pattern_infer.hpp"
 
 namespace transform_stmts {
 

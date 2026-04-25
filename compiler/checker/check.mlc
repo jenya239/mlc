@@ -62,6 +62,15 @@ fn type_is_checkable(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
     TUnit       => true,
     TArray(inner) => type_is_checkable(inner, registry),
     TPair(a, b)   => type_is_checkable(a, registry) && type_is_checkable(b, registry),
+    TTuple(ts)    => do
+      let mut ok = true
+      let mut ti = 0
+      while ti < ts.length() && ok do
+        ok = type_is_checkable(ts[ti], registry)
+        ti = ti + 1
+      end
+      ok
+    end,
     TGeneric(_, args) => do
       let mut ok = true
       let mut i = 0

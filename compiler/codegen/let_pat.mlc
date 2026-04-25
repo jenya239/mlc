@@ -1,0 +1,77 @@
+// SStmtLetPat: structured let — tuple/record/array/ctor (A3).
+
+import { Pat } from "../ast"
+import { SExpr } from "../semantic_ir"
+import { Type, TArray } from "../checker/registry"
+import { CodegenContext, list_contains, context_resolve } from "./context"
+import { sem_type_to_cpp } from "./type_gen"
+import { cpp_safe } from "./cpp_naming"
+import { pat_bind_names } from "./match_analysis"
+import * as expression_output from "./expr"
+
+fn gen_let_array_rest_slice(temp: string, from_index: i32, element_cpp: string) -> string =
+  "mlc::Array<" + element_cpp + ">(" + temp + ".cbegin() + " + from_index.to_string() + ", " + temp + ".cend())"
+
+export fn gen_let_pattern_statement(
+  pat: Shared<Pat>,
+  value: Shared<SExpr>,
+  value_type: Shared<Type>,
+  context: CodegenContext,
+  eval_fn: (Shared<SExpr>, CodegenContext) -> string
+) -> string = do
+  const rhs = eval_fn(value, context)
+  match pat {
+    PatIdent(n, _) => expression_output.auto_binding_statement(cpp_safe(n), rhs),
+    PatTuple(subs, _) => do
+      const names = pat_bind_names(subs)
+      "{\nauto __lt = " + rhs + ";\n" + expression_output.tuple_destructure_binding(names, "__lt") + "\n}\n"
+    end,
+    PatRecord(_, field_pats, _) => do
+      let mut b = "{\nauto __lt = " + rhs + ";\n"
+      let mut i = 0
+      while i < field_pats.length() do
+        match field_pats[i] {
+          PatIdent(fname, _) => do
+            b = b + expression_output.auto_binding_statement(cpp_safe(fname), "__lt." + cpp_safe(fname))
+          end,
+          _ => do end
+        }
+        i = i + 1
+      end
+      b + "}\n"
+    end,
+    PatArray(subs, rest, _) => do
+      const et = match value_type { TArray(inn) => sem_type_to_cpp(context, inn), _ => "auto" }
+      let mut b = "{\nauto __lt = " + rhs + ";\n"
+      let mut j = 0
+      while j < subs.length() do
+        match subs[j] {
+          PatIdent(n, _) => do
+            b = b + "auto " + cpp_safe(n) + " = __lt[" + j.to_string() + "];\n"
+          end,
+          _ => do end
+        }
+        j = j + 1
+      end
+      if rest != "" then
+        b = b + "auto " + cpp_safe(rest) + " = " + gen_let_array_rest_slice("__lt", subs.length(), et) + ";\n"
+      end
+      b + "}\n"
+    end,
+    PatCtor(ctor_name, sub_patterns, _) => do
+      const q = context_resolve(context, ctor_name)
+      const bind =
+        if sub_patterns.length() == 0 then ""
+        else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), "__b")
+        end
+      const is_generic = list_contains(context.generic_variants, ctor_name)
+      const targs = if is_generic then "<auto>" else "" end
+      "{\n" +
+      "auto __lt = " + rhs + ";\n" +
+      "if (!std::holds_alternative<" + q + targs + ">(__lt)) { std::abort(); }\n" +
+      "const " + q + targs + "& __b = std::get<" + q + targs + ">(__lt);\n" +
+      bind + "\n}\n"
+    end,
+    _ => expression_output.suffix_semicolon_newline(rhs)
+  }
+end

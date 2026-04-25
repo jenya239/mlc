@@ -19,6 +19,7 @@
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
 #include "infer_match.hpp"
+#include "let_pattern_infer.hpp"
 #include "infer_array_method.hpp"
 #include "infer_result_option_method.hpp"
 

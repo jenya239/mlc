@@ -129,6 +129,17 @@ mlc::String eval_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::Codegen
   [&](const SExprRecord& sexprrecord) -> mlc::String { auto [type_name, field_values, _w0, _w1] = sexprrecord; return record_gen::gen_record_expr(type_name, field_values, context, gen_stmts, eval_expr); },
   [&](const SExprRecordUpdate& sexprrecordupdate) -> mlc::String { auto [type_name, base_expr, overrides, _w0, _w1] = sexprrecordupdate; return record_gen::gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr); },
   [&](const SExprArray& sexprarray) -> mlc::String { auto [elements, _w0, _w1] = sexprarray; return gen_array_expr(elements, context, gen_stmts); },
+  [&](const SExprTuple& sexprtuple) -> mlc::String { auto [elements, _w0, _w1] = sexprtuple; return [&]() -> mlc::String { 
+  mlc::Array<mlc::String> parts = {};
+  int ki = 0;
+  while (ki < elements.size()){
+{
+parts.push_back(eval_expr(elements[ki], context, gen_stmts));
+ki = ki + 1;
+}
+}
+  return mlc::String("std::make_tuple(") + parts.join(mlc::String(", ")) + mlc::String(")");
+ }(); },
   [&](const SExprQuestion& sexprquestion) -> mlc::String { auto [inner_expr, _w0, _w1] = sexprquestion; return gen_question_expr(inner_expr, context, gen_stmts); },
   [&](const SExprLambda& sexprlambda) -> mlc::String { auto [parameters, body_expr, _w0, _w1] = sexprlambda; return gen_lambda_expr(parameters, body_expr, context, gen_stmts); }
 }, (*expr)._);}

@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "semantic_ir.hpp"
+#include "let_pat.hpp"
 #include "registry.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"

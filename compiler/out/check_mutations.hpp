@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "ast.hpp"
+#include "names.hpp"
 
 namespace check_mutations {
 

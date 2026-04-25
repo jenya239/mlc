@@ -269,6 +269,17 @@ arg_index = arg_index + 1;
   mlc::Array<std::shared_ptr<semantic_ir::SExpr>> typed_elements = transform_exprs(elements, transform_context, stmts_fn);
   std::shared_ptr<registry::Type> element_type = typed_elements.size() > 0 ? semantic_ir::sexpr_type(typed_elements[0]) : std::make_shared<registry::Type>((registry::TUnknown{}));
   return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray(typed_elements, std::make_shared<registry::Type>(registry::TArray(element_type)), source_span));
+ }(); } if (std::holds_alternative<ast::ExprTuple>((*expression)._)) { auto _v_exprtuple = std::get<ast::ExprTuple>((*expression)._); auto [elements, source_span] = _v_exprtuple; return elements.size() < 2 ? std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUnit(std::make_shared<registry::Type>((registry::TUnit{})), ast::span_unknown())) : [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
+  mlc::Array<std::shared_ptr<semantic_ir::SExpr>> typed = transform_exprs(elements, transform_context, stmts_fn);
+  mlc::Array<std::shared_ptr<registry::Type>> tuple_types = {};
+  int ti = 0;
+  while (ti < typed.size()){
+{
+tuple_types.push_back(semantic_ir::sexpr_type(typed[ti]));
+ti = ti + 1;
+}
+}
+  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprTuple(typed, std::make_shared<registry::Type>(registry::TTuple(tuple_types)), source_span));
  }(); } if (std::holds_alternative<ast::ExprQuestion>((*expression)._)) { auto _v_exprquestion = std::get<ast::ExprQuestion>((*expression)._); auto [inner, source_span] = _v_exprquestion; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   std::shared_ptr<semantic_ir::SExpr> typed_inner = transform_expr(inner, transform_context, stmts_fn);
   std::shared_ptr<registry::Type> inner_type = semantic_ir::sexpr_type(typed_inner);

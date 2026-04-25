@@ -9,6 +9,7 @@ export type Type =
   | TNamed(string)
   | TGeneric(string, [Shared<Type>])
   | TPair(Shared<Type>, Shared<Type>)
+  | TTuple([Shared<Type>])
   | TFn([Shared<Type>], Shared<Type>)
   | TUnknown
 

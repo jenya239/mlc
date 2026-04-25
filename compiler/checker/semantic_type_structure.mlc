@@ -26,7 +26,28 @@ export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> b
         end,
       _ => false
     },
-    TPair(a1, b1) => match right { TPair(a2, b2) => types_structurally_equal(a1, a2) && types_structurally_equal(b1, b2), _ => false },
+    TTuple(t1) => match right {
+      TTuple(t2) =>
+        if t1.length() != t2.length() then false
+        else
+          let mut ti = 0
+          let mut tok = true
+          while ti < t1.length() && tok do
+            if !types_structurally_equal(t1[ti], t2[ti]) then tok = false end
+            ti = ti + 1
+          end
+          tok
+        end,
+      TPair(a2, b2) =>
+        t1.length() == 2 && types_structurally_equal(t1[0], a2) && types_structurally_equal(t1[1], b2),
+      _ => false
+    },
+    TPair(a1, b1) => match right {
+      TPair(a2, b2) => types_structurally_equal(a1, a2) && types_structurally_equal(b1, b2),
+      TTuple(t2) =>
+        t2.length() == 2 && types_structurally_equal(a1, t2[0]) && types_structurally_equal(b1, t2[1]),
+      _ => false
+    },
     TFn(left_params, left_ret) => match right {
       TFn(right_params, right_ret) =>
         if left_params.length() != right_params.length() then false
@@ -75,6 +96,7 @@ export fn function_return_type(function_type: Shared<Type>) -> Shared<Type> =
     TNamed(_) => Shared.new(TUnknown),
     TGeneric(_, _) => Shared.new(TUnknown),
     TPair(_, _) => Shared.new(TUnknown),
+    TTuple(_)   => Shared.new(TUnknown),
     TUnknown => Shared.new(TUnknown)
   }
 
@@ -90,6 +112,7 @@ export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>]
     TNamed(_) => empty_type_parameter_list(),
     TGeneric(_, _) => empty_type_parameter_list(),
     TPair(_, _) => empty_type_parameter_list(),
+    TTuple(_)   => empty_type_parameter_list(),
     TUnknown => empty_type_parameter_list()
   }
 
@@ -129,6 +152,7 @@ export fn type_description(type_value: Shared<Type>) -> string =
     TNamed(type_name)      => type_name,
     TGeneric(type_name, _) => type_name,
     TPair(_, _) => "pair",
+    TTuple(_)   => "tuple",
     TFn(_, _)  => "function"
   }
 
@@ -193,6 +217,15 @@ export fn substitute_type(type_value: Shared<Type>, substitution: Map<string, Sh
     end,
     TPair(a, b) =>
       Shared.new(TPair(substitute_type(a, substitution), substitute_type(b, substitution))),
+    TTuple(ts) => do
+      let mut new_ts: [Shared<Type>] = []
+      let mut si = 0
+      while si < ts.length() do
+        new_ts.push(substitute_type(ts[si], substitution))
+        si = si + 1
+      end
+      Shared.new(TTuple(new_ts))
+    end,
     TFn(params, ret) => do
       let mut new_params: [Shared<Type>] = []
       let mut j = 0

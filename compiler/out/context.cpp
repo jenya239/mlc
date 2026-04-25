@@ -33,6 +33,8 @@ context::CodegenContext context_add_value(context::CodegenContext context, mlc::
 
 context::CodegenContext context_add_match_deref(context::CodegenContext context, mlc::String name) noexcept;
 
+mlc::Array<mlc::String> collect_pat_bind_names_for_context(std::shared_ptr<ast::Pat> pat, mlc::Array<mlc::String> accumulator) noexcept;
+
 context::CodegenContext update_context_from_statement(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context) noexcept;
 
 context::CodegenContext create_codegen_context(ast::Program prog) noexcept;
@@ -67,7 +69,64 @@ md.push_back(name);
 return make_body_context(context, context.shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, context.value_params, md);
 }
 
-context::CodegenContext update_context_from_statement(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context) noexcept{return [&]() -> context::CodegenContext { if (std::holds_alternative<semantic_ir::SStmtLetConst>((*stmt)._)) { auto _v_sstmtletconst = std::get<semantic_ir::SStmtLetConst>((*stmt)._); auto [binding_name, _w0, _w1, _w2] = _v_sstmtletconst; return context_add_value(context, binding_name); } if (std::holds_alternative<semantic_ir::SStmtLet>((*stmt)._)) { auto _v_sstmtlet = std::get<semantic_ir::SStmtLet>((*stmt)._); auto [binding_name, _w0, _w1, value_type, _w2] = _v_sstmtlet; return [&]() -> context::CodegenContext { if (std::holds_alternative<registry::TShared>((*value_type))) { auto _v_tshared = std::get<registry::TShared>((*value_type)); auto [_w0] = _v_tshared; return context_add_shared(context, binding_name); } if (std::holds_alternative<registry::TArray>((*value_type))) { auto _v_tarray = std::get<registry::TArray>((*value_type)); auto [inner] = _v_tarray; return [&]() -> context::CodegenContext { if (std::holds_alternative<registry::TShared>((*inner))) { auto _v_tshared = std::get<registry::TShared>((*inner)); auto [_w0] = _v_tshared; return context_add_shared_array(context, binding_name); } return context_add_value(context, binding_name); }(); } return context_add_value(context, binding_name); }(); } return context; }();}
+mlc::Array<mlc::String> collect_pat_bind_names_for_context(std::shared_ptr<ast::Pat> pat, mlc::Array<mlc::String> accumulator) noexcept{
+return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::PatIdent>((*pat))) { auto _v_patident = std::get<ast::PatIdent>((*pat)); auto [n, _w0] = _v_patident; return [&]() -> mlc::Array<mlc::String> { 
+  accumulator.push_back(n);
+  return accumulator;
+ }(); } if (std::holds_alternative<ast::PatCtor>((*pat))) { auto _v_patctor = std::get<ast::PatCtor>((*pat)); auto [_w0, subs, _w1] = _v_patctor; return [&]() -> mlc::Array<mlc::String> { 
+  int j = 0;
+  while (j < subs.size()){
+{
+accumulator = collect_pat_bind_names_for_context(subs[j], accumulator);
+j = j + 1;
+}
+}
+  return accumulator;
+ }(); } if (std::holds_alternative<ast::PatRecord>((*pat))) { auto _v_patrecord = std::get<ast::PatRecord>((*pat)); auto [_w0, fps, _w1] = _v_patrecord; return [&]() -> mlc::Array<mlc::String> { 
+  int j = 0;
+  while (j < fps.size()){
+{
+accumulator = collect_pat_bind_names_for_context(fps[j], accumulator);
+j = j + 1;
+}
+}
+  return accumulator;
+ }(); } if (std::holds_alternative<ast::PatTuple>((*pat))) { auto _v_pattuple = std::get<ast::PatTuple>((*pat)); auto [subs, _w0] = _v_pattuple; return [&]() -> mlc::Array<mlc::String> { 
+  int j = 0;
+  while (j < subs.size()){
+{
+accumulator = collect_pat_bind_names_for_context(subs[j], accumulator);
+j = j + 1;
+}
+}
+  return accumulator;
+ }(); } if (std::holds_alternative<ast::PatArray>((*pat))) { auto _v_patarray = std::get<ast::PatArray>((*pat)); auto [subs, rest, _w0] = _v_patarray; return [&]() -> mlc::Array<mlc::String> { 
+  int j = 0;
+  while (j < subs.size()){
+{
+accumulator = collect_pat_bind_names_for_context(subs[j], accumulator);
+j = j + 1;
+}
+}
+  return rest != mlc::String("") && rest != mlc::String("_") ? [&]() -> mlc::Array<mlc::String> { 
+  accumulator.push_back(rest);
+  return accumulator;
+ }() : accumulator;
+ }(); } return accumulator; }();
+}
+
+context::CodegenContext update_context_from_statement(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context) noexcept{return [&]() -> context::CodegenContext { if (std::holds_alternative<semantic_ir::SStmtLetConst>((*stmt)._)) { auto _v_sstmtletconst = std::get<semantic_ir::SStmtLetConst>((*stmt)._); auto [binding_name, _w0, _w1, _w2] = _v_sstmtletconst; return context_add_value(context, binding_name); } if (std::holds_alternative<semantic_ir::SStmtLet>((*stmt)._)) { auto _v_sstmtlet = std::get<semantic_ir::SStmtLet>((*stmt)._); auto [binding_name, _w0, _w1, value_type, _w2] = _v_sstmtlet; return [&]() -> context::CodegenContext { if (std::holds_alternative<registry::TShared>((*value_type))) { auto _v_tshared = std::get<registry::TShared>((*value_type)); auto [_w0] = _v_tshared; return context_add_shared(context, binding_name); } if (std::holds_alternative<registry::TArray>((*value_type))) { auto _v_tarray = std::get<registry::TArray>((*value_type)); auto [inner] = _v_tarray; return [&]() -> context::CodegenContext { if (std::holds_alternative<registry::TShared>((*inner))) { auto _v_tshared = std::get<registry::TShared>((*inner)); auto [_w0] = _v_tshared; return context_add_shared_array(context, binding_name); } return context_add_value(context, binding_name); }(); } return context_add_value(context, binding_name); }(); } if (std::holds_alternative<semantic_ir::SStmtLetPat>((*stmt)._)) { auto _v_sstmtletpat = std::get<semantic_ir::SStmtLetPat>((*stmt)._); auto [pat, _w0, _w1, _w2, _w3] = _v_sstmtletpat; return [&]() -> context::CodegenContext { 
+  mlc::Array<mlc::String> names = collect_pat_bind_names_for_context(pat, {});
+  context::CodegenContext c = std::move(context);
+  int k = 0;
+  while (k < names.size()){
+{
+c = context_add_value(c, names[k]);
+k = k + 1;
+}
+}
+  return c;
+ }(); } return context; }();}
 
 context::CodegenContext create_codegen_context(ast::Program prog) noexcept{return context::CodegenContext{type_index::build_field_orders(prog), mlc::String(""), mlc::HashMap<mlc::String, mlc::String>(), mlc::HashMap<mlc::String, mlc::String>(), mlc::String(""), type_index::build_method_owners_from_decls(prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, {}, type_index::build_variant_types_from_decls(prog.decls), {}, {}, type_index::build_generic_variants_from_decls(prog.decls)};}
 

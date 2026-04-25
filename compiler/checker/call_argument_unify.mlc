@@ -104,6 +104,46 @@ fn unify_expected_and_actual_argument_types(
             "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
             diagnostic_span)]
       },
+    TTuple(expected_elts) =>
+      match actual_type {
+        TTuple(actual_elts) =>
+          if expected_elts.length() != actual_elts.length() then
+            [diagnostic_error(
+              "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            let mut out_t: [Diagnostic] = empty_diagnostic_list()
+            let mut ti = 0
+            while ti < expected_elts.length() do
+              out_t = diagnostics_append(
+                out_t,
+                unify_expected_and_actual_argument_types(
+                  expected_elts[ti],
+                  actual_elts[ti],
+                  type_parameter_names,
+                  substitution,
+                  diagnostic_span))
+              ti = ti + 1
+            end
+            out_t
+          end,
+        TPair(a2, b2) =>
+          if expected_elts.length() != 2 then
+            [diagnostic_error(
+              "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            diagnostics_append(
+              unify_expected_and_actual_argument_types(
+                expected_elts[0], a2, type_parameter_names, substitution, diagnostic_span),
+              unify_expected_and_actual_argument_types(
+                expected_elts[1], b2, type_parameter_names, substitution, diagnostic_span))
+          end,
+        _ =>
+          [diagnostic_error(
+            "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
+            diagnostic_span)]
+      },
     TPair(expected_a, expected_b) =>
       match actual_type {
         TPair(actual_a, actual_b) =>
@@ -112,6 +152,18 @@ fn unify_expected_and_actual_argument_types(
               expected_a, actual_a, type_parameter_names, substitution, diagnostic_span),
             unify_expected_and_actual_argument_types(
               expected_b, actual_b, type_parameter_names, substitution, diagnostic_span)),
+        TTuple(ats) =>
+          if ats.length() != 2 then
+            [diagnostic_error(
+              "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            diagnostics_append(
+              unify_expected_and_actual_argument_types(
+                expected_a, ats[0], type_parameter_names, substitution, diagnostic_span),
+              unify_expected_and_actual_argument_types(
+                expected_b, ats[1], type_parameter_names, substitution, diagnostic_span))
+          end,
         _ =>
           [diagnostic_error(
             "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),

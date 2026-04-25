@@ -200,6 +200,21 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("for-in: loop variable visible in body - 0 errors",
     check_error_count("fn sum(items: [i32]) -> i32 = do\n  let mut total = 0\n  for element in items do\n    total = total + element\n  end\n  total\nend"), 0))
 
+  results.push(assert_eq_int("A3: let (a, b) = (1, 2) - 0 errors",
+    check_error_count("fn f() -> i32 = do\n  let (a, b) = (1, 2)\n  a + b\nend"), 0))
+
+  results.push(assert_eq_int("A3: let (a, b, c) = (1, 2, 3) - 0 errors",
+    check_error_count("fn f() -> i32 = do\n  let (a, b, c) = (1, 2, 3)\n  a + b + c\nend"), 0))
+
+  results.push(assert_eq_int("A3: let {x, y} = record - 0 errors",
+    check_error_count("type Point = { x: i32, y: i32 }\nfn f() -> i32 = do\n  let p = Point { x: 1, y: 2 }\n  let { x, y } = p\n  x + y\nend"), 0))
+
+  results.push(assert_eq_int("A3: let [a, ...b] = array - 0 errors",
+    check_error_count("fn f() -> i32 = do\n  let a: [i32] = [1, 2, 3]\n  let [u, ...v] = a\n  u\nend"), 0))
+
+  results.push(assert_eq_int("A3: let Ok(x) = Ok - 0 errors",
+    check_error_count("type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let o: Result<i32, string> = Ok(1)\n  let Ok(n) = o\n  n\nend"), 0))
+
   results.push(assert_true("for-in: iterator must be an array",
     first_checker_error_line("fn g() -> i32 = do\n  for x in 42 do\n    0\n  end\n  0\nend").contains("for loop range must be an array")))
 

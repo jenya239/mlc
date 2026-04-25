@@ -41,4 +41,29 @@ class DestructuringTest < Minitest::Test
     assert_includes cpp, "auto y = __tmp_0.y"
   end
 
+  def test_array_destructuring
+    source = <<~MLC
+      fn main() -> i32 = do
+        let a: [i32] = [1, 2, 3, 4]
+        let [h, ...t] = a
+        h
+      end
+    MLC
+    cpp = MLC.to_cpp(source)
+    assert_includes cpp, "__tmp_0[0]"
+    assert_includes cpp, "begin() + 1"
+  end
+
+  def test_result_ok_destructuring
+    source = <<~MLC
+      type Result<T, E> = Ok(T) | Err(E)
+      fn main() -> i32 = do
+        let o: Result<i32, string> = Ok(7)
+        let Ok(v) = o
+        v
+      end
+    MLC
+    cpp = MLC.to_cpp(source)
+    assert_includes cpp, "std::holds_alternative"
+  end
 end

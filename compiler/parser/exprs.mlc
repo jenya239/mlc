@@ -2,7 +2,8 @@
 
 import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, FieldValsResult, StmtsResult, StmtResult, TypeResult } from "./preds"
 import { parse_type } from "./types"
-import { span_unknown, Span } from "../ast"
+import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit } from "../ast"
+import { TKind, Eof } from "../ast_tokens"
 
 // --- Statement parsers (merged to break exprs<->stmts cycle) --------------
 
@@ -44,6 +45,61 @@ fn parse_statement_let_const(parser: Parser, statement_span: Span) -> StmtResult
   }
 end
 
+fn parser_next_kind(p: Parser) -> TKind = do
+  if p.pos + 1 >= p.tokens.length() then Eof
+  else p.tokens[p.pos + 1].kind
+  end
+end
+
+fn parse_after_let_pattern(parser: Parser) -> TypeResult = do
+  if parser.kind().is_colon() then
+    const tr = parse_type(parser.advance())
+    if tr.parser.kind().is_equal() then
+      TypeResult { type_expr: tr.type_expr, parser: tr.parser.advance() }
+    else
+      TypeResult { type_expr: tr.type_expr, parser: tr.parser }
+    end
+  else
+    if parser.kind().is_equal() then
+      TypeResult { type_expr: Shared.new(TyUnit), parser: parser.advance() }
+    else
+      TypeResult { type_expr: Shared.new(TyUnit), parser: parser }
+    end
+  end
+end
+
+fn parse_array_pattern(parser: Parser, bracket_span: Span) -> PatResult = do
+  if parser.kind().is_rbracket() then
+    PatResult { pat: Shared.new(PatArray([], "", bracket_span)), parser: parser.advance() }
+  else
+    const first = parse_pat(parser)
+    const pats: [Shared<Pat>] = []
+    pats.push(first.pat)
+    let mut st = first.parser
+    let mut rest = ""
+    while st.kind().is_comma() do
+      st = st.advance()
+      if st.kind().is_spread() then
+        st = st.advance()
+        if st.kind().is_ident() then
+          rest = st.kind().ident()
+          st = st.advance()
+        end
+        break
+      else
+        const nxt = parse_pat(st)
+        pats.push(nxt.pat)
+        st = nxt.parser
+      end
+    end
+    if st.kind().is_rbracket() then
+      PatResult { pat: Shared.new(PatArray(pats, rest, bracket_span)), parser: st.advance() }
+    else
+      PatResult { pat: Shared.new(PatArray(pats, rest, bracket_span)), parser: st }
+    end
+  end
+end
+
 fn parse_statement_let(parser: Parser) -> StmtResult = do
   const statement_span = parser.span_at_cursor()
   const after_let  = parser.advance()
@@ -52,18 +108,60 @@ fn parse_statement_let(parser: Parser) -> StmtResult = do
   else
     const is_mut   = after_let.kind().is_mut()
     const name_pos = if is_mut then after_let.advance() else after_let end
-    const var_name = name_pos.kind().ident()
-    const type_result =
-      if name_pos.advance().kind().is_colon() then
-        parse_type(name_pos.advance_by(2))
-      else
-        TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
-      end
-    const value_result = parse_expr(type_result.parser.advance())
-    StmtResult {
-      stmt: Shared.new(StmtLet(var_name, is_mut, type_result.type_expr, value_result.expr, statement_span)),
-      parser: value_result.parser
-    }
+    const k0 = name_pos.kind()
+    if k0.is_lparen() then
+      const paren_span = name_pos.span_at_cursor()
+      const inner = parse_pat_args(name_pos.advance())
+      const pat = Shared.new(PatTuple(inner.pats, paren_span))
+      const type_result = parse_after_let_pattern(inner.parser)
+      const value_result = parse_expr(type_result.parser)
+      StmtResult {
+        stmt: Shared.new(StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, statement_span)),
+        parser: value_result.parser
+      }
+    else if k0.is_lbracket() then
+      const br_span = name_pos.span_at_cursor()
+      const ar = parse_array_pattern(name_pos.advance(), br_span)
+      const type_result = parse_after_let_pattern(ar.parser)
+      const value_result = parse_expr(type_result.parser)
+      StmtResult {
+        stmt: Shared.new(StmtLetPat(ar.pat, is_mut, type_result.type_expr, value_result.expr, statement_span)),
+        parser: value_result.parser
+      }
+    else if k0.is_lbrace() then
+      const br_span = name_pos.span_at_cursor()
+      const fr = parse_record_pat_fields(name_pos.advance())
+      const pat = Shared.new(PatRecord("", fr.pats, br_span))
+      const type_result = parse_after_let_pattern(fr.parser)
+      const value_result = parse_expr(type_result.parser)
+      StmtResult {
+        stmt: Shared.new(StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, statement_span)),
+        parser: value_result.parser
+      }
+    else if k0.is_ident() && is_ctor_name(k0.ident()) && parser_next_kind(name_pos).is_lparen() then
+      const pr = parse_pattern_identifier_branch(name_pos, k0.ident())
+      const type_result = parse_after_let_pattern(pr.parser)
+      const value_result = parse_expr(type_result.parser)
+      StmtResult {
+        stmt: Shared.new(StmtLetPat(pr.pat, is_mut, type_result.type_expr, value_result.expr, statement_span)),
+        parser: value_result.parser
+      }
+    else if k0.is_ident() then
+      const var_name = k0.ident()
+      const type_result =
+        if name_pos.advance().kind().is_colon() then
+          parse_type(name_pos.advance_by(2))
+        else
+          TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
+        end
+      const value_result = parse_expr(type_result.parser.advance())
+      StmtResult {
+        stmt: Shared.new(StmtLet(var_name, is_mut, type_result.type_expr, value_result.expr, statement_span)),
+        parser: value_result.parser
+      }
+    else
+      StmtResult { stmt: Shared.new(StmtExpr(Shared.new(ExprUnit(name_pos.span_at_cursor())), statement_span)), parser: name_pos }
+    end
   end
 end
 
@@ -446,8 +544,27 @@ fn parse_primary_parenthesized(parser: Parser) -> ExprResult = do
     const body = parse_expr(param_result.parser.advance())
     ExprResult { expr: Shared.new(ExprLambda(param_result.exprs, body.expr, open_paren_span)), parser: body.parser }
   else
-    const inner = parse_expr(parser.advance())
-    ExprResult { expr: inner.expr, parser: inner.parser.advance() }
+    const e0 = parse_expr(parser.advance())
+    if e0.parser.kind().is_comma() then
+      const elts: [Shared<Expr>] = []
+      elts.push(e0.expr)
+      let mut st = e0.parser
+      while st.kind().is_comma() do
+        const en = parse_expr(st.advance())
+        elts.push(en.expr)
+        st = en.parser
+      end
+      if st.kind().is_rparen() then
+        ExprResult {
+          expr: Shared.new(ExprTuple(elts, open_paren_span)),
+          parser: st.advance()
+        }
+      else
+        ExprResult { expr: e0.expr, parser: e0.parser }
+      end
+    else
+      ExprResult { expr: e0.expr, parser: e0.parser.advance() }
+    end
   end
 end
 

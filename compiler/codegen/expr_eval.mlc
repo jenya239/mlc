@@ -118,6 +118,15 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprRecord(type_name, field_values, _, _)             => gen_record_expr(type_name, field_values, context, gen_stmts, eval_expr),
     SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr),
     SExprArray(elements, _, _)                             => gen_array_expr(elements, context, gen_stmts),
+    SExprTuple(elements, _, _) => do
+      let mut parts: [string] = []
+      let mut ki = 0
+      while ki < elements.length() do
+        parts.push(eval_expr(elements[ki], context, gen_stmts))
+        ki = ki + 1
+      end
+      "std::make_tuple(" + parts.join(", ") + ")"
+    end,
     SExprQuestion(inner_expr, _, _)                        => gen_question_expr(inner_expr, context, gen_stmts),
     SExprLambda(parameters, body_expr, _, _)               => gen_lambda_expr(parameters, body_expr, context, gen_stmts)
   }

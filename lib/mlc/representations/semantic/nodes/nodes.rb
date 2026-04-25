@@ -546,15 +546,17 @@ module MLC
     # Destructuring declaration statement
     # Desugars to multiple VariableDeclStmt statements
     # bindings: array of {name:, type:, accessor:} hashes
-    #   accessor is either TupleAccessExpr or MemberExpr for extracting values
+    #   accessor is either TupleAccessExpr, MemberExpr, IndexExpr, SliceExpr, or nil (ctor; see ctor_destructure)
+    # ctor_destructure: optional { variant_name:, field_names:, value: } for let Ok(x) = r (A3 refutable)
     class DestructuringDeclStmt < Stmt
-      attr_reader :bindings, :value, :mutable
+      attr_reader :bindings, :value, :mutable, :ctor_destructure
 
-      def initialize(bindings:, value:, mutable:, origin: nil)
+      def initialize(bindings:, value:, mutable:, origin: nil, ctor_destructure: nil)
         super(origin: origin)
         @bindings = bindings # Array of {name:, type:, accessor:}
         @value = value
         @mutable = mutable
+        @ctor_destructure = ctor_destructure
       end
     end
 

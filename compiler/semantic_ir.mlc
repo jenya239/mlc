@@ -32,6 +32,7 @@ export type SExpr =
   | SExprRecord(string, [Shared<SFieldVal>], Shared<Type>, Span)
   | SExprRecordUpdate(string, Shared<SExpr>, [Shared<SFieldVal>], Shared<Type>, Span)
   | SExprArray([Shared<SExpr>], Shared<Type>, Span)
+  | SExprTuple([Shared<SExpr>], Shared<Type>, Span)
   | SExprQuestion(Shared<SExpr>, Shared<Type>, Span)
   | SExprLambda([string], Shared<SExpr>, Shared<Type>, Span)
 
@@ -39,6 +40,7 @@ export type SExpr =
 
 export type SStmt =
   | SStmtLet(string, bool, Shared<SExpr>, Shared<Type>, Span)
+  | SStmtLetPat(Shared<Pat>, bool, Shared<SExpr>, Shared<Type>, Span)
   | SStmtLetConst(string, Shared<SExpr>, Shared<Type>, Span)
   | SStmtExpr(Shared<SExpr>, Span)
   | SStmtReturn(Shared<SExpr>, Span)
@@ -93,6 +95,7 @@ export fn sexpr_type(expression: Shared<SExpr>) -> Shared<Type> =
     SExprRecord(_, _, t, _)            => t,
     SExprRecordUpdate(_, _, _, t, _)   => t,
     SExprArray(_, t, _)                => t,
+    SExprTuple(_, t, _)                => t,
     SExprQuestion(_, t, _)             => t,
     SExprLambda(_, _, t, _)            => t
   }
@@ -119,6 +122,7 @@ export fn sexpr_span(expression: Shared<SExpr>) -> Span =
     SExprRecord(_, _, _, s)            => s,
     SExprRecordUpdate(_, _, _, _, s)   => s,
     SExprArray(_, _, s)                => s,
+    SExprTuple(_, _, s)                => s,
     SExprQuestion(_, _, s)             => s,
     SExprLambda(_, _, _, s)            => s
   }

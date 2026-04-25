@@ -36,6 +36,7 @@ std::shared_ptr<registry::Type> sexpr_type(std::shared_ptr<semantic_ir::SExpr> e
   [&](const SExprRecord& sexprrecord) -> std::shared_ptr<registry::Type> { auto [_w0, _w1, t, _w2] = sexprrecord; return t; },
   [&](const SExprRecordUpdate& sexprrecordupdate) -> std::shared_ptr<registry::Type> { auto [_w0, _w1, _w2, t, _w3] = sexprrecordupdate; return t; },
   [&](const SExprArray& sexprarray) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprarray; return t; },
+  [&](const SExprTuple& sexprtuple) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprtuple; return t; },
   [&](const SExprQuestion& sexprquestion) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprquestion; return t; },
   [&](const SExprLambda& sexprlambda) -> std::shared_ptr<registry::Type> { auto [_w0, _w1, t, _w2] = sexprlambda; return t; }
 }, (*expression)._);}
@@ -61,6 +62,7 @@ ast::Span sexpr_span(std::shared_ptr<semantic_ir::SExpr> expression) noexcept{re
   [&](const SExprRecord& sexprrecord) -> ast::Span { auto [_w0, _w1, _w2, s] = sexprrecord; return s; },
   [&](const SExprRecordUpdate& sexprrecordupdate) -> ast::Span { auto [_w0, _w1, _w2, _w3, s] = sexprrecordupdate; return s; },
   [&](const SExprArray& sexprarray) -> ast::Span { auto [_w0, _w1, s] = sexprarray; return s; },
+  [&](const SExprTuple& sexprtuple) -> ast::Span { auto [_w0, _w1, s] = sexprtuple; return s; },
   [&](const SExprQuestion& sexprquestion) -> ast::Span { auto [_w0, _w1, s] = sexprquestion; return s; },
   [&](const SExprLambda& sexprlambda) -> ast::Span { auto [_w0, _w1, _w2, s] = sexprlambda; return s; }
 }, (*expression)._);}

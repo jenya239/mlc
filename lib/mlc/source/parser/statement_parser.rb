@@ -112,9 +112,13 @@ module MLC
           end
 
           if current.type == :LPAREN
-            return parse_tuple_destructuring(let_token, explicit_mut)
+            return parse_destructuring_let(let_token, explicit_mut)
           elsif current.type == :LBRACE
             return parse_record_destructuring(let_token, explicit_mut)
+          elsif current.type == :LBRACKET
+            return parse_destructuring_let(let_token, explicit_mut)
+          elsif current.type == :IDENTIFIER && peek&.type == :LPAREN
+            return parse_destructuring_let(let_token, explicit_mut)
           end
 
           name_token = consume(:IDENTIFIER)
@@ -164,9 +168,9 @@ module MLC
 
         public
 
-        # Parse tuple destructuring: let (a, b) = expr
-        def parse_tuple_destructuring(let_token, mutable)
-          pattern = parse_pattern # Uses PatternParser which handles (a, b) as tuple pattern
+        # Parse let with a pattern: tuple (a, b), array [h, ...t], ctor Ok(x), etc.
+        def parse_destructuring_let(let_token, mutable)
+          pattern = parse_pattern
           consume(:EQUAL)
           value = parse_expression_in_block
           consume(:SEMICOLON) if current.type == :SEMICOLON

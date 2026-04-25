@@ -3,7 +3,7 @@
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
 import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown } from "../ast"
-import { Type, TypeRegistry, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
+import { Type, TypeRegistry, TTuple, TUnit, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
 import {
   binary_operation_result_type,
   builtin_method_return_type,
@@ -341,6 +341,21 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
         else Shared.new(TUnknown)
         end
       Shared.new(SExprArray(typed_elements, Shared.new(TArray(element_type)), source_span))
+    end,
+
+    ExprTuple(elements, source_span) => do
+      if elements.length() < 2 then
+        Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
+      else
+        const typed = transform_exprs(elements, transform_context, stmts_fn)
+        let mut tuple_types: [Shared<Type>] = []
+        let mut ti = 0
+        while ti < typed.length() do
+          tuple_types.push(sexpr_type(typed[ti]))
+          ti = ti + 1
+        end
+        Shared.new(SExprTuple(typed, Shared.new(TTuple(tuple_types)), source_span))
+      end
     end,
 
     ExprQuestion(inner, source_span) => do

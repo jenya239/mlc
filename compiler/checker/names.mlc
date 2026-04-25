@@ -12,7 +12,7 @@ fn scope_contains(scope: [string], name: string) -> bool = do
   found
 end
 
-fn pattern_bindings(pattern: Shared<Pat>) -> [string] = do
+export fn pattern_bindings(pattern: Shared<Pat>) -> [string] = do
   const accumulator: [string] = []
   collect_pattern_bindings(pattern, accumulator)
 end
@@ -33,6 +33,20 @@ fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> 
         accumulator = collect_pattern_bindings(field_patterns[index], accumulator); index = index + 1
       end
       accumulator
+    end,
+    PatTuple(sub_patterns, _) => do
+      let mut index = 0
+      while index < sub_patterns.length() do
+        accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
+      end
+      accumulator
+    end,
+    PatArray(subs, rest, _) => do
+      let mut index = 0
+      while index < subs.length() do
+        accumulator = collect_pattern_bindings(subs[index], accumulator); index = index + 1
+      end
+      if rest != "" && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
     end,
     _ => accumulator
   }
@@ -166,6 +180,7 @@ export fn check_names_expr(expression: Shared<Expr>, locals: [string], globals: 
     ExprRecord(_, field_values, _)         => check_names_record_expression(field_values, locals, globals),
     ExprRecordUpdate(_, base, field_values, _) => check_names_record_update_expression(base, field_values, locals, globals),
     ExprArray(elements, _)                  => check_names_array_expression(elements, locals, globals),
+    ExprTuple(elements, _)                  => check_names_array_expression(elements, locals, globals),
     ExprQuestion(inner, _)                  => check_names_question_expression(inner, locals, globals),
     ExprLambda(parameter_names, body, _)  => check_names_lambda_expression(parameter_names, body, locals, globals),
     _                                       => check_names_empty()
@@ -185,6 +200,15 @@ export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], g
       StmtLet(name, _, _, value, _) => do
         collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
         scope.push(name); ()
+      end,
+      StmtLetPat(pattern, _, _, value, _) => do
+        collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
+        const pnames = pattern_bindings(pattern)
+        let mut j = 0
+        while j < pnames.length() do
+          scope.push(pnames[j]); j = j + 1
+        end
+        ()
       end,
       StmtLetConst(name, _, value, _) => do
         collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))

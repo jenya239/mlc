@@ -157,7 +157,7 @@ module MLC
                   alternatives: transformed_alternatives
                 }
               when :array
-                # Array pattern: elements list
+                # Array pattern: elements list, optional ...rest name
                 transformed_elements = Array(data[:elements]).map do |elem|
                   if elem.is_a?(MLC::Source::AST::Pattern)
                     # Recursively transform nested pattern
@@ -169,7 +169,8 @@ module MLC
                 end
                 {
                   kind: :array,
-                  elements: transformed_elements
+                  elements: transformed_elements,
+                  rest: data[:rest]
                 }
               when :tuple
                 # Tuple pattern: elements list

@@ -15,6 +15,7 @@
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
 #include "infer_match.hpp"
+#include "let_pattern_infer.hpp"
 #include "infer_array_method.hpp"
 #include "infer_result_option_method.hpp"
 
@@ -35,6 +36,7 @@ using namespace registry;
 using namespace infer_expr_ident;
 using namespace pattern_env;
 using namespace infer_match;
+using namespace let_pattern_infer;
 using namespace infer_array_method;
 using namespace infer_result_option_method;
 using namespace ast_tokens;
@@ -64,6 +66,8 @@ infer_result::InferResult infer_expr_for_loop(mlc::String variable_name, std::sh
 infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_record_update(mlc::String type_name, std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept;
+
+infer_result::InferResult infer_expr_tuple_literal(mlc::Array<std::shared_ptr<ast::Expr>> elements, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_array_literal(mlc::Array<std::shared_ptr<ast::Expr>> elements, check_context::CheckContext inference_context) noexcept;
 
@@ -172,6 +176,23 @@ infer_result::InferResult base_result = infer_expr(base, inference_context);
 return infer_field_values_errors(infer_result::InferResult_with_type(base_result, std::make_shared<registry::Type>(registry::TNamed(type_name))), field_values, inference_context, type_name);
 }
 
+infer_result::InferResult infer_expr_tuple_literal(mlc::Array<std::shared_ptr<ast::Expr>> elements, check_context::CheckContext inference_context) noexcept{
+return elements.size() < 2 ? infer_arguments_errors(infer_result::infer_ok(std::make_shared<registry::Type>((registry::TUnknown{}))), elements, inference_context) : [&]() -> infer_result::InferResult { 
+  infer_result::InferResult r = infer_result::infer_ok(std::make_shared<registry::Type>((registry::TUnknown{})));
+  mlc::Array<std::shared_ptr<registry::Type>> types = {};
+  int i = 0;
+  while (i < elements.size()){
+{
+infer_result::InferResult er = infer_expr(elements[i], inference_context);
+r = infer_result::InferResult_absorb(r, er);
+types.push_back(er.inferred_type);
+i = i + 1;
+}
+}
+  return infer_result::InferResult_with_type(r, std::make_shared<registry::Type>(registry::TTuple(types)));
+ }();
+}
+
 infer_result::InferResult infer_expr_array_literal(mlc::Array<std::shared_ptr<ast::Expr>> elements, check_context::CheckContext inference_context) noexcept{
 std::shared_ptr<registry::Type> first_element_type = elements.size() > 0 ? infer_expr(elements[0], inference_context).inferred_type : std::make_shared<registry::Type>((registry::TUnknown{}));
 return infer_arguments_errors(infer_result::infer_ok(std::make_shared<registry::Type>(registry::TArray(first_element_type))), elements, inference_context);
@@ -216,6 +237,7 @@ infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, chec
   [&](const ExprRecord& exprrecord) -> infer_result::InferResult { auto [name, field_vals, _w0] = exprrecord; return infer_expr_record(name, field_vals, inference_context); },
   [&](const ExprRecordUpdate& exprrecordupdate) -> infer_result::InferResult { auto [name, base, field_vals, _w0] = exprrecordupdate; return infer_expr_record_update(name, base, field_vals, inference_context); },
   [&](const ExprArray& exprarray) -> infer_result::InferResult { auto [elements, _w0] = exprarray; return infer_expr_array_literal(elements, inference_context); },
+  [&](const ExprTuple& exprtuple) -> infer_result::InferResult { auto [elements, _w0] = exprtuple; return infer_expr_tuple_literal(elements, inference_context); },
   [&](const ExprQuestion& exprquestion) -> infer_result::InferResult { auto [inner, question_span] = exprquestion; return infer_expr_question(inner, question_span, inference_context); },
   [&](const ExprLambda& exprlambda) -> infer_result::InferResult { auto [params, body, _w0] = exprlambda; return infer_expr_lambda(params, body, inference_context); }
 }, (*expression)._);}
@@ -230,6 +252,12 @@ std::visit(overloaded{
   [&](const StmtLet& stmtlet) -> std::tuple<> { auto [binding_name, _w0, _w1, value_expression, _w2] = stmtlet; return [&]() -> std::tuple<> { 
   infer_result::InferResult value_result = infer_expr(value_expression, check_context::check_context_new(current_environment, inference_context.registry));
   current_environment.set(binding_name, value_result.inferred_type);
+  collected_errors = ast::diagnostics_append(collected_errors, value_result.errors);
+  return std::make_tuple();
+ }(); },
+  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, _w0, _w1, value_expression, _w2] = stmtletpat; return [&]() -> std::tuple<> { 
+  infer_result::InferResult value_result = infer_expr(value_expression, check_context::check_context_new(current_environment, inference_context.registry));
+  let_pattern_infer::infer_let_pattern_env(pattern, value_result.inferred_type, current_environment, inference_context.registry);
   collected_errors = ast::diagnostics_append(collected_errors, value_result.errors);
   return std::make_tuple();
  }(); },

@@ -7,6 +7,7 @@ import { Type, type_from_annotation } from "./registry"
 import { SStmt, SExpr, sexpr_type } from "../semantic_ir"
 import { TransformContext, TransformStmtsResult,
          transform_expr, transform_context_with_env, coerce_expr_to_type } from "./transform"
+import { infer_let_pattern_env } from "./let_pattern_infer"
 
 export fn transform_stmts(
   statements: [Shared<Stmt>],
@@ -26,6 +27,16 @@ export fn transform_stmts(
         current_env.set(binding_name, value_type)
         const coerced_value = coerce_expr_to_type(typed_value, value_type)
         typed_statements.push(Shared.new(SStmtLet(binding_name, is_mut, coerced_value, value_type, source_span)))
+        ()
+      end,
+      StmtLetPat(pattern, is_mut, annotation, value_expression, source_span) => do
+        const annotated_type = type_from_annotation(annotation)
+        const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
+        const inferred_type  = sexpr_type(typed_value)
+        const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
+        const coerced_value = coerce_expr_to_type(typed_value, value_type)
+        infer_let_pattern_env(pattern, value_type, current_env, current_context.registry)
+        typed_statements.push(Shared.new(SStmtLetPat(pattern, is_mut, coerced_value, value_type, source_span)))
         ()
       end,
       StmtLetConst(binding_name, annotation, value_expression, source_span) => do
