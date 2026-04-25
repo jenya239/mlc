@@ -15,6 +15,8 @@ import { field_type_from_object } from "./registry"
 import { infer_expr_identifier } from "./infer_expr_ident"
 import { env_for_pattern } from "./pattern_env"
 import { infer_expr_match } from "./infer_match"
+import { infer_array_hof_method_call, should_infer_as_array_hof } from "./infer_array_method"
+import { infer_result_option_hof_method_call, should_infer_as_result_option_hof } from "./infer_result_option_method"
 
 // --- Argument / field-value error accumulators ------------------------------
 
@@ -85,17 +87,26 @@ fn infer_expr_method(
   method_name: string,
   method_arguments: [Shared<Expr>],
   method_span: Span,
-  inference_context: CheckContext
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
-  const object_result = infer_expr(object, inference_context)
-  const with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context)
-  infer_operand_combine.infer_method_from_object_and_arguments(
-    object_result,
-    with_arguments,
-    method_name,
-    method_span,
-    method_arguments.length(),
-    inference_context.registry)
+  const object_result = infer_expr_fn(object, inference_context)
+  if should_infer_as_result_option_hof(object_result.inferred_type, method_name) then
+    infer_result_option_hof_method_call(
+      object_result, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if should_infer_as_array_hof(object_result.inferred_type, method_name) then
+    infer_array_hof_method_call(
+      object_result, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
+  else
+    const with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context)
+    infer_operand_combine.infer_method_from_object_and_arguments(
+      object_result,
+      with_arguments,
+      method_name,
+      method_span,
+      method_arguments.length(),
+      inference_context.registry)
+  end
 end
 
 fn infer_expr_field(object: Shared<Expr>, field_name: string, field_source_span: Span, inference_context: CheckContext) -> InferResult =
@@ -184,7 +195,7 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprUn(operation, inner, span)          => infer_expr_unary(operation, inner, span, inference_context),
     ExprCall(function, call_arguments, call_source_span)   => infer_expr_call(function, call_arguments, call_source_span, inference_context, infer_expr),
     ExprMethod(object, method_name, margs, method_span) =>
-      infer_expr_method(object, method_name, margs, method_span, inference_context),
+      infer_expr_method(object, method_name, margs, method_span, inference_context, infer_expr),
     ExprField(object, field_name, field_source_span) => infer_expr_field(object, field_name, field_source_span, inference_context),
     ExprIndex(object, index_expression, bracket_source_span) => infer_expr_index(object, index_expression, bracket_source_span, inference_context),
     ExprIf(condition, then_expr, else_expr, _) => infer_expr_conditional(condition, then_expr, else_expr, inference_context),

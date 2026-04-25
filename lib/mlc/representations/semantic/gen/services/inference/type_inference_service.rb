@@ -224,6 +224,24 @@ module MLC
               object_type = object_ir.type
               return [] unless object_type
 
+              if object_type.is_a?(SemanticIR::GenericType)
+                bname = object_type.base_type.respond_to?(:name) ? object_type.base_type.name : nil
+                t_args = object_type.type_args
+                if bname == "Result" && t_args.size >= 2
+                  t, e = t_args[0], t_args[1]
+                  case member_name
+                  when "map", "and_then" then return [t]
+                  when "map_err", "or_else", "unwrap_or_else" then return [e]
+                  end
+                elsif bname == "Option" && t_args[0]
+                  inner = t_args[0]
+                  case member_name
+                  when "map", "and_then", "filter" then return [inner]
+                  when "or_else" then return []
+                  end
+                end
+              end
+
               case member_name
               when "map", "filter"
                 object_type.is_a?(SemanticIR::ArrayType) ? [object_type.element_type] : []
@@ -275,6 +293,10 @@ module MLC
                   rescue MLC::CompileError
                     # Fall through to regular error handling
                   end
+                end
+
+                if base_name && %w[Result Option].include?(base_name) && result_option_combinator_member_name?(member)
+                  return SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("auto"))
                 end
               end
 
@@ -332,6 +354,10 @@ module MLC
 
                 type_error("Unknown member '#{member}' for type #{describe_type(object_type)}", node: node)
               end
+            end
+
+            def result_option_combinator_member_name?(member)
+              %w[map map_err and_then or_else unwrap_or unwrap_or_else ok filter ok_or].include?(member)
             end
 
             # Generic type unification
@@ -610,6 +636,8 @@ module MLC
                   return infer(object_type.inner_type, member, args)
                 end
 
+                return resolve_result_option_combinator(object_type, member, args) if object_type.is_a?(SemanticIR::GenericType) && %w[Result Option].include?(object_type.base_type&.name)
+
                 return resolve_array_member(object_type, member, args) if object_type.is_a?(SemanticIR::ArrayType)
                 return resolve_map_member(object_type, member, args) if object_type.is_a?(SemanticIR::MapType)
                 return resolve_string_member(member, args) if string?(object_type)
@@ -628,6 +656,66 @@ module MLC
               end
 
               private
+
+              def resolve_result_option_combinator(object_type, member, args)
+                base_name = object_type.base_type&.name
+                t_args = object_type.type_args
+                rbase = object_type.base_type
+                if base_name == "Result" && t_args.size >= 2
+                  t, e = t_args[0], t_args[1]
+                  case member
+                  when "map"
+                    ensure_args(member, args, 1)
+                    u = lambda_return_type(args.first)
+                    type_error("Unable to infer return type of map lambda") unless u
+                    SemanticIR::GenericType.new(base_type: rbase, type_args: [u, e])
+                  when "map_err"
+                    ensure_args(member, args, 1)
+                    f = lambda_return_type(args.first)
+                    type_error("Unable to infer return type of map_err lambda") unless f
+                    SemanticIR::GenericType.new(base_type: rbase, type_args: [t, f])
+                  when "and_then", "or_else"
+                    ensure_args(member, args, 1)
+                    lambda_return_type(args.first) || prim("auto")
+                  when "unwrap_or", "unwrap_or_else"
+                    ensure_args(member, args, 1)
+                    t
+                  when "ok"
+                    ensure_args(member, args, 0)
+                    ob = SemanticIR::Builder.primitive_type("Option")
+                    SemanticIR::GenericType.new(base_type: ob, type_args: [t])
+                  else
+                    type_error("Unknown Result method '#{member}'")
+                  end
+                elsif base_name == "Option" && t_args[0]
+                  inner = t_args[0]
+                  case member
+                  when "map"
+                    ensure_args(member, args, 1)
+                    u = lambda_return_type(args.first)
+                    type_error("Unable to infer return type of map lambda") unless u
+                    SemanticIR::GenericType.new(base_type: rbase, type_args: [u])
+                  when "and_then", "or_else"
+                    ensure_args(member, args, 1)
+                    lambda_return_type(args.first) || prim("auto")
+                  when "unwrap_or"
+                    ensure_args(member, args, 1)
+                    inner
+                  when "filter"
+                    ensure_args(member, args, 1)
+                    SemanticIR::GenericType.new(base_type: rbase, type_args: [inner])
+                  when "ok_or"
+                    ensure_args(member, args, 1)
+                    err_t = args.first&.type
+                    res = SemanticIR::Builder.primitive_type("Result")
+                    SemanticIR::GenericType.new(base_type: res, type_args: [inner, err_t].compact)
+                  else
+                    type_error("Unknown Option method '#{member}'")
+                  end
+                else
+                  type_error("Invalid combinator receiver")
+                end
+              end
 
               def resolve_array_member(object_type, member, args)
                 if (handler = array_method_table[member])

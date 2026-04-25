@@ -29,6 +29,8 @@ bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
 
 mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept;
 
+std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::Type> function_type) noexcept;
+
 mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept;
 
 bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept;

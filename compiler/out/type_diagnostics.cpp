@@ -3,12 +3,14 @@
 #include "ast.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
+#include "array_method_types.hpp"
 
 namespace type_diagnostics {
 
 using namespace ast;
 using namespace registry;
 using namespace semantic_type_structure;
+using namespace array_method_types;
 using namespace ast_tokens;
 
 mlc::Array<ast::Diagnostic> unary_minus_diagnostic(mlc::String operation, std::shared_ptr<registry::Type> inner_type, ast::Span source_span) noexcept;
@@ -48,7 +50,7 @@ return expected_length != actual_length ? mlc::Array<ast::Diagnostic>{ast::diagn
 }
 
 mlc::Array<ast::Diagnostic> infer_builtin_method_arity_diagnostics(mlc::String method_name, int argument_count, ast::Span method_span) noexcept{
-int expected = semantic_type_structure::builtin_method_expected_argument_count(method_name);
+int expected = array_method_types::is_array_hof_method(method_name) ? array_method_types::array_hof_expected_argument_count(method_name) : semantic_type_structure::builtin_method_expected_argument_count(method_name);
 return expected < 0 ? mlc::Array<ast::Diagnostic>{} : argument_count != expected ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("expected ") + mlc::to_string(expected) + mlc::String(" arguments, got ") + mlc::to_string(argument_count), method_span)} : mlc::Array<ast::Diagnostic>{};
 }
 

@@ -1,0 +1,274 @@
+// Type inference for Result / Option TGeneric combinator methods (A2).
+
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_span } from "../ast"
+import { Type, TUnknown, TGeneric } from "./registry"
+import { CheckContext } from "./check_context"
+import { InferResult } from "./infer_result"
+import {
+  type_is_unknown,
+  types_structurally_equal,
+  type_description,
+  function_return_type,
+  type_is_bool
+} from "./semantic_type_structure"
+import {
+  result_option_hof_call_result_type,
+  result_option_hof_expected_argument_count,
+  is_result_generic,
+  is_option_generic,
+  result_ok_type,
+  result_err_type,
+  option_inner_type,
+  should_infer_result_option_combinator
+} from "./result_option_method_types"
+import { infer_lambda_with_param_types } from "./infer_lambda_context"
+import { infer_builtin_method_receiver_diagnostics } from "./method_receiver_diagnostics"
+
+type InferExprFn = (Shared<Expr>, CheckContext) -> InferResult
+
+fn append_lambda_arity(
+  errors: [Diagnostic], expression: Shared<Expr>, expected: i32, method_name: string
+) -> [Diagnostic] =
+  match expression {
+    ExprLambda(parameter_names, _, _) =>
+      if parameter_names.length() != expected then
+        diagnostics_append(errors, [
+          diagnostic_error(
+            "method " + method_name + " expects a lambda with " + expected.to_string() + " parameter(s)",
+            expr_span(expression))])
+      else
+        errors
+      end,
+    _ => errors
+  }
+
+fn is_result_type(t: Shared<Type>) -> bool =
+  match t {
+    TGeneric(name, _) => name == "Result",
+    _ => false
+  }
+
+fn result_inner_err_from_ret(lam_ret: Shared<Type>) -> Shared<Type> =
+  match lam_ret {
+    TGeneric(name, a) => if name == "Result" && a.length() >= 2 then a[1] else Shared.new(TUnknown) end,
+    _ => Shared.new(TUnknown)
+  }
+
+export fn should_infer_as_result_option_hof(receiver_type: Shared<Type>, method_name: string) -> bool =
+  should_infer_result_option_combinator(receiver_type, method_name)
+
+export fn infer_result_option_hof_method_call(
+  object_result: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: InferExprFn
+) -> InferResult = do
+  const receiver_type = object_result.inferred_type
+  const receiver_errors = infer_builtin_method_receiver_diagnostics(
+    receiver_type, method_name, method_span)
+  const expected_arity = result_option_hof_expected_argument_count(receiver_type, method_name)
+  const arity_errors: [Diagnostic] =
+    if expected_arity >= 0 then
+      if method_arguments.length() != expected_arity then
+        [diagnostic_error(
+          "expected " + expected_arity.to_string() + " arguments, got " + method_arguments.length().to_string(),
+          method_span)]
+      else [] end
+    else [] end
+  let mut merged = object_result
+  let mut arg_types: [Shared<Type>] = []
+
+  if is_result_generic(receiver_type) then
+    const t_t = result_ok_type(receiver_type)
+    const e_t = result_err_type(receiver_type)
+    if method_name == "unwrap_or" && method_arguments.length() > 0 then
+      const a = infer_expr_fn(method_arguments[0], inference_context)
+      merged = merged.absorb(a)
+      arg_types.push(a.inferred_type)
+      if !type_is_unknown(t_t) && !type_is_unknown(a.inferred_type) && !types_structurally_equal(t_t, a.inferred_type) then
+        merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, [
+          diagnostic_error(
+            "method unwrap_or value must match Ok type (expected " + type_description(t_t) + ")",
+            expr_span(method_arguments[0]))]) }
+      end
+    else if method_name == "unwrap_or_else" && method_arguments.length() > 0 then
+      const arg0 = method_arguments[0]
+      let mut ar: [Diagnostic] = append_lambda_arity([], arg0, 1, method_name)
+      const lam_r: InferResult = match arg0 {
+        ExprLambda(parameter_names, body, _) =>
+          infer_lambda_with_param_types(parameter_names, [e_t], body, inference_context, infer_expr_fn),
+        _ => infer_expr_fn(arg0, inference_context)
+      }
+      ar = append_lambda_arity(ar, arg0, 1, method_name)
+      merged = merged.absorb(lam_r)
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, ar) }
+      const lam_ret = function_return_type(lam_r.inferred_type)
+      if !type_is_unknown(t_t) && !type_is_unknown(lam_ret) && !types_structurally_equal(t_t, lam_ret) then
+        merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, [
+          diagnostic_error(
+            "method unwrap_or_else must return the Ok type (expected " + type_description(t_t) + ")",
+            expr_span(arg0))]) }
+      end
+      arg_types.push(lam_r.inferred_type)
+    else if method_name == "map" && method_arguments.length() > 0 then
+      const arg0 = method_arguments[0]
+      let mut ar: [Diagnostic] = append_lambda_arity([], arg0, 1, method_name)
+      const lam_r: InferResult = match arg0 {
+        ExprLambda(parameter_names, body, _) =>
+          infer_lambda_with_param_types(parameter_names, [t_t], body, inference_context, infer_expr_fn),
+        _ => infer_expr_fn(arg0, inference_context)
+      }
+      ar = append_lambda_arity(ar, arg0, 1, method_name)
+      merged = merged.absorb(lam_r)
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, ar) }
+      arg_types.push(lam_r.inferred_type)
+    else if method_name == "map_err" && method_arguments.length() > 0 then
+      const arg0 = method_arguments[0]
+      let mut ar: [Diagnostic] = append_lambda_arity([], arg0, 1, method_name)
+      const lam_r: InferResult = match arg0 {
+        ExprLambda(parameter_names, body, _) =>
+          infer_lambda_with_param_types(parameter_names, [e_t], body, inference_context, infer_expr_fn),
+        _ => infer_expr_fn(arg0, inference_context)
+      }
+      ar = append_lambda_arity(ar, arg0, 1, method_name)
+      merged = merged.absorb(lam_r)
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, ar) }
+      arg_types.push(lam_r.inferred_type)
+    else if method_name == "and_then" && method_arguments.length() > 0 then
+      const arg0 = method_arguments[0]
+      let mut ar: [Diagnostic] = append_lambda_arity([], arg0, 1, method_name)
+      const lam_r: InferResult = match arg0 {
+        ExprLambda(parameter_names, body, _) =>
+          infer_lambda_with_param_types(parameter_names, [t_t], body, inference_context, infer_expr_fn),
+        _ => infer_expr_fn(arg0, inference_context)
+      }
+      ar = append_lambda_arity(ar, arg0, 1, method_name)
+      merged = merged.absorb(lam_r)
+      let mut extra: [Diagnostic] = ar
+      const lam_ret = function_return_type(lam_r.inferred_type)
+      if is_result_type(lam_ret) then
+        const inner_e = result_inner_err_from_ret(lam_ret)
+        if !type_is_unknown(e_t) && !type_is_unknown(inner_e) && !types_structurally_equal(e_t, inner_e) then
+          extra = diagnostics_append(extra, [
+            diagnostic_error(
+              "method and_then callback must return Result with the same error type (expected " + type_description(e_t) + ")",
+              expr_span(arg0))])
+        end
+      else
+        extra = diagnostics_append(extra, [ diagnostic_error("method and_then must return a Result type", expr_span(arg0)) ])
+      end
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
+      arg_types.push(lam_r.inferred_type)
+    else if method_name == "ok" then
+      let _noop = 0
+    else if method_name == "or_else" && method_arguments.length() > 0 then
+      const arg0 = method_arguments[0]
+      let mut ar: [Diagnostic] = append_lambda_arity([], arg0, 1, method_name)
+      const lam_r: InferResult = match arg0 {
+        ExprLambda(parameter_names, body, _) =>
+          infer_lambda_with_param_types(parameter_names, [e_t], body, inference_context, infer_expr_fn),
+        _ => infer_expr_fn(arg0, inference_context)
+      }
+      ar = append_lambda_arity(ar, arg0, 1, method_name)
+      merged = merged.absorb(lam_r)
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, ar) }
+      arg_types.push(lam_r.inferred_type)
+    end
+  else if is_option_generic(receiver_type) then
+    const o_t = option_inner_type(receiver_type)
+    if method_name == "unwrap_or" && method_arguments.length() > 0 then
+      const a = infer_expr_fn(method_arguments[0], inference_context)
+      merged = merged.absorb(a)
+      arg_types.push(a.inferred_type)
+      if !type_is_unknown(o_t) && !type_is_unknown(a.inferred_type) && !types_structurally_equal(o_t, a.inferred_type) then
+        merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, [
+          diagnostic_error(
+            "method unwrap_or value must match Some type (expected " + type_description(o_t) + ")",
+            expr_span(method_arguments[0]))]) }
+      end
+    else if method_name == "or_else" && method_arguments.length() > 0 then
+      const arg0 = method_arguments[0]
+      let mut ar: [Diagnostic] = append_lambda_arity([], arg0, 0, "or_else")
+      const lam_r: InferResult = match arg0 {
+        ExprLambda(parameter_names, body, _) =>
+          infer_lambda_with_param_types(parameter_names, [], body, inference_context, infer_expr_fn),
+        _ => infer_expr_fn(arg0, inference_context)
+      }
+      ar = append_lambda_arity(ar, arg0, 0, "or_else")
+      merged = merged.absorb(lam_r)
+      let mut extra: [Diagnostic] = ar
+      const inner_ret = function_return_type(lam_r.inferred_type)
+      if is_option_generic(inner_ret) then
+        const io = option_inner_type(inner_ret)
+        if !type_is_unknown(o_t) && !type_is_unknown(io) && !types_structurally_equal(o_t, io) then
+          extra = diagnostics_append(extra, [
+            diagnostic_error(
+              "method or_else must return Option with the same inner type (expected " + type_description(o_t) + ")",
+              expr_span(arg0))])
+        end
+      else
+        extra = diagnostics_append(extra, [ diagnostic_error("method or_else must return Option", expr_span(arg0)) ])
+      end
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
+      arg_types.push(lam_r.inferred_type)
+    else if method_name == "ok_or" && method_arguments.length() > 0 then
+      const a = infer_expr_fn(method_arguments[0], inference_context)
+      merged = merged.absorb(a)
+      arg_types.push(a.inferred_type)
+    else if method_name == "map" && method_arguments.length() > 0 then
+      const arg0 = method_arguments[0]
+      let mut ar: [Diagnostic] = append_lambda_arity([], arg0, 1, method_name)
+      const lam_r: InferResult = match arg0 {
+        ExprLambda(parameter_names, body, _) =>
+          infer_lambda_with_param_types(parameter_names, [o_t], body, inference_context, infer_expr_fn),
+        _ => infer_expr_fn(arg0, inference_context)
+      }
+      ar = append_lambda_arity(ar, arg0, 1, method_name)
+      merged = merged.absorb(lam_r)
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, ar) }
+      arg_types.push(lam_r.inferred_type)
+    else if method_name == "and_then" && method_arguments.length() > 0 then
+      const arg0 = method_arguments[0]
+      let mut ar: [Diagnostic] = append_lambda_arity([], arg0, 1, method_name)
+      const lam_r: InferResult = match arg0 {
+        ExprLambda(parameter_names, body, _) =>
+          infer_lambda_with_param_types(parameter_names, [o_t], body, inference_context, infer_expr_fn),
+        _ => infer_expr_fn(arg0, inference_context)
+      }
+      ar = append_lambda_arity(ar, arg0, 1, method_name)
+      merged = merged.absorb(lam_r)
+      let mut extra: [Diagnostic] = ar
+      const ret = function_return_type(lam_r.inferred_type)
+      if !is_option_generic(ret) then
+        extra = diagnostics_append(extra, [ diagnostic_error("method and_then must return Option", expr_span(arg0)) ])
+      end
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
+      arg_types.push(lam_r.inferred_type)
+    else if method_name == "filter" && method_arguments.length() > 0 then
+      const arg0 = method_arguments[0]
+      let mut ar: [Diagnostic] = append_lambda_arity([], arg0, 1, method_name)
+      const lam_r: InferResult = match arg0 {
+        ExprLambda(parameter_names, body, _) =>
+          infer_lambda_with_param_types(parameter_names, [o_t], body, inference_context, infer_expr_fn),
+        _ => infer_expr_fn(arg0, inference_context)
+      }
+      ar = append_lambda_arity(ar, arg0, 1, method_name)
+      merged = merged.absorb(lam_r)
+      let mut extra: [Diagnostic] = ar
+      const lam_ret = function_return_type(lam_r.inferred_type)
+      if !type_is_unknown(lam_ret) && !type_is_bool(lam_ret) then
+        extra = diagnostics_append(extra, [ diagnostic_error("method filter expects a predicate returning bool", expr_span(arg0)) ])
+      end
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
+      arg_types.push(lam_r.inferred_type)
+    end
+  end
+
+  const out = result_option_hof_call_result_type(receiver_type, method_name, arg_types)
+  InferResult {
+    inferred_type: out,
+    errors:        diagnostics_append(diagnostics_append(merged.errors, receiver_errors), arity_errors)
+  }
+end

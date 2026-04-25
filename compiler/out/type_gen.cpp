@@ -15,6 +15,8 @@ using namespace cpp_naming;
 using namespace expr;
 using namespace ast_tokens;
 
+mlc::String cpp_generic_base_name(context::CodegenContext context, mlc::String type_name) noexcept;
+
 mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept;
 
 mlc::String type_name_to_cpp(context::CodegenContext context, mlc::String type_name) noexcept;
@@ -51,6 +53,8 @@ mlc::String gen_type_decl_body_only(context::CodegenContext context, mlc::String
 
 mlc::String requires_clause(mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds) noexcept;
 
+mlc::String cpp_generic_base_name(context::CodegenContext context, mlc::String type_name) noexcept{return type_name == mlc::String("Map") ? mlc::String("mlc::HashMap") : type_name == mlc::String("Shared") ? mlc::String("std::shared_ptr") : context::context_resolve(context, type_name);}
+
 mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept{return std::visit(overloaded{
   [&](const TI32& ti32) -> mlc::String { return mlc::String("int"); },
   [&](const TString& tstring) -> mlc::String { return mlc::String("mlc::String"); },
@@ -60,10 +64,8 @@ mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<reg
   [&](const TArray& tarray) -> mlc::String { auto [inner] = tarray; return expr::cpp_array_type_element(sem_type_to_cpp(context, inner)); },
   [&](const TShared& tshared) -> mlc::String { auto [inner] = tshared; return expr::cpp_shared_pointer_type(sem_type_to_cpp(context, inner)); },
   [&](const TNamed& tnamed) -> mlc::String { auto [type_name] = tnamed; return context::context_resolve(context, type_name); },
-  [&](const TGeneric& tgeneric) -> mlc::String { auto [type_name, type_args] = tgeneric; return [&]() -> mlc::String { 
-  mlc::String safe_name = type_name == mlc::String("Map") ? mlc::String("mlc::HashMap") : type_name == mlc::String("Shared") ? mlc::String("std::shared_ptr") : context::context_resolve(context, type_name);
-  return type_args.size() == 0 ? safe_name : type_args.size() == 1 ? expr::cpp_template_single_type_argument(safe_name, sem_type_to_cpp(context, type_args[0])) : expr::cpp_template_two_type_arguments(safe_name, sem_type_to_cpp(context, type_args[0]), sem_type_to_cpp(context, type_args[1]));
- }(); },
+  [&](const TPair& tpair) -> mlc::String { auto [left, right] = tpair; return mlc::String("std::pair<") + sem_type_to_cpp(context, left) + mlc::String(", ") + sem_type_to_cpp(context, right) + mlc::String(">"); },
+  [&](const TGeneric& tgeneric) -> mlc::String { auto [type_name, type_args] = tgeneric; return type_name == mlc::String("Option") && type_args.size() == 1 ? mlc::String("std::optional<") + sem_type_to_cpp(context, type_args[0]) + mlc::String(">") : type_args.size() == 0 ? cpp_generic_base_name(context, type_name) : type_args.size() == 1 ? expr::cpp_template_single_type_argument(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_args[0])) : expr::cpp_template_two_type_arguments(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_args[0]), sem_type_to_cpp(context, type_args[1])); },
   [&](const TFn& tfn) -> mlc::String { auto [param_types, return_type] = tfn; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int i = 0;

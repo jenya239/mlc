@@ -1,0 +1,99 @@
+// Result / Option (TGeneric) combinator method names, arity, result type (A2).
+
+import { Type, TUnknown, TGeneric, TNamed } from "./registry"
+import { function_return_type } from "./semantic_type_structure"
+
+export fn is_result_generic(t: Shared<Type>) -> bool =
+  match t {
+    TGeneric(name, type_args) => name == "Result" && type_args.length() == 2,
+    TNamed(name) => name == "Result",
+    _ => false
+  }
+
+export fn is_option_generic(t: Shared<Type>) -> bool =
+  match t {
+    TGeneric(name, type_args) => name == "Option" && type_args.length() == 1,
+    TNamed(name) => name == "Option",
+    _ => false
+  }
+
+export fn should_skip_array_hof_for_receiver(t: Shared<Type>) -> bool =
+  is_result_generic(t) || is_option_generic(t)
+
+export fn is_result_combinator_method(method_name: string) -> bool =
+  method_name == "map" || method_name == "map_err" || method_name == "and_then"
+  || method_name == "or_else" || method_name == "unwrap_or" || method_name == "unwrap_or_else"
+  || method_name == "ok"
+
+export fn is_option_combinator_method(method_name: string) -> bool =
+  method_name == "map" || method_name == "and_then" || method_name == "or_else"
+  || method_name == "unwrap_or" || method_name == "filter" || method_name == "ok_or"
+
+export fn should_infer_result_option_combinator(receiver_type: Shared<Type>, method_name: string) -> bool =
+  (is_result_generic(receiver_type) && is_result_combinator_method(method_name))
+  || (is_option_generic(receiver_type) && is_option_combinator_method(method_name))
+
+export fn result_option_hof_expected_argument_count(receiver_type: Shared<Type>, method_name: string) -> i32 =
+  if method_name == "ok" then 0
+  else 1
+  end
+
+export fn result_ok_type(result_type: Shared<Type>) -> Shared<Type> =
+  match result_type {
+    TGeneric(name, a) => if name == "Result" && a.length() >= 1 then a[0] else Shared.new(TUnknown) end,
+    TNamed(name) => if name == "Result" then Shared.new(TUnknown) else Shared.new(TUnknown) end,
+    _ => Shared.new(TUnknown)
+  }
+
+export fn result_err_type(result_type: Shared<Type>) -> Shared<Type> =
+  match result_type {
+    TGeneric(name, a) => if name == "Result" && a.length() >= 2 then a[1] else Shared.new(TUnknown) end,
+    TNamed(name) => if name == "Result" then Shared.new(TUnknown) else Shared.new(TUnknown) end,
+    _ => Shared.new(TUnknown)
+  }
+
+export fn option_inner_type(opt_type: Shared<Type>) -> Shared<Type> =
+  match opt_type {
+    TGeneric(name, a) => if name == "Option" && a.length() >= 1 then a[0] else Shared.new(TUnknown) end,
+    TNamed(name) => if name == "Option" then Shared.new(TUnknown) else Shared.new(TUnknown) end,
+    _ => Shared.new(TUnknown)
+  }
+
+export fn result_option_hof_call_result_type(
+  receiver_type: Shared<Type>,
+  method_name: string,
+  arg_inferred_types: [Shared<Type>]
+) -> Shared<Type> = do
+  if is_result_generic(receiver_type) then
+    const t_type = result_ok_type(receiver_type)
+    const e_type = result_err_type(receiver_type)
+    if method_name == "map" then
+      if arg_inferred_types.length() > 0 then Shared.new(TGeneric("Result", [function_return_type(arg_inferred_types[0]), e_type]))
+      else Shared.new(TUnknown) end
+    else if method_name == "map_err" then
+      if arg_inferred_types.length() > 0 then Shared.new(TGeneric("Result", [t_type, function_return_type(arg_inferred_types[0])]))
+      else Shared.new(TUnknown) end
+    else if method_name == "and_then" || method_name == "or_else" then
+      if arg_inferred_types.length() > 0 then function_return_type(arg_inferred_types[0]) else Shared.new(TUnknown) end
+    else if method_name == "unwrap_or" || method_name == "unwrap_or_else" then t_type
+    else if method_name == "ok" then Shared.new(TGeneric("Option", [t_type]))
+    else Shared.new(TUnknown) end
+  else if is_option_generic(receiver_type) then
+    const opt_t = option_inner_type(receiver_type)
+    if method_name == "map" then
+      if arg_inferred_types.length() > 0 then Shared.new(TGeneric("Option", [function_return_type(arg_inferred_types[0])]))
+      else Shared.new(TUnknown) end
+    else if method_name == "and_then" then
+      if arg_inferred_types.length() > 0 then function_return_type(arg_inferred_types[0]) else Shared.new(TUnknown) end
+    else if method_name == "or_else" then
+      if arg_inferred_types.length() > 0 then function_return_type(arg_inferred_types[0]) else Shared.new(TUnknown) end
+    else if method_name == "unwrap_or" then opt_t
+    else if method_name == "filter" then Shared.new(TGeneric("Option", [opt_t]))
+    else if method_name == "ok_or" then
+      if arg_inferred_types.length() > 0 then Shared.new(TGeneric("Result", [opt_t, arg_inferred_types[0]]))
+      else Shared.new(TUnknown) end
+    else Shared.new(TUnknown) end
+  else
+    Shared.new(TUnknown) end
+  end
+end

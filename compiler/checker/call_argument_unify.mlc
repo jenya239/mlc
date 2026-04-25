@@ -76,6 +76,78 @@ fn unify_expected_and_actual_argument_types(
           "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
           diagnostic_span)]
       end,
+    TGeneric(expected_name, expected_args) =>
+      match actual_type {
+        TGeneric(actual_name, actual_args) =>
+          if expected_name != actual_name || expected_args.length() != actual_args.length() then
+            [diagnostic_error(
+              "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            let mut out: [Diagnostic] = empty_diagnostic_list()
+            let mut gi = 0
+            while gi < expected_args.length() do
+              out = diagnostics_append(
+                out,
+                unify_expected_and_actual_argument_types(
+                  expected_args[gi],
+                  actual_args[gi],
+                  type_parameter_names,
+                  substitution,
+                  diagnostic_span))
+              gi = gi + 1
+            end
+            out
+          end,
+        _ =>
+          [diagnostic_error(
+            "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
+            diagnostic_span)]
+      },
+    TPair(expected_a, expected_b) =>
+      match actual_type {
+        TPair(actual_a, actual_b) =>
+          diagnostics_append(
+            unify_expected_and_actual_argument_types(
+              expected_a, actual_a, type_parameter_names, substitution, diagnostic_span),
+            unify_expected_and_actual_argument_types(
+              expected_b, actual_b, type_parameter_names, substitution, diagnostic_span)),
+        _ =>
+          [diagnostic_error(
+            "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
+            diagnostic_span)]
+      },
+    TFn(expected_params, expected_ret) =>
+      match actual_type {
+        TFn(actual_params, actual_ret) =>
+          if expected_params.length() != actual_params.length() then
+            [diagnostic_error(
+              "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            let mut out_fn: [Diagnostic] = empty_diagnostic_list()
+            let mut pi = 0
+            while pi < expected_params.length() do
+              out_fn = diagnostics_append(
+                out_fn,
+                unify_expected_and_actual_argument_types(
+                  expected_params[pi],
+                  actual_params[pi],
+                  type_parameter_names,
+                  substitution,
+                  diagnostic_span))
+              pi = pi + 1
+            end
+            diagnostics_append(
+              out_fn,
+              unify_expected_and_actual_argument_types(
+                expected_ret, actual_ret, type_parameter_names, substitution, diagnostic_span))
+          end,
+        _ =>
+          [diagnostic_error(
+            "argument expects " + semantic_type_structure.type_description(expected_type) + ", got " + semantic_type_structure.type_description(actual_type),
+            diagnostic_span)]
+      },
     _ =>
       if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
       else

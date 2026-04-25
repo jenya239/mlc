@@ -12,8 +12,35 @@ export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> b
     TArray(inner_left) => match right { TArray(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
     TShared(inner_left) => match right { TShared(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
     TNamed(left_name) => match right { TNamed(right_name) => left_name == right_name, _ => false },
-    TGeneric(left_name, _) => match right { TGeneric(right_name, _) => left_name == right_name, _ => false },
-    TFn(_, _) => match right { TFn(_, _) => true, _ => false }
+    TGeneric(left_name, left_args) => match right {
+      TGeneric(right_name, right_args) =>
+        if left_name != right_name || left_args.length() != right_args.length() then false
+        else
+          let mut gi = 0
+          let mut gok = true
+          while gi < left_args.length() && gok do
+            if !types_structurally_equal(left_args[gi], right_args[gi]) then gok = false end
+            gi = gi + 1
+          end
+          gok
+        end,
+      _ => false
+    },
+    TPair(a1, b1) => match right { TPair(a2, b2) => types_structurally_equal(a1, a2) && types_structurally_equal(b1, b2), _ => false },
+    TFn(left_params, left_ret) => match right {
+      TFn(right_params, right_ret) =>
+        if left_params.length() != right_params.length() then false
+        else
+          let mut fi = 0
+          let mut fok = true
+          while fi < left_params.length() && fok do
+            if !types_structurally_equal(left_params[fi], right_params[fi]) then fok = false end
+            fi = fi + 1
+          end
+          fok && types_structurally_equal(left_ret, right_ret)
+        end,
+      _ => false
+    }
   }
 
 export fn type_is_unknown(type_value: Shared<Type>) -> bool =
@@ -36,6 +63,21 @@ export fn type_is_function(type_value: Shared<Type>) -> bool =
 
 export fn empty_type_parameter_list() -> [Shared<Type>] = []
 
+export fn function_return_type(function_type: Shared<Type>) -> Shared<Type> =
+  match function_type {
+    TFn(_, return_type) => return_type,
+    TI32 => Shared.new(TUnknown),
+    TString => Shared.new(TUnknown),
+    TBool => Shared.new(TUnknown),
+    TUnit => Shared.new(TUnknown),
+    TArray(_) => Shared.new(TUnknown),
+    TShared(_) => Shared.new(TUnknown),
+    TNamed(_) => Shared.new(TUnknown),
+    TGeneric(_, _) => Shared.new(TUnknown),
+    TPair(_, _) => Shared.new(TUnknown),
+    TUnknown => Shared.new(TUnknown)
+  }
+
 export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>] =
   match function_type {
     TFn(parameters, _) => parameters,
@@ -47,6 +89,7 @@ export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>]
     TShared(_) => empty_type_parameter_list(),
     TNamed(_) => empty_type_parameter_list(),
     TGeneric(_, _) => empty_type_parameter_list(),
+    TPair(_, _) => empty_type_parameter_list(),
     TUnknown => empty_type_parameter_list()
   }
 
@@ -85,6 +128,7 @@ export fn type_description(type_value: Shared<Type>) -> string =
     TShared(_) => "shared",
     TNamed(type_name)      => type_name,
     TGeneric(type_name, _) => type_name,
+    TPair(_, _) => "pair",
     TFn(_, _)  => "function"
   }
 
@@ -134,6 +178,29 @@ end
 
 export fn substitute_type(type_value: Shared<Type>, substitution: Map<string, Shared<Type>>) -> Shared<Type> =
   match type_value {
-    TNamed(name) => if substitution.has(name) then substitution.get(name) else type_value end,
+    TNamed(name) =>
+      if substitution.has(name) then substitute_type(substitution.get(name), substitution) else type_value end,
+    TArray(inner) => Shared.new(TArray(substitute_type(inner, substitution))),
+    TShared(inner) => Shared.new(TShared(substitute_type(inner, substitution))),
+    TGeneric(name, args) => do
+      let mut new_args: [Shared<Type>] = []
+      let mut i = 0
+      while i < args.length() do
+        new_args.push(substitute_type(args[i], substitution))
+        i = i + 1
+      end
+      Shared.new(TGeneric(name, new_args))
+    end,
+    TPair(a, b) =>
+      Shared.new(TPair(substitute_type(a, substitution), substitute_type(b, substitution))),
+    TFn(params, ret) => do
+      let mut new_params: [Shared<Type>] = []
+      let mut j = 0
+      while j < params.length() do
+        new_params.push(substitute_type(params[j], substitution))
+        j = j + 1
+      end
+      Shared.new(TFn(new_params, substitute_type(ret, substitution)))
+    end,
     _ => type_value
   }

@@ -3,12 +3,16 @@
 #include "ast.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
+#include "array_method_types.hpp"
+#include "result_option_method_types.hpp"
 
 namespace method_receiver_diagnostics {
 
 using namespace ast;
 using namespace registry;
 using namespace semantic_type_structure;
+using namespace array_method_types;
+using namespace result_option_method_types;
 using namespace ast_tokens;
 
 mlc::Array<ast::Diagnostic> infer_method_receiver_push(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
@@ -26,6 +30,8 @@ mlc::Array<ast::Diagnostic> infer_method_receiver_join(mlc::String method_name, 
 mlc::Array<ast::Diagnostic> infer_method_receiver_has(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
 
 mlc::Array<ast::Diagnostic> infer_method_receiver_get_remove_keys_values(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
+
+mlc::Array<ast::Diagnostic> infer_method_receiver_array_hof(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept;
 
 mlc::Array<ast::Diagnostic> infer_builtin_method_receiver_diagnostics(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name, ast::Span method_span) noexcept;
 
@@ -61,9 +67,15 @@ mlc::Array<ast::Diagnostic> infer_method_receiver_get_remove_keys_values(mlc::St
 return method_name == mlc::String("get") || method_name == mlc::String("remove") || method_name == mlc::String("keys") || method_name == mlc::String("values") ? !semantic_type_structure::type_is_unknown(receiver_type) && !semantic_type_structure::receiver_type_is_map(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method ") + method_name + mlc::String(" expects a Map receiver, got ") + semantic_type_structure::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
 }
 
+mlc::Array<ast::Diagnostic> infer_method_receiver_array_hof(mlc::String method_name, std::shared_ptr<registry::Type> receiver_type, ast::Span method_span) noexcept{
+return result_option_method_types::should_skip_array_hof_for_receiver(receiver_type) ? mlc::Array<ast::Diagnostic>{} : array_method_types::is_array_hof_method(method_name) ? !semantic_type_structure::type_is_unknown(receiver_type) && !semantic_type_structure::type_is_array(receiver_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method ") + method_name + mlc::String(" expects an array receiver, got ") + semantic_type_structure::type_description(receiver_type), method_span)} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+}
+
 mlc::Array<ast::Diagnostic> infer_builtin_method_receiver_diagnostics(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name, ast::Span method_span) noexcept{
-mlc::Array<ast::Diagnostic> from_push = infer_method_receiver_push(method_name, receiver_type, method_span);
-return from_push.size() > 0 ? from_push : [&]() -> mlc::Array<ast::Diagnostic> { 
+mlc::Array<ast::Diagnostic> from_hof = infer_method_receiver_array_hof(method_name, receiver_type, method_span);
+return from_hof.size() > 0 ? from_hof : [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> from_push = infer_method_receiver_push(method_name, receiver_type, method_span);
+  return from_push.size() > 0 ? from_push : [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> from_set = infer_method_receiver_set(method_name, receiver_type, method_span);
   return from_set.size() > 0 ? from_set : [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> from_length = infer_method_receiver_length_or_size(method_name, receiver_type, method_span);
@@ -76,6 +88,7 @@ return from_push.size() > 0 ? from_push : [&]() -> mlc::Array<ast::Diagnostic> {
   return from_join.size() > 0 ? from_join : [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> from_map_access = infer_method_receiver_get_remove_keys_values(method_name, receiver_type, method_span);
   return from_map_access.size() > 0 ? from_map_access : infer_method_receiver_has(method_name, receiver_type, method_span);
+ }();
  }();
  }();
  }();

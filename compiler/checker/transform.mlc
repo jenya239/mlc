@@ -2,9 +2,19 @@
 // Mirrors infer_expr but produces typed Shared<SExpr> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pat, span_unknown } from "../ast"
+import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown } from "../ast"
 import { Type, TypeRegistry, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
-import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, function_parameter_list, type_is_function } from "./semantic_type_structure"
+import {
+  binary_operation_result_type,
+  builtin_method_return_type,
+  type_is_unknown,
+  function_parameter_list,
+  type_is_function,
+  array_element_type_from_array_type,
+  type_is_array
+} from "./semantic_type_structure"
+import { array_hof_call_result_type, is_array_hof_method } from "./array_method_types"
+import { result_option_hof_call_result_type, should_infer_result_option_combinator } from "./result_option_method_types"
 import { env_for_pattern_substituted } from "./pattern_env"
 import { substitute_type } from "./semantic_type_structure"
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from "../semantic_ir"
@@ -90,6 +100,84 @@ fn transform_match_arms(arms: [Shared<MatchArm>], transform_context: TransformCo
   result
 end
 
+fn transform_expr_lambda_with_param_types(
+  parameter_names: [string],
+  parameter_types: [Shared<Type>],
+  body: Shared<Expr>,
+  source_span: Span,
+  transform_context: TransformContext,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SExpr> = do
+  let lambda_env = transform_context.type_env
+  let mut parameter_type_vec: [Shared<Type>] = []
+  let mut parameter_index = 0
+  while parameter_index < parameter_names.length() do
+    const pt =
+      if parameter_index < parameter_types.length() then parameter_types[parameter_index]
+      else Shared.new(TUnknown)
+    parameter_type_vec.push(pt)
+    lambda_env.set(parameter_names[parameter_index], pt)
+    parameter_index = parameter_index + 1
+  end
+  const lambda_context = transform_context_with_env(transform_context, lambda_env)
+  const typed_body     = transform_expr(body, lambda_context, stmts_fn)
+  Shared.new(SExprLambda(
+    parameter_names,
+    typed_body,
+    Shared.new(TFn(parameter_type_vec, sexpr_type(typed_body))),
+    source_span))
+end
+
+fn transform_expr_maybe_lambda_context(
+  expression: Shared<Expr>,
+  expected_param_types: [Shared<Type>],
+  transform_context: TransformContext,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SExpr> =
+  match expression {
+    ExprLambda(parameter_names, body, source_span) =>
+      transform_expr_lambda_with_param_types(
+        parameter_names, expected_param_types, body, source_span, transform_context, stmts_fn),
+    _ => transform_expr(expression, transform_context, stmts_fn)
+  }
+
+fn transform_array_hof_method_arguments(
+  typed_object: Shared<SExpr>,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  transform_context: TransformContext,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> [Shared<SExpr>] = do
+  const element_type = array_element_type_from_array_type(sexpr_type(typed_object))
+  let mut out: [Shared<SExpr>] = []
+  if method_name == "fold" then
+    if method_arguments.length() > 0 then
+      out.push(transform_expr(method_arguments[0], transform_context, stmts_fn))
+      if method_arguments.length() > 1 then
+        const acc_t = sexpr_type(out[0])
+        out.push(transform_expr_maybe_lambda_context(
+          method_arguments[1], [acc_t, element_type], transform_context, stmts_fn))
+      end
+    end
+  else if method_name == "zip" || method_name == "join" then
+    if method_arguments.length() > 0 then
+      out.push(transform_expr(method_arguments[0], transform_context, stmts_fn))
+    end
+  else if method_name == "take" || method_name == "drop" then
+    if method_arguments.length() > 0 then
+      out.push(transform_expr(method_arguments[0], transform_context, stmts_fn))
+    end
+  else if method_name == "enumerate" || method_name == "sum" || method_name == "flat" then
+    let _skip = 0
+  else
+    if method_arguments.length() > 0 then
+      out.push(transform_expr_maybe_lambda_context(
+        method_arguments[0], [element_type], transform_context, stmts_fn))
+    end
+  end
+  out
+end
+
 // --- Expression transform ---------------------------------------------------
 
 export fn transform_expr(expression: Shared<Expr>, transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SExpr> =
@@ -147,14 +235,39 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     ExprMethod(object, method_name, method_arguments, source_span) => do
       const typed_object = transform_expr(object, transform_context, stmts_fn)
-      const typed_args   = transform_exprs(method_arguments, transform_context, stmts_fn)
-      const builtin_type = builtin_method_return_type(method_name)
-      const result_type  =
-        if type_is_unknown(builtin_type) then
-          method_return_type_from_object(sexpr_type(typed_object), method_name, transform_context.registry)
-        else builtin_type
+      if should_infer_result_option_combinator(sexpr_type(typed_object), method_name) then
+        const typed_args   = transform_exprs(method_arguments, transform_context, stmts_fn)
+        let mut arg_types: [Shared<Type>] = []
+        let mut arg_index = 0
+        while arg_index < typed_args.length() do
+          arg_types.push(sexpr_type(typed_args[arg_index]))
+          arg_index = arg_index + 1
         end
-      Shared.new(SExprMethod(typed_object, method_name, typed_args, result_type, source_span))
+        const result_type = result_option_hof_call_result_type(
+          sexpr_type(typed_object), method_name, arg_types)
+        Shared.new(SExprMethod(typed_object, method_name, typed_args, result_type, source_span))
+      else if type_is_array(sexpr_type(typed_object)) && is_array_hof_method(method_name) then
+        const typed_args = transform_array_hof_method_arguments(
+          typed_object, method_name, method_arguments, transform_context, stmts_fn)
+        let mut arg_types: [Shared<Type>] = []
+        let mut arg_index = 0
+        while arg_index < typed_args.length() do
+          arg_types.push(sexpr_type(typed_args[arg_index]))
+          arg_index = arg_index + 1
+        end
+        const elem        = array_element_type_from_array_type(sexpr_type(typed_object))
+        const result_type = array_hof_call_result_type(elem, method_name, arg_types)
+        Shared.new(SExprMethod(typed_object, method_name, typed_args, result_type, source_span))
+      else
+        const typed_args   = transform_exprs(method_arguments, transform_context, stmts_fn)
+        const builtin_type = builtin_method_return_type(method_name)
+        const result_type  =
+          if type_is_unknown(builtin_type) then
+            method_return_type_from_object(sexpr_type(typed_object), method_name, transform_context.registry)
+          else builtin_type
+          end
+        Shared.new(SExprMethod(typed_object, method_name, typed_args, result_type, source_span))
+      end
     end,
 
     ExprField(object, field_name, source_span) => do

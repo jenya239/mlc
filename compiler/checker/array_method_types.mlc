@@ -1,0 +1,79 @@
+// Array higher-order method names and result types (checker + transform).
+
+import { Type } from "./registry"
+import { function_return_type, type_is_array } from "./semantic_type_structure"
+
+export fn is_array_hof_method(method_name: string) -> bool =
+  method_name == "map" || method_name == "filter" || method_name == "fold"
+  || method_name == "flat_map" || method_name == "any" || method_name == "all"
+  || method_name == "find_index" || method_name == "find" || method_name == "sort_by"
+  || method_name == "take" || method_name == "drop" || method_name == "zip"
+  || method_name == "enumerate" || method_name == "join" || method_name == "sum"
+  || method_name == "group_by" || method_name == "flat"
+
+export fn array_hof_expected_argument_count(method_name: string) -> i32 =
+  if method_name == "fold" then 2
+  else if method_name == "enumerate" || method_name == "sum" || method_name == "flat" then 0
+  else 1
+  end
+
+export fn array_hof_call_result_type(
+  element_type: Shared<Type>,
+  method_name: string,
+  argument_inferred_types: [Shared<Type>]
+) -> Shared<Type> = do
+  if method_name == "map" then
+    if argument_inferred_types.length() > 0 then
+      Shared.new(TArray(function_return_type(argument_inferred_types[0])))
+    else
+      Shared.new(TUnknown)
+    end
+  else if method_name == "filter" || method_name == "sort_by" then Shared.new(TArray(element_type))
+  else if method_name == "fold" then
+    if argument_inferred_types.length() > 0 then argument_inferred_types[0] else Shared.new(TUnknown) end
+  else if method_name == "flat_map" then
+    if argument_inferred_types.length() > 0 then
+      const callback_return = function_return_type(argument_inferred_types[0])
+      if type_is_array(callback_return) then
+        match callback_return {
+          TArray(inner) => Shared.new(TArray(inner)),
+          _ => Shared.new(TUnknown)
+        }
+      else
+        Shared.new(TUnknown)
+      end
+    else
+      Shared.new(TUnknown)
+    end
+  else if method_name == "any" || method_name == "all" then Shared.new(TBool)
+  else if method_name == "find_index" then Shared.new(TI32)
+  else if method_name == "find" then Shared.new(TGeneric("Option", [element_type]))
+  else if method_name == "take" || method_name == "drop" then Shared.new(TArray(element_type))
+  else if method_name == "zip" then
+    if argument_inferred_types.length() > 0 then
+      match argument_inferred_types[0] {
+        TArray(other_el) => Shared.new(TArray(Shared.new(TPair(element_type, other_el)))),
+        _ => Shared.new(TUnknown)
+      }
+    else
+      Shared.new(TUnknown)
+    end
+  else if method_name == "enumerate" then
+    Shared.new(TArray(Shared.new(TPair(Shared.new(TI32), element_type))))
+  else if method_name == "join" then Shared.new(TString)
+  else if method_name == "sum" then Shared.new(TI32)
+  else if method_name == "group_by" then
+    if argument_inferred_types.length() > 0 then
+      const key_t = function_return_type(argument_inferred_types[0])
+      Shared.new(TArray(Shared.new(TPair(key_t, Shared.new(TArray(element_type))))))
+    else
+      Shared.new(TUnknown)
+    end
+  else if method_name == "flat" then
+    match element_type {
+      TArray(inner) => Shared.new(TArray(inner)),
+      _ => Shared.new(TUnknown)
+    }
+  else Shared.new(TUnknown)
+  end
+end

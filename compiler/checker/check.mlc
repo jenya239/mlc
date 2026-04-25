@@ -60,7 +60,17 @@ fn type_is_checkable(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
     TString     => true,
     TBool       => true,
     TUnit       => true,
-    TArray(_)   => true,
+    TArray(inner) => type_is_checkable(inner, registry),
+    TPair(a, b)   => type_is_checkable(a, registry) && type_is_checkable(b, registry),
+    TGeneric(_, args) => do
+      let mut ok = true
+      let mut i = 0
+      while i < args.length() && ok do
+        ok = type_is_checkable(args[i], registry)
+        i = i + 1
+      end
+      ok
+    end,
     TFn(_, _)   => true,
     TShared(_)  => true,
     TNamed(name) => registry.has_fields(name),

@@ -93,7 +93,7 @@ class StdlibOptionTest < Minitest::Test
       import { or_else, some, none } from "Option"
 
       fn test() -> Option<i32> =
-        or_else(none(), some(42))
+        or_else(none(), () => some(42))
     MLCORA
 
     cpp = MLC.to_cpp(source)

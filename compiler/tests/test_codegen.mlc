@@ -3,11 +3,11 @@
 import { TestResult, assert_eq_str } from "./test_runner"
 import { gen_expr, gen_argument_list, gen_stmts_str } from "../codegen/eval"
 import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from "../codegen/context"
-import { type_to_cpp, gen_type_decl } from "../codegen/type_gen"
+import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from "../codegen/type_gen"
 import { gen_program } from "../codegen/module"
 import { Program, TypeExpr, TypeVariant, DeclType, DeclFn, DeclExported, Param, VarTuple, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, PatInt, PatWild, span_unknown } from "../ast"
 import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr } from "../semantic_ir"
-import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed } from "../checker/registry"
+import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair } from "../checker/registry"
 
 fn i32_t() -> Shared<Type> = Shared.new(TI32)
 fn str_t() -> Shared<Type> = Shared.new(TString)
@@ -46,6 +46,14 @@ export fn codegen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str("TyShared(TyI32) - 'std::shared_ptr<int>'",
     type_to_cpp(ctx, Shared.new(TyShared(Shared.new(TyI32)))), "std::shared_ptr<int>"))
+
+  results.push(assert_eq_str("sem_type TPair(i32, string)",
+    sem_type_to_cpp(ctx, Shared.new(TPair(Shared.new(TI32), Shared.new(TString)))),
+    "std::pair<int, mlc::String>"))
+
+  results.push(assert_eq_str("sem_type Option<i32> -> std::optional",
+    sem_type_to_cpp(ctx, Shared.new(TGeneric("Option", [Shared.new(TI32)]))),
+    "std::optional<int>"))
 
   results.push(assert_eq_str("ExprInt(42) - '42'",
     gen_expr(si(42), ctx), "42"))
@@ -181,6 +189,13 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("ExprMethod length",
     gen_expr(Shared.new(SExprMethod(sid("arr"), "length", empty_arr, i32_t(), span_unknown())), ctx),
     "arr.length()"))
+
+  const result_r_t = Shared.new(TGeneric("Result", [i32_t(), str_t()]))
+  const s_result = Shared.new(SExprIdent("r", result_r_t, span_unknown()))
+  const map_one: [Shared<SExpr>] = [Shared.new(SExprIdent("f", unk_t(), span_unknown()))]
+  results.push(assert_eq_str("ExprMethod Result map",
+    gen_expr(Shared.new(SExprMethod(s_result, "map", map_one, unk_t(), span_unknown())), ctx),
+    "mlc::result::map(r, f)"))
 
   let namespace_alias_prefixes: Map<string, string> = Map.new()
   namespace_alias_prefixes.set("helpers", "infer_literals::")

@@ -98,6 +98,12 @@ module MLC
                 return lower_map_method(node)
               end
 
+              if context.checker.member_expr?(node.callee) &&
+                 node.callee.object.type.is_a?(MLC::SemanticIR::GenericType) &&
+                 %w[Result Option].include?(node.callee.object.type.base_type&.name)
+                return lower_result_option_combinator(node)
+              end
+
               # Check for string method calls
               if context.checker.member_expr?(node.callee) &&
                  node.callee.object.type.respond_to?(:primitive?) &&
@@ -337,6 +343,22 @@ module MLC
                 callee: callee,
                 arguments: args,
                 argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+              )
+            end
+
+            def lower_result_option_combinator(call)
+              method_name = call.callee.member
+              base = call.callee.object.type.base_type&.name
+              obj = wrap_for_member_access(lower_expression(call.callee.object), call.callee.object)
+              cpp_ns = base == "Option" ? "mlc::opt::" : "mlc::result::"
+              cpp_fn = (base == "Result" && method_name == "ok") ? "ok_into_optional" : method_name
+              callee = context.factory.identifier(name: "#{cpp_ns}#{cpp_fn}")
+              rest = call.args.map { |arg| lower_argument_with_move(arg) }
+              args = [obj] + rest
+              context.factory.function_call(
+                callee: callee,
+                arguments: args,
+                argument_separators: args.size > 1 ? ::Array.new(args.size - 1, ", ") : []
               )
             end
 

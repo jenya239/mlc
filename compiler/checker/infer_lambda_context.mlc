@@ -1,0 +1,33 @@
+// Lambda inference with known parameter types (call-site context).
+
+import { Expr } from "../ast"
+import { Type } from "./registry"
+import { CheckContext, check_context_new } from "./check_context"
+import { InferResult } from "./infer_result"
+
+type InferExprFn = (Shared<Expr>, CheckContext) -> InferResult
+
+export fn infer_lambda_with_param_types(
+  parameter_names: [string],
+  parameter_types: [Shared<Type>],
+  body: Shared<Expr>,
+  inference_context: CheckContext,
+  infer_expr_fn: InferExprFn
+) -> InferResult = do
+  let lambda_env = inference_context.type_env
+  let mut built: [Shared<Type>] = []
+  let mut index = 0
+  while index < parameter_names.length() do
+    const param_type =
+      if index < parameter_types.length() then parameter_types[index] else Shared.new(TUnknown)
+    built.push(param_type)
+    lambda_env.set(parameter_names[index], param_type)
+    index = index + 1
+  end
+  const inner_context = check_context_new(lambda_env, inference_context.registry)
+  const body_result    = infer_expr_fn(body, inner_context)
+  InferResult {
+    inferred_type: Shared.new(TFn(built, body_result.inferred_type)),
+    errors:        body_result.errors
+  }
+end

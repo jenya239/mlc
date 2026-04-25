@@ -7,6 +7,8 @@
 #include "ast.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
+#include "array_method_types.hpp"
+#include "result_option_method_types.hpp"
 #include "pattern_env.hpp"
 #include "semantic_type_structure.hpp"
 #include "semantic_ir.hpp"

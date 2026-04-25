@@ -153,6 +153,28 @@ results.push_back(test_runner::assert_eq_int(mlc::String("infer: binary + string
 results.push_back(test_runner::assert_true(mlc::String("mutation: assign to immutable binding produces error"), first_checker_error_line(mlc::String("fn f() -> i32 = do let x = 1; x = 2; x end")).contains(mlc::String("cannot assign to immutable binding: x"))));
 results.push_back(test_runner::assert_eq_int(mlc::String("mutation: assign to let mut binding — 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do let mut x = 1; x = 2; x end")), 0));
 results.push_back(test_runner::assert_true(mlc::String("question: ? on non-Result produces error"), first_checker_error_line(mlc::String("fn f() -> i32 = do let x: i32 = 42; x? end")).contains(mlc::String("? operator requires a Result type"))));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: Result map — 0 errors"), check_error_count(mlc::String("type Result<T, E> = Ok(T) | Err(E)\nfn f() -> Result<i32, string> = Ok(1).map(x => x + 1)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: Option map — 0 errors"), check_error_count(mlc::String("type Option<T> = Some(T) | None\nfn f() -> Option<i32> = Some(1).map(x => x * 2)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array map — 0 errors"), check_error_count(mlc::String("fn f(a: [i32]) -> [i32] = a.map(x => x + 1)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array filter — 0 errors"), check_error_count(mlc::String("fn f(a: [i32]) -> [i32] = a.filter(x => x > 0)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array fold — 0 errors"), check_error_count(mlc::String("fn f(a: [i32]) -> i32 = a.fold(0, (s, x) => s + x)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array flat_map — 0 errors"), check_error_count(mlc::String("fn f(a: [i32]) -> [i32] = a.flat_map(x => [x])")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array any — 0 errors"), check_error_count(mlc::String("fn f(a: [i32]) -> bool = a.any(x => x > 0)")), 0));
+results.push_back(test_runner::assert_true(mlc::String("infer: array map on non-array receiver"), first_checker_error_line(mlc::String("fn f() -> [i32] = 42.map(x => x)")).contains(mlc::String("expects an array receiver"))));
+results.push_back(test_runner::assert_true(mlc::String("infer: array map wrong arity"), first_checker_error_line(mlc::String("fn f(a: [i32]) -> [i32] = a.map()")).contains(mlc::String("expected 1 arguments"))));
+results.push_back(test_runner::assert_true(mlc::String("infer: filter predicate must return bool"), first_checker_error_line(mlc::String("fn f(a: [i32]) -> [i32] = a.filter(x => x)")).contains(mlc::String("expects a predicate returning bool"))));
+results.push_back(test_runner::assert_true(mlc::String("infer: fold step return must match accumulator"), first_checker_error_line(mlc::String("fn f(a: [i32]) -> i32 = a.fold(0, (s, x) => \"bad\")")).contains(mlc::String("fold step function must return"))));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array find — 0 errors"), check_error_count(mlc::String("type Option<T> = Some(T) | None\nfn f(a: [i32]) -> Option<i32> = a.find(x => x > 0)")), 0));
+results.push_back(test_runner::assert_true(mlc::String("infer: find Option element must match declared return"), first_checker_error_line(mlc::String("type Option<T> = Some(T) | None\nfn f(a: [string]) -> Option<i32> = a.find(x => false)")).contains(mlc::String("return type: expected"))));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array zip — 0 errors"), check_error_count(mlc::String("fn f(a: [i32], b: [string]) -> i32 = a.zip(b).length()")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array enumerate — 0 errors"), check_error_count(mlc::String("fn f(a: [i32]) -> i32 = a.enumerate().length()")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array join strings — 0 errors"), check_error_count(mlc::String("fn f(a: [string]) -> string = a.join(\",\")")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array sum — 0 errors"), check_error_count(mlc::String("fn f(a: [i32]) -> i32 = a.sum()")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array flat — 0 errors"), check_error_count(mlc::String("fn f(a: [[i32]]) -> [i32] = a.flat()")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: array group_by — 0 errors"), check_error_count(mlc::String("fn f(a: [i32]) -> i32 = a.group_by(x => x % 2).length()")), 0));
+results.push_back(test_runner::assert_true(mlc::String("infer: sum on non-i32 array"), first_checker_error_line(mlc::String("fn f(a: [string]) -> i32 = a.sum()")).contains(mlc::String("sum expects i32 array"))));
+results.push_back(test_runner::assert_true(mlc::String("infer: flat on non-nested array"), first_checker_error_line(mlc::String("fn f(a: [i32]) -> [i32] = a.flat()")).contains(mlc::String("flat expects an array of arrays"))));
+results.push_back(test_runner::assert_true(mlc::String("infer: zip expects array argument"), first_checker_error_line(mlc::String("fn f(a: [i32]) -> i32 = a.zip(1).length()")).contains(mlc::String("expects an array argument"))));
 return results;
 }
 

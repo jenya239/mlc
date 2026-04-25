@@ -3,6 +3,8 @@
 import { Diagnostic, Span, diagnostic_error } from "../ast"
 import { Type } from "./registry"
 import * as semantic_type_structure from "./semantic_type_structure"
+import { is_array_hof_method } from "./array_method_types"
+import { should_skip_array_hof_for_receiver } from "./result_option_method_types"
 
 fn infer_method_receiver_push(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
   if method_name == "push" then
@@ -116,7 +118,26 @@ fn infer_method_receiver_get_remove_keys_values(method_name: string, receiver_ty
   end
 end
 
+fn infer_method_receiver_array_hof(method_name: string, receiver_type: Shared<Type>, method_span: Span) -> [Diagnostic] = do
+  if should_skip_array_hof_for_receiver(receiver_type) then []
+  else if is_array_hof_method(method_name) then
+    if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.type_is_array(receiver_type) then
+      [diagnostic_error(
+        "method " + method_name + " expects an array receiver, got "
+          + semantic_type_structure.type_description(receiver_type),
+        method_span)]
+    else
+      []
+    end
+  else
+    []
+  end
+end
+
 export fn infer_builtin_method_receiver_diagnostics(receiver_type: Shared<Type>, method_name: string, method_span: Span) -> [Diagnostic] = do
+  const from_hof = infer_method_receiver_array_hof(method_name, receiver_type, method_span)
+  if from_hof.length() > 0 then from_hof
+  else
   const from_push = infer_method_receiver_push(method_name, receiver_type, method_span)
   if from_push.length() > 0 then from_push
   else
@@ -144,5 +165,6 @@ export fn infer_builtin_method_receiver_diagnostics(receiver_type: Shared<Type>,
         end
       end
     end
+  end
   end
 end

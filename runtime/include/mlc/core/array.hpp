@@ -11,6 +11,8 @@
 #include <functional>
 #include <optional>
 #include <utility>
+#include <unordered_map>
+#include <type_traits>
 
 namespace mlc {
 
@@ -217,6 +219,42 @@ public:
         for (int32_t i = 0; i < static_cast<int32_t>(data_->size()); ++i)
             result.push_back({i, (*data_)[i]});
         return result;
+    }
+
+    int32_t sum() const requires std::same_as<T, int> {
+        int32_t s = 0;
+        for (const auto& item : *data_) s += static_cast<int32_t>(item);
+        return s;
+    }
+
+    auto flat() const requires requires { typename T::value_type; } {
+        using Inner = typename T::value_type;
+        Array<Inner> result;
+        for (const auto& sub : *data_) {
+            for (const auto& x : sub) result.push_back(x);
+        }
+        return result;
+    }
+
+    template<typename F>
+    auto group_by(F&& key_fn) const -> Array<std::pair<std::decay_t<std::invoke_result_t<F, const T&>>, Array<T>>> {
+        using K = std::decay_t<std::invoke_result_t<F, const T&>>;
+        std::unordered_map<K, Array<T>> buckets;
+        for (const auto& item : *data_) {
+            K k = key_fn(item);
+            auto it = buckets.find(k);
+            if (it == buckets.end()) {
+                Array<T> bucket;
+                bucket.push_back(item);
+                buckets.emplace(std::move(k), std::move(bucket));
+            } else {
+                it->second.push_back(item);
+            }
+        }
+        Array<std::pair<K, Array<T>>> out;
+        for (auto& entry : buckets)
+            out.push_back({std::move(entry.first), std::move(entry.second)});
+        return out;
     }
 
     Array<T> concat(const Array<T>& other) const {

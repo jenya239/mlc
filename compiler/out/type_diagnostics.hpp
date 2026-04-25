@@ -7,6 +7,7 @@
 #include "ast.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
+#include "array_method_types.hpp"
 
 namespace type_diagnostics {
 

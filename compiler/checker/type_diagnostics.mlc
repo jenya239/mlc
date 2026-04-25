@@ -3,6 +3,7 @@
 import { Expr, Diagnostic, Span, diagnostic_error, expr_span } from "../ast"
 import { Type, TypeRegistry } from "./registry"
 import * as semantic_type_structure from "./semantic_type_structure"
+import { array_hof_expected_argument_count, is_array_hof_method } from "./array_method_types"
 // --- Unary diagnostics -------------------------------------------------------
 
 export fn unary_minus_diagnostic(operation: string, inner_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
@@ -38,7 +39,10 @@ export fn constructor_arity_diagnostics(expected_length: i32, actual_length: i32
 end
 
 fn infer_builtin_method_arity_diagnostics(method_name: string, argument_count: i32, method_span: Span) -> [Diagnostic] = do
-  const expected = semantic_type_structure.builtin_method_expected_argument_count(method_name)
+  const expected =
+    if is_array_hof_method(method_name) then array_hof_expected_argument_count(method_name)
+    else semantic_type_structure.builtin_method_expected_argument_count(method_name)
+  end
   if expected < 0 then
     []
   else if argument_count != expected then

@@ -15,6 +15,8 @@
 #include "infer_expr_ident.hpp"
 #include "pattern_env.hpp"
 #include "infer_match.hpp"
+#include "infer_array_method.hpp"
+#include "infer_result_option_method.hpp"
 
 namespace infer {
 
@@ -33,6 +35,8 @@ using namespace registry;
 using namespace infer_expr_ident;
 using namespace pattern_env;
 using namespace infer_match;
+using namespace infer_array_method;
+using namespace infer_result_option_method;
 using namespace ast_tokens;
 
 infer_result::InferResult infer_arguments_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept;
@@ -43,7 +47,7 @@ infer_result::InferResult infer_expr_binary(mlc::String operation, std::shared_p
 
 infer_result::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
 
-infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept;
+infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context, std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)> infer_expr_fn) noexcept;
 
 infer_result::InferResult infer_expr_field(std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span field_source_span, check_context::CheckContext inference_context) noexcept;
 
@@ -124,10 +128,12 @@ return infer_operand_combine::infer_binary_from_operand_results(operation, left_
 
 infer_result::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept{return infer_operand_combine::infer_unary_from_inner_result(operation, infer_expr(inner, inference_context), source_span);}
 
-infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context) noexcept{
-infer_result::InferResult object_result = infer_expr(object, inference_context);
-infer_result::InferResult with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context);
-return infer_operand_combine::infer_method_from_object_and_arguments(object_result, with_arguments, method_name, method_span, method_arguments.size(), inference_context.registry);
+infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context, std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)> infer_expr_fn) noexcept{
+infer_result::InferResult object_result = infer_expr_fn(object, inference_context);
+return infer_result_option_method::should_infer_as_result_option_hof(object_result.inferred_type, method_name) ? infer_result_option_method::infer_result_option_hof_method_call(object_result, method_name, method_arguments, method_span, inference_context, infer_expr_fn) : infer_array_method::should_infer_as_array_hof(object_result.inferred_type, method_name) ? infer_array_method::infer_array_hof_method_call(object_result, method_name, method_arguments, method_span, inference_context, infer_expr_fn) : [&]() -> infer_result::InferResult { 
+  infer_result::InferResult with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context);
+  return infer_operand_combine::infer_method_from_object_and_arguments(object_result, with_arguments, method_name, method_span, method_arguments.size(), inference_context.registry);
+ }();
 }
 
 infer_result::InferResult infer_expr_field(std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span field_source_span, check_context::CheckContext inference_context) noexcept{return infer_operand_combine::infer_field_from_object_result(infer_expr(object, inference_context), field_name, field_source_span, inference_context.registry);}
@@ -199,7 +205,7 @@ infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, chec
   [&](const ExprBin& exprbin) -> infer_result::InferResult { auto [operation, left, right, span] = exprbin; return infer_expr_binary(operation, left, right, span, inference_context); },
   [&](const ExprUn& exprun) -> infer_result::InferResult { auto [operation, inner, span] = exprun; return infer_expr_unary(operation, inner, span, inference_context); },
   [&](const ExprCall& exprcall) -> infer_result::InferResult { auto [function, call_arguments, call_source_span] = exprcall; return infer_call::infer_expr_call(function, call_arguments, call_source_span, inference_context, infer_expr); },
-  [&](const ExprMethod& exprmethod) -> infer_result::InferResult { auto [object, method_name, margs, method_span] = exprmethod; return infer_expr_method(object, method_name, margs, method_span, inference_context); },
+  [&](const ExprMethod& exprmethod) -> infer_result::InferResult { auto [object, method_name, margs, method_span] = exprmethod; return infer_expr_method(object, method_name, margs, method_span, inference_context, infer_expr); },
   [&](const ExprField& exprfield) -> infer_result::InferResult { auto [object, field_name, field_source_span] = exprfield; return infer_expr_field(object, field_name, field_source_span, inference_context); },
   [&](const ExprIndex& exprindex) -> infer_result::InferResult { auto [object, index_expression, bracket_source_span] = exprindex; return infer_expr_index(object, index_expression, bracket_source_span, inference_context); },
   [&](const ExprIf& exprif) -> infer_result::InferResult { auto [condition, then_expr, else_expr, _w0] = exprif; return infer_expr_conditional(condition, then_expr, else_expr, inference_context); },

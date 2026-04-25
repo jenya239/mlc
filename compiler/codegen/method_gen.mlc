@@ -2,7 +2,7 @@
 // eval_expr_fn injected to break the import cycle with expr_eval.mlc.
 
 import { SExpr, SStmt, sexpr_type } from "../semantic_ir"
-import { Type, TI32, TString, TBool, TNamed, TShared } from "../checker/registry"
+import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from "../checker/registry"
 import { CodegenContext, context_resolve, context_add_shared } from "./context"
 import { cpp_safe, map_method, map_builtin } from "./cpp_naming"
 import { resolve_object_code_in_self_context, infer_shared_new_type_name,
@@ -93,9 +93,51 @@ fn gen_method_expr_after_object(object_code: string, object_type_name: string, m
     gen_method_builtin(object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
   end
 
+fn gen_result_option_combinator_call(
+  is_option: bool,
+  object_code: string,
+  method_name: string,
+  arguments: [Shared<SExpr>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  eval_expr_fn: EvalExprFn
+) -> string = do
+  const base = if is_option then "mlc::opt::" else "mlc::result::" end
+  const cpp_name = if !is_option && method_name == "ok" then "ok_into_optional" else method_name end
+  const callee = base + cpp_name
+  if arguments.length() == 0 then
+    expression_output.function_call_parentheses(callee, object_code)
+  else
+    expression_output.function_call_parentheses(
+      callee, expression_output.comma_separated_pair(object_code, gen_arg_list(arguments, context, gen_stmts, eval_expr_fn)))
+  end
+end
+
 export fn gen_method_expr(object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: EvalExprFn) -> string = do
-  const object_type_name = object_type_name_for_dispatch(sexpr_type(object))
+  const object_type = sexpr_type(object)
+  const object_type_name = object_type_name_for_dispatch(object_type)
   const object_code = gen_object_code(object, context, gen_stmts, eval_expr_fn)
+  const ro_code = match object_type {
+    TGeneric(gname, _) =>
+      if gname == "Result" then
+        gen_result_option_combinator_call(false, object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+      else if gname == "Option" then
+        gen_result_option_combinator_call(true, object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+      else
+        ""
+      end,
+    TNamed(n) =>
+      if n == "Result" then
+        gen_result_option_combinator_call(false, object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+      else if n == "Option" then
+        gen_result_option_combinator_call(true, object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+      else
+        ""
+      end,
+    _ => ""
+  }
+  if ro_code != "" then ro_code
+  else
   match object {
     SExprIdent(object_name, _, _) =>
       if context.namespace_alias_prefixes.has(object_name) then
@@ -105,4 +147,5 @@ export fn gen_method_expr(object: Shared<SExpr>, method_name: string, arguments:
       end,
     _ => gen_method_expr_after_object(object_code, object_type_name, method_name, arguments, context, gen_stmts, eval_expr_fn)
   }
+  end
 end

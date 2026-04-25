@@ -172,7 +172,9 @@ module MLC
             CppAst::Nodes::IncludeDirective.new(path: "mlc/io/io.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/io/file.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/match.hpp", system: false),
-            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/result.hpp", system: false)
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/result.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/result_combinators.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/optional_combinators.hpp", system: false)
           ]
 
           # Phase 1: emit forward declarations + using aliases for ALL sum types.

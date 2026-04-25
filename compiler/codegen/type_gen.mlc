@@ -6,6 +6,12 @@ import { CodegenContext, CtorTypeInfo, context_resolve, list_contains } from "./
 import { cpp_safe, lower_first, template_prefix } from "./cpp_naming"
 import * as expression_output from "./expr"
 
+fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
+  if type_name == "Map" then "mlc::HashMap"
+  else if type_name == "Shared" then "std::shared_ptr"
+  else context_resolve(context, type_name)
+  end
+
 // Converts a semantic Type (from checker/registry) to a C++ type string.
 export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) -> string =
   match semantic_type {
@@ -17,23 +23,22 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TArray(inner)  => expression_output.cpp_array_type_element(sem_type_to_cpp(context, inner)),
     TShared(inner) => expression_output.cpp_shared_pointer_type(sem_type_to_cpp(context, inner)),
     TNamed(type_name)  => context_resolve(context, type_name),
-    TGeneric(type_name, type_args) => do
-      const safe_name =
-        if type_name == "Map" then "mlc::HashMap"
-        else if type_name == "Shared" then "std::shared_ptr"
-        else context_resolve(context, type_name)
-        end
-      if type_args.length() == 0 then safe_name
+    TPair(left, right) =>
+      "std::pair<" + sem_type_to_cpp(context, left) + ", " + sem_type_to_cpp(context, right) + ">",
+    TGeneric(type_name, type_args) =>
+      if type_name == "Option" && type_args.length() == 1 then
+        "std::optional<" + sem_type_to_cpp(context, type_args[0]) + ">"
+      else if type_args.length() == 0 then cpp_generic_base_name(context, type_name)
       else if type_args.length() == 1 then
-        expression_output.cpp_template_single_type_argument(safe_name, sem_type_to_cpp(context, type_args[0]))
+        expression_output.cpp_template_single_type_argument(
+          cpp_generic_base_name(context, type_name),
+          sem_type_to_cpp(context, type_args[0]))
       else
         expression_output.cpp_template_two_type_arguments(
-          safe_name,
+          cpp_generic_base_name(context, type_name),
           sem_type_to_cpp(context, type_args[0]),
-          sem_type_to_cpp(context, type_args[1])
-        )
-      end
-    end,
+          sem_type_to_cpp(context, type_args[1]))
+      end,
     TFn(param_types, return_type) => do
       let mut parts: [string] = []; let mut i = 0
       while i < param_types.length() do

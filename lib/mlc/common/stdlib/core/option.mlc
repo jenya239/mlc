@@ -43,10 +43,10 @@ export fn and_then<T, U>(opt: Option<T>, f: fn(T) -> Option<U>) -> Option<U> =
     | Some(x) => f(x)
     | None => None
 
-export fn or_else<T>(opt: Option<T>, alternative: Option<T>) -> Option<T> =
+export fn or_else<T>(opt: Option<T>, alternative: () -> Option<T>) -> Option<T> =
   match opt
     | Some(_) => opt
-    | None => alternative
+    | None => alternative()
 
 // Helper for creating Some
 export fn some<T>(value: T) -> Option<T> =
