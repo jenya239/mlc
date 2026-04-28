@@ -104,7 +104,8 @@ ast::Span pat_span(std::shared_ptr<ast::Pat> pattern) noexcept{return std::visit
   [&](const PatCtor& patctor) -> ast::Span { auto [_w0, _w1, source_span] = patctor; return source_span; },
   [&](const PatRecord& patrecord) -> ast::Span { auto [_w0, _w1, source_span] = patrecord; return source_span; },
   [&](const PatTuple& pattuple) -> ast::Span { auto [_w0, source_span] = pattuple; return source_span; },
-  [&](const PatArray& patarray) -> ast::Span { auto [_w0, _w1, source_span] = patarray; return source_span; }
+  [&](const PatArray& patarray) -> ast::Span { auto [_w0, _w1, source_span] = patarray; return source_span; },
+  [&](const PatOr& pator) -> ast::Span { auto [_w0, source_span] = pator; return source_span; }
 }, (*pattern));}
 
 mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept{return p->name;}

@@ -202,9 +202,21 @@ module MLC
                   bind_variable(name, string_type) unless ignored_binding?(name)
                 end
               when :or
-                # For or-patterns, bind variables from the first alternative
-                # All alternatives must have same bindings (verified at semantic level)
-                first_alt = pattern[:alternatives]&.first
+                alternatives = pattern[:alternatives] || []
+                binding_sets = alternatives.map do |alt|
+                  case alt[:kind]
+                  when :constructor
+                    (alt[:bindings] || alt[:fields] || []).reject { |b| b == "_" || b.is_a?(Hash) }.sort
+                  when :var
+                    [alt[:name]]
+                  else
+                    []
+                  end
+                end.uniq
+                if binding_sets.length > 1
+                  raise MLC::CompileError, "or-pattern alternatives must bind the same names (got #{binding_sets.map(&:inspect).join(" vs ")})"
+                end
+                first_alt = alternatives.first
                 bind_pattern_variables(first_alt, scrutinee_type) if first_alt
               when :array
                 # Array pattern: bind variables from element patterns

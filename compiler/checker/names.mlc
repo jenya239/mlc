@@ -48,6 +48,7 @@ fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> 
       end
       if rest != "" && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
     end,
+    PatOr(alts, _) => if alts.length() > 0 then collect_pattern_bindings(alts[0], accumulator) else accumulator end,
     _ => accumulator
   }
 end

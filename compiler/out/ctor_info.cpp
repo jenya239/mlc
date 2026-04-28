@@ -74,7 +74,7 @@ mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> result = {};
 int i = 0;
 while (i < decls.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclExported>((*decls[i]))) { auto _v_declexported = std::get<ast::DeclExported>((*decls[i])); auto [inner] = _v_declexported; return [&]() -> void { if (std::holds_alternative<ast::DeclType>((*ast::decl_inner(inner)))) { auto _v_decltype = std::get<ast::DeclType>((*ast::decl_inner(inner))); auto [_w0, _w1, variants] = _v_decltype; return [&]() { 
+[&]() -> void { if (std::holds_alternative<ast::DeclExported>((*decls[i]))) { auto _v_declexported = std::get<ast::DeclExported>((*decls[i])); auto [inner] = _v_declexported; return [&]() -> void { if (std::holds_alternative<ast::DeclType>((*ast::decl_inner(inner)))) { auto _v_decltype = std::get<ast::DeclType>((*ast::decl_inner(inner))); auto [_w0, _w1, variants, _w2] = _v_decltype; return [&]() { 
   mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos = add_ctor_infos_from_variants(variants);
   int ii = 0;
   return [&]() { 
@@ -85,7 +85,7 @@ ii = ii + 1;
 }
 }
  }();
- }(); } return; }(); } if (std::holds_alternative<ast::DeclType>((*decls[i]))) { auto _v_decltype = std::get<ast::DeclType>((*decls[i])); auto [_w0, _w1, variants] = _v_decltype; return [&]() { 
+ }(); } return; }(); } if (std::holds_alternative<ast::DeclType>((*decls[i]))) { auto _v_decltype = std::get<ast::DeclType>((*decls[i])); auto [_w0, _w1, variants, _w2] = _v_decltype; return [&]() { 
   mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos = add_ctor_infos_from_variants(variants);
   int ii = 0;
   return [&]() { 

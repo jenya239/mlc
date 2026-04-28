@@ -119,7 +119,7 @@ index = index + 1;
   accumulator.push_back(rest);
   return accumulator;
  }() : accumulator;
- }(); } return accumulator; }();
+ }(); } if (std::holds_alternative<ast::PatOr>((*pattern))) { auto _v_pator = std::get<ast::PatOr>((*pattern)); auto [alts, _w0] = _v_pator; return alts.size() > 0 ? collect_pattern_bindings(alts[0], accumulator) : accumulator; } return accumulator; }();
 }
 
 mlc::Array<ast::Diagnostic> check_names_identifier(mlc::String name, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals, ast::Span source_span) noexcept{

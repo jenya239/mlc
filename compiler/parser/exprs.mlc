@@ -261,6 +261,21 @@ fn parse_pattern_boolean(parser: Parser, value: bool) -> PatResult =
 fn parse_pattern_fallback_wildcard(parser: Parser) -> PatResult =
   PatResult { pat: Shared.new(PatWild(parser.span_at_cursor())), parser: parser.advance() }
 
+fn parse_or_pat(parser: Parser) -> PatResult = do
+  const first = parse_pat(parser)
+  const span = parser.span_at_cursor()
+  const alts: [Shared<Pat>] = [first.pat]
+  let mut state = first.parser
+  while state.kind().is_bar() && !state.advance().at_eof() && !state.advance().kind().is_fat_arrow() do
+    const next = parse_pat(state.advance())
+    alts.push(next.pat)
+    state = next.parser
+  end
+  if alts.length() == 1 then first
+  else PatResult { pat: Shared.new(PatOr(alts, span)), parser: state }
+  end
+end
+
 fn parse_pat(parser: Parser) -> PatResult = do
   const kind = parser.kind()
   if kind.is_ident() then parse_pattern_identifier_branch(parser, kind.ident())
@@ -822,7 +837,7 @@ fn parse_arms_brace(parser: Parser) -> ArmsResult = do
   let mut state = parser
   while !state.kind().is_rbrace() && !state.at_eof() do
     if state.kind().is_bar() then state = state.advance() end
-    const pat_result  = parse_pat(state)
+    const pat_result  = parse_or_pat(state)
     const body_result = parse_expr(pat_result.parser.advance())
     arms.push(Shared.new(MatchArm { pat: pat_result.pat, body: body_result.expr }))
     state = body_result.parser
@@ -835,7 +850,7 @@ fn parse_arms_pipe(parser: Parser) -> ArmsResult = do
   const arms: [Shared<MatchArm>] = []
   let mut state = parser
   while state.kind().is_bar() do
-    const pat_result  = parse_pat(state.advance())
+    const pat_result  = parse_or_pat(state.advance())
     const body_result = parse_expr(pat_result.parser.advance())
     arms.push(Shared.new(MatchArm { pat: pat_result.pat, body: body_result.expr }))
     state = body_result.parser

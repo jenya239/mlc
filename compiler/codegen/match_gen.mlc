@@ -73,6 +73,24 @@ fn gen_arm_record_pattern(
     eval_expr_fn(arm_body, context, gen_stmts))
 end
 
+fn expand_or_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] = do
+  let result: [Shared<SMatchArm>] = []; let mut i = 0
+  while i < arms.length() do
+    match arms[i].pat {
+      PatOr(alts, _) => do
+        let mut j = 0
+        while j < alts.length() do
+          result.push(Shared.new(SMatchArm { pat: alts[j], body: arms[i].body }))
+          j = j + 1
+        end
+      end,
+      _ => result.push(arms[i])
+    }
+    i = i + 1
+  end
+  result
+end
+
 export fn gen_arm(
   arm: Shared<SMatchArm>,
   context: CodegenContext,
@@ -89,7 +107,8 @@ export fn gen_arm(
     PatCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_fn),
     PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts, eval_expr_fn),
     PatTuple(_, _)                     => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
-    PatArray(_, _, _)                  => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+    PatArray(_, _, _)                  => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
+    PatOr(_, _)                        => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
   }
 
 export fn gen_match(
@@ -98,13 +117,14 @@ export fn gen_match(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
+  const expanded = expand_or_arms(arms)
   let parts: [string] = []; let mut index = 0
-  while index < arms.length() do
-    parts.push(gen_arm(arms[index], context, gen_stmts, eval_expr_fn))
+  while index < expanded.length() do
+    parts.push(gen_arm(expanded[index], context, gen_stmts, eval_expr_fn))
     index = index + 1
   end
   const subject_code = eval_expr_fn(subject, context, gen_stmts)
-  const needs_deref = if arms.length() > 0 then first_arm_needs_deref(arms[0], subject, context) else true end
+  const needs_deref = if expanded.length() > 0 then first_arm_needs_deref(expanded[0], subject, context) else true end
   expression_output.std_visit_match_expression(
     parts.join(",\n"),
     expression_output.visit_subject_for_match(subject_code, needs_deref))

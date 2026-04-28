@@ -219,7 +219,7 @@ registry.function_trait_bounds.set(name, trait_bounds);
 }
   return registry;
  }(); },
-  [&](const DeclType& decltype_) -> registry::TypeRegistry { auto [type_name, type_parameters, variants] = decltype_; return [&]() -> registry::TypeRegistry { 
+  [&](const DeclType& decltype_) -> registry::TypeRegistry { auto [type_name, type_parameters, variants, _w0] = decltype_; return [&]() -> registry::TypeRegistry { 
   registry.algebraic_decl_type_parameter_names.set(type_name, type_parameters);
   int i = 0;
   while (i < variants.size()){

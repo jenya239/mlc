@@ -34,7 +34,7 @@ sub_index = sub_index + 1;
 }
 }
   return current_environment;
- }(); } return type_environment; }();
+ }(); } if (std::holds_alternative<ast::PatOr>((*pattern))) { auto _v_pator = std::get<ast::PatOr>((*pattern)); auto [alts, _w0] = _v_pator; return alts.size() > 0 ? env_for_pattern(type_environment, alts[0], registry) : type_environment; } return type_environment; }();
 }
 
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> env_for_pattern_with_type(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, std::shared_ptr<ast::Pat> pattern, std::shared_ptr<registry::Type> type_value, registry::TypeRegistry registry) noexcept{
@@ -42,7 +42,7 @@ return [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { if 
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> environment = type_environment;
   environment.set(binding_name, type_value);
   return environment;
- }(); } return env_for_pattern(type_environment, pattern, registry); }();
+ }(); } if (std::holds_alternative<ast::PatOr>((*pattern))) { auto _v_pator = std::get<ast::PatOr>((*pattern)); auto [alts, _w0] = _v_pator; return alts.size() > 0 ? env_for_pattern_with_type(type_environment, alts[0], type_value, registry) : type_environment; } return env_for_pattern(type_environment, pattern, registry); }();
 }
 
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> env_for_pattern_substituted(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, std::shared_ptr<ast::Pat> pattern, registry::TypeRegistry registry, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
@@ -63,7 +63,7 @@ sub_index = sub_index + 1;
 }
 }
   return current_environment;
- }(); } return type_environment; }();
+ }(); } if (std::holds_alternative<ast::PatOr>((*pattern))) { auto _v_pator = std::get<ast::PatOr>((*pattern)); auto [alts, _w0] = _v_pator; return alts.size() > 0 ? env_for_pattern_substituted(type_environment, alts[0], registry, substitution) : type_environment; } return type_environment; }();
 }
 
 } // namespace pattern_env

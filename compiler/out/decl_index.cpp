@@ -29,7 +29,7 @@ mlc::Array<mlc::String> names = {};
   [&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*d))) { auto _v_declfn = std::get<ast::DeclFn>((*d)); auto [name, _w0, _w1, _w2, _w3, _w4] = _v_declfn; return [&]() -> std::tuple<> { 
   names.push_back(name);
   return std::make_tuple();
- }(); } if (std::holds_alternative<ast::DeclType>((*d))) { auto _v_decltype = std::get<ast::DeclType>((*d)); auto [type_name, _w0, variants] = _v_decltype; return [&]() -> std::tuple<> { 
+ }(); } if (std::holds_alternative<ast::DeclType>((*d))) { auto _v_decltype = std::get<ast::DeclType>((*d)); auto [type_name, _w0, variants, _w1] = _v_decltype; return [&]() -> std::tuple<> { 
   names.push_back(type_name);
   int variant_index = 0;
   while (variant_index < variants.size()){

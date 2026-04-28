@@ -47,6 +47,38 @@ mlc::String gen_type_decl_body(context::CodegenContext context, mlc::String type
 
 mlc::String gen_type_decl(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 
+mlc::String derive_field_display(mlc::String field_name, std::shared_ptr<ast::TypeExpr> field_type) noexcept;
+
+mlc::String derive_display_record_fields(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept;
+
+mlc::String derive_display_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept;
+
+mlc::String derive_display_variant_case(std::shared_ptr<ast::TypeVariant> variant) noexcept;
+
+mlc::String derive_display_variant_record(mlc::String name, mlc::Array<std::shared_ptr<ast::FieldDef>> fds) noexcept;
+
+mlc::String derive_display_sum(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
+mlc::String derive_eq_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept;
+
+mlc::String derive_eq_sum(mlc::String type_name) noexcept;
+
+mlc::String derive_ord_build_cond(mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept;
+
+mlc::String derive_ord_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept;
+
+mlc::String derive_ord_sum(mlc::String type_name) noexcept;
+
+bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
+mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_defs(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
+mlc::String gen_derive_record_trait(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String trait_name) noexcept;
+
+mlc::String gen_derive_sum_trait(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String trait_name) noexcept;
+
+mlc::String gen_derive_methods(context::CodegenContext context, mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_traits) noexcept;
+
 mlc::String gen_type_decl_fwd_only(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 
 mlc::String gen_type_decl_body_only(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
@@ -268,6 +300,128 @@ mlc::String gen_type_decl_fwd(context::CodegenContext context, mlc::String type_
 mlc::String gen_type_decl_body(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants.size() == 1 ? cpp_naming::template_prefix(type_params) + gen_single_variant(context, type_name, variants[0]) : gen_adt_defs(context, type_name, type_params, variants);}
 
 mlc::String gen_type_decl(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return gen_type_decl_fwd(context, type_name, type_params, variants) + gen_type_decl_body(context, type_name, type_params, variants);}
+
+mlc::String derive_field_display(mlc::String field_name, std::shared_ptr<ast::TypeExpr> field_type) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::TyString>((*field_type))) {  return mlc::String("self.") + field_name; } return mlc::String("mlc::to_string(self.") + field_name + mlc::String(")"); }();}
+
+mlc::String derive_display_record_fields(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
+mlc::String body = mlc::String("mlc::String(\"") + type_name + mlc::String(" { ") + field_defs[0]->name + mlc::String(": \") + ") + derive_field_display(field_defs[0]->name, field_defs[0]->typ);
+int i = 1;
+while (i < field_defs.size()){
+{
+body = body + mlc::String(" + mlc::String(\", ") + field_defs[i]->name + mlc::String(": \") + ") + derive_field_display(field_defs[i]->name, field_defs[i]->typ);
+i = i + 1;
+}
+}
+return body + mlc::String(" + mlc::String(\" }\")");
+}
+
+mlc::String derive_display_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
+mlc::String sig = mlc::String("mlc::String ") + type_name + mlc::String("_to_string(const ") + type_name + mlc::String("& self) noexcept");
+return field_defs.size() == 0 ? sig + mlc::String(" { return mlc::String(\"") + type_name + mlc::String(" {}\"); }\n") : sig + mlc::String(" {\n  return ") + derive_display_record_fields(type_name, field_defs) + mlc::String(";\n}\n");
+}
+
+mlc::String derive_display_variant_case(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
+  [&](const VarUnit& varunit) -> mlc::String { auto [name] = varunit; return mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("\");\n"); },
+  [&](const VarTuple& vartuple) -> mlc::String { auto [name, field_types] = vartuple; return field_types.size() == 0 ? mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("\");\n") : mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("(\") + mlc::to_string(std::get<") + name + mlc::String(">(self._)._0) + mlc::String(\")\");\n"); },
+  [&](const VarRecord& varrecord) -> mlc::String { auto [name, fds] = varrecord; return derive_display_variant_record(name, fds); }
+}, (*variant));}
+
+mlc::String derive_display_variant_record(mlc::String name, mlc::Array<std::shared_ptr<ast::FieldDef>> fds) noexcept{
+return fds.size() == 0 ? mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("\");\n") : [&]() -> mlc::String { 
+  mlc::String parts = mlc::String("mlc::to_string(std::get<") + name + mlc::String(">(self._).") + fds[0]->name + mlc::String(")");
+  int fi = 1;
+  while (fi < fds.size()){
+{
+parts = parts + mlc::String(" + mlc::String(\", \") + mlc::to_string(std::get<") + name + mlc::String(">(self._).") + fds[fi]->name + mlc::String(")");
+fi = fi + 1;
+}
+}
+  return mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("(\") + ") + parts + mlc::String(" + mlc::String(\")\");\n");
+ }();
+}
+
+mlc::String derive_display_sum(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+mlc::String cases = mlc::String("");
+int i = 0;
+while (i < variants.size()){
+{
+cases = cases + derive_display_variant_case(variants[i]);
+i = i + 1;
+}
+}
+return mlc::String("mlc::String ") + type_name + mlc::String("_to_string(const ") + type_name + mlc::String("& self) noexcept {\n") + cases + mlc::String("  return mlc::String(\"\");\n}\n");
+}
+
+mlc::String derive_eq_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
+mlc::String sig = mlc::String("bool operator==(const ") + type_name + mlc::String("& a, const ") + type_name + mlc::String("& b) noexcept");
+return field_defs.size() == 0 ? sig + mlc::String(" { return true; }\n") : [&]() -> mlc::String { 
+  mlc::String cond = mlc::String("a.") + field_defs[0]->name + mlc::String(" == b.") + field_defs[0]->name;
+  int i = 1;
+  while (i < field_defs.size()){
+{
+cond = cond + mlc::String(" && a.") + field_defs[i]->name + mlc::String(" == b.") + field_defs[i]->name;
+i = i + 1;
+}
+}
+  return sig + mlc::String(" { return ") + cond + mlc::String("; }\n");
+ }();
+}
+
+mlc::String derive_eq_sum(mlc::String type_name) noexcept{return mlc::String("bool operator==(const ") + type_name + mlc::String("& a, const ") + type_name + mlc::String("& b) noexcept { return a._ == b._; }\n");}
+
+mlc::String derive_ord_build_cond(mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
+mlc::String cond = mlc::String("a.") + field_defs[0]->name + mlc::String(" < b.") + field_defs[0]->name;
+int i = 1;
+while (i < field_defs.size()){
+{
+mlc::String prev_eq = mlc::String("a.") + field_defs[0]->name + mlc::String(" == b.") + field_defs[0]->name;
+int j = 1;
+while (j < i){
+{
+prev_eq = prev_eq + mlc::String(" && a.") + field_defs[j]->name + mlc::String(" == b.") + field_defs[j]->name;
+j = j + 1;
+}
+}
+cond = cond + mlc::String(" || (") + prev_eq + mlc::String(" && a.") + field_defs[i]->name + mlc::String(" < b.") + field_defs[i]->name + mlc::String(")");
+i = i + 1;
+}
+}
+return cond;
+}
+
+mlc::String derive_ord_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
+mlc::String sig = mlc::String("bool operator<(const ") + type_name + mlc::String("& a, const ") + type_name + mlc::String("& b) noexcept");
+return field_defs.size() == 0 ? sig + mlc::String(" { return false; }\n") : sig + mlc::String(" { return ") + derive_ord_build_cond(field_defs) + mlc::String("; }\n");
+}
+
+mlc::String derive_ord_sum(mlc::String type_name) noexcept{return mlc::String("bool operator<(const ") + type_name + mlc::String("& a, const ") + type_name + mlc::String("& b) noexcept { return a._ < b._; }\n");}
+
+bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants.size() != 1 ? false : [&]() { if (std::holds_alternative<ast::VarRecord>((*variants[0]))) { auto _v_varrecord = std::get<ast::VarRecord>((*variants[0])); auto [_w0, _w1] = _v_varrecord; return true; } return false; }();}
+
+mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_defs(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return [&]() -> mlc::Array<std::shared_ptr<ast::FieldDef>> { if (std::holds_alternative<ast::VarRecord>((*variants[0]))) { auto _v_varrecord = std::get<ast::VarRecord>((*variants[0])); auto [_w0, fds] = _v_varrecord; return fds; } return {}; }();}
+
+mlc::String gen_derive_record_trait(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String trait_name) noexcept{
+mlc::Array<std::shared_ptr<ast::FieldDef>> fds = derive_record_field_defs(variants);
+return trait_name == mlc::String("Display") ? derive_display_record(type_name, fds) : trait_name == mlc::String("Eq") ? derive_eq_record(type_name, fds) : trait_name == mlc::String("Ord") ? derive_ord_record(type_name, fds) : mlc::String("");
+}
+
+mlc::String gen_derive_sum_trait(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String trait_name) noexcept{return trait_name == mlc::String("Display") ? derive_display_sum(type_name, variants) : trait_name == mlc::String("Eq") ? derive_eq_sum(type_name) : trait_name == mlc::String("Ord") ? derive_ord_sum(type_name) : mlc::String("");}
+
+mlc::String gen_derive_methods(context::CodegenContext context, mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_traits) noexcept{
+return derive_traits.size() == 0 ? mlc::String("") : [&]() -> mlc::String { 
+  bool is_record = variants_is_single_record(variants);
+  mlc::String result = mlc::String("");
+  int i = 0;
+  while (i < derive_traits.size()){
+{
+mlc::String trait_code = is_record ? gen_derive_record_trait(type_name, variants, derive_traits[i]) : gen_derive_sum_trait(type_name, variants, derive_traits[i]);
+result = result + trait_code;
+i = i + 1;
+}
+}
+  return result;
+ }();
+}
 
 mlc::String gen_type_decl_fwd_only(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return gen_type_decl_fwd(context, type_name, type_params, variants);}
 

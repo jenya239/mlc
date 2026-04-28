@@ -15,6 +15,7 @@ export fn env_for_pattern(type_environment: Map<string, Shared<Type>>, pattern: 
       end
       current_environment
     end,
+    PatOr(alts, _) => if alts.length() > 0 then env_for_pattern(type_environment, alts[0], registry) else type_environment end,
     _ => type_environment
   }
 end
@@ -22,6 +23,7 @@ end
 export fn env_for_pattern_with_type(type_environment: Map<string, Shared<Type>>, pattern: Shared<Pat>, type_value: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
   match pattern {
     PatIdent(binding_name, _) => do let environment = type_environment; environment.set(binding_name, type_value); environment end,
+    PatOr(alts, _) => if alts.length() > 0 then env_for_pattern_with_type(type_environment, alts[0], type_value, registry) else type_environment end,
     _ => env_for_pattern(type_environment, pattern, registry)
   }
 end
@@ -40,6 +42,7 @@ export fn env_for_pattern_substituted(type_environment: Map<string, Shared<Type>
       end
       current_environment
     end,
+    PatOr(alts, _) => if alts.length() > 0 then env_for_pattern_substituted(type_environment, alts[0], registry, substitution) else type_environment end,
     _ => type_environment
   }
 end

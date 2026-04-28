@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from "./test_runner"
 import { tokenize } from "../lexer"
 import { parse_program } from "../parser/decls"
-import { Decl, DeclFn, DeclType, DeclExtend, DeclImport, Expr, ExprStr, ExprBin, ExprMethod } from "../ast"
+import { Decl, DeclFn, DeclType, DeclExtend, DeclImport, Expr, ExprStr, ExprBin, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor } from "../ast"
 import { parse_expr } from "../parser/exprs"
 import { parser_new } from "../parser/preds"
 
@@ -106,6 +106,55 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_true("import single name in braces",
     match first_decl("import { only } from \"./one.mlc\"") {
       DeclImport(path, symbols) => path == "./one.mlc" && symbols.length() == 1 && symbols[0] == "only",
+      _ => false
+    }))
+
+  // Or-pattern tests (B2)
+  results.push(assert_true("or-pattern brace-style: PatOr produced",
+    match parse_expr_source("match x { A(r) | B(r) => r }") {
+      ExprMatch(_, arms, _) =>
+        if arms.length() == 1 then
+          match arms[0].pat {
+            PatOr(alts, _) => alts.length() == 2,
+            _ => false
+          }
+        else false end,
+      _ => false
+    }))
+
+  results.push(assert_true("or-pattern pipe-style: PatOr produced",
+    match parse_expr_source("match x | A(r) | B(r) => r end") {
+      ExprMatch(_, arms, _) =>
+        if arms.length() == 1 then
+          match arms[0].pat {
+            PatOr(alts, _) => alts.length() == 2,
+            _ => false
+          }
+        else false end,
+      _ => false
+    }))
+
+  results.push(assert_true("unit or-pattern: PatOr produced",
+    match parse_expr_source("match x { Red | Green => 1, Blue => 2 }") {
+      ExprMatch(_, arms, _) =>
+        if arms.length() == 2 then
+          match arms[0].pat {
+            PatOr(alts, _) => alts.length() == 2,
+            _ => false
+          }
+        else false end,
+      _ => false
+    }))
+
+  results.push(assert_true("single pattern: no PatOr",
+    match parse_expr_source("match x { A(r) => r }") {
+      ExprMatch(_, arms, _) =>
+        if arms.length() == 1 then
+          match arms[0].pat {
+            PatCtor(name, _, _) => name == "A",
+            _ => false
+          }
+        else false end,
       _ => false
     }))
 

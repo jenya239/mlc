@@ -142,7 +142,7 @@ std::visit(overloaded{
   names.set(name, true);
   return std::make_tuple();
  }(); },
-  [&](const DeclType& decltype_) -> std::tuple<> { auto [name, _w0, variants] = decltype_; return [&]() -> std::tuple<> { 
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [name, _w0, variants, _w1] = decltype_; return [&]() -> std::tuple<> { 
   names.set(name, true);
   int variant_index = 0;
   while (variant_index < variants.size()){
@@ -252,7 +252,7 @@ parameter_index = parameter_index + 1;
   all_diagnostics = ast::diagnostics_append(ast::diagnostics_append(all_diagnostics, inference_result.errors), return_type_errors);
   return std::make_tuple();
  }(); },
-  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1, _w2] = decltype_; return std::make_tuple(); },
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1, _w2, _w3] = decltype_; return std::make_tuple(); },
   [&](const DeclTrait& decltrait) -> std::tuple<> { auto [_w0, _w1, _w2] = decltrait; return std::make_tuple(); },
   [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1, _w2] = declextend; return std::make_tuple(); },
   [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },

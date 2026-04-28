@@ -99,6 +99,38 @@ class OrPatternsTest < Minitest::Test
     assert_includes cpp, "std::holds_alternative<Failed>"
   end
 
+  def test_or_pattern_with_payload_bindings
+    source = <<~MLC
+      type Shape = Circle(i32) | Square(i32) | Triangle(i32, i32)
+
+      fn side(s: Shape) -> i32 =
+        match s {
+          Circle(r) | Square(r) => r,
+          _ => 0
+        }
+    MLC
+
+    cpp = MLC.to_cpp(source)
+    assert_includes cpp, "std::holds_alternative<Circle>"
+    assert_includes cpp, "std::holds_alternative<Square>"
+    # Both branches bind r and return it
+    assert_includes cpp, "return"
+  end
+
+  def test_or_pattern_payload_binding_mismatch_raises
+    source = <<~MLC
+      type Shape = Circle(i32) | Square(i32)
+
+      fn bad(s: Shape) -> i32 =
+        match s {
+          Circle(r) | Square(x) => 0
+        }
+    MLC
+
+    err = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
+    assert_match(/or-pattern/i, err.message)
+  end
+
   def test_simple_pattern_without_or
     source = <<~MLC
       type Option<T> = Some(T) | None

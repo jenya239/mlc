@@ -712,23 +712,43 @@ module MLC
             def build_or_pattern_arm(pattern, guard, body_src, scrutinee_src, scrutinee_type = nil)
               alternatives = pattern[:alternatives] || []
 
-              conditions = alternatives.map do |alt|
-                build_pattern_condition(alt, scrutinee_src, scrutinee_type)
+              has_payload = alternatives.any? do |alt|
+                alt[:kind] == :constructor && (alt[:bindings] || alt[:fields] || []).reject { |b| b == "_" }.any?
               end
 
-              or_condition = conditions.join(" || ")
-
-              if guard
-                guard_expr = context.lower_expression(guard)
-                guard_src = guard_expr.to_source
-                inner_body = "if (#{guard_src}) { return #{body_src}; }"
-              else
-                inner_body = "return #{body_src};"
+              unless has_payload
+                conditions = alternatives.map do |alt|
+                  build_pattern_condition(alt, scrutinee_src, scrutinee_type)
+                end
+                or_condition = conditions.join(" || ")
+                inner_body = if guard
+                               guard_src = context.lower_expression(guard).to_source
+                               "if (#{guard_src}) { return #{body_src}; }"
+                             else
+                               "return #{body_src};"
+                             end
+                return context.factory.raw_statement(code: "if (#{or_condition}) { #{inner_body} }")
               end
 
-              context.factory.raw_statement(
-                code: "if (#{or_condition}) { #{inner_body} }"
-              )
+              inner_return = if guard
+                               guard_src = context.lower_expression(guard).to_source
+                               "if (#{guard_src}) { return #{body_src}; }"
+                             else
+                               "return #{body_src};"
+                             end
+
+              branches = alternatives.map.with_index do |alt, idx|
+                case_name = alt[:name]
+                bindings = alt[:bindings] || alt[:fields] || []
+                qcase = qualified_case_name(case_name, scrutinee_type)
+                holds_check = "std::holds_alternative<#{qcase}>(#{scrutinee_src})"
+                binding_decls, _nested = build_binding_extractions(case_name, bindings, scrutinee_src, scrutinee_type)
+                binding_str = binding_decls.join(" ")
+                prefix = idx == 0 ? "if" : "} else if"
+                "#{prefix} (#{holds_check}) { #{binding_str} #{inner_return}"
+              end
+
+              context.factory.raw_statement(code: branches.join(" ") + " }")
             end
 
             # Build if statement for array pattern with optional guard

@@ -75,7 +75,7 @@ int i = 0;
 while (i < decls.size()){
 {
 std::shared_ptr<ast::Decl> inner_decl = ast::decl_inner(decls[i]);
-[&]() -> void { if (std::holds_alternative<ast::DeclType>((*inner_decl))) { auto _v_decltype = std::get<ast::DeclType>((*inner_decl)); auto [_w0, type_params, variants] = _v_decltype; return [&]() { 
+[&]() -> void { if (std::holds_alternative<ast::DeclType>((*inner_decl))) { auto _v_decltype = std::get<ast::DeclType>((*inner_decl)); auto [_w0, type_params, variants, _w1] = _v_decltype; return [&]() { 
   int vi = 0;
   return [&]() { 
   while (vi < variants.size()){
@@ -112,7 +112,7 @@ int i = 0;
 while (i < decls.size()){
 {
 std::shared_ptr<ast::Decl> inner_decl = ast::decl_inner(decls[i]);
-[&]() -> void { if (std::holds_alternative<ast::DeclType>((*inner_decl))) { auto _v_decltype = std::get<ast::DeclType>((*inner_decl)); auto [type_name, _w0, variants] = _v_decltype; return [&]() { 
+[&]() -> void { if (std::holds_alternative<ast::DeclType>((*inner_decl))) { auto _v_decltype = std::get<ast::DeclType>((*inner_decl)); auto [type_name, _w0, variants, _w1] = _v_decltype; return [&]() { 
   int vi = 0;
   return [&]() { 
   while (vi < variants.size()){
@@ -140,7 +140,7 @@ while (i < prog.decls.size()){
 {
 std::visit(overloaded{
   [&](const DeclExported& declexported) -> void { auto [inner] = declexported; return std::visit(overloaded{
-  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants] = decltype_; return [&]() { 
+  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1] = decltype_; return [&]() { 
   int vi = 0;
   return [&]() { 
   while (vi < variants.size()){
@@ -177,7 +177,7 @@ vi = vi + 1;
   [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; return ; },
   [&](const DeclExported& declexported) -> void { auto [_w0] = declexported; return ; }
 }, (*ast::decl_inner(inner))); },
-  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants] = decltype_; return [&]() { 
+  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1] = decltype_; return [&]() { 
   int vi = 0;
   return [&]() { 
   while (vi < variants.size()){

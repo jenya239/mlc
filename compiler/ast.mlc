@@ -67,6 +67,7 @@ export type Pat =
   | PatRecord(string, [Shared<Pat>], Span)
   | PatTuple([Shared<Pat>], Span)
   | PatArray([Shared<Pat>], string, Span)
+  | PatOr([Shared<Pat>], Span)
 
 export type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
 export type MatchArm = MatchArm { pat: Shared<Pat>, body: Shared<Expr> }
@@ -152,6 +153,7 @@ export fn pat_span(pattern: Shared<Pat>) -> Span =
     PatRecord(_, _, source_span)            => source_span,
     PatTuple(_, source_span)                => source_span,
     PatArray(_, _, source_span)             => source_span,
+    PatOr(_, source_span)                   => source_span,
   }
 
 export type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr>, has_default: bool, default: Shared<Expr> }

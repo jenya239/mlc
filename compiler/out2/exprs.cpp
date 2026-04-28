@@ -47,6 +47,8 @@ preds::PatResult parse_pattern_boolean(preds::Parser parser, bool value) noexcep
 
 preds::PatResult parse_pattern_fallback_wildcard(preds::Parser parser) noexcept;
 
+preds::PatResult parse_or_pat(preds::Parser parser) noexcept;
+
 preds::PatResult parse_pat(preds::Parser parser) noexcept;
 
 preds::PatsResult parse_pat_args(preds::Parser parser) noexcept;
@@ -328,6 +330,21 @@ preds::PatResult parse_pattern_string(preds::Parser parser, mlc::String value) n
 preds::PatResult parse_pattern_boolean(preds::Parser parser, bool value) noexcept{return preds::PatResult{std::make_shared<ast::Pat>(ast::PatBool(value, preds::Parser_span_at_cursor(parser))), preds::Parser_advance(parser)};}
 
 preds::PatResult parse_pattern_fallback_wildcard(preds::Parser parser) noexcept{return preds::PatResult{std::make_shared<ast::Pat>(ast::PatWild(preds::Parser_span_at_cursor(parser))), preds::Parser_advance(parser)};}
+
+preds::PatResult parse_or_pat(preds::Parser parser) noexcept{
+preds::PatResult first = parse_pat(parser);
+ast::Span span = preds::Parser_span_at_cursor(parser);
+mlc::Array<std::shared_ptr<ast::Pat>> alts = mlc::Array<std::shared_ptr<ast::Pat>>{first.pat};
+preds::Parser state = first.parser;
+while (preds::TKind_is_bar(preds::Parser_kind(state)) && !preds::Parser_at_eof(preds::Parser_advance(state)) && !preds::TKind_is_fat_arrow(preds::Parser_kind(preds::Parser_advance(state)))){
+{
+preds::PatResult next = parse_pat(preds::Parser_advance(state));
+alts.push_back(next.pat);
+state = next.parser;
+}
+}
+return alts.size() == 1 ? first : preds::PatResult{std::make_shared<ast::Pat>(ast::PatOr(alts, span)), state};
+}
 
 preds::PatResult parse_pat(preds::Parser parser) noexcept{
 ast_tokens::TKind kind = preds::Parser_kind(parser);
@@ -876,7 +893,7 @@ if (preds::TKind_is_bar(preds::Parser_kind(state))){
 state = preds::Parser_advance(state);
 }
 }
-preds::PatResult pat_result = parse_pat(state);
+preds::PatResult pat_result = parse_or_pat(state);
 preds::ExprResult body_result = parse_expr(preds::Parser_advance(pat_result.parser));
 arms.push_back(std::make_shared<ast::MatchArm>(ast::MatchArm{pat_result.pat, body_result.expr}));
 state = body_result.parser;
@@ -895,7 +912,7 @@ mlc::Array<std::shared_ptr<ast::MatchArm>> arms = {};
 preds::Parser state = std::move(parser);
 while (preds::TKind_is_bar(preds::Parser_kind(state))){
 {
-preds::PatResult pat_result = parse_pat(preds::Parser_advance(state));
+preds::PatResult pat_result = parse_or_pat(preds::Parser_advance(state));
 preds::ExprResult body_result = parse_expr(preds::Parser_advance(pat_result.parser));
 arms.push_back(std::make_shared<ast::MatchArm>(ast::MatchArm{pat_result.pat, body_result.expr}));
 state = body_result.parser;
