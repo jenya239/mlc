@@ -154,7 +154,7 @@ export fn pat_span(pattern: Shared<Pat>) -> Span =
     PatArray(_, _, source_span)             => source_span,
   }
 
-export type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr> }
+export type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr>, has_default: bool, default: Shared<Expr> }
 export type FieldDef = FieldDef { name: string, typ: Shared<TypeExpr> }
 
 export type TypeVariant =
@@ -164,7 +164,7 @@ export type TypeVariant =
 
 export type Decl =
   | DeclFn(string, [string], [[string]], [Shared<Param>], Shared<TypeExpr>, Shared<Expr>)
-  | DeclType(string, [string], [Shared<TypeVariant>])
+  | DeclType(string, [string], [Shared<TypeVariant>], [string])
   | DeclTrait(string, [string], [Shared<Decl>])
   | DeclExtend(string, string, [Shared<Decl>])
   | DeclImport(string, [string])
@@ -180,7 +180,7 @@ export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
   match unwrapped {
     DeclExported(inner) => inner,
     DeclFn(_, _, _, _, _, _) => decl,
-    DeclType(_, _, _) => decl,
+    DeclType(_, _, _, _) => decl,
     DeclTrait(_, _, _) => decl,
     DeclExtend(_, _, _) => decl,
     DeclImport(_, _) => decl
@@ -191,7 +191,7 @@ export fn decl_name(decl: Shared<Decl>) -> string = do
   const unwrapped: Shared<Decl> = decl
   match unwrapped {
     DeclFn(name, _, _, _, _, _) => name,
-    DeclType(name, _, _) => name,
+    DeclType(name, _, _, _) => name,
     DeclTrait(name, _, _) => name,
     DeclExtend(type_name, _, _) => type_name,
     DeclImport(_, _) => "",

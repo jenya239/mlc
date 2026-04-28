@@ -22,8 +22,8 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       const typed_body       = transform_expr(body, initial_context, (stmts: [Shared<Stmt>], ctx: TransformContext) => transform_stmts(stmts, ctx))
       Shared.new(SDeclFn(name, type_params, trait_bounds, params, return_type, typed_body))
     end,
-    DeclType(type_name, type_params, variants) =>
-      Shared.new(SDeclType(type_name, type_params, variants)),
+    DeclType(type_name, type_params, variants, derive_traits) =>
+      Shared.new(SDeclType(type_name, type_params, variants, derive_traits)),
     DeclTrait(trait_name, type_params, methods) => do
       const typed_methods = transform_decls(methods, registry)
       Shared.new(SDeclTrait(trait_name, type_params, typed_methods))

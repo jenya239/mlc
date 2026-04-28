@@ -208,9 +208,20 @@ module MLC
               expected = info.param_types || []
               return if expected.empty?
 
-              type_error("Function '#{name}' expects #{expected.length} argument(s), got #{args.length}") if expected.length != args.length
+              req = if info.respond_to?(:required_arity) && !info.required_arity.nil?
+                      info.required_arity
+                    else
+                      expected.length
+                    end
+              max = expected.length
+              if args.length < req || args.length > max
+                type_error(
+                  "Function '#{name}' expects between #{req} and #{max} argument(s), got #{args.length}"
+                )
+              end
 
-              expected.each_with_index do |type, index|
+              args.length.times do |index|
+                type = expected[index]
                 arg_expr = args[index]
                 ensure_compatible_type(arg_expr.type, type, "argument #{index + 1} of '#{name}'", node: arg_expr)
                 # Don't propagate ref types back to the argument expression

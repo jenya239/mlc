@@ -1,7 +1,7 @@
 // Builder functions for constructing AST nodes in tests.
 // Eliminates Shared.new(...) verbosity and makes test intent clear.
 
-import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown } from "../ast"
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown, ExprUnit } from "../ast"
 
 // --- Program ------------------------------------------------------------------
 
@@ -120,7 +120,7 @@ export fn return_statement(value_expr: Shared<Expr>) -> Shared<Stmt> =
 // --- Param builder -----------------------------------------------------------
 
 export fn value_param(parameter_name: string, parameter_type: Shared<TypeExpr>) -> Shared<Param> =
-  Shared.new(Param { name: parameter_name, is_mut: false, typ: parameter_type })
+  Shared.new(Param { name: parameter_name, is_mut: false, typ: parameter_type, has_default: false, default: Shared.new(ExprUnit(span_unknown())) })
 
 // --- Declaration builders ----------------------------------------------------
 
@@ -128,7 +128,7 @@ export fn function_decl(function_name: string, parameters: [Shared<Param>], retu
   Shared.new(DeclFn(function_name, [], [], parameters, return_type, body_expr))
 
 export fn type_decl(type_name: string, variants: [Shared<TypeVariant>]) -> Shared<Decl> =
-  Shared.new(DeclType(type_name, [], variants))
+  Shared.new(DeclType(type_name, [], variants, []))
 
 export fn exported_decl(inner_decl: Shared<Decl>) -> Shared<Decl> =
   Shared.new(DeclExported(inner_decl))

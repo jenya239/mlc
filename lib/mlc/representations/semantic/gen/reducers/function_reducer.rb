@@ -70,10 +70,50 @@ module MLC
                 )
               end
 
+              if func_decl.external && func_decl.params.any? { |p| p.default }
+                @type_checker.type_error("extern function cannot have default parameter values", node: func_decl)
+              end
+
+              if func_decl.type_params&.any? && func_decl.params.any? { |p| p.default }
+                @type_checker.type_error(
+                  "generic functions cannot have default parameter values in this version",
+                  node: func_decl
+                )
+              end
+
               func_decl.params.each_with_index.map do |param, index|
                 type = param_types[index]
-                MLC::SemanticIR::Param.new(name: param.name, type: type, mutable: param.mutable, origin: param.origin)
+                default_ir = nil
+                if param.default
+                  validate_default_param_ast!(param.default, param.name)
+                  default_ir = @engine.run_expression(param.default)
+                  @type_checker.ensure_compatible_type(
+                    default_ir.type, type, "default value for parameter '#{param.name}'",
+                    node: default_ir
+                  )
+                end
+                MLC::SemanticIR::Param.new(
+                  name: param.name, type: type, mutable: param.mutable, default: default_ir, origin: param.origin
+                )
               end
+            end
+
+            def validate_default_param_ast!(expr, param_name)
+              ok = case expr
+                   when MLC::Source::AST::IntLit, MLC::Source::AST::FloatLit,
+                        MLC::Source::AST::StringLit, MLC::Source::AST::UnitLit
+                     true
+                   when MLC::Source::AST::VarRef
+                     %w[true false].include?(expr.name)
+                   else
+                     false
+                   end
+              return if ok
+
+              @type_checker.type_error(
+                "default value for '#{param_name}' must be a literal (or true/false) in this version",
+                node: expr
+              )
             end
 
             def build_external_func(func_decl, params, signature, type_params)

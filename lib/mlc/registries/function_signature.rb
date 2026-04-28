@@ -2,10 +2,7 @@
 
 module MLC
   module Registries
-    FunctionSignature = Struct.new(:name, :param_types, :ret_type, :type_params) do
-      def initialize(name, param_types, ret_type, type_params = [])
-        super(name, param_types, ret_type, type_params)
-      end
-    end
+    # required_arity: number of leading parameters that must be passed at a call (no default).
+    FunctionSignature = Struct.new(:name, :param_types, :ret_type, :type_params, :required_arity, keyword_init: false)
   end
 end

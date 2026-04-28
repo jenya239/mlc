@@ -12,6 +12,16 @@ import { type_is_function } from "./semantic_type_structure"
 
 type InferExprFn = (Shared<Expr>, CheckContext) -> InferResult
 
+fn take_first_param_types(param_types: [Shared<Type>], n: i32) -> [Shared<Type>] = do
+  const out: [Shared<Type>] = []
+  let mut j = 0
+  while j < n && j < param_types.length() do
+    out.push(param_types[j])
+    j = j + 1
+  end
+  out
+end
+
 export fn infer_expr_call(
   function: Shared<Expr>,
   call_arguments: [Shared<Expr>],
@@ -60,20 +70,29 @@ export fn infer_expr_call(
     end
   else
     const non_constructor_output = infer_expr_call_non_constructor(
-      function_result, with_arguments, call_arguments, call_source_span)
+      function_result, with_arguments, call_arguments, call_source_span, inference_context.registry, callee_name)
     const callee_parameter_types = function_parameter_list(function_result.inferred_type)
+    const max_arity = callee_parameter_types.length()
+    const min_arity =
+      if callee_name != "" && inference_context.registry.has_fn(callee_name) then
+        const r = inference_context.registry.required_arity_for_fn(callee_name)
+        if r >= 0 then r else max_arity end
+      else
+        max_arity
+      end
+    const got = call_arguments.length()
     const callee_type_parameter_names =
       if callee_name != "" && inference_context.registry.has_fn(callee_name) then
         inference_context.registry.registered_function_type_parameter_names(callee_name)
       else
         do const empty_callee_type_names: [string] = []; empty_callee_type_names end
       end
-    if type_is_function(function_result.inferred_type) &&
-       callee_parameter_types.length() == call_arguments.length() then
+    if type_is_function(function_result.inferred_type) && got >= min_arity && got <= max_arity then
+      const params_for_unify = take_first_param_types(callee_parameter_types, got)
       const unification_errors = call_argument_unification_diagnostics(
-        callee_parameter_types, argument_inferred_types, callee_type_parameter_names, call_arguments)
+        params_for_unify, argument_inferred_types, callee_type_parameter_names, call_arguments)
       const bound_errors = trait_bound_diagnostics(
-        callee_name, callee_parameter_types, argument_inferred_types,
+        callee_name, params_for_unify, argument_inferred_types,
         callee_type_parameter_names, call_source_span, inference_context)
       InferResult {
         inferred_type: non_constructor_output.inferred_type,

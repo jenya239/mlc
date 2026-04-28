@@ -58,7 +58,7 @@ class TypeConstraintSolverTest < Minitest::Test
       solver.solve(info, args, name: "add")
     end
 
-    assert_match(/expects 1 argument/, error.message)
+    assert_match(/expects between 1 and 1|expects 1 argument/i, error.message)
     refute_empty captured
   end
 

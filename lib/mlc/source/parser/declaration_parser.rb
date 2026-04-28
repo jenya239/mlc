@@ -157,6 +157,7 @@ module MLC
 
         def parse_params
           params = []
+          saw_default = false
 
           while current.type != :RPAREN
             mutable = current.type == :MUT
@@ -176,7 +177,20 @@ module MLC
               type = parse_type
             end
 
-            params << with_origin(name_token) { MLC::Source::AST::Param.new(name: name, type: type, mutable: mutable) }
+            default_expr = nil
+            if current.type == :EQUAL
+              consume(:EQUAL)
+              saw_default = true
+              default_expr = parse_expression
+            elsif saw_default
+              raise MLC::CompileError.new(
+                "required parameter '#{name}' cannot follow a parameter with a default value"
+              )
+            end
+
+            params << with_origin(name_token) do
+              MLC::Source::AST::Param.new(name: name, type: type, mutable: mutable, default: default_expr)
+            end
 
             break unless current.type == :COMMA
 
@@ -369,7 +383,9 @@ module MLC
                    MLC::Source::AST::OpaqueType.new(name: name)
                  end
 
-          with_origin(name_token) { MLC::Source::AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported) }
+          derive_traits = parse_derive_clause
+
+          with_origin(name_token) { MLC::Source::AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported, derive_traits: derive_traits) }
         end
 
         # Parse record declaration - syntactic sugar for type Name = { fields }
@@ -390,7 +406,26 @@ module MLC
           # Parse record body { field: Type, ... }
           type = parse_record_type
 
-          with_origin(name_token) { MLC::Source::AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported) }
+          derive_traits = parse_derive_clause
+
+          with_origin(name_token) { MLC::Source::AST::TypeDecl.new(name: name, type: type, type_params: type_params, exported: exported, derive_traits: derive_traits) }
+        end
+
+        # Parse optional `derive { Trait1, Trait2, ... }` clause
+        def parse_derive_clause
+          return [] unless current.type == :IDENTIFIER && current.value == "derive"
+
+          consume(:IDENTIFIER) # derive
+          consume(:LBRACE)
+          traits = []
+          while current.type != :RBRACE
+            traits << consume(:IDENTIFIER).value
+            break if current.type != :COMMA
+
+            consume(:COMMA)
+          end
+          consume(:RBRACE)
+          traits
         end
 
         # Parse trait declaration

@@ -1,6 +1,7 @@
 // Trait and extend block code generation (helpers shared with decl.mlc).
 
-import { TypeVariant, TypeExpr, Param } from "../ast"
+import { TypeVariant, TypeExpr, Param, Expr, ExprInt, ExprStr, ExprBool, ExprUnit } from "../ast"
+import * as lit from "./literals"
 import { SDecl, SExpr, SExprExtern } from "../semantic_ir"
 import { Type } from "../checker/registry"
 import { CodegenContext, make_body_context } from "./context"
@@ -16,12 +17,39 @@ export fn extract_method_name(fn_name: string, type_name: string) -> string = do
   end
 end
 
-export fn gen_params(context: CodegenContext, params: [Shared<Param>]) -> string = do
+fn default_expr_to_cpp(e: Shared<Expr>) -> string = match e {
+  ExprInt(v, _)  => lit.gen_integer_literal(v),
+  ExprStr(s, _)  => lit.gen_string_literal(s),
+  ExprBool(b, _) => lit.gen_boolean_literal(b),
+  ExprUnit(_)    => lit.gen_unit_literal(),
+  _              => "0"
+}
+
+fn param_item_def(context: CodegenContext, p: Shared<Param>) -> string =
+  expression_output.parameter_declaration_item(type_to_cpp(context, p.typ), cpp_safe(p.name))
+
+fn param_item_proto(context: CodegenContext, p: Shared<Param>) -> string = do
+  const base = param_item_def(context, p)
+  if p.has_default then
+    base + " = " + default_expr_to_cpp(p.default)
+  else
+    base
+  end
+end
+
+export fn gen_params_def(context: CodegenContext, params: [Shared<Param>]) -> string = do
   let parts: [string] = []; let mut index = 0
   while index < params.length() do
-    parts.push(expression_output.parameter_declaration_item(
-      type_to_cpp(context, params[index].typ),
-      cpp_safe(params[index].name)))
+    parts.push(param_item_def(context, params[index]))
+    index = index + 1
+  end
+  parts.join(", ")
+end
+
+export fn gen_params_proto(context: CodegenContext, params: [Shared<Param>]) -> string = do
+  let parts: [string] = []; let mut index = 0
+  while index < params.length() do
+    parts.push(param_item_proto(context, params[index]))
     index = index + 1
   end
   parts.join(", ")
@@ -62,7 +90,7 @@ export fn gen_extend_wrapper_protos(type_name: string, trait_name: string, metho
           const wrapper_context = make_body_context(context, [], [], Map.new(), [], type_name, [], [])
           const method_name = extract_method_name(mangled, type_name)
           const ret_cpp = sem_type_to_cpp(wrapper_context, ret_type)
-          const params_str = gen_params(wrapper_context, params)
+          const params_str = gen_params_proto(wrapper_context, params)
           wrappers = wrappers + expression_output.noexcept_function_prototype(
             ret_cpp,
             cpp_safe(method_name),
@@ -80,7 +108,7 @@ fn gen_extend_trait_wrapper(type_name: string, mangled: string, params: [Shared<
   const method_name = extract_method_name(mangled, type_name)
   const ret_cpp = sem_type_to_cpp(wrapper_context, ret_type)
   const fn_resolved = context_resolve_fn(context, mangled)
-  const params_str = gen_params(wrapper_context, params)
+  const params_str = gen_params_proto(wrapper_context, params)
   let call_args: [string] = []; let mut param_index = 0
   while param_index < params.length() do
     call_args.push(cpp_safe(params[param_index].name))
@@ -112,7 +140,7 @@ fn gen_extend_extern_method(mangled: string, type_name: string, params: [Shared<
   if type_name == "i32" && method_name == "to_string" && params.length() > 0 then
     do
       const ret_cpp = sem_type_to_cpp(context, ret_type)
-      const params_str = gen_params(context, params)
+      const params_str = gen_params_def(context, params)
       expression_output.noexcept_one_line_returning_function(
         ret_cpp,
         context_resolve_fn(context, mangled),

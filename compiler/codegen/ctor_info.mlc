@@ -39,13 +39,13 @@ export fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<Cto
   while i < decls.length() do
     match decls[i] {
       DeclExported(inner) => match decl_inner(inner) {
-        DeclType(_, _, variants) => do
+        DeclType(_, _, variants, _) => do
           let infos = add_ctor_infos_from_variants(variants)
           let mut ii = 0; while ii < infos.length() do result.push(infos[ii]); ii = ii + 1 end
         end,
         _ => do end
       },
-      DeclType(_, _, variants) => do
+      DeclType(_, _, variants, _) => do
         let infos = add_ctor_infos_from_variants(variants)
         let mut ii = 0; while ii < infos.length() do result.push(infos[ii]); ii = ii + 1 end
       end,

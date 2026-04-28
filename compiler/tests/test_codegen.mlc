@@ -5,7 +5,7 @@ import { gen_expr, gen_argument_list, gen_stmts_str } from "../codegen/eval"
 import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from "../codegen/context"
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from "../codegen/type_gen"
 import { gen_program } from "../codegen/module"
-import { Program, TypeExpr, TypeVariant, DeclType, DeclFn, DeclExported, Param, VarTuple, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, PatInt, PatWild, span_unknown } from "../ast"
+import { Program, TypeExpr, TypeVariant, DeclType, DeclFn, DeclExported, Param, VarTuple, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, span_unknown } from "../ast"
 import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr } from "../semantic_ir"
 import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple } from "../checker/registry"
 
@@ -249,7 +249,7 @@ export fn codegen_tests() -> [TestResult] = do
 
   // --- DeclFn via gen_program ---------------------------------------------------
 
-  const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", typ: Shared.new(TyI32), is_mut: false })]
+  const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())) })]
   const fn_body = Shared.new(ExprBin("*", Shared.new(ExprIdent("n", span_unknown())), Shared.new(ExprInt(2, span_unknown())), span_unknown()))
   const fn_decl = DeclFn("double_it", [], [], fn_param, Shared.new(TyI32), fn_body)
   const fn_prog = Program { decls: [Shared.new(DeclExported(Shared.new(fn_decl)))] }

@@ -57,7 +57,7 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true("type decl is DeclType",
     match first_decl("type Color = Red | Green") {
-      DeclType(_, _, _) => true,
+      DeclType(_, _, _, _) => true,
       _ => false
     }))
 

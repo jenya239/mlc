@@ -63,7 +63,7 @@ struct StmtReturn {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
 struct Stmt {std::variant<StmtLet, StmtLetPat, StmtLetConst, StmtExpr, StmtBreak, StmtContinue, StmtReturn> _;};
 
 
-struct Param {mlc::String name;bool is_mut;std::shared_ptr<ast::TypeExpr> typ;};
+struct Param {mlc::String name;bool is_mut;std::shared_ptr<ast::TypeExpr> typ;bool has_default;std::shared_ptr<ast::Expr> default_;};
 
 struct FieldDef {mlc::String name;std::shared_ptr<ast::TypeExpr> typ;};
 

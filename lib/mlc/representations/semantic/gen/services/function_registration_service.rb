@@ -55,7 +55,8 @@ module MLC
             def register_function_signature(func_decl, param_types, ret_type, type_params)
               return @function_registry.fetch(func_decl.name) if @function_registry.registered?(func_decl.name)
 
-              info = MLC::Registries::FunctionSignature.new(func_decl.name, param_types, ret_type, type_params)
+              req = func_decl.params.find_index { |p| p.default } || param_types.length
+              info = MLC::Registries::FunctionSignature.new(func_decl.name, param_types, ret_type, type_params, req)
 
               @function_registry.register(
                 func_decl.name,

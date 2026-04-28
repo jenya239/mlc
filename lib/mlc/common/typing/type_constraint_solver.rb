@@ -29,11 +29,20 @@ module MLC
 
           param_types = info.param_types.map { |pt| @substitute_type.call(pt, type_map) }
 
-          if param_types.length != args.length
-            @type_error.call("Function '#{name}' expects #{param_types.length} argument(s), got #{args.length}")
+          req = if info.respond_to?(:required_arity) && !info.required_arity.nil?
+                  info.required_arity
+                else
+                  param_types.length
+                end
+          max = param_types.length
+          if args.length < req || args.length > max
+            @type_error.call(
+              "Function '#{name}' expects between #{req} and #{max} argument(s), got #{args.length}"
+            )
           end
 
-          param_types.each_with_index do |type, index|
+          args.length.times do |index|
+            type = param_types[index]
             @ensure_compatible_type.call(
               args[index].type,
               type,

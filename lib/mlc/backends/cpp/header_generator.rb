@@ -274,10 +274,14 @@ module MLC
         def generate_function_declaration(func)
           ret_type = @lowering.send(:map_type, func.ret_type)
           name = @lowering.send(:sanitize_identifier, func.name)
-          params = func.params.map do |param|
-            type = @lowering.send(:map_type, param.type)
-            "#{type} #{@lowering.send(:sanitize_identifier, param.name)}"
-          end.join(", ")
+          params = if @lowering.respond_to?(:build_function_parameters_cpp)
+                     @lowering.build_function_parameters_cpp(func, include_default_values: true)
+                   else
+                     func.params.map do |param|
+                       type = @lowering.send(:map_type, param.type)
+                       "#{type} #{@lowering.send(:sanitize_identifier, param.name)}"
+                     end
+                   end.join(", ")
 
           effects = Array(func.effects)
           prefix = ""

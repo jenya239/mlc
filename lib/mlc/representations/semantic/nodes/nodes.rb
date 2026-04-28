@@ -219,13 +219,14 @@ module MLC
 
     # Function parameter
     class Param < Node
-      attr_reader :name, :type, :mutable
+      attr_reader :name, :type, :mutable, :default
 
-      def initialize(name:, type:, mutable: false, origin: nil)
+      def initialize(name:, type:, mutable: false, default: nil, origin: nil)
         super(origin: origin)
         @name = name
         @type = type
         @mutable = mutable
+        @default = default
       end
     end
 
@@ -573,14 +574,15 @@ module MLC
 
     # Type declaration
     class TypeDecl < Node
-      attr_reader :name, :type, :type_params, :exported
+      attr_reader :name, :type, :type_params, :exported, :derive_traits
 
-      def initialize(name:, type:, type_params: [], exported: false, origin: nil)
+      def initialize(name:, type:, type_params: [], exported: false, derive_traits: [], origin: nil)
         super(origin: origin)
         @name = name
         @type = type
         @type_params = type_params # Array of TypeParam
         @exported = exported # Boolean - is this exported?
+        @derive_traits = derive_traits # Array of String
       end
     end
 

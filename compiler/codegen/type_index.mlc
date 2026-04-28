@@ -57,7 +57,7 @@ export fn build_generic_variants_from_decls(decls: [Shared<Decl>]) -> [string] =
   while i < decls.length() do
     const inner_decl = decl_inner(decls[i])
     match inner_decl {
-      DeclType(_, type_params, variants) => do
+      DeclType(_, type_params, variants, _) => do
         let mut vi = 0
         while vi < variants.length() do
           let should_add = type_params.length() > 0
@@ -83,7 +83,7 @@ export fn build_variant_types_from_decls(decls: [Shared<Decl>]) -> Map<string, s
   while i < decls.length() do
     const inner_decl = decl_inner(decls[i])
     match inner_decl {
-      DeclType(type_name, _, variants) => do
+      DeclType(type_name, _, variants, _) => do
         let mut vi = 0
         while vi < variants.length() do
           match variants[vi] {
@@ -107,7 +107,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
   while i < prog.decls.length() do
     match prog.decls[i] {
       DeclExported(inner) => match decl_inner(inner) {
-        DeclType(type_name, _, variants) => do
+        DeclType(type_name, _, variants, _) => do
           let mut vi = 0
           while vi < variants.length() do
             match variants[vi] {
@@ -132,7 +132,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
         DeclImport(_, _)         => do end,
         DeclExported(_)          => do end
       },
-      DeclType(type_name, _, variants) => do
+      DeclType(type_name, _, variants, _) => do
         let mut vi = 0
         while vi < variants.length() do
           match variants[vi] {

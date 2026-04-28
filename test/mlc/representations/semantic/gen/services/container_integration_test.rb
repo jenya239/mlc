@@ -88,7 +88,7 @@ module MLC
             end
 
             def test_user_import_registers_alias
-              info = MLC::Registries::FunctionSignature.new('bar', [], @container.ir_builder.prim_type(name: 'i32'))
+              info = MLC::Registries::FunctionSignature.new('bar', [], @container.ir_builder.prim_type(name: 'i32'), [], 0)
               @function_registry.register('Foo.bar', info, module_name: 'Foo')
 
               import_decl = MLC::Source::AST::ImportDecl.new(path: 'Foo', items: ['bar'], import_all: false, alias_name: 'Alias')

@@ -9,10 +9,10 @@ import { CodegenContext, CtorTypeInfo,
          collect_shared_map_params, collect_value_params } from "./context"
 import { cpp_safe } from "./cpp_naming"
 import { type_to_cpp, sem_type_to_cpp, type_name_to_cpp, gen_type_decl, gen_type_decl_fwd_only, gen_type_decl_body_only,
-         template_prefix, requires_clause } from "./type_gen"
+         template_prefix, requires_clause, gen_derive_methods } from "./type_gen"
 import { gen_fn_body } from "./return_body"
 import * as expression_output from "./expr"
-import { gen_params, gen_trait_decl, gen_extend_wrapper_protos, gen_decl_extend } from "./decl_extend"
+import { gen_params_proto, gen_params_def, gen_trait_decl, gen_extend_wrapper_protos, gen_decl_extend } from "./decl_extend"
 
 // --- Context builder methods -------------------------------------------------
 
@@ -44,7 +44,7 @@ export fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[strin
     prefix + expression_output.noexcept_function_prototype(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
-      gen_params(prototype_context, params))
+      gen_params_proto(prototype_context, params))
   end
 end
 
@@ -83,7 +83,7 @@ export fn gen_fn_decl(name: string, type_params: [string], type_bounds: [[string
     prefix + expression_output.noexcept_function_body_open(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
-      gen_params(prototype_context, params)) +
+      gen_params_def(prototype_context, params)) +
     gen_fn_body(body, body_context) + expression_output.block_close_newline()
   end
 end
@@ -92,7 +92,8 @@ end
 
 export fn gen_decl(decl: Shared<SDecl>, context: CodegenContext) -> string =
   match decl {
-    SDeclType(type_name, type_params, variants) => gen_type_decl(context, type_name, type_params, variants),
+    SDeclType(type_name, type_params, variants, derive_traits) =>
+      gen_type_decl(context, type_name, type_params, variants) + gen_derive_methods(context, type_name, variants, derive_traits),
     SDeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
     SDeclFn(name, type_params, type_bounds, params, return_type, body) =>
       match body { SExprExtern(_, _) => "", _ => gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context) },
@@ -106,7 +107,7 @@ export fn gen_decl(decl: Shared<SDecl>, context: CodegenContext) -> string =
 
 export fn gen_proto(decl: Shared<SDecl>, context: CodegenContext) -> string =
   match decl {
-    SDeclType(_, _, _)  => "",
+    SDeclType(_, _, _, _) => "",
     SDeclTrait(_, _, _) => "",
     SDeclFn(name, type_params, type_bounds, params, ret, body) =>
       match body { SExprExtern(_, _) => "", _ => gen_fn_proto(name, type_params, type_bounds, params, ret, context) },
@@ -158,9 +159,11 @@ export fn collect_decl_parts(decls: [Shared<SDecl>], context: CodegenContext, ph
   let mut index = 0
   while index < decls.length() do
     const segment = match decls[index] {
-      SDeclType(type_name, type_params, variants) =>
+      SDeclType(type_name, type_params, variants, derive_traits) =>
         if phase == 0 then gen_type_decl_fwd_only(context, type_name, type_params, variants)
-        else if phase == 1 then gen_type_decl_body_only(context, type_name, type_params, variants)
+        else if phase == 1 then
+          gen_type_decl_body_only(context, type_name, type_params, variants) +
+          gen_derive_methods(context, type_name, variants, derive_traits)
         else ""
         end,
       SDeclTrait(name, type_params, methods) =>
@@ -180,17 +183,19 @@ export fn collect_decl_parts(decls: [Shared<SDecl>], context: CodegenContext, ph
       SDeclImport(_, _) => "",
       SDeclExported(d) =>
         if phase == 0 then match sdecl_inner(d) {
-          SDeclType(type_name, type_params, variants) => gen_type_decl_fwd_only(context, type_name, type_params, variants),
+          SDeclType(type_name, type_params, variants, _) => gen_type_decl_fwd_only(context, type_name, type_params, variants),
           SDeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
           _ => ""
         }
         else if phase == 1 then match sdecl_inner(d) {
-          SDeclType(type_name, type_params, variants) => gen_type_decl_body_only(context, type_name, type_params, variants),
+          SDeclType(type_name, type_params, variants, derive_traits) =>
+            gen_type_decl_body_only(context, type_name, type_params, variants) +
+            gen_derive_methods(context, type_name, variants, derive_traits),
           _ => ""
         }
         else if phase == 2 then gen_proto(d, context)
         else if phase == 3 then match sdecl_inner(d) {
-          SDeclType(_, _, _) => "",
+          SDeclType(_, _, _, _) => "",
           SDeclTrait(_, _, _) => "",
           _ => gen_decl(d, context)
         }

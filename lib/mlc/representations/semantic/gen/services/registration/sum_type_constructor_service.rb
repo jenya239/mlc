@@ -59,7 +59,8 @@ module MLC
                   variant[:name],
                   field_types,
                   generic_ret_type,
-                  type_params
+                  type_params,
+                  field_types.length
                 )
 
                 @sum_type_constructors[variant[:name]] = constructor_info

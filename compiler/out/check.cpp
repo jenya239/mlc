@@ -19,6 +19,14 @@ using namespace check_context;
 using namespace semantic_type_structure;
 using namespace ast_tokens;
 
+bool param_defaults_in_tail(mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
+
+bool default_expr_mvp_ok(std::shared_ptr<ast::Expr> e) noexcept;
+
+bool is_extern_body(std::shared_ptr<ast::Expr> e) noexcept;
+
+mlc::Array<ast::Diagnostic> param_default_diagnostics(mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::Expr> body, registry::TypeRegistry registry) noexcept;
+
 mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept;
 
 bool type_is_checkable(std::shared_ptr<registry::Type> type_value, registry::TypeRegistry registry) noexcept;
@@ -30,6 +38,87 @@ ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept;
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check(ast::Program program) noexcept;
+
+bool param_defaults_in_tail(mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{
+bool optional_began = false;
+int i = 0;
+while (i < parameters.size()){
+{
+if (parameters[i]->has_default){
+{
+optional_began = true;
+}
+} else {
+{
+if (optional_began){
+return false;
+}
+}
+}
+i = i + 1;
+}
+}
+return true;
+}
+
+bool default_expr_mvp_ok(std::shared_ptr<ast::Expr> e) noexcept{return [&]() { if (std::holds_alternative<ast::ExprInt>((*e)._)) { auto _v_exprint = std::get<ast::ExprInt>((*e)._); auto [_w0, _w1] = _v_exprint; return true; } if (std::holds_alternative<ast::ExprStr>((*e)._)) { auto _v_exprstr = std::get<ast::ExprStr>((*e)._); auto [_w0, _w1] = _v_exprstr; return true; } if (std::holds_alternative<ast::ExprBool>((*e)._)) { auto _v_exprbool = std::get<ast::ExprBool>((*e)._); auto [_w0, _w1] = _v_exprbool; return true; } if (std::holds_alternative<ast::ExprUnit>((*e)._)) { auto _v_exprunit = std::get<ast::ExprUnit>((*e)._); auto [_w0] = _v_exprunit; return true; } return false; }();}
+
+bool is_extern_body(std::shared_ptr<ast::Expr> e) noexcept{return [&]() { if (std::holds_alternative<ast::ExprExtern>((*e)._)) { auto _v_exprextern = std::get<ast::ExprExtern>((*e)._); auto [_w0] = _v_exprextern; return true; } return false; }();}
+
+mlc::Array<ast::Diagnostic> param_default_diagnostics(mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::Expr> body, registry::TypeRegistry registry) noexcept{
+mlc::Array<ast::Diagnostic> out = {};
+if (!param_defaults_in_tail(parameters)){
+{
+out.push_back(ast::diagnostic_error(mlc::String("parameter defaults must be trailing"), ast::expr_span(body)));
+}
+}
+bool has_any_default = false;
+int j = 0;
+while (j < parameters.size()){
+{
+if (parameters[j]->has_default){
+{
+has_any_default = true;
+}
+}
+j = j + 1;
+}
+}
+if (type_parameters.size() > 0 && has_any_default){
+{
+out.push_back(ast::diagnostic_error(mlc::String("default parameters are not allowed on generic functions yet"), ast::expr_span(body)));
+}
+}
+if (is_extern_body(body) && has_any_default){
+{
+out.push_back(ast::diagnostic_error(mlc::String("default parameters are not allowed on extern functions"), ast::expr_span(body)));
+}
+}
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> empty_type_environment = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
+check_context::CheckContext default_infer_context = check_context::check_context_new(empty_type_environment, registry);
+int p = 0;
+while (p < parameters.size()){
+{
+if (parameters[p]->has_default){
+{
+std::shared_ptr<ast::Expr> param_default_expr = parameters[p]->default_;
+if (!default_expr_mvp_ok(param_default_expr)){
+out.push_back(ast::diagnostic_error(mlc::String("parameter default must be a literal in this version"), ast::expr_span(param_default_expr)));
+} else {
+infer_result::InferResult default_infer = infer::infer_expr(param_default_expr, default_infer_context);
+out = ast::diagnostics_append(out, default_infer.errors);
+std::shared_ptr<registry::Type> param_expected_type = registry::type_from_annotation(ast::param_typ(parameters[p]));
+if (type_is_checkable(param_expected_type, registry) && type_is_checkable(default_infer.inferred_type, registry) && !semantic_type_structure::types_structurally_equal(param_expected_type, default_infer.inferred_type)){
+out.push_back(ast::diagnostic_error(mlc::String("parameter default: expected ") + semantic_type_structure::type_description(param_expected_type) + mlc::String(", got ") + semantic_type_structure::type_description(default_infer.inferred_type), ast::expr_span(param_default_expr)));
+}
+}
+}
+}
+p = p + 1;
+}
+}
+return out;
+}
 
 mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
 mlc::HashMap<mlc::String, bool> names = mlc::HashMap<mlc::String, bool>();
@@ -134,6 +223,7 @@ while (declaration_index < entry.decls.size()){
 {
 std::visit(overloaded{
   [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, type_parameters, _w1, parameters, return_type_annotation, body] = declfn; return [&]() -> std::tuple<> { 
+  all_diagnostics = ast::diagnostics_append(all_diagnostics, param_default_diagnostics(type_parameters, parameters, body, registry));
   mlc::Array<mlc::String> locals = {};
   int type_parameter_index = 0;
   while (type_parameter_index < type_parameters.size()){

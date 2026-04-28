@@ -63,6 +63,26 @@ module MLC
 
         # Lower function using new architecture for expression/statement lowering
         # Public for test compatibility
+        # When include_default_values: append " = <expr>" for parameters with a lowered default.
+        # Non-generic: forward decl uses true; the single definition uses false. Template functions
+        # have no separate forward decl, so the definition must include defaults (true when generic).
+        def build_function_parameters_cpp(func, include_default_values:)
+          name = @context.sanitize_identifier(func.name)
+          is_main = name == "main" && func.params.empty?
+          if is_main
+            return ["int argc", "char** argv"]
+          end
+
+          func.params.map do |param|
+            base = "#{@context.map_type(param.type)} #{@context.sanitize_identifier(param.name)}"
+            if include_default_values && param.default
+              base + " = " + @context.lower_expression(param.default).to_source
+            else
+              base
+            end
+          end
+        end
+
         def lower_function(func)
           # Reset variable declaration tracking for each new function scope
           @context.reset_declared_variables
@@ -70,9 +90,9 @@ module MLC
 
           return_type = @context.map_type(func.ret_type)
           name = @context.sanitize_identifier(func.name)
-          parameters = func.params.map do |param|
-            "#{@context.map_type(param.type)} #{@context.sanitize_identifier(param.name)}"
-          end
+          # Single template definition is the only declaration — keep default values there
+          include_defaults = func.type_params.any?
+          parameters = build_function_parameters_cpp(func, include_default_values: include_defaults)
 
           # Set flag for generic function context
           @in_generic_function = func.type_params.any?
@@ -191,7 +211,9 @@ module MLC
           # Functions are excluded here; they come after forward declarations in Phase 4.
           type_defs = module_node.items.grep(SemanticIR::TypeDecl).flat_map do |td|
             if td.type.is_a?(SemanticIR::SumType) && td.type_params.empty?
-              sum_type_body_stmts(td.name, td.type)
+              stmts = sum_type_body_stmts(td.name, td.type)
+              derive_traits = Array(td.derive_traits)
+              stmts + (derive_traits.empty? ? [] : generate_derive_methods(td.name, td.type, derive_traits))
             else
               result = lower(td)
               result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
@@ -281,9 +303,7 @@ module MLC
           parameters = if is_main
                          ["int argc", "char** argv"]
                        else
-                         func.params.map do |p|
-                           "#{@context.map_type(p.type)} #{@context.sanitize_identifier(p.name)}"
-                         end
+                         build_function_parameters_cpp(func, include_default_values: true)
                        end
           proto = CppAst::Nodes::FunctionDeclaration.new(
             return_type: return_type,
@@ -392,6 +412,19 @@ module MLC
                      lower_type_alias_internal(type_decl.name, type_decl.type)
                    end
 
+          derive_traits = Array(type_decl.derive_traits)
+          unless derive_traits.empty?
+            derive_stmts = generate_derive_methods(type_decl.name, type_decl.type, derive_traits)
+            unless derive_stmts.empty?
+              base_stmts = result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
+              all_stmts = base_stmts + derive_stmts
+              result = CppAst::Nodes::Program.new(
+                statements: all_stmts,
+                statement_trailings: Array.new(all_stmts.size, "\n")
+              )
+            end
+          end
+
           if type_decl.type_params.any?
             if result.is_a?(CppAst::Nodes::Program) && type_decl.type.is_a?(SemanticIR::SumType)
               # Per-variant templates already applied inside lower_sum_type_internal.
@@ -411,6 +444,124 @@ module MLC
           else
             result
           end
+        end
+
+        # Generate C++ free functions for derived traits on a type.
+        # Returns array of raw_statement nodes.
+        def generate_derive_methods(name, type, traits)
+          stmts = []
+          traits.each do |trait|
+            case trait
+            when "Display"
+              stmts << generate_derive_display(name, type)
+            when "Eq"
+              stmts << generate_derive_eq(name, type)
+            when "Ord"
+              stmts << generate_derive_ord(name, type)
+            end
+          end
+          stmts.compact
+        end
+
+        def derive_field_to_string(field_name, field_type)
+          case field_type
+          when SemanticIR::Type
+            if field_type.kind == :prim && field_type.name == "string"
+              "self.#{field_name}"
+            else
+              "mlc::to_string(self.#{field_name})"
+            end
+          else
+            "mlc::to_string(self.#{field_name})"
+          end
+        end
+
+        def generate_derive_display(name, type)
+          body = case type
+                 when SemanticIR::RecordType
+                   parts = type.fields.map do |field|
+                     fn = field[:name]
+                     ft = field[:type]
+                     "mlc::String(\", #{fn}: \") + #{derive_field_to_string(fn, ft)}"
+                   end
+                   if parts.empty?
+                     "mlc::String(\"#{name} {}\")"
+                   else
+                     first_field = type.fields.first[:name]
+                     first_str = derive_field_to_string(first_field, type.fields.first[:type])
+                     rest = type.fields.drop(1).map do |field|
+                       fn = field[:name]
+                       "mlc::String(\", #{fn}: \") + #{derive_field_to_string(fn, field[:type])}"
+                     end
+                     all_parts = ["mlc::String(\"#{name} { #{first_field}: \") + #{first_str}"] + rest + ["mlc::String(\" }\")"]
+                     all_parts.join(" + ")
+                   end
+                 when SemanticIR::SumType
+                   variant_cases = type.variants.map do |variant|
+                     vname = variant[:name]
+                     fields = variant[:fields]
+                     if fields.empty?
+                       "if (std::holds_alternative<#{vname}>(self._)) return mlc::String(\"#{vname}\");"
+                     elsif fields.length == 1 && !fields.first[:name]
+                       "if (std::holds_alternative<#{vname}>(self._)) return mlc::String(\"#{vname}(\") + mlc::to_string(std::get<#{vname}>(self._)._0) + mlc::String(\")\");"
+                     else
+                       field_strs = fields.map { |f| "mlc::to_string(std::get<#{vname}>(self._).#{f[:name]})" }.join(" + mlc::String(\", \") + ")
+                       "if (std::holds_alternative<#{vname}>(self._)) return mlc::String(\"#{vname}(\") + #{field_strs} + mlc::String(\")\");"
+                     end
+                   end
+                   variant_cases.join("\n  ") + "\n  return mlc::String(\"\");"
+                 else
+                   return nil
+                 end
+
+          code = "mlc::String #{name}_to_string(const #{name}& self) noexcept {\n  #{body}\n}"
+          @context.factory.raw_statement(code: code)
+        end
+
+        def generate_derive_eq(name, type)
+          body = case type
+                 when SemanticIR::RecordType
+                   if type.fields.empty?
+                     "return true;"
+                   else
+                     conditions = type.fields.map { |f| "a.#{f[:name]} == b.#{f[:name]}" }.join(" && ")
+                     "return #{conditions};"
+                   end
+                 when SemanticIR::SumType
+                   "return a._ == b._;"
+                 else
+                   return nil
+                 end
+
+          code = "bool operator==(const #{name}& a, const #{name}& b) noexcept { #{body} }"
+          @context.factory.raw_statement(code: code)
+        end
+
+        def generate_derive_ord(name, type)
+          body = case type
+                 when SemanticIR::RecordType
+                   if type.fields.empty?
+                     "return false;"
+                   else
+                     conditions = type.fields.map { |f| "a.#{f[:name]} < b.#{f[:name]}" }.join(" || (a.#{type.fields.first[:name]} == b.#{type.fields.first[:name]} && ")
+                     field_parts = type.fields.each_with_index.map do |f, i|
+                       if i == 0
+                         "a.#{f[:name]} < b.#{f[:name]}"
+                       else
+                         prev_eq = type.fields[0...i].map { |pf| "a.#{pf[:name]} == b.#{pf[:name]}" }.join(" && ")
+                         "(#{prev_eq} && a.#{f[:name]} < b.#{f[:name]})"
+                       end
+                     end
+                     "return #{field_parts.join(" || ")};"
+                   end
+                 when SemanticIR::SumType
+                   "return a._ < b._;"
+                 else
+                   return nil
+                 end
+
+          code = "bool operator<(const #{name}& a, const #{name}& b) noexcept { #{body} }"
+          @context.factory.raw_statement(code: code)
         end
 
         def lower_type_alias_internal(name, aliased_type)

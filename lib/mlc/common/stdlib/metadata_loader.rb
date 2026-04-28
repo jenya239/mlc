@@ -77,7 +77,8 @@ module MLC
             func_meta["name"],
             param_types,
             return_type,
-            [] # type_params - not yet in metadata
+            [], # type_params - not yet in metadata
+            param_types.length
           )
 
           # Compute namespace from module name (e.g., "Math::Vector" -> "math::vector")

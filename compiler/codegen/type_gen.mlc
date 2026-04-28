@@ -1,6 +1,6 @@
 // Type expression → C++ string generation.
 
-import { TypeVariant, TypeExpr, Decl, Param } from "../ast"
+import { TypeVariant, TypeExpr, FieldDef, Decl, Param } from "../ast"
 import { Type } from "../checker/registry"
 import { CodegenContext, CtorTypeInfo, context_resolve, list_contains } from "./context"
 import { cpp_safe, lower_first, template_prefix } from "./cpp_naming"
@@ -236,6 +236,157 @@ fn gen_type_decl_body(context: CodegenContext, type_name: string, type_params: [
 
 export fn gen_type_decl(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
   gen_type_decl_fwd(context, type_name, type_params, variants) + gen_type_decl_body(context, type_name, type_params, variants)
+
+// --- Derive method generation ------------------------------------------------
+
+fn derive_field_display(field_name: string, field_type: Shared<TypeExpr>) -> string =
+  match field_type {
+    TyString => "self." + field_name,
+    _        => "mlc::to_string(self." + field_name + ")"
+  }
+
+fn derive_display_record_fields(type_name: string, field_defs: [Shared<FieldDef>]) -> string = do
+  let mut body = "mlc::String(\"" + type_name + " { " + field_defs[0].name + ": \") + " + derive_field_display(field_defs[0].name, field_defs[0].typ)
+  let mut i = 1
+  while i < field_defs.length() do
+    body = body + " + mlc::String(\", " + field_defs[i].name + ": \") + " + derive_field_display(field_defs[i].name, field_defs[i].typ)
+    i = i + 1
+  end
+  body + " + mlc::String(\" }\")"
+end
+
+fn derive_display_record(type_name: string, field_defs: [Shared<FieldDef>]) -> string = do
+  const sig = "mlc::String " + type_name + "_to_string(const " + type_name + "& self) noexcept"
+  if field_defs.length() == 0 then
+    sig + " { return mlc::String(\"" + type_name + " {}\"); }\n"
+  else
+    sig + " {\n  return " + derive_display_record_fields(type_name, field_defs) + ";\n}\n"
+  end
+end
+
+fn derive_display_variant_case(variant: Shared<TypeVariant>) -> string =
+  match variant {
+    VarUnit(name) =>
+      "  if (std::holds_alternative<" + name + ">(self._)) return mlc::String(\"" + name + "\");\n",
+    VarTuple(name, field_types) =>
+      if field_types.length() == 0 then
+        "  if (std::holds_alternative<" + name + ">(self._)) return mlc::String(\"" + name + "\");\n"
+      else
+        "  if (std::holds_alternative<" + name + ">(self._)) return mlc::String(\"" + name + "(\") + mlc::to_string(std::get<" + name + ">(self._)._0) + mlc::String(\")\");\n"
+      end,
+    VarRecord(name, fds) => derive_display_variant_record(name, fds)
+  }
+
+fn derive_display_variant_record(name: string, fds: [Shared<FieldDef>]) -> string = do
+  if fds.length() == 0 then
+    "  if (std::holds_alternative<" + name + ">(self._)) return mlc::String(\"" + name + "\");\n"
+  else
+    let mut parts = "mlc::to_string(std::get<" + name + ">(self._)." + fds[0].name + ")"
+    let mut fi = 1
+    while fi < fds.length() do
+      parts = parts + " + mlc::String(\", \") + mlc::to_string(std::get<" + name + ">(self._)." + fds[fi].name + ")"
+      fi = fi + 1
+    end
+    "  if (std::holds_alternative<" + name + ">(self._)) return mlc::String(\"" + name + "(\") + " + parts + " + mlc::String(\")\");\n"
+  end
+end
+
+fn derive_display_sum(type_name: string, variants: [Shared<TypeVariant>]) -> string = do
+  let mut cases = ""
+  let mut i = 0
+  while i < variants.length() do
+    cases = cases + derive_display_variant_case(variants[i])
+    i = i + 1
+  end
+  "mlc::String " + type_name + "_to_string(const " + type_name + "& self) noexcept {\n" + cases + "  return mlc::String(\"\");\n}\n"
+end
+
+fn derive_eq_record(type_name: string, field_defs: [Shared<FieldDef>]) -> string = do
+  const sig = "bool operator==(const " + type_name + "& a, const " + type_name + "& b) noexcept"
+  if field_defs.length() == 0 then
+    sig + " { return true; }\n"
+  else
+    let mut cond = "a." + field_defs[0].name + " == b." + field_defs[0].name
+    let mut i = 1
+    while i < field_defs.length() do
+      cond = cond + " && a." + field_defs[i].name + " == b." + field_defs[i].name
+      i = i + 1
+    end
+    sig + " { return " + cond + "; }\n"
+  end
+end
+
+fn derive_eq_sum(type_name: string) -> string =
+  "bool operator==(const " + type_name + "& a, const " + type_name + "& b) noexcept { return a._ == b._; }\n"
+
+fn derive_ord_build_cond(field_defs: [Shared<FieldDef>]) -> string = do
+  let mut cond = "a." + field_defs[0].name + " < b." + field_defs[0].name
+  let mut i = 1
+  while i < field_defs.length() do
+    let mut prev_eq = "a." + field_defs[0].name + " == b." + field_defs[0].name
+    let mut j = 1
+    while j < i do
+      prev_eq = prev_eq + " && a." + field_defs[j].name + " == b." + field_defs[j].name
+      j = j + 1
+    end
+    cond = cond + " || (" + prev_eq + " && a." + field_defs[i].name + " < b." + field_defs[i].name + ")"
+    i = i + 1
+  end
+  cond
+end
+
+fn derive_ord_record(type_name: string, field_defs: [Shared<FieldDef>]) -> string = do
+  const sig = "bool operator<(const " + type_name + "& a, const " + type_name + "& b) noexcept"
+  if field_defs.length() == 0 then
+    sig + " { return false; }\n"
+  else
+    sig + " { return " + derive_ord_build_cond(field_defs) + "; }\n"
+  end
+end
+
+fn derive_ord_sum(type_name: string) -> string =
+  "bool operator<(const " + type_name + "& a, const " + type_name + "& b) noexcept { return a._ < b._; }\n"
+
+fn variants_is_single_record(variants: [Shared<TypeVariant>]) -> bool =
+  if variants.length() != 1 then false
+  else match variants[0] { VarRecord(_, _) => true, _ => false }
+  end
+
+fn derive_record_field_defs(variants: [Shared<TypeVariant>]) -> [Shared<FieldDef>] =
+  match variants[0] { VarRecord(_, fds) => fds, _ => [] }
+
+fn gen_derive_record_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string = do
+  const fds = derive_record_field_defs(variants)
+  if trait_name == "Display" then derive_display_record(type_name, fds)
+  else if trait_name == "Eq" then derive_eq_record(type_name, fds)
+  else if trait_name == "Ord" then derive_ord_record(type_name, fds)
+  else ""
+  end
+end
+
+fn gen_derive_sum_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string =
+  if trait_name == "Display" then derive_display_sum(type_name, variants)
+  else if trait_name == "Eq" then derive_eq_sum(type_name)
+  else if trait_name == "Ord" then derive_ord_sum(type_name)
+  else ""
+  end
+
+export fn gen_derive_methods(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>], derive_traits: [string]) -> string = do
+  if derive_traits.length() == 0 then ""
+  else
+    const is_record = variants_is_single_record(variants)
+    let mut result = ""
+    let mut i = 0
+    while i < derive_traits.length() do
+      const trait_code = if is_record then gen_derive_record_trait(type_name, variants, derive_traits[i])
+                         else gen_derive_sum_trait(type_name, variants, derive_traits[i])
+                         end
+      result = result + trait_code
+      i = i + 1
+    end
+    result
+  end
+end
 
 export fn gen_type_decl_fwd_only(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string =
   gen_type_decl_fwd(context, type_name, type_params, variants)

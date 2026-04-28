@@ -1,13 +1,87 @@
 // Checker entry: name resolution + type inference over a program (or entry slice).
 
-import { Program, Decl, Result, decl_inner, param_name, param_typ,
-         Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span } from "../ast"
+import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
+         Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span,
+         Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit } from "../ast"
 import { check_names_expr } from "./names"
 import { check_fn_body_mutations } from "./check_mutations"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
 import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
 import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
+
+fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
+  let mut optional_began = false
+  let mut i = 0
+  while i < parameters.length() do
+    if parameters[i].has_default then
+      optional_began = true
+    else
+      if optional_began then return false end
+    end
+    i = i + 1
+  end
+  true
+end
+
+fn default_expr_mvp_ok(e: Shared<Expr>) -> bool = match e {
+  ExprInt(_, _) => true,
+  ExprStr(_, _) => true,
+  ExprBool(_, _) => true,
+  ExprUnit(_)   => true,
+  _ => false
+}
+
+fn is_extern_body(e: Shared<Expr>) -> bool = match e {
+  ExprExtern(_) => true,
+  _ => false
+}
+
+fn param_default_diagnostics(
+  type_parameters: [string],
+  parameters: [Shared<Param>],
+  body: Shared<Expr>,
+  registry: TypeRegistry
+) -> [Diagnostic] = do
+  let mut out: [Diagnostic] = []
+  if !param_defaults_in_tail(parameters) then
+    out.push(diagnostic_error("parameter defaults must be trailing", expr_span(body)))
+  end
+  let mut has_any_default = false
+  let mut j = 0
+  while j < parameters.length() do
+    if parameters[j].has_default then has_any_default = true end
+    j = j + 1
+  end
+  if type_parameters.length() > 0 && has_any_default then
+    out.push(diagnostic_error("default parameters are not allowed on generic functions yet", expr_span(body)))
+  end
+  if is_extern_body(body) && has_any_default then
+    out.push(diagnostic_error("default parameters are not allowed on extern functions", expr_span(body)))
+  end
+  const empty_type_environment: Map<string, Shared<Type>> = Map.new()
+  const default_infer_context = check_context_new(empty_type_environment, registry)
+  let mut p = 0
+  while p < parameters.length() do
+    if parameters[p].has_default then
+      const param_default_expr = parameters[p].default
+      if !default_expr_mvp_ok(param_default_expr) then
+        out.push(diagnostic_error("parameter default must be a literal in this version", expr_span(param_default_expr)))
+      else
+        const default_infer = infer_expr(param_default_expr, default_infer_context)
+        out = diagnostics_append(out, default_infer.errors)
+        const param_expected_type = type_from_annotation(param_typ(parameters[p]))
+        if type_is_checkable(param_expected_type, registry) && type_is_checkable(default_infer.inferred_type, registry) && !types_structurally_equal(param_expected_type, default_infer.inferred_type) then
+          out.push(diagnostic_error(
+            "parameter default: expected " + type_description(param_expected_type) + ", got " + type_description(default_infer.inferred_type),
+            expr_span(param_default_expr)))
+        end
+      end
+    end
+    p = p + 1
+  end
+  out
+end
 
 fn collect_globals(program: Program) -> Map<string, bool> = do
   let names: Map<string, bool> = Map.new()
@@ -19,7 +93,7 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
   while index < program.decls.length() do
     match decl_inner(program.decls[index]) {
       DeclFn(name, _, _, _, _, _) => do names.set(name, true); () end,
-      DeclType(name, _, variants) => do
+      DeclType(name, _, variants, _) => do
         names.set(name, true); let mut variant_index = 0
         while variant_index < variants.length() do
           match variants[variant_index] {
@@ -100,6 +174,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
   while declaration_index < entry.decls.length() do
     match decl_inner(entry.decls[declaration_index]) {
       DeclFn(_, type_parameters, _, parameters, return_type_annotation, body) => do
+        all_diagnostics = diagnostics_append(all_diagnostics, param_default_diagnostics(type_parameters, parameters, body, registry))
         const locals: [string] = []
         let mut type_parameter_index = 0
         while type_parameter_index < type_parameters.length() do
@@ -130,7 +205,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
           diagnostics_append(all_diagnostics, inference_result.errors),
           return_type_errors); ()
       end,
-      DeclType(_, _, _)    => do () end,
+      DeclType(_, _, _, _) => do () end,
       DeclTrait(_, _, _)   => do () end,
       DeclExtend(_, _, _)  => do () end,
       DeclImport(_, _)     => do () end,

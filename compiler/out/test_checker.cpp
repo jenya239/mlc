@@ -103,6 +103,13 @@ results.push_back(test_runner::assert_eq_int(mlc::String("A3: let (a, b, c) = (1
 results.push_back(test_runner::assert_eq_int(mlc::String("A3: let {x, y} = record - 0 errors"), check_error_count(mlc::String("type Point = { x: i32, y: i32 }\nfn f() -> i32 = do\n  let p = Point { x: 1, y: 2 }\n  let { x, y } = p\n  x + y\nend")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("A3: let [a, ...b] = array - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  let a: [i32] = [1, 2, 3]\n  let [u, ...v] = a\n  u\nend")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("A3: let Ok(x) = Ok - 0 errors"), check_error_count(mlc::String("type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let o: Result<i32, string> = Ok(1)\n  let Ok(n) = o\n  n\nend")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("A4: default param call with omitted args - 0 errors"), check_error_count(mlc::String("fn f(a: i32 = 1) -> i32 = a\nfn g() -> i32 = f()")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("A4: two defaults call with one arg - 0 errors"), check_error_count(mlc::String("fn f(a: i32, b: i32 = 2, c: i32 = 3) -> i32 = a + b + c\nfn g() -> i32 = f(0)")), 0));
+results.push_back(test_runner::assert_true(mlc::String("A4: default not before required"), first_checker_error_line(mlc::String("fn f(a: i32 = 1, b: i32) -> i32 = b")).contains(mlc::String("parameter defaults must be trailing"))));
+results.push_back(test_runner::assert_true(mlc::String("A4: generic function default rejected"), first_checker_error_line(mlc::String("fn f<T>(a: T = 1) -> T = a")).contains(mlc::String("default parameters are not allowed on generic"))));
+results.push_back(test_runner::assert_true(mlc::String("A4: non-literal default rejected"), first_checker_error_line(mlc::String("fn f(a: i32 = 1 + 1) -> i32 = a")).contains(mlc::String("literal"))));
+results.push_back(test_runner::assert_true(mlc::String("A4: too many call arguments with defaults"), first_checker_error_line(mlc::String("fn f(a: i32 = 1) -> i32 = a\nfn g() -> i32 = f(1, 2)")).contains(mlc::String("expected between"))));
+results.push_back(test_runner::assert_true(mlc::String("A4: extern with default rejected"), first_checker_error_line(mlc::String("extern fn f(a: i32 = 1) -> i32")).contains(mlc::String("extern"))));
 results.push_back(test_runner::assert_true(mlc::String("for-in: iterator must be an array"), first_checker_error_line(mlc::String("fn g() -> i32 = do\n  for x in 42 do\n    0\n  end\n  0\nend")).contains(mlc::String("for loop range must be an array"))));
 results.push_back(test_runner::assert_true(mlc::String("index: subscript must be i32"), first_checker_error_line(mlc::String("fn f(items: [i32]) -> i32 = items[\"0\"]")).contains(mlc::String("array index must be i32"))));
 results.push_back(test_runner::assert_eq_int(mlc::String("check_with_context: entry sees helper from full program - 0 errors"), check_with_context_error_count(mlc::String("fn main() -> i32 = helper()"), mlc::String("fn helper() -> i32 = 1\nfn main() -> i32 = helper()")), 0));
@@ -180,6 +187,12 @@ results.push_back(test_runner::assert_eq_int(mlc::String("infer: array group_by 
 results.push_back(test_runner::assert_true(mlc::String("infer: sum on non-i32 array"), first_checker_error_line(mlc::String("fn f(a: [string]) -> i32 = a.sum()")).contains(mlc::String("sum expects i32 array"))));
 results.push_back(test_runner::assert_true(mlc::String("infer: flat on non-nested array"), first_checker_error_line(mlc::String("fn f(a: [i32]) -> [i32] = a.flat()")).contains(mlc::String("flat expects an array of arrays"))));
 results.push_back(test_runner::assert_true(mlc::String("infer: zip expects array argument"), first_checker_error_line(mlc::String("fn f(a: [i32]) -> i32 = a.zip(1).length()")).contains(mlc::String("expects an array argument"))));
+results.push_back(test_runner::assert_eq_int(mlc::String("template: plain string - 0 errors"), check_error_count(mlc::String("fn f() -> string = `hello`")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("template: i32 interpolation - 0 errors"), check_error_count(mlc::String("fn f(x: i32) -> string = `val ${x}`")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("template: string interpolation - 0 errors"), check_error_count(mlc::String("fn f(s: string) -> string = `hello ${s}`")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("template: bool interpolation - 0 errors"), check_error_count(mlc::String("fn f(b: bool) -> string = `${b}`")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("template: multi interpolation - 0 errors"), check_error_count(mlc::String("fn f(x: i32, y: i32) -> string = `${x}+${y}`")), 0));
+results.push_back(test_runner::assert_true(mlc::String("template: undefined var in interpolation - error"), check_error_count(mlc::String("fn f() -> string = `${undefined_var}`")) > 0));
 return results;
 }
 

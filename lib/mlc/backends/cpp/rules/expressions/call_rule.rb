@@ -112,6 +112,14 @@ module MLC
                 return lower_string_method(node)
               end
 
+              # Check for derive Display to_string call: obj.to_string() on derived type
+              if context.checker.member_expr?(node.callee) &&
+                 node.callee.member == "to_string" &&
+                 node.args.empty? &&
+                 derive_has_trait?(node.callee.object.type, "Display")
+                return lower_derive_to_string(node)
+              end
+
               # Check for numeric method calls
               if context.checker.member_expr?(node.callee) &&
                  node.callee.object.type.respond_to?(:primitive?) &&
@@ -1201,6 +1209,26 @@ module MLC
               return true if type.is_a?(MLC::SemanticIR::SymbolType)
               return false unless type.respond_to?(:name)
               %w[string str String mlc::String].include?(type.name)
+            end
+
+            # Check if a SemanticIR type has a specific derive trait.
+            def derive_has_trait?(type, trait)
+              return false unless type&.respond_to?(:name) && context.type_registry
+              type_info = context.type_registry.lookup(type.name)
+              return false unless type_info&.ast_node.respond_to?(:derive_traits)
+              Array(type_info.ast_node.derive_traits).include?(trait)
+            end
+
+            # Generate TypeName_to_string(obj) for derive Display types.
+            def lower_derive_to_string(node)
+              obj_type = node.callee.object.type
+              type_name = obj_type.name
+              obj = lower_expression(node.callee.object)
+              context.factory.function_call(
+                callee: context.factory.identifier(name: "#{type_name}_to_string"),
+                arguments: [obj],
+                argument_separators: []
+              )
             end
           end
         end

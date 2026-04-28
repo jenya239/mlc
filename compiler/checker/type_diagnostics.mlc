@@ -64,6 +64,17 @@ export fn call_arity_diagnostics(expected_count: i32, actual_count: i32, call_so
   end
 end
 
+export fn call_arity_range_diagnostics(
+  min_count: i32, max_count: i32, actual_count: i32, call_source_span: Span) -> [Diagnostic] = do
+  if actual_count < min_count || actual_count > max_count then
+    [diagnostic_error(
+      "expected between " + min_count.to_string() + " and " + max_count.to_string() + " arguments, got " + actual_count.to_string(),
+      call_source_span)]
+  else
+    []
+  end
+end
+
 export fn method_arity_after_receiver(receiver_errors: [Diagnostic], method_name: string, argument_count: i32, method_span: Span) -> [Diagnostic] = do
   if receiver_errors.length() > 0 then []
   else infer_builtin_method_arity_diagnostics(method_name, argument_count, method_span)

@@ -54,11 +54,14 @@ module MLC
         def register_func(func, module_name)
           return if @function_registry.registered?(func.name)
 
+          ptypes = func.params.map(&:type)
+          req = func.params.find_index { |p| p.default } || ptypes.length
           info = MLC::Registries::FunctionSignature.new(
             func.name,
-            func.params.map(&:type),
+            ptypes,
             func.ret_type,
-            func.type_params || []
+            func.type_params || [],
+            req
           )
           @function_registry.register(
             func.name,

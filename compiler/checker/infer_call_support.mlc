@@ -3,8 +3,9 @@
 import { Expr, Span, diagnostic_error, diagnostics_append } from "../ast"
 import { Type } from "./registry"
 import { CheckContext } from "./check_context"
+import { TypeRegistry } from "./registry"
 import { InferResult } from "./infer_result"
-import { constructor_arity_diagnostics, call_arity_diagnostics } from "./type_diagnostics"
+import { constructor_arity_diagnostics, call_arity_diagnostics, call_arity_range_diagnostics } from "./type_diagnostics"
 import * as semantic_type_structure from "./semantic_type_structure"
 
 export fn infer_expr_call_for_constructor_name(
@@ -30,10 +31,25 @@ export fn infer_expr_call_non_constructor_arity_only(
   function_result: InferResult,
   call_arguments: [Shared<Expr>],
   call_source_span: Span,
-  return_type: Shared<Type>
+  return_type: Shared<Type>,
+  registry: TypeRegistry,
+  callee_name: string
 ) -> InferResult = do
   const parameter_types = semantic_type_structure.function_parameter_list(function_result.inferred_type)
-  const arity_errors = call_arity_diagnostics(parameter_types.length(), call_arguments.length(), call_source_span)
+  const max_arity = parameter_types.length()
+  const min_arity =
+    if callee_name != "" && registry.has_fn(callee_name) then
+      const r = registry.required_arity_for_fn(callee_name)
+      if r >= 0 then r else max_arity end
+    else
+      max_arity
+    end
+  const arity_errors =
+    if min_arity == max_arity then
+      call_arity_diagnostics(max_arity, call_arguments.length(), call_source_span)
+    else
+      call_arity_range_diagnostics(min_arity, max_arity, call_arguments.length(), call_source_span)
+    end
   InferResult {
     inferred_type: return_type,
     errors: diagnostics_append(base.errors, arity_errors)
@@ -61,12 +77,15 @@ export fn infer_expr_call_non_constructor(
   function_result: InferResult,
   with_arguments: InferResult,
   call_arguments: [Shared<Expr>],
-  call_source_span: Span
+  call_source_span: Span,
+  registry: TypeRegistry,
+  callee_name: string
 ) -> InferResult = do
   const return_type = match function_result.inferred_type { TFn(_, return_ty) => return_ty, _ => Shared.new(TUnknown) }
   const base = InferResult { inferred_type: return_type, errors: with_arguments.errors }
   if semantic_type_structure.type_is_function(function_result.inferred_type) then
-    infer_expr_call_non_constructor_arity_only(base, function_result, call_arguments, call_source_span, return_type)
+    infer_expr_call_non_constructor_arity_only(
+      base, function_result, call_arguments, call_source_span, return_type, registry, callee_name)
   else
     infer_expr_call_non_constructor_not_callable(base, function_result, call_source_span)
   end

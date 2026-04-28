@@ -83,11 +83,13 @@ module MLC
 
               canonical_name = metadata.qualified_name || [module_info.name, metadata.name].join('.')
 
+              ptypes = params.map { |p| p[:type] }
               info = MLC::Registries::FunctionSignature.new(
                 metadata.name,
-                params.map { |p| p[:type] },
+                ptypes,
                 ret_type,
-                type_params
+                type_params,
+                ptypes.length
               )
 
               function_registry.register(

@@ -35,7 +35,7 @@ module MLC
                 module_name: @module_context_service.current_module_name
               )
 
-              MLC::SemanticIR::TypeDecl.new(name: decl.name, type: core_type, type_params: type_params, exported: decl.exported)
+              MLC::SemanticIR::TypeDecl.new(name: decl.name, type: core_type, type_params: type_params, exported: decl.exported, derive_traits: Array(decl.derive_traits))
             end
 
             private

@@ -571,6 +571,15 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true("infer: flat on non-nested array",
     first_checker_error_line("fn f(a: [i32]) -> [i32] = a.flat()").contains("flat expects an array of arrays")))
 
+  results.push(assert_eq_int("derive Display: to_string on record — 0 errors",
+    check_error_count("type Point = { x: i32, y: i32 } derive { Display }\nfn f(p: Point) -> string = p.to_string()"), 0))
+
+  results.push(assert_eq_int("derive Eq: == on record — 0 errors",
+    check_error_count("type Point = { x: i32, y: i32 } derive { Eq }\nfn f(a: Point, b: Point) -> bool = a == b"), 0))
+
+  results.push(assert_eq_int("derive Display on sum type — 0 errors",
+    check_error_count("type Color = Red | Green | Blue derive { Display }\nfn f(c: Color) -> string = c.to_string()"), 0))
+
   results.push(assert_true("infer: zip expects array argument",
     first_checker_error_line("fn f(a: [i32]) -> i32 = a.zip(1).length()").contains("expects an array argument")))
 

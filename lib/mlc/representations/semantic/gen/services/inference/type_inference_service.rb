@@ -317,6 +317,11 @@ module MLC
                   instance_fn_type = resolve_extend_instance_method_type(object_type, member)
                   return instance_fn_type if instance_fn_type
 
+                  # Check derive traits: Display provides to_string, Eq provides ==
+                  if member == "to_string" && type_has_derive?(object_type, "Display")
+                    return SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("string"))
+                  end
+
                   type_error("Unknown field '#{member}' for type #{object_type.name}", node: node)
                 end
               elsif object_type.is_a?(SemanticIR::ArrayType)
@@ -337,6 +342,11 @@ module MLC
                 # Fallback: check extend blocks for instance methods
                 instance_fn_type = resolve_extend_instance_method_type(object_type, member)
                 return instance_fn_type if instance_fn_type
+
+                # Check derive traits
+                if member == "to_string" && type_has_derive?(object_type, "Display")
+                  return SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("string"))
+                end
 
                 # Check if this is a trait type (dynamic dispatch via trait object)
                 if object_type.respond_to?(:name) && @trait_registry
@@ -651,6 +661,11 @@ module MLC
                 # Check trait object methods
                 trait_ret = @context.send(:resolve_trait_method_call_type, object_type, member, args)
                 return trait_ret if trait_ret
+
+                # Check derive traits
+                if member == "to_string" && args.empty? && @context.send(:type_has_derive?, object_type, "Display")
+                  return prim("string")
+                end
 
                 type_error("Unknown member '#{member}' for type #{describe(object_type)}")
               end
@@ -1315,6 +1330,14 @@ module MLC
 
             def current_type_params
               @scope_context.current_type_params
+            end
+
+            # Check if a type has a specific derive trait registered.
+            def type_has_derive?(object_type, trait)
+              return false unless object_type.respond_to?(:name) && @type_registry
+              type_info = @type_registry.lookup(object_type.name)
+              return false unless type_info&.ast_node.respond_to?(:derive_traits)
+              Array(type_info.ast_node.derive_traits).include?(trait)
             end
           end
         end

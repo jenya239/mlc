@@ -4,6 +4,8 @@
 #include "lexer.hpp"
 #include "decls.hpp"
 #include "ast.hpp"
+#include "exprs.hpp"
+#include "preds.hpp"
 
 namespace test_parser {
 
@@ -11,9 +13,13 @@ using namespace test_runner;
 using namespace lexer;
 using namespace decls;
 using namespace ast;
+using namespace exprs;
+using namespace preds;
 using namespace ast_tokens;
 
 ast::Program parse_source(mlc::String source) noexcept;
+
+std::shared_ptr<ast::Expr> parse_expr_source(mlc::String source) noexcept;
 
 int decl_count(mlc::String source) noexcept;
 
@@ -24,6 +30,8 @@ std::shared_ptr<ast::Decl> second_decl(mlc::String source) noexcept;
 mlc::Array<test_runner::TestResult> parser_tests() noexcept;
 
 ast::Program parse_source(mlc::String source) noexcept{return decls::parse_program(lexer::tokenize(source).tokens);}
+
+std::shared_ptr<ast::Expr> parse_expr_source(mlc::String source) noexcept{return exprs::parse_expr(preds::parser_new(lexer::tokenize(source).tokens)).expr;}
 
 int decl_count(mlc::String source) noexcept{return parse_source(source).decls.size();}
 
@@ -38,6 +46,7 @@ results.push_back(test_runner::assert_eq_int(mlc::String("single fn decl - 1 dec
 results.push_back(test_runner::assert_eq_int(mlc::String("two fn decls - 2 decls"), decl_count(mlc::String("fn f() -> i32 = 1\nfn g() -> i32 = 2")), 2));
 results.push_back(test_runner::assert_eq_int(mlc::String("type decl - 1 decl"), decl_count(mlc::String("type Color = Red | Green | Blue")), 1));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with params - 1 decl"), decl_count(mlc::String("fn add(x: i32, y: i32) -> i32 = x + y")), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("fn with default param - 1 decl"), decl_count(mlc::String("fn f(a: i32 = 1) -> i32 = a")), 1));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with do block - 1 decl"), decl_count(mlc::String("fn f() -> i32 = do\n  const x = 1\n  x\nend")), 1));
 results.push_back(test_runner::assert_eq_int(mlc::String("type + fn - 2 decls"), decl_count(mlc::String("type Color = Red\nfn f() -> i32 = 1")), 2));
 results.push_back(test_runner::assert_true(mlc::String("fn decl is DeclFn"), [&]() { if (std::holds_alternative<ast::DeclFn>((*first_decl(mlc::String("fn f() -> i32 = 42"))))) { auto _v_declfn = std::get<ast::DeclFn>((*first_decl(mlc::String("fn f() -> i32 = 42")))); auto [_w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return true; } return false; }()));
@@ -52,6 +61,11 @@ results.push_back(test_runner::assert_true(mlc::String("import star-as: path and
 results.push_back(test_runner::assert_eq_int(mlc::String("import named list - 1 decl"), decl_count(mlc::String("import { foo, bar } from \"./mod.mlc\"")), 1));
 results.push_back(test_runner::assert_true(mlc::String("import named list: path and symbols order"), [&]() { if (std::holds_alternative<ast::DeclImport>((*first_decl(mlc::String("import { foo, bar } from \"./mod.mlc\""))))) { auto _v_declimport = std::get<ast::DeclImport>((*first_decl(mlc::String("import { foo, bar } from \"./mod.mlc\"")))); auto [path, symbols] = _v_declimport; return path == mlc::String("./mod.mlc") && symbols.size() == 2 && symbols[0] == mlc::String("foo") && symbols[1] == mlc::String("bar"); } return false; }()));
 results.push_back(test_runner::assert_true(mlc::String("import single name in braces"), [&]() { if (std::holds_alternative<ast::DeclImport>((*first_decl(mlc::String("import { only } from \"./one.mlc\""))))) { auto _v_declimport = std::get<ast::DeclImport>((*first_decl(mlc::String("import { only } from \"./one.mlc\"")))); auto [path, symbols] = _v_declimport; return path == mlc::String("./one.mlc") && symbols.size() == 1 && symbols[0] == mlc::String("only"); } return false; }()));
+results.push_back(test_runner::assert_eq_int(mlc::String("plain template literal - 1 decl"), decl_count(mlc::String("fn f() -> string = `hello`")), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("template with interpolation - 1 decl"), decl_count(mlc::String("fn f(x: i32) -> string = `a ${x} b`")), 1));
+results.push_back(test_runner::assert_true(mlc::String("plain template parses to ExprStr"), [&]() { if (std::holds_alternative<ast::ExprStr>((*parse_expr_source(mlc::String("`hello`")))._)) { auto _v_exprstr = std::get<ast::ExprStr>((*parse_expr_source(mlc::String("`hello`")))._); auto [s, _w0] = _v_exprstr; return s == mlc::String("hello"); } return false; }()));
+results.push_back(test_runner::assert_true(mlc::String("template with interp parses to ExprBin"), [&]() { if (std::holds_alternative<ast::ExprBin>((*parse_expr_source(mlc::String("`a ${x}`")))._)) { auto _v_exprbin = std::get<ast::ExprBin>((*parse_expr_source(mlc::String("`a ${x}`")))._); auto [op, _w0, _w1, _w2] = _v_exprbin; return op == mlc::String("+"); } return false; }()));
+results.push_back(test_runner::assert_true(mlc::String("template with only interp parses to ExprBin"), [&]() { if (std::holds_alternative<ast::ExprBin>((*parse_expr_source(mlc::String("`${x}`")))._)) { auto _v_exprbin = std::get<ast::ExprBin>((*parse_expr_source(mlc::String("`${x}`")))._); auto [op, _w0, _w1, _w2] = _v_exprbin; return op == mlc::String("+"); } return false; }()));
 return results;
 }
 

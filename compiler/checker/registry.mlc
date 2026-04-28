@@ -1,6 +1,6 @@
 // --- Semantic type --------------------------------------------------------
 
-import { TypeExpr, Decl, TypeVariant, FieldDef, Program } from "../ast"
+import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ } from "../ast"
 
 export type Type =
   | TI32 | TString | TBool | TUnit
@@ -18,6 +18,7 @@ export type Type =
 export type TypeRegistry = TypeRegistry {
   fn_types:    Map<string, Shared<Type>>,
   function_type_parameter_names: Map<string, [string]>,
+  function_required_arity: Map<string, i32>,
   function_trait_bounds: Map<string, [[string]]>,
   ctor_types:  Map<string, Shared<Type>>,
   ctor_params: Map<string, [Shared<Type>]>,
@@ -76,6 +77,9 @@ export extend TypeRegistry {
   fn fn_trait_bounds(self, fn_name: string) -> [[string]] =
     if function_trait_bounds.has(fn_name) then function_trait_bounds.get(fn_name)
     else do const empty_bounds: [[string]] = []; empty_bounds end end
+
+  fn required_arity_for_fn(self, fn_name: string) -> i32 =
+    if self.function_required_arity.has(fn_name) then self.function_required_arity.get(fn_name) else -1 end
 }
 
 export fn empty_registry() -> TypeRegistry = do
@@ -102,9 +106,15 @@ export fn empty_registry() -> TypeRegistry = do
   builtin_function_types.set(
     "args",
     Shared.new(TFn([], Shared.new(TArray(Shared.new(TString))))))
+  const fn_req: Map<string, i32> = Map.new()
+  fn_req.set("print", 1)
+  fn_req.set("println", 1)
+  fn_req.set("exit", 1)
+  fn_req.set("args", 0)
   TypeRegistry {
     fn_types: builtin_function_types,
     function_type_parameter_names: Map.new(),
+    function_required_arity: fn_req,
     function_trait_bounds: Map.new(),
     ctor_types: ctor_types,
     ctor_params: ctor_params,
@@ -137,6 +147,15 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     end,
     _ => Shared.new(TUnknown)
   }
+
+fn required_arity_from_params(params: [Shared<Param>]) -> i32 = do
+  let mut i = 0
+  while i < params.length() do
+    if params[i].has_default then return i end
+    i = i + 1
+  end
+  params.length()
+end
 
 export fn build_registry(prog: Program) -> TypeRegistry = do
   let mut registry = empty_registry()
@@ -178,10 +197,11 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       end
       registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
       registry.function_type_parameter_names.set(name, type_parameters)
+      registry.function_required_arity.set(name, required_arity_from_params(params))
       if trait_bounds.length() > 0 then registry.function_trait_bounds.set(name, trait_bounds) end
       registry
     end,
-    DeclType(type_name, type_parameters, variants) => do
+    DeclType(type_name, type_parameters, variants, _) => do
       registry.algebraic_decl_type_parameter_names.set(type_name, type_parameters)
       let mut i = 0
       while i < variants.length() do
