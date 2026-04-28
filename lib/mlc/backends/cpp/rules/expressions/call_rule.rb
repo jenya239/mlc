@@ -821,6 +821,10 @@ module MLC
                   argument_separators: []
                 )
 
+              when "to_string"
+                # str.to_string() -> str (identity for strings)
+                string_obj
+
               else
                 # Fallback: call method directly
                 member = context.factory.member_access(

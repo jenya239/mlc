@@ -209,11 +209,10 @@ module MLC
                 if part[:type] == :text
                   factory.string_literal(value: part[:value], origin: node.origin)
                 else
-                  # Wrap non-string expressions in to_string() call
                   expr = part[:value]
                   factory.call(
-                    callee: factory.var_ref(name: 'to_string', origin: node.origin),
-                    args: [expr],
+                    callee: factory.member_access(object: expr, member: 'to_string', origin: node.origin),
+                    args: [],
                     origin: node.origin
                   )
                 end

@@ -8,6 +8,7 @@
 #include "types.hpp"
 #include "ast.hpp"
 #include "ast_tokens.hpp"
+#include "lexer.hpp"
 
 namespace exprs {
 

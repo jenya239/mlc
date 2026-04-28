@@ -845,6 +845,9 @@ module MLC
                 when "pad_start", "pad_end"
                   ensure_args(member, args, 2)
                   prim("string")
+                when "to_string"
+                  ensure_args(member, args, 0)
+                  prim("string")
                 else
                   type_error(
                     "Unknown string method '#{member}'. Supported methods: split, chars, lines, substring, byte_substring, trim, trim_start, trim_end, upper, lower, to_upper, to_lower, is_empty, contains, starts_with, ends_with, length, len, byte_size, index_of, last_index_of, replace, char_at, byte_at, to_i, repeat, reverse, is_blank, is_present, squish, truncate, titleize, camelize, underscore, pad_start, pad_end"
@@ -1121,7 +1124,8 @@ module MLC
               when "trim", "trim_start", "trim_end", "upper", "lower",
                    "to_lower", "to_upper", "substring", "byte_substring", "replace",
                    "char_at", "byte_at", "repeat", "reverse", "squish", "truncate",
-                   "titleize", "camelize", "underscore", "pad_start", "pad_end"
+                   "titleize", "camelize", "underscore", "pad_start", "pad_end",
+                   "to_string"
                 str
               when "is_empty", "is_blank", "is_present",
                    "contains", "starts_with", "ends_with"

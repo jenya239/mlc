@@ -1,9 +1,10 @@
 // --- Expression and pattern parser ---------------------------------------
 
-import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, FieldValsResult, StmtsResult, StmtResult, TypeResult } from "./preds"
+import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, FieldValsResult, StmtsResult, StmtResult, TypeResult, parser_new } from "./preds"
 import { parse_type } from "./types"
 import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit } from "../ast"
 import { TKind, Eof } from "../ast_tokens"
+import { tokenize } from "../lexer"
 
 // --- Statement parsers (merged to break exprs<->stmts cycle) --------------
 
@@ -481,20 +482,20 @@ fn parse_arg_list(parser: Parser) -> ExprsResult = do
   end
 end
 
-fn fstr_to_string_expr(part: string) -> Shared<Expr> =
-  Shared.new(ExprMethod(Shared.new(ExprIdent(part, span_unknown())), "to_string", [], span_unknown()))
-
-fn build_fstr_part_expr(part: string, is_literal: bool) -> Shared<Expr> =
-  if is_literal then Shared.new(ExprStr(part, span_unknown()))
-  else if part.length() == 0 then Shared.new(ExprStr(part, span_unknown()))
-  else fstr_to_string_expr(part)
-  end
-
-fn build_fstr_expr(parts: [string]) -> Shared<Expr> = do
+fn build_template_expr(parts: [string]) -> Shared<Expr> = do
   let mut result: Shared<Expr> = Shared.new(ExprStr("", span_unknown()))
   let mut pi = 0
   while pi < parts.length() do
-    const part_expr = build_fstr_part_expr(parts[pi], pi % 2 == 0)
+    const part_expr =
+      if pi % 2 == 0 then
+        Shared.new(ExprStr(parts[pi], span_unknown()))
+      else if parts[pi].length() == 0 then
+        Shared.new(ExprStr("", span_unknown()))
+      else
+        const sub_lex = tokenize(parts[pi])
+        const sub_parsed = parse_expr(parser_new(sub_lex.tokens))
+        Shared.new(ExprMethod(sub_parsed.expr, "to_string", [], span_unknown()))
+      end
     if pi == 0 then
       result = part_expr
     else
@@ -517,8 +518,8 @@ fn parse_primary_string_literal(parser: Parser, value: string) -> ExprResult = d
   ExprResult { expr: Shared.new(ExprStr(value, source_span)), parser: parser.advance() }
 end
 
-fn parse_primary_fat_string_literal(parser: Parser, parts: [string]) -> ExprResult =
-  ExprResult { expr: build_fstr_expr(parts), parser: parser.advance() }
+fn parse_primary_template_literal(parser: Parser, parts: [string]) -> ExprResult =
+  ExprResult { expr: build_template_expr(parts), parser: parser.advance() }
 
 fn parse_primary_boolean_literal(parser: Parser, value: bool) -> ExprResult = do
   const source_span = parser.span_at_cursor()
@@ -623,7 +624,7 @@ fn parse_primary(parser: Parser) -> ExprResult = do
   const kind = parser.kind()
   if kind.is_int() then parse_primary_integer_literal(parser, kind.int_val())
   else if kind.is_str() then parse_primary_string_literal(parser, kind.str_val())
-  else if kind.is_fstr() then parse_primary_fat_string_literal(parser, kind.fstr_parts())
+  else if kind.is_template() then parse_primary_template_literal(parser, kind.template_parts())
   else if kind.is_true() then parse_primary_boolean_literal(parser, true)
   else if kind.is_false() then parse_primary_boolean_literal(parser, false)
   else if kind.is_lparen() then parse_primary_parenthesized(parser)

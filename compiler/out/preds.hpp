@@ -116,9 +116,9 @@ bool TKind_is_int(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_str(ast_tokens::TKind self) noexcept;
 
-bool TKind_is_fstr(ast_tokens::TKind self) noexcept;
+bool TKind_is_template(ast_tokens::TKind self) noexcept;
 
-mlc::Array<mlc::String> TKind_fstr_parts(ast_tokens::TKind self) noexcept;
+mlc::Array<mlc::String> TKind_template_parts(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_equal(ast_tokens::TKind self) noexcept;
 

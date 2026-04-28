@@ -66,6 +66,8 @@ module MLC
               tokenize_string
             when "'"
               tokenize_raw_string
+            when '`'
+              tokenize_backtick_template
             when '<'
               handle_left_angle
             when '/'
@@ -389,6 +391,80 @@ module MLC
             add_token(:STRING_INTERP, parts, line: start_line, column: start_column)
           else
             # Simple string - extract value
+            value = parts.empty? ? "" : parts.first[:value]
+            add_token(:STRING_LITERAL, value, line: start_line, column: start_column)
+          end
+        end
+
+        def tokenize_backtick_template
+          start_line = @line
+          start_column = @column
+          @pos += 1
+          @column += 1
+
+          parts = []
+          current_text = []
+          has_interpolation = false
+
+          while @pos < @source.length && @source[@pos] != '`'
+            if @source[@pos] == '\\'
+              @pos += 1
+              @column += 1
+              raise ParseError, "unterminated escape in template literal" if @pos >= @source.length
+
+              escaped = @source[@pos]
+              case escaped
+              when '`'
+                current_text << '`'
+              when '$'
+                if @pos + 1 < @source.length && @source[@pos + 1] == '{'
+                  current_text << '$'
+                  @pos += 1
+                  @column += 1
+                  current_text << '{'
+                else
+                  current_text << "\\"
+                  current_text << escaped
+                end
+              when 'n' then current_text << "\n"
+              when 't' then current_text << "\t"
+              when 'r' then current_text << "\r"
+              when '\\' then current_text << "\\"
+              else
+                current_text << "\\"
+                current_text << escaped
+              end
+              @pos += 1
+              @column += 1
+              next
+            end
+
+            if @source[@pos] == '$' && @pos + 1 < @source.length && @source[@pos + 1] == '{'
+              @pos += 1
+              @column += 1
+              has_interpolation = true if handle_interpolation(parts, current_text)
+              next
+            end
+
+            if @source[@pos] == "\n"
+              @line += 1
+              @column = 1
+            else
+              @column += 1
+            end
+            current_text << @source[@pos]
+            @pos += 1
+          end
+
+          raise ParseError, "unterminated template literal" if @pos >= @source.length
+
+          parts << { type: :text, value: current_text.join } if current_text.any?
+          @pos += 1
+          @column += 1
+
+          if has_interpolation
+            add_token(:STRING_INTERP, parts, line: start_line, column: start_column)
+          else
             value = parts.empty? ? "" : parts.first[:value]
             add_token(:STRING_LITERAL, value, line: start_line, column: start_column)
           end

@@ -2,7 +2,7 @@
 
 import { TestResult, assert_eq_int, assert_eq_str, assert_true } from "./test_runner"
 import { tokenize } from "../lexer"
-import { TKind, LStr } from "../ast_tokens"
+import { TKind, LStr, LTemplate } from "../ast_tokens"
 
 fn lex_token_count(source: string) -> i32 =
   tokenize(source).tokens.length()
@@ -14,6 +14,12 @@ fn lex_first_string(source: string) -> string =
   match tokenize(source).tokens[0].kind {
     LStr(text) => text,
     _ => ""
+  }
+
+fn lex_template_parts(source: string) -> [string] =
+  match tokenize(source).tokens[0].kind {
+    LTemplate(parts) => parts,
+    _ => do let r: [string] = []; r end
   }
 
 fn lex_error_count(source: string) -> i32 =
@@ -51,6 +57,26 @@ export fn lexer_tests() -> [TestResult] = do
 
   results.push(assert_eq_int("fn decl - correct token count",
     lex_token_count("fn f() -> i32 = 42"), 9))
+
+  // Template literal tests
+  results.push(assert_eq_int("plain template - 2 tokens (LTemplate + Eof)",
+    lex_token_count("`hello`"), 2))
+  results.push(assert_eq_int("plain template parts count",
+    lex_template_parts("`hello`").length(), 1))
+  results.push(assert_eq_str("plain template content",
+    lex_template_parts("`hello`")[0], "hello"))
+  results.push(assert_eq_int("template with interpolation parts count",
+    lex_template_parts("`a \${x} b`").length(), 3))
+  results.push(assert_eq_str("template interp part[0]",
+    lex_template_parts("`a \${x} b`")[0], "a "))
+  results.push(assert_eq_str("template interp part[1] (expr)",
+    lex_template_parts("`a \${x} b`")[1], "x"))
+  results.push(assert_eq_str("template interp part[2]",
+    lex_template_parts("`a \${x} b`")[2], " b"))
+  results.push(assert_true("unterminated template yields lex error",
+    lex_error_count("`no closing") > 0))
+  results.push(assert_true("unterminated interpolation yields lex error",
+    lex_error_count("`a \${b") > 0))
 
   results
 end

@@ -161,14 +161,24 @@ fn connect(host: string, port: i32 = 5432, timeout: i32 = 30) -> Result<Conn, Er
 **Проблема.** `"x = " + x.to_string() + ", y = " + y.to_string()` — нечитаемо.
 
 ```mlc
-f"x = {x}, y = {y}"                 // вычисляется через .to_string() для каждого выражения
-f"result: {if ok then \"ok\" else \"fail\" end}"  // произвольные выражения
+`x = ${x}, y = ${y}`                         // вычисляется через .to_string()
+`result: ${if ok then "ok" else "fail" end}`  // произвольные выражения
+`многострочный
+текст без экранирования`                      // переносы строк — обычные символы
+`вложенные ${ f({a: 1}) } скобки`            // баланс {} внутри ${}
 ```
 
-**C++ трансляция:** `mlc::format("x = {}, y = {}", x, y)` или конкатенация строк.
-Каждое `{expr}` вызывает `mlc::to_string(expr)`.
+**Синтаксис:** обратные кавычки `` ` `` с `${expr}` (JS-стиль).  
+Escape-последовательности: `` \` `` — буквальная кавычка; `\${` — буквальные `${` без интерполяции.
 
-**Ограничение:** `{expr}` — тип должен реализовывать `Display` (иметь `to_string`).
+**C++ трансляция:** цепочка `+`-конкатенации, каждый `${expr}` → `expr.to_string()`.
+
+```mlc
+// `a ${x} b` десахарится в:
+"a " + x.to_string() + " b"
+```
+
+**Ограничение:** тип `${expr}` должен иметь метод `to_string() -> string`.
 
 ---
 
@@ -440,7 +450,7 @@ fn merge<K, V>(maps: [Map<K, V>]) -> Map<K, V>
 | Operator overloading | `operator+`, `operator==`, etc. |
 | Named args | позиционные (compile-time соответствие) |
 | Default args | C++ default parameter values |
-| `f"..."` interpolation | `mlc::format(...)` |
+| `` `${...}` `` interpolation | цепочка `+` + `.to_string()` |
 | Destructuring `let` | C++17 structured bindings |
 | Numeric types i64/f64 | `int64_t`, `double`, etc. |
 

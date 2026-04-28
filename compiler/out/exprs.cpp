@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include "ast.hpp"
 #include "ast_tokens.hpp"
+#include "lexer.hpp"
 
 namespace exprs {
 
@@ -11,6 +12,7 @@ using namespace preds;
 using namespace types;
 using namespace ast;
 using namespace ast_tokens;
+using namespace lexer;
 using namespace ast_tokens;
 
 preds::StmtsResult parse_stmts_until_end(preds::Parser parser) noexcept;
@@ -75,17 +77,13 @@ preds::ExprResult parse_postfix(preds::Parser parser) noexcept;
 
 preds::ExprsResult parse_arg_list(preds::Parser parser) noexcept;
 
-std::shared_ptr<ast::Expr> fstr_to_string_expr(mlc::String part) noexcept;
-
-std::shared_ptr<ast::Expr> build_fstr_part_expr(mlc::String part, bool is_literal) noexcept;
-
-std::shared_ptr<ast::Expr> build_fstr_expr(mlc::Array<mlc::String> parts) noexcept;
+std::shared_ptr<ast::Expr> build_template_expr(mlc::Array<mlc::String> parts) noexcept;
 
 preds::ExprResult parse_primary_integer_literal(preds::Parser parser, int value) noexcept;
 
 preds::ExprResult parse_primary_string_literal(preds::Parser parser, mlc::String value) noexcept;
 
-preds::ExprResult parse_primary_fat_string_literal(preds::Parser parser, mlc::Array<mlc::String> parts) noexcept;
+preds::ExprResult parse_primary_template_literal(preds::Parser parser, mlc::Array<mlc::String> parts) noexcept;
 
 preds::ExprResult parse_primary_boolean_literal(preds::Parser parser, bool value) noexcept;
 
@@ -580,16 +578,16 @@ state = next.parser;
  }();
 }
 
-std::shared_ptr<ast::Expr> fstr_to_string_expr(mlc::String part) noexcept{return std::make_shared<ast::Expr>(ast::ExprMethod(std::make_shared<ast::Expr>(ast::ExprIdent(part, ast::span_unknown())), mlc::String("to_string"), {}, ast::span_unknown()));}
-
-std::shared_ptr<ast::Expr> build_fstr_part_expr(mlc::String part, bool is_literal) noexcept{return is_literal ? std::make_shared<ast::Expr>(ast::ExprStr(part, ast::span_unknown())) : part.length() == 0 ? std::make_shared<ast::Expr>(ast::ExprStr(part, ast::span_unknown())) : fstr_to_string_expr(part);}
-
-std::shared_ptr<ast::Expr> build_fstr_expr(mlc::Array<mlc::String> parts) noexcept{
+std::shared_ptr<ast::Expr> build_template_expr(mlc::Array<mlc::String> parts) noexcept{
 std::shared_ptr<ast::Expr> result = std::make_shared<ast::Expr>(ast::ExprStr(mlc::String(""), ast::span_unknown()));
 int pi = 0;
 while (pi < parts.size()){
 {
-std::shared_ptr<ast::Expr> part_expr = build_fstr_part_expr(parts[pi], pi % 2 == 0);
+std::shared_ptr<ast::Expr> part_expr = pi % 2 == 0 ? std::make_shared<ast::Expr>(ast::ExprStr(parts[pi], ast::span_unknown())) : parts[pi].length() == 0 ? std::make_shared<ast::Expr>(ast::ExprStr(mlc::String(""), ast::span_unknown())) : [&]() -> std::shared_ptr<ast::Expr> { 
+  ast_tokens::LexOut sub_lex = lexer::tokenize(parts[pi]);
+  preds::ExprResult sub_parsed = parse_expr(preds::parser_new(sub_lex.tokens));
+  return std::make_shared<ast::Expr>(ast::ExprMethod(sub_parsed.expr, mlc::String("to_string"), {}, ast::span_unknown()));
+ }();
 if (pi == 0){
 {
 result = part_expr;
@@ -615,7 +613,7 @@ ast::Span source_span = preds::Parser_span_at_cursor(parser);
 return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprStr(value, source_span)), preds::Parser_advance(parser)};
 }
 
-preds::ExprResult parse_primary_fat_string_literal(preds::Parser parser, mlc::Array<mlc::String> parts) noexcept{return preds::ExprResult{build_fstr_expr(parts), preds::Parser_advance(parser)};}
+preds::ExprResult parse_primary_template_literal(preds::Parser parser, mlc::Array<mlc::String> parts) noexcept{return preds::ExprResult{build_template_expr(parts), preds::Parser_advance(parser)};}
 
 preds::ExprResult parse_primary_boolean_literal(preds::Parser parser, bool value) noexcept{
 ast::Span source_span = preds::Parser_span_at_cursor(parser);
@@ -704,7 +702,7 @@ return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprUnit(source_span))
 
 preds::ExprResult parse_primary(preds::Parser parser) noexcept{
 ast_tokens::TKind kind = preds::Parser_kind(parser);
-return preds::TKind_is_int(kind) ? parse_primary_integer_literal(parser, preds::TKind_int_val(kind)) : preds::TKind_is_str(kind) ? parse_primary_string_literal(parser, preds::TKind_str_val(kind)) : preds::TKind_is_fstr(kind) ? parse_primary_fat_string_literal(parser, preds::TKind_fstr_parts(kind)) : preds::TKind_is_true(kind) ? parse_primary_boolean_literal(parser, true) : preds::TKind_is_false(kind) ? parse_primary_boolean_literal(parser, false) : preds::TKind_is_lparen(kind) ? parse_primary_parenthesized(parser) : preds::TKind_is_lbracket(kind) ? [&]() -> preds::ExprResult { 
+return preds::TKind_is_int(kind) ? parse_primary_integer_literal(parser, preds::TKind_int_val(kind)) : preds::TKind_is_str(kind) ? parse_primary_string_literal(parser, preds::TKind_str_val(kind)) : preds::TKind_is_template(kind) ? parse_primary_template_literal(parser, preds::TKind_template_parts(kind)) : preds::TKind_is_true(kind) ? parse_primary_boolean_literal(parser, true) : preds::TKind_is_false(kind) ? parse_primary_boolean_literal(parser, false) : preds::TKind_is_lparen(kind) ? parse_primary_parenthesized(parser) : preds::TKind_is_lbracket(kind) ? [&]() -> preds::ExprResult { 
   ast::Span bracket_span = preds::Parser_span_at_cursor(parser);
   return parse_array_lit(preds::Parser_advance(parser), bracket_span);
  }() : preds::TKind_is_if(kind) || preds::TKind_is_unless(kind) ? parse_primary_if_or_unless(parser) : preds::TKind_is_do(kind) ? parse_primary_do_block(parser) : preds::TKind_is_while(kind) ? parse_primary_while_loop(parser) : preds::TKind_is_for(kind) ? parse_primary_for_loop(parser) : preds::TKind_is_match(kind) ? parse_primary_match(parser) : preds::TKind_is_return(kind) ? parse_primary_return_as_block(parser) : preds::TKind_is_ident(kind) ? parse_primary_identifier(parser, preds::TKind_ident(kind)) : parse_primary_unit_fallback(parser);

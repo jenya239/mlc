@@ -185,33 +185,76 @@ fn scan_string(state: LexState) -> ScanStrResult = do
   }
 end
 
-fn scan_fstring(state: LexState) -> ScanStrResult = do
+fn scan_template_nested_string(initial: LexState, expr_chars: [string]) -> LexState = do
+  let mut current = initial.lex_advance()
+  while !current.eof() && current.current() != "\"" do
+    if current.current() == "\\" && !current.lex_advance().eof() then
+      expr_chars.push(current.current())
+      current = current.lex_advance()
+      expr_chars.push(current.current())
+      current = current.lex_advance()
+    else
+      expr_chars.push(current.current())
+      current = current.lex_advance()
+    end
+  end
+  if !current.eof() then
+    expr_chars.push(current.current())
+    current = current.lex_advance()
+  end
+  current
+end
+
+fn scan_template(state: LexState) -> ScanStrResult = do
   const token_line = state.line
   const token_col  = state.col
-  let mut current = state.lex_advance().lex_advance()
+  let mut current = state.lex_advance()
   let mut parts: [string] = []
   let mut current_lit: [string] = []
   let mut error = ""
-  while !current.eof() && current.current() != "\"" do
-    if current.current() == "\\" then
+  while !current.eof() && current.current() != "`" do
+    if current.current() == "\\" && !current.lex_advance().eof() then
+      const next = current.lex_advance().current()
       current = current.lex_advance()
-      const mapped = map_escape(current.current())
-      if mapped != "" then
-        current_lit.push(mapped)
+      if next == "`" then
+        current_lit.push("`"); current = current.lex_advance()
+      else if next == "$" && !current.lex_advance().eof() && current.lex_advance().current() == "{" then
+        current_lit.push("$"); current = current.lex_advance()
+        current_lit.push("{"); current = current.lex_advance()
+      else if next == "n" then
+        current_lit.push("\n"); current = current.lex_advance()
+      else if next == "t" then
+        current_lit.push("\t"); current = current.lex_advance()
+      else if next == "r" then
+        current_lit.push("\r"); current = current.lex_advance()
+      else if next == "\\" then
+        current_lit.push("\\"); current = current.lex_advance()
       else
-        current_lit.push("\\")
-        current_lit.push(current.current())
+        current_lit.push("\\"); current_lit.push(next); current = current.lex_advance()
       end
-      current = current.lex_advance()
-    else if current.current() == "{" then
+    else if current.current() == "$" && !current.lex_advance().eof() && current.lex_advance().current() == "{" then
       parts.push(current_lit.join(""))
       current_lit = []
-      current = current.lex_advance()
+      current = current.lex_advance().lex_advance()
       let mut expr_chars: [string] = []
-      while !current.eof() && current.current() != "}" do
-        expr_chars.push(current.current()); current = current.lex_advance()
+      let mut depth = 1
+      while !current.eof() && depth > 0 do
+        if current.current() == "{" then
+          depth = depth + 1; expr_chars.push(current.current()); current = current.lex_advance()
+        else if current.current() == "}" then
+          depth = depth - 1
+          if depth > 0 then expr_chars.push(current.current()) end
+          current = current.lex_advance()
+        else if current.current() == "\"" then
+          expr_chars.push(current.current())
+          current = scan_template_nested_string(current, expr_chars)
+        else
+          expr_chars.push(current.current()); current = current.lex_advance()
+        end
       end
-      if !current.eof() then current = current.lex_advance() end
+      if depth > 0 then
+        error = "unterminated interpolation in template literal"
+      end
       parts.push(expr_chars.join(""))
     else
       current_lit.push(current.current())
@@ -219,14 +262,14 @@ fn scan_fstring(state: LexState) -> ScanStrResult = do
     end
   end
   if current.eof() then
-    error = "unterminated f-string"
+    error = "unterminated template literal"
   else
     current = current.lex_advance()
   end
   parts.push(current_lit.join(""))
   ScanStrResult {
     state: current,
-    token: Token { kind: LFStr(parts), line: token_line, col: token_col },
+    token: Token { kind: LTemplate(parts), line: token_line, col: token_col },
     error
   }
 end
@@ -297,12 +340,7 @@ export fn tokenize(source: string) -> LexOut = do
     if state.eof() then break end
     const character = state.current()
     if is_alpha(character) then
-      if character == "f" && !state.lex_advance().eof() && state.lex_advance().current() == "\"" then
-        const result = scan_fstring(state); tokens.push(result.token); state = result.state
-        if result.error != "" then errors.push(result.error) end
-      else
-        const result = scan_ident(state); tokens.push(result.token); state = result.state
-      end
+      const result = scan_ident(state); tokens.push(result.token); state = result.state
     else if is_digit(character) then
       const result = scan_int(state); tokens.push(result.token); state = result.state
     else if character == "\"" then
@@ -310,6 +348,9 @@ export fn tokenize(source: string) -> LexOut = do
       if result.error != "" then errors.push(result.error) end
     else if character == "'" then
       const result = scan_single_string(state); tokens.push(result.token); state = result.state
+      if result.error != "" then errors.push(result.error) end
+    else if character == "`" then
+      const result = scan_template(state); tokens.push(result.token); state = result.state
       if result.error != "" then errors.push(result.error) end
     else
       const result = scan_op(state); tokens.push(result.token); state = result.state
