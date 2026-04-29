@@ -31,6 +31,10 @@ mlc::Array<std::shared_ptr<ast::TypeExpr>> variant_field_typeexprs(std::shared_p
 
 mlc::Array<mlc::String> variant_used_type_params(mlc::Array<mlc::String> type_params, std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
+mlc::Array<mlc::String> union_string_lists(mlc::Array<mlc::String> a, mlc::Array<mlc::String> b) noexcept;
+
+mlc::Array<mlc::String> type_phantom_params_for_variants(mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
 mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
 mlc::String gen_variant_struct(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept;
@@ -168,8 +172,8 @@ return found;
 }
 
 mlc::Array<std::shared_ptr<ast::TypeExpr>> variant_field_typeexprs(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
-  [&](const VarTuple& vartuple) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fts] = vartuple; return fts; },
-  [&](const VarRecord& varrecord) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fds] = varrecord; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
+  [&](const VarTuple& vartuple) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fts, _w1] = vartuple; return fts; },
+  [&](const VarRecord& varrecord) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fds, _w1] = varrecord; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
   mlc::Array<std::shared_ptr<ast::TypeExpr>> result = {};
   int i = 0;
   while (i < fds.size()){
@@ -180,7 +184,7 @@ i = i + 1;
 }
   return result;
  }(); },
-  [&](const VarUnit& varunit) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0] = varunit; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
+  [&](const VarUnit& varunit) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, _w1] = varunit; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
   mlc::Array<std::shared_ptr<ast::TypeExpr>> r = {};
   return r;
  }(); }
@@ -203,15 +207,81 @@ i = i + 1;
 return used;
 }
 
+mlc::Array<mlc::String> union_string_lists(mlc::Array<mlc::String> a, mlc::Array<mlc::String> b) noexcept{
+mlc::Array<mlc::String> result = {};
+int i = 0;
+while (i < a.size()){
+{
+result.push_back(a[i]);
+i = i + 1;
+}
+}
+i = 0;
+while (i < b.size()){
+{
+bool found = false;
+int j = 0;
+while (j < a.size()){
+{
+if (a[j] == b[i]){
+{
+found = true;
+}
+}
+j = j + 1;
+}
+}
+if (!found){
+{
+result.push_back(b[i]);
+}
+}
+i = i + 1;
+}
+}
+return result;
+}
+
+mlc::Array<mlc::String> type_phantom_params_for_variants(mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+mlc::Array<std::shared_ptr<ast::TypeExpr>> all_fields = {};
+int vi = 0;
+while (vi < variants.size()){
+{
+mlc::Array<std::shared_ptr<ast::TypeExpr>> fts = variant_field_typeexprs(variants[vi]);
+int fi = 0;
+while (fi < fts.size()){
+{
+all_fields.push_back(fts[fi]);
+fi = fi + 1;
+}
+}
+vi = vi + 1;
+}
+}
+mlc::Array<mlc::String> phantom = {};
+int i = 0;
+while (i < type_params.size()){
+{
+if (!type_param_in_typeexpr_list(type_params[i], all_fields)){
+{
+phantom.push_back(type_params[i]);
+}
+}
+i = i + 1;
+}
+}
+return phantom;
+}
+
 mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
-  [&](const VarUnit& varunit) -> mlc::String { auto [name] = varunit; return name; },
-  [&](const VarTuple& vartuple) -> mlc::String { auto [name, _w0] = vartuple; return name; },
-  [&](const VarRecord& varrecord) -> mlc::String { auto [name, _w0] = varrecord; return name; }
+  [&](const VarUnit& varunit) -> mlc::String { auto [name, _w0] = varunit; return name; },
+  [&](const VarTuple& vartuple) -> mlc::String { auto [name, _w0, _w1] = vartuple; return name; },
+  [&](const VarRecord& varrecord) -> mlc::String { auto [name, _w0, _w1] = varrecord; return name; }
 }, (*variant));}
 
 mlc::String gen_variant_struct(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
-  [&](const VarUnit& varunit) -> mlc::String { auto [name] = varunit; return expr::struct_empty_definition(context::context_resolve(context, name)); },
-  [&](const VarTuple& vartuple) -> mlc::String { auto [name, field_types] = vartuple; return [&]() -> mlc::String { 
+  [&](const VarUnit& varunit) -> mlc::String { auto [name, _w0] = varunit; return expr::struct_empty_definition(context::context_resolve(context, name)); },
+  [&](const VarTuple& vartuple) -> mlc::String { auto [name, field_types, _w0] = vartuple; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int i = 0;
   while (i < field_types.size()){
@@ -222,7 +292,7 @@ i = i + 1;
 }
   return expr::struct_with_inline_members_definition(context::context_resolve(context, name), parts.join(mlc::String("")));
  }(); },
-  [&](const VarRecord& varrecord) -> mlc::String { auto [name, field_defs] = varrecord; return [&]() -> mlc::String { 
+  [&](const VarRecord& varrecord) -> mlc::String { auto [name, field_defs, _w0] = varrecord; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int i = 0;
   while (i < field_defs.size()){
@@ -236,7 +306,7 @@ i = i + 1;
 }, (*variant));}
 
 mlc::String gen_single_variant(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> mlc::String { auto [_w0, field_defs] = varrecord; return [&]() -> mlc::String { 
+  [&](const VarRecord& varrecord) -> mlc::String { auto [_w0, field_defs, _w1] = varrecord; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int i = 0;
   while (i < field_defs.size()){
@@ -247,7 +317,7 @@ i = i + 1;
 }
   return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), parts.join(mlc::String("")));
  }(); },
-  [&](const VarTuple& vartuple) -> mlc::String { auto [_w0, field_types] = vartuple; return [&]() -> mlc::String { 
+  [&](const VarTuple& vartuple) -> mlc::String { auto [_w0, field_types, _w1] = vartuple; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int i = 0;
   while (i < field_types.size()){
@@ -258,11 +328,12 @@ i = i + 1;
 }
   return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), parts.join(mlc::String("")));
  }(); },
-  [&](const VarUnit& varunit) -> mlc::String { auto [_w0] = varunit; return expr::struct_empty_definition(context::context_resolve(context, type_name)); }
+  [&](const VarUnit& varunit) -> mlc::String { auto [_w0, _w1] = varunit; return expr::struct_empty_definition(context::context_resolve(context, type_name)); }
 }, (*variant));}
 
 mlc::String gen_adt_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
 mlc::String full_prefix = cpp_naming::template_prefix(type_params);
+mlc::Array<mlc::String> phantom = type_phantom_params_for_variants(type_params, variants);
 mlc::Array<mlc::String> parts = {};
 mlc::Array<mlc::String> alias_parts = {};
 int index = 0;
@@ -270,7 +341,7 @@ while (index < variants.size()){
 {
 std::shared_ptr<ast::TypeVariant> v = variants[index];
 mlc::String variant_name = context::context_resolve(context, variant_ctor_name(v));
-mlc::Array<mlc::String> used = variant_used_type_params(type_params, v);
+mlc::Array<mlc::String> used = union_string_lists(variant_used_type_params(type_params, v), phantom);
 mlc::String var_prefix = cpp_naming::template_prefix(used);
 mlc::String var_targs = used.size() > 0 ? mlc::String("<") + used.join(mlc::String(", ")) + mlc::String(">") : mlc::String("");
 alias_parts.push_back(variant_name + var_targs);
@@ -282,12 +353,13 @@ return parts.join(mlc::String("")) + expr::variant_using_alias_definition_line(f
 }
 
 mlc::String gen_adt_defs(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+mlc::Array<mlc::String> phantom = type_phantom_params_for_variants(type_params, variants);
 mlc::Array<mlc::String> parts = {};
 int i = 0;
 while (i < variants.size()){
 {
 std::shared_ptr<ast::TypeVariant> v = variants[i];
-mlc::Array<mlc::String> used = variant_used_type_params(type_params, v);
+mlc::Array<mlc::String> used = union_string_lists(variant_used_type_params(type_params, v), phantom);
 parts.push_back(cpp_naming::template_prefix(used) + gen_variant_struct(context, type_name, v));
 i = i + 1;
 }
@@ -321,9 +393,9 @@ return field_defs.size() == 0 ? sig + mlc::String(" { return mlc::String(\"") + 
 }
 
 mlc::String derive_display_variant_case(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
-  [&](const VarUnit& varunit) -> mlc::String { auto [name] = varunit; return mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("\");\n"); },
-  [&](const VarTuple& vartuple) -> mlc::String { auto [name, field_types] = vartuple; return field_types.size() == 0 ? mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("\");\n") : mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("(\") + mlc::to_string(std::get<") + name + mlc::String(">(self._)._0) + mlc::String(\")\");\n"); },
-  [&](const VarRecord& varrecord) -> mlc::String { auto [name, fds] = varrecord; return derive_display_variant_record(name, fds); }
+  [&](const VarUnit& varunit) -> mlc::String { auto [name, _w0] = varunit; return mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("\");\n"); },
+  [&](const VarTuple& vartuple) -> mlc::String { auto [name, field_types, _w0] = vartuple; return field_types.size() == 0 ? mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("\");\n") : mlc::String("  if (std::holds_alternative<") + name + mlc::String(">(self._)) return mlc::String(\"") + name + mlc::String("(\") + mlc::to_string(std::get<") + name + mlc::String(">(self._)._0) + mlc::String(\")\");\n"); },
+  [&](const VarRecord& varrecord) -> mlc::String { auto [name, fds, _w0] = varrecord; return derive_display_variant_record(name, fds); }
 }, (*variant));}
 
 mlc::String derive_display_variant_record(mlc::String name, mlc::Array<std::shared_ptr<ast::FieldDef>> fds) noexcept{
@@ -396,9 +468,9 @@ return field_defs.size() == 0 ? sig + mlc::String(" { return false; }\n") : sig 
 
 mlc::String derive_ord_sum(mlc::String type_name) noexcept{return mlc::String("bool operator<(const ") + type_name + mlc::String("& a, const ") + type_name + mlc::String("& b) noexcept { return a._ < b._; }\n");}
 
-bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants.size() != 1 ? false : [&]() { if (std::holds_alternative<ast::VarRecord>((*variants[0]))) { auto _v_varrecord = std::get<ast::VarRecord>((*variants[0])); auto [_w0, _w1] = _v_varrecord; return true; } return false; }();}
+bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants.size() != 1 ? false : [&]() { if (std::holds_alternative<ast::VarRecord>((*variants[0]))) { auto _v_varrecord = std::get<ast::VarRecord>((*variants[0])); auto [_w0, _w1, _w2] = _v_varrecord; return true; } return false; }();}
 
-mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_defs(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return [&]() -> mlc::Array<std::shared_ptr<ast::FieldDef>> { if (std::holds_alternative<ast::VarRecord>((*variants[0]))) { auto _v_varrecord = std::get<ast::VarRecord>((*variants[0])); auto [_w0, fds] = _v_varrecord; return fds; } return {}; }();}
+mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_defs(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return [&]() -> mlc::Array<std::shared_ptr<ast::FieldDef>> { if (std::holds_alternative<ast::VarRecord>((*variants[0]))) { auto _v_varrecord = std::get<ast::VarRecord>((*variants[0])); auto [_w0, fds, _w1] = _v_varrecord; return fds; } return {}; }();}
 
 mlc::String gen_derive_record_trait(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String trait_name) noexcept{
 mlc::Array<std::shared_ptr<ast::FieldDef>> fds = derive_record_field_defs(variants);

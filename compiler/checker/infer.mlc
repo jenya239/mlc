@@ -149,8 +149,15 @@ fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements
 end
 
 
-fn infer_expr_record(type_name: string, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult =
-  infer_field_values_errors(infer_ok(Shared.new(TNamed(type_name))), field_values, inference_context, type_name)
+fn infer_expr_record(type_name: string, field_values: [Shared<FieldVal>], inference_context: CheckContext, span: Span) -> InferResult = do
+  const private_errors: [Diagnostic] =
+    if inference_context.registry.is_private_ctor(type_name) &&
+       inference_context.current_extend_type != type_name then
+      [diagnostic_error("private constructor: cannot construct " + type_name + " outside its extend block", span)]
+    else [] end
+  const base = InferResult { inferred_type: Shared.new(TNamed(type_name)), errors: private_errors }
+  infer_field_values_errors(base, field_values, inference_context, type_name)
+end
 
 fn infer_expr_record_update(type_name: string, base: Shared<Expr>, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult = do
   const base_result = infer_expr(base, inference_context)
@@ -221,7 +228,7 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprWhile(condition, statements, _)     => infer_expr_while_loop(condition, statements, inference_context),
     ExprFor(variable, iterator, statements, _) => infer_expr_for_loop(variable, iterator, statements, inference_context),
     ExprMatch(subject, arms, _)             => infer_expr_match(subject, arms, inference_context, infer_expr),
-    ExprRecord(name, field_vals, _)         => infer_expr_record(name, field_vals, inference_context),
+    ExprRecord(name, field_vals, span)      => infer_expr_record(name, field_vals, inference_context, span),
     ExprRecordUpdate(name, base, field_vals, _) => infer_expr_record_update(name, base, field_vals, inference_context),
     ExprArray(elements, _)                  => infer_expr_array_literal(elements, inference_context),
     ExprTuple(elements, _)                  => infer_expr_tuple_literal(elements, inference_context),

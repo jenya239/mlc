@@ -391,7 +391,7 @@ return preds::TKind_is_lbrace(preds::Parser_kind(state)) ? [&]() -> preds::DeclR
   return preds::TKind_is_lbrace(first_kind) ? [&]() -> preds::DeclResult { 
   preds::FieldDefsResult field_defs_result = parse_field_defs(preds::Parser_advance(state));
   mlc::Array<std::shared_ptr<ast::TypeVariant>> variants = {};
-  variants.push_back(std::make_shared<ast::TypeVariant>(ast::VarRecord(type_name, field_defs_result.field_defs)));
+  variants.push_back(std::make_shared<ast::TypeVariant>(ast::VarRecord(type_name, field_defs_result.field_defs, false)));
   decls::DeriveResult derive_res = parse_derive_clause(field_defs_result.parser);
   return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType(type_name, type_params_res.params, variants, derive_res.traits)), derive_res.parser};
  }() : [&]() -> preds::DeclResult { 
@@ -429,15 +429,17 @@ return preds::VariantsResult{variants, state};
 }
 
 preds::VariantResult parse_variant(preds::Parser parser) noexcept{
-mlc::String variant_name = preds::TKind_ident(preds::Parser_kind(parser));
-preds::Parser after_name = preds::Parser_advance(parser);
+bool is_private = preds::TKind_is_ident(preds::Parser_kind(parser)) && preds::TKind_ident(preds::Parser_kind(parser)) == mlc::String("private");
+preds::Parser after_private = is_private ? preds::Parser_advance(parser) : parser;
+mlc::String variant_name = preds::TKind_ident(preds::Parser_kind(after_private));
+preds::Parser after_name = preds::Parser_advance(after_private);
 return preds::TKind_is_lparen(preds::Parser_kind(after_name)) ? [&]() -> preds::VariantResult { 
   preds::TypesResult types_result = parse_tuple_types(preds::Parser_advance(after_name));
-  return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarTuple(variant_name, types_result.types)), types_result.parser};
+  return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarTuple(variant_name, types_result.types, is_private)), types_result.parser};
  }() : preds::TKind_is_lbrace(preds::Parser_kind(after_name)) ? [&]() -> preds::VariantResult { 
   preds::FieldDefsResult field_defs_result = parse_field_defs(preds::Parser_advance(after_name));
-  return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarRecord(variant_name, field_defs_result.field_defs)), field_defs_result.parser};
- }() : preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarUnit(variant_name)), after_name};
+  return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarRecord(variant_name, field_defs_result.field_defs, is_private)), field_defs_result.parser};
+ }() : preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarUnit(variant_name, is_private)), after_name};
 }
 
 preds::TypesResult parse_tuple_types(preds::Parser parser) noexcept{

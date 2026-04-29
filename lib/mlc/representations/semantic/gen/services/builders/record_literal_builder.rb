@@ -7,10 +7,12 @@ module MLC
         module Services
           # RecordLiteralBuilder - builds SemanticIR record literals using services
           class RecordLiteralBuilder
-            def initialize(ir_builder:, type_registry:, type_checker:)
+            def initialize(ir_builder:, type_registry:, type_checker:, private_ctors: nil, scope_context: nil)
               @ir_builder = ir_builder
               @type_registry = type_registry
               @type_checker = type_checker
+              @private_ctors = private_ctors || {}
+              @scope_context = scope_context
             end
 
             def build(node:, fields_ir:, expected_type: nil)
@@ -27,6 +29,17 @@ module MLC
               # For truly anonymous records (no expected type), generate structural type
               # This allows `{x: 1, y: 2}` to work in contexts like function return
               type_name = "__anon_record_#{normalized.keys.sort.join('_')}" if type_name.empty? || type_name == 'record'
+
+              # Check private constructor access
+              if @private_ctors.key?(type_name)
+                extend_type = @scope_context&.current_extend_type
+                unless extend_type == type_name
+                  @type_checker.type_error(
+                    "private constructor: cannot construct #{type_name} outside its extend block",
+                    node: node
+                  )
+                end
+              end
 
               # Build record type and get ordered fields
               record_type, ordered_fields =

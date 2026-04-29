@@ -97,9 +97,9 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
         names.set(name, true); let mut variant_index = 0
         while variant_index < variants.length() do
           match variants[variant_index] {
-            VarUnit(variant_name)      => do names.set(variant_name, true); () end,
-            VarTuple(variant_name, _)  => do names.set(variant_name, true); () end,
-            VarRecord(variant_name, _) => do names.set(variant_name, true); () end
+            VarUnit(variant_name, _)      => do names.set(variant_name, true); () end,
+            VarTuple(variant_name, _, _)  => do names.set(variant_name, true); () end,
+            VarRecord(variant_name, _, _) => do names.set(variant_name, true); () end
           }
           variant_index = variant_index + 1
         end; ()
@@ -207,7 +207,28 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
       end,
       DeclType(_, _, _, _) => do () end,
       DeclTrait(_, _, _)   => do () end,
-      DeclExtend(_, _, _)  => do () end,
+      DeclExtend(extend_type_name, _, methods) => do
+        let mut method_index = 0
+        while method_index < methods.length() do
+          match methods[method_index] {
+            DeclFn(_, type_params, _, params, _, method_body) => do
+              const method_env: Map<string, Shared<Type>> = Map.new()
+              let mut pi = 0
+              while pi < params.length() do
+                method_env.set(param_name(params[pi]), type_from_annotation(param_typ(params[pi])))
+                pi = pi + 1
+              end
+              const extend_context = CheckContext { type_env: method_env, registry: registry, current_extend_type: extend_type_name }
+              const method_result = infer_expr(method_body, extend_context)
+              all_diagnostics = diagnostics_append(all_diagnostics, method_result.errors)
+              ()
+            end,
+            _ => do () end
+          }
+          method_index = method_index + 1
+        end
+        ()
+      end,
       DeclImport(_, _)     => do () end,
       DeclExported(_)      => do () end
     }

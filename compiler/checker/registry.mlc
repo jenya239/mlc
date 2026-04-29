@@ -25,7 +25,8 @@ export type TypeRegistry = TypeRegistry {
   algebraic_decl_type_parameter_names: Map<string, [string]>,
   algebraic_decl_phantom_type_params: Map<string, [string]>,
   field_types: Map<string, Map<string, Shared<Type>>>,
-  trait_impls: Map<string, [string]>
+  trait_impls: Map<string, [string]>,
+  private_ctors: [string]
 }
 
 export extend TypeRegistry {
@@ -88,6 +89,15 @@ export extend TypeRegistry {
 
   fn required_arity_for_fn(self, fn_name: string) -> i32 =
     if self.function_required_arity.has(fn_name) then self.function_required_arity.get(fn_name) else -1 end
+
+  fn is_private_ctor(self, name: string) -> bool = do
+    let mut i = 0; let mut found = false
+    while i < private_ctors.length() do
+      if private_ctors[i] == name then found = true end
+      i = i + 1
+    end
+    found
+  end
 }
 
 export fn empty_registry() -> TypeRegistry = do
@@ -119,6 +129,7 @@ export fn empty_registry() -> TypeRegistry = do
   fn_req.set("println", 1)
   fn_req.set("exit", 1)
   fn_req.set("args", 0)
+  const empty_private_ctors: [string] = []
   TypeRegistry {
     fn_types: builtin_function_types,
     function_type_parameter_names: Map.new(),
@@ -129,7 +140,8 @@ export fn empty_registry() -> TypeRegistry = do
     algebraic_decl_type_parameter_names: Map.new(),
     algebraic_decl_phantom_type_params: Map.new(),
     field_types: Map.new(),
-    trait_impls: Map.new()
+    trait_impls: Map.new(),
+    private_ctors: empty_private_ctors
   }
 end
 
@@ -245,14 +257,14 @@ end
 
 fn variant_annotation_typeexprs(variant: Shared<TypeVariant>) -> [Shared<TypeExpr>] =
   match variant {
-    VarTuple(_, fts) => fts,
-    VarRecord(_, fds) => do
+    VarTuple(_, fts, _) => fts,
+    VarRecord(_, fds, _) => do
       const result: [Shared<TypeExpr>] = []
       let mut i = 0
       while i < fds.length() do result.push(fds[i].typ); i = i + 1 end
       result
     end,
-    VarUnit(_) => do let r: [Shared<TypeExpr>] = []; r end
+    VarUnit(_, _) => do let r: [Shared<TypeExpr>] = []; r end
   }
 
 fn compute_phantom_type_params(type_params: [string], variants: [Shared<TypeVariant>]) -> [string] = do
@@ -278,12 +290,13 @@ end
 fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shared<TypeVariant>) -> TypeRegistry = do
   const result_type = Shared.new(TNamed(type_name))
   match variant {
-    VarUnit(variant_name) => do
+    VarUnit(variant_name, is_private) => do
       registry.ctor_types.set(variant_name, result_type)
       registry.ctor_params.set(variant_name, [])
+      if is_private then registry.private_ctors.push(variant_name) end
       registry
     end,
-    VarTuple(variant_name, field_types) => do
+    VarTuple(variant_name, field_types, is_private) => do
       const field_type_list: [Shared<Type>] = []
       let mut i = 0
       while i < field_types.length() do
@@ -291,9 +304,10 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
       end
       registry.ctor_types.set(variant_name, result_type)
       registry.ctor_params.set(variant_name, field_type_list)
+      if is_private then registry.private_ctors.push(variant_name) end
       registry
     end,
-    VarRecord(variant_name, field_defs) => do
+    VarRecord(variant_name, field_defs, is_private) => do
       const field_map: Map<string, Shared<Type>> = Map.new()
       let mut i = 0
       while i < field_defs.length() do
@@ -303,6 +317,7 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
       registry.ctor_params.set(variant_name, [])
       registry.field_types.set(variant_name, field_map)
       registry.field_types.set(type_name, field_map)
+      if is_private then registry.private_ctors.push(variant_name) end
       registry
     end
   }

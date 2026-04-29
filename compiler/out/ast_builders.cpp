@@ -183,11 +183,11 @@ std::shared_ptr<ast::Decl> type_decl(mlc::String type_name, mlc::Array<std::shar
 
 std::shared_ptr<ast::Decl> exported_decl(std::shared_ptr<ast::Decl> inner_decl) noexcept{return std::make_shared<ast::Decl>(ast::DeclExported(inner_decl));}
 
-std::shared_ptr<ast::TypeVariant> record_variant(mlc::String variant_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept{return std::make_shared<ast::TypeVariant>(ast::VarRecord(variant_name, field_definitions));}
+std::shared_ptr<ast::TypeVariant> record_variant(mlc::String variant_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept{return std::make_shared<ast::TypeVariant>(ast::VarRecord(variant_name, field_definitions, false));}
 
-std::shared_ptr<ast::TypeVariant> tuple_variant(mlc::String variant_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types) noexcept{return std::make_shared<ast::TypeVariant>(ast::VarTuple(variant_name, field_types));}
+std::shared_ptr<ast::TypeVariant> tuple_variant(mlc::String variant_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types) noexcept{return std::make_shared<ast::TypeVariant>(ast::VarTuple(variant_name, field_types, false));}
 
-std::shared_ptr<ast::TypeVariant> unit_variant(mlc::String variant_name) noexcept{return std::make_shared<ast::TypeVariant>(ast::VarUnit(variant_name));}
+std::shared_ptr<ast::TypeVariant> unit_variant(mlc::String variant_name) noexcept{return std::make_shared<ast::TypeVariant>(ast::VarUnit(variant_name, false));}
 
 std::shared_ptr<ast::FieldDef> field_definition(mlc::String field_name, std::shared_ptr<ast::TypeExpr> field_type) noexcept{return std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, field_type});}
 

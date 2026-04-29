@@ -198,6 +198,13 @@ results.push_back(test_runner::assert_eq_int(mlc::String("template: multi interp
 results.push_back(test_runner::assert_true(mlc::String("template: undefined var in interpolation - error"), check_error_count(mlc::String("fn f() -> string = `${undefined_var}`")) > 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("let-else: PatCtor without else - 1 error"), check_error_count(mlc::String("type Opt = Some(i32) | None\nfn f(o: Opt) -> i32 = do\n  let Some(v) = o\n  v\nend")), 1));
 results.push_back(test_runner::assert_eq_int(mlc::String("let-else: PatCtor with else - 0 errors"), check_error_count(mlc::String("type Opt = Some(i32) | None\nfn f(o: Opt) -> i32 = do\n  let Some(v) = o else return 0 end\n  v\nend")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("phantom type: declaration — 0 errors"), check_error_count(mlc::String("type Unvalidated\ntype Ast<Phase> = Ast { value: i32 }")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("phantom type: fn with phantom param annotation — 0 errors"), check_error_count(mlc::String("type Unvalidated\ntype Ast<Phase> = Ast { value: i32 }\nfn use_ast(ast: Ast<Unvalidated>) -> i32 = ast.value")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("phantom type: wrong phantom arg at call site — 1 error"), check_error_count(mlc::String("type Unvalidated\ntype Validated\ntype Ast<Phase> = Ast { value: i32 }\nfn expect(ast: Ast<Validated>) -> i32 = 0\nfn make() -> Ast<Unvalidated> = do\n  let ast: Ast<Unvalidated> = Ast { value: 1 }\n  ast\nend\nfn wrong() -> i32 = expect(make())")), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: declaration — 0 errors"), check_error_count(mlc::String("type Email = private Email { raw: string }")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: construction outside extend — 1 error"), check_error_count(mlc::String("type Email = private Email { raw: string }\nfn f() -> Email = Email { raw: \"x\" }")), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: construction inside extend — 0 errors"), check_error_count(mlc::String("type Email = private Email { raw: string }\nextend Email { fn make(s: string) -> Email = Email { raw: s } }")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: matching outside extend allowed — 0 errors"), check_error_count(mlc::String("type Email = private Email { raw: string }\nfn get_raw(e: Email) -> string = match e { Email { raw } => raw }")), 0));
 return results;
 }
 

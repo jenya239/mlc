@@ -1,6 +1,6 @@
 // Call / non-constructor inference helpers (no infer_expr dependency).
 
-import { Expr, Span, diagnostic_error, diagnostics_append } from "../ast"
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append } from "../ast"
 import { Type } from "./registry"
 import { CheckContext } from "./check_context"
 import { TypeRegistry } from "./registry"
@@ -20,9 +20,16 @@ export fn infer_expr_call_for_constructor_name(
     constructor_parameter_types.length(),
     call_arguments.length(),
     call_source_span)
+  const ctor_type = inference_context.registry.ctor_type(constructor_name)
+  const owner_name = match ctor_type { TNamed(n) => n, _ => "" }
+  const private_errors: [Diagnostic] =
+    if inference_context.registry.is_private_ctor(constructor_name) &&
+       inference_context.current_extend_type != owner_name then
+      [diagnostic_error("private constructor: cannot construct " + constructor_name + " outside its extend block", call_source_span)]
+    else [] end
   InferResult {
-    inferred_type: inference_context.registry.ctor_type(constructor_name),
-    errors: diagnostics_append(with_arguments.errors, call_errors)
+    inferred_type: ctor_type,
+    errors: diagnostics_append(diagnostics_append(with_arguments.errors, call_errors), private_errors)
   }
 end
 

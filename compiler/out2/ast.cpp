@@ -86,7 +86,7 @@ ast::Span expr_span(std::shared_ptr<ast::Expr> expression) noexcept{return [&]()
 
 ast::Span stmt_span(std::shared_ptr<ast::Stmt> statement) noexcept{return std::visit(overloaded{
   [&](const StmtLet& stmtlet) -> ast::Span { auto [_w0, _w1, _w2, _w3, source_span] = stmtlet; return source_span; },
-  [&](const StmtLetPat& stmtletpat) -> ast::Span { auto [_w0, _w1, _w2, _w3, source_span] = stmtletpat; return source_span; },
+  [&](const StmtLetPat& stmtletpat) -> ast::Span { auto [_w0, _w1, _w2, _w3, _w4, _w5, source_span] = stmtletpat; return source_span; },
   [&](const StmtLetConst& stmtletconst) -> ast::Span { auto [_w0, _w1, _w2, source_span] = stmtletconst; return source_span; },
   [&](const StmtExpr& stmtexpr) -> ast::Span { auto [_w0, source_span] = stmtexpr; return source_span; },
   [&](const StmtBreak& stmtbreak) -> ast::Span { auto [source_span] = stmtbreak; return source_span; },

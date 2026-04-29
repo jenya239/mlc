@@ -45,7 +45,7 @@ struct SExpr {std::variant<SExprInt, SExprStr, SExprBool, SExprUnit, SExprExtern
 
 
 struct SStmtLet {mlc::String field0;bool field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
-struct SStmtLetPat {std::shared_ptr<ast::Pat> field0;bool field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SStmtLetPat {std::shared_ptr<ast::Pat> field0;bool field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;bool field4;std::shared_ptr<semantic_ir::SExpr> field5;ast::Span field6;};
 struct SStmtLetConst {mlc::String field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
 struct SStmtExpr {std::shared_ptr<semantic_ir::SExpr> field0;ast::Span field1;};
 struct SStmtReturn {std::shared_ptr<semantic_ir::SExpr> field0;ast::Span field1;};

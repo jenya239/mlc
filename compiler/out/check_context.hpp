@@ -13,7 +13,7 @@ struct Stmt;
 struct SExpr;
 struct SStmt;
 
-struct CheckContext {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;registry::TypeRegistry registry;};
+struct CheckContext {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;registry::TypeRegistry registry;mlc::String current_extend_type;};
 
 check_context::CheckContext check_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept;
 

@@ -8,6 +8,6 @@ using namespace registry;
 
 check_context::CheckContext check_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept;
 
-check_context::CheckContext check_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept{return check_context::CheckContext{type_environment, registry};}
+check_context::CheckContext check_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept{return check_context::CheckContext{type_environment, registry, mlc::String("")};}
 
 } // namespace check_context

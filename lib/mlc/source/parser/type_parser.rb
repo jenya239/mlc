@@ -55,6 +55,8 @@ module MLC
           consume(:OPERATOR) if current.type == :OPERATOR && current.value == "|"
 
           loop do
+            is_private = current.type == :IDENTIFIER && current.value == "private"
+            consume(:IDENTIFIER) if is_private
             name_token = consume(:IDENTIFIER)
             sum_origin_token ||= name_token
             variant_name = name_token.value
@@ -94,7 +96,7 @@ module MLC
               consume(:RBRACE)
             end
 
-            variants << { name: variant_name, fields: variant_fields }
+            variants << { name: variant_name, fields: variant_fields, private: is_private }
 
             # Check for next variant
             break unless current.type == :OPERATOR && current.value == "|"
@@ -253,7 +255,12 @@ module MLC
         def parse_type_or_sum
           # Try parsing as sum type first
           start_pos = @pos
-          consume(:IDENTIFIER).value
+          first_ident = consume(:IDENTIFIER).value
+
+          # If first identifier is "private", skip ahead to the actual variant name
+          if first_ident == "private" && current.type == :IDENTIFIER
+            consume(:IDENTIFIER)
+          end
 
           # Check if this is a sum type variant
           # Patterns: Variant(...) or Variant {...} or Variant | ...
@@ -269,7 +276,13 @@ module MLC
 
           # Named record: Identifier { fields... } without | following
           # e.g. type ENode = ENode { kind: i32, children: ENode[] }
-          return parse_record_type if current.type == :LBRACE
+          if current.type == :LBRACE && first_ident != "private"
+            return parse_record_type
+          end
+          if current.type == :LBRACE && first_ident == "private"
+            @pos = start_pos
+            return parse_sum_type
+          end
 
           # Otherwise, it's just a type reference
           @pos = start_pos

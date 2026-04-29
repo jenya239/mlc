@@ -274,22 +274,24 @@ module MLC
 
                   # Wrap method processing in associated type context
                   @services.scope_context.with_associated_type_bindings(assoc_bindings) do
-                    decl.methods.each do |func|
-                      next if func.external
+                    @services.scope_context.with_extend_type(type_name) do
+                      decl.methods.each do |func|
+                        next if func.external
 
-                      func = fill_self_type(func, decl.target_type)
-                      mangled_name = "#{type_name}_#{func.name}"
-                      combined_type_params = extend_type_params + Array(func.type_params)
-                      synthetic_func = MLC::Source::AST::FuncDecl.new(
-                        name: mangled_name,
-                        params: func.params,
-                        ret_type: func.ret_type,
-                        body: func.body,
-                        type_params: combined_type_params,
-                        exported: decl.exported,
-                        origin: func.origin
-                      )
-                      context[:func_items] << @function_reducer.reduce(synthetic_func)
+                        func = fill_self_type(func, decl.target_type)
+                        mangled_name = "#{type_name}_#{func.name}"
+                        combined_type_params = extend_type_params + Array(func.type_params)
+                        synthetic_func = MLC::Source::AST::FuncDecl.new(
+                          name: mangled_name,
+                          params: func.params,
+                          ret_type: func.ret_type,
+                          body: func.body,
+                          type_params: combined_type_params,
+                          exported: decl.exported,
+                          origin: func.origin
+                        )
+                        context[:func_items] << @function_reducer.reduce(synthetic_func)
+                      end
                     end
                   end
                 when MLC::Source::AST::TraitDecl

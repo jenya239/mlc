@@ -134,13 +134,13 @@ export fn exported_decl(inner_decl: Shared<Decl>) -> Shared<Decl> =
   Shared.new(DeclExported(inner_decl))
 
 export fn record_variant(variant_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<TypeVariant> =
-  Shared.new(VarRecord(variant_name, field_definitions))
+  Shared.new(VarRecord(variant_name, field_definitions, false))
 
 export fn tuple_variant(variant_name: string, field_types: [Shared<TypeExpr>]) -> Shared<TypeVariant> =
-  Shared.new(VarTuple(variant_name, field_types))
+  Shared.new(VarTuple(variant_name, field_types, false))
 
 export fn unit_variant(variant_name: string) -> Shared<TypeVariant> =
-  Shared.new(VarUnit(variant_name))
+  Shared.new(VarUnit(variant_name, false))
 
 export fn field_definition(field_name: string, field_type: Shared<TypeExpr>) -> Shared<FieldDef> =
   Shared.new(FieldDef { name: field_name, typ: field_type })

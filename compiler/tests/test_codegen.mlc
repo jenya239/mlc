@@ -283,8 +283,8 @@ export fn codegen_tests() -> [TestResult] = do
   const ok_fields:  [Shared<TypeExpr>] = [Shared.new(TyNamed("T"))]
   const err_fields: [Shared<TypeExpr>] = [Shared.new(TyNamed("E"))]
   const result_variants: [Shared<TypeVariant>] = [
-    Shared.new(VarTuple("Ok",  ok_fields)),
-    Shared.new(VarTuple("Err", err_fields))
+    Shared.new(VarTuple("Ok",  ok_fields, false)),
+    Shared.new(VarTuple("Err", err_fields, false))
   ]
   const expected_fwd =
     "template<typename T>\nstruct Ok;\n" +
@@ -329,14 +329,14 @@ export fn codegen_tests() -> [TestResult] = do
   // --- Phantom type codegen ---------------------------------------------------
 
   const phantom_fds: [Shared<FieldDef>] = [Shared.new(FieldDef { name: "value", typ: Shared.new(TyI32) })]
-  const phantom_variants_1: [Shared<TypeVariant>] = [Shared.new(VarRecord("Ast", phantom_fds))]
+  const phantom_variants_1: [Shared<TypeVariant>] = [Shared.new(VarRecord("Ast", phantom_fds, false))]
   const phantom_type_out = gen_type_decl(ctx, "Ast", ["Phase"], phantom_variants_1)
   results.push(assert_eq_str("phantom single-variant: template<typename Phase> in output",
     if phantom_type_out.contains("typename Phase") then "yes" else "no" end, "yes"))
 
   const tagged_variants: [Shared<TypeVariant>] = [
-    Shared.new(VarTuple("Active", [Shared.new(TyI32)])),
-    Shared.new(VarUnit("Inactive"))
+    Shared.new(VarTuple("Active", [Shared.new(TyI32)], false)),
+    Shared.new(VarUnit("Inactive", false))
   ]
   const tagged_out = gen_type_decl(ctx, "Tagged", ["Tag"], tagged_variants)
   results.push(assert_eq_str("phantom multi-variant: Active<Tag> in alias",

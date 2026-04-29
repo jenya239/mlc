@@ -33,6 +33,8 @@ mlc::Array<mlc::Array<mlc::String>> TypeRegistry_fn_trait_bounds(registry::TypeR
 
 int TypeRegistry_required_arity_for_fn(registry::TypeRegistry self, mlc::String fn_name) noexcept;
 
+bool TypeRegistry_is_private_ctor(registry::TypeRegistry self, mlc::String name) noexcept;
+
 registry::TypeRegistry empty_registry() noexcept;
 
 std::shared_ptr<registry::Type> type_from_annotation(std::shared_ptr<ast::TypeExpr> type_expr) noexcept;
@@ -110,6 +112,22 @@ mlc::Array<mlc::Array<mlc::String>> TypeRegistry_fn_trait_bounds(registry::TypeR
 
 int TypeRegistry_required_arity_for_fn(registry::TypeRegistry self, mlc::String fn_name) noexcept{return self.function_required_arity.has(fn_name) ? self.function_required_arity.get(fn_name) : -1;}
 
+bool TypeRegistry_is_private_ctor(registry::TypeRegistry self, mlc::String name) noexcept{
+int i = 0;
+bool found = false;
+while (i < self.private_ctors.size()){
+{
+if (self.private_ctors[i] == name){
+{
+found = true;
+}
+}
+i = i + 1;
+}
+}
+return found;
+}
+
 registry::TypeRegistry empty_registry() noexcept{
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> ctor_types = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
 mlc::HashMap<mlc::String, mlc::Array<std::shared_ptr<registry::Type>>> ctor_params = mlc::HashMap<mlc::String, mlc::Array<std::shared_ptr<registry::Type>>>();
@@ -131,7 +149,8 @@ fn_req.set(mlc::String("print"), 1);
 fn_req.set(mlc::String("println"), 1);
 fn_req.set(mlc::String("exit"), 1);
 fn_req.set(mlc::String("args"), 0);
-return registry::TypeRegistry{builtin_function_types, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), fn_req, mlc::HashMap<mlc::String, mlc::Array<mlc::Array<mlc::String>>>(), ctor_types, ctor_params, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>()};
+mlc::Array<mlc::String> empty_private_ctors = {};
+return registry::TypeRegistry{builtin_function_types, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), fn_req, mlc::HashMap<mlc::String, mlc::Array<mlc::Array<mlc::String>>>(), ctor_types, ctor_params, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), empty_private_ctors};
 }
 
 std::shared_ptr<registry::Type> type_from_annotation(std::shared_ptr<ast::TypeExpr> type_expr) noexcept{return [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<ast::TyI32>((*type_expr))) {  return std::make_shared<registry::Type>((registry::TI32{})); } if (std::holds_alternative<ast::TyString>((*type_expr))) {  return std::make_shared<registry::Type>((registry::TString{})); } if (std::holds_alternative<ast::TyBool>((*type_expr))) {  return std::make_shared<registry::Type>((registry::TBool{})); } if (std::holds_alternative<ast::TyUnit>((*type_expr))) {  return std::make_shared<registry::Type>((registry::TUnit{})); } if (std::holds_alternative<ast::TyNamed>((*type_expr))) { auto _v_tynamed = std::get<ast::TyNamed>((*type_expr)); auto [name] = _v_tynamed; return std::make_shared<registry::Type>(registry::TNamed(name)); } if (std::holds_alternative<ast::TyArray>((*type_expr))) { auto _v_tyarray = std::get<ast::TyArray>((*type_expr)); auto [inner] = _v_tyarray; return std::make_shared<registry::Type>(registry::TArray(type_from_annotation(inner))); } if (std::holds_alternative<ast::TyShared>((*type_expr))) { auto _v_tyshared = std::get<ast::TyShared>((*type_expr)); auto [inner] = _v_tyshared; return std::make_shared<registry::Type>(registry::TShared(type_from_annotation(inner))); } if (std::holds_alternative<ast::TyGeneric>((*type_expr))) { auto _v_tygeneric = std::get<ast::TyGeneric>((*type_expr)); auto [name, targs] = _v_tygeneric; return name == mlc::String("ref") && targs.size() == 1 ? type_from_annotation(targs[0]) : [&]() -> std::shared_ptr<registry::Type> { 
@@ -271,8 +290,8 @@ return found;
 }
 
 mlc::Array<std::shared_ptr<ast::TypeExpr>> variant_annotation_typeexprs(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
-  [&](const VarTuple& vartuple) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fts] = vartuple; return fts; },
-  [&](const VarRecord& varrecord) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fds] = varrecord; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
+  [&](const VarTuple& vartuple) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fts, _w1] = vartuple; return fts; },
+  [&](const VarRecord& varrecord) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fds, _w1] = varrecord; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
   mlc::Array<std::shared_ptr<ast::TypeExpr>> result = {};
   int i = 0;
   while (i < fds.size()){
@@ -283,7 +302,7 @@ i = i + 1;
 }
   return result;
  }(); },
-  [&](const VarUnit& varunit) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0] = varunit; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
+  [&](const VarUnit& varunit) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, _w1] = varunit; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
   mlc::Array<std::shared_ptr<ast::TypeExpr>> r = {};
   return r;
  }(); }
@@ -323,12 +342,17 @@ return phantom;
 registry::TypeRegistry register_variant(registry::TypeRegistry registry, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{
 std::shared_ptr<registry::Type> result_type = std::make_shared<registry::Type>(registry::TNamed(type_name));
 return std::visit(overloaded{
-  [&](const VarUnit& varunit) -> registry::TypeRegistry { auto [variant_name] = varunit; return [&]() -> registry::TypeRegistry { 
+  [&](const VarUnit& varunit) -> registry::TypeRegistry { auto [variant_name, is_private] = varunit; return [&]() -> registry::TypeRegistry { 
   registry.ctor_types.set(variant_name, result_type);
   registry.ctor_params.set(variant_name, {});
+  if (is_private){
+{
+registry.private_ctors.push_back(variant_name);
+}
+}
   return registry;
  }(); },
-  [&](const VarTuple& vartuple) -> registry::TypeRegistry { auto [variant_name, field_types] = vartuple; return [&]() -> registry::TypeRegistry { 
+  [&](const VarTuple& vartuple) -> registry::TypeRegistry { auto [variant_name, field_types, is_private] = vartuple; return [&]() -> registry::TypeRegistry { 
   mlc::Array<std::shared_ptr<registry::Type>> field_type_list = {};
   int i = 0;
   while (i < field_types.size()){
@@ -339,9 +363,14 @@ i = i + 1;
 }
   registry.ctor_types.set(variant_name, result_type);
   registry.ctor_params.set(variant_name, field_type_list);
+  if (is_private){
+{
+registry.private_ctors.push_back(variant_name);
+}
+}
   return registry;
  }(); },
-  [&](const VarRecord& varrecord) -> registry::TypeRegistry { auto [variant_name, field_defs] = varrecord; return [&]() -> registry::TypeRegistry { 
+  [&](const VarRecord& varrecord) -> registry::TypeRegistry { auto [variant_name, field_defs, is_private] = varrecord; return [&]() -> registry::TypeRegistry { 
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> field_map = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
   int i = 0;
   while (i < field_defs.size()){
@@ -354,6 +383,11 @@ i = i + 1;
   registry.ctor_params.set(variant_name, {});
   registry.field_types.set(variant_name, field_map);
   registry.field_types.set(type_name, field_map);
+  if (is_private){
+{
+registry.private_ctors.push_back(variant_name);
+}
+}
   return registry;
  }(); }
 }, (*variant));

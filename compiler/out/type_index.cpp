@@ -82,9 +82,9 @@ std::shared_ptr<ast::Decl> inner_decl = ast::decl_inner(decls[i]);
 {
 bool should_add = type_params.size() > 0;
 mlc::String vname = std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> mlc::String { auto [n, _w0] = varrecord; return n; },
-  [&](const VarTuple& vartuple) -> mlc::String { auto [n, _w0] = vartuple; return n; },
-  [&](const VarUnit& varunit) -> mlc::String { auto [n] = varunit; return n; }
+  [&](const VarRecord& varrecord) -> mlc::String { auto [n, _w0, _w1] = varrecord; return n; },
+  [&](const VarTuple& vartuple) -> mlc::String { auto [n, _w0, _w1] = vartuple; return n; },
+  [&](const VarUnit& varunit) -> mlc::String { auto [n, _w0] = varunit; return n; }
 }, (*variants[vi]));
 if (should_add){
 {
@@ -118,9 +118,9 @@ std::shared_ptr<ast::Decl> inner_decl = ast::decl_inner(decls[i]);
   while (vi < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [variant_name, _w0] = varrecord; return variant_map.set(variant_name, type_name); },
-  [&](const VarTuple& vartuple) -> void { auto [variant_name, _w0] = vartuple; return variant_map.set(variant_name, type_name); },
-  [&](const VarUnit& varunit) -> void { auto [variant_name] = varunit; return variant_map.set(variant_name, type_name); }
+  [&](const VarRecord& varrecord) -> void { auto [variant_name, _w0, _w1] = varrecord; return variant_map.set(variant_name, type_name); },
+  [&](const VarTuple& vartuple) -> void { auto [variant_name, _w0, _w1] = vartuple; return variant_map.set(variant_name, type_name); },
+  [&](const VarUnit& varunit) -> void { auto [variant_name, _w0] = varunit; return variant_map.set(variant_name, type_name); }
 }, (*variants[vi]));
 vi = vi + 1;
 }
@@ -146,7 +146,7 @@ std::visit(overloaded{
   while (vi < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs] = varrecord; return [&]() { 
+  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; return [&]() { 
   mlc::Array<mlc::String> field_names = {};
   int fi = 0;
   while (fi < field_defs.size()){
@@ -163,8 +163,8 @@ orders.push_back(std::make_shared<decl_index::FieldOrder>(decl_index::FieldOrder
 }
   return;
  }(); },
-  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1] = vartuple; return ; },
-  [&](const VarUnit& varunit) -> void { auto [_w0] = varunit; return ; }
+  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; return ; },
+  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; return ; }
 }, (*variants[vi]));
 vi = vi + 1;
 }
@@ -183,7 +183,7 @@ vi = vi + 1;
   while (vi < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs] = varrecord; return [&]() { 
+  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; return [&]() { 
   mlc::Array<mlc::String> field_names = {};
   int fi = 0;
   while (fi < field_defs.size()){
@@ -200,8 +200,8 @@ orders.push_back(std::make_shared<decl_index::FieldOrder>(decl_index::FieldOrder
 }
   return;
  }(); },
-  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1] = vartuple; return ; },
-  [&](const VarUnit& varunit) -> void { auto [_w0] = varunit; return ; }
+  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; return ; },
+  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; return ; }
 }, (*variants[vi]));
 vi = vi + 1;
 }

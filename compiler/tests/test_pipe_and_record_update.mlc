@@ -48,7 +48,7 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   const point_decl = Shared.new(DeclType("Point", [], [Shared.new(VarRecord("Point", [
     Shared.new(FieldDef { name: "x", typ: Shared.new(TyI32) }),
     Shared.new(FieldDef { name: "y", typ: Shared.new(TyI32) })
-  ]))], []))
+  ], false))], []))
   const point_prog  = Program { decls: [point_decl] }
   const ctx_point   = create_codegen_context(point_prog)
 

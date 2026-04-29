@@ -282,7 +282,7 @@ std::visit(overloaded{
   scope.push_back(name);
   return std::make_tuple();
  }(); },
-  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, _w0, _w1, value, _w2] = stmtletpat; return [&]() -> std::tuple<> { 
+  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, _w0, _w1, value, has_else, else_body, _w2] = stmtletpat; return [&]() -> std::tuple<> { 
   collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals));
   mlc::Array<mlc::String> pnames = pattern_bindings(pattern);
   int j = 0;
@@ -290,6 +290,11 @@ std::visit(overloaded{
 {
 scope.push_back(pnames[j]);
 j = j + 1;
+}
+}
+  if (has_else){
+{
+collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(else_body, scope, globals));
 }
 }
   return std::make_tuple();

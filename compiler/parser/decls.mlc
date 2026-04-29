@@ -326,7 +326,7 @@ fn parse_type_decl(parser: Parser) -> DeclResult = do
     if first_kind.is_lbrace() then
       const field_defs_result = parse_field_defs(state.advance())
       const variants: [Shared<TypeVariant>] = []
-      variants.push(Shared.new(VarRecord(type_name, field_defs_result.field_defs)))
+      variants.push(Shared.new(VarRecord(type_name, field_defs_result.field_defs, false)))
       const derive_res = parse_derive_clause(field_defs_result.parser)
       DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants, derive_res.traits)), parser: derive_res.parser }
     else
@@ -365,16 +365,18 @@ fn parse_variants(parser: Parser) -> VariantsResult = do
 end
 
 fn parse_variant(parser: Parser) -> VariantResult = do
-  const variant_name = parser.kind().ident()
-  const after_name   = parser.advance()
+  const is_private = parser.kind().is_ident() && parser.kind().ident() == "private"
+  const after_private = if is_private then parser.advance() else parser end
+  const variant_name = after_private.kind().ident()
+  const after_name   = after_private.advance()
   if after_name.kind().is_lparen() then
     const types_result = parse_tuple_types(after_name.advance())
-    VariantResult { variant: Shared.new(VarTuple(variant_name, types_result.types)), parser: types_result.parser }
+    VariantResult { variant: Shared.new(VarTuple(variant_name, types_result.types, is_private)), parser: types_result.parser }
   else if after_name.kind().is_lbrace() then
     const field_defs_result = parse_field_defs(after_name.advance())
-    VariantResult { variant: Shared.new(VarRecord(variant_name, field_defs_result.field_defs)), parser: field_defs_result.parser }
+    VariantResult { variant: Shared.new(VarRecord(variant_name, field_defs_result.field_defs, is_private)), parser: field_defs_result.parser }
   else
-    VariantResult { variant: Shared.new(VarUnit(variant_name)), parser: after_name }
+    VariantResult { variant: Shared.new(VarUnit(variant_name, is_private)), parser: after_name }
   end
 end
 

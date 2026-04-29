@@ -5,8 +5,9 @@ import { Type, TypeRegistry } from "./registry"
 
 export type CheckContext = CheckContext {
   type_env: Map<string, Shared<Type>>,
-  registry: TypeRegistry
+  registry: TypeRegistry,
+  current_extend_type: string
 }
 
 export fn check_context_new(type_environment: Map<string, Shared<Type>>, registry: TypeRegistry) -> CheckContext =
-  CheckContext { type_env: type_environment, registry: registry }
+  CheckContext { type_env: type_environment, registry: registry, current_extend_type: "" }

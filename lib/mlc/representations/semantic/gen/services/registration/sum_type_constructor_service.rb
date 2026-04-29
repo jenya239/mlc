@@ -22,11 +22,12 @@ module MLC
           # - type_decl_table: Hash (type declarations lookup)
           # - type_checker: TypeChecker (for type parameter normalization)
           class SumTypeConstructorService
-            def initialize(sum_type_constructors:, function_registry:, type_decl_table:, type_checker:)
+            def initialize(sum_type_constructors:, function_registry:, type_decl_table:, type_checker:, private_ctors: nil)
               @sum_type_constructors = sum_type_constructors
               @function_registry = function_registry
               @type_decl_table = type_decl_table
               @type_checker = type_checker
+              @private_ctors = private_ctors || {}
             end
 
             # Register constructors for sum type variants
@@ -64,6 +65,7 @@ module MLC
                 )
 
                 @sum_type_constructors[variant[:name]] = constructor_info
+                @private_ctors[variant[:name]] = true if variant[:private]
                 @function_registry.register(variant[:name], constructor_info, {
                   exported: true,
                   external: true,

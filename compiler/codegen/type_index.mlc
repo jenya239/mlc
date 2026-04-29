@@ -62,9 +62,9 @@ export fn build_generic_variants_from_decls(decls: [Shared<Decl>]) -> [string] =
         while vi < variants.length() do
           let should_add = type_params.length() > 0
           let vname = match variants[vi] {
-            VarRecord(n, _) => n,
-            VarTuple(n, _)  => n,
-            VarUnit(n)      => n
+            VarRecord(n, _, _) => n,
+            VarTuple(n, _, _)  => n,
+            VarUnit(n, _)      => n
           }
           if should_add then result.push(vname) else result.push("__skip__") end
           vi = vi + 1
@@ -87,9 +87,9 @@ export fn build_variant_types_from_decls(decls: [Shared<Decl>]) -> Map<string, s
         let mut vi = 0
         while vi < variants.length() do
           match variants[vi] {
-            VarRecord(variant_name, _) => variant_map.set(variant_name, type_name),
-            VarTuple(variant_name, _)  => variant_map.set(variant_name, type_name),
-            VarUnit(variant_name)      => variant_map.set(variant_name, type_name)
+            VarRecord(variant_name, _, _) => variant_map.set(variant_name, type_name),
+            VarTuple(variant_name, _, _)  => variant_map.set(variant_name, type_name),
+            VarUnit(variant_name, _)      => variant_map.set(variant_name, type_name)
           }
           vi = vi + 1
         end
@@ -111,7 +111,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
           let mut vi = 0
           while vi < variants.length() do
             match variants[vi] {
-              VarRecord(variant_name, field_defs) => do
+              VarRecord(variant_name, field_defs, _) => do
                 const field_names: [string] = []; let mut fi = 0
                 while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
                 orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
@@ -120,8 +120,8 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
                 end
                 do end
               end,
-              VarTuple(_, _) => do end,
-              VarUnit(_)     => do end
+              VarTuple(_, _, _) => do end,
+              VarUnit(_, _)     => do end
             }
             vi = vi + 1
           end
@@ -136,7 +136,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
         let mut vi = 0
         while vi < variants.length() do
           match variants[vi] {
-            VarRecord(variant_name, field_defs) => do
+            VarRecord(variant_name, field_defs, _) => do
               const field_names: [string] = []; let mut fi = 0
               while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
               orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
@@ -145,8 +145,8 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
               end
               do end
             end,
-            VarTuple(_, _) => do end,
-            VarUnit(_)     => do end
+            VarTuple(_, _, _) => do end,
+            VarUnit(_, _)     => do end
           }
           vi = vi + 1
         end

@@ -54,7 +54,7 @@ struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprIdent, ExprB
 
 
 struct StmtLet {mlc::String field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;ast::Span field4;};
-struct StmtLetPat {std::shared_ptr<ast::Pat> field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;ast::Span field4;};
+struct StmtLetPat {std::shared_ptr<ast::Pat> field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;bool field4;std::shared_ptr<ast::Expr> field5;ast::Span field6;};
 struct StmtLetConst {mlc::String field0;std::shared_ptr<ast::TypeExpr> field1;std::shared_ptr<ast::Expr> field2;ast::Span field3;};
 struct StmtExpr {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
 struct StmtBreak {ast::Span field0;};
@@ -67,7 +67,7 @@ struct Param {mlc::String name;bool is_mut;std::shared_ptr<ast::TypeExpr> typ;bo
 
 struct FieldDef {mlc::String name;std::shared_ptr<ast::TypeExpr> typ;};
 
-struct VarUnit {mlc::String field0;};struct VarTuple {mlc::String field0;mlc::Array<std::shared_ptr<ast::TypeExpr>> field1;};struct VarRecord {mlc::String field0;mlc::Array<std::shared_ptr<ast::FieldDef>> field1;};using TypeVariant = std::variant<VarUnit, VarTuple, VarRecord>;
+struct VarUnit {mlc::String field0;bool field1;};struct VarTuple {mlc::String field0;mlc::Array<std::shared_ptr<ast::TypeExpr>> field1;bool field2;};struct VarRecord {mlc::String field0;mlc::Array<std::shared_ptr<ast::FieldDef>> field1;bool field2;};using TypeVariant = std::variant<VarUnit, VarTuple, VarRecord>;
 
 struct DeclFn;struct DeclType;struct DeclTrait;struct DeclExtend;struct DeclImport;struct DeclExported;using Decl = std::variant<DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported>;struct DeclFn {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<mlc::Array<mlc::String>> field2;mlc::Array<std::shared_ptr<ast::Param>> field3;std::shared_ptr<ast::TypeExpr> field4;std::shared_ptr<ast::Expr> field5;};struct DeclType {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<ast::TypeVariant>> field2;mlc::Array<mlc::String> field3;};struct DeclTrait {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<ast::Decl>> field2;};struct DeclExtend {mlc::String field0;mlc::String field1;mlc::Array<std::shared_ptr<ast::Decl>> field2;};struct DeclImport {mlc::String field0;mlc::Array<mlc::String> field1;};struct DeclExported {std::shared_ptr<ast::Decl> field0;};
 

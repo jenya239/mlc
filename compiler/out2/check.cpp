@@ -148,15 +148,15 @@ std::visit(overloaded{
   while (variant_index < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarUnit& varunit) -> std::tuple<> { auto [variant_name] = varunit; return [&]() -> std::tuple<> { 
+  [&](const VarUnit& varunit) -> std::tuple<> { auto [variant_name, _w0] = varunit; return [&]() -> std::tuple<> { 
   names.set(variant_name, true);
   return std::make_tuple();
  }(); },
-  [&](const VarTuple& vartuple) -> std::tuple<> { auto [variant_name, _w0] = vartuple; return [&]() -> std::tuple<> { 
+  [&](const VarTuple& vartuple) -> std::tuple<> { auto [variant_name, _w0, _w1] = vartuple; return [&]() -> std::tuple<> { 
   names.set(variant_name, true);
   return std::make_tuple();
  }(); },
-  [&](const VarRecord& varrecord) -> std::tuple<> { auto [variant_name, _w0] = varrecord; return [&]() -> std::tuple<> { 
+  [&](const VarRecord& varrecord) -> std::tuple<> { auto [variant_name, _w0, _w1] = varrecord; return [&]() -> std::tuple<> { 
   names.set(variant_name, true);
   return std::make_tuple();
  }(); }
@@ -254,7 +254,29 @@ parameter_index = parameter_index + 1;
  }(); },
   [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1, _w2, _w3] = decltype_; return std::make_tuple(); },
   [&](const DeclTrait& decltrait) -> std::tuple<> { auto [_w0, _w1, _w2] = decltrait; return std::make_tuple(); },
-  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1, _w2] = declextend; return std::make_tuple(); },
+  [&](const DeclExtend& declextend) -> std::tuple<> { auto [extend_type_name, _w0, methods] = declextend; return [&]() -> std::tuple<> { 
+  int method_index = 0;
+  while (method_index < methods.size()){
+{
+[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [_w0, type_params, _w1, params, _w2, method_body] = _v_declfn; return [&]() -> std::tuple<> { 
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> method_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
+  int pi = 0;
+  while (pi < params.size()){
+{
+method_env.set(ast::param_name(params[pi]), registry::type_from_annotation(ast::param_typ(params[pi])));
+pi = pi + 1;
+}
+}
+  check_context::CheckContext extend_context = check_context::CheckContext{method_env, registry, extend_type_name};
+  infer_result::InferResult method_result = infer::infer_expr(method_body, extend_context);
+  all_diagnostics = ast::diagnostics_append(all_diagnostics, method_result.errors);
+  return std::make_tuple();
+ }(); } return std::make_tuple(); }();
+method_index = method_index + 1;
+}
+}
+  return std::make_tuple();
+ }(); },
   [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
   [&](const DeclExported& declexported) -> std::tuple<> { auto [_w0] = declexported; return std::make_tuple(); }
 }, (*ast::decl_inner(entry.decls[declaration_index])));

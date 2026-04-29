@@ -35,15 +35,15 @@ mlc::Array<mlc::String> names = {};
   while (variant_index < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> std::tuple<> { auto [variant_name, _w0] = varrecord; return [&]() -> std::tuple<> { 
+  [&](const VarRecord& varrecord) -> std::tuple<> { auto [variant_name, _w0, _w1] = varrecord; return [&]() -> std::tuple<> { 
   names.push_back(variant_name);
   return std::make_tuple();
  }(); },
-  [&](const VarTuple& vartuple) -> std::tuple<> { auto [variant_name, _w0] = vartuple; return [&]() -> std::tuple<> { 
+  [&](const VarTuple& vartuple) -> std::tuple<> { auto [variant_name, _w0, _w1] = vartuple; return [&]() -> std::tuple<> { 
   names.push_back(variant_name);
   return std::make_tuple();
  }(); },
-  [&](const VarUnit& varunit) -> std::tuple<> { auto [variant_name] = varunit; return [&]() -> std::tuple<> { 
+  [&](const VarUnit& varunit) -> std::tuple<> { auto [variant_name, _w0] = varunit; return [&]() -> std::tuple<> { 
   names.push_back(variant_name);
   return std::make_tuple();
  }(); }

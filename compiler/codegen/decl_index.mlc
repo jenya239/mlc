@@ -23,9 +23,9 @@ fn decl_export_names(decl: Shared<Decl>) -> [string] = do
           names.push(type_name); let mut variant_index = 0
           while variant_index < variants.length() do
             match variants[variant_index] {
-              VarRecord(variant_name, _) => do names.push(variant_name); () end,
-              VarTuple(variant_name, _)  => do names.push(variant_name); () end,
-              VarUnit(variant_name)      => do names.push(variant_name); () end
+              VarRecord(variant_name, _, _) => do names.push(variant_name); () end,
+              VarTuple(variant_name, _, _)  => do names.push(variant_name); () end,
+              VarUnit(variant_name, _)      => do names.push(variant_name); () end
             }
             variant_index = variant_index + 1
           end; ()

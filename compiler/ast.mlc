@@ -160,9 +160,9 @@ export type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeEx
 export type FieldDef = FieldDef { name: string, typ: Shared<TypeExpr> }
 
 export type TypeVariant =
-  | VarUnit(string)
-  | VarTuple(string, [Shared<TypeExpr>])
-  | VarRecord(string, [Shared<FieldDef>])
+  | VarUnit(string, bool)
+  | VarTuple(string, [Shared<TypeExpr>], bool)
+  | VarRecord(string, [Shared<FieldDef>], bool)
 
 export type Decl =
   | DeclFn(string, [string], [[string]], [Shared<Param>], Shared<TypeExpr>, Shared<Expr>)

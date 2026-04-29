@@ -30,7 +30,10 @@ infer_result::InferResult infer_expr_call_non_constructor(infer_result::InferRes
 infer_result::InferResult infer_expr_call_for_constructor_name(mlc::String constructor_name, infer_result::InferResult with_arguments, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context) noexcept{
 mlc::Array<std::shared_ptr<registry::Type>> constructor_parameter_types = registry::TypeRegistry_ctor_params_for(inference_context.registry, constructor_name);
 mlc::Array<ast::Diagnostic> call_errors = type_diagnostics::constructor_arity_diagnostics(constructor_parameter_types.size(), call_arguments.size(), call_source_span);
-return infer_result::InferResult{registry::TypeRegistry_ctor_type(inference_context.registry, constructor_name), ast::diagnostics_append(with_arguments.errors, call_errors)};
+std::shared_ptr<registry::Type> ctor_type = registry::TypeRegistry_ctor_type(inference_context.registry, constructor_name);
+mlc::String owner_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*ctor_type))) { auto _v_tnamed = std::get<registry::TNamed>((*ctor_type)); auto [n] = _v_tnamed; return n; } return mlc::String(""); }();
+mlc::Array<ast::Diagnostic> private_errors = registry::TypeRegistry_is_private_ctor(inference_context.registry, constructor_name) && inference_context.current_extend_type != owner_name ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("private constructor: cannot construct ") + constructor_name + mlc::String(" outside its extend block"), call_source_span)} : mlc::Array<ast::Diagnostic>{};
+return infer_result::InferResult{ctor_type, ast::diagnostics_append(ast::diagnostics_append(with_arguments.errors, call_errors), private_errors)};
 }
 
 infer_result::InferResult infer_expr_call_non_constructor_arity_only(infer_result::InferResult base, infer_result::InferResult function_result, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, std::shared_ptr<registry::Type> return_type, registry::TypeRegistry registry, mlc::String callee_name) noexcept{

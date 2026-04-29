@@ -21,13 +21,13 @@ fn add_ctor_infos_from_variants(variants: [Shared<TypeVariant>]) -> [Shared<Ctor
   let result: [Shared<CtorTypeInfo>] = []; let mut vi = 0
   while vi < variants.length() do
     match variants[vi] {
-      VarTuple(variant_name, types) => result.push(ctor_type_info_for(variant_name, types)),
-      VarRecord(variant_name, field_defs) => do
+      VarTuple(variant_name, types, _) => result.push(ctor_type_info_for(variant_name, types)),
+      VarRecord(variant_name, field_defs, _) => do
         let types: [Shared<TypeExpr>] = []; let mut fi = 0
         while fi < field_defs.length() do types.push(field_def_type(field_defs[fi])); fi = fi + 1 end
         result.push(ctor_type_info_for(variant_name, types))
       end,
-      VarUnit(_) => do end
+      VarUnit(_, _) => do end
     }
     vi = vi + 1
   end

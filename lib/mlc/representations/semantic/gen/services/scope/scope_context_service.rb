@@ -32,6 +32,7 @@ module MLC
               @current_node = nil
               @loop_depth = 0
               @unsafe_depth = 0
+              @extend_type_stack = []
             end
 
             # Type parameters (e.g., <T> in fn foo<T>())
@@ -120,6 +121,17 @@ module MLC
                 return bindings[name] if bindings.key?(name)
               end
               nil
+            end
+
+            def with_extend_type(type_name)
+              @extend_type_stack.push(type_name)
+              yield
+            ensure
+              @extend_type_stack.pop
+            end
+
+            def current_extend_type
+              @extend_type_stack.last
             end
           end
 

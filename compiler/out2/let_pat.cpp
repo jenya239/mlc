@@ -23,11 +23,11 @@ using namespace ast_tokens;
 
 mlc::String gen_let_array_rest_slice(mlc::String temp, int from_index, mlc::String element_cpp) noexcept;
 
-mlc::String gen_let_pattern_statement(std::shared_ptr<ast::Pat> pat, std::shared_ptr<semantic_ir::SExpr> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> eval_fn) noexcept;
+mlc::String gen_let_pattern_statement(std::shared_ptr<ast::Pat> pat, std::shared_ptr<semantic_ir::SExpr> value, std::shared_ptr<registry::Type> value_type, bool has_else, std::shared_ptr<semantic_ir::SExpr> else_body, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> eval_fn) noexcept;
 
 mlc::String gen_let_array_rest_slice(mlc::String temp, int from_index, mlc::String element_cpp) noexcept{return mlc::String("mlc::Array<") + element_cpp + mlc::String(">(") + temp + mlc::String(".cbegin() + ") + mlc::to_string(from_index) + mlc::String(", ") + temp + mlc::String(".cend())");}
 
-mlc::String gen_let_pattern_statement(std::shared_ptr<ast::Pat> pat, std::shared_ptr<semantic_ir::SExpr> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> eval_fn) noexcept{
+mlc::String gen_let_pattern_statement(std::shared_ptr<ast::Pat> pat, std::shared_ptr<semantic_ir::SExpr> value, std::shared_ptr<registry::Type> value_type, bool has_else, std::shared_ptr<semantic_ir::SExpr> else_body, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> eval_fn) noexcept{
 mlc::String rhs = eval_fn(value, context);
 return [&]() -> mlc::String { if (std::holds_alternative<ast::PatIdent>((*pat))) { auto _v_patident = std::get<ast::PatIdent>((*pat)); auto [n, _w0] = _v_patident; return expr::auto_binding_statement(cpp_naming::cpp_safe(n), rhs); } if (std::holds_alternative<ast::PatTuple>((*pat))) { auto _v_pattuple = std::get<ast::PatTuple>((*pat)); auto [subs, _w0] = _v_pattuple; return [&]() -> mlc::String { 
   mlc::String names = match_analysis::pat_bind_names(subs);
@@ -85,7 +85,8 @@ b = b + mlc::String("auto ") + cpp_naming::cpp_safe(rest) + mlc::String(" = ") +
   mlc::String bind = sub_patterns.size() == 0 ? mlc::String("") : expr::tuple_destructure_binding(match_analysis::pat_bind_names(sub_patterns), mlc::String("__b"));
   bool is_generic = decl_index::list_contains(context.generic_variants, ctor_name);
   mlc::String targs = is_generic ? mlc::String("<auto>") : mlc::String("");
-  return mlc::String("{\n") + mlc::String("auto __lt = ") + rhs + mlc::String(";\n") + mlc::String("if (!std::holds_alternative<") + q + targs + mlc::String(">(__lt)) { std::abort(); }\n") + mlc::String("const ") + q + targs + mlc::String("& __b = std::get<") + q + targs + mlc::String(">(__lt);\n") + bind + mlc::String("\n}\n");
+  mlc::String else_code = has_else ? eval_fn(else_body, context) : mlc::String("std::abort();");
+  return mlc::String("{\n") + mlc::String("auto __lt = ") + rhs + mlc::String(";\n") + mlc::String("if (!std::holds_alternative<") + q + targs + mlc::String(">(__lt)) { ") + else_code + mlc::String(" }\n") + mlc::String("const ") + q + targs + mlc::String("& __b = std::get<") + q + targs + mlc::String(">(__lt);\n") + bind + mlc::String("\n}\n");
  }(); } return expr::suffix_semicolon_newline(rhs); }();
 }
 

@@ -57,7 +57,7 @@ module MLC
                   fields = Array(variant[:fields]).map do |field|
                     { name: field[:name], type: transform(field[:type]) }
                   end
-                  { name: variant[:name], fields: fields }
+                  { name: variant[:name], fields: fields, private: variant[:private] }
                 end
                 @ir_builder.sum_type(name: node.name, variants: variants)
               when MLC::Source::AST::TupleType

@@ -63,6 +63,7 @@ module MLC
               @literal_processor = LiteralProcessor.new(ir_builder: @ir_builder)
               @type_decl_table = {}
               @sum_type_constructors = {}
+              @private_ctors = {}
               @trait_registry = TraitRegistry.new
               @operator_trait_mapper = OperatorTraitMapper.new(@trait_registry)
               @type_checker = MLC::Representations::Semantic::Gen::Services::TypeChecker.new(
@@ -84,7 +85,9 @@ module MLC
               @record_literal_builder = RecordLiteralBuilder.new(
                 ir_builder: @ir_builder,
                 type_registry: @type_registry,
-                type_checker: @type_checker
+                type_checker: @type_checker,
+                private_ctors: @private_ctors,
+                scope_context: @scope_context
               )
               @array_literal_builder = ArrayLiteralBuilder.new(
                 ir_builder: @ir_builder,
@@ -106,7 +109,8 @@ module MLC
                 sum_type_constructors: @sum_type_constructors,
                 function_registry: @function_registry,
                 type_decl_table: @type_decl_table,
-                type_checker: @type_checker
+                type_checker: @type_checker,
+                private_ctors: @private_ctors
               )
               @type_unification_service = MLC::Representations::Semantic::Gen::Services::TypeUnificationService.new(
                 type_checker: @type_checker,

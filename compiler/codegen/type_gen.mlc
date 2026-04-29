@@ -127,14 +127,14 @@ end
 
 export fn variant_field_typeexprs(variant: Shared<TypeVariant>) -> [Shared<TypeExpr>] =
   match variant {
-    VarTuple(_, fts) => fts,
-    VarRecord(_, fds) => do
+    VarTuple(_, fts, _) => fts,
+    VarRecord(_, fds, _) => do
       const result: [Shared<TypeExpr>] = []
       let mut i = 0
       while i < fds.length() do result.push(fds[i].typ); i = i + 1 end
       result
     end,
-    VarUnit(_) => do let r: [Shared<TypeExpr>] = []; r end
+    VarUnit(_, _) => do let r: [Shared<TypeExpr>] = []; r end
   }
 
 export fn variant_used_type_params(type_params: [string], variant: Shared<TypeVariant>) -> [string] = do
@@ -185,19 +185,19 @@ end
 // --- Variant struct generation -----------------------------------------------
 
 export fn variant_ctor_name(variant: Shared<TypeVariant>) -> string =
-  match variant { VarUnit(name) => name, VarTuple(name, _) => name, VarRecord(name, _) => name }
+  match variant { VarUnit(name, _) => name, VarTuple(name, _, _) => name, VarRecord(name, _, _) => name }
 
 fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
   match variant {
-    VarUnit(name) => expression_output.struct_empty_definition(context_resolve(context, name)),
-    VarTuple(name, field_types) => do
+    VarUnit(name, _) => expression_output.struct_empty_definition(context_resolve(context, name)),
+    VarTuple(name, field_types, _) => do
       let parts: [string] = []; let mut i = 0
       while i < field_types.length() do
         parts.push(expression_output.struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), i.to_string())); i = i + 1
       end
       expression_output.struct_with_inline_members_definition(context_resolve(context, name), parts.join(""))
     end,
-    VarRecord(name, field_defs) => do
+    VarRecord(name, field_defs, _) => do
       let parts: [string] = []; let mut i = 0
       while i < field_defs.length() do
         parts.push(expression_output.struct_named_field_declaration(type_to_cpp(context, field_defs[i].typ), cpp_safe(field_defs[i].name))); i = i + 1
@@ -208,21 +208,21 @@ fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Share
 
 fn gen_single_variant(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
   match variant {
-    VarRecord(_, field_defs) => do
+    VarRecord(_, field_defs, _) => do
       let parts: [string] = []; let mut i = 0
       while i < field_defs.length() do
         parts.push(expression_output.struct_named_field_declaration(type_to_cpp(context, field_defs[i].typ), cpp_safe(field_defs[i].name))); i = i + 1
       end
       expression_output.struct_with_inline_members_definition(context_resolve(context, type_name), parts.join(""))
     end,
-    VarTuple(_, field_types) => do
+    VarTuple(_, field_types, _) => do
       let parts: [string] = []; let mut i = 0
       while i < field_types.length() do
         parts.push(expression_output.struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), i.to_string())); i = i + 1
       end
       expression_output.struct_with_inline_members_definition(context_resolve(context, type_name), parts.join(""))
     end,
-    VarUnit(_) => expression_output.struct_empty_definition(context_resolve(context, type_name))
+    VarUnit(_, _) => expression_output.struct_empty_definition(context_resolve(context, type_name))
   }
 
 export fn gen_adt_fwd(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
@@ -302,15 +302,15 @@ end
 
 fn derive_display_variant_case(variant: Shared<TypeVariant>) -> string =
   match variant {
-    VarUnit(name) =>
+    VarUnit(name, _) =>
       "  if (std::holds_alternative<" + name + ">(self._)) return mlc::String(\"" + name + "\");\n",
-    VarTuple(name, field_types) =>
+    VarTuple(name, field_types, _) =>
       if field_types.length() == 0 then
         "  if (std::holds_alternative<" + name + ">(self._)) return mlc::String(\"" + name + "\");\n"
       else
         "  if (std::holds_alternative<" + name + ">(self._)) return mlc::String(\"" + name + "(\") + mlc::to_string(std::get<" + name + ">(self._)._0) + mlc::String(\")\");\n"
       end,
-    VarRecord(name, fds) => derive_display_variant_record(name, fds)
+    VarRecord(name, fds, _) => derive_display_variant_record(name, fds)
   }
 
 fn derive_display_variant_record(name: string, fds: [Shared<FieldDef>]) -> string = do
@@ -385,11 +385,11 @@ fn derive_ord_sum(type_name: string) -> string =
 
 fn variants_is_single_record(variants: [Shared<TypeVariant>]) -> bool =
   if variants.length() != 1 then false
-  else match variants[0] { VarRecord(_, _) => true, _ => false }
+  else match variants[0] { VarRecord(_, _, _) => true, _ => false }
   end
 
 fn derive_record_field_defs(variants: [Shared<TypeVariant>]) -> [Shared<FieldDef>] =
-  match variants[0] { VarRecord(_, fds) => fds, _ => [] }
+  match variants[0] { VarRecord(_, fds, _) => fds, _ => [] }
 
 fn gen_derive_record_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string = do
   const fds = derive_record_field_defs(variants)

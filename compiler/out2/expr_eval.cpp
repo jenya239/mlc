@@ -126,7 +126,7 @@ mlc::String eval_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::Codegen
   [&](const SExprWhile& sexprwhile) -> mlc::String { auto [condition, statements, _w0, _w1] = sexprwhile; return gen_while_expr(condition, statements, context, gen_stmts); },
   [&](const SExprFor& sexprfor) -> mlc::String { auto [variable, iterator, statements, _w0, _w1] = sexprfor; return gen_for_expr(variable, iterator, statements, context, gen_stmts); },
   [&](const SExprMatch& sexprmatch) -> mlc::String { auto [subject, arms, _w0, _w1] = sexprmatch; return match_gen::gen_match(subject, arms, context, gen_stmts, eval_expr); },
-  [&](const SExprRecord& sexprrecord) -> mlc::String { auto [type_name, field_values, _w0, _w1] = sexprrecord; return record_gen::gen_record_expr(type_name, field_values, context, gen_stmts, eval_expr); },
+  [&](const SExprRecord& sexprrecord) -> mlc::String { auto [type_name, field_values, expr_type, _w0] = sexprrecord; return record_gen::gen_record_expr(type_name, field_values, expr_type, context, gen_stmts, eval_expr); },
   [&](const SExprRecordUpdate& sexprrecordupdate) -> mlc::String { auto [type_name, base_expr, overrides, _w0, _w1] = sexprrecordupdate; return record_gen::gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr); },
   [&](const SExprArray& sexprarray) -> mlc::String { auto [elements, _w0, _w1] = sexprarray; return gen_array_expr(elements, context, gen_stmts); },
   [&](const SExprTuple& sexprtuple) -> mlc::String { auto [elements, _w0, _w1] = sexprtuple; return [&]() -> mlc::String { 
