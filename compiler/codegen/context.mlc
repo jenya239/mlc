@@ -112,7 +112,7 @@ export fn update_context_from_statement(stmt: Shared<SStmt>, context: CodegenCon
         TArray(inner)   => match inner { TShared(_) => context_add_shared_array(context, binding_name), _ => context_add_value(context, binding_name) },
         _               => context_add_value(context, binding_name)
       },
-    SStmtLetPat(pat, _, _, _, _) => do
+    SStmtLetPat(pat, _, _, _, _, _, _) => do
       const names = collect_pat_bind_names_for_context(pat, [])
       let mut c = context; let mut k = 0
       while k < names.length() do

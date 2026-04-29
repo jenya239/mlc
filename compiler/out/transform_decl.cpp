@@ -40,7 +40,8 @@ index = index + 1;
   std::shared_ptr<registry::Type> return_type = registry::type_from_annotation(return_type_expr);
   transform::TransformContext initial_context = transform::TransformContext{param_env, registry};
   std::shared_ptr<semantic_ir::SExpr> typed_body = transform::transform_expr(body, initial_context, [](mlc::Array<std::shared_ptr<ast::Stmt>> stmts, transform::TransformContext ctx)  { return transform_stmts::transform_stmts(stmts, ctx); });
-  return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn(name, type_params, trait_bounds, params, return_type, typed_body));
+  std::shared_ptr<semantic_ir::SExpr> coerced_body = transform::coerce_expr_to_type(typed_body, return_type);
+  return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn(name, type_params, trait_bounds, params, return_type, coerced_body));
  }(); },
   [&](const DeclType& decltype_) -> std::shared_ptr<semantic_ir::SDecl> { auto [type_name, type_params, variants, derive_traits] = decltype_; return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclType(type_name, type_params, variants, derive_traits)); },
   [&](const DeclTrait& decltrait) -> std::shared_ptr<semantic_ir::SDecl> { auto [trait_name, type_params, methods] = decltrait; return [&]() -> std::shared_ptr<semantic_ir::SDecl> { 

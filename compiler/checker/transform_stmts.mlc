@@ -29,14 +29,15 @@ export fn transform_stmts(
         typed_statements.push(Shared.new(SStmtLet(binding_name, is_mut, coerced_value, value_type, source_span)))
         ()
       end,
-      StmtLetPat(pattern, is_mut, annotation, value_expression, source_span) => do
+      StmtLetPat(pattern, is_mut, annotation, value_expression, has_else, else_body, source_span) => do
         const annotated_type = type_from_annotation(annotation)
         const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
         const inferred_type  = sexpr_type(typed_value)
         const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
         const coerced_value = coerce_expr_to_type(typed_value, value_type)
         infer_let_pattern_env(pattern, value_type, current_env, current_context.registry)
-        typed_statements.push(Shared.new(SStmtLetPat(pattern, is_mut, coerced_value, value_type, source_span)))
+        const typed_else_body = transform_expr(else_body, current_context, transform_stmts)
+        typed_statements.push(Shared.new(SStmtLetPat(pattern, is_mut, coerced_value, value_type, has_else, typed_else_body, source_span)))
         ()
       end,
       StmtLetConst(binding_name, annotation, value_expression, source_span) => do

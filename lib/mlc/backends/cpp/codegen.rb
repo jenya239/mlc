@@ -695,11 +695,13 @@ module MLC
 
           # Generate using declaration for std::variant.
           # For generic sum types, use per-variant type params in the instantiation.
+          # Phantom params (not in any variant's fields) are included in every variant.
           all_param_names = type_params.any? ? sum_type_param_names_ordered(sum_type) : []
+          phantom_param_names = type_params.any? ? type_params.map(&:name) - all_param_names : []
           variant_type_names = if type_params.any?
                                  sum_type.variants.map do |v|
                                    used = variant_param_names_used(v)
-                                   used_params = all_param_names.select { |n| used.include?(n) }
+                                   used_params = all_param_names.select { |n| used.include?(n) } + phantom_param_names
                                    used_params.any? ? "#{v[:name]}<#{used_params.join(", ")}>" : v[:name]
                                  end.join(", ")
                                else
@@ -724,7 +726,8 @@ module MLC
             variant_structs = variant_structs.each_with_index.map do |struct, idx|
               v = sum_type.variants[idx]
               used = variant_param_names_used(v)
-              used_tps = type_params.select { |tp| used.include?(tp.name) }
+              used_names = all_param_names.select { |n| used.include?(n) } + phantom_param_names
+              used_tps = type_params.select { |tp| used_names.include?(tp.name) }
               if used_tps.any?
                 tpl_str, suffix = @context.build_template_signature(used_tps)
                 CppAst::Nodes::TemplateDeclaration.new(

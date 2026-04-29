@@ -133,6 +133,10 @@ mlc::String match_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(sema
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMatch contains std::visit"), match_out.contains(mlc::String("std::visit")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMatch contains one"), match_out.contains(mlc::String("\"one\"")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMatch contains other"), match_out.contains(mlc::String("\"other\"")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> or_arms = mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>>{std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{std::make_shared<ast::Pat>(ast::PatOr(mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatCtor(mlc::String("Circle"), mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown()))}, ast::span_unknown())), std::make_shared<ast::Pat>(ast::PatCtor(mlc::String("Square"), mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown()))}, ast::span_unknown()))}, ast::span_unknown())), ss(mlc::String("r"))})};
+mlc::String or_match_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMatch(sid(mlc::String("s")), or_arms, str_t(), ast::span_unknown())), ctx);
+results.push_back(test_runner::assert_eq_str(mlc::String("PatOr expanded: Circle lambda present"), or_match_out.contains(mlc::String("Circle")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+results.push_back(test_runner::assert_eq_str(mlc::String("PatOr expanded: Square lambda present"), or_match_out.contains(mlc::String("Square")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 mlc::Array<std::shared_ptr<semantic_ir::SStmt>> while_body = mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtExpr(si(0), ast::span_unknown()))};
 mlc::String while_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprWhile(sb(true), while_body, unit_t(), ast::span_unknown())), ctx);
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprWhile contains while (true)"), while_out.contains(mlc::String("while (true)")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
@@ -160,6 +164,14 @@ results.push_back(test_runner::assert_eq_str(mlc::String("string literal with em
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal with tab - escapes to \\t"), eval::gen_expr(ss(mlc::String("a\tb")), ctx), mlc::String("mlc::String(\"a\\tb\", 3)")));
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal with backslash - escapes to \\\\"), eval::gen_expr(ss(mlc::String("a\\b")), ctx), mlc::String("mlc::String(\"a\\\\b\", 3)")));
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal with double quote - escapes to \\\""), eval::gen_expr(ss(mlc::String("say \"hi\"")), ctx), mlc::String("mlc::String(\"say \\\"hi\\\"\", 8)")));
+std::shared_ptr<ast::Pat> letpat_ctor_pat = std::make_shared<ast::Pat>(ast::PatCtor(mlc::String("Some"), mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatIdent(mlc::String("v"), ast::span_unknown()))}, ast::span_unknown()));
+std::shared_ptr<semantic_ir::SExpr> letpat_else_body = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprInt(0, i32_t(), ast::span_unknown()));
+std::shared_ptr<semantic_ir::SStmt> letpat_with_else = std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetPat(letpat_ctor_pat, false, sid(mlc::String("opt")), std::make_shared<registry::Type>(registry::TNamed(mlc::String("Opt"))), true, letpat_else_body, ast::span_unknown()));
+std::shared_ptr<semantic_ir::SStmt> letpat_no_else = std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetPat(letpat_ctor_pat, false, sid(mlc::String("opt")), std::make_shared<registry::Type>(registry::TNamed(mlc::String("Opt"))), false, letpat_else_body, ast::span_unknown()));
+mlc::String letpat_with_else_out = eval::gen_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{letpat_with_else}, ctx);
+mlc::String letpat_no_else_out = eval::gen_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{letpat_no_else}, ctx);
+results.push_back(test_runner::assert_eq_str(mlc::String("let-else: with else no abort"), letpat_with_else_out.contains(mlc::String("abort")) ? mlc::String("abort") : mlc::String("no-abort"), mlc::String("no-abort")));
+results.push_back(test_runner::assert_eq_str(mlc::String("let-else: without else uses abort"), letpat_no_else_out.contains(mlc::String("abort")) ? mlc::String("abort") : mlc::String("no-abort"), mlc::String("abort")));
 return results;
 }
 

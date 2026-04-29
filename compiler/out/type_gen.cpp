@@ -31,6 +31,10 @@ mlc::Array<std::shared_ptr<ast::TypeExpr>> variant_field_typeexprs(std::shared_p
 
 mlc::Array<mlc::String> variant_used_type_params(mlc::Array<mlc::String> type_params, std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
+mlc::Array<mlc::String> union_string_lists(mlc::Array<mlc::String> a, mlc::Array<mlc::String> b) noexcept;
+
+mlc::Array<mlc::String> type_phantom_params_for_variants(mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
 mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
 mlc::String gen_variant_struct(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept;
@@ -203,6 +207,72 @@ i = i + 1;
 return used;
 }
 
+mlc::Array<mlc::String> union_string_lists(mlc::Array<mlc::String> a, mlc::Array<mlc::String> b) noexcept{
+mlc::Array<mlc::String> result = {};
+int i = 0;
+while (i < a.size()){
+{
+result.push_back(a[i]);
+i = i + 1;
+}
+}
+i = 0;
+while (i < b.size()){
+{
+bool found = false;
+int j = 0;
+while (j < a.size()){
+{
+if (a[j] == b[i]){
+{
+found = true;
+}
+}
+j = j + 1;
+}
+}
+if (!found){
+{
+result.push_back(b[i]);
+}
+}
+i = i + 1;
+}
+}
+return result;
+}
+
+mlc::Array<mlc::String> type_phantom_params_for_variants(mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+mlc::Array<std::shared_ptr<ast::TypeExpr>> all_fields = {};
+int vi = 0;
+while (vi < variants.size()){
+{
+mlc::Array<std::shared_ptr<ast::TypeExpr>> fts = variant_field_typeexprs(variants[vi]);
+int fi = 0;
+while (fi < fts.size()){
+{
+all_fields.push_back(fts[fi]);
+fi = fi + 1;
+}
+}
+vi = vi + 1;
+}
+}
+mlc::Array<mlc::String> phantom = {};
+int i = 0;
+while (i < type_params.size()){
+{
+if (!type_param_in_typeexpr_list(type_params[i], all_fields)){
+{
+phantom.push_back(type_params[i]);
+}
+}
+i = i + 1;
+}
+}
+return phantom;
+}
+
 mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
   [&](const VarUnit& varunit) -> mlc::String { auto [name] = varunit; return name; },
   [&](const VarTuple& vartuple) -> mlc::String { auto [name, _w0] = vartuple; return name; },
@@ -263,6 +333,7 @@ i = i + 1;
 
 mlc::String gen_adt_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
 mlc::String full_prefix = cpp_naming::template_prefix(type_params);
+mlc::Array<mlc::String> phantom = type_phantom_params_for_variants(type_params, variants);
 mlc::Array<mlc::String> parts = {};
 mlc::Array<mlc::String> alias_parts = {};
 int index = 0;
@@ -270,7 +341,7 @@ while (index < variants.size()){
 {
 std::shared_ptr<ast::TypeVariant> v = variants[index];
 mlc::String variant_name = context::context_resolve(context, variant_ctor_name(v));
-mlc::Array<mlc::String> used = variant_used_type_params(type_params, v);
+mlc::Array<mlc::String> used = union_string_lists(variant_used_type_params(type_params, v), phantom);
 mlc::String var_prefix = cpp_naming::template_prefix(used);
 mlc::String var_targs = used.size() > 0 ? mlc::String("<") + used.join(mlc::String(", ")) + mlc::String(">") : mlc::String("");
 alias_parts.push_back(variant_name + var_targs);
@@ -282,12 +353,13 @@ return parts.join(mlc::String("")) + expr::variant_using_alias_definition_line(f
 }
 
 mlc::String gen_adt_defs(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+mlc::Array<mlc::String> phantom = type_phantom_params_for_variants(type_params, variants);
 mlc::Array<mlc::String> parts = {};
 int i = 0;
 while (i < variants.size()){
 {
 std::shared_ptr<ast::TypeVariant> v = variants[i];
-mlc::Array<mlc::String> used = variant_used_type_params(type_params, v);
+mlc::Array<mlc::String> used = union_string_lists(variant_used_type_params(type_params, v), phantom);
 parts.push_back(cpp_naming::template_prefix(used) + gen_variant_struct(context, type_name, v));
 i = i + 1;
 }

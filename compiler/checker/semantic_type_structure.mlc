@@ -2,8 +2,12 @@
 
 import { Type } from "./registry"
 
+export fn type_is_unknown(type_value: Shared<Type>) -> bool =
+  match type_value { TUnknown => true, _ => false }
+
 export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> bool =
-  match left {
+  if type_is_unknown(left) || type_is_unknown(right) then true
+  else match left {
     TI32 => match right { TI32 => true, _ => false },
     TString => match right { TString => true, _ => false },
     TBool => match right { TBool => true, _ => false },
@@ -63,9 +67,7 @@ export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> b
       _ => false
     }
   }
-
-export fn type_is_unknown(type_value: Shared<Type>) -> bool =
-  match type_value { TUnknown => true, _ => false }
+  end
 
 export fn type_is_array(type_value: Shared<Type>) -> bool =
   match type_value { TArray(_) => true, _ => false }

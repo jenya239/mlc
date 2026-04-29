@@ -550,14 +550,15 @@ module MLC
     #   accessor is either TupleAccessExpr, MemberExpr, IndexExpr, SliceExpr, or nil (ctor; see ctor_destructure)
     # ctor_destructure: optional { variant_name:, field_names:, value: } for let Ok(x) = r (A3 refutable)
     class DestructuringDeclStmt < Stmt
-      attr_reader :bindings, :value, :mutable, :ctor_destructure
+      attr_reader :bindings, :value, :mutable, :ctor_destructure, :else_body
 
-      def initialize(bindings:, value:, mutable:, origin: nil, ctor_destructure: nil)
+      def initialize(bindings:, value:, mutable:, origin: nil, ctor_destructure: nil, else_body: nil)
         super(origin: origin)
         @bindings = bindings # Array of {name:, type:, accessor:}
         @value = value
         @mutable = mutable
         @ctor_destructure = ctor_destructure
+        @else_body = else_body
       end
     end
 

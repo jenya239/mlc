@@ -202,12 +202,15 @@ export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], g
         collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
         scope.push(name); ()
       end,
-      StmtLetPat(pattern, _, _, value, _) => do
+      StmtLetPat(pattern, _, _, value, has_else, else_body, _) => do
         collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
         const pnames = pattern_bindings(pattern)
         let mut j = 0
         while j < pnames.length() do
           scope.push(pnames[j]); j = j + 1
+        end
+        if has_else then
+          collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(else_body, scope, globals))
         end
         ()
       end,

@@ -179,7 +179,7 @@ std::shared_ptr<ast::Param> value_param(mlc::String parameter_name, std::shared_
 
 std::shared_ptr<ast::Decl> function_decl(mlc::String function_name, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::TypeExpr> return_type, std::shared_ptr<ast::Expr> body_expr) noexcept{return std::make_shared<ast::Decl>(ast::DeclFn(function_name, {}, {}, parameters, return_type, body_expr));}
 
-std::shared_ptr<ast::Decl> type_decl(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return std::make_shared<ast::Decl>(ast::DeclType(type_name, {}, variants));}
+std::shared_ptr<ast::Decl> type_decl(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return std::make_shared<ast::Decl>(ast::DeclType(type_name, {}, variants, {}));}
 
 std::shared_ptr<ast::Decl> exported_decl(std::shared_ptr<ast::Decl> inner_decl) noexcept{return std::make_shared<ast::Decl>(ast::DeclExported(inner_decl));}
 

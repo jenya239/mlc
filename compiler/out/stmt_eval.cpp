@@ -85,7 +85,7 @@ context::GenStmtResult eval_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> st
  }(); } return context::GenStmtResult{expr::auto_binding_statement(cpp_naming::cpp_safe(name), gen_expr_fn(value, context)), try_counter}; }();
   return result;
  }(); },
-  [&](const SStmtLetPat& sstmtletpat) -> context::GenStmtResult { auto [pat, _w0, value, value_type, _w1] = sstmtletpat; return context::GenStmtResult{let_pat::gen_let_pattern_statement(pat, value, value_type, context, gen_expr_fn), try_counter}; },
+  [&](const SStmtLetPat& sstmtletpat) -> context::GenStmtResult { auto [pat, _w0, value, value_type, has_else, else_body, _w1] = sstmtletpat; return context::GenStmtResult{let_pat::gen_let_pattern_statement(pat, value, value_type, has_else, else_body, context, gen_expr_fn), try_counter}; },
   [&](const SStmtLetConst& sstmtletconst) -> context::GenStmtResult { auto [name, value, _w0, _w1] = sstmtletconst; return context::GenStmtResult{expr::constexpr_auto_binding_statement(cpp_naming::cpp_safe(name), gen_expr_fn(value, context)), try_counter}; },
   [&](const SStmtExpr& sstmtexpr) -> context::GenStmtResult { auto [expression, _w0] = sstmtexpr; return [&]() -> context::GenStmtResult { if (std::holds_alternative<semantic_ir::SExprQuestion>((*expression)._)) { auto _v_sexprquestion = std::get<semantic_ir::SExprQuestion>((*expression)._); auto [inner_expr, _w0, _w1] = _v_sexprquestion; return [&]() -> context::GenStmtResult { 
   mlc::String try_identifier = mlc::String("__try_") + mlc::to_string(try_counter);

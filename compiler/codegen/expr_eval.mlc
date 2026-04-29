@@ -115,7 +115,7 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprWhile(condition, statements, _, _)                => gen_while_expr(condition, statements, context, gen_stmts),
     SExprFor(variable, iterator, statements, _, _)         => gen_for_expr(variable, iterator, statements, context, gen_stmts),
     SExprMatch(subject, arms, _, _)                        => gen_match(subject, arms, context, gen_stmts, eval_expr),
-    SExprRecord(type_name, field_values, _, _)             => gen_record_expr(type_name, field_values, context, gen_stmts, eval_expr),
+    SExprRecord(type_name, field_values, expr_type, _)      => gen_record_expr(type_name, field_values, expr_type, context, gen_stmts, eval_expr),
     SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr),
     SExprArray(elements, _, _)                             => gen_array_expr(elements, context, gen_stmts),
     SExprTuple(elements, _, _) => do

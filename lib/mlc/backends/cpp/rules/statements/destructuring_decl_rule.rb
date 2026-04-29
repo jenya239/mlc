@@ -36,17 +36,18 @@ module MLC
               meta = node.ctor_destructure
               vname = meta[:variant_name]
               pbind = meta[:bindings]
+              else_src = context.lower_expression(meta[:else_body]).to_source
               m = match_helper
               if m.send(:option_type?, st) && vname == "Some" && pbind.any? { |b| b != "_" }
                 s = context.sanitize_identifier(pbind.find { |b| b != "_" })
                 return context.factory.raw_statement(
-                  code: "{\nauto __s = #{value_src};\nif (!__s.has_value()) { std::abort(); }\n" \
+                  code: "{\nauto __s = #{value_src};\nif (!__s.has_value()) { #{else_src}; }\n" \
                         "auto #{s} = *__s;\n}\n"
                 )
               end
               if m.send(:option_type?, st) && vname == "None"
                 return context.factory.raw_statement(
-                  code: "{\nauto __s = #{value_src};\nif (__s.has_value()) { std::abort(); }\n}\n"
+                  code: "{\nauto __s = #{value_src};\nif (__s.has_value()) { #{else_src}; }\n}\n"
                 )
               end
 
@@ -56,7 +57,7 @@ module MLC
               bdecls, = m.send(:build_binding_extractions, vname, pbind, vs, st)
               inner = bdecls.join(" ")
               code = "{\nauto #{scr} = #{value_src};\n" \
-                     "if (!std::holds_alternative<#{qcase}>(#{vs})) { std::abort(); }\n" \
+                     "if (!std::holds_alternative<#{qcase}>(#{vs})) { #{else_src}; }\n" \
                      "#{inner}\n}\n"
               context.factory.raw_statement(code: code)
             end

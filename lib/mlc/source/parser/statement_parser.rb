@@ -173,9 +173,15 @@ module MLC
           pattern = parse_pattern
           consume(:EQUAL)
           value = parse_expression_in_block
+          else_body = nil
+          if current.type == :ELSE
+            else_token = consume(:ELSE)
+            items = parse_block_items_until_end
+            else_body = build_block_expr(items, else_token)
+          end
           consume(:SEMICOLON) if current.type == :SEMICOLON
 
-          with_origin(let_token) { MLC::Source::AST::DestructuringDecl.new(pattern: pattern, value: value, mutable: mutable) }
+          with_origin(let_token) { MLC::Source::AST::DestructuringDecl.new(pattern: pattern, value: value, mutable: mutable, else_body: else_body) }
         end
 
         # Parse record destructuring: let { x, y } = expr
@@ -211,9 +217,15 @@ module MLC
 
           consume(:EQUAL)
           value = parse_expression_in_block
+          else_body = nil
+          if current.type == :ELSE
+            else_token = consume(:ELSE)
+            items = parse_block_items_until_end
+            else_body = build_block_expr(items, else_token)
+          end
           consume(:SEMICOLON) if current.type == :SEMICOLON
 
-          with_origin(let_token) { MLC::Source::AST::DestructuringDecl.new(pattern: pattern, value: value, mutable: mutable) }
+          with_origin(let_token) { MLC::Source::AST::DestructuringDecl.new(pattern: pattern, value: value, mutable: mutable, else_body: else_body) }
         end
       end
     end

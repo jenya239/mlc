@@ -148,6 +148,40 @@ export fn variant_used_type_params(type_params: [string], variant: Shared<TypeVa
   used
 end
 
+fn union_string_lists(a: [string], b: [string]) -> [string] = do
+  const result: [string] = []
+  let mut i = 0
+  while i < a.length() do result.push(a[i]); i = i + 1 end
+  i = 0
+  while i < b.length() do
+    let mut found = false; let mut j = 0
+    while j < a.length() do
+      if a[j] == b[i] then found = true end; j = j + 1
+    end
+    if !found then result.push(b[i]) end
+    i = i + 1
+  end
+  result
+end
+
+fn type_phantom_params_for_variants(type_params: [string], variants: [Shared<TypeVariant>]) -> [string] = do
+  const all_fields: [Shared<TypeExpr>] = []
+  let mut vi = 0
+  while vi < variants.length() do
+    const fts = variant_field_typeexprs(variants[vi])
+    let mut fi = 0
+    while fi < fts.length() do all_fields.push(fts[fi]); fi = fi + 1 end
+    vi = vi + 1
+  end
+  const phantom: [string] = []
+  let mut i = 0
+  while i < type_params.length() do
+    if !type_param_in_typeexpr_list(type_params[i], all_fields) then phantom.push(type_params[i]) end
+    i = i + 1
+  end
+  phantom
+end
+
 // --- Variant struct generation -----------------------------------------------
 
 export fn variant_ctor_name(variant: Shared<TypeVariant>) -> string =
@@ -193,11 +227,12 @@ fn gen_single_variant(context: CodegenContext, type_name: string, variant: Share
 
 export fn gen_adt_fwd(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
   const full_prefix = template_prefix(type_params)
+  const phantom     = type_phantom_params_for_variants(type_params, variants)
   let parts: [string] = []; const alias_parts: [string] = []; let mut index = 0
   while index < variants.length() do
     const v = variants[index]
     const variant_name = context_resolve(context, variant_ctor_name(v))
-    const used = variant_used_type_params(type_params, v)
+    const used = union_string_lists(variant_used_type_params(type_params, v), phantom)
     const var_prefix = template_prefix(used)
     const var_targs  = if used.length() > 0 then "<" + used.join(", ") + ">" else "" end
     alias_parts.push(variant_name + var_targs)
@@ -213,10 +248,11 @@ export fn gen_adt_fwd(context: CodegenContext, type_name: string, type_params: [
 end
 
 export fn gen_adt_defs(context: CodegenContext, type_name: string, type_params: [string], variants: [Shared<TypeVariant>]) -> string = do
+  const phantom = type_phantom_params_for_variants(type_params, variants)
   let parts: [string] = []; let mut i = 0
   while i < variants.length() do
     const v = variants[i]
-    const used = variant_used_type_params(type_params, v)
+    const used = union_string_lists(variant_used_type_params(type_params, v), phantom)
     parts.push(template_prefix(used) + gen_variant_struct(context, type_name, v))
     i = i + 1
   end

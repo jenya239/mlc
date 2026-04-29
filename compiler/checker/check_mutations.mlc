@@ -94,7 +94,7 @@ fn check_mutation_block(statements: [Shared<Stmt>], result: Shared<Expr>, mutabl
         if is_mut then inner_mutable.push(name) end
         ()
       end,
-      StmtLetPat(pattern, is_mut, _, value, _) => do
+      StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
         errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
         if is_mut then do
           const pnames = pattern_bindings(pattern); let mut pi = 0
@@ -128,7 +128,7 @@ fn check_mutation_stmts_errors(statements: [Shared<Stmt>], mutable_locals: [stri
         if is_mut then inner_mutable.push(name) end
         ()
       end,
-      StmtLetPat(pattern, is_mut, _, value, _) => do
+      StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
         errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
         if is_mut then do
           const pnames = pattern_bindings(pattern); let mut pi = 0

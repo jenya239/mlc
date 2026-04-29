@@ -5,7 +5,7 @@ import { Decl, TypeVariant, Param, Program, Stmt } from "../ast"
 import { Type, TypeRegistry, type_from_annotation } from "./registry"
 import { SDecl, SProgram, SLoadItem, SNamespaceImportAlias } from "../semantic_ir"
 import { LoadItem, NamespaceImportAlias } from "../codegen/decl_index"
-import { TransformContext, TransformStmtsResult, transform_expr } from "./transform"
+import { TransformContext, TransformStmtsResult, transform_expr, coerce_expr_to_type } from "./transform"
 import { transform_stmts } from "./transform_stmts"
 
 fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<SDecl> =
@@ -20,7 +20,8 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       const return_type      = type_from_annotation(return_type_expr)
       const initial_context  = TransformContext { type_env: param_env, registry }
       const typed_body       = transform_expr(body, initial_context, (stmts: [Shared<Stmt>], ctx: TransformContext) => transform_stmts(stmts, ctx))
-      Shared.new(SDeclFn(name, type_params, trait_bounds, params, return_type, typed_body))
+      const coerced_body     = coerce_expr_to_type(typed_body, return_type)
+      Shared.new(SDeclFn(name, type_params, trait_bounds, params, return_type, coerced_body))
     end,
     DeclType(type_name, type_params, variants, derive_traits) =>
       Shared.new(SDeclType(type_name, type_params, variants, derive_traits)),

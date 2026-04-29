@@ -35,14 +35,15 @@ std::visit(overloaded{
   typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLet(binding_name, is_mut, coerced_value, value_type, source_span)));
   return std::make_tuple();
  }(); },
-  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, is_mut, annotation, value_expression, source_span] = stmtletpat; return [&]() -> std::tuple<> { 
+  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, is_mut, annotation, value_expression, has_else, else_body, source_span] = stmtletpat; return [&]() -> std::tuple<> { 
   std::shared_ptr<registry::Type> annotated_type = registry::type_from_annotation(annotation);
   std::shared_ptr<semantic_ir::SExpr> typed_value = transform::transform_expr(value_expression, current_context, transform_stmts);
   std::shared_ptr<registry::Type> inferred_type = semantic_ir::sexpr_type(typed_value);
   std::shared_ptr<registry::Type> value_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TUnit>((*annotated_type))) {  return inferred_type; } return annotated_type; }();
   std::shared_ptr<semantic_ir::SExpr> coerced_value = transform::coerce_expr_to_type(typed_value, value_type);
   let_pattern_infer::infer_let_pattern_env(pattern, value_type, current_env, current_context.registry);
-  typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetPat(pattern, is_mut, coerced_value, value_type, source_span)));
+  std::shared_ptr<semantic_ir::SExpr> typed_else_body = transform::transform_expr(else_body, current_context, transform_stmts);
+  typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetPat(pattern, is_mut, coerced_value, value_type, has_else, typed_else_body, source_span)));
   return std::make_tuple();
  }(); },
   [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [binding_name, annotation, value_expression, source_span] = stmtletconst; return [&]() -> std::tuple<> { 

@@ -163,9 +163,9 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
       }
       result
     end,
-    SStmtLetPat(pat, _, value, value_type, _) =>
+    SStmtLetPat(pat, _, value, value_type, has_else, else_body, _) =>
       GenStmtResult {
-        output: gen_let_pattern_statement(pat, value, value_type, context, gen_expr_fn),
+        output: gen_let_pattern_statement(pat, value, value_type, has_else, else_body, context, gen_expr_fn),
         next_try: try_counter
       },
     SStmtLetConst(name, value, _, _) =>

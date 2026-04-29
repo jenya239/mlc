@@ -54,7 +54,7 @@ struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprIdent, ExprB
 
 
 struct StmtLet {mlc::String field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;ast::Span field4;};
-struct StmtLetPat {std::shared_ptr<ast::Pat> field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;ast::Span field4;};
+struct StmtLetPat {std::shared_ptr<ast::Pat> field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;bool field4;std::shared_ptr<ast::Expr> field5;ast::Span field6;};
 struct StmtLetConst {mlc::String field0;std::shared_ptr<ast::TypeExpr> field1;std::shared_ptr<ast::Expr> field2;ast::Span field3;};
 struct StmtExpr {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
 struct StmtBreak {ast::Span field0;};

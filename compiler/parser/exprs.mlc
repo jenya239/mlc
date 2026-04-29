@@ -2,7 +2,7 @@
 
 import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, FieldValsResult, StmtsResult, StmtResult, TypeResult, parser_new } from "./preds"
 import { parse_type } from "./types"
-import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit } from "../ast"
+import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit, ExprBlock } from "../ast"
 import { TKind, Eof } from "../ast_tokens"
 import { tokenize } from "../lexer"
 
@@ -116,18 +116,24 @@ fn parse_statement_let(parser: Parser) -> StmtResult = do
       const pat = Shared.new(PatTuple(inner.pats, paren_span))
       const type_result = parse_after_let_pattern(inner.parser)
       const value_result = parse_expr(type_result.parser)
+      const has_else = value_result.parser.kind().is_else()
+      const else_result = if has_else then parse_stmts_until_end(value_result.parser.advance()) else StmtsResult { stmts: [], parser: value_result.parser } end
+      const else_body = Shared.new(ExprBlock(else_result.stmts, Shared.new(ExprUnit(statement_span)), statement_span))
       StmtResult {
-        stmt: Shared.new(StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, statement_span)),
-        parser: value_result.parser
+        stmt: Shared.new(StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)),
+        parser: else_result.parser
       }
     else if k0.is_lbracket() then
       const br_span = name_pos.span_at_cursor()
       const ar = parse_array_pattern(name_pos.advance(), br_span)
       const type_result = parse_after_let_pattern(ar.parser)
       const value_result = parse_expr(type_result.parser)
+      const has_else = value_result.parser.kind().is_else()
+      const else_result = if has_else then parse_stmts_until_end(value_result.parser.advance()) else StmtsResult { stmts: [], parser: value_result.parser } end
+      const else_body = Shared.new(ExprBlock(else_result.stmts, Shared.new(ExprUnit(statement_span)), statement_span))
       StmtResult {
-        stmt: Shared.new(StmtLetPat(ar.pat, is_mut, type_result.type_expr, value_result.expr, statement_span)),
-        parser: value_result.parser
+        stmt: Shared.new(StmtLetPat(ar.pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)),
+        parser: else_result.parser
       }
     else if k0.is_lbrace() then
       const br_span = name_pos.span_at_cursor()
@@ -135,17 +141,23 @@ fn parse_statement_let(parser: Parser) -> StmtResult = do
       const pat = Shared.new(PatRecord("", fr.pats, br_span))
       const type_result = parse_after_let_pattern(fr.parser)
       const value_result = parse_expr(type_result.parser)
+      const has_else = value_result.parser.kind().is_else()
+      const else_result = if has_else then parse_stmts_until_end(value_result.parser.advance()) else StmtsResult { stmts: [], parser: value_result.parser } end
+      const else_body = Shared.new(ExprBlock(else_result.stmts, Shared.new(ExprUnit(statement_span)), statement_span))
       StmtResult {
-        stmt: Shared.new(StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, statement_span)),
-        parser: value_result.parser
+        stmt: Shared.new(StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)),
+        parser: else_result.parser
       }
     else if k0.is_ident() && is_ctor_name(k0.ident()) && parser_next_kind(name_pos).is_lparen() then
       const pr = parse_pattern_identifier_branch(name_pos, k0.ident())
       const type_result = parse_after_let_pattern(pr.parser)
       const value_result = parse_expr(type_result.parser)
+      const has_else = value_result.parser.kind().is_else()
+      const else_result = if has_else then parse_stmts_until_end(value_result.parser.advance()) else StmtsResult { stmts: [], parser: value_result.parser } end
+      const else_body = Shared.new(ExprBlock(else_result.stmts, Shared.new(ExprUnit(statement_span)), statement_span))
       StmtResult {
-        stmt: Shared.new(StmtLetPat(pr.pat, is_mut, type_result.type_expr, value_result.expr, statement_span)),
-        parser: value_result.parser
+        stmt: Shared.new(StmtLetPat(pr.pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)),
+        parser: else_result.parser
       }
     else if k0.is_ident() then
       const var_name = k0.ident()

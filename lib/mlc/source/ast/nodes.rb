@@ -659,13 +659,14 @@ module MLC
       # let (a, b) = expr   -- tuple destructuring
       # let { x, y } = expr -- record destructuring
       class DestructuringDecl < Stmt
-        attr_reader :pattern, :value, :mutable
+        attr_reader :pattern, :value, :mutable, :else_body
 
-        def initialize(pattern:, value:, mutable: false, origin: nil)
+        def initialize(pattern:, value:, mutable: false, else_body: nil, origin: nil)
           super(origin: origin)
           @pattern = pattern # Pattern AST node
           @value = value
           @mutable = mutable
+          @else_body = else_body
         end
       end
 

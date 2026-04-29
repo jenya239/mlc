@@ -5,8 +5,8 @@ import { gen_expr, gen_argument_list, gen_stmts_str } from "../codegen/eval"
 import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from "../codegen/context"
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from "../codegen/type_gen"
 import { gen_program } from "../codegen/module"
-import { Program, TypeExpr, TypeVariant, DeclType, DeclFn, DeclExported, Param, VarTuple, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, span_unknown } from "../ast"
-import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr } from "../semantic_ir"
+import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown } from "../ast"
+import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat } from "../semantic_ir"
 import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple } from "../checker/registry"
 
 fn i32_t() -> Shared<Type> = Shared.new(TI32)
@@ -314,6 +314,41 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("string literal with double quote - escapes to \\\"",
     gen_expr(ss("say \"hi\""), ctx),
     "mlc::String(\"say \\\"hi\\\"\", 8)"))
+
+  const letpat_ctor_pat = Shared.new(PatCtor("Some", [Shared.new(PatIdent("v", span_unknown()))], span_unknown()))
+  const letpat_else_body = Shared.new(SExprInt(0, i32_t(), span_unknown()))
+  const letpat_with_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid("opt"), Shared.new(TNamed("Opt")), true, letpat_else_body, span_unknown()))
+  const letpat_no_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid("opt"), Shared.new(TNamed("Opt")), false, letpat_else_body, span_unknown()))
+  const letpat_with_else_out = gen_stmts_str([letpat_with_else], ctx)
+  const letpat_no_else_out = gen_stmts_str([letpat_no_else], ctx)
+  results.push(assert_eq_str("let-else: with else no abort",
+    if letpat_with_else_out.contains("abort") then "abort" else "no-abort" end, "no-abort"))
+  results.push(assert_eq_str("let-else: without else uses abort",
+    if letpat_no_else_out.contains("abort") then "abort" else "no-abort" end, "abort"))
+
+  // --- Phantom type codegen ---------------------------------------------------
+
+  const phantom_fds: [Shared<FieldDef>] = [Shared.new(FieldDef { name: "value", typ: Shared.new(TyI32) })]
+  const phantom_variants_1: [Shared<TypeVariant>] = [Shared.new(VarRecord("Ast", phantom_fds))]
+  const phantom_type_out = gen_type_decl(ctx, "Ast", ["Phase"], phantom_variants_1)
+  results.push(assert_eq_str("phantom single-variant: template<typename Phase> in output",
+    if phantom_type_out.contains("typename Phase") then "yes" else "no" end, "yes"))
+
+  const tagged_variants: [Shared<TypeVariant>] = [
+    Shared.new(VarTuple("Active", [Shared.new(TyI32)])),
+    Shared.new(VarUnit("Inactive"))
+  ]
+  const tagged_out = gen_type_decl(ctx, "Tagged", ["Tag"], tagged_variants)
+  results.push(assert_eq_str("phantom multi-variant: Active<Tag> in alias",
+    if tagged_out.contains("Active<Tag>") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str("phantom multi-variant: template<typename Tag> on Active struct",
+    if tagged_out.contains("template<typename Tag>\nstruct Active") then "yes" else "no" end, "yes"))
+
+  const phantom_rec_type = Shared.new(TGeneric("Ast", [Shared.new(TNamed("Unvalidated"))]))
+  const phantom_rec_fvals: [Shared<SFieldVal>] = []
+  const phantom_rec_expr = Shared.new(SExprRecord("Ast", phantom_rec_fvals, phantom_rec_type, span_unknown()))
+  results.push(assert_eq_str("phantom record expr: Ast<Unvalidated>{}",
+    gen_expr(phantom_rec_expr, ctx), "Ast<Unvalidated>{}"))
 
   results
 end

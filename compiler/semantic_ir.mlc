@@ -40,7 +40,7 @@ export type SExpr =
 
 export type SStmt =
   | SStmtLet(string, bool, Shared<SExpr>, Shared<Type>, Span)
-  | SStmtLetPat(Shared<Pat>, bool, Shared<SExpr>, Shared<Type>, Span)
+  | SStmtLetPat(Shared<Pat>, bool, Shared<SExpr>, Shared<Type>, bool, Shared<SExpr>, Span)
   | SStmtLetConst(string, Shared<SExpr>, Shared<Type>, Span)
   | SStmtExpr(Shared<SExpr>, Span)
   | SStmtReturn(Shared<SExpr>, Span)

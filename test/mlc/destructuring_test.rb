@@ -59,7 +59,7 @@ class DestructuringTest < Minitest::Test
       type Result<T, E> = Ok(T) | Err(E)
       fn main() -> i32 = do
         let o: Result<i32, string> = Ok(7)
-        let Ok(v) = o
+        let Ok(v) = o else return 0 end
         v
       end
     MLC

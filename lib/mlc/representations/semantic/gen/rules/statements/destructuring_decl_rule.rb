@@ -203,12 +203,14 @@ module MLC
                 )
               end
 
-              def produce_constructor_destructuring(node, value_ir, svc, _context)
+              def produce_constructor_destructuring(node, value_ir, svc, context)
                 pat = node.pattern
                 cname = pat.data[:name]
                 raw_fields = pat.data[:fields] || []
                 info = svc.type_unification_service.constructor_info_for(cname, value_ir.type)
                 raise MLC::CompileError, "Unknown constructor `#{cname}` for this type" unless info
+
+                raise MLC::CompileError, "refutable pattern in let requires else branch" if node.else_body.nil?
 
                 param_types = info.param_types
                 if raw_fields.size != param_types.size
@@ -241,13 +243,17 @@ module MLC
                   bindings << { name: name, type: t, accessor: nil }
                 end
 
-                ctor_destructure = { variant_name: cname, bindings: pattern_bindings, value: value_ir, param_types: param_types }
+                expression_visitor = context.fetch(:expression_visitor)
+                else_body_ir = expression_visitor.visit(node.else_body)
+
+                ctor_destructure = { variant_name: cname, bindings: pattern_bindings, value: value_ir, param_types: param_types, else_body: else_body_ir }
                 MLC::SemanticIR::DestructuringDeclStmt.new(
                   bindings: bindings,
                   value: value_ir,
                   mutable: node.mutable,
                   origin: node,
-                  ctor_destructure: ctor_destructure
+                  ctor_destructure: ctor_destructure,
+                  else_body: else_body_ir
                 )
               end
             end

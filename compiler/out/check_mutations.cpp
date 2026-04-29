@@ -124,7 +124,7 @@ inner_mutable.push_back(name);
 }
   return std::make_tuple();
  }(); },
-  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, is_mut, _w0, value, _w1] = stmtletpat; return [&]() -> std::tuple<> { 
+  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, is_mut, _w0, value, _w1, _w2, _w3] = stmtletpat; return [&]() -> std::tuple<> { 
   errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
   if (is_mut){
 {
@@ -179,7 +179,7 @@ inner_mutable.push_back(name);
 }
   return std::make_tuple();
  }(); },
-  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, is_mut, _w0, value, _w1] = stmtletpat; return [&]() -> std::tuple<> { 
+  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, is_mut, _w0, value, _w1, _w2, _w3] = stmtletpat; return [&]() -> std::tuple<> { 
   errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
   if (is_mut){
 {

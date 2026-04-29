@@ -16,6 +16,8 @@ export fn gen_let_pattern_statement(
   pat: Shared<Pat>,
   value: Shared<SExpr>,
   value_type: Shared<Type>,
+  has_else: bool,
+  else_body: Shared<SExpr>,
   context: CodegenContext,
   eval_fn: (Shared<SExpr>, CodegenContext) -> string
 ) -> string = do
@@ -66,9 +68,10 @@ export fn gen_let_pattern_statement(
         end
       const is_generic = list_contains(context.generic_variants, ctor_name)
       const targs = if is_generic then "<auto>" else "" end
+      const else_code = if has_else then eval_fn(else_body, context) else "std::abort();" end
       "{\n" +
       "auto __lt = " + rhs + ";\n" +
-      "if (!std::holds_alternative<" + q + targs + ">(__lt)) { std::abort(); }\n" +
+      "if (!std::holds_alternative<" + q + targs + ">(__lt)) { " + else_code + " }\n" +
       "const " + q + targs + "& __b = std::get<" + q + targs + ">(__lt);\n" +
       bind + "\n}\n"
     end,

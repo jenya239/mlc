@@ -255,10 +255,22 @@ std::visit(overloaded{
   collected_errors = ast::diagnostics_append(collected_errors, value_result.errors);
   return std::make_tuple();
  }(); },
-  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, _w0, _w1, value_expression, _w2] = stmtletpat; return [&]() -> std::tuple<> { 
+  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, _w0, _w1, value_expression, has_else, else_body, source_span] = stmtletpat; return [&]() -> std::tuple<> { 
   infer_result::InferResult value_result = infer_expr(value_expression, check_context::check_context_new(current_environment, inference_context.registry));
   let_pattern_infer::infer_let_pattern_env(pattern, value_result.inferred_type, current_environment, inference_context.registry);
   collected_errors = ast::diagnostics_append(collected_errors, value_result.errors);
+  bool is_refutable = [&]() { if (std::holds_alternative<ast::PatCtor>((*pattern))) { auto _v_patctor = std::get<ast::PatCtor>((*pattern)); auto [_w0, _w1, _w2] = _v_patctor; return true; } return false; }();
+  if (is_refutable && !has_else){
+{
+collected_errors = ast::diagnostics_append(collected_errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("refutable pattern in let requires `else` branch"), source_span)});
+}
+}
+  if (has_else){
+{
+infer_result::InferResult else_result = infer_expr(else_body, check_context::check_context_new(current_environment, inference_context.registry));
+collected_errors = ast::diagnostics_append(collected_errors, else_result.errors);
+}
+}
   return std::make_tuple();
  }(); },
   [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [binding_name, _w0, value_expression, _w1] = stmtletconst; return [&]() -> std::tuple<> { 

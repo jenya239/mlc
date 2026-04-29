@@ -23,6 +23,7 @@ export type TypeRegistry = TypeRegistry {
   ctor_types:  Map<string, Shared<Type>>,
   ctor_params: Map<string, [Shared<Type>]>,
   algebraic_decl_type_parameter_names: Map<string, [string]>,
+  algebraic_decl_phantom_type_params: Map<string, [string]>,
   field_types: Map<string, Map<string, Shared<Type>>>,
   trait_impls: Map<string, [string]>
 }
@@ -46,6 +47,13 @@ export extend TypeRegistry {
       self.algebraic_decl_type_parameter_names.get(algebraic_type_name)
     else
       do const empty_algebraic_type_names: [string] = []; empty_algebraic_type_names end
+    end
+
+  fn phantom_type_params_for(self, type_name: string) -> [string] =
+    if self.algebraic_decl_phantom_type_params.has(type_name) then
+      self.algebraic_decl_phantom_type_params.get(type_name)
+    else
+      do const empty_phantom: [string] = []; empty_phantom end
     end
 
   fn ctor_type(self, name: string) -> Shared<Type> =
@@ -119,6 +127,7 @@ export fn empty_registry() -> TypeRegistry = do
     ctor_types: ctor_types,
     ctor_params: ctor_params,
     algebraic_decl_type_parameter_names: Map.new(),
+    algebraic_decl_phantom_type_params: Map.new(),
     field_types: Map.new(),
     trait_impls: Map.new()
   }
@@ -207,11 +216,63 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       while i < variants.length() do
         registry = register_variant(registry, type_name, variants[i]); i = i + 1
       end
+      const phantom = compute_phantom_type_params(type_parameters, variants)
+      registry.algebraic_decl_phantom_type_params.set(type_name, phantom)
       registry
     end,
     DeclImport(_, _) => registry,
     DeclExported(d) => register_decl(registry, d)
   }
+end
+
+fn type_param_in_annotation(param: string, t: Shared<TypeExpr>) -> bool =
+  match t {
+    TyNamed(name)       => name == param,
+    TyArray(inner)      => type_param_in_annotation(param, inner),
+    TyShared(inner)     => type_param_in_annotation(param, inner),
+    TyGeneric(_, targs) => type_param_in_annotation_list(param, targs),
+    TyFn(params, ret)   => type_param_in_annotation_list(param, params) || type_param_in_annotation(param, ret),
+    _                   => false
+  }
+
+fn type_param_in_annotation_list(param: string, types: [Shared<TypeExpr>]) -> bool = do
+  let mut found = false; let mut i = 0
+  while i < types.length() do
+    if !found then found = type_param_in_annotation(param, types[i]) end; i = i + 1
+  end
+  found
+end
+
+fn variant_annotation_typeexprs(variant: Shared<TypeVariant>) -> [Shared<TypeExpr>] =
+  match variant {
+    VarTuple(_, fts) => fts,
+    VarRecord(_, fds) => do
+      const result: [Shared<TypeExpr>] = []
+      let mut i = 0
+      while i < fds.length() do result.push(fds[i].typ); i = i + 1 end
+      result
+    end,
+    VarUnit(_) => do let r: [Shared<TypeExpr>] = []; r end
+  }
+
+fn compute_phantom_type_params(type_params: [string], variants: [Shared<TypeVariant>]) -> [string] = do
+  const all_fields: [Shared<TypeExpr>] = []
+  let mut vi = 0
+  while vi < variants.length() do
+    const fts = variant_annotation_typeexprs(variants[vi])
+    let mut fi = 0
+    while fi < fts.length() do all_fields.push(fts[fi]); fi = fi + 1 end
+    vi = vi + 1
+  end
+  const phantom: [string] = []
+  let mut i = 0
+  while i < type_params.length() do
+    if !type_param_in_annotation_list(type_params[i], all_fields) then
+      phantom.push(type_params[i])
+    end
+    i = i + 1
+  end
+  phantom
 end
 
 fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shared<TypeVariant>) -> TypeRegistry = do

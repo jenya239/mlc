@@ -242,10 +242,20 @@ export fn infer_statements(statements: [Shared<Stmt>], inference_context: CheckC
         current_environment.set(binding_name, value_result.inferred_type)
         collected_errors = diagnostics_append(collected_errors, value_result.errors); ()
       end,
-      StmtLetPat(pattern, _, _, value_expression, _) => do
+      StmtLetPat(pattern, _, _, value_expression, has_else, else_body, source_span) => do
         const value_result = infer_expr(value_expression, check_context_new(current_environment, inference_context.registry))
         infer_let_pattern_env(pattern, value_result.inferred_type, current_environment, inference_context.registry)
-        collected_errors = diagnostics_append(collected_errors, value_result.errors); ()
+        collected_errors = diagnostics_append(collected_errors, value_result.errors)
+        const is_refutable: bool = match pattern { PatCtor(_, _, _) => true, _ => false }
+        if is_refutable && !has_else then
+          collected_errors = diagnostics_append(collected_errors,
+            [diagnostic_error("refutable pattern in let requires `else` branch", source_span)])
+        end
+        if has_else then do
+          const else_result = infer_expr(else_body, check_context_new(current_environment, inference_context.registry))
+          collected_errors = diagnostics_append(collected_errors, else_result.errors)
+        end end
+        ()
       end,
       StmtLetConst(binding_name, _, value_expression, _) => do
         const value_result = infer_expr(value_expression, check_context_new(current_environment, inference_context.registry))

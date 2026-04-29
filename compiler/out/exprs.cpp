@@ -239,25 +239,37 @@ return preds::TKind_is_const(preds::Parser_kind(after_let)) ? parse_statement_le
   std::shared_ptr<ast::Pat> pat = std::make_shared<ast::Pat>(ast::PatTuple(inner.pats, paren_span));
   preds::TypeResult type_result = parse_after_let_pattern(inner.parser);
   preds::ExprResult value_result = parse_expr(type_result.parser);
-  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+  bool has_else = preds::TKind_is_else(preds::Parser_kind(value_result.parser));
+  preds::StmtsResult else_result = has_else ? parse_stmts_until_end(preds::Parser_advance(value_result.parser)) : preds::StmtsResult{{}, value_result.parser};
+  std::shared_ptr<ast::Expr> else_body = std::make_shared<ast::Expr>(ast::ExprBlock(else_result.stmts, std::make_shared<ast::Expr>(ast::ExprUnit(statement_span)), statement_span));
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)), else_result.parser};
  }() : preds::TKind_is_lbracket(k0) ? [&]() -> preds::StmtResult { 
   ast::Span br_span = preds::Parser_span_at_cursor(name_pos);
   preds::PatResult ar = parse_array_pattern(preds::Parser_advance(name_pos), br_span);
   preds::TypeResult type_result = parse_after_let_pattern(ar.parser);
   preds::ExprResult value_result = parse_expr(type_result.parser);
-  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(ar.pat, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+  bool has_else = preds::TKind_is_else(preds::Parser_kind(value_result.parser));
+  preds::StmtsResult else_result = has_else ? parse_stmts_until_end(preds::Parser_advance(value_result.parser)) : preds::StmtsResult{{}, value_result.parser};
+  std::shared_ptr<ast::Expr> else_body = std::make_shared<ast::Expr>(ast::ExprBlock(else_result.stmts, std::make_shared<ast::Expr>(ast::ExprUnit(statement_span)), statement_span));
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(ar.pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)), else_result.parser};
  }() : preds::TKind_is_lbrace(k0) ? [&]() -> preds::StmtResult { 
   ast::Span br_span = preds::Parser_span_at_cursor(name_pos);
   preds::PatsResult fr = parse_record_pat_fields(preds::Parser_advance(name_pos));
   std::shared_ptr<ast::Pat> pat = std::make_shared<ast::Pat>(ast::PatRecord(mlc::String(""), fr.pats, br_span));
   preds::TypeResult type_result = parse_after_let_pattern(fr.parser);
   preds::ExprResult value_result = parse_expr(type_result.parser);
-  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+  bool has_else = preds::TKind_is_else(preds::Parser_kind(value_result.parser));
+  preds::StmtsResult else_result = has_else ? parse_stmts_until_end(preds::Parser_advance(value_result.parser)) : preds::StmtsResult{{}, value_result.parser};
+  std::shared_ptr<ast::Expr> else_body = std::make_shared<ast::Expr>(ast::ExprBlock(else_result.stmts, std::make_shared<ast::Expr>(ast::ExprUnit(statement_span)), statement_span));
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)), else_result.parser};
  }() : preds::TKind_is_ident(k0) && preds::is_ctor_name(preds::TKind_ident(k0)) && preds::TKind_is_lparen(parser_next_kind(name_pos)) ? [&]() -> preds::StmtResult { 
   preds::PatResult pr = parse_pattern_identifier_branch(name_pos, preds::TKind_ident(k0));
   preds::TypeResult type_result = parse_after_let_pattern(pr.parser);
   preds::ExprResult value_result = parse_expr(type_result.parser);
-  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(pr.pat, is_mut, type_result.type_expr, value_result.expr, statement_span)), value_result.parser};
+  bool has_else = preds::TKind_is_else(preds::Parser_kind(value_result.parser));
+  preds::StmtsResult else_result = has_else ? parse_stmts_until_end(preds::Parser_advance(value_result.parser)) : preds::StmtsResult{{}, value_result.parser};
+  std::shared_ptr<ast::Expr> else_body = std::make_shared<ast::Expr>(ast::ExprBlock(else_result.stmts, std::make_shared<ast::Expr>(ast::ExprUnit(statement_span)), statement_span));
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtLetPat(pr.pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)), else_result.parser};
  }() : preds::TKind_is_ident(k0) ? [&]() -> preds::StmtResult { 
   mlc::String var_name = preds::TKind_ident(k0);
   preds::TypeResult type_result = preds::TKind_is_colon(preds::Parser_kind(preds::Parser_advance(name_pos))) ? types::parse_type(preds::Parser_advance_by(name_pos, 2)) : preds::TypeResult{std::make_shared<ast::TypeExpr>((ast::TyUnit{})), preds::Parser_advance(name_pos)};

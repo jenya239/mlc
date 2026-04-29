@@ -3,7 +3,7 @@
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
 import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown } from "../ast"
-import { Type, TypeRegistry, TTuple, TUnit, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
+import { Type, TypeRegistry, TTuple, TUnit, TGeneric, TUnknown, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
 import {
   binary_operation_result_type,
   builtin_method_return_type,
@@ -32,13 +32,30 @@ export fn empty_transform_context() -> TransformContext =
 export fn transform_context_with_env(base: TransformContext, type_env: Map<string, Shared<Type>>) -> TransformContext =
   TransformContext { type_env, registry: base.registry }
 
-// Coerce an SExpr to a target type, primarily for empty arrays.
+fn tunk_args(count: i32) -> [Shared<Type>] = do
+  const args: [Shared<Type>] = []; let mut i = 0
+  while i < count do args.push(Shared.new(TUnknown)); i = i + 1 end
+  args
+end
+
+// Coerce an SExpr to a target type: empty arrays adopt target element type;
+// phantom-typed records adopt target TGeneric type.
 export fn coerce_expr_to_type(expression: Shared<SExpr>, target_type: Shared<Type>) -> Shared<SExpr> =
   match expression {
     SExprArray(elements, _, source_span) =>
       if elements.length() == 0 then Shared.new(SExprArray(elements, target_type, source_span))
-      else expression
-      end,
+      else expression end,
+    SExprRecord(type_name, fields, expr_type, source_span) =>
+      match target_type {
+        TGeneric(tgt_name, _) =>
+          match expr_type {
+            TGeneric(exp_name, _) =>
+              if tgt_name == exp_name then Shared.new(SExprRecord(type_name, fields, target_type, source_span))
+              else expression end,
+            _ => expression
+          },
+        _ => expression
+      },
     _ => expression
   }
 
@@ -325,7 +342,12 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     ExprRecord(type_name, field_values, source_span) => do
       const typed_fields = transform_field_vals(field_values, transform_context, stmts_fn)
-      Shared.new(SExprRecord(type_name, typed_fields, Shared.new(TNamed(type_name)), source_span))
+      const phantom    = transform_context.registry.phantom_type_params_for(type_name)
+      const all_params = transform_context.registry.algebraic_decl_type_parameter_names_for(type_name)
+      const expr_type  = if all_params.length() > 0 && phantom.length() == all_params.length()
+        then Shared.new(TGeneric(type_name, tunk_args(all_params.length())))
+        else Shared.new(TNamed(type_name)) end
+      Shared.new(SExprRecord(type_name, typed_fields, expr_type, source_span))
     end,
 
     ExprRecordUpdate(type_name, base, field_values, source_span) => do
