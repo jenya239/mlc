@@ -56,12 +56,14 @@ module MLC
 
           ptypes = func.params.map(&:type)
           req = func.params.find_index { |p| p.default } || ptypes.length
+          pnames = func.params.map(&:name).map(&:to_s)
           info = MLC::Registries::FunctionSignature.new(
             func.name,
             ptypes,
             func.ret_type,
             func.type_params || [],
-            req
+            req,
+            pnames
           )
           @function_registry.register(
             func.name,

@@ -624,5 +624,20 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("private ctor: matching outside extend allowed — 0 errors",
     check_error_count("type Email = private Email { raw: string }\nfn get_raw(e: Email) -> string = match e { Email { raw } => raw }"), 0))
 
+  results.push(assert_eq_int("named args: all-named call — 0 errors",
+    check_error_count("fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(x: 1, y: 2)"), 0))
+
+  results.push(assert_eq_int("named args: reverse order — 0 errors",
+    check_error_count("fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(y: 2, x: 1)"), 0))
+
+  results.push(assert_eq_int("named args: mixed positional + named — 0 errors",
+    check_error_count("fn f(x: i32, y: i32, z: i32) -> i32 = x\nfn g() -> i32 = f(1, y: 2, z: 3)"), 0))
+
+  results.push(assert_true("named args: unknown param name — at least 1 error",
+    check_error_count("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(bad: 1)") > 0))
+
+  results.push(assert_true("named args: type mismatch in named arg",
+    check_error_count("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(x: \"str\")") > 0))
+
   results
 end

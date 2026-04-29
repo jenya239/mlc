@@ -233,7 +233,8 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprArray(elements, _)                  => infer_expr_array_literal(elements, inference_context),
     ExprTuple(elements, _)                  => infer_expr_tuple_literal(elements, inference_context),
     ExprQuestion(inner, question_span)      => infer_expr_question(inner, question_span, inference_context),
-    ExprLambda(params, body, _)             => infer_expr_lambda(params, body, inference_context)
+    ExprLambda(params, body, _)             => infer_expr_lambda(params, body, inference_context),
+    ExprNamedArg(_, inner, _)               => infer_expr(inner, inference_context)
   }
 
 // --- Statements -------------------------------------------------------------

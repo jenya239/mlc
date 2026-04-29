@@ -391,6 +391,17 @@ module MLC
         end
       end
 
+      # Named argument in a call: label: value
+      class NamedArg < Node
+        attr_reader :label, :value
+
+        def initialize(label:, value:, origin: nil)
+          super(origin: origin)
+          @label = label
+          @value = value
+        end
+      end
+
       # Member access
       class MemberAccess < Expr
         attr_reader :object, :member

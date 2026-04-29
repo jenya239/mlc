@@ -80,7 +80,15 @@ module MLC
           args = []
 
           while current.type != :RPAREN
-            args << parse_expression
+            if current.type == :IDENTIFIER && peek&.type == :COLON
+              label_token = current
+              label = label_token.value
+              consume(:IDENTIFIER)
+              consume(:COLON)
+              args << MLC::Source::AST::NamedArg.new(label: label, value: parse_expression, origin: label_token)
+            else
+              args << parse_expression
+            end
 
             break unless current.type == :COMMA
 

@@ -2,7 +2,7 @@
 // Mirrors infer_expr but produces typed Shared<SExpr> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown } from "../ast"
+import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder } from "../ast"
 import { Type, TypeRegistry, TTuple, TUnit, TGeneric, TUnknown, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
 import {
   binary_operation_result_type,
@@ -65,6 +65,85 @@ export type TransformStmtsResult = TransformStmtsResult {
   statements: [Shared<SStmt>],
   type_env:   Map<string, Shared<Type>>
 }
+
+// --- Named arg resolution (for transform, no error reporting) ---------------
+
+fn transform_has_named_args(args: [Shared<Expr>]) -> bool = do
+  let mut i = 0; let mut found = false
+  while i < args.length() do
+    match args[i] {
+      ExprNamedArg(_, _, _) => do found = true; () end,
+      _ => ()
+    }
+    i = i + 1
+  end
+  found
+end
+
+fn transform_find_param_slot(param_names: [string], name: string) -> i32 = do
+  let mut i = 0; let mut slot = -1
+  while i < param_names.length() do
+    if param_names[i] == name then slot = i end
+    i = i + 1
+  end
+  slot
+end
+
+fn transform_strip_labels(args: [Shared<Expr>]) -> [Shared<Expr>] = do
+  const stripped: [Shared<Expr>] = []; let mut i = 0
+  while i < args.length() do
+    match args[i] {
+      ExprNamedArg(_, inner, _) => stripped.push(inner),
+      _ => stripped.push(args[i])
+    }
+    i = i + 1
+  end
+  stripped
+end
+
+fn transform_reorder_to_positional(args: [Shared<Expr>], param_names: [string]) -> [Shared<Expr>] = do
+  const n = param_names.length()
+  let mut result: [Shared<Expr>] = []; let mut filled: [i32] = []
+  let mut k = 0
+  while k < n do result.push(expr_placeholder()); filled.push(0); k = k + 1 end
+  let mut pos_slot = 0; let mut i = 0
+  while i < args.length() do
+    match args[i] {
+      ExprNamedArg(name, inner, _) => do
+        const slot = transform_find_param_slot(param_names, name)
+        if slot >= 0 && filled[slot] == 0 then
+          result.set(slot, inner)
+          filled.set(slot, 1)
+        end; ()
+      end,
+      _ => do
+        while pos_slot < n && filled[pos_slot] == 1 do
+          pos_slot = pos_slot + 1
+        end
+        if pos_slot < n then
+          result.set(pos_slot, args[i])
+          filled.set(pos_slot, 1)
+          pos_slot = pos_slot + 1
+        end; ()
+      end
+    }
+    i = i + 1
+  end
+  const compact: [Shared<Expr>] = []; let mut j = 0
+  while j < n do if filled[j] == 1 then compact.push(result[j]) end; j = j + 1 end
+  compact
+end
+
+fn reorder_named_args_for_transform(args: [Shared<Expr>], callee_name: string, registry: TypeRegistry) -> [Shared<Expr>] =
+  if !transform_has_named_args(args) then args
+  else
+    const param_names = registry.parameter_names_for(callee_name)
+    if param_names.length() == 0 then
+      transform_strip_labels(args)
+    else
+      transform_reorder_to_positional(args, param_names)
+    end
+  end
 
 // --- Helpers ----------------------------------------------------------------
 
@@ -238,9 +317,10 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     end,
 
     ExprCall(function, call_arguments, source_span) => do
-      const typed_fn   = transform_expr(function, transform_context, stmts_fn)
-      const typed_args = transform_exprs(call_arguments, transform_context, stmts_fn)
       const callee_name = match function { ExprIdent(name, _) => name, _ => "" }
+      const resolved_call_args = reorder_named_args_for_transform(call_arguments, callee_name, transform_context.registry)
+      const typed_fn   = transform_expr(function, transform_context, stmts_fn)
+      const typed_args = transform_exprs(resolved_call_args, transform_context, stmts_fn)
       const result_type =
         if callee_name != "" && transform_context.registry.has_ctor(callee_name) then
           transform_context.registry.ctor_type(callee_name)
@@ -404,6 +484,8 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
       const function_type  = Shared.new(TFn(parameter_types, sexpr_type(typed_body)))
       Shared.new(SExprLambda(parameter_names, typed_body, function_type, source_span))
     end,
+
+    ExprNamedArg(_, inner, _) => transform_expr(inner, transform_context, stmts_fn),
 
     _ => Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
   }

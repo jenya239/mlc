@@ -1,6 +1,6 @@
 // --- Semantic type --------------------------------------------------------
 
-import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ } from "../ast"
+import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name } from "../ast"
 
 export type Type =
   | TI32 | TString | TBool | TUnit
@@ -18,6 +18,7 @@ export type Type =
 export type TypeRegistry = TypeRegistry {
   fn_types:    Map<string, Shared<Type>>,
   function_type_parameter_names: Map<string, [string]>,
+  function_parameter_names: Map<string, [string]>,
   function_required_arity: Map<string, i32>,
   function_trait_bounds: Map<string, [[string]]>,
   ctor_types:  Map<string, Shared<Type>>,
@@ -41,6 +42,13 @@ export extend TypeRegistry {
       self.function_type_parameter_names.get(function_name)
     else
       do const empty_function_type_names: [string] = []; empty_function_type_names end
+    end
+
+  fn parameter_names_for(self, fn_name: string) -> [string] =
+    if self.function_parameter_names.has(fn_name) then
+      self.function_parameter_names.get(fn_name)
+    else
+      do const empty_param_names: [string] = []; empty_param_names end
     end
 
   fn algebraic_decl_type_parameter_names_for(self, algebraic_type_name: string) -> [string] =
@@ -133,6 +141,7 @@ export fn empty_registry() -> TypeRegistry = do
   TypeRegistry {
     fn_types: builtin_function_types,
     function_type_parameter_names: Map.new(),
+    function_parameter_names: Map.new(),
     function_required_arity: fn_req,
     function_trait_bounds: Map.new(),
     ctor_types: ctor_types,
@@ -212,12 +221,16 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
     end,
     DeclFn(name, type_parameters, trait_bounds, params, return_type, _) => do
       const param_types: [Shared<Type>] = []
+      const pnames: [string] = []
       let mut i = 0
       while i < params.length() do
-        param_types.push(type_from_annotation(param_typ(params[i]))); i = i + 1
+        param_types.push(type_from_annotation(param_typ(params[i])))
+        pnames.push(param_name(params[i]))
+        i = i + 1
       end
       registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
       registry.function_type_parameter_names.set(name, type_parameters)
+      registry.function_parameter_names.set(name, pnames)
       registry.function_required_arity.set(name, required_arity_from_params(params))
       if trait_bounds.length() > 0 then registry.function_trait_bounds.set(name, trait_bounds) end
       registry

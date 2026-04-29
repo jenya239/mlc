@@ -102,7 +102,7 @@ results.push_back(test_runner::assert_eq_int(mlc::String("A3: let (a, b) = (1, 2
 results.push_back(test_runner::assert_eq_int(mlc::String("A3: let (a, b, c) = (1, 2, 3) - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  let (a, b, c) = (1, 2, 3)\n  a + b + c\nend")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("A3: let {x, y} = record - 0 errors"), check_error_count(mlc::String("type Point = { x: i32, y: i32 }\nfn f() -> i32 = do\n  let p = Point { x: 1, y: 2 }\n  let { x, y } = p\n  x + y\nend")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("A3: let [a, ...b] = array - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  let a: [i32] = [1, 2, 3]\n  let [u, ...v] = a\n  u\nend")), 0));
-results.push_back(test_runner::assert_eq_int(mlc::String("A3: let Ok(x) = Ok - 0 errors"), check_error_count(mlc::String("type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let o: Result<i32, string> = Ok(1)\n  let Ok(n) = o\n  n\nend")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("A3: let Ok(x) = Ok - 0 errors"), check_error_count(mlc::String("type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let o: Result<i32, string> = Ok(1)\n  let Ok(n) = o else return 0 end\n  n\nend")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("A4: default param call with omitted args - 0 errors"), check_error_count(mlc::String("fn f(a: i32 = 1) -> i32 = a\nfn g() -> i32 = f()")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("A4: two defaults call with one arg - 0 errors"), check_error_count(mlc::String("fn f(a: i32, b: i32 = 2, c: i32 = 3) -> i32 = a + b + c\nfn g() -> i32 = f(0)")), 0));
 results.push_back(test_runner::assert_true(mlc::String("A4: default not before required"), first_checker_error_line(mlc::String("fn f(a: i32 = 1, b: i32) -> i32 = b")).contains(mlc::String("parameter defaults must be trailing"))));
@@ -196,6 +196,20 @@ results.push_back(test_runner::assert_eq_int(mlc::String("template: string inter
 results.push_back(test_runner::assert_eq_int(mlc::String("template: bool interpolation - 0 errors"), check_error_count(mlc::String("fn f(b: bool) -> string = `${b}`")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("template: multi interpolation - 0 errors"), check_error_count(mlc::String("fn f(x: i32, y: i32) -> string = `${x}+${y}`")), 0));
 results.push_back(test_runner::assert_true(mlc::String("template: undefined var in interpolation - error"), check_error_count(mlc::String("fn f() -> string = `${undefined_var}`")) > 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("let-else: PatCtor without else - 1 error"), check_error_count(mlc::String("type Opt = Some(i32) | None\nfn f(o: Opt) -> i32 = do\n  let Some(v) = o\n  v\nend")), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("let-else: PatCtor with else - 0 errors"), check_error_count(mlc::String("type Opt = Some(i32) | None\nfn f(o: Opt) -> i32 = do\n  let Some(v) = o else return 0 end\n  v\nend")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("phantom type: declaration — 0 errors"), check_error_count(mlc::String("type Unvalidated\ntype Ast<Phase> = Ast { value: i32 }")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("phantom type: fn with phantom param annotation — 0 errors"), check_error_count(mlc::String("type Unvalidated\ntype Ast<Phase> = Ast { value: i32 }\nfn use_ast(ast: Ast<Unvalidated>) -> i32 = ast.value")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("phantom type: wrong phantom arg at call site — 1 error"), check_error_count(mlc::String("type Unvalidated\ntype Validated\ntype Ast<Phase> = Ast { value: i32 }\nfn expect(ast: Ast<Validated>) -> i32 = 0\nfn make() -> Ast<Unvalidated> = do\n  let ast: Ast<Unvalidated> = Ast { value: 1 }\n  ast\nend\nfn wrong() -> i32 = expect(make())")), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: declaration — 0 errors"), check_error_count(mlc::String("type Email = private Email { raw: string }")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: construction outside extend — 1 error"), check_error_count(mlc::String("type Email = private Email { raw: string }\nfn f() -> Email = Email { raw: \"x\" }")), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: construction inside extend — 0 errors"), check_error_count(mlc::String("type Email = private Email { raw: string }\nextend Email { fn make(s: string) -> Email = Email { raw: s } }")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: matching outside extend allowed — 0 errors"), check_error_count(mlc::String("type Email = private Email { raw: string }\nfn get_raw(e: Email) -> string = match e { Email { raw } => raw }")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("named args: all-named call — 0 errors"), check_error_count(mlc::String("fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(x: 1, y: 2)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("named args: reverse order — 0 errors"), check_error_count(mlc::String("fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(y: 2, x: 1)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("named args: mixed positional + named — 0 errors"), check_error_count(mlc::String("fn f(x: i32, y: i32, z: i32) -> i32 = x\nfn g() -> i32 = f(1, y: 2, z: 3)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("named args: unknown param name — 1 error"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(bad: 1)")), 1));
+results.push_back(test_runner::assert_true(mlc::String("named args: type mismatch in named arg"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(x: \"str\")")) > 0));
 return results;
 }
 

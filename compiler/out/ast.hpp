@@ -50,7 +50,8 @@ struct ExprTuple {mlc::Array<std::shared_ptr<ast::Expr>> field0;ast::Span field1
 struct ExprQuestion {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
 struct ExprExtern {ast::Span field0;};
 struct ExprLambda {mlc::Array<mlc::String> field0;std::shared_ptr<ast::Expr> field1;ast::Span field2;};
-struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex, ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate, ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda> _;};
+struct ExprNamedArg {mlc::String field0;std::shared_ptr<ast::Expr> field1;ast::Span field2;};
+struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex, ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate, ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda, ExprNamedArg> _;};
 
 
 struct StmtLet {mlc::String field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;ast::Span field4;};
@@ -79,6 +80,8 @@ struct Err {E field0;};template<typename T, typename E>
 using Result = std::variant<Ok<T>, Err<E>>;
 
 ast::Span span_unknown() noexcept;
+
+std::shared_ptr<ast::Expr> expr_placeholder() noexcept;
 
 ast::Diagnostic diagnostic_new(mlc::String severity, mlc::String message, ast::Span span) noexcept;
 

@@ -1,7 +1,7 @@
 // Function and constructor call type inference.
 // infer_expr_fn injected to break the import cycle with infer.mlc.
 
-import { Expr, Span, Diagnostic, diagnostics_append } from "../ast"
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_placeholder } from "../ast"
 import { Type, TNamed } from "./registry"
 import { CheckContext } from "./check_context"
 import { InferResult } from "./infer_result"
@@ -11,6 +11,90 @@ import { trait_bound_diagnostics } from "./infer_trait_bounds"
 import { type_is_function } from "./semantic_type_structure"
 
 type InferExprFn = (Shared<Expr>, CheckContext) -> InferResult
+
+type ResolvedArgs = ResolvedArgs { exprs: [Shared<Expr>], errors: [Diagnostic] }
+
+fn has_named_args(args: [Shared<Expr>]) -> bool = do
+  let mut i = 0; let mut found = false
+  while i < args.length() do
+    match args[i] {
+      ExprNamedArg(_, _, _) => do found = true; () end,
+      _ => ()
+    }
+    i = i + 1
+  end
+  found
+end
+
+fn find_param_slot(param_names: [string], name: string) -> i32 = do
+  let mut i = 0; let mut slot = -1
+  while i < param_names.length() do
+    if param_names[i] == name then slot = i end
+    i = i + 1
+  end
+  slot
+end
+
+fn strip_named_labels(args: [Shared<Expr>]) -> ResolvedArgs = do
+  const stripped: [Shared<Expr>] = []; let mut i = 0
+  while i < args.length() do
+    match args[i] {
+      ExprNamedArg(_, inner, _) => stripped.push(inner),
+      _ => stripped.push(args[i])
+    }
+    i = i + 1
+  end
+  ResolvedArgs { exprs: stripped, errors: [] }
+end
+
+fn reorder_named_to_positional(args: [Shared<Expr>], param_names: [string]) -> ResolvedArgs = do
+  const n = param_names.length()
+  let mut result: [Shared<Expr>] = []; let mut filled: [i32] = []
+  let mut k = 0
+  while k < n do result.push(expr_placeholder()); filled.push(0); k = k + 1 end
+  const errors: [Diagnostic] = []
+  let mut pos_slot = 0; let mut i = 0
+  while i < args.length() do
+    match args[i] {
+      ExprNamedArg(name, inner, arg_span) => do
+        const slot = find_param_slot(param_names, name)
+        if slot == -1 then
+          errors.push(diagnostic_error("unknown parameter name: " + name, arg_span))
+            else if filled[slot] == 1 then
+          errors.push(diagnostic_error("duplicate named arg: " + name, arg_span))
+            else
+              result.set(slot, inner)
+              filled.set(slot, 1)
+            end; ()
+      end,
+      _ => do
+            while pos_slot < n && filled[pos_slot] == 1 do
+          pos_slot = pos_slot + 1
+        end
+        if pos_slot < n then
+              result.set(pos_slot, args[i])
+              filled.set(pos_slot, 1)
+              pos_slot = pos_slot + 1
+            end; ()
+      end
+    }
+    i = i + 1
+  end
+  const compact: [Shared<Expr>] = []; let mut j = 0
+  while j < n do if filled[j] == 1 then compact.push(result[j]) end; j = j + 1 end
+  ResolvedArgs { exprs: compact, errors: errors }
+end
+
+fn resolve_named_args(args: [Shared<Expr>], callee_name: string, registry: TypeRegistry) -> ResolvedArgs =
+  if !has_named_args(args) then ResolvedArgs { exprs: args, errors: [] }
+  else
+    const param_names = registry.parameter_names_for(callee_name)
+    if param_names.length() == 0 then
+      strip_named_labels(args)
+    else
+      reorder_named_to_positional(args, param_names)
+    end
+  end
 
 fn take_first_param_types(param_types: [Shared<Type>], n: i32) -> [Shared<Type>] = do
   const out: [Shared<Type>] = []
@@ -29,24 +113,23 @@ export fn infer_expr_call(
   inference_context: CheckContext,
   infer_expr_fn: InferExprFn
 ) -> InferResult = do
+  const callee_name = match function { ExprIdent(name, _) => name, _ => "" }
+  const resolved = resolve_named_args(call_arguments, callee_name, inference_context.registry)
+  const effective_args = resolved.exprs
   const function_result = infer_expr_fn(function, inference_context)
-  let mut collected_errors = function_result.errors
+  let mut collected_errors = diagnostics_append(function_result.errors, resolved.errors)
   const argument_inferred_types: [Shared<Type>] = []
   let mut argument_index = 0
-  while argument_index < call_arguments.length() do
-    const argument_inference = infer_expr_fn(call_arguments[argument_index], inference_context)
+  while argument_index < effective_args.length() do
+    const argument_inference = infer_expr_fn(effective_args[argument_index], inference_context)
     collected_errors = diagnostics_append(collected_errors, argument_inference.errors)
     argument_inferred_types.push(argument_inference.inferred_type)
     argument_index = argument_index + 1
   end
   const with_arguments = InferResult { inferred_type: function_result.inferred_type, errors: collected_errors }
-  const callee_name = match function {
-    ExprIdent(name, _) => name,
-    _ => ""
-  }
   if callee_name != "" && inference_context.registry.has_ctor(callee_name) then
     const constructor_output = infer_expr_call_for_constructor_name(
-      callee_name, with_arguments, call_arguments, call_source_span, inference_context)
+      callee_name, with_arguments, effective_args, call_source_span, inference_context)
     const constructor_parameter_types = inference_context.registry.ctor_params_for(callee_name)
     const algebraic_type_name = match inference_context.registry.ctor_type(callee_name) {
       TNamed(parent_name) => parent_name,
@@ -54,7 +137,7 @@ export fn infer_expr_call(
     }
     const constructor_type_parameter_names =
       inference_context.registry.algebraic_decl_type_parameter_names_for(algebraic_type_name)
-    if constructor_parameter_types.length() == call_arguments.length() then
+    if constructor_parameter_types.length() == effective_args.length() then
       InferResult {
         inferred_type: constructor_output.inferred_type,
         errors: diagnostics_append(
@@ -63,14 +146,14 @@ export fn infer_expr_call(
             constructor_parameter_types,
             argument_inferred_types,
             constructor_type_parameter_names,
-            call_arguments))
+            effective_args))
       }
     else
       constructor_output
     end
   else
     const non_constructor_output = infer_expr_call_non_constructor(
-      function_result, with_arguments, call_arguments, call_source_span, inference_context.registry, callee_name)
+      function_result, with_arguments, effective_args, call_source_span, inference_context.registry, callee_name)
     const callee_parameter_types = function_parameter_list(function_result.inferred_type)
     const max_arity = callee_parameter_types.length()
     const min_arity =
@@ -80,7 +163,7 @@ export fn infer_expr_call(
       else
         max_arity
       end
-    const got = call_arguments.length()
+    const got = effective_args.length()
     const callee_type_parameter_names =
       if callee_name != "" && inference_context.registry.has_fn(callee_name) then
         inference_context.registry.registered_function_type_parameter_names(callee_name)
@@ -90,7 +173,7 @@ export fn infer_expr_call(
     if type_is_function(function_result.inferred_type) && got >= min_arity && got <= max_arity then
       const params_for_unify = take_first_param_types(callee_parameter_types, got)
       const unification_errors = call_argument_unification_diagnostics(
-        params_for_unify, argument_inferred_types, callee_type_parameter_names, call_arguments)
+        params_for_unify, argument_inferred_types, callee_type_parameter_names, effective_args)
       const bound_errors = trait_bound_diagnostics(
         callee_name, params_for_unify, argument_inferred_types,
         callee_type_parameter_names, call_source_span, inference_context)

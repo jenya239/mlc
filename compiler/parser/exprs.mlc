@@ -497,13 +497,22 @@ fn parse_arg_list(parser: Parser) -> ExprsResult = do
   if parser.kind().is_rparen() then
     ExprsResult { exprs, parser: parser.advance() }
   else
-    const first = parse_expr(parser)
-    exprs.push(first.expr)
-    let mut state = first.parser
-    while state.kind().is_comma() do
-      const next = parse_expr(state.advance())
-      exprs.push(next.expr)
-      state = next.parser
+    let mut state = parser
+    while !state.kind().is_rparen() && !state.at_eof() do
+      const arg_span = state.span_at_cursor()
+      const arg =
+        if state.kind().is_ident() && parser_next_kind(state).is_colon() then
+          const name = state.kind().ident()
+          const value = parse_expr(state.advance_by(2))
+          state = value.parser
+          Shared.new(ExprNamedArg(name, value.expr, arg_span))
+        else
+          const r = parse_expr(state)
+          state = r.parser
+          r.expr
+        end
+      exprs.push(arg)
+      if state.kind().is_comma() then state = state.advance() end
     end
     ExprsResult { exprs, parser: state.advance() }
   end

@@ -184,6 +184,7 @@ export fn check_names_expr(expression: Shared<Expr>, locals: [string], globals: 
     ExprTuple(elements, _)                  => check_names_array_expression(elements, locals, globals),
     ExprQuestion(inner, _)                  => check_names_question_expression(inner, locals, globals),
     ExprLambda(parameter_names, body, _)  => check_names_lambda_expression(parameter_names, body, locals, globals),
+    ExprNamedArg(_, inner, _)             => check_names_expr(inner, locals, globals),
     _                                       => check_names_empty()
   }
 

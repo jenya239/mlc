@@ -593,14 +593,26 @@ return preds::ExprResult{expr, state};
 preds::ExprsResult parse_arg_list(preds::Parser parser) noexcept{
 mlc::Array<std::shared_ptr<ast::Expr>> exprs = {};
 return preds::TKind_is_rparen(preds::Parser_kind(parser)) ? preds::ExprsResult{exprs, preds::Parser_advance(parser)} : [&]() -> preds::ExprsResult { 
-  preds::ExprResult first = parse_expr(parser);
-  exprs.push_back(first.expr);
-  preds::Parser state = first.parser;
-  while (preds::TKind_is_comma(preds::Parser_kind(state))){
+  preds::Parser state = std::move(parser);
+  while (!preds::TKind_is_rparen(preds::Parser_kind(state)) && !preds::Parser_at_eof(state)){
 {
-preds::ExprResult next = parse_expr(preds::Parser_advance(state));
-exprs.push_back(next.expr);
-state = next.parser;
+ast::Span arg_span = preds::Parser_span_at_cursor(state);
+std::shared_ptr<ast::Expr> arg = preds::TKind_is_ident(preds::Parser_kind(state)) && preds::TKind_is_colon(parser_next_kind(state)) ? [&]() -> std::shared_ptr<ast::Expr> { 
+  mlc::String name = preds::TKind_ident(preds::Parser_kind(state));
+  preds::ExprResult value = parse_expr(preds::Parser_advance_by(state, 2));
+  state = value.parser;
+  return std::make_shared<ast::Expr>(ast::ExprNamedArg(name, value.expr, arg_span));
+ }() : [&]() -> std::shared_ptr<ast::Expr> { 
+  preds::ExprResult r = parse_expr(state);
+  state = r.parser;
+  return r.expr;
+ }();
+exprs.push_back(arg);
+if (preds::TKind_is_comma(preds::Parser_kind(state))){
+{
+state = preds::Parser_advance(state);
+}
+}
 }
 }
   return preds::ExprsResult{exprs, preds::Parser_advance(state)};

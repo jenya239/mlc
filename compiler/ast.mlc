@@ -8,6 +8,8 @@ export type Span = Span { file: string, line: i32, column: i32 }
 
 export fn span_unknown() -> Span = Span { file: "", line: 0, column: 0 }
 
+export fn expr_placeholder() -> Shared<Expr> = Shared.new(ExprUnit(span_unknown()))
+
 export type Diagnostic = Diagnostic { message: string, span: Span, severity: string }
 
 export fn diagnostic_new(severity: string, message: string, span: Span) -> Diagnostic =
@@ -94,6 +96,7 @@ export type Expr =
   | ExprQuestion(Shared<Expr>, Span)
   | ExprExtern(Span)
   | ExprLambda([string], Shared<Expr>, Span)
+  | ExprNamedArg(string, Shared<Expr>, Span)
 
 export fn expr_span(expression: Shared<Expr>) -> Span =
   match expression {
@@ -119,7 +122,8 @@ export fn expr_span(expression: Shared<Expr>) -> Span =
     ExprTuple(_, source_span)      => source_span,
     ExprQuestion(_, source_span)   => source_span,
     ExprExtern(source_span)         => source_span,
-    ExprLambda(_, _, source_span)  => source_span,
+    ExprLambda(_, _, source_span)   => source_span,
+    ExprNamedArg(_, _, source_span) => source_span,
     _                               => span_unknown()
   }
 

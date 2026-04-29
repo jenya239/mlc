@@ -205,6 +205,11 @@ results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: declarat
 results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: construction outside extend — 1 error"), check_error_count(mlc::String("type Email = private Email { raw: string }\nfn f() -> Email = Email { raw: \"x\" }")), 1));
 results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: construction inside extend — 0 errors"), check_error_count(mlc::String("type Email = private Email { raw: string }\nextend Email { fn make(s: string) -> Email = Email { raw: s } }")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("private ctor: matching outside extend allowed — 0 errors"), check_error_count(mlc::String("type Email = private Email { raw: string }\nfn get_raw(e: Email) -> string = match e { Email { raw } => raw }")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("named args: all-named call — 0 errors"), check_error_count(mlc::String("fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(x: 1, y: 2)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("named args: reverse order — 0 errors"), check_error_count(mlc::String("fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(y: 2, x: 1)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("named args: mixed positional + named — 0 errors"), check_error_count(mlc::String("fn f(x: i32, y: i32, z: i32) -> i32 = x\nfn g() -> i32 = f(1, y: 2, z: 3)")), 0));
+results.push_back(test_runner::assert_true(mlc::String("named args: unknown param name — at least 1 error"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(bad: 1)")) > 0));
+results.push_back(test_runner::assert_true(mlc::String("named args: type mismatch in named arg"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(x: \"str\")")) > 0));
 return results;
 }
 

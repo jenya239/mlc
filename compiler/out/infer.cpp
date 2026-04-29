@@ -243,7 +243,8 @@ infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, chec
   [&](const ExprArray& exprarray) -> infer_result::InferResult { auto [elements, _w0] = exprarray; return infer_expr_array_literal(elements, inference_context); },
   [&](const ExprTuple& exprtuple) -> infer_result::InferResult { auto [elements, _w0] = exprtuple; return infer_expr_tuple_literal(elements, inference_context); },
   [&](const ExprQuestion& exprquestion) -> infer_result::InferResult { auto [inner, question_span] = exprquestion; return infer_expr_question(inner, question_span, inference_context); },
-  [&](const ExprLambda& exprlambda) -> infer_result::InferResult { auto [params, body, _w0] = exprlambda; return infer_expr_lambda(params, body, inference_context); }
+  [&](const ExprLambda& exprlambda) -> infer_result::InferResult { auto [params, body, _w0] = exprlambda; return infer_expr_lambda(params, body, inference_context); },
+  [&](const ExprNamedArg& exprnamedarg) -> infer_result::InferResult { auto [_w0, inner, _w1] = exprnamedarg; return infer_expr(inner, inference_context); }
 }, (*expression)._);}
 
 infer_result::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{

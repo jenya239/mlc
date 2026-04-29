@@ -100,7 +100,8 @@ module MLC
 
               if svc.call?(node)
                 if static_method_call?(node)
-                  args_ir = node.args.map { |arg| visit(arg) }
+                  resolved = node.args.map { |a| a.is_a?(MLC::Source::AST::NamedArg) ? a.value : a }
+                  args_ir = resolved.map { |arg| visit(arg) }
                   return apply_rules(node, extra_context.merge(args_ir: args_ir, skip_callee_visit: true))
                 end
                 callee_ir = visit(node.callee)
@@ -137,8 +138,9 @@ module MLC
               svc = @services.ast_type_checker
               scope = @services.scope_context
               inference = @services.type_inference_service
+              resolved_args = resolve_named_call_args(node)
               args_ir = []
-              node.args.each do |arg|
+              resolved_args.each do |arg|
                 expected = if callee_ir.is_a?(SemanticIR::MemberExpr) && svc.lambda?(arg)
                              inference.send(:expected_lambda_param_types, callee_ir.object, callee_ir.member, args_ir)
                            end
@@ -149,6 +151,36 @@ module MLC
                 end
               end
               args_ir
+            end
+
+            def resolve_named_call_args(node)
+              args = node.args
+              return args unless args.any? { |a| a.is_a?(MLC::Source::AST::NamedArg) }
+
+              callee_name = node.callee.respond_to?(:name) ? node.callee.name : nil
+              param_names = []
+              if callee_name
+                sig = @services.function_registry.fetch(callee_name)
+                param_names = sig&.param_names || []
+              end
+
+              if param_names.empty?
+                return args.map { |a| a.is_a?(MLC::Source::AST::NamedArg) ? a.value : a }
+              end
+
+              result = Array.new(param_names.length)
+              pos = 0
+              args.each do |arg|
+                if arg.is_a?(MLC::Source::AST::NamedArg)
+                  i = param_names.index(arg.label)
+                  result[i] = arg.value if i
+                else
+                  pos += 1 while pos < param_names.length && result[pos]
+                  result[pos] = arg
+                  pos += 1
+                end
+              end
+              result.compact
             end
 
             def pipe_op?(node)

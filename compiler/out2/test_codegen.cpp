@@ -156,7 +156,7 @@ results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: body in output
 mlc::Array<mlc::String> result_type_params = mlc::Array<mlc::String>{mlc::String("T"), mlc::String("E")};
 mlc::Array<std::shared_ptr<ast::TypeExpr>> ok_fields = mlc::Array<std::shared_ptr<ast::TypeExpr>>{std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("T")))};
 mlc::Array<std::shared_ptr<ast::TypeExpr>> err_fields = mlc::Array<std::shared_ptr<ast::TypeExpr>>{std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("E")))};
-mlc::Array<std::shared_ptr<ast::TypeVariant>> result_variants = mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarTuple(mlc::String("Ok"), ok_fields)), std::make_shared<ast::TypeVariant>(ast::VarTuple(mlc::String("Err"), err_fields))};
+mlc::Array<std::shared_ptr<ast::TypeVariant>> result_variants = mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarTuple(mlc::String("Ok"), ok_fields, false)), std::make_shared<ast::TypeVariant>(ast::VarTuple(mlc::String("Err"), err_fields, false))};
 mlc::String expected_fwd = mlc::String("template<typename T>\nstruct Ok;\n") + mlc::String("template<typename E>\nstruct Err;\n") + mlc::String("template<typename T, typename E>\nusing Result = std::variant<Ok<T>, Err<E>>;\n");
 mlc::String expected_body = mlc::String("template<typename T>\nstruct Ok {T field0;};\n") + mlc::String("template<typename E>\nstruct Err {E field0;};\n");
 results.push_back(test_runner::assert_eq_str(mlc::String("generic type Result<T,E> = Ok(T) | Err(E) codegen"), type_gen::gen_type_decl(ctx, mlc::String("Result"), result_type_params, result_variants), expected_fwd + expected_body));
@@ -164,6 +164,26 @@ results.push_back(test_runner::assert_eq_str(mlc::String("string literal with em
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal with tab - escapes to \\t"), eval::gen_expr(ss(mlc::String("a\tb")), ctx), mlc::String("mlc::String(\"a\\tb\", 3)")));
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal with backslash - escapes to \\\\"), eval::gen_expr(ss(mlc::String("a\\b")), ctx), mlc::String("mlc::String(\"a\\\\b\", 3)")));
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal with double quote - escapes to \\\""), eval::gen_expr(ss(mlc::String("say \"hi\"")), ctx), mlc::String("mlc::String(\"say \\\"hi\\\"\", 8)")));
+std::shared_ptr<ast::Pat> letpat_ctor_pat = std::make_shared<ast::Pat>(ast::PatCtor(mlc::String("Some"), mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatIdent(mlc::String("v"), ast::span_unknown()))}, ast::span_unknown()));
+std::shared_ptr<semantic_ir::SExpr> letpat_else_body = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprInt(0, i32_t(), ast::span_unknown()));
+std::shared_ptr<semantic_ir::SStmt> letpat_with_else = std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetPat(letpat_ctor_pat, false, sid(mlc::String("opt")), std::make_shared<registry::Type>(registry::TNamed(mlc::String("Opt"))), true, letpat_else_body, ast::span_unknown()));
+std::shared_ptr<semantic_ir::SStmt> letpat_no_else = std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetPat(letpat_ctor_pat, false, sid(mlc::String("opt")), std::make_shared<registry::Type>(registry::TNamed(mlc::String("Opt"))), false, letpat_else_body, ast::span_unknown()));
+mlc::String letpat_with_else_out = eval::gen_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{letpat_with_else}, ctx);
+mlc::String letpat_no_else_out = eval::gen_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{letpat_no_else}, ctx);
+results.push_back(test_runner::assert_eq_str(mlc::String("let-else: with else no abort"), letpat_with_else_out.contains(mlc::String("abort")) ? mlc::String("abort") : mlc::String("no-abort"), mlc::String("no-abort")));
+results.push_back(test_runner::assert_eq_str(mlc::String("let-else: without else uses abort"), letpat_no_else_out.contains(mlc::String("abort")) ? mlc::String("abort") : mlc::String("no-abort"), mlc::String("abort")));
+mlc::Array<std::shared_ptr<ast::FieldDef>> phantom_fds = mlc::Array<std::shared_ptr<ast::FieldDef>>{std::make_shared<ast::FieldDef>(ast::FieldDef{mlc::String("value"), std::make_shared<ast::TypeExpr>((ast::TyI32{}))})};
+mlc::Array<std::shared_ptr<ast::TypeVariant>> phantom_variants_1 = mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarRecord(mlc::String("Ast"), phantom_fds, false))};
+mlc::String phantom_type_out = type_gen::gen_type_decl(ctx, mlc::String("Ast"), mlc::Array<mlc::String>{mlc::String("Phase")}, phantom_variants_1);
+results.push_back(test_runner::assert_eq_str(mlc::String("phantom single-variant: template<typename Phase> in output"), phantom_type_out.contains(mlc::String("typename Phase")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+mlc::Array<std::shared_ptr<ast::TypeVariant>> tagged_variants = mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarTuple(mlc::String("Active"), mlc::Array<std::shared_ptr<ast::TypeExpr>>{std::make_shared<ast::TypeExpr>((ast::TyI32{}))}, false)), std::make_shared<ast::TypeVariant>(ast::VarUnit(mlc::String("Inactive"), false))};
+mlc::String tagged_out = type_gen::gen_type_decl(ctx, mlc::String("Tagged"), mlc::Array<mlc::String>{mlc::String("Tag")}, tagged_variants);
+results.push_back(test_runner::assert_eq_str(mlc::String("phantom multi-variant: Active<Tag> in alias"), tagged_out.contains(mlc::String("Active<Tag>")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+results.push_back(test_runner::assert_eq_str(mlc::String("phantom multi-variant: template<typename Tag> on Active struct"), tagged_out.contains(mlc::String("template<typename Tag>\nstruct Active")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+std::shared_ptr<registry::Type> phantom_rec_type = std::make_shared<registry::Type>(registry::TGeneric(mlc::String("Ast"), mlc::Array<std::shared_ptr<registry::Type>>{std::make_shared<registry::Type>(registry::TNamed(mlc::String("Unvalidated")))}));
+mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> phantom_rec_fvals = {};
+std::shared_ptr<semantic_ir::SExpr> phantom_rec_expr = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprRecord(mlc::String("Ast"), phantom_rec_fvals, phantom_rec_type, ast::span_unknown()));
+results.push_back(test_runner::assert_eq_str(mlc::String("phantom record expr: Ast<Unvalidated>{}"), eval::gen_expr(phantom_rec_expr, ctx), mlc::String("Ast<Unvalidated>{}")));
 return results;
 }
 
