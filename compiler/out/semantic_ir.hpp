@@ -46,7 +46,8 @@ struct SExprArray {mlc::Array<std::shared_ptr<semantic_ir::SExpr>> field0;std::s
 struct SExprTuple {mlc::Array<std::shared_ptr<semantic_ir::SExpr>> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
 struct SExprQuestion {std::shared_ptr<semantic_ir::SExpr> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
 struct SExprLambda {mlc::Array<mlc::String> field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExpr {std::variant<SExprInt, SExprStr, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprBool, SExprUnit, SExprExtern, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprFor, SExprMatch, SExprRecord, SExprRecordUpdate, SExprArray, SExprTuple, SExprQuestion, SExprLambda> _;};
+struct SExprWith {std::shared_ptr<semantic_ir::SExpr> field0;mlc::String field1;mlc::Array<std::shared_ptr<semantic_ir::SStmt>> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SExpr {std::variant<SExprInt, SExprStr, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprBool, SExprUnit, SExprExtern, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprFor, SExprMatch, SExprRecord, SExprRecordUpdate, SExprArray, SExprTuple, SExprQuestion, SExprLambda, SExprWith> _;};
 
 
 struct SStmtLet {mlc::String field0;bool field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};

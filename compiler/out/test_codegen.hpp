@@ -12,6 +12,7 @@
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "semantic_ir.hpp"
+#include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "registry.hpp"
 

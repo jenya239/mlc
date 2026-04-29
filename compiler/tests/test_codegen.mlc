@@ -8,6 +8,7 @@ import { gen_program } from "../codegen/module"
 import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown } from "../ast"
 import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat } from "../semantic_ir"
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
+import { SExprWith } from "../semantic_ir"
 import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple } from "../checker/registry"
 import { TF64, TI64, TU8, TUsize, TChar } from "../checker/registry"
 
@@ -388,6 +389,13 @@ export fn codegen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str("c4: sem_type_to_cpp TChar",
     sem_type_to_cpp(ctx, char_t), "char32_t"))
+
+  const with_body: [Shared<SStmt>] = [Shared.new(SStmtExpr(si(0), span_unknown()))]
+  const with_out = gen_expr(Shared.new(SExprWith(si(1), "res", with_body, unit_t(), span_unknown())), ctx)
+  results.push(assert_eq_str("c5: SExprWith contains auto res =",
+    if with_out.contains("auto res =") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str("c5: SExprWith contains res.drop()",
+    if with_out.contains("res.drop()") then "yes" else "no" end, "yes"))
 
   results
 end

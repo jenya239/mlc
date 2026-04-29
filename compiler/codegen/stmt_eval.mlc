@@ -82,6 +82,11 @@ fn eval_stmt_expr(expression: Shared<SExpr>, context: CodegenContext, gen_expr_f
         cpp_safe(variable),
         gen_expr_fn(iterator, context),
         eval_stmts_str(statements, context, gen_expr_fn)),
+    SExprWith(resource, binder, stmts, _, _) =>
+      expression_output.with_block_statement(
+        gen_expr_fn(resource, context),
+        cpp_safe(binder),
+        eval_stmts_str(stmts, context, gen_expr_fn)),
     SExprBlock(statements, result_expr, _, _) => do
       const statements_code = eval_stmts_str(statements, context, gen_expr_fn)
       const result_code = gen_expr_fn(result_expr, stmts_final_ctx(statements, context))

@@ -235,6 +235,10 @@ fn parse_stmt(parser: Parser) -> StmtResult = do
     const header_span = parser.span_at_cursor()
     const block_result = parse_block(parser.advance(), header_span)
     StmtResult { stmt: Shared.new(StmtExpr(block_result.expr, header_span)), parser: block_result.parser }
+  else if kind.is_with() then
+    const header_span = parser.span_at_cursor()
+    const with_result = parse_with_expr(parser.advance(), header_span)
+    StmtResult { stmt: Shared.new(StmtExpr(with_result.expr, header_span)), parser: with_result.parser }
   else parse_statement_expression_or_assign(parser)
   end
 end
@@ -692,6 +696,10 @@ fn parse_primary(parser: Parser) -> ExprResult = do
   else if kind.is_do() then parse_primary_do_block(parser)
   else if kind.is_while() then parse_primary_while_loop(parser)
   else if kind.is_for() then parse_primary_for_loop(parser)
+  else if kind.is_with() then do
+    const header_span = parser.span_at_cursor()
+    parse_with_expr(parser.advance(), header_span)
+  end
   else if kind.is_match() then parse_primary_match(parser)
   else if kind.is_return() then parse_primary_return_as_block(parser)
   else if kind.is_ident() then parse_primary_identifier(parser, kind.ident())
@@ -859,6 +867,14 @@ fn parse_for_expr(parser: Parser, header_span: Span) -> ExprResult = do
   const iter = parse_expr(parser.advance_by(2))
   const body = parse_stmts_until_end(iter.parser.advance())
   ExprResult { expr: Shared.new(ExprFor(var_name, iter.expr, body.stmts, header_span)), parser: body.parser }
+end
+
+fn parse_with_expr(parser: Parser, header_span: Span) -> ExprResult = do
+  const resource = parse_expr(parser)
+  const after_as = resource.parser.advance()
+  const binder = after_as.kind().ident()
+  const body = parse_stmts_until_end(after_as.advance().advance())
+  ExprResult { expr: Shared.new(ExprWith(resource.expr, binder, body.stmts, header_span)), parser: body.parser }
 end
 
 fn parse_match_expr(parser: Parser, header_span: Span) -> ExprResult = do

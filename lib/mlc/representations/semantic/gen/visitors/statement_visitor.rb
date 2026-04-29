@@ -60,6 +60,10 @@ module MLC
                 return apply_rule(node, iterable_ir: iterable_ir)
               end
 
+              if svc.with_expr?(node)
+                return @expression_visitor.visit(node)
+              end
+
               raise MLC::CompileError, "StatementVisitor cannot handle #{node.class}"
             end
 

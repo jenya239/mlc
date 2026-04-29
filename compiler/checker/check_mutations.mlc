@@ -49,6 +49,7 @@ fn check_mutation_expr(expression: Shared<Expr>, mutable_locals: [string]) -> [D
     ExprQuestion(inner, _)                           => check_mutation_expr(inner, mutable_locals),
     ExprLambda(_, body, _)                           => check_mutation_expr(body, mutable_locals),
     ExprNamedArg(_, inner, _)                        => check_mutation_expr(inner, mutable_locals),
+    ExprWith(resource, _, stmts, _)                  => diagnostics_append(check_mutation_expr(resource, mutable_locals), check_mutation_stmts_errors(stmts, mutable_locals)),
     _                                                => do let empty: [Diagnostic] = []; empty end
   }
 

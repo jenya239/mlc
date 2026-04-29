@@ -86,6 +86,8 @@ bool TKind_is_while(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_for(ast_tokens::TKind self) noexcept;
 
+bool TKind_is_with(ast_tokens::TKind self) noexcept;
+
 bool TKind_is_match(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_return(ast_tokens::TKind self) noexcept;

@@ -184,6 +184,8 @@ mlc::String user_main_arguments_copy_into_runtime_statement() noexcept;
 
 mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept;
 
+mlc::String with_block_statement(mlc::String resource_code, mlc::String binder, mlc::String body_statements) noexcept;
+
 mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept{return mlc::String("(") + left_code + mlc::String(" ") + operation + mlc::String(" ") + right_code + mlc::String(")");}
 
 mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) noexcept{return mlc::String("(") + operation + inner_code + mlc::String(")");}
@@ -365,5 +367,7 @@ mlc::String trait_concept_requires_definition_line(mlc::String template_header, 
 mlc::String user_main_arguments_copy_into_runtime_statement() noexcept{return mlc::String("mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n");}
 
 mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept{return mlc::String("static_assert(") + concept_cpp_safe + mlc::String("<") + type_cpp + mlc::String(">, \"") + diagnostic_message_inside_cpp_string_literal + mlc::String("\");\n");}
+
+mlc::String with_block_statement(mlc::String resource_code, mlc::String binder, mlc::String body_statements) noexcept{return mlc::String("{\nauto ") + binder + mlc::String(" = (") + resource_code + mlc::String(");\n") + body_statements + binder + mlc::String(".drop();\n}\n");}
 
 } // namespace expr

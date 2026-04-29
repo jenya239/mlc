@@ -503,6 +503,15 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     ExprNamedArg(_, inner, _) => transform_expr(inner, transform_context, stmts_fn),
 
+    ExprWith(resource, binder, stmts, source_span) => do
+      const typed_resource = transform_expr(resource, transform_context, stmts_fn)
+      let inner_env = transform_context.type_env
+      inner_env.set(binder, sexpr_type(typed_resource))
+      const inner_context = transform_context_with_env(transform_context, inner_env)
+      const stmts_result = stmts_fn(stmts, inner_context)
+      Shared.new(SExprWith(typed_resource, binder, stmts_result.statements, Shared.new(TUnit), source_span))
+    end,
+
     _ => Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
   }
 

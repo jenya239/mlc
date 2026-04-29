@@ -99,6 +99,7 @@ export type Expr =
   | ExprExtern(Span)
   | ExprLambda([string], Shared<Expr>, Span)
   | ExprNamedArg(string, Shared<Expr>, Span)
+  | ExprWith(Shared<Expr>, string, [Shared<Stmt>], Span)
 
 export fn expr_span(expression: Shared<Expr>) -> Span =
   match expression {
@@ -131,6 +132,7 @@ export fn expr_span(expression: Shared<Expr>) -> Span =
     ExprExtern(source_span)         => source_span,
     ExprLambda(_, _, source_span)   => source_span,
     ExprNamedArg(_, _, source_span) => source_span,
+    ExprWith(_, _, _, source_span)  => source_span,
     _                               => span_unknown()
   }
 

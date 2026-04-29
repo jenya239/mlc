@@ -112,6 +112,12 @@ fn check_names_for_expression(variable_name: string, iterator: Shared<Expr>, sta
   diagnostics_append(check_names_expr(iterator, locals, globals), statement_check.diagnostics)
 end
 
+fn check_names_with_expression(resource: Shared<Expr>, binder: string, stmts: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  const inner_scope = locals; inner_scope.push(binder)
+  const stmts_check = check_names_statements(stmts, inner_scope, globals)
+  diagnostics_append(check_names_expr(resource, locals, globals), stmts_check.diagnostics)
+end
+
 fn check_names_match_expression(subject: Shared<Expr>, arms: [Shared<MatchArm>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
   let mut collected = check_names_expr(subject, locals, globals); let mut arm_index = 0
   while arm_index < arms.length() do
@@ -185,6 +191,7 @@ export fn check_names_expr(expression: Shared<Expr>, locals: [string], globals: 
     ExprQuestion(inner, _)                  => check_names_question_expression(inner, locals, globals),
     ExprLambda(parameter_names, body, _)  => check_names_lambda_expression(parameter_names, body, locals, globals),
     ExprNamedArg(_, inner, _)             => check_names_expr(inner, locals, globals),
+    ExprWith(resource, binder, stmts, _)  => check_names_with_expression(resource, binder, stmts, locals, globals),
     _                                       => check_names_empty()
   }
 

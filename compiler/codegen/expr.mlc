@@ -333,3 +333,7 @@ export fn static_assert_concept_for_type_line(
 ) -> string =
   "static_assert(" + concept_cpp_safe + "<" + type_cpp + ">, \"" +
   diagnostic_message_inside_cpp_string_literal + "\");\n"
+
+export fn with_block_statement(resource_code: string, binder: string, body_statements: string) -> string =
+  "{\nauto " + binder + " = (" + resource_code + ");\n" + body_statements + binder + ".drop();\n}\n"
+

@@ -59,6 +59,8 @@ infer_result::InferResult infer_expr_conditional(std::shared_ptr<ast::Expr> cond
 
 infer_result::InferResult infer_expr_block(mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result_expression, check_context::CheckContext inference_context) noexcept;
 
+infer_result::InferResult infer_expr_with(std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> stmts, check_context::CheckContext inference_context) noexcept;
+
 infer_result::InferResult infer_expr_while_loop(std::shared_ptr<ast::Expr> condition, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_for_loop(mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
@@ -150,6 +152,14 @@ infer_result::InferResult infer_expr_block(mlc::Array<std::shared_ptr<ast::Stmt>
 infer_result::StmtInferResult statements_result = infer_statements(statements, inference_context);
 infer_result::InferResult result_inference = infer_expr(result_expression, check_context::check_context_new(statements_result.type_env, inference_context.registry));
 return infer_result::InferResult_absorb_stmt(result_inference, statements_result);
+}
+
+infer_result::InferResult infer_expr_with(std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> stmts, check_context::CheckContext inference_context) noexcept{
+infer_result::InferResult res = infer_expr(resource, inference_context);
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> inner_env = inference_context.type_env;
+inner_env.set(binder, res.inferred_type);
+infer_result::StmtInferResult stmts_result = infer_statements(stmts, check_context::check_context_new(inner_env, inference_context.registry));
+return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt(res, stmts_result), std::make_shared<registry::Type>((registry::TUnit{})));
 }
 
 infer_result::InferResult infer_expr_while_loop(std::shared_ptr<ast::Expr> condition, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
@@ -249,7 +259,8 @@ infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, chec
   [&](const ExprTuple& exprtuple) -> infer_result::InferResult { auto [elements, _w0] = exprtuple; return infer_expr_tuple_literal(elements, inference_context); },
   [&](const ExprQuestion& exprquestion) -> infer_result::InferResult { auto [inner, question_span] = exprquestion; return infer_expr_question(inner, question_span, inference_context); },
   [&](const ExprLambda& exprlambda) -> infer_result::InferResult { auto [params, body, _w0] = exprlambda; return infer_expr_lambda(params, body, inference_context); },
-  [&](const ExprNamedArg& exprnamedarg) -> infer_result::InferResult { auto [_w0, inner, _w1] = exprnamedarg; return infer_expr(inner, inference_context); }
+  [&](const ExprNamedArg& exprnamedarg) -> infer_result::InferResult { auto [_w0, inner, _w1] = exprnamedarg; return infer_expr(inner, inference_context); },
+  [&](const ExprWith& exprwith) -> infer_result::InferResult { auto [resource, binder, stmts, _w0] = exprwith; return infer_expr_with(resource, binder, stmts, inference_context); }
 }, (*expression)._);}
 
 infer_result::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{

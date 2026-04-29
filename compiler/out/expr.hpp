@@ -193,6 +193,8 @@ mlc::String user_main_arguments_copy_into_runtime_statement() noexcept;
 
 mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept;
 
+mlc::String with_block_statement(mlc::String resource_code, mlc::String binder, mlc::String body_statements) noexcept;
+
 } // namespace expr
 
 #endif // EXPR_HPP

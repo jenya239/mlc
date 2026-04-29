@@ -436,6 +436,13 @@ parameter_index = parameter_index + 1;
   std::shared_ptr<semantic_ir::SExpr> typed_body = transform_expr(body, lambda_context, stmts_fn);
   std::shared_ptr<registry::Type> function_type = std::make_shared<registry::Type>(registry::TFn(parameter_types, semantic_ir::sexpr_type(typed_body)));
   return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprLambda(parameter_names, typed_body, function_type, source_span));
- }(); } if (std::holds_alternative<ast::ExprNamedArg>((*expression)._)) { auto _v_exprnamedarg = std::get<ast::ExprNamedArg>((*expression)._); auto [_w0, inner, _w1] = _v_exprnamedarg; return transform_expr(inner, transform_context, stmts_fn); } return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUnit(std::make_shared<registry::Type>((registry::TUnit{})), ast::span_unknown())); }();}
+ }(); } if (std::holds_alternative<ast::ExprNamedArg>((*expression)._)) { auto _v_exprnamedarg = std::get<ast::ExprNamedArg>((*expression)._); auto [_w0, inner, _w1] = _v_exprnamedarg; return transform_expr(inner, transform_context, stmts_fn); } if (std::holds_alternative<ast::ExprWith>((*expression)._)) { auto _v_exprwith = std::get<ast::ExprWith>((*expression)._); auto [resource, binder, stmts, source_span] = _v_exprwith; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
+  std::shared_ptr<semantic_ir::SExpr> typed_resource = transform_expr(resource, transform_context, stmts_fn);
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> inner_env = transform_context.type_env;
+  inner_env.set(binder, semantic_ir::sexpr_type(typed_resource));
+  transform::TransformContext inner_context = transform_context_with_env(transform_context, inner_env);
+  transform::TransformStmtsResult stmts_result = stmts_fn(stmts, inner_context);
+  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprWith(typed_resource, binder, stmts_result.statements, std::make_shared<registry::Type>((registry::TUnit{})), source_span));
+ }(); } return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUnit(std::make_shared<registry::Type>((registry::TUnit{})), ast::span_unknown())); }();}
 
 } // namespace transform

@@ -275,6 +275,10 @@ module MLC
               MLC::SemanticIR::Builder.for_stmt(var_name, var_type, iterable, body, origin: origin)
             end
 
+            def with_stmt(binder:, resource:, body:, origin: nil)
+              MLC::SemanticIR::WithStmt.new(binder: binder, resource: resource, body: body, origin: origin)
+            end
+
             # Build a return node
             def return_node(value:, origin: nil)
               MLC::SemanticIR::Return.new(

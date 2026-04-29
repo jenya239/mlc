@@ -237,6 +237,10 @@ module MLC
             def range_expr?(node)
               node.is_a?(MLC::Source::AST::RangeExpr)
             end
+
+            def with_expr?(node)
+              node.is_a?(MLC::Source::AST::WithExpr)
+            end
           end
         end
       end

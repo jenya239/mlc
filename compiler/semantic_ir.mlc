@@ -40,6 +40,7 @@ export type SExpr =
   | SExprTuple([Shared<SExpr>], Shared<Type>, Span)
   | SExprQuestion(Shared<SExpr>, Shared<Type>, Span)
   | SExprLambda([string], Shared<SExpr>, Shared<Type>, Span)
+  | SExprWith(Shared<SExpr>, string, [Shared<SStmt>], Shared<Type>, Span)
 
 // --- Typed statement --------------------------------------------------------
 
@@ -107,7 +108,8 @@ export fn sexpr_type(expression: Shared<SExpr>) -> Shared<Type> =
     SExprArray(_, t, _)                => t,
     SExprTuple(_, t, _)                => t,
     SExprQuestion(_, t, _)             => t,
-    SExprLambda(_, _, t, _)            => t
+    SExprLambda(_, _, t, _)            => t,
+    SExprWith(_, _, _, t, _)           => t
   }
 
 export fn sexpr_span(expression: Shared<SExpr>) -> Span =
@@ -139,7 +141,8 @@ export fn sexpr_span(expression: Shared<SExpr>) -> Span =
     SExprArray(_, _, s)                => s,
     SExprTuple(_, _, s)                => s,
     SExprQuestion(_, _, s)             => s,
-    SExprLambda(_, _, _, s)            => s
+    SExprLambda(_, _, _, s)            => s,
+    SExprWith(_, _, _, _, s)           => s
   }
 
 export fn sdecl_inner(declaration: Shared<SDecl>) -> Shared<SDecl> =

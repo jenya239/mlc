@@ -8,6 +8,7 @@
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "semantic_ir.hpp"
+#include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "registry.hpp"
 
@@ -19,6 +20,7 @@ using namespace context;
 using namespace type_gen;
 using namespace module;
 using namespace ast;
+using namespace semantic_ir;
 using namespace semantic_ir;
 using namespace semantic_ir;
 using namespace registry;
@@ -203,6 +205,10 @@ results.push_back(test_runner::assert_eq_str(mlc::String("c4: sem_type_to_cpp TF
 results.push_back(test_runner::assert_eq_str(mlc::String("c4: sem_type_to_cpp TU8"), type_gen::sem_type_to_cpp(ctx, u8_t), mlc::String("uint8_t")));
 results.push_back(test_runner::assert_eq_str(mlc::String("c4: sem_type_to_cpp TUsize"), type_gen::sem_type_to_cpp(ctx, usize_t), mlc::String("size_t")));
 results.push_back(test_runner::assert_eq_str(mlc::String("c4: sem_type_to_cpp TChar"), type_gen::sem_type_to_cpp(ctx, char_t), mlc::String("char32_t")));
+mlc::Array<std::shared_ptr<semantic_ir::SStmt>> with_body = mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtExpr(si(0), ast::span_unknown()))};
+mlc::String with_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprWith(si(1), mlc::String("res"), with_body, unit_t(), ast::span_unknown())), ctx);
+results.push_back(test_runner::assert_eq_str(mlc::String("c5: SExprWith contains auto res ="), with_out.contains(mlc::String("auto res =")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c5: SExprWith contains res.drop()"), with_out.contains(mlc::String("res.drop()")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 return results;
 }
 

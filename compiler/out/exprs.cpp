@@ -135,6 +135,8 @@ preds::ExprResult parse_while_expr(preds::Parser parser, ast::Span header_span) 
 
 preds::ExprResult parse_for_expr(preds::Parser parser, ast::Span header_span) noexcept;
 
+preds::ExprResult parse_with_expr(preds::Parser parser, ast::Span header_span) noexcept;
+
 preds::ExprResult parse_match_expr(preds::Parser parser, ast::Span header_span) noexcept;
 
 preds::ArmsResult parse_arms_brace(preds::Parser parser) noexcept;
@@ -318,6 +320,10 @@ return preds::TKind_is_let(kind) ? parse_statement_let(parser) : preds::TKind_is
   ast::Span header_span = preds::Parser_span_at_cursor(parser);
   preds::ExprResult block_result = parse_block(preds::Parser_advance(parser), header_span);
   return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtExpr(block_result.expr, header_span)), block_result.parser};
+ }() : preds::TKind_is_with(kind) ? [&]() -> preds::StmtResult { 
+  ast::Span header_span = preds::Parser_span_at_cursor(parser);
+  preds::ExprResult with_result = parse_with_expr(preds::Parser_advance(parser), header_span);
+  return preds::StmtResult{std::make_shared<ast::Stmt>(ast::StmtExpr(with_result.expr, header_span)), with_result.parser};
  }() : parse_statement_expression_or_assign(parser);
 }
 
@@ -761,7 +767,10 @@ return preds::TKind_is_float(kind) ? [&]() -> preds::ExprResult {
  }() : preds::TKind_is_int(kind) ? parse_primary_integer_literal(parser, preds::TKind_int_val(kind)) : preds::TKind_is_str(kind) ? parse_primary_string_literal(parser, preds::TKind_str_val(kind)) : preds::TKind_is_template(kind) ? parse_primary_template_literal(parser, preds::TKind_template_parts(kind)) : preds::TKind_is_true(kind) ? parse_primary_boolean_literal(parser, true) : preds::TKind_is_false(kind) ? parse_primary_boolean_literal(parser, false) : preds::TKind_is_lparen(kind) ? parse_primary_parenthesized(parser) : preds::TKind_is_lbracket(kind) ? [&]() -> preds::ExprResult { 
   ast::Span bracket_span = preds::Parser_span_at_cursor(parser);
   return parse_array_lit(preds::Parser_advance(parser), bracket_span);
- }() : preds::TKind_is_if(kind) || preds::TKind_is_unless(kind) ? parse_primary_if_or_unless(parser) : preds::TKind_is_do(kind) ? parse_primary_do_block(parser) : preds::TKind_is_while(kind) ? parse_primary_while_loop(parser) : preds::TKind_is_for(kind) ? parse_primary_for_loop(parser) : preds::TKind_is_match(kind) ? parse_primary_match(parser) : preds::TKind_is_return(kind) ? parse_primary_return_as_block(parser) : preds::TKind_is_ident(kind) ? parse_primary_identifier(parser, preds::TKind_ident(kind)) : parse_primary_unit_fallback(parser);
+ }() : preds::TKind_is_if(kind) || preds::TKind_is_unless(kind) ? parse_primary_if_or_unless(parser) : preds::TKind_is_do(kind) ? parse_primary_do_block(parser) : preds::TKind_is_while(kind) ? parse_primary_while_loop(parser) : preds::TKind_is_for(kind) ? parse_primary_for_loop(parser) : preds::TKind_is_with(kind) ? [&]() -> preds::ExprResult { 
+  ast::Span header_span = preds::Parser_span_at_cursor(parser);
+  return parse_with_expr(preds::Parser_advance(parser), header_span);
+ }() : preds::TKind_is_match(kind) ? parse_primary_match(parser) : preds::TKind_is_return(kind) ? parse_primary_return_as_block(parser) : preds::TKind_is_ident(kind) ? parse_primary_identifier(parser, preds::TKind_ident(kind)) : parse_primary_unit_fallback(parser);
 }
 
 bool looks_like_typed_lambda_params(preds::Parser parser) noexcept{return preds::TKind_is_ident(preds::Parser_kind(parser)) && preds::TKind_is_colon(preds::Parser_kind(preds::Parser_advance(parser)));}
@@ -908,6 +917,14 @@ mlc::String var_name = preds::TKind_ident(preds::Parser_kind(parser));
 preds::ExprResult iter = parse_expr(preds::Parser_advance_by(parser, 2));
 preds::StmtsResult body = parse_stmts_until_end(preds::Parser_advance(iter.parser));
 return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprFor(var_name, iter.expr, body.stmts, header_span)), body.parser};
+}
+
+preds::ExprResult parse_with_expr(preds::Parser parser, ast::Span header_span) noexcept{
+preds::ExprResult resource = parse_expr(parser);
+preds::Parser after_as = preds::Parser_advance(resource.parser);
+mlc::String binder = preds::TKind_ident(preds::Parser_kind(after_as));
+preds::StmtsResult body = parse_stmts_until_end(preds::Parser_advance(preds::Parser_advance(after_as)));
+return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprWith(resource.expr, binder, body.stmts, header_span)), body.parser};
 }
 
 preds::ExprResult parse_match_expr(preds::Parser parser, ast::Span header_span) noexcept{

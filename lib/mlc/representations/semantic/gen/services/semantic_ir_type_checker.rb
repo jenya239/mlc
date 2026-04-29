@@ -159,6 +159,10 @@ module MLC
             def match_stmt?(node)
               node.is_a?(MLC::SemanticIR::MatchStmt)
             end
+
+            def with_stmt?(node)
+              node.is_a?(MLC::SemanticIR::WithStmt)
+            end
           end
         end
       end

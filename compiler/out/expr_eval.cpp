@@ -150,7 +150,12 @@ ki = ki + 1;
   return mlc::String("std::make_tuple(") + parts.join(mlc::String(", ")) + mlc::String(")");
  }(); },
   [&](const SExprQuestion& sexprquestion) -> mlc::String { auto [inner_expr, _w0, _w1] = sexprquestion; return gen_question_expr(inner_expr, context, gen_stmts); },
-  [&](const SExprLambda& sexprlambda) -> mlc::String { auto [parameters, body_expr, _w0, _w1] = sexprlambda; return gen_lambda_expr(parameters, body_expr, context, gen_stmts); }
+  [&](const SExprLambda& sexprlambda) -> mlc::String { auto [parameters, body_expr, _w0, _w1] = sexprlambda; return gen_lambda_expr(parameters, body_expr, context, gen_stmts); },
+  [&](const SExprWith& sexprwith) -> mlc::String { auto [resource, binder, stmts, _w0, _w1] = sexprwith; return [&]() -> mlc::String { 
+  mlc::String resource_code = eval_expr(resource, context, gen_stmts);
+  mlc::String body_code = gen_stmts(stmts, context);
+  return expr::with_block_statement(resource_code, binder, body_code);
+ }(); }
 }, (*expr)._);}
 
 } // namespace expr_eval

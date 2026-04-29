@@ -63,6 +63,7 @@ fn keyword_kind(word: string) -> TKind =
   else if word == "do"       then KDo
   else if word == "end"      then KEnd
   else if word == "match"    then KMatch
+  else if word == "with"     then KWith
   else if word == "import"   then KImport
   else if word == "from"     then KFrom
   else if word == "as"       then KAs

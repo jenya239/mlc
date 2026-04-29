@@ -43,7 +43,8 @@ std::shared_ptr<registry::Type> sexpr_type(std::shared_ptr<semantic_ir::SExpr> e
   [&](const SExprArray& sexprarray) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprarray; return t; },
   [&](const SExprTuple& sexprtuple) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprtuple; return t; },
   [&](const SExprQuestion& sexprquestion) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprquestion; return t; },
-  [&](const SExprLambda& sexprlambda) -> std::shared_ptr<registry::Type> { auto [_w0, _w1, t, _w2] = sexprlambda; return t; }
+  [&](const SExprLambda& sexprlambda) -> std::shared_ptr<registry::Type> { auto [_w0, _w1, t, _w2] = sexprlambda; return t; },
+  [&](const SExprWith& sexprwith) -> std::shared_ptr<registry::Type> { auto [_w0, _w1, _w2, t, _w3] = sexprwith; return t; }
 }, (*expression)._);}
 
 ast::Span sexpr_span(std::shared_ptr<semantic_ir::SExpr> expression) noexcept{return std::visit(overloaded{
@@ -74,7 +75,8 @@ ast::Span sexpr_span(std::shared_ptr<semantic_ir::SExpr> expression) noexcept{re
   [&](const SExprArray& sexprarray) -> ast::Span { auto [_w0, _w1, s] = sexprarray; return s; },
   [&](const SExprTuple& sexprtuple) -> ast::Span { auto [_w0, _w1, s] = sexprtuple; return s; },
   [&](const SExprQuestion& sexprquestion) -> ast::Span { auto [_w0, _w1, s] = sexprquestion; return s; },
-  [&](const SExprLambda& sexprlambda) -> ast::Span { auto [_w0, _w1, _w2, s] = sexprlambda; return s; }
+  [&](const SExprLambda& sexprlambda) -> ast::Span { auto [_w0, _w1, _w2, s] = sexprlambda; return s; },
+  [&](const SExprWith& sexprwith) -> ast::Span { auto [_w0, _w1, _w2, _w3, s] = sexprwith; return s; }
 }, (*expression)._);}
 
 std::shared_ptr<semantic_ir::SDecl> sdecl_inner(std::shared_ptr<semantic_ir::SDecl> declaration) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SDecl> { if (std::holds_alternative<semantic_ir::SDeclExported>((*declaration))) { auto _v_sdeclexported = std::get<semantic_ir::SDeclExported>((*declaration)); auto [inner] = _v_sdeclexported; return inner; } return declaration; }();}

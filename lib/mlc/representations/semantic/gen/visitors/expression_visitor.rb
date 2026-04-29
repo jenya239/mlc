@@ -129,6 +129,8 @@ module MLC
                 return apply_rules(node, extra_context.merge(left_ir: left_ir, right_ir: right_ir))
               end
 
+              return apply_rules(node, extra_context) if svc.with_expr?(node)
+
               raise NotImplementedError, "ExpressionVisitor cannot handle #{node.class}"
             end
 

@@ -96,6 +96,7 @@ module MLC
           rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::IfRule").new(context))
           rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::WhileRule").new(context))
           rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::ForRule").new(context))
+          rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::WithRule").new(context))
           rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::MatchRule").new(context))
           rule_engine.register_statement_rule(Object.const_get("MLC::Backends::Cpp::Rules::Statements::BlockRule").new(context))
         end

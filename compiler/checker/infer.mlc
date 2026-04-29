@@ -132,6 +132,14 @@ fn infer_expr_block(statements: [Shared<Stmt>], result_expression: Shared<Expr>,
   result_inference.absorb_stmt(statements_result)
 end
 
+fn infer_expr_with(resource: Shared<Expr>, binder: string, stmts: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
+  const res = infer_expr(resource, inference_context)
+  const inner_env = inference_context.type_env
+  inner_env.set(binder, res.inferred_type)
+  const stmts_result = infer_statements(stmts, check_context_new(inner_env, inference_context.registry))
+  res.absorb_stmt(stmts_result).with_type(Shared.new(TUnit))
+end
+
 fn infer_expr_while_loop(condition: Shared<Expr>, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
   const condition_result  = infer_expr(condition, inference_context)
   const statements_result = infer_statements(statements, inference_context)
@@ -239,7 +247,8 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprTuple(elements, _)                  => infer_expr_tuple_literal(elements, inference_context),
     ExprQuestion(inner, question_span)      => infer_expr_question(inner, question_span, inference_context),
     ExprLambda(params, body, _)             => infer_expr_lambda(params, body, inference_context),
-    ExprNamedArg(_, inner, _)               => infer_expr(inner, inference_context)
+    ExprNamedArg(_, inner, _)               => infer_expr(inner, inference_context),
+    ExprWith(resource, binder, stmts, _)    => infer_expr_with(resource, binder, stmts, inference_context)
   }
 
 // --- Statements -------------------------------------------------------------

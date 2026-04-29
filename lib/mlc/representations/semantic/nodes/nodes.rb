@@ -671,6 +671,17 @@ module MLC
       end
     end
 
+    class WithStmt < Stmt
+      attr_reader :binder, :resource, :body
+
+      def initialize(binder:, resource:, body:, origin: nil)
+        super(origin: origin)
+        @binder   = binder
+        @resource = resource
+        @body     = body
+      end
+    end
+
     # List comprehension desugars to loop + push
     class ListCompExpr < Expr
       attr_reader :element_type, :generators, :filters, :output_expr

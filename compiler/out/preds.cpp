@@ -141,6 +141,8 @@ bool TKind_is_while(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_for(ast_tokens::TKind self) noexcept;
 
+bool TKind_is_with(ast_tokens::TKind self) noexcept;
+
 bool TKind_is_match(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_return(ast_tokens::TKind self) noexcept;
@@ -396,6 +398,8 @@ bool TKind_is_do(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_
 bool TKind_is_while(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KWhile>(self)) {  return true; } return false; }();}
 
 bool TKind_is_for(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KFor>(self)) {  return true; } return false; }();}
+
+bool TKind_is_with(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KWith>(self)) {  return true; } return false; }();}
 
 bool TKind_is_match(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KMatch>(self)) {  return true; } return false; }();}
 

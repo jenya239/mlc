@@ -70,6 +70,7 @@ module MLC
             register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::MatchRule)
             register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::ForLoopRule)
             register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::WhileLoopRule)
+            register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::WithExprRule)
             register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::LambdaRule)
             register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::ListComprehensionRule)
             register_rule(engine, :expression, MLC::Representations::Semantic::Gen::Rules::IndexAccessRule)

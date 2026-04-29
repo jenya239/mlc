@@ -672,5 +672,8 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true("c4: type mismatch i64 vs i32 - 1+ errors",
     check_error_count("fn f(x: i32) -> i64 = x") > 0))
 
+  const with_src = "type Res = { v: i32 } fn make(x: i32) -> Res = Res { v: x } extend Res { fn drop(self: Res) -> i32 = 0 fn read(self: Res) -> i32 = self.v } fn f(x: i32) -> i32 = do with make(x) as r do r.read() end 0 end"
+  results.push(assert_eq_int("c5: with — 0 errors", check_error_count(with_src), 0))
+
   results
 end

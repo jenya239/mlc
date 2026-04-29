@@ -237,6 +237,8 @@ module MLC
             parse_while_loop
           when :FOR
             parse_for_loop
+          when :WITH
+            parse_with_expression
           when :RETURN
             return_token = consume(:RETURN)
             expr = nil
@@ -1217,6 +1219,8 @@ module MLC
 
         def parse_primary
           case current.type
+          when :WITH
+            parse_with_expression
           when :FOR
             parse_for_loop
           when :WHILE
@@ -1510,6 +1514,20 @@ module MLC
         end
 
         # Parse %w[] or %W[] - array of strings
+        def parse_with_expression
+          with_token = consume(:WITH)
+          resource = parse_if_expression
+          consume(:AS)
+          name_token = consume(:IDENTIFIER)
+          binder = name_token.value
+          consume(:DO)
+
+          items = parse_block_items_until_end
+          body = build_block_expr(items, with_token)
+
+          attach_origin(MLC::Source::AST::WithExpr.new(resource: resource, binder: binder, body: body), with_token)
+        end
+
         # Token value is already an array of strings from the lexer
         def parse_percent_string_array
           token = consume(current.type) # Consume STRING_ARRAY or STRING_ARRAY_INTERP

@@ -790,6 +790,17 @@ module MLC
         end
       end
 
+      class WithExpr < Expr
+        attr_reader :resource, :binder, :body
+
+        def initialize(resource:, binder:, body:, origin: nil)
+          super(kind: :with_expr, data: { resource: resource, binder: binder, body: body }, origin: origin)
+          @resource = resource
+          @binder   = binder
+          @body     = body
+        end
+      end
+
       # Range expression (for ranges like 0..10)
       class RangeExpr < Expr
         attr_reader :start, :end_expr, :inclusive

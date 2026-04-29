@@ -3,7 +3,7 @@
 export type TKind =
   | KFn | KType | KLet | KMut | KConst | KReturn
   | KBreak | KContinue | KIf | KThen | KElse | KUnless
-  | KWhile | KFor | KIn | KDo | KEnd | KMatch
+  | KWhile | KFor | KIn | KDo | KEnd | KMatch | KWith
   | KImport | KFrom | KAs | KExtern | KExtend | KWhere
   | KTrue | KFalse
   | LInt(i32) | LStr(string) | LTemplate([string]) | Ident(string)

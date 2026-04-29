@@ -221,6 +221,8 @@ results.push_back(test_runner::assert_eq_int(mlc::String("c4: i64 arithmetic - 0
 results.push_back(test_runner::assert_eq_int(mlc::String("c4: char arithmetic - 0 errors"), check_error_count(mlc::String("fn f(x: char, y: char) -> char = x + y")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("c4: f64 arithmetic - 0 errors"), check_error_count(mlc::String("fn f(x: f64, y: f64) -> f64 = x + y")), 0));
 results.push_back(test_runner::assert_true(mlc::String("c4: type mismatch i64 vs i32 - 1+ errors"), check_error_count(mlc::String("fn f(x: i32) -> i64 = x")) > 0));
+mlc::String with_src = mlc::String("type Res = { v: i32 } fn make(x: i32) -> Res = Res { v: x } extend Res { fn drop(self: Res) -> i32 = 0 fn read(self: Res) -> i32 = self.v } fn f(x: i32) -> i32 = do with make(x) as r do r.read() end 0 end");
+results.push_back(test_runner::assert_eq_int(mlc::String("c5: with — 0 errors"), check_error_count(with_src), 0));
 return results;
 }
 
