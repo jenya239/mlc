@@ -315,6 +315,25 @@ module MLC
         end
       end
 
+      class TypedNumLit < Expr
+        attr_reader :value, :type_name
+
+        def initialize(value:, type_name:, origin: nil)
+          super(kind: :typed_num_lit, data: value, origin: origin)
+          @value = value
+          @type_name = type_name
+        end
+      end
+
+      class CharLit < Expr
+        attr_reader :value
+
+        def initialize(value:, origin: nil)
+          super(kind: :char_lit, data: value, origin: origin)
+          @value = value
+        end
+      end
+
       # String literal
       class StringLit < Expr
         attr_reader :value

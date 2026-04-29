@@ -7,6 +7,8 @@
 #include "module.hpp"
 #include "ast.hpp"
 #include "semantic_ir.hpp"
+#include "semantic_ir.hpp"
+#include "registry.hpp"
 #include "registry.hpp"
 
 namespace test_codegen {
@@ -18,6 +20,8 @@ using namespace type_gen;
 using namespace module;
 using namespace ast;
 using namespace semantic_ir;
+using namespace semantic_ir;
+using namespace registry;
 using namespace registry;
 using namespace ast_tokens;
 
@@ -184,6 +188,21 @@ std::shared_ptr<registry::Type> phantom_rec_type = std::make_shared<registry::Ty
 mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> phantom_rec_fvals = {};
 std::shared_ptr<semantic_ir::SExpr> phantom_rec_expr = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprRecord(mlc::String("Ast"), phantom_rec_fvals, phantom_rec_type, ast::span_unknown()));
 results.push_back(test_runner::assert_eq_str(mlc::String("phantom record expr: Ast<Unvalidated>{}"), eval::gen_expr(phantom_rec_expr, ctx), mlc::String("Ast<Unvalidated>{}")));
+auto f64_t = std::make_shared<registry::Type>((registry::TF64{}));
+auto i64_t = std::make_shared<registry::Type>((registry::TI64{}));
+auto u8_t = std::make_shared<registry::Type>((registry::TU8{}));
+auto usize_t = std::make_shared<registry::Type>((registry::TUsize{}));
+auto char_t = std::make_shared<registry::Type>((registry::TChar{}));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: f64 literal codegen"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprFloat(mlc::String("3.14"), f64_t, ast::span_unknown())), ctx), mlc::String("3.14")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: i64 literal codegen"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprI64(mlc::String("42"), i64_t, ast::span_unknown())), ctx), mlc::String("42")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: u8 literal codegen"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprU8(mlc::String("255"), u8_t, ast::span_unknown())), ctx), mlc::String("static_cast<uint8_t>(255)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: usize literal codegen"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUsize(mlc::String("100"), usize_t, ast::span_unknown())), ctx), mlc::String("static_cast<size_t>(100)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: char literal codegen"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprChar(mlc::String("a"), char_t, ast::span_unknown())), ctx), mlc::String("static_cast<char32_t>(a)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: sem_type_to_cpp TI64"), type_gen::sem_type_to_cpp(ctx, i64_t), mlc::String("int64_t")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: sem_type_to_cpp TF64"), type_gen::sem_type_to_cpp(ctx, f64_t), mlc::String("double")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: sem_type_to_cpp TU8"), type_gen::sem_type_to_cpp(ctx, u8_t), mlc::String("uint8_t")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: sem_type_to_cpp TUsize"), type_gen::sem_type_to_cpp(ctx, usize_t), mlc::String("size_t")));
+results.push_back(test_runner::assert_eq_str(mlc::String("c4: sem_type_to_cpp TChar"), type_gen::sem_type_to_cpp(ctx, char_t), mlc::String("char32_t")));
 return results;
 }
 

@@ -3,6 +3,7 @@
 import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
          Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span,
          Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit } from "../ast"
+import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from "../ast"
 import { check_names_expr } from "./names"
 import { check_fn_body_mutations } from "./check_mutations"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
@@ -25,10 +26,15 @@ fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
 end
 
 fn default_expr_mvp_ok(e: Shared<Expr>) -> bool = match e {
-  ExprInt(_, _) => true,
-  ExprStr(_, _) => true,
-  ExprBool(_, _) => true,
-  ExprUnit(_)   => true,
+  ExprInt(_, _)   => true,
+  ExprStr(_, _)   => true,
+  ExprBool(_, _)  => true,
+  ExprUnit(_)     => true,
+  ExprFloat(_, _) => true,
+  ExprI64(_, _)   => true,
+  ExprU8(_, _)    => true,
+  ExprUsize(_, _) => true,
+  ExprChar(_, _)  => true,
   _ => false
 }
 
@@ -134,6 +140,11 @@ fn type_is_checkable(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
     TString     => true,
     TBool       => true,
     TUnit       => true,
+    TI64        => true,
+    TF64        => true,
+    TU8         => true,
+    TUsize      => true,
+    TChar       => true,
     TArray(inner) => type_is_checkable(inner, registry),
     TPair(a, b)   => type_is_checkable(a, registry) && type_is_checkable(b, registry),
     TTuple(ts)    => do

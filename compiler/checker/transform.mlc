@@ -3,7 +3,7 @@
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
 import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder } from "../ast"
-import { Type, TypeRegistry, TTuple, TUnit, TGeneric, TUnknown, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
+import { Type, TypeRegistry, TTuple, TUnit, TGeneric, TUnknown, TF64, TI64, TU8, TUsize, TChar, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
 import {
   binary_operation_result_type,
   builtin_method_return_type,
@@ -18,6 +18,7 @@ import { result_option_hof_call_result_type, should_infer_result_option_combinat
 import { env_for_pattern_substituted } from "./pattern_env"
 import { substitute_type } from "./semantic_type_structure"
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from "../semantic_ir"
+import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
 
 // --- Context ----------------------------------------------------------------
 
@@ -289,6 +290,21 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     ExprUnit(source_span) =>
       Shared.new(SExprUnit(Shared.new(TUnit), source_span)),
+
+    ExprFloat(value, source_span) =>
+      Shared.new(SExprFloat(value, Shared.new(TF64), source_span)),
+
+    ExprI64(value, source_span) =>
+      Shared.new(SExprI64(value, Shared.new(TI64), source_span)),
+
+    ExprU8(value, source_span) =>
+      Shared.new(SExprU8(value, Shared.new(TU8), source_span)),
+
+    ExprUsize(value, source_span) =>
+      Shared.new(SExprUsize(value, Shared.new(TUsize), source_span)),
+
+    ExprChar(value, source_span) =>
+      Shared.new(SExprChar(value, Shared.new(TChar), source_span)),
 
     ExprExtern(source_span) =>
       Shared.new(SExprExtern(Shared.new(TUnit), source_span)),

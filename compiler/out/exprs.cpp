@@ -743,7 +743,22 @@ return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprUnit(source_span))
 
 preds::ExprResult parse_primary(preds::Parser parser) noexcept{
 ast_tokens::TKind kind = preds::Parser_kind(parser);
-return preds::TKind_is_int(kind) ? parse_primary_integer_literal(parser, preds::TKind_int_val(kind)) : preds::TKind_is_str(kind) ? parse_primary_string_literal(parser, preds::TKind_str_val(kind)) : preds::TKind_is_template(kind) ? parse_primary_template_literal(parser, preds::TKind_template_parts(kind)) : preds::TKind_is_true(kind) ? parse_primary_boolean_literal(parser, true) : preds::TKind_is_false(kind) ? parse_primary_boolean_literal(parser, false) : preds::TKind_is_lparen(kind) ? parse_primary_parenthesized(parser) : preds::TKind_is_lbracket(kind) ? [&]() -> preds::ExprResult { 
+return preds::TKind_is_float(kind) ? [&]() -> preds::ExprResult { 
+  ast::Span source_span = preds::Parser_span_at_cursor(parser);
+  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprFloat(preds::TKind_float_val(kind), source_span)), preds::Parser_advance(parser)};
+ }() : preds::TKind_is_i64(kind) ? [&]() -> preds::ExprResult { 
+  ast::Span source_span = preds::Parser_span_at_cursor(parser);
+  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprI64(preds::TKind_i64_val(kind), source_span)), preds::Parser_advance(parser)};
+ }() : preds::TKind_is_u8(kind) ? [&]() -> preds::ExprResult { 
+  ast::Span source_span = preds::Parser_span_at_cursor(parser);
+  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprU8(preds::TKind_u8_val(kind), source_span)), preds::Parser_advance(parser)};
+ }() : preds::TKind_is_usize(kind) ? [&]() -> preds::ExprResult { 
+  ast::Span source_span = preds::Parser_span_at_cursor(parser);
+  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprUsize(preds::TKind_usize_val(kind), source_span)), preds::Parser_advance(parser)};
+ }() : preds::TKind_is_char_lit(kind) ? [&]() -> preds::ExprResult { 
+  ast::Span source_span = preds::Parser_span_at_cursor(parser);
+  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprChar(preds::TKind_char_val(kind), source_span)), preds::Parser_advance(parser)};
+ }() : preds::TKind_is_int(kind) ? parse_primary_integer_literal(parser, preds::TKind_int_val(kind)) : preds::TKind_is_str(kind) ? parse_primary_string_literal(parser, preds::TKind_str_val(kind)) : preds::TKind_is_template(kind) ? parse_primary_template_literal(parser, preds::TKind_template_parts(kind)) : preds::TKind_is_true(kind) ? parse_primary_boolean_literal(parser, true) : preds::TKind_is_false(kind) ? parse_primary_boolean_literal(parser, false) : preds::TKind_is_lparen(kind) ? parse_primary_parenthesized(parser) : preds::TKind_is_lbracket(kind) ? [&]() -> preds::ExprResult { 
   ast::Span bracket_span = preds::Parser_span_at_cursor(parser);
   return parse_array_lit(preds::Parser_advance(parser), bracket_span);
  }() : preds::TKind_is_if(kind) || preds::TKind_is_unless(kind) ? parse_primary_if_or_unless(parser) : preds::TKind_is_do(kind) ? parse_primary_do_block(parser) : preds::TKind_is_while(kind) ? parse_primary_while_loop(parser) : preds::TKind_is_for(kind) ? parse_primary_for_loop(parser) : preds::TKind_is_match(kind) ? parse_primary_match(parser) : preds::TKind_is_return(kind) ? parse_primary_return_as_block(parser) : preds::TKind_is_ident(kind) ? parse_primary_identifier(parser, preds::TKind_ident(kind)) : parse_primary_unit_fallback(parser);

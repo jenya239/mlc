@@ -41,6 +41,8 @@ bool type_is_string(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcept;
 
+bool is_numeric_type(std::shared_ptr<registry::Type> t) noexcept;
+
 std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept;
 
 mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcept;

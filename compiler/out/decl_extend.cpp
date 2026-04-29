@@ -1,6 +1,7 @@
 #include "decl_extend.hpp"
 
 #include "ast.hpp"
+#include "ast.hpp"
 #include "literals.hpp"
 #include "semantic_ir.hpp"
 #include "registry.hpp"
@@ -11,6 +12,7 @@
 
 namespace decl_extend {
 
+using namespace ast;
 using namespace ast;
 using namespace literals;
 using namespace semantic_ir;
@@ -52,7 +54,7 @@ mlc::String prefix = type_name + mlc::String("_");
 return fn_name.length() > prefix.length() && fn_name.substring(0, prefix.length()) == prefix ? fn_name.substring(prefix.length(), fn_name.length() - prefix.length()) : fn_name;
 }
 
-mlc::String default_expr_to_cpp(std::shared_ptr<ast::Expr> e) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::ExprInt>((*e)._)) { auto _v_exprint = std::get<ast::ExprInt>((*e)._); auto [v, _w0] = _v_exprint; return literals::gen_integer_literal(v); } if (std::holds_alternative<ast::ExprStr>((*e)._)) { auto _v_exprstr = std::get<ast::ExprStr>((*e)._); auto [s, _w0] = _v_exprstr; return literals::gen_string_literal(s); } if (std::holds_alternative<ast::ExprBool>((*e)._)) { auto _v_exprbool = std::get<ast::ExprBool>((*e)._); auto [b, _w0] = _v_exprbool; return literals::gen_boolean_literal(b); } if (std::holds_alternative<ast::ExprUnit>((*e)._)) { auto _v_exprunit = std::get<ast::ExprUnit>((*e)._); auto [_w0] = _v_exprunit; return literals::gen_unit_literal(); } return mlc::String("0"); }();}
+mlc::String default_expr_to_cpp(std::shared_ptr<ast::Expr> e) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::ExprInt>((*e)._)) { auto _v_exprint = std::get<ast::ExprInt>((*e)._); auto [v, _w0] = _v_exprint; return literals::gen_integer_literal(v); } if (std::holds_alternative<ast::ExprStr>((*e)._)) { auto _v_exprstr = std::get<ast::ExprStr>((*e)._); auto [s, _w0] = _v_exprstr; return literals::gen_string_literal(s); } if (std::holds_alternative<ast::ExprBool>((*e)._)) { auto _v_exprbool = std::get<ast::ExprBool>((*e)._); auto [b, _w0] = _v_exprbool; return literals::gen_boolean_literal(b); } if (std::holds_alternative<ast::ExprUnit>((*e)._)) { auto _v_exprunit = std::get<ast::ExprUnit>((*e)._); auto [_w0] = _v_exprunit; return literals::gen_unit_literal(); } if (std::holds_alternative<ast::ExprFloat>((*e)._)) { auto _v_exprfloat = std::get<ast::ExprFloat>((*e)._); auto [v, _w0] = _v_exprfloat; return literals::gen_float_literal(v); } if (std::holds_alternative<ast::ExprI64>((*e)._)) { auto _v_expri64 = std::get<ast::ExprI64>((*e)._); auto [v, _w0] = _v_expri64; return literals::gen_i64_literal(v); } if (std::holds_alternative<ast::ExprU8>((*e)._)) { auto _v_expru8 = std::get<ast::ExprU8>((*e)._); auto [v, _w0] = _v_expru8; return literals::gen_u8_literal(v); } if (std::holds_alternative<ast::ExprUsize>((*e)._)) { auto _v_exprusize = std::get<ast::ExprUsize>((*e)._); auto [v, _w0] = _v_exprusize; return literals::gen_usize_literal(v); } if (std::holds_alternative<ast::ExprChar>((*e)._)) { auto _v_exprchar = std::get<ast::ExprChar>((*e)._); auto [v, _w0] = _v_exprchar; return literals::gen_char_literal(v); } return mlc::String("0"); }();}
 
 mlc::String param_item_def(context::CodegenContext context, std::shared_ptr<ast::Param> p) noexcept{return expr::parameter_declaration_item(type_gen::type_to_cpp(context, p->typ), cpp_naming::cpp_safe(p->name));}
 

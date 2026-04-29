@@ -14,3 +14,9 @@ export fn gen_boolean_literal(boolean_value: bool) -> string =
 export fn gen_unit_literal() -> string = "/* unit */"
 
 export fn gen_extern_placeholder() -> string = ""
+
+export fn gen_float_literal(v: string) -> string = v
+export fn gen_i64_literal(v: string) -> string = v
+export fn gen_u8_literal(v: string) -> string = "static_cast<uint8_t>(" + v + ")"
+export fn gen_usize_literal(v: string) -> string = "static_cast<size_t>(" + v + ")"
+export fn gen_char_literal(v: string) -> string = "static_cast<char32_t>(" + v + ")"

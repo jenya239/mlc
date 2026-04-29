@@ -19,6 +19,11 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TString  => "mlc::String",
     TBool    => "bool",
     TUnit    => "void",
+    TI64     => "int64_t",
+    TF64     => "double",
+    TU8      => "uint8_t",
+    TUsize   => "size_t",
+    TChar    => "char32_t",
     TUnknown => "auto",
     TArray(inner)  => expression_output.cpp_array_type_element(sem_type_to_cpp(context, inner)),
     TShared(inner) => expression_output.cpp_shared_pointer_type(sem_type_to_cpp(context, inner)),
@@ -62,6 +67,11 @@ export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string
   else if type_name == "string" then "mlc::String"
   else if type_name == "bool" then "bool"
   else if type_name == "unit" then "void"
+  else if type_name == "i64" then "int64_t"
+  else if type_name == "f64" then "double"
+  else if type_name == "u8" then "uint8_t"
+  else if type_name == "usize" then "size_t"
+  else if type_name == "char" then "char32_t"
   else if type_name == "Self" || type_name == "self" then
     if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else "void" end
   else context_resolve(context, type_name)

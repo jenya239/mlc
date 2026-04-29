@@ -1,6 +1,7 @@
 // Trait and extend block code generation (helpers shared with decl.mlc).
 
 import { TypeVariant, TypeExpr, Param, Expr, ExprInt, ExprStr, ExprBool, ExprUnit } from "../ast"
+import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from "../ast"
 import * as lit from "./literals"
 import { SDecl, SExpr, SExprExtern } from "../semantic_ir"
 import { Type } from "../checker/registry"
@@ -18,11 +19,16 @@ export fn extract_method_name(fn_name: string, type_name: string) -> string = do
 end
 
 fn default_expr_to_cpp(e: Shared<Expr>) -> string = match e {
-  ExprInt(v, _)  => lit.gen_integer_literal(v),
-  ExprStr(s, _)  => lit.gen_string_literal(s),
-  ExprBool(b, _) => lit.gen_boolean_literal(b),
-  ExprUnit(_)    => lit.gen_unit_literal(),
-  _              => "0"
+  ExprInt(v, _)    => lit.gen_integer_literal(v),
+  ExprStr(s, _)    => lit.gen_string_literal(s),
+  ExprBool(b, _)   => lit.gen_boolean_literal(b),
+  ExprUnit(_)      => lit.gen_unit_literal(),
+  ExprFloat(v, _)  => lit.gen_float_literal(v),
+  ExprI64(v, _)    => lit.gen_i64_literal(v),
+  ExprU8(v, _)     => lit.gen_u8_literal(v),
+  ExprUsize(v, _)  => lit.gen_usize_literal(v),
+  ExprChar(v, _)   => lit.gen_char_literal(v),
+  _                => "0"
 }
 
 fn param_item_def(context: CodegenContext, p: Shared<Param>) -> string =

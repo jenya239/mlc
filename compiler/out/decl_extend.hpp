@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "ast.hpp"
+#include "ast.hpp"
 #include "literals.hpp"
 #include "semantic_ir.hpp"
 #include "registry.hpp"

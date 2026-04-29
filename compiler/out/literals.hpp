@@ -23,6 +23,16 @@ mlc::String gen_unit_literal() noexcept;
 
 mlc::String gen_extern_placeholder() noexcept;
 
+mlc::String gen_float_literal(mlc::String v) noexcept;
+
+mlc::String gen_i64_literal(mlc::String v) noexcept;
+
+mlc::String gen_u8_literal(mlc::String v) noexcept;
+
+mlc::String gen_usize_literal(mlc::String v) noexcept;
+
+mlc::String gen_char_literal(mlc::String v) noexcept;
+
 } // namespace literals
 
 #endif // LITERALS_HPP

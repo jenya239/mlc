@@ -1,8 +1,10 @@
 #include "expr_eval.hpp"
 
 #include "semantic_ir.hpp"
+#include "semantic_ir.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
+#include "literals.hpp"
 #include "literals.hpp"
 #include "identifiers.hpp"
 #include "expression_support.hpp"
@@ -15,8 +17,10 @@
 namespace expr_eval {
 
 using namespace semantic_ir;
+using namespace semantic_ir;
 using namespace context;
 using namespace cpp_naming;
+using namespace literals;
 using namespace literals;
 using namespace identifiers;
 using namespace expression_support;
@@ -114,6 +118,11 @@ mlc::String eval_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::Codegen
   [&](const SExprBool& sexprbool) -> mlc::String { auto [boolean_value, _w0, _w1] = sexprbool; return literals::gen_boolean_literal(boolean_value); },
   [&](const SExprUnit& sexprunit) -> mlc::String { auto [_w0, _w1] = sexprunit; return literals::gen_unit_literal(); },
   [&](const SExprExtern& sexprextern) -> mlc::String { auto [_w0, _w1] = sexprextern; return literals::gen_extern_placeholder(); },
+  [&](const SExprFloat& sexprfloat) -> mlc::String { auto [v, _w0, _w1] = sexprfloat; return literals::gen_float_literal(v); },
+  [&](const SExprI64& sexpri64) -> mlc::String { auto [v, _w0, _w1] = sexpri64; return literals::gen_i64_literal(v); },
+  [&](const SExprU8& sexpru8) -> mlc::String { auto [v, _w0, _w1] = sexpru8; return literals::gen_u8_literal(v); },
+  [&](const SExprUsize& sexprusize) -> mlc::String { auto [v, _w0, _w1] = sexprusize; return literals::gen_usize_literal(v); },
+  [&](const SExprChar& sexprchar) -> mlc::String { auto [v, _w0, _w1] = sexprchar; return literals::gen_char_literal(v); },
   [&](const SExprIdent& sexprident) -> mlc::String { auto [name, _w0, _w1] = sexprident; return identifiers::gen_identifier(name, context); },
   [&](const SExprBin& sexprbin) -> mlc::String { auto [operation, left_expr, right_expr, _w0, _w1] = sexprbin; return gen_binary_expr(operation, left_expr, right_expr, context, gen_stmts); },
   [&](const SExprUn& sexprun) -> mlc::String { auto [operation, inner_expr, _w0, _w1] = sexprun; return gen_unary_expr(operation, inner_expr, context, gen_stmts); },

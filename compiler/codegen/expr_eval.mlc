@@ -3,9 +3,11 @@
 // through; recursive eval_expr calls go directly (same module).
 
 import { SExpr, SStmt } from "../semantic_ir"
+import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
 import { CodegenContext, context_resolve } from "./context"
 import { cpp_safe, map_builtin } from "./cpp_naming"
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from "./literals"
+import { gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from "./literals"
 import { gen_identifier } from "./identifiers"
 import { is_constructor_call, field_access_operator, cpp_lambda_header_prefix } from "./expression_support"
 import { gen_match } from "./match_gen"
@@ -103,6 +105,11 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprBool(boolean_value, _, _)                         => gen_boolean_literal(boolean_value),
     SExprUnit(_, _)                                        => gen_unit_literal(),
     SExprExtern(_, _)                                      => gen_extern_placeholder(),
+    SExprFloat(v, _, _)                                    => gen_float_literal(v),
+    SExprI64(v, _, _)                                      => gen_i64_literal(v),
+    SExprU8(v, _, _)                                       => gen_u8_literal(v),
+    SExprUsize(v, _, _)                                    => gen_usize_literal(v),
+    SExprChar(v, _, _)                                     => gen_char_literal(v),
     SExprIdent(name, _, _)                                 => gen_identifier(name, context),
     SExprBin(operation, left_expr, right_expr, _, _)       => gen_binary_expr(operation, left_expr, right_expr, context, gen_stmts),
     SExprUn(operation, inner_expr, _, _)                   => gen_unary_expr(operation, inner_expr, context, gen_stmts),

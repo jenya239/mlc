@@ -24,6 +24,10 @@ module MLC
                 build_numeric_literal(node, 'i32')
               when :float
                 build_numeric_literal(node, 'f32')
+              when :typed_num
+                build_numeric_literal(node, node.type_name)
+              when :char
+                build_char_literal(node)
               when :string
                 build_string_literal(node)
               when :regex
@@ -48,6 +52,11 @@ module MLC
             def build_regex_literal(node)
               type = @ir_builder.prim_type(name: 'regex', origin: node)
               @ir_builder.regex(pattern: node.pattern, flags: node.flags, type: type, origin: node)
+            end
+
+            def build_char_literal(node)
+              type = @ir_builder.prim_type(name: 'char', origin: node)
+              @ir_builder.literal(value: node.value, type: type, origin: node)
             end
 
             def build_unit_literal(node)

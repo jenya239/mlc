@@ -658,7 +658,27 @@ end
 
 fn parse_primary(parser: Parser) -> ExprResult = do
   const kind = parser.kind()
-  if kind.is_int() then parse_primary_integer_literal(parser, kind.int_val())
+  if kind.is_float() then do
+    const source_span = parser.span_at_cursor()
+    ExprResult { expr: Shared.new(ExprFloat(kind.float_val(), source_span)), parser: parser.advance() }
+  end
+  else if kind.is_i64() then do
+    const source_span = parser.span_at_cursor()
+    ExprResult { expr: Shared.new(ExprI64(kind.i64_val(), source_span)), parser: parser.advance() }
+  end
+  else if kind.is_u8() then do
+    const source_span = parser.span_at_cursor()
+    ExprResult { expr: Shared.new(ExprU8(kind.u8_val(), source_span)), parser: parser.advance() }
+  end
+  else if kind.is_usize() then do
+    const source_span = parser.span_at_cursor()
+    ExprResult { expr: Shared.new(ExprUsize(kind.usize_val(), source_span)), parser: parser.advance() }
+  end
+  else if kind.is_char_lit() then do
+    const source_span = parser.span_at_cursor()
+    ExprResult { expr: Shared.new(ExprChar(kind.char_val(), source_span)), parser: parser.advance() }
+  end
+  else if kind.is_int() then parse_primary_integer_literal(parser, kind.int_val())
   else if kind.is_str() then parse_primary_string_literal(parser, kind.str_val())
   else if kind.is_template() then parse_primary_template_literal(parser, kind.template_parts())
   else if kind.is_true() then parse_primary_boolean_literal(parser, true)

@@ -77,6 +77,8 @@ export type FieldVal = FieldVal { name: string, val: Shared<Expr> }
 
 export type Expr =
   | ExprInt(i32, Span) | ExprStr(string, Span) | ExprBool(bool, Span) | ExprUnit(Span)
+  | ExprFloat(string, Span) | ExprI64(string, Span) | ExprU8(string, Span)
+  | ExprUsize(string, Span) | ExprChar(string, Span)
   | ExprIdent(string, Span)
   | ExprBin(string, Shared<Expr>, Shared<Expr>, Span)
   | ExprUn(string, Shared<Expr>, Span)
@@ -100,11 +102,16 @@ export type Expr =
 
 export fn expr_span(expression: Shared<Expr>) -> Span =
   match expression {
-    ExprIdent(_, source_span) => source_span,
-    ExprInt(_, source_span)   => source_span,
-    ExprStr(_, source_span)   => source_span,
-    ExprBool(_, source_span)  => source_span,
-    ExprUnit(source_span)     => source_span,
+    ExprIdent(_, source_span)  => source_span,
+    ExprInt(_, source_span)    => source_span,
+    ExprStr(_, source_span)    => source_span,
+    ExprBool(_, source_span)   => source_span,
+    ExprUnit(source_span)      => source_span,
+    ExprFloat(_, source_span)  => source_span,
+    ExprI64(_, source_span)    => source_span,
+    ExprU8(_, source_span)     => source_span,
+    ExprUsize(_, source_span)  => source_span,
+    ExprChar(_, source_span)   => source_span,
     ExprBin(_, _, _, source_span)   => source_span,
     ExprUn(_, _, source_span)       => source_span,
     ExprCall(_, _, source_span)     => source_span,

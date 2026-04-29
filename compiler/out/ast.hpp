@@ -31,6 +31,11 @@ struct ExprInt {int field0;ast::Span field1;};
 struct ExprStr {mlc::String field0;ast::Span field1;};
 struct ExprBool {bool field0;ast::Span field1;};
 struct ExprUnit {ast::Span field0;};
+struct ExprFloat {mlc::String field0;ast::Span field1;};
+struct ExprI64 {mlc::String field0;ast::Span field1;};
+struct ExprU8 {mlc::String field0;ast::Span field1;};
+struct ExprUsize {mlc::String field0;ast::Span field1;};
+struct ExprChar {mlc::String field0;ast::Span field1;};
 struct ExprIdent {mlc::String field0;ast::Span field1;};
 struct ExprBin {mlc::String field0;std::shared_ptr<ast::Expr> field1;std::shared_ptr<ast::Expr> field2;ast::Span field3;};
 struct ExprUn {mlc::String field0;std::shared_ptr<ast::Expr> field1;ast::Span field2;};
@@ -51,7 +56,7 @@ struct ExprQuestion {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
 struct ExprExtern {ast::Span field0;};
 struct ExprLambda {mlc::Array<mlc::String> field0;std::shared_ptr<ast::Expr> field1;ast::Span field2;};
 struct ExprNamedArg {mlc::String field0;std::shared_ptr<ast::Expr> field1;ast::Span field2;};
-struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex, ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate, ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda, ExprNamedArg> _;};
+struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar, ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex, ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate, ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda, ExprNamedArg> _;};
 
 
 struct StmtLet {mlc::String field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;ast::Span field4;};

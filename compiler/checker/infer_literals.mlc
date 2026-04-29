@@ -14,5 +14,20 @@ export fn infer_expr_boolean_literal() -> InferResult =
 export fn infer_expr_unit_literal() -> InferResult =
   infer_ok(Shared.new(TUnit))
 
+export fn infer_expr_f64_literal() -> InferResult =
+  infer_ok(Shared.new(TF64))
+
+export fn infer_expr_i64_literal() -> InferResult =
+  infer_ok(Shared.new(TI64))
+
+export fn infer_expr_u8_literal() -> InferResult =
+  infer_ok(Shared.new(TU8))
+
+export fn infer_expr_usize_literal() -> InferResult =
+  infer_ok(Shared.new(TUsize))
+
+export fn infer_expr_char_literal() -> InferResult =
+  infer_ok(Shared.new(TChar))
+
 export fn infer_expr_extern_placeholder() -> InferResult =
   infer_ok(Shared.new(TUnit))

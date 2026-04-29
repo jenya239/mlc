@@ -14,6 +14,11 @@ export type SFieldVal  = SFieldVal  { name: string, val: Shared<SExpr> }
 export type SExpr =
   | SExprInt(i32, Shared<Type>, Span)
   | SExprStr(string, Shared<Type>, Span)
+  | SExprFloat(string, Shared<Type>, Span)
+  | SExprI64(string, Shared<Type>, Span)
+  | SExprU8(string, Shared<Type>, Span)
+  | SExprUsize(string, Shared<Type>, Span)
+  | SExprChar(string, Shared<Type>, Span)
   | SExprBool(bool, Shared<Type>, Span)
   | SExprUnit(Shared<Type>, Span)
   | SExprExtern(Shared<Type>, Span)
@@ -77,6 +82,11 @@ export fn sexpr_type(expression: Shared<SExpr>) -> Shared<Type> =
   match expression {
     SExprInt(_, t, _)                  => t,
     SExprStr(_, t, _)                  => t,
+    SExprFloat(_, t, _)                => t,
+    SExprI64(_, t, _)                  => t,
+    SExprU8(_, t, _)                   => t,
+    SExprUsize(_, t, _)                => t,
+    SExprChar(_, t, _)                 => t,
     SExprBool(_, t, _)                 => t,
     SExprUnit(t, _)                    => t,
     SExprExtern(t, _)                  => t,
@@ -104,6 +114,11 @@ export fn sexpr_span(expression: Shared<SExpr>) -> Span =
   match expression {
     SExprInt(_, _, s)                  => s,
     SExprStr(_, _, s)                  => s,
+    SExprFloat(_, _, s)                => s,
+    SExprI64(_, _, s)                  => s,
+    SExprU8(_, _, s)                   => s,
+    SExprUsize(_, _, s)                => s,
+    SExprChar(_, _, s)                 => s,
     SExprBool(_, _, s)                 => s,
     SExprUnit(_, s)                    => s,
     SExprExtern(_, s)                  => s,

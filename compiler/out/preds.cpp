@@ -217,6 +217,26 @@ mlc::String TKind_str_val(ast_tokens::TKind self) noexcept;
 
 mlc::String TKind_op_val(ast_tokens::TKind self) noexcept;
 
+bool TKind_is_float(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_i64(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_u8(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_usize(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_char_lit(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_float_val(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_i64_val(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_u8_val(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_usize_val(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_char_val(ast_tokens::TKind self) noexcept;
+
 ast_tokens::TKind Parser_kind(preds::Parser self) noexcept;
 
 preds::Parser Parser_advance(preds::Parser self) noexcept;
@@ -455,6 +475,26 @@ int TKind_int_val(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds
 mlc::String TKind_str_val(ast_tokens::TKind self) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LStr>(self)) { auto _v_lstr = std::get<ast_tokens::LStr>(self); auto [s] = _v_lstr; return s; } return mlc::String(""); }();}
 
 mlc::String TKind_op_val(ast_tokens::TKind self) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::Op>(self)) { auto _v_op = std::get<ast_tokens::Op>(self); auto [s] = _v_op; return s; } return mlc::String(""); }();}
+
+bool TKind_is_float(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LFloat>(self)) { auto _v_lfloat = std::get<ast_tokens::LFloat>(self); auto [_w0] = _v_lfloat; return true; } return false; }();}
+
+bool TKind_is_i64(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LI64>(self)) { auto _v_li64 = std::get<ast_tokens::LI64>(self); auto [_w0] = _v_li64; return true; } return false; }();}
+
+bool TKind_is_u8(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LU8>(self)) { auto _v_lu8 = std::get<ast_tokens::LU8>(self); auto [_w0] = _v_lu8; return true; } return false; }();}
+
+bool TKind_is_usize(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LUsize>(self)) { auto _v_lusize = std::get<ast_tokens::LUsize>(self); auto [_w0] = _v_lusize; return true; } return false; }();}
+
+bool TKind_is_char_lit(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LChar>(self)) { auto _v_lchar = std::get<ast_tokens::LChar>(self); auto [_w0] = _v_lchar; return true; } return false; }();}
+
+mlc::String TKind_float_val(ast_tokens::TKind self) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LFloat>(self)) { auto _v_lfloat = std::get<ast_tokens::LFloat>(self); auto [s] = _v_lfloat; return s; } return mlc::String(""); }();}
+
+mlc::String TKind_i64_val(ast_tokens::TKind self) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LI64>(self)) { auto _v_li64 = std::get<ast_tokens::LI64>(self); auto [s] = _v_li64; return s; } return mlc::String(""); }();}
+
+mlc::String TKind_u8_val(ast_tokens::TKind self) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LU8>(self)) { auto _v_lu8 = std::get<ast_tokens::LU8>(self); auto [s] = _v_lu8; return s; } return mlc::String(""); }();}
+
+mlc::String TKind_usize_val(ast_tokens::TKind self) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LUsize>(self)) { auto _v_lusize = std::get<ast_tokens::LUsize>(self); auto [s] = _v_lusize; return s; } return mlc::String(""); }();}
+
+mlc::String TKind_char_val(ast_tokens::TKind self) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LChar>(self)) { auto _v_lchar = std::get<ast_tokens::LChar>(self); auto [s] = _v_lchar; return s; } return mlc::String(""); }();}
 
 ast_tokens::TKind Parser_kind(preds::Parser self) noexcept{
 ast_tokens::Token tok = self.tokens[self.pos];

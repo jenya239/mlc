@@ -18,6 +18,11 @@ std::shared_ptr<semantic_ir::SDecl> sdecl_inner(std::shared_ptr<semantic_ir::SDe
 std::shared_ptr<registry::Type> sexpr_type(std::shared_ptr<semantic_ir::SExpr> expression) noexcept{return std::visit(overloaded{
   [&](const SExprInt& sexprint) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprint; return t; },
   [&](const SExprStr& sexprstr) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprstr; return t; },
+  [&](const SExprFloat& sexprfloat) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprfloat; return t; },
+  [&](const SExprI64& sexpri64) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexpri64; return t; },
+  [&](const SExprU8& sexpru8) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexpru8; return t; },
+  [&](const SExprUsize& sexprusize) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprusize; return t; },
+  [&](const SExprChar& sexprchar) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprchar; return t; },
   [&](const SExprBool& sexprbool) -> std::shared_ptr<registry::Type> { auto [_w0, t, _w1] = sexprbool; return t; },
   [&](const SExprUnit& sexprunit) -> std::shared_ptr<registry::Type> { auto [t, _w0] = sexprunit; return t; },
   [&](const SExprExtern& sexprextern) -> std::shared_ptr<registry::Type> { auto [t, _w0] = sexprextern; return t; },
@@ -44,6 +49,11 @@ std::shared_ptr<registry::Type> sexpr_type(std::shared_ptr<semantic_ir::SExpr> e
 ast::Span sexpr_span(std::shared_ptr<semantic_ir::SExpr> expression) noexcept{return std::visit(overloaded{
   [&](const SExprInt& sexprint) -> ast::Span { auto [_w0, _w1, s] = sexprint; return s; },
   [&](const SExprStr& sexprstr) -> ast::Span { auto [_w0, _w1, s] = sexprstr; return s; },
+  [&](const SExprFloat& sexprfloat) -> ast::Span { auto [_w0, _w1, s] = sexprfloat; return s; },
+  [&](const SExprI64& sexpri64) -> ast::Span { auto [_w0, _w1, s] = sexpri64; return s; },
+  [&](const SExprU8& sexpru8) -> ast::Span { auto [_w0, _w1, s] = sexpru8; return s; },
+  [&](const SExprUsize& sexprusize) -> ast::Span { auto [_w0, _w1, s] = sexprusize; return s; },
+  [&](const SExprChar& sexprchar) -> ast::Span { auto [_w0, _w1, s] = sexprchar; return s; },
   [&](const SExprBool& sexprbool) -> ast::Span { auto [_w0, _w1, s] = sexprbool; return s; },
   [&](const SExprUnit& sexprunit) -> ast::Span { auto [_w0, s] = sexprunit; return s; },
   [&](const SExprExtern& sexprextern) -> ast::Span { auto [_w0, s] = sexprextern; return s; },

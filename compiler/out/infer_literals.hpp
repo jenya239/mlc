@@ -21,6 +21,16 @@ infer_result::InferResult infer_expr_boolean_literal() noexcept;
 
 infer_result::InferResult infer_expr_unit_literal() noexcept;
 
+infer_result::InferResult infer_expr_f64_literal() noexcept;
+
+infer_result::InferResult infer_expr_i64_literal() noexcept;
+
+infer_result::InferResult infer_expr_u8_literal() noexcept;
+
+infer_result::InferResult infer_expr_usize_literal() noexcept;
+
+infer_result::InferResult infer_expr_char_literal() noexcept;
+
 infer_result::InferResult infer_expr_extern_placeholder() noexcept;
 
 } // namespace infer_literals

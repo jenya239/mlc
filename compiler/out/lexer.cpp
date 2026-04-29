@@ -12,6 +12,8 @@ struct ScanResult {lexer::LexState state;ast_tokens::Token token;};
 
 struct ScanStrResult {lexer::LexState state;ast_tokens::Token token;mlc::String error;};
 
+struct SuffixScan {mlc::String suffix;lexer::LexState after;};
+
 bool LexState_eof(lexer::LexState self) noexcept;
 
 mlc::String LexState_current(lexer::LexState self) noexcept;
@@ -35,6 +37,10 @@ bool is_ws(mlc::String character) noexcept;
 ast_tokens::TKind keyword_kind(mlc::String word) noexcept;
 
 lexer::ScanResult scan_ident(lexer::LexState state) noexcept;
+
+bool is_alpha_lower(mlc::String c) noexcept;
+
+lexer::SuffixScan try_scan_suffix(lexer::LexState state) noexcept;
 
 lexer::ScanResult scan_int(lexer::LexState state) noexcept;
 
@@ -104,9 +110,31 @@ mlc::String word = source.byte_substring(start, current.pos - start);
 return lexer::ScanResult{current, ast_tokens::Token{keyword_kind(word), token_line, token_col}};
 }
 
+bool is_alpha_lower(mlc::String c) noexcept{return c >= mlc::String("a") && c <= mlc::String("z");}
+
+lexer::SuffixScan try_scan_suffix(lexer::LexState state) noexcept{
+return !LexState_eof(state) && is_alpha_lower(LexState_current(state)) ? [&]() -> lexer::SuffixScan { 
+  int start = state.pos;
+  int orig_line = state.line;
+  int orig_col = state.col;
+  lexer::LexState cur = std::move(state);
+  while (!LexState_eof(cur) && is_alpha_lower(LexState_current(cur)) || is_digit(LexState_current(cur))){
+{
+cur = LexState_lex_advance(cur);
+}
+}
+  mlc::String candidate = cur.src.byte_substring(start, cur.pos - start);
+  return candidate == mlc::String("i64") || candidate == mlc::String("u8") || candidate == mlc::String("usize") || candidate == mlc::String("f64") || candidate == mlc::String("f32") ? lexer::SuffixScan{candidate, cur} : [&]() -> lexer::SuffixScan { 
+  lexer::LexState back = lexer::LexState{cur.src, start, orig_line, orig_col};
+  return lexer::SuffixScan{mlc::String(""), back};
+ }();
+ }() : lexer::SuffixScan{mlc::String(""), state};
+}
+
 lexer::ScanResult scan_int(lexer::LexState state) noexcept{
 int token_line = state.line;
 int token_col = state.col;
+int int_start = state.pos;
 lexer::LexState current = std::move(state);
 int value = 0;
 while (!LexState_eof(current) && is_digit(LexState_current(current))){
@@ -115,7 +143,20 @@ value = value * 10 + LexState_current(current).to_i();
 current = LexState_lex_advance(current);
 }
 }
-return lexer::ScanResult{current, ast_tokens::Token{ast_tokens::LInt(value), token_line, token_col}};
+return !LexState_eof(current) && LexState_current(current) == mlc::String(".") && !LexState_eof(LexState_lex_advance(current)) && is_digit(LexState_current(LexState_lex_advance(current))) ? [&]() -> lexer::ScanResult { 
+  current = LexState_lex_advance(current);
+  while (!LexState_eof(current) && is_digit(LexState_current(current))){
+{
+current = LexState_lex_advance(current);
+}
+}
+  mlc::String raw_float = current.src.byte_substring(int_start, current.pos - int_start);
+  lexer::SuffixScan scan = try_scan_suffix(current);
+  return lexer::ScanResult{scan.after, ast_tokens::Token{ast_tokens::LFloat(raw_float), token_line, token_col}};
+ }() : [&]() -> lexer::ScanResult { 
+  lexer::SuffixScan scan = try_scan_suffix(current);
+  return scan.suffix == mlc::String("i64") ? lexer::ScanResult{scan.after, ast_tokens::Token{ast_tokens::LI64(mlc::to_string(value)), token_line, token_col}} : scan.suffix == mlc::String("u8") ? lexer::ScanResult{scan.after, ast_tokens::Token{ast_tokens::LU8(mlc::to_string(value)), token_line, token_col}} : scan.suffix == mlc::String("usize") ? lexer::ScanResult{scan.after, ast_tokens::Token{ast_tokens::LUsize(mlc::to_string(value)), token_line, token_col}} : lexer::ScanResult{scan.after, ast_tokens::Token{ast_tokens::LInt(value), token_line, token_col}};
+ }();
 }
 
 lexer::ScanStrResult scan_single_string(lexer::LexState state) noexcept{
@@ -174,7 +215,9 @@ error = mlc::String("unterminated single-quoted string");
 current = LexState_lex_advance(current);
 }
 }
-return lexer::ScanStrResult{current, ast_tokens::Token{ast_tokens::LStr(parts.join(mlc::String(""))), token_line, token_col}, error};
+mlc::String joined = parts.join(mlc::String(""));
+ast_tokens::TKind token_kind = joined.length() == 1 ? ast_tokens::TKind(ast_tokens::LChar(joined)) : ast_tokens::TKind(ast_tokens::LStr(joined));
+return lexer::ScanStrResult{current, ast_tokens::Token{token_kind, token_line, token_col}, error};
 }
 
 mlc::String map_escape(mlc::String character) noexcept{return character == mlc::String("n") ? mlc::String("\n") : character == mlc::String("t") ? mlc::String("\t") : character == mlc::String("r") ? mlc::String("\r") : character == mlc::String("\"") ? mlc::String("\"") : character == mlc::String("\\") ? mlc::String("\\") : character == mlc::String("0") ? mlc::String("\0", 1) : character == mlc::String("{") ? mlc::String("{") : character == mlc::String("}") ? mlc::String("}") : mlc::String("");}

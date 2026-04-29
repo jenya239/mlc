@@ -162,6 +162,26 @@ mlc::String TKind_str_val(ast_tokens::TKind self) noexcept;
 
 mlc::String TKind_op_val(ast_tokens::TKind self) noexcept;
 
+bool TKind_is_float(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_i64(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_u8(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_usize(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_char_lit(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_float_val(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_i64_val(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_u8_val(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_usize_val(ast_tokens::TKind self) noexcept;
+
+mlc::String TKind_char_val(ast_tokens::TKind self) noexcept;
+
 ast_tokens::TKind Parser_kind(preds::Parser self) noexcept;
 
 preds::Parser Parser_advance(preds::Parser self) noexcept;

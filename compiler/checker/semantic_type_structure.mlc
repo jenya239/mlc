@@ -8,10 +8,15 @@ export fn type_is_unknown(type_value: Shared<Type>) -> bool =
 export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> bool =
   if type_is_unknown(left) || type_is_unknown(right) then true
   else match left {
-    TI32 => match right { TI32 => true, _ => false },
+    TI32   => match right { TI32   => true, _ => false },
     TString => match right { TString => true, _ => false },
-    TBool => match right { TBool => true, _ => false },
-    TUnit => match right { TUnit => true, _ => false },
+    TBool  => match right { TBool  => true, _ => false },
+    TUnit  => match right { TUnit  => true, _ => false },
+    TI64   => match right { TI64   => true, _ => false },
+    TF64   => match right { TF64   => true, _ => false },
+    TU8    => match right { TU8    => true, _ => false },
+    TUsize => match right { TUsize => true, _ => false },
+    TChar  => match right { TChar  => true, _ => false },
     TUnknown => match right { TUnknown => true, _ => false },
     TArray(inner_left) => match right { TArray(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
     TShared(inner_left) => match right { TShared(inner_right) => types_structurally_equal(inner_left, inner_right), _ => false },
@@ -93,6 +98,11 @@ export fn function_return_type(function_type: Shared<Type>) -> Shared<Type> =
     TString => Shared.new(TUnknown),
     TBool => Shared.new(TUnknown),
     TUnit => Shared.new(TUnknown),
+    TI64 => Shared.new(TUnknown),
+    TF64 => Shared.new(TUnknown),
+    TU8 => Shared.new(TUnknown),
+    TUsize => Shared.new(TUnknown),
+    TChar => Shared.new(TUnknown),
     TArray(_) => Shared.new(TUnknown),
     TShared(_) => Shared.new(TUnknown),
     TNamed(_) => Shared.new(TUnknown),
@@ -109,6 +119,11 @@ export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>]
     TString => empty_type_parameter_list(),
     TBool => empty_type_parameter_list(),
     TUnit => empty_type_parameter_list(),
+    TI64 => empty_type_parameter_list(),
+    TF64 => empty_type_parameter_list(),
+    TU8 => empty_type_parameter_list(),
+    TUsize => empty_type_parameter_list(),
+    TChar => empty_type_parameter_list(),
     TArray(_) => empty_type_parameter_list(),
     TShared(_) => empty_type_parameter_list(),
     TNamed(_) => empty_type_parameter_list(),
@@ -134,9 +149,20 @@ export fn receiver_type_is_map(receiver_type: Shared<Type>) -> bool =
     _ => false
   }
 
+export fn is_numeric_type(t: Shared<Type>) -> bool =
+  match t { TI32 => true, TI64 => true, TF64 => true, TU8 => true, TUsize => true, TChar => true, _ => false }
+
 export fn binary_operation_result_type(operation: string, left_type: Shared<Type>) -> Shared<Type> = do
   if operation == "+" || operation == "-" || operation == "*" || operation == "/" || operation == "%" then
-    match left_type { TString => Shared.new(TString), _ => Shared.new(TI32) }
+    match left_type {
+      TString => Shared.new(TString),
+      TI64    => Shared.new(TI64),
+      TF64    => Shared.new(TF64),
+      TU8     => Shared.new(TU8),
+      TUsize  => Shared.new(TUsize),
+      TChar   => Shared.new(TChar),
+      _       => Shared.new(TI32)
+    }
   else if operation == "=" then Shared.new(TUnit)
   else Shared.new(TBool)
   end
@@ -148,6 +174,11 @@ export fn type_description(type_value: Shared<Type>) -> string =
     TString    => "string",
     TBool      => "bool",
     TUnit      => "unit",
+    TI64       => "i64",
+    TF64       => "f64",
+    TU8        => "u8",
+    TUsize     => "usize",
+    TChar      => "char",
     TUnknown   => "unknown",
     TArray(_)  => "array",
     TShared(_) => "shared",
@@ -160,16 +191,16 @@ export fn type_description(type_value: Shared<Type>) -> string =
 
 export fn types_allowed_for_binary_plus(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =
   (match left_type { TUnknown => true, _ => match right_type { TUnknown => true, _ => false } }) ||
-  (match left_type { TI32 => match right_type { TI32 => true, _ => false }, _ => false }) ||
+  (is_numeric_type(left_type) && types_structurally_equal(left_type, right_type)) ||
   (match left_type { TString => match right_type { TString => true, _ => false }, _ => false })
 
 export fn types_allowed_for_binary_int_only(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =
   (match left_type { TUnknown => true, _ => match right_type { TUnknown => true, _ => false } }) ||
-  (match left_type { TI32 => match right_type { TI32 => true, _ => false }, _ => false })
+  (is_numeric_type(left_type) && types_structurally_equal(left_type, right_type))
 
 export fn types_allowed_for_ordering(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =
   (match left_type { TUnknown => true, _ => match right_type { TUnknown => true, _ => false } }) ||
-  (match left_type { TI32 => match right_type { TI32 => true, _ => false }, _ => false }) ||
+  (is_numeric_type(left_type) && types_structurally_equal(left_type, right_type)) ||
   (match left_type { TString => match right_type { TString => true, _ => false }, _ => false })
 
 export fn types_allowed_for_logical_and_or(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =

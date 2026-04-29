@@ -68,9 +68,19 @@ module MLC
               node.is_a?(MLC::Source::AST::UnitLit)
             end
 
+            def typed_num_literal?(node)
+              node.is_a?(MLC::Source::AST::TypedNumLit)
+            end
+
+            def char_literal?(node)
+              node.is_a?(MLC::Source::AST::CharLit)
+            end
+
             def literal_kind(node)
               return :int if int_literal?(node)
               return :float if float_literal?(node)
+              return :typed_num if typed_num_literal?(node)
+              return :char if char_literal?(node)
               return :string if string_literal?(node)
               return :regex if regex_literal?(node)
               return :unit if unit_literal?(node)

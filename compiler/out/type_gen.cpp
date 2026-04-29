@@ -96,6 +96,11 @@ mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<reg
   [&](const TString& tstring) -> mlc::String { return mlc::String("mlc::String"); },
   [&](const TBool& tbool) -> mlc::String { return mlc::String("bool"); },
   [&](const TUnit& tunit) -> mlc::String { return mlc::String("void"); },
+  [&](const TI64& ti64) -> mlc::String { return mlc::String("int64_t"); },
+  [&](const TF64& tf64) -> mlc::String { return mlc::String("double"); },
+  [&](const TU8& tu8) -> mlc::String { return mlc::String("uint8_t"); },
+  [&](const TUsize& tusize) -> mlc::String { return mlc::String("size_t"); },
+  [&](const TChar& tchar) -> mlc::String { return mlc::String("char32_t"); },
   [&](const TUnknown& tunknown) -> mlc::String { return mlc::String("auto"); },
   [&](const TArray& tarray) -> mlc::String { auto [inner] = tarray; return expr::cpp_array_type_element(sem_type_to_cpp(context, inner)); },
   [&](const TShared& tshared) -> mlc::String { auto [inner] = tshared; return expr::cpp_shared_pointer_type(sem_type_to_cpp(context, inner)); },
@@ -126,7 +131,7 @@ i = i + 1;
  }(); }
 }, (*semantic_type));}
 
-mlc::String type_name_to_cpp(context::CodegenContext context, mlc::String type_name) noexcept{return type_name == mlc::String("i32") ? mlc::String("int") : type_name == mlc::String("string") ? mlc::String("mlc::String") : type_name == mlc::String("bool") ? mlc::String("bool") : type_name == mlc::String("unit") ? mlc::String("void") : type_name == mlc::String("Self") || type_name == mlc::String("self") ? context.self_type.length() > 0 ? type_name_to_cpp(context, context.self_type) : mlc::String("void") : context::context_resolve(context, type_name);}
+mlc::String type_name_to_cpp(context::CodegenContext context, mlc::String type_name) noexcept{return type_name == mlc::String("i32") ? mlc::String("int") : type_name == mlc::String("string") ? mlc::String("mlc::String") : type_name == mlc::String("bool") ? mlc::String("bool") : type_name == mlc::String("unit") ? mlc::String("void") : type_name == mlc::String("i64") ? mlc::String("int64_t") : type_name == mlc::String("f64") ? mlc::String("double") : type_name == mlc::String("u8") ? mlc::String("uint8_t") : type_name == mlc::String("usize") ? mlc::String("size_t") : type_name == mlc::String("char") ? mlc::String("char32_t") : type_name == mlc::String("Self") || type_name == mlc::String("self") ? context.self_type.length() > 0 ? type_name_to_cpp(context, context.self_type) : mlc::String("void") : context::context_resolve(context, type_name);}
 
 mlc::String type_to_cpp(context::CodegenContext context, std::shared_ptr<ast::TypeExpr> type_expr) noexcept{return std::visit(overloaded{
   [&](const TyI32& tyi32) -> mlc::String { return mlc::String("int"); },

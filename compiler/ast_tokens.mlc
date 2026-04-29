@@ -7,6 +7,7 @@ export type TKind =
   | KImport | KFrom | KAs | KExtern | KExtend | KWhere
   | KTrue | KFalse
   | LInt(i32) | LStr(string) | LTemplate([string]) | Ident(string)
+  | LFloat(string) | LI64(string) | LU8(string) | LUsize(string) | LChar(string)
   | Arrow | FatArrow | Pipe | Bar | Equal | Question | Dot | Spread
   | LParen | RParen | LBrace | RBrace | LBracket | RBracket
   | Comma | Semicolon | Colon | Op(string) | Eof

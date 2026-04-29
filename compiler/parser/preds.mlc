@@ -172,6 +172,16 @@ export extend TKind {
   fn int_val(self)     -> i32    = match self { LInt(n)     => n,    _ => 0 }
   fn str_val(self)     -> string = match self { LStr(s)     => s,    _ => "" }
   fn op_val(self)      -> string = match self { Op(s)       => s,    _ => "" }
+  fn is_float(self)    -> bool   = match self { LFloat(_)   => true, _ => false }
+  fn is_i64(self)      -> bool   = match self { LI64(_)     => true, _ => false }
+  fn is_u8(self)       -> bool   = match self { LU8(_)      => true, _ => false }
+  fn is_usize(self)    -> bool   = match self { LUsize(_)   => true, _ => false }
+  fn is_char_lit(self) -> bool   = match self { LChar(_)    => true, _ => false }
+  fn float_val(self)   -> string = match self { LFloat(s)   => s,    _ => "" }
+  fn i64_val(self)     -> string = match self { LI64(s)     => s,    _ => "" }
+  fn u8_val(self)      -> string = match self { LU8(s)      => s,    _ => "" }
+  fn usize_val(self)   -> string = match self { LUsize(s)   => s,    _ => "" }
+  fn char_val(self)    -> string = match self { LChar(s)    => s,    _ => "" }
 }
 
 // --- extend Parser --------------------------------------------------------

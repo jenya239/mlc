@@ -87,17 +87,64 @@ fn scan_ident(state: LexState) -> ScanResult = do
   ScanResult { state: current, token: Token { kind: keyword_kind(word), line: token_line, col: token_col } }
 end
 
+fn is_alpha_lower(c: string) -> bool = c >= "a" && c <= "z"
+
+type SuffixScan = SuffixScan { suffix: string, after: LexState }
+
+fn try_scan_suffix(state: LexState) -> SuffixScan = do
+  if !state.eof() && is_alpha_lower(state.current()) then
+    const start = state.pos
+    const orig_line = state.line
+    const orig_col  = state.col
+    let mut cur = state
+    while !cur.eof() && (is_alpha_lower(cur.current()) || is_digit(cur.current())) do
+      cur = cur.lex_advance()
+    end
+    const candidate = cur.src.byte_substring(start, cur.pos - start)
+    if candidate == "i64" || candidate == "u8" || candidate == "usize" ||
+       candidate == "f64" || candidate == "f32" then
+      SuffixScan { suffix: candidate, after: cur }
+    else
+      const back = LexState { src: cur.src, pos: start, line: orig_line, col: orig_col }
+      SuffixScan { suffix: "", after: back }
+    end
+  else
+    SuffixScan { suffix: "", after: state }
+  end
+end
+
 fn scan_int(state: LexState) -> ScanResult = do
   const token_line = state.line
   const token_col  = state.col
+  const int_start  = state.pos
   let mut current = state
   let mut value = 0
   while !current.eof() && is_digit(current.current()) do
-    // byte_at returns a 1-byte ASCII digit string, to_i() works correctly
     value = value * 10 + current.current().to_i()
     current = current.lex_advance()
   end
-  ScanResult { state: current, token: Token { kind: LInt(value), line: token_line, col: token_col } }
+  // Check for float: '.' followed by digit
+  if !current.eof() && current.current() == "." &&
+     !current.lex_advance().eof() && is_digit(current.lex_advance().current()) then
+    current = current.lex_advance() // consume '.'
+    while !current.eof() && is_digit(current.current()) do
+      current = current.lex_advance()
+    end
+    const raw_float = current.src.byte_substring(int_start, current.pos - int_start)
+    const scan = try_scan_suffix(current)
+    ScanResult { state: scan.after, token: Token { kind: LFloat(raw_float), line: token_line, col: token_col } }
+  else
+    const scan = try_scan_suffix(current)
+    if scan.suffix == "i64" then
+      ScanResult { state: scan.after, token: Token { kind: LI64(value.to_string()), line: token_line, col: token_col } }
+    else if scan.suffix == "u8" then
+      ScanResult { state: scan.after, token: Token { kind: LU8(value.to_string()), line: token_line, col: token_col } }
+    else if scan.suffix == "usize" then
+      ScanResult { state: scan.after, token: Token { kind: LUsize(value.to_string()), line: token_line, col: token_col } }
+    else
+      ScanResult { state: scan.after, token: Token { kind: LInt(value), line: token_line, col: token_col } }
+    end
+  end
 end
 
 fn scan_single_string(state: LexState) -> ScanStrResult = do
@@ -132,9 +179,11 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
   else
     current = current.lex_advance()
   end
+  const joined = parts.join("")
+  const token_kind = if joined.length() == 1 then LChar(joined) else LStr(joined) end
   ScanStrResult {
     state: current,
-    token: Token { kind: LStr(parts.join("")), line: token_line, col: token_col },
+    token: Token { kind: token_kind, line: token_line, col: token_col },
     error
   }
 end

@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "ast.hpp"
+#include "ast.hpp"
 #include "names.hpp"
 #include "check_mutations.hpp"
 #include "registry.hpp"

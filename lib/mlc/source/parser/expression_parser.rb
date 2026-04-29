@@ -1226,10 +1226,16 @@ module MLC
             value = token.value
             attach_origin(MLC::Source::AST::IntLit.new(value: value), token)
           when :CHAR_LITERAL
-            # Character literal 'a' -> integer value (e.g., 97)
             token = consume(:CHAR_LITERAL)
-            value = token.value # Already converted to integer in lexer
-            attach_origin(MLC::Source::AST::IntLit.new(value: value), token)
+            attach_origin(MLC::Source::AST::CharLit.new(value: token.value), token)
+          when :SUFFIXED_INT_LITERAL
+            token = consume(:SUFFIXED_INT_LITERAL)
+            attach_origin(MLC::Source::AST::TypedNumLit.new(value: token.value[:value],
+                                                             type_name: token.value[:type_name]), token)
+          when :SUFFIXED_FLOAT_LITERAL
+            token = consume(:SUFFIXED_FLOAT_LITERAL)
+            attach_origin(MLC::Source::AST::TypedNumLit.new(value: token.value[:value],
+                                                             type_name: token.value[:type_name]), token)
           when :FLOAT_LITERAL
             token = consume(:FLOAT_LITERAL)
             value = token.value

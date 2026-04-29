@@ -210,6 +210,17 @@ results.push_back(test_runner::assert_eq_int(mlc::String("named args: reverse or
 results.push_back(test_runner::assert_eq_int(mlc::String("named args: mixed positional + named — 0 errors"), check_error_count(mlc::String("fn f(x: i32, y: i32, z: i32) -> i32 = x\nfn g() -> i32 = f(1, y: 2, z: 3)")), 0));
 results.push_back(test_runner::assert_true(mlc::String("named args: unknown param name — at least 1 error"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(bad: 1)")) > 0));
 results.push_back(test_runner::assert_true(mlc::String("named args: type mismatch in named arg"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(x: \"str\")")) > 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: i64 annotation - 0 errors"), check_error_count(mlc::String("fn f(x: i64) -> i64 = x")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: f64 annotation - 0 errors"), check_error_count(mlc::String("fn f(x: f64) -> f64 = x")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: u8 annotation - 0 errors"), check_error_count(mlc::String("fn f(x: u8) -> u8 = x")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: usize annotation - 0 errors"), check_error_count(mlc::String("fn f(x: usize) -> usize = x")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: char annotation - 0 errors"), check_error_count(mlc::String("fn f(x: char) -> char = x")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: i64 literal - 0 errors"), check_error_count(mlc::String("fn f() -> i64 = 42i64")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: char literal - 0 errors"), check_error_count(mlc::String("fn f() -> char = 'a'")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: i64 arithmetic - 0 errors"), check_error_count(mlc::String("fn f(x: i64, y: i64) -> i64 = x + y")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: char arithmetic - 0 errors"), check_error_count(mlc::String("fn f(x: char, y: char) -> char = x + y")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("c4: f64 arithmetic - 0 errors"), check_error_count(mlc::String("fn f(x: f64, y: f64) -> f64 = x + y")), 0));
+results.push_back(test_runner::assert_true(mlc::String("c4: type mismatch i64 vs i32 - 1+ errors"), check_error_count(mlc::String("fn f(x: i32) -> i64 = x")) > 0));
 return results;
 }
 

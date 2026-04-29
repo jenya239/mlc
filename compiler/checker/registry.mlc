@@ -4,6 +4,7 @@ import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param
 
 export type Type =
   | TI32 | TString | TBool | TUnit
+  | TI64 | TF64 | TU8 | TUsize | TChar
   | TArray(Shared<Type>)
   | TShared(Shared<Type>)
   | TNamed(string)
@@ -160,7 +161,14 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     TyString  => Shared.new(TString),
     TyBool    => Shared.new(TBool),
     TyUnit    => Shared.new(TUnit),
-    TyNamed(name)   => Shared.new(TNamed(name)),
+    TyNamed(name)   =>
+      if name == "i64" then Shared.new(TI64)
+      else if name == "f64" then Shared.new(TF64)
+      else if name == "u8" then Shared.new(TU8)
+      else if name == "usize" then Shared.new(TUsize)
+      else if name == "char" then Shared.new(TChar)
+      else Shared.new(TNamed(name))
+      end,
     TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),
     TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),
     TyGeneric(name, targs) =>

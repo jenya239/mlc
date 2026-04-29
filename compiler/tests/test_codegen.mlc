@@ -7,7 +7,9 @@ import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from "../codegen/type_gen
 import { gen_program } from "../codegen/module"
 import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown } from "../ast"
 import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat } from "../semantic_ir"
+import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
 import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple } from "../checker/registry"
+import { TF64, TI64, TU8, TUsize, TChar } from "../checker/registry"
 
 fn i32_t() -> Shared<Type> = Shared.new(TI32)
 fn str_t() -> Shared<Type> = Shared.new(TString)
@@ -349,6 +351,43 @@ export fn codegen_tests() -> [TestResult] = do
   const phantom_rec_expr = Shared.new(SExprRecord("Ast", phantom_rec_fvals, phantom_rec_type, span_unknown()))
   results.push(assert_eq_str("phantom record expr: Ast<Unvalidated>{}",
     gen_expr(phantom_rec_expr, ctx), "Ast<Unvalidated>{}"))
+
+  // C4: numeric tower
+  const f64_t = Shared.new(TF64)
+  const i64_t = Shared.new(TI64)
+  const u8_t  = Shared.new(TU8)
+  const usize_t = Shared.new(TUsize)
+  const char_t = Shared.new(TChar)
+
+  results.push(assert_eq_str("c4: f64 literal codegen",
+    gen_expr(Shared.new(SExprFloat("3.14", f64_t, span_unknown())), ctx), "3.14"))
+
+  results.push(assert_eq_str("c4: i64 literal codegen",
+    gen_expr(Shared.new(SExprI64("42", i64_t, span_unknown())), ctx), "42"))
+
+  results.push(assert_eq_str("c4: u8 literal codegen",
+    gen_expr(Shared.new(SExprU8("255", u8_t, span_unknown())), ctx), "static_cast<uint8_t>(255)"))
+
+  results.push(assert_eq_str("c4: usize literal codegen",
+    gen_expr(Shared.new(SExprUsize("100", usize_t, span_unknown())), ctx), "static_cast<size_t>(100)"))
+
+  results.push(assert_eq_str("c4: char literal codegen",
+    gen_expr(Shared.new(SExprChar("a", char_t, span_unknown())), ctx), "static_cast<char32_t>(a)"))
+
+  results.push(assert_eq_str("c4: sem_type_to_cpp TI64",
+    sem_type_to_cpp(ctx, i64_t), "int64_t"))
+
+  results.push(assert_eq_str("c4: sem_type_to_cpp TF64",
+    sem_type_to_cpp(ctx, f64_t), "double"))
+
+  results.push(assert_eq_str("c4: sem_type_to_cpp TU8",
+    sem_type_to_cpp(ctx, u8_t), "uint8_t"))
+
+  results.push(assert_eq_str("c4: sem_type_to_cpp TUsize",
+    sem_type_to_cpp(ctx, usize_t), "size_t"))
+
+  results.push(assert_eq_str("c4: sem_type_to_cpp TChar",
+    sem_type_to_cpp(ctx, char_t), "char32_t"))
 
   results
 end

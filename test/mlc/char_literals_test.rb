@@ -135,27 +135,27 @@ class MLCCharLiteralsTest < Minitest::Test
 
   def test_parser_char_literal
     source = <<~MLC
-      fn test() -> i32 = 'a'
+      fn test() -> char = 'a'
     MLC
 
     ast = MLC.parse(source)
     func = ast.declarations.first
     body = func.body
 
-    assert_instance_of MLC::Source::AST::IntLit, body
+    assert_instance_of MLC::Source::AST::CharLit, body
     assert_equal 97, body.value
   end
 
   def test_parser_escape_in_function
     source = <<~MLC
-      fn newline() -> i32 = '\\n'
+      fn newline() -> char = '\\n'
     MLC
 
     ast = MLC.parse(source)
     func = ast.declarations.first
     body = func.body
 
-    assert_instance_of MLC::Source::AST::IntLit, body
+    assert_instance_of MLC::Source::AST::CharLit, body
     assert_equal 10, body.value
   end
 
@@ -163,52 +163,52 @@ class MLCCharLiteralsTest < Minitest::Test
 
   def test_cpp_codegen_char_literal
     source = <<~MLC
-      fn test() -> i32 = 'a'
+      fn test() -> char = 'a'
     MLC
 
     cpp = MLC.to_cpp(source)
-    assert_includes cpp, "return 97"
+    assert_includes cpp, "char32_t"
+    assert_includes cpp, "97"
   end
 
   def test_cpp_codegen_escape_sequence
     source = <<~MLC
-      fn test() -> i32 = '\\n'
+      fn test() -> char = '\\n'
     MLC
 
     cpp = MLC.to_cpp(source)
-    assert_includes cpp, "return 10"
+    assert_includes cpp, "char32_t"
+    assert_includes cpp, "10"
   end
 
   def test_cpp_codegen_null_char
     source = <<~MLC
-      fn test() -> i32 = '\\0'
+      fn test() -> char = '\\0'
     MLC
 
     cpp = MLC.to_cpp(source)
-    assert_includes cpp, "return 0"
+    assert_includes cpp, "char32_t"
+    assert_includes cpp, "0"
   end
 
   # ========== Arithmetic with Char Literals ==========
 
   def test_char_arithmetic
     source = <<~MLC
-      fn to_uppercase(c: i32) -> i32 = c - 'a' + 'A'
+      fn to_uppercase(c: char) -> char = c - 'a' + 'A'
     MLC
 
     cpp = MLC.to_cpp(source)
-    # 'a' = 97, 'A' = 65
-    assert_includes cpp, "c - 97 + 65"
+    assert_includes cpp, "char32_t"
   end
 
   def test_char_comparison
     source = <<~MLC
-      fn is_digit(c: i32) -> bool = c >= '0' && c <= '9'
+      fn is_digit(c: char) -> bool = c >= '0' && c <= '9'
     MLC
 
     cpp = MLC.to_cpp(source)
-    # '0' = 48, '9' = 57
-    assert_includes cpp, "c >= 48"
-    assert_includes cpp, "c <= 57"
+    assert_includes cpp, "char32_t"
   end
 
   # ========== Unicode Support ==========

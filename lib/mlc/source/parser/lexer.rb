@@ -263,6 +263,22 @@ module MLC
           add_token(type, value, line: start_line, column: start_column)
         end
 
+        NUMERIC_SUFFIXES = %w[i8 i16 i32 i64 u8 u16 u32 u64 usize f32 f64].freeze
+
+        def scan_numeric_suffix
+          return nil unless @pos < @source.length && @source[@pos] =~ /[a-z]/
+
+          suffix_start = @pos
+          @pos += 1 while @pos < @source.length && @source[@pos] =~ /[a-z0-9]/
+          candidate = @source[suffix_start...@pos]
+          if NUMERIC_SUFFIXES.include?(candidate)
+            candidate
+          else
+            @pos = suffix_start
+            nil
+          end
+        end
+
         def tokenize_number
           start_line = @line
           start_column = @column
@@ -292,15 +308,25 @@ module MLC
             @pos += 1 while @pos < @source.length && @source[@pos] =~ /[0-9_]/
             raw_value = @source[start...@pos]
             @column += raw_value.length
-            # Remove underscores before conversion
             clean_value = raw_value.delete('_')
-            add_token(:FLOAT_LITERAL, clean_value.to_f, line: start_line, column: start_column)
+            suffix = scan_numeric_suffix
+            if suffix
+              add_token(:SUFFIXED_FLOAT_LITERAL, { value: clean_value.to_f, type_name: suffix },
+                        line: start_line, column: start_column)
+            else
+              add_token(:FLOAT_LITERAL, clean_value.to_f, line: start_line, column: start_column)
+            end
           else
             raw_value = @source[start...@pos]
             @column += raw_value.length
-            # Remove underscores before conversion
             clean_value = raw_value.delete('_')
-            add_token(:INT_LITERAL, clean_value.to_i, line: start_line, column: start_column)
+            suffix = scan_numeric_suffix
+            if suffix
+              add_token(:SUFFIXED_INT_LITERAL, { value: clean_value.to_i, type_name: suffix },
+                        line: start_line, column: start_column)
+            else
+              add_token(:INT_LITERAL, clean_value.to_i, line: start_line, column: start_column)
+            end
           end
         end
 
@@ -318,7 +344,13 @@ module MLC
           raise "Invalid binary literal: #{raw_value}" if binary_part.empty?
 
           int_value = binary_part.to_i(2)
-          add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
+          suffix = scan_numeric_suffix
+          if suffix
+            add_token(:SUFFIXED_INT_LITERAL, { value: int_value, type_name: suffix },
+                      line: start_line, column: start_column)
+          else
+            add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
+          end
         end
 
         def tokenize_octal_literal(start_line, start_column)
@@ -335,7 +367,13 @@ module MLC
           raise "Invalid octal literal: #{raw_value}" if octal_part.empty?
 
           int_value = octal_part.to_i(8)
-          add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
+          suffix = scan_numeric_suffix
+          if suffix
+            add_token(:SUFFIXED_INT_LITERAL, { value: int_value, type_name: suffix },
+                      line: start_line, column: start_column)
+          else
+            add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
+          end
         end
 
         def tokenize_hex_literal(start_line, start_column)
@@ -352,7 +390,13 @@ module MLC
           raise "Invalid hex literal: #{raw_value}" if hex_part.empty?
 
           int_value = hex_part.to_i(16)
-          add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
+          suffix = scan_numeric_suffix
+          if suffix
+            add_token(:SUFFIXED_INT_LITERAL, { value: int_value, type_name: suffix },
+                      line: start_line, column: start_column)
+          else
+            add_token(:INT_LITERAL, int_value, line: start_line, column: start_column)
+          end
         end
 
         def tokenize_string
