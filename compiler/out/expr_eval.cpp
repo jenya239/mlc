@@ -2,6 +2,8 @@
 
 #include "semantic_ir.hpp"
 #include "semantic_ir.hpp"
+#include "registry.hpp"
+#include "semantic_type_structure.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "literals.hpp"
@@ -18,6 +20,8 @@ namespace expr_eval {
 
 using namespace semantic_ir;
 using namespace semantic_ir;
+using namespace registry;
+using namespace semantic_type_structure;
 using namespace context;
 using namespace cpp_naming;
 using namespace literals;
@@ -72,7 +76,12 @@ index = index + 1;
 return parts.join(mlc::String(", "));
 }
 
-mlc::String gen_binary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expr, std::shared_ptr<semantic_ir::SExpr> right_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return expr::parenthesized_binary(eval_expr(left_expr, context, gen_stmts), operation, eval_expr(right_expr, context, gen_stmts));}
+mlc::String gen_binary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expr, std::shared_ptr<semantic_ir::SExpr> right_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
+mlc::String method = semantic_type_structure::operator_method_for(operation);
+std::shared_ptr<registry::Type> left_type = semantic_ir::sexpr_type(left_expr);
+mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*left_type))) { auto _v_tnamed = std::get<registry::TNamed>((*left_type)); auto [n] = _v_tnamed; return n; } return mlc::String(""); }();
+return method != mlc::String("") && type_name != mlc::String("") ? type_name + mlc::String("_") + method + mlc::String("(") + eval_expr(left_expr, context, gen_stmts) + mlc::String(", ") + eval_expr(right_expr, context, gen_stmts) + mlc::String(")") : expr::parenthesized_binary(eval_expr(left_expr, context, gen_stmts), operation, eval_expr(right_expr, context, gen_stmts));
+}
 
 mlc::String gen_unary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> inner_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return expr::parenthesized_unary(operation, eval_expr(inner_expr, context, gen_stmts));}
 

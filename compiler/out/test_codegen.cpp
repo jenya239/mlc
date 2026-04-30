@@ -218,6 +218,9 @@ results.push_back(test_runner::assert_eq_str(mlc::String("d1: sem_type_to_cpp TA
 mlc::String assoc_prog_src = mlc::String("type Iter { type Item } type Box<T> = { val: T } extend Box<T>: Iter { type Item = T fn Iter_next(self: Box<T>) -> i32 = 0 }");
 mlc::String assoc_prog_out = module::gen_program(decls::parse_program(lexer::tokenize(assoc_prog_src).tokens));
 results.push_back(test_runner::assert_eq_str(mlc::String("d1: gen_program struct contains using Item ="), assoc_prog_out.contains(mlc::String("using Item =")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+mlc::String op_prog_src = mlc::String("type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0");
+mlc::String op_prog_out = module::gen_program(decls::parse_program(lexer::tokenize(op_prog_src).tokens));
+results.push_back(test_runner::assert_eq_str(mlc::String("d2: gen_program Vec2 + Vec2 desugars to Vec2_add"), op_prog_out.contains(mlc::String("Vec2_add(")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 return results;
 }
 

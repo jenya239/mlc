@@ -54,6 +54,8 @@ int builtin_method_expected_argument_count(mlc::String method_name) noexcept;
 
 std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
 
+mlc::String operator_method_for(mlc::String operation) noexcept;
+
 bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TUnknown>((*type_value))) {  return true; } return false; }();}
 
 bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept{return type_is_unknown(left) || type_is_unknown(right) ? true : std::visit(overloaded{
@@ -255,5 +257,7 @@ j = j + 1;
 }
   return std::make_shared<registry::Type>(registry::TFn(new_params, substitute_type(ret, substitution)));
  }(); } return type_value; }();}
+
+mlc::String operator_method_for(mlc::String operation) noexcept{return operation == mlc::String("+") ? mlc::String("add") : operation == mlc::String("-") ? mlc::String("sub") : operation == mlc::String("*") ? mlc::String("mul") : operation == mlc::String("/") ? mlc::String("div") : operation == mlc::String("%") ? mlc::String("rem") : mlc::String("");}
 
 } // namespace semantic_type_structure

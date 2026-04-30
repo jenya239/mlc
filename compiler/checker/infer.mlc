@@ -9,9 +9,9 @@ import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } fr
 import { infer_question_from_inner_result } from "./infer_question_expression"
 import * as infer_operand_combine from "./infer_operand_combine"
 import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
-import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
+import { types_structurally_equal, type_is_unknown, type_description, operator_method_for } from "./semantic_type_structure"
 import { infer_expr_call } from "./infer_call"
-import { field_type_from_object } from "./registry"
+import { field_type_from_object, method_return_type_from_object } from "./registry"
 import { infer_expr_identifier } from "./infer_expr_ident"
 import { env_for_pattern } from "./pattern_env"
 import { infer_expr_match } from "./infer_match"
@@ -77,7 +77,17 @@ end
 fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
   const left_result  = infer_expr(left, inference_context)
   const right_result = infer_expr(right, inference_context)
-  infer_operand_combine.infer_binary_from_operand_results(operation, left_result, right_result, source_span)
+  const method = operator_method_for(operation)
+  if method != "" then
+    const method_type = method_return_type_from_object(left_result.inferred_type, method, inference_context.registry)
+    if !type_is_unknown(method_type) then
+      InferResult { inferred_type: method_type, errors: diagnostics_append(left_result.errors, right_result.errors) }
+    else
+      infer_operand_combine.infer_binary_from_operand_results(operation, left_result, right_result, source_span)
+    end
+  else
+    infer_operand_combine.infer_binary_from_operand_results(operation, left_result, right_result, source_span)
+  end
 end
 
 fn infer_expr_unary(operation: string, inner: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult =

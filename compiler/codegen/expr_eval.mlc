@@ -2,8 +2,10 @@
 // break the import cycle with stmt_eval.mlc. Private helpers thread gen_stmts
 // through; recursive eval_expr calls go directly (same module).
 
-import { SExpr, SStmt } from "../semantic_ir"
+import { SExpr, SStmt, sexpr_type } from "../semantic_ir"
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
+import { Type } from "../checker/registry"
+import { operator_method_for } from "../checker/semantic_type_structure"
 import { CodegenContext, context_resolve } from "./context"
 import { cpp_safe, map_builtin } from "./cpp_naming"
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from "./literals"
@@ -28,8 +30,16 @@ end
 
 // --- Expression rules --------------------------------------------------------
 
-fn gen_binary_expr(operation: string, left_expr: Shared<SExpr>, right_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
-  expression_output.parenthesized_binary(eval_expr(left_expr, context, gen_stmts), operation, eval_expr(right_expr, context, gen_stmts))
+fn gen_binary_expr(operation: string, left_expr: Shared<SExpr>, right_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+  const method    = operator_method_for(operation)
+  const left_type = sexpr_type(left_expr)
+  const type_name = match left_type { TNamed(n) => n, _ => "" }
+  if method != "" && type_name != "" then
+    type_name + "_" + method + "(" + eval_expr(left_expr, context, gen_stmts) + ", " + eval_expr(right_expr, context, gen_stmts) + ")"
+  else
+    expression_output.parenthesized_binary(eval_expr(left_expr, context, gen_stmts), operation, eval_expr(right_expr, context, gen_stmts))
+  end
+end
 
 fn gen_unary_expr(operation: string, inner_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   expression_output.parenthesized_unary(operation, eval_expr(inner_expr, context, gen_stmts))

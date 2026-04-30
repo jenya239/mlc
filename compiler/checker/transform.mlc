@@ -11,7 +11,8 @@ import {
   function_parameter_list,
   type_is_function,
   array_element_type_from_array_type,
-  type_is_array
+  type_is_array,
+  operator_method_for
 } from "./semantic_type_structure"
 import { array_hof_call_result_type, is_array_hof_method } from "./array_method_types"
 import { result_option_hof_call_result_type, should_infer_result_option_combinator } from "./result_option_method_types"
@@ -322,7 +323,13 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     ExprBin(operation, left, right, source_span) => do
       const typed_left  = transform_expr(left,  transform_context, stmts_fn)
       const typed_right = transform_expr(right, transform_context, stmts_fn)
-      const result_type = binary_operation_result_type(operation, sexpr_type(typed_left))
+      const left_type   = sexpr_type(typed_left)
+      const method      = operator_method_for(operation)
+      const result_type = if method != "" then
+        const from_reg = method_return_type_from_object(left_type, method, transform_context.registry)
+        if type_is_unknown(from_reg) then binary_operation_result_type(operation, left_type) else from_reg end
+      else binary_operation_result_type(operation, left_type)
+      end
       Shared.new(SExprBin(operation, typed_left, typed_right, result_type, source_span))
     end,
 

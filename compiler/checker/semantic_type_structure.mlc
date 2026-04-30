@@ -274,3 +274,12 @@ export fn substitute_type(type_value: Shared<Type>, substitution: Map<string, Sh
     end,
     _ => type_value
   }
+
+export fn operator_method_for(operation: string) -> string =
+  if      operation == "+" then "add"
+  else if operation == "-" then "sub"
+  else if operation == "*" then "mul"
+  else if operation == "/" then "div"
+  else if operation == "%" then "rem"
+  else ""
+  end

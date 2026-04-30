@@ -408,5 +408,10 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("d1: gen_program struct contains using Item =",
     if assoc_prog_out.contains("using Item =") then "yes" else "no" end, "yes"))
 
+  const op_prog_src = "type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0"
+  const op_prog_out = gen_program(parse_program(tokenize(op_prog_src).tokens))
+  results.push(assert_eq_str("d2: gen_program Vec2 + Vec2 desugars to Vec2_add",
+    if op_prog_out.contains("Vec2_add(") then "yes" else "no" end, "yes"))
+
   results
 end

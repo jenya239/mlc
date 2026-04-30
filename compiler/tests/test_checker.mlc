@@ -684,5 +684,8 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("d1: TyAssoc in fn return type - 0 errors",
     check_error_count("type Iter { type Item } fn first<I: Iter>(x: I) -> I.Item = x"), 0))
 
+  results.push(assert_eq_int("d2: operator overload via Add trait - 0 errors",
+    check_error_count("type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0"), 0))
+
   results
 end

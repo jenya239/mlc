@@ -306,7 +306,12 @@ std::shared_ptr<semantic_ir::SExpr> transform_expr(std::shared_ptr<ast::Expr> ex
  }(); } if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [operation, left, right, source_span] = _v_exprbin; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   std::shared_ptr<semantic_ir::SExpr> typed_left = transform_expr(left, transform_context, stmts_fn);
   std::shared_ptr<semantic_ir::SExpr> typed_right = transform_expr(right, transform_context, stmts_fn);
-  std::shared_ptr<registry::Type> result_type = semantic_type_structure::binary_operation_result_type(operation, semantic_ir::sexpr_type(typed_left));
+  std::shared_ptr<registry::Type> left_type = semantic_ir::sexpr_type(typed_left);
+  mlc::String method = semantic_type_structure::operator_method_for(operation);
+  std::shared_ptr<registry::Type> result_type = method != mlc::String("") ? [&]() -> std::shared_ptr<registry::Type> { 
+  std::shared_ptr<registry::Type> from_reg = registry::method_return_type_from_object(left_type, method, transform_context.registry);
+  return semantic_type_structure::type_is_unknown(from_reg) ? semantic_type_structure::binary_operation_result_type(operation, left_type) : from_reg;
+ }() : semantic_type_structure::binary_operation_result_type(operation, left_type);
   return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprBin(operation, typed_left, typed_right, result_type, source_span));
  }(); } if (std::holds_alternative<ast::ExprUn>((*expression)._)) { auto _v_exprun = std::get<ast::ExprUn>((*expression)._); auto [operation, inner, source_span] = _v_exprun; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   std::shared_ptr<semantic_ir::SExpr> typed_inner = transform_expr(inner, transform_context, stmts_fn);

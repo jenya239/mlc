@@ -18,6 +18,24 @@ module MLC
               left_ir = context.fetch(:left_ir)
               right_ir = context.fetch(:right_ir)
 
+              # Check for operator overloading via traits BEFORE type inference
+              if svc.operator_trait_mapper.overloadable?(node.op, left_ir.type)
+                resolution = svc.operator_trait_mapper.resolve(node.op, left_ir.type)
+                if resolution
+                  output_type = svc.operator_trait_mapper.output_type(node.op, left_ir.type, svc.type_builder) ||
+                                left_ir.type
+                  return svc.ir_builder.operator_call(
+                    op: node.op,
+                    left: left_ir,
+                    right: right_ir,
+                    method_name: resolution[:method_name],
+                    trait_name: resolution[:trait_name],
+                    type: output_type,
+                    origin: node
+                  )
+                end
+              end
+
               result_type = begin
                 svc.type_inference_service.infer_binary_type(
                   node.op,
@@ -30,23 +48,6 @@ module MLC
                 raise "#{e.message} | left_val=#{left_val.inspect[0..50]} right_name=#{right_name}"
               end
 
-              # Check for operator overloading via traits
-              if svc.operator_trait_mapper.overloadable?(node.op, left_ir.type)
-                resolution = svc.operator_trait_mapper.resolve(node.op, left_ir.type)
-                if resolution
-                  return svc.ir_builder.operator_call(
-                    op: node.op,
-                    left: left_ir,
-                    right: right_ir,
-                    method_name: resolution[:method_name],
-                    trait_name: resolution[:trait_name],
-                    type: result_type,
-                    origin: node
-                  )
-                end
-              end
-
-              # Default: native binary operation
               svc.ir_builder.binary_op(
                 op: node.op,
                 left: left_ir,

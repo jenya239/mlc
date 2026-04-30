@@ -109,6 +109,29 @@ module MLC
               end
             end
 
+            # Get the Output associated type for an overloaded operator
+            # @param op [String] operator
+            # @param type [SemanticIR::Type] left operand type
+            # @param type_builder [TypeBuilder] for AST->SemanticIR conversion
+            # @return [SemanticIR::Type, nil]
+            def output_type(op, type, type_builder) # rubocop:disable Naming/MethodParameterName
+              return nil unless OPERATOR_TRAITS.key?(op)
+
+              type_name = extract_type_name(type)
+              return nil unless type_name
+
+              trait_name, = OPERATOR_TRAITS[op]
+              impl = @trait_registry.get_implementation(type_name, trait_name)
+              return nil unless impl&.associated_type_bindings
+
+              ast_output = impl.associated_type_bindings["Output"]
+              return nil unless ast_output
+
+              type_builder.transform(ast_output)
+            rescue StandardError
+              nil
+            end
+
             # Get trait name for operator
             def trait_for(op) # rubocop:disable Naming/MethodParameterName
               OPERATOR_TRAITS.dig(op, 0)

@@ -6,6 +6,8 @@
 
 #include "semantic_ir.hpp"
 #include "semantic_ir.hpp"
+#include "registry.hpp"
+#include "semantic_type_structure.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "literals.hpp"

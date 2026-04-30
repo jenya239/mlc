@@ -129,7 +129,11 @@ return result;
 infer_result::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult left_result = infer_expr(left, inference_context);
 infer_result::InferResult right_result = infer_expr(right, inference_context);
-return infer_operand_combine::infer_binary_from_operand_results(operation, left_result, right_result, source_span);
+mlc::String method = semantic_type_structure::operator_method_for(operation);
+return method != mlc::String("") ? [&]() -> infer_result::InferResult { 
+  std::shared_ptr<registry::Type> method_type = registry::method_return_type_from_object(left_result.inferred_type, method, inference_context.registry);
+  return !semantic_type_structure::type_is_unknown(method_type) ? infer_result::InferResult{method_type, ast::diagnostics_append(left_result.errors, right_result.errors)} : infer_operand_combine::infer_binary_from_operand_results(operation, left_result, right_result, source_span);
+ }() : infer_operand_combine::infer_binary_from_operand_results(operation, left_result, right_result, source_span);
 }
 
 infer_result::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept{return infer_operand_combine::infer_unary_from_inner_result(operation, infer_expr(inner, inference_context), source_span);}

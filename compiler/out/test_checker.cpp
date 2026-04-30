@@ -226,6 +226,7 @@ results.push_back(test_runner::assert_eq_int(mlc::String("c5: with — 0 errors"
 results.push_back(test_runner::assert_eq_int(mlc::String("d1: DeclAssocType in trait - 0 errors"), check_error_count(mlc::String("type Iter { type Item fn Iter_next(self: Iter) -> i32 }")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("d1: DeclAssocBind in extend - 0 errors"), check_error_count(mlc::String("type Iter { type Item } type Box<T> = { val: T } extend Box<T>: Iter { type Item = T fn Iter_next(self: Box<T>) -> i32 = 0 }")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("d1: TyAssoc in fn return type - 0 errors"), check_error_count(mlc::String("type Iter { type Item } fn first<I: Iter>(x: I) -> I.Item = x")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("d2: operator overload via Add trait - 0 errors"), check_error_count(mlc::String("type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0")), 0));
 return results;
 }
 
