@@ -41,15 +41,22 @@ module MLC
           next_token = peek
           return false unless next_token
 
-          # If next token is /, _, or RBRACE, it's match arms
+          token_after_next = @tokens[@pos + 2] if @pos + 2 < @tokens.length
+
+          # Literal patterns: 0 =>, true =>, etc.
+          if %i[INT_LITERAL FLOAT_LITERAL STRING_LITERAL TRUE FALSE].include?(next_token.type)
+            return true if token_after_next&.type == :FAT_ARROW
+          end
+
+          # If next token is /, _, else, or RBRACE, it's match arms
           return true if next_token.type == :REGEX
           return true if next_token.type == :UNDERSCORE
+          return true if next_token.type == :ELSE
           return true if next_token.type == :RBRACE
 
           # If next token is IDENTIFIER followed by :, it's a record field
           # If next token is IDENTIFIER followed by =>, it's a match arm
           if next_token.type == :IDENTIFIER
-            token_after_next = @tokens[@pos + 2] if @pos + 2 < @tokens.length
             return false if token_after_next && token_after_next.type == :COLON
             return false if token_after_next && (token_after_next.type == :COMMA || token_after_next.type == :RBRACE)
             return true if token_after_next && token_after_next.type == :FAT_ARROW

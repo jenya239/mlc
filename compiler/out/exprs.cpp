@@ -366,7 +366,7 @@ return alts.size() == 1 ? first : preds::PatResult{std::make_shared<ast::Pat>(as
 
 preds::PatResult parse_pat(preds::Parser parser) noexcept{
 ast_tokens::TKind kind = preds::Parser_kind(parser);
-return preds::TKind_is_ident(kind) ? parse_pattern_identifier_branch(parser, preds::TKind_ident(kind)) : preds::TKind_is_int(kind) ? parse_pattern_integer(parser, preds::TKind_int_val(kind)) : preds::TKind_is_str(kind) ? parse_pattern_string(parser, preds::TKind_str_val(kind)) : preds::TKind_is_true(kind) ? parse_pattern_boolean(parser, true) : preds::TKind_is_false(kind) ? parse_pattern_boolean(parser, false) : parse_pattern_fallback_wildcard(parser);
+return preds::TKind_is_ident(kind) ? parse_pattern_identifier_branch(parser, preds::TKind_ident(kind)) : preds::TKind_is_int(kind) ? parse_pattern_integer(parser, preds::TKind_int_val(kind)) : preds::TKind_is_str(kind) ? parse_pattern_string(parser, preds::TKind_str_val(kind)) : preds::TKind_is_true(kind) ? parse_pattern_boolean(parser, true) : preds::TKind_is_false(kind) ? parse_pattern_boolean(parser, false) : preds::TKind_is_else(kind) ? preds::PatResult{std::make_shared<ast::Pat>(ast::PatWild(preds::Parser_span_at_cursor(parser))), preds::Parser_advance(parser)} : parse_pattern_fallback_wildcard(parser);
 }
 
 preds::PatsResult parse_pat_args(preds::Parser parser) noexcept{

@@ -299,6 +299,8 @@ fn parse_pat(parser: Parser) -> PatResult = do
   else if kind.is_str() then parse_pattern_string(parser, kind.str_val())
   else if kind.is_true() then parse_pattern_boolean(parser, true)
   else if kind.is_false() then parse_pattern_boolean(parser, false)
+  else if kind.is_else() then
+    PatResult { pat: Shared.new(PatWild(parser.span_at_cursor())), parser: parser.advance() }
   else parse_pattern_fallback_wildcard(parser)
   end
 end

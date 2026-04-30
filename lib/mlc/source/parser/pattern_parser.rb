@@ -10,6 +10,9 @@ module MLC
         # Patterns can be: wildcard, regex, literal, variable, constructor, tuple, array, or or-pattern
         def parse_pattern
           case current.type
+          when :ELSE
+            token = consume(:ELSE)
+            with_origin(token) { MLC::Source::AST::Pattern.new(kind: :wildcard, data: {}) }
           when :UNDERSCORE, :OPERATOR
             parse_wildcard_pattern
           when :REGEX
@@ -74,6 +77,8 @@ module MLC
           return false unless token
 
           case token.type
+          when :ELSE
+            true
           when :UNDERSCORE, :REGEX, :INT_LITERAL, :FLOAT_LITERAL, :STRING_LITERAL, :TRUE, :FALSE, :IDENTIFIER, :LBRACKET, :LPAREN
             true
           when :OPERATOR

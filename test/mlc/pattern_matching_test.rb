@@ -43,6 +43,22 @@ class MLCPatternMatchingTest < Minitest::Test
     refute_nil arm3[:body].result_expr
   end
 
+  def test_match_else_arm_is_wildcard
+    mlc_source = <<~MLCORA
+      fn test(x: i32) -> i32 =
+        match x {
+          0 => 1,
+          else => 2
+        }
+    MLCORA
+
+    ast = MLC.parse(mlc_source)
+    func = ast.declarations.first
+    match_expr = func.body
+    assert_equal 2, match_expr.arms.length
+    assert_equal :wildcard, match_expr.arms[1][:pattern].kind
+  end
+
   def test_parse_constructor_pattern
     mlc_source = <<~MLCORA
       type Shape = Circle(f32) | Point

@@ -158,6 +158,18 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
+  results.push(assert_true("match catch-all: else => synonyms wildcard PatWild",
+    match parse_expr_source("match x { 1 => 0, else => 1 }") {
+      ExprMatch(_, arms, _) =>
+        if arms.length() == 2 then
+          match arms[1].pat {
+            PatWild(_) => true,
+            _ => false
+          }
+        else false end,
+      _ => false
+    }))
+
   // Template literal parser tests
   results.push(assert_eq_int("plain template literal - 1 decl",
     decl_count("fn f() -> string = `hello`"), 1))
