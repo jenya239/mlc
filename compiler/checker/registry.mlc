@@ -274,7 +274,7 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       end
       registry
     end,
-    DeclFn(name, type_parameters, trait_bounds, params, return_type, _) => do
+    DeclFn(name, type_parameters, trait_bounds, params, return_type, _, _) => do
       const param_types: [Shared<Type>] = []
       const pnames: [string] = []
       let mut i = 0

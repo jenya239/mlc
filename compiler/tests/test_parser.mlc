@@ -51,7 +51,7 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true("fn decl is DeclFn",
     match first_decl("fn f() -> i32 = 42") {
-      DeclFn(_, _, _, _, _, _) => true,
+      DeclFn(_, _, _, _, _, _, _) => true,
       _ => false
     }))
 
@@ -70,6 +70,9 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_eq_int("type + fn with match pipe arms - 2 decls",
     decl_count("type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0\n"), 2))
 
+  results.push(assert_eq_int("trait plus fn with where clause — 2 decls",
+    decl_count("type Display { fn to_string(self: Self) -> string }\nfn f<T>(x: T) -> unit where T: Display = ()"), 2))
+
   results.push(assert_eq_int("fn with parenthesized lambda - 1 decl",
     decl_count("fn f() -> i32 = (() => 7)()"), 1))
 
@@ -77,7 +80,7 @@ export fn parser_tests() -> [TestResult] = do
     match second_decl("type R = { a: i32 }\nextend R {\n  fn m(self: R, x: i32) -> i32 = x\n}") {
       DeclExtend(_, _, methods) =>
         match methods[0] {
-          DeclFn(_, _, _, parameters, _, _) => parameters.length() == 2,
+          DeclFn(_, _, _, parameters, _, _, _) => parameters.length() == 2,
           _ => false
         },
       _ => false

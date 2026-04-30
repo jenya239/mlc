@@ -31,6 +31,10 @@ bool is_extern_body(std::shared_ptr<ast::Expr> e) noexcept;
 
 mlc::Array<ast::Diagnostic> param_default_diagnostics(mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::Expr> body, registry::TypeRegistry registry) noexcept;
 
+bool type_parameter_name_known(mlc::Array<mlc::String> type_parameter_names, mlc::String candidate_name) noexcept;
+
+mlc::Array<ast::Diagnostic> where_clause_unknown_parameter_diagnostics(mlc::Array<mlc::String> type_parameter_names, mlc::Array<ast::WhereClauseBound> where_entries, ast::Span source_span) noexcept;
+
 mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept;
 
 bool type_is_checkable(std::shared_ptr<registry::Type> type_value, registry::TypeRegistry registry) noexcept;
@@ -124,6 +128,38 @@ p = p + 1;
 return out;
 }
 
+bool type_parameter_name_known(mlc::Array<mlc::String> type_parameter_names, mlc::String candidate_name) noexcept{
+int index = 0;
+while (index < type_parameter_names.size()){
+{
+if (type_parameter_names[index] == candidate_name){
+{
+return true;
+}
+}
+index = index + 1;
+}
+}
+return false;
+}
+
+mlc::Array<ast::Diagnostic> where_clause_unknown_parameter_diagnostics(mlc::Array<mlc::String> type_parameter_names, mlc::Array<ast::WhereClauseBound> where_entries, ast::Span source_span) noexcept{
+mlc::Array<ast::Diagnostic> collected = {};
+int entry_index = 0;
+while (entry_index < where_entries.size()){
+{
+ast::WhereClauseBound entry = where_entries[entry_index];
+if (!type_parameter_name_known(type_parameter_names, entry.parameter_name)){
+{
+collected.push_back(ast::diagnostic_error(mlc::String("where clause names unknown type parameter \"") + entry.parameter_name + mlc::String("\""), source_span));
+}
+}
+entry_index = entry_index + 1;
+}
+}
+return collected;
+}
+
 mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
 mlc::HashMap<mlc::String, bool> names = mlc::HashMap<mlc::String, bool>();
 names.set(mlc::String("true"), true);
@@ -142,7 +178,7 @@ int index = 0;
 while (index < program.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclFn& declfn) -> std::tuple<> { auto [name, _w0, _w1, _w2, _w3, _w4] = declfn; return [&]() -> std::tuple<> { 
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [name, _w0, _w1, _w2, _w3, _w4, _w5] = declfn; return [&]() -> std::tuple<> { 
   names.set(name, true);
   return std::make_tuple();
  }(); },
@@ -175,7 +211,7 @@ variant_index = variant_index + 1;
   int method_index = 0;
   while (method_index < methods.size()){
 {
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [function_name, _w0, _w1, _w2, _w3, _w4] = _v_declfn; return [&]() -> std::tuple<> { 
+[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [function_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() -> std::tuple<> { 
   names.set(function_name, true);
   return std::make_tuple();
  }(); } return std::make_tuple(); }();
@@ -229,7 +265,8 @@ int declaration_index = 0;
 while (declaration_index < expanded_entry_program.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, type_parameters, _w1, parameters, return_type_annotation, body] = declfn; return [&]() -> std::tuple<> { 
+  [&](const DeclFn& declfn) -> std::tuple<> { auto [name, type_parameters, trait_bounds, parameters, return_type_annotation, body, where_clause_bounds_entries] = declfn; return [&]() -> std::tuple<> { 
+  all_diagnostics = ast::diagnostics_append(all_diagnostics, where_clause_unknown_parameter_diagnostics(type_parameters, where_clause_bounds_entries, ast::expr_span(body)));
   all_diagnostics = ast::diagnostics_append(all_diagnostics, param_default_diagnostics(type_parameters, parameters, body, registry));
   mlc::Array<mlc::String> locals = {};
   int type_parameter_index = 0;
@@ -265,7 +302,8 @@ parameter_index = parameter_index + 1;
   int method_index = 0;
   while (method_index < methods.size()){
 {
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [_w0, type_params, _w1, params, _w2, method_body] = _v_declfn; return [&]() -> std::tuple<> { 
+[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [_w0, type_params, _w1, params, _w2, method_body, where_entries] = _v_declfn; return [&]() -> std::tuple<> { 
+  all_diagnostics = ast::diagnostics_append(all_diagnostics, where_clause_unknown_parameter_diagnostics(type_params, where_entries, ast::expr_span(method_body)));
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> method_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
   int pi = 0;
   while (pi < params.size()){

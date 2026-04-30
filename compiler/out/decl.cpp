@@ -77,7 +77,7 @@ return name == mlc::String("main") && params.size() == 0 ? [&]() -> mlc::String 
 mlc::String gen_decl(std::shared_ptr<semantic_ir::SDecl> decl, context::CodegenContext context) noexcept{return std::visit(overloaded{
   [&](const SDeclType& sdecltype) -> mlc::String { auto [type_name, type_params, variants, derive_traits] = sdecltype; return type_gen::gen_type_decl(context, type_name, type_params, variants) + type_gen::gen_derive_methods(context, type_name, variants, derive_traits); },
   [&](const SDeclTrait& sdecltrait) -> mlc::String { auto [name, type_params, methods] = sdecltrait; return decl_extend::gen_trait_decl(context, name, type_params, methods); },
-  [&](const SDeclFn& sdeclfn) -> mlc::String { auto [name, type_params, type_bounds, params, return_type, body] = sdeclfn; return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprExtern>((*body)._)) { auto _v_sexprextern = std::get<semantic_ir::SExprExtern>((*body)._); auto [_w0, _w1] = _v_sexprextern; return mlc::String(""); } return gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context); }(); },
+  [&](const SDeclFn& sdeclfn) -> mlc::String { auto [name, type_params, type_bounds, params, return_type, body, _w0] = sdeclfn; return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprExtern>((*body)._)) { auto _v_sexprextern = std::get<semantic_ir::SExprExtern>((*body)._); auto [_w0, _w1] = _v_sexprextern; return mlc::String(""); } return gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context); }(); },
   [&](const SDeclExtend& sdeclextend) -> mlc::String { auto [type_name, trait_name, methods] = sdeclextend; return decl_extend::gen_decl_extend(type_name, trait_name, methods, context, [](context::CodegenContext ctx, mlc::String name)  { return context::context_resolve(ctx, name); }, [](std::shared_ptr<semantic_ir::SDecl> decl, context::CodegenContext ctx)  { return gen_decl(decl, ctx); }); },
   [&](const SDeclImport& sdeclimport) -> mlc::String { auto [_w0, _w1] = sdeclimport; return mlc::String(""); },
   [&](const SDeclExported& sdeclexported) -> mlc::String { auto [d] = sdeclexported; return gen_decl(d, context); },
@@ -87,7 +87,7 @@ mlc::String gen_decl(std::shared_ptr<semantic_ir::SDecl> decl, context::CodegenC
 mlc::String gen_proto(std::shared_ptr<semantic_ir::SDecl> decl, context::CodegenContext context) noexcept{return std::visit(overloaded{
   [&](const SDeclType& sdecltype) -> mlc::String { auto [_w0, _w1, _w2, _w3] = sdecltype; return mlc::String(""); },
   [&](const SDeclTrait& sdecltrait) -> mlc::String { auto [_w0, _w1, _w2] = sdecltrait; return mlc::String(""); },
-  [&](const SDeclFn& sdeclfn) -> mlc::String { auto [name, type_params, type_bounds, params, ret, body] = sdeclfn; return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprExtern>((*body)._)) { auto _v_sexprextern = std::get<semantic_ir::SExprExtern>((*body)._); auto [_w0, _w1] = _v_sexprextern; return mlc::String(""); } return gen_fn_proto(name, type_params, type_bounds, params, ret, context); }(); },
+  [&](const SDeclFn& sdeclfn) -> mlc::String { auto [name, type_params, type_bounds, params, ret, body, _w0] = sdeclfn; return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprExtern>((*body)._)) { auto _v_sexprextern = std::get<semantic_ir::SExprExtern>((*body)._); auto [_w0, _w1] = _v_sexprextern; return mlc::String(""); } return gen_fn_proto(name, type_params, type_bounds, params, ret, context); }(); },
   [&](const SDeclExtend& sdeclextend) -> mlc::String { auto [type_name, _w0, methods] = sdeclextend; return [&]() -> mlc::String { 
   context::CodegenContext extend_context = CodegenContext_for_type_body(context, type_name);
   mlc::Array<mlc::String> parts = {};
@@ -111,14 +111,10 @@ int index = 0;
 while (index < decls.size()){
 {
 std::shared_ptr<semantic_ir::SDecl> inner = semantic_ir::sdecl_inner(decls[index]);
-bool is_main = [&]() { if (std::holds_alternative<semantic_ir::SDeclFn>((*inner))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*inner)); auto [name, _w0, _w1, _w2, _w3, _w4] = _v_sdeclfn; return name == mlc::String("main"); } return false; }();
+bool is_main = [&]() { if (std::holds_alternative<semantic_ir::SDeclFn>((*inner))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*inner)); auto [name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_sdeclfn; return name == mlc::String("main"); } return false; }();
 if (is_main){
 {
 found = true;
-}
-} else {
-{
-std::make_tuple();
 }
 }
 index = index + 1;
@@ -153,7 +149,7 @@ while (index < decls.size()){
 mlc::String segment = std::visit(overloaded{
   [&](const SDeclType& sdecltype) -> mlc::String { auto [type_name, type_params, variants, derive_traits] = sdecltype; return phase == 0 ? type_gen::gen_type_decl_fwd_only(context, type_name, type_params, variants) : phase == 1 ? type_gen::gen_type_decl_body_only(context, type_name, type_params, variants) + type_gen::gen_derive_methods(context, type_name, variants, derive_traits) : mlc::String(""); },
   [&](const SDeclTrait& sdecltrait) -> mlc::String { auto [name, type_params, methods] = sdecltrait; return phase == 0 ? decl_extend::gen_trait_decl(context, name, type_params, methods) : mlc::String(""); },
-  [&](const SDeclFn& sdeclfn) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4, _w5] = sdeclfn; return phase == 2 ? gen_proto(decls[index], context) : phase == 3 ? gen_decl(decls[index], context) : mlc::String(""); },
+  [&](const SDeclFn& sdeclfn) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = sdeclfn; return phase == 2 ? gen_proto(decls[index], context) : phase == 3 ? gen_decl(decls[index], context) : mlc::String(""); },
   [&](const SDeclExtend& sdeclextend) -> mlc::String { auto [_w0, _w1, _w2] = sdeclextend; return phase == 2 ? gen_proto(decls[index], context) : phase == 3 ? gen_decl(decls[index], context) : mlc::String(""); },
   [&](const SDeclImport& sdeclimport) -> mlc::String { auto [_w0, _w1] = sdeclimport; return mlc::String(""); },
   [&](const SDeclAssocBind& sdeclassocbind) -> mlc::String { auto [_w0, _w1, _w2] = sdeclassocbind; return mlc::String(""); },

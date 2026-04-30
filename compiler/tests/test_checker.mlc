@@ -173,6 +173,12 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true("D3 trait and type same name — conflict diagnostic",
     first_checker_error_line("type Ambiguous { fn method(self: Self) -> unit }\ntype Ambiguous = VariantOne | VariantTwo").contains("both a type and a trait")))
 
+  results.push(assert_eq_int("D4 where clause merges trait bounds — 0 errors",
+    check_error_count("type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()"), 0))
+
+  results.push(assert_true("D4 where clause unknown type parameter — diagnostic",
+    first_checker_error_line("fn f<T>(x: T) -> unit where U: Display = ()").contains("unknown type parameter")))
+
   results.push(assert_eq_int("call generic fn - 0 errors",
     check_error_count("fn id<T>(x: T) -> T = x\nfn f() -> i32 = id(42)"), 0))
 

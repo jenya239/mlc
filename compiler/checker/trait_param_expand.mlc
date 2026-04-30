@@ -6,6 +6,7 @@ import {
   TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc,
   DeclFn, DeclType, DeclTrait, DeclExtend,
   DeclExported,
+  WhereClauseBound,
   param_name, param_typ,
   Diagnostic, diagnostic_error, span_unknown
 } from "../ast"
@@ -208,6 +209,7 @@ fn expand_decl_fn_trait_parameters(
   parameters: [Shared<Param>],
   return_type_expression: Shared<TypeExpr>,
   body_expression: Shared<Expr>,
+  where_clause_bounds_entries: [WhereClauseBound],
   trait_declaration_names: Map<string, bool>,
   nominal_type_declaration_names: Map<string, bool>
 ) -> Shared<Decl> = do
@@ -256,7 +258,8 @@ fn expand_decl_fn_trait_parameters(
     expanded_trait_bounds,
     expanded_parameters,
     return_chunk.type_expression,
-    body_expression))
+    body_expression,
+    where_clause_bounds_entries))
 end
 
 fn expand_extend_methods(
@@ -275,7 +278,7 @@ end
 
 fn expand_decl_shared(declaration: Shared<Decl>, trait_declaration_names: Map<string, bool>, nominal_type_declaration_names: Map<string, bool>) -> Shared<Decl> =
   match declaration {
-    DeclFn(function_name, type_parameter_names, trait_bounds_rows, parameters, return_type_expression, body_expression) =>
+    DeclFn(function_name, type_parameter_names, trait_bounds_rows, parameters, return_type_expression, body_expression, where_clause_bounds_entries) =>
       expand_decl_fn_trait_parameters(
         function_name,
         type_parameter_names,
@@ -283,6 +286,7 @@ fn expand_decl_shared(declaration: Shared<Decl>, trait_declaration_names: Map<st
         parameters,
         return_type_expression,
         body_expression,
+        where_clause_bounds_entries,
         trait_declaration_names,
         nominal_type_declaration_names),
     DeclExported(inner) => Shared.new(DeclExported(expand_decl_shared(inner, trait_declaration_names, nominal_type_declaration_names))),

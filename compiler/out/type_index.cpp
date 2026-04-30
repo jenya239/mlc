@@ -35,7 +35,7 @@ while (i < decls.size()){
   return [&]() { 
   while (mi < methods.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclFn>((*methods[mi]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[mi])); auto [fn_name, _w0, _w1, _w2, _w3, _w4] = _v_declfn; return [&]() { 
+[&]() -> void { if (std::holds_alternative<ast::DeclFn>((*methods[mi]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[mi])); auto [fn_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() { 
   mlc::String unmangled = extract_method_name(fn_name, trait_name);
   if (!owners.has(unmangled)){
 owners.set(unmangled, fn_name);
@@ -50,7 +50,7 @@ mi = mi + 1;
   return [&]() { 
   while (mi < methods.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclFn>((*methods[mi]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[mi])); auto [fn_name, _w0, _w1, _w2, _w3, _w4] = _v_declfn; return [&]() { 
+[&]() -> void { if (std::holds_alternative<ast::DeclFn>((*methods[mi]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[mi])); auto [fn_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() { 
   mlc::String unmangled = extract_method_name(fn_name, type_name);
   if (!owners.has(unmangled)){
 owners.set(unmangled, fn_name);
@@ -171,7 +171,7 @@ vi = vi + 1;
 }
  }();
  }(); },
-  [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5] = declfn; return ; },
+  [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; return ; },
   [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; return ; },
   [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; return ; },
   [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; return ; },
@@ -210,7 +210,7 @@ vi = vi + 1;
 }
  }();
  }(); },
-  [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5] = declfn; return ; },
+  [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; return ; },
   [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; return ; },
   [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; return ; },
   [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; return ; },

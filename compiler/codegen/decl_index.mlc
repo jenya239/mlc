@@ -18,7 +18,7 @@ fn decl_export_names(decl: Shared<Decl>) -> [string] = do
   match decl {
     DeclExported(d) => do
       match d {
-        DeclFn(name, _, _, _, _, _) => do names.push(name); () end,
+        DeclFn(name, _, _, _, _, _, _) => do names.push(name); () end,
         DeclType(type_name, _, variants, _) => do
           names.push(type_name); let mut variant_index = 0
           while variant_index < variants.length() do
@@ -34,7 +34,7 @@ fn decl_export_names(decl: Shared<Decl>) -> [string] = do
           names.push(name); let mut mi = 0
           while mi < methods.length() do
             match methods[mi] {
-              DeclFn(fn_name, _, _, _, _, _) => do names.push(fn_name); () end,
+              DeclFn(fn_name, _, _, _, _, _, _) => do names.push(fn_name); () end,
               _ => do () end
             }
             mi = mi + 1
@@ -45,7 +45,7 @@ fn decl_export_names(decl: Shared<Decl>) -> [string] = do
           let mut mi = 0
           while mi < methods.length() do
             match methods[mi] {
-              DeclFn(fn_name, _, _, _, _, _) => do names.push(fn_name); () end,
+              DeclFn(fn_name, _, _, _, _, _, _) => do names.push(fn_name); () end,
               _ => do () end
             }
             mi = mi + 1

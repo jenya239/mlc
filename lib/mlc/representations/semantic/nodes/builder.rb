@@ -55,7 +55,8 @@ module MLC
       end
 
       def self.type_param(name, constraint: nil, origin: nil)
-        TypeParam.new(name: name, constraint: constraint, origin: origin)
+        traits = constraint && !constraint.to_s.empty? ? [constraint] : []
+        TypeParam.new(name: name, trait_bounds: traits, origin: origin)
       end
 
       def self.param(name, type, origin: nil)

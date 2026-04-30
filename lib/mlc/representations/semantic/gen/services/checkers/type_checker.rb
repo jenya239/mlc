@@ -385,8 +385,13 @@ module MLC
               params.map do |tp|
                 name = tp.respond_to?(:name) ? tp.name : tp
                 constraint = tp.respond_to?(:constraint) ? tp.constraint : nil
+                extras = tp.respond_to?(:extra_trait_bounds) ? Array(tp.extra_trait_bounds).compact : []
                 validate_constraint_name(constraint)
-                MLC::SemanticIR::TypeParam.new(name: name, constraint: constraint)
+                bounds = []
+                bounds << constraint if constraint && !constraint.empty?
+                bounds.concat(extras.reject(&:empty?))
+                bounds.uniq!
+                MLC::SemanticIR::TypeParam.new(name: name, trait_bounds: bounds, origin: tp.respond_to?(:origin) ? tp.origin : nil)
               end
             end
 

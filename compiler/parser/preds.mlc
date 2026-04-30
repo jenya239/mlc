@@ -1,7 +1,7 @@
 // Parser state, result types, and token kind predicates.
 
 import { TKind, Token, LexOut } from "../ast_tokens"
-import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span } from "../ast"
+import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound } from "../ast"
 
 // --- Parser state ---------------------------------------------------------
 
@@ -57,6 +57,7 @@ export type ParamResult     = ParamResult     { param:      Shared<Param>,      
 export type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
 export type TypeParamsResult = TypeParamsResult { params: [string], bounds: [[string]], parser: Parser }
 export type BoundsResult = BoundsResult { bounds: [string], parser: Parser }
+export type WhereClauseParseResult = WhereClauseParseResult { where_bounds: [WhereClauseBound], parser: Parser }
 export type TraitBodyResult  = TraitBodyResult  { methods:  [Shared<Decl>],           parser: Parser }
 
 // --- Token kind predicates ------------------------------------------------
@@ -81,6 +82,7 @@ fn is_keyword_true(kind: TKind)     -> bool = match kind { KTrue     => true, _ 
 fn is_keyword_false(kind: TKind)    -> bool = match kind { KFalse    => true, _ => false }
 fn is_keyword_extern(kind: TKind)   -> bool = match kind { KExtern   => true, _ => false }
 fn is_keyword_extend(kind: TKind)   -> bool = match kind { KExtend   => true, _ => false }
+fn is_keyword_where(kind: TKind)   -> bool = match kind { KWhere    => true, _ => false }
 
 fn is_ident(kind: TKind)         -> bool = match kind { Ident(_)  => true, _ => false }
 fn is_int_literal(kind: TKind)   -> bool = match kind { LInt(_)   => true, _ => false }
@@ -140,6 +142,7 @@ export extend TKind {
   fn is_false(self)    -> bool = match self { KFalse    => true, _ => false }
   fn is_extern(self)   -> bool = match self { KExtern   => true, _ => false }
   fn is_extend(self)   -> bool = match self { KExtend   => true, _ => false }
+  fn is_where(self)    -> bool = match self { KWhere    => true, _ => false }
   fn is_import(self)   -> bool = match self { KImport   => true, _ => false }
   fn is_as(self)       -> bool = match self { KAs       => true, _ => false }
   fn is_from(self)     -> bool = match self { KFrom     => true, _ => false }

@@ -2,7 +2,7 @@
 
 import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
          Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span,
-         Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit } from "../ast"
+         Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span } from "../ast"
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from "../ast"
 import { check_names_expr } from "./names"
 import { check_fn_body_mutations } from "./check_mutations"
@@ -90,6 +90,34 @@ fn param_default_diagnostics(
   out
 end
 
+fn type_parameter_name_known(type_parameter_names: [string], candidate_name: string) -> bool = do
+  let mut index = 0
+  while index < type_parameter_names.length() do
+    if type_parameter_names[index] == candidate_name then return true end
+    index = index + 1
+  end
+  false
+end
+
+fn where_clause_unknown_parameter_diagnostics(
+  type_parameter_names: [string],
+  where_entries: [WhereClauseBound],
+  source_span: Span
+) -> [Diagnostic] = do
+  let collected: [Diagnostic] = []
+  let mut entry_index = 0
+  while entry_index < where_entries.length() do
+    const entry = where_entries[entry_index]
+    if !type_parameter_name_known(type_parameter_names, entry.parameter_name) then
+      collected.push(diagnostic_error(
+        "where clause names unknown type parameter \"" + entry.parameter_name + "\"",
+        source_span))
+    end
+    entry_index = entry_index + 1
+  end
+  collected
+end
+
 fn collect_globals(program: Program) -> Map<string, bool> = do
   let names: Map<string, bool> = Map.new()
   names.set("true", true); names.set("false", true); names.set("exit", true)
@@ -99,7 +127,7 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
   let mut index = 0
   while index < program.decls.length() do
     match decl_inner(program.decls[index]) {
-      DeclFn(name, _, _, _, _, _) => do names.set(name, true); () end,
+      DeclFn(name, _, _, _, _, _, _) => do names.set(name, true); () end,
       DeclType(name, _, variants, _) => do
         names.set(name, true); let mut variant_index = 0
         while variant_index < variants.length() do
@@ -116,7 +144,7 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
         let mut method_index = 0
         while method_index < methods.length() do
           match methods[method_index] {
-            DeclFn(function_name, _, _, _, _, _) => do names.set(function_name, true); () end,
+            DeclFn(function_name, _, _, _, _, _, _) => do names.set(function_name, true); () end,
             _ => do () end
           }
           method_index = method_index + 1
@@ -189,7 +217,8 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
   let mut declaration_index = 0
   while declaration_index < expanded_entry_program.decls.length() do
     match decl_inner(expanded_entry_program.decls[declaration_index]) {
-      DeclFn(_, type_parameters, _, parameters, return_type_annotation, body) => do
+      DeclFn(name, type_parameters, trait_bounds, parameters, return_type_annotation, body, where_clause_bounds_entries) => do
+        all_diagnostics = diagnostics_append(all_diagnostics, where_clause_unknown_parameter_diagnostics(type_parameters, where_clause_bounds_entries, expr_span(body)))
         all_diagnostics = diagnostics_append(all_diagnostics, param_default_diagnostics(type_parameters, parameters, body, registry))
         const locals: [string] = []
         let mut type_parameter_index = 0
@@ -227,7 +256,8 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         let mut method_index = 0
         while method_index < methods.length() do
           match methods[method_index] {
-            DeclFn(_, type_params, _, params, _, method_body) => do
+            DeclFn(_, type_params, _, params, _, method_body, where_entries) => do
+              all_diagnostics = diagnostics_append(all_diagnostics, where_clause_unknown_parameter_diagnostics(type_params, where_entries, expr_span(method_body)))
               const method_env: Map<string, Shared<Type>> = Map.new()
               let mut pi = 0
               while pi < params.length() do

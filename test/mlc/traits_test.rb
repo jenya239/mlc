@@ -464,19 +464,39 @@ class TraitsTest < Minitest::Test
     assert_match(/__trait_param_1/, cpp)
   end
 
-  def test_trait_and_type_same_name_conflict_raises
+  def test_where_clause_trait_bounds_in_requires
     code = <<~MLC
-      trait Ambiguous {
-        fn method(self: Self) -> unit
+      trait Display {
+        fn to_string(self: Self) -> string
+      }
+      trait Same {
+        fn same(self: Self, other: Self) -> bool
       }
 
-      type Ambiguous = VariantOne | VariantTwo
+      fn f<T>(_value: T) -> unit where T: Display + Same = ()
+
+      fn main() -> i32 = 0
+    MLC
+
+    cpp = compile_to_cpp(code)
+    assert_match(/requires/, cpp)
+    assert_match(/Display/, cpp)
+    assert_match(/Same/, cpp)
+  end
+
+  def test_where_clause_unknown_type_parameter_raises
+    code = <<~MLC
+      trait Display {
+        fn to_string(self: Self) -> string
+      }
+
+      fn f<T>(_value: T) -> unit where U: Display = ()
 
       fn main() -> i32 = 0
     MLC
 
     error = assert_raises(MLC::CompileError) { compile_to_cpp(code) }
-    assert_match(/both a type and a trait/, error.message)
+    assert_match(/unknown type parameter/, error.message)
   end
 
   def test_trait_and_type_same_name_conflict_raises

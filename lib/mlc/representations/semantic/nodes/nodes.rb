@@ -589,12 +589,18 @@ module MLC
 
     # Type parameter metadata for generics
     class TypeParam < Node
-      attr_reader :name, :constraint
+      attr_reader :name, :constraint, :trait_bounds
 
-      def initialize(name:, constraint: nil, origin: nil)
+      def initialize(name:, constraint: nil, trait_bounds: [], origin: nil)
         super(origin: origin)
         @name = name
-        @constraint = constraint
+        merged = []
+        merged << constraint if constraint && !constraint.empty?
+        Array(trait_bounds).each do |trait|
+          merged << trait if trait && !trait.empty?
+        end
+        @trait_bounds = merged.uniq
+        @constraint = @trait_bounds.first
       end
     end
 

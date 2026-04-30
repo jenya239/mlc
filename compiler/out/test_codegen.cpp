@@ -159,7 +159,7 @@ mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> fv_a = mlc::Array<std::share
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprRecord positional"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprRecord(mlc::String("Point"), fv_a, std::make_shared<registry::Type>(registry::TNamed(mlc::String("Point"))), ast::span_unknown())), ctx), mlc::String("Point{1, 2}")));
 mlc::Array<std::shared_ptr<ast::Param>> fn_param = mlc::Array<std::shared_ptr<ast::Param>>{std::make_shared<ast::Param>(ast::Param{mlc::String("n"), false, std::make_shared<ast::TypeExpr>((ast::TyI32{})), false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown()))})};
 std::shared_ptr<ast::Expr> fn_body = std::make_shared<ast::Expr>(ast::ExprBin(mlc::String("*"), std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("n"), ast::span_unknown())), std::make_shared<ast::Expr>(ast::ExprInt(2, ast::span_unknown())), ast::span_unknown()));
-ast::Decl fn_decl = ast::DeclFn(mlc::String("double_it"), {}, {}, fn_param, std::make_shared<ast::TypeExpr>((ast::TyI32{})), fn_body);
+ast::Decl fn_decl = ast::DeclFn(mlc::String("double_it"), {}, {}, fn_param, std::make_shared<ast::TypeExpr>((ast::TyI32{})), fn_body, {});
 ast::Program fn_prog = ast::Program{mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclExported(std::make_shared<ast::Decl>(fn_decl)))}};
 mlc::String fn_prog_out = module::gen_program(fn_prog);
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: signature in output"), fn_prog_out.contains(mlc::String("double_it")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
@@ -173,7 +173,10 @@ results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen
 mlc::String d3_two_trait_parameter_source = mlc::String("type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()");
 mlc::String d3_two_trait_parameter_output = module::gen_program(decls::parse_program(lexer::tokenize(d3_two_trait_parameter_source).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: first Display parameter"), d3_two_trait_parameter_output, mlc::String("Display first")));
-results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: second Display parameter"), d3_two_trait_parameter_output, mlc::String("Display second")));
+mlc::String d4_where_trait_bounds_source = mlc::String("type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()");
+mlc::String d4_where_trait_bounds_output = module::gen_program(decls::parse_program(lexer::tokenize(d4_where_trait_bounds_source).tokens));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D4 gen_program: requires Display"), d4_where_trait_bounds_output, mlc::String("Display")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D4 gen_program: requires EqCompare"), d4_where_trait_bounds_output, mlc::String("EqCompare")));
 mlc::Array<mlc::String> result_type_params = mlc::Array<mlc::String>{mlc::String("T"), mlc::String("E")};
 mlc::Array<std::shared_ptr<ast::TypeExpr>> ok_fields = mlc::Array<std::shared_ptr<ast::TypeExpr>>{std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("T")))};
 mlc::Array<std::shared_ptr<ast::TypeExpr>> err_fields = mlc::Array<std::shared_ptr<ast::TypeExpr>>{std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("E")))};

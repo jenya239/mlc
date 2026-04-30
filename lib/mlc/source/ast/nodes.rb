@@ -135,12 +135,13 @@ module MLC
 
       # Type parameter with optional constraint
       class TypeParam < Node
-        attr_reader :name, :constraint
+        attr_reader :name, :constraint, :extra_trait_bounds
 
-        def initialize(name:, constraint: nil, origin: nil)
+        def initialize(name:, constraint: nil, extra_trait_bounds: [], origin: nil)
           super(origin: origin)
           @name = name
           @constraint = constraint
+          @extra_trait_bounds = Array(extra_trait_bounds)
         end
       end
 

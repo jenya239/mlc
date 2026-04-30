@@ -125,7 +125,7 @@ export fn value_param(parameter_name: string, parameter_type: Shared<TypeExpr>) 
 // --- Declaration builders ----------------------------------------------------
 
 export fn function_decl(function_name: string, parameters: [Shared<Param>], return_type: Shared<TypeExpr>, body_expr: Shared<Expr>) -> Shared<Decl> =
-  Shared.new(DeclFn(function_name, [], [], parameters, return_type, body_expr))
+  Shared.new(DeclFn(function_name, [], [], parameters, return_type, body_expr, []))
 
 export fn type_decl(type_name: string, variants: [Shared<TypeVariant>]) -> Shared<Decl> =
   Shared.new(DeclType(type_name, [], variants, []))

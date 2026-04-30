@@ -284,7 +284,7 @@ i = i + 1;
 }
   return registry;
  }(); },
-  [&](const DeclFn& declfn) -> registry::TypeRegistry { auto [name, type_parameters, trait_bounds, params, return_type, _w0] = declfn; return [&]() -> registry::TypeRegistry { 
+  [&](const DeclFn& declfn) -> registry::TypeRegistry { auto [name, type_parameters, trait_bounds, params, return_type, _w0, _w1] = declfn; return [&]() -> registry::TypeRegistry { 
   mlc::Array<std::shared_ptr<registry::Type>> param_types = {};
   mlc::Array<mlc::String> pnames = {};
   int i = 0;

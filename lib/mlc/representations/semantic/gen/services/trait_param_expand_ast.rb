@@ -93,6 +93,7 @@ module MLC
                     appended_type_params << MLC::Source::AST::TypeParam.new(
                       name: synthetic,
                       constraint: name,
+                      extra_trait_bounds: [],
                       origin: type_node.origin
                     )
                     return [

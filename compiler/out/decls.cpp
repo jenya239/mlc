@@ -15,7 +15,25 @@ using namespace ast_tokens;
 
 struct DeriveResult {mlc::Array<mlc::String> traits;preds::Parser parser;};
 
+preds::BoundsResult parse_trait_bound_ident_list(preds::Parser parser_state) noexcept;
+
 preds::BoundsResult parse_one_param_bounds(preds::Parser state) noexcept;
+
+preds::WhereClauseParseResult parse_where_clause_opt(preds::Parser parser_state) noexcept;
+
+bool string_list_contains(mlc::Array<mlc::String> haystack, mlc::String needle) noexcept;
+
+mlc::Array<mlc::String> clone_string_row(mlc::Array<mlc::String> source) noexcept;
+
+mlc::Array<mlc::Array<mlc::String>> clone_trait_bounds_matrix(mlc::Array<mlc::Array<mlc::String>> source) noexcept;
+
+mlc::Array<mlc::String> union_trait_string_rows(mlc::Array<mlc::String> existing_row, mlc::Array<mlc::String> incoming_traits) noexcept;
+
+int type_parameter_row_index(mlc::Array<mlc::String> type_parameter_names, mlc::String parameter_name) noexcept;
+
+mlc::Array<mlc::Array<mlc::String>> replace_trait_bounds_row_at(mlc::Array<mlc::Array<mlc::String>> matrix, int row_index, mlc::Array<mlc::String> new_row) noexcept;
+
+mlc::Array<mlc::Array<mlc::String>> merge_where_clause_trait_bounds(mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows, mlc::Array<ast::WhereClauseBound> where_entries) noexcept;
 
 preds::TypeParamsResult parse_type_params_opt(preds::Parser parser) noexcept;
 
@@ -63,22 +81,21 @@ ast::Program parse_program_with_source_path(mlc::Array<ast_tokens::Token> tokens
 
 ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept;
 
-preds::BoundsResult parse_one_param_bounds(preds::Parser state) noexcept{
-return preds::TKind_is_colon(preds::Parser_kind(state)) ? [&]() -> preds::BoundsResult { 
-  preds::Parser s = preds::Parser_advance(state);
-  mlc::Array<mlc::String> bounds = {};
-  if (preds::TKind_is_ident(preds::Parser_kind(s))){
+preds::BoundsResult parse_trait_bound_ident_list(preds::Parser parser_state) noexcept{
+preds::Parser state = std::move(parser_state);
+mlc::Array<mlc::String> bounds = {};
+if (preds::TKind_is_ident(preds::Parser_kind(state))){
 {
-bounds.push_back(preds::TKind_ident(preds::Parser_kind(s)));
-s = preds::Parser_advance(s);
+bounds.push_back(preds::TKind_ident(preds::Parser_kind(state)));
+state = preds::Parser_advance(state);
 [&]() { 
-  while (preds::TKind_is_op(preds::Parser_kind(s)) && preds::TKind_op_val(preds::Parser_kind(s)) == mlc::String("+")){
+  while (preds::TKind_is_op(preds::Parser_kind(state)) && preds::TKind_op_val(preds::Parser_kind(state)) == mlc::String("+")){
 {
-s = preds::Parser_advance(s);
-if (preds::TKind_is_ident(preds::Parser_kind(s))){
+state = preds::Parser_advance(state);
+if (preds::TKind_is_ident(preds::Parser_kind(state))){
 {
-bounds.push_back(preds::TKind_ident(preds::Parser_kind(s)));
-s = preds::Parser_advance(s);
+bounds.push_back(preds::TKind_ident(preds::Parser_kind(state)));
+state = preds::Parser_advance(state);
 }
 }
 }
@@ -86,8 +103,153 @@ s = preds::Parser_advance(s);
  }();
 }
 }
-  return preds::BoundsResult{bounds, s};
- }() : preds::BoundsResult{{}, state};
+return preds::BoundsResult{bounds, state};
+}
+
+preds::BoundsResult parse_one_param_bounds(preds::Parser state) noexcept{
+return preds::TKind_is_colon(preds::Parser_kind(state)) ? parse_trait_bound_ident_list(preds::Parser_advance(state)) : preds::BoundsResult{{}, state};
+}
+
+preds::WhereClauseParseResult parse_where_clause_opt(preds::Parser parser_state) noexcept{
+return !preds::TKind_is_where(preds::Parser_kind(parser_state)) ? preds::WhereClauseParseResult{{}, parser_state} : [&]() -> preds::WhereClauseParseResult { 
+  preds::Parser state = preds::Parser_advance(parser_state);
+  mlc::Array<ast::WhereClauseBound> collected = {};
+  while (preds::TKind_is_ident(preds::Parser_kind(state))){
+{
+mlc::String parameter_name = preds::TKind_ident(preds::Parser_kind(state));
+state = preds::Parser_advance(state);
+if (preds::TKind_is_colon(preds::Parser_kind(state))){
+{
+preds::BoundsResult trait_result = parse_trait_bound_ident_list(preds::Parser_advance(state));
+state = trait_result.parser;
+collected.push_back(ast::WhereClauseBound{parameter_name, trait_result.bounds});
+}
+}
+if (preds::TKind_is_comma(preds::Parser_kind(state))){
+{
+state = preds::Parser_advance(state);
+}
+}
+}
+}
+  return preds::WhereClauseParseResult{collected, state};
+ }();
+}
+
+bool string_list_contains(mlc::Array<mlc::String> haystack, mlc::String needle) noexcept{
+int index = 0;
+while (index < haystack.size()){
+{
+if (haystack[index] == needle){
+{
+return true;
+}
+}
+index = index + 1;
+}
+}
+return false;
+}
+
+mlc::Array<mlc::String> clone_string_row(mlc::Array<mlc::String> source) noexcept{
+mlc::Array<mlc::String> copy = {};
+int index = 0;
+while (index < source.size()){
+{
+copy.push_back(source[index]);
+index = index + 1;
+}
+}
+return copy;
+}
+
+mlc::Array<mlc::Array<mlc::String>> clone_trait_bounds_matrix(mlc::Array<mlc::Array<mlc::String>> source) noexcept{
+mlc::Array<mlc::Array<mlc::String>> matrix = {};
+int row_index = 0;
+while (row_index < source.size()){
+{
+matrix.push_back(clone_string_row(source[row_index]));
+row_index = row_index + 1;
+}
+}
+return matrix;
+}
+
+mlc::Array<mlc::String> union_trait_string_rows(mlc::Array<mlc::String> existing_row, mlc::Array<mlc::String> incoming_traits) noexcept{
+mlc::Array<mlc::String> combined = clone_string_row(existing_row);
+int incoming_index = 0;
+while (incoming_index < incoming_traits.size()){
+{
+mlc::String trait_name = incoming_traits[incoming_index];
+if (!string_list_contains(combined, trait_name)){
+{
+combined.push_back(trait_name);
+}
+}
+incoming_index = incoming_index + 1;
+}
+}
+return combined;
+}
+
+int type_parameter_row_index(mlc::Array<mlc::String> type_parameter_names, mlc::String parameter_name) noexcept{
+int index = 0;
+while (index < type_parameter_names.size()){
+{
+if (type_parameter_names[index] == parameter_name){
+{
+return index;
+}
+}
+index = index + 1;
+}
+}
+return -1;
+}
+
+mlc::Array<mlc::Array<mlc::String>> replace_trait_bounds_row_at(mlc::Array<mlc::Array<mlc::String>> matrix, int row_index, mlc::Array<mlc::String> new_row) noexcept{
+mlc::Array<mlc::Array<mlc::String>> output_matrix = {};
+int matrix_row_index = 0;
+while (matrix_row_index < matrix.size()){
+{
+if (matrix_row_index == row_index){
+{
+output_matrix.push_back(clone_string_row(new_row));
+}
+} else {
+{
+output_matrix.push_back(clone_string_row(matrix[matrix_row_index]));
+}
+}
+matrix_row_index = matrix_row_index + 1;
+}
+}
+return output_matrix;
+}
+
+mlc::Array<mlc::Array<mlc::String>> merge_where_clause_trait_bounds(mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows, mlc::Array<ast::WhereClauseBound> where_entries) noexcept{
+mlc::Array<mlc::Array<mlc::String>> merged = clone_trait_bounds_matrix(trait_bounds_rows);
+while (merged.size() < type_parameter_names.size()){
+{
+mlc::Array<mlc::String> empty_row = {};
+merged.push_back(empty_row);
+}
+}
+int entry_index = 0;
+while (entry_index < where_entries.size()){
+{
+ast::WhereClauseBound entry = where_entries[entry_index];
+int row_index = type_parameter_row_index(type_parameter_names, entry.parameter_name);
+if (row_index >= 0){
+{
+mlc::Array<mlc::String> updated_row = union_trait_string_rows(merged[row_index], entry.traits);
+merged = replace_trait_bounds_row_at(merged, row_index, updated_row);
+}
+}
+entry_index = entry_index + 1;
+}
+}
+return merged;
 }
 
 preds::TypeParamsResult parse_type_params_opt(preds::Parser parser) noexcept{
@@ -276,7 +438,7 @@ index = index + 1;
 preds::Parser after_rparen = preds::Parser_advance(rest_params.parser);
 preds::Parser type_parser = preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? preds::Parser_advance(after_rparen) : after_rparen;
 preds::TypeResult ret_type_result = types::parse_type(type_parser);
-return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mangled_name, {}, {}, params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(extern_span)))), ret_type_result.parser};
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mangled_name, {}, {}, params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(extern_span)), {})), ret_type_result.parser};
 }
 
 preds::DeclResult parse_extend_method(preds::Parser parser, mlc::String type_name) noexcept{
@@ -308,7 +470,7 @@ preds::ExprResult body_result = preds::TKind_is_extern(preds::Parser_kind(after_
   preds::ExprResult parsed = exprs::parse_expr(after_eq);
   return [&]() -> preds::ExprResult { if (std::holds_alternative<ast::ExprIdent>((*parsed.expr)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*parsed.expr)._); auto [name, _w0] = _v_exprident; return name == mlc::String("extern") ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprExtern(ast::expr_span(parsed.expr))), parsed.parser} : parsed; } return parsed; }();
  }();
-return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mangled_name, {}, {}, params, ret_type_result.type_expr, body_result.expr)), body_result.parser};
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mangled_name, {}, {}, params, ret_type_result.type_expr, body_result.expr, {})), body_result.parser};
 }
 
 preds::DeclResult parse_decl(preds::Parser parser) noexcept{
@@ -316,7 +478,7 @@ ast_tokens::TKind kind = preds::Parser_kind(parser);
 return preds::TKind_is_ident(kind) && preds::TKind_ident(kind) == mlc::String("export") ? [&]() -> preds::DeclResult { 
   preds::DeclResult inner = parse_decl(preds::Parser_advance(parser));
   return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclExported(inner.decl)), inner.parser};
- }() : preds::TKind_is_fn(kind) || preds::TKind_is_extern(kind) && preds::TKind_is_fn(preds::Parser_kind(preds::Parser_advance(parser))) ? parse_fn_decl(parser) : preds::TKind_is_type(kind) ? parse_type_decl(preds::Parser_advance(parser)) : preds::TKind_is_extend(kind) ? parse_extend_decl(preds::Parser_advance(parser)) : preds::TKind_is_import(kind) ? parse_import_decl(preds::Parser_advance(parser)) : preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mlc::String("__skip__"), {}, {}, {}, std::make_shared<ast::TypeExpr>((ast::TyUnit{})), std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())))), preds::Parser_advance(parser)};
+ }() : preds::TKind_is_fn(kind) || preds::TKind_is_extern(kind) && preds::TKind_is_fn(preds::Parser_kind(preds::Parser_advance(parser))) ? parse_fn_decl(parser) : preds::TKind_is_type(kind) ? parse_type_decl(preds::Parser_advance(parser)) : preds::TKind_is_extend(kind) ? parse_extend_decl(preds::Parser_advance(parser)) : preds::TKind_is_import(kind) ? parse_import_decl(preds::Parser_advance(parser)) : preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mlc::String("__skip__"), {}, {}, {}, std::make_shared<ast::TypeExpr>((ast::TyUnit{})), std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())), {})), preds::Parser_advance(parser)};
 }
 
 preds::DeclResult parse_fn_decl(preds::Parser parser) noexcept{
@@ -331,9 +493,11 @@ preds::Parser after_rparen = preds::Parser_advance(params_result.parser);
 preds::Parser type_parser = preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? preds::Parser_advance(after_rparen) : after_rparen;
 preds::TypeResult ret_type_result = types::parse_type(type_parser);
 mlc::Array<mlc::Array<mlc::String>> type_bounds = type_params_res.bounds;
-return is_extern ? preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(extern_keyword_span)))), ret_type_result.parser} : [&]() -> preds::DeclResult { 
-  preds::ExprResult body_result = exprs::parse_expr(preds::Parser_advance(ret_type_result.parser));
-  return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, body_result.expr)), body_result.parser};
+preds::WhereClauseParseResult where_parse = parse_where_clause_opt(ret_type_result.parser);
+mlc::Array<mlc::Array<mlc::String>> merged_trait_bounds = merge_where_clause_trait_bounds(type_params_res.params, type_bounds, where_parse.where_bounds);
+return is_extern ? preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(fn_name, type_params_res.params, merged_trait_bounds, params_result.params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(extern_keyword_span)), where_parse.where_bounds)), where_parse.parser} : [&]() -> preds::DeclResult { 
+  preds::ExprResult body_result = exprs::parse_expr(preds::Parser_advance(where_parse.parser));
+  return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(fn_name, type_params_res.params, merged_trait_bounds, params_result.params, ret_type_result.type_expr, body_result.expr, where_parse.where_bounds)), body_result.parser};
  }();
 }
 
@@ -486,25 +650,26 @@ preds::ParamsResult params_result = parse_params(preds::Parser_advance(after_fn)
 preds::Parser after_rparen = preds::Parser_advance(params_result.parser);
 preds::Parser type_parser = preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? preds::Parser_advance(after_rparen) : after_rparen;
 preds::TypeResult ret_result = types::parse_type(type_parser);
-preds::Parser after_ret = ret_result.parser;
-std::shared_ptr<ast::Expr> body = preds::TKind_is_equal(preds::Parser_kind(after_ret)) ? [&]() -> std::shared_ptr<ast::Expr> { 
-  preds::ExprResult body_res = exprs::parse_expr(preds::Parser_advance(after_ret));
-  state = body_res.parser;
-  return body_res.expr;
- }() : [&]() -> std::shared_ptr<ast::Expr> { 
-  ast::Span extern_method_span = preds::Parser_span_at_cursor(after_ret);
-  state = after_ret;
-  return std::make_shared<ast::Expr>(ast::ExprExtern(extern_method_span));
- }();
-mlc::Array<mlc::Array<mlc::String>> trait_bounds = {};
+mlc::Array<mlc::Array<mlc::String>> initial_trait_bounds = {};
 int bi = 0;
 while (bi < type_params.size()){
 {
-trait_bounds.push_back({});
+initial_trait_bounds.push_back({});
 bi = bi + 1;
 }
 }
-methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn(mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, body)));
+preds::WhereClauseParseResult where_parse = parse_where_clause_opt(ret_result.parser);
+mlc::Array<mlc::Array<mlc::String>> merged_trait_bounds = merge_where_clause_trait_bounds(type_params, initial_trait_bounds, where_parse.where_bounds);
+std::shared_ptr<ast::Expr> body = preds::TKind_is_equal(preds::Parser_kind(where_parse.parser)) ? [&]() -> std::shared_ptr<ast::Expr> { 
+  preds::ExprResult body_res = exprs::parse_expr(preds::Parser_advance(where_parse.parser));
+  state = body_res.parser;
+  return body_res.expr;
+ }() : [&]() -> std::shared_ptr<ast::Expr> { 
+  ast::Span extern_method_span = preds::Parser_span_at_cursor(where_parse.parser);
+  state = where_parse.parser;
+  return std::make_shared<ast::Expr>(ast::ExprExtern(extern_method_span));
+ }();
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn(mangled, type_params, merged_trait_bounds, params_result.params, ret_result.type_expr, body, where_parse.where_bounds)));
 }
 } else {
 {
@@ -516,16 +681,18 @@ preds::ParamsResult params_result = parse_params(preds::Parser_advance(after_ext
 preds::Parser after_rparen = preds::Parser_advance(params_result.parser);
 preds::Parser type_parser = preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? preds::Parser_advance(after_rparen) : after_rparen;
 preds::TypeResult ret_result = types::parse_type(type_parser);
-mlc::Array<mlc::Array<mlc::String>> trait_bounds = {};
-int bi = 0;
-while (bi < type_params.size()){
+mlc::Array<mlc::Array<mlc::String>> initial_trait_bounds_extern = {};
+int be = 0;
+while (be < type_params.size()){
 {
-trait_bounds.push_back({});
-bi = bi + 1;
+initial_trait_bounds_extern.push_back({});
+be = be + 1;
 }
 }
-methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn(mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(ast::span_unknown())))));
-state = ret_result.parser;
+preds::WhereClauseParseResult where_parse_extern = parse_where_clause_opt(ret_result.parser);
+mlc::Array<mlc::Array<mlc::String>> merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.where_bounds);
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn(mangled, type_params, merged_trait_bounds_extern, params_result.params, ret_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(ast::span_unknown())), where_parse_extern.where_bounds)));
+state = where_parse_extern.parser;
 } else {
 if (preds::TKind_is_type(preds::Parser_kind(state))){
 preds::Parser after_type = preds::Parser_advance(state);

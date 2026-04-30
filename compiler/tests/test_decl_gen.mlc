@@ -20,7 +20,7 @@ fn make_unit_expr() -> Shared<SExpr> = Shared.new(SExprUnit(tunit(), span_unknow
 
 fn iparam(name: string) -> Shared<Param> = Shared.new(Param { name: name, is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())) })
 fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SExpr>) -> Shared<SDecl> =
-  Shared.new(SDeclFn(name, [], [], params, return_type, body))
+  Shared.new(SDeclFn(name, [], [], params, return_type, body, []))
 
 fn make_str_expr(text: string) -> Shared<SExpr> = Shared.new(SExprStr(text, tstr(), span_unknown()))
 

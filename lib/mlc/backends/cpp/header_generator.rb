@@ -415,12 +415,15 @@ module MLC
         end
 
         def build_requires_clause(type_params)
-          clauses = type_params.map do |tp|
-            next unless tp.constraint && !tp.constraint.empty?
-
-            "#{tp.constraint}<#{tp.name}>"
-          end.compact
-          clauses.join(" && ")
+          clauses = []
+          type_params.each do |tp|
+            traits = tp.respond_to?(:trait_bounds) ? tp.trait_bounds : []
+            traits = [tp.constraint].compact if traits.empty? && tp.constraint && !tp.constraint.empty?
+            traits.each do |trait_name|
+              clauses << "#{trait_name}<#{tp.name}>"
+            end
+          end
+          clauses.compact.join(" && ")
         end
 
         def collect_required_import_paths(module_node)

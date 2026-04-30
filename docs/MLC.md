@@ -425,6 +425,8 @@ Statically dispatched, нет vtable.
 
 ### D4. Multiline `where` для сложных bounds
 
+**Статус:** реализовано в mlcc (парсер мержит bounds с `<T: Trait>`) и в Ruby (мердж в `TypeParam` до codegen); неизвестное имя в `where` — ошибка.
+
 ```mlc
 fn serialize<T>(value: T) -> string
   where T: Display + Eq + Clone

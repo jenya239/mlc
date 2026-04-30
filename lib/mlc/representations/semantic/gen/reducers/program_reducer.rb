@@ -52,11 +52,15 @@ module MLC
 
             def expanded_function_declaration(func_decl)
               cache = @expanded_function_declaration_cache ||= {}
-              cache[func_decl.object_id] ||= Services::TraitParamExpandAst.expand_function_declaration(
-                func_decl,
-                trait_registry: @services.trait_registry,
-                type_decl_table: @services.type_checker.type_decl_table
-              )
+              cache[func_decl.object_id] ||= begin
+                Services::WhereClauseMerge.validate!(func_decl, type_checker: @services.type_checker)
+                merged_declaration = Services::WhereClauseMerge.merge_where_into_func_decl(func_decl)
+                Services::TraitParamExpandAst.expand_function_declaration(
+                  merged_declaration,
+                  trait_registry: @services.trait_registry,
+                  type_decl_table: @services.type_checker.type_decl_table
+                )
+              end
             end
 
             def build_pass_manager
@@ -160,11 +164,13 @@ module MLC
                         ret_type: func.ret_type,
                         body: func.body,
                         type_params: combined_type_params,
+                        where_clause: func.where_clause,
                         exported: decl.exported,
                         external: func.external,
+                        is_async: func.is_async,
                         origin: func.origin
                       )
-                      @function_reducer.register_signature(synthetic_func)
+                      @function_reducer.register_signature(expanded_function_declaration(synthetic_func))
                     end
                   end
 
@@ -226,8 +232,10 @@ module MLC
                 ret_type: func.ret_type,
                 body: func.body,
                 type_params: func.type_params,
+                where_clause: func.where_clause,
                 exported: func.exported,
                 external: func.external,
+                is_async: func.is_async,
                 origin: func.origin
               )
             end
@@ -301,7 +309,10 @@ module MLC
                           ret_type: func.ret_type,
                           body: func.body,
                           type_params: combined_type_params,
+                          where_clause: func.where_clause,
                           exported: decl.exported,
+                          external: func.external,
+                          is_async: func.is_async,
                           origin: func.origin
                         )
                         context[:func_items] << @function_reducer.reduce(expanded_function_declaration(synthetic_func))

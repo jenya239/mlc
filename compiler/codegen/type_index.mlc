@@ -20,7 +20,7 @@ export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string
         let mut mi = 0
         while mi < methods.length() do
           match methods[mi] {
-            DeclFn(fn_name, _, _, _, _, _) => do
+            DeclFn(fn_name, _, _, _, _, _, _) => do
               const unmangled = extract_method_name(fn_name, trait_name)
               if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
             end,
@@ -33,7 +33,7 @@ export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string
         let mut mi = 0
         while mi < methods.length() do
           match methods[mi] {
-            DeclFn(fn_name, _, _, _, _, _) => do
+            DeclFn(fn_name, _, _, _, _, _, _) => do
               const unmangled = extract_method_name(fn_name, type_name)
               if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
             end,
@@ -126,7 +126,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
             vi = vi + 1
           end
         end,
-        DeclFn(_, _, _, _, _, _) => do end,
+        DeclFn(_, _, _, _, _, _, _) => do end,
         DeclTrait(_, _, _)       => do end,
         DeclExtend(_, _, _)      => do end,
         DeclImport(_, _)         => do end,
@@ -153,7 +153,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
           vi = vi + 1
         end
       end,
-      DeclFn(_, _, _, _, _, _) => do end,
+      DeclFn(_, _, _, _, _, _, _) => do end,
       DeclTrait(_, _, _)       => do end,
       DeclExtend(_, _, _)      => do end,
       DeclImport(_, _)         => do end,

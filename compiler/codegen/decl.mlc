@@ -95,7 +95,7 @@ export fn gen_decl(decl: Shared<SDecl>, context: CodegenContext) -> string =
     SDeclType(type_name, type_params, variants, derive_traits) =>
       gen_type_decl(context, type_name, type_params, variants) + gen_derive_methods(context, type_name, variants, derive_traits),
     SDeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
-    SDeclFn(name, type_params, type_bounds, params, return_type, body) =>
+    SDeclFn(name, type_params, type_bounds, params, return_type, body, _) =>
       match body { SExprExtern(_, _) => "", _ => gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context) },
     SDeclExtend(type_name, trait_name, methods) =>
       gen_decl_extend(type_name, trait_name, methods, context,
@@ -110,7 +110,7 @@ export fn gen_proto(decl: Shared<SDecl>, context: CodegenContext) -> string =
   match decl {
     SDeclType(_, _, _, _) => "",
     SDeclTrait(_, _, _) => "",
-    SDeclFn(name, type_params, type_bounds, params, ret, body) =>
+    SDeclFn(name, type_params, type_bounds, params, ret, body, _) =>
       match body { SExprExtern(_, _) => "", _ => gen_fn_proto(name, type_params, type_bounds, params, ret, context) },
     SDeclExtend(type_name, _, methods) => do
       const extend_context = context.for_type_body(type_name)
@@ -132,10 +132,10 @@ export fn decls_have_main(decls: [Shared<SDecl>]) -> bool = do
   while index < decls.length() do
     const inner = sdecl_inner(decls[index])
     const is_main = match inner {
-      SDeclFn(name, _, _, _, _, _) => name == "main",
+      SDeclFn(name, _, _, _, _, _, _) => name == "main",
       _ => false
     }
-    if is_main then found = true else () end
+    if is_main then found = true end
     index = index + 1
   end
   found
@@ -172,7 +172,7 @@ export fn collect_decl_parts(decls: [Shared<SDecl>], context: CodegenContext, ph
         if phase == 0 then gen_trait_decl(context, name, type_params, methods)
         else ""
         end,
-      SDeclFn(_, _, _, _, _, _) =>
+      SDeclFn(_, _, _, _, _, _, _) =>
         if phase == 2 then gen_proto(decls[index], context)
         else if phase == 3 then gen_decl(decls[index], context)
         else ""

@@ -59,7 +59,7 @@ std::shared_ptr<semantic_ir::SExpr> make_unit_expr() noexcept{return std::make_s
 
 std::shared_ptr<ast::Param> iparam(mlc::String name) noexcept{return std::make_shared<ast::Param>(ast::Param{name, false, std::make_shared<ast::TypeExpr>((ast::TyI32{})), false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown()))});}
 
-std::shared_ptr<semantic_ir::SDecl> fn_decl(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SExpr> body) noexcept{return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn(name, {}, {}, params, return_type, body));}
+std::shared_ptr<semantic_ir::SDecl> fn_decl(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SExpr> body) noexcept{return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn(name, {}, {}, params, return_type, body, {}));}
 
 std::shared_ptr<semantic_ir::SExpr> make_str_expr(mlc::String text) noexcept{return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprStr(text, tstr(), ast::span_unknown()));}
 

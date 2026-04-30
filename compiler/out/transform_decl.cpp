@@ -30,7 +30,7 @@ mlc::Array<semantic_ir::SNamespaceImportAlias> to_semantic_namespace_aliases(mlc
 mlc::Array<semantic_ir::SLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry, ast::Program program_for_trait_maps) noexcept;
 
 std::shared_ptr<semantic_ir::SDecl> transform_decl(std::shared_ptr<ast::Decl> declaration, registry::TypeRegistry registry) noexcept{return std::visit(overloaded{
-  [&](const DeclFn& declfn) -> std::shared_ptr<semantic_ir::SDecl> { auto [name, type_params, trait_bounds, params, return_type_expr, body] = declfn; return [&]() -> std::shared_ptr<semantic_ir::SDecl> { 
+  [&](const DeclFn& declfn) -> std::shared_ptr<semantic_ir::SDecl> { auto [name, type_params, trait_bounds, params, return_type_expr, body, where_clause_bounds_entries] = declfn; return [&]() -> std::shared_ptr<semantic_ir::SDecl> { 
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> param_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
   int index = 0;
   while (index < params.size()){
@@ -43,7 +43,7 @@ index = index + 1;
   transform::TransformContext initial_context = transform::TransformContext{param_env, registry};
   std::shared_ptr<semantic_ir::SExpr> typed_body = transform::transform_expr(body, initial_context, [](mlc::Array<std::shared_ptr<ast::Stmt>> stmts, transform::TransformContext ctx)  { return transform_stmts::transform_stmts(stmts, ctx); });
   std::shared_ptr<semantic_ir::SExpr> coerced_body = transform::coerce_expr_to_type(typed_body, return_type);
-  return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn(name, type_params, trait_bounds, params, return_type, coerced_body));
+  return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn(name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries));
  }(); },
   [&](const DeclType& decltype_) -> std::shared_ptr<semantic_ir::SDecl> { auto [type_name, type_params, variants, derive_traits] = decltype_; return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclType(type_name, type_params, variants, derive_traits)); },
   [&](const DeclTrait& decltrait) -> std::shared_ptr<semantic_ir::SDecl> { auto [trait_name, type_params, methods] = decltrait; return [&]() -> std::shared_ptr<semantic_ir::SDecl> { 

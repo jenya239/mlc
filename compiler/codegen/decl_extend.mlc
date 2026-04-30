@@ -69,7 +69,7 @@ export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_param
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, ret_type, _) => do
+      SDeclFn(mangled, _, _, params, ret_type, _, _) => do
         const method_name = extract_method_name(mangled, trait_name)
         const ret_cpp = type_to_cpp(context, Shared.new(TyUnit))
         req_parts.push(expression_output.concept_requires_expression_method_returns_convertible(method_name, ret_cpp))
@@ -92,7 +92,7 @@ export fn gen_extend_wrapper_protos(type_name: string, trait_name: string, metho
     let mut wrappers = ""; let mut method_index = 0
     while method_index < methods.length() do
       match methods[method_index] {
-        SDeclFn(mangled, _, _, params, ret_type, _) => do
+        SDeclFn(mangled, _, _, params, ret_type, _, _) => do
           const wrapper_context = make_body_context(context, [], [], Map.new(), [], type_name, [], [])
           const method_name = extract_method_name(mangled, type_name)
           const ret_cpp = sem_type_to_cpp(wrapper_context, ret_type)
@@ -132,7 +132,7 @@ fn gen_extend_trait_wrappers(type_name: string, methods: [Shared<SDecl>], contex
   let mut wrappers = ""; let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, ret_type, _) =>
+      SDeclFn(mangled, _, _, params, ret_type, _, _) =>
         do wrappers = wrappers + gen_extend_trait_wrapper(type_name, mangled, params, ret_type, context, context_resolve_fn) end,
       _ => do end
     }
@@ -161,7 +161,7 @@ fn gen_extend_method_parts(type_name: string, trait_name: string, methods: [Shar
   let parts: [string] = []; let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, ret_type, body) => do
+      SDeclFn(mangled, _, _, params, ret_type, body, _) => do
         match body {
           SExprExtern(_, _) => do
             const generated = gen_extend_extern_method(mangled, type_name, params, ret_type, trait_name, context, context_resolve_fn)

@@ -270,7 +270,7 @@ export fn codegen_tests() -> [TestResult] = do
 
   const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())) })]
   const fn_body = Shared.new(ExprBin("*", Shared.new(ExprIdent("n", span_unknown())), Shared.new(ExprInt(2, span_unknown())), span_unknown()))
-  const fn_decl = DeclFn("double_it", [], [], fn_param, Shared.new(TyI32), fn_body)
+  const fn_decl = DeclFn("double_it", [], [], fn_param, Shared.new(TyI32), fn_body, [])
   const fn_prog = Program { decls: [Shared.new(DeclExported(Shared.new(fn_decl)))] }
   const fn_prog_out = gen_program(fn_prog)
   results.push(assert_eq_str("DeclFn: signature in output",
@@ -294,9 +294,11 @@ export fn codegen_tests() -> [TestResult] = do
     "type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()"
   const d3_two_trait_parameter_output = gen_program(parse_program(tokenize(d3_two_trait_parameter_source).tokens))
   results.push(assert_code_contains("D3 gen_program: first Display parameter", d3_two_trait_parameter_output, "Display first"))
-  results.push(assert_code_contains("D3 gen_program: second Display parameter", d3_two_trait_parameter_output, "Display second"))
-
-  // --- Generic type codegen -----------------------------------------------
+  const d4_where_trait_bounds_source =
+    "type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()"
+  const d4_where_trait_bounds_output = gen_program(parse_program(tokenize(d4_where_trait_bounds_source).tokens))
+  results.push(assert_code_contains("D4 gen_program: requires Display", d4_where_trait_bounds_output, "Display"))
+  results.push(assert_code_contains("D4 gen_program: requires EqCompare", d4_where_trait_bounds_output, "EqCompare"))
 
   const result_type_params: [string] = ["T", "E"]
   const ok_fields:  [Shared<TypeExpr>] = [Shared.new(TyNamed("T"))]

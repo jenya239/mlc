@@ -54,6 +54,8 @@ struct TypeParamsResult {mlc::Array<mlc::String> params;mlc::Array<mlc::Array<ml
 
 struct BoundsResult {mlc::Array<mlc::String> bounds;preds::Parser parser;};
 
+struct WhereClauseParseResult {mlc::Array<ast::WhereClauseBound> where_bounds;preds::Parser parser;};
+
 struct TraitBodyResult {mlc::Array<std::shared_ptr<ast::Decl>> methods;preds::Parser parser;};
 
 preds::Parser parser_new_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
@@ -103,6 +105,8 @@ bool TKind_is_false(ast_tokens::TKind self) noexcept;
 bool TKind_is_extern(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_extend(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_where(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_import(ast_tokens::TKind self) noexcept;
 

@@ -95,7 +95,7 @@ mlc::Array<mlc::String> req_parts = {};
 int method_index = 0;
 while (method_index < methods.size()){
 {
-[&]() -> void { if (std::holds_alternative<semantic_ir::SDeclFn>((*methods[method_index]))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*methods[method_index])); auto [mangled, _w0, _w1, params, ret_type, _w2] = _v_sdeclfn; return [&]() { 
+[&]() -> void { if (std::holds_alternative<semantic_ir::SDeclFn>((*methods[method_index]))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*methods[method_index])); auto [mangled, _w0, _w1, params, ret_type, _w2, _w3] = _v_sdeclfn; return [&]() { 
   mlc::String method_name = extract_method_name(mangled, trait_name);
   mlc::String ret_cpp = type_gen::type_to_cpp(context, std::make_shared<ast::TypeExpr>((ast::TyUnit{})));
   return req_parts.push_back(expr::concept_requires_expression_method_returns_convertible(method_name, ret_cpp));
@@ -114,7 +114,7 @@ mlc::String gen_extend_wrapper_protos(mlc::String type_name, mlc::String trait_n
 {
 std::visit(overloaded{
   [&](const SDeclFn& sdeclfn) {
-auto [mangled, _w0, _w1, params, ret_type, _w2] = sdeclfn;
+auto [mangled, _w0, _w1, params, ret_type, _w2, _w3] = sdeclfn;
 {
 context::CodegenContext wrapper_context = context::make_body_context(context, {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, type_name, {}, {});
 mlc::String method_name = extract_method_name(mangled, type_name);
@@ -158,7 +158,7 @@ while (method_index < methods.size()){
 {
 std::visit(overloaded{
   [&](const SDeclFn& sdeclfn) {
-auto [mangled, _w0, _w1, params, ret_type, _w2] = sdeclfn;
+auto [mangled, _w0, _w1, params, ret_type, _w2, _w3] = sdeclfn;
 {
 wrappers = wrappers + gen_extend_trait_wrapper(type_name, mangled, params, ret_type, context, context_resolve_fn);
 }
@@ -188,7 +188,7 @@ mlc::Array<mlc::String> parts = {};
 int method_index = 0;
 while (method_index < methods.size()){
 {
-[&]() -> void { if (std::holds_alternative<semantic_ir::SDeclFn>((*methods[method_index]))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*methods[method_index])); auto [mangled, _w0, _w1, params, ret_type, body] = _v_sdeclfn; return [&]() -> void { if (std::holds_alternative<semantic_ir::SExprExtern>((*body)._)) { auto _v_sexprextern = std::get<semantic_ir::SExprExtern>((*body)._); auto [_w0, _w1] = _v_sexprextern; return [&]() { 
+[&]() -> void { if (std::holds_alternative<semantic_ir::SDeclFn>((*methods[method_index]))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*methods[method_index])); auto [mangled, _w0, _w1, params, ret_type, body, _w2] = _v_sdeclfn; return [&]() -> void { if (std::holds_alternative<semantic_ir::SExprExtern>((*body)._)) { auto _v_sexprextern = std::get<semantic_ir::SExprExtern>((*body)._); auto [_w0, _w1] = _v_sexprextern; return [&]() { 
   mlc::String generated = gen_extend_extern_method(mangled, type_name, params, ret_type, trait_name, context, context_resolve_fn);
   if (generated.length() > 0){
 parts.push_back(generated);

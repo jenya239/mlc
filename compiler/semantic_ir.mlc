@@ -3,7 +3,7 @@
 // Produced by checker/transform.mlc; consumed by codegen/.
 
 import { Type } from "./checker/registry"
-import { Pat, Span, TypeVariant, Param, Decl } from "./ast"
+import { Pat, Span, TypeVariant, Param, Decl, WhereClauseBound } from "./ast"
 
 // Forward-declare SExpr so records referencing it can be defined first.
 export type SMatchArm = SMatchArm { pat: Shared<Pat>, body: Shared<SExpr> }
@@ -58,7 +58,7 @@ export type SStmt =
 // Type and trait declarations stay structurally identical to AST;
 // only function bodies switch to SExpr.
 export type SDecl =
-  | SDeclFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SExpr>)
+  | SDeclFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SExpr>, [WhereClauseBound])
   | SDeclType(string, [string], [Shared<TypeVariant>], [string])
   | SDeclTrait(string, [string], [Shared<SDecl>])
   | SDeclExtend(string, string, [Shared<SDecl>])

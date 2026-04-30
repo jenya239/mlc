@@ -63,6 +63,8 @@ bool is_keyword_extern(ast_tokens::TKind kind) noexcept;
 
 bool is_keyword_extend(ast_tokens::TKind kind) noexcept;
 
+bool is_keyword_where(ast_tokens::TKind kind) noexcept;
+
 bool is_ident(ast_tokens::TKind kind) noexcept;
 
 bool is_int_literal(ast_tokens::TKind kind) noexcept;
@@ -158,6 +160,8 @@ bool TKind_is_false(ast_tokens::TKind self) noexcept;
 bool TKind_is_extern(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_extend(ast_tokens::TKind self) noexcept;
+
+bool TKind_is_where(ast_tokens::TKind self) noexcept;
 
 bool TKind_is_import(ast_tokens::TKind self) noexcept;
 
@@ -318,6 +322,8 @@ bool is_keyword_extern(ast_tokens::TKind kind) noexcept{return [&]() { if (std::
 
 bool is_keyword_extend(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KExtend>(kind)) {  return true; } return false; }();}
 
+bool is_keyword_where(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KWhere>(kind)) {  return true; } return false; }();}
+
 bool is_ident(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::Ident>(kind)) { auto _v_ident = std::get<ast_tokens::Ident>(kind); auto [_w0] = _v_ident; return true; } return false; }();}
 
 bool is_int_literal(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::LInt>(kind)) { auto _v_lint = std::get<ast_tokens::LInt>(kind); auto [_w0] = _v_lint; return true; } return false; }();}
@@ -416,6 +422,8 @@ bool TKind_is_false(ast_tokens::TKind self) noexcept{return [&]() { if (std::hol
 bool TKind_is_extern(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KExtern>(self)) {  return true; } return false; }();}
 
 bool TKind_is_extend(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KExtend>(self)) {  return true; } return false; }();}
+
+bool TKind_is_where(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KWhere>(self)) {  return true; } return false; }();}
 
 bool TKind_is_import(ast_tokens::TKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KImport>(self)) {  return true; } return false; }();}
 
