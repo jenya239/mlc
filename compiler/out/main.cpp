@@ -265,7 +265,7 @@ return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<
 
 mlc::String compile_modular_loop(mlc::Array<decl_index::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept{
 registry::TypeRegistry registry = registry::build_registry(full_prog);
-mlc::Array<semantic_ir::SLoadItem> s_items = transform_decl::transform_load_items(items, registry);
+mlc::Array<semantic_ir::SLoadItem> s_items = transform_decl::transform_load_items(items, registry, full_prog);
 context::PrecomputedCtx precomp = module::precompute(full_prog, items);
 int i = 0;
 while (i < s_items.size()){

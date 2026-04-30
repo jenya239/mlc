@@ -163,7 +163,7 @@ export fn gen_program(program: Program) -> string = do
   const precomp   = precompute(program, all_items)
   const registry  = build_registry(program)
   const single    = LoadItem { path: "test_main", decls: program.decls, imports: [], namespace_import_aliases: [] }
-  const s_items   = transform_load_items([single], registry)
+  const s_items   = transform_load_items([single], registry, program)
   const result    = gen_module(s_items[0], all_items, program, precomp)
   result.h + result.c
 end

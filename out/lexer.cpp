@@ -89,6 +89,8 @@ return ast_tokens::KDo{};
 return ast_tokens::KEnd{};
 } else if ((word == mlc::String("match", 5))) {
 return ast_tokens::KMatch{};
+} else if ((word == mlc::String("with", 4))) {
+return ast_tokens::KWith{};
 } else if ((word == mlc::String("import", 6))) {
 return ast_tokens::KImport{};
 } else if ((word == mlc::String("from", 4))) {
@@ -133,6 +135,7 @@ return ast_tokens::Ident{word};
 
 
 
+
 }
 ScanResult scan_ident(LexState state) noexcept{
 auto start = state.pos;
@@ -146,16 +149,61 @@ current = LexState_lex_advance(current);
 auto word = source.byte_substring(start, (current.pos - start));
 return ScanResult{current, ast_tokens::Token{keyword_kind(word), token_line, token_col}};
 }
+bool is_alpha_lower(mlc::String c) noexcept{
+return ((c >= mlc::String("a", 1)) && (c <= mlc::String("z", 1)));
+}
+SuffixScan try_scan_suffix(LexState state) noexcept{
+if (((!LexState_eof(state)) && is_alpha_lower(LexState_current(state)))) {
+auto start = state.pos;
+auto orig_line = state.line;
+auto orig_col = state.col;
+auto cur = state;
+while (((!LexState_eof(cur)) && (is_alpha_lower(LexState_current(cur)) || is_digit(LexState_current(cur))))) {
+cur = LexState_lex_advance(cur);
+}
+auto candidate = cur.src.byte_substring(start, (cur.pos - start));
+if ((((((candidate == mlc::String("i64", 3)) || (candidate == mlc::String("u8", 2))) || (candidate == mlc::String("usize", 5))) || (candidate == mlc::String("f64", 3))) || (candidate == mlc::String("f32", 3)))) {
+return SuffixScan{candidate, cur};
+} else {
+auto back = LexState{cur.src, start, orig_line, orig_col};
+return SuffixScan{mlc::String("", 0), back};
+}
+} else {
+return SuffixScan{mlc::String("", 0), state};
+}
+}
 ScanResult scan_int(LexState state) noexcept{
 auto token_line = state.line;
 auto token_col = state.col;
+auto int_start = state.pos;
 auto current = state;
 auto value = 0;
 while (((!LexState_eof(current)) && is_digit(LexState_current(current)))) {
 value = ((value * 10) + LexState_current(current).to_i());
 current = LexState_lex_advance(current);
 }
-return ScanResult{current, ast_tokens::Token{ast_tokens::LInt{value}, token_line, token_col}};
+if (((((!LexState_eof(current)) && (LexState_current(current) == mlc::String(".", 1))) && (!LexState_eof(LexState_lex_advance(current)))) && is_digit(LexState_current(LexState_lex_advance(current))))) {
+current = LexState_lex_advance(current);
+while (((!LexState_eof(current)) && is_digit(LexState_current(current)))) {
+current = LexState_lex_advance(current);
+}
+auto raw_float = current.src.byte_substring(int_start, (current.pos - int_start));
+auto scan = try_scan_suffix(current);
+return ScanResult{scan.after, ast_tokens::Token{ast_tokens::LFloat{raw_float}, token_line, token_col}};
+} else {
+auto scan = try_scan_suffix(current);
+if ((scan.suffix == mlc::String("i64", 3))) {
+return ScanResult{scan.after, ast_tokens::Token{ast_tokens::LI64{mlc::to_string(value)}, token_line, token_col}};
+} else if ((scan.suffix == mlc::String("u8", 2))) {
+return ScanResult{scan.after, ast_tokens::Token{ast_tokens::LU8{mlc::to_string(value)}, token_line, token_col}};
+} else if ((scan.suffix == mlc::String("usize", 5))) {
+return ScanResult{scan.after, ast_tokens::Token{ast_tokens::LUsize{mlc::to_string(value)}, token_line, token_col}};
+} else {
+return ScanResult{scan.after, ast_tokens::Token{ast_tokens::LInt{value}, token_line, token_col}};
+}
+
+
+}
 }
 ScanStrResult scan_single_string(LexState state) noexcept{
 auto token_line = state.line;
@@ -203,7 +251,9 @@ error = mlc::String("unterminated single-quoted string", 33);
 } else {
 current = LexState_lex_advance(current);
 }
-return ScanStrResult{current, ast_tokens::Token{ast_tokens::LStr{parts.join(mlc::String("", 0))}, token_line, token_col}, error};
+auto joined = parts.join(mlc::String("", 0));
+auto token_kind = ((joined.length() == 1) ? ast_tokens::LChar{joined} : ast_tokens::LStr{joined});
+return ScanStrResult{current, ast_tokens::Token{token_kind, token_line, token_col}, error};
 }
 mlc::String map_escape(mlc::String character) noexcept{
 if ((character == mlc::String("n", 1))) {
@@ -262,35 +312,104 @@ current = LexState_lex_advance(current);
 }
 return ScanStrResult{current, ast_tokens::Token{ast_tokens::LStr{parts.join(mlc::String("", 0))}, token_line, token_col}, error};
 }
-ScanStrResult scan_fstring(LexState state) noexcept{
-auto token_line = state.line;
-auto token_col = state.col;
-auto current = LexState_lex_advance(LexState_lex_advance(state));
-auto parts = mlc::Array<mlc::String>{};
-auto current_lit = mlc::Array<mlc::String>{};
-auto error = mlc::String("", 0);
+LexState scan_template_nested_string(LexState initial, mlc::Array<mlc::String> expr_chars) noexcept{
+auto current = LexState_lex_advance(initial);
 while (((!LexState_eof(current)) && (LexState_current(current) != mlc::String("\"", 1)))) {
-if ((LexState_current(current) == mlc::String("\\", 1))) {
+if (((LexState_current(current) == mlc::String("\\", 1)) && (!LexState_eof(LexState_lex_advance(current))))) {
+expr_chars.push_back(LexState_current(current));
 current = LexState_lex_advance(current);
-auto mapped = map_escape(LexState_current(current));
-if ((mapped != mlc::String("", 0))) {
-current_lit.push_back(mapped);
+expr_chars.push_back(LexState_current(current));
+current = LexState_lex_advance(current);
 } else {
-current_lit.push_back(mlc::String("\\", 1));
-current_lit.push_back(LexState_current(current));
-}
-current = LexState_lex_advance(current);
-} else if ((LexState_current(current) == mlc::String("{", 1))) {
-parts.push_back(current_lit.join(mlc::String("", 0)));
-current_lit = {};
-current = LexState_lex_advance(current);
-auto expr_chars = mlc::Array<mlc::String>{};
-while (((!LexState_eof(current)) && (LexState_current(current) != mlc::String("}", 1)))) {
 expr_chars.push_back(LexState_current(current));
 current = LexState_lex_advance(current);
 }
+}
 if ((!LexState_eof(current))) {
+expr_chars.push_back(LexState_current(current));
 current = LexState_lex_advance(current);
+}
+return current;
+}
+ScanStrResult scan_template(LexState state) noexcept{
+auto token_line = state.line;
+auto token_col = state.col;
+auto current = LexState_lex_advance(state);
+auto parts = mlc::Array<mlc::String>{};
+auto current_lit = mlc::Array<mlc::String>{};
+auto error = mlc::String("", 0);
+while (((!LexState_eof(current)) && (LexState_current(current) != mlc::String("`", 1)))) {
+if (((LexState_current(current) == mlc::String("\\", 1)) && (!LexState_eof(LexState_lex_advance(current))))) {
+auto next = LexState_current(LexState_lex_advance(current));
+current = LexState_lex_advance(current);
+if ((next == mlc::String("`", 1))) {
+current_lit.push_back(mlc::String("`", 1));
+/* unit */;
+current = LexState_lex_advance(current);
+} else if ((((next == mlc::String("$", 1)) && (!LexState_eof(LexState_lex_advance(current)))) && (LexState_current(LexState_lex_advance(current)) == mlc::String("{", 1)))) {
+current_lit.push_back(mlc::String("$", 1));
+/* unit */;
+current = LexState_lex_advance(current);
+current_lit.push_back(mlc::String("{", 1));
+/* unit */;
+current = LexState_lex_advance(current);
+} else if ((next == mlc::String("n", 1))) {
+current_lit.push_back(mlc::String("\n", 1));
+/* unit */;
+current = LexState_lex_advance(current);
+} else if ((next == mlc::String("t", 1))) {
+current_lit.push_back(mlc::String("\t", 1));
+/* unit */;
+current = LexState_lex_advance(current);
+} else if ((next == mlc::String("r", 1))) {
+current_lit.push_back(mlc::String("\r", 1));
+/* unit */;
+current = LexState_lex_advance(current);
+} else if ((next == mlc::String("\\", 1))) {
+current_lit.push_back(mlc::String("\\", 1));
+/* unit */;
+current = LexState_lex_advance(current);
+} else {
+current_lit.push_back(mlc::String("\\", 1));
+current_lit.push_back(next);
+current = LexState_lex_advance(current);
+}
+
+
+
+
+
+} else if ((((LexState_current(current) == mlc::String("$", 1)) && (!LexState_eof(LexState_lex_advance(current)))) && (LexState_current(LexState_lex_advance(current)) == mlc::String("{", 1)))) {
+parts.push_back(current_lit.join(mlc::String("", 0)));
+current_lit = {};
+current = LexState_lex_advance(LexState_lex_advance(current));
+auto expr_chars = mlc::Array<mlc::String>{};
+auto depth = 1;
+while (((!LexState_eof(current)) && (depth > 0))) {
+if ((LexState_current(current) == mlc::String("{", 1))) {
+depth = (depth + 1);
+/* unit */;
+expr_chars.push_back(LexState_current(current));
+/* unit */;
+current = LexState_lex_advance(current);
+} else if ((LexState_current(current) == mlc::String("}", 1))) {
+depth = (depth - 1);
+if ((depth > 0)) {
+expr_chars.push_back(LexState_current(current));
+}
+current = LexState_lex_advance(current);
+} else if ((LexState_current(current) == mlc::String("\"", 1))) {
+expr_chars.push_back(LexState_current(current));
+current = scan_template_nested_string(current, expr_chars);
+} else {
+expr_chars.push_back(LexState_current(current));
+current = LexState_lex_advance(current);
+}
+
+
+}
+if ((depth > 0)) {
+error = mlc::String("unterminated interpolation in template literal", 46);
 }
 parts.push_back(expr_chars.join(mlc::String("", 0)));
 } else {
@@ -300,12 +419,12 @@ current = LexState_lex_advance(current);
 
 }
 if (LexState_eof(current)) {
-error = mlc::String("unterminated f-string", 21);
+error = mlc::String("unterminated template literal", 29);
 } else {
 current = LexState_lex_advance(current);
 }
 parts.push_back(current_lit.join(mlc::String("", 0)));
-return ScanStrResult{current, ast_tokens::Token{ast_tokens::LFStr{parts}, token_line, token_col}, error};
+return ScanStrResult{current, ast_tokens::Token{ast_tokens::LTemplate{parts}, token_line, token_col}, error};
 }
 LexState skip_whitespace(LexState state) noexcept{
 auto current = state;
@@ -428,20 +547,11 @@ break;
 }
 auto character = LexState_current(state);
 if (is_alpha(character)) {
-if ((((character == mlc::String("f", 1)) && (!LexState_eof(LexState_lex_advance(state)))) && (LexState_current(LexState_lex_advance(state)) == mlc::String("\"", 1)))) {
-auto result = scan_fstring(state);
-/* unit */;
-tokens.push_back(result.token);
-/* unit */;
-state = result.state;
-if ((result.error != mlc::String("", 0))) {
-errors.push_back(result.error);
-}
-} else {
 auto result = scan_ident(state);
+/* unit */;
 tokens.push_back(result.token);
+/* unit */;
 state = result.state;
-}
 } else if (is_digit(character)) {
 auto result = scan_int(state);
 /* unit */;
@@ -466,11 +576,21 @@ state = result.state;
 if ((result.error != mlc::String("", 0))) {
 errors.push_back(result.error);
 }
+} else if ((character == mlc::String("`", 1))) {
+auto result = scan_template(state);
+/* unit */;
+tokens.push_back(result.token);
+/* unit */;
+state = result.state;
+if ((result.error != mlc::String("", 0))) {
+errors.push_back(result.error);
+}
 } else {
 auto result = scan_op(state);
 tokens.push_back(result.token);
 state = result.state;
 }
+
 
 
 

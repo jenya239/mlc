@@ -9,6 +9,7 @@
 #include "names.hpp"
 #include "check_mutations.hpp"
 #include "registry.hpp"
+#include "trait_param_expand.hpp"
 #include "infer.hpp"
 #include "check_context.hpp"
 #include "semantic_type_structure.hpp"

@@ -2,6 +2,7 @@
 // Not called back by transform_expr/transform_stmts; imports from transform.mlc.
 
 import { Decl, TypeVariant, Param, Program, Stmt, Span } from "../ast"
+import { expand_declarations_with_trait_context } from "./trait_param_expand"
 import { Type, TypeRegistry, type_from_annotation } from "./registry"
 import { SDecl, SProgram, SLoadItem, SNamespaceImportAlias } from "../semantic_ir"
 import { LoadItem, NamespaceImportAlias } from "../codegen/decl_index"
@@ -63,12 +64,13 @@ fn to_semantic_namespace_aliases(items: [NamespaceImportAlias]) -> [SNamespaceIm
   result
 end
 
-export fn transform_load_items(items: [LoadItem], registry: TypeRegistry) -> [SLoadItem] = do
+export fn transform_load_items(items: [LoadItem], registry: TypeRegistry, program_for_trait_maps: Program) -> [SLoadItem] = do
   let mut result: [SLoadItem] = []
   let mut index = 0
   while index < items.length() do
     const item = items[index]
-    const typed_decls = transform_decls(item.decls, registry)
+    const expanded_declarations = expand_declarations_with_trait_context(item.decls, program_for_trait_maps)
+    const typed_decls = transform_decls(expanded_declarations, registry)
     result.push(SLoadItem {
       path: item.path,
       decls: typed_decls,

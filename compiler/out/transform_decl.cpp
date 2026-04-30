@@ -1,6 +1,7 @@
 #include "transform_decl.hpp"
 
 #include "ast.hpp"
+#include "trait_param_expand.hpp"
 #include "registry.hpp"
 #include "semantic_ir.hpp"
 #include "decl_index.hpp"
@@ -10,6 +11,7 @@
 namespace transform_decl {
 
 using namespace ast;
+using namespace trait_param_expand;
 using namespace registry;
 using namespace semantic_ir;
 using namespace decl_index;
@@ -25,7 +27,7 @@ semantic_ir::SProgram transform_program(ast::Program program, registry::TypeRegi
 
 mlc::Array<semantic_ir::SNamespaceImportAlias> to_semantic_namespace_aliases(mlc::Array<decl_index::NamespaceImportAlias> items) noexcept;
 
-mlc::Array<semantic_ir::SLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry) noexcept;
+mlc::Array<semantic_ir::SLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry, ast::Program program_for_trait_maps) noexcept;
 
 std::shared_ptr<semantic_ir::SDecl> transform_decl(std::shared_ptr<ast::Decl> declaration, registry::TypeRegistry registry) noexcept{return std::visit(overloaded{
   [&](const DeclFn& declfn) -> std::shared_ptr<semantic_ir::SDecl> { auto [name, type_params, trait_bounds, params, return_type_expr, body] = declfn; return [&]() -> std::shared_ptr<semantic_ir::SDecl> { 
@@ -85,13 +87,14 @@ index = index + 1;
 return result;
 }
 
-mlc::Array<semantic_ir::SLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry) noexcept{
+mlc::Array<semantic_ir::SLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry, ast::Program program_for_trait_maps) noexcept{
 mlc::Array<semantic_ir::SLoadItem> result = {};
 int index = 0;
 while (index < items.size()){
 {
 decl_index::LoadItem item = items[index];
-mlc::Array<std::shared_ptr<semantic_ir::SDecl>> typed_decls = transform_decls(item.decls, registry);
+mlc::Array<std::shared_ptr<ast::Decl>> expanded_declarations = trait_param_expand::expand_declarations_with_trait_context(item.decls, program_for_trait_maps);
+mlc::Array<std::shared_ptr<semantic_ir::SDecl>> typed_decls = transform_decls(expanded_declarations, registry);
 result.push_back(semantic_ir::SLoadItem{item.path, typed_decls, item.imports, to_semantic_namespace_aliases(item.namespace_import_aliases)});
 index = index + 1;
 }

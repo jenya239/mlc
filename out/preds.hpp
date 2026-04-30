@@ -9,7 +9,7 @@
 
 namespace preds {
 
-struct Parser {mlc::Array<ast_tokens::Token> tokens;int pos;};
+struct Parser {mlc::Array<ast_tokens::Token> tokens;int pos;mlc::String source_path;};
 struct ExprResult {std::shared_ptr<ast::Expr> expr;Parser parser;};
 struct TypeResult {std::shared_ptr<ast::TypeExpr> type_expr;Parser parser;};
 struct PatResult {std::shared_ptr<ast::Pat> pat;Parser parser;};
@@ -30,6 +30,7 @@ struct NamesResult {mlc::Array<mlc::String> exprs;Parser parser;};
 struct TypeParamsResult {mlc::Array<mlc::String> params;mlc::Array<mlc::Array<mlc::String>> bounds;Parser parser;};
 struct BoundsResult {mlc::Array<mlc::String> bounds;Parser parser;};
 struct TraitBodyResult {mlc::Array<std::shared_ptr<ast::Decl>> methods;Parser parser;};
+Parser parser_new_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
 Parser parser_new(mlc::Array<ast_tokens::Token> tokens) noexcept;
 ast_tokens::TKind parser_kind(Parser parser) noexcept;
 Parser parser_advance(Parser parser) noexcept;
@@ -59,8 +60,8 @@ bool is_keyword_extend(ast_tokens::TKind kind) noexcept;
 bool is_ident(ast_tokens::TKind kind) noexcept;
 bool is_int_literal(ast_tokens::TKind kind) noexcept;
 bool is_str_literal(ast_tokens::TKind kind) noexcept;
-bool is_fstr_literal(ast_tokens::TKind kind) noexcept;
-mlc::Array<mlc::String> get_fstr_parts(ast_tokens::TKind kind) noexcept;
+bool is_template_literal(ast_tokens::TKind kind) noexcept;
+mlc::Array<mlc::String> get_template_parts(ast_tokens::TKind kind) noexcept;
 bool is_equal(ast_tokens::TKind kind) noexcept;
 bool is_bar(ast_tokens::TKind kind) noexcept;
 bool is_pipe(ast_tokens::TKind kind) noexcept;
@@ -95,6 +96,7 @@ bool TKind_is_end(ast_tokens::TKind self) noexcept;
 bool TKind_is_do(ast_tokens::TKind self) noexcept;
 bool TKind_is_while(ast_tokens::TKind self) noexcept;
 bool TKind_is_for(ast_tokens::TKind self) noexcept;
+bool TKind_is_with(ast_tokens::TKind self) noexcept;
 bool TKind_is_match(ast_tokens::TKind self) noexcept;
 bool TKind_is_return(ast_tokens::TKind self) noexcept;
 bool TKind_is_break(ast_tokens::TKind self) noexcept;
@@ -104,13 +106,14 @@ bool TKind_is_false(ast_tokens::TKind self) noexcept;
 bool TKind_is_extern(ast_tokens::TKind self) noexcept;
 bool TKind_is_extend(ast_tokens::TKind self) noexcept;
 bool TKind_is_import(ast_tokens::TKind self) noexcept;
+bool TKind_is_as(ast_tokens::TKind self) noexcept;
 bool TKind_is_from(ast_tokens::TKind self) noexcept;
 bool TKind_is_eof(ast_tokens::TKind self) noexcept;
 bool TKind_is_ident(ast_tokens::TKind self) noexcept;
 bool TKind_is_int(ast_tokens::TKind self) noexcept;
 bool TKind_is_str(ast_tokens::TKind self) noexcept;
-bool TKind_is_fstr(ast_tokens::TKind self) noexcept;
-mlc::Array<mlc::String> TKind_fstr_parts(ast_tokens::TKind self) noexcept;
+bool TKind_is_template(ast_tokens::TKind self) noexcept;
+mlc::Array<mlc::String> TKind_template_parts(ast_tokens::TKind self) noexcept;
 bool TKind_is_equal(ast_tokens::TKind self) noexcept;
 bool TKind_is_bar(ast_tokens::TKind self) noexcept;
 bool TKind_is_pipe(ast_tokens::TKind self) noexcept;
@@ -132,11 +135,23 @@ mlc::String TKind_ident(ast_tokens::TKind self) noexcept;
 int TKind_int_val(ast_tokens::TKind self) noexcept;
 mlc::String TKind_str_val(ast_tokens::TKind self) noexcept;
 mlc::String TKind_op_val(ast_tokens::TKind self) noexcept;
+bool TKind_is_float(ast_tokens::TKind self) noexcept;
+bool TKind_is_i64(ast_tokens::TKind self) noexcept;
+bool TKind_is_u8(ast_tokens::TKind self) noexcept;
+bool TKind_is_usize(ast_tokens::TKind self) noexcept;
+bool TKind_is_char_lit(ast_tokens::TKind self) noexcept;
+mlc::String TKind_float_val(ast_tokens::TKind self) noexcept;
+mlc::String TKind_i64_val(ast_tokens::TKind self) noexcept;
+mlc::String TKind_u8_val(ast_tokens::TKind self) noexcept;
+mlc::String TKind_usize_val(ast_tokens::TKind self) noexcept;
+mlc::String TKind_char_val(ast_tokens::TKind self) noexcept;
 ast_tokens::TKind Parser_kind(Parser self) noexcept;
 Parser Parser_advance(Parser self) noexcept;
 Parser Parser_advance_by(Parser self, int count) noexcept;
 bool Parser_at_eof(Parser self) noexcept;
 Parser Parser_skip_semi(Parser self) noexcept;
+ast::Span Parser_span_at_cursor(Parser self) noexcept;
+int Parser_prev_line(Parser self) noexcept;
 
 } // namespace preds
 

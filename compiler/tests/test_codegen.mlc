@@ -1,6 +1,7 @@
 // Unit tests for the code generator.
 
 import { TestResult, assert_eq_str } from "./test_runner"
+import { assert_code_contains } from "./codegen_test_helpers"
 import { gen_expr, gen_argument_list, gen_stmts_str } from "../codegen/eval"
 import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from "../codegen/context"
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from "../codegen/type_gen"
@@ -281,6 +282,19 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str("DeclFn: body in output",
     if fn_prog_out.contains("return (n * 2)") then "yes" else "no" end,
     "yes"))
+
+  const d3_trait_parameter_source =
+    "type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()"
+  const d3_trait_parameter_output = gen_program(parse_program(tokenize(d3_trait_parameter_source).tokens))
+  results.push(assert_code_contains("D3 gen_program: concept Display", d3_trait_parameter_output, "concept Display"))
+  results.push(assert_code_contains("D3 gen_program: requires in trait concept", d3_trait_parameter_output, "requires"))
+  results.push(assert_code_contains("D3 gen_program: parameter uses Display constraint", d3_trait_parameter_output, "f(Display"))
+
+  const d3_two_trait_parameter_source =
+    "type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()"
+  const d3_two_trait_parameter_output = gen_program(parse_program(tokenize(d3_two_trait_parameter_source).tokens))
+  results.push(assert_code_contains("D3 gen_program: first Display parameter", d3_two_trait_parameter_output, "Display first"))
+  results.push(assert_code_contains("D3 gen_program: second Display parameter", d3_two_trait_parameter_output, "Display second"))
 
   // --- Generic type codegen -----------------------------------------------
 

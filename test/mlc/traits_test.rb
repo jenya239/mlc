@@ -432,6 +432,68 @@ class TraitsTest < Minitest::Test
     assert_match(/i32_show/, cpp)
   end
 
+  def test_trait_as_parameter_desugars_to_template_requires
+    code = <<~MLC
+      trait Display {
+        fn to_string(self: Self) -> string
+      }
+
+      fn consume(_value: Display) -> unit = ()
+
+      fn main() -> i32 = 0
+    MLC
+
+    cpp = compile_to_cpp(code)
+    assert_match(/requires/, cpp)
+    assert_match(/__trait_param_0/, cpp)
+  end
+
+  def test_trait_as_parameter_two_occurrences_two_type_parameters
+    code = <<~MLC
+      trait Display {
+        fn to_string(self: Self) -> string
+      }
+
+      fn pair(_first: Display, _second: Display) -> unit = ()
+
+      fn main() -> i32 = 0
+    MLC
+
+    cpp = compile_to_cpp(code)
+    assert_match(/__trait_param_0/, cpp)
+    assert_match(/__trait_param_1/, cpp)
+  end
+
+  def test_trait_and_type_same_name_conflict_raises
+    code = <<~MLC
+      trait Ambiguous {
+        fn method(self: Self) -> unit
+      }
+
+      type Ambiguous = VariantOne | VariantTwo
+
+      fn main() -> i32 = 0
+    MLC
+
+    error = assert_raises(MLC::CompileError) { compile_to_cpp(code) }
+    assert_match(/both a type and a trait/, error.message)
+  end
+
+  def test_trait_and_type_same_name_conflict_raises
+    code = <<~MLC
+      trait Ambiguous {
+        fn method(self: Self) -> unit
+      }
+
+      type Ambiguous = VariantOne | VariantTwo
+
+      fn main() -> i32 = 0
+    MLC
+
+    error = assert_raises(MLC::CompileError) { compile_to_cpp(code) }
+    assert_match(/both a type and a trait/, error.message)
+  end
+
   def test_generic_extend
     code = <<~MLC
       type Box<T> = { value: T }

@@ -1,0 +1,326 @@
+// Desugar D3: trait name used as a parameter type (e.g. x: Display) into explicit type
+// parameters with trait bounds, aligned with DeclFn(type_params, trait_bounds, ...).
+
+import {
+  Program, Decl, TypeExpr, Param, Expr, Shared,
+  TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc,
+  DeclFn, DeclType, DeclTrait, DeclExtend,
+  DeclExported,
+  param_name, param_typ,
+  Diagnostic, diagnostic_error, span_unknown
+} from "../ast"
+
+export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnostic] = do
+  let trait_declaration_names: Map<string, bool> = Map.new()
+  let nominal_type_declaration_names: Map<string, bool> = Map.new()
+  let conflicts: [Diagnostic] = []
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    let mut declaration_stack: [Shared<Decl>] = []
+    declaration_stack.push(program.decls[declaration_index])
+    let mut stack_index = 0
+    while stack_index < declaration_stack.length() do
+      const current_declaration = declaration_stack[stack_index]
+      match current_declaration {
+        DeclExported(inner) => do declaration_stack.push(inner); () end,
+        DeclType(type_name, _, _, _) => do
+          if trait_declaration_names.has(type_name) then
+            conflicts.push(diagnostic_error(
+              "the name \"" + type_name + "\" is declared as both a type and a trait",
+              span_unknown()))
+          end
+          nominal_type_declaration_names.set(type_name, true); ()
+        end,
+        DeclTrait(trait_name, _, _) => do
+          if nominal_type_declaration_names.has(trait_name) then
+            conflicts.push(diagnostic_error(
+              "the name \"" + trait_name + "\" is declared as both a type and a trait",
+              span_unknown()))
+          end
+          trait_declaration_names.set(trait_name, true); ()
+        end,
+        _ => ()
+      }
+      stack_index = stack_index + 1
+    end
+    declaration_index = declaration_index + 1
+  end
+  conflicts
+end
+
+fn fill_trait_and_nominal_maps(program: Program, trait_names: Map<string, bool>, nominal_type_names: Map<string, bool>) -> unit = do
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    let mut declaration_stack: [Shared<Decl>] = []
+    declaration_stack.push(program.decls[declaration_index])
+    let mut stack_index = 0
+    while stack_index < declaration_stack.length() do
+      const current_declaration = declaration_stack[stack_index]
+      match current_declaration {
+        DeclExported(inner) => do declaration_stack.push(inner); () end,
+        DeclType(type_name, _, _, _) => do nominal_type_names.set(type_name, true); () end,
+        DeclTrait(trait_name, _, _) => do trait_names.set(trait_name, true); () end,
+        _ => ()
+      }
+      stack_index = stack_index + 1
+    end
+    declaration_index = declaration_index + 1
+  end
+end
+
+fn align_trait_bounds_matrix(type_parameter_names: [string], trait_bounds_rows: [[string]]) -> [[string]] = do
+  let aligned: [[string]] = []
+  let mut row_index = 0
+  while row_index < trait_bounds_rows.length() do
+    aligned.push(trait_bounds_rows[row_index]); row_index = row_index + 1
+  end
+  while aligned.length() < type_parameter_names.length() do
+    const empty_row: [string] = []
+    aligned.push(empty_row)
+  end
+  aligned
+end
+
+fn append_string_rows(mut destination: [[string]], source: [[string]]) -> [[string]] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index]); index = index + 1
+  end
+  destination
+end
+
+fn append_strings(mut destination: [string], source: [string]) -> [string] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index]); index = index + 1
+  end
+  destination
+end
+
+type TraitExpandChunk = TraitExpandChunk {
+  type_expression: Shared<TypeExpr>,
+  next_counter: i32,
+  appended_type_parameter_names: [string],
+  appended_trait_bounds_rows: [[string]]
+}
+
+fn expand_type_expression_for_trait_param(
+  type_expression: Shared<TypeExpr>,
+  explicit_type_parameter_environment: Map<string, bool>,
+  trait_declaration_names: Map<string, bool>,
+  nominal_type_declaration_names: Map<string, bool>,
+  synthetic_counter: i32
+) -> TraitExpandChunk =
+  match type_expression {
+    TyNamed(name) =>
+      if explicit_type_parameter_environment.has(name) then
+        TraitExpandChunk { type_expression, next_counter: synthetic_counter, appended_type_parameter_names: [], appended_trait_bounds_rows: [] }
+      else if trait_declaration_names.has(name) && !nominal_type_declaration_names.has(name) then
+        const synthetic_name = "__trait_param_" + synthetic_counter.to_string()
+        const single_trait_row: [string] = [name]
+        const bounds_wrapper: [[string]] = [single_trait_row]
+        TraitExpandChunk {
+          type_expression: Shared.new(TyNamed(synthetic_name)),
+          next_counter: synthetic_counter + 1,
+          appended_type_parameter_names: [synthetic_name],
+          appended_trait_bounds_rows: bounds_wrapper
+        }
+      else
+        TraitExpandChunk { type_expression, next_counter: synthetic_counter, appended_type_parameter_names: [], appended_trait_bounds_rows: [] }
+      end,
+    TyArray(inner) => do
+      const inner_chunk = expand_type_expression_for_trait_param(
+        inner, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter)
+      TraitExpandChunk {
+        type_expression: Shared.new(TyArray(inner_chunk.type_expression)),
+        next_counter: inner_chunk.next_counter,
+        appended_type_parameter_names: inner_chunk.appended_type_parameter_names,
+        appended_trait_bounds_rows: inner_chunk.appended_trait_bounds_rows
+      }
+    end,
+    TyShared(inner) => do
+      const inner_chunk = expand_type_expression_for_trait_param(
+        inner, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter)
+      TraitExpandChunk {
+        type_expression: Shared.new(TyShared(inner_chunk.type_expression)),
+        next_counter: inner_chunk.next_counter,
+        appended_type_parameter_names: inner_chunk.appended_type_parameter_names,
+        appended_trait_bounds_rows: inner_chunk.appended_trait_bounds_rows
+      }
+    end,
+    TyGeneric(base_name, type_arguments) => do
+      let mut counter = synthetic_counter
+      let rebuilt_arguments: [Shared<TypeExpr>] = []
+      let mut combined_appended_names: [string] = []
+      let mut combined_bounds: [[string]] = []
+      let mut argument_index = 0
+      while argument_index < type_arguments.length() do
+        const argument_chunk = expand_type_expression_for_trait_param(
+          type_arguments[argument_index], explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, counter)
+        rebuilt_arguments.push(argument_chunk.type_expression)
+        counter = argument_chunk.next_counter
+        combined_appended_names = append_strings(combined_appended_names, argument_chunk.appended_type_parameter_names)
+        combined_bounds = append_string_rows(combined_bounds, argument_chunk.appended_trait_bounds_rows)
+        argument_index = argument_index + 1
+      end
+      TraitExpandChunk {
+        type_expression: Shared.new(TyGeneric(base_name, rebuilt_arguments)),
+        next_counter: counter,
+        appended_type_parameter_names: combined_appended_names,
+        appended_trait_bounds_rows: combined_bounds
+      }
+    end,
+    TyFn(parameter_types, return_type_expression) => do
+      let mut counter = synthetic_counter
+      let rebuilt_parameter_types: [Shared<TypeExpr>] = []
+      let mut combined_appended_names: [string] = []
+      let mut combined_bounds: [[string]] = []
+      let mut parameter_index = 0
+      while parameter_index < parameter_types.length() do
+        const parameter_chunk = expand_type_expression_for_trait_param(
+          parameter_types[parameter_index], explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, counter)
+        rebuilt_parameter_types.push(parameter_chunk.type_expression)
+        counter = parameter_chunk.next_counter
+        combined_appended_names = append_strings(combined_appended_names, parameter_chunk.appended_type_parameter_names)
+        combined_bounds = append_string_rows(combined_bounds, parameter_chunk.appended_trait_bounds_rows)
+        parameter_index = parameter_index + 1
+      end
+      const return_chunk = expand_type_expression_for_trait_param(
+        return_type_expression, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, counter)
+      TraitExpandChunk {
+        type_expression: Shared.new(TyFn(rebuilt_parameter_types, return_chunk.type_expression)),
+        next_counter: return_chunk.next_counter,
+        appended_type_parameter_names: append_strings(combined_appended_names, return_chunk.appended_type_parameter_names),
+        appended_trait_bounds_rows: append_string_rows(combined_bounds, return_chunk.appended_trait_bounds_rows)
+      }
+    end,
+    TyAssoc(_, _) => TraitExpandChunk { type_expression, next_counter: synthetic_counter, appended_type_parameter_names: [], appended_trait_bounds_rows: [] },
+    TyI32       => TraitExpandChunk { type_expression, next_counter: synthetic_counter, appended_type_parameter_names: [], appended_trait_bounds_rows: [] },
+    TyString    => TraitExpandChunk { type_expression, next_counter: synthetic_counter, appended_type_parameter_names: [], appended_trait_bounds_rows: [] },
+    TyBool      => TraitExpandChunk { type_expression, next_counter: synthetic_counter, appended_type_parameter_names: [], appended_trait_bounds_rows: [] },
+    TyUnit      => TraitExpandChunk { type_expression, next_counter: synthetic_counter, appended_type_parameter_names: [], appended_trait_bounds_rows: [] }
+  }
+
+fn expand_decl_fn_trait_parameters(
+  function_name: string,
+  type_parameter_names: [string],
+  trait_bounds_rows: [[string]],
+  parameters: [Shared<Param>],
+  return_type_expression: Shared<TypeExpr>,
+  body_expression: Shared<Expr>,
+  trait_declaration_names: Map<string, bool>,
+  nominal_type_declaration_names: Map<string, bool>
+) -> Shared<Decl> = do
+  let explicit_type_parameter_environment: Map<string, bool> = Map.new()
+  let mut explicit_index = 0
+  while explicit_index < type_parameter_names.length() do
+    explicit_type_parameter_environment.set(type_parameter_names[explicit_index], true)
+    explicit_index = explicit_index + 1
+  end
+  let mut expanded_type_parameter_names: [string] = []
+  let mut copy_index = 0
+  while copy_index < type_parameter_names.length() do
+    expanded_type_parameter_names.push(type_parameter_names[copy_index]); copy_index = copy_index + 1
+  end
+  let mut expanded_trait_bounds = align_trait_bounds_matrix(type_parameter_names, trait_bounds_rows)
+  let mut synthetic_counter = 0
+  let expanded_parameters: [Shared<Param>] = []
+  let mut parameter_index = 0
+  while parameter_index < parameters.length() do
+    const parameter_chunk = expand_type_expression_for_trait_param(
+      param_typ(parameters[parameter_index]),
+      explicit_type_parameter_environment,
+      trait_declaration_names,
+      nominal_type_declaration_names,
+      synthetic_counter)
+    synthetic_counter = parameter_chunk.next_counter
+    expanded_type_parameter_names = append_strings(expanded_type_parameter_names, parameter_chunk.appended_type_parameter_names)
+    expanded_trait_bounds = append_string_rows(expanded_trait_bounds, parameter_chunk.appended_trait_bounds_rows)
+    const original_parameter = parameters[parameter_index]
+    expanded_parameters.push(Shared.new(Param {
+      name: param_name(original_parameter),
+      is_mut: original_parameter.is_mut,
+      typ: parameter_chunk.type_expression,
+      has_default: original_parameter.has_default,
+      default: original_parameter.default
+    }))
+    parameter_index = parameter_index + 1
+  end
+  const return_chunk = expand_type_expression_for_trait_param(
+    return_type_expression, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter)
+  expanded_type_parameter_names = append_strings(expanded_type_parameter_names, return_chunk.appended_type_parameter_names)
+  expanded_trait_bounds = append_string_rows(expanded_trait_bounds, return_chunk.appended_trait_bounds_rows)
+  Shared.new(DeclFn(
+    function_name,
+    expanded_type_parameter_names,
+    expanded_trait_bounds,
+    expanded_parameters,
+    return_chunk.type_expression,
+    body_expression))
+end
+
+fn expand_extend_methods(
+  methods: [Shared<Decl>],
+  trait_declaration_names: Map<string, bool>,
+  nominal_type_declaration_names: Map<string, bool>
+) -> [Shared<Decl>] = do
+  let result: [Shared<Decl>] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    result.push(expand_decl_shared(methods[method_index], trait_declaration_names, nominal_type_declaration_names))
+    method_index = method_index + 1
+  end
+  result
+end
+
+fn expand_decl_shared(declaration: Shared<Decl>, trait_declaration_names: Map<string, bool>, nominal_type_declaration_names: Map<string, bool>) -> Shared<Decl> =
+  match declaration {
+    DeclFn(function_name, type_parameter_names, trait_bounds_rows, parameters, return_type_expression, body_expression) =>
+      expand_decl_fn_trait_parameters(
+        function_name,
+        type_parameter_names,
+        trait_bounds_rows,
+        parameters,
+        return_type_expression,
+        body_expression,
+        trait_declaration_names,
+        nominal_type_declaration_names),
+    DeclExported(inner) => Shared.new(DeclExported(expand_decl_shared(inner, trait_declaration_names, nominal_type_declaration_names))),
+    DeclExtend(extended_type_name, implemented_trait_name, methods) =>
+      Shared.new(DeclExtend(
+        extended_type_name,
+        implemented_trait_name,
+        expand_extend_methods(methods, trait_declaration_names, nominal_type_declaration_names))),
+    _ => declaration
+  }
+
+fn expand_declarations_with_trait_and_nominal_maps(
+  declarations: [Shared<Decl>],
+  trait_declaration_names: Map<string, bool>,
+  nominal_type_declaration_names: Map<string, bool>
+) -> [Shared<Decl>] = do
+  let expanded_declarations: [Shared<Decl>] = []
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    expanded_declarations.push(expand_decl_shared(
+      declarations[declaration_index],
+      trait_declaration_names,
+      nominal_type_declaration_names))
+    declaration_index = declaration_index + 1
+  end
+  expanded_declarations
+end
+
+// Expands declarations using trait/type names from `program_for_maps` (full merged program).
+export fn expand_declarations_with_trait_context(declarations: [Shared<Decl>], program_for_maps: Program) -> [Shared<Decl>] = do
+  let trait_declaration_names: Map<string, bool> = Map.new()
+  let nominal_type_declaration_names: Map<string, bool> = Map.new()
+  fill_trait_and_nominal_maps(program_for_maps, trait_declaration_names, nominal_type_declaration_names)
+  expand_declarations_with_trait_and_nominal_maps(declarations, trait_declaration_names, nominal_type_declaration_names)
+end
+
+export fn expand_trait_as_param_entry_using_full(entry: Program, full_program: Program) -> Program =
+  Program { decls: expand_declarations_with_trait_context(entry.decls, full_program) }
+
+export fn expand_trait_as_param_program(program: Program) -> Program =
+  Program { decls: expand_declarations_with_trait_context(program.decls, program) }

@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "test_runner.hpp"
+#include "codegen_test_helpers.hpp"
 #include "eval.hpp"
 #include "context.hpp"
 #include "type_gen.hpp"

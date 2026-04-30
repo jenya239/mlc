@@ -59,6 +59,13 @@ auto symbols = mlc::Array<mlc::String>{};
 if ((preds::TKind_is_op(preds::Parser_kind(state)) && (preds::TKind_op_val(preds::Parser_kind(state)) == mlc::String("*", 1)))) {
 symbols.push_back(mlc::String("*", 1));
 state = preds::Parser_advance(state);
+if (preds::TKind_is_as(preds::Parser_kind(state))) {
+state = preds::Parser_advance(state);
+if (preds::TKind_is_ident(preds::Parser_kind(state))) {
+symbols.push_back(preds::TKind_ident(preds::Parser_kind(state)));
+state = preds::Parser_advance(state);
+}
+}
 } else if (preds::TKind_is_lbrace(preds::Parser_kind(state))) {
 state = preds::Parser_advance(state);
 while ((preds::TKind_is_ident(preds::Parser_kind(state)) || (preds::TKind_is_op(preds::Parser_kind(state)) && (preds::TKind_op_val(preds::Parser_kind(state)) == mlc::String("*", 1))))) {
@@ -111,12 +118,33 @@ methods_state = method_result.parser;
 auto method_result = parse_extend_extern_method(preds::Parser_advance(methods_state), type_name);
 methods.push_back(method_result.decl);
 methods_state = method_result.parser;
+} else if (preds::TKind_is_type(preds::Parser_kind(methods_state))) {
+auto after_type = preds::Parser_advance(methods_state);
+auto assoc_span = preds::Parser_span_at_cursor(after_type);
+auto assoc_name = preds::TKind_ident(preds::Parser_kind(after_type));
+auto after_name = preds::Parser_advance(after_type);
+if (preds::TKind_is_equal(preds::Parser_kind(after_name))) {
+auto type_result = types::parse_type(preds::Parser_advance(after_name));
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclAssocBind{assoc_name, type_result.type_expr, assoc_span}));
+methods_state = type_result.parser;
+} else {
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclAssocType{assoc_name, assoc_span}));
+methods_state = after_name;
+}
 } else {
 methods_state = preds::Parser_advance(methods_state);
 }
 
+
 }
 return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclExtend{type_name, trait_name, methods}), preds::Parser_advance(methods_state)};
+}
+preds::Parser advance_past_optional_self_type(preds::Parser parser_after_self) noexcept{
+if (preds::TKind_is_colon(preds::Parser_kind(parser_after_self))) {
+return types::parse_type(preds::Parser_advance(parser_after_self)).parser;
+} else {
+return parser_after_self;
+}
 }
 preds::ParamsResult parse_extend_extern_no_self_params(preds::Parser after_lparen) noexcept{
 if (preds::TKind_is_rparen(preds::Parser_kind(after_lparen))) {
@@ -127,22 +155,22 @@ return parse_params(after_lparen);
 }
 preds::ParamsResult parse_extend_extern_rest_params(preds::Parser after_lparen, bool leading_self) noexcept{
 if (leading_self) {
-auto after_self = after_lparen;
-auto after_self_skip = (preds::TKind_is_rparen(preds::Parser_kind(after_self)) ? after_self : (preds::TKind_is_comma(preds::Parser_kind(after_self)) ? preds::Parser_advance(after_self) : preds::Parser_advance(after_self)));
-if (preds::TKind_is_rparen(preds::Parser_kind(after_self_skip))) {
-return preds::ParamsResult{{}, preds::Parser_advance(after_self_skip)};
+auto after_self_type = advance_past_optional_self_type(preds::Parser_advance(after_lparen));
+if (preds::TKind_is_rparen(preds::Parser_kind(after_self_type))) {
+return preds::ParamsResult{{}, preds::Parser_advance(after_self_type)};
 } else {
-return parse_params((preds::TKind_is_comma(preds::Parser_kind(after_self_skip)) ? preds::Parser_advance(after_self_skip) : after_self_skip));
+return parse_params((preds::TKind_is_comma(preds::Parser_kind(after_self_type)) ? preds::Parser_advance(after_self_type) : after_self_type));
 }
 } else {
 return parse_extend_extern_no_self_params(after_lparen);
 }
 }
 preds::DeclResult parse_extend_extern_method(preds::Parser parser, mlc::String type_name) noexcept{
+auto extern_span = preds::Parser_span_at_cursor(parser);
 auto fn_name = preds::TKind_ident(preds::Parser_kind(preds::Parser_advance(parser)));
 auto mangled_name = ((type_name + mlc::String("_", 1)) + fn_name);
 auto after_lparen = preds::Parser_advance_by(parser, 3);
-auto self_param = std::make_shared<ast::Param>(ast::Param{mlc::String("self", 4), false, std::make_shared<ast::TypeExpr>(ast::TyNamed{type_name})});
+auto self_param = std::make_shared<ast::Param>(ast::Param{mlc::String("self", 4), false, std::make_shared<ast::TypeExpr>(ast::TyNamed{type_name}), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})});
 auto params = mlc::Array<std::shared_ptr<ast::Param>>{};
 auto leading_self = (preds::TKind_is_ident(preds::Parser_kind(after_lparen)) && (preds::TKind_ident(preds::Parser_kind(after_lparen)) == mlc::String("self", 4)));
 if (leading_self) {
@@ -160,18 +188,17 @@ index = (index + 1);
 auto after_rparen = preds::Parser_advance(rest_params.parser);
 auto type_parser = (preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? preds::Parser_advance(after_rparen) : after_rparen);
 auto ret_type_result = types::parse_type(type_parser);
-return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn{mangled_name, {}, {}, params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern{})}), ret_type_result.parser};
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn{mangled_name, {}, {}, params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern{extern_span})}), ret_type_result.parser};
 }
 preds::DeclResult parse_extend_method(preds::Parser parser, mlc::String type_name) noexcept{
 auto fn_name = preds::TKind_ident(preds::Parser_kind(preds::Parser_advance(parser)));
 auto mangled_name = ((type_name + mlc::String("_", 1)) + fn_name);
 auto after_lparen = preds::Parser_advance_by(parser, 3);
-auto after_self = ((preds::TKind_is_ident(preds::Parser_kind(after_lparen)) && (preds::TKind_ident(preds::Parser_kind(after_lparen)) == mlc::String("self", 4))) ? after_lparen : preds::Parser_advance(after_lparen));
-auto self_param = std::make_shared<ast::Param>(ast::Param{mlc::String("self", 4), false, std::make_shared<ast::TypeExpr>(ast::TyNamed{type_name})});
+auto self_param = std::make_shared<ast::Param>(ast::Param{mlc::String("self", 4), false, std::make_shared<ast::TypeExpr>(ast::TyNamed{type_name}), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})});
 auto params = mlc::Array<std::shared_ptr<ast::Param>>{};
 params.push_back(self_param);
-auto after_self_skip = (preds::TKind_is_rparen(preds::Parser_kind(after_self)) ? after_self : (preds::TKind_is_comma(preds::Parser_kind(after_self)) ? preds::Parser_advance(after_self) : preds::Parser_advance(after_self)));
-auto rest_params = (preds::TKind_is_rparen(preds::Parser_kind(after_self_skip)) ? preds::ParamsResult{{}, preds::Parser_advance(after_self_skip)} : parse_params((preds::TKind_is_comma(preds::Parser_kind(after_self_skip)) ? preds::Parser_advance(after_self_skip) : after_self_skip)));
+auto rest_start = ((preds::TKind_is_ident(preds::Parser_kind(after_lparen)) && (preds::TKind_ident(preds::Parser_kind(after_lparen)) == mlc::String("self", 4))) ? advance_past_optional_self_type(preds::Parser_advance(after_lparen)) : after_lparen);
+auto rest_params = (preds::TKind_is_rparen(preds::Parser_kind(rest_start)) ? preds::ParamsResult{{}, preds::Parser_advance(rest_start)} : parse_params((preds::TKind_is_comma(preds::Parser_kind(rest_start)) ? preds::Parser_advance(rest_start) : rest_start)));
 auto index = 0;
 while ((index < rest_params.params.length())) {
 auto rp = rest_params.params[index];
@@ -184,9 +211,9 @@ auto after_rparen = preds::Parser_advance(rest_params.parser);
 auto type_parser = (preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? preds::Parser_advance(after_rparen) : after_rparen);
 auto ret_type_result = types::parse_type(type_parser);
 auto after_eq = preds::Parser_advance(ret_type_result.parser);
-auto body_result = (preds::TKind_is_extern(preds::Parser_kind(after_eq)) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprExtern{}), preds::Parser_advance(after_eq)} : [&]() {
+auto body_result = (preds::TKind_is_extern(preds::Parser_kind(after_eq)) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprExtern{preds::Parser_span_at_cursor(after_eq)}), preds::Parser_advance(after_eq)} : [&]() {
 auto parsed = exprs::parse_expr(after_eq);
-return std::visit(overloaded{[&](const ast::ExprIdent& exprIdent) { auto [name] = exprIdent; return ((name == mlc::String("extern", 6)) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprExtern{}), parsed.parser} : parsed); },
+return std::visit(overloaded{[&](const ast::ExprIdent& exprIdent) { auto [name, __1] = exprIdent; return ((name == mlc::String("extern", 6)) ? preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprExtern{ast::expr_span(parsed.expr)}), parsed.parser} : parsed); },
 [&](const auto& __v) { return parsed; }
 }, (*parsed.expr));
 }());
@@ -206,7 +233,7 @@ return parse_extend_decl(preds::Parser_advance(parser));
 } else if (preds::TKind_is_import(kind)) {
 return parse_import_decl(preds::Parser_advance(parser));
 } else {
-return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{})}), preds::Parser_advance(parser)};
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})}), preds::Parser_advance(parser)};
 }
 
 
@@ -215,6 +242,7 @@ return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__
 }
 preds::DeclResult parse_fn_decl(preds::Parser parser) noexcept{
 auto is_extern = preds::TKind_is_extern(preds::Parser_kind(parser));
+auto extern_keyword_span = (is_extern ? preds::Parser_span_at_cursor(parser) : ast::span_unknown());
 auto fn_start = (is_extern ? preds::Parser_advance(parser) : parser);
 auto after_name = preds::Parser_advance(fn_start);
 auto fn_name = preds::TKind_ident(preds::Parser_kind(after_name));
@@ -225,7 +253,7 @@ auto type_parser = (preds::TKind_is_arrow(preds::Parser_kind(after_rparen)) ? pr
 auto ret_type_result = types::parse_type(type_parser);
 auto type_bounds = type_params_res.bounds;
 if (is_extern) {
-return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn{fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern{})}), ret_type_result.parser};
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn{fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern{extern_keyword_span})}), ret_type_result.parser};
 } else {
 auto body_result = exprs::parse_expr(preds::Parser_advance(ret_type_result.parser));
 return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn{fn_name, type_params_res.params, type_bounds, params_result.params, ret_type_result.type_expr, body_result.expr}), body_result.parser};
@@ -251,7 +279,35 @@ preds::ParamResult parse_param(preds::Parser parser) noexcept{
 auto is_mutable = preds::TKind_is_mut(preds::Parser_kind(parser));
 auto name_pos = (is_mutable ? preds::Parser_advance(parser) : parser);
 auto type_result = types::parse_type(preds::Parser_advance_by(name_pos, 2));
-return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{preds::TKind_ident(preds::Parser_kind(name_pos)), is_mutable, type_result.type_expr}), type_result.parser};
+auto s = type_result.parser;
+if (preds::TKind_is_equal(preds::Parser_kind(s))) {
+auto def_result = exprs::parse_expr(preds::Parser_advance(s));
+return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{preds::TKind_ident(preds::Parser_kind(name_pos)), is_mutable, type_result.type_expr, true, def_result.expr}), def_result.parser};
+} else {
+return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{preds::TKind_ident(preds::Parser_kind(name_pos)), is_mutable, type_result.type_expr, false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})}), s};
+}
+}
+DeriveResult parse_derive_clause(preds::Parser parser) noexcept{
+if ((preds::TKind_is_ident(preds::Parser_kind(parser)) && (preds::TKind_ident(preds::Parser_kind(parser)) == mlc::String("derive", 6)))) {
+auto state = preds::Parser_advance(parser);
+auto traits = mlc::Array<mlc::String>{};
+if (preds::TKind_is_lbrace(preds::Parser_kind(state))) {
+state = preds::Parser_advance(state);
+while (preds::TKind_is_ident(preds::Parser_kind(state))) {
+traits.push_back(preds::TKind_ident(preds::Parser_kind(state)));
+state = preds::Parser_advance(state);
+if (preds::TKind_is_comma(preds::Parser_kind(state))) {
+state = preds::Parser_advance(state);
+}
+}
+if (preds::TKind_is_rbrace(preds::Parser_kind(state))) {
+state = preds::Parser_advance(state);
+}
+}
+return DeriveResult{traits, state};
+} else {
+return DeriveResult{{}, parser};
+}
 }
 preds::DeclResult parse_type_decl(preds::Parser parser) noexcept{
 auto type_name = preds::TKind_ident(preds::Parser_kind(parser));
@@ -267,15 +323,18 @@ auto first_kind = preds::Parser_kind(state);
 if (preds::TKind_is_lbrace(first_kind)) {
 auto field_defs_result = parse_field_defs(preds::Parser_advance(state));
 auto variants = mlc::Array<std::shared_ptr<ast::TypeVariant>>{};
-variants.push_back(std::make_shared<ast::TypeVariant>(ast::VarRecord{type_name, field_defs_result.field_defs}));
-return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType{type_name, type_params_res.params, variants}), field_defs_result.parser};
+variants.push_back(std::make_shared<ast::TypeVariant>(ast::VarRecord{type_name, field_defs_result.field_defs, false}));
+auto derive_res = parse_derive_clause(field_defs_result.parser);
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType{type_name, type_params_res.params, variants, derive_res.traits}), derive_res.parser};
 } else {
 auto variants_result = parse_variants(state);
-return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType{type_name, type_params_res.params, variants_result.variants}), variants_result.parser};
+auto derive_res = parse_derive_clause(variants_result.parser);
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType{type_name, type_params_res.params, variants_result.variants, derive_res.traits}), derive_res.parser};
 }
 } else {
 auto variants_result = parse_variants(state);
-return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType{type_name, type_params_res.params, variants_result.variants}), variants_result.parser};
+auto derive_res = parse_derive_clause(variants_result.parser);
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclType{type_name, type_params_res.params, variants_result.variants, derive_res.traits}), derive_res.parser};
 }
 
 }
@@ -287,9 +346,12 @@ if (preds::Parser_at_eof(state)) {
 return false;
 } else if (is_decl_start(preds::Parser_kind(state))) {
 return false;
+} else if ((preds::TKind_is_ident(preds::Parser_kind(state)) && (preds::TKind_ident(preds::Parser_kind(state)) == mlc::String("derive", 6)))) {
+return false;
 } else {
 return (preds::TKind_is_bar(preds::Parser_kind(state)) || preds::TKind_is_ident(preds::Parser_kind(state)));
 }
+
 
 }
 preds::VariantsResult parse_variants(preds::Parser parser) noexcept{
@@ -306,16 +368,18 @@ state = preds::Parser_advance(state);
 return preds::VariantsResult{variants, state};
 }
 preds::VariantResult parse_variant(preds::Parser parser) noexcept{
-auto variant_name = preds::TKind_ident(preds::Parser_kind(parser));
-auto after_name = preds::Parser_advance(parser);
+auto is_private = (preds::TKind_is_ident(preds::Parser_kind(parser)) && (preds::TKind_ident(preds::Parser_kind(parser)) == mlc::String("private", 7)));
+auto after_private = (is_private ? preds::Parser_advance(parser) : parser);
+auto variant_name = preds::TKind_ident(preds::Parser_kind(after_private));
+auto after_name = preds::Parser_advance(after_private);
 if (preds::TKind_is_lparen(preds::Parser_kind(after_name))) {
 auto types_result = parse_tuple_types(preds::Parser_advance(after_name));
-return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarTuple{variant_name, types_result.types}), types_result.parser};
+return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarTuple{variant_name, types_result.types, is_private}), types_result.parser};
 } else if (preds::TKind_is_lbrace(preds::Parser_kind(after_name))) {
 auto field_defs_result = parse_field_defs(preds::Parser_advance(after_name));
-return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarRecord{variant_name, field_defs_result.field_defs}), field_defs_result.parser};
+return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarRecord{variant_name, field_defs_result.field_defs, is_private}), field_defs_result.parser};
 } else {
-return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarUnit{variant_name}), after_name};
+return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarUnit{variant_name, is_private}), after_name};
 }
 
 }
@@ -349,8 +413,9 @@ auto body_res = exprs::parse_expr(preds::Parser_advance(after_ret));
 state = body_res.parser;
 return body_res.expr;
 }() : [&]() {
+auto extern_method_span = preds::Parser_span_at_cursor(after_ret);
 state = after_ret;
-return std::make_shared<ast::Expr>(ast::ExprExtern{});
+return std::make_shared<ast::Expr>(ast::ExprExtern{extern_method_span});
 }());
 auto trait_bounds = mlc::Array<mlc::Array<mlc::String>>{};
 /* unit */;
@@ -377,11 +442,18 @@ while ((bi < type_params.length())) {
 trait_bounds.push_back({});
 bi = (bi + 1);
 }
-methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn{mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern{})}));
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn{mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern{ast::span_unknown()})}));
 state = ret_result.parser;
+} else if (preds::TKind_is_type(preds::Parser_kind(state))) {
+auto after_type = preds::Parser_advance(state);
+auto assoc_span = preds::Parser_span_at_cursor(after_type);
+auto assoc_name = preds::TKind_ident(preds::Parser_kind(after_type));
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclAssocType{assoc_name, assoc_span}));
+state = preds::Parser_advance(after_type);
 } else {
 state = preds::Parser_advance(state);
 }
+
 
 }
 return preds::TraitBodyResult{methods, preds::Parser_advance(state)};
@@ -400,15 +472,18 @@ state = preds::Parser_advance(state);
 }
 return preds::FieldDefsResult{field_defs, preds::Parser_advance(state)};
 }
-ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept{
+ast::Program parse_program_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept{
 auto decls = mlc::Array<std::shared_ptr<ast::Decl>>{};
-auto state = preds::parser_new(tokens);
+auto state = preds::parser_new_with_source_path(tokens, source_path);
 while ((!preds::Parser_at_eof(state))) {
 auto result = parse_decl(state);
 decls.push_back(result.decl);
 state = result.parser;
 }
 return ast::Program{decls};
+}
+ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept{
+return parse_program_with_source_path(tokens, mlc::String("", 0));
 }
 
 } // namespace decls

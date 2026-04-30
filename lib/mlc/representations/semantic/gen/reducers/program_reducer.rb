@@ -30,6 +30,9 @@ module MLC
                 import_aliases: {}
               }
 
+              @expanded_function_declaration_cache = {}
+              Services::TraitParamExpandAst.validate_trait_and_type_name_conflicts(program, @services.type_checker)
+
               @services.module_context_service.with_current_module(context[:module_name]) do
                 @services.module_context_service.with_import_aliases(context[:import_aliases]) do
                   @pass_manager.run(context)
@@ -41,9 +44,20 @@ module MLC
                 items: context[:type_items] + context[:func_items],
                 imports: context[:imports]
               )
+            ensure
+              @expanded_function_declaration_cache = nil
             end
 
             private
+
+            def expanded_function_declaration(func_decl)
+              cache = @expanded_function_declaration_cache ||= {}
+              cache[func_decl.object_id] ||= Services::TraitParamExpandAst.expand_function_declaration(
+                func_decl,
+                trait_registry: @services.trait_registry,
+                type_decl_table: @services.type_checker.type_decl_table
+              )
+            end
 
             def build_pass_manager
               MLC::Common::Analysis::PassManager.new.tap do |manager|
@@ -244,7 +258,7 @@ module MLC
               program.declarations.each do |decl|
                 next unless decl.is_a?(MLC::Source::AST::FuncDecl)
 
-                @function_reducer.register_signature(decl)
+                @function_reducer.register_signature(expanded_function_declaration(decl))
               end
             end
 
@@ -260,7 +274,7 @@ module MLC
                 when MLC::Source::AST::TypeDecl
                   @type_resolution_service&.refresh_function_signatures!(decl.name)
                 when MLC::Source::AST::FuncDecl
-                  context[:func_items] << @function_reducer.reduce(decl)
+                  context[:func_items] << @function_reducer.reduce(expanded_function_declaration(decl))
                 when MLC::Source::AST::ExtendDecl
                   # Lower methods from extend block as functions with mangled names
                   type_name = extract_type_name(decl.target_type)
@@ -290,7 +304,7 @@ module MLC
                           exported: decl.exported,
                           origin: func.origin
                         )
-                        context[:func_items] << @function_reducer.reduce(synthetic_func)
+                        context[:func_items] << @function_reducer.reduce(expanded_function_declaration(synthetic_func))
                       end
                     end
                   end

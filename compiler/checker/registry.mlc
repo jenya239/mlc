@@ -1,6 +1,7 @@
 // --- Semantic type --------------------------------------------------------
 
 import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name } from "../ast"
+import { expand_trait_as_param_program } from "./trait_param_expand"
 
 export type Type =
   | TI32 | TString | TBool | TUnit
@@ -214,11 +215,12 @@ fn required_arity_from_params(params: [Shared<Param>]) -> i32 = do
   params.length()
 end
 
-export fn build_registry(prog: Program) -> TypeRegistry = do
+export fn build_registry(program: Program) -> TypeRegistry = do
+  const expanded_program = expand_trait_as_param_program(program)
   let mut registry = empty_registry()
-  let mut i = 0
-  while i < prog.decls.length() do
-    registry = register_decl(registry, prog.decls[i]); i = i + 1
+  let mut declaration_index = 0
+  while declaration_index < expanded_program.decls.length() do
+    registry = register_decl(registry, expanded_program.decls[declaration_index]); declaration_index = declaration_index + 1
   end
   registry
 end
@@ -394,7 +396,11 @@ end
 
 export fn field_type_from_object(object_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
   const inner_type = match object_type { TShared(inner) => inner, _ => object_type }
-  const type_name = match inner_type { TNamed(name) => name, _ => "" }
+  const type_name = match inner_type {
+    TNamed(name) => name,
+    TGeneric(name, _) => name,
+    _ => ""
+  }
   if type_name != "" && registry.has_fields(type_name) then
     const field_map = registry.fields_for(type_name)
     if field_map.has(field_name) then field_map.get(field_name) else Shared.new(TUnknown) end

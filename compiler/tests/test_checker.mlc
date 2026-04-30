@@ -164,6 +164,15 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("fn with type param and bound - 0 errors",
     check_error_count("type Display { fn to_string(self: Self) -> string }\nfn id<T: Display>(x: T) -> T = x"), 0))
 
+  results.push(assert_eq_int("D3 trait-as-param: single Display parameter — 0 errors",
+    check_error_count("type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()"), 0))
+
+  results.push(assert_eq_int("D3 trait-as-param: two Display parameters — 0 errors",
+    check_error_count("type Display { fn to_string(self: Self) -> string }\nfn f(first: Display, second: Display) -> unit = ()"), 0))
+
+  results.push(assert_true("D3 trait and type same name — conflict diagnostic",
+    first_checker_error_line("type Ambiguous { fn method(self: Self) -> unit }\ntype Ambiguous = VariantOne | VariantTwo").contains("both a type and a trait")))
+
   results.push(assert_eq_int("call generic fn - 0 errors",
     check_error_count("fn id<T>(x: T) -> T = x\nfn f() -> i32 = id(42)"), 0))
 

@@ -7,6 +7,7 @@ import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from "../ast"
 import { check_names_expr } from "./names"
 import { check_fn_body_mutations } from "./check_mutations"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
+import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from "./trait_param_expand"
 import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
 import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
@@ -181,12 +182,13 @@ export extend CheckOut {
 }
 
 fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
+  let mut all_diagnostics: [Diagnostic] = trait_and_type_name_conflict_diagnostics(full_program)
+  const expanded_entry_program = expand_trait_as_param_entry_using_full(entry, full_program)
   const globals = collect_globals(full_program)
   let registry = build_registry(full_program)
-  let mut all_diagnostics: [Diagnostic] = []
   let mut declaration_index = 0
-  while declaration_index < entry.decls.length() do
-    match decl_inner(entry.decls[declaration_index]) {
+  while declaration_index < expanded_entry_program.decls.length() do
+    match decl_inner(expanded_entry_program.decls[declaration_index]) {
       DeclFn(_, type_parameters, _, parameters, return_type_annotation, body) => do
         all_diagnostics = diagnostics_append(all_diagnostics, param_default_diagnostics(type_parameters, parameters, body, registry))
         const locals: [string] = []

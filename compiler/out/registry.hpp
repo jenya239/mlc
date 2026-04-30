@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "ast.hpp"
+#include "trait_param_expand.hpp"
 
 namespace registry {
 
@@ -55,7 +56,7 @@ registry::TypeRegistry empty_registry() noexcept;
 
 std::shared_ptr<registry::Type> type_from_annotation(std::shared_ptr<ast::TypeExpr> type_expr) noexcept;
 
-registry::TypeRegistry build_registry(ast::Program prog) noexcept;
+registry::TypeRegistry build_registry(ast::Program program) noexcept;
 
 std::shared_ptr<registry::Type> field_type_from_object(std::shared_ptr<registry::Type> object_type, mlc::String field_name, registry::TypeRegistry registry) noexcept;
 

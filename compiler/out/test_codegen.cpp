@@ -1,6 +1,7 @@
 #include "test_codegen.hpp"
 
 #include "test_runner.hpp"
+#include "codegen_test_helpers.hpp"
 #include "eval.hpp"
 #include "context.hpp"
 #include "type_gen.hpp"
@@ -17,6 +18,7 @@
 namespace test_codegen {
 
 using namespace test_runner;
+using namespace codegen_test_helpers;
 using namespace eval;
 using namespace context;
 using namespace type_gen;
@@ -163,6 +165,15 @@ mlc::String fn_prog_out = module::gen_program(fn_prog);
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: signature in output"), fn_prog_out.contains(mlc::String("double_it")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: param type in output"), fn_prog_out.contains(mlc::String("int n")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: body in output"), fn_prog_out.contains(mlc::String("return (n * 2)")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+mlc::String d3_trait_parameter_source = mlc::String("type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()");
+mlc::String d3_trait_parameter_output = module::gen_program(decls::parse_program(lexer::tokenize(d3_trait_parameter_source).tokens));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: concept Display"), d3_trait_parameter_output, mlc::String("concept Display")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: requires in trait concept"), d3_trait_parameter_output, mlc::String("requires")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: parameter uses Display constraint"), d3_trait_parameter_output, mlc::String("f(Display")));
+mlc::String d3_two_trait_parameter_source = mlc::String("type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()");
+mlc::String d3_two_trait_parameter_output = module::gen_program(decls::parse_program(lexer::tokenize(d3_two_trait_parameter_source).tokens));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: first Display parameter"), d3_two_trait_parameter_output, mlc::String("Display first")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: second Display parameter"), d3_two_trait_parameter_output, mlc::String("Display second")));
 mlc::Array<mlc::String> result_type_params = mlc::Array<mlc::String>{mlc::String("T"), mlc::String("E")};
 mlc::Array<std::shared_ptr<ast::TypeExpr>> ok_fields = mlc::Array<std::shared_ptr<ast::TypeExpr>>{std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("T")))};
 mlc::Array<std::shared_ptr<ast::TypeExpr>> err_fields = mlc::Array<std::shared_ptr<ast::TypeExpr>>{std::make_shared<ast::TypeExpr>(ast::TyNamed(mlc::String("E")))};

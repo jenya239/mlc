@@ -139,7 +139,12 @@ end
 // --- Field access diagnostics ------------------------------------------------
 
 export fn infer_expr_field_diagnostics(object_type: Shared<Type>, field_name: string, field_source_span: Span, registry: TypeRegistry) -> [Diagnostic] = do
-  const type_name = match object_type { TNamed(name) => name, _ => "" }
+  const inner_object_type = match object_type { TShared(inner) => inner, _ => object_type }
+  const type_name = match inner_object_type {
+    TNamed(name) => name,
+    TGeneric(name, _) => name,
+    _ => ""
+  }
   if type_name != "" && registry.has_fields(type_name) then
     if !registry.fields_for(type_name).has(field_name) then
       [diagnostic_error("undefined field: " + field_name + " on " + type_name, field_source_span)]

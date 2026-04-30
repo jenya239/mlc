@@ -129,7 +129,7 @@ mlc::Array<decl_index::LoadItem> all_items = {};
 context::PrecomputedCtx precomp = precompute(program, all_items);
 registry::TypeRegistry registry = registry::build_registry(program);
 decl_index::LoadItem single = decl_index::LoadItem{mlc::String("test_main"), program.decls, {}, {}};
-mlc::Array<semantic_ir::SLoadItem> s_items = transform_decl::transform_load_items(mlc::Array<decl_index::LoadItem>{single}, registry);
+mlc::Array<semantic_ir::SLoadItem> s_items = transform_decl::transform_load_items(mlc::Array<decl_index::LoadItem>{single}, registry, program);
 context::GenModuleOut result = gen_module(s_items[0], all_items, program, precomp);
 return result.h + result.c;
 }

@@ -3,18 +3,21 @@
 
 namespace preds {
 
+Parser parser_new_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept{
+return Parser{tokens, 0, source_path};
+}
 Parser parser_new(mlc::Array<ast_tokens::Token> tokens) noexcept{
-return Parser{tokens, 0};
+return parser_new_with_source_path(tokens, mlc::String("", 0));
 }
 ast_tokens::TKind parser_kind(Parser parser) noexcept{
 auto tok = parser.tokens[parser.pos];
 return tok.kind;
 }
 Parser parser_advance(Parser parser) noexcept{
-return Parser{parser.tokens, (parser.pos + 1)};
+return Parser{parser.tokens, (parser.pos + 1), parser.source_path};
 }
 Parser parser_advance_by(Parser parser, int count) noexcept{
-return Parser{parser.tokens, (parser.pos + count)};
+return Parser{parser.tokens, (parser.pos + count), parser.source_path};
 }
 bool parser_at_eof(Parser parser) noexcept{
 if ((parser.pos >= parser.tokens.length())) {
@@ -147,13 +150,13 @@ return std::visit(overloaded{[&](const ast_tokens::LStr& lStr) { auto [__0] = lS
 [&](const auto& __v) { return false; }
 }, kind);
 }
-bool is_fstr_literal(ast_tokens::TKind kind) noexcept{
-return std::visit(overloaded{[&](const ast_tokens::LFStr& lFStr) { auto [__0] = lFStr; return true; },
+bool is_template_literal(ast_tokens::TKind kind) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LTemplate& lTemplate) { auto [__0] = lTemplate; return true; },
 [&](const auto& __v) { return false; }
 }, kind);
 }
-mlc::Array<mlc::String> get_fstr_parts(ast_tokens::TKind kind) noexcept{
-return std::visit(overloaded{[&](const ast_tokens::LFStr& lFStr) { auto [parts] = lFStr; return parts; },
+mlc::Array<mlc::String> get_template_parts(ast_tokens::TKind kind) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LTemplate& lTemplate) { auto [parts] = lTemplate; return parts; },
 [&](const auto& __v) { return [&]() {
 auto r = mlc::Array<mlc::String>{};
 return r;
@@ -328,6 +331,11 @@ return std::visit(overloaded{[&](const ast_tokens::KFor& kFor) { return true; },
 [&](const auto& __v) { return false; }
 }, self);
 }
+bool TKind_is_with(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KWith& kWith) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
 bool TKind_is_match(ast_tokens::TKind self) noexcept{
 return std::visit(overloaded{[&](const ast_tokens::KMatch& kMatch) { return true; },
 [&](const auto& __v) { return false; }
@@ -373,6 +381,11 @@ return std::visit(overloaded{[&](const ast_tokens::KImport& kImport) { return tr
 [&](const auto& __v) { return false; }
 }, self);
 }
+bool TKind_is_as(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::KAs& kAs) { return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
 bool TKind_is_from(ast_tokens::TKind self) noexcept{
 return std::visit(overloaded{[&](const ast_tokens::KFrom& kFrom) { return true; },
 [&](const auto& __v) { return false; }
@@ -398,13 +411,13 @@ return std::visit(overloaded{[&](const ast_tokens::LStr& lStr) { auto [__0] = lS
 [&](const auto& __v) { return false; }
 }, self);
 }
-bool TKind_is_fstr(ast_tokens::TKind self) noexcept{
-return std::visit(overloaded{[&](const ast_tokens::LFStr& lFStr) { auto [__0] = lFStr; return true; },
+bool TKind_is_template(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LTemplate& lTemplate) { auto [__0] = lTemplate; return true; },
 [&](const auto& __v) { return false; }
 }, self);
 }
-mlc::Array<mlc::String> TKind_fstr_parts(ast_tokens::TKind self) noexcept{
-return std::visit(overloaded{[&](const ast_tokens::LFStr& lFStr) { auto [parts] = lFStr; return parts; },
+mlc::Array<mlc::String> TKind_template_parts(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LTemplate& lTemplate) { auto [parts] = lTemplate; return parts; },
 [&](const auto& __v) { return [&]() {
 auto r = mlc::Array<mlc::String>{};
 return r;
@@ -516,15 +529,65 @@ return std::visit(overloaded{[&](const ast_tokens::Op& op) { auto [s] = op; retu
 [&](const auto& __v) { return mlc::String("", 0); }
 }, self);
 }
+bool TKind_is_float(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LFloat& lFloat) { auto [__0] = lFloat; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_i64(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LI64& lI64) { auto [__0] = lI64; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_u8(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LU8& lU8) { auto [__0] = lU8; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_usize(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LUsize& lUsize) { auto [__0] = lUsize; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+bool TKind_is_char_lit(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LChar& lChar) { auto [__0] = lChar; return true; },
+[&](const auto& __v) { return false; }
+}, self);
+}
+mlc::String TKind_float_val(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LFloat& lFloat) { auto [s] = lFloat; return s; },
+[&](const auto& __v) { return mlc::String("", 0); }
+}, self);
+}
+mlc::String TKind_i64_val(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LI64& lI64) { auto [s] = lI64; return s; },
+[&](const auto& __v) { return mlc::String("", 0); }
+}, self);
+}
+mlc::String TKind_u8_val(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LU8& lU8) { auto [s] = lU8; return s; },
+[&](const auto& __v) { return mlc::String("", 0); }
+}, self);
+}
+mlc::String TKind_usize_val(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LUsize& lUsize) { auto [s] = lUsize; return s; },
+[&](const auto& __v) { return mlc::String("", 0); }
+}, self);
+}
+mlc::String TKind_char_val(ast_tokens::TKind self) noexcept{
+return std::visit(overloaded{[&](const ast_tokens::LChar& lChar) { auto [s] = lChar; return s; },
+[&](const auto& __v) { return mlc::String("", 0); }
+}, self);
+}
 ast_tokens::TKind Parser_kind(Parser self) noexcept{
 auto tok = self.tokens[self.pos];
 return tok.kind;
 }
 Parser Parser_advance(Parser self) noexcept{
-return Parser{self.tokens, (self.pos + 1)};
+return Parser{self.tokens, (self.pos + 1), self.source_path};
 }
 Parser Parser_advance_by(Parser self, int count) noexcept{
-return Parser{self.tokens, (self.pos + count)};
+return Parser{self.tokens, (self.pos + count), self.source_path};
 }
 bool Parser_at_eof(Parser self) noexcept{
 if ((self.pos >= self.tokens.length())) {
@@ -539,6 +602,19 @@ auto tok = self.tokens[self.pos];
 return std::visit(overloaded{[&](const ast_tokens::Semicolon& semicolon) { return Parser_advance(self); },
 [&](const auto& __v) { return self; }
 }, tok.kind);
+}
+ast::Span Parser_span_at_cursor(Parser self) noexcept{
+auto tok = self.tokens[self.pos];
+return ast::Span{self.source_path, tok.line, tok.col};
+}
+int Parser_prev_line(Parser self) noexcept{
+if ((self.pos > 0)) {
+auto tok = self.tokens[(self.pos - 1)];
+/* unit */;
+return tok.line;
+} else {
+return 0;
+}
 }
 
 } // namespace preds

@@ -65,7 +65,7 @@ module MLC
               @trait_registry = trait_registry
             end
 
-            attr_reader :error_collector
+            attr_reader :error_collector, :type_decl_table
 
             # Enable error recovery mode
             def error_recovery_mode?

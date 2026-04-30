@@ -1,10 +1,12 @@
 #include "registry.hpp"
 
 #include "ast.hpp"
+#include "trait_param_expand.hpp"
 
 namespace registry {
 
 using namespace ast;
+using namespace trait_param_expand;
 using namespace ast_tokens;
 
 std::shared_ptr<registry::Type> TypeRegistry_fn_type(registry::TypeRegistry self, mlc::String name) noexcept;
@@ -47,7 +49,7 @@ std::shared_ptr<registry::Type> type_from_annotation(std::shared_ptr<ast::TypeEx
 
 int required_arity_from_params(mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
 
-registry::TypeRegistry build_registry(ast::Program prog) noexcept;
+registry::TypeRegistry build_registry(ast::Program program) noexcept;
 
 registry::TypeRegistry register_decl(registry::TypeRegistry registry, std::shared_ptr<ast::Decl> decl) noexcept;
 
@@ -214,13 +216,14 @@ i = i + 1;
 return params.size();
 }
 
-registry::TypeRegistry build_registry(ast::Program prog) noexcept{
+registry::TypeRegistry build_registry(ast::Program program) noexcept{
+ast::Program expanded_program = trait_param_expand::expand_trait_as_param_program(program);
 registry::TypeRegistry registry = empty_registry();
-int i = 0;
-while (i < prog.decls.size()){
+int declaration_index = 0;
+while (declaration_index < expanded_program.decls.size()){
 {
-registry = register_decl(registry, prog.decls[i]);
-i = i + 1;
+registry = register_decl(registry, expanded_program.decls[declaration_index]);
+declaration_index = declaration_index + 1;
 }
 }
 return registry;
@@ -447,7 +450,7 @@ registry.private_ctors.push_back(variant_name);
 
 std::shared_ptr<registry::Type> field_type_from_object(std::shared_ptr<registry::Type> object_type, mlc::String field_name, registry::TypeRegistry registry) noexcept{
 std::shared_ptr<registry::Type> inner_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TShared>((*object_type))) { auto _v_tshared = std::get<registry::TShared>((*object_type)); auto [inner] = _v_tshared; return inner; } return object_type; }();
-mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*inner_type))) { auto _v_tnamed = std::get<registry::TNamed>((*inner_type)); auto [name] = _v_tnamed; return name; } return mlc::String(""); }();
+mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*inner_type))) { auto _v_tnamed = std::get<registry::TNamed>((*inner_type)); auto [name] = _v_tnamed; return name; } if (std::holds_alternative<registry::TGeneric>((*inner_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*inner_type)); auto [name, _w0] = _v_tgeneric; return name; } return mlc::String(""); }();
 return type_name != mlc::String("") && TypeRegistry_has_fields(registry, type_name) ? [&]() -> std::shared_ptr<registry::Type> { 
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> field_map = TypeRegistry_fields_for(registry, type_name);
   return field_map.has(field_name) ? field_map.get(field_name) : std::make_shared<registry::Type>((registry::TUnknown{}));

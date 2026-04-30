@@ -5,6 +5,7 @@
 #include "names.hpp"
 #include "check_mutations.hpp"
 #include "registry.hpp"
+#include "trait_param_expand.hpp"
 #include "infer.hpp"
 #include "check_context.hpp"
 #include "semantic_type_structure.hpp"
@@ -16,6 +17,7 @@ using namespace ast;
 using namespace names;
 using namespace check_mutations;
 using namespace registry;
+using namespace trait_param_expand;
 using namespace infer;
 using namespace check_context;
 using namespace semantic_type_structure;
@@ -219,11 +221,12 @@ i = i + 1;
 bool CheckOut_has_errors(check::CheckOut self) noexcept{return self.errors.size() > 0;}
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full(ast::Program entry, ast::Program full_program) noexcept{
+mlc::Array<ast::Diagnostic> all_diagnostics = trait_param_expand::trait_and_type_name_conflict_diagnostics(full_program);
+ast::Program expanded_entry_program = trait_param_expand::expand_trait_as_param_entry_using_full(entry, full_program);
 mlc::HashMap<mlc::String, bool> globals = collect_globals(full_program);
 registry::TypeRegistry registry = registry::build_registry(full_program);
-mlc::Array<ast::Diagnostic> all_diagnostics = {};
 int declaration_index = 0;
-while (declaration_index < entry.decls.size()){
+while (declaration_index < expanded_entry_program.decls.size()){
 {
 std::visit(overloaded{
   [&](const DeclFn& declfn) -> std::tuple<> { auto [_w0, type_parameters, _w1, parameters, return_type_annotation, body] = declfn; return [&]() -> std::tuple<> { 
@@ -285,7 +288,7 @@ method_index = method_index + 1;
   [&](const DeclExported& declexported) -> std::tuple<> { auto [_w0] = declexported; return std::make_tuple(); },
   [&](const DeclAssocType& declassoctype) -> std::tuple<> { auto [_w0, _w1] = declassoctype; return std::make_tuple(); },
   [&](const DeclAssocBind& declassocbind) -> std::tuple<> { auto [_w0, _w1, _w2] = declassocbind; return std::make_tuple(); }
-}, (*ast::decl_inner(entry.decls[declaration_index])));
+}, (*ast::decl_inner(expanded_entry_program.decls[declaration_index])));
 declaration_index = declaration_index + 1;
 }
 }
