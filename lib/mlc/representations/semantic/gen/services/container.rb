@@ -71,7 +71,8 @@ module MLC
                 type_decl_table: @type_decl_table,
                 current_node_proc: -> { nil },
                 var_type_registry: @var_type_registry,
-                type_registry: @type_registry
+                type_registry: @type_registry,
+                trait_registry: @trait_registry
               )
               @scope_context = MLC::Representations::Semantic::Gen::Services::TransformationContext.new(
                 var_type_registry: @var_type_registry

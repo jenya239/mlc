@@ -1,7 +1,7 @@
 // Declaration, program, and load-item AST → SemanticIR transforms.
 // Not called back by transform_expr/transform_stmts; imports from transform.mlc.
 
-import { Decl, TypeVariant, Param, Program, Stmt } from "../ast"
+import { Decl, TypeVariant, Param, Program, Stmt, Span } from "../ast"
 import { Type, TypeRegistry, type_from_annotation } from "./registry"
 import { SDecl, SProgram, SLoadItem, SNamespaceImportAlias } from "../semantic_ir"
 import { LoadItem, NamespaceImportAlias } from "../codegen/decl_index"
@@ -34,7 +34,9 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       Shared.new(SDeclExtend(type_name, trait_name, typed_methods))
     end,
     DeclImport(path, names) => Shared.new(SDeclImport(path, names)),
-    DeclExported(inner)     => Shared.new(SDeclExported(transform_decl(inner, registry)))
+    DeclExported(inner)     => Shared.new(SDeclExported(transform_decl(inner, registry))),
+    DeclAssocType(_, _)     => Shared.new(SDeclImport("", [])),
+    DeclAssocBind(name, type_expr, span) => Shared.new(SDeclAssocBind(name, type_from_annotation(type_expr), span))
   }
 
 fn transform_decls(declarations: [Shared<Decl>], registry: TypeRegistry) -> [Shared<SDecl>] = do

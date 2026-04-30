@@ -102,7 +102,8 @@ export fn gen_decl(decl: Shared<SDecl>, context: CodegenContext) -> string =
         (ctx: CodegenContext, name: string) => context_resolve(ctx, name),
         (decl: Shared<SDecl>, ctx: CodegenContext) => gen_decl(decl, ctx)),
     SDeclImport(_, _) => "",
-    SDeclExported(d) => gen_decl(d, context)
+    SDeclExported(d) => gen_decl(d, context),
+    SDeclAssocBind(_, _, _) => ""
   }
 
 export fn gen_proto(decl: Shared<SDecl>, context: CodegenContext) -> string =
@@ -120,7 +121,8 @@ export fn gen_proto(decl: Shared<SDecl>, context: CodegenContext) -> string =
       parts.join("")
     end,
     SDeclImport(_, _) => "",
-    SDeclExported(d) => gen_proto(d, context)
+    SDeclExported(d) => gen_proto(d, context),
+    SDeclAssocBind(_, _, _) => ""
   }
 
 // --- Whole-program helpers ---------------------------------------------------
@@ -181,6 +183,7 @@ export fn collect_decl_parts(decls: [Shared<SDecl>], context: CodegenContext, ph
         else ""
         end,
       SDeclImport(_, _) => "",
+      SDeclAssocBind(_, _, _) => "",
       SDeclExported(d) =>
         if phase == 0 then match sdecl_inner(d) {
           SDeclType(type_name, type_params, variants, _) => gen_type_decl_fwd_only(context, type_name, type_params, variants),

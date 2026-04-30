@@ -383,6 +383,10 @@ module MLC
               MLC::SemanticIR::MapType.new(key_type: key_type, value_type: value_type, origin: origin)
             end
 
+            def assoc_type(param_name:, assoc_name:, origin: nil)
+              MLC::SemanticIR::AssocType.new(param_name: param_name, assoc_name: assoc_name, origin: origin)
+            end
+
             def match_expr(scrutinee:, arms:, type:, origin: nil)
               MLC::SemanticIR::Builder.match_expr(scrutinee, arms, type, origin: origin)
             end

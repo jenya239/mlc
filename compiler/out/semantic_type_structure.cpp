@@ -115,7 +115,8 @@ fi = fi + 1;
 }
 }
   return fok && types_structurally_equal(left_ret, right_ret);
- }(); } return false; }(); }
+ }(); } return false; }(); },
+  [&](const TAssoc& tassoc) -> bool { auto [p1, a1] = tassoc; return [&]() { if (std::holds_alternative<registry::TAssoc>((*right))) { auto _v_tassoc = std::get<registry::TAssoc>((*right)); auto [p2, a2] = _v_tassoc; return p1 == p2 && a1 == a2; } return true; }(); }
 }, (*left));}
 
 bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TArray>((*type_value))) { auto _v_tarray = std::get<registry::TArray>((*type_value)); auto [_w0] = _v_tarray; return true; } return false; }();}
@@ -147,6 +148,7 @@ std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::T
   [&](const TGeneric& tgeneric) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tgeneric; return std::make_shared<registry::Type>((registry::TUnknown{})); },
   [&](const TPair& tpair) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tpair; return std::make_shared<registry::Type>((registry::TUnknown{})); },
   [&](const TTuple& ttuple) -> std::shared_ptr<registry::Type> { auto [_w0] = ttuple; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TAssoc& tassoc) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tassoc; return std::make_shared<registry::Type>((registry::TUnknown{})); },
   [&](const TUnknown& tunknown) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); }
 }, (*function_type));}
 
@@ -167,6 +169,7 @@ mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_
   [&](const TGeneric& tgeneric) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tgeneric; return empty_type_parameter_list(); },
   [&](const TPair& tpair) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tpair; return empty_type_parameter_list(); },
   [&](const TTuple& ttuple) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = ttuple; return empty_type_parameter_list(); },
+  [&](const TAssoc& tassoc) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tassoc; return empty_type_parameter_list(); },
   [&](const TUnknown& tunknown) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); }
 }, (*function_type));}
 
@@ -201,7 +204,8 @@ mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcep
   [&](const TGeneric& tgeneric) -> mlc::String { auto [type_name, _w0] = tgeneric; return type_name; },
   [&](const TPair& tpair) -> mlc::String { auto [_w0, _w1] = tpair; return mlc::String("pair"); },
   [&](const TTuple& ttuple) -> mlc::String { auto [_w0] = ttuple; return mlc::String("tuple"); },
-  [&](const TFn& tfn) -> mlc::String { auto [_w0, _w1] = tfn; return mlc::String("function"); }
+  [&](const TFn& tfn) -> mlc::String { auto [_w0, _w1] = tfn; return mlc::String("function"); },
+  [&](const TAssoc& tassoc) -> mlc::String { auto [p, a] = tassoc; return p + mlc::String(".") + a; }
 }, (*type_value));}
 
 bool types_allowed_for_binary_plus(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{return [&]() { if (std::holds_alternative<registry::TUnknown>((*left_type))) {  return true; } return [&]() { if (std::holds_alternative<registry::TUnknown>((*right_type))) {  return true; } return false; }(); }() || is_numeric_type(left_type) && types_structurally_equal(left_type, right_type) || [&]() { if (std::holds_alternative<registry::TString>((*left_type))) {  return [&]() { if (std::holds_alternative<registry::TString>((*right_type))) {  return true; } return false; }(); } return false; }();}

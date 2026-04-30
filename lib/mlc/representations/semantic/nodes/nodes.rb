@@ -736,6 +736,17 @@ module MLC
       end
     end
 
+    # Associated type reference: I.Item
+    class AssocType < Type
+      attr_reader :param_name, :assoc_name
+
+      def initialize(param_name:, assoc_name:, origin: nil)
+        super(kind: :assoc_type, name: "#{param_name}.#{assoc_name}", origin: origin)
+        @param_name = param_name
+        @assoc_name = assoc_name
+      end
+    end
+
     # Array type
     class ArrayType < Type
       attr_reader :element_type

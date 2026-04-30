@@ -54,7 +54,7 @@ module MLC
             }.freeze
 
             def initialize(function_registry:, type_decl_table: nil, event_bus: nil, current_node_proc: nil, var_type_registry: nil,
-                           type_registry: nil, error_collector: nil)
+                           type_registry: nil, error_collector: nil, trait_registry: nil)
               @function_registry = function_registry
               @type_decl_table = type_decl_table || {}
               @event_bus = event_bus
@@ -62,6 +62,7 @@ module MLC
               @var_type_registry = var_type_registry
               @type_registry = type_registry
               @error_collector = error_collector
+              @trait_registry = trait_registry
             end
 
             attr_reader :error_collector
@@ -307,6 +308,7 @@ module MLC
             def validate_constraint_name(name)
               return if name.nil? || name.empty?
               return if BUILTIN_CONSTRAINTS.key?(name)
+              return if @trait_registry&.get_trait(name)
 
               type_error("Unknown constraint '#{name}'")
             end

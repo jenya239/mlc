@@ -24,7 +24,8 @@ export type CodegenContext = CodegenContext {
   variant_types: Map<string, string>,
   value_params: [string],
   match_deref_params: [string],
-  generic_variants: [string]
+  generic_variants: [string],
+  struct_using_lines: Map<string, [string]>
 }
 export type GenStmtsResult = GenStmtsResult { code: string, next_try: i32 }
 export type GenStmtResult  = GenStmtResult  { output: string, next_try: i32 }
@@ -44,7 +45,7 @@ export fn context_resolve(context: CodegenContext, name: string) -> string =
   end
 
 export fn make_body_context(base: CodegenContext, shared_params: [string], shared_array_params: [string], array_elem_types: Map<string, string>, shared_map_params: [string], self_type: string, value_params: [string], match_deref_params: [string]) -> CodegenContext =
-  CodegenContext { field_orders: base.field_orders, namespace_prefix: base.namespace_prefix, qualified: base.qualified, namespace_alias_prefixes: base.namespace_alias_prefixes, self_type: self_type, method_owners: base.method_owners, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, ctor_type_infos: base.ctor_type_infos, variant_types: base.variant_types, value_params: value_params, match_deref_params: match_deref_params, generic_variants: base.generic_variants }
+  CodegenContext { field_orders: base.field_orders, namespace_prefix: base.namespace_prefix, qualified: base.qualified, namespace_alias_prefixes: base.namespace_alias_prefixes, self_type: self_type, method_owners: base.method_owners, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, ctor_type_infos: base.ctor_type_infos, variant_types: base.variant_types, value_params: value_params, match_deref_params: match_deref_params, generic_variants: base.generic_variants, struct_using_lines: base.struct_using_lines }
 
 export fn context_add_shared(context: CodegenContext, name: string) -> CodegenContext = do
   let new_shared_params = context.shared_params; new_shared_params.push(name)
@@ -139,7 +140,31 @@ export fn create_codegen_context(prog: Program) -> CodegenContext =
     variant_types: build_variant_types_from_decls(prog.decls),
     value_params: [],
     match_deref_params: [],
-    generic_variants: build_generic_variants_from_decls(prog.decls)
+    generic_variants: build_generic_variants_from_decls(prog.decls),
+    struct_using_lines: Map.new()
+  }
+
+export fn context_with_struct_using_lines(
+  base: CodegenContext,
+  struct_using_lines: Map<string, [string]>
+) -> CodegenContext =
+  CodegenContext {
+    field_orders: base.field_orders,
+    namespace_prefix: base.namespace_prefix,
+    qualified: base.qualified,
+    namespace_alias_prefixes: base.namespace_alias_prefixes,
+    self_type: base.self_type,
+    method_owners: base.method_owners,
+    shared_params: base.shared_params,
+    shared_array_params: base.shared_array_params,
+    array_elem_types: base.array_elem_types,
+    shared_map_params: base.shared_map_params,
+    ctor_type_infos: base.ctor_type_infos,
+    variant_types: base.variant_types,
+    value_params: base.value_params,
+    match_deref_params: base.match_deref_params,
+    generic_variants: base.generic_variants,
+    struct_using_lines: struct_using_lines
   }
 
 export fn context_with_namespace_alias_prefixes(
@@ -161,5 +186,6 @@ export fn context_with_namespace_alias_prefixes(
     variant_types: base.variant_types,
     value_params: base.value_params,
     match_deref_params: base.match_deref_params,
-    generic_variants: base.generic_variants
+    generic_variants: base.generic_variants,
+    struct_using_lines: base.struct_using_lines
   }

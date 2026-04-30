@@ -582,6 +582,18 @@ module MLC
             )
           end
 
+          # Inject associated type using declarations from trait implementations
+          if @trait_registry
+            @trait_registry.implementations_for(name).each do |impl|
+              next if impl.associated_type_bindings.nil? || impl.associated_type_bindings.empty?
+              impl.associated_type_bindings.each do |assoc_name, ast_type|
+                cpp_type = ast_type_to_cpp_string(ast_type)
+                next unless cpp_type
+                members << @context.factory.raw_statement(code: "using #{assoc_name} = #{cpp_type}")
+              end
+            end
+          end
+
           CppAst::Nodes::StructDeclaration.new(
             name: name,
             members: members,
@@ -592,6 +604,20 @@ module MLC
             rbrace_suffix: "",
             base_classes_text: ""
           )
+        end
+
+        def ast_type_to_cpp_string(ast_type)
+          case ast_type
+          when MLC::Source::AST::GenericType
+            params = ast_type.type_params.map { |p| ast_type_to_cpp_string(p) }.join(", ")
+            "#{ast_type.name}<#{params}>"
+          when MLC::Source::AST::AssocTypeRef
+            "typename #{ast_type.param_name}::#{ast_type.assoc_name}"
+          when MLC::Source::AST::Type
+            ast_type.name
+          else
+            nil
+          end
         end
 
         def sum_type_recursive?(name, sum_type)

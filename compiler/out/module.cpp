@@ -6,6 +6,8 @@
 #include "transform_decl.hpp"
 #include "decl_index.hpp"
 #include "context.hpp"
+#include "semantic_ir.hpp"
+#include "type_gen.hpp"
 #include "cpp_naming.hpp"
 #include "decl.hpp"
 #include "expr.hpp"
@@ -18,12 +20,16 @@ using namespace registry;
 using namespace transform_decl;
 using namespace decl_index;
 using namespace context;
+using namespace semantic_ir;
+using namespace type_gen;
 using namespace cpp_naming;
 using namespace decl;
 using namespace expr;
 using namespace ast_tokens;
 
 mlc::Array<decl_index::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SNamespaceImportAlias> items) noexcept;
+
+mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_struct_using_lines(mlc::Array<std::shared_ptr<semantic_ir::SDecl>> decls, context::CodegenContext context) noexcept;
 
 context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept;
 
@@ -44,6 +50,57 @@ index = index + 1;
 return result;
 }
 
+mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_struct_using_lines(mlc::Array<std::shared_ptr<semantic_ir::SDecl>> decls, context::CodegenContext context) noexcept{
+mlc::HashMap<mlc::String, mlc::Array<mlc::String>> result = mlc::HashMap<mlc::String, mlc::Array<mlc::String>>();
+int i = 0;
+while (i < decls.size()){
+{
+[&]() -> std::tuple<> { if (std::holds_alternative<semantic_ir::SDeclExtend>((*decls[i]))) { auto _v_sdeclextend = std::get<semantic_ir::SDeclExtend>((*decls[i])); auto [type_name, _w0, methods] = _v_sdeclextend; return [&]() -> std::tuple<> { 
+  int j = 0;
+  while (j < methods.size()){
+{
+[&]() -> std::tuple<> { if (std::holds_alternative<semantic_ir::SDeclAssocBind>((*methods[j]))) { auto _v_sdeclassocbind = std::get<semantic_ir::SDeclAssocBind>((*methods[j])); auto [assoc_name, bound_type, _w0] = _v_sdeclassocbind; return [&]() -> std::tuple<> { 
+  mlc::String line = mlc::String("using ") + assoc_name + mlc::String(" = ") + type_gen::sem_type_to_cpp(context, bound_type) + mlc::String(";\n");
+  mlc::Array<mlc::String> existing = result.has(type_name) ? result.get(type_name) : [&]() -> mlc::Array<mlc::String> { 
+  mlc::Array<mlc::String> empty = {};
+  return empty;
+ }();
+  existing.push_back(line);
+  result.set(type_name, existing);
+  return std::make_tuple();
+ }(); } return std::make_tuple(); }();
+j = j + 1;
+}
+}
+  return std::make_tuple();
+ }(); } if (std::holds_alternative<semantic_ir::SDeclExported>((*decls[i]))) { auto _v_sdeclexported = std::get<semantic_ir::SDeclExported>((*decls[i])); auto [inner] = _v_sdeclexported; return [&]() -> std::tuple<> { 
+  [&]() -> std::tuple<> { if (std::holds_alternative<semantic_ir::SDeclExtend>((*inner))) { auto _v_sdeclextend = std::get<semantic_ir::SDeclExtend>((*inner)); auto [type_name, _w0, methods] = _v_sdeclextend; return [&]() -> std::tuple<> { 
+  int j = 0;
+  while (j < methods.size()){
+{
+[&]() -> std::tuple<> { if (std::holds_alternative<semantic_ir::SDeclAssocBind>((*methods[j]))) { auto _v_sdeclassocbind = std::get<semantic_ir::SDeclAssocBind>((*methods[j])); auto [assoc_name, bound_type, _w0] = _v_sdeclassocbind; return [&]() -> std::tuple<> { 
+  mlc::String line = mlc::String("using ") + assoc_name + mlc::String(" = ") + type_gen::sem_type_to_cpp(context, bound_type) + mlc::String(";\n");
+  mlc::Array<mlc::String> existing = result.has(type_name) ? result.get(type_name) : [&]() -> mlc::Array<mlc::String> { 
+  mlc::Array<mlc::String> empty = {};
+  return empty;
+ }();
+  existing.push_back(line);
+  result.set(type_name, existing);
+  return std::make_tuple();
+ }(); } return std::make_tuple(); }();
+j = j + 1;
+}
+}
+  return std::make_tuple();
+ }(); } return std::make_tuple(); }();
+  return std::make_tuple();
+ }(); } return std::make_tuple(); }();
+i = i + 1;
+}
+}
+return result;
+}
+
 context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept{return context::PrecomputedCtx{type_index::build_field_orders(prog), type_index::build_variant_types_from_decls(prog.decls), decl_index::build_item_index(all_items), ctor_info::build_ctor_type_infos_from_decls(prog.decls), type_index::build_generic_variants_from_decls(prog.decls)};}
 
 context::GenModuleOut gen_module(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept{
@@ -51,7 +108,8 @@ mlc::String base = cpp_naming::path_to_module_base(s_item.path);
 mlc::Array<semantic_ir::SNamespaceImportAlias> namespace_aliases = s_item.namespace_import_aliases;
 mlc::HashMap<mlc::String, mlc::String> qualified = decl_index::build_qualified(s_item.imports, all_items);
 mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes = decl_index::build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases));
-context::CodegenContext context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, namespace_alias_prefixes, mlc::String(""), type_index::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants};
+context::CodegenContext base_context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, namespace_alias_prefixes, mlc::String(""), type_index::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>()};
+context::CodegenContext context = context::context_with_struct_using_lines(base_context, build_struct_using_lines(s_item.decls, base_context));
 mlc::String module_namespace = base == mlc::String("main") ? mlc::String("mlc_main") : base;
 bool is_entry = decl::decls_have_main(s_item.decls);
 mlc::String std_includes = expr::standard_translation_unit_runtime_headers() + cpp_naming::include_lines(s_item.imports) + mlc::String("\n");

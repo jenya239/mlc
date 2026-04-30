@@ -5,6 +5,8 @@
 #include "context.hpp"
 #include "type_gen.hpp"
 #include "module.hpp"
+#include "lexer.hpp"
+#include "decls.hpp"
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "semantic_ir.hpp"
@@ -19,6 +21,8 @@ using namespace eval;
 using namespace context;
 using namespace type_gen;
 using namespace module;
+using namespace lexer;
+using namespace decls;
 using namespace ast;
 using namespace semantic_ir;
 using namespace semantic_ir;
@@ -209,6 +213,11 @@ mlc::Array<std::shared_ptr<semantic_ir::SStmt>> with_body = mlc::Array<std::shar
 mlc::String with_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprWith(si(1), mlc::String("res"), with_body, unit_t(), ast::span_unknown())), ctx);
 results.push_back(test_runner::assert_eq_str(mlc::String("c5: SExprWith contains auto res ="), with_out.contains(mlc::String("auto res =")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("c5: SExprWith contains res.drop()"), with_out.contains(mlc::String("res.drop()")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+std::shared_ptr<registry::Type> assoc_t = std::make_shared<registry::Type>(registry::TAssoc(mlc::String("I"), mlc::String("Item")));
+results.push_back(test_runner::assert_eq_str(mlc::String("d1: sem_type_to_cpp TAssoc"), type_gen::sem_type_to_cpp(ctx, assoc_t), mlc::String("typename I::Item")));
+mlc::String assoc_prog_src = mlc::String("type Iter { type Item } type Box<T> = { val: T } extend Box<T>: Iter { type Item = T fn Iter_next(self: Box<T>) -> i32 = 0 }");
+mlc::String assoc_prog_out = module::gen_program(decls::parse_program(lexer::tokenize(assoc_prog_src).tokens));
+results.push_back(test_runner::assert_eq_str(mlc::String("d1: gen_program struct contains using Item ="), assoc_prog_out.contains(mlc::String("using Item =")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 return results;
 }
 

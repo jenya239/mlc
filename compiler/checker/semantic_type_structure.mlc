@@ -70,7 +70,8 @@ export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> b
           fok && types_structurally_equal(left_ret, right_ret)
         end,
       _ => false
-    }
+    },
+    TAssoc(p1, a1) => match right { TAssoc(p2, a2) => p1 == p2 && a1 == a2, _ => true }
   }
   end
 
@@ -109,6 +110,7 @@ export fn function_return_type(function_type: Shared<Type>) -> Shared<Type> =
     TGeneric(_, _) => Shared.new(TUnknown),
     TPair(_, _) => Shared.new(TUnknown),
     TTuple(_)   => Shared.new(TUnknown),
+    TAssoc(_, _) => Shared.new(TUnknown),
     TUnknown => Shared.new(TUnknown)
   }
 
@@ -130,6 +132,7 @@ export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>]
     TGeneric(_, _) => empty_type_parameter_list(),
     TPair(_, _) => empty_type_parameter_list(),
     TTuple(_)   => empty_type_parameter_list(),
+    TAssoc(_, _) => empty_type_parameter_list(),
     TUnknown => empty_type_parameter_list()
   }
 
@@ -186,7 +189,8 @@ export fn type_description(type_value: Shared<Type>) -> string =
     TGeneric(type_name, _) => type_name,
     TPair(_, _) => "pair",
     TTuple(_)   => "tuple",
-    TFn(_, _)  => "function"
+    TFn(_, _)  => "function",
+    TAssoc(p, a) => p + "." + a
   }
 
 export fn types_allowed_for_binary_plus(left_type: Shared<Type>, right_type: Shared<Type>) -> bool =

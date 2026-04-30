@@ -64,6 +64,9 @@ return preds::TKind_is_lparen(kind) ? [&]() -> preds::TypeResult {
   preds::TypesResult targs = parse_type_args(preds::Parser_advance(after));
   std::shared_ptr<ast::TypeExpr> type_expr = name == mlc::String("Shared") && targs.types.size() == 1 ? std::make_shared<ast::TypeExpr>(ast::TyShared(targs.types[0])) : std::make_shared<ast::TypeExpr>(ast::TyGeneric(name, targs.types));
   return preds::TypeResult{type_expr, targs.parser};
+ }() : preds::TKind_is_dot(preds::Parser_kind(after)) && preds::TKind_is_ident(preds::Parser_kind(preds::Parser_advance(after))) ? [&]() -> preds::TypeResult { 
+  mlc::String assoc_name = preds::TKind_ident(preds::Parser_kind(preds::Parser_advance(after)));
+  return preds::TypeResult{std::make_shared<ast::TypeExpr>(ast::TyAssoc(name, assoc_name)), preds::Parser_advance_by(after, 2)};
  }() : preds::TypeResult{std::make_shared<ast::TypeExpr>(ast::TyNamed(name)), after};
  }();
  }() : preds::TypeResult{std::make_shared<ast::TypeExpr>((ast::TyUnit{})), preds::Parser_advance_by(parser, 2)};

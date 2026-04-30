@@ -72,6 +72,8 @@ module MLC
               when MLC::Source::AST::MutRefType
                 inner = transform(node.inner_type)
                 @ir_builder.mut_ref_type(inner_type: inner)
+              when MLC::Source::AST::AssocTypeRef
+                @ir_builder.assoc_type(param_name: node.param_name, assoc_name: node.assoc_name, origin: node.origin)
               else
                 raise MLC::CompileError, "Unsupported type node #{node.class}"
               end

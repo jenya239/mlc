@@ -214,7 +214,22 @@ preds::DeclResult method_result = parse_extend_extern_method(preds::Parser_advan
 methods.push_back(method_result.decl);
 methods_state = method_result.parser;
 } else {
+if (preds::TKind_is_type(preds::Parser_kind(methods_state))){
+preds::Parser after_type = preds::Parser_advance(methods_state);
+ast::Span assoc_span = preds::Parser_span_at_cursor(after_type);
+mlc::String assoc_name = preds::TKind_ident(preds::Parser_kind(after_type));
+preds::Parser after_name = preds::Parser_advance(after_type);
+if (preds::TKind_is_equal(preds::Parser_kind(after_name))){
+preds::TypeResult type_result = types::parse_type(preds::Parser_advance(after_name));
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclAssocBind(assoc_name, type_result.type_expr, assoc_span)));
+methods_state = type_result.parser;
+} else {
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclAssocType(assoc_name, assoc_span)));
+methods_state = after_name;
+}
+} else {
 methods_state = preds::Parser_advance(methods_state);
+}
 }
 }
 }
@@ -512,7 +527,15 @@ bi = bi + 1;
 methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn(mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern(ast::span_unknown())))));
 state = ret_result.parser;
 } else {
+if (preds::TKind_is_type(preds::Parser_kind(state))){
+preds::Parser after_type = preds::Parser_advance(state);
+ast::Span assoc_span = preds::Parser_span_at_cursor(after_type);
+mlc::String assoc_name = preds::TKind_ident(preds::Parser_kind(after_type));
+methods.push_back(std::make_shared<ast::Decl>(ast::DeclAssocType(assoc_name, assoc_span)));
+state = preds::Parser_advance(after_type);
+} else {
 state = preds::Parser_advance(state);
+}
 }
 }
 }

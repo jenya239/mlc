@@ -9,7 +9,9 @@ import { LoadItem, CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, build_field_orders, build_variant_types_from_decls,
          build_item_index, build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
          build_qualified, build_method_owners_from_decls,
-         context_resolve } from "./context"
+         context_resolve, context_with_struct_using_lines } from "./context"
+import { SDecl } from "../semantic_ir"
+import { sem_type_to_cpp } from "./type_gen"
 import { cpp_safe, include_lines, path_to_module_base } from "./cpp_naming"
 import { collect_decl_parts, decls_have_main } from "./decl"
 import * as expression_output from "./expr"
@@ -21,6 +23,62 @@ fn namespace_aliases_mapped(items: [SNamespaceImportAlias]) -> [NamespaceImportA
     const entry = items[index]
     result.push(NamespaceImportAlias { alias: entry.alias, module_path: entry.module_path })
     index = index + 1
+  end
+  result
+end
+
+fn build_struct_using_lines(decls: [Shared<SDecl>], context: CodegenContext) -> Map<string, [string]> = do
+  const result: Map<string, [string]> = Map.new()
+  let mut i = 0
+  while i < decls.length() do
+    match decls[i] {
+      SDeclExtend(type_name, _, methods) => do
+        let mut j = 0
+        while j < methods.length() do
+          match methods[j] {
+            SDeclAssocBind(assoc_name, bound_type, _) => do
+              const line = "using " + assoc_name + " = " + sem_type_to_cpp(context, bound_type) + ";\n"
+              const existing: [string] =
+                if result.has(type_name) then result.get(type_name)
+                else do const empty: [string] = []; empty end end
+              existing.push(line)
+              result.set(type_name, existing)
+              ()
+            end,
+            _ => do () end
+          }
+          j = j + 1
+        end
+        ()
+      end,
+      SDeclExported(inner) => do
+        match inner {
+          SDeclExtend(type_name, _, methods) => do
+            let mut j = 0
+            while j < methods.length() do
+              match methods[j] {
+                SDeclAssocBind(assoc_name, bound_type, _) => do
+                  const line = "using " + assoc_name + " = " + sem_type_to_cpp(context, bound_type) + ";\n"
+                  const existing: [string] =
+                    if result.has(type_name) then result.get(type_name)
+                    else do const empty: [string] = []; empty end end
+                  existing.push(line)
+                  result.set(type_name, existing)
+                  ()
+                end,
+                _ => do () end
+              }
+              j = j + 1
+            end
+            ()
+          end,
+          _ => do () end
+        }
+        ()
+      end,
+      _ => do () end
+    }
+    i = i + 1
   end
   result
 end
@@ -39,7 +97,7 @@ export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Progra
   const namespace_aliases = s_item.namespace_import_aliases
   const qualified = build_qualified(s_item.imports, all_items)
   const namespace_alias_prefixes = build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases))
-  const context = CodegenContext {
+  const base_context = CodegenContext {
     field_orders: precomp.field_orders,
     namespace_prefix: "",
     qualified: qualified,
@@ -54,8 +112,10 @@ export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Progra
     variant_types: precomp.variant_types,
     value_params: [],
     match_deref_params: [],
-    generic_variants: precomp.generic_variants
+    generic_variants: precomp.generic_variants,
+    struct_using_lines: Map.new()
   }
+  const context = context_with_struct_using_lines(base_context, build_struct_using_lines(s_item.decls, base_context))
   const module_namespace = if base == "main" then "mlc_main" else base end
   const is_entry = decls_have_main(s_item.decls)
   const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(s_item.imports) + "\n"

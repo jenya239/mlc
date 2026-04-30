@@ -175,7 +175,9 @@ vi = vi + 1;
   [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; return ; },
   [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; return ; },
   [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; return ; },
-  [&](const DeclExported& declexported) -> void { auto [_w0] = declexported; return ; }
+  [&](const DeclExported& declexported) -> void { auto [_w0] = declexported; return ; },
+  [&](const DeclAssocType& declassoctype) -> void { auto [_w0, _w1] = declassoctype; return ; },
+  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; return ; }
 }, (*ast::decl_inner(inner))); },
   [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1] = decltype_; return [&]() { 
   int vi = 0;
@@ -211,7 +213,9 @@ vi = vi + 1;
   [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5] = declfn; return ; },
   [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; return ; },
   [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; return ; },
-  [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; return ; }
+  [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; return ; },
+  [&](const DeclAssocType& declassoctype) -> void { auto [_w0, _w1] = declassoctype; return ; },
+  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; return ; }
 }, (*prog.decls[i]));
 i = i + 1;
 }

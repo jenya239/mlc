@@ -53,7 +53,9 @@ index = index + 1;
   return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclExtend(type_name, trait_name, typed_methods));
  }(); },
   [&](const DeclImport& declimport) -> std::shared_ptr<semantic_ir::SDecl> { auto [path, names] = declimport; return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclImport(path, names)); },
-  [&](const DeclExported& declexported) -> std::shared_ptr<semantic_ir::SDecl> { auto [inner] = declexported; return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclExported(transform_decl(inner, registry))); }
+  [&](const DeclExported& declexported) -> std::shared_ptr<semantic_ir::SDecl> { auto [inner] = declexported; return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclExported(transform_decl(inner, registry))); },
+  [&](const DeclAssocType& declassoctype) -> std::shared_ptr<semantic_ir::SDecl> { auto [_w0, _w1] = declassoctype; return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclImport(mlc::String(""), {})); },
+  [&](const DeclAssocBind& declassocbind) -> std::shared_ptr<semantic_ir::SDecl> { auto [name, type_expr, span] = declassocbind; return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclAssocBind(name, registry::type_from_annotation(type_expr), span)); }
 }, (*declaration));}
 
 mlc::Array<std::shared_ptr<semantic_ir::SDecl>> transform_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations, registry::TypeRegistry registry) noexcept{

@@ -65,6 +65,9 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
           else Shared.new(TyGeneric(name, targs.types))
           end
         TypeResult { type_expr, parser: targs.parser }
+      else if after.kind().is_dot() && after.advance().kind().is_ident() then
+        const assoc_name = after.advance().kind().ident()
+        TypeResult { type_expr: Shared.new(TyAssoc(name, assoc_name)), parser: after.advance_by(2) }
       else
         TypeResult { type_expr: Shared.new(TyNamed(name)), parser: after }
       end

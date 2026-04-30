@@ -112,6 +112,19 @@ fn parse_extend_decl(parser: Parser) -> DeclResult = do
       const method_result = parse_extend_extern_method(methods_state.advance(), type_name)
       methods.push(method_result.decl)
       methods_state = method_result.parser
+    else if methods_state.kind().is_type() then
+      const after_type = methods_state.advance()
+      const assoc_span = after_type.span_at_cursor()
+      const assoc_name = after_type.kind().ident()
+      const after_name = after_type.advance()
+      if after_name.kind().is_equal() then
+        const type_result = parse_type(after_name.advance())
+        methods.push(Shared.new(DeclAssocBind(assoc_name, type_result.type_expr, assoc_span)))
+        methods_state = type_result.parser
+      else
+        methods.push(Shared.new(DeclAssocType(assoc_name, assoc_span)))
+        methods_state = after_name
+      end
     else
       methods_state = methods_state.advance()
     end
@@ -428,6 +441,12 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
       const trait_bounds: [[string]] = []; let mut bi = 0; while bi < type_params.length() do trait_bounds.push([]); bi = bi + 1 end
       methods.push(Shared.new(DeclFn(mangled, type_params, trait_bounds, params_result.params, ret_result.type_expr, Shared.new(ExprExtern(span_unknown())))))
       state = ret_result.parser
+    else if state.kind().is_type() then
+      const after_type = state.advance()
+      const assoc_span = after_type.span_at_cursor()
+      const assoc_name = after_type.kind().ident()
+      methods.push(Shared.new(DeclAssocType(assoc_name, assoc_span)))
+      state = after_type.advance()
     else
       state = state.advance()
     end

@@ -12,6 +12,7 @@ export type Type =
   | TPair(Shared<Type>, Shared<Type>)
   | TTuple([Shared<Type>])
   | TFn([Shared<Type>], Shared<Type>)
+  | TAssoc(string, string)
   | TUnknown
 
 // --- Type registry --------------------------------------------------------
@@ -28,7 +29,9 @@ export type TypeRegistry = TypeRegistry {
   algebraic_decl_phantom_type_params: Map<string, [string]>,
   field_types: Map<string, Map<string, Shared<Type>>>,
   trait_impls: Map<string, [string]>,
-  private_ctors: [string]
+  private_ctors: [string],
+  trait_assoc_types: Map<string, [string]>,
+  assoc_type_bindings: Map<string, Map<string, Shared<Type>>>
 }
 
 export extend TypeRegistry {
@@ -107,6 +110,19 @@ export extend TypeRegistry {
     end
     found
   end
+
+  fn trait_assoc_names(self, trait_name: string) -> [string] =
+    if self.trait_assoc_types.has(trait_name) then self.trait_assoc_types.get(trait_name)
+    else do const empty: [string] = []; empty end end
+
+  fn resolve_assoc(self, type_name: string, trait_name: string, assoc_name: string) -> Shared<Type> = do
+    const key = type_name + "::" + trait_name
+    if self.assoc_type_bindings.has(key) then
+      const bindings = self.assoc_type_bindings.get(key)
+      if bindings.has(assoc_name) then bindings.get(assoc_name)
+      else Shared.new(TUnknown) end
+    else Shared.new(TUnknown) end
+  end
 }
 
 export fn empty_registry() -> TypeRegistry = do
@@ -151,7 +167,9 @@ export fn empty_registry() -> TypeRegistry = do
     algebraic_decl_phantom_type_params: Map.new(),
     field_types: Map.new(),
     trait_impls: Map.new(),
-    private_ctors: empty_private_ctors
+    private_ctors: empty_private_ctors,
+    trait_assoc_types: Map.new(),
+    assoc_type_bindings: Map.new()
   }
 end
 
@@ -183,6 +201,7 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
       while i < params.length() do param_types.push(type_from_annotation(params[i])); i = i + 1 end
       Shared.new(TFn(param_types, type_from_annotation(ret)))
     end,
+    TyAssoc(param, assoc) => Shared.new(TAssoc(param, assoc)),
     _ => Shared.new(TUnknown)
   }
 
@@ -206,10 +225,22 @@ end
 
 fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry = do
   match decl {
-    DeclTrait(_, _, methods) => do
+    DeclTrait(trait_name, _, methods) => do
       let mut i = 0
       while i < methods.length() do
-        registry = register_decl(registry, methods[i]); i = i + 1
+        const m = methods[i]
+        match m {
+          DeclAssocType(assoc_name, _) => do
+            const existing: [string] =
+              if registry.trait_assoc_types.has(trait_name) then registry.trait_assoc_types.get(trait_name)
+              else do const empty: [string] = []; empty end end
+            existing.push(assoc_name)
+            registry.trait_assoc_types.set(trait_name, existing)
+            ()
+          end,
+          _ => do registry = register_decl(registry, m); () end
+        }
+        i = i + 1
       end
       registry
     end,
@@ -223,7 +254,21 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       end
       let mut i = 0
       while i < methods.length() do
-        registry = register_decl(registry, methods[i]); i = i + 1
+        const m = methods[i]
+        match m {
+          DeclAssocBind(assoc_name, type_expr, _) => do
+            const key = type_name + "::" + trait_name
+            const empty_bindings: Map<string, Shared<Type>> = Map.new()
+            const bindings: Map<string, Shared<Type>> =
+              if registry.assoc_type_bindings.has(key) then registry.assoc_type_bindings.get(key)
+              else empty_bindings end
+            bindings.set(assoc_name, type_from_annotation(type_expr))
+            registry.assoc_type_bindings.set(key, bindings)
+            ()
+          end,
+          _ => do registry = register_decl(registry, m); () end
+        }
+        i = i + 1
       end
       registry
     end,
@@ -254,7 +299,9 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       registry
     end,
     DeclImport(_, _) => registry,
-    DeclExported(d) => register_decl(registry, d)
+    DeclExported(d) => register_decl(registry, d),
+    DeclAssocType(_, _) => registry,
+    DeclAssocBind(_, _, _) => registry
   }
 end
 
@@ -265,6 +312,7 @@ fn type_param_in_annotation(param: string, t: Shared<TypeExpr>) -> bool =
     TyShared(inner)     => type_param_in_annotation(param, inner),
     TyGeneric(_, targs) => type_param_in_annotation_list(param, targs),
     TyFn(params, ret)   => type_param_in_annotation_list(param, params) || type_param_in_annotation(param, ret),
+    TyAssoc(p, _)       => p == param,
     _                   => false
   }
 

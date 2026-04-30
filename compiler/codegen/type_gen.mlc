@@ -59,7 +59,8 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
         parts.push(sem_type_to_cpp(context, param_types[i])); i = i + 1
       end
       expression_output.cpp_std_function_type(sem_type_to_cpp(context, return_type), parts.join(", "))
-    end
+    end,
+    TAssoc(param, assoc) => "typename " + cpp_safe(param) + "::" + assoc
   }
 
 export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
@@ -112,7 +113,8 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
         param_types.push(type_to_cpp(context, params[i])); i = i + 1
       end
       expression_output.cpp_std_function_type(type_to_cpp(context, ret), param_types.join(", "))
-    end
+    end,
+    TyAssoc(param, assoc) => "typename " + cpp_safe(param) + "::" + assoc
   }
 
 // --- Type parameter helpers --------------------------------------------------
@@ -124,6 +126,7 @@ export fn type_param_in_typeexpr(param: string, t: Shared<TypeExpr>) -> bool =
     TyShared(inner)     => type_param_in_typeexpr(param, inner),
     TyGeneric(_, targs) => type_param_in_typeexpr_list(param, targs),
     TyFn(params, ret)   => type_param_in_typeexpr_list(param, params) || type_param_in_typeexpr(param, ret),
+    TyAssoc(p, _)       => p == param,
     _                   => false
   }
 
@@ -216,6 +219,14 @@ fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Share
     end
   }
 
+fn struct_extra_using(context: CodegenContext, type_name: string) -> string =
+  if context.struct_using_lines.has(type_name) then
+    const lines = context.struct_using_lines.get(type_name)
+    let mut result = ""; let mut k = 0
+    while k < lines.length() do result = result + lines[k]; k = k + 1 end
+    result
+  else "" end
+
 fn gen_single_variant(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
   match variant {
     VarRecord(_, field_defs, _) => do
@@ -223,14 +234,14 @@ fn gen_single_variant(context: CodegenContext, type_name: string, variant: Share
       while i < field_defs.length() do
         parts.push(expression_output.struct_named_field_declaration(type_to_cpp(context, field_defs[i].typ), cpp_safe(field_defs[i].name))); i = i + 1
       end
-      expression_output.struct_with_inline_members_definition(context_resolve(context, type_name), parts.join(""))
+      expression_output.struct_with_inline_members_definition(context_resolve(context, type_name), parts.join("") + struct_extra_using(context, type_name))
     end,
     VarTuple(_, field_types, _) => do
       let parts: [string] = []; let mut i = 0
       while i < field_types.length() do
         parts.push(expression_output.struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), i.to_string())); i = i + 1
       end
-      expression_output.struct_with_inline_members_definition(context_resolve(context, type_name), parts.join(""))
+      expression_output.struct_with_inline_members_definition(context_resolve(context, type_name), parts.join("") + struct_extra_using(context, type_name))
     end,
     VarUnit(_, _) => expression_output.struct_empty_definition(context_resolve(context, type_name))
   }

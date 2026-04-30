@@ -40,6 +40,9 @@ module MLC
             # Pure function - all dependencies passed as parameters
             def map_type(type, type_map:, type_registry: nil)
               case type
+              when SemanticIR::AssocType
+                "typename #{type.param_name}::#{type.assoc_name}"
+
               when SemanticIR::RefType
                 # Reference type: &T -> const T&
                 inner = map_type(type.inner_type, type_map: type_map, type_registry: type_registry)

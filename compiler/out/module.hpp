@@ -10,6 +10,8 @@
 #include "transform_decl.hpp"
 #include "decl_index.hpp"
 #include "context.hpp"
+#include "semantic_ir.hpp"
+#include "type_gen.hpp"
 #include "cpp_naming.hpp"
 #include "decl.hpp"
 #include "expr.hpp"

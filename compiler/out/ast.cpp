@@ -124,7 +124,9 @@ return std::visit(overloaded{
   [&](const DeclType& decltype_) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3] = decltype_; return decl; },
   [&](const DeclTrait& decltrait) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2] = decltrait; return decl; },
   [&](const DeclExtend& declextend) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2] = declextend; return decl; },
-  [&](const DeclImport& declimport) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1] = declimport; return decl; }
+  [&](const DeclImport& declimport) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1] = declimport; return decl; },
+  [&](const DeclAssocType& declassoctype) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1] = declassoctype; return decl; },
+  [&](const DeclAssocBind& declassocbind) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2] = declassocbind; return decl; }
 }, (*unwrapped));
 }
 
@@ -136,7 +138,9 @@ return std::visit(overloaded{
   [&](const DeclTrait& decltrait) -> mlc::String { auto [name, _w0, _w1] = decltrait; return name; },
   [&](const DeclExtend& declextend) -> mlc::String { auto [type_name, _w0, _w1] = declextend; return type_name; },
   [&](const DeclImport& declimport) -> mlc::String { auto [_w0, _w1] = declimport; return mlc::String(""); },
-  [&](const DeclExported& declexported) -> mlc::String { auto [inner] = declexported; return decl_name(inner); }
+  [&](const DeclExported& declexported) -> mlc::String { auto [inner] = declexported; return decl_name(inner); },
+  [&](const DeclAssocType& declassoctype) -> mlc::String { auto [name, _w0] = declassoctype; return name; },
+  [&](const DeclAssocBind& declassocbind) -> mlc::String { auto [name, _w0, _w1] = declassocbind; return name; }
 }, (*unwrapped));
 }
 

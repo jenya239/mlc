@@ -124,7 +124,9 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
       end,
       DeclExtend(_, _, _) => do () end,
       DeclImport(_, _) => do () end,
-      DeclExported(_)  => do () end
+      DeclExported(_)  => do () end,
+      DeclAssocType(_, _) => do () end,
+      DeclAssocBind(_, _, _) => do () end
     }
     index = index + 1
   end
@@ -168,6 +170,7 @@ fn type_is_checkable(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
     TFn(_, _)   => true,
     TShared(_)  => true,
     TNamed(name) => registry.has_fields(name),
+    TAssoc(_, _) => true,
     _           => false
   }
 
@@ -241,7 +244,9 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         ()
       end,
       DeclImport(_, _)     => do () end,
-      DeclExported(_)      => do () end
+      DeclExported(_)      => do () end,
+      DeclAssocType(_, _)  => do () end,
+      DeclAssocBind(_, _, _) => do () end
     }
     declaration_index = declaration_index + 1
   end

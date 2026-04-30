@@ -61,6 +61,7 @@ export type TypeExpr =
   | TyShared(Shared<TypeExpr>)
   | TyGeneric(string, [Shared<TypeExpr>])
   | TyFn([Shared<TypeExpr>], Shared<TypeExpr>)
+  | TyAssoc(string, string)
 
 export type Pat =
   | PatWild(Span) | PatIdent(string, Span) | PatInt(i32, Span) | PatStr(string, Span)
@@ -184,6 +185,8 @@ export type Decl =
   | DeclExtend(string, string, [Shared<Decl>])
   | DeclImport(string, [string])
   | DeclExported(Shared<Decl>)
+  | DeclAssocType(string, Span)
+  | DeclAssocBind(string, Shared<TypeExpr>, Span)
 
 export type Program = Program { decls: [Shared<Decl>] }
 
@@ -198,7 +201,9 @@ export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
     DeclType(_, _, _, _) => decl,
     DeclTrait(_, _, _) => decl,
     DeclExtend(_, _, _) => decl,
-    DeclImport(_, _) => decl
+    DeclImport(_, _) => decl,
+    DeclAssocType(_, _) => decl,
+    DeclAssocBind(_, _, _) => decl
   }
 end
 
@@ -210,7 +215,9 @@ export fn decl_name(decl: Shared<Decl>) -> string = do
     DeclTrait(name, _, _) => name,
     DeclExtend(type_name, _, _) => type_name,
     DeclImport(_, _) => "",
-    DeclExported(inner) => decl_name(inner)
+    DeclExported(inner) => decl_name(inner),
+    DeclAssocType(name, _) => name,
+    DeclAssocBind(name, _, _) => name
   }
 end
 

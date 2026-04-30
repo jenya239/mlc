@@ -911,6 +911,17 @@ module MLC
         end
       end
 
+      # Associated type reference: I.Item
+      class AssocTypeRef < Type
+        attr_reader :param_name, :assoc_name
+
+        def initialize(param_name:, assoc_name:, origin: nil)
+          super(kind: :assoc_type_ref, name: "#{param_name}.#{assoc_name}", origin: origin)
+          @param_name = param_name
+          @assoc_name = assoc_name
+        end
+      end
+
       # Trait declaration
       # trait Name<T> { type Item; fn method(...) -> ... }
       class TraitDecl < Node

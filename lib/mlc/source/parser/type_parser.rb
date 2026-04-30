@@ -220,6 +220,20 @@ module MLC
                         raise "Unexpected token: #{current}"
                       end
 
+          # Check for associated type reference: I.Item
+          is_dot = (current.type == :DOT) || (current.type == :OPERATOR && current.value == ".")
+          if base_type.is_a?(MLC::Source::AST::PrimType) && is_dot && peek&.type == :IDENTIFIER
+            current.type == :DOT ? consume(:DOT) : consume(:OPERATOR)
+            assoc_name_token = consume(:IDENTIFIER)
+            base_type = with_origin(base_token) do
+              MLC::Source::AST::AssocTypeRef.new(
+                param_name: base_type.name,
+                assoc_name: assoc_name_token.value
+              )
+            end
+            return base_type
+          end
+
           # Check for generic type parameters <T1, T2, ...>
           if current.type == :OPERATOR && current.value == "<"
             consume_operator("<")

@@ -39,11 +39,13 @@ context::CodegenContext update_context_from_statement(std::shared_ptr<semantic_i
 
 context::CodegenContext create_codegen_context(ast::Program prog) noexcept;
 
+context::CodegenContext context_with_struct_using_lines(context::CodegenContext base, mlc::HashMap<mlc::String, mlc::Array<mlc::String>> struct_using_lines) noexcept;
+
 context::CodegenContext context_with_namespace_alias_prefixes(context::CodegenContext base, mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes) noexcept;
 
 mlc::String context_resolve(context::CodegenContext context, mlc::String name) noexcept{return context.qualified.has(name) ? context.qualified.get(name) + cpp_naming::cpp_safe(name) : context.namespace_prefix.length() > 0 ? context.namespace_prefix + cpp_naming::cpp_safe(name) : cpp_naming::cpp_safe(name);}
 
-context::CodegenContext make_body_context(context::CodegenContext base, mlc::Array<mlc::String> shared_params, mlc::Array<mlc::String> shared_array_params, mlc::HashMap<mlc::String, mlc::String> array_elem_types, mlc::Array<mlc::String> shared_map_params, mlc::String self_type, mlc::Array<mlc::String> value_params, mlc::Array<mlc::String> match_deref_params) noexcept{return context::CodegenContext{base.field_orders, base.namespace_prefix, base.qualified, base.namespace_alias_prefixes, self_type, base.method_owners, shared_params, shared_array_params, array_elem_types, shared_map_params, base.ctor_type_infos, base.variant_types, value_params, match_deref_params, base.generic_variants};}
+context::CodegenContext make_body_context(context::CodegenContext base, mlc::Array<mlc::String> shared_params, mlc::Array<mlc::String> shared_array_params, mlc::HashMap<mlc::String, mlc::String> array_elem_types, mlc::Array<mlc::String> shared_map_params, mlc::String self_type, mlc::Array<mlc::String> value_params, mlc::Array<mlc::String> match_deref_params) noexcept{return context::CodegenContext{base.field_orders, base.namespace_prefix, base.qualified, base.namespace_alias_prefixes, self_type, base.method_owners, shared_params, shared_array_params, array_elem_types, shared_map_params, base.ctor_type_infos, base.variant_types, value_params, match_deref_params, base.generic_variants, base.struct_using_lines};}
 
 context::CodegenContext context_add_shared(context::CodegenContext context, mlc::String name) noexcept{
 mlc::Array<mlc::String> new_shared_params = context.shared_params;
@@ -128,8 +130,10 @@ k = k + 1;
   return c;
  }(); } return context; }();}
 
-context::CodegenContext create_codegen_context(ast::Program prog) noexcept{return context::CodegenContext{type_index::build_field_orders(prog), mlc::String(""), mlc::HashMap<mlc::String, mlc::String>(), mlc::HashMap<mlc::String, mlc::String>(), mlc::String(""), type_index::build_method_owners_from_decls(prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, {}, type_index::build_variant_types_from_decls(prog.decls), {}, {}, type_index::build_generic_variants_from_decls(prog.decls)};}
+context::CodegenContext create_codegen_context(ast::Program prog) noexcept{return context::CodegenContext{type_index::build_field_orders(prog), mlc::String(""), mlc::HashMap<mlc::String, mlc::String>(), mlc::HashMap<mlc::String, mlc::String>(), mlc::String(""), type_index::build_method_owners_from_decls(prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, {}, type_index::build_variant_types_from_decls(prog.decls), {}, {}, type_index::build_generic_variants_from_decls(prog.decls), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>()};}
 
-context::CodegenContext context_with_namespace_alias_prefixes(context::CodegenContext base, mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes) noexcept{return context::CodegenContext{base.field_orders, base.namespace_prefix, base.qualified, namespace_alias_prefixes, base.self_type, base.method_owners, base.shared_params, base.shared_array_params, base.array_elem_types, base.shared_map_params, base.ctor_type_infos, base.variant_types, base.value_params, base.match_deref_params, base.generic_variants};}
+context::CodegenContext context_with_struct_using_lines(context::CodegenContext base, mlc::HashMap<mlc::String, mlc::Array<mlc::String>> struct_using_lines) noexcept{return context::CodegenContext{base.field_orders, base.namespace_prefix, base.qualified, base.namespace_alias_prefixes, base.self_type, base.method_owners, base.shared_params, base.shared_array_params, base.array_elem_types, base.shared_map_params, base.ctor_type_infos, base.variant_types, base.value_params, base.match_deref_params, base.generic_variants, struct_using_lines};}
+
+context::CodegenContext context_with_namespace_alias_prefixes(context::CodegenContext base, mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes) noexcept{return context::CodegenContext{base.field_orders, base.namespace_prefix, base.qualified, namespace_alias_prefixes, base.self_type, base.method_owners, base.shared_params, base.shared_array_params, base.array_elem_types, base.shared_map_params, base.ctor_type_infos, base.variant_types, base.value_params, base.match_deref_params, base.generic_variants, base.struct_using_lines};}
 
 } // namespace context

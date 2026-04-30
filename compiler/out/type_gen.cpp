@@ -39,6 +39,8 @@ mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcep
 
 mlc::String gen_variant_struct(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
+mlc::String struct_extra_using(context::CodegenContext context, mlc::String type_name) noexcept;
+
 mlc::String gen_single_variant(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
 mlc::String gen_adt_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
@@ -128,7 +130,8 @@ i = i + 1;
 }
 }
   return expr::cpp_std_function_type(sem_type_to_cpp(context, return_type), parts.join(mlc::String(", ")));
- }(); }
+ }(); },
+  [&](const TAssoc& tassoc) -> mlc::String { auto [param, assoc] = tassoc; return mlc::String("typename ") + cpp_naming::cpp_safe(param) + mlc::String("::") + assoc; }
 }, (*semantic_type));}
 
 mlc::String type_name_to_cpp(context::CodegenContext context, mlc::String type_name) noexcept{return type_name == mlc::String("i32") ? mlc::String("int") : type_name == mlc::String("string") ? mlc::String("mlc::String") : type_name == mlc::String("bool") ? mlc::String("bool") : type_name == mlc::String("unit") ? mlc::String("void") : type_name == mlc::String("i64") ? mlc::String("int64_t") : type_name == mlc::String("f64") ? mlc::String("double") : type_name == mlc::String("u8") ? mlc::String("uint8_t") : type_name == mlc::String("usize") ? mlc::String("size_t") : type_name == mlc::String("char") ? mlc::String("char32_t") : type_name == mlc::String("Self") || type_name == mlc::String("self") ? context.self_type.length() > 0 ? type_name_to_cpp(context, context.self_type) : mlc::String("void") : context::context_resolve(context, type_name);}
@@ -155,10 +158,11 @@ i = i + 1;
 }
 }
   return expr::cpp_std_function_type(type_to_cpp(context, ret), param_types.join(mlc::String(", ")));
- }(); }
+ }(); },
+  [&](const TyAssoc& tyassoc) -> mlc::String { auto [param, assoc] = tyassoc; return mlc::String("typename ") + cpp_naming::cpp_safe(param) + mlc::String("::") + assoc; }
 }, (*type_expr));}
 
-bool type_param_in_typeexpr(mlc::String param, std::shared_ptr<ast::TypeExpr> t) noexcept{return [&]() { if (std::holds_alternative<ast::TyNamed>((*t))) { auto _v_tynamed = std::get<ast::TyNamed>((*t)); auto [name] = _v_tynamed; return name == param; } if (std::holds_alternative<ast::TyArray>((*t))) { auto _v_tyarray = std::get<ast::TyArray>((*t)); auto [inner] = _v_tyarray; return type_param_in_typeexpr(param, inner); } if (std::holds_alternative<ast::TyShared>((*t))) { auto _v_tyshared = std::get<ast::TyShared>((*t)); auto [inner] = _v_tyshared; return type_param_in_typeexpr(param, inner); } if (std::holds_alternative<ast::TyGeneric>((*t))) { auto _v_tygeneric = std::get<ast::TyGeneric>((*t)); auto [_w0, targs] = _v_tygeneric; return type_param_in_typeexpr_list(param, targs); } if (std::holds_alternative<ast::TyFn>((*t))) { auto _v_tyfn = std::get<ast::TyFn>((*t)); auto [params, ret] = _v_tyfn; return type_param_in_typeexpr_list(param, params) || type_param_in_typeexpr(param, ret); } return false; }();}
+bool type_param_in_typeexpr(mlc::String param, std::shared_ptr<ast::TypeExpr> t) noexcept{return [&]() { if (std::holds_alternative<ast::TyNamed>((*t))) { auto _v_tynamed = std::get<ast::TyNamed>((*t)); auto [name] = _v_tynamed; return name == param; } if (std::holds_alternative<ast::TyArray>((*t))) { auto _v_tyarray = std::get<ast::TyArray>((*t)); auto [inner] = _v_tyarray; return type_param_in_typeexpr(param, inner); } if (std::holds_alternative<ast::TyShared>((*t))) { auto _v_tyshared = std::get<ast::TyShared>((*t)); auto [inner] = _v_tyshared; return type_param_in_typeexpr(param, inner); } if (std::holds_alternative<ast::TyGeneric>((*t))) { auto _v_tygeneric = std::get<ast::TyGeneric>((*t)); auto [_w0, targs] = _v_tygeneric; return type_param_in_typeexpr_list(param, targs); } if (std::holds_alternative<ast::TyFn>((*t))) { auto _v_tyfn = std::get<ast::TyFn>((*t)); auto [params, ret] = _v_tyfn; return type_param_in_typeexpr_list(param, params) || type_param_in_typeexpr(param, ret); } if (std::holds_alternative<ast::TyAssoc>((*t))) { auto _v_tyassoc = std::get<ast::TyAssoc>((*t)); auto [p, _w0] = _v_tyassoc; return p == param; } return false; }();}
 
 bool type_param_in_typeexpr_list(mlc::String param, mlc::Array<std::shared_ptr<ast::TypeExpr>> types) noexcept{
 bool found = false;
@@ -310,6 +314,19 @@ i = i + 1;
  }(); }
 }, (*variant));}
 
+mlc::String struct_extra_using(context::CodegenContext context, mlc::String type_name) noexcept{return context.struct_using_lines.has(type_name) ? [&]() -> mlc::String { 
+  mlc::Array<mlc::String> lines = context.struct_using_lines.get(type_name);
+  mlc::String result = mlc::String("");
+  int k = 0;
+  while (k < lines.size()){
+{
+result = result + lines[k];
+k = k + 1;
+}
+}
+  return result;
+ }() : mlc::String("");}
+
 mlc::String gen_single_variant(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
   [&](const VarRecord& varrecord) -> mlc::String { auto [_w0, field_defs, _w1] = varrecord; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
@@ -320,7 +337,7 @@ parts.push_back(expr::struct_named_field_declaration(type_to_cpp(context, field_
 i = i + 1;
 }
 }
-  return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), parts.join(mlc::String("")));
+  return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), parts.join(mlc::String("")) + struct_extra_using(context, type_name));
  }(); },
   [&](const VarTuple& vartuple) -> mlc::String { auto [_w0, field_types, _w1] = vartuple; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
@@ -331,7 +348,7 @@ parts.push_back(expr::struct_tuple_field_declaration(type_to_cpp(context, field_
 i = i + 1;
 }
 }
-  return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), parts.join(mlc::String("")));
+  return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), parts.join(mlc::String("")) + struct_extra_using(context, type_name));
  }(); },
   [&](const VarUnit& varunit) -> mlc::String { auto [_w0, _w1] = varunit; return expr::struct_empty_definition(context::context_resolve(context, type_name)); }
 }, (*variant));}

@@ -5,12 +5,14 @@ import { gen_expr, gen_argument_list, gen_stmts_str } from "../codegen/eval"
 import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from "../codegen/context"
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from "../codegen/type_gen"
 import { gen_program } from "../codegen/module"
+import { tokenize } from "../lexer"
+import { parse_program } from "../parser/decls"
 import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown } from "../ast"
 import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat } from "../semantic_ir"
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
 import { SExprWith } from "../semantic_ir"
 import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple } from "../checker/registry"
-import { TF64, TI64, TU8, TUsize, TChar } from "../checker/registry"
+import { TF64, TI64, TU8, TUsize, TChar, TAssoc } from "../checker/registry"
 
 fn i32_t() -> Shared<Type> = Shared.new(TI32)
 fn str_t() -> Shared<Type> = Shared.new(TString)
@@ -396,6 +398,15 @@ export fn codegen_tests() -> [TestResult] = do
     if with_out.contains("auto res =") then "yes" else "no" end, "yes"))
   results.push(assert_eq_str("c5: SExprWith contains res.drop()",
     if with_out.contains("res.drop()") then "yes" else "no" end, "yes"))
+
+  const assoc_t = Shared.new(TAssoc("I", "Item"))
+  results.push(assert_eq_str("d1: sem_type_to_cpp TAssoc",
+    sem_type_to_cpp(ctx, assoc_t), "typename I::Item"))
+
+  const assoc_prog_src = "type Iter { type Item } type Box<T> = { val: T } extend Box<T>: Iter { type Item = T fn Iter_next(self: Box<T>) -> i32 = 0 }"
+  const assoc_prog_out = gen_program(parse_program(tokenize(assoc_prog_src).tokens))
+  results.push(assert_eq_str("d1: gen_program struct contains using Item =",
+    if assoc_prog_out.contains("using Item =") then "yes" else "no" end, "yes"))
 
   results
 end

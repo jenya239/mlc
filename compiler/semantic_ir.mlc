@@ -64,6 +64,7 @@ export type SDecl =
   | SDeclExtend(string, string, [Shared<SDecl>])
   | SDeclImport(string, [string])
   | SDeclExported(Shared<SDecl>)
+  | SDeclAssocBind(string, Shared<Type>, Span)
 
 export type SProgram = SProgram { decls: [Shared<SDecl>] }
 

@@ -130,7 +130,9 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
         DeclTrait(_, _, _)       => do end,
         DeclExtend(_, _, _)      => do end,
         DeclImport(_, _)         => do end,
-        DeclExported(_)          => do end
+        DeclExported(_)          => do end,
+        DeclAssocType(_, _)      => do end,
+        DeclAssocBind(_, _, _)   => do end
       },
       DeclType(type_name, _, variants, _) => do
         let mut vi = 0
@@ -154,7 +156,9 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
       DeclFn(_, _, _, _, _, _) => do end,
       DeclTrait(_, _, _)       => do end,
       DeclExtend(_, _, _)      => do end,
-      DeclImport(_, _)         => do end
+      DeclImport(_, _)         => do end,
+      DeclAssocType(_, _)      => do end,
+      DeclAssocBind(_, _, _)   => do end
     }
     i = i + 1
   end

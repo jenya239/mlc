@@ -9,6 +9,8 @@
 #include "context.hpp"
 #include "type_gen.hpp"
 #include "module.hpp"
+#include "lexer.hpp"
+#include "decls.hpp"
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "semantic_ir.hpp"
