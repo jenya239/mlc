@@ -52,6 +52,10 @@ end
 
 task default: :test
 
+# Self-hosted compiler: optional gate — Ruby builds mlcc, then bootstrap link (g++ mlcc_bootstrap).
+# bundle exec ruby -Ilib:test test/mlc/self_hosted_mlcc_bootstrap_link_test.rb
+# MLC_REQUIRE_BOOTSTRAP_LINK=1 bundle exec ruby -Ilib:test test/mlc/self_hosted_mlcc_bootstrap_link_test.rb
+
 # Self-hosted compiler: собирает compiler/tests/tests_main.mlc через Ruby и запускает run_tests (нужен g++).
 desc "Тесты self-hosted компилятора (compiler/tests/build_tests.sh)"
 task :test_compiler_mlc do

@@ -61,6 +61,13 @@ export fn map_builtin(name: string) -> string =
   else name
   end
 
+// Identifiers named `args` often shadow the CLI helper (match bindings, parameters).
+// Calls still use map_builtin via gen_call_function_code (args becomes mlc::io::args + "()").
+export fn map_builtin_identifier_reference(name: string) -> string =
+  if name == "args" then name
+  else map_builtin(name)
+  end
+
 export fn escape_str(input: string) -> string = do
   let parts: [string] = []; let mut i = 0
   while i < input.length() do

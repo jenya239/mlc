@@ -16,11 +16,9 @@ fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
   let mut optional_began = false
   let mut i = 0
   while i < parameters.length() do
-    if parameters[i].has_default then
-      optional_began = true
-    else
-      if optional_began then return false end
-    end
+    const has_default_now = parameters[i].has_default
+    if (!has_default_now) && optional_began then return false end
+    if has_default_now then optional_began = true end
     i = i + 1
   end
   true

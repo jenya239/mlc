@@ -27,6 +27,8 @@ test_runner::TestResult assert_type_generates(mlc::String test_name, context::Co
 
 test_runner::TestResult assert_code_contains(mlc::String test_name, mlc::String actual_code, mlc::String expected_substring) noexcept;
 
+test_runner::TestResult assert_code_not_contains(mlc::String test_name, mlc::String actual_code, mlc::String forbidden_substring) noexcept;
+
 bool chars_match_at(mlc::String haystack, int start_position, mlc::String needle, int needle_length) noexcept;
 
 bool string_contains(mlc::String haystack, mlc::String needle) noexcept;
@@ -38,6 +40,8 @@ test_runner::TestResult assert_expr_generates(mlc::String test_name, context::Co
 test_runner::TestResult assert_type_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<ast::TypeExpr> type_expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, type_gen::type_to_cpp(context, type_expr), expected_code);}
 
 test_runner::TestResult assert_code_contains(mlc::String test_name, mlc::String actual_code, mlc::String expected_substring) noexcept{return test_runner::assert_true(test_name + mlc::String(" contains '") + expected_substring + mlc::String("'"), string_contains(actual_code, expected_substring));}
+
+test_runner::TestResult assert_code_not_contains(mlc::String test_name, mlc::String actual_code, mlc::String forbidden_substring) noexcept{return test_runner::assert_true(test_name + mlc::String(" must not contain '") + forbidden_substring + mlc::String("'"), !string_contains(actual_code, forbidden_substring));}
 
 bool chars_match_at(mlc::String haystack, int start_position, mlc::String needle, int needle_length) noexcept{
 int character_index = 0;

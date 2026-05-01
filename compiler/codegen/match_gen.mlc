@@ -6,7 +6,7 @@ import { Pat } from "../ast"
 import { SExpr, SStmt, SMatchArm } from "../semantic_ir"
 import { CodegenContext, CtorTypeInfo,
          context_resolve, list_contains, lookup_ctor_type_info,
-         context_add_shared, context_add_shared_array } from "./context"
+         context_add_shared, context_add_shared_array, context_add_value } from "./context"
 import { cpp_safe, lower_first } from "./cpp_naming"
 import { first_arm_needs_deref, pat_bind_names } from "./match_analysis"
 import * as expression_output from "./expr"
@@ -36,6 +36,9 @@ fn gen_arm_ctor(
         if ctor_type_info.shared_arr_pos.contains(index) then
           arm_context = context_add_shared_array(arm_context, pattern_name)
         end
+        if (!ctor_type_info.shared_pos.contains(index)) && (!ctor_type_info.shared_arr_pos.contains(index)) then
+          arm_context = context_add_value(arm_context, pattern_name)
+        end
       end,
       _ => do end
     }
@@ -57,11 +60,12 @@ fn gen_arm_record_pattern(
   const lower_name = cpp_safe(lower_first(record_name))
   const is_generic = list_contains(context.generic_variants, record_name)
   const type_argument = if is_generic then "<auto>" else "" end
-  let mut field_bindings = ""; let mut field_index = 0
+  let mut field_bindings = ""; let mut arm_context = context; let mut field_index = 0
   while field_index < field_patterns.length() do
     match field_patterns[field_index] {
       PatIdent(field_name, _) => do
         field_bindings = field_bindings + expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name)
+        arm_context = context_add_value(arm_context, field_name)
       end,
       _ => do end
     }
@@ -70,7 +74,7 @@ fn gen_arm_record_pattern(
   expression_output.match_arm_constructed_value(
     expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
     field_bindings,
-    eval_expr_fn(arm_body, context, gen_stmts))
+    eval_expr_fn(arm_body, arm_context, gen_stmts))
 end
 
 fn expand_or_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] = do
@@ -103,7 +107,10 @@ export fn gen_arm(
     PatBool(_, _)     => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
     PatInt(_, _)      => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
     PatStr(_, _)      => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
-    PatIdent(name, _) => expression_output.match_arm_binding_identifier(cpp_safe(name), eval_expr_fn(arm.body, context, gen_stmts)),
+    PatIdent(name, _) =>
+      expression_output.match_arm_binding_identifier(
+        cpp_safe(name),
+        eval_expr_fn(arm.body, context_add_value(context, name), gen_stmts)),
     PatCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_fn),
     PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts, eval_expr_fn),
     PatTuple(_, _)                     => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),

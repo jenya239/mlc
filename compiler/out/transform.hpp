@@ -12,7 +12,6 @@
 #include "pattern_env.hpp"
 #include "semantic_type_structure.hpp"
 #include "semantic_ir.hpp"
-#include "semantic_ir.hpp"
 
 namespace transform {
 

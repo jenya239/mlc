@@ -21,8 +21,6 @@ using namespace infer_trait_bounds;
 using namespace semantic_type_structure;
 using namespace ast_tokens;
 
-using InferExprFn = std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)>;
-
 struct ResolvedArgs {mlc::Array<std::shared_ptr<ast::Expr>> exprs;mlc::Array<ast::Diagnostic> errors;};
 
 bool has_named_args(mlc::Array<std::shared_ptr<ast::Expr>> args) noexcept;

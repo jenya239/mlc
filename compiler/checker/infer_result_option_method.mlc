@@ -24,8 +24,6 @@ import {
 import { infer_lambda_with_param_types } from "./infer_lambda_context"
 import { infer_builtin_method_receiver_diagnostics } from "./method_receiver_diagnostics"
 
-type InferExprFn = (Shared<Expr>, CheckContext) -> InferResult
-
 fn append_lambda_arity(
   errors: [Diagnostic], expression: Shared<Expr>, expected: i32, method_name: string
 ) -> [Diagnostic] =
@@ -63,7 +61,7 @@ export fn infer_result_option_hof_method_call(
   method_arguments: [Shared<Expr>],
   method_span: Span,
   inference_context: CheckContext,
-  infer_expr_fn: InferExprFn
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
   const receiver_type = object_result.inferred_type
   const receiver_errors = infer_builtin_method_receiver_diagnostics(

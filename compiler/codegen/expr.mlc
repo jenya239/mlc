@@ -9,7 +9,7 @@ export fn parenthesized_unary(operation: string, inner_code: string) -> string =
   "(" + operation + inner_code + ")"
 
 export fn ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
-  "(" + condition_code + " ? " + then_code + " : " + else_code + ")"
+  "(" + condition_code + " ? (" + then_code + ") : (" + else_code + "))"
 
 export fn index_subscript(object_code: string, index_code: string) -> string =
   object_code + "[" + index_code + "]"
@@ -164,6 +164,12 @@ export fn hash_map_empty_instantiation(key_type_cpp: string, value_type_cpp: str
 
 export fn typed_array_empty(element_type_cpp: string) -> string =
   "mlc::Array<" + element_type_cpp + ">\{\}"
+
+export fn typed_array_empty_or_untyped_empty(element_type_cpp: string) -> string =
+  if element_type_cpp == "auto" then "\{\}" else typed_array_empty(element_type_cpp) end
+
+export fn typed_array_braced_initializer(element_type_cpp: string, comma_separated_elements: string) -> string =
+  "mlc::Array<" + element_type_cpp + ">\{" + comma_separated_elements + "\}"
 
 export fn array_string_fallback_empty() -> string =
   "mlc::Array<mlc::String>\{\}"

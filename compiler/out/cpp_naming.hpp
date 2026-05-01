@@ -23,6 +23,8 @@ mlc::String map_method(mlc::String method_name) noexcept;
 
 mlc::String map_builtin(mlc::String name) noexcept;
 
+mlc::String map_builtin_identifier_reference(mlc::String name) noexcept;
+
 mlc::String escape_str(mlc::String input) noexcept;
 
 mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept;

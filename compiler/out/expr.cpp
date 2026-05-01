@@ -104,6 +104,10 @@ mlc::String hash_map_empty_instantiation(mlc::String key_type_cpp, mlc::String v
 
 mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept;
 
+mlc::String typed_array_empty_or_untyped_empty(mlc::String element_type_cpp) noexcept;
+
+mlc::String typed_array_braced_initializer(mlc::String element_type_cpp, mlc::String comma_separated_elements) noexcept;
+
 mlc::String array_string_fallback_empty() noexcept;
 
 mlc::String match_lambda_const_reference_parameter(mlc::String resolved_type_name, mlc::String generic_angle_bracket_argument, mlc::String binding_name_cpp_safe) noexcept;
@@ -190,7 +194,7 @@ mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, m
 
 mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) noexcept{return mlc::String("(") + operation + inner_code + mlc::String(")");}
 
-mlc::String ternary_conditional(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept{return mlc::String("(") + condition_code + mlc::String(" ? ") + then_code + mlc::String(" : ") + else_code + mlc::String(")");}
+mlc::String ternary_conditional(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept{return mlc::String("(") + condition_code + mlc::String(" ? (") + then_code + mlc::String(") : (") + else_code + mlc::String("))");}
 
 mlc::String index_subscript(mlc::String object_code, mlc::String index_code) noexcept{return object_code + mlc::String("[") + index_code + mlc::String("]");}
 
@@ -287,6 +291,10 @@ mlc::String append_trailing_expression_statement(mlc::String statements_code, ml
 mlc::String hash_map_empty_instantiation(mlc::String key_type_cpp, mlc::String value_type_cpp) noexcept{return mlc::String("mlc::HashMap<") + key_type_cpp + mlc::String(", ") + value_type_cpp + mlc::String(">()");}
 
 mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept{return mlc::String("mlc::Array<") + element_type_cpp + mlc::String(">{}");}
+
+mlc::String typed_array_empty_or_untyped_empty(mlc::String element_type_cpp) noexcept{return element_type_cpp == mlc::String("auto") ? mlc::String("{}") : typed_array_empty(element_type_cpp);}
+
+mlc::String typed_array_braced_initializer(mlc::String element_type_cpp, mlc::String comma_separated_elements) noexcept{return mlc::String("mlc::Array<") + element_type_cpp + mlc::String(">{") + comma_separated_elements + mlc::String("}");}
 
 mlc::String array_string_fallback_empty() noexcept{return mlc::String("mlc::Array<mlc::String>{}");}
 

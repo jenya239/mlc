@@ -8,7 +8,6 @@
 #include "pattern_env.hpp"
 #include "semantic_type_structure.hpp"
 #include "semantic_ir.hpp"
-#include "semantic_ir.hpp"
 
 namespace transform {
 
@@ -20,8 +19,15 @@ using namespace result_option_method_types;
 using namespace pattern_env;
 using namespace semantic_type_structure;
 using namespace semantic_ir;
-using namespace semantic_ir;
 using namespace ast_tokens;
+
+std::shared_ptr<semantic_ir::SExpr> coerce_unknown_else_array_when_then_known_inner(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, ast::Span span_else, std::shared_ptr<registry::Type> inner_then, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept;
+
+std::shared_ptr<semantic_ir::SExpr> conditional_else_coerce_empty_array_using_then_type(std::shared_ptr<semantic_ir::SExpr> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept;
+
+std::shared_ptr<semantic_ir::SExpr> array_literal_else_maybe_coerce(std::shared_ptr<semantic_ir::SExpr> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept;
+
+std::shared_ptr<semantic_ir::SExpr> conditional_else_empty_unknown_array_coerced_to_then_array_element(std::shared_ptr<semantic_ir::SExpr> typed_then, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept;
 
 transform::TransformContext transform_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env, registry::TypeRegistry registry) noexcept;
 
@@ -59,6 +65,14 @@ mlc::Array<std::shared_ptr<semantic_ir::SExpr>> transform_array_hof_method_argum
 
 std::shared_ptr<semantic_ir::SExpr> transform_expr(std::shared_ptr<ast::Expr> expression, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
 
+std::shared_ptr<semantic_ir::SExpr> coerce_unknown_else_array_when_then_known_inner(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, ast::Span span_else, std::shared_ptr<registry::Type> inner_then, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_else)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_else))); auto [inner_else] = _v_tarray; return semantic_type_structure::type_is_unknown(inner_else) ? std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray(elements, std::make_shared<registry::Type>(registry::TArray(inner_then)), span_else)) : typed_else; } return typed_else; }();}
+
+std::shared_ptr<semantic_ir::SExpr> conditional_else_coerce_empty_array_using_then_type(std::shared_ptr<semantic_ir::SExpr> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_then)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_then))); auto [inner_then] = _v_tarray; return coerce_unknown_else_array_when_then_known_inner(elements, span_else, inner_then, typed_else); } return typed_else; }();}
+
+std::shared_ptr<semantic_ir::SExpr> array_literal_else_maybe_coerce(std::shared_ptr<semantic_ir::SExpr> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept{return elements.size() > 0 ? typed_else : conditional_else_coerce_empty_array_using_then_type(typed_then, elements, span_else, typed_else);}
+
+std::shared_ptr<semantic_ir::SExpr> conditional_else_empty_unknown_array_coerced_to_then_array_element(std::shared_ptr<semantic_ir::SExpr> typed_then, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<semantic_ir::SExprArray>((*typed_else)._)) { auto _v_sexprarray = std::get<semantic_ir::SExprArray>((*typed_else)._); auto [elements, _w0, span_else] = _v_sexprarray; return array_literal_else_maybe_coerce(typed_then, elements, span_else, typed_else); } return typed_else; }();}
+
 transform::TransformContext transform_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env, registry::TypeRegistry registry) noexcept{return transform::TransformContext{type_env, registry};}
 
 transform::TransformContext empty_transform_context() noexcept{return transform::TransformContext{mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>(), registry::empty_registry()};}
@@ -77,7 +91,10 @@ i = i + 1;
 return args;
 }
 
-std::shared_ptr<semantic_ir::SExpr> coerce_expr_to_type(std::shared_ptr<semantic_ir::SExpr> expression, std::shared_ptr<registry::Type> target_type) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<semantic_ir::SExprArray>((*expression)._)) { auto _v_sexprarray = std::get<semantic_ir::SExprArray>((*expression)._); auto [elements, _w0, source_span] = _v_sexprarray; return elements.size() == 0 ? std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray(elements, target_type, source_span)) : expression; } if (std::holds_alternative<semantic_ir::SExprRecord>((*expression)._)) { auto _v_sexprrecord = std::get<semantic_ir::SExprRecord>((*expression)._); auto [type_name, fields, expr_type, source_span] = _v_sexprrecord; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TGeneric>((*target_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*target_type)); auto [tgt_name, _w0] = _v_tgeneric; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TGeneric>((*expr_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*expr_type)); auto [exp_name, _w0] = _v_tgeneric; return tgt_name == exp_name ? std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprRecord(type_name, fields, target_type, source_span)) : expression; } return expression; }(); } return expression; }(); } return expression; }();}
+std::shared_ptr<semantic_ir::SExpr> coerce_expr_to_type(std::shared_ptr<semantic_ir::SExpr> expression, std::shared_ptr<registry::Type> target_type) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<semantic_ir::SExprArray>((*expression)._)) { auto _v_sexprarray = std::get<semantic_ir::SExprArray>((*expression)._); auto [elements, _w0, source_span] = _v_sexprarray; return elements.size() == 0 ? std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray(elements, target_type, source_span)) : expression; } if (std::holds_alternative<semantic_ir::SExprRecord>((*expression)._)) { auto _v_sexprrecord = std::get<semantic_ir::SExprRecord>((*expression)._); auto [type_name, fields, expr_type, source_span] = _v_sexprrecord; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TGeneric>((*target_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*target_type)); auto [tgt_name, _w0] = _v_tgeneric; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TGeneric>((*expr_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*expr_type)); auto [exp_name, _w0] = _v_tgeneric; return tgt_name == exp_name ? std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprRecord(type_name, fields, target_type, source_span)) : expression; } return expression; }(); } return expression; }(); } if (std::holds_alternative<semantic_ir::SExprBlock>((*expression)._)) { auto _v_sexprblock = std::get<semantic_ir::SExprBlock>((*expression)._); auto [statements, result_expression, _w0, span] = _v_sexprblock; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TArray>((*target_type))) { auto _v_tarray = std::get<registry::TArray>((*target_type)); auto [_w0] = _v_tarray; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
+  std::shared_ptr<semantic_ir::SExpr> coerced_result = coerce_expr_to_type(result_expression, target_type);
+  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprBlock(statements, coerced_result, semantic_ir::sexpr_type(coerced_result), span));
+ }(); } return expression; }(); } if (std::holds_alternative<semantic_ir::SExprIf>((*expression)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expression)._); auto [condition, then_branch, else_branch, _w0, source_span] = _v_sexprif; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TArray>((*target_type))) { auto _v_tarray = std::get<registry::TArray>((*target_type)); auto [_w0] = _v_tarray; return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIf(condition, coerce_expr_to_type(then_branch, target_type), coerce_expr_to_type(else_branch, target_type), target_type, source_span)); } return expression; }(); } return expression; }();}
 
 bool transform_has_named_args(mlc::Array<std::shared_ptr<ast::Expr>> args) noexcept{
 int i = 0;
@@ -369,9 +386,10 @@ arg_index = arg_index + 1;
  }(); } if (std::holds_alternative<ast::ExprIf>((*expression)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expression)._); auto [condition, then_expression, else_expression, source_span] = _v_exprif; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   std::shared_ptr<semantic_ir::SExpr> typed_condition = transform_expr(condition, transform_context, stmts_fn);
   std::shared_ptr<semantic_ir::SExpr> typed_then = transform_expr(then_expression, transform_context, stmts_fn);
-  std::shared_ptr<semantic_ir::SExpr> typed_else = transform_expr(else_expression, transform_context, stmts_fn);
-  std::shared_ptr<registry::Type> result_type = semantic_ir::sexpr_type(typed_then);
-  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIf(typed_condition, typed_then, typed_else, result_type, source_span));
+  std::shared_ptr<semantic_ir::SExpr> typed_else_raw = transform_expr(else_expression, transform_context, stmts_fn);
+  std::shared_ptr<semantic_ir::SExpr> typed_else = conditional_else_empty_unknown_array_coerced_to_then_array_element(typed_then, typed_else_raw);
+  std::shared_ptr<registry::Type> merged_conditional_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_then)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_then))); auto [inner_then] = _v_tarray; return [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_else)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_else))); auto [inner_else] = _v_tarray; return semantic_type_structure::type_is_unknown(inner_then) ? std::make_shared<registry::Type>(registry::TArray(inner_else)) : std::make_shared<registry::Type>(registry::TArray(inner_then)); } return semantic_ir::sexpr_type(typed_then); }(); } return semantic_ir::sexpr_type(typed_then); }();
+  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIf(typed_condition, typed_then, typed_else, merged_conditional_type, source_span));
  }(); } if (std::holds_alternative<ast::ExprBlock>((*expression)._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*expression)._); auto [statements, result, source_span] = _v_exprblock; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   transform::TransformStmtsResult stmts_result = stmts_fn(statements, transform_context);
   transform::TransformContext body_context = transform_context_with_env(transform_context, stmts_result.type_env);

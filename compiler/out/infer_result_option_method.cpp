@@ -21,8 +21,6 @@ using namespace infer_lambda_context;
 using namespace method_receiver_diagnostics;
 using namespace ast_tokens;
 
-using InferExprFn = std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)>;
-
 mlc::Array<ast::Diagnostic> append_lambda_arity(mlc::Array<ast::Diagnostic> errors, std::shared_ptr<ast::Expr> expression, int expected, mlc::String method_name) noexcept;
 
 bool is_result_type(std::shared_ptr<registry::Type> t) noexcept;

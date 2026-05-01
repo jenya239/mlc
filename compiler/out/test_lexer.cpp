@@ -16,6 +16,8 @@ ast_tokens::TKind lex_first_kind(mlc::String source) noexcept;
 
 mlc::String lex_first_string(mlc::String source) noexcept;
 
+mlc::String lex_first_single_quoted_label(mlc::String source) noexcept;
+
 mlc::Array<mlc::String> lex_template_parts(mlc::String source) noexcept;
 
 int lex_error_count(mlc::String source) noexcept;
@@ -27,6 +29,8 @@ int lex_token_count(mlc::String source) noexcept{return lexer::tokenize(source).
 ast_tokens::TKind lex_first_kind(mlc::String source) noexcept{return lexer::tokenize(source).tokens[0].kind;}
 
 mlc::String lex_first_string(mlc::String source) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LStr>(lexer::tokenize(source).tokens[0].kind)) { auto _v_lstr = std::get<ast_tokens::LStr>(lexer::tokenize(source).tokens[0].kind); auto [text] = _v_lstr; return text; } return mlc::String(""); }();}
+
+mlc::String lex_first_single_quoted_label(mlc::String source) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LChar>(lexer::tokenize(source).tokens[0].kind)) { auto _v_lchar = std::get<ast_tokens::LChar>(lexer::tokenize(source).tokens[0].kind); auto [text] = _v_lchar; return mlc::String("char:") + text; } if (std::holds_alternative<ast_tokens::LStr>(lexer::tokenize(source).tokens[0].kind)) { auto _v_lstr = std::get<ast_tokens::LStr>(lexer::tokenize(source).tokens[0].kind); auto [text] = _v_lstr; return mlc::String("str:") + text; } return mlc::String("other"); }();}
 
 mlc::Array<mlc::String> lex_template_parts(mlc::String source) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast_tokens::LTemplate>(lexer::tokenize(source).tokens[0].kind)) { auto _v_ltemplate = std::get<ast_tokens::LTemplate>(lexer::tokenize(source).tokens[0].kind); auto [parts] = _v_ltemplate; return parts; } return [&]() -> mlc::Array<mlc::String> { 
   mlc::Array<mlc::String> r = {};
@@ -50,6 +54,8 @@ results.push_back(test_runner::assert_eq_int(mlc::String("integer literal - 2 to
 results.push_back(test_runner::assert_eq_int(mlc::String("string literal - 2 tokens"), lex_token_count(mlc::String("\"hi\"")), 2));
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal decodes escaped newline"), lex_first_string(mlc::String("\"a\\nb\"")), mlc::String("a\nb")));
 results.push_back(test_runner::assert_eq_str(mlc::String("string literal decodes escaped quote"), lex_first_string(mlc::String("\"say \\\"hi\\\"\"")), mlc::String("say \"hi\"")));
+results.push_back(test_runner::assert_eq_str(mlc::String("single-quoted one character uses LChar token kind"), lex_first_single_quoted_label(mlc::String("'x'")), mlc::String("char:x")));
+results.push_back(test_runner::assert_eq_str(mlc::String("single-quoted multi-character uses LStr token kind"), lex_first_single_quoted_label(mlc::String("'ab'")), mlc::String("str:ab")));
 results.push_back(test_runner::assert_eq_int(mlc::String("multiline double-quoted string - 2 tokens (LStr + Eof)"), lex_token_count(mlc::String("\"a\nb\"")), 2));
 results.push_back(test_runner::assert_eq_str(mlc::String("multiline double-quoted string literal preserves embedded newline"), lex_first_string(mlc::String("\"a\nb\"")), mlc::String("a\nb")));
 results.push_back(test_runner::assert_true(mlc::String("unterminated double-quoted string yields lex error"), lex_error_count(mlc::String("\"no closing quote")) > 0));

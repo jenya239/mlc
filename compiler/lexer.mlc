@@ -181,7 +181,10 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
     current = current.lex_advance()
   end
   const joined = parts.join("")
-  const token_kind = if joined.length() == 1 then LChar(joined) else LStr(joined) end
+  const token_kind =
+    if joined.length() == 1 then LChar(joined)
+    else LStr(joined)
+    end
   ScanStrResult {
     state: current,
     token: Token { kind: token_kind, line: token_line, col: token_col },

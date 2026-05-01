@@ -14,6 +14,8 @@ mlc::String map_method(mlc::String method_name) noexcept;
 
 mlc::String map_builtin(mlc::String name) noexcept;
 
+mlc::String map_builtin_identifier_reference(mlc::String name) noexcept;
+
 mlc::String escape_str(mlc::String input) noexcept;
 
 mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept;
@@ -52,6 +54,8 @@ mlc::String lower_first(mlc::String name) noexcept{return name.length() == 0 ? n
 mlc::String map_method(mlc::String method_name) noexcept{return method_name == mlc::String("length") || method_name == mlc::String("len") ? mlc::String("length") : method_name == mlc::String("push") ? mlc::String("push_back") : method_name == mlc::String("to_string") ? mlc::String("to_string") : method_name == mlc::String("to_int") || method_name == mlc::String("to_i") ? mlc::String("to_i") : method_name == mlc::String("upper") || method_name == mlc::String("to_upper") ? mlc::String("upper") : method_name == mlc::String("lower") || method_name == mlc::String("to_lower") ? mlc::String("lower") : method_name;}
 
 mlc::String map_builtin(mlc::String name) noexcept{return name == mlc::String("print") ? mlc::String("mlc::io::print") : name == mlc::String("println") ? mlc::String("mlc::io::println") : name == mlc::String("exit") ? mlc::String("mlc::io::exit") : name == mlc::String("args") ? mlc::String("mlc::io::args") : name;}
+
+mlc::String map_builtin_identifier_reference(mlc::String name) noexcept{return name == mlc::String("args") ? name : map_builtin(name);}
 
 mlc::String escape_str(mlc::String input) noexcept{
 mlc::Array<mlc::String> parts = {};

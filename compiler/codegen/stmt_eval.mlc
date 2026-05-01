@@ -2,18 +2,51 @@
 // break the import cycle with expr_eval.mlc. Private helpers thread gen_expr_fn
 // through; recursive eval_stmts_str calls go directly (same module).
 
-import { SExpr, SStmt, SExprUnit } from "../semantic_ir"
+import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from "../semantic_ir"
 import { gen_let_pattern_statement } from "./let_pat"
-import { Type } from "../checker/registry"
+import { Type, TArray, TGeneric, TNamed } from "../checker/registry"
 import { CodegenContext, GenStmtsResult, GenStmtResult,
-         update_context_from_statement } from "./context"
+         update_context_from_statement, context_resolve } from "./context"
 import { cpp_safe } from "./cpp_naming"
+import { generate_conditional_else_with_empty_array_coercion } from "./expression_support"
 import { sem_type_to_cpp } from "./type_gen"
 import { gen_unit_literal } from "./literals"
 import { stmts_final_ctx } from "./statement_context"
 import * as expression_output from "./expr"
 
 // --- Try unwrap helper -------------------------------------------------------
+
+fn constexpr_binding_value_code(
+  value: Shared<SExpr>,
+  binding_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string
+) -> string =
+  match value {
+    SExprBlock(inner_statements, result_expression, _, _) =>
+      if inner_statements.length() == 0 then
+        constexpr_binding_value_code(result_expression, binding_semantic_type, context, gen_expr_fn)
+      else gen_expr_fn(value, context)
+      end,
+    SExprIf(condition, then_branch, else_branch, _, _) => do
+      const cond_code = gen_expr_fn(condition, context)
+      const then_code = gen_expr_fn(then_branch, context)
+      const else_code = generate_conditional_else_with_empty_array_coercion(
+        then_branch, else_branch, binding_semantic_type, context, gen_expr_fn)
+      match binding_semantic_type {
+        TNamed(type_name) => do
+          const type_cpp = context_resolve(context, type_name)
+          if type_cpp == "auto" then
+            expression_output.ternary_conditional(cond_code, then_code, else_code)
+          else
+            "[&]() -> " + type_cpp + " {\nif (" + cond_code + ") {\nreturn " + then_code + ";\n} else {\nreturn " + else_code + ";\n}\n}()"
+          end
+        end,
+        _ => expression_output.ternary_conditional(cond_code, then_code, else_code)
+      }
+    end,
+    _ => gen_expr_fn(value, context)
+  }
 
 export fn eval_try_unwrap(inner_expr: Shared<SExpr>, context: CodegenContext, try_identifier: string, success_line: string, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string = do
   const inner_code = gen_expr_fn(inner_expr, context)
@@ -22,13 +55,45 @@ end
 
 // --- Statement generation ----------------------------------------------------
 
+fn eval_stmt_if_else_suffix(
+  else_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string
+) -> string =
+  match else_expression {
+    SExprUnit(_, _) => "",
+    SExprBlock(statements, result_expression, _, _) =>
+      if statements.length() == 0 then
+        match result_expression {
+          SExprUnit(_, _) => "",
+          _ => expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
+        }
+      else expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
+      end,
+    SExprIf(_, _, _, _, _) =>
+      expression_output.else_fragment_raw(eval_stmt_if_nested(else_expression, context, gen_expr_fn)),
+    _ => expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
+  }
+
+fn eval_stmt_if_nested(if_expression: Shared<SExpr>, context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string =
+  match if_expression {
+    SExprIf(condition_expression, then_expression, else_expression, _, _) => do
+      const opening = expression_output.if_brace_block(
+        gen_expr_fn(condition_expression, context),
+        eval_block_body(then_expression, context, gen_expr_fn))
+      const else_suffix = eval_stmt_if_else_suffix(else_expression, context, gen_expr_fn)
+      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(opening, else_suffix))
+    end,
+    _ => expression_output.if_always_true_block(eval_block_body(if_expression, context, gen_expr_fn))
+  }
+
 fn eval_block_body(expr: Shared<SExpr>, context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string =
   match expr {
     SExprBlock(statements, result_expr, _, _) => do
       const statements_code = eval_stmts_str(statements, context, gen_expr_fn)
       const final_context   = stmts_final_ctx(statements, context)
       match result_expr {
-        SExprIf(_, _, _, _, _) => statements_code + eval_stmt_expr(result_expr, final_context, gen_expr_fn),
+        SExprIf(_, _, _, _, _) => statements_code + eval_stmt_if_nested(result_expr, final_context, gen_expr_fn),
         SExprUnit(_, _)        => statements_code,
         _ => do
           const result_code = gen_expr_fn(result_expr, final_context)
@@ -38,7 +103,7 @@ fn eval_block_body(expr: Shared<SExpr>, context: CodegenContext, gen_expr_fn: (S
         end
       }
     end,
-    SExprIf(_, _, _, _, _) => eval_stmt_expr(expr, context, gen_expr_fn),
+    SExprIf(_, _, _, _, _) => eval_stmt_if_nested(expr, context, gen_expr_fn),
     _ => expression_output.suffix_semicolon_newline(gen_expr_fn(expr, context))
   }
 
@@ -53,26 +118,8 @@ fn eval_stmt_expr(expression: Shared<SExpr>, context: CodegenContext, gen_expr_f
           gen_expr_fn(left_expr, context),
           gen_expr_fn(right_expr, context))
       end,
-    SExprIf(condition, then_expr, else_expr, _, _) => do
-      let mut output = expression_output.if_brace_block(
-        gen_expr_fn(condition, context),
-        eval_block_body(then_expr, context, gen_expr_fn))
-      const else_string = match else_expr {
-        SExprUnit(_, _)                             => "",
-        SExprBlock(statements, result_expr, _, _) =>
-          if statements.length() == 0 then
-            match result_expr {
-              SExprUnit(_, _) => "",
-              _ => expression_output.else_brace_block(eval_block_body(else_expr, context, gen_expr_fn))
-            }
-          else expression_output.else_brace_block(eval_block_body(else_expr, context, gen_expr_fn))
-          end,
-        SExprIf(_, _, _, _, _) =>
-          expression_output.else_fragment_raw(eval_stmt_expr(else_expr, context, gen_expr_fn)),
-        _ => expression_output.else_brace_block(eval_block_body(else_expr, context, gen_expr_fn))
-      }
-      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
-    end,
+    SExprIf(_, _, _, _, _) =>
+      eval_stmt_if_nested(expression, context, gen_expr_fn),
     SExprWhile(condition, statements, _, _) =>
       expression_output.while_loop_statement(
         gen_expr_fn(condition, context),
@@ -122,14 +169,21 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
             next_try: next_counter
           },
         SExprArray(elements, array_type, _) => do
-          const value_code = if elements.length() == 0 then
-            match array_type {
-              TArray(inner_type) =>
-                expression_output.typed_array_empty(sem_type_to_cpp(context, inner_type)),
-              _ => expression_output.array_string_fallback_empty()
-            }
-          else expression_output.constructor_call_braces("mlc::Array", eval_elements_code(elements, context, gen_expr_fn))
-          end
+          const value_code = match array_type {
+            TArray(inner_type) => do
+              const element_cpp = sem_type_to_cpp(context, inner_type)
+              if elements.length() == 0 then
+                expression_output.typed_array_empty_or_untyped_empty(element_cpp)
+              else if element_cpp == "auto" then
+                expression_output.array_literal(eval_elements_code(elements, context, gen_expr_fn))
+              else
+                expression_output.typed_array_braced_initializer(element_cpp, eval_elements_code(elements, context, gen_expr_fn))
+              end
+            end,
+            _ => if elements.length() == 0 then expression_output.array_string_fallback_empty()
+                 else expression_output.constructor_call_braces("mlc::Array", eval_elements_code(elements, context, gen_expr_fn))
+                 end
+          }
           GenStmtResult {
             output: expression_output.auto_binding_statement(cpp_safe(name), value_code),
             next_try: try_counter
@@ -173,9 +227,11 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
         output: gen_let_pattern_statement(pat, value, value_type, has_else, else_body, context, gen_expr_fn),
         next_try: try_counter
       },
-    SStmtLetConst(name, value, _, _) =>
+    SStmtLetConst(name, value, binding_semantic_type, _) =>
       GenStmtResult {
-        output: expression_output.constexpr_auto_binding_statement(cpp_safe(name), gen_expr_fn(value, context)),
+        output: expression_output.constexpr_auto_binding_statement(
+          cpp_safe(name),
+          constexpr_binding_value_code(value, binding_semantic_type, context, gen_expr_fn)),
         next_try: try_counter
       },
     SStmtExpr(expression, _) => match expression {

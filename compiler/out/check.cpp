@@ -52,15 +52,15 @@ bool optional_began = false;
 int i = 0;
 while (i < parameters.size()){
 {
-if (parameters[i]->has_default){
+bool has_default_now = parameters[i]->has_default;
+if (!has_default_now && optional_began){
 {
-optional_began = true;
-}
-} else {
-{
-if (optional_began){
 return false;
 }
+}
+if (has_default_now){
+{
+optional_began = true;
 }
 }
 i = i + 1;

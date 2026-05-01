@@ -20,13 +20,11 @@ import { infer_lambda_with_param_types } from "./infer_lambda_context"
 import { infer_builtin_method_receiver_diagnostics } from "./method_receiver_diagnostics"
 import { method_arity_after_receiver } from "./type_diagnostics"
 
-type InferExprFn = (Shared<Expr>, CheckContext) -> InferResult
-
 fn infer_expr_maybe_lambda(
   expression: Shared<Expr>,
   expected_param_types: [Shared<Type>],
   inference_context: CheckContext,
-  infer_expr_fn: InferExprFn
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult =
   match expression {
     ExprLambda(parameter_names, body, _) =>
@@ -75,7 +73,7 @@ export fn infer_array_hof_method_call(
   method_arguments: [Shared<Expr>],
   method_span: Span,
   inference_context: CheckContext,
-  infer_expr_fn: InferExprFn
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
   const element_type = array_element_type_from_array_type(object_result.inferred_type)
   const receiver_errors = infer_builtin_method_receiver_diagnostics(
@@ -113,33 +111,37 @@ export fn infer_array_hof_method_call(
       end
     end
   else if method_name == "zip" || method_name == "join" then
+    let mut zip_or_join_diagnostics: [Diagnostic] = []
     if method_arguments.length() > 0 then
       const arg0_result = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(arg0_result)
       arg_types.push(arg0_result.inferred_type)
-      let mut extra: [Diagnostic] = []
       if method_name == "zip" then
         if !type_is_unknown(arg0_result.inferred_type) && !type_is_array(arg0_result.inferred_type) then
-          extra = [
+          zip_or_join_diagnostics = [
             diagnostic_error(
               "method zip expects an array argument, got " + type_description(arg0_result.inferred_type),
               expr_span(method_arguments[0]))]
         end
-      else
+      end
+      if method_name == "join" then
         if !type_is_unknown(element_type) && !type_is_string(element_type) then
-          extra = [
+          zip_or_join_diagnostics = [
             diagnostic_error(
               "method join expects an array of string elements, got " + type_description(element_type),
               method_span)]
         end
         if !type_is_unknown(arg0_result.inferred_type) && !type_is_string(arg0_result.inferred_type) then
-          extra = diagnostics_append(extra, [
+          zip_or_join_diagnostics = diagnostics_append(zip_or_join_diagnostics, [
             diagnostic_error(
               "method join expects string separator, got " + type_description(arg0_result.inferred_type),
               expr_span(method_arguments[0]))])
         end
       end
-      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
+      merged = InferResult {
+        inferred_type: merged.inferred_type,
+        errors:        diagnostics_append(merged.errors, zip_or_join_diagnostics)
+      }
     end
   else if method_name == "take" || method_name == "drop" then
     if method_arguments.length() > 0 then
@@ -170,7 +172,7 @@ export fn infer_array_hof_method_call(
           method_span)]
     end
     merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
-  else
+  else do
     if method_arguments.length() > 0 then
       let mut lam_errors = append_lambda_arity_diag([], method_arguments[0], 1, method_name)
       const lam_result = infer_expr_maybe_lambda(
@@ -202,9 +204,8 @@ export fn infer_array_hof_method_call(
     end
   end
 
-  const out_type = array_hof_call_result_type(element_type, method_name, arg_types)
   InferResult {
-    inferred_type: out_type,
+    inferred_type: array_hof_call_result_type(element_type, method_name, arg_types),
     errors:        diagnostics_append(diagnostics_append(merged.errors, receiver_errors), arity_errors)
   }
 end

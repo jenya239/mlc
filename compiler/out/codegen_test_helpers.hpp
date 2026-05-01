@@ -27,6 +27,8 @@ test_runner::TestResult assert_type_generates(mlc::String test_name, context::Co
 
 test_runner::TestResult assert_code_contains(mlc::String test_name, mlc::String actual_code, mlc::String expected_substring) noexcept;
 
+test_runner::TestResult assert_code_not_contains(mlc::String test_name, mlc::String actual_code, mlc::String forbidden_substring) noexcept;
+
 } // namespace codegen_test_helpers
 
 #endif // CODEGEN_TEST_HELPERS_HPP

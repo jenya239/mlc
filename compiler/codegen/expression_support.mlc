@@ -1,10 +1,10 @@
 // Leaf helpers for eval (no gen_expr dependency).
 
 import { span_unknown } from "../ast"
-import { SExpr, SFieldVal, SExprUnit, sexpr_type } from "../semantic_ir"
-import { Type } from "../checker/registry"
+import { SExpr, SFieldVal, SExprUnit, sexpr_type, SExprArray } from "../semantic_ir"
+import { Type, TArray, TUnit, TShared } from "../checker/registry"
 import { CodegenContext, context_resolve, lookup_fields, list_contains } from "./context"
-import { cpp_safe, map_builtin } from "./cpp_naming"
+import { cpp_safe, map_builtin_identifier_reference } from "./cpp_naming"
 
 export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
   const capture = if parameters.length() == 0 then "[]" else "[=]" end
@@ -40,7 +40,7 @@ export fn resolve_object_code_in_self_context(object_name: string, context: Code
   const self_fields = lookup_fields(context.field_orders, context.self_type)
   const is_known_field = object_name == "errors" || object_name == "kind" || object_name == "tokens" || object_name == "line" || object_name == "col" || object_name == "inferred_type" || object_name == "type_env"
   if list_contains(self_fields, object_name) || is_known_field then "self." + cpp_safe(object_name)
-  else context_resolve(context, map_builtin(object_name))
+  else context_resolve(context, map_builtin_identifier_reference(object_name))
   end
 end
 
@@ -63,3 +63,33 @@ export fn cpp_function_name_for_file_method(method_name: string) -> string =
 // Determine whether field access should use -> (shared) or . (value).
 export fn field_access_operator(object: Shared<SExpr>, context: CodegenContext) -> string =
   match sexpr_type(object) { TShared(_) => "->", _ => "." }
+
+// Prefer preferred_array_semantic_type (annotated binding / SExprIf carrier) so empty [] matches TArray element.
+export fn generate_conditional_else_with_empty_array_coercion(
+  then_expression: Shared<SExpr>,
+  else_expression: Shared<SExpr>,
+  preferred_array_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  evaluate_expression: (Shared<SExpr>, CodegenContext) -> string
+) -> string = do
+  match else_expression {
+    SExprArray(elements, _, array_span) => do
+      if elements.length() > 0 then evaluate_expression(else_expression, context)
+      else match preferred_array_semantic_type {
+        TArray(inner_from_preferred) =>
+          evaluate_expression(
+            Shared.new(SExprArray(elements, Shared.new(TArray(inner_from_preferred)), array_span)),
+            context),
+        _ => match sexpr_type(then_expression) {
+          TArray(inner_then) =>
+            evaluate_expression(
+              Shared.new(SExprArray(elements, Shared.new(TArray(inner_then)), array_span)),
+              context),
+          _ => evaluate_expression(else_expression, context),
+        },
+      }
+      end
+    end,
+    _ => evaluate_expression(else_expression, context)
+  }
+end

@@ -1,6 +1,6 @@
 // Combine InferResult values after subexpressions are inferred (no infer_expr).
 
-import { Expr, Span, diagnostics_append } from "../ast"
+import { Expr, ExprArray, Span, diagnostics_append } from "../ast"
 import { InferResult } from "./infer_result"
 import { Type, TypeRegistry, field_type_from_object, method_return_type_from_object } from "./registry"
 import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from "./semantic_type_structure"
@@ -56,18 +56,47 @@ export fn infer_index_from_operand_results(
   }
 end
 
+fn expr_is_empty_array_literal(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprArray(elements, _) => elements.length() == 0,
+    _ => false
+  }
+
+fn infer_merge_unknown_else_array_inner(then_inner: Shared<Type>, else_result: InferResult) -> InferResult =
+  match else_result.inferred_type {
+    TArray(inner_else) =>
+      if type_is_unknown(inner_else) then
+        InferResult { inferred_type: Shared.new(TArray(then_inner)), errors: else_result.errors }
+      else else_result
+      end,
+    _ => else_result
+  }
+
+fn conditional_else_result_coerced_for_empty_unknown_array(
+  then_result: InferResult,
+  else_result: InferResult,
+  else_expression: Shared<Expr>
+) -> InferResult =
+  if !expr_is_empty_array_literal(else_expression) then else_result
+  else match then_result.inferred_type {
+    TArray(inner_then) => infer_merge_unknown_else_array_inner(inner_then, else_result),
+    _ => else_result
+  }
+  end
+
 export fn infer_conditional_from_branch_results(
   condition_result: InferResult,
   then_result: InferResult,
   else_result: InferResult,
   else_expression: Shared<Expr>
 ) -> InferResult = do
-  const merged = then_result.absorb(condition_result).absorb(else_result)
+  const else_coerced = conditional_else_result_coerced_for_empty_unknown_array(then_result, else_result, else_expression)
+  const merged = then_result.absorb(condition_result).absorb(else_coerced)
   const branches_mismatch =
-    !type_is_unknown(then_result.inferred_type) && !type_is_unknown(else_result.inferred_type) &&
-    !types_structurally_equal(then_result.inferred_type, else_result.inferred_type)
+    !type_is_unknown(then_result.inferred_type) && !type_is_unknown(else_coerced.inferred_type) &&
+    !types_structurally_equal(then_result.inferred_type, else_coerced.inferred_type)
   const branch_errors = if_branch_mismatch_diagnostic(
-    branches_mismatch, then_result.inferred_type, else_result.inferred_type, else_expression)
+    branches_mismatch, then_result.inferred_type, else_coerced.inferred_type, else_expression)
   InferResult {
     inferred_type: if branches_mismatch then then_result.inferred_type else merged.inferred_type end,
     errors: diagnostics_append(merged.errors, branch_errors)

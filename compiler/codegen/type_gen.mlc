@@ -409,8 +409,10 @@ fn variants_is_single_record(variants: [Shared<TypeVariant>]) -> bool =
   else match variants[0] { VarRecord(_, _, _) => true, _ => false }
   end
 
-fn derive_record_field_defs(variants: [Shared<TypeVariant>]) -> [Shared<FieldDef>] =
-  match variants[0] { VarRecord(_, fds, _) => fds, _ => [] }
+fn derive_record_field_defs(variants: [Shared<TypeVariant>]) -> [Shared<FieldDef>] = do
+  const empty: [Shared<FieldDef>] = []
+  match variants[0] { VarRecord(_, fds, _) => fds, _ => empty }
+end
 
 fn gen_derive_record_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string = do
   const fds = derive_record_field_defs(variants)

@@ -2,12 +2,13 @@
 // break the import cycle with stmt_eval.mlc. Private helpers thread gen_stmts
 // through; recursive eval_expr calls go directly (same module).
 
-import { SExpr, SStmt, sexpr_type } from "../semantic_ir"
+import { SExpr, SStmt, sexpr_type, SExprArray } from "../semantic_ir"
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
-import { Type } from "../checker/registry"
-import { operator_method_for } from "../checker/semantic_type_structure"
+import { Type, TArray, TNamed } from "../checker/registry"
+import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from "../checker/semantic_type_structure"
 import { CodegenContext, context_resolve } from "./context"
 import { cpp_safe, map_builtin } from "./cpp_naming"
+import { sem_type_to_cpp } from "./type_gen"
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from "./literals"
 import { gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from "./literals"
 import { gen_identifier } from "./identifiers"
@@ -67,11 +68,57 @@ end
 fn gen_index_expr(object: Shared<SExpr>, index_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   expression_output.index_subscript(eval_expr(object, context, gen_stmts), eval_expr(index_expr, context, gen_stmts))
 
-fn gen_if_expr(condition: Shared<SExpr>, then_expr: Shared<SExpr>, else_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
-  expression_output.ternary_conditional(
-    eval_expr(condition, context, gen_stmts),
-    eval_expr(then_expr, context, gen_stmts),
-    eval_expr(else_expr, context, gen_stmts))
+fn gen_if_else_code(
+  else_expr: Shared<SExpr>,
+  if_semantic_type: Shared<Type>,
+  then_expr: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> string =
+  match else_expr {
+    SExprArray(elements, _, array_span) =>
+      if elements.length() > 0 then eval_expr(else_expr, context, gen_stmts)
+      else do
+        const inner_preferred = array_element_type_from_array_type(if_semantic_type)
+        const inner_from_then_branch = array_element_type_from_array_type(sexpr_type(then_expr))
+        const inner_for_empty_array =
+          if !type_is_unknown(inner_preferred) then inner_preferred
+          else inner_from_then_branch
+          end
+        if type_is_unknown(inner_for_empty_array) then eval_expr(else_expr, context, gen_stmts)
+        else
+          eval_expr(
+            Shared.new(SExprArray(elements, Shared.new(TArray(inner_for_empty_array)), array_span)),
+            context,
+            gen_stmts)
+        end
+      end,
+    _ => eval_expr(else_expr, context, gen_stmts)
+  }
+
+fn gen_if_expr(
+  condition: Shared<SExpr>,
+  then_expr: Shared<SExpr>,
+  else_expr: Shared<SExpr>,
+  if_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> string = do
+  const cond_code = eval_expr(condition, context, gen_stmts)
+  const then_code = eval_expr(then_expr, context, gen_stmts)
+  const else_code = gen_if_else_code(else_expr, if_semantic_type, then_expr, context, gen_stmts)
+  match if_semantic_type {
+    TNamed(type_name) => do
+      const type_cpp = context_resolve(context, type_name)
+      if type_cpp == "auto" then
+        expression_output.ternary_conditional(cond_code, then_code, else_code)
+      else
+        "[&]() -> " + type_cpp + " {\nif (" + cond_code + ") {\nreturn " + then_code + ";\n} else {\nreturn " + else_code + ";\n}\n}()"
+      end
+    end,
+    _ => expression_output.ternary_conditional(cond_code, then_code, else_code)
+  }
+end
 
 fn gen_block_expr(statements: [Shared<SStmt>], result_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   if statements.length() == 0 then
@@ -95,8 +142,25 @@ fn gen_for_expr(variable: string, iterator: Shared<SExpr>, statements: [Shared<S
     eval_expr(iterator, context, gen_stmts),
     gen_stmts(statements, context))
 
-fn gen_array_expr(elements: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
-  expression_output.array_literal(eval_argument_list(elements, context, gen_stmts))
+fn gen_array_expr(
+  elements: [Shared<SExpr>],
+  element_container_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> string =
+  match element_container_semantic_type {
+    TArray(inner_type) => do
+      const element_cpp = sem_type_to_cpp(context, inner_type)
+      if elements.length() == 0 then expression_output.typed_array_empty_or_untyped_empty(element_cpp)
+      else if element_cpp == "auto" then expression_output.array_literal(eval_argument_list(elements, context, gen_stmts))
+      else
+        expression_output.typed_array_braced_initializer(
+          element_cpp,
+          eval_argument_list(elements, context, gen_stmts))
+      end
+    end,
+    _ => expression_output.array_literal(eval_argument_list(elements, context, gen_stmts))
+  }
 
 fn gen_question_expr(inner_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
   const inner_code = eval_expr(inner_expr, context, gen_stmts)
@@ -127,14 +191,16 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprMethod(object, method_name, arguments, _, _)      => gen_method_expr(object, method_name, arguments, context, gen_stmts, eval_expr),
     SExprField(object, field_name, _, _)                   => gen_field_expr(object, field_name, context, gen_stmts),
     SExprIndex(object, index_expr, _, _)                   => gen_index_expr(object, index_expr, context, gen_stmts),
-    SExprIf(condition, then_expr, else_expr, _, _)         => gen_if_expr(condition, then_expr, else_expr, context, gen_stmts),
+    SExprIf(condition, then_expr, else_expr, if_semantic_type, _) =>
+      gen_if_expr(condition, then_expr, else_expr, if_semantic_type, context, gen_stmts),
     SExprBlock(statements, result_expr, _, _)              => gen_block_expr(statements, result_expr, context, gen_stmts),
     SExprWhile(condition, statements, _, _)                => gen_while_expr(condition, statements, context, gen_stmts),
     SExprFor(variable, iterator, statements, _, _)         => gen_for_expr(variable, iterator, statements, context, gen_stmts),
     SExprMatch(subject, arms, _, _)                        => gen_match(subject, arms, context, gen_stmts, eval_expr),
     SExprRecord(type_name, field_values, expr_type, _)      => gen_record_expr(type_name, field_values, expr_type, context, gen_stmts, eval_expr),
     SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr),
-    SExprArray(elements, _, _)                             => gen_array_expr(elements, context, gen_stmts),
+    SExprArray(elements, container_semantic_type, _) =>
+      gen_array_expr(elements, container_semantic_type, context, gen_stmts),
     SExprTuple(elements, _, _) => do
       let mut parts: [string] = []
       let mut ki = 0

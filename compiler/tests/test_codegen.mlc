@@ -1,7 +1,7 @@
 // Unit tests for the code generator.
 
 import { TestResult, assert_eq_str } from "./test_runner"
-import { assert_code_contains } from "./codegen_test_helpers"
+import { assert_code_contains, assert_code_not_contains } from "./codegen_test_helpers"
 import { gen_expr, gen_argument_list, gen_stmts_str } from "../codegen/eval"
 import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from "../codegen/context"
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from "../codegen/type_gen"
@@ -163,19 +163,19 @@ export fn codegen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str("ExprIf",
     gen_expr(Shared.new(SExprIf(sb(true), si(1), si(2), i32_t(), span_unknown())), ctx),
-    "(true ? 1 : 2)"))
+    "(true ? (1) : (2))"))
 
   // --- ExprArray ----------------------------------------------------------------
 
   const arr_elems: [Shared<SExpr>] = [si(1), si(2), si(3)]
   results.push(assert_eq_str("ExprArray",
     gen_expr(Shared.new(SExprArray(arr_elems, Shared.new(TArray(i32_t())), span_unknown())), ctx),
-    "mlc::Array{1, 2, 3}"))
+    "mlc::Array<int>{1, 2, 3}"))
 
   const empty_arr: [Shared<SExpr>] = []
   results.push(assert_eq_str("ExprArray empty",
     gen_expr(Shared.new(SExprArray(empty_arr, Shared.new(TArray(i32_t())), span_unknown())), ctx),
-    "{}"))
+    "mlc::Array<int>{}"))
 
   // --- ExprIndex ----------------------------------------------------------------
 
@@ -428,6 +428,32 @@ export fn codegen_tests() -> [TestResult] = do
   const op_prog_out = gen_program(parse_program(tokenize(op_prog_src).tokens))
   results.push(assert_eq_str("d2: gen_program Vec2 + Vec2 desugars to Vec2_add",
     if op_prog_out.contains("Vec2_add(") then "yes" else "no" end, "yes"))
+
+  const codegen_invariant_tail_after_else_if_chain =
+    "export fn tail_after_chain(kind: string, extra: i32) -> i32 = do\n  let mut accumulator = 0\n  if kind == \"a\" then\n    accumulator = 1\n  else if kind == \"b\" then\n    accumulator = 2\n  else\n    accumulator = 3\n  end\n  accumulator + extra\nend\n\nexport fn main() -> i32 = tail_after_chain(\"a\", 100)"
+  const codegen_tail_chain_cpp = gen_program(parse_program(tokenize(codegen_invariant_tail_after_else_if_chain).tokens))
+  results.push(assert_code_contains("gen_program: else-if chain keeps trailing tail expr",
+    codegen_tail_chain_cpp, "accumulator + extra"))
+  results.push(assert_code_contains("gen_program: else-if chain emits return of tail",
+    codegen_tail_chain_cpp, "return"))
+  results.push(assert_code_not_contains("gen_program: else-if chain has no stray export marker",
+    codegen_tail_chain_cpp, "export_;"))
+
+  const codegen_invariant_twin_if_zip_join_style =
+    "export fn twin_branch(kind: string, has_arg: bool) -> i32 = do\n  let mut diagnostics_weight = 0\n  if has_arg then\n    if kind == \"zip\" then\n      diagnostics_weight = 1\n    end\n    if kind == \"join\" then\n      diagnostics_weight = diagnostics_weight + 2\n    end\n  end\n  diagnostics_weight + 50\nend\n\nexport fn main() -> i32 = twin_branch(\"zip\", true)"
+  const codegen_twin_if_cpp = gen_program(parse_program(tokenize(codegen_invariant_twin_if_zip_join_style).tokens))
+  results.push(assert_code_contains("gen_program: twin if emits final accumulator tail",
+    codegen_twin_if_cpp, "diagnostics_weight + 50"))
+  results.push(assert_code_not_contains("gen_program: twin if has no stray export marker",
+    codegen_twin_if_cpp, "export_;"))
+
+  const codegen_invariant_if_else_flattened =
+    "fn merge_unknown_inner(then_inner: i32, else_errors: i32) -> i32 = do\n  if then_inner == 0 then else_errors + 10\n  else then_inner + else_errors\n  end\nend\n\nexport fn conditional_flat(use_merge: bool, then_inner: i32, else_errors: i32) -> i32 = do\n  if !use_merge then else_errors\n  else merge_unknown_inner(then_inner, else_errors)\n  end\nend\n\nexport fn main() -> i32 = conditional_flat(true, 0, 5)"
+  const codegen_if_else_flat_cpp = gen_program(parse_program(tokenize(codegen_invariant_if_else_flattened).tokens))
+  results.push(assert_code_contains("gen_program: flattened else branch references helper",
+    codegen_if_else_flat_cpp, "merge_unknown_inner"))
+  results.push(assert_code_not_contains("gen_program: flattened if/else has no stray export marker",
+    codegen_if_else_flat_cpp, "export_;"))
 
   results
 end

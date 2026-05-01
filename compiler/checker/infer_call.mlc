@@ -10,8 +10,6 @@ import { call_argument_unification_diagnostics } from "./call_argument_unify"
 import { trait_bound_diagnostics } from "./infer_trait_bounds"
 import { type_is_function } from "./semantic_type_structure"
 
-type InferExprFn = (Shared<Expr>, CheckContext) -> InferResult
-
 type ResolvedArgs = ResolvedArgs { exprs: [Shared<Expr>], errors: [Diagnostic] }
 
 fn has_named_args(args: [Shared<Expr>]) -> bool = do
@@ -111,7 +109,7 @@ export fn infer_expr_call(
   call_arguments: [Shared<Expr>],
   call_source_span: Span,
   inference_context: CheckContext,
-  infer_expr_fn: InferExprFn
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
   const callee_name = match function { ExprIdent(name, _) => name, _ => "" }
   const resolved = resolve_named_args(call_arguments, callee_name, inference_context.registry)

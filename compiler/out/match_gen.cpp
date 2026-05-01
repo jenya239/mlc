@@ -45,7 +45,12 @@ arm_context = context::context_add_shared(arm_context, pattern_name);
 }
 }
   if (ctor_type_info->shared_arr_pos.contains(index)){
+{
 arm_context = context::context_add_shared_array(arm_context, pattern_name);
+}
+}
+  if (!ctor_type_info->shared_pos.contains(index) && !ctor_type_info->shared_arr_pos.contains(index)){
+arm_context = context::context_add_value(arm_context, pattern_name);
 }
  }(); } return; }();
 index = index + 1;
@@ -60,6 +65,7 @@ mlc::String lower_name = cpp_naming::cpp_safe(cpp_naming::lower_first(record_nam
 bool is_generic = decl_index::list_contains(context.generic_variants, record_name);
 mlc::String type_argument = is_generic ? mlc::String("<auto>") : mlc::String("");
 mlc::String field_bindings = mlc::String("");
+context::CodegenContext arm_context = std::move(context);
 int field_index = 0;
 while (field_index < field_patterns.size()){
 {
@@ -68,6 +74,7 @@ std::visit(overloaded{
 auto [field_name, _w0] = patident;
 {
 field_bindings = field_bindings + expr::record_pattern_field_binding(cpp_naming::cpp_safe(field_name), lower_name);
+arm_context = context::context_add_value(arm_context, field_name);
 }
 },
   [&](const auto& _unused) {
@@ -78,7 +85,7 @@ field_bindings = field_bindings + expr::record_pattern_field_binding(cpp_naming:
 field_index = field_index + 1;
 }
 }
-return expr::match_arm_constructed_value(expr::match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name), field_bindings, eval_expr_fn(arm_body, context, gen_stmts));
+return expr::match_arm_constructed_value(expr::match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name), field_bindings, eval_expr_fn(arm_body, arm_context, gen_stmts));
 }
 
 mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> expand_or_arms(mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> arms) noexcept{
@@ -109,7 +116,7 @@ mlc::String gen_arm(std::shared_ptr<semantic_ir::SMatchArm> arm, context::Codege
   [&](const PatBool& patbool) -> mlc::String { auto [_w0, _w1] = patbool; return expr::match_arm_wild_or_unit_return(eval_expr_fn(arm->body, context, gen_stmts)); },
   [&](const PatInt& patint) -> mlc::String { auto [_w0, _w1] = patint; return expr::match_arm_wild_or_unit_return(eval_expr_fn(arm->body, context, gen_stmts)); },
   [&](const PatStr& patstr) -> mlc::String { auto [_w0, _w1] = patstr; return expr::match_arm_wild_or_unit_return(eval_expr_fn(arm->body, context, gen_stmts)); },
-  [&](const PatIdent& patident) -> mlc::String { auto [name, _w0] = patident; return expr::match_arm_binding_identifier(cpp_naming::cpp_safe(name), eval_expr_fn(arm->body, context, gen_stmts)); },
+  [&](const PatIdent& patident) -> mlc::String { auto [name, _w0] = patident; return expr::match_arm_binding_identifier(cpp_naming::cpp_safe(name), eval_expr_fn(arm->body, context::context_add_value(context, name), gen_stmts)); },
   [&](const PatCtor& patctor) -> mlc::String { auto [name, sub_patterns, _w0] = patctor; return gen_arm_ctor(name, sub_patterns, arm->body, context, gen_stmts, eval_expr_fn); },
   [&](const PatRecord& patrecord) -> mlc::String { auto [name, field_patterns, _w0] = patrecord; return gen_arm_record_pattern(name, field_patterns, arm->body, context, gen_stmts, eval_expr_fn); },
   [&](const PatTuple& pattuple) -> mlc::String { auto [_w0, _w1] = pattuple; return expr::match_arm_wild_or_unit_return(eval_expr_fn(arm->body, context, gen_stmts)); },

@@ -3,7 +3,7 @@
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
 import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder } from "../ast"
-import { Type, TypeRegistry, TTuple, TUnit, TGeneric, TUnknown, TF64, TI64, TU8, TUsize, TChar, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
+import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TUnknown, TF64, TI64, TU8, TUsize, TChar, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
 import {
   binary_operation_result_type,
   builtin_method_return_type,
@@ -18,8 +18,54 @@ import { array_hof_call_result_type, is_array_hof_method } from "./array_method_
 import { result_option_hof_call_result_type, should_infer_result_option_combinator } from "./result_option_method_types"
 import { env_for_pattern_substituted } from "./pattern_env"
 import { substitute_type } from "./semantic_type_structure"
-import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from "../semantic_ir"
-import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
+import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprArray, SExprIf, SExprBlock } from "../semantic_ir"
+
+fn coerce_unknown_else_array_when_then_known_inner(
+  elements: [Shared<SExpr>],
+  span_else: Span,
+  inner_then: Shared<Type>,
+  typed_else: Shared<SExpr>
+) -> Shared<SExpr> =
+  match sexpr_type(typed_else) {
+    TArray(inner_else) =>
+      if type_is_unknown(inner_else) then
+        Shared.new(SExprArray(elements, Shared.new(TArray(inner_then)), span_else))
+      else typed_else
+      end,
+    _ => typed_else
+  }
+
+fn conditional_else_coerce_empty_array_using_then_type(
+  typed_then: Shared<SExpr>,
+  elements: [Shared<SExpr>],
+  span_else: Span,
+  typed_else: Shared<SExpr>
+) -> Shared<SExpr> =
+  match sexpr_type(typed_then) {
+    TArray(inner_then) =>
+      coerce_unknown_else_array_when_then_known_inner(elements, span_else, inner_then, typed_else),
+    _ => typed_else
+  }
+
+fn array_literal_else_maybe_coerce(
+  typed_then: Shared<SExpr>,
+  elements: [Shared<SExpr>],
+  span_else: Span,
+  typed_else: Shared<SExpr>
+) -> Shared<SExpr> =
+  if elements.length() > 0 then typed_else
+  else conditional_else_coerce_empty_array_using_then_type(typed_then, elements, span_else, typed_else)
+  end
+
+fn conditional_else_empty_unknown_array_coerced_to_then_array_element(
+  typed_then: Shared<SExpr>,
+  typed_else: Shared<SExpr>
+) -> Shared<SExpr> =
+  match typed_else {
+    SExprArray(elements, _, span_else) =>
+      array_literal_else_maybe_coerce(typed_then, elements, span_else, typed_else),
+    _ => typed_else
+  }
 
 // --- Context ----------------------------------------------------------------
 
@@ -56,6 +102,25 @@ export fn coerce_expr_to_type(expression: Shared<SExpr>, target_type: Shared<Typ
               else expression end,
             _ => expression
           },
+        _ => expression
+      },
+    SExprBlock(statements, result_expression, _, span) =>
+      match target_type {
+        TArray(_) => do
+          const coerced_result = coerce_expr_to_type(result_expression, target_type)
+          Shared.new(SExprBlock(statements, coerced_result, sexpr_type(coerced_result), span))
+        end,
+        _ => expression
+      },
+    SExprIf(condition, then_branch, else_branch, _, source_span) =>
+      match target_type {
+        TArray(_) =>
+          Shared.new(SExprIf(
+            condition,
+            coerce_expr_to_type(then_branch, target_type),
+            coerce_expr_to_type(else_branch, target_type),
+            target_type,
+            source_span)),
         _ => expression
       },
     _ => expression
@@ -213,6 +278,7 @@ fn transform_expr_lambda_with_param_types(
     const pt =
       if parameter_index < parameter_types.length() then parameter_types[parameter_index]
       else Shared.new(TUnknown)
+      end
     parameter_type_vec.push(pt)
     lambda_env.set(parameter_names[parameter_index], pt)
     parameter_index = parameter_index + 1
@@ -267,7 +333,7 @@ fn transform_array_hof_method_arguments(
     end
   else if method_name == "enumerate" || method_name == "sum" || method_name == "flat" then
     let _skip = 0
-  else
+  else do
     if method_arguments.length() > 0 then
       out.push(transform_expr_maybe_lambda_context(
         method_arguments[0], [element_type], transform_context, stmts_fn))
@@ -406,9 +472,22 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     ExprIf(condition, then_expression, else_expression, source_span) => do
       const typed_condition = transform_expr(condition, transform_context, stmts_fn)
       const typed_then      = transform_expr(then_expression, transform_context, stmts_fn)
-      const typed_else      = transform_expr(else_expression, transform_context, stmts_fn)
-      const result_type     = sexpr_type(typed_then)
-      Shared.new(SExprIf(typed_condition, typed_then, typed_else, result_type, source_span))
+      const typed_else_raw  = transform_expr(else_expression, transform_context, stmts_fn)
+      const typed_else      =
+        conditional_else_empty_unknown_array_coerced_to_then_array_element(typed_then, typed_else_raw)
+      const merged_conditional_type =
+        match sexpr_type(typed_then) {
+          TArray(inner_then) =>
+            match sexpr_type(typed_else) {
+              TArray(inner_else) =>
+                if type_is_unknown(inner_then) then Shared.new(TArray(inner_else))
+                else Shared.new(TArray(inner_then))
+                end,
+              _ => sexpr_type(typed_then),
+            },
+          _ => sexpr_type(typed_then),
+        }
+      Shared.new(SExprIf(typed_condition, typed_then, typed_else, merged_conditional_type, source_span))
     end,
 
     ExprBlock(statements, result, source_span) => do

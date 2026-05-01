@@ -20,6 +20,11 @@ export fn assert_type_generates(test_name: string, context: CodegenContext, type
 export fn assert_code_contains(test_name: string, actual_code: string, expected_substring: string) -> TestResult =
   assert_true(test_name + " contains '" + expected_substring + "'", string_contains(actual_code, expected_substring))
 
+export fn assert_code_not_contains(test_name: string, actual_code: string, forbidden_substring: string) -> TestResult =
+  assert_true(
+    test_name + " must not contain '" + forbidden_substring + "'",
+    !string_contains(actual_code, forbidden_substring))
+
 fn chars_match_at(haystack: string, start_position: i32, needle: string, needle_length: i32) -> bool = do
   let mut character_index = 0
   let mut all_match = true

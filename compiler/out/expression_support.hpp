@@ -31,6 +31,8 @@ mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept;
 
 mlc::String field_access_operator(std::shared_ptr<semantic_ir::SExpr> object, context::CodegenContext context) noexcept;
 
+mlc::String generate_conditional_else_with_empty_array_coercion(std::shared_ptr<semantic_ir::SExpr> then_expression, std::shared_ptr<semantic_ir::SExpr> else_expression, std::shared_ptr<registry::Type> preferred_array_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> evaluate_expression) noexcept;
+
 } // namespace expression_support
 
 #endif // EXPRESSION_SUPPORT_HPP

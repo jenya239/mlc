@@ -23,8 +23,6 @@ using namespace method_receiver_diagnostics;
 using namespace type_diagnostics;
 using namespace ast_tokens;
 
-using InferExprFn = std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)>;
-
 infer_result::InferResult infer_expr_maybe_lambda(std::shared_ptr<ast::Expr> expression, mlc::Array<std::shared_ptr<registry::Type>> expected_param_types, check_context::CheckContext inference_context, std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)> infer_expr_fn) noexcept;
 
 mlc::Array<ast::Diagnostic> append_lambda_arity_diag(mlc::Array<ast::Diagnostic> errors, std::shared_ptr<ast::Expr> expression, int expected_params, mlc::String method_name) noexcept;
@@ -76,30 +74,31 @@ arg_types.push_back(lam_result.inferred_type);
 } else {
 {
 if (method_name == mlc::String("zip") || method_name == mlc::String("join")){
+mlc::Array<ast::Diagnostic> zip_or_join_diagnostics = {};
 if (method_arguments.size() > 0){
 infer_result::InferResult arg0_result = infer_expr_fn(method_arguments[0], inference_context);
 merged = infer_result::InferResult_absorb(merged, arg0_result);
 arg_types.push_back(arg0_result.inferred_type);
-mlc::Array<ast::Diagnostic> extra = {};
 if (method_name == mlc::String("zip")){
 {
 if (!semantic_type_structure::type_is_unknown(arg0_result.inferred_type) && !semantic_type_structure::type_is_array(arg0_result.inferred_type)){
-extra = mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method zip expects an array argument, got ") + semantic_type_structure::type_description(arg0_result.inferred_type), ast::expr_span(method_arguments[0]))};
+zip_or_join_diagnostics = mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method zip expects an array argument, got ") + semantic_type_structure::type_description(arg0_result.inferred_type), ast::expr_span(method_arguments[0]))};
 }
 }
-} else {
+}
+if (method_name == mlc::String("join")){
 {
 if (!semantic_type_structure::type_is_unknown(element_type) && !semantic_type_structure::type_is_string(element_type)){
 {
-extra = mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method join expects an array of string elements, got ") + semantic_type_structure::type_description(element_type), method_span)};
+zip_or_join_diagnostics = mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method join expects an array of string elements, got ") + semantic_type_structure::type_description(element_type), method_span)};
 }
 }
 if (!semantic_type_structure::type_is_unknown(arg0_result.inferred_type) && !semantic_type_structure::type_is_string(arg0_result.inferred_type)){
-extra = ast::diagnostics_append(extra, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method join expects string separator, got ") + semantic_type_structure::type_description(arg0_result.inferred_type), ast::expr_span(method_arguments[0]))});
+zip_or_join_diagnostics = ast::diagnostics_append(zip_or_join_diagnostics, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("method join expects string separator, got ") + semantic_type_structure::type_description(arg0_result.inferred_type), ast::expr_span(method_arguments[0]))});
 }
 }
 }
-merged = infer_result::InferResult{merged.inferred_type, ast::diagnostics_append(merged.errors, extra)};
+merged = infer_result::InferResult{merged.inferred_type, ast::diagnostics_append(merged.errors, zip_or_join_diagnostics)};
 }
 } else {
 if (method_name == mlc::String("take") || method_name == mlc::String("drop")){
@@ -148,8 +147,7 @@ arg_types.push_back(lam_result.inferred_type);
 }
 }
 }
-std::shared_ptr<registry::Type> out_type = array_method_types::array_hof_call_result_type(element_type, method_name, arg_types);
-return infer_result::InferResult{out_type, ast::diagnostics_append(ast::diagnostics_append(merged.errors, receiver_errors), arity_errors)};
+return infer_result::InferResult{array_method_types::array_hof_call_result_type(element_type, method_name, arg_types), ast::diagnostics_append(ast::diagnostics_append(merged.errors, receiver_errors), arity_errors)};
 }
 
 bool should_infer_as_array_hof(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name) noexcept{return array_method_types::is_array_hof_method(method_name) && semantic_type_structure::type_is_array(receiver_type);}

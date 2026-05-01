@@ -10,6 +10,7 @@
 #include "semantic_type_structure.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
+#include "type_gen.hpp"
 #include "literals.hpp"
 #include "literals.hpp"
 #include "identifiers.hpp"

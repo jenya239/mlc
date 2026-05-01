@@ -6,6 +6,7 @@
 #include "semantic_type_structure.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
+#include "type_gen.hpp"
 #include "literals.hpp"
 #include "literals.hpp"
 #include "identifiers.hpp"
@@ -24,6 +25,7 @@ using namespace registry;
 using namespace semantic_type_structure;
 using namespace context;
 using namespace cpp_naming;
+using namespace type_gen;
 using namespace literals;
 using namespace literals;
 using namespace identifiers;
@@ -48,7 +50,9 @@ mlc::String gen_field_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::Stri
 
 mlc::String gen_index_expr(std::shared_ptr<semantic_ir::SExpr> object, std::shared_ptr<semantic_ir::SExpr> index_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
-mlc::String gen_if_expr(std::shared_ptr<semantic_ir::SExpr> condition, std::shared_ptr<semantic_ir::SExpr> then_expr, std::shared_ptr<semantic_ir::SExpr> else_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
+mlc::String gen_if_else_code(std::shared_ptr<semantic_ir::SExpr> else_expr, std::shared_ptr<registry::Type> if_semantic_type, std::shared_ptr<semantic_ir::SExpr> then_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
+
+mlc::String gen_if_expr(std::shared_ptr<semantic_ir::SExpr> condition, std::shared_ptr<semantic_ir::SExpr> then_expr, std::shared_ptr<semantic_ir::SExpr> else_expr, std::shared_ptr<registry::Type> if_semantic_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
 mlc::String gen_block_expr(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<semantic_ir::SExpr> result_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
@@ -56,7 +60,7 @@ mlc::String gen_while_expr(std::shared_ptr<semantic_ir::SExpr> condition, mlc::A
 
 mlc::String gen_for_expr(mlc::String variable, std::shared_ptr<semantic_ir::SExpr> iterator, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
-mlc::String gen_array_expr(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
+mlc::String gen_array_expr(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, std::shared_ptr<registry::Type> element_container_semantic_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
 mlc::String gen_question_expr(std::shared_ptr<semantic_ir::SExpr> inner_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
@@ -101,7 +105,22 @@ return expr::field_access(object_code, operator_, cpp_naming::cpp_safe(field_nam
 
 mlc::String gen_index_expr(std::shared_ptr<semantic_ir::SExpr> object, std::shared_ptr<semantic_ir::SExpr> index_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return expr::index_subscript(eval_expr(object, context, gen_stmts), eval_expr(index_expr, context, gen_stmts));}
 
-mlc::String gen_if_expr(std::shared_ptr<semantic_ir::SExpr> condition, std::shared_ptr<semantic_ir::SExpr> then_expr, std::shared_ptr<semantic_ir::SExpr> else_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return expr::ternary_conditional(eval_expr(condition, context, gen_stmts), eval_expr(then_expr, context, gen_stmts), eval_expr(else_expr, context, gen_stmts));}
+mlc::String gen_if_else_code(std::shared_ptr<semantic_ir::SExpr> else_expr, std::shared_ptr<registry::Type> if_semantic_type, std::shared_ptr<semantic_ir::SExpr> then_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprArray>((*else_expr)._)) { auto _v_sexprarray = std::get<semantic_ir::SExprArray>((*else_expr)._); auto [elements, _w0, array_span] = _v_sexprarray; return elements.size() > 0 ? eval_expr(else_expr, context, gen_stmts) : [&]() -> mlc::String { 
+  std::shared_ptr<registry::Type> inner_preferred = semantic_type_structure::array_element_type_from_array_type(if_semantic_type);
+  std::shared_ptr<registry::Type> inner_from_then_branch = semantic_type_structure::array_element_type_from_array_type(semantic_ir::sexpr_type(then_expr));
+  std::shared_ptr<registry::Type> inner_for_empty_array = !semantic_type_structure::type_is_unknown(inner_preferred) ? inner_preferred : inner_from_then_branch;
+  return semantic_type_structure::type_is_unknown(inner_for_empty_array) ? eval_expr(else_expr, context, gen_stmts) : eval_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray(elements, std::make_shared<registry::Type>(registry::TArray(inner_for_empty_array)), array_span)), context, gen_stmts);
+ }(); } return eval_expr(else_expr, context, gen_stmts); }();}
+
+mlc::String gen_if_expr(std::shared_ptr<semantic_ir::SExpr> condition, std::shared_ptr<semantic_ir::SExpr> then_expr, std::shared_ptr<semantic_ir::SExpr> else_expr, std::shared_ptr<registry::Type> if_semantic_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
+mlc::String cond_code = eval_expr(condition, context, gen_stmts);
+mlc::String then_code = eval_expr(then_expr, context, gen_stmts);
+mlc::String else_code = gen_if_else_code(else_expr, if_semantic_type, then_expr, context, gen_stmts);
+return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*if_semantic_type))) { auto _v_tnamed = std::get<registry::TNamed>((*if_semantic_type)); auto [type_name] = _v_tnamed; return [&]() -> mlc::String { 
+  mlc::String type_cpp = context::context_resolve(context, type_name);
+  return type_cpp == mlc::String("auto") ? expr::ternary_conditional(cond_code, then_code, else_code) : mlc::String("[&]() -> ") + type_cpp + mlc::String(" {\nif (") + cond_code + mlc::String(") {\nreturn ") + then_code + mlc::String(";\n} else {\nreturn ") + else_code + mlc::String(";\n}\n}()");
+ }(); } return expr::ternary_conditional(cond_code, then_code, else_code); }();
+}
 
 mlc::String gen_block_expr(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<semantic_ir::SExpr> result_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return statements.size() == 0 ? eval_expr(result_expr, context, gen_stmts) : [&]() -> mlc::String { 
   mlc::String body = gen_stmts(statements, context) + expr::block_immediate_function_return_fragment(eval_expr(result_expr, statement_context::stmts_final_ctx(statements, context), gen_stmts));
@@ -112,7 +131,10 @@ mlc::String gen_while_expr(std::shared_ptr<semantic_ir::SExpr> condition, mlc::A
 
 mlc::String gen_for_expr(mlc::String variable, std::shared_ptr<semantic_ir::SExpr> iterator, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return expr::for_loop_immediate_invoked_function_expression(cpp_naming::cpp_safe(variable), eval_expr(iterator, context, gen_stmts), gen_stmts(statements, context));}
 
-mlc::String gen_array_expr(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return expr::array_literal(eval_argument_list(elements, context, gen_stmts));}
+mlc::String gen_array_expr(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, std::shared_ptr<registry::Type> element_container_semantic_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<registry::TArray>((*element_container_semantic_type))) { auto _v_tarray = std::get<registry::TArray>((*element_container_semantic_type)); auto [inner_type] = _v_tarray; return [&]() -> mlc::String { 
+  mlc::String element_cpp = type_gen::sem_type_to_cpp(context, inner_type);
+  return elements.size() == 0 ? expr::typed_array_empty_or_untyped_empty(element_cpp) : element_cpp == mlc::String("auto") ? expr::array_literal(eval_argument_list(elements, context, gen_stmts)) : expr::typed_array_braced_initializer(element_cpp, eval_argument_list(elements, context, gen_stmts));
+ }(); } return expr::array_literal(eval_argument_list(elements, context, gen_stmts)); }();}
 
 mlc::String gen_question_expr(std::shared_ptr<semantic_ir::SExpr> inner_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
 mlc::String inner_code = eval_expr(inner_expr, context, gen_stmts);
@@ -139,14 +161,14 @@ mlc::String eval_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::Codegen
   [&](const SExprMethod& sexprmethod) -> mlc::String { auto [object, method_name, arguments, _w0, _w1] = sexprmethod; return method_gen::gen_method_expr(object, method_name, arguments, context, gen_stmts, eval_expr); },
   [&](const SExprField& sexprfield) -> mlc::String { auto [object, field_name, _w0, _w1] = sexprfield; return gen_field_expr(object, field_name, context, gen_stmts); },
   [&](const SExprIndex& sexprindex) -> mlc::String { auto [object, index_expr, _w0, _w1] = sexprindex; return gen_index_expr(object, index_expr, context, gen_stmts); },
-  [&](const SExprIf& sexprif) -> mlc::String { auto [condition, then_expr, else_expr, _w0, _w1] = sexprif; return gen_if_expr(condition, then_expr, else_expr, context, gen_stmts); },
+  [&](const SExprIf& sexprif) -> mlc::String { auto [condition, then_expr, else_expr, if_semantic_type, _w0] = sexprif; return gen_if_expr(condition, then_expr, else_expr, if_semantic_type, context, gen_stmts); },
   [&](const SExprBlock& sexprblock) -> mlc::String { auto [statements, result_expr, _w0, _w1] = sexprblock; return gen_block_expr(statements, result_expr, context, gen_stmts); },
   [&](const SExprWhile& sexprwhile) -> mlc::String { auto [condition, statements, _w0, _w1] = sexprwhile; return gen_while_expr(condition, statements, context, gen_stmts); },
   [&](const SExprFor& sexprfor) -> mlc::String { auto [variable, iterator, statements, _w0, _w1] = sexprfor; return gen_for_expr(variable, iterator, statements, context, gen_stmts); },
   [&](const SExprMatch& sexprmatch) -> mlc::String { auto [subject, arms, _w0, _w1] = sexprmatch; return match_gen::gen_match(subject, arms, context, gen_stmts, eval_expr); },
   [&](const SExprRecord& sexprrecord) -> mlc::String { auto [type_name, field_values, expr_type, _w0] = sexprrecord; return record_gen::gen_record_expr(type_name, field_values, expr_type, context, gen_stmts, eval_expr); },
   [&](const SExprRecordUpdate& sexprrecordupdate) -> mlc::String { auto [type_name, base_expr, overrides, _w0, _w1] = sexprrecordupdate; return record_gen::gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr); },
-  [&](const SExprArray& sexprarray) -> mlc::String { auto [elements, _w0, _w1] = sexprarray; return gen_array_expr(elements, context, gen_stmts); },
+  [&](const SExprArray& sexprarray) -> mlc::String { auto [elements, container_semantic_type, _w0] = sexprarray; return gen_array_expr(elements, container_semantic_type, context, gen_stmts); },
   [&](const SExprTuple& sexprtuple) -> mlc::String { auto [elements, _w0, _w1] = sexprtuple; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int ki = 0;
