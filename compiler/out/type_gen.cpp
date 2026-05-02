@@ -75,6 +75,28 @@ mlc::String derive_ord_record(mlc::String type_name, mlc::Array<std::shared_ptr<
 
 mlc::String derive_ord_sum(mlc::String type_name) noexcept;
 
+mlc::String derive_hash_std_cpp_type(std::shared_ptr<ast::TypeExpr> field_type) noexcept;
+
+mlc::String derive_hash_combine_line(mlc::String cpp_type, mlc::String access_expr) noexcept;
+
+mlc::String derive_hash_record_operator_body(mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept;
+
+mlc::String derive_hash_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept;
+
+mlc::String derive_hash_tuple_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types, int discriminant_index) noexcept;
+
+mlc::String derive_hash_record_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs, int discriminant_index) noexcept;
+
+mlc::String derive_hash_sum_variant_inner(std::shared_ptr<ast::TypeVariant> variant, int discriminant_index) noexcept;
+
+mlc::String type_variant_constructor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept;
+
+mlc::String derive_hash_sum_branch(std::shared_ptr<ast::TypeVariant> variant, int discriminant_index) noexcept;
+
+mlc::String derive_hash_sum_operator_body(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
+mlc::String derive_hash_sum(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
 bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 
 mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_defs(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
@@ -490,6 +512,91 @@ return field_defs.size() == 0 ? sig + mlc::String(" { return false; }\n") : sig 
 
 mlc::String derive_ord_sum(mlc::String type_name) noexcept{return mlc::String("bool operator<(const ") + type_name + mlc::String("& a, const ") + type_name + mlc::String("& b) noexcept { return a._ < b._; }\n");}
 
+mlc::String derive_hash_std_cpp_type(std::shared_ptr<ast::TypeExpr> field_type) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::TyString>((*field_type))) {  return mlc::String("mlc::String"); } if (std::holds_alternative<ast::TyI32>((*field_type))) {  return mlc::String("int"); } if (std::holds_alternative<ast::TyBool>((*field_type))) {  return mlc::String("bool"); } return mlc::String(""); }();}
+
+mlc::String derive_hash_combine_line(mlc::String cpp_type, mlc::String access_expr) noexcept{return mlc::String("h ^= std::hash<") + cpp_type + mlc::String(">{}(") + access_expr + mlc::String(") + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);\n");}
+
+mlc::String derive_hash_record_operator_body(mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{return field_defs.size() == 0 ? mlc::String("return static_cast<size_t>(1469598103934665603ULL);\n") : [&]() -> mlc::String { 
+  mlc::String inner = mlc::String("size_t h = 1469598103934665603ULL;\n");
+  int field_index = 0;
+  while (field_index < field_defs.size()){
+{
+mlc::String cpp_type_name = derive_hash_std_cpp_type(field_defs[field_index]->typ);
+inner = inner + derive_hash_combine_line(cpp_type_name, mlc::String("self.") + field_defs[field_index]->name);
+field_index = field_index + 1;
+}
+}
+  return inner + mlc::String("return h;\n");
+ }();}
+
+mlc::String derive_hash_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
+mlc::String operator_body = derive_hash_record_operator_body(field_defs);
+return mlc::String("namespace std {\ntemplate<>\nstruct hash<") + type_name + mlc::String("> {\n  size_t operator()(const ") + type_name + mlc::String("& self) const noexcept {\n    ") + operator_body + mlc::String("  }\n};\n}\n");
+}
+
+mlc::String derive_hash_tuple_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types, int discriminant_index) noexcept{
+mlc::String inner = derive_hash_combine_line(mlc::String("size_t"), mlc::to_string(discriminant_index));
+int tuple_index = 0;
+while (tuple_index < field_types.size()){
+{
+mlc::String cpp_type_name = derive_hash_std_cpp_type(field_types[tuple_index]);
+mlc::String slot_access = mlc::String("std::get<") + variant_struct_name + mlc::String(">(self._).field") + mlc::to_string(tuple_index);
+inner = inner + derive_hash_combine_line(cpp_type_name, slot_access);
+tuple_index = tuple_index + 1;
+}
+}
+return inner;
+}
+
+mlc::String derive_hash_record_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs, int discriminant_index) noexcept{
+mlc::String inner = derive_hash_combine_line(mlc::String("size_t"), mlc::to_string(discriminant_index));
+int field_index = 0;
+while (field_index < field_defs.size()){
+{
+mlc::String cpp_type_name = derive_hash_std_cpp_type(field_defs[field_index]->typ);
+mlc::String variant_member_access_expression = mlc::String("std::get<") + variant_struct_name + mlc::String(">(self._).") + field_defs[field_index]->name;
+inner = inner + derive_hash_combine_line(cpp_type_name, variant_member_access_expression);
+field_index = field_index + 1;
+}
+}
+return inner;
+}
+
+mlc::String derive_hash_sum_variant_inner(std::shared_ptr<ast::TypeVariant> variant, int discriminant_index) noexcept{return std::visit(overloaded{
+  [&](const VarUnit& varunit) -> mlc::String { auto [_w0, _w1] = varunit; return derive_hash_combine_line(mlc::String("size_t"), mlc::to_string(discriminant_index)); },
+  [&](const VarTuple& vartuple) -> mlc::String { auto [vname, fts, _w0] = vartuple; return derive_hash_tuple_variant_inner(vname, fts, discriminant_index); },
+  [&](const VarRecord& varrecord) -> mlc::String { auto [vname, fds, _w0] = varrecord; return derive_hash_record_variant_inner(vname, fds, discriminant_index); }
+}, (*variant));}
+
+mlc::String type_variant_constructor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
+  [&](const VarUnit& varunit) -> mlc::String { auto [name, _w0] = varunit; return name; },
+  [&](const VarTuple& vartuple) -> mlc::String { auto [name, _w0, _w1] = vartuple; return name; },
+  [&](const VarRecord& varrecord) -> mlc::String { auto [name, _w0, _w1] = varrecord; return name; }
+}, (*variant));}
+
+mlc::String derive_hash_sum_branch(std::shared_ptr<ast::TypeVariant> variant, int discriminant_index) noexcept{
+mlc::String constructor_name = type_variant_constructor_name(variant);
+mlc::String variant_inner = derive_hash_sum_variant_inner(variant, discriminant_index);
+return mlc::String("if (std::holds_alternative<") + constructor_name + mlc::String(">(self._)) {\n    ") + variant_inner + mlc::String("    return h;\n  }\n");
+}
+
+mlc::String derive_hash_sum_operator_body(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+mlc::String inner = mlc::String("size_t h = 1469598103934665603ULL;\n");
+int variant_index = 0;
+while (variant_index < variants.size()){
+{
+inner = inner + derive_hash_sum_branch(variants[variant_index], variant_index);
+variant_index = variant_index + 1;
+}
+}
+return inner + mlc::String("return h;\n");
+}
+
+mlc::String derive_hash_sum(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+mlc::String operator_body = derive_hash_sum_operator_body(variants);
+return mlc::String("namespace std {\ntemplate<>\nstruct hash<") + type_name + mlc::String("> {\n  size_t operator()(const ") + type_name + mlc::String("& self) const noexcept {\n    ") + operator_body + mlc::String("  }\n};\n}\n");
+}
+
 bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants.size() != 1 ? false : [&]() { if (std::holds_alternative<ast::VarRecord>((*variants[0]))) { auto _v_varrecord = std::get<ast::VarRecord>((*variants[0])); auto [_w0, _w1, _w2] = _v_varrecord; return true; } return false; }();}
 
 mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_defs(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
@@ -499,10 +606,10 @@ return [&]() -> mlc::Array<std::shared_ptr<ast::FieldDef>> { if (std::holds_alte
 
 mlc::String gen_derive_record_trait(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String trait_name) noexcept{
 mlc::Array<std::shared_ptr<ast::FieldDef>> fds = derive_record_field_defs(variants);
-return trait_name == mlc::String("Display") ? derive_display_record(type_name, fds) : trait_name == mlc::String("Eq") ? derive_eq_record(type_name, fds) : trait_name == mlc::String("Ord") ? derive_ord_record(type_name, fds) : mlc::String("");
+return trait_name == mlc::String("Display") ? derive_display_record(type_name, fds) : trait_name == mlc::String("Eq") ? derive_eq_record(type_name, fds) : trait_name == mlc::String("Ord") ? derive_ord_record(type_name, fds) : trait_name == mlc::String("Hash") ? derive_hash_record(type_name, fds) : mlc::String("");
 }
 
-mlc::String gen_derive_sum_trait(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String trait_name) noexcept{return trait_name == mlc::String("Display") ? derive_display_sum(type_name, variants) : trait_name == mlc::String("Eq") ? derive_eq_sum(type_name) : trait_name == mlc::String("Ord") ? derive_ord_sum(type_name) : mlc::String("");}
+mlc::String gen_derive_sum_trait(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String trait_name) noexcept{return trait_name == mlc::String("Display") ? derive_display_sum(type_name, variants) : trait_name == mlc::String("Eq") ? derive_eq_sum(type_name) : trait_name == mlc::String("Ord") ? derive_ord_sum(type_name) : trait_name == mlc::String("Hash") ? derive_hash_sum(type_name, variants) : mlc::String("");}
 
 mlc::String gen_derive_methods(context::CodegenContext context, mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_traits) noexcept{
 return derive_traits.size() == 0 ? mlc::String("") : [&]() -> mlc::String { 

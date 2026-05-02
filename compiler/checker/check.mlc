@@ -2,12 +2,14 @@
 
 import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
          Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span,
-         Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span } from "../ast"
+         Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span,
+         span_unknown } from "../ast"
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from "../ast"
 import { check_names_expr } from "./names"
 import { check_fn_body_mutations } from "./check_mutations"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
 import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from "./trait_param_expand"
+import { derive_clause_diagnostics } from "./derive_validation"
 import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
 import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
@@ -248,7 +250,12 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
           diagnostics_append(all_diagnostics, inference_result.errors),
           return_type_errors); ()
       end,
-      DeclType(_, _, _, _) => do () end,
+      DeclType(_, type_parameters, variants, derive_trait_names) => do
+        all_diagnostics = diagnostics_append(
+          all_diagnostics,
+          derive_clause_diagnostics(type_parameters, variants, derive_trait_names, span_unknown()))
+        ()
+      end,
       DeclTrait(_, _, _)   => do () end,
       DeclExtend(extend_type_name, _, methods) => do
         let mut method_index = 0

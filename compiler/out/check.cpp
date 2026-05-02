@@ -6,6 +6,7 @@
 #include "check_mutations.hpp"
 #include "registry.hpp"
 #include "trait_param_expand.hpp"
+#include "derive_validation.hpp"
 #include "infer.hpp"
 #include "check_context.hpp"
 #include "semantic_type_structure.hpp"
@@ -18,6 +19,7 @@ using namespace names;
 using namespace check_mutations;
 using namespace registry;
 using namespace trait_param_expand;
+using namespace derive_validation;
 using namespace infer;
 using namespace check_context;
 using namespace semantic_type_structure;
@@ -296,7 +298,10 @@ parameter_index = parameter_index + 1;
   all_diagnostics = ast::diagnostics_append(ast::diagnostics_append(all_diagnostics, inference_result.errors), return_type_errors);
   return std::make_tuple();
  }(); },
-  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, _w1, _w2, _w3] = decltype_; return std::make_tuple(); },
+  [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, type_parameters, variants, derive_trait_names] = decltype_; return [&]() -> std::tuple<> { 
+  all_diagnostics = ast::diagnostics_append(all_diagnostics, derive_validation::derive_clause_diagnostics(type_parameters, variants, derive_trait_names, ast::span_unknown()));
+  return std::make_tuple();
+ }(); },
   [&](const DeclTrait& decltrait) -> std::tuple<> { auto [_w0, _w1, _w2] = decltrait; return std::make_tuple(); },
   [&](const DeclExtend& declextend) -> std::tuple<> { auto [extend_type_name, _w0, methods] = declextend; return [&]() -> std::tuple<> { 
   int method_index = 0;

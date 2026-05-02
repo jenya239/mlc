@@ -413,6 +413,86 @@ return (((sig + mlc::String(" { return ", 10)) + derive_ord_build_cond(field_def
 mlc::String derive_ord_sum(mlc::String type_name) noexcept{
 return ((((mlc::String("bool operator<(const ", 21) + type_name) + mlc::String("& a, const ", 11)) + type_name) + mlc::String("& b) noexcept { return a._ < b._; }\n", 36));
 }
+mlc::String derive_hash_std_cpp_type(std::shared_ptr<ast::TypeExpr> field_type) noexcept{
+return std::visit(overloaded{[&](const ast::TyString& tyString) { return mlc::String("mlc::String", 11); },
+[&](const ast::TyI32& tyI32) { return mlc::String("int", 3); },
+[&](const ast::TyBool& tyBool) { return mlc::String("bool", 4); },
+[&](const auto& __v) { return mlc::String("", 0); }
+}, (*field_type));
+}
+mlc::String derive_hash_combine_line(mlc::String cpp_type, mlc::String access_expr) noexcept{
+return ((((mlc::String("h ^= std::hash<", 15) + cpp_type) + mlc::String(">{}(", 4)) + access_expr) + mlc::String(") + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);\n", 49));
+}
+mlc::String derive_hash_record_operator_body(mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
+if ((field_defs.length() == 0)) {
+return mlc::String("return static_cast<size_t>(1469598103934665603ULL);\n", 52);
+} else {
+auto inner = mlc::String("size_t h = 1469598103934665603ULL;\n", 35);
+auto field_index = 0;
+while ((field_index < field_defs.length())) {
+auto cpp_type_name = derive_hash_std_cpp_type(field_defs[field_index]->typ);
+inner = (inner + derive_hash_combine_line(cpp_type_name, (mlc::String("self.", 5) + field_defs[field_index]->name)));
+field_index = (field_index + 1);
+}
+return (inner + mlc::String("return h;\n", 10));
+}
+}
+mlc::String derive_hash_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
+auto operator_body = derive_hash_record_operator_body(field_defs);
+return ((((((mlc::String("namespace std {\ntemplate<>\nstruct hash<", 39) + type_name) + mlc::String("> {\n  size_t operator()(const ", 30)) + type_name) + mlc::String("& self) const noexcept {\n    ", 29)) + operator_body) + mlc::String("  }\n};\n}\n", 9));
+}
+mlc::String derive_hash_tuple_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types, int discriminant_index) noexcept{
+auto inner = derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index));
+auto tuple_index = 0;
+while ((tuple_index < field_types.length())) {
+auto cpp_type_name = derive_hash_std_cpp_type(field_types[tuple_index]);
+auto slot_access = (((mlc::String("std::get<", 9) + variant_struct_name) + mlc::String(">(self._).field", 15)) + mlc::to_string(tuple_index));
+inner = (inner + derive_hash_combine_line(cpp_type_name, slot_access));
+tuple_index = (tuple_index + 1);
+}
+return inner;
+}
+mlc::String derive_hash_record_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs, int discriminant_index) noexcept{
+auto inner = derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index));
+auto field_index = 0;
+while ((field_index < field_defs.length())) {
+auto cpp_type_name = derive_hash_std_cpp_type(field_defs[field_index]->typ);
+auto variant_member_access_expression = (((mlc::String("std::get<", 9) + variant_struct_name) + mlc::String(">(self._).", 10)) + field_defs[field_index]->name);
+inner = (inner + derive_hash_combine_line(cpp_type_name, variant_member_access_expression));
+field_index = (field_index + 1);
+}
+return inner;
+}
+mlc::String derive_hash_sum_variant_inner(std::shared_ptr<ast::TypeVariant> variant, int discriminant_index) noexcept{
+return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [__0, __1] = varUnit; return derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index)); },
+[&](const ast::VarTuple& varTuple) { auto [vname, fts, __2] = varTuple; return derive_hash_tuple_variant_inner(vname, fts, discriminant_index); },
+[&](const ast::VarRecord& varRecord) { auto [vname, fds, __2] = varRecord; return derive_hash_record_variant_inner(vname, fds, discriminant_index); }
+}, (*variant));
+}
+mlc::String type_variant_constructor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept{
+return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [name, __1] = varUnit; return name; },
+[&](const ast::VarTuple& varTuple) { auto [name, __1, __2] = varTuple; return name; },
+[&](const ast::VarRecord& varRecord) { auto [name, __1, __2] = varRecord; return name; }
+}, (*variant));
+}
+mlc::String derive_hash_sum_branch(std::shared_ptr<ast::TypeVariant> variant, int discriminant_index) noexcept{
+auto constructor_name = type_variant_constructor_name(variant);
+auto variant_inner = derive_hash_sum_variant_inner(variant, discriminant_index);
+return ((((mlc::String("if (std::holds_alternative<", 27) + constructor_name) + mlc::String(">(self._)) {\n    ", 17)) + variant_inner) + mlc::String("    return h;\n  }\n", 18));
+}
+mlc::String derive_hash_sum_operator_body(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+auto inner = mlc::String("size_t h = 1469598103934665603ULL;\n", 35);
+auto variant_index = 0;
+while ((variant_index < variants.length())) {
+inner = (inner + derive_hash_sum_branch(variants[variant_index], variant_index));
+variant_index = (variant_index + 1);
+}
+return (inner + mlc::String("return h;\n", 10));
+}
+mlc::String derive_hash_sum(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+auto operator_body = derive_hash_sum_operator_body(variants);
+return ((((((mlc::String("namespace std {\ntemplate<>\nstruct hash<", 39) + type_name) + mlc::String("> {\n  size_t operator()(const ", 30)) + type_name) + mlc::String("& self) const noexcept {\n    ", 29)) + operator_body) + mlc::String("  }\n};\n}\n", 9));
+}
 bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
 if ((variants.length() != 1)) {
 return false;
@@ -436,9 +516,12 @@ return derive_display_record(type_name, fds);
 return derive_eq_record(type_name, fds);
 } else if ((trait_name == mlc::String("Ord", 3))) {
 return derive_ord_record(type_name, fds);
+} else if ((trait_name == mlc::String("Hash", 4))) {
+return derive_hash_record(type_name, fds);
 } else {
 return mlc::String("", 0);
 }
+
 
 
 }
@@ -449,9 +532,12 @@ return derive_display_sum(type_name, variants);
 return derive_eq_sum(type_name);
 } else if ((trait_name == mlc::String("Ord", 3))) {
 return derive_ord_sum(type_name);
+} else if ((trait_name == mlc::String("Hash", 4))) {
+return derive_hash_sum(type_name, variants);
 } else {
 return mlc::String("", 0);
 }
+
 
 
 }

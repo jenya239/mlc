@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "derive_clause_validation"
+
 module MLC
   module Representations
     module Semantic
@@ -24,6 +26,7 @@ module MLC
               end
 
               core_type = specialize_named_type(core_type, decl.name)
+              DeriveClauseValidation.validate!(decl, core_type)
               kind = @type_checker.infer_type_kind(decl, core_type)
 
               @type_registration_service.register(

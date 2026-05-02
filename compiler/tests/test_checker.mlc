@@ -595,6 +595,27 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("derive Display on sum type — 0 errors",
     check_error_count("type Color = Red | Green | Blue derive { Display }\nfn f(c: Color) -> string = c.to_string()"), 0))
 
+  results.push(assert_eq_int("derive Hash: mixed primitive fields on record — 0 errors",
+    check_error_count("type Cell = { tag: i32, flag: bool, label: string } derive { Hash }\nfn main() -> i32 = 0"), 0))
+
+  results.push(assert_eq_int("derive Hash: unit sum — 0 errors",
+    check_error_count("type Hue = North | South derive { Hash }\nfn main() -> i32 = 0"), 0))
+
+  results.push(assert_eq_int("derive Hash: tuple and unit variants — 0 errors",
+    check_error_count("type Shape = Circle(i32) | Empty derive { Hash }\nfn main() -> i32 = 0"), 0))
+
+  results.push(assert_true("derive: unknown trait name",
+    first_checker_error_line("type P = { x: i32 } derive { FooTrait }\nfn main() -> i32 = 0").contains("unknown derive trait \"FooTrait\"")))
+
+  results.push(assert_true("derive: duplicate trait in list",
+    first_checker_error_line("type P = { x: i32 } derive { Eq, Eq }\nfn main() -> i32 = 0").contains("duplicate derive trait \"Eq\"")))
+
+  results.push(assert_true("derive Hash: generic type rejected",
+    first_checker_error_line("type Box<T> = { value: T } derive { Hash }\nfn main() -> i32 = 0").contains("derive Hash is not supported for generic types in this version")))
+
+  results.push(assert_true("derive Hash: nested named field rejected",
+    first_checker_error_line("type Inner = { x: i32 }\ntype Outer = { inner: Inner } derive { Hash }\nfn main() -> i32 = 0").contains("derive Hash: unsupported field type for \"inner\"")))
+
   results.push(assert_true("infer: zip expects array argument",
     first_checker_error_line("fn f(a: [i32]) -> i32 = a.zip(1).length()").contains("expects an array argument")))
 

@@ -206,8 +206,8 @@ type Token = Ident(string) | Int(i64) | Str(string) derive { Display, Eq }
 | `Hash` | хеш через поля (для HashMap ключей) |
 | `Clone` | глубокое копирование (Shared<T> — инкремент ref-count) |
 
-**C++ трансляция:** генерация `operator==`, `operator<`, `std::hash<T>` специализации,
-метода `to_string`. Всё — compile-time, zero overhead.
+**C++ трансляция:** генерация `operator==`, **`operator<`** для `Ord`, специализации **`std::hash<T>`** для `Hash`,
+метода `to_string`. Всё — compile-time, zero overhead. Для `Ord` не используется `operator<=>` до отдельного решения.
 
 **Реализация:** codegen-правило в `compiler/codegen/decl.mlc` для `DeclType` с `derive`.
 
@@ -444,7 +444,7 @@ fn merge<K, V>(maps: [Map<K, V>]) -> Map<K, V>
 ### E1. `derive` — автогенерация трейт-имплементаций
 
 ```mlc
-type Point = { x: f64, y: f64 }
+type Point = { x: i32, y: i32 }
   derive { Eq, Hash, Display }
 
 // автогенерируется:
@@ -453,8 +453,15 @@ type Point = { x: f64, y: f64 }
 // extend Point : Display { fn to_string(self: Point) -> string = "Point { x: " + self.x.to_string() + ", y: " + self.y.to_string() + " }" }
 ```
 
-**C++ трансляция:** `operator==`, `operator<=>` (spaceship), `std::hash<T>` специализация.
-Нулевой overhead — тот же код что написал бы руками.
+**Ограничения текущей версии:** `derive { Hash }` только для **мономорфных** типов (без type-параметров).
+Для полей записи и полезной нагрузки sum-вариантов в хеше допускаются **`i32`**, **`bool`**, **`string`**;
+иначе — ошибка checker. Дубликаты и неизвестные имена в списке `derive { … }` — ошибка.
+
+**C++ трансляция:** `operator==`, для `Ord` — **`operator<`** (лексикографически по полям),
+специализация **`std::hash<T>`** в `namespace std` для `Hash`.
+Оператор **`operator<=>`** при derive пока **не** генерируется — отдельный этап.
+
+Нулевой overhead — тот же код что написал бы руками (в пределах этих правил).
 
 ---
 
@@ -606,7 +613,7 @@ end
 | `Result<T,E>.and_then(f)` | метод на `std::variant` |
 | `derive { Display }` | генерация `to_string()` |
 | `derive { Eq }` | `operator==` |
-| `derive { Ord }` | `operator<=>` (spaceship) |
+| `derive { Ord }` | `operator<` (лексикографическое сравнение полей; `<=>` — позже) |
 | `derive { Hash }` | `std::hash<T>` специализация |
 | Phantom types | `template<typename Phase>` struct |
 | `private` constructor | `private:` в struct + factory |

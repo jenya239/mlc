@@ -85,4 +85,95 @@ class MLCDeriveTest < Minitest::Test
     assert_includes cpp, "Empty_to_string"
     assert_includes cpp, "\"Empty {}\""
   end
+
+  def test_derive_hash_record_generates_std_hash_specialization
+    cpp = MLC.to_cpp(<<~MLC)
+      type Cell = { tag: i32, flag: bool, label: string } derive { Hash }
+      fn main() -> i32 = 0
+    MLC
+    assert_includes cpp, "namespace std"
+    assert_includes cpp, "struct hash<Cell>"
+    assert_includes cpp, "std::hash<int>{}(self.tag)"
+    assert_includes cpp, "std::hash<bool>{}(self.flag)"
+    assert_includes cpp, "std::hash<mlc::String>{}(self.label)"
+    assert_includes cpp, "0x9e3779b97f4a7c15ULL"
+  end
+
+  def test_derive_hash_empty_record_constant_seed
+    cpp = MLC.to_cpp(<<~MLC)
+      type Empty = { } derive { Hash }
+      fn main() -> i32 = 0
+    MLC
+    assert_includes cpp, "struct hash<Empty>"
+    assert_includes cpp, "1469598103934665603ULL"
+  end
+
+  def test_derive_hash_sum_type_units_and_tuple_payload
+    cpp = MLC.to_cpp(<<~MLC)
+      type Shape = Circle(i32) | Empty derive { Hash }
+      fn main() -> i32 = 0
+    MLC
+    assert_includes cpp, "struct hash<Shape>"
+    assert_includes cpp, "std::holds_alternative<Circle>"
+    assert_includes cpp, "std::holds_alternative<Empty>"
+    assert_includes cpp, "std::get<Circle>(self._).field0"
+  end
+
+  def test_derive_hash_as_hash_map_key_emits_hash_map_type
+    cpp = MLC.to_cpp(<<~MLC)
+      type PointKey = { x: i32, y: i32 } derive { Eq, Hash }
+      fn main() -> i32 = do
+        let table: Map<PointKey, i32> = Map.new()
+        table.set(PointKey { x: 1, y: 2 }, 1)
+        0
+      end
+    MLC
+    assert_includes cpp, "mlc::HashMap<PointKey"
+  end
+
+  def test_derive_unknown_trait_raises
+    source = <<~MLC
+      type Bad = { x: i32 } derive { NotATrait }
+      fn main() -> i32 = 0
+    MLC
+    error = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
+    assert_includes error.message, "unknown derive trait \"NotATrait\""
+  end
+
+  def test_derive_duplicate_trait_raises
+    source = <<~MLC
+      type Bad = { x: i32 } derive { Eq, Eq }
+      fn main() -> i32 = 0
+    MLC
+    error = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
+    assert_includes error.message, "duplicate derive trait \"Eq\""
+  end
+
+  def test_derive_hash_wrong_case_trait_name_raises
+    source = <<~MLC
+      type Bad = { x: i32 } derive { hash }
+      fn main() -> i32 = 0
+    MLC
+    error = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
+    assert_includes error.message, "unknown derive trait \"hash\""
+  end
+
+  def test_derive_hash_generic_type_raises
+    source = <<~MLC
+      type Box<T> = { value: T } derive { Hash }
+      fn main() -> i32 = 0
+    MLC
+    error = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
+    assert_includes error.message, "derive Hash is not supported for generic types in this version"
+  end
+
+  def test_derive_hash_nested_named_field_raises
+    source = <<~MLC
+      type Inner = { x: i32 }
+      type Outer = { inner: Inner } derive { Hash }
+      fn main() -> i32 = 0
+    MLC
+    error = assert_raises(MLC::CompileError) { MLC.to_cpp(source) }
+    assert_includes error.message, "derive Hash: unsupported field type for \"inner\""
+  end
 end

@@ -123,6 +123,43 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains("derive Display sum type: handles Red variant",
     gen_decl(color_display, context), "\"Red\""))
 
+  const point_hash = Shared.new(SDeclType("Point", [],
+    [record_variant("Point", [
+      field_definition("tag", Shared.new(TyI32)),
+      field_definition("flag", Shared.new(TyBool)),
+      field_definition("label", Shared.new(TyString))
+    ])], ["Hash"]))
+
+  results.push(assert_code_contains("derive Hash record: namespace std and struct hash",
+    gen_decl(point_hash, context), "namespace std"))
+  results.push(assert_code_contains("derive Hash record: struct hash<Point>",
+    gen_decl(point_hash, context), "struct hash<Point>"))
+  results.push(assert_code_contains("derive Hash record: combines i32 field",
+    gen_decl(point_hash, context), "std::hash<int>{}(self.tag)"))
+  results.push(assert_code_contains("derive Hash record: combines bool field",
+    gen_decl(point_hash, context), "std::hash<bool>{}(self.flag)"))
+  results.push(assert_code_contains("derive Hash record: combines string field",
+    gen_decl(point_hash, context), "std::hash<mlc::String>{}(self.label)"))
+  results.push(assert_code_contains("derive Hash record: boost-style combine constant",
+    gen_decl(point_hash, context), "0x9e3779b97f4a7c15ULL"))
+
+  const empty_hash = Shared.new(SDeclType("Empty", [],
+    [record_variant("Empty", [])], ["Hash"]))
+  results.push(assert_code_contains("derive Hash empty record: fnv offset basis seed",
+    gen_decl(empty_hash, context), "1469598103934665603ULL"))
+
+  const hue_hash = Shared.new(SDeclType("Hue", [],
+    [unit_variant("North"), unit_variant("South")], ["Hash"]))
+  results.push(assert_code_contains("derive Hash sum: holds_alternative first variant",
+    gen_decl(hue_hash, context), "std::holds_alternative<North>"))
+  results.push(assert_code_contains("derive Hash sum: holds_alternative second variant",
+    gen_decl(hue_hash, context), "std::holds_alternative<South>"))
+
+  const shape_hash = Shared.new(SDeclType("Shape", [],
+    [tuple_variant("Circle", [Shared.new(TyI32)]), unit_variant("Empty")], ["Hash"]))
+  results.push(assert_code_contains("derive Hash sum tuple variant: std get and field0",
+    gen_decl(shape_hash, context), "std::get<Circle>(self._).field0"))
+
   // --- gen_trait_decl + SDeclExtend --------------------------------------------
 
   const display_self = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed("Display")), has_default: false, default: Shared.new(ExprUnit(span_unknown())) })

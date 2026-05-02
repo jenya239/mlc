@@ -263,7 +263,8 @@ all_diagnostics = ast::diagnostics_append(ast::diagnostics_append(all_diagnostic
 /* unit */;
 return /* unit */;
 }(); },
-[&](const ast::DeclType& declType) { auto [__0, __1, __2, __3] = declType; return [&]() {
+[&](const ast::DeclType& declType) { auto [__0, type_parameters, variants, derive_trait_names] = declType; return [&]() {
+all_diagnostics = ast::diagnostics_append(all_diagnostics, derive_validation::derive_clause_diagnostics(type_parameters, variants, derive_trait_names, ast::span_unknown()));
 /* unit */;
 return /* unit */;
 }(); },

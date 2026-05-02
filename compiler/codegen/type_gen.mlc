@@ -1,6 +1,6 @@
 // Type expression → C++ string generation.
 
-import { TypeVariant, TypeExpr, FieldDef, Decl, Param } from "../ast"
+import { TypeVariant, TypeExpr, FieldDef, Decl, Param, TyI32, TyBool, TyString, VarUnit, VarTuple, VarRecord } from "../ast"
 import { Type } from "../checker/registry"
 import { CodegenContext, CtorTypeInfo, context_resolve, list_contains } from "./context"
 import { cpp_safe, lower_first, template_prefix } from "./cpp_naming"
@@ -404,6 +404,97 @@ end
 fn derive_ord_sum(type_name: string) -> string =
   "bool operator<(const " + type_name + "& a, const " + type_name + "& b) noexcept { return a._ < b._; }\n"
 
+fn derive_hash_std_cpp_type(field_type: Shared<TypeExpr>) -> string =
+  match field_type {
+    TyString => "mlc::String",
+    TyI32    => "int",
+    TyBool   => "bool",
+    _        => ""
+  }
+
+fn derive_hash_combine_line(cpp_type: string, access_expr: string) -> string =
+  "h ^= std::hash<" + cpp_type + ">{}(" + access_expr + ") + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);\n"
+
+fn derive_hash_record_operator_body(field_defs: [Shared<FieldDef>]) -> string =
+  if field_defs.length() == 0 then "return static_cast<size_t>(1469598103934665603ULL);\n"
+  else
+    let mut inner = "size_t h = 1469598103934665603ULL;\n"
+    let mut field_index = 0
+    while field_index < field_defs.length() do
+      const cpp_type_name = derive_hash_std_cpp_type(field_defs[field_index].typ)
+      inner = inner + derive_hash_combine_line(cpp_type_name, "self." + field_defs[field_index].name)
+      field_index = field_index + 1
+    end
+    inner + "return h;\n"
+  end
+
+fn derive_hash_record(type_name: string, field_defs: [Shared<FieldDef>]) -> string = do
+  const operator_body = derive_hash_record_operator_body(field_defs)
+  "namespace std {\ntemplate<>\nstruct hash<" + type_name + "> {\n  size_t operator()(const " + type_name + "& self) const noexcept {\n    "
+    + operator_body + "  }\n};\n}\n"
+end
+
+fn derive_hash_tuple_variant_inner(variant_struct_name: string, field_types: [Shared<TypeExpr>], discriminant_index: i32) -> string = do
+  let mut inner = derive_hash_combine_line("size_t", discriminant_index.to_string())
+  let mut tuple_index = 0
+  while tuple_index < field_types.length() do
+    const cpp_type_name = derive_hash_std_cpp_type(field_types[tuple_index])
+    const slot_access = "std::get<" + variant_struct_name + ">(self._).field" + tuple_index.to_string()
+    inner = inner + derive_hash_combine_line(cpp_type_name, slot_access)
+    tuple_index = tuple_index + 1
+  end
+  inner
+end
+
+fn derive_hash_record_variant_inner(variant_struct_name: string, field_defs: [Shared<FieldDef>], discriminant_index: i32) -> string = do
+  let mut inner = derive_hash_combine_line("size_t", discriminant_index.to_string())
+  let mut field_index = 0
+  while field_index < field_defs.length() do
+    const cpp_type_name = derive_hash_std_cpp_type(field_defs[field_index].typ)
+    const variant_member_access_expression =
+      "std::get<" + variant_struct_name + ">(self._)." + field_defs[field_index].name
+    inner = inner + derive_hash_combine_line(cpp_type_name, variant_member_access_expression)
+    field_index = field_index + 1
+  end
+  inner
+end
+
+fn derive_hash_sum_variant_inner(variant: Shared<TypeVariant>, discriminant_index: i32) -> string =
+  match variant {
+    VarUnit(_, _)             => derive_hash_combine_line("size_t", discriminant_index.to_string()),
+    VarTuple(vname, fts, _)   => derive_hash_tuple_variant_inner(vname, fts, discriminant_index),
+    VarRecord(vname, fds, _)  => derive_hash_record_variant_inner(vname, fds, discriminant_index)
+  }
+
+fn type_variant_constructor_name(variant: Shared<TypeVariant>) -> string =
+  match variant {
+    VarUnit(name, _)        => name,
+    VarTuple(name, _, _)    => name,
+    VarRecord(name, _, _)   => name
+  }
+
+fn derive_hash_sum_branch(variant: Shared<TypeVariant>, discriminant_index: i32) -> string = do
+  const constructor_name = type_variant_constructor_name(variant)
+  const variant_inner = derive_hash_sum_variant_inner(variant, discriminant_index)
+  "if (std::holds_alternative<" + constructor_name + ">(self._)) {\n    " + variant_inner + "    return h;\n  }\n"
+end
+
+fn derive_hash_sum_operator_body(variants: [Shared<TypeVariant>]) -> string = do
+  let mut inner = "size_t h = 1469598103934665603ULL;\n"
+  let mut variant_index = 0
+  while variant_index < variants.length() do
+    inner = inner + derive_hash_sum_branch(variants[variant_index], variant_index)
+    variant_index = variant_index + 1
+  end
+  inner + "return h;\n"
+end
+
+fn derive_hash_sum(type_name: string, variants: [Shared<TypeVariant>]) -> string = do
+  const operator_body = derive_hash_sum_operator_body(variants)
+  "namespace std {\ntemplate<>\nstruct hash<" + type_name + "> {\n  size_t operator()(const " + type_name + "& self) const noexcept {\n    "
+    + operator_body + "  }\n};\n}\n"
+end
+
 fn variants_is_single_record(variants: [Shared<TypeVariant>]) -> bool =
   if variants.length() != 1 then false
   else match variants[0] { VarRecord(_, _, _) => true, _ => false }
@@ -419,6 +510,7 @@ fn gen_derive_record_trait(type_name: string, variants: [Shared<TypeVariant>], t
   if trait_name == "Display" then derive_display_record(type_name, fds)
   else if trait_name == "Eq" then derive_eq_record(type_name, fds)
   else if trait_name == "Ord" then derive_ord_record(type_name, fds)
+  else if trait_name == "Hash" then derive_hash_record(type_name, fds)
   else ""
   end
 end
@@ -427,6 +519,7 @@ fn gen_derive_sum_trait(type_name: string, variants: [Shared<TypeVariant>], trai
   if trait_name == "Display" then derive_display_sum(type_name, variants)
   else if trait_name == "Eq" then derive_eq_sum(type_name)
   else if trait_name == "Ord" then derive_ord_sum(type_name)
+  else if trait_name == "Hash" then derive_hash_sum(type_name, variants)
   else ""
   end
 

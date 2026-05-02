@@ -458,6 +458,8 @@ module MLC
               stmts << generate_derive_eq(name, type)
             when "Ord"
               stmts << generate_derive_ord(name, type)
+            when "Hash"
+              stmts << generate_derive_hash(name, type)
             end
           end
           stmts.compact
@@ -562,6 +564,92 @@ module MLC
 
           code = "bool operator<(const #{name}& a, const #{name}& b) noexcept { #{body} }"
           @context.factory.raw_statement(code: code)
+        end
+
+        HASH_COMBINE_SUFFIX = " + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);"
+
+        def generate_derive_hash(name, type)
+          body = case type
+                 when SemanticIR::RecordType
+                   derive_hash_record_body(type.fields)
+                 when SemanticIR::SumType
+                   derive_hash_sum_body(type.variants)
+                 else
+                   return nil
+                 end
+
+          code = <<~CPP.strip
+            namespace std {
+            template<>
+            struct hash<#{name}> {
+              size_t operator()(const #{name}& self) const noexcept {
+                #{body}
+              }
+            };
+            }
+          CPP
+          @context.factory.raw_statement(code: code)
+        end
+
+        def derive_hash_prim_std_type(semantic_type)
+          return nil unless semantic_type.is_a?(SemanticIR::Type) && semantic_type.kind == :prim
+
+          case semantic_type.name
+          when "string"
+            "mlc::String"
+          when "i32"
+            "int"
+          when "bool"
+            "bool"
+          else
+            nil
+          end
+        end
+
+        def derive_hash_combine_line(cpp_type, access_expr)
+          "h ^= std::hash<#{cpp_type}>{}(#{access_expr})#{HASH_COMBINE_SUFFIX}"
+        end
+
+        def derive_hash_record_body(fields)
+          if fields.empty?
+            "return static_cast<size_t>(1469598103934665603ULL);"
+          else
+            lines = ["size_t h = 1469598103934665603ULL;"]
+            fields.each do |field|
+              cpp_t = derive_hash_prim_std_type(field[:type])
+              lines << "#{derive_hash_combine_line(cpp_t, "self.#{field[:name]}")}"
+            end
+            lines << "return h;"
+            lines.join("\n    ")
+          end
+        end
+
+        def derive_hash_sum_body(variants)
+          lines = ["size_t h = 1469598103934665603ULL;"]
+          variants.each_with_index do |variant, idx|
+            vname = variant[:name]
+            fields = Array(variant[:fields])
+            branch_inner =
+              if fields.empty?
+                derive_hash_combine_line("size_t", idx.to_s)
+              elsif fields.length == 1 && fields.first[:name].nil?
+                ft = fields.first[:type]
+                cpp_t = derive_hash_prim_std_type(ft)
+                idx_line = derive_hash_combine_line("size_t", idx.to_s)
+                payload_line = derive_hash_combine_line(cpp_t, "std::get<#{vname}>(self._).field0")
+                "#{idx_line}\n      #{payload_line}"
+              else
+                idx_line = derive_hash_combine_line("size_t", idx.to_s)
+                payload_lines = fields.map do |field|
+                  cpp_t = derive_hash_prim_std_type(field[:type])
+                  derive_hash_combine_line(cpp_t, "std::get<#{vname}>(self._).#{field[:name]}")
+                end
+                ([idx_line] + payload_lines).join("\n      ")
+              end
+            lines << "if (std::holds_alternative<#{vname}>(self._)) {\n      #{branch_inner}\n      return h;\n    }"
+          end
+          lines << "return h;"
+          lines.join("\n    ")
         end
 
         def lower_type_alias_internal(name, aliased_type)
