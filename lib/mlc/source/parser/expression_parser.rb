@@ -953,7 +953,13 @@ module MLC
           return unless current.type == :IF
 
           consume(:IF)
-          parse_logical_or_no_pipe
+          saved_forbid_lambda_shorthand = @forbid_lambda_shorthand
+          @forbid_lambda_shorthand = true
+          begin
+            parse_logical_or_no_pipe
+          ensure
+            @forbid_lambda_shorthand = saved_forbid_lambda_shorthand
+          end
         end
 
         def consume_fat_arrow!
@@ -1264,7 +1270,7 @@ module MLC
             attach_origin(MLC::Source::AST::RegexLit.new(pattern: regex_data[:pattern], flags: regex_data[:flags]), token)
           when :IDENTIFIER
             # Check for lambda: x => expr
-            if peek && peek.type == :FAT_ARROW
+            if !@forbid_lambda_shorthand && peek && peek.type == :FAT_ARROW
               parse_lambda
             else
               name_token = consume(:IDENTIFIER)
@@ -1290,6 +1296,8 @@ module MLC
               end
             end
           when :FN
+            raise parse_error("Lambda expressions are not allowed in match guards") if @forbid_lambda_shorthand
+
             # fn(params) => body  -- lambda with fn keyword
             fn_token = consume(:FN)
             consume(:LPAREN)
@@ -1301,7 +1309,7 @@ module MLC
           when :LPAREN
             # Could be lambda, tuple literal, or grouped expression
             # Lookahead to determine
-            if looks_like_lambda?
+            if !@forbid_lambda_shorthand && looks_like_lambda?
               parse_lambda
             else
               parse_tuple_or_grouped

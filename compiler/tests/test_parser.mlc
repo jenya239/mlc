@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from "./test_runner"
 import { tokenize } from "../lexer"
 import { parse_program } from "../parser/decls"
-import { Decl, DeclFn, DeclType, DeclExtend, DeclImport, Expr, ExprStr, ExprBin, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, ExprBlock, Stmt, StmtLetPat } from "../ast"
+import { Decl, DeclFn, DeclType, DeclExtend, DeclImport, Expr, ExprStr, ExprBin, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, PatWild, PatIdent, ExprBlock, Stmt, StmtLetPat } from "../ast"
 import { parse_expr } from "../parser/exprs"
 import { parser_new } from "../parser/preds"
 
@@ -12,6 +12,83 @@ fn parse_source(source: string) -> Program =
 
 fn parse_expr_source(source: string) -> Shared<Expr> =
   parse_expr(parser_new(tokenize(source).tokens)).expr
+
+fn expr_match_arm_count(parsed_expression: Shared<Expr>) -> i32 =
+  match parsed_expression {
+    ExprMatch(_, arms, _) => do
+      let mut count = 0
+      while count < arms.length() do count = count + 1 end
+      count
+    end,
+    _ => -1
+  }
+
+fn expr_match_arm_has_guard(parsed_expression: Shared<Expr>, arm_index: i32) -> bool =
+  match parsed_expression {
+    ExprMatch(_, arms, _) =>
+      if arm_index < 0 || arm_index >= arms.length() then false
+      else arms[arm_index].has_guard
+      end,
+    _ => false
+  }
+
+fn expr_guard_binary_operation(candidate_guard: Shared<Expr>) -> string =
+  match candidate_guard {
+    ExprBin(binary_operation, _, _, _) => binary_operation,
+    _ => ""
+  }
+
+fn expr_pat_ident_binding_name(pattern: Shared<Pat>) -> string =
+  match pattern {
+    PatIdent(binding_name, _) => binding_name,
+    _ => ""
+  }
+
+fn expr_pat_or_alt_count(pattern: Shared<Pat>) -> i32 =
+  match pattern {
+    PatOr(alts, _) => do
+      let mut count = 0
+      while count < alts.length() do count = count + 1 end
+      count
+    end,
+    _ => -1
+  }
+
+fn expr_match_arm_guard_binary_operation(parsed_expression: Shared<Expr>, arm_index: i32) -> string =
+  match parsed_expression {
+    ExprMatch(_, arms, _) =>
+      if arm_index < 0 || arm_index >= arms.length() then ""
+      else expr_guard_binary_operation(arms[arm_index].when_condition)
+      end,
+    _ => ""
+  }
+
+fn expr_match_arm_pat_ident_name(parsed_expression: Shared<Expr>, arm_index: i32) -> string =
+  match parsed_expression {
+    ExprMatch(_, arms, _) =>
+      if arm_index < 0 || arm_index >= arms.length() then ""
+      else expr_pat_ident_binding_name(arms[arm_index].pat)
+      end,
+    _ => ""
+  }
+
+fn expr_match_arm_pat_or_alt_count(parsed_expression: Shared<Expr>, arm_index: i32) -> i32 =
+  match parsed_expression {
+    ExprMatch(_, arms, _) =>
+      if arm_index < 0 || arm_index >= arms.length() then -1
+      else expr_pat_or_alt_count(arms[arm_index].pat)
+      end,
+    _ => -1
+  }
+
+fn sample_parse_match_guard_brace() -> Shared<Expr> =
+  parse_expr_source("match score { n if n >= 90 => 1 }")
+
+fn sample_parse_match_guard_pipe() -> Shared<Expr> =
+  parse_expr_source("match x | n if n > 0 => 1 end")
+
+fn sample_parse_match_guard_or_pattern() -> Shared<Expr> =
+  parse_expr_source("match x { A(r) | B(r) if r > 0 => r }")
 
 fn decl_count(source: string) -> i32 =
   parse_source(source).decls.length()
@@ -149,17 +226,37 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_true("single pattern: no PatOr",
+  results.push(assert_true("single pattern: no PatOr, no guard",
     match parse_expr_source("match x { A(r) => r }") {
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
-          match arms[0].pat {
-            PatCtor(name, _, _) => name == "A",
-            _ => false
-          }
+          if arms[0].has_guard then false
+          else
+            match arms[0].pat {
+              PatCtor(name, _, _) => name == "A",
+              _ => false
+            }
+          end
         else false end,
       _ => false
     }))
+
+  results.push(assert_true("match arm guard brace-style",
+    expr_match_arm_count(sample_parse_match_guard_brace()) == 1 &&
+    expr_match_arm_has_guard(sample_parse_match_guard_brace(), 0) &&
+    expr_match_arm_pat_ident_name(sample_parse_match_guard_brace(), 0) == "n" &&
+    expr_match_arm_guard_binary_operation(sample_parse_match_guard_brace(), 0) == ">="))
+
+  results.push(assert_true("match arm guard pipe-style",
+    expr_match_arm_count(sample_parse_match_guard_pipe()) == 1 &&
+    expr_match_arm_has_guard(sample_parse_match_guard_pipe(), 0) &&
+    expr_match_arm_guard_binary_operation(sample_parse_match_guard_pipe(), 0) == ">"))
+
+  results.push(assert_true("or-pattern with shared guard after alternatives",
+    expr_match_arm_count(sample_parse_match_guard_or_pattern()) == 1 &&
+    expr_match_arm_has_guard(sample_parse_match_guard_or_pattern(), 0) &&
+    expr_match_arm_pat_or_alt_count(sample_parse_match_guard_or_pattern(), 0) == 2 &&
+    expr_match_arm_guard_binary_operation(sample_parse_match_guard_or_pattern(), 0) == ">"))
 
   results.push(assert_true("match catch-all: else => synonyms wildcard PatWild",
     match parse_expr_source("match x { 1 => 0, else => 1 }") {

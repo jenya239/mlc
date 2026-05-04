@@ -5,10 +5,10 @@ import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVar
 
 // --- Parser state ---------------------------------------------------------
 
-export type Parser = Parser { tokens: [Token], pos: i32, source_path: string }
+export type Parser = Parser { tokens: [Token], pos: i32, source_path: string, suppress_lambda_shorthand: bool }
 
 export fn parser_new_with_source_path(tokens: [Token], source_path: string) -> Parser =
-  Parser { tokens: tokens, pos: 0, source_path: source_path }
+  Parser { tokens: tokens, pos: 0, source_path: source_path, suppress_lambda_shorthand: false }
 
 export fn parser_new(tokens: [Token]) -> Parser =
   parser_new_with_source_path(tokens, "")
@@ -17,23 +17,9 @@ fn parser_kind(parser: Parser) -> TKind = do
   const tok: Token = parser.tokens[parser.pos]; tok.kind
 end
 
-fn parser_advance(parser: Parser) -> Parser =
-  Parser { tokens: parser.tokens, pos: parser.pos + 1, source_path: parser.source_path }
-
-fn parser_advance_by(parser: Parser, count: i32) -> Parser =
-  Parser { tokens: parser.tokens, pos: parser.pos + count, source_path: parser.source_path }
-
-fn parser_at_eof(parser: Parser) -> bool = do
-  if parser.pos >= parser.tokens.length() then true
-  else
-    const tok: Token = parser.tokens[parser.pos]
-    match tok.kind { Eof => true, _ => false }
-  end
-end
-
 fn parser_skip_semi(parser: Parser) -> Parser = do
   const tok: Token = parser.tokens[parser.pos]
-  match tok.kind { Semicolon => parser_advance(parser), _ => parser }
+  match tok.kind { Semicolon => parser.advance(), _ => parser }
 end
 
 // --- Result types ---------------------------------------------------------
@@ -192,8 +178,13 @@ export extend TKind {
 
 export extend Parser {
   fn kind(self) -> TKind = do const tok: Token = tokens[pos]; tok.kind end
-  fn advance(self)   -> Parser = Parser { tokens, pos: pos + 1, source_path: source_path }
-  fn advance_by(self, count: i32) -> Parser = Parser { tokens, pos: pos + count, source_path: source_path }
+  fn lambda_shorthand_suppression_active(self) -> bool = suppress_lambda_shorthand
+  fn with_lambda_shorthand_suppressed(self, value: bool) -> Parser =
+    Parser { tokens, pos, source_path: source_path, suppress_lambda_shorthand: value }
+  fn advance(self)   -> Parser =
+    Parser { tokens, pos: pos + 1, source_path: source_path, suppress_lambda_shorthand: suppress_lambda_shorthand }
+  fn advance_by(self, count: i32) -> Parser =
+    Parser { tokens, pos: pos + count, source_path: source_path, suppress_lambda_shorthand: suppress_lambda_shorthand }
   fn at_eof(self) -> bool =
     if pos >= tokens.length() then true
     else

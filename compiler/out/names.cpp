@@ -206,6 +206,11 @@ arm_scope.push_back(bindings[binding_index]);
 binding_index = binding_index + 1;
 }
 }
+if (arms[arm_index]->has_guard){
+{
+collected = ast::diagnostics_append(collected, check_names_expr(arms[arm_index]->when_condition, arm_scope, globals));
+}
+}
 collected = ast::diagnostics_append(collected, check_names_expr(arms[arm_index]->body, arm_scope, globals));
 arm_index = arm_index + 1;
 }

@@ -21,6 +21,28 @@ ast::Program parse_source(mlc::String source) noexcept;
 
 std::shared_ptr<ast::Expr> parse_expr_source(mlc::String source) noexcept;
 
+int expr_match_arm_count(std::shared_ptr<ast::Expr> parsed_expression) noexcept;
+
+bool expr_match_arm_has_guard(std::shared_ptr<ast::Expr> parsed_expression, int arm_index) noexcept;
+
+mlc::String expr_guard_binary_operation(std::shared_ptr<ast::Expr> candidate_guard) noexcept;
+
+mlc::String expr_pat_ident_binding_name(std::shared_ptr<ast::Pat> pattern) noexcept;
+
+int expr_pat_or_alt_count(std::shared_ptr<ast::Pat> pattern) noexcept;
+
+mlc::String expr_match_arm_guard_binary_operation(std::shared_ptr<ast::Expr> parsed_expression, int arm_index) noexcept;
+
+mlc::String expr_match_arm_pat_ident_name(std::shared_ptr<ast::Expr> parsed_expression, int arm_index) noexcept;
+
+int expr_match_arm_pat_or_alt_count(std::shared_ptr<ast::Expr> parsed_expression, int arm_index) noexcept;
+
+std::shared_ptr<ast::Expr> sample_parse_match_guard_brace() noexcept;
+
+std::shared_ptr<ast::Expr> sample_parse_match_guard_pipe() noexcept;
+
+std::shared_ptr<ast::Expr> sample_parse_match_guard_or_pattern() noexcept;
+
 int decl_count(mlc::String source) noexcept;
 
 std::shared_ptr<ast::Decl> first_decl(mlc::String source) noexcept;
@@ -32,6 +54,44 @@ mlc::Array<test_runner::TestResult> parser_tests() noexcept;
 ast::Program parse_source(mlc::String source) noexcept{return decls::parse_program(lexer::tokenize(source).tokens);}
 
 std::shared_ptr<ast::Expr> parse_expr_source(mlc::String source) noexcept{return exprs::parse_expr(preds::parser_new(lexer::tokenize(source).tokens)).expr;}
+
+int expr_match_arm_count(std::shared_ptr<ast::Expr> parsed_expression) noexcept{return [&]() { if (std::holds_alternative<ast::ExprMatch>((*parsed_expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parsed_expression)._); auto [_w0, arms, _w1] = _v_exprmatch; return [&]() -> int { 
+  int count = 0;
+  while (count < arms.size()){
+{
+count = count + 1;
+}
+}
+  return count;
+ }(); } return -1; }();}
+
+bool expr_match_arm_has_guard(std::shared_ptr<ast::Expr> parsed_expression, int arm_index) noexcept{return [&]() { if (std::holds_alternative<ast::ExprMatch>((*parsed_expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parsed_expression)._); auto [_w0, arms, _w1] = _v_exprmatch; return arm_index < 0 || arm_index >= arms.size() ? false : arms[arm_index]->has_guard; } return false; }();}
+
+mlc::String expr_guard_binary_operation(std::shared_ptr<ast::Expr> candidate_guard) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::ExprBin>((*candidate_guard)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*candidate_guard)._); auto [binary_operation, _w0, _w1, _w2] = _v_exprbin; return binary_operation; } return mlc::String(""); }();}
+
+mlc::String expr_pat_ident_binding_name(std::shared_ptr<ast::Pat> pattern) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::PatIdent>((*pattern))) { auto _v_patident = std::get<ast::PatIdent>((*pattern)); auto [binding_name, _w0] = _v_patident; return binding_name; } return mlc::String(""); }();}
+
+int expr_pat_or_alt_count(std::shared_ptr<ast::Pat> pattern) noexcept{return [&]() { if (std::holds_alternative<ast::PatOr>((*pattern))) { auto _v_pator = std::get<ast::PatOr>((*pattern)); auto [alts, _w0] = _v_pator; return [&]() -> int { 
+  int count = 0;
+  while (count < alts.size()){
+{
+count = count + 1;
+}
+}
+  return count;
+ }(); } return -1; }();}
+
+mlc::String expr_match_arm_guard_binary_operation(std::shared_ptr<ast::Expr> parsed_expression, int arm_index) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::ExprMatch>((*parsed_expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parsed_expression)._); auto [_w0, arms, _w1] = _v_exprmatch; return arm_index < 0 || arm_index >= arms.size() ? mlc::String("") : expr_guard_binary_operation(arms[arm_index]->when_condition); } return mlc::String(""); }();}
+
+mlc::String expr_match_arm_pat_ident_name(std::shared_ptr<ast::Expr> parsed_expression, int arm_index) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::ExprMatch>((*parsed_expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parsed_expression)._); auto [_w0, arms, _w1] = _v_exprmatch; return arm_index < 0 || arm_index >= arms.size() ? mlc::String("") : expr_pat_ident_binding_name(arms[arm_index]->pat); } return mlc::String(""); }();}
+
+int expr_match_arm_pat_or_alt_count(std::shared_ptr<ast::Expr> parsed_expression, int arm_index) noexcept{return [&]() { if (std::holds_alternative<ast::ExprMatch>((*parsed_expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parsed_expression)._); auto [_w0, arms, _w1] = _v_exprmatch; return arm_index < 0 || arm_index >= arms.size() ? -1 : expr_pat_or_alt_count(arms[arm_index]->pat); } return -1; }();}
+
+std::shared_ptr<ast::Expr> sample_parse_match_guard_brace() noexcept{return parse_expr_source(mlc::String("match score { n if n >= 90 => 1 }"));}
+
+std::shared_ptr<ast::Expr> sample_parse_match_guard_pipe() noexcept{return parse_expr_source(mlc::String("match x | n if n > 0 => 1 end"));}
+
+std::shared_ptr<ast::Expr> sample_parse_match_guard_or_pattern() noexcept{return parse_expr_source(mlc::String("match x { A(r) | B(r) if r > 0 => r }"));}
 
 int decl_count(mlc::String source) noexcept{return parse_source(source).decls.size();}
 
@@ -65,7 +125,10 @@ results.push_back(test_runner::assert_true(mlc::String("import single name in br
 results.push_back(test_runner::assert_true(mlc::String("or-pattern brace-style: PatOr produced"), [&]() { if (std::holds_alternative<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { A(r) | B(r) => r }")))._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { A(r) | B(r) => r }")))._); auto [_w0, arms, _w1] = _v_exprmatch; return arms.size() == 1 ? [&]() { if (std::holds_alternative<ast::PatOr>((*arms[0]->pat))) { auto _v_pator = std::get<ast::PatOr>((*arms[0]->pat)); auto [alts, _w0] = _v_pator; return alts.size() == 2; } return false; }() : false; } return false; }()));
 results.push_back(test_runner::assert_true(mlc::String("or-pattern pipe-style: PatOr produced"), [&]() { if (std::holds_alternative<ast::ExprMatch>((*parse_expr_source(mlc::String("match x | A(r) | B(r) => r end")))._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parse_expr_source(mlc::String("match x | A(r) | B(r) => r end")))._); auto [_w0, arms, _w1] = _v_exprmatch; return arms.size() == 1 ? [&]() { if (std::holds_alternative<ast::PatOr>((*arms[0]->pat))) { auto _v_pator = std::get<ast::PatOr>((*arms[0]->pat)); auto [alts, _w0] = _v_pator; return alts.size() == 2; } return false; }() : false; } return false; }()));
 results.push_back(test_runner::assert_true(mlc::String("unit or-pattern: PatOr produced"), [&]() { if (std::holds_alternative<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { Red | Green => 1, Blue => 2 }")))._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { Red | Green => 1, Blue => 2 }")))._); auto [_w0, arms, _w1] = _v_exprmatch; return arms.size() == 2 ? [&]() { if (std::holds_alternative<ast::PatOr>((*arms[0]->pat))) { auto _v_pator = std::get<ast::PatOr>((*arms[0]->pat)); auto [alts, _w0] = _v_pator; return alts.size() == 2; } return false; }() : false; } return false; }()));
-results.push_back(test_runner::assert_true(mlc::String("single pattern: no PatOr"), [&]() { if (std::holds_alternative<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { A(r) => r }")))._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { A(r) => r }")))._); auto [_w0, arms, _w1] = _v_exprmatch; return arms.size() == 1 ? [&]() { if (std::holds_alternative<ast::PatCtor>((*arms[0]->pat))) { auto _v_patctor = std::get<ast::PatCtor>((*arms[0]->pat)); auto [name, _w0, _w1] = _v_patctor; return name == mlc::String("A"); } return false; }() : false; } return false; }()));
+results.push_back(test_runner::assert_true(mlc::String("single pattern: no PatOr, no guard"), [&]() { if (std::holds_alternative<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { A(r) => r }")))._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { A(r) => r }")))._); auto [_w0, arms, _w1] = _v_exprmatch; return arms.size() == 1 ? arms[0]->has_guard ? false : [&]() { if (std::holds_alternative<ast::PatCtor>((*arms[0]->pat))) { auto _v_patctor = std::get<ast::PatCtor>((*arms[0]->pat)); auto [name, _w0, _w1] = _v_patctor; return name == mlc::String("A"); } return false; }() : false; } return false; }()));
+results.push_back(test_runner::assert_true(mlc::String("match arm guard brace-style"), expr_match_arm_count(sample_parse_match_guard_brace()) == 1 && expr_match_arm_has_guard(sample_parse_match_guard_brace(), 0) && expr_match_arm_pat_ident_name(sample_parse_match_guard_brace(), 0) == mlc::String("n") && expr_match_arm_guard_binary_operation(sample_parse_match_guard_brace(), 0) == mlc::String(">=")));
+results.push_back(test_runner::assert_true(mlc::String("match arm guard pipe-style"), expr_match_arm_count(sample_parse_match_guard_pipe()) == 1 && expr_match_arm_has_guard(sample_parse_match_guard_pipe(), 0) && expr_match_arm_guard_binary_operation(sample_parse_match_guard_pipe(), 0) == mlc::String(">")));
+results.push_back(test_runner::assert_true(mlc::String("or-pattern with shared guard after alternatives"), expr_match_arm_count(sample_parse_match_guard_or_pattern()) == 1 && expr_match_arm_has_guard(sample_parse_match_guard_or_pattern(), 0) && expr_match_arm_pat_or_alt_count(sample_parse_match_guard_or_pattern(), 0) == 2 && expr_match_arm_guard_binary_operation(sample_parse_match_guard_or_pattern(), 0) == mlc::String(">")));
 results.push_back(test_runner::assert_true(mlc::String("match catch-all: else => synonyms wildcard PatWild"), [&]() { if (std::holds_alternative<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { 1 => 0, else => 1 }")))._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parse_expr_source(mlc::String("match x { 1 => 0, else => 1 }")))._); auto [_w0, arms, _w1] = _v_exprmatch; return arms.size() == 2 ? [&]() { if (std::holds_alternative<ast::PatWild>((*arms[1]->pat))) { auto _v_patwild = std::get<ast::PatWild>((*arms[1]->pat)); auto [_w0] = _v_patwild; return true; } return false; }() : false; } return false; }()));
 results.push_back(test_runner::assert_eq_int(mlc::String("plain template literal - 1 decl"), decl_count(mlc::String("fn f() -> string = `hello`")), 1));
 results.push_back(test_runner::assert_eq_int(mlc::String("template with interpolation - 1 decl"), decl_count(mlc::String("fn f(x: i32) -> string = `a ${x} b`")), 1));

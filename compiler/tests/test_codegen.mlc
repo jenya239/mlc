@@ -27,6 +27,22 @@ fn sb(v: bool) -> Shared<SExpr> = Shared.new(SExprBool(v, bool_t(), span_unknown
 fn sid(name: string) -> Shared<SExpr> = Shared.new(SExprIdent(name, unk_t(), span_unknown()))
 fn su() -> Shared<SExpr> = Shared.new(SExprUnit(unit_t(), span_unknown()))
 
+fn smatch_arm(pattern: Shared<Pat>, body_expression: Shared<SExpr>) -> Shared<SMatchArm> =
+  Shared.new(SMatchArm {
+    pat: pattern,
+    has_guard: false,
+    when_condition: Shared.new(SExprBool(true, bool_t(), span_unknown())),
+    body: body_expression
+  })
+
+fn smatch_arm_guarded(pattern: Shared<Pat>, when_condition_expression: Shared<SExpr>, body_expression: Shared<SExpr>) -> Shared<SMatchArm> =
+  Shared.new(SMatchArm {
+    pat: pattern,
+    has_guard: true,
+    when_condition: when_condition_expression,
+    body: body_expression
+  })
+
 export fn codegen_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
@@ -217,8 +233,8 @@ export fn codegen_tests() -> [TestResult] = do
   // --- ExprMatch ----------------------------------------------------------------
 
   const pat_arms: [Shared<SMatchArm>] = [
-    Shared.new(SMatchArm { pat: Shared.new(PatInt(1, span_unknown())), body: ss("one") }),
-    Shared.new(SMatchArm { pat: Shared.new(PatWild(span_unknown())), body: ss("other") })
+    smatch_arm(Shared.new(PatInt(1, span_unknown())), ss("one")),
+    smatch_arm(Shared.new(PatWild(span_unknown())), ss("other"))
   ]
   const match_out = gen_expr(Shared.new(SExprMatch(sid("n"), pat_arms, str_t(), span_unknown())), ctx)
   results.push(assert_eq_str("ExprMatch contains std::visit",
@@ -230,16 +246,40 @@ export fn codegen_tests() -> [TestResult] = do
 
   // PatOr: expand_or_arms produces two separate lambda arms
   const or_arms: [Shared<SMatchArm>] = [
-    Shared.new(SMatchArm {
-      pat: Shared.new(PatOr([Shared.new(PatCtor("Circle", [Shared.new(PatWild(span_unknown()))], span_unknown())), Shared.new(PatCtor("Square", [Shared.new(PatWild(span_unknown()))], span_unknown()))], span_unknown())),
-      body: ss("r")
-    })
+    smatch_arm(
+      Shared.new(PatOr([Shared.new(PatCtor("Circle", [Shared.new(PatWild(span_unknown()))], span_unknown())), Shared.new(PatCtor("Square", [Shared.new(PatWild(span_unknown()))], span_unknown()))], span_unknown())),
+      ss("r"))
   ]
   const or_match_out = gen_expr(Shared.new(SExprMatch(sid("s"), or_arms, str_t(), span_unknown())), ctx)
   results.push(assert_eq_str("PatOr expanded: Circle lambda present",
     if or_match_out.contains("Circle") then "yes" else "no" end, "yes"))
   results.push(assert_eq_str("PatOr expanded: Square lambda present",
     if or_match_out.contains("Square") then "yes" else "no" end, "yes"))
+
+  const guarded_primitive_program =
+    "fn main() -> i32 = match 5 { n if n > 0 => 1, else => 0 }\n"
+  const guarded_primitive_cpp = gen_program(parse_program(tokenize(guarded_primitive_program).tokens))
+  results.push(assert_eq_str("match guard on primitive avoids std::visit",
+    if guarded_primitive_cpp.contains("std::visit") then "has_visit" else "no_visit" end, "no_visit"))
+  results.push(assert_code_contains("match guard emits typed IIFE", guarded_primitive_cpp, "[&]() -> int"))
+
+  const plain_sum_program =
+    "type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0 end\nfn main() -> i32 = f(A(1))\n"
+  const plain_sum_cpp = gen_program(parse_program(tokenize(plain_sum_program).tokens))
+  results.push(assert_eq_str("match sum without guard keeps std::visit",
+    if plain_sum_cpp.contains("std::visit") then "yes" else "no" end, "yes"))
+
+  const guarded_sum_program =
+    "type U = A(i32) | B\nfn g(x: U) -> i32 = match x | A(n) if n > 0 => n | A(_) => 0 | B => -1 end\nfn main() -> i32 = g(A(3))\n"
+  const guarded_sum_cpp = gen_program(parse_program(tokenize(guarded_sum_program).tokens))
+  results.push(assert_eq_str("match sum with guard avoids std::visit",
+    if guarded_sum_cpp.contains("std::visit") then "has_visit" else "no_visit" end, "no_visit"))
+
+  const mixed_guard_program =
+    "type V = A(i32) | B\nfn h(x: V) -> i32 = match x | A(n) => n | B if true => 0 end\nfn main() -> i32 = h(B)\n"
+  const mixed_guard_cpp = gen_program(parse_program(tokenize(mixed_guard_program).tokens))
+  results.push(assert_eq_str("match mixed arms use guarded lowering when any guard present",
+    if mixed_guard_cpp.contains("std::visit") then "has_visit" else "no_visit" end, "no_visit"))
 
   // --- ExprWhile ----------------------------------------------------------------
 

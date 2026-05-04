@@ -14,7 +14,7 @@ struct Stmt;
 struct SExpr;
 struct SStmt;
 
-struct Parser {mlc::Array<ast_tokens::Token> tokens;int pos;mlc::String source_path;};
+struct Parser {mlc::Array<ast_tokens::Token> tokens;int pos;mlc::String source_path;bool suppress_lambda_shorthand;};
 
 struct ExprResult {std::shared_ptr<ast::Expr> expr;preds::Parser parser;};
 
@@ -189,6 +189,10 @@ mlc::String TKind_usize_val(ast_tokens::TKind self) noexcept;
 mlc::String TKind_char_val(ast_tokens::TKind self) noexcept;
 
 ast_tokens::TKind Parser_kind(preds::Parser self) noexcept;
+
+bool Parser_lambda_shorthand_suppression_active(preds::Parser self) noexcept;
+
+preds::Parser Parser_with_lambda_shorthand_suppressed(preds::Parser self, bool value) noexcept;
 
 preds::Parser Parser_advance(preds::Parser self) noexcept;
 

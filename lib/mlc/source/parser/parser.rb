@@ -26,6 +26,7 @@ module MLC
           parser.instance_variable_set(:@tokens, tokens)
           parser.instance_variable_set(:@pos, 0)
           parser.instance_variable_set(:@last_token, nil)
+          parser.instance_variable_set(:@forbid_lambda_shorthand, false)
           parser
         end
 

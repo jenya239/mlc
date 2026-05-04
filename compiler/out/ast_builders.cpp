@@ -75,6 +75,8 @@ std::shared_ptr<ast::Pat> ctor_pattern(mlc::String ctor_name, mlc::Array<std::sh
 
 std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept;
 
+std::shared_ptr<ast::MatchArm> match_arm_with_guard(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> when_condition_expression, std::shared_ptr<ast::Expr> body_expr) noexcept;
+
 std::shared_ptr<ast::Stmt> let_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept;
 
 std::shared_ptr<ast::Stmt> let_mut_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept;
@@ -165,7 +167,9 @@ std::shared_ptr<ast::Pat> identifier_pattern(mlc::String name) noexcept{return s
 
 std::shared_ptr<ast::Pat> ctor_pattern(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::Pat>> sub_patterns) noexcept{return std::make_shared<ast::Pat>(ast::PatCtor(ctor_name, sub_patterns, ast::span_unknown()));}
 
-std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept{return std::make_shared<ast::MatchArm>(ast::MatchArm{pattern, body_expr});}
+std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept{return std::make_shared<ast::MatchArm>(ast::MatchArm{pattern, false, std::make_shared<ast::Expr>(ast::ExprBool(true, ast::span_unknown())), body_expr});}
+
+std::shared_ptr<ast::MatchArm> match_arm_with_guard(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> when_condition_expression, std::shared_ptr<ast::Expr> body_expr) noexcept{return std::make_shared<ast::MatchArm>(ast::MatchArm{pattern, true, when_condition_expression, body_expr});}
 
 std::shared_ptr<ast::Stmt> let_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept{return std::make_shared<ast::Stmt>(ast::StmtLet(binding_name, false, type_expr, value_expr, ast::span_unknown()));}
 

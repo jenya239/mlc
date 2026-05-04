@@ -462,6 +462,12 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("infer: match arms same type — 0 errors",
     check_error_count("fn f() -> i32 = match 1 { _ => 0, _ => 1 }"), 0))
 
+  results.push(assert_true("infer: match guard must be bool",
+    first_checker_error_line("fn f() -> i32 = match 1 { x if x => 0 }").contains("match guard must have type bool")))
+
+  results.push(assert_true("names: undefined identifier in match guard",
+    first_checker_error_line("fn f() -> i32 = match 1 { x if missing_guard_binding => 0 }").contains("undefined:")))
+
   // --- for loop range type ---------------------------------------------------
 
   results.push(assert_diagnostic_at(

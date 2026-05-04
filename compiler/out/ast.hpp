@@ -23,7 +23,7 @@ struct PatWild;struct PatIdent;struct PatInt;struct PatStr;struct PatBool;struct
 
 struct FieldPat {mlc::String name;std::shared_ptr<ast::Pat> pat;};
 
-struct MatchArm {std::shared_ptr<ast::Pat> pat;std::shared_ptr<ast::Expr> body;};
+struct MatchArm {std::shared_ptr<ast::Pat> pat;bool has_guard;std::shared_ptr<ast::Expr> when_condition;std::shared_ptr<ast::Expr> body;};
 
 struct FieldVal {mlc::String name;std::shared_ptr<ast::Expr> val;};
 

@@ -73,7 +73,12 @@ export type Pat =
   | PatOr([Shared<Pat>], Span)
 
 export type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
-export type MatchArm = MatchArm { pat: Shared<Pat>, body: Shared<Expr> }
+export type MatchArm = MatchArm {
+  pat: Shared<Pat>,
+  has_guard: bool,
+  when_condition: Shared<Expr>,
+  body: Shared<Expr>
+}
 export type FieldVal = FieldVal { name: string, val: Shared<Expr> }
 
 export type Expr =

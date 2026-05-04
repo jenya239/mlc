@@ -80,7 +80,13 @@ end
 fn check_mutation_arms(arms: [Shared<MatchArm>], mutable_locals: [string]) -> [Diagnostic] = do
   let mut errors: [Diagnostic] = []; let mut index = 0
   while index < arms.length() do
-    errors = diagnostics_append(errors, check_mutation_expr(arms[index].body, mutable_locals)); index = index + 1
+    const bindings = pattern_bindings(arms[index].pat)
+    const arm_scope = mutable_locals; let mut binding_index = 0
+    while binding_index < bindings.length() do arm_scope.push(bindings[binding_index]); binding_index = binding_index + 1 end
+    if arms[index].has_guard then
+      errors = diagnostics_append(errors, check_mutation_expr(arms[index].when_condition, arm_scope))
+    end
+    errors = diagnostics_append(errors, check_mutation_expr(arms[index].body, arm_scope)); index = index + 1
   end
   errors
 end

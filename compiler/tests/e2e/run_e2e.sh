@@ -42,6 +42,9 @@ run_test "result"    "$SCRIPT_DIR/result.mlc"    "6
 division by zero"
 run_test "sum_types" "$SCRIPT_DIR/sum_types.mlc" "circle: 75
 rect: 12"
+run_test "match_guard" "$SCRIPT_DIR/match_guard.mlc" "5
+0
+-1"
 run_test "record_update" "$SCRIPT_DIR/record_update.mlc" "(0, 0)
 (5, 0)
 (5, 3)"

@@ -6,7 +6,12 @@ import { Type } from "./checker/registry"
 import { Pat, Span, TypeVariant, Param, Decl, WhereClauseBound } from "./ast"
 
 // Forward-declare SExpr so records referencing it can be defined first.
-export type SMatchArm = SMatchArm { pat: Shared<Pat>, body: Shared<SExpr> }
+export type SMatchArm = SMatchArm {
+  pat: Shared<Pat>,
+  has_guard: bool,
+  when_condition: Shared<SExpr>,
+  body: Shared<SExpr>
+}
 export type SFieldVal  = SFieldVal  { name: string, val: Shared<SExpr> }
 
 // --- Typed expression -------------------------------------------------------

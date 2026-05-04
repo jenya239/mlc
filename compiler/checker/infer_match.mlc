@@ -1,12 +1,20 @@
 // Match expression type inference.
 // infer_expr injected as a parameter to break the import cycle with infer.mlc.
 
-import { Expr, MatchArm, Diagnostic, diagnostics_append } from "../ast"
+import { Expr, MatchArm, Diagnostic, diagnostics_append, diagnostic_error, expr_span, Pat, PatTuple, PatArray } from "../ast"
 import { Type } from "./registry"
 import { CheckContext, check_context_new } from "./check_context"
 import { InferResult } from "./infer_result"
 import { match_arm_type_mismatch_diagnostic } from "./type_diagnostics"
 import { env_for_pattern_substituted } from "./pattern_env"
+import { type_is_bool, type_is_unknown } from "./semantic_type_structure"
+
+fn pattern_guard_unsupported_tuple_or_array_diagnostic(pattern: Shared<Pat>) -> [Diagnostic] =
+  match pattern {
+    PatTuple(_, span)    => [ diagnostic_error("match guard is not supported with tuple patterns", span) ],
+    PatArray(_, _, span) => [ diagnostic_error("match guard is not supported with array patterns", span) ],
+    _                    => do let empty_list: [Diagnostic] = []; empty_list end
+  }
 
 fn build_match_substitution(subject_type: Shared<Type>, context: CheckContext) -> Map<string, Shared<Type>> = do
   const substitution: Map<string, Shared<Type>> = Map.new()
@@ -35,8 +43,17 @@ export fn infer_expr_match(
   let mut arm_type: Shared<Type> = Shared.new(TUnknown)
   let mut arm_index = 0
   while arm_index < arms.length() do
-    const arm_environment = env_for_pattern_substituted(inference_context.type_env, arms[arm_index].pat, inference_context.registry, substitution)
+    const arm_environment = env_for_pattern_substituted(inference_context.type_env, arms[arm_index].pat, inference_context.registry, substitution, subject_result.inferred_type)
     const arm_context     = check_context_new(arm_environment, inference_context.registry)
+    if arms[arm_index].has_guard then
+      collected_errors = diagnostics_append(collected_errors, pattern_guard_unsupported_tuple_or_array_diagnostic(arms[arm_index].pat))
+      const guard_inference = infer_expr_fn(arms[arm_index].when_condition, arm_context)
+      collected_errors = diagnostics_append(collected_errors, guard_inference.errors)
+      if !type_is_unknown(guard_inference.inferred_type) && !type_is_bool(guard_inference.inferred_type) then
+        collected_errors =
+          diagnostics_append(collected_errors, [ diagnostic_error("match guard must have type bool", expr_span(arms[arm_index].when_condition)) ])
+      end
+    end
     const arm_result      = infer_expr_fn(arms[arm_index].body, arm_context)
     collected_errors = diagnostics_append(collected_errors, arm_result.errors)
     arm_type =

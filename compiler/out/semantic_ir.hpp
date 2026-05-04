@@ -14,7 +14,7 @@ struct Stmt;
 struct SExpr;
 struct SStmt;
 
-struct SMatchArm {std::shared_ptr<ast::Pat> pat;std::shared_ptr<semantic_ir::SExpr> body;};
+struct SMatchArm {std::shared_ptr<ast::Pat> pat;bool has_guard;std::shared_ptr<semantic_ir::SExpr> when_condition;std::shared_ptr<semantic_ir::SExpr> body;};
 
 struct SFieldVal {mlc::String name;std::shared_ptr<semantic_ir::SExpr> val;};
 

@@ -16,6 +16,7 @@ module MLC
           @tokens = @lexer.tokenize
           @pos = 0
           @last_token = nil
+          @forbid_lambda_shorthand = false
         end
 
         # Token navigation

@@ -79,7 +79,7 @@ fn apply_let_pattern_to_env(
         acc
       end
     end,
-    PatCtor(_, _, _) => env_for_pattern_substituted(base_env, pat, registry, build_let_substitution(value_type, registry)),
+    PatCtor(_, _, _) => env_for_pattern_substituted(base_env, pat, registry, build_let_substitution(value_type, registry), value_type),
     _ => base_env
   }
 end

@@ -81,6 +81,8 @@ std::shared_ptr<ast::Pat> ctor_pattern(mlc::String ctor_name, mlc::Array<std::sh
 
 std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept;
 
+std::shared_ptr<ast::MatchArm> match_arm_with_guard(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> when_condition_expression, std::shared_ptr<ast::Expr> body_expr) noexcept;
+
 std::shared_ptr<ast::Stmt> let_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept;
 
 std::shared_ptr<ast::Stmt> let_mut_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept;

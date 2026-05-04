@@ -3,7 +3,7 @@
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
 import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder } from "../ast"
-import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TUnknown, TF64, TI64, TU8, TUsize, TChar, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
+import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TUnknown, TF64, TI64, TU8, TUsize, TChar, TBool, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
 import {
   binary_operation_result_type,
   builtin_method_return_type,
@@ -18,7 +18,7 @@ import { array_hof_call_result_type, is_array_hof_method } from "./array_method_
 import { result_option_hof_call_result_type, should_infer_result_option_combinator } from "./result_option_method_types"
 import { env_for_pattern_substituted } from "./pattern_env"
 import { substitute_type } from "./semantic_type_structure"
-import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprArray, SExprIf, SExprBlock } from "../semantic_ir"
+import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprArray, SExprIf, SExprBlock, SExprBool } from "../semantic_ir"
 
 fn coerce_unknown_else_array_when_then_known_inner(
   elements: [Shared<SExpr>],
@@ -250,14 +250,29 @@ fn build_transform_substitution(subject_type: Shared<Type>, registry: TypeRegist
   substitution
 end
 
-fn transform_match_arms(arms: [Shared<MatchArm>], transform_context: TransformContext, substitution: Map<string, Shared<Type>>, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SMatchArm>] = do
+fn transform_match_arms(
+  arms: [Shared<MatchArm>],
+  transform_context: TransformContext,
+  substitution: Map<string, Shared<Type>>,
+  scrutinee_type: Shared<Type>,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> [Shared<SMatchArm>] = do
   let mut result: [Shared<SMatchArm>] = []
   let mut index = 0
   while index < arms.length() do
-    const arm_env     = env_for_pattern_substituted(transform_context.type_env, arms[index].pat, transform_context.registry, substitution)
+    const arm_env     = env_for_pattern_substituted(transform_context.type_env, arms[index].pat, transform_context.registry, substitution, scrutinee_type)
     const arm_context = transform_context_with_env(transform_context, arm_env)
     const typed_body  = transform_expr(arms[index].body, arm_context, stmts_fn)
-    result.push(Shared.new(SMatchArm { pat: arms[index].pat, body: typed_body }))
+    const typed_guard =
+      if arms[index].has_guard then transform_expr(arms[index].when_condition, arm_context, stmts_fn)
+      else Shared.new(SExprBool(true, Shared.new(TBool), span_unknown()))
+      end
+    result.push(Shared.new(SMatchArm {
+      pat: arms[index].pat,
+      has_guard: arms[index].has_guard,
+      when_condition: typed_guard,
+      body: typed_body
+    }))
     index = index + 1
   end
   result
@@ -517,7 +532,7 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     ExprMatch(subject, arms, source_span) => do
       const typed_subject = transform_expr(subject, transform_context, stmts_fn)
       const substitution  = build_transform_substitution(sexpr_type(typed_subject), transform_context.registry)
-      const typed_arms    = transform_match_arms(arms, transform_context, substitution, stmts_fn)
+      const typed_arms    = transform_match_arms(arms, transform_context, substitution, sexpr_type(typed_subject), stmts_fn)
       const result_type   = if typed_arms.length() > 0 then sexpr_type(typed_arms[0].body) else Shared.new(TUnknown) end
       Shared.new(SExprMatch(typed_subject, typed_arms, result_type, source_span))
     end,

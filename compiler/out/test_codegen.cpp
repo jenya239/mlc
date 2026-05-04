@@ -53,6 +53,10 @@ std::shared_ptr<semantic_ir::SExpr> sid(mlc::String name) noexcept;
 
 std::shared_ptr<semantic_ir::SExpr> su() noexcept;
 
+std::shared_ptr<semantic_ir::SMatchArm> smatch_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<semantic_ir::SExpr> body_expression) noexcept;
+
+std::shared_ptr<semantic_ir::SMatchArm> smatch_arm_guarded(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<semantic_ir::SExpr> when_condition_expression, std::shared_ptr<semantic_ir::SExpr> body_expression) noexcept;
+
 mlc::Array<test_runner::TestResult> codegen_tests() noexcept;
 
 std::shared_ptr<registry::Type> i32_t() noexcept{return std::make_shared<registry::Type>((registry::TI32{}));}
@@ -74,6 +78,10 @@ std::shared_ptr<semantic_ir::SExpr> sb(bool v) noexcept{return std::make_shared<
 std::shared_ptr<semantic_ir::SExpr> sid(mlc::String name) noexcept{return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIdent(name, unk_t(), ast::span_unknown()));}
 
 std::shared_ptr<semantic_ir::SExpr> su() noexcept{return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUnit(unit_t(), ast::span_unknown()));}
+
+std::shared_ptr<semantic_ir::SMatchArm> smatch_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<semantic_ir::SExpr> body_expression) noexcept{return std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{pattern, false, std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprBool(true, bool_t(), ast::span_unknown())), body_expression});}
+
+std::shared_ptr<semantic_ir::SMatchArm> smatch_arm_guarded(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<semantic_ir::SExpr> when_condition_expression, std::shared_ptr<semantic_ir::SExpr> body_expression) noexcept{return std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{pattern, true, when_condition_expression, body_expression});}
 
 mlc::Array<test_runner::TestResult> codegen_tests() noexcept{
 mlc::Array<test_runner::TestResult> results = {};
@@ -140,15 +148,28 @@ mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes = mlc::HashMap<m
 namespace_alias_prefixes.set(mlc::String("helpers"), mlc::String("infer_literals::"));
 context::CodegenContext context_with_aliases = context::context_with_namespace_alias_prefixes(ctx, namespace_alias_prefixes);
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod on import-as alias emits namespace::fn()"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(sid(mlc::String("helpers")), mlc::String("infer_expr_integer_literal"), empty_arr, unk_t(), ast::span_unknown())), context_with_aliases), mlc::String("infer_literals::infer_expr_integer_literal()")));
-mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> pat_arms = mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>>{std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{std::make_shared<ast::Pat>(ast::PatInt(1, ast::span_unknown())), ss(mlc::String("one"))}), std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown())), ss(mlc::String("other"))})};
+mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> pat_arms = mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>>{smatch_arm(std::make_shared<ast::Pat>(ast::PatInt(1, ast::span_unknown())), ss(mlc::String("one"))), smatch_arm(std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown())), ss(mlc::String("other")))};
 mlc::String match_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMatch(sid(mlc::String("n")), pat_arms, str_t(), ast::span_unknown())), ctx);
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMatch contains std::visit"), match_out.contains(mlc::String("std::visit")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMatch contains one"), match_out.contains(mlc::String("\"one\"")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMatch contains other"), match_out.contains(mlc::String("\"other\"")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
-mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> or_arms = mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>>{std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{std::make_shared<ast::Pat>(ast::PatOr(mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatCtor(mlc::String("Circle"), mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown()))}, ast::span_unknown())), std::make_shared<ast::Pat>(ast::PatCtor(mlc::String("Square"), mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown()))}, ast::span_unknown()))}, ast::span_unknown())), ss(mlc::String("r"))})};
+mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> or_arms = mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>>{smatch_arm(std::make_shared<ast::Pat>(ast::PatOr(mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatCtor(mlc::String("Circle"), mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown()))}, ast::span_unknown())), std::make_shared<ast::Pat>(ast::PatCtor(mlc::String("Square"), mlc::Array<std::shared_ptr<ast::Pat>>{std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown()))}, ast::span_unknown()))}, ast::span_unknown())), ss(mlc::String("r")))};
 mlc::String or_match_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMatch(sid(mlc::String("s")), or_arms, str_t(), ast::span_unknown())), ctx);
 results.push_back(test_runner::assert_eq_str(mlc::String("PatOr expanded: Circle lambda present"), or_match_out.contains(mlc::String("Circle")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("PatOr expanded: Square lambda present"), or_match_out.contains(mlc::String("Square")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+mlc::String guarded_primitive_program = mlc::String("fn main() -> i32 = match 5 { n if n > 0 => 1, else => 0 }\n");
+mlc::String guarded_primitive_cpp = module::gen_program(decls::parse_program(lexer::tokenize(guarded_primitive_program).tokens));
+results.push_back(test_runner::assert_eq_str(mlc::String("match guard on primitive avoids std::visit"), guarded_primitive_cpp.contains(mlc::String("std::visit")) ? mlc::String("has_visit") : mlc::String("no_visit"), mlc::String("no_visit")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("match guard emits typed IIFE"), guarded_primitive_cpp, mlc::String("[&]() -> int")));
+mlc::String plain_sum_program = mlc::String("type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0 end\nfn main() -> i32 = f(A(1))\n");
+mlc::String plain_sum_cpp = module::gen_program(decls::parse_program(lexer::tokenize(plain_sum_program).tokens));
+results.push_back(test_runner::assert_eq_str(mlc::String("match sum without guard keeps std::visit"), plain_sum_cpp.contains(mlc::String("std::visit")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+mlc::String guarded_sum_program = mlc::String("type U = A(i32) | B\nfn g(x: U) -> i32 = match x | A(n) if n > 0 => n | A(_) => 0 | B => -1 end\nfn main() -> i32 = g(A(3))\n");
+mlc::String guarded_sum_cpp = module::gen_program(decls::parse_program(lexer::tokenize(guarded_sum_program).tokens));
+results.push_back(test_runner::assert_eq_str(mlc::String("match sum with guard avoids std::visit"), guarded_sum_cpp.contains(mlc::String("std::visit")) ? mlc::String("has_visit") : mlc::String("no_visit"), mlc::String("no_visit")));
+mlc::String mixed_guard_program = mlc::String("type V = A(i32) | B\nfn h(x: V) -> i32 = match x | A(n) => n | B if true => 0 end\nfn main() -> i32 = h(B)\n");
+mlc::String mixed_guard_cpp = module::gen_program(decls::parse_program(lexer::tokenize(mixed_guard_program).tokens));
+results.push_back(test_runner::assert_eq_str(mlc::String("match mixed arms use guarded lowering when any guard present"), mixed_guard_cpp.contains(mlc::String("std::visit")) ? mlc::String("has_visit") : mlc::String("no_visit"), mlc::String("no_visit")));
 mlc::Array<std::shared_ptr<semantic_ir::SStmt>> while_body = mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtExpr(si(0), ast::span_unknown()))};
 mlc::String while_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprWhile(sb(true), while_body, unit_t(), ast::span_unknown())), ctx);
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprWhile contains while (true)"), while_out.contains(mlc::String("while (true)")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));

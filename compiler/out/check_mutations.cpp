@@ -101,7 +101,21 @@ mlc::Array<ast::Diagnostic> errors = {};
 int index = 0;
 while (index < arms.size()){
 {
-errors = ast::diagnostics_append(errors, check_mutation_expr(arms[index]->body, mutable_locals));
+mlc::Array<mlc::String> bindings = names::pattern_bindings(arms[index]->pat);
+mlc::Array<mlc::String> arm_scope = mutable_locals;
+int binding_index = 0;
+while (binding_index < bindings.size()){
+{
+arm_scope.push_back(bindings[binding_index]);
+binding_index = binding_index + 1;
+}
+}
+if (arms[index]->has_guard){
+{
+errors = ast::diagnostics_append(errors, check_mutation_expr(arms[index]->when_condition, arm_scope));
+}
+}
+errors = ast::diagnostics_append(errors, check_mutation_expr(arms[index]->body, arm_scope));
 index = index + 1;
 }
 }

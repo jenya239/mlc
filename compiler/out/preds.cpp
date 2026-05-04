@@ -15,12 +15,6 @@ preds::Parser parser_new(mlc::Array<ast_tokens::Token> tokens) noexcept;
 
 ast_tokens::TKind parser_kind(preds::Parser parser) noexcept;
 
-preds::Parser parser_advance(preds::Parser parser) noexcept;
-
-preds::Parser parser_advance_by(preds::Parser parser, int count) noexcept;
-
-bool parser_at_eof(preds::Parser parser) noexcept;
-
 preds::Parser parser_skip_semi(preds::Parser parser) noexcept;
 
 bool is_keyword_fn(ast_tokens::TKind kind) noexcept;
@@ -245,6 +239,10 @@ mlc::String TKind_char_val(ast_tokens::TKind self) noexcept;
 
 ast_tokens::TKind Parser_kind(preds::Parser self) noexcept;
 
+bool Parser_lambda_shorthand_suppression_active(preds::Parser self) noexcept;
+
+preds::Parser Parser_with_lambda_shorthand_suppressed(preds::Parser self, bool value) noexcept;
+
 preds::Parser Parser_advance(preds::Parser self) noexcept;
 
 preds::Parser Parser_advance_by(preds::Parser self, int count) noexcept;
@@ -257,7 +255,7 @@ ast::Span Parser_span_at_cursor(preds::Parser self) noexcept;
 
 int Parser_prev_line(preds::Parser self) noexcept;
 
-preds::Parser parser_new_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept{return preds::Parser{tokens, 0, source_path};}
+preds::Parser parser_new_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept{return preds::Parser{tokens, 0, source_path, false};}
 
 preds::Parser parser_new(mlc::Array<ast_tokens::Token> tokens) noexcept{return parser_new_with_source_path(tokens, mlc::String(""));}
 
@@ -266,20 +264,9 @@ ast_tokens::Token tok = parser.tokens[parser.pos];
 return tok.kind;
 }
 
-preds::Parser parser_advance(preds::Parser parser) noexcept{return preds::Parser{parser.tokens, parser.pos + 1, parser.source_path};}
-
-preds::Parser parser_advance_by(preds::Parser parser, int count) noexcept{return preds::Parser{parser.tokens, parser.pos + count, parser.source_path};}
-
-bool parser_at_eof(preds::Parser parser) noexcept{
-return parser.pos >= parser.tokens.size() ? true : [&]() -> bool { 
-  ast_tokens::Token tok = parser.tokens[parser.pos];
-  return [&]() { if (std::holds_alternative<ast_tokens::Eof>(tok.kind)) {  return true; } return false; }();
- }();
-}
-
 preds::Parser parser_skip_semi(preds::Parser parser) noexcept{
 ast_tokens::Token tok = parser.tokens[parser.pos];
-return [&]() -> preds::Parser { if (std::holds_alternative<ast_tokens::Semicolon>(tok.kind)) {  return parser_advance(parser); } return parser; }();
+return [&]() -> preds::Parser { if (std::holds_alternative<ast_tokens::Semicolon>(tok.kind)) {  return Parser_advance(parser); } return parser; }();
 }
 
 bool is_keyword_fn(ast_tokens::TKind kind) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KFn>(kind)) {  return true; } return false; }();}
@@ -513,9 +500,13 @@ ast_tokens::Token tok = self.tokens[self.pos];
 return tok.kind;
 }
 
-preds::Parser Parser_advance(preds::Parser self) noexcept{return preds::Parser{self.tokens, self.pos + 1, self.source_path};}
+bool Parser_lambda_shorthand_suppression_active(preds::Parser self) noexcept{return self.suppress_lambda_shorthand;}
 
-preds::Parser Parser_advance_by(preds::Parser self, int count) noexcept{return preds::Parser{self.tokens, self.pos + count, self.source_path};}
+preds::Parser Parser_with_lambda_shorthand_suppressed(preds::Parser self, bool value) noexcept{return preds::Parser{self.tokens, self.pos, self.source_path, value};}
+
+preds::Parser Parser_advance(preds::Parser self) noexcept{return preds::Parser{self.tokens, self.pos + 1, self.source_path, self.suppress_lambda_shorthand};}
+
+preds::Parser Parser_advance_by(preds::Parser self, int count) noexcept{return preds::Parser{self.tokens, self.pos + count, self.source_path, self.suppress_lambda_shorthand};}
 
 bool Parser_at_eof(preds::Parser self) noexcept{return self.pos >= self.tokens.size() ? true : [&]() -> bool { 
   ast_tokens::Token tok = self.tokens[self.pos];

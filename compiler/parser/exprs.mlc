@@ -2,7 +2,7 @@
 
 import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, FieldValsResult, StmtsResult, StmtResult, TypeResult, parser_new } from "./preds"
 import { parse_type } from "./types"
-import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit, ExprBlock } from "../ast"
+import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm } from "../ast"
 import { TKind, Eof } from "../ast_tokens"
 import { tokenize } from "../lexer"
 
@@ -571,18 +571,19 @@ end
 fn parse_primary_parenthesized(parser: Parser) -> ExprResult = do
   const open_paren_span = parser.span_at_cursor()
   if parser.advance().kind().is_rparen() then
-    if parser.advance_by(2).kind().is_fat_arrow() then
+    const after_close = parser.advance_by(2)
+    if after_close.kind().is_fat_arrow() && !parser.lambda_shorthand_suppression_active() then
       const params: [string] = []
       const body = parse_expr(parser.advance_by(3))
       ExprResult { expr: Shared.new(ExprLambda(params, body.expr, open_paren_span)), parser: body.parser }
     else
-      ExprResult { expr: Shared.new(ExprUnit(open_paren_span)), parser: parser.advance_by(2) }
+      ExprResult { expr: Shared.new(ExprUnit(open_paren_span)), parser: after_close }
     end
-  else if looks_like_typed_lambda_params(parser.advance()) then
+  else if !parser.lambda_shorthand_suppression_active() && looks_like_typed_lambda_params(parser.advance()) then
     const param_result = parse_typed_lambda_params(parser.advance())
     const body = parse_expr(param_result.parser.advance())
     ExprResult { expr: Shared.new(ExprLambda(param_result.exprs, body.expr, open_paren_span)), parser: body.parser }
-  else if looks_like_lambda_params(parser.advance()) then
+  else if !parser.lambda_shorthand_suppression_active() && looks_like_lambda_params(parser.advance()) then
     const param_result = parse_lambda_params(parser.advance())
     const body = parse_expr(param_result.parser.advance())
     ExprResult { expr: Shared.new(ExprLambda(param_result.exprs, body.expr, open_paren_span)), parser: body.parser }
@@ -645,7 +646,7 @@ end
 fn parse_primary_identifier(parser: Parser, name: string) -> ExprResult = do
   const source_span = parser.span_at_cursor()
   const after_name = parser.advance()
-  if after_name.kind().is_fat_arrow() then
+  if after_name.kind().is_fat_arrow() && !parser.lambda_shorthand_suppression_active() then
     const parameters: [string] = [name]
     const body = parse_expr(after_name.advance())
     ExprResult { expr: Shared.new(ExprLambda(parameters, body.expr, source_span)), parser: body.parser }
@@ -891,15 +892,40 @@ fn parse_match_expr(parser: Parser, header_span: Span) -> ExprResult = do
   end
 end
 
+type MatchArmParseOutcome = MatchArmParseOutcome { arm: Shared<MatchArm>, parser: Parser }
+
+fn parse_match_arm(pat_result: PatResult) -> MatchArmParseOutcome = do
+  let mut after_pattern = pat_result.parser
+  let mut has_guard = false
+  let mut guard_expression = Shared.new(ExprBool(true, span_unknown()))
+  if after_pattern.kind().is_if() then
+    const guard_expression_result = parse_expr(after_pattern.advance().with_lambda_shorthand_suppressed(true))
+    guard_expression = guard_expression_result.expr
+    has_guard = true
+    after_pattern = guard_expression_result.parser
+  end
+  const after_fat_arrow = after_pattern.advance()
+  const body_expression_result = parse_expr(after_fat_arrow)
+  MatchArmParseOutcome {
+    arm: Shared.new(MatchArm {
+      pat: pat_result.pat,
+      has_guard: has_guard,
+      when_condition: guard_expression,
+      body: body_expression_result.expr
+    }),
+    parser: body_expression_result.parser
+  }
+end
+
 fn parse_arms_brace(parser: Parser) -> ArmsResult = do
   const arms: [Shared<MatchArm>] = []
   let mut state = parser
   while !state.kind().is_rbrace() && !state.at_eof() do
     if state.kind().is_bar() then state = state.advance() end
-    const pat_result  = parse_or_pat(state)
-    const body_result = parse_expr(pat_result.parser.advance())
-    arms.push(Shared.new(MatchArm { pat: pat_result.pat, body: body_result.expr }))
-    state = body_result.parser
+    const pat_result = parse_or_pat(state)
+    const finished_match_arm = parse_match_arm(pat_result)
+    arms.push(finished_match_arm.arm)
+    state = finished_match_arm.parser
     if state.kind().is_comma() then state = state.advance() end
   end
   ArmsResult { arms, parser: state.advance() }
@@ -909,10 +935,10 @@ fn parse_arms_pipe(parser: Parser) -> ArmsResult = do
   const arms: [Shared<MatchArm>] = []
   let mut state = parser
   while state.kind().is_bar() do
-    const pat_result  = parse_or_pat(state.advance())
-    const body_result = parse_expr(pat_result.parser.advance())
-    arms.push(Shared.new(MatchArm { pat: pat_result.pat, body: body_result.expr }))
-    state = body_result.parser
+    const pat_result = parse_or_pat(state.advance())
+    const finished_match_arm = parse_match_arm(pat_result)
+    arms.push(finished_match_arm.arm)
+    state = finished_match_arm.parser
   end
   if state.kind().is_end() then state = state.advance() end
   ArmsResult { arms, parser: state }

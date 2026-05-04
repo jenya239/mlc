@@ -18,7 +18,20 @@ export fn first_arm_needs_deref(first_arm: Shared<SMatchArm>, subject: Shared<SE
       else subject_needs_deref(subject, context)
       end
     end,
-    PatOr(alts, _) => if alts.length() > 0 then first_arm_needs_deref(Shared.new(SMatchArm { pat: alts[0], body: first_arm.body }), subject, context) else subject_needs_deref(subject, context) end,
+    PatOr(alts, _) =>
+      if alts.length() > 0 then
+        first_arm_needs_deref(
+          Shared.new(SMatchArm {
+            pat: alts[0],
+            has_guard: first_arm.has_guard,
+            when_condition: first_arm.when_condition,
+            body: first_arm.body
+          }),
+          subject,
+          context)
+      else
+        subject_needs_deref(subject, context)
+      end,
     _ => subject_needs_deref(subject, context)
   }
 
