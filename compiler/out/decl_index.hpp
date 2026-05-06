@@ -9,6 +9,7 @@
 
 namespace decl_index {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

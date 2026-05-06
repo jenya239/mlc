@@ -12,6 +12,7 @@
 
 namespace return_body {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

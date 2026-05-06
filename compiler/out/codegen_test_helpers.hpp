@@ -14,6 +14,7 @@
 
 namespace codegen_test_helpers {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

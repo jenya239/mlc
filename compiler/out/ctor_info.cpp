@@ -49,8 +49,8 @@ int vi = 0;
 while (vi < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarTuple& vartuple) -> void { auto [variant_name, types, _w0] = vartuple; return result.push_back(ctor_type_info_for(variant_name, types)); },
-  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; return [&]() { 
+  [&](const VarTuple& vartuple) -> void { auto [variant_name, types, _w0] = vartuple; result.push_back(ctor_type_info_for(variant_name, types)); },
+  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; [&]() { 
   mlc::Array<std::shared_ptr<ast::TypeExpr>> types = {};
   int fi = 0;
   while (fi < field_defs.size()){
@@ -61,7 +61,7 @@ fi = fi + 1;
 }
   return result.push_back(ctor_type_info_for(variant_name, types));
  }(); },
-  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; return ; }
+  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; }
 }, (*variants[vi]));
 vi = vi + 1;
 }

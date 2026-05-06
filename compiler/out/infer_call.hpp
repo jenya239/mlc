@@ -15,6 +15,7 @@
 
 namespace infer_call {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

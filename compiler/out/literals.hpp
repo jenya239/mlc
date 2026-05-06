@@ -8,6 +8,7 @@
 
 namespace literals {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

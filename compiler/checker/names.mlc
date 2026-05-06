@@ -1,6 +1,6 @@
 // Checker: name resolution.
 
-import { Expr, Stmt, Pat, FieldVal, MatchArm,
+import { Expr, Stmt, Pat, FieldVal, MatchArm, RecordLitPart, RecordLitFields, RecordLitSpread,
          Diagnostic, Span, diagnostic_error, diagnostics_append, span_unknown } from "../ast"
 
 fn scope_contains(scope: [string], name: string) -> bool = do
@@ -132,6 +132,22 @@ fn check_names_match_expression(subject: Shared<Expr>, arms: [Shared<MatchArm>],
   collected
 end
 
+fn check_names_record_lit_parts(lit_parts: [RecordLitPart], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+  let mut collected: [Diagnostic] = []; let mut part_index = 0
+  while part_index < lit_parts.length() do
+    match lit_parts[part_index] {
+      RecordLitFields(field_values) => do
+        collected = diagnostics_append(collected, check_names_record_expression(field_values, locals, globals))
+      end,
+      RecordLitSpread(spread_expression) => do
+        collected = diagnostics_append(collected, check_names_expr(spread_expression, locals, globals))
+      end,
+    }
+    part_index = part_index + 1
+  end
+  collected
+end
+
 fn check_names_record_expression(field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
   let mut collected: [Diagnostic] = []; let mut index = 0
   while index < field_values.length() do
@@ -187,7 +203,7 @@ export fn check_names_expr(expression: Shared<Expr>, locals: [string], globals: 
     ExprWhile(condition, statements, _)    => check_names_while_expression(condition, statements, locals, globals),
     ExprFor(variable, iterator, statements, _) => check_names_for_expression(variable, iterator, statements, locals, globals),
     ExprMatch(subject, arms, _)            => check_names_match_expression(subject, arms, locals, globals),
-    ExprRecord(_, field_values, _)         => check_names_record_expression(field_values, locals, globals),
+    ExprRecord(_, lit_parts, _)            => check_names_record_lit_parts(lit_parts, locals, globals),
     ExprRecordUpdate(_, base, field_values, _) => check_names_record_update_expression(base, field_values, locals, globals),
     ExprArray(elements, _)                  => check_names_array_expression(elements, locals, globals),
     ExprTuple(elements, _)                  => check_names_array_expression(elements, locals, globals),

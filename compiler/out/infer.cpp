@@ -18,6 +18,7 @@
 #include "let_pattern_infer.hpp"
 #include "infer_array_method.hpp"
 #include "infer_result_option_method.hpp"
+#include "record_lit_merge.hpp"
 
 namespace infer {
 
@@ -39,6 +40,7 @@ using namespace infer_match;
 using namespace let_pattern_infer;
 using namespace infer_array_method;
 using namespace infer_result_option_method;
+using namespace record_lit_merge;
 using namespace ast_tokens;
 
 infer_result::InferResult infer_arguments_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept;
@@ -65,8 +67,6 @@ infer_result::InferResult infer_expr_while_loop(std::shared_ptr<ast::Expr> condi
 
 infer_result::InferResult infer_expr_for_loop(mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 
-infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context, ast::Span span) noexcept;
-
 infer_result::InferResult infer_expr_record_update(mlc::String type_name, std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_tuple_literal(mlc::Array<std::shared_ptr<ast::Expr>> elements, check_context::CheckContext inference_context) noexcept;
@@ -78,6 +78,8 @@ infer_result::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner, 
 infer_result::InferResult infer_expr_lambda(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept;
+
+infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<ast::RecordLitPart> lit_parts, check_context::CheckContext inference_context, ast::Span span) noexcept;
 
 infer_result::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 
@@ -183,12 +185,6 @@ infer_result::StmtInferResult statements_result = infer_statements(statements, l
 return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt(iterator_result, statements_result), std::make_shared<registry::Type>((registry::TUnit{})));
 }
 
-infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context, ast::Span span) noexcept{
-mlc::Array<ast::Diagnostic> private_errors = registry::TypeRegistry_is_private_ctor(inference_context.registry, type_name) && inference_context.current_extend_type != type_name ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("private constructor: cannot construct ") + type_name + mlc::String(" outside its extend block"), span)} : mlc::Array<ast::Diagnostic>{};
-infer_result::InferResult base = infer_result::InferResult{std::make_shared<registry::Type>(registry::TNamed(type_name)), private_errors};
-return infer_field_values_errors(base, field_values, inference_context, type_name);
-}
-
 infer_result::InferResult infer_expr_record_update(mlc::String type_name, std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult base_result = infer_expr(base, inference_context);
 return infer_field_values_errors(infer_result::InferResult_with_type(base_result, std::make_shared<registry::Type>(registry::TNamed(type_name))), field_values, inference_context, type_name);
@@ -234,7 +230,8 @@ infer_result::InferResult body_result = infer_expr(body, lambda_context);
 return infer_result::infer_ok(std::make_shared<registry::Type>(registry::TFn(parameter_types, body_result.inferred_type)));
 }
 
-infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept{return std::visit(overloaded{
+infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept{
+return std::visit(overloaded{
   [&](const ExprInt& exprint) -> infer_result::InferResult { auto [_w0, _w1] = exprint; return infer_literals::infer_expr_integer_literal(); },
   [&](const ExprStr& exprstr) -> infer_result::InferResult { auto [_w0, _w1] = exprstr; return infer_literals::infer_expr_string_literal(); },
   [&](const ExprBool& exprbool) -> infer_result::InferResult { auto [_w0, _w1] = exprbool; return infer_literals::infer_expr_boolean_literal(); },
@@ -257,7 +254,7 @@ infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, chec
   [&](const ExprWhile& exprwhile) -> infer_result::InferResult { auto [condition, statements, _w0] = exprwhile; return infer_expr_while_loop(condition, statements, inference_context); },
   [&](const ExprFor& exprfor) -> infer_result::InferResult { auto [variable, iterator, statements, _w0] = exprfor; return infer_expr_for_loop(variable, iterator, statements, inference_context); },
   [&](const ExprMatch& exprmatch) -> infer_result::InferResult { auto [subject, arms, _w0] = exprmatch; return infer_match::infer_expr_match(subject, arms, inference_context, infer_expr); },
-  [&](const ExprRecord& exprrecord) -> infer_result::InferResult { auto [name, field_vals, span] = exprrecord; return infer_expr_record(name, field_vals, inference_context, span); },
+  [&](const ExprRecord& exprrecord) -> infer_result::InferResult { auto [name, lit_parts, span] = exprrecord; return infer_expr_record(name, lit_parts, inference_context, span); },
   [&](const ExprRecordUpdate& exprrecordupdate) -> infer_result::InferResult { auto [name, base, field_vals, _w0] = exprrecordupdate; return infer_expr_record_update(name, base, field_vals, inference_context); },
   [&](const ExprArray& exprarray) -> infer_result::InferResult { auto [elements, _w0] = exprarray; return infer_expr_array_literal(elements, inference_context); },
   [&](const ExprTuple& exprtuple) -> infer_result::InferResult { auto [elements, _w0] = exprtuple; return infer_expr_tuple_literal(elements, inference_context); },
@@ -265,7 +262,47 @@ infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, chec
   [&](const ExprLambda& exprlambda) -> infer_result::InferResult { auto [params, body, _w0] = exprlambda; return infer_expr_lambda(params, body, inference_context); },
   [&](const ExprNamedArg& exprnamedarg) -> infer_result::InferResult { auto [_w0, inner, _w1] = exprnamedarg; return infer_expr(inner, inference_context); },
   [&](const ExprWith& exprwith) -> infer_result::InferResult { auto [resource, binder, stmts, _w0] = exprwith; return infer_expr_with(resource, binder, stmts, inference_context); }
-}, (*expression)._);}
+}, (*expression)._);
+}
+
+infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<ast::RecordLitPart> lit_parts, check_context::CheckContext inference_context, ast::Span span) noexcept{
+mlc::Array<ast::Diagnostic> private_errors = registry::TypeRegistry_is_private_ctor(inference_context.registry, type_name) && inference_context.current_extend_type != type_name ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("private constructor: cannot construct ") + type_name + mlc::String(" outside its extend block"), span)} : mlc::Array<ast::Diagnostic>{};
+infer_result::InferResult result = infer_result::InferResult{std::make_shared<registry::Type>(registry::TNamed(type_name)), private_errors};
+mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_field_values_flat = record_lit_merge::collect_explicit_field_values_flat(lit_parts);
+return !record_lit_merge::record_literal_contains_spread(lit_parts) ? [&]() -> infer_result::InferResult { 
+  result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, type_name);
+  if (registry::TypeRegistry_has_fields(inference_context.registry, type_name)){
+{
+result = infer_result::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, record_lit_merge::diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, explicit_field_values_flat, span))};
+}
+}
+  return result;
+ }() : !registry::TypeRegistry_has_fields(inference_context.registry, type_name) ? [&]() -> infer_result::InferResult { 
+  result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, mlc::String(""));
+  return infer_result::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("record literal spread requires a named record type with fields"), span)})};
+ }() : [&]() -> infer_result::InferResult { 
+  result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, type_name);
+  mlc::Array<std::shared_ptr<registry::Type>> spread_types_in_order = {};
+  int part_index = 0;
+  while (part_index < lit_parts.size()){
+{
+std::visit(overloaded{
+  [&](const RecordLitSpread& recordlitspread) -> void { auto [spread_expression] = recordlitspread; [&]() { 
+  infer_result::InferResult spread_inference = infer_expr(spread_expression, inference_context);
+  result = infer_result::InferResult_absorb(result, spread_inference);
+  return spread_types_in_order.push_back(spread_inference.inferred_type);
+ }(); },
+  [&](const RecordLitFields& recordlitfields) -> void { auto [_w0] = recordlitfields; std::make_tuple(); }
+}, lit_parts[part_index]._);
+part_index = part_index + 1;
+}
+}
+  mlc::Array<std::shared_ptr<ast::FieldVal>> merged_field_values = record_lit_merge::merge_record_literal_parts_to_field_values(type_name, lit_parts, inference_context.registry, spread_types_in_order);
+  result = infer_field_values_errors(result, merged_field_values, inference_context, type_name);
+  result = infer_result::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, record_lit_merge::diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_field_values, span))};
+  return result;
+ }();
+}
 
 infer_result::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
 mlc::Array<ast::Diagnostic> collected_errors = {};

@@ -2,6 +2,12 @@
 
 require "rake/testtask"
 
+# Per-test lines in Minitest: MLC_TEST_PROGRESS=1 bundle exec rake test
+if ENV["MLC_TEST_PROGRESS"].to_s == "1"
+  existing = ENV.fetch("TESTOPTS", "").strip
+  ENV["TESTOPTS"] = existing.empty? ? "--verbose" : "#{existing} --verbose"
+end
+
 # Full test suite (~20 min)
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"

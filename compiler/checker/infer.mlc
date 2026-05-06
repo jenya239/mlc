@@ -1,7 +1,7 @@
 // Type inference: dispatcher and per-expression rule functions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span } from "../ast"
-import { Type, TTuple } from "./registry"
+import { Expr, Stmt, FieldVal, MatchArm, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span, RecordLitPart } from "../ast"
+import { Type, TTuple, TNamed } from "./registry"
 import { CheckContext, check_context_new } from "./check_context"
 import { InferResult, StmtInferResult, infer_ok } from "./infer_result"
 import * as infer_literal_helpers from "./infer_literals"
@@ -18,6 +18,7 @@ import { infer_expr_match } from "./infer_match"
 import { infer_let_pattern_env } from "./let_pattern_infer"
 import { infer_array_hof_method_call, should_infer_as_array_hof } from "./infer_array_method"
 import { infer_result_option_hof_method_call, should_infer_as_result_option_hof } from "./infer_result_option_method"
+import * as record_lit_merge from "./record_lit_merge"
 
 // --- Argument / field-value error accumulators ------------------------------
 
@@ -166,17 +167,6 @@ fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements
   iterator_result.absorb_stmt(statements_result).with_type(Shared.new(TUnit))
 end
 
-
-fn infer_expr_record(type_name: string, field_values: [Shared<FieldVal>], inference_context: CheckContext, span: Span) -> InferResult = do
-  const private_errors: [Diagnostic] =
-    if inference_context.registry.is_private_ctor(type_name) &&
-       inference_context.current_extend_type != type_name then
-      [diagnostic_error("private constructor: cannot construct " + type_name + " outside its extend block", span)]
-    else [] end
-  const base = InferResult { inferred_type: Shared.new(TNamed(type_name)), errors: private_errors }
-  infer_field_values_errors(base, field_values, inference_context, type_name)
-end
-
 fn infer_expr_record_update(type_name: string, base: Shared<Expr>, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult = do
   const base_result = infer_expr(base, inference_context)
   infer_field_values_errors(base_result.with_type(Shared.new(TNamed(type_name))), field_values, inference_context, type_name)
@@ -226,7 +216,7 @@ end
 
 // --- Dispatcher -------------------------------------------------------------
 
-export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) -> InferResult =
+export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
   match expression {
     ExprInt(_, _)                           => infer_literal_helpers.infer_expr_integer_literal(),
     ExprStr(_, _)                           => infer_literal_helpers.infer_expr_string_literal(),
@@ -251,7 +241,7 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprWhile(condition, statements, _)     => infer_expr_while_loop(condition, statements, inference_context),
     ExprFor(variable, iterator, statements, _) => infer_expr_for_loop(variable, iterator, statements, inference_context),
     ExprMatch(subject, arms, _)             => infer_expr_match(subject, arms, inference_context, infer_expr),
-    ExprRecord(name, field_vals, span)      => infer_expr_record(name, field_vals, inference_context, span),
+    ExprRecord(name, lit_parts, span)      => infer_expr_record(name, lit_parts, inference_context, span),
     ExprRecordUpdate(name, base, field_vals, _) => infer_expr_record_update(name, base, field_vals, inference_context),
     ExprArray(elements, _)                  => infer_expr_array_literal(elements, inference_context),
     ExprTuple(elements, _)                  => infer_expr_tuple_literal(elements, inference_context),
@@ -260,6 +250,59 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprNamedArg(_, inner, _)               => infer_expr(inner, inference_context),
     ExprWith(resource, binder, stmts, _)    => infer_expr_with(resource, binder, stmts, inference_context)
   }
+end
+
+export fn infer_expr_record(type_name: string, lit_parts: [RecordLitPart], inference_context: CheckContext, span: Span) -> InferResult = do
+  const private_errors: [Diagnostic] =
+    if inference_context.registry.is_private_ctor(type_name) &&
+       inference_context.current_extend_type != type_name then
+      [diagnostic_error("private constructor: cannot construct " + type_name + " outside its extend block", span)]
+    else [] end
+  let mut result = InferResult { inferred_type: Shared.new(TNamed(type_name)), errors: private_errors }
+  const explicit_field_values_flat = record_lit_merge.collect_explicit_field_values_flat(lit_parts)
+  if !record_lit_merge.record_literal_contains_spread(lit_parts) then
+    result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, type_name)
+    if inference_context.registry.has_fields(type_name) then
+      result = InferResult {
+        inferred_type: result.inferred_type,
+        errors:           diagnostics_append(result.errors,
+          record_lit_merge.diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, explicit_field_values_flat, span))
+      }
+    end
+    result
+  else if !inference_context.registry.has_fields(type_name) then
+    result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, "")
+    InferResult {
+      inferred_type: result.inferred_type,
+      errors: diagnostics_append(result.errors,
+        [diagnostic_error("record literal spread requires a named record type with fields", span)])
+    }
+  else
+    result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, type_name)
+    let spread_types_in_order: [Shared<Type>] = []
+    let mut part_index = 0
+    while part_index < lit_parts.length() do
+      match lit_parts[part_index] {
+        RecordLitSpread(spread_expression) => do
+          const spread_inference = infer_expr(spread_expression, inference_context)
+          result = result.absorb(spread_inference)
+          spread_types_in_order.push(spread_inference.inferred_type)
+        end,
+        RecordLitFields(_) => (),
+      }
+      part_index = part_index + 1
+    end
+    const merged_field_values =
+      record_lit_merge.merge_record_literal_parts_to_field_values(type_name, lit_parts, inference_context.registry, spread_types_in_order)
+    result = infer_field_values_errors(result, merged_field_values, inference_context, type_name)
+    result = InferResult {
+      inferred_type: result.inferred_type,
+      errors:         diagnostics_append(result.errors,
+        record_lit_merge.diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_field_values, span))
+    }
+    result
+  end
+end
 
 // --- Statements -------------------------------------------------------------
 

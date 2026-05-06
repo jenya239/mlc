@@ -14,6 +14,7 @@
 
 namespace infer_match {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

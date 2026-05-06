@@ -10,6 +10,7 @@
 
 namespace pattern_env {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

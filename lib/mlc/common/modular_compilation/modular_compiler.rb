@@ -23,11 +23,13 @@ module MLC
           pipeline = build_pipeline
           modules_ir = {}
 
-          order.each do |path|
+          build_progress("semantic: #{order.size} module(s)")
+          order.each_with_index do |path, module_index|
             source = File.read(path)
             ast = MLC.parse(source, filename: path)
             module_name = File.basename(path, ".mlc")
             pipeline.services.module_path_resolver.source_file_dir = File.dirname(path)
+            build_progress("  semantic #{module_index + 1}/#{order.size}: #{module_name}")
             ir = pipeline.transform(ast, module_name: module_name)
             modules_ir[path] = { ir: ir, module_name: module_name }
           end
@@ -46,10 +48,12 @@ module MLC
           generator = MLC::Backends::Cpp::HeaderGenerator.new(lowerer)
 
           all_modules = order.map { |path| modules_ir[path][:ir] }
-          order.each do |path|
+          build_progress("codegen: #{order.size} module(s)")
+          order.each_with_index do |path, module_index|
             mod = modules_ir[path]
-            result = generator.generate(mod[:ir], all_modules: all_modules)
             base = mod[:module_name]
+            build_progress("  emit #{module_index + 1}/#{order.size}: #{base}.cpp")
+            result = generator.generate(mod[:ir], all_modules: all_modules)
             hpp_path = File.join(@out_dir, "#{base}.hpp")
             cpp_path = File.join(@out_dir, "#{base}.cpp")
             File.write(hpp_path, result[:header])
@@ -74,6 +78,7 @@ module MLC
           main_cpp = File.join(@out_dir, "#{entry_base}.cpp")
           main_content = File.read(main_cpp)
           wrapped = wrap_main(main_content)
+          build_progress("wrap entry: #{entry_base}.cpp")
           File.write(main_cpp, wrapped)
 
           obj_dir = File.join(@out_dir, "obj")
@@ -82,7 +87,12 @@ module MLC
 
           extra_flags = (ENV["MLC_CXX_FLAGS"] || "").split
 
+          compile_units_total = result[:cpp_files].size + runtime_cpp.size
+          compile_unit_index = 0
+          build_progress("compile: #{compile_units_total} translation unit(s)")
           result[:cpp_files].each do |cpp|
+            compile_unit_index += 1
+            build_progress("  [#{compile_unit_index}/#{compile_units_total}] #{File.basename(cpp)}")
             obj = File.join(obj_dir, "#{File.basename(cpp, ".cpp")}.o")
             cmd = ["g++", "-std=c++20", "-O2", *extra_flags, "-I", @out_dir, "-I", runtime_include, "-c", cpp, "-o", obj]
             system(*cmd) || raise("g++ failed: #{cmd.join(' ')}")
@@ -90,6 +100,8 @@ module MLC
           end
 
           runtime_cpp.each do |rcpp|
+            compile_unit_index += 1
+            build_progress("  [#{compile_unit_index}/#{compile_units_total}] runtime #{File.basename(rcpp)}")
             obj = File.join(obj_dir, "runtime_#{File.basename(rcpp, ".cpp")}.o")
             cmd = ["g++", "-std=c++20", "-O2", *extra_flags, "-I", runtime_include, "-c", rcpp, "-o", obj]
             system(*cmd) || raise("g++ failed: #{cmd.join(' ')}")
@@ -97,6 +109,7 @@ module MLC
           end
 
           bin_path = File.join(@out_dir, @binary_name)
+          build_progress("link: #{File.basename(bin_path)}")
           cmd = ["g++", "-std=c++20", *extra_flags, "-o", bin_path, *objs]
           system(*cmd) || raise("g++ link failed: #{cmd.join(' ')}")
 
@@ -104,6 +117,19 @@ module MLC
         end
 
         private
+
+        # Progress lines go to stderr so stdout stays suitable for piping (e.g. tee).
+        # Enable with MLCC_BUILD_VERBOSE=1 (or true/yes; disable with 0/false/no).
+        def verbose_build?
+          value = ENV["MLCC_BUILD_VERBOSE"]
+          return false if value.nil? || value.empty?
+
+          !%w[0 false no].include?(value.downcase)
+        end
+
+        def build_progress(message)
+          warn("[mlc build] #{message}") if verbose_build?
+        end
 
         def build_pipeline
           type_registry = MLC::Registries::TypeRegistry.new

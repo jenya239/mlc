@@ -11,6 +11,7 @@
 
 namespace infer_question_expression {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

@@ -8,6 +8,7 @@
 
 namespace derive_validation {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

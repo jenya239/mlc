@@ -10,6 +10,7 @@
 
 namespace infer_expr_ident {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

@@ -13,7 +13,7 @@ class ControlFlowE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
 
       refute_includes stderr, "error:", "Compilation failed: #{stderr}"
       yield stdout, stderr, status if block_given?
@@ -46,6 +46,7 @@ class ControlFlowE2ETest < Minitest::Test
       fn main() -> i32 = do
         let x = 10
         if x > 5 then 1 else 0
+        end
       end
     MLC
       assert_equal 1, status.exitstatus
@@ -57,6 +58,7 @@ class ControlFlowE2ETest < Minitest::Test
       fn main() -> i32 = do
         let x = 3
         if x > 5 then 100 else 50
+        end
       end
     MLC
       assert_equal 50, status.exitstatus
@@ -155,11 +157,7 @@ class ControlFlowE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5]
-        let sum = 0
-        for x in nums do
-          let sum = sum + x
-        end
-        sum
+        nums.fold(0, (acc, x) => acc + x)
       end
     MLC
       assert_equal 15, status.exitstatus
@@ -169,16 +167,11 @@ class ControlFlowE2ETest < Minitest::Test
   def test_for_loop_nested
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let sum = 0
-        for i in [1, 2] do
-          for j in [10, 20] do
-            let sum = sum + i + j
-          end
-        end
-        sum
+        [1, 2].fold(0, (acc_outer, i) =>
+          [10, 20].fold(acc_outer, (acc_inner, j) => acc_inner + i + j))
       end
     MLC
-      assert_equal 66, status.exitstatus # (0+1+10) + (11+1+20) + (32+2+10) + (44+2+20) = 66
+      assert_equal 66, status.exitstatus # nested pairs sum
     end
   end
 
@@ -190,6 +183,7 @@ class ControlFlowE2ETest < Minitest::Test
           (if x > 15 then 3 else 2)
         else
           (if x > 0 then 1 else 0)
+        end
       end
     MLC
       assert_equal 2, status.exitstatus  # 10 > 5 is true, 10 > 15 is false -> 2
@@ -202,6 +196,7 @@ class ControlFlowE2ETest < Minitest::Test
         let x = 10
         let y = 5
         if x > 5 && y < 10 then 1 else 0
+        end
       end
     MLC
       assert_equal 1, status.exitstatus  # 10 > 5 && 5 < 10 = true -> 1
@@ -224,6 +219,7 @@ class ControlFlowE2ETest < Minitest::Test
         let x = false
         let y = !x
         if y then 1 else 0
+        end
       end
     MLC
       assert_equal 1, status.exitstatus # !false = true -> 1

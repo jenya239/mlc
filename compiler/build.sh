@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Progress during modular compile/link (semantic → codegen → g++): stderr lines prefixed with "[mlc build]".
+# Example: MLCC_BUILD_VERBOSE=1 compiler/build.sh
+
 COMPILER_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$COMPILER_DIR/.." && pwd)"
 OUT_DIR="${1:-$COMPILER_DIR/out}"
@@ -8,6 +11,14 @@ mkdir -p "$OUT_DIR"
 
 MAIN="$COMPILER_DIR/main.mlc"
 BIN_OUT="$OUT_DIR/mlcc"
+
+echo "[mlcc build] modular compile → ${BIN_OUT} (MAIN=${MAIN})" >&2
+
+_verbose_lowercase="$(printf '%s' "${MLCC_BUILD_VERBOSE:-}" | tr '[:upper:]' '[:lower:]')"
+if [[ -n "${MLCC_BUILD_VERBOSE:-}" ]] && [[ "${_verbose_lowercase}" != "0" ]] && [[ "${_verbose_lowercase}" != "false" ]] && [[ "${_verbose_lowercase}" != "no" ]]; then
+  echo "compiler/build.sh: MLCC_BUILD_VERBOSE=${MLCC_BUILD_VERBOSE} (progress on stderr)" >&2
+fi
+unset _verbose_lowercase
 
 bundle exec ruby -I"$ROOT_DIR/lib" -e '
 require "mlc/common/index"
@@ -23,7 +34,7 @@ result = compiler.build
 puts "Built: #{result[:binary]}"
 ' "$MAIN" "$OUT_DIR"
 
-BIN_OUT="$OUT_DIR/mlcc"
+echo "[mlcc build] binary ready: ${BIN_OUT}" >&2
 
 if [ "${MLCC_BOOTSTRAP:-0}" = "1" ]; then
   BS_DIR="$OUT_DIR/bootstrap"

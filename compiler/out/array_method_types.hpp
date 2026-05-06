@@ -9,6 +9,7 @@
 
 namespace array_method_types {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

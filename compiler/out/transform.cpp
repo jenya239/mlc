@@ -7,6 +7,9 @@
 #include "result_option_method_types.hpp"
 #include "pattern_env.hpp"
 #include "semantic_type_structure.hpp"
+#include "infer.hpp"
+#include "check_context.hpp"
+#include "record_lit_merge.hpp"
 #include "semantic_ir.hpp"
 
 namespace transform {
@@ -18,6 +21,9 @@ using namespace array_method_types;
 using namespace result_option_method_types;
 using namespace pattern_env;
 using namespace semantic_type_structure;
+using namespace infer;
+using namespace check_context;
+using namespace record_lit_merge;
 using namespace semantic_ir;
 using namespace ast_tokens;
 
@@ -415,8 +421,30 @@ arg_index = arg_index + 1;
   mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> typed_arms = transform_match_arms(arms, transform_context, substitution, semantic_ir::sexpr_type(typed_subject), stmts_fn);
   std::shared_ptr<registry::Type> result_type = typed_arms.size() > 0 ? semantic_ir::sexpr_type(typed_arms[0]->body) : std::make_shared<registry::Type>((registry::TUnknown{}));
   return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMatch(typed_subject, typed_arms, result_type, source_span));
- }(); } if (std::holds_alternative<ast::ExprRecord>((*expression)._)) { auto _v_exprrecord = std::get<ast::ExprRecord>((*expression)._); auto [type_name, field_values, source_span] = _v_exprrecord; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
-  mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> typed_fields = transform_field_vals(field_values, transform_context, stmts_fn);
+ }(); } if (std::holds_alternative<ast::ExprRecord>((*expression)._)) { auto _v_exprrecord = std::get<ast::ExprRecord>((*expression)._); auto [type_name, lit_parts, source_span] = _v_exprrecord; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
+  mlc::Array<std::shared_ptr<ast::FieldVal>> merged_field_values_for_transform = {};
+  if (!record_lit_merge::record_literal_contains_spread(lit_parts)){
+{
+merged_field_values_for_transform = record_lit_merge::collect_explicit_field_values_flat(lit_parts);
+}
+} else {
+{
+mlc::Array<std::shared_ptr<registry::Type>> spread_types_for_merge = {};
+check_context::CheckContext inference_context_for_literal_spreads = check_context::check_context_new(transform_context.type_env, transform_context.registry);
+int literal_part_index = 0;
+while (literal_part_index < lit_parts.size()){
+{
+std::visit(overloaded{
+  [&](const RecordLitSpread& recordlitspread) -> void { auto [spread_expression] = recordlitspread; spread_types_for_merge.push_back(infer::infer_expr(spread_expression, inference_context_for_literal_spreads).inferred_type); },
+  [&](const RecordLitFields& recordlitfields) -> void { auto [_w0] = recordlitfields; std::make_tuple(); }
+}, lit_parts[literal_part_index]._);
+literal_part_index = literal_part_index + 1;
+}
+}
+merged_field_values_for_transform = record_lit_merge::merge_record_literal_parts_to_field_values(type_name, lit_parts, transform_context.registry, spread_types_for_merge);
+}
+}
+  mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> typed_fields = transform_field_vals(merged_field_values_for_transform, transform_context, stmts_fn);
   mlc::Array<mlc::String> phantom = registry::TypeRegistry_phantom_type_params_for(transform_context.registry, type_name);
   mlc::Array<mlc::String> all_params = registry::TypeRegistry_algebraic_decl_type_parameter_names_for(transform_context.registry, type_name);
   std::shared_ptr<registry::Type> expr_type = all_params.size() > 0 && phantom.size() == all_params.size() ? std::make_shared<registry::Type>(registry::TGeneric(type_name, tunk_args(all_params.size()))) : std::make_shared<registry::Type>(registry::TNamed(type_name));

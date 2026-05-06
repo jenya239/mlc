@@ -4,6 +4,24 @@
 
 module CppAst
   module Nodes
+    # Shared lowering for std::visit lambdas: -> void must not use `return expr;`.
+    module MatchVisitLambdaBody
+      module_function
+
+      def void_return?(return_type)
+        return_type.to_s.strip == "void"
+      end
+
+      def expression_fragment(return_type, body_str)
+        if void_return?(return_type)
+          stripped = body_str.to_s.strip
+          stripped.empty? ? "" : "#{stripped}; "
+        else
+          "return #{body_str}; "
+        end
+      end
+    end
+
     # Match expression - generates std::visit with overloaded
     class MatchExpression < Expression
       attr_accessor :value, :arms, :arm_separators
@@ -67,7 +85,8 @@ module CppAst
         end
 
         body_str = body.respond_to?(:to_source) ? body.to_source : body.to_s
-        result << "return #{body_str}; }"
+        result << MatchVisitLambdaBody.expression_fragment(return_type, body_str)
+        result << "}"
         result
       end
     end
@@ -85,7 +104,8 @@ module CppAst
       def to_source
         ret = return_type ? " -> #{return_type}" : ""
         body_str = body.respond_to?(:to_source) ? body.to_source : body.to_s
-        "[&](const auto& #{var_name})#{ret} { return #{body_str}; }"
+        inner = MatchVisitLambdaBody.expression_fragment(return_type, body_str)
+        "[&](const auto& #{var_name})#{ret} { #{inner}}"
       end
     end
 

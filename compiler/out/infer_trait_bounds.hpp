@@ -11,6 +11,7 @@
 
 namespace infer_trait_bounds {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

@@ -12,6 +12,7 @@
 
 namespace expression_support {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

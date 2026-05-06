@@ -16,6 +16,7 @@
 
 namespace infer_array_method {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

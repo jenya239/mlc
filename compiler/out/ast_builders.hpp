@@ -8,6 +8,7 @@
 
 namespace ast_builders {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

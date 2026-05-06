@@ -14,6 +14,7 @@
 
 namespace tests_main {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

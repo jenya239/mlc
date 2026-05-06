@@ -146,14 +146,77 @@ module MLC
                 return callee if src.end_with?("{}") || src.match?(/\([^)]*\{\}\)\z/)
               end
 
-              context.factory.function_call(
+              call_expr = context.factory.function_call(
                 callee: callee,
                 arguments: args,
                 argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
               )
+              wrap_lowered_cyclic_sum_variant(node, call_expr)
             end
 
             private
+
+            # Wrapper struct cyclic sums: struct Sum { std::variant<...> _; } — bare
+            # Variant(...) does not convert to Sum; emit Sum(Variant(...)).
+            def wrap_lowered_cyclic_sum_variant(expression_ir, lowered_cpp)
+              wrapped_source = cyclic_sum_variant_wrap_source(expression_ir, lowered_cpp.to_source)
+              return lowered_cpp unless wrapped_source
+
+              context.factory.raw_expression(code: wrapped_source)
+            end
+
+            def cyclic_sum_variant_wrap_source(expression_ir, inner_cpp_source)
+              return nil unless expression_ir.is_a?(MLC::SemanticIR::CallExpr)
+              return nil unless context.checker.var_expr?(expression_ir.callee)
+
+              variant_constructor_name = expression_ir.callee.name
+              return nil unless variant_constructor_name.match?(/\A[A-Z]/)
+
+              sum_type = wrapper_sum_type_for_variant_call_result(expression_ir.type)
+              return nil unless sum_type
+              return nil unless context.cyclic_sum_types.include?(sum_type.name)
+
+              variant = sum_type.variants.find { |v| v[:name] == variant_constructor_name }
+              return nil unless variant
+
+              outer_cpp = qualify_sum_type_cpp_name(sum_type.name)
+              "#{outer_cpp}(#{inner_cpp_source})"
+            end
+
+            def wrapper_sum_type_for_variant_call_result(type)
+              case type
+              when MLC::SemanticIR::SumType
+                type
+              when MLC::SemanticIR::GenericType
+                base_type = type.base_type
+                base_type.is_a?(MLC::SemanticIR::SumType) ? base_type : nil
+              when MLC::SemanticIR::FunctionType
+                wrapper_sum_type_for_variant_call_result(type.ret_type)
+              else
+                nil
+              end
+            end
+
+            def qualify_sum_type_cpp_name(sum_type_name)
+              info = context.type_registry&.lookup(sum_type_name)
+              return sum_type_name unless info
+
+              namespace =
+                info.namespace ||
+                (info.cpp_name[/\A([^:]+)::/, 1] if info.cpp_name&.include?("::")) ||
+                module_name_to_namespace_for_sum(info)
+              return sum_type_name unless namespace
+
+              "#{namespace}::#{sum_type_name}"
+            end
+
+            def module_name_to_namespace_for_sum(info)
+              module_name = info.respond_to?(:module_name) ? info.module_name : nil
+              return nil unless module_name && !module_name.empty?
+
+              base = module_name.gsub("/", "::").split("::").map(&:downcase).join("::")
+              base == "main" ? "mlc_main" : base
+            end
 
             # Lower IO function calls
             IO_STRING_FUNCTIONS = %w[print println eprint eprintln].freeze
@@ -451,7 +514,7 @@ module MLC
                   operator: ".",
                   member: context.factory.identifier(name: "push_back")
                 )
-                args = call.args.map { |arg| lower_expression(arg) }
+                args = call.args.map { |arg| wrap_lowered_cyclic_sum_variant(arg, lower_expression(arg)) }
                 context.factory.function_call(
                   callee: member,
                   arguments: args,
@@ -493,7 +556,15 @@ module MLC
                   index: args[0]
                 )
 
-              when "map", "filter", "any", "all", "none", "find", "find_index",
+              when "find"
+                args = call.args.map { |a| lower_expression(a) }
+                context.factory.function_call(
+                  callee: context.factory.identifier(name: "mlc::collections::find"),
+                  arguments: [array_obj] + args,
+                  argument_separators: ::Array.new(args.size, ", ")
+                )
+
+              when "map", "filter", "any", "all", "none", "find_index",
                    "contains", "index_of", "sort", "enumerate",
                    "concat", "append", "zip", "sort_by", "take", "drop",
                    "each",

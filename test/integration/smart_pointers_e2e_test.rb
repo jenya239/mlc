@@ -14,7 +14,7 @@ class SmartPointersE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
 
       refute_includes stderr, "error:", "Compilation failed: #{stderr}"
       yield stdout, stderr, status if block_given?
@@ -149,6 +149,7 @@ class SmartPointersE2ETest < Minitest::Test
         let weak = Shared.downgrade(shared)
         // While shared exists, weak should be valid
         if Weak.is_valid(weak) then 1 else 0
+        end
       end
     MLC
       assert_equal 1, status.exitstatus
@@ -169,6 +170,7 @@ class SmartPointersE2ETest < Minitest::Test
         let null_weak: Weak<Node> = Weak.null()
         // null weak should not be valid
         if Weak.is_valid(null_weak) then 1 else 0
+        end
       end
     MLC
       assert_equal 0, status.exitstatus

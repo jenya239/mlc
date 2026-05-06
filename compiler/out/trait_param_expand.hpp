@@ -8,6 +8,7 @@
 
 namespace trait_param_expand {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

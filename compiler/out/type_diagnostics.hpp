@@ -11,6 +11,7 @@
 
 namespace type_diagnostics {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

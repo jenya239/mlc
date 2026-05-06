@@ -11,6 +11,7 @@
 
 namespace infer_lambda_context {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

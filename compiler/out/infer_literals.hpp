@@ -8,6 +8,7 @@
 
 namespace infer_literals {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

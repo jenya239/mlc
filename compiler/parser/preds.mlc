@@ -1,7 +1,7 @@
 // Parser state, result types, and token kind predicates.
 
 import { TKind, Token, LexOut } from "../ast_tokens"
-import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound } from "../ast"
+import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound, RecordLitPart } from "../ast"
 
 // --- Parser state ---------------------------------------------------------
 
@@ -36,6 +36,7 @@ export type VariantsResult  = VariantsResult  { variants:   [Shared<TypeVariant>
 export type ParamsResult    = ParamsResult    { params:     [Shared<Param>],        parser: Parser }
 export type DeclResult      = DeclResult      { decl:       Shared<Decl>,           parser: Parser }
 export type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
+export type RecordLitPartsResult = RecordLitPartsResult { lit_parts: [RecordLitPart], parser: Parser }
 export type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          parser: Parser }
 export type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
 export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }

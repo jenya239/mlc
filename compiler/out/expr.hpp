@@ -6,6 +6,7 @@
 
 namespace expr {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

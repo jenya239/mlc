@@ -15,7 +15,7 @@ class SelfHostedE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
       compile_errors = stderr.lines.select { |l| l.include?("error:") }
       refute compile_errors.any?, "Compilation failed:\n#{compile_errors.join}"
       yield stdout, stderr, status if block_given?
@@ -49,9 +49,9 @@ class SelfHostedE2ETest < Minitest::Test
       fn is_alpha(c: string) -> bool = c >= "a" && c <= "z"
 
       fn scan(src: string) -> i32 = do
-        let digits = 0
-        let letters = 0
-        let i = 0
+        let mut digits = 0
+        let mut letters = 0
+        let mut i = 0
         while i < src.length() do
           let c = src.char_at(i)
           if is_digit(c) then
@@ -76,8 +76,8 @@ class SelfHostedE2ETest < Minitest::Test
       fn is_digit(c: string) -> bool = c >= "0" && c <= "9"
 
       fn extract_number(src: string, start: i32) -> string = do
-        let token = ""
-        let i = start
+        let mut token = ""
+        let mut i = start
         while i < src.length() do
           let c = src.char_at(i)
           if is_digit(c) then
@@ -112,8 +112,8 @@ class SelfHostedE2ETest < Minitest::Test
 
       fn main() -> i32 = do
         let tokens = [TInt(42), TPlus, TIdent("x"), TMinus, TEof]
-        let kinds = 0
-        let i = 0
+        let mut kinds = 0
+        let mut i = 0
         while i < tokens.length() do
           kinds = kinds + token_kind(tokens.get(i))
           i = i + 1
@@ -138,8 +138,8 @@ class SelfHostedE2ETest < Minitest::Test
 
       fn main() -> i32 = do
         let arr = [TInt(10), TInt(20), TPlus, TInt(30)]
-        let sum = 0
-        let i = 0
+        let mut sum = 0
+        let mut i = 0
         while i < arr.length() do
           sum = sum + get_int_value(arr.get(i))
           i = i + 1
@@ -286,7 +286,7 @@ class SelfHostedE2ETest < Minitest::Test
 
       fn main() -> i32 = do
         let program = [Load(0, 42), Add(0, 1), Load(1, 10), Ret]
-        let total = 0
+        let mut total = 0
         for instr in program do
           total = total + instr_size(instr)
         end
@@ -317,8 +317,8 @@ class SelfHostedE2ETest < Minitest::Test
       fn is_digit(c: string) -> bool = c >= "0" && c <= "9"
 
       fn count(src: string) -> i32 = do
-        let n = 0
-        let i = 0
+        let mut n = 0
+        let mut i = 0
         while i < src.length() do
           if is_digit(src.char_at(i)) then
             n = n + 1
@@ -360,8 +360,8 @@ class SelfHostedE2ETest < Minitest::Test
   def test_file_read_write_parse
     run_mlc(<<~MLC) do |_out, _err, status|
       fn count_chars(src: string) -> i32 = do
-        let n = 0
-        let i = 0
+        let mut n = 0
+        let mut i = 0
         while i < src.length() do
           n = n + 1
           i = i + 1
@@ -409,7 +409,7 @@ class SelfHostedE2ETest < Minitest::Test
   def test_println_in_loop
     run_mlc(<<~MLC) do |stdout, _err, status|
       fn main() -> i32 = do
-        let i = 0
+        let mut i = 0
         while i < 4 do
           println(to_string(i))
           i = i + 1
@@ -458,7 +458,7 @@ class SelfHostedE2ETest < Minitest::Test
 
       fn main() -> i32 = do
         let tokens = [TInt(42), TPlus, TIdent("x"), TEof]
-        let i = 0
+        let mut i = 0
         while i < tokens.length() do
           println(token_to_string(tokens.get(i)))
           i = i + 1

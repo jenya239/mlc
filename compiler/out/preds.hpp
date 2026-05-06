@@ -9,6 +9,7 @@
 
 namespace preds {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;
@@ -39,6 +40,8 @@ struct ParamsResult {mlc::Array<std::shared_ptr<ast::Param>> params;preds::Parse
 struct DeclResult {std::shared_ptr<ast::Decl> decl;preds::Parser parser;};
 
 struct FieldValsResult {mlc::Array<std::shared_ptr<ast::FieldVal>> field_vals;preds::Parser parser;};
+
+struct RecordLitPartsResult {mlc::Array<ast::RecordLitPart> lit_parts;preds::Parser parser;};
 
 struct PatsResult {mlc::Array<std::shared_ptr<ast::Pat>> pats;preds::Parser parser;};
 

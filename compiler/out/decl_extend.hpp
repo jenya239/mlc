@@ -16,6 +16,7 @@
 
 namespace decl_extend {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

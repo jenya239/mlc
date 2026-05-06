@@ -6,6 +6,7 @@
 
 namespace ast_tokens {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

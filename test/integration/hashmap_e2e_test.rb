@@ -13,7 +13,7 @@ class HashMapE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
       yield stdout, stderr, status if block_given?
     end
   end
@@ -37,6 +37,7 @@ class HashMapE2ETest < Minitest::Test
         let m: Map<string, i32> = Map.new()
         m.set("x", 42)
         if m.has("x") then 1 else 0
+        end
       end
     MLC
       assert_equal 1, status.exitstatus

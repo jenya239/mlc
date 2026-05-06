@@ -14,7 +14,7 @@ class GenericsE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
 
       refute_includes stderr, "error:", "Compilation failed: #{stderr}"
       yield stdout, stderr, status if block_given?
@@ -114,7 +114,7 @@ class GenericsE2ETest < Minitest::Test
       type Pair<T, U> = {first: T, second: U}
 
       fn make_boxed_pair<T, U>(x: T, y: U) -> Pair<Box<T>, Box<U>> =
-        {first: {value: x}, second: {value: y}}
+        Pair { first: Box { value: x }, second: Box { value: y } }
 
       fn main() -> i32 = do
         let p = make_boxed_pair(100, 50)
@@ -424,6 +424,7 @@ class GenericsE2ETest < Minitest::Test
         let n = IntHolder.get(ih)
         let b = BoolHolder.get(bh)
         if b then n else 0
+        end
       end
     MLC
       assert_equal 50, status.exitstatus

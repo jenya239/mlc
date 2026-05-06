@@ -57,7 +57,7 @@ class TypeConstraintSolverTest < Minitest::Test
       solver.solve(info, [arg], name: "add")
     end
 
-    assert_includes @type_errors.first, "expects 2 argument(s), got 1"
+    assert_match(/expects (between 2 and 2|2) argument\(s\), got 1/, @type_errors.first)
   end
 
   def test_solve_checks_type_compatibility

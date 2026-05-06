@@ -15,7 +15,7 @@ class SelfHostingInfrastructureTest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
       compile_errors = stderr.lines.select { |l| l.include?("error:") }
       refute compile_errors.any?, "Compilation failed:\n#{compile_errors.join}\nSource:\n#{source_code}"
       yield stdout, stderr, status if block_given?
@@ -178,8 +178,8 @@ class SelfHostingInfrastructureTest < Minitest::Test
   def test_string_scan_chars
     run_mlc(<<~MLC) do |_out, _err, status|
       fn count_digits(src: string) -> i32 = do
-        let count = 0
-        let i = 0
+        let mut count = 0
+        let mut i = 0
         while i < src.length() do
           let c = src.char_at(i)
           if c >= "0" && c <= "9" then
@@ -199,8 +199,8 @@ class SelfHostingInfrastructureTest < Minitest::Test
   def test_string_build_from_chars
     run_mlc(<<~MLC) do |_out, _err, status|
       fn take_while_digit(src: string, start: i32) -> string = do
-        let result = ""
-        let i = start
+        let mut result = ""
+        let mut i = start
         while i < src.length() do
           let c = src.char_at(i)
           if c >= "0" && c <= "9" then

@@ -13,7 +13,7 @@ class MoveSemanticsE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
       refute_includes stderr, "error:", "Compilation failed: #{stderr}"
       yield stdout, stderr, status if block_given?
     end
@@ -41,6 +41,7 @@ class MoveSemanticsE2ETest < Minitest::Test
         let a = true
         let b = a
         if a then 1 else 0
+        end
       end
     MLC
       assert_equal 1, status.exitstatus
@@ -94,43 +95,32 @@ class MoveSemanticsE2ETest < Minitest::Test
   end
 
   # ===========================================
-  # Use-after-move: compiler rejects
+  # Array and string bind copy-on-write; use-after-bind remains valid
   # ===========================================
 
-  def test_use_after_move_array_rejected
-    source = <<~MLC
+  def test_array_bind_copy_allows_use_after_bind
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let a = [1, 2, 3]
         let b = a
-        a[0]
+        a[0] + b[0]
       end
     MLC
-
-    Dir.mktmpdir do |dir|
-      file = File.join(dir, "test.mlc")
-      File.write(file, source)
-      _stdout, stderr, status = Open3.capture3(CLI, file)
-      refute status.success?, "Expected compilation to fail for use-after-move"
-      assert_match(/moved/, stderr)
+      assert_equal 2, status.exitstatus
     end
   end
 
-  def test_use_after_move_string_rejected
-    source = <<~MLC
+  def test_string_bind_copy_allows_use_after_bind
+    run_mlc(<<~MLC) do |stdout, _stderr, status|
       fn main() -> i32 = do
         let a = "hello"
         let b = a
         println(a)
-        0
+        b.length()
       end
     MLC
-
-    Dir.mktmpdir do |dir|
-      file = File.join(dir, "test.mlc")
-      File.write(file, source)
-      _stdout, stderr, status = Open3.capture3(CLI, file)
-      refute status.success?, "Expected compilation to fail for use-after-move"
-      assert_match(/moved/, stderr)
+      assert_equal "hello\n", stdout
+      assert_equal 5, status.exitstatus
     end
   end
 
@@ -141,7 +131,7 @@ class MoveSemanticsE2ETest < Minitest::Test
   def test_mutable_reassignment_allows_reuse
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let a = [1, 2, 3]
+        let mut a = [1, 2, 3]
         let _b = a
         a = [4, 5, 6]
         a[0]

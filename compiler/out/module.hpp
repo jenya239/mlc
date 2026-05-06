@@ -18,6 +18,7 @@
 
 namespace module {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

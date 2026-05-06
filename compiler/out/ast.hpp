@@ -8,6 +8,7 @@
 
 namespace ast {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;
@@ -26,6 +27,11 @@ struct FieldPat {mlc::String name;std::shared_ptr<ast::Pat> pat;};
 struct MatchArm {std::shared_ptr<ast::Pat> pat;bool has_guard;std::shared_ptr<ast::Expr> when_condition;std::shared_ptr<ast::Expr> body;};
 
 struct FieldVal {mlc::String name;std::shared_ptr<ast::Expr> val;};
+
+struct RecordLitFields {mlc::Array<std::shared_ptr<ast::FieldVal>> field0;};
+struct RecordLitSpread {std::shared_ptr<ast::Expr> field0;};
+struct RecordLitPart {std::variant<RecordLitFields, RecordLitSpread> _;};
+
 
 struct ExprInt {int field0;ast::Span field1;};
 struct ExprStr {mlc::String field0;ast::Span field1;};
@@ -48,7 +54,7 @@ struct ExprBlock {mlc::Array<std::shared_ptr<ast::Stmt>> field0;std::shared_ptr<
 struct ExprWhile {std::shared_ptr<ast::Expr> field0;mlc::Array<std::shared_ptr<ast::Stmt>> field1;ast::Span field2;};
 struct ExprFor {mlc::String field0;std::shared_ptr<ast::Expr> field1;mlc::Array<std::shared_ptr<ast::Stmt>> field2;ast::Span field3;};
 struct ExprMatch {std::shared_ptr<ast::Expr> field0;mlc::Array<std::shared_ptr<ast::MatchArm>> field1;ast::Span field2;};
-struct ExprRecord {mlc::String field0;mlc::Array<std::shared_ptr<ast::FieldVal>> field1;ast::Span field2;};
+struct ExprRecord {mlc::String field0;mlc::Array<ast::RecordLitPart> field1;ast::Span field2;};
 struct ExprRecordUpdate {mlc::String field0;std::shared_ptr<ast::Expr> field1;mlc::Array<std::shared_ptr<ast::FieldVal>> field2;ast::Span field3;};
 struct ExprArray {mlc::Array<std::shared_ptr<ast::Expr>> field0;ast::Span field1;};
 struct ExprTuple {mlc::Array<std::shared_ptr<ast::Expr>> field0;ast::Span field1;};

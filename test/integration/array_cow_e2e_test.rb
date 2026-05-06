@@ -13,7 +13,7 @@ class ArrayCowE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
       refute_includes stderr, "error:", "Compilation failed: #{stderr}"
       yield stdout, stderr, status if block_given?
     end
@@ -127,8 +127,8 @@ class ArrayCowE2ETest < Minitest::Test
   def test_push_in_while_loop
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
-        let arr: i32[] = []
-        let i = 0
+        let mut arr: i32[] = []
+        let mut i = 0
         while i < 10 do
           arr.push(i)
           i = i + 1

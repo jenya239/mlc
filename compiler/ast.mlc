@@ -81,6 +81,11 @@ export type MatchArm = MatchArm {
 }
 export type FieldVal = FieldVal { name: string, val: Shared<Expr> }
 
+// Ordered chunks for TypeName { ... }: explicit fields and record spreads (`...expr`).
+export type RecordLitPart =
+  | RecordLitFields([Shared<FieldVal>])
+  | RecordLitSpread(Shared<Expr>)
+
 export type Expr =
   | ExprInt(i32, Span) | ExprStr(string, Span) | ExprBool(bool, Span) | ExprUnit(Span)
   | ExprFloat(string, Span) | ExprI64(string, Span) | ExprU8(string, Span)
@@ -97,7 +102,7 @@ export type Expr =
   | ExprWhile(Shared<Expr>, [Shared<Stmt>], Span)
   | ExprFor(string, Shared<Expr>, [Shared<Stmt>], Span)
   | ExprMatch(Shared<Expr>, [Shared<MatchArm>], Span)
-  | ExprRecord(string, [Shared<FieldVal>], Span)
+  | ExprRecord(string, [RecordLitPart], Span)
   | ExprRecordUpdate(string, Shared<Expr>, [Shared<FieldVal>], Span)
   | ExprArray([Shared<Expr>], Span)
   | ExprTuple([Shared<Expr>], Span)

@@ -9,6 +9,8 @@ MLCC="${1:-$ROOT_DIR/compiler/out/mlcc}"
 RT_INC="$ROOT_DIR/runtime/include"
 RT_SRC="$ROOT_DIR/runtime/src/io/io.cpp $ROOT_DIR/runtime/src/core/string.cpp"
 
+echo "[e2e] mlcc=$MLCC (6 programs: compile, link, run)" >&2
+
 PASS=0; FAIL=0
 
 run_test() {

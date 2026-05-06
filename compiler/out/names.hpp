@@ -8,6 +8,7 @@
 
 namespace names {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

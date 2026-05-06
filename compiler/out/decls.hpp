@@ -11,6 +11,7 @@
 
 namespace decls {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

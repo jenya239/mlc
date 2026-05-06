@@ -14,6 +14,7 @@
 
 namespace infer_operand_combine {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

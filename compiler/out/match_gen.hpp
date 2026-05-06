@@ -16,6 +16,7 @@
 
 namespace match_gen {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

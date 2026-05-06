@@ -9,6 +9,7 @@
 
 namespace check_mutations {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

@@ -221,6 +221,30 @@ public:
         return result;
     }
 
+    Array<T> slice(int32_t start, int32_t end) const {
+        if (start < 0) start = 0;
+        int32_t len = length();
+        if (end > len) end = len;
+        if (start >= end) return Array<T>{};
+        return Array<T>(data_->begin() + start, data_->begin() + end);
+    }
+
+    T min() const {
+        if (data_->empty()) return T{};
+        T result = (*data_)[0];
+        for (const auto& item : *data_)
+            if (item < result) result = item;
+        return result;
+    }
+
+    T max() const {
+        if (data_->empty()) return T{};
+        T result = (*data_)[0];
+        for (const auto& item : *data_)
+            if (item > result) result = item;
+        return result;
+    }
+
     int32_t sum() const requires std::same_as<T, int> {
         int32_t s = 0;
         for (const auto& item : *data_) s += static_cast<int32_t>(item);

@@ -9,6 +9,7 @@
 
 namespace registry {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;
@@ -16,7 +17,7 @@ struct SStmt;
 
 struct TI32;struct TString;struct TBool;struct TUnit;struct TI64;struct TF64;struct TU8;struct TUsize;struct TChar;struct TArray;struct TShared;struct TNamed;struct TGeneric;struct TPair;struct TTuple;struct TFn;struct TAssoc;struct TUnknown;using Type = std::variant<TI32, TString, TBool, TUnit, TI64, TF64, TU8, TUsize, TChar, TArray, TShared, TNamed, TGeneric, TPair, TTuple, TFn, TAssoc, TUnknown>;struct TI32 {};struct TString {};struct TBool {};struct TUnit {};struct TI64 {};struct TF64 {};struct TU8 {};struct TUsize {};struct TChar {};struct TArray {std::shared_ptr<registry::Type> field0;};struct TShared {std::shared_ptr<registry::Type> field0;};struct TNamed {mlc::String field0;};struct TGeneric {mlc::String field0;mlc::Array<std::shared_ptr<registry::Type>> field1;};struct TPair {std::shared_ptr<registry::Type> field0;std::shared_ptr<registry::Type> field1;};struct TTuple {mlc::Array<std::shared_ptr<registry::Type>> field0;};struct TFn {mlc::Array<std::shared_ptr<registry::Type>> field0;std::shared_ptr<registry::Type> field1;};struct TAssoc {mlc::String field0;mlc::String field1;};struct TUnknown {};
 
-struct TypeRegistry {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> fn_types;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> function_type_parameter_names;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> function_parameter_names;mlc::HashMap<mlc::String, int> function_required_arity;mlc::HashMap<mlc::String, mlc::Array<mlc::Array<mlc::String>>> function_trait_bounds;mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> ctor_types;mlc::HashMap<mlc::String, mlc::Array<std::shared_ptr<registry::Type>>> ctor_params;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> algebraic_decl_type_parameter_names;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> algebraic_decl_phantom_type_params;mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>> field_types;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> trait_impls;mlc::Array<mlc::String> private_ctors;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> trait_assoc_types;mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>> assoc_type_bindings;};
+struct TypeRegistry {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> fn_types;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> function_type_parameter_names;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> function_parameter_names;mlc::HashMap<mlc::String, int> function_required_arity;mlc::HashMap<mlc::String, mlc::Array<mlc::Array<mlc::String>>> function_trait_bounds;mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> ctor_types;mlc::HashMap<mlc::String, mlc::Array<std::shared_ptr<registry::Type>>> ctor_params;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> algebraic_decl_type_parameter_names;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> algebraic_decl_phantom_type_params;mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>> field_types;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> record_field_names_ordered;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> trait_impls;mlc::Array<mlc::String> private_ctors;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> trait_assoc_types;mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>> assoc_type_bindings;};
 
 std::shared_ptr<registry::Type> TypeRegistry_fn_type(registry::TypeRegistry self, mlc::String name) noexcept;
 
@@ -37,6 +38,8 @@ bool TypeRegistry_has_ctor(registry::TypeRegistry self, mlc::String name) noexce
 mlc::Array<std::shared_ptr<registry::Type>> TypeRegistry_ctor_params_for(registry::TypeRegistry self, mlc::String name) noexcept;
 
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> TypeRegistry_fields_for(registry::TypeRegistry self, mlc::String type_name) noexcept;
+
+mlc::Array<mlc::String> TypeRegistry_record_field_names_ordered_for(registry::TypeRegistry self, mlc::String algebraic_or_variant_name) noexcept;
 
 bool TypeRegistry_has_fields(registry::TypeRegistry self, mlc::String type_name) noexcept;
 

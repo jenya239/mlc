@@ -6,6 +6,7 @@
 
 namespace test_runner {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

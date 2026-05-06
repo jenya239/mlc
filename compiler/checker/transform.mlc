@@ -2,7 +2,7 @@
 // Mirrors infer_expr but produces typed Shared<SExpr> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder } from "../ast"
+import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from "../ast"
 import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TUnknown, TF64, TI64, TU8, TUsize, TChar, TBool, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from "./registry"
 import {
   binary_operation_result_type,
@@ -18,6 +18,9 @@ import { array_hof_call_result_type, is_array_hof_method } from "./array_method_
 import { result_option_hof_call_result_type, should_infer_result_option_combinator } from "./result_option_method_types"
 import { env_for_pattern_substituted } from "./pattern_env"
 import { substitute_type } from "./semantic_type_structure"
+import { infer_expr } from "./infer"
+import { check_context_new } from "./check_context"
+import * as record_lit_merge from "./record_lit_merge"
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprArray, SExprIf, SExprBlock, SExprBool } from "../semantic_ir"
 
 fn coerce_unknown_else_array_when_then_known_inner(
@@ -537,11 +540,32 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
       Shared.new(SExprMatch(typed_subject, typed_arms, result_type, source_span))
     end,
 
-    ExprRecord(type_name, field_values, source_span) => do
-      const typed_fields = transform_field_vals(field_values, transform_context, stmts_fn)
-      const phantom    = transform_context.registry.phantom_type_params_for(type_name)
+    ExprRecord(type_name, lit_parts, source_span) => do
+      let mut merged_field_values_for_transform: [Shared<FieldVal>] = []
+      if !record_lit_merge.record_literal_contains_spread(lit_parts) then
+        merged_field_values_for_transform = record_lit_merge.collect_explicit_field_values_flat(lit_parts)
+      else do
+        let mut spread_types_for_merge: [Shared<Type>] = []
+        const inference_context_for_literal_spreads =
+          check_context_new(transform_context.type_env, transform_context.registry)
+        let mut literal_part_index = 0
+        while literal_part_index < lit_parts.length() do
+          match lit_parts[literal_part_index] {
+            RecordLitSpread(spread_expression) =>
+              spread_types_for_merge.push(
+                infer_expr(spread_expression, inference_context_for_literal_spreads).inferred_type),
+            RecordLitFields(_) => (),
+          }
+          literal_part_index = literal_part_index + 1
+        end
+        merged_field_values_for_transform =
+          record_lit_merge.merge_record_literal_parts_to_field_values(
+            type_name, lit_parts, transform_context.registry, spread_types_for_merge)
+      end
+      const typed_fields = transform_field_vals(merged_field_values_for_transform, transform_context, stmts_fn)
+      const phantom = transform_context.registry.phantom_type_params_for(type_name)
       const all_params = transform_context.registry.algebraic_decl_type_parameter_names_for(type_name)
-      const expr_type  = if all_params.length() > 0 && phantom.length() == all_params.length()
+      const expr_type = if all_params.length() > 0 && phantom.length() == all_params.length()
         then Shared.new(TGeneric(type_name, tunk_args(all_params.length())))
         else Shared.new(TNamed(type_name)) end
       Shared.new(SExprRecord(type_name, typed_fields, expr_type, source_span))

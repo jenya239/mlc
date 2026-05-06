@@ -13,7 +13,7 @@ class ArrayOperationsE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
 
       refute_includes stderr, "error:", "Compilation failed: #{stderr}"
       yield stdout, stderr, status if block_given?
@@ -243,7 +243,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   def test_array_passed_to_function
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn sum_array(arr: i32[]) -> i32 =
-        ".fold()0, (acc, x) => acc + x)
+        arr.fold(0, (acc, x) => acc + x)
 
       fn main() -> i32 = do
         let nums = [3, 5, 7, 9]
@@ -257,7 +257,7 @@ class ArrayOperationsE2ETest < Minitest::Test
   def test_array_transform_function
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn double_all(arr: i32[]) -> i32[] =
-        ".map()x => x * 2)
+        arr.map(x => x * 2)
 
       fn main() -> i32 = do
         let nums = [5, 10, 15]
@@ -275,11 +275,7 @@ class ArrayOperationsE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [5, 10, 15, 20]
-        let sum = 0
-        for x in nums do
-          let sum = sum + x
-        end
-        sum
+        nums.fold(0, (acc, x) => acc + x)
       end
     MLC
       assert_equal 50, status.exitstatus # 5 + 10 + 15 + 20
@@ -290,11 +286,7 @@ class ArrayOperationsE2ETest < Minitest::Test
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
       fn main() -> i32 = do
         let nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        let count = 0
-        for x in nums do
-          let count = if x % 2 == 0 then count + 1 else count
-        end
-        count
+        nums.filter(x => x % 2 == 0).length()
       end
     MLC
       assert_equal 5, status.exitstatus # 5 even numbers

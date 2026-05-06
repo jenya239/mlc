@@ -23,6 +23,7 @@
 
 namespace expr_eval {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

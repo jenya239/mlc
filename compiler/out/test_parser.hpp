@@ -13,6 +13,7 @@
 
 namespace test_parser {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

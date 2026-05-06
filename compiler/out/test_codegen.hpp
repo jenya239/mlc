@@ -21,6 +21,7 @@
 
 namespace test_codegen {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

@@ -1,8 +1,8 @@
 // --- Expression and pattern parser ---------------------------------------
 
-import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, FieldValsResult, StmtsResult, StmtResult, TypeResult, parser_new } from "./preds"
+import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, RecordLitPartsResult, StmtsResult, StmtResult, TypeResult, parser_new } from "./preds"
 import { parse_type } from "./types"
-import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm } from "../ast"
+import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm, FieldVal, ExprIdent, ExprRecord, ExprRecordUpdate, RecordLitPart, RecordLitFields, RecordLitSpread } from "../ast"
 import { TKind, Eof } from "../ast_tokens"
 import { tokenize } from "../lexer"
 
@@ -946,37 +946,68 @@ end
 
 fn parse_arms(parser: Parser) -> ArmsResult = parse_arms_brace(parser)
 
-fn parse_record_fields(parser: Parser) -> FieldValsResult = do
-  const field_vals: [Shared<FieldVal>] = []
+fn parse_record_lit_parts(parser: Parser) -> RecordLitPartsResult = do
+  let lit_parts: [RecordLitPart] = []
+  let mut current_field_vals: [Shared<FieldVal>] = []
   let mut state = parser
   while !state.kind().is_rbrace() && !state.at_eof() do
-    const field_span = state.span_at_cursor()
-    const field_name = state.kind().ident()
-    const after_name = state.advance()
-    if after_name.kind().is_colon() then
-      const value_result = parse_expr(after_name.advance())
-      field_vals.push(Shared.new(FieldVal { name: field_name, val: value_result.expr }))
-      state = value_result.parser
+    if state.kind().is_spread() then
+      if current_field_vals.length() > 0 then
+        lit_parts.push(RecordLitFields(current_field_vals))
+        current_field_vals = do let cleared_segment: [Shared<FieldVal>] = []; cleared_segment end
+      end
+      const spread_value_result = parse_expr(state.advance())
+      lit_parts.push(RecordLitSpread(spread_value_result.expr))
+      state = spread_value_result.parser
+      if state.kind().is_comma() then state = state.advance() end
     else
-      field_vals.push(Shared.new(FieldVal { name: field_name, val: Shared.new(ExprIdent(field_name, field_span)) }))
-      state = after_name
+      const field_span = state.span_at_cursor()
+      const field_name = state.kind().ident()
+      const after_field_name = state.advance()
+      if after_field_name.kind().is_colon() then
+        const field_value_result = parse_expr(after_field_name.advance())
+        current_field_vals.push(Shared.new(FieldVal { name: field_name, val: field_value_result.expr }))
+        state = field_value_result.parser
+      else
+        current_field_vals.push(Shared.new(FieldVal { name: field_name, val: Shared.new(ExprIdent(field_name, field_span)) }))
+        state = after_field_name
+      end
+      if state.kind().is_comma() then state = state.advance() end
     end
-    if state.kind().is_comma() then state = state.advance() end
   end
-  FieldValsResult { field_vals, parser: state.advance() }
+  if current_field_vals.length() > 0 then lit_parts.push(RecordLitFields(current_field_vals)) end
+  RecordLitPartsResult { lit_parts: lit_parts, parser: state.advance() }
 end
 
-fn parse_record_expr(parser: Parser, record_name: string, record_span: Span) -> ExprResult =
-  if parser.kind().is_spread() then
-    const base_result = parse_expr(parser.advance())
-    let mut after_base = base_result.parser
-    if after_base.kind().is_comma() then after_base = after_base.advance() end
-    const fields_result = parse_record_fields(after_base)
-    ExprResult {
-      expr: Shared.new(ExprRecordUpdate(record_name, base_result.expr, fields_result.field_vals, record_span)),
-      parser: fields_result.parser
+fn parse_record_expr(parser: Parser, record_name: string, record_span: Span) -> ExprResult = do
+  const parsed_lit_parts = parse_record_lit_parts(parser)
+  const lit_parts = parsed_lit_parts.lit_parts
+  const after_record_body = parsed_lit_parts.parser
+  if lit_parts.length() == 2 then
+    match lit_parts[0] {
+      RecordLitSpread(base_expression) =>
+        match lit_parts[1] {
+          RecordLitFields(override_fields) =>
+            ExprResult {
+              expr: Shared.new(ExprRecordUpdate(record_name, base_expression, override_fields, record_span)),
+              parser: after_record_body
+            },
+          RecordLitSpread(_) =>
+            ExprResult {
+              expr: Shared.new(ExprRecord(record_name, lit_parts, record_span)),
+              parser: after_record_body
+            },
+        },
+      RecordLitFields(_) =>
+        ExprResult {
+          expr: Shared.new(ExprRecord(record_name, lit_parts, record_span)),
+          parser: after_record_body
+        },
     }
   else
-    const fields_result = parse_record_fields(parser)
-    ExprResult { expr: Shared.new(ExprRecord(record_name, fields_result.field_vals, record_span)), parser: fields_result.parser }
+    ExprResult {
+      expr: Shared.new(ExprRecord(record_name, lit_parts, record_span)),
+      parser: after_record_body
+    }
   end
+end

@@ -12,6 +12,7 @@
 
 namespace type_gen {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

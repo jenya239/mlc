@@ -9,6 +9,7 @@
 
 namespace statement_context {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

@@ -12,6 +12,7 @@
 
 namespace method_receiver_diagnostics {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

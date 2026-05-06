@@ -15,7 +15,7 @@ class MLCCLITest < Minitest::Test
           println("hello")
       MLC
 
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
 
       assert(status.success?, "Expected program to succeed, stderr: #{stderr}")
       assert_equal "hello\n", stdout
@@ -27,10 +27,12 @@ class MLCCLITest < Minitest::Test
       fn main() -> i32 = println("from-stdin")
     MLC
 
-    stdout, stderr, status = Open3.capture3(CLI, "-", stdin_data: source)
+    Dir.mktmpdir do |directory|
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{directory}", "-", stdin_data: source)
 
-    assert(status.success?, "Expected execution success, stderr: #{stderr}")
-    assert_equal "from-stdin\n", stdout
+      assert(status.success?, "Expected execution success, stderr: #{stderr}")
+      assert_equal "from-stdin\n", stdout
+    end
   end
 
   def test_program_reads_runtime_stdin
@@ -40,7 +42,7 @@ class MLCCLITest < Minitest::Test
         fn main() -> i32 = println(read_line())
       MLC
 
-      stdout, stderr, status = Open3.capture3(CLI, source, stdin_data: "hello\n")
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source, stdin_data: "hello\n")
 
       assert(status.success?, "Expected execution success, stderr: #{stderr}")
       assert_equal "hello\n", stdout
@@ -71,7 +73,7 @@ class MLCCLITest < Minitest::Test
           if true then 1 else 2
       MLC
 
-      _stdout, stderr, status = Open3.capture3(CLI, source)
+      _stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
 
       refute status.success?, "Expected compilation failure"
       assert_match(
@@ -88,7 +90,7 @@ class MLCCLITest < Minitest::Test
         fn main() -> i32 = println(args()[1])
       MLC
 
-      stdout, stderr, status = Open3.capture3(CLI, source, "--", "program", "value")
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source, "--", "program", "value")
 
       assert(status.success?, "Expected execution success, stderr: #{stderr}")
       assert_equal "value\n", stdout
@@ -104,7 +106,7 @@ class MLCCLITest < Minitest::Test
           x + 1
       MLC
 
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
 
       assert_equal 42, status.exitstatus, "Unexpected exit code, stderr: #{stderr}"
       assert_equal "", stdout
@@ -122,7 +124,7 @@ class MLCCLITest < Minitest::Test
           count(["a", "b", "c"])
       MLC
 
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
 
       assert_equal 3, status.exitstatus, "Unexpected exit code, stderr: #{stderr}"
       assert_equal "", stdout
@@ -171,7 +173,7 @@ class MLCCLITest < Minitest::Test
         INFO: Done
       LOG
 
-      _stdout, stderr, status = Open3.capture3(CLI, source, stdin_data: input)
+      _stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source, stdin_data: input)
 
       assert(status.success?, "Expected execution success, stderr: #{stderr}")
     end

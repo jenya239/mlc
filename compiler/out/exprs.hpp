@@ -12,6 +12,7 @@
 
 namespace exprs {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

@@ -149,7 +149,7 @@ preds::ArmsResult parse_arms_pipe(preds::Parser parser) noexcept;
 
 preds::ArmsResult parse_arms(preds::Parser parser) noexcept;
 
-preds::FieldValsResult parse_record_fields(preds::Parser parser) noexcept;
+preds::RecordLitPartsResult parse_record_lit_parts(preds::Parser parser) noexcept;
 
 preds::ExprResult parse_record_expr(preds::Parser parser, mlc::String record_name, ast::Span record_span) noexcept;
 
@@ -1008,49 +1008,73 @@ return preds::ArmsResult{arms, state};
 
 preds::ArmsResult parse_arms(preds::Parser parser) noexcept{return parse_arms_brace(parser);}
 
-preds::FieldValsResult parse_record_fields(preds::Parser parser) noexcept{
-mlc::Array<std::shared_ptr<ast::FieldVal>> field_vals = {};
+preds::RecordLitPartsResult parse_record_lit_parts(preds::Parser parser) noexcept{
+mlc::Array<ast::RecordLitPart> lit_parts = {};
+mlc::Array<std::shared_ptr<ast::FieldVal>> current_field_vals = {};
 preds::Parser state = std::move(parser);
 while (!preds::TKind_is_rbrace(preds::Parser_kind(state)) && !preds::Parser_at_eof(state)){
 {
-ast::Span field_span = preds::Parser_span_at_cursor(state);
-mlc::String field_name = preds::TKind_ident(preds::Parser_kind(state));
-preds::Parser after_name = preds::Parser_advance(state);
-if (preds::TKind_is_colon(preds::Parser_kind(after_name))){
+if (preds::TKind_is_spread(preds::Parser_kind(state))){
 {
-preds::ExprResult value_result = parse_expr(preds::Parser_advance(after_name));
-field_vals.push_back(std::make_shared<ast::FieldVal>(ast::FieldVal{field_name, value_result.expr}));
-state = value_result.parser;
+if (current_field_vals.size() > 0){
+{
+lit_parts.push_back(ast::RecordLitPart(ast::RecordLitFields(current_field_vals)));
+current_field_vals = [&]() -> mlc::Array<std::shared_ptr<ast::FieldVal>> { 
+  mlc::Array<std::shared_ptr<ast::FieldVal>> cleared_segment = {};
+  return cleared_segment;
+ }();
+}
+}
+preds::ExprResult spread_value_result = parse_expr(preds::Parser_advance(state));
+lit_parts.push_back(ast::RecordLitPart(ast::RecordLitSpread(spread_value_result.expr)));
+state = spread_value_result.parser;
+if (preds::TKind_is_comma(preds::Parser_kind(state))){
+state = preds::Parser_advance(state);
+}
 }
 } else {
 {
-field_vals.push_back(std::make_shared<ast::FieldVal>(ast::FieldVal{field_name, std::make_shared<ast::Expr>(ast::ExprIdent(field_name, field_span))}));
-state = after_name;
+ast::Span field_span = preds::Parser_span_at_cursor(state);
+mlc::String field_name = preds::TKind_ident(preds::Parser_kind(state));
+preds::Parser after_field_name = preds::Parser_advance(state);
+if (preds::TKind_is_colon(preds::Parser_kind(after_field_name))){
+{
+preds::ExprResult field_value_result = parse_expr(preds::Parser_advance(after_field_name));
+current_field_vals.push_back(std::make_shared<ast::FieldVal>(ast::FieldVal{field_name, field_value_result.expr}));
+state = field_value_result.parser;
+}
+} else {
+{
+current_field_vals.push_back(std::make_shared<ast::FieldVal>(ast::FieldVal{field_name, std::make_shared<ast::Expr>(ast::ExprIdent(field_name, field_span))}));
+state = after_field_name;
 }
 }
 if (preds::TKind_is_comma(preds::Parser_kind(state))){
-{
 state = preds::Parser_advance(state);
 }
 }
 }
 }
-return preds::FieldValsResult{field_vals, preds::Parser_advance(state)};
+}
+if (current_field_vals.size() > 0){
+{
+lit_parts.push_back(ast::RecordLitPart(ast::RecordLitFields(current_field_vals)));
+}
+}
+return preds::RecordLitPartsResult{lit_parts, preds::Parser_advance(state)};
 }
 
-preds::ExprResult parse_record_expr(preds::Parser parser, mlc::String record_name, ast::Span record_span) noexcept{return preds::TKind_is_spread(preds::Parser_kind(parser)) ? [&]() -> preds::ExprResult { 
-  preds::ExprResult base_result = parse_expr(preds::Parser_advance(parser));
-  preds::Parser after_base = base_result.parser;
-  if (preds::TKind_is_comma(preds::Parser_kind(after_base))){
-{
-after_base = preds::Parser_advance(after_base);
+preds::ExprResult parse_record_expr(preds::Parser parser, mlc::String record_name, ast::Span record_span) noexcept{
+preds::RecordLitPartsResult parsed_lit_parts = parse_record_lit_parts(parser);
+mlc::Array<ast::RecordLitPart> lit_parts = parsed_lit_parts.lit_parts;
+preds::Parser after_record_body = parsed_lit_parts.parser;
+return lit_parts.size() == 2 ? std::visit(overloaded{
+  [&](const RecordLitSpread& recordlitspread) -> preds::ExprResult { auto [base_expression] = recordlitspread; return std::visit(overloaded{
+  [&](const RecordLitFields& recordlitfields) -> preds::ExprResult { auto [override_fields] = recordlitfields; return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecordUpdate(record_name, base_expression, override_fields, record_span)), after_record_body}; },
+  [&](const RecordLitSpread& recordlitspread) -> preds::ExprResult { auto [_w0] = recordlitspread; return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecord(record_name, lit_parts, record_span)), after_record_body}; }
+}, lit_parts[1]._); },
+  [&](const RecordLitFields& recordlitfields) -> preds::ExprResult { auto [_w0] = recordlitfields; return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecord(record_name, lit_parts, record_span)), after_record_body}; }
+}, lit_parts[0]._) : preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecord(record_name, lit_parts, record_span)), after_record_body};
 }
-}
-  preds::FieldValsResult fields_result = parse_record_fields(after_base);
-  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecordUpdate(record_name, base_result.expr, fields_result.field_vals, record_span)), fields_result.parser};
- }() : [&]() -> preds::ExprResult { 
-  preds::FieldValsResult fields_result = parse_record_fields(parser);
-  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecord(record_name, fields_result.field_vals, record_span)), fields_result.parser};
- }();}
 
 } // namespace exprs

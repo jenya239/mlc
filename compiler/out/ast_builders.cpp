@@ -151,7 +151,11 @@ std::shared_ptr<ast::Expr> while_expr(std::shared_ptr<ast::Expr> condition, mlc:
 
 std::shared_ptr<ast::Expr> array_expr(mlc::Array<std::shared_ptr<ast::Expr>> elements) noexcept{return std::make_shared<ast::Expr>(ast::ExprArray(elements, ast::span_unknown()));}
 
-std::shared_ptr<ast::Expr> record_expr(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values) noexcept{return std::make_shared<ast::Expr>(ast::ExprRecord(type_name, field_values, ast::span_unknown()));}
+std::shared_ptr<ast::Expr> record_expr(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values) noexcept{
+mlc::Array<ast::RecordLitPart> parts = {};
+parts.push_back(ast::RecordLitPart(ast::RecordLitFields(field_values)));
+return std::make_shared<ast::Expr>(ast::ExprRecord(type_name, parts, ast::span_unknown()));
+}
 
 std::shared_ptr<ast::Expr> question_expr(std::shared_ptr<ast::Expr> inner_expr) noexcept{return std::make_shared<ast::Expr>(ast::ExprQuestion(inner_expr, ast::span_unknown()));}
 

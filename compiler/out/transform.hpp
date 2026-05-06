@@ -11,10 +11,14 @@
 #include "result_option_method_types.hpp"
 #include "pattern_env.hpp"
 #include "semantic_type_structure.hpp"
+#include "infer.hpp"
+#include "check_context.hpp"
+#include "record_lit_merge.hpp"
 #include "semantic_ir.hpp"
 
 namespace transform {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

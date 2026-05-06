@@ -12,6 +12,7 @@
 
 namespace transform_stmts {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

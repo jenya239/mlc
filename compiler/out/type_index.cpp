@@ -118,9 +118,9 @@ std::shared_ptr<ast::Decl> inner_decl = ast::decl_inner(decls[i]);
   while (vi < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [variant_name, _w0, _w1] = varrecord; return variant_map.set(variant_name, type_name); },
-  [&](const VarTuple& vartuple) -> void { auto [variant_name, _w0, _w1] = vartuple; return variant_map.set(variant_name, type_name); },
-  [&](const VarUnit& varunit) -> void { auto [variant_name, _w0] = varunit; return variant_map.set(variant_name, type_name); }
+  [&](const VarRecord& varrecord) -> void { auto [variant_name, _w0, _w1] = varrecord; variant_map.set(variant_name, type_name); },
+  [&](const VarTuple& vartuple) -> void { auto [variant_name, _w0, _w1] = vartuple; variant_map.set(variant_name, type_name); },
+  [&](const VarUnit& varunit) -> void { auto [variant_name, _w0] = varunit; variant_map.set(variant_name, type_name); }
 }, (*variants[vi]));
 vi = vi + 1;
 }
@@ -139,14 +139,14 @@ int i = 0;
 while (i < prog.decls.size()){
 {
 std::visit(overloaded{
-  [&](const DeclExported& declexported) -> void { auto [inner] = declexported; return std::visit(overloaded{
-  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1] = decltype_; return [&]() { 
+  [&](const DeclExported& declexported) -> void { auto [inner] = declexported; std::visit(overloaded{
+  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1] = decltype_; [&]() { 
   int vi = 0;
   return [&]() { 
   while (vi < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; return [&]() { 
+  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; [&]() { 
   mlc::Array<mlc::String> field_names = {};
   int fi = 0;
   while (fi < field_defs.size()){
@@ -163,29 +163,29 @@ orders.push_back(std::make_shared<decl_index::FieldOrder>(decl_index::FieldOrder
 }
   return;
  }(); },
-  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; return ; },
-  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; return ; }
+  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; },
+  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; }
 }, (*variants[vi]));
 vi = vi + 1;
 }
 }
  }();
  }(); },
-  [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; return ; },
-  [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; return ; },
-  [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; return ; },
-  [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; return ; },
-  [&](const DeclExported& declexported) -> void { auto [_w0] = declexported; return ; },
-  [&](const DeclAssocType& declassoctype) -> void { auto [_w0, _w1] = declassoctype; return ; },
-  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; return ; }
+  [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; },
+  [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; },
+  [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; },
+  [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; },
+  [&](const DeclExported& declexported) -> void { auto [_w0] = declexported; },
+  [&](const DeclAssocType& declassoctype) -> void { auto [_w0, _w1] = declassoctype; },
+  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; }
 }, (*ast::decl_inner(inner))); },
-  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1] = decltype_; return [&]() { 
+  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1] = decltype_; [&]() { 
   int vi = 0;
   return [&]() { 
   while (vi < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; return [&]() { 
+  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; [&]() { 
   mlc::Array<mlc::String> field_names = {};
   int fi = 0;
   while (fi < field_defs.size()){
@@ -202,20 +202,20 @@ orders.push_back(std::make_shared<decl_index::FieldOrder>(decl_index::FieldOrder
 }
   return;
  }(); },
-  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; return ; },
-  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; return ; }
+  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; },
+  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; }
 }, (*variants[vi]));
 vi = vi + 1;
 }
 }
  }();
  }(); },
-  [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; return ; },
-  [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; return ; },
-  [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; return ; },
-  [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; return ; },
-  [&](const DeclAssocType& declassoctype) -> void { auto [_w0, _w1] = declassoctype; return ; },
-  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; return ; }
+  [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; },
+  [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; },
+  [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; },
+  [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; },
+  [&](const DeclAssocType& declassoctype) -> void { auto [_w0, _w1] = declassoctype; },
+  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; }
 }, (*prog.decls[i]));
 i = i + 1;
 }

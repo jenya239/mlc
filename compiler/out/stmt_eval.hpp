@@ -17,6 +17,7 @@
 
 namespace stmt_eval {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

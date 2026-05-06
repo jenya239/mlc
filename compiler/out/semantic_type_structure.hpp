@@ -8,6 +8,7 @@
 
 namespace semantic_type_structure {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

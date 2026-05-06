@@ -10,6 +10,7 @@
 
 namespace call_argument_unify {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

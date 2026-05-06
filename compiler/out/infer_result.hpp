@@ -9,6 +9,7 @@
 
 namespace infer_result {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

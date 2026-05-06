@@ -17,6 +17,7 @@
 
 namespace test_pipe_and_record_update {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

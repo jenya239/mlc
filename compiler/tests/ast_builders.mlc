@@ -1,7 +1,7 @@
 // Builder functions for constructing AST nodes in tests.
 // Eliminates Shared.new(...) verbosity and makes test intent clear.
 
-import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown, ExprUnit, ExprBool } from "../ast"
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown, ExprUnit, ExprBool, ExprRecord, RecordLitPart, RecordLitFields } from "../ast"
 
 // --- Program ------------------------------------------------------------------
 
@@ -76,8 +76,11 @@ export fn while_expr(condition: Shared<Expr>, statements: [Shared<Stmt>]) -> Sha
 export fn array_expr(elements: [Shared<Expr>]) -> Shared<Expr> =
   Shared.new(ExprArray(elements, span_unknown()))
 
-export fn record_expr(type_name: string, field_values: [Shared<FieldVal>]) -> Shared<Expr> =
-  Shared.new(ExprRecord(type_name, field_values, span_unknown()))
+export fn record_expr(type_name: string, field_values: [Shared<FieldVal>]) -> Shared<Expr> = do
+  let mut parts: [RecordLitPart] = []
+  parts.push(RecordLitFields(field_values))
+  Shared.new(ExprRecord(type_name, parts, span_unknown()))
+end
 
 export fn question_expr(inner_expr: Shared<Expr>) -> Shared<Expr> =
   Shared.new(ExprQuestion(inner_expr, span_unknown()))

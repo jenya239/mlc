@@ -15,6 +15,7 @@
 
 namespace record_gen {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

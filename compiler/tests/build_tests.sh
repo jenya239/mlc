@@ -8,6 +8,8 @@ mkdir -p "$OUT_DIR"
 
 TESTS_MAIN="$COMPILER_DIR/tests/tests_main.mlc"
 
+echo "[compiler tests] phase 1/2: compile tests_main.mlc → ${OUT_DIR}/run_tests" >&2
+
 bundle exec ruby -I"$ROOT_DIR/lib" -e '
 require "mlc/common/index"
 require "mlc/common/modular_compilation/modular_compiler"
@@ -22,5 +24,5 @@ result = compiler.build
 puts "Built: #{result[:binary]}"
 ' "$TESTS_MAIN" "$OUT_DIR"
 
-echo "Running tests..."
+echo "[compiler tests] phase 2/2: execute run_tests" >&2
 "$OUT_DIR/run_tests"

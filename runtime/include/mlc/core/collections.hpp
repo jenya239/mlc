@@ -176,6 +176,15 @@ std::vector<T> slice(const std::vector<T>& items, int32_t start, int32_t end) {
     return std::vector<T>(items.begin() + start, items.begin() + end);
 }
 
+template <typename T>
+mlc::Array<T> slice(const mlc::Array<T>& items, int32_t start, int32_t end) {
+    if (start < 0) start = 0;
+    int32_t len = items.length();
+    if (end > len) end = len;
+    if (start >= end) return mlc::Array<T>{};
+    return mlc::Array<T>(items.begin() + start, items.begin() + end);
+}
+
 // Specialized slice functions
 inline std::vector<int32_t> slice_i32(const std::vector<int32_t>& items, int32_t start, int32_t end) {
     return slice(items, start, end);

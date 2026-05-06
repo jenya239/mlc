@@ -22,15 +22,19 @@
 #include "let_pattern_infer.hpp"
 #include "infer_array_method.hpp"
 #include "infer_result_option_method.hpp"
+#include "record_lit_merge.hpp"
 
 namespace infer {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
 
 infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept;
+
+infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<ast::RecordLitPart> lit_parts, check_context::CheckContext inference_context, ast::Span span) noexcept;
 
 infer_result::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 

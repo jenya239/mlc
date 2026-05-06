@@ -46,6 +46,9 @@ module MLC
             all_modules: all_modules
           )
 
+          cyclic_union = all_modules ? cyclic_sum_types_global(all_modules) : cyclic_sum_types(module_node)
+          @lowering.cyclic_sum_types = cyclic_union
+
           implementation = generate_implementation(
             module_node: module_node,
             module_name: module_node.name,
@@ -329,17 +332,8 @@ module MLC
           end
         end
 
-        TRAIT_AST_TYPE_MAP = {
-          "unit" => "void", "void" => "void", "string" => "mlc::String", "str" => "mlc::String",
-          "bool" => "bool", "i32" => "int", "i64" => "int64_t", "i8" => "int8_t",
-          "u32" => "uint32_t", "u64" => "uint64_t", "f32" => "float", "f64" => "double",
-          "int" => "int"
-        }.freeze
-
-        def ast_type_to_cpp(ast_type)
-          return "void" unless ast_type
-          name = ast_type.respond_to?(:name) ? ast_type.name.to_s : ast_type.to_s
-          TRAIT_AST_TYPE_MAP[name] || name
+        def ast_type_to_cpp(ast_type, trait_self: nil, associated_type_names: nil)
+          TraitCppTypes.ast_type_to_cpp(ast_type, trait_self: trait_self, associated_type_names: associated_type_names)
         end
 
         def generate_trait_structs_for_module(module_node)
@@ -348,16 +342,26 @@ module MLC
           return [] unless tr
           trait_names_in_module = collect_trait_names_in_module(module_node)
           return [] if trait_names_in_module.empty?
-          tr.all_traits.select { |t| trait_names_in_module.include?(t.name) }.map do |trait_info|
-            fields = trait_info.trait_methods.reject { |m| m[:name] == "self" }.map do |m|
-              params = Array(m[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
-              param_types = params.map do |p|
-                ast_type_to_cpp(p.respond_to?(:type) ? p.type : p[:type])
+          tr.all_traits.select { |trait_definition| trait_names_in_module.include?(trait_definition.name) }.map do |trait_info|
+            uses_associated_types = trait_info.associated_types&.any?
+            trait_self_name = "TraitSelf"
+            trait_self_keyword = uses_associated_types ? trait_self_name : nil
+            associated_type_names = trait_info.associated_types&.map { |entry| entry[:name].to_s }&.to_set
+            fields = trait_info.trait_methods.reject { |method_entry| method_entry[:name] == "self" }.map do |method_entry|
+              params = Array(method_entry[:params]).reject { |parameter| parameter.respond_to?(:name) ? parameter.name == "self" : parameter[:name] == "self" }
+              param_types = params.map do |parameter|
+                type_syntax = parameter.respond_to?(:type) ? parameter.type : parameter[:type]
+                ast_type_to_cpp(type_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names)
               end.join(", ")
-              ret_type = ast_type_to_cpp(m[:ret_type])
-              "  std::function<#{ret_type}(#{param_types})> #{m[:name]};"
+              ret_syntax = method_entry[:ret_type]
+              ret_type = ret_syntax ? ast_type_to_cpp(ret_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names) : "void"
+              "  std::function<#{ret_type}(#{param_types})> #{method_entry[:name]};"
             end.join("\n")
-            "struct #{trait_info.name} {\n#{fields}\n};"
+            if uses_associated_types
+              "template<typename #{trait_self_name}>\nstruct #{trait_info.name} {\n#{fields}\n};"
+            else
+              "struct #{trait_info.name} {\n#{fields}\n};"
+            end
           end
         end
 
@@ -369,23 +373,41 @@ module MLC
           adapters = []
           tr.all_traits.each do |trait_info|
             trait_name = trait_info.name
+            uses_associated_types = trait_info.associated_types&.any?
             tr.implementations_for_trait(trait_name).each do |impl|
               type_name = impl.type_name
               cpp_type = type_registry&.cpp_name(type_name) || type_name
-              field_inits = trait_info.trait_methods.reject { |m| m[:name] == "self" }.map do |m|
-                method_name = m[:name]
-                params = Array(m[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
-                param_decls = params.each_with_index.map do |p, i|
-                  t = p.respond_to?(:type) ? p.type : p[:type]
-                  "#{ast_type_to_cpp(t)} _p#{i}"
+              trait_cpp_name = uses_associated_types ? "#{trait_name}<#{cpp_type}>" : trait_name
+              field_inits = trait_info.trait_methods.reject { |method_entry| method_entry[:name] == "self" }.map do |trait_method_entry|
+                method_name = trait_method_entry[:name]
+                impl_method = impl.impl_methods[method_name]
+                implementation_parameters = Array(impl_method.params)
+                first_trait_parameter = Array(trait_method_entry[:params]).first
+                first_trait_type = first_trait_parameter&.respond_to?(:type) ? first_trait_parameter.type : first_trait_parameter&.[](:type)
+                trait_has_self_receiver = first_trait_type.is_a?(MLC::Source::AST::Type) && first_trait_type.name == "Self"
+                implementation_parameters = implementation_parameters.drop(1) if trait_has_self_receiver
+                param_decls = implementation_parameters.each_with_index.map do |parameter, index|
+                  "#{ast_type_to_cpp(parameter.type)} _p#{index}"
                 end.join(", ")
-                param_names = params.each_with_index.map { |_, i| "_p#{i}" }.join(", ")
-                sep = param_names.empty? ? "" : ", "
-                ret_type = ast_type_to_cpp(m[:ret_type])
-                stmt = ret_type == "void" ? "" : "return "
-                "  .#{method_name} = [self](#{param_decls}) noexcept { #{stmt}#{type_name}_#{method_name}(self#{sep}#{param_names}); }"
+                param_names = implementation_parameters.each_with_index.map { |_, index| "_p#{index}" }.join(", ")
+                ret_cpp = ast_type_to_cpp(impl_method.ret_type)
+                statement_prefix = ret_cpp == "void" ? "" : "return "
+                if trait_has_self_receiver && uses_associated_types
+                  receiver_declaration = "#{cpp_type} receiver"
+                  extra_declarations = implementation_parameters.each_with_index.map do |parameter, index|
+                    "#{ast_type_to_cpp(parameter.type)} _p#{index}"
+                  end
+                  lambda_parameter_list = ([receiver_declaration] + extra_declarations).join(", ")
+                  call_arguments = (["receiver"] + implementation_parameters.each_with_index.map { |_, index| "_p#{index}" }).join(", ")
+                  "  .#{method_name} = [](#{lambda_parameter_list}) noexcept { #{statement_prefix}#{type_name}_#{method_name}(#{call_arguments}); }"
+                elsif trait_has_self_receiver
+                  capture_call_arguments = (["self"] + implementation_parameters.each_with_index.map { |_, index| "_p#{index}" }).join(", ")
+                  "  .#{method_name} = [self](#{param_decls}) noexcept { #{statement_prefix}#{type_name}_#{method_name}(#{capture_call_arguments}); }"
+                else
+                  "  .#{method_name} = [](#{param_decls}) noexcept { #{statement_prefix}#{type_name}_#{method_name}(#{param_names}); }"
+                end
               end.join(",\n")
-              adapters << "inline #{trait_name} #{type_name}_as_#{trait_name}(#{cpp_type} self) noexcept {\n  return #{trait_name}{\n#{field_inits}\n  };\n}"
+              adapters << "inline #{trait_cpp_name} #{type_name}_as_#{trait_name}(#{cpp_type} self) noexcept {\n  return #{trait_cpp_name}{\n#{field_inits}\n  };\n}"
             end
           end
           adapters

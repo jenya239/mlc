@@ -11,6 +11,7 @@
 
 namespace infer_for_support {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

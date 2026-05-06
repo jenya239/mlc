@@ -10,6 +10,7 @@
 
 namespace let_pattern_infer {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

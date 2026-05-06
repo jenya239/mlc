@@ -14,6 +14,7 @@
 
 namespace transform_decl {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

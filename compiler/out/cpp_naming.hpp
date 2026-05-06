@@ -6,6 +6,7 @@
 
 namespace cpp_naming {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

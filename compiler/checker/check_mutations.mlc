@@ -1,7 +1,7 @@
 // Mutation check: verify that x = value only applies to let mut bindings.
 // Separate pass from names.mlc; builds its own mutable-names scope.
 
-import { Expr, Stmt, FieldVal, MatchArm, Param, Diagnostic, diagnostic_error, diagnostics_append } from "../ast"
+import { Expr, Stmt, FieldVal, MatchArm, Param, Diagnostic, diagnostic_error, diagnostics_append, RecordLitPart, RecordLitFields, RecordLitSpread } from "../ast"
 import { pattern_bindings } from "./names"
 
 fn scope_has(scope: [string], name: string) -> bool = do
@@ -42,7 +42,7 @@ fn check_mutation_expr(expression: Shared<Expr>, mutable_locals: [string]) -> [D
     ExprWhile(condition, statements, _)              => diagnostics_append(check_mutation_expr(condition, mutable_locals), check_mutation_stmts_errors(statements, mutable_locals)),
     ExprFor(_, iterator, statements, _)              => diagnostics_append(check_mutation_expr(iterator, mutable_locals), check_mutation_stmts_errors(statements, mutable_locals)),
     ExprMatch(subject, arms, _)                      => diagnostics_append(check_mutation_expr(subject, mutable_locals), check_mutation_arms(arms, mutable_locals)),
-    ExprRecord(_, field_values, _)                   => check_mutation_field_vals(field_values, mutable_locals),
+    ExprRecord(_, lit_parts, _)                      => check_mutation_record_lit_parts(lit_parts, mutable_locals),
     ExprRecordUpdate(_, base, field_values, _)       => diagnostics_append(check_mutation_expr(base, mutable_locals), check_mutation_field_vals(field_values, mutable_locals)),
     ExprArray(elements, _)                           => check_mutation_exprs(elements, mutable_locals),
     ExprTuple(elements, _)                           => check_mutation_exprs(elements, mutable_locals),
@@ -52,6 +52,22 @@ fn check_mutation_expr(expression: Shared<Expr>, mutable_locals: [string]) -> [D
     ExprWith(resource, _, stmts, _)                  => diagnostics_append(check_mutation_expr(resource, mutable_locals), check_mutation_stmts_errors(stmts, mutable_locals)),
     _                                                => do let empty: [Diagnostic] = []; empty end
   }
+
+fn check_mutation_record_lit_parts(lit_parts: [RecordLitPart], mutable_locals: [string]) -> [Diagnostic] = do
+  let mut errors: [Diagnostic] = []; let mut part_index = 0
+  while part_index < lit_parts.length() do
+    match lit_parts[part_index] {
+      RecordLitFields(field_values) => do
+        errors = diagnostics_append(errors, check_mutation_field_vals(field_values, mutable_locals))
+      end,
+      RecordLitSpread(spread_expression) => do
+        errors = diagnostics_append(errors, check_mutation_expr(spread_expression, mutable_locals))
+      end,
+    }
+    part_index = part_index + 1
+  end
+  errors
+end
 
 fn check_mutation_call(function: Shared<Expr>, arguments: [Shared<Expr>], mutable_locals: [string]) -> [Diagnostic] = do
   let mut errors = check_mutation_expr(function, mutable_locals); let mut index = 0

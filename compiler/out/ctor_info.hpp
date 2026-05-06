@@ -9,6 +9,7 @@
 
 namespace ctor_info {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

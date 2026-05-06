@@ -9,6 +9,7 @@
 
 namespace semantic_ir {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;

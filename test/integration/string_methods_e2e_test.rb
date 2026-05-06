@@ -13,7 +13,7 @@ class StringMethodsE2ETest < Minitest::Test
     Dir.mktmpdir do |dir|
       source = File.join(dir, "test.mlc")
       File.write(source, source_code)
-      stdout, stderr, status = Open3.capture3(CLI, source)
+      stdout, stderr, status = Open3.capture3(CLI, "-o#{dir}", source)
       refute_includes stderr, "error:", "Compilation failed: #{stderr}"
       yield stdout, stderr, status if block_given?
     end
@@ -32,6 +32,7 @@ class StringMethodsE2ETest < Minitest::Test
       fn main() -> i32 = do
         let s = "hi"
         if s.is_empty() then 1 else 0
+        end
       end
     MLC
       assert_equal 0, status.exitstatus
@@ -43,6 +44,7 @@ class StringMethodsE2ETest < Minitest::Test
       fn main() -> i32 = do
         let s = ""
         if s.is_empty() then 1 else 0
+        end
       end
     MLC
       assert_equal 1, status.exitstatus
@@ -158,6 +160,7 @@ class StringMethodsE2ETest < Minitest::Test
       fn main() -> i32 = do
         let idx = "hello".index_of("xyz")
         if idx < 0 then 1 else 0
+        end
       end
     MLC
       assert_equal 1, status.exitstatus

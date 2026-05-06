@@ -15,6 +15,7 @@
 
 namespace infer_result_option_method {
 
+struct RecordLitPart;
 struct Expr;
 struct Stmt;
 struct SExpr;
