@@ -1,9 +1,9 @@
 // --- Declaration parsers --------------------------------------------------
 
-import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult, WhereClauseParseResult } from "./preds"
+import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamResult, PatResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult, WhereClauseParseResult } from "./preds"
 import { parse_type } from "./types"
-import { parse_expr } from "./exprs"
-import { ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound } from "../ast"
+import { parse_expr, parse_record_pat_fields } from "./exprs"
+import { ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pat, PatTuple, PatRecord, PatWild, PatIdent, PatUnit, Span } from "../ast"
 
 fn parse_trait_bound_ident_list(parser_state: Parser) -> BoundsResult = do
   let mut state = parser_state
@@ -272,7 +272,7 @@ fn parse_extend_extern_method(parser: Parser, type_name: string) -> DeclResult =
   const fn_name       = parser.advance().kind().ident()
   const mangled_name  = type_name + "_" + fn_name
   const after_lparen  = parser.advance_by(3)
-  const self_param = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed(type_name)), has_default: false, default: Shared.new(ExprUnit(span_unknown())) })
+  const self_param = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed(type_name)), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
   const params: [Shared<Param>] = []
   const leading_self = after_lparen.kind().is_ident() && after_lparen.kind().ident() == "self"
   if leading_self then params.push(self_param) end
@@ -296,7 +296,7 @@ fn parse_extend_method(parser: Parser, type_name: string) -> DeclResult = do
   const fn_name       = parser.advance().kind().ident()
   const mangled_name  = type_name + "_" + fn_name
   const after_lparen  = parser.advance_by(3)
-  const self_param = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed(type_name)), has_default: false, default: Shared.new(ExprUnit(span_unknown())) })
+  const self_param = Shared.new(Param { name: "self", is_mut: false, typ: Shared.new(TyNamed(type_name)), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
   const params: [Shared<Param>] = []
   params.push(self_param)
   const rest_start = if after_lparen.kind().is_ident() && after_lparen.kind().ident() == "self" then
@@ -378,39 +378,175 @@ fn parse_fn_decl(parser: Parser) -> DeclResult = do
   end
 end
 
+fn parse_tuple_parameter_binding_element(binding_parser: Parser) -> PatResult = do
+  const binding_span = binding_parser.span_at_cursor()
+  const binding_kind = binding_parser.kind()
+  if binding_kind.is_ident() then
+    const binding_label = binding_kind.ident()
+    if binding_label == "_" then
+      PatResult { pat: Shared.new(PatWild(binding_span)), parser: binding_parser.advance() }
+    else
+      PatResult { pat: Shared.new(PatIdent(binding_label, binding_span)), parser: binding_parser.advance() }
+    end
+  else if binding_kind.is_op() && binding_kind.op_val() == "_" then
+    PatResult { pat: Shared.new(PatWild(binding_span)), parser: binding_parser.advance() }
+  else
+    PatResult { pat: Shared.new(PatWild(binding_span)), parser: binding_parser.advance() }
+  end
+end
+
+fn parse_tuple_parameter_pattern(tuple_span: Span, parser_after_open_paren: Parser) -> PatResult = do
+  let mut cursor = parser_after_open_paren
+  const tuple_elements: [Shared<Pat>] = []
+  if cursor.kind().is_rparen() then
+    PatResult { pat: Shared.new(PatTuple(tuple_elements, tuple_span)), parser: cursor.advance() }
+  else
+    let mut tuple_parse_finished = false
+    while !tuple_parse_finished do
+      const bound_element = parse_tuple_parameter_binding_element(cursor)
+      tuple_elements.push(bound_element.pat)
+      cursor = bound_element.parser
+      if cursor.kind().is_comma() then
+        cursor = cursor.advance()
+        if cursor.kind().is_rparen() then tuple_parse_finished = true end
+      else if cursor.kind().is_rparen() then
+        tuple_parse_finished = true
+      else
+        tuple_parse_finished = true
+      end
+    end
+    PatResult { pat: Shared.new(PatTuple(tuple_elements, tuple_span)), parser: cursor.advance() }
+  end
+end
+
 fn parse_params(parser: Parser) -> ParamsResult = do
   const params: [Shared<Param>] = []
   if parser.kind().is_rparen() then
     ParamsResult { params, parser: parser.advance() }
   else
-    const first = parse_param(parser)
-    params.push(first.param)
-    let mut state = first.parser
+    const first_parameter = parse_param(parser, 0)
+    params.push(first_parameter.param)
+    let mut state = first_parameter.parser
+    let mut parameter_slot_index = 1
     while state.kind().is_comma() do
-      const next = parse_param(state.advance())
-      params.push(next.param)
-      state = next.parser
+      const next_parameter = parse_param(state.advance(), parameter_slot_index)
+      params.push(next_parameter.param)
+      state = next_parameter.parser
+      parameter_slot_index = parameter_slot_index + 1
     end
     ParamsResult { params, parser: state.advance() }
   end
 end
 
-fn parse_param(parser: Parser) -> ParamResult = do
-  const is_mutable  = parser.kind().is_mut()
-  const name_pos    = if is_mutable then parser.advance() else parser end
-  const type_result = parse_type(name_pos.advance_by(2))
-  let s = type_result.parser
-  if s.kind().is_equal() then
-    const def_result = parse_expr(s.advance())
-    ParamResult {
-      param:  Shared.new(Param { name: name_pos.kind().ident(), is_mut: is_mutable, typ: type_result.type_expr, has_default: true, default: def_result.expr }),
-      parser: def_result.parser
-    }
+fn plain_identifier_parameter_pattern_marker() -> Shared<Pat> =
+  Shared.new(PatUnit(span_unknown()))
+
+fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> ParamResult = do
+  const mutable_binding_requested = parser_for_parameter.kind().is_mut()
+  const cursor_after_mutability_keyword = if mutable_binding_requested then parser_for_parameter.advance() else parser_for_parameter end
+
+  if cursor_after_mutability_keyword.kind().is_lbrace() then
+    const record_pattern_span = cursor_after_mutability_keyword.span_at_cursor()
+    const shorthand_record_fields = parse_record_pat_fields(cursor_after_mutability_keyword.advance())
+    const cursor_after_record_fields = shorthand_record_fields.parser
+    const record_field_type_parse = parse_type(cursor_after_record_fields.advance())
+    let remainder_after_record_type = record_field_type_parse.parser
+    const synthetic_aggregate_identifier = "__mlc_ds" + parameter_slot_index.to_string()
+    const record_destructure_pattern = Shared.new(PatRecord("", shorthand_record_fields.pats, record_pattern_span))
+    if remainder_after_record_type.kind().is_equal() then
+      const parsed_default_expression = parse_expr(remainder_after_record_type.advance())
+      ParamResult {
+        param: Shared.new(Param {
+          name: synthetic_aggregate_identifier,
+          is_mut: mutable_binding_requested,
+          typ: record_field_type_parse.type_expr,
+          has_default: true,
+          default: parsed_default_expression.expr,
+          param_pattern: record_destructure_pattern
+        }),
+        parser: parsed_default_expression.parser
+      }
+    else
+      ParamResult {
+        param: Shared.new(Param {
+          name: synthetic_aggregate_identifier,
+          is_mut: mutable_binding_requested,
+          typ: record_field_type_parse.type_expr,
+          has_default: false,
+          default: Shared.new(ExprUnit(span_unknown())),
+          param_pattern: record_destructure_pattern
+        }),
+        parser: remainder_after_record_type
+      }
+    end
+
+  else if cursor_after_mutability_keyword.kind().is_lparen() then
+    const tuple_pattern_span = cursor_after_mutability_keyword.span_at_cursor()
+    const tuple_pattern_parse = parse_tuple_parameter_pattern(tuple_pattern_span, cursor_after_mutability_keyword.advance())
+    const cursor_after_tuple_pattern = tuple_pattern_parse.parser
+    const tuple_parameter_type_parse = parse_type(cursor_after_tuple_pattern.advance())
+    let remainder_after_tuple_type = tuple_parameter_type_parse.parser
+    const synthetic_tuple_aggregate_identifier = "__mlc_ds" + parameter_slot_index.to_string()
+    const tuple_destructure_pattern = tuple_pattern_parse.pat
+    if remainder_after_tuple_type.kind().is_equal() then
+      const parsed_tuple_default_expression = parse_expr(remainder_after_tuple_type.advance())
+      ParamResult {
+        param: Shared.new(Param {
+          name: synthetic_tuple_aggregate_identifier,
+          is_mut: mutable_binding_requested,
+          typ: tuple_parameter_type_parse.type_expr,
+          has_default: true,
+          default: parsed_tuple_default_expression.expr,
+          param_pattern: tuple_destructure_pattern
+        }),
+        parser: parsed_tuple_default_expression.parser
+      }
+    else
+      ParamResult {
+        param: Shared.new(Param {
+          name: synthetic_tuple_aggregate_identifier,
+          is_mut: mutable_binding_requested,
+          typ: tuple_parameter_type_parse.type_expr,
+          has_default: false,
+          default: Shared.new(ExprUnit(span_unknown())),
+          param_pattern: tuple_destructure_pattern
+        }),
+        parser: remainder_after_tuple_type
+      }
+    end
+
   else
-    ParamResult {
-      param:  Shared.new(Param { name: name_pos.kind().ident(), is_mut: is_mutable, typ: type_result.type_expr, has_default: false, default: Shared.new(ExprUnit(span_unknown())) }),
-      parser: s
-    }
+    const binding_identifier_token_position = cursor_after_mutability_keyword
+    const binding_name = binding_identifier_token_position.kind().ident()
+    const after_binding_name = binding_identifier_token_position.advance()
+    const plain_binding_type_parse = parse_type(after_binding_name.advance())
+    let remainder_after_plain_type = plain_binding_type_parse.parser
+    if remainder_after_plain_type.kind().is_equal() then
+      const parsed_plain_default_expression = parse_expr(remainder_after_plain_type.advance())
+      ParamResult {
+        param: Shared.new(Param {
+          name: binding_name,
+          is_mut: mutable_binding_requested,
+          typ: plain_binding_type_parse.type_expr,
+          has_default: true,
+          default: parsed_plain_default_expression.expr,
+          param_pattern: plain_identifier_parameter_pattern_marker()
+        }),
+        parser: parsed_plain_default_expression.parser
+      }
+    else
+      ParamResult {
+        param: Shared.new(Param {
+          name: binding_name,
+          is_mut: mutable_binding_requested,
+          typ: plain_binding_type_parse.type_expr,
+          has_default: false,
+          default: Shared.new(ExprUnit(span_unknown())),
+          param_pattern: plain_identifier_parameter_pattern_marker()
+        }),
+        parser: remainder_after_plain_type
+      }
+    end
   end
 end
 
@@ -524,7 +660,7 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
       const after_fn = state.advance()
       const fn_name = after_fn.kind().ident()
       const mangled = trait_name + "_" + fn_name
-      const params_result = parse_params(after_fn.advance())
+      const params_result = parse_params(after_fn.advance().advance())
       const after_rparen = params_result.parser.advance()
       const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
       const ret_result = parse_type(type_parser)
@@ -541,19 +677,24 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
         Shared.new(ExprExtern(extern_method_span))
       end
       methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds, params_result.params, ret_result.type_expr, body, where_parse.where_bounds)))
-    else if state.kind().is_extern() && state.advance().kind().is_fn() then
-      const after_extern = state.advance()
-      const fn_name = after_extern.kind().ident()
-      const mangled = trait_name + "_" + fn_name
-      const params_result = parse_params(after_extern.advance())
-      const after_rparen = params_result.parser.advance()
-      const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
-      const ret_result = parse_type(type_parser)
-      const initial_trait_bounds_extern: [[string]] = []; let mut be = 0; while be < type_params.length() do initial_trait_bounds_extern.push([]); be = be + 1 end
-      const where_parse_extern = parse_where_clause_opt(ret_result.parser)
-      const merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.where_bounds)
-      methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_result.params, ret_result.type_expr, Shared.new(ExprExtern(span_unknown())), where_parse_extern.where_bounds)))
-      state = where_parse_extern.parser
+    else if state.kind().is_extern() then
+      const parser_after_extern = state.advance()
+      if parser_after_extern.kind().is_fn() then
+        const parser_after_fn_keyword = parser_after_extern.advance()
+        const fn_name = parser_after_fn_keyword.kind().ident()
+        const mangled = trait_name + "_" + fn_name
+        const params_result = parse_params(parser_after_fn_keyword.advance().advance())
+        const after_rparen = params_result.parser.advance()
+        const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
+        const ret_result = parse_type(type_parser)
+        const initial_trait_bounds_extern: [[string]] = []; let mut be = 0; while be < type_params.length() do initial_trait_bounds_extern.push([]); be = be + 1 end
+        const where_parse_extern = parse_where_clause_opt(ret_result.parser)
+        const merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.where_bounds)
+        methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_result.params, ret_result.type_expr, Shared.new(ExprExtern(span_unknown())), where_parse_extern.where_bounds)))
+        state = where_parse_extern.parser
+      else
+        state = parser_after_extern
+      end
     else if state.kind().is_type() then
       const after_type = state.advance()
       const assoc_span = after_type.span_at_cursor()

@@ -162,23 +162,50 @@ module MLC
           while current.type != :RPAREN
             mutable = current.type == :MUT
             consume(:MUT) if mutable
-            name_token = consume(:IDENTIFIER)
-            name = name_token.value
 
-            # `self` without type annotation is allowed inside extend blocks;
-            # the type will be filled in by the semantic layer.
-            if current.type == :COLON
+            name_token = nil
+            name = nil
+            type = nil
+            destructure_pattern = nil
+            pattern_origin = nil
+
+            if current.type == :LBRACE
+              pattern_origin = current
+              synthetic_suffix = params.size
+              name = "__mlc_ds#{synthetic_suffix}"
+              destructure_pattern = parse_record_parameter_pattern
               consume(:COLON)
               type = parse_type
-            elsif name == "self"
-              type = nil
-            else
-              consume(:COLON) # will raise expected error
+            elsif current.type == :LPAREN
+              pattern_origin = current
+              synthetic_suffix = params.size
+              name = "__mlc_ds#{synthetic_suffix}"
+              destructure_pattern = parse_tuple_parameter_pattern
+              consume(:COLON)
               type = parse_type
+            else
+              name_token = consume(:IDENTIFIER)
+              name = name_token.value
+
+              # `self` without type annotation is allowed inside extend blocks;
+              # the type will be filled in by the semantic layer.
+              if current.type == :COLON
+                consume(:COLON)
+                type = parse_type
+              elsif name == "self"
+                type = nil
+              else
+                consume(:COLON) # will raise expected error
+                type = parse_type
+              end
             end
 
             default_expr = nil
             if current.type == :EQUAL
+              raise MLC::CompileError.new(
+                "default values are not supported for destructuring parameters"
+              ) if destructure_pattern
+
               consume(:EQUAL)
               saw_default = true
               default_expr = parse_expression
@@ -188,8 +215,15 @@ module MLC
               )
             end
 
-            params << with_origin(name_token) do
-              MLC::Source::AST::Param.new(name: name, type: type, mutable: mutable, default: default_expr)
+            origin_anchor = pattern_origin || name_token
+            params << with_origin(origin_anchor) do
+              MLC::Source::AST::Param.new(
+                name: name,
+                type: type,
+                mutable: mutable,
+                default: default_expr,
+                destructure_pattern: destructure_pattern
+              )
             end
 
             break unless current.type == :COMMA
@@ -199,6 +233,127 @@ module MLC
           end
 
           params
+        end
+
+        # `{ x, y }` or `{ ...rest }` record pattern for function parameters (no surrounding `let`).
+        def parse_record_parameter_pattern
+          lbrace_token = consume(:LBRACE)
+          bindings = []
+          rest_binding = nil
+
+          while current.type != :RBRACE
+            if current.type == :SPREAD
+              consume(:SPREAD)
+              rest_binding = consume(:IDENTIFIER).value
+              break
+            else
+              field_name = consume(:IDENTIFIER).value
+              if bindings.include?(field_name)
+                raise MLC::CompileError.new(
+                  "duplicate field '#{field_name}' in record parameter pattern"
+                )
+              end
+
+              bindings << field_name
+            end
+
+            break unless current.type == :COMMA
+
+            consume(:COMMA)
+          end
+
+          consume(:RBRACE)
+
+          if bindings.empty? && rest_binding.nil?
+            raise MLC::CompileError.new(
+              "record parameter pattern cannot be empty"
+            )
+          end
+
+          with_origin(lbrace_token) do
+            MLC::Source::AST::Pattern.new(
+              kind: :record,
+              data: { bindings: bindings, rest: rest_binding }
+            )
+          end
+        end
+
+        # `(a, b): (T, U)` — only variables or `_`; one-element tuples must use a trailing comma.
+        def parse_tuple_parameter_pattern
+          lparen_token = consume(:LPAREN)
+          elements = []
+
+          if current.type == :RPAREN
+            consume(:RPAREN)
+            raise MLC::CompileError.new(
+              "tuple parameter pattern cannot be empty"
+            )
+          end
+
+          loop do
+            elements << parse_tuple_parameter_binding_element
+
+            if current.type == :COMMA
+              consume(:COMMA)
+              break if current.type == :RPAREN
+
+              next
+            elsif current.type == :RPAREN
+              if elements.size == 1
+                raise MLC::CompileError.new(
+                  "tuple parameter with one binding must use a trailing comma, e.g. `(name,): (T,)`, or use `name: T`"
+                )
+              end
+
+              break
+            else
+              raise MLC::CompileError.new(
+                "expected `,` or `)` in tuple parameter pattern, got #{current.type}"
+              )
+            end
+          end
+
+          consume(:RPAREN)
+
+          with_origin(lparen_token) do
+            MLC::Source::AST::Pattern.new(kind: :tuple, data: { elements: elements })
+          end
+        end
+
+        def parse_tuple_parameter_binding_element
+          case current.type
+          when :UNDERSCORE
+            parse_wildcard_pattern
+          when :OPERATOR
+            if current.value == "_"
+              parse_wildcard_pattern
+            else
+              raise MLC::CompileError.new(
+                "tuple parameter pattern expects a name or `_`, got operator #{current.value.inspect}"
+              )
+            end
+          when :IDENTIFIER
+            binding_token = current
+            binding_name = consume(:IDENTIFIER).value
+            if binding_name == "true" || binding_name == "false"
+              raise MLC::CompileError.new(
+                "tuple parameter pattern cannot bind `#{binding_name}`"
+              )
+            end
+            if binding_name[0] == binding_name[0].upcase
+              raise MLC::CompileError.new(
+                "tuple parameter pattern expects a lowercase binding name, got `#{binding_name}`"
+              )
+            end
+
+            with_origin(binding_token) do
+              MLC::Source::AST::Pattern.new(kind: :var, data: { name: binding_name })
+            end
+          else
+            raise MLC::CompileError.new(
+              "tuple parameter pattern expects a name or `_`, got #{current.type}"
+            )
+          end
         end
 
         def parse_program

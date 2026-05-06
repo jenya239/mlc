@@ -1,7 +1,7 @@
 // Builder functions for constructing AST nodes in tests.
 // Eliminates Shared.new(...) verbosity and makes test intent clear.
 
-import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown, ExprUnit, ExprBool, ExprRecord, RecordLitPart, RecordLitFields } from "../ast"
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown, ExprUnit, ExprBool, ExprRecord, RecordLitPart, RecordLitFields, PatUnit } from "../ast"
 
 // --- Program ------------------------------------------------------------------
 
@@ -136,7 +136,7 @@ export fn return_statement(value_expr: Shared<Expr>) -> Shared<Stmt> =
 // --- Param builder -----------------------------------------------------------
 
 export fn value_param(parameter_name: string, parameter_type: Shared<TypeExpr>) -> Shared<Param> =
-  Shared.new(Param { name: parameter_name, is_mut: false, typ: parameter_type, has_default: false, default: Shared.new(ExprUnit(span_unknown())) })
+  Shared.new(Param { name: parameter_name, is_mut: false, typ: parameter_type, has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
 
 // --- Declaration builders ----------------------------------------------------
 

@@ -15,6 +15,10 @@ mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> build_let_substitutio
 
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> apply_let_pattern_to_env(std::shared_ptr<ast::Pat> pat, std::shared_ptr<registry::Type> value_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> base_env, registry::TypeRegistry registry) noexcept;
 
+mlc::String record_base_name_for_ordered_tuple_pattern(std::shared_ptr<registry::Type> value_type) noexcept;
+
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> tuple_pattern_environment_using_ordered_record_fields(mlc::Array<std::shared_ptr<ast::Pat>> subs, std::shared_ptr<registry::Type> value_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> base_environment, registry::TypeRegistry registry) noexcept;
+
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> infer_let_pattern_env(std::shared_ptr<ast::Pat> pat, std::shared_ptr<registry::Type> value_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> base_env, registry::TypeRegistry registry) noexcept;
 
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> build_let_substitution(std::shared_ptr<registry::Type> value_type, registry::TypeRegistry registry) noexcept{
@@ -50,9 +54,9 @@ j = j + 1;
 }
   return acc;
  }(); } if (std::holds_alternative<registry::TPair>((*value_type))) { auto _v_tpair = std::get<registry::TPair>((*value_type)); auto [fst, snd] = _v_tpair; return subs.size() != 2 ? base_env : [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { 
-  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> e0 = apply_let_pattern_to_env(subs[0], fst, base_env, registry);
-  return apply_let_pattern_to_env(subs[1], snd, e0, registry);
- }(); } return base_env; }(); } if (std::holds_alternative<ast::PatArray>((*pat))) { auto _v_patarray = std::get<ast::PatArray>((*pat)); auto [subs, rest, _w0] = _v_patarray; return [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { if (std::holds_alternative<registry::TArray>((*value_type))) { auto _v_tarray = std::get<registry::TArray>((*value_type)); auto [et] = _v_tarray; return [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { 
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> environment_after_first = apply_let_pattern_to_env(subs[0], fst, base_env, registry);
+  return apply_let_pattern_to_env(subs[1], snd, environment_after_first, registry);
+ }(); } return tuple_pattern_environment_using_ordered_record_fields(subs, value_type, base_env, registry); }(); } if (std::holds_alternative<ast::PatArray>((*pat))) { auto _v_patarray = std::get<ast::PatArray>((*pat)); auto [subs, rest, _w0] = _v_patarray; return [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { if (std::holds_alternative<registry::TArray>((*value_type))) { auto _v_tarray = std::get<registry::TArray>((*value_type)); auto [et] = _v_tarray; return [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { 
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> acc = base_env;
   int i = 0;
   while (i < subs.size()){
@@ -83,6 +87,28 @@ i = i + 1;
 }
   return acc;
  }(); } if (std::holds_alternative<ast::PatCtor>((*pat))) { auto _v_patctor = std::get<ast::PatCtor>((*pat)); auto [_w0, _w1, _w2] = _v_patctor; return pattern_env::env_for_pattern_substituted(base_env, pat, registry, build_let_substitution(value_type, registry), value_type); } return base_env; }();
+}
+
+mlc::String record_base_name_for_ordered_tuple_pattern(std::shared_ptr<registry::Type> value_type) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*value_type))) { auto _v_tnamed = std::get<registry::TNamed>((*value_type)); auto [record_name] = _v_tnamed; return record_name; } if (std::holds_alternative<registry::TGeneric>((*value_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*value_type)); auto [record_name, _w0] = _v_tgeneric; return record_name; } return mlc::String(""); }();}
+
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> tuple_pattern_environment_using_ordered_record_fields(mlc::Array<std::shared_ptr<ast::Pat>> subs, std::shared_ptr<registry::Type> value_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> base_environment, registry::TypeRegistry registry) noexcept{
+mlc::String record_lookup_name = record_base_name_for_ordered_tuple_pattern(value_type);
+return record_lookup_name == mlc::String("") || !registry::TypeRegistry_has_fields(registry, record_lookup_name) ? base_environment : [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { 
+  mlc::Array<mlc::String> ordered_field_labels = registry::TypeRegistry_record_field_names_ordered_for(registry, record_lookup_name);
+  return ordered_field_labels.size() != subs.size() ? base_environment : [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { 
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> accumulator_environment = base_environment;
+  int field_slot_index = 0;
+  while (field_slot_index < subs.size()){
+{
+mlc::String selected_field_label = ordered_field_labels[field_slot_index];
+std::shared_ptr<registry::Type> selected_field_type = registry::field_type_from_object(value_type, selected_field_label, registry);
+accumulator_environment = apply_let_pattern_to_env(subs[field_slot_index], selected_field_type, accumulator_environment, registry);
+field_slot_index = field_slot_index + 1;
+}
+}
+  return accumulator_environment;
+ }();
+ }();
 }
 
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> infer_let_pattern_env(std::shared_ptr<ast::Pat> pat, std::shared_ptr<registry::Type> value_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> base_env, registry::TypeRegistry registry) noexcept{return apply_let_pattern_to_env(pat, value_type, base_env, registry);}

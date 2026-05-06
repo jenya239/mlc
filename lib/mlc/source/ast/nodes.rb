@@ -170,14 +170,15 @@ module MLC
 
       # Function parameter
       class Param < Node
-        attr_reader :name, :type, :mutable, :default
+        attr_reader :name, :type, :mutable, :default, :destructure_pattern
 
-        def initialize(name:, type:, mutable: false, default: nil, origin: nil)
+        def initialize(name:, type:, mutable: false, default: nil, destructure_pattern: nil, origin: nil)
           super(origin: origin)
           @name = name
           @type = type
           @mutable = mutable
           @default = default
+          @destructure_pattern = destructure_pattern
         end
       end
 

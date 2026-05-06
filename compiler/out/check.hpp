@@ -10,6 +10,7 @@
 #include "check_mutations.hpp"
 #include "registry.hpp"
 #include "trait_param_expand.hpp"
+#include "param_destructure_expand.hpp"
 #include "derive_validation.hpp"
 #include "infer.hpp"
 #include "check_context.hpp"

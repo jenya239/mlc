@@ -52,6 +52,7 @@ module MLC
                     type: expanded_type,
                     mutable: param.mutable,
                     default: param.default,
+                    destructure_pattern: param.destructure_pattern,
                     origin: param.origin
                   )
                 end

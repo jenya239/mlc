@@ -8,6 +8,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "type_gen.hpp"
 #include "cpp_naming.hpp"
 #include "match_analysis.hpp"

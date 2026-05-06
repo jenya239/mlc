@@ -9,6 +9,7 @@ import { gen_module, GenModuleOut, precompute } from "./codegen/module"
 import { LoadItem, PrecomputedCtx } from "./codegen/context"
 import { NamespaceImportAlias } from "./codegen/decl_index"
 import { path_to_module_base } from "./codegen/cpp_naming"
+import { expand_parameter_destructuring_in_program } from "./checker/param_destructure_expand"
 import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from "./ast"
 
 fn dirname(path: string) -> string = do
@@ -206,13 +207,14 @@ fn compile_modular(entry_path: string, out_dir: string) -> Result<string, [strin
 end
 
 fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) -> string = do
-  const registry  = build_registry(full_prog)
-  const s_items   = transform_load_items(items, registry, full_prog)
-  const precomp   = precompute(full_prog, items)
+  const expanded_merge_program = expand_parameter_destructuring_in_program(full_prog)
+  const registry  = build_registry(expanded_merge_program)
+  const s_items   = transform_load_items(items, registry, expanded_merge_program)
+  const precomp   = precompute(expanded_merge_program, items)
   let mut i = 0
   while i < s_items.length() do
     const s_item = s_items[i]
-    const out    = gen_module(s_item, items, full_prog, precomp)
+    const out    = gen_module(s_item, items, expanded_merge_program, precomp)
     const base   = path_to_module_base(s_item.path)
     const hpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".hpp" else base + ".hpp" end
     const cpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".cpp" else base + ".cpp" end

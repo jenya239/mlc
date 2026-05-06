@@ -9,6 +9,7 @@ import { check_names_expr } from "./names"
 import { check_fn_body_mutations } from "./check_mutations"
 import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
 import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from "./trait_param_expand"
+import { expand_parameter_destructuring_in_program, extern_parameter_destructure_diagnostics, parameter_binding_is_plain_identifier } from "./param_destructure_expand"
 import { derive_clause_diagnostics } from "./derive_validation"
 import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
@@ -70,6 +71,9 @@ fn param_default_diagnostics(
   const default_infer_context = check_context_new(empty_type_environment, registry)
   let mut p = 0
   while p < parameters.length() do
+    if parameters[p].has_default && !parameter_binding_is_plain_identifier(parameters[p]) then
+      out.push(diagnostic_error("default values are not supported for destructuring parameters", expr_span(body)))
+    end
     if parameters[p].has_default then
       const param_default_expr = parameters[p].default
       if !default_expr_mvp_ok(param_default_expr) then
@@ -211,9 +215,12 @@ export extend CheckOut {
 
 fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
   let mut all_diagnostics: [Diagnostic] = trait_and_type_name_conflict_diagnostics(full_program)
-  const expanded_entry_program = expand_trait_as_param_entry_using_full(entry, full_program)
-  const globals = collect_globals(full_program)
-  let registry = build_registry(full_program)
+  const destructured_full_program = expand_parameter_destructuring_in_program(full_program)
+  all_diagnostics = diagnostics_append(all_diagnostics, extern_parameter_destructure_diagnostics(full_program))
+  const expanded_entry_program = expand_parameter_destructuring_in_program(
+    expand_trait_as_param_entry_using_full(entry, destructured_full_program))
+  const globals = collect_globals(destructured_full_program)
+  let registry = build_registry(destructured_full_program)
   let mut declaration_index = 0
   while declaration_index < expanded_entry_program.decls.length() do
     match decl_inner(expanded_entry_program.decls[declaration_index]) {

@@ -234,7 +234,7 @@ synthetic_counter = parameter_chunk.next_counter;
 expanded_type_parameter_names = append_strings(expanded_type_parameter_names, parameter_chunk.appended_type_parameter_names);
 expanded_trait_bounds = append_string_rows(expanded_trait_bounds, parameter_chunk.appended_trait_bounds_rows);
 std::shared_ptr<ast::Param> original_parameter = parameters[parameter_index];
-expanded_parameters.push_back(std::make_shared<ast::Param>(ast::Param{ast::param_name(original_parameter), original_parameter->is_mut, parameter_chunk.type_expression, original_parameter->has_default, original_parameter->default_}));
+expanded_parameters.push_back(std::make_shared<ast::Param>(ast::Param{ast::param_name(original_parameter), original_parameter->is_mut, parameter_chunk.type_expression, original_parameter->has_default, original_parameter->default_, original_parameter->param_pattern}));
 parameter_index = parameter_index + 1;
 }
 }

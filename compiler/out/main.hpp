@@ -13,6 +13,7 @@
 #include "context.hpp"
 #include "decl_index.hpp"
 #include "cpp_naming.hpp"
+#include "param_destructure_expand.hpp"
 #include "ast.hpp"
 
 namespace mlc_main {

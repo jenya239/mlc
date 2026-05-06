@@ -2,6 +2,7 @@
 
 #include "ast.hpp"
 #include "trait_param_expand.hpp"
+#include "param_destructure_expand.hpp"
 #include "registry.hpp"
 #include "semantic_ir.hpp"
 #include "decl_index.hpp"
@@ -12,6 +13,7 @@ namespace transform_decl {
 
 using namespace ast;
 using namespace trait_param_expand;
+using namespace param_destructure_expand;
 using namespace registry;
 using namespace semantic_ir;
 using namespace decl_index;
@@ -93,7 +95,8 @@ int index = 0;
 while (index < items.size()){
 {
 decl_index::LoadItem item = items[index];
-mlc::Array<std::shared_ptr<ast::Decl>> expanded_declarations = trait_param_expand::expand_declarations_with_trait_context(item.decls, program_for_trait_maps);
+mlc::Array<std::shared_ptr<ast::Decl>> destructured_entry_declarations = param_destructure_expand::expand_parameter_destructuring_in_program(ast::Program{item.decls}).decls;
+mlc::Array<std::shared_ptr<ast::Decl>> expanded_declarations = trait_param_expand::expand_declarations_with_trait_context(destructured_entry_declarations, program_for_trait_maps);
 mlc::Array<std::shared_ptr<semantic_ir::SDecl>> typed_decls = transform_decls(expanded_declarations, registry);
 result.push_back(semantic_ir::SLoadItem{item.path, typed_decls, item.imports, to_semantic_namespace_aliases(item.namespace_import_aliases)});
 index = index + 1;

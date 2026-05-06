@@ -244,7 +244,8 @@ fn expand_decl_fn_trait_parameters(
       is_mut: original_parameter.is_mut,
       typ: parameter_chunk.type_expression,
       has_default: original_parameter.has_default,
-      default: original_parameter.default
+      default: original_parameter.default,
+      param_pattern: original_parameter.param_pattern
     }))
     parameter_index = parameter_index + 1
   end

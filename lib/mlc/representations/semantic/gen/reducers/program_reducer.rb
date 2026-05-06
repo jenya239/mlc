@@ -55,11 +55,12 @@ module MLC
               cache[func_decl.object_id] ||= begin
                 Services::WhereClauseMerge.validate!(func_decl, type_checker: @services.type_checker)
                 merged_declaration = Services::WhereClauseMerge.merge_where_into_func_decl(func_decl)
-                Services::TraitParamExpandAst.expand_function_declaration(
+                trait_expanded = Services::TraitParamExpandAst.expand_function_declaration(
                   merged_declaration,
                   trait_registry: @services.trait_registry,
                   type_decl_table: @services.type_checker.type_decl_table
                 )
+                MLC::Source::Transforms::ParameterDestructuringExpand.expand(trait_expanded)
               end
             end
 

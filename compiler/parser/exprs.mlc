@@ -322,7 +322,7 @@ fn parse_pat_args(parser: Parser) -> PatsResult = do
   end
 end
 
-fn parse_record_pat_fields(parser: Parser) -> PatsResult = do
+export fn parse_record_pat_fields(parser: Parser) -> PatsResult = do
   const pats: [Shared<Pat>] = []
   let mut state = parser
   while !state.kind().is_rbrace() && !state.at_eof() do

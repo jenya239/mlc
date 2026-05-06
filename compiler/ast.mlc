@@ -180,7 +180,14 @@ export fn pat_span(pattern: Shared<Pat>) -> Span =
     PatOr(_, source_span)                   => source_span,
   }
 
-export type Param    = Param    { name: string, is_mut: bool, typ: Shared<TypeExpr>, has_default: bool, default: Shared<Expr> }
+export type Param    = Param    {
+  name: string,
+  is_mut: bool,
+  typ: Shared<TypeExpr>,
+  has_default: bool,
+  default: Shared<Expr>,
+  param_pattern: Shared<Pat>
+}
 export type FieldDef = FieldDef { name: string, typ: Shared<TypeExpr> }
 
 export type WhereClauseBound = WhereClauseBound { parameter_name: string, traits: [string] }

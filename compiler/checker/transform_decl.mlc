@@ -3,6 +3,7 @@
 
 import { Decl, TypeVariant, Param, Program, Stmt, Span } from "../ast"
 import { expand_declarations_with_trait_context } from "./trait_param_expand"
+import { expand_parameter_destructuring_in_program } from "./param_destructure_expand"
 import { Type, TypeRegistry, type_from_annotation } from "./registry"
 import { SDecl, SProgram, SLoadItem, SNamespaceImportAlias } from "../semantic_ir"
 import { LoadItem, NamespaceImportAlias } from "../codegen/decl_index"
@@ -69,7 +70,8 @@ export fn transform_load_items(items: [LoadItem], registry: TypeRegistry, progra
   let mut index = 0
   while index < items.length() do
     const item = items[index]
-    const expanded_declarations = expand_declarations_with_trait_context(item.decls, program_for_trait_maps)
+    const destructured_entry_declarations = expand_parameter_destructuring_in_program(Program { decls: item.decls }).decls
+    const expanded_declarations = expand_declarations_with_trait_context(destructured_entry_declarations, program_for_trait_maps)
     const typed_decls = transform_decls(expanded_declarations, registry)
     result.push(SLoadItem {
       path: item.path,

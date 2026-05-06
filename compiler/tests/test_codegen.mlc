@@ -8,7 +8,7 @@ import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from "../codegen/type_gen
 import { gen_program } from "../codegen/module"
 import { tokenize } from "../lexer"
 import { parse_program } from "../parser/decls"
-import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown } from "../ast"
+import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown, PatUnit } from "../ast"
 import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat } from "../semantic_ir"
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
 import { SExprWith } from "../semantic_ir"
@@ -308,7 +308,7 @@ export fn codegen_tests() -> [TestResult] = do
 
   // --- DeclFn via gen_program ---------------------------------------------------
 
-  const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())) })]
+  const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })]
   const fn_body = Shared.new(ExprBin("*", Shared.new(ExprIdent("n", span_unknown())), Shared.new(ExprInt(2, span_unknown())), span_unknown()))
   const fn_decl = DeclFn("double_it", [], [], fn_param, Shared.new(TyI32), fn_body, [])
   const fn_prog = Program { decls: [Shared.new(DeclExported(Shared.new(fn_decl)))] }

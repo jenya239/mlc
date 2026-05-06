@@ -51,9 +51,20 @@ module MLC
                 elements = node.pattern.data[:elements]
                 value_type = value_ir.type
 
-                raise MLC::CompileError, "Cannot destructure non-tuple type: #{value_type.inspect}" unless value_type.is_a?(MLC::SemanticIR::TupleType)
+                if value_type.is_a?(MLC::SemanticIR::TupleType)
+                  return produce_tuple_tuple_destructuring(node, value_ir, svc, elements, value_type)
+                end
 
-                element_types = value_type.element_types
+                ordered_record_fields = ordered_record_fields_for_positional_tuple_pattern(value_type, svc)
+                if ordered_record_fields
+                  return produce_tuple_as_ordered_record_fields(node, value_ir, svc, elements, ordered_record_fields)
+                end
+
+                raise MLC::CompileError, "Cannot destructure non-tuple type as (...) tuple pattern: #{value_type.inspect}"
+              end
+
+              def produce_tuple_tuple_destructuring(node, value_ir, svc, elements, tuple_type)
+                element_types = tuple_type.element_types
                 if elements.size != element_types.size
                   raise MLC::CompileError, "Tuple destructuring size mismatch: pattern has #{elements.size} elements, value has #{element_types.size}"
                 end
@@ -82,19 +93,104 @@ module MLC
                 )
               end
 
+              def produce_tuple_as_ordered_record_fields(node, value_ir, svc, elements, ordered_record_fields)
+                if elements.size != ordered_record_fields.size
+                  raise MLC::CompileError,
+                        "Tuple destructuring size mismatch: pattern has #{elements.size} elements, record type has #{ordered_record_fields.size} fields"
+                end
+
+                bindings = []
+                elements.each_with_index do |elem, idx|
+                  name = tuple_element_binding_name(elem)
+                  next if name.nil?
+
+                  field_entry = ordered_record_fields[idx]
+                  field_name = field_entry[:name]
+                  elem_type = field_entry[:type]
+                  accessor = svc.ir_builder.member(
+                    object: value_ir,
+                    member: field_name,
+                    type: elem_type,
+                    origin: node
+                  )
+                  svc.var_type_registry.set(name, elem_type, initializer: accessor, mutable: node.mutable)
+                  bindings << { name: name, type: elem_type, accessor: accessor }
+                end
+
+                MLC::SemanticIR::DestructuringDeclStmt.new(
+                  bindings: bindings,
+                  value: value_ir,
+                  mutable: node.mutable,
+                  origin: node
+                )
+              end
+
+              def type_parameter_declaration_names(decl)
+                return [] unless decl
+
+                Array(decl.type_params).map do |type_parameter_entry|
+                  if type_parameter_entry.respond_to?(:name)
+                    type_parameter_entry.name
+                  else
+                    type_parameter_entry.to_s
+                  end
+                end
+              end
+
+              def ordered_record_fields_for_positional_tuple_pattern(value_type, svc)
+                case value_type
+                when MLC::SemanticIR::RecordType
+                  value_type.fields.map do |field_entry|
+                    {
+                      name: (field_entry[:name] || field_entry["name"]).to_s,
+                      type: field_entry[:type] || field_entry["type"]
+                    }
+                  end
+                when MLC::SemanticIR::GenericType
+                  base_record_type = value_type.base_type
+                  return nil unless base_record_type.is_a?(MLC::SemanticIR::RecordType)
+
+                  type_declaration = svc.type_decl_table[base_record_type.name]
+                  substitution_names = type_parameter_declaration_names(type_declaration)
+                  substitution_map = {}
+                  substitution_names.each_with_index do |parameter_name, index|
+                    type_argument = value_type.type_args[index]
+                    substitution_map[parameter_name] = type_argument if type_argument
+                  end
+
+                  base_record_type.fields.map do |field_entry|
+                    raw_field_type = field_entry[:type] || field_entry["type"]
+                    resolved_field_type = if substitution_map.empty?
+                                              raw_field_type
+                                            else
+                                              svc.type_inference_service.substitute_type(raw_field_type, substitution_map)
+                                            end
+                    {
+                      name: (field_entry[:name] || field_entry["name"]).to_s,
+                      type: resolved_field_type
+                    }
+                  end
+                else
+                  nil
+                end
+              end
+
               def produce_record_destructuring(node, value_ir, svc, _context)
                 field_names = node.pattern.data[:bindings]
                 rest_name = node.pattern.data[:rest]
                 value_type = value_ir.type
 
-                raise MLC::CompileError, "Cannot destructure non-record type: #{value_type.inspect}" unless value_type.is_a?(MLC::SemanticIR::RecordType)
+                record_for_lookup = record_type_for_record_pattern(value_type)
+                raise MLC::CompileError, "Cannot destructure non-record type: #{value_type.inspect}" unless record_for_lookup
+
+                substitution_map = record_substitution_map_for_destructure(value_type, record_for_lookup)
 
                 bindings = []
                 field_names.each do |field_name|
-                  field_info = value_type.fields.find { |f| f[:name] == field_name }
-                  raise MLC::CompileError, "Record type #{value_type.name} has no field '#{field_name}'" unless field_info
+                  field_info = record_for_lookup.fields.find { |field_definition| field_definition[:name] == field_name }
+                  raise MLC::CompileError, "Record type #{record_for_lookup.name} has no field '#{field_name}'" unless field_info
 
-                  field_type = field_info[:type]
+                  field_type = resolve_record_field_type_for_destructure(field_info[:type], substitution_map, svc)
                   accessor = svc.ir_builder.member(
                     object: value_ir,
                     member: field_name,
@@ -106,27 +202,34 @@ module MLC
                 end
 
                 if rest_name
-                  rest_field_defs = value_type.fields.reject { |f| field_names.include?(f[:name]) }
+                  rest_field_defs = record_for_lookup.fields.reject { |field_definition| field_names.include?(field_definition[:name]) }
                   if rest_field_defs.empty?
-                    raise MLC::CompileError, "let { ...#{rest_name} } has no remaining fields in #{value_type.name}"
+                    raise MLC::CompileError, "let { ...#{rest_name} } has no remaining fields in #{record_for_lookup.name}"
+                  end
+
+                  rest_type_fields = rest_field_defs.map do |field_definition|
+                    {
+                      name: field_definition[:name],
+                      type: resolve_record_field_type_for_destructure(field_definition[:type], substitution_map, svc)
+                    }
                   end
 
                   rest_type = MLC::SemanticIR::RecordType.new(
-                    name: "#{value_type.name}_rest",
-                    fields: rest_field_defs,
+                    name: "#{record_for_lookup.name}_rest",
+                    fields: rest_type_fields,
                     origin: node
                   )
-                  field_entries = rest_field_defs.to_h do |f|
-                    acc = svc.ir_builder.member(
+                  field_entries = rest_type_fields.to_h do |field_definition|
+                    access_expression = svc.ir_builder.member(
                       object: value_ir,
-                      member: f[:name],
-                      type: f[:type],
+                      member: field_definition[:name],
+                      type: field_definition[:type],
                       origin: node
                     )
-                    [f[:name], acc]
+                    [field_definition[:name], access_expression]
                   end
                   rest_expr = svc.ir_builder.record_expr(
-                    type_name: value_type.name,
+                    type_name: record_for_lookup.name,
                     fields: field_entries,
                     type: rest_type,
                     origin: node
@@ -141,6 +244,35 @@ module MLC
                   mutable: node.mutable,
                   origin: node
                 )
+              end
+
+              def record_type_for_record_pattern(value_type)
+                case value_type
+                when MLC::SemanticIR::RecordType
+                  value_type
+                when MLC::SemanticIR::GenericType
+                  base_type = value_type.base_type
+                  base_type if base_type.is_a?(MLC::SemanticIR::RecordType)
+                end
+              end
+
+              def record_substitution_map_for_destructure(value_type, record_for_lookup)
+                return {} unless value_type.is_a?(MLC::SemanticIR::GenericType)
+
+                type_declaration = svc.type_decl_table[record_for_lookup.name]
+                substitution_names = type_parameter_declaration_names(type_declaration)
+                substitution_map = {}
+                substitution_names.each_with_index do |parameter_name, index|
+                  type_argument = value_type.type_args[index]
+                  substitution_map[parameter_name] = type_argument if type_argument
+                end
+                substitution_map
+              end
+
+              def resolve_record_field_type_for_destructure(field_type, substitution_map, svc)
+                return field_type if substitution_map.nil? || substitution_map.empty?
+
+                svc.type_inference_service.substitute_type(field_type, substitution_map)
               end
 
               def array_element_binding(elem)

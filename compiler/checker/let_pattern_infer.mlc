@@ -1,7 +1,7 @@
 // let-pattern: extend type environment from pattern + RHS type (A3).
 
 import { Pat, span_unknown } from "../ast"
-import { Type, TypeRegistry, field_type_from_object } from "./registry"
+import { Type, TypeRegistry, field_type_from_object, TNamed, TGeneric, TTuple, TPair } from "./registry"
 import { env_for_pattern_substituted } from "./pattern_env"
 
 fn build_let_substitution(value_type: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
@@ -44,10 +44,10 @@ fn apply_let_pattern_to_env(
         TPair(fst, snd) =>
           if subs.length() != 2 then base_env
           else
-            const e0 = apply_let_pattern_to_env(subs[0], fst, base_env, registry)
-            apply_let_pattern_to_env(subs[1], snd, e0, registry)
+            const environment_after_first = apply_let_pattern_to_env(subs[0], fst, base_env, registry)
+            apply_let_pattern_to_env(subs[1], snd, environment_after_first, registry)
           end,
-        _ => base_env
+        _ => tuple_pattern_environment_using_ordered_record_fields(subs, value_type, base_env, registry)
       }
     end,
     PatArray(subs, rest, _) => do
@@ -82,6 +82,38 @@ fn apply_let_pattern_to_env(
     PatCtor(_, _, _) => env_for_pattern_substituted(base_env, pat, registry, build_let_substitution(value_type, registry), value_type),
     _ => base_env
   }
+end
+
+fn record_base_name_for_ordered_tuple_pattern(value_type: Shared<Type>) -> string =
+  match value_type {
+    TNamed(record_name) => record_name,
+    TGeneric(record_name, _) => record_name,
+    _ => ""
+  }
+
+fn tuple_pattern_environment_using_ordered_record_fields(
+  subs: [Shared<Pat>],
+  value_type: Shared<Type>,
+  base_environment: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> = do
+  const record_lookup_name = record_base_name_for_ordered_tuple_pattern(value_type)
+  if record_lookup_name == "" || !registry.has_fields(record_lookup_name) then base_environment
+  else
+    const ordered_field_labels = registry.record_field_names_ordered_for(record_lookup_name)
+    if ordered_field_labels.length() != subs.length() then base_environment
+    else
+      let mut accumulator_environment = base_environment
+      let mut field_slot_index = 0
+      while field_slot_index < subs.length() do
+        const selected_field_label = ordered_field_labels[field_slot_index]
+        const selected_field_type = field_type_from_object(value_type, selected_field_label, registry)
+        accumulator_environment = apply_let_pattern_to_env(subs[field_slot_index], selected_field_type, accumulator_environment, registry)
+        field_slot_index = field_slot_index + 1
+      end
+      accumulator_environment
+    end
+  end
 end
 
 export fn infer_let_pattern_env(

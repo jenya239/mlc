@@ -12,6 +12,7 @@
 #include "context.hpp"
 #include "decl_index.hpp"
 #include "cpp_naming.hpp"
+#include "param_destructure_expand.hpp"
 #include "ast.hpp"
 
 namespace mlc_main {
@@ -25,6 +26,7 @@ using namespace module;
 using namespace context;
 using namespace decl_index;
 using namespace cpp_naming;
+using namespace param_destructure_expand;
 using namespace ast;
 using namespace ast_tokens;
 
@@ -264,14 +266,15 @@ return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<
 }
 
 mlc::String compile_modular_loop(mlc::Array<decl_index::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept{
-registry::TypeRegistry registry = registry::build_registry(full_prog);
-mlc::Array<semantic_ir::SLoadItem> s_items = transform_decl::transform_load_items(items, registry, full_prog);
-context::PrecomputedCtx precomp = module::precompute(full_prog, items);
+ast::Program expanded_merge_program = param_destructure_expand::expand_parameter_destructuring_in_program(full_prog);
+registry::TypeRegistry registry = registry::build_registry(expanded_merge_program);
+mlc::Array<semantic_ir::SLoadItem> s_items = transform_decl::transform_load_items(items, registry, expanded_merge_program);
+context::PrecomputedCtx precomp = module::precompute(expanded_merge_program, items);
 int i = 0;
 while (i < s_items.size()){
 {
 semantic_ir::SLoadItem s_item = s_items[i];
-context::GenModuleOut out = module::gen_module(s_item, items, full_prog, precomp);
+context::GenModuleOut out = module::gen_module(s_item, items, expanded_merge_program, precomp);
 mlc::String base = cpp_naming::path_to_module_base(s_item.path);
 mlc::String hpp_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + base + mlc::String(".hpp") : base + mlc::String(".hpp");
 mlc::String cpp_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + base + mlc::String(".cpp") : base + mlc::String(".cpp");

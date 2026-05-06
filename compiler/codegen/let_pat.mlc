@@ -1,9 +1,10 @@
 // SStmtLetPat: structured let — tuple/record/array/ctor (A3).
 
-import { Pat } from "../ast"
+import { Pat, PatIdent } from "../ast"
 import { SExpr } from "../semantic_ir"
-import { Type, TArray } from "../checker/registry"
+import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from "../checker/registry"
 import { CodegenContext, list_contains, context_resolve } from "./context"
+import { lookup_fields } from "./decl_index"
 import { sem_type_to_cpp } from "./type_gen"
 import { cpp_safe } from "./cpp_naming"
 import { pat_bind_names } from "./match_analysis"
@@ -25,8 +26,44 @@ export fn gen_let_pattern_statement(
   match pat {
     PatIdent(n, _) => expression_output.auto_binding_statement(cpp_safe(n), rhs),
     PatTuple(subs, _) => do
-      const names = pat_bind_names(subs)
-      "{\nauto __lt = " + rhs + ";\n" + expression_output.tuple_destructure_binding(names, "__lt") + "\n}\n"
+      match value_type {
+        TTuple(_) | TPair(_, _) => do
+          const primitive_tuple_binding_names = pat_bind_names(subs)
+          "{\nauto __lt = " + rhs + ";\n" + expression_output.tuple_destructure_binding(primitive_tuple_binding_names, "__lt") + "\n}\n"
+        end,
+        _ => do
+          const record_codegen_name = match value_type {
+            TNamed(record_nominal_name) => record_nominal_name,
+            TGeneric(record_nominal_name, _) => record_nominal_name,
+            _ => ""
+          }
+          if record_codegen_name != "" then
+            const ordered_member_labels = lookup_fields(context.field_orders, record_codegen_name)
+            if ordered_member_labels.length() == subs.length() && subs.length() > 0 then
+              let mut record_ordered_tuple_fragment = "{\nauto __lt = " + rhs + ";\n"
+              let mut member_slot_index = 0
+              while member_slot_index < subs.length() do
+                match subs[member_slot_index] {
+                  PatIdent(binding_member_name, _) => do
+                    record_ordered_tuple_fragment = record_ordered_tuple_fragment + expression_output.auto_binding_statement(
+                      cpp_safe(binding_member_name),
+                      "__lt." + cpp_safe(ordered_member_labels[member_slot_index]))
+                  end,
+                  _ => do end
+                }
+                member_slot_index = member_slot_index + 1
+              end
+              record_ordered_tuple_fragment + "}\n"
+            else
+              const fallback_binding_names = pat_bind_names(subs)
+              "{\nauto __lt = " + rhs + ";\n" + expression_output.tuple_destructure_binding(fallback_binding_names, "__lt") + "\n}\n"
+            end
+          else
+            const outer_fallback_binding_names = pat_bind_names(subs)
+            "{\nauto __lt = " + rhs + ";\n" + expression_output.tuple_destructure_binding(outer_fallback_binding_names, "__lt") + "\n}\n"
+          end
+        end
+      }
     end,
     PatRecord(_, field_pats, _) => do
       let mut b = "{\nauto __lt = " + rhs + ";\n"

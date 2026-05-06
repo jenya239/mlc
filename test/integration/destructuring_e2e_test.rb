@@ -54,4 +54,41 @@ class DestructuringE2ETest < Minitest::Test
       assert_equal 50, status.exitstatus
     end
   end
+
+  def test_generic_pair_swap_with_tuple_parameter_e2e
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
+      type Pair<T, U> = { first: T, second: U }
+
+      fn swap_pair<T, U>((left, right): Pair<T, U>) -> Pair<U, T> =
+        Pair { first: right, second: left }
+
+      fn main() -> i32 =
+        let result = swap_pair(Pair { first: 4_i32, second: 8_i32 })
+        result.first + result.second
+    MLC
+      assert_equal 12, status.exitstatus
+    end
+  end
+
+  def test_tuple_parameter_destructuring_e2e
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
+      fn sum_pair((left, right): (i32, i32)) -> i32 = left + right
+
+      fn main() -> i32 = sum_pair((3, 9))
+    MLC
+      assert_equal 12, status.exitstatus
+    end
+  end
+
+  def test_record_parameter_destructuring_e2e
+    run_mlc(<<~MLC) do |_stdout, _stderr, status|
+      type Vec2 = { x: i32, y: i32 }
+
+      fn sum_components({ x, y }: Vec2) -> i32 = x + y
+
+      fn main() -> i32 = sum_components(Vec2 { x: 30, y: 12 })
+    MLC
+      assert_equal 42, status.exitstatus
+    end
+  end
 end

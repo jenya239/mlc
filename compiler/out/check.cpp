@@ -6,6 +6,7 @@
 #include "check_mutations.hpp"
 #include "registry.hpp"
 #include "trait_param_expand.hpp"
+#include "param_destructure_expand.hpp"
 #include "derive_validation.hpp"
 #include "infer.hpp"
 #include "check_context.hpp"
@@ -19,6 +20,7 @@ using namespace names;
 using namespace check_mutations;
 using namespace registry;
 using namespace trait_param_expand;
+using namespace param_destructure_expand;
 using namespace derive_validation;
 using namespace infer;
 using namespace check_context;
@@ -109,6 +111,11 @@ check_context::CheckContext default_infer_context = check_context::check_context
 int p = 0;
 while (p < parameters.size()){
 {
+if (parameters[p]->has_default && !param_destructure_expand::parameter_binding_is_plain_identifier(parameters[p])){
+{
+out.push_back(ast::diagnostic_error(mlc::String("default values are not supported for destructuring parameters"), ast::expr_span(body)));
+}
+}
 if (parameters[p]->has_default){
 {
 std::shared_ptr<ast::Expr> param_default_expr = parameters[p]->default_;
@@ -260,9 +267,11 @@ bool CheckOut_has_errors(check::CheckOut self) noexcept{return self.errors.size(
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full(ast::Program entry, ast::Program full_program) noexcept{
 mlc::Array<ast::Diagnostic> all_diagnostics = trait_param_expand::trait_and_type_name_conflict_diagnostics(full_program);
-ast::Program expanded_entry_program = trait_param_expand::expand_trait_as_param_entry_using_full(entry, full_program);
-mlc::HashMap<mlc::String, bool> globals = collect_globals(full_program);
-registry::TypeRegistry registry = registry::build_registry(full_program);
+ast::Program destructured_full_program = param_destructure_expand::expand_parameter_destructuring_in_program(full_program);
+all_diagnostics = ast::diagnostics_append(all_diagnostics, param_destructure_expand::extern_parameter_destructure_diagnostics(full_program));
+ast::Program expanded_entry_program = param_destructure_expand::expand_parameter_destructuring_in_program(trait_param_expand::expand_trait_as_param_entry_using_full(entry, destructured_full_program));
+mlc::HashMap<mlc::String, bool> globals = collect_globals(destructured_full_program);
+registry::TypeRegistry registry = registry::build_registry(destructured_full_program);
 int declaration_index = 0;
 while (declaration_index < expanded_entry_program.decls.size()){
 {

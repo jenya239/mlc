@@ -4,6 +4,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "type_gen.hpp"
 #include "cpp_naming.hpp"
 #include "match_analysis.hpp"
@@ -15,6 +16,7 @@ using namespace ast;
 using namespace semantic_ir;
 using namespace registry;
 using namespace context;
+using namespace decl_index;
 using namespace type_gen;
 using namespace cpp_naming;
 using namespace match_analysis;
@@ -29,10 +31,46 @@ mlc::String gen_let_array_rest_slice(mlc::String temp, int from_index, mlc::Stri
 
 mlc::String gen_let_pattern_statement(std::shared_ptr<ast::Pat> pat, std::shared_ptr<semantic_ir::SExpr> value, std::shared_ptr<registry::Type> value_type, bool has_else, std::shared_ptr<semantic_ir::SExpr> else_body, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> eval_fn) noexcept{
 mlc::String rhs = eval_fn(value, context);
-return [&]() -> mlc::String { if (std::holds_alternative<ast::PatIdent>((*pat))) { auto _v_patident = std::get<ast::PatIdent>((*pat)); auto [n, _w0] = _v_patident; return expr::auto_binding_statement(cpp_naming::cpp_safe(n), rhs); } if (std::holds_alternative<ast::PatTuple>((*pat))) { auto _v_pattuple = std::get<ast::PatTuple>((*pat)); auto [subs, _w0] = _v_pattuple; return [&]() -> mlc::String { 
-  mlc::String names = match_analysis::pat_bind_names(subs);
-  return mlc::String("{\nauto __lt = ") + rhs + mlc::String(";\n") + expr::tuple_destructure_binding(names, mlc::String("__lt")) + mlc::String("\n}\n");
- }(); } if (std::holds_alternative<ast::PatRecord>((*pat))) { auto _v_patrecord = std::get<ast::PatRecord>((*pat)); auto [_w0, field_pats, _w1] = _v_patrecord; return [&]() -> mlc::String { 
+return [&]() -> mlc::String { if (std::holds_alternative<ast::PatIdent>((*pat))) { auto _v_patident = std::get<ast::PatIdent>((*pat)); auto [n, _w0] = _v_patident; return expr::auto_binding_statement(cpp_naming::cpp_safe(n), rhs); } if (std::holds_alternative<ast::PatTuple>((*pat))) { auto _v_pattuple = std::get<ast::PatTuple>((*pat)); auto [subs, _w0] = _v_pattuple; return [&]() -> mlc::String { if (std::holds_alternative<registry::TTuple>((*value_type))) { auto _v_ttuple = std::get<registry::TTuple>((*value_type)); auto [_w0] = _v_ttuple; return [&]() -> mlc::String { 
+  mlc::String primitive_tuple_binding_names = match_analysis::pat_bind_names(subs);
+  return mlc::String("{\nauto __lt = ") + rhs + mlc::String(";\n") + expr::tuple_destructure_binding(primitive_tuple_binding_names, mlc::String("__lt")) + mlc::String("\n}\n");
+ }(); } else if (std::holds_alternative<registry::TPair>((*value_type))) { auto _v_tpair = std::get<registry::TPair>((*value_type)); return [&]() -> mlc::String { 
+  mlc::String primitive_tuple_binding_names = match_analysis::pat_bind_names(subs);
+  return mlc::String("{\nauto __lt = ") + rhs + mlc::String(";\n") + expr::tuple_destructure_binding(primitive_tuple_binding_names, mlc::String("__lt")) + mlc::String("\n}\n");
+ }(); } return [&]() -> mlc::String { 
+  mlc::String record_codegen_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*value_type))) { auto _v_tnamed = std::get<registry::TNamed>((*value_type)); auto [record_nominal_name] = _v_tnamed; return record_nominal_name; } if (std::holds_alternative<registry::TGeneric>((*value_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*value_type)); auto [record_nominal_name, _w0] = _v_tgeneric; return record_nominal_name; } return mlc::String(""); }();
+  return record_codegen_name != mlc::String("") ? [&]() -> mlc::String { 
+  mlc::Array<mlc::String> ordered_member_labels = decl_index::lookup_fields(context.field_orders, record_codegen_name);
+  return ordered_member_labels.size() == subs.size() && subs.size() > 0 ? [&]() -> mlc::String { 
+  mlc::String record_ordered_tuple_fragment = mlc::String("{\nauto __lt = ") + rhs + mlc::String(";\n");
+  int member_slot_index = 0;
+  while (member_slot_index < subs.size()){
+{
+std::visit(overloaded{
+  [&](const PatIdent& patident) {
+auto [binding_member_name, _w0] = patident;
+{
+record_ordered_tuple_fragment = record_ordered_tuple_fragment + expr::auto_binding_statement(cpp_naming::cpp_safe(binding_member_name), mlc::String("__lt.") + cpp_naming::cpp_safe(ordered_member_labels[member_slot_index]));
+}
+},
+  [&](const auto& _unused) {
+{
+}
+}
+}, (*subs[member_slot_index]));
+member_slot_index = member_slot_index + 1;
+}
+}
+  return record_ordered_tuple_fragment + mlc::String("}\n");
+ }() : [&]() -> mlc::String { 
+  mlc::String fallback_binding_names = match_analysis::pat_bind_names(subs);
+  return mlc::String("{\nauto __lt = ") + rhs + mlc::String(";\n") + expr::tuple_destructure_binding(fallback_binding_names, mlc::String("__lt")) + mlc::String("\n}\n");
+ }();
+ }() : [&]() -> mlc::String { 
+  mlc::String outer_fallback_binding_names = match_analysis::pat_bind_names(subs);
+  return mlc::String("{\nauto __lt = ") + rhs + mlc::String(";\n") + expr::tuple_destructure_binding(outer_fallback_binding_names, mlc::String("__lt")) + mlc::String("\n}\n");
+ }();
+ }(); }(); } if (std::holds_alternative<ast::PatRecord>((*pat))) { auto _v_patrecord = std::get<ast::PatRecord>((*pat)); auto [_w0, field_pats, _w1] = _v_patrecord; return [&]() -> mlc::String { 
   mlc::String b = mlc::String("{\nauto __lt = ") + rhs + mlc::String(";\n");
   int i = 0;
   while (i < field_pats.size()){
