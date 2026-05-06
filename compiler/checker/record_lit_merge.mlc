@@ -5,6 +5,53 @@
 import { Expr, FieldVal, RecordLitPart, ExprField, expr_span, Diagnostic, diagnostic_error, Span } from "../ast"
 import { TypeRegistry, Type, TGeneric, TShared } from "./registry"
 
+fn field_values_map_from_flat(field_values: [Shared<FieldVal>]) -> Map<string, Shared<FieldVal>> = do
+  let accumulator: Map<string, Shared<FieldVal>> = Map.new()
+  let mut index = 0
+  while index < field_values.length() do
+    const row = field_values[index]
+    accumulator.set(row.name, row); index = index + 1
+  end
+  accumulator
+end
+
+fn merge_explicit_record_literal_with_type_defaults_nonempty(
+  nominal_record_name: string,
+  explicit_fields_flat: [Shared<FieldVal>],
+  registry: TypeRegistry
+) -> [Shared<FieldVal>] = do
+  const ordered_target_names = registry.record_field_names_ordered_for(nominal_record_name)
+  const explicit_by_field_name = field_values_map_from_flat(explicit_fields_flat)
+  let merged_ordered_fields: [Shared<FieldVal>] = []
+  let mut ordered_walk_index = 0
+  while ordered_walk_index < ordered_target_names.length() do
+    const slot_field_name = ordered_target_names[ordered_walk_index]
+    if explicit_by_field_name.has(slot_field_name) then
+      merged_ordered_fields.push(explicit_by_field_name.get(slot_field_name))
+    else if registry.record_field_has_default_expression(nominal_record_name, slot_field_name) then
+      merged_ordered_fields.push(Shared.new(FieldVal {
+        name: slot_field_name,
+        val: registry.record_field_default_expression_ast(nominal_record_name, slot_field_name)
+      }))
+    end
+    ordered_walk_index = ordered_walk_index + 1
+  end
+  merged_ordered_fields
+end
+
+export fn merge_explicit_record_literal_with_type_defaults(
+  nominal_record_name: string,
+  explicit_fields_flat: [Shared<FieldVal>],
+  registry: TypeRegistry
+) -> [Shared<FieldVal>] = do
+  if !registry.has_fields(nominal_record_name) then explicit_fields_flat
+  else merge_explicit_record_literal_with_type_defaults_nonempty(
+    nominal_record_name,
+    explicit_fields_flat,
+    registry)
+  end
+end
+
 fn record_type_base_name(value_type: Shared<Type>) -> string =
   match value_type {
     TNamed(name) => name,
@@ -136,7 +183,7 @@ export fn diagnostics_missing_fields_for_ordered_record(
         if merged_field_values[merged_index].name == expected_field_name then found_present = true end
         merged_index = merged_index + 1
       end
-      if !found_present then
+      if !found_present && !registry.record_field_has_default_expression(type_name, expected_field_name) then
         missing_field_diagnostics.push(
           diagnostic_error("missing field \"" + expected_field_name + "\" in record literal", span))
       end

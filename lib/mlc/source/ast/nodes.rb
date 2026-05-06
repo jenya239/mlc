@@ -190,7 +190,7 @@ module MLC
           super(origin: origin)
           @kind = kind # :prim/:record
           @name = name
-          @fields = fields # For record types: Array of {name: String, type: Type}
+          @fields = fields # For record types: Array of {name:, type:, optional default: expr AST}
         end
       end
 

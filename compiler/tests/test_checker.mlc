@@ -134,6 +134,16 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("record constructor: correct field types — 0 errors",
     check_error_count("type Point = { x: i32, y: i32 }\nfn f() -> Point = Point { x: 1, y: 2 }"), 0))
 
+  results.push(assert_eq_int("E4: record field default binary arithmetic — 0 errors",
+    check_error_count("type Line = { offset: i32 = 10 + 5 * 2 }\nfn main() -> i32 = Line {} .offset"), 0))
+
+  results.push(assert_true("E4: record field default call expression rejected for codegen",
+    first_checker_error_line(
+      "fn zero() -> i32 = 0\ntype R = { x: i32 = zero() }\nfn main() -> i32 = R {} .x").contains("cannot be lowered")))
+
+  results.push(assert_true("E4: record field default still type-checked when shape ok",
+    first_checker_error_line("type Bad = { x: i32 = \"wrong\" }\nfn main() -> i32 = 0").contains("type mismatch")))
+
   results.push(assert_eq_int("multiline string literal in source — 0 checker errors",
     check_error_count("fn f() -> string = \"hello\nworld\""), 0))
 

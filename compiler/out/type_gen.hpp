@@ -6,6 +6,7 @@
 
 #include "ast.hpp"
 #include "registry.hpp"
+#include "record_field_default_initializer.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "expr.hpp"

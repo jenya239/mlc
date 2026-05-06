@@ -11,6 +11,7 @@
 #include "infer.hpp"
 #include "check_context.hpp"
 #include "semantic_type_structure.hpp"
+#include "record_field_default_initializer.hpp"
 
 namespace check {
 
@@ -25,11 +26,14 @@ using namespace derive_validation;
 using namespace infer;
 using namespace check_context;
 using namespace semantic_type_structure;
+using namespace record_field_default_initializer;
 using namespace ast_tokens;
 
 bool param_defaults_in_tail(mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
 
 bool default_expr_mvp_ok(std::shared_ptr<ast::Expr> e) noexcept;
+
+mlc::Array<ast::Diagnostic> record_field_default_value_diagnostics(mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, registry::TypeRegistry registry) noexcept;
 
 bool is_extern_body(std::shared_ptr<ast::Expr> e) noexcept;
 
@@ -74,6 +78,79 @@ return true;
 }
 
 bool default_expr_mvp_ok(std::shared_ptr<ast::Expr> e) noexcept{return [&]() { if (std::holds_alternative<ast::ExprInt>((*e)._)) { auto _v_exprint = std::get<ast::ExprInt>((*e)._); auto [_w0, _w1] = _v_exprint; return true; } if (std::holds_alternative<ast::ExprStr>((*e)._)) { auto _v_exprstr = std::get<ast::ExprStr>((*e)._); auto [_w0, _w1] = _v_exprstr; return true; } if (std::holds_alternative<ast::ExprBool>((*e)._)) { auto _v_exprbool = std::get<ast::ExprBool>((*e)._); auto [_w0, _w1] = _v_exprbool; return true; } if (std::holds_alternative<ast::ExprUnit>((*e)._)) { auto _v_exprunit = std::get<ast::ExprUnit>((*e)._); auto [_w0] = _v_exprunit; return true; } if (std::holds_alternative<ast::ExprFloat>((*e)._)) { auto _v_exprfloat = std::get<ast::ExprFloat>((*e)._); auto [_w0, _w1] = _v_exprfloat; return true; } if (std::holds_alternative<ast::ExprI64>((*e)._)) { auto _v_expri64 = std::get<ast::ExprI64>((*e)._); auto [_w0, _w1] = _v_expri64; return true; } if (std::holds_alternative<ast::ExprU8>((*e)._)) { auto _v_expru8 = std::get<ast::ExprU8>((*e)._); auto [_w0, _w1] = _v_expru8; return true; } if (std::holds_alternative<ast::ExprUsize>((*e)._)) { auto _v_exprusize = std::get<ast::ExprUsize>((*e)._); auto [_w0, _w1] = _v_exprusize; return true; } if (std::holds_alternative<ast::ExprChar>((*e)._)) { auto _v_exprchar = std::get<ast::ExprChar>((*e)._); auto [_w0, _w1] = _v_exprchar; return true; } return false; }();}
+
+mlc::Array<ast::Diagnostic> record_field_default_value_diagnostics(mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, registry::TypeRegistry registry) noexcept{
+mlc::Array<ast::Diagnostic> diagnostics_accumulator = {};
+if (type_parameters.size() > 0){
+{
+int generic_variant_scan_index = 0;
+[&]() { 
+  while (generic_variant_scan_index < variants.size()){
+{
+std::visit(overloaded{
+  [&](const VarRecord& varrecord) -> void { auto [_w0, field_defs_generic_scan, _w1] = varrecord; [&]() { 
+  int generic_field_scan_index = 0;
+  return [&]() { 
+  while (generic_field_scan_index < field_defs_generic_scan.size()){
+{
+if (field_defs_generic_scan[generic_field_scan_index]->has_default_expression){
+{
+diagnostics_accumulator.push_back(ast::diagnostic_error(mlc::String("record field default values are not supported when the type has generic parameters"), ast::span_unknown()));
+}
+}
+generic_field_scan_index = generic_field_scan_index + 1;
+}
+}
+ }();
+ }(); },
+  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; std::make_tuple(); },
+  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; std::make_tuple(); }
+}, (*variants[generic_variant_scan_index]));
+generic_variant_scan_index = generic_variant_scan_index + 1;
+}
+}
+ }();
+}
+}
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> empty_record_default_environment = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
+check_context::CheckContext record_default_inference_context = check_context::check_context_new(empty_record_default_environment, registry);
+int literal_variant_scan_index = 0;
+while (literal_variant_scan_index < variants.size()){
+{
+std::visit(overloaded{
+  [&](const VarRecord& varrecord) -> void { auto [_w0, field_defs_literal_scan, _w1] = varrecord; [&]() { 
+  int literal_field_scan_index = 0;
+  return [&]() { 
+  while (literal_field_scan_index < field_defs_literal_scan.size()){
+{
+if (field_defs_literal_scan[literal_field_scan_index]->has_default_expression){
+{
+std::shared_ptr<ast::Expr> default_ast_expression = field_defs_literal_scan[literal_field_scan_index]->default_expression;
+if (!record_field_default_initializer::record_field_default_expression_acceptable_for_codegen(default_ast_expression)){
+diagnostics_accumulator.push_back(ast::diagnostic_error(mlc::String("record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)"), ast::expr_span(default_ast_expression)));
+} else {
+infer_result::InferResult inferred_default_result = infer::infer_expr(default_ast_expression, record_default_inference_context);
+diagnostics_accumulator = ast::diagnostics_append(diagnostics_accumulator, inferred_default_result.errors);
+std::shared_ptr<registry::Type> annotated_field_type = registry::type_from_annotation(field_defs_literal_scan[literal_field_scan_index]->typ);
+if (type_is_checkable(annotated_field_type, registry) && type_is_checkable(inferred_default_result.inferred_type, registry) && !semantic_type_structure::types_structurally_equal(annotated_field_type, inferred_default_result.inferred_type)){
+diagnostics_accumulator.push_back(ast::diagnostic_error(mlc::String("record field default type mismatch for field \"") + field_defs_literal_scan[literal_field_scan_index]->name + mlc::String("\""), ast::expr_span(default_ast_expression)));
+}
+}
+}
+}
+literal_field_scan_index = literal_field_scan_index + 1;
+}
+}
+ }();
+ }(); },
+  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; std::make_tuple(); },
+  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; std::make_tuple(); }
+}, (*variants[literal_variant_scan_index]));
+literal_variant_scan_index = literal_variant_scan_index + 1;
+}
+}
+return diagnostics_accumulator;
+}
 
 bool is_extern_body(std::shared_ptr<ast::Expr> e) noexcept{return [&]() { if (std::holds_alternative<ast::ExprExtern>((*e)._)) { auto _v_exprextern = std::get<ast::ExprExtern>((*e)._); auto [_w0] = _v_exprextern; return true; } return false; }();}
 
@@ -309,6 +386,7 @@ parameter_index = parameter_index + 1;
  }(); },
   [&](const DeclType& decltype_) -> std::tuple<> { auto [_w0, type_parameters, variants, derive_trait_names] = decltype_; return [&]() -> std::tuple<> { 
   all_diagnostics = ast::diagnostics_append(all_diagnostics, derive_validation::derive_clause_diagnostics(type_parameters, variants, derive_trait_names, ast::span_unknown()));
+  all_diagnostics = ast::diagnostics_append(all_diagnostics, record_field_default_value_diagnostics(type_parameters, variants, registry));
   return std::make_tuple();
  }(); },
   [&](const DeclTrait& decltrait) -> std::tuple<> { auto [_w0, _w1, _w2] = decltrait; return std::make_tuple(); },

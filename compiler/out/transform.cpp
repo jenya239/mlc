@@ -444,6 +444,7 @@ literal_part_index = literal_part_index + 1;
 merged_field_values_for_transform = record_lit_merge::merge_record_literal_parts_to_field_values(type_name, lit_parts, transform_context.registry, spread_types_for_merge);
 }
 }
+  merged_field_values_for_transform = record_lit_merge::merge_explicit_record_literal_with_type_defaults(type_name, merged_field_values_for_transform, transform_context.registry);
   mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> typed_fields = transform_field_vals(merged_field_values_for_transform, transform_context, stmts_fn);
   mlc::Array<mlc::String> phantom = registry::TypeRegistry_phantom_type_params_for(transform_context.registry, type_name);
   mlc::Array<mlc::String> all_params = registry::TypeRegistry_algebraic_decl_type_parameter_names_for(transform_context.registry, type_name);

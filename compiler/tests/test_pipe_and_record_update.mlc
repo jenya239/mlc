@@ -5,7 +5,7 @@ import { gen_expr } from "../codegen/eval"
 import { create_codegen_context } from "../codegen/context"
 import { pipe_desugar } from "../parser/exprs"
 import { tokenize } from "../lexer"
-import { Program, Expr, Stmt, DeclType, VarRecord, FieldDef, TyI32, ExprIdent, ExprCall, ExprInt, span_unknown } from "../ast"
+import { Program, Expr, Stmt, DeclType, VarRecord, FieldDef, TyI32, ExprIdent, ExprCall, ExprInt, ExprUnit, span_unknown } from "../ast"
 import { SExpr, SFieldVal, SExprInt, SExprIdent, SExprRecordUpdate } from "../semantic_ir"
 import { Type, TNamed, TI32, TUnknown } from "../checker/registry"
 import { transform_expr, empty_transform_context, TransformContext, TransformStmtsResult } from "../checker/transform"
@@ -46,8 +46,18 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   // -- Record update codegen ------------------------------------------------
 
   const point_decl = Shared.new(DeclType("Point", [], [Shared.new(VarRecord("Point", [
-    Shared.new(FieldDef { name: "x", typ: Shared.new(TyI32) }),
-    Shared.new(FieldDef { name: "y", typ: Shared.new(TyI32) })
+    Shared.new(FieldDef {
+      name: "x",
+      typ: Shared.new(TyI32),
+      has_default_expression: false,
+      default_expression: Shared.new(ExprUnit(span_unknown()))
+    }),
+    Shared.new(FieldDef {
+      name: "y",
+      typ: Shared.new(TyI32),
+      has_default_expression: false,
+      default_expression: Shared.new(ExprUnit(span_unknown()))
+    })
   ], false))], []))
   const point_prog  = Program { decls: [point_decl] }
   const ctx_point   = create_codegen_context(point_prog)

@@ -2,6 +2,10 @@
 
 import { TypeVariant, TypeExpr, FieldDef, Decl, Param, TyI32, TyBool, TyString, VarUnit, VarTuple, VarRecord } from "../ast"
 import { Type } from "../checker/registry"
+import {
+  record_field_default_expression_acceptable_for_codegen,
+  record_field_default_expression_cpp_initializer
+} from "../record_field_default_initializer"
 import { CodegenContext, CtorTypeInfo, context_resolve, list_contains } from "./context"
 import { cpp_safe, lower_first, template_prefix } from "./cpp_naming"
 import * as expression_output from "./expr"
@@ -195,6 +199,26 @@ fn type_phantom_params_for_variants(type_params: [string], variants: [Shared<Typ
   phantom
 end
 
+fn variant_record_struct_inline_member_declarations(context: CodegenContext, field_definitions: [Shared<FieldDef>]) -> string = do
+  let parts: [string] = []
+  let mut member_index = 0
+  while member_index < field_definitions.length() do
+    const base_declaration_line = expression_output.struct_named_field_declaration(
+      type_to_cpp(context, field_definitions[member_index].typ),
+      cpp_safe(field_definitions[member_index].name))
+    const declaration_with_optional_initializer =
+      if field_definitions[member_index].has_default_expression &&
+         record_field_default_expression_acceptable_for_codegen(field_definitions[member_index].default_expression) then
+        base_declaration_line + " = " +
+          record_field_default_expression_cpp_initializer(field_definitions[member_index].default_expression, context)
+      else
+        base_declaration_line
+      end
+    parts.push(declaration_with_optional_initializer); member_index = member_index + 1
+  end
+  parts.join("")
+end
+
 // --- Variant struct generation -----------------------------------------------
 
 export fn variant_ctor_name(variant: Shared<TypeVariant>) -> string =
@@ -211,11 +235,9 @@ fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Share
       expression_output.struct_with_inline_members_definition(context_resolve(context, name), parts.join(""))
     end,
     VarRecord(name, field_defs, _) => do
-      let parts: [string] = []; let mut i = 0
-      while i < field_defs.length() do
-        parts.push(expression_output.struct_named_field_declaration(type_to_cpp(context, field_defs[i].typ), cpp_safe(field_defs[i].name))); i = i + 1
-      end
-      expression_output.struct_with_inline_members_definition(context_resolve(context, name), parts.join(""))
+      expression_output.struct_with_inline_members_definition(
+        context_resolve(context, name),
+        variant_record_struct_inline_member_declarations(context, field_defs))
     end
   }
 
@@ -230,11 +252,9 @@ fn struct_extra_using(context: CodegenContext, type_name: string) -> string =
 fn gen_single_variant(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
   match variant {
     VarRecord(_, field_defs, _) => do
-      let parts: [string] = []; let mut i = 0
-      while i < field_defs.length() do
-        parts.push(expression_output.struct_named_field_declaration(type_to_cpp(context, field_defs[i].typ), cpp_safe(field_defs[i].name))); i = i + 1
-      end
-      expression_output.struct_with_inline_members_definition(context_resolve(context, type_name), parts.join("") + struct_extra_using(context, type_name))
+      expression_output.struct_with_inline_members_definition(
+        context_resolve(context, type_name),
+        variant_record_struct_inline_member_declarations(context, field_defs) + struct_extra_using(context, type_name))
     end,
     VarTuple(_, field_types, _) => do
       let parts: [string] = []; let mut i = 0

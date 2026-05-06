@@ -73,6 +73,30 @@ fn infer_field_values_errors(
   result
 end
 
+fn infer_explicit_record_literal_field_name_errors(
+  initial: InferResult,
+  record_type_name: string,
+  explicit_field_values_flat: [Shared<FieldVal>],
+  registry: TypeRegistry
+) -> InferResult = do
+  let mut result = initial
+  let mut explicit_field_index = 0
+  while explicit_field_index < explicit_field_values_flat.length() do
+    const field_value_binding = explicit_field_values_flat[explicit_field_index]
+    const unknown_field_messages = infer_expr_field_diagnostics(
+      Shared.new(TNamed(record_type_name)),
+      field_value_binding.name,
+      expr_span(field_value_binding.val),
+      registry)
+    result = InferResult {
+      inferred_type: result.inferred_type,
+      errors: diagnostics_append(result.errors, unknown_field_messages)
+    }
+    explicit_field_index = explicit_field_index + 1
+  end
+  result
+end
+
 // --- Expression rule functions ----------------------------------------------
 
 fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
@@ -261,12 +285,18 @@ export fn infer_expr_record(type_name: string, lit_parts: [RecordLitPart], infer
   let mut result = InferResult { inferred_type: Shared.new(TNamed(type_name)), errors: private_errors }
   const explicit_field_values_flat = record_lit_merge.collect_explicit_field_values_flat(lit_parts)
   if !record_lit_merge.record_literal_contains_spread(lit_parts) then
-    result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, type_name)
+    if inference_context.registry.has_fields(type_name) then
+      result = infer_explicit_record_literal_field_name_errors(
+        result, type_name, explicit_field_values_flat, inference_context.registry)
+    end
+    const merged_with_optional_defaults =
+      record_lit_merge.merge_explicit_record_literal_with_type_defaults(type_name, explicit_field_values_flat, inference_context.registry)
+    result = infer_field_values_errors(result, merged_with_optional_defaults, inference_context, type_name)
     if inference_context.registry.has_fields(type_name) then
       result = InferResult {
         inferred_type: result.inferred_type,
         errors:           diagnostics_append(result.errors,
-          record_lit_merge.diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, explicit_field_values_flat, span))
+          record_lit_merge.diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_with_optional_defaults, span))
       }
     end
     result
@@ -294,11 +324,13 @@ export fn infer_expr_record(type_name: string, lit_parts: [RecordLitPart], infer
     end
     const merged_field_values =
       record_lit_merge.merge_record_literal_parts_to_field_values(type_name, lit_parts, inference_context.registry, spread_types_in_order)
-    result = infer_field_values_errors(result, merged_field_values, inference_context, type_name)
+    const merged_including_decl_defaults =
+      record_lit_merge.merge_explicit_record_literal_with_type_defaults(type_name, merged_field_values, inference_context.registry)
+    result = infer_field_values_errors(result, merged_including_decl_defaults, inference_context, type_name)
     result = InferResult {
       inferred_type: result.inferred_type,
       errors:         diagnostics_append(result.errors,
-        record_lit_merge.diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_field_values, span))
+        record_lit_merge.diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_including_decl_defaults, span))
     }
     result
   end

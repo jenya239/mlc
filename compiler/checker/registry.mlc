@@ -1,6 +1,6 @@
 // --- Semantic type --------------------------------------------------------
 
-import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name } from "../ast"
+import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name, Expr } from "../ast"
 import { expand_trait_as_param_program } from "./trait_param_expand"
 
 export type Type =
@@ -30,6 +30,7 @@ export type TypeRegistry = TypeRegistry {
   algebraic_decl_phantom_type_params: Map<string, [string]>,
   field_types: Map<string, Map<string, Shared<Type>>>,
   record_field_names_ordered: Map<string, [string]>,
+  record_literal_field_defaults: Map<string, Map<string, Shared<Expr>>>,
   trait_impls: Map<string, [string]>,
   private_ctors: [string],
   trait_assoc_types: Map<string, [string]>,
@@ -89,6 +90,13 @@ export extend TypeRegistry {
     else
       do const empty_names: [string] = []; empty_names end
     end
+
+  fn record_field_has_default_expression(self, nominal_record_key: string, field_label: string) -> bool =
+    record_literal_field_defaults.has(nominal_record_key) &&
+    record_literal_field_defaults.get(nominal_record_key).has(field_label)
+
+  fn record_field_default_expression_ast(self, nominal_record_key: string, field_label: string) -> Shared<Expr> =
+    record_literal_field_defaults.get(nominal_record_key).get(field_label)
 
   fn has_fields(self, type_name: string) -> bool =
     field_types.has(type_name)
@@ -176,6 +184,7 @@ export fn empty_registry() -> TypeRegistry = do
     algebraic_decl_phantom_type_params: Map.new(),
     field_types: Map.new(),
     record_field_names_ordered: Map.new(),
+    record_literal_field_defaults: Map.new(),
     trait_impls: Map.new(),
     private_ctors: empty_private_ctors,
     trait_assoc_types: Map.new(),
@@ -389,11 +398,15 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
     end,
     VarRecord(variant_name, field_defs, is_private) => do
       const field_map: Map<string, Shared<Type>> = Map.new()
+      const defaults_for_variant: Map<string, Shared<Expr>> = Map.new()
       const ordered_names: [string] = []
       let mut i = 0
       while i < field_defs.length() do
         field_map.set(field_defs[i].name, type_from_annotation(field_defs[i].typ))
         ordered_names.push(field_defs[i].name)
+        if field_defs[i].has_default_expression then
+          defaults_for_variant.set(field_defs[i].name, field_defs[i].default_expression)
+        end
         i = i + 1
       end
       registry.ctor_types.set(variant_name, result_type)
@@ -402,6 +415,8 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
       registry.field_types.set(type_name, field_map)
       registry.record_field_names_ordered.set(variant_name, ordered_names)
       registry.record_field_names_ordered.set(type_name, ordered_names)
+      registry.record_literal_field_defaults.set(variant_name, defaults_for_variant)
+      registry.record_literal_field_defaults.set(type_name, defaults_for_variant)
       if is_private then registry.private_ctors.push(variant_name) end
       registry
     end

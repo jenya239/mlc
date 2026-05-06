@@ -9,6 +9,12 @@ using namespace ast;
 using namespace registry;
 using namespace ast_tokens;
 
+mlc::HashMap<mlc::String, std::shared_ptr<ast::FieldVal>> field_values_map_from_flat(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values) noexcept;
+
+mlc::Array<std::shared_ptr<ast::FieldVal>> merge_explicit_record_literal_with_type_defaults_nonempty(mlc::String nominal_record_name, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_fields_flat, registry::TypeRegistry registry) noexcept;
+
+mlc::Array<std::shared_ptr<ast::FieldVal>> merge_explicit_record_literal_with_type_defaults(mlc::String nominal_record_name, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_fields_flat, registry::TypeRegistry registry) noexcept;
+
 mlc::String record_type_base_name(std::shared_ptr<registry::Type> value_type) noexcept;
 
 mlc::HashMap<mlc::String, std::shared_ptr<ast::FieldVal>> explicit_field_map_last_wins(mlc::Array<ast::RecordLitPart> parts) noexcept;
@@ -20,6 +26,48 @@ bool record_literal_contains_spread(mlc::Array<ast::RecordLitPart> parts) noexce
 mlc::Array<std::shared_ptr<ast::FieldVal>> merge_record_literal_parts_to_field_values(mlc::String type_name, mlc::Array<ast::RecordLitPart> parts, registry::TypeRegistry registry, mlc::Array<std::shared_ptr<registry::Type>> spread_types_in_order) noexcept;
 
 mlc::Array<ast::Diagnostic> diagnostics_missing_fields_for_ordered_record(mlc::String type_name, registry::TypeRegistry registry, mlc::Array<std::shared_ptr<ast::FieldVal>> merged_field_values, ast::Span span) noexcept;
+
+mlc::HashMap<mlc::String, std::shared_ptr<ast::FieldVal>> field_values_map_from_flat(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values) noexcept{
+mlc::HashMap<mlc::String, std::shared_ptr<ast::FieldVal>> accumulator = mlc::HashMap<mlc::String, std::shared_ptr<ast::FieldVal>>();
+int index = 0;
+while (index < field_values.size()){
+{
+std::shared_ptr<ast::FieldVal> row = field_values[index];
+accumulator.set(row->name, row);
+index = index + 1;
+}
+}
+return accumulator;
+}
+
+mlc::Array<std::shared_ptr<ast::FieldVal>> merge_explicit_record_literal_with_type_defaults_nonempty(mlc::String nominal_record_name, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_fields_flat, registry::TypeRegistry registry) noexcept{
+mlc::Array<mlc::String> ordered_target_names = registry::TypeRegistry_record_field_names_ordered_for(registry, nominal_record_name);
+mlc::HashMap<mlc::String, std::shared_ptr<ast::FieldVal>> explicit_by_field_name = field_values_map_from_flat(explicit_fields_flat);
+mlc::Array<std::shared_ptr<ast::FieldVal>> merged_ordered_fields = {};
+int ordered_walk_index = 0;
+while (ordered_walk_index < ordered_target_names.size()){
+{
+mlc::String slot_field_name = ordered_target_names[ordered_walk_index];
+if (explicit_by_field_name.has(slot_field_name)){
+{
+merged_ordered_fields.push_back(explicit_by_field_name.get(slot_field_name));
+}
+} else {
+{
+if (registry::TypeRegistry_record_field_has_default_expression(registry, nominal_record_name, slot_field_name)){
+merged_ordered_fields.push_back(std::make_shared<ast::FieldVal>(ast::FieldVal{slot_field_name, registry::TypeRegistry_record_field_default_expression_ast(registry, nominal_record_name, slot_field_name)}));
+}
+}
+}
+ordered_walk_index = ordered_walk_index + 1;
+}
+}
+return merged_ordered_fields;
+}
+
+mlc::Array<std::shared_ptr<ast::FieldVal>> merge_explicit_record_literal_with_type_defaults(mlc::String nominal_record_name, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_fields_flat, registry::TypeRegistry registry) noexcept{
+return !registry::TypeRegistry_has_fields(registry, nominal_record_name) ? explicit_fields_flat : merge_explicit_record_literal_with_type_defaults_nonempty(nominal_record_name, explicit_fields_flat, registry);
+}
 
 mlc::String record_type_base_name(std::shared_ptr<registry::Type> value_type) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*value_type))) { auto _v_tnamed = std::get<registry::TNamed>((*value_type)); auto [name] = _v_tnamed; return name; } if (std::holds_alternative<registry::TGeneric>((*value_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*value_type)); auto [name, _w0] = _v_tgeneric; return name; } if (std::holds_alternative<registry::TShared>((*value_type))) { auto _v_tshared = std::get<registry::TShared>((*value_type)); auto [inner] = _v_tshared; return record_type_base_name(inner); } return mlc::String(""); }();}
 
@@ -172,7 +220,7 @@ found_present = true;
 merged_index = merged_index + 1;
 }
 }
-if (!found_present){
+if (!found_present && !registry::TypeRegistry_record_field_has_default_expression(registry, type_name, expected_field_name)){
 {
 missing_field_diagnostics.push_back(ast::diagnostic_error(mlc::String("missing field \"") + expected_field_name + mlc::String("\" in record literal"), span));
 }

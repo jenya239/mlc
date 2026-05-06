@@ -197,6 +197,6 @@ std::shared_ptr<ast::TypeVariant> tuple_variant(mlc::String variant_name, mlc::A
 
 std::shared_ptr<ast::TypeVariant> unit_variant(mlc::String variant_name) noexcept{return std::make_shared<ast::TypeVariant>(ast::VarUnit(variant_name, false));}
 
-std::shared_ptr<ast::FieldDef> field_definition(mlc::String field_name, std::shared_ptr<ast::TypeExpr> field_type) noexcept{return std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, field_type});}
+std::shared_ptr<ast::FieldDef> field_definition(mlc::String field_name, std::shared_ptr<ast::TypeExpr> field_type) noexcept{return std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, field_type, false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown()))});}
 
 } // namespace ast_builders

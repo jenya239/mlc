@@ -68,36 +68,42 @@ module MLC
               expected_names = Array(type_info.fields).map { |field| field[:name].to_s }
               actual_names = fields_ir.keys
 
-              # Compare as sets - order doesn't matter for spread expansion
               expected_set = expected_names.to_set
               actual_set = actual_names.to_set
 
-              unless expected_names.empty? || expected_set == actual_set
-                missing = (expected_set - actual_set).to_a
-                extra = (actual_set - expected_set).to_a
+              extra = (actual_set - expected_set).to_a
+              if extra.any?
                 msg = "Record literal fields do not match type '#{type_name}'"
-                msg += ". Missing: #{missing.join(', ')}" if missing.any?
-                msg += ". Extra: #{extra.join(', ')}" if extra.any?
+                msg += ". Extra: #{extra.join(', ')}"
                 @type_checker.type_error(msg, node: node)
               end
 
-              Array(type_info.fields).each do |field|
-                field_name = field[:name].to_s
-                literal_expr = fields_ir[field_name]
-                next unless literal_expr
-
-                ensure_expr_type!(literal_expr, field_name, node)
-                @type_checker.ensure_compatible_type(
-                  literal_expr.type,
-                  field[:type],
-                  "field '#{field_name}' of '#{type_name}'",
-                  node: node
-                )
+              missing = (expected_set - actual_set).to_a
+              missing.each do |missing_field_name|
+                field_row = Array(type_info.fields).find { |field_row_entry| field_row_entry[:name].to_s == missing_field_name }
+                unless field_row&.dig(:default)
+                  msg = "missing field '#{missing_field_name}' in record literal '#{type_name}'"
+                  msg += " (no default in type declaration)" unless field_row
+                  @type_checker.type_error(msg, node: node)
+                end
               end
 
-              # Reorder fields to match expected order for correct C++ brace initialization
-              ordered_fields_ir = expected_names.each_with_object({}) do |name, acc|
-                acc[name] = fields_ir[name] if fields_ir.key?(name)
+              ordered_fields_ir = expected_names.each_with_object({}) do |field_name, accumulator|
+                if fields_ir.key?(field_name)
+                  literal_expression = fields_ir[field_name]
+                  ensure_expr_type!(literal_expression, field_name, node)
+                  field_metadata = Array(type_info.fields).find { |field_row_entry| field_row_entry[:name].to_s == field_name }
+                  @type_checker.ensure_compatible_type(
+                    literal_expression.type,
+                    field_metadata[:type],
+                    "field '#{field_name}' of '#{type_name}'",
+                    node: node
+                  )
+                  accumulator[field_name] = literal_expression
+                else
+                  field_metadata = Array(type_info.fields).find { |field_row_entry| field_row_entry[:name].to_s == field_name }
+                  accumulator[field_name] = field_metadata[:default]
+                end
               end
 
               [inferred_record_type(type_name, ordered_fields_ir, node), ordered_fields_ir]

@@ -188,7 +188,12 @@ export type Param    = Param    {
   default: Shared<Expr>,
   param_pattern: Shared<Pat>
 }
-export type FieldDef = FieldDef { name: string, typ: Shared<TypeExpr> }
+export type FieldDef = FieldDef {
+  name: string,
+  typ: Shared<TypeExpr>,
+  has_default_expression: bool,
+  default_expression: Shared<Expr>
+}
 
 export type WhereClauseBound = WhereClauseBound { parameter_name: string, traits: [string] }
 

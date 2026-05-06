@@ -691,9 +691,16 @@ module MLC
           # Generate struct declaration
           members = record_type.fields.map do |field|
             field_type = @context.map_type(field[:type])
+            declarator_name = @context.sanitize_identifier(field[:name])
+            declarator_text =
+              if field[:default]
+                "#{declarator_name} = #{@context.lower_expression(field[:default]).to_source}"
+              else
+                declarator_name
+              end
             CppAst::Nodes::VariableDeclaration.new(
               type: field_type,
-              declarators: [@context.sanitize_identifier(field[:name])],
+              declarators: [declarator_text],
               declarator_separators: [],
               type_suffix: " ",
               prefix_modifiers: ""

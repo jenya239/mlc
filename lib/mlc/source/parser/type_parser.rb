@@ -34,8 +34,12 @@ module MLC
             field_name = consume(:IDENTIFIER).value
             consume(:COLON)
             field_type = parse_type
-
-            fields << { name: field_name, type: field_type }
+            field_entry = { name: field_name, type: field_type }
+            if current.type == :EQUAL
+              consume(:EQUAL)
+              field_entry[:default] = parse_expression
+            end
+            fields << field_entry
 
             break unless current.type == :COMMA
 

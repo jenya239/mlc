@@ -714,8 +714,25 @@ fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
   while !state.kind().is_rbrace() && !state.at_eof() do
     const field_name  = state.kind().ident()
     const type_result = parse_type(state.advance_by(2))
-    field_defs.push(Shared.new(FieldDef { name: field_name, typ: type_result.type_expr }))
-    state = type_result.parser
+    let remainder_after_field_type = type_result.parser
+    if remainder_after_field_type.kind().is_equal() then
+      const default_parse_result = parse_expr(remainder_after_field_type.advance())
+      field_defs.push(Shared.new(FieldDef {
+        name: field_name,
+        typ: type_result.type_expr,
+        has_default_expression: true,
+        default_expression: default_parse_result.expr
+      }))
+      state = default_parse_result.parser
+    else
+      field_defs.push(Shared.new(FieldDef {
+        name: field_name,
+        typ: type_result.type_expr,
+        has_default_expression: false,
+        default_expression: Shared.new(ExprUnit(span_unknown()))
+      }))
+      state = remainder_after_field_type
+    end
     if state.kind().is_comma() then state = state.advance() end
   end
   FieldDefsResult { field_defs, parser: state.advance() }

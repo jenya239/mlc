@@ -78,7 +78,7 @@ struct Stmt {std::variant<StmtLet, StmtLetPat, StmtLetConst, StmtExpr, StmtBreak
 
 struct Param {mlc::String name;bool is_mut;std::shared_ptr<ast::TypeExpr> typ;bool has_default;std::shared_ptr<ast::Expr> default_;std::shared_ptr<ast::Pat> param_pattern;};
 
-struct FieldDef {mlc::String name;std::shared_ptr<ast::TypeExpr> typ;};
+struct FieldDef {mlc::String name;std::shared_ptr<ast::TypeExpr> typ;bool has_default_expression;std::shared_ptr<ast::Expr> default_expression;};
 
 struct WhereClauseBound {mlc::String parameter_name;mlc::Array<mlc::String> traits;};
 

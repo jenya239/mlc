@@ -104,7 +104,10 @@ class RecordUpdateTest < Minitest::Test
 
     cpp = MLC.to_cpp(source)
 
-    assert_includes cpp, "Point{0, 0}"
+    assert(
+      cpp.include?("Point{0, 0}") || cpp.include?("Point{.x = 0, .y = 0}"),
+      "expected positional or designated Point literal with zeros"
+    )
   end
 
   # ============================================================================

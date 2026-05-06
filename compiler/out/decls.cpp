@@ -803,8 +803,19 @@ while (!preds::TKind_is_rbrace(preds::Parser_kind(state)) && !preds::Parser_at_e
 {
 mlc::String field_name = preds::TKind_ident(preds::Parser_kind(state));
 preds::TypeResult type_result = types::parse_type(preds::Parser_advance_by(state, 2));
-field_defs.push_back(std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, type_result.type_expr}));
-state = type_result.parser;
+preds::Parser remainder_after_field_type = type_result.parser;
+if (preds::TKind_is_equal(preds::Parser_kind(remainder_after_field_type))){
+{
+preds::ExprResult default_parse_result = exprs::parse_expr(preds::Parser_advance(remainder_after_field_type));
+field_defs.push_back(std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, type_result.type_expr, true, default_parse_result.expr}));
+state = default_parse_result.parser;
+}
+} else {
+{
+field_defs.push_back(std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, type_result.type_expr, false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown()))}));
+state = remainder_after_field_type;
+}
+}
 if (preds::TKind_is_comma(preds::Parser_kind(state))){
 {
 state = preds::Parser_advance(state);

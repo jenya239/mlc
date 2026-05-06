@@ -52,7 +52,6 @@ module MLC
           return true if next_token.type == :REGEX
           return true if next_token.type == :UNDERSCORE
           return true if next_token.type == :ELSE
-          return true if next_token.type == :RBRACE
 
           # If next token is IDENTIFIER followed by :, it's a record field
           # If next token is IDENTIFIER followed by =>, it's a match arm

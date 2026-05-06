@@ -389,7 +389,12 @@ export fn codegen_tests() -> [TestResult] = do
 
   // --- Phantom type codegen ---------------------------------------------------
 
-  const phantom_fds: [Shared<FieldDef>] = [Shared.new(FieldDef { name: "value", typ: Shared.new(TyI32) })]
+  const phantom_fds: [Shared<FieldDef>] = [Shared.new(FieldDef {
+    name: "value",
+    typ: Shared.new(TyI32),
+    has_default_expression: false,
+    default_expression: Shared.new(ExprUnit(span_unknown()))
+  })]
   const phantom_variants_1: [Shared<TypeVariant>] = [Shared.new(VarRecord("Ast", phantom_fds, false))]
   const phantom_type_out = gen_type_decl(ctx, "Ast", ["Phase"], phantom_variants_1)
   results.push(assert_eq_str("phantom single-variant: template<typename Phase> in output",

@@ -53,6 +53,7 @@ module MLC
               services: @services,
               rule_engine: rule_engine
             )
+            @services.type_declaration_service.expression_visitor = @engine.expression_visitor
 
             @rule_engine = @engine.rule_engine
             ensure_function_rule(@rule_engine)

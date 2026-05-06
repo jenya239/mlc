@@ -47,6 +47,8 @@ infer_result::InferResult infer_arguments_errors(infer_result::InferResult initi
 
 infer_result::InferResult infer_field_values_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context, mlc::String record_type_name_for_fields) noexcept;
 
+infer_result::InferResult infer_explicit_record_literal_field_name_errors(infer_result::InferResult initial, mlc::String record_type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_field_values_flat, registry::TypeRegistry registry) noexcept;
+
 infer_result::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
 
 infer_result::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
@@ -123,6 +125,20 @@ result = infer_result::InferResult_absorb(result, value_result);
 }
 }
 index = index + 1;
+}
+}
+return result;
+}
+
+infer_result::InferResult infer_explicit_record_literal_field_name_errors(infer_result::InferResult initial, mlc::String record_type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_field_values_flat, registry::TypeRegistry registry) noexcept{
+infer_result::InferResult result = std::move(initial);
+int explicit_field_index = 0;
+while (explicit_field_index < explicit_field_values_flat.size()){
+{
+std::shared_ptr<ast::FieldVal> field_value_binding = explicit_field_values_flat[explicit_field_index];
+mlc::Array<ast::Diagnostic> unknown_field_messages = type_diagnostics::infer_expr_field_diagnostics(std::make_shared<registry::Type>(registry::TNamed(record_type_name)), field_value_binding->name, ast::expr_span(field_value_binding->val), registry);
+result = infer_result::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, unknown_field_messages)};
+explicit_field_index = explicit_field_index + 1;
 }
 }
 return result;
@@ -270,10 +286,16 @@ mlc::Array<ast::Diagnostic> private_errors = registry::TypeRegistry_is_private_c
 infer_result::InferResult result = infer_result::InferResult{std::make_shared<registry::Type>(registry::TNamed(type_name)), private_errors};
 mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_field_values_flat = record_lit_merge::collect_explicit_field_values_flat(lit_parts);
 return !record_lit_merge::record_literal_contains_spread(lit_parts) ? [&]() -> infer_result::InferResult { 
-  result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, type_name);
   if (registry::TypeRegistry_has_fields(inference_context.registry, type_name)){
 {
-result = infer_result::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, record_lit_merge::diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, explicit_field_values_flat, span))};
+result = infer_explicit_record_literal_field_name_errors(result, type_name, explicit_field_values_flat, inference_context.registry);
+}
+}
+  mlc::Array<std::shared_ptr<ast::FieldVal>> merged_with_optional_defaults = record_lit_merge::merge_explicit_record_literal_with_type_defaults(type_name, explicit_field_values_flat, inference_context.registry);
+  result = infer_field_values_errors(result, merged_with_optional_defaults, inference_context, type_name);
+  if (registry::TypeRegistry_has_fields(inference_context.registry, type_name)){
+{
+result = infer_result::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, record_lit_merge::diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_with_optional_defaults, span))};
 }
 }
   return result;
@@ -298,8 +320,9 @@ part_index = part_index + 1;
 }
 }
   mlc::Array<std::shared_ptr<ast::FieldVal>> merged_field_values = record_lit_merge::merge_record_literal_parts_to_field_values(type_name, lit_parts, inference_context.registry, spread_types_in_order);
-  result = infer_field_values_errors(result, merged_field_values, inference_context, type_name);
-  result = infer_result::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, record_lit_merge::diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_field_values, span))};
+  mlc::Array<std::shared_ptr<ast::FieldVal>> merged_including_decl_defaults = record_lit_merge::merge_explicit_record_literal_with_type_defaults(type_name, merged_field_values, inference_context.registry);
+  result = infer_field_values_errors(result, merged_including_decl_defaults, inference_context, type_name);
+  result = infer_result::InferResult{result.inferred_type, ast::diagnostics_append(result.errors, record_lit_merge::diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_including_decl_defaults, span))};
   return result;
  }();
 }

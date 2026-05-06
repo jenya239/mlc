@@ -217,7 +217,7 @@ mlc::String letpat_with_else_out = eval::gen_stmts_str(mlc::Array<std::shared_pt
 mlc::String letpat_no_else_out = eval::gen_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{letpat_no_else}, ctx);
 results.push_back(test_runner::assert_eq_str(mlc::String("let-else: with else no abort"), letpat_with_else_out.contains(mlc::String("abort")) ? mlc::String("abort") : mlc::String("no-abort"), mlc::String("no-abort")));
 results.push_back(test_runner::assert_eq_str(mlc::String("let-else: without else uses abort"), letpat_no_else_out.contains(mlc::String("abort")) ? mlc::String("abort") : mlc::String("no-abort"), mlc::String("abort")));
-mlc::Array<std::shared_ptr<ast::FieldDef>> phantom_fds = mlc::Array<std::shared_ptr<ast::FieldDef>>{std::make_shared<ast::FieldDef>(ast::FieldDef{mlc::String("value"), std::make_shared<ast::TypeExpr>((ast::TyI32{}))})};
+mlc::Array<std::shared_ptr<ast::FieldDef>> phantom_fds = mlc::Array<std::shared_ptr<ast::FieldDef>>{std::make_shared<ast::FieldDef>(ast::FieldDef{mlc::String("value"), std::make_shared<ast::TypeExpr>((ast::TyI32{})), false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown()))})};
 mlc::Array<std::shared_ptr<ast::TypeVariant>> phantom_variants_1 = mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarRecord(mlc::String("Ast"), phantom_fds, false))};
 mlc::String phantom_type_out = type_gen::gen_type_decl(ctx, mlc::String("Ast"), mlc::Array<mlc::String>{mlc::String("Phase")}, phantom_variants_1);
 results.push_back(test_runner::assert_eq_str(mlc::String("phantom single-variant: template<typename Phase> in output"), phantom_type_out.contains(mlc::String("typename Phase")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));

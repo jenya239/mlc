@@ -2,6 +2,7 @@
 
 #include "ast.hpp"
 #include "registry.hpp"
+#include "record_field_default_initializer.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "expr.hpp"
@@ -10,6 +11,7 @@ namespace type_gen {
 
 using namespace ast;
 using namespace registry;
+using namespace record_field_default_initializer;
 using namespace context;
 using namespace cpp_naming;
 using namespace expr;
@@ -34,6 +36,8 @@ mlc::Array<mlc::String> variant_used_type_params(mlc::Array<mlc::String> type_pa
 mlc::Array<mlc::String> union_string_lists(mlc::Array<mlc::String> a, mlc::Array<mlc::String> b) noexcept;
 
 mlc::Array<mlc::String> type_phantom_params_for_variants(mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
+mlc::String variant_record_struct_inline_member_declarations(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept;
 
 mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
@@ -304,6 +308,20 @@ i = i + 1;
 return phantom;
 }
 
+mlc::String variant_record_struct_inline_member_declarations(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept{
+mlc::Array<mlc::String> parts = {};
+int member_index = 0;
+while (member_index < field_definitions.size()){
+{
+mlc::String base_declaration_line = expr::struct_named_field_declaration(type_to_cpp(context, field_definitions[member_index]->typ), cpp_naming::cpp_safe(field_definitions[member_index]->name));
+mlc::String declaration_with_optional_initializer = field_definitions[member_index]->has_default_expression && record_field_default_initializer::record_field_default_expression_acceptable_for_codegen(field_definitions[member_index]->default_expression) ? base_declaration_line + mlc::String(" = ") + record_field_default_initializer::record_field_default_expression_cpp_initializer(field_definitions[member_index]->default_expression, context) : base_declaration_line;
+parts.push_back(declaration_with_optional_initializer);
+member_index = member_index + 1;
+}
+}
+return parts.join(mlc::String(""));
+}
+
 mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
   [&](const VarUnit& varunit) -> mlc::String { auto [name, _w0] = varunit; return name; },
   [&](const VarTuple& vartuple) -> mlc::String { auto [name, _w0, _w1] = vartuple; return name; },
@@ -323,17 +341,7 @@ i = i + 1;
 }
   return expr::struct_with_inline_members_definition(context::context_resolve(context, name), parts.join(mlc::String("")));
  }(); },
-  [&](const VarRecord& varrecord) -> mlc::String { auto [name, field_defs, _w0] = varrecord; return [&]() -> mlc::String { 
-  mlc::Array<mlc::String> parts = {};
-  int i = 0;
-  while (i < field_defs.size()){
-{
-parts.push_back(expr::struct_named_field_declaration(type_to_cpp(context, field_defs[i]->typ), cpp_naming::cpp_safe(field_defs[i]->name)));
-i = i + 1;
-}
-}
-  return expr::struct_with_inline_members_definition(context::context_resolve(context, name), parts.join(mlc::String("")));
- }(); }
+  [&](const VarRecord& varrecord) -> mlc::String { auto [name, field_defs, _w0] = varrecord; return expr::struct_with_inline_members_definition(context::context_resolve(context, name), variant_record_struct_inline_member_declarations(context, field_defs)); }
 }, (*variant));}
 
 mlc::String struct_extra_using(context::CodegenContext context, mlc::String type_name) noexcept{return context.struct_using_lines.has(type_name) ? [&]() -> mlc::String { 
@@ -350,17 +358,7 @@ k = k + 1;
  }() : mlc::String("");}
 
 mlc::String gen_single_variant(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> mlc::String { auto [_w0, field_defs, _w1] = varrecord; return [&]() -> mlc::String { 
-  mlc::Array<mlc::String> parts = {};
-  int i = 0;
-  while (i < field_defs.size()){
-{
-parts.push_back(expr::struct_named_field_declaration(type_to_cpp(context, field_defs[i]->typ), cpp_naming::cpp_safe(field_defs[i]->name)));
-i = i + 1;
-}
-}
-  return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), parts.join(mlc::String("")) + struct_extra_using(context, type_name));
- }(); },
+  [&](const VarRecord& varrecord) -> mlc::String { auto [_w0, field_defs, _w1] = varrecord; return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), variant_record_struct_inline_member_declarations(context, field_defs) + struct_extra_using(context, type_name)); },
   [&](const VarTuple& vartuple) -> mlc::String { auto [_w0, field_types, _w1] = vartuple; return [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int i = 0;

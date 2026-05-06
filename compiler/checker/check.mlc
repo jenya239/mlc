@@ -3,7 +3,7 @@
 import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
          Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span,
          Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span,
-         span_unknown } from "../ast"
+         span_unknown, TypeVariant } from "../ast"
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from "../ast"
 import { check_names_expr } from "./names"
 import { check_fn_body_mutations } from "./check_mutations"
@@ -14,6 +14,7 @@ import { derive_clause_diagnostics } from "./derive_validation"
 import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
 import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
+import { record_field_default_expression_acceptable_for_codegen } from "../record_field_default_initializer"
 
 fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
   let mut optional_began = false
@@ -39,6 +40,73 @@ fn default_expr_mvp_ok(e: Shared<Expr>) -> bool = match e {
   ExprChar(_, _)  => true,
   _ => false
 }
+
+fn record_field_default_value_diagnostics(
+  type_parameters: [string],
+  variants: [Shared<TypeVariant>],
+  registry: TypeRegistry
+) -> [Diagnostic] = do
+  let mut diagnostics_accumulator: [Diagnostic] = []
+  if type_parameters.length() > 0 then
+    let mut generic_variant_scan_index = 0
+    while generic_variant_scan_index < variants.length() do
+      match variants[generic_variant_scan_index] {
+        VarRecord(_, field_defs_generic_scan, _) => do
+          let mut generic_field_scan_index = 0
+          while generic_field_scan_index < field_defs_generic_scan.length() do
+            if field_defs_generic_scan[generic_field_scan_index].has_default_expression then
+              diagnostics_accumulator.push(diagnostic_error(
+                "record field default values are not supported when the type has generic parameters",
+                span_unknown()))
+            end
+            generic_field_scan_index = generic_field_scan_index + 1
+          end
+        end,
+        VarTuple(_, _, _) => (),
+        VarUnit(_, _) => (),
+      }
+      generic_variant_scan_index = generic_variant_scan_index + 1
+    end
+  end
+  const empty_record_default_environment: Map<string, Shared<Type>> = Map.new()
+  const record_default_inference_context = check_context_new(empty_record_default_environment, registry)
+  let mut literal_variant_scan_index = 0
+  while literal_variant_scan_index < variants.length() do
+    match variants[literal_variant_scan_index] {
+      VarRecord(_, field_defs_literal_scan, _) => do
+        let mut literal_field_scan_index = 0
+        while literal_field_scan_index < field_defs_literal_scan.length() do
+          if field_defs_literal_scan[literal_field_scan_index].has_default_expression then
+            const default_ast_expression = field_defs_literal_scan[literal_field_scan_index].default_expression
+            if !record_field_default_expression_acceptable_for_codegen(default_ast_expression) then
+              diagnostics_accumulator.push(diagnostic_error(
+                "record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)",
+                expr_span(default_ast_expression)))
+            else
+              const inferred_default_result = infer_expr(default_ast_expression, record_default_inference_context)
+              diagnostics_accumulator =
+                diagnostics_append(diagnostics_accumulator, inferred_default_result.errors)
+              const annotated_field_type = type_from_annotation(field_defs_literal_scan[literal_field_scan_index].typ)
+              if type_is_checkable(annotated_field_type, registry) &&
+                 type_is_checkable(inferred_default_result.inferred_type, registry) &&
+                 !types_structurally_equal(annotated_field_type, inferred_default_result.inferred_type) then
+                diagnostics_accumulator.push(diagnostic_error(
+                  "record field default type mismatch for field \"" +
+                    field_defs_literal_scan[literal_field_scan_index].name + "\"",
+                  expr_span(default_ast_expression)))
+              end
+            end
+          end
+          literal_field_scan_index = literal_field_scan_index + 1
+        end
+      end,
+      VarTuple(_, _, _) => (),
+      VarUnit(_, _) => (),
+    }
+    literal_variant_scan_index = literal_variant_scan_index + 1
+  end
+  diagnostics_accumulator
+end
 
 fn is_extern_body(e: Shared<Expr>) -> bool = match e {
   ExprExtern(_) => true,
@@ -261,6 +329,9 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         all_diagnostics = diagnostics_append(
           all_diagnostics,
           derive_clause_diagnostics(type_parameters, variants, derive_trait_names, span_unknown()))
+        all_diagnostics = diagnostics_append(
+          all_diagnostics,
+          record_field_default_value_diagnostics(type_parameters, variants, registry))
         ()
       end,
       DeclTrait(_, _, _)   => do () end,

@@ -29,14 +29,35 @@ module MLC
                            context.map_type(node.type)
                          end
 
-              # Recursively lower each field value
-              args = node.fields.values.map { |value| lower_expression(value) }
+              type_base_name = node.type_name.to_s.split("<").first
+              type_entry = context.type_registry.lookup(type_base_name)
+              record_fields_list = type_entry&.record? ? Array(type_entry.fields) : []
+              has_field_default_in_declaration = record_fields_list.any? { |field_row| field_row[:default] }
+              known_record_shape = type_entry&.record? && !record_fields_list.empty?
 
-              # Generate brace initializer: Point{x_val, y_val}
+              literal_covers_all_declared_fields =
+                known_record_shape && node.fields.size == record_fields_list.size
+
+              use_designated_initializers =
+                !node.type_name.to_s.start_with?("__anon_record") &&
+                known_record_shape &&
+                (has_field_default_in_declaration || !literal_covers_all_declared_fields)
+
+              field_arguments =
+                if use_designated_initializers
+                  node.fields.map do |field_name, value|
+                    lowered_value = lower_expression(value)
+                    field_cpp_name = context.sanitize_identifier(field_name.to_s)
+                    context.factory.raw_expression(code: ".#{field_cpp_name} = #{lowered_value.to_source}")
+                  end
+                else
+                  node.fields.values.map { |value| lower_expression(value) }
+                end
+
               context.factory.brace_initializer(
                 type: type_str,
-                arguments: args,
-                argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
+                arguments: field_arguments,
+                argument_separators: field_arguments.size > 1 ? Array.new(field_arguments.size - 1, ", ") : []
               )
             end
           end

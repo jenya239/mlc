@@ -15,6 +15,8 @@ struct Stmt;
 struct SExpr;
 struct SStmt;
 
+mlc::Array<std::shared_ptr<ast::FieldVal>> merge_explicit_record_literal_with_type_defaults(mlc::String nominal_record_name, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_fields_flat, registry::TypeRegistry registry) noexcept;
+
 mlc::Array<std::shared_ptr<ast::FieldVal>> collect_explicit_field_values_flat(mlc::Array<ast::RecordLitPart> parts) noexcept;
 
 bool record_literal_contains_spread(mlc::Array<ast::RecordLitPart> parts) noexcept;

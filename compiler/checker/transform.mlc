@@ -562,6 +562,11 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
           record_lit_merge.merge_record_literal_parts_to_field_values(
             type_name, lit_parts, transform_context.registry, spread_types_for_merge)
       end
+      merged_field_values_for_transform =
+        record_lit_merge.merge_explicit_record_literal_with_type_defaults(
+          type_name,
+          merged_field_values_for_transform,
+          transform_context.registry)
       const typed_fields = transform_field_vals(merged_field_values_for_transform, transform_context, stmts_fn)
       const phantom = transform_context.registry.phantom_type_params_for(type_name)
       const all_params = transform_context.registry.algebraic_decl_type_parameter_names_for(type_name)
