@@ -87,6 +87,35 @@
 
 ---
 
+## E6 — частичное применение `_`
+
+### Эталон (Ruby)
+
+- Лексер: `_` в выражении — идентификатор `"_"` (`VarRef`).
+- Десахар до вывода типов / lowering: вызовы `Call` (и при необходимости `SafeCall`) с прямым аргументом `_` заменяются на `Lambda` с телом — тот же вызов, где каждая дыра подставлена свежим параметром (`lib/mlc/representations/semantic/gen/services/features/partial_application_desugar.rb`, вызывается из `ExpressionVisitor#visit`).
+- Семантика совпадает с правилами § E6 в `docs/MLC.md`.
+
+### Self-hosted (mlcc)
+
+- Десахар после парса, до `check_names` / `infer_expr` и повторно на входе `transform_expr`: `compiler/checker/partial_application_desugar.mlc`, функция `partial_application_desugar_expr`.
+- AST: дыры остаются как `ExprIdent("_", …)` до трансформации; результат — `ExprLambda` с телом `ExprCall` / `ExprMethod`.
+
+### Файлы для правок
+
+| Назначение | Путь |
+|------------|------|
+| Ruby: обход AST и построение лямбды | `lib/mlc/representations/semantic/gen/services/features/partial_application_desugar.rb` |
+| Ruby: точка входа | `lib/mlc/representations/semantic/gen/visitors/expression_visitor.rb` |
+| mlcc: десахар | `compiler/checker/partial_application_desugar.mlc` |
+| mlcc: checker / IR | `compiler/checker/check.mlc`, `compiler/checker/transform.mlc` |
+
+### Тесты
+
+- Ruby: `test/mlc/partial_application_test.rb`, при необходимости `test/mlc/representations/semantic/gen/engine_test.rb`.
+- mlcc: `compiler/tests/test_checker.mlc`, `compiler/tests/test_parser.mlc`.
+
+---
+
 ## Прочее
 
 - В импортах MLC **не ставить завершающую запятую** в списке символов в фигурных скобках `{ … }` — Ruby-парсер bootstrap даёт ошибку (`Expected IDENTIFIER, got RBRACE`).

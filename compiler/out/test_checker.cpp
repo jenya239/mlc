@@ -251,6 +251,8 @@ mlc::String codegen_invariant_twin_if_zip_join_style = mlc::String("export fn tw
 results.push_back(test_runner::assert_eq_int(mlc::String("codegen invariant: sequential if branches (zip/join shape) — 0 errors"), check_error_count(codegen_invariant_twin_if_zip_join_style), 0));
 mlc::String codegen_invariant_if_else_flattened = mlc::String("fn merge_unknown_inner(then_inner: i32, else_errors: i32) -> i32 = do\n  if then_inner == 0 then else_errors + 10\n  else then_inner + else_errors\n  end\nend\n\nexport fn conditional_flat(use_merge: bool, then_inner: i32, else_errors: i32) -> i32 = do\n  if !use_merge then else_errors\n  else merge_unknown_inner(then_inner, else_errors)\n  end\nend\n\nexport fn main() -> i32 = conditional_flat(true, 0, 5)");
 results.push_back(test_runner::assert_eq_int(mlc::String("codegen invariant: if + else calls helper (flattened match shape) — 0 errors"), check_error_count(codegen_invariant_if_else_flattened), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("E6 partial application: let-bound thunk call — 0 errors"), check_error_count(mlc::String("fn add_numbers(left: i32, right: i32) -> i32 = left + right\nfn main() -> i32 = do\n  let bound = add_numbers(10, _)\n  bound(3)\nend")), 0));
+results.push_back(test_runner::assert_true(mlc::String("E6 bare underscore expression — error"), check_error_count(mlc::String("fn main() -> i32 = _")) > 0));
 return results;
 }
 

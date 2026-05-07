@@ -23,6 +23,7 @@
 #include "infer_array_method.hpp"
 #include "infer_result_option_method.hpp"
 #include "record_lit_merge.hpp"
+#include "partial_application_desugar.hpp"
 
 namespace infer {
 

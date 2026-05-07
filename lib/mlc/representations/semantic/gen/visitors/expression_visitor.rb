@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../services/features/partial_application_desugar'
+
 module MLC
   module Representations
     module Semantic
@@ -12,6 +14,7 @@ module MLC
               @rule_engine = engine.rule_engine
               @services = engine.services
               @statement_visitor = nil
+              @partial_application_serial = [0]
             end
 
             attr_writer :statement_visitor
@@ -19,6 +22,12 @@ module MLC
             def visit(node, extra_context = {})
               svc = @services.ast_type_checker
               return nil unless node
+
+              node = Services::Features::PartialApplicationDesugar.rewrite(
+                node,
+                factory: @services.ast_factory,
+                serial: @partial_application_serial
+              )
 
               return build_block_from_statements(node, extra_context) if node.is_a?(MLC::Source::AST::Block)
               return desugar_string_interpolation(node, extra_context) if svc.string_interpolation?(node)

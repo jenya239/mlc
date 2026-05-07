@@ -12,6 +12,7 @@
 #include "check_context.hpp"
 #include "semantic_type_structure.hpp"
 #include "record_field_default_initializer.hpp"
+#include "partial_application_desugar.hpp"
 
 namespace check {
 
@@ -27,6 +28,7 @@ using namespace infer;
 using namespace check_context;
 using namespace semantic_type_structure;
 using namespace record_field_default_initializer;
+using namespace partial_application_desugar;
 using namespace ast_tokens;
 
 bool param_defaults_in_tail(mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
@@ -374,10 +376,11 @@ type_environment.set(ast::param_name(parameters[parameter_index]), registry::typ
 parameter_index = parameter_index + 1;
 }
 }
-  all_diagnostics = ast::diagnostics_append(all_diagnostics, names::check_names_expr(body, locals, globals));
-  all_diagnostics = ast::diagnostics_append(all_diagnostics, check_mutations::check_fn_body_mutations(parameters, body));
+  std::shared_ptr<ast::Expr> body_partial_application = partial_application_desugar::partial_application_desugar_expr(body);
+  all_diagnostics = ast::diagnostics_append(all_diagnostics, names::check_names_expr(body_partial_application, locals, globals));
+  all_diagnostics = ast::diagnostics_append(all_diagnostics, check_mutations::check_fn_body_mutations(parameters, body_partial_application));
   check_context::CheckContext inference_context = check_context::check_context_new(type_environment, registry);
-  infer_result::InferResult inference_result = infer::infer_expr(body, inference_context);
+  infer_result::InferResult inference_result = infer::infer_expr(body_partial_application, inference_context);
   std::shared_ptr<registry::Type> expected_type = registry::type_from_annotation(return_type_annotation);
   std::shared_ptr<registry::Type> actual_type = inference_result.inferred_type;
   mlc::Array<ast::Diagnostic> return_type_errors = type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !semantic_type_structure::types_structurally_equal(expected_type, actual_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("return type: expected ") + semantic_type_structure::type_description(expected_type) + mlc::String(", got ") + semantic_type_structure::type_description(actual_type), ast::expr_span(body))} : mlc::Array<ast::Diagnostic>{};

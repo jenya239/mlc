@@ -21,6 +21,7 @@ import { substitute_type } from "./semantic_type_structure"
 import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
 import * as record_lit_merge from "./record_lit_merge"
+import { partial_application_desugar_expr } from "./partial_application_desugar"
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprArray, SExprIf, SExprBlock, SExprBool } from "../semantic_ir"
 
 fn coerce_unknown_else_array_when_then_known_inner(
@@ -362,8 +363,9 @@ end
 
 // --- Expression transform ---------------------------------------------------
 
-export fn transform_expr(expression: Shared<Expr>, transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SExpr> =
-  match expression {
+export fn transform_expr(expression: Shared<Expr>, transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SExpr> = do
+  const expression_partial_application = partial_application_desugar_expr(expression)
+  match expression_partial_application {
     ExprInt(value, source_span) =>
       Shared.new(SExprInt(value, Shared.new(TI32), source_span)),
 
@@ -644,4 +646,5 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     _ => Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
   }
+end
 

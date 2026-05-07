@@ -19,6 +19,7 @@ import { infer_let_pattern_env } from "./let_pattern_infer"
 import { infer_array_hof_method_call, should_infer_as_array_hof } from "./infer_array_method"
 import { infer_result_option_hof_method_call, should_infer_as_result_option_hof } from "./infer_result_option_method"
 import * as record_lit_merge from "./record_lit_merge"
+import { partial_application_desugar_expr } from "./partial_application_desugar"
 
 // --- Argument / field-value error accumulators ------------------------------
 
@@ -241,7 +242,8 @@ end
 // --- Dispatcher -------------------------------------------------------------
 
 export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
-  match expression {
+  const expression_partial_application = partial_application_desugar_expr(expression)
+  match expression_partial_application {
     ExprInt(_, _)                           => infer_literal_helpers.infer_expr_integer_literal(),
     ExprStr(_, _)                           => infer_literal_helpers.infer_expr_string_literal(),
     ExprBool(_, _)                          => infer_literal_helpers.infer_expr_boolean_literal(),

@@ -14,6 +14,7 @@
 #include "infer.hpp"
 #include "check_context.hpp"
 #include "record_lit_merge.hpp"
+#include "partial_application_desugar.hpp"
 #include "semantic_ir.hpp"
 
 namespace transform {

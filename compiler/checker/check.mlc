@@ -15,6 +15,7 @@ import { infer_expr } from "./infer"
 import { check_context_new } from "./check_context"
 import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
 import { record_field_default_expression_acceptable_for_codegen } from "../record_field_default_initializer"
+import { partial_application_desugar_expr } from "./partial_application_desugar"
 
 fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
   let mut optional_began = false
@@ -309,10 +310,11 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
           type_environment.set(param_name(parameters[parameter_index]), type_from_annotation(param_typ(parameters[parameter_index])))
           parameter_index = parameter_index + 1
         end
-        all_diagnostics = diagnostics_append(all_diagnostics, check_names_expr(body, locals, globals))
-        all_diagnostics = diagnostics_append(all_diagnostics, check_fn_body_mutations(parameters, body))
+        const body_partial_application = partial_application_desugar_expr(body)
+        all_diagnostics = diagnostics_append(all_diagnostics, check_names_expr(body_partial_application, locals, globals))
+        all_diagnostics = diagnostics_append(all_diagnostics, check_fn_body_mutations(parameters, body_partial_application))
         const inference_context = check_context_new(type_environment, registry)
-        const inference_result = infer_expr(body, inference_context)
+        const inference_result = infer_expr(body_partial_application, inference_context)
         const expected_type = type_from_annotation(return_type_annotation)
         const actual_type = inference_result.inferred_type
         const return_type_errors: [Diagnostic] =

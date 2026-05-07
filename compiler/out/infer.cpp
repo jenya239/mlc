@@ -19,6 +19,7 @@
 #include "infer_array_method.hpp"
 #include "infer_result_option_method.hpp"
 #include "record_lit_merge.hpp"
+#include "partial_application_desugar.hpp"
 
 namespace infer {
 
@@ -41,6 +42,7 @@ using namespace let_pattern_infer;
 using namespace infer_array_method;
 using namespace infer_result_option_method;
 using namespace record_lit_merge;
+using namespace partial_application_desugar;
 using namespace ast_tokens;
 
 infer_result::InferResult infer_arguments_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept;
@@ -247,6 +249,7 @@ return infer_result::infer_ok(std::make_shared<registry::Type>(registry::TFn(par
 }
 
 infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept{
+std::shared_ptr<ast::Expr> expression_partial_application = partial_application_desugar::partial_application_desugar_expr(expression);
 return std::visit(overloaded{
   [&](const ExprInt& exprint) -> infer_result::InferResult { auto [_w0, _w1] = exprint; return infer_literals::infer_expr_integer_literal(); },
   [&](const ExprStr& exprstr) -> infer_result::InferResult { auto [_w0, _w1] = exprstr; return infer_literals::infer_expr_string_literal(); },
@@ -278,7 +281,7 @@ return std::visit(overloaded{
   [&](const ExprLambda& exprlambda) -> infer_result::InferResult { auto [params, body, _w0] = exprlambda; return infer_expr_lambda(params, body, inference_context); },
   [&](const ExprNamedArg& exprnamedarg) -> infer_result::InferResult { auto [_w0, inner, _w1] = exprnamedarg; return infer_expr(inner, inference_context); },
   [&](const ExprWith& exprwith) -> infer_result::InferResult { auto [resource, binder, stmts, _w0] = exprwith; return infer_expr_with(resource, binder, stmts, inference_context); }
-}, (*expression)._);
+}, (*expression_partial_application)._);
 }
 
 infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<ast::RecordLitPart> lit_parts, check_context::CheckContext inference_context, ast::Span span) noexcept{
