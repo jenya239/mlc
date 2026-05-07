@@ -3,107 +3,105 @@
 // Export names must not collide with other compiler modules (single global symbol namespace).
 
 export fn parenthesized_binary(left_code: string, operation: string, right_code: string) -> string =
-  "(" + left_code + " " + operation + " " + right_code + ")"
+  `(${left_code} ${operation} ${right_code})`
 
 export fn parenthesized_unary(operation: string, inner_code: string) -> string =
-  "(" + operation + inner_code + ")"
+  `(${operation}${inner_code})`
 
 export fn ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
-  "(" + condition_code + ' ? (' + then_code + ') : (' + else_code + '))'
+  `(${condition_code} ? (${then_code}) : (${else_code}))`
 
 export fn index_subscript(object_code: string, index_code: string) -> string =
-  object_code + "[" + index_code + "]"
+  `${object_code}[${index_code}]`
 
 export fn array_literal(argument_list: string) -> string =
-  if argument_list.length() == 0 then '{}' else 'mlc::Array{' + argument_list + "\}" end
+  if argument_list.length() == 0 then '{}' else `mlc::Array{${argument_list}}` end
 
 export fn question_try_result(inner_code: string) -> string =
-  '({ auto __q = ' + inner_code + '; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })'
+  `({ auto __q = ${inner_code}; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })`
 
 export fn block_as_immediate_invoked_function_expression(body_statements_and_return: string) -> string =
-  '[&]() {\n' + body_statements_and_return + '}()'
+  `[&]() {\n${body_statements_and_return}}()`
 
 export fn while_loop_immediate_invoked_function_expression(condition_code: string, body_statements: string) -> string =
-  '[&]() {\nwhile (' + condition_code + ') {\n' + body_statements + '}\n}()'
+  `[&]() {\nwhile (${condition_code}) {\n${body_statements}}\n}()`
 
 export fn for_loop_immediate_invoked_function_expression(
   variable_cpp_safe: string,
   iterator_code: string,
   body_statements: string
 ) -> string =
-  '[&]() {\nfor (auto ' + variable_cpp_safe + ' : ' + iterator_code + ') {\n' + body_statements + '}\n}()'
+  `[&]() {\nfor (auto ${variable_cpp_safe} : ${iterator_code}) {\n${body_statements}}\n}()`
 
 export fn std_visit_match_expression(arm_lambdas: string, visit_subject: string) -> string =
-  'std::visit(overloaded{' + arm_lambdas + '\n}, ' + visit_subject + ")"
+  `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
 
 export fn match_arm_wild_or_unit_return(return_expression_code: string) -> string =
-  '[&](const auto& __v) { return ' + return_expression_code + '; }'
+  `[&](const auto& __v) { return ${return_expression_code}; }`
 
 export fn match_arm_binding_identifier(parameter_cpp_safe: string, return_expression_code: string) -> string =
-  '[&](const auto& ' + parameter_cpp_safe + ') { return ' + return_expression_code + '; }'
+  `[&](const auto& ${parameter_cpp_safe}) { return ${return_expression_code}; }`
 
 export fn match_arm_constructed_value(
   const_reference_parameter: string,
   binding_prefix: string,
   return_expression_code: string
 ) -> string =
-  '[&](' + const_reference_parameter + ') { ' + binding_prefix + 'return ' + return_expression_code + '; }'
+  `[&](${const_reference_parameter}) { ${binding_prefix}return ${return_expression_code}; }`
 
 export fn record_initializer(type_resolved: string, values_comma_separated: string) -> string =
-  type_resolved + "\{" + values_comma_separated + "\}"
+  `${type_resolved}{${values_comma_separated}}`
 
 export fn record_update_lazy_closure(initializer_and_assignments: string) -> string =
-  '[&]() { ' + initializer_and_assignments + 'return __upd; }()'
+  `[&]() { ${initializer_and_assignments}return __upd; }()`
 
 export fn function_call_parentheses(callee_code: string, argument_list: string) -> string =
-  callee_code + "(" + argument_list + ")"
+  `${callee_code}(${argument_list})`
 
 export fn constructor_call_braces(constructor_code: string, argument_list: string) -> string =
-  constructor_code + "\{" + argument_list + "\}"
+  `${constructor_code}{${argument_list}}`
 
 export fn field_access(object_code: string, access_operator: string, field_cpp_safe: string) -> string =
-  object_code + access_operator + field_cpp_safe
+  `${object_code}${access_operator}${field_cpp_safe}`
 
 export fn lambda_with_return(header_code: string, return_expression_code: string) -> string =
-  header_code + ' { return ' + return_expression_code + '; }'
+  `${header_code} { return ${return_expression_code}; }`
 
 export fn assignment_statement(left_code: string, right_code: string) -> string =
-  left_code + ' = ' + right_code + ';\n'
+  `${left_code} = ${right_code};\n`
 
 export fn expression_operation_statement(operation: string, left_code: string, right_code: string) -> string =
-  "(" + left_code + " " + operation + " " + right_code + ');\n'
+  `(${left_code} ${operation} ${right_code});\n`
 
 export fn suffix_semicolon_newline(expression_code: string) -> string =
-  expression_code + ';\n'
+  `${expression_code};\n`
 
 export fn try_unwrap_result_block(result_variable: string, inner_code: string, success_line: string) -> string =
-  'auto ' + result_variable + ' = ' + inner_code + ';\n' +
-  'if (std::get_if<1>(&' + result_variable + ')) return *std::get_if<1>(&' + result_variable + ');\n' +
-  success_line
+  `auto ${result_variable} = ${inner_code};\nif (std::get_if<1>(&${result_variable})) return *std::get_if<1>(&${result_variable});\n${success_line}`
 
 export fn auto_binding_statement(binding_cpp_safe: string, value_code: string) -> string =
-  'auto ' + binding_cpp_safe + ' = ' + value_code + ';\n'
+  `auto ${binding_cpp_safe} = ${value_code};\n`
 
 export fn constexpr_auto_binding_statement(binding_cpp_safe: string, value_code: string) -> string =
-  'constexpr auto ' + binding_cpp_safe + ' = ' + value_code + ';\n'
+  `constexpr auto ${binding_cpp_safe} = ${value_code};\n`
 
 export fn return_line(expression_code: string) -> string =
-  'return ' + expression_code + ';\n'
+  `return ${expression_code};\n`
 
 export fn if_brace_block(condition_code: string, inner_statements: string) -> string =
-  'if (' + condition_code + ') {\n' + inner_statements + "\}"
+  `if (${condition_code}) {\n${inner_statements}}`
 
 export fn else_brace_block(inner_statements: string) -> string =
-  ' else {\n' + inner_statements + "\}"
+  ` else {\n${inner_statements}}`
 
 export fn else_fragment_raw(raw_else_suffix: string) -> string =
-  ' else ' + raw_else_suffix
+  ` else ${raw_else_suffix}`
 
 export fn while_loop_statement(condition_code: string, body_statements: string) -> string =
-  'while (' + condition_code + ') {\n' + body_statements + '}\n'
+  `while (${condition_code}) {\n${body_statements}}\n`
 
 export fn for_loop_statement(variable_cpp_safe: string, iterator_code: string, body_statements: string) -> string =
-  'for (auto ' + variable_cpp_safe + ' : ' + iterator_code + ') {\n' + body_statements + '}\n'
+  `for (auto ${variable_cpp_safe} : ${iterator_code}) {\n${body_statements}}\n`
 
 export fn break_line() -> string =
   'break;\n'
@@ -112,64 +110,64 @@ export fn continue_line() -> string =
   'continue;\n'
 
 export fn let_from_try_ok_field0(binding_cpp_safe: string, try_variable: string) -> string =
-  'auto ' + binding_cpp_safe + ' = std::get<0>(' + try_variable + ').field0;\n'
+  `auto ${binding_cpp_safe} = std::get<0>(${try_variable}).field0;\n`
 
 export fn discard_try_ok_field0_statement(try_variable: string) -> string =
-  '/* discard */ (void)std::get<0>(' + try_variable + ').field0;\n'
+  `/* discard */ (void)std::get<0>(${try_variable}).field0;\n`
 
 export fn return_try_ok_field0_statement(try_variable: string) -> string =
-  'return std::get<0>(' + try_variable + ').field0;\n'
+  `return std::get<0>(${try_variable}).field0;\n`
 
 export fn if_always_true_block(inner_statements: string) -> string =
-  'if (true) {\n' + inner_statements + '}\n'
+  `if (true) {\n${inner_statements}}\n`
 
 export fn fragment_with_newline(fragment: string) -> string =
-  fragment + "\n"
+  `${fragment}\n`
 
 export fn tuple_destructure_binding(binding_names_csv: string, source_name: string) -> string =
-  'auto [' + binding_names_csv + '] = ' + source_name + '; '
+  `auto [${binding_names_csv}] = ${source_name}; `
 
 export fn record_pattern_field_binding(field_cpp_safe: string, variant_lower_name: string) -> string =
-  'const auto& ' + field_cpp_safe + ' = ' + variant_lower_name + "." + field_cpp_safe + '; '
+  `const auto& ${field_cpp_safe} = ${variant_lower_name}.${field_cpp_safe}; `
 
 export fn record_update_base_prefix(expression_code: string) -> string =
-  'auto __upd = ' + expression_code + '; '
+  `auto __upd = ${expression_code}; `
 
 export fn mutable_member_assignment(receiver: string, member_cpp_safe: string, value_code: string) -> string =
-  receiver + "." + member_cpp_safe + ' = ' + value_code + '; '
+  `${receiver}.${member_cpp_safe} = ${value_code}; `
 
 export fn pointer_dereference_parenthesized(expression_code: string) -> string =
-  '(*' + expression_code + ")"
+  `(*${expression_code})`
 
 export fn visit_subject_for_match(expression_code: string, needs_dereference: bool) -> string =
   if needs_dereference then pointer_dereference_parenthesized(expression_code) else expression_code end
 
 export fn make_shared_call(element_type: string, argument_code: string) -> string =
-  'std::make_shared<' + element_type + '>(' + argument_code + ")"
+  `std::make_shared<${element_type}>(${argument_code})`
 
 export fn runtime_to_string_call(expression_code: string) -> string =
-  'mlc::to_string(' + expression_code + ")"
+  `mlc::to_string(${expression_code})`
 
 export fn empty_map_initializer() -> string =
   '{}'
 
 export fn block_immediate_function_return_fragment(return_expression_code: string) -> string =
-  'return ' + return_expression_code + ';\n'
+  `return ${return_expression_code};\n`
 
 export fn append_trailing_expression_statement(statements_code: string, expression_code: string) -> string =
-  statements_code + expression_code + ';\n'
+  `${statements_code}${expression_code};\n`
 
 export fn hash_map_empty_instantiation(key_type_cpp: string, value_type_cpp: string) -> string =
-  'mlc::HashMap<' + key_type_cpp + ', ' + value_type_cpp + '>()'
+  `mlc::HashMap<${key_type_cpp}, ${value_type_cpp}>()`
 
 export fn typed_array_empty(element_type_cpp: string) -> string =
-  'mlc::Array<' + element_type_cpp + '>{}'
+  `mlc::Array<${element_type_cpp}>{}`
 
 export fn typed_array_empty_or_untyped_empty(element_type_cpp: string) -> string =
   if element_type_cpp == 'auto' then '{}' else typed_array_empty(element_type_cpp) end
 
 export fn typed_array_braced_initializer(element_type_cpp: string, comma_separated_elements: string) -> string =
-  'mlc::Array<' + element_type_cpp + '>{' + comma_separated_elements + "\}"
+  `mlc::Array<${element_type_cpp}>{${comma_separated_elements}}`
 
 export fn array_string_fallback_empty() -> string =
   'mlc::Array<mlc::String>{}'
@@ -179,13 +177,13 @@ export fn match_lambda_const_reference_parameter(
   generic_angle_bracket_argument: string,
   binding_name_cpp_safe: string
 ) -> string =
-  'const ' + resolved_type_name + generic_angle_bracket_argument + '& ' + binding_name_cpp_safe
+  `const ${resolved_type_name}${generic_angle_bracket_argument}& ${binding_name_cpp_safe}`
 
 export fn dot_member_access(receiver_code: string, member_code: string) -> string =
-  receiver_code + "." + member_code
+  `${receiver_code}.${member_code}`
 
 export fn comma_separated_pair(first_code: string, second_code: string) -> string =
-  first_code + ', ' + second_code
+  `${first_code}, ${second_code}`
 
 export fn prefix_with_optional_suffix(prefix: string, optional_suffix: string) -> string =
   if optional_suffix.length() > 0 then prefix + optional_suffix else prefix end
@@ -194,10 +192,10 @@ export fn main_program_parameter_list() -> string =
   'int argc, char** argv'
 
 export fn noexcept_function_prototype(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
-  return_type_cpp + " " + name_cpp + "(" + parameter_list + ') noexcept;\n'
+  `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept;\n`
 
 export fn noexcept_function_body_open(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
-  return_type_cpp + " " + name_cpp + "(" + parameter_list + ') noexcept{\n'
+  `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept{\n`
 
 export fn inline_noexcept_forwarding_call(
   return_type_cpp: string,
@@ -206,8 +204,7 @@ export fn inline_noexcept_forwarding_call(
   callee_code: string,
   call_argument_list: string
 ) -> string =
-  'inline ' + return_type_cpp + " " + method_name_cpp + "(" + parameter_list +
-  ') noexcept { return ' + callee_code + "(" + call_argument_list + '); }\n'
+  `inline ${return_type_cpp} ${method_name_cpp}(${parameter_list}) noexcept { return ${callee_code}(${call_argument_list}); }\n`
 
 export fn noexcept_one_line_returning_function(
   return_type_cpp: string,
@@ -215,10 +212,10 @@ export fn noexcept_one_line_returning_function(
   parameter_list: string,
   return_expression_code: string
 ) -> string =
-  return_type_cpp + " " + name_cpp + "(" + parameter_list + ') noexcept { return ' + return_expression_code + '; }\n'
+  `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept { return ${return_expression_code}; }\n`
 
 export fn parameter_declaration_item(type_expression_cpp: string, binding_name_cpp: string) -> string =
-  type_expression_cpp + " " + binding_name_cpp
+  `${type_expression_cpp} ${binding_name_cpp}`
 
 export fn block_close_newline() -> string =
   '}\n'
@@ -226,54 +223,54 @@ export fn block_close_newline() -> string =
 // --- C++ type spelling (no CodegenContext; callers pass resolved names / inner spellings)
 
 export fn cpp_array_type_element(inner_type_cpp: string) -> string =
-  'mlc::Array<' + inner_type_cpp + ">"
+  `mlc::Array<${inner_type_cpp}>`
 
 export fn cpp_shared_pointer_type(inner_type_cpp: string) -> string =
-  'std::shared_ptr<' + inner_type_cpp + ">"
+  `std::shared_ptr<${inner_type_cpp}>`
 
 export fn cpp_template_single_type_argument(template_name_cpp: string, type_argument_cpp: string) -> string =
-  template_name_cpp + "<" + type_argument_cpp + ">"
+  `${template_name_cpp}<${type_argument_cpp}>`
 
 export fn cpp_template_two_type_arguments(
   template_name_cpp: string,
   first_type_argument_cpp: string,
   second_type_argument_cpp: string
 ) -> string =
-  template_name_cpp + "<" + comma_separated_pair(first_type_argument_cpp, second_type_argument_cpp) + ">"
+  `${template_name_cpp}<${comma_separated_pair(first_type_argument_cpp, second_type_argument_cpp)}>`
 
 export fn cpp_std_function_type(return_type_cpp: string, parameter_types_csv: string) -> string =
-  'std::function<' + return_type_cpp + "(" + parameter_types_csv + ')>'
+  `std::function<${return_type_cpp}(${parameter_types_csv})>`
 
 export fn cpp_lvalue_reference_suffix(inner_type_cpp: string) -> string =
-  inner_type_cpp + "&"
+  `${inner_type_cpp}&`
 
 export fn struct_empty_definition(resolved_struct_name: string) -> string =
-  'struct ' + resolved_struct_name + ' {};\n'
+  `struct ${resolved_struct_name} {};\n`
 
 export fn struct_with_inline_members_definition(resolved_struct_name: string, member_declarations_concatenated: string) -> string =
-  'struct ' + resolved_struct_name + ' {' + member_declarations_concatenated + '};\n'
+  `struct ${resolved_struct_name} {${member_declarations_concatenated}};\n`
 
 export fn struct_forward_declaration_line(template_prefix_before_keyword: string, resolved_struct_name: string) -> string =
-  template_prefix_before_keyword + 'struct ' + resolved_struct_name + ';\n'
+  `${template_prefix_before_keyword}struct ${resolved_struct_name};\n`
 
 export fn variant_using_alias_definition_line(
   template_prefix_before_using: string,
   resolved_alias_name: string,
   variant_alternatives_csv: string
 ) -> string =
-  template_prefix_before_using + 'using ' + resolved_alias_name + ' = std::variant<' + variant_alternatives_csv + '>;\n'
+  `${template_prefix_before_using}using ${resolved_alias_name} = std::variant<${variant_alternatives_csv}>;\n`
 
 export fn concept_requires_clause_line(requires_predicates_joined: string) -> string =
-  'requires ' + requires_predicates_joined + "\n"
+  `requires ${requires_predicates_joined}\n`
 
 export fn concept_trait_constraint_on_type_parameter(trait_name_cpp_safe: string, type_parameter_name: string) -> string =
-  trait_name_cpp_safe + "<" + type_parameter_name + ">"
+  `${trait_name_cpp_safe}<${type_parameter_name}>`
 
 export fn struct_tuple_field_declaration(element_type_cpp: string, field_index_text: string) -> string =
-  element_type_cpp + ' field' + field_index_text + ";"
+  `${element_type_cpp} field${field_index_text};`
 
 export fn struct_named_field_declaration(field_type_cpp: string, field_name_cpp_safe: string) -> string =
-  field_type_cpp + " " + field_name_cpp_safe + ";"
+  `${field_type_cpp} ${field_name_cpp_safe};`
 
 // --- Header / module shell (no traversal)
 
@@ -281,44 +278,34 @@ export fn standard_translation_unit_runtime_headers() -> string =
   '#include "mlc.hpp"\n#include <variant>\n\n'
 
 export fn include_guard_ifndef_line(guard_macro: string) -> string =
-  '#ifndef ' + guard_macro + "\n"
+  `#ifndef ${guard_macro}\n`
 
 export fn include_guard_define_line(guard_macro: string) -> string =
-  '#define ' + guard_macro + "\n"
+  `#define ${guard_macro}\n`
 
 export fn include_guard_endif_comment_line(guard_macro: string) -> string =
-  '#endif // ' + guard_macro + "\n"
+  `#endif // ${guard_macro}\n`
 
 export fn namespace_open_line(namespace_identifier: string) -> string =
-  'namespace ' + namespace_identifier + ' {\n'
+  `namespace ${namespace_identifier} {\n`
 
 export fn namespace_close_comment_line(namespace_identifier: string) -> string =
-  '} // namespace ' + namespace_identifier + "\n"
+  `} // namespace ${namespace_identifier}\n`
 
 export fn implementation_define_main_as_user_main_line() -> string =
   '#define main mlc_user_main\n'
 
 export fn implementation_include_quotefile_line(header_filename: string) -> string =
-  '#include "' + header_filename + '"\n'
+  `#include "${header_filename}"\n`
 
 export fn bootstrap_host_main_calling_namespaced_user_main(qualified_namespace: string) -> string =
-  '\n#undef main\n\n' +
-  'static void mlc_cli_set_args(int argc, char** argv) {\n' +
-  '  std::vector<mlc::String> arguments;\n' +
-  '  arguments.reserve(argc > 0 ? argc - 1 : 0);\n' +
-  '  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n' +
-  '  mlc::io::set_args(std::move(arguments));\n' +
-  '}\n\n' +
-  'int main(int argc, char** argv) {\n' +
-  '  mlc_cli_set_args(argc, argv);\n' +
-  '  return ::' + qualified_namespace + '::mlc_user_main(argc, argv);\n' +
-  '}\n'
+  `\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::${qualified_namespace}::mlc_user_main(argc, argv);\n}\n`
 
 export fn cpp_template_typename_header_line(template_parameter_list: string) -> string =
-  'template<typename ' + template_parameter_list + '>\n'
+  `template<typename ${template_parameter_list}>\n`
 
 export fn concept_requires_expression_method_returns_convertible(method_name: string, destination_type_cpp: string) -> string =
-  '{ ' + method_name + '(self) } -> std::convertible_to<' + destination_type_cpp + ">"
+  `{ ${method_name}(self) } -> std::convertible_to<${destination_type_cpp}>`
 
 export fn trait_concept_requires_definition_line(
   template_header: string,
@@ -326,8 +313,7 @@ export fn trait_concept_requires_definition_line(
   self_parameter_name: string,
   requires_expressions_semicolon_separated: string
 ) -> string =
-  template_header + 'concept ' + trait_cpp_safe + ' = requires(const ' + self_parameter_name +
-  '& self) { ' + requires_expressions_semicolon_separated + '; };\n'
+  `${template_header}concept ${trait_cpp_safe} = requires(const ${self_parameter_name}& self) { ${requires_expressions_semicolon_separated}; };\n`
 
 export fn user_main_arguments_copy_into_runtime_statement() -> string =
   'mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n'
@@ -337,9 +323,7 @@ export fn static_assert_concept_for_type_line(
   type_cpp: string,
   diagnostic_message_inside_cpp_string_literal: string
 ) -> string =
-  'static_assert(' + concept_cpp_safe + "<" + type_cpp + '>, "' +
-  diagnostic_message_inside_cpp_string_literal + '");\n'
+  `static_assert(${concept_cpp_safe}<${type_cpp}>, "${diagnostic_message_inside_cpp_string_literal}");\n`
 
 export fn with_block_statement(resource_code: string, binder: string, body_statements: string) -> string =
-  '{\nauto ' + binder + ' = (' + resource_code + ');\n' + body_statements + binder + '.drop();\n}\n'
-
+  `{\nauto ${binder} = (${resource_code});\n${body_statements}${binder}.drop();\n}\n`
