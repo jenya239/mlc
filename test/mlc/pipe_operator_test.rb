@@ -68,6 +68,78 @@ class PipeOperatorTest < Minitest::Test
     assert_equal "add", body.right.callee.name
   end
 
+  def test_parse_pipe_logical_or_binds_looser_than_pipe
+    source = <<~MLC
+      fn f() -> i32 =
+        a || b |> c
+    MLC
+
+    ast = MLC.parse(source)
+    body = ast.declarations.first.body
+
+    assert_equal "||", body.op
+    assert_instance_of MLC::Source::AST::VarRef, body.left
+    assert_equal "a", body.left.name
+    inner = body.right
+    assert_equal "|>", inner.op
+    assert_instance_of MLC::Source::AST::VarRef, inner.left
+    assert_equal "b", inner.left.name
+    assert_instance_of MLC::Source::AST::VarRef, inner.right
+    assert_equal "c", inner.right.name
+  end
+
+  def test_parse_pipe_logical_and_binds_looser_than_pipe
+    source = <<~MLC
+      fn f() -> i32 =
+        a && b |> c
+    MLC
+
+    ast = MLC.parse(source)
+    body = ast.declarations.first.body
+
+    assert_equal "&&", body.op
+    assert_instance_of MLC::Source::AST::VarRef, body.left
+    assert_equal "a", body.left.name
+    inner = body.right
+    assert_equal "|>", inner.op
+    assert_equal "b", inner.left.name
+    assert_equal "c", inner.right.name
+  end
+
+  def test_parse_equality_binds_tighter_than_pipe_on_right
+    source = <<~MLC
+      fn f() -> i32 =
+        a == b |> c
+    MLC
+
+    ast = MLC.parse(source)
+    body = ast.declarations.first.body
+
+    assert_equal "==", body.op
+    assert_equal "a", body.left.name
+    inner = body.right
+    assert_equal "|>", inner.op
+    assert_equal "b", inner.left.name
+    assert_equal "c", inner.right.name
+  end
+
+  def test_parse_pipe_binds_tighter_than_equality_on_left
+    source = <<~MLC
+      fn f() -> i32 =
+        a |> b == c
+    MLC
+
+    ast = MLC.parse(source)
+    body = ast.declarations.first.body
+
+    assert_equal "==", body.op
+    inner = body.left
+    assert_equal "|>", inner.op
+    assert_equal "a", inner.left.name
+    assert_equal "b", inner.right.name
+    assert_equal "c", body.right.name
+  end
+
   # ============================================================================
   # Codegen Tests
   # ============================================================================

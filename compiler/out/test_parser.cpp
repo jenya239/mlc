@@ -21,6 +21,18 @@ ast::Program parse_source(mlc::String source) noexcept;
 
 std::shared_ptr<ast::Expr> parse_expr_source(mlc::String source) noexcept;
 
+bool expr_call_one_ident_argument(std::shared_ptr<ast::Expr> expression, mlc::String expected_function, mlc::String expected_argument) noexcept;
+
+bool pipe_case_logical_or_over_pipeline(std::shared_ptr<ast::Expr> expression) noexcept;
+
+bool pipe_case_logical_and_over_pipeline(std::shared_ptr<ast::Expr> expression) noexcept;
+
+bool pipe_case_equality_right_operand_contains_pipeline(std::shared_ptr<ast::Expr> expression) noexcept;
+
+bool pipe_pipeline_left_equals_shape(std::shared_ptr<ast::Expr> left_equals, std::shared_ptr<ast::Expr> right_equals) noexcept;
+
+bool pipe_case_pipeline_binds_tighter_than_equality_on_left(std::shared_ptr<ast::Expr> expression) noexcept;
+
 int expr_match_arm_count(std::shared_ptr<ast::Expr> parsed_expression) noexcept;
 
 bool expr_match_arm_has_guard(std::shared_ptr<ast::Expr> parsed_expression, int arm_index) noexcept;
@@ -54,6 +66,18 @@ mlc::Array<test_runner::TestResult> parser_tests() noexcept;
 ast::Program parse_source(mlc::String source) noexcept{return decls::parse_program(lexer::tokenize(source).tokens);}
 
 std::shared_ptr<ast::Expr> parse_expr_source(mlc::String source) noexcept{return exprs::parse_expr(preds::parser_new(lexer::tokenize(source).tokens)).expr;}
+
+bool expr_call_one_ident_argument(std::shared_ptr<ast::Expr> expression, mlc::String expected_function, mlc::String expected_argument) noexcept{return [&]() { if (std::holds_alternative<ast::ExprCall>((*expression)._)) { auto _v_exprcall = std::get<ast::ExprCall>((*expression)._); auto [callee, arguments, _w0] = _v_exprcall; return [&]() { if (std::holds_alternative<ast::ExprIdent>((*callee)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*callee)._); auto [function_name, _w0] = _v_exprident; return function_name != expected_function || arguments.size() != 1 ? false : [&]() { if (std::holds_alternative<ast::ExprIdent>((*arguments[0])._)) { auto _v_exprident = std::get<ast::ExprIdent>((*arguments[0])._); auto [argument_name, _w0] = _v_exprident; return argument_name == expected_argument; } return false; }(); } return false; }(); } return false; }();}
+
+bool pipe_case_logical_or_over_pipeline(std::shared_ptr<ast::Expr> expression) noexcept{return [&]() { if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [binary_operator, left_logical, right_logical, _w0] = _v_exprbin; return binary_operator != mlc::String("||") ? false : [&]() { if (std::holds_alternative<ast::ExprIdent>((*left_logical)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*left_logical)._); auto [left_name, _w0] = _v_exprident; return left_name == mlc::String("a") && expr_call_one_ident_argument(right_logical, mlc::String("c"), mlc::String("b")); } return false; }(); } return false; }();}
+
+bool pipe_case_logical_and_over_pipeline(std::shared_ptr<ast::Expr> expression) noexcept{return [&]() { if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [binary_operator, left_conjunct, right_conjunct, _w0] = _v_exprbin; return binary_operator != mlc::String("&&") ? false : [&]() { if (std::holds_alternative<ast::ExprIdent>((*left_conjunct)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*left_conjunct)._); auto [left_name, _w0] = _v_exprident; return left_name == mlc::String("a") && expr_call_one_ident_argument(right_conjunct, mlc::String("c"), mlc::String("b")); } return false; }(); } return false; }();}
+
+bool pipe_case_equality_right_operand_contains_pipeline(std::shared_ptr<ast::Expr> expression) noexcept{return [&]() { if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [binary_operator, left_equals, right_equals, _w0] = _v_exprbin; return binary_operator != mlc::String("==") ? false : [&]() { if (std::holds_alternative<ast::ExprIdent>((*left_equals)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*left_equals)._); auto [left_name, _w0] = _v_exprident; return left_name == mlc::String("a") && expr_call_one_ident_argument(right_equals, mlc::String("c"), mlc::String("b")); } return false; }(); } return false; }();}
+
+bool pipe_pipeline_left_equals_shape(std::shared_ptr<ast::Expr> left_equals, std::shared_ptr<ast::Expr> right_equals) noexcept{return [&]() { if (std::holds_alternative<ast::ExprCall>((*left_equals)._)) { auto _v_exprcall = std::get<ast::ExprCall>((*left_equals)._); auto [callee, arguments, _w0] = _v_exprcall; return [&]() { if (std::holds_alternative<ast::ExprIdent>((*callee)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*callee)._); auto [function_name, _w0] = _v_exprident; return [&]() { if (std::holds_alternative<ast::ExprIdent>((*right_equals)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*right_equals)._); auto [right_name, _w0] = _v_exprident; return function_name != mlc::String("b") || right_name != mlc::String("c") || arguments.size() != 1 ? false : [&]() { if (std::holds_alternative<ast::ExprIdent>((*arguments[0])._)) { auto _v_exprident = std::get<ast::ExprIdent>((*arguments[0])._); auto [argument_name, _w0] = _v_exprident; return argument_name == mlc::String("a"); } return false; }(); } return false; }(); } return false; }(); } return false; }();}
+
+bool pipe_case_pipeline_binds_tighter_than_equality_on_left(std::shared_ptr<ast::Expr> expression) noexcept{return [&]() { if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [binary_operator, left_equals, right_equals, _w0] = _v_exprbin; return binary_operator != mlc::String("==") ? false : pipe_pipeline_left_equals_shape(left_equals, right_equals); } return false; }();}
 
 int expr_match_arm_count(std::shared_ptr<ast::Expr> parsed_expression) noexcept{return [&]() { if (std::holds_alternative<ast::ExprMatch>((*parsed_expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*parsed_expression)._); auto [_w0, arms, _w1] = _v_exprmatch; return [&]() -> int { 
   int count = 0;
@@ -138,6 +162,10 @@ results.push_back(test_runner::assert_true(mlc::String("template with interp par
 results.push_back(test_runner::assert_true(mlc::String("template with only interp parses to ExprBin"), [&]() { if (std::holds_alternative<ast::ExprBin>((*parse_expr_source(mlc::String("`${x}`")))._)) { auto _v_exprbin = std::get<ast::ExprBin>((*parse_expr_source(mlc::String("`${x}`")))._); auto [op, _w0, _w1, _w2] = _v_exprbin; return op == mlc::String("+"); } return false; }()));
 results.push_back(test_runner::assert_true(mlc::String("let-else: has_else=true when else present"), [&]() { if (std::holds_alternative<ast::ExprBlock>((*parse_expr_source(mlc::String("do\n  let Some(v) = opt else return 0 end\n  0\nend")))._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*parse_expr_source(mlc::String("do\n  let Some(v) = opt else return 0 end\n  0\nend")))._); auto [stmts, _w0, _w1] = _v_exprblock; return stmts.size() >= 1 ? [&]() { if (std::holds_alternative<ast::StmtLetPat>((*stmts[0])._)) { auto _v_stmtletpat = std::get<ast::StmtLetPat>((*stmts[0])._); auto [_w0, _w1, _w2, _w3, has_else, _w4, _w5] = _v_stmtletpat; return has_else; } return false; }() : false; } return false; }()));
 results.push_back(test_runner::assert_true(mlc::String("let-else: has_else=false without else"), [&]() { if (std::holds_alternative<ast::ExprBlock>((*parse_expr_source(mlc::String("do\n  let {x} = pt\n  0\nend")))._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*parse_expr_source(mlc::String("do\n  let {x} = pt\n  0\nend")))._); auto [stmts, _w0, _w1] = _v_exprblock; return stmts.size() >= 1 ? [&]() { if (std::holds_alternative<ast::StmtLetPat>((*stmts[0])._)) { auto _v_stmtletpat = std::get<ast::StmtLetPat>((*stmts[0])._); auto [_w0, _w1, _w2, _w3, has_else, _w4, _w5] = _v_stmtletpat; return !has_else; } return false; }() : false; } return false; }()));
+results.push_back(test_runner::assert_true(mlc::String("pipe precedence: logical or binds looser than pipeline"), pipe_case_logical_or_over_pipeline(parse_expr_source(mlc::String("a || b |> c")))));
+results.push_back(test_runner::assert_true(mlc::String("pipe precedence: logical and binds looser than pipeline"), pipe_case_logical_and_over_pipeline(parse_expr_source(mlc::String("a && b |> c")))));
+results.push_back(test_runner::assert_true(mlc::String("pipe precedence: equality binds tighter than pipeline on right"), pipe_case_equality_right_operand_contains_pipeline(parse_expr_source(mlc::String("a == b |> c")))));
+results.push_back(test_runner::assert_true(mlc::String("pipe precedence: pipeline binds tighter than equality on left"), pipe_case_pipeline_binds_tighter_than_equality_on_left(parse_expr_source(mlc::String("a |> b == c")))));
 return results;
 }
 

@@ -67,9 +67,11 @@ preds::ExprResult parse_or(preds::Parser parser) noexcept;
 
 preds::ExprResult parse_and(preds::Parser parser) noexcept;
 
-bool is_cmp_op(mlc::String op) noexcept;
+preds::ExprResult parse_equality(preds::Parser parser) noexcept;
 
-preds::ExprResult parse_cmp(preds::Parser parser) noexcept;
+bool is_relational_comparison_operator(mlc::String operator_) noexcept;
+
+preds::ExprResult parse_comparison_relational(preds::Parser parser) noexcept;
 
 preds::ExprResult parse_add(preds::Parser parser) noexcept;
 
@@ -411,7 +413,7 @@ state = preds::Parser_advance(state);
 return preds::PatsResult{pats, preds::Parser_advance(state)};
 }
 
-preds::ExprResult parse_expr(preds::Parser parser) noexcept{return parse_pipe(parser);}
+preds::ExprResult parse_expr(preds::Parser parser) noexcept{return parse_or(parser);}
 
 std::shared_ptr<ast::Expr> pipe_desugar(std::shared_ptr<ast::Expr> left_expr, std::shared_ptr<ast::Expr> right_expr) noexcept{return [&]() -> std::shared_ptr<ast::Expr> { if (std::holds_alternative<ast::ExprCall>((*right_expr)._)) { auto _v_exprcall = std::get<ast::ExprCall>((*right_expr)._); auto [callee, existing_args, _w0] = _v_exprcall; return [&]() -> std::shared_ptr<ast::Expr> { 
   mlc::Array<std::shared_ptr<ast::Expr>> new_args = mlc::Array<std::shared_ptr<ast::Expr>>{left_expr};
@@ -429,12 +431,12 @@ i = i + 1;
  }(); }();}
 
 preds::ExprResult parse_pipe(preds::Parser parser) noexcept{
-preds::ExprResult left = parse_or(parser);
+preds::ExprResult left = parse_comparison_relational(parser);
 std::shared_ptr<ast::Expr> expr = left.expr;
 preds::Parser state = left.parser;
 while (preds::TKind_is_pipe(preds::Parser_kind(state))){
 {
-preds::ExprResult right = parse_or(preds::Parser_advance(state));
+preds::ExprResult right = parse_comparison_relational(preds::Parser_advance(state));
 expr = pipe_desugar(expr, right.expr);
 state = right.parser;
 }
@@ -458,13 +460,13 @@ return preds::ExprResult{expr, state};
 }
 
 preds::ExprResult parse_and(preds::Parser parser) noexcept{
-preds::ExprResult left = parse_cmp(parser);
+preds::ExprResult left = parse_equality(parser);
 std::shared_ptr<ast::Expr> expr = left.expr;
 preds::Parser state = left.parser;
 while (preds::TKind_is_op(preds::Parser_kind(state)) && preds::TKind_op_val(preds::Parser_kind(state)) == mlc::String("&&")){
 {
 ast::Span operator_span = preds::Parser_span_at_cursor(state);
-preds::ExprResult right = parse_cmp(preds::Parser_advance(state));
+preds::ExprResult right = parse_equality(preds::Parser_advance(state));
 expr = std::make_shared<ast::Expr>(ast::ExprBin(mlc::String("&&"), expr, right.expr, operator_span));
 state = right.parser;
 }
@@ -472,19 +474,55 @@ state = right.parser;
 return preds::ExprResult{expr, state};
 }
 
-bool is_cmp_op(mlc::String op) noexcept{return op == mlc::String("==") || op == mlc::String("!=") || op == mlc::String("<") || op == mlc::String(">") || op == mlc::String("<=") || op == mlc::String(">=");}
+preds::ExprResult parse_equality(preds::Parser parser) noexcept{
+preds::ExprResult left = parse_pipe(parser);
+std::shared_ptr<ast::Expr> expr = left.expr;
+preds::Parser state = left.parser;
+bool go = true;
+while (go){
+{
+ast_tokens::TKind kind = preds::Parser_kind(state);
+if (preds::TKind_is_op(kind) && preds::TKind_op_val(kind) == mlc::String("==") || preds::TKind_op_val(kind) == mlc::String("!=")){
+{
+ast::Span operator_span = preds::Parser_span_at_cursor(state);
+mlc::String operator_value = preds::TKind_op_val(kind);
+preds::ExprResult right = parse_pipe(preds::Parser_advance(state));
+expr = std::make_shared<ast::Expr>(ast::ExprBin(operator_value, expr, right.expr, operator_span));
+state = right.parser;
+}
+} else {
+{
+go = false;
+}
+}
+}
+}
+return preds::ExprResult{expr, state};
+}
 
-preds::ExprResult parse_cmp(preds::Parser parser) noexcept{
+bool is_relational_comparison_operator(mlc::String operator_) noexcept{return operator_ == mlc::String("<") || operator_ == mlc::String(">") || operator_ == mlc::String("<=") || operator_ == mlc::String(">=");}
+
+preds::ExprResult parse_comparison_relational(preds::Parser parser) noexcept{
 preds::ExprResult left = parse_add(parser);
 std::shared_ptr<ast::Expr> expr = left.expr;
 preds::Parser state = left.parser;
+bool go = true;
+while (go){
+{
 ast_tokens::TKind kind = preds::Parser_kind(state);
-if (preds::TKind_is_op(kind) && is_cmp_op(preds::TKind_op_val(kind))){
+if (preds::TKind_is_op(kind) && is_relational_comparison_operator(preds::TKind_op_val(kind))){
 {
 ast::Span operator_span = preds::Parser_span_at_cursor(state);
+mlc::String operator_value = preds::TKind_op_val(kind);
 preds::ExprResult right = parse_add(preds::Parser_advance(state));
-expr = std::make_shared<ast::Expr>(ast::ExprBin(preds::TKind_op_val(kind), expr, right.expr, operator_span));
+expr = std::make_shared<ast::Expr>(ast::ExprBin(operator_value, expr, right.expr, operator_span));
 state = right.parser;
+}
+} else {
+{
+go = false;
+}
+}
 }
 }
 return preds::ExprResult{expr, state};

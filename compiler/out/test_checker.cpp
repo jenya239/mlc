@@ -59,6 +59,7 @@ results.push_back(test_runner::assert_eq_int(mlc::String("fn generic return T â€
 results.push_back(test_runner::assert_true(mlc::String("integer literal called like function - diagnostic names type"), checker_first_error_contains_nonfunction_i32(mlc::String("fn f() -> i32 = 42()"))));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn using its own param - 0 errors"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn calling another fn - 0 errors"), check_error_count(mlc::String("fn add(x: i32, y: i32) -> i32 = x + y\nfn main() -> i32 = add(1, 2)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("pipe chain of plain functions - 0 errors"), check_error_count(mlc::String("fn increment(value: i32) -> i32 = value + 1\nfn double_value(value: i32) -> i32 = value * 2\nfn main() -> i32 = 3 |> increment |> double_value")), 0));
 results.push_back(test_runner::assert_true(mlc::String("undefined name - at least 1 error"), check_error_count(mlc::String("fn f() -> i32 = undefined_name")) > 0));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("undefined ident: line and column (single line body)"), first_checker_error_line(mlc::String("fn f() -> i32 = badident")), 1, 17, mlc::String("undefined: badident")));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("undefined ident: line and column (next line, indented)"), first_checker_error_line(mlc::String("fn f() -> i32 =\n  badident")), 2, 3, mlc::String("undefined: badident")));

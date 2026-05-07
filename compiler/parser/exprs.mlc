@@ -337,7 +337,7 @@ end
 
 // --- Expression parser (precedence climbing) -----------------------------
 
-export fn parse_expr(parser: Parser) -> ExprResult = parse_pipe(parser)
+export fn parse_expr(parser: Parser) -> ExprResult = parse_or(parser)
 
 export fn pipe_desugar(left_expr: Shared<Expr>, right_expr: Shared<Expr>) -> Shared<Expr> =
   match right_expr {
@@ -356,11 +356,11 @@ export fn pipe_desugar(left_expr: Shared<Expr>, right_expr: Shared<Expr>) -> Sha
   }
 
 fn parse_pipe(parser: Parser) -> ExprResult = do
-  const left = parse_or(parser)
+  const left = parse_comparison_relational(parser)
   let mut expr = left.expr
   let mut state = left.parser
   while state.kind().is_pipe() do
-    const right = parse_or(state.advance())
+    const right = parse_comparison_relational(state.advance())
     expr = pipe_desugar(expr, right.expr)
     state = right.parser
   end
@@ -381,31 +381,57 @@ fn parse_or(parser: Parser) -> ExprResult = do
 end
 
 fn parse_and(parser: Parser) -> ExprResult = do
-  const left = parse_cmp(parser)
+  const left = parse_equality(parser)
   let mut expr = left.expr
   let mut state = left.parser
   while state.kind().is_op() && state.kind().op_val() == "&&" do
     const operator_span = state.span_at_cursor()
-    const right = parse_cmp(state.advance())
+    const right = parse_equality(state.advance())
     expr = Shared.new(ExprBin("&&", expr, right.expr, operator_span))
     state = right.parser
   end
   ExprResult { expr, parser: state }
 end
 
-fn is_cmp_op(op: string) -> bool =
-  op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">="
+fn parse_equality(parser: Parser) -> ExprResult = do
+  const left = parse_pipe(parser)
+  let mut expr = left.expr
+  let mut state = left.parser
+  let mut go = true
+  while go do
+    const kind = state.kind()
+    if kind.is_op() && (kind.op_val() == "==" || kind.op_val() == "!=") then
+      const operator_span = state.span_at_cursor()
+      const operator_value = kind.op_val()
+      const right = parse_pipe(state.advance())
+      expr = Shared.new(ExprBin(operator_value, expr, right.expr, operator_span))
+      state = right.parser
+    else
+      go = false
+    end
+  end
+  ExprResult { expr, parser: state }
+end
 
-fn parse_cmp(parser: Parser) -> ExprResult = do
+fn is_relational_comparison_operator(operator: string) -> bool =
+  operator == "<" || operator == ">" || operator == "<=" || operator == ">="
+
+fn parse_comparison_relational(parser: Parser) -> ExprResult = do
   const left = parse_add(parser)
   let mut expr = left.expr
   let mut state = left.parser
-  const kind = state.kind()
-  if kind.is_op() && is_cmp_op(kind.op_val()) then
-    const operator_span = state.span_at_cursor()
-    const right = parse_add(state.advance())
-    expr = Shared.new(ExprBin(kind.op_val(), expr, right.expr, operator_span))
-    state = right.parser
+  let mut go = true
+  while go do
+    const kind = state.kind()
+    if kind.is_op() && is_relational_comparison_operator(kind.op_val()) then
+      const operator_span = state.span_at_cursor()
+      const operator_value = kind.op_val()
+      const right = parse_add(state.advance())
+      expr = Shared.new(ExprBin(operator_value, expr, right.expr, operator_span))
+      state = right.parser
+    else
+      go = false
+    end
   end
   ExprResult { expr, parser: state }
 end

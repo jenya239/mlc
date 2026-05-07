@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from "./test_runner"
 import { tokenize } from "../lexer"
 import { parse_program } from "../parser/decls"
-import { Decl, DeclFn, DeclType, DeclExtend, DeclImport, Expr, ExprStr, ExprBin, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, PatWild, PatIdent, ExprBlock, Stmt, StmtLetPat } from "../ast"
+import { Decl, DeclFn, DeclType, DeclExtend, DeclImport, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, PatWild, PatIdent, ExprBlock, Stmt, StmtLetPat } from "../ast"
 import { parse_expr } from "../parser/exprs"
 import { parser_new } from "../parser/preds"
 
@@ -12,6 +12,95 @@ fn parse_source(source: string) -> Program =
 
 fn parse_expr_source(source: string) -> Shared<Expr> =
   parse_expr(parser_new(tokenize(source).tokens)).expr
+
+fn expr_call_one_ident_argument(expression: Shared<Expr>, expected_function: string, expected_argument: string) -> bool =
+  match expression {
+    ExprCall(callee, arguments, _) =>
+      match callee {
+        ExprIdent(function_name, _) =>
+          if function_name != expected_function || arguments.length() != 1 then false
+          else
+            match arguments[0] {
+              ExprIdent(argument_name, _) => argument_name == expected_argument,
+              _ => false
+            }
+          end,
+        _ => false
+      },
+    _ => false
+  }
+
+fn pipe_case_logical_or_over_pipeline(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprBin(binary_operator, left_logical, right_logical, _) =>
+      if binary_operator != "||" then false
+      else
+        match left_logical {
+          ExprIdent(left_name, _) =>
+            left_name == "a" && expr_call_one_ident_argument(right_logical, "c", "b"),
+          _ => false
+        }
+      end,
+    _ => false
+  }
+
+fn pipe_case_logical_and_over_pipeline(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprBin(binary_operator, left_conjunct, right_conjunct, _) =>
+      if binary_operator != "&&" then false
+      else
+        match left_conjunct {
+          ExprIdent(left_name, _) =>
+            left_name == "a" && expr_call_one_ident_argument(right_conjunct, "c", "b"),
+          _ => false
+        }
+      end,
+    _ => false
+  }
+
+fn pipe_case_equality_right_operand_contains_pipeline(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprBin(binary_operator, left_equals, right_equals, _) =>
+      if binary_operator != "==" then false
+      else
+        match left_equals {
+          ExprIdent(left_name, _) =>
+            left_name == "a" && expr_call_one_ident_argument(right_equals, "c", "b"),
+          _ => false
+        }
+      end,
+    _ => false
+  }
+
+fn pipe_pipeline_left_equals_shape(left_equals: Shared<Expr>, right_equals: Shared<Expr>) -> bool =
+  match left_equals {
+    ExprCall(callee, arguments, _) =>
+      match callee {
+        ExprIdent(function_name, _) =>
+          match right_equals {
+            ExprIdent(right_name, _) =>
+              if function_name != "b" || right_name != "c" || arguments.length() != 1 then false
+              else
+                match arguments[0] {
+                  ExprIdent(argument_name, _) => argument_name == "a",
+                  _ => false
+                }
+              end,
+            _ => false
+          },
+        _ => false
+      },
+    _ => false
+  }
+
+fn pipe_case_pipeline_binds_tighter_than_equality_on_left(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprBin(binary_operator, left_equals, right_equals, _) =>
+      if binary_operator != "==" then false
+      else pipe_pipeline_left_equals_shape(left_equals, right_equals)
+      end,
+    _ => false
+  }
 
 fn expr_match_arm_count(parsed_expression: Shared<Expr>) -> i32 =
   match parsed_expression {
@@ -317,6 +406,18 @@ export fn parser_tests() -> [TestResult] = do
         else false end,
       _ => false
     }))
+
+  results.push(assert_true("pipe precedence: logical or binds looser than pipeline",
+    pipe_case_logical_or_over_pipeline(parse_expr_source("a || b |> c"))))
+
+  results.push(assert_true("pipe precedence: logical and binds looser than pipeline",
+    pipe_case_logical_and_over_pipeline(parse_expr_source("a && b |> c"))))
+
+  results.push(assert_true("pipe precedence: equality binds tighter than pipeline on right",
+    pipe_case_equality_right_operand_contains_pipeline(parse_expr_source("a == b |> c"))))
+
+  results.push(assert_true("pipe precedence: pipeline binds tighter than equality on left",
+    pipe_case_pipeline_binds_tighter_than_equality_on_left(parse_expr_source("a |> b == c"))))
 
   results
 end

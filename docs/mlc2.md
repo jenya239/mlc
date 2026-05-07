@@ -60,6 +60,33 @@
 
 ---
 
+## E5 — оператор пайпа `|>`
+
+### Эталон (Ruby)
+
+- Лексер: токен `|>` (`lib/mlc/source/parser/lexer.rb`).
+- Парсер: цепочка приоритетов `logical_or` → `logical_and` → … → **`parse_equality`** (`==` / `!=`) → **`parse_pipe`** → **`parse_comparison`** (`<` `>` `<=` `>=`) → ниже (`expression_parser.rb`).
+- Семантика: `ExpressionVisitor#desugar_pipe` сводит бинарный узел `|>` к обычному `Call` с первым аргументом слева.
+
+### Self-hosted (mlcc)
+
+- Парсинг и десахар в одном проходе: `compiler/parser/exprs.mlc` (`pipe_desugar`, операнды `|>` через тот же относительный порядок, что у Ruby: сравнения ниже пайпа, равенство выше пайпа, логика `&&` / `||` выше равенства).
+- Отдельного узла пайпа в AST после парса нет — только `ExprCall`.
+
+### Файлы для правок
+
+| Назначение | Путь |
+|------------|------|
+| Преcedence + десахар | `compiler/parser/exprs.mlc` |
+| Ruby-паритет | `lib/mlc/source/parser/expression_parser.rb` |
+
+### Тесты
+
+- Ruby: `test/mlc/pipe_operator_test.rb` (в т.ч. приоритет относительно `||`, `&&`, `==`).
+- mlcc: `compiler/tests/test_parser.mlc`, `compiler/tests/test_pipe_and_record_update.mlc`, `compiler/tests/test_checker.mlc`.
+
+---
+
 ## Прочее
 
 - В импортах MLC **не ставить завершающую запятую** в списке символов в фигурных скобках `{ … }` — Ruby-парсер bootstrap даёт ошибку (`Expected IDENTIFIER, got RBRACE`).

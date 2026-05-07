@@ -61,6 +61,11 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int("fn calling another fn - 0 errors",
     check_error_count("fn add(x: i32, y: i32) -> i32 = x + y\nfn main() -> i32 = add(1, 2)"), 0))
 
+  results.push(assert_eq_int("pipe chain of plain functions - 0 errors",
+    check_error_count(
+      "fn increment(value: i32) -> i32 = value + 1\nfn double_value(value: i32) -> i32 = value * 2\nfn main() -> i32 = 3 |> increment |> double_value"
+    ), 0))
+
   results.push(assert_true("undefined name - at least 1 error",
     check_error_count("fn f() -> i32 = undefined_name") > 0))
 
