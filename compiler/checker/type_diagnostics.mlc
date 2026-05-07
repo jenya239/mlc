@@ -1,15 +1,15 @@
 // Diagnostic builders: unary, arity, index, if, match, for, field access.
 
-import { Expr, Diagnostic, Span, diagnostic_error, expr_span } from "../ast"
-import { Type, TypeRegistry } from "./registry"
-import * as semantic_type_structure from "./semantic_type_structure"
-import { array_hof_expected_argument_count, is_array_hof_method } from "./array_method_types"
+import { Expr, Diagnostic, Span, diagnostic_error, expr_span } from '../ast'
+import { Type, TypeRegistry } from './registry'
+import * as semantic_type_structure from './semantic_type_structure'
+import { array_hof_expected_argument_count, is_array_hof_method } from './array_method_types'
 // --- Unary diagnostics -------------------------------------------------------
 
 export fn unary_minus_diagnostic(operation: string, inner_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
   if operation == "-" && !semantic_type_structure.type_is_unknown(inner_type) && !semantic_type_structure.type_is_i32(inner_type) then
     [diagnostic_error(
-      "unary - expects i32, got " + semantic_type_structure.type_description(inner_type),
+      'unary - expects i32, got ' + semantic_type_structure.type_description(inner_type),
       source_span)]
   else
     []
@@ -19,7 +19,7 @@ end
 export fn unary_bang_diagnostic(operation: string, inner_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
   if operation == "!" && !semantic_type_structure.type_is_unknown(inner_type) && !semantic_type_structure.type_is_bool(inner_type) then
     [diagnostic_error(
-      "operator ! expects bool, got " + semantic_type_structure.type_description(inner_type),
+      'operator ! expects bool, got ' + semantic_type_structure.type_description(inner_type),
       source_span)]
   else
     []
@@ -31,7 +31,7 @@ end
 export fn constructor_arity_diagnostics(expected_length: i32, actual_length: i32, call_source_span: Span) -> [Diagnostic] = do
   if expected_length != actual_length then
     [diagnostic_error(
-      "expected " + expected_length.to_string() + " arguments, got " + actual_length.to_string(),
+      'expected ' + expected_length.to_string() + ' arguments, got ' + actual_length.to_string(),
       call_source_span)]
   else
     []
@@ -47,7 +47,7 @@ fn infer_builtin_method_arity_diagnostics(method_name: string, argument_count: i
     []
   else if argument_count != expected then
     [diagnostic_error(
-      "expected " + expected.to_string() + " arguments, got " + argument_count.to_string(),
+      'expected ' + expected.to_string() + ' arguments, got ' + argument_count.to_string(),
       method_span)]
   else
     []
@@ -57,7 +57,7 @@ end
 export fn call_arity_diagnostics(expected_count: i32, actual_count: i32, call_source_span: Span) -> [Diagnostic] = do
   if expected_count != actual_count then
     [diagnostic_error(
-      "expected " + expected_count.to_string() + " arguments, got " + actual_count.to_string(),
+      'expected ' + expected_count.to_string() + ' arguments, got ' + actual_count.to_string(),
       call_source_span)]
   else
     []
@@ -68,7 +68,7 @@ export fn call_arity_range_diagnostics(
   min_count: i32, max_count: i32, actual_count: i32, call_source_span: Span) -> [Diagnostic] = do
   if actual_count < min_count || actual_count > max_count then
     [diagnostic_error(
-      "expected between " + min_count.to_string() + " and " + max_count.to_string() + " arguments, got " + actual_count.to_string(),
+      'expected between ' + min_count.to_string() + ' and ' + max_count.to_string() + ' arguments, got ' + actual_count.to_string(),
       call_source_span)]
   else
     []
@@ -86,7 +86,7 @@ end
 export fn index_not_array_diagnostic(receiver_type: Shared<Type>, bracket_source_span: Span) -> [Diagnostic] = do
   if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.type_is_array(receiver_type) then
     [diagnostic_error(
-      "indexing requires an array, got " + semantic_type_structure.type_description(receiver_type),
+      'indexing requires an array, got ' + semantic_type_structure.type_description(receiver_type),
       bracket_source_span)]
   else
     []
@@ -96,7 +96,7 @@ end
 export fn index_not_i32_diagnostic(index_type: Shared<Type>, bracket_source_span: Span) -> [Diagnostic] = do
   if !semantic_type_structure.type_is_unknown(index_type) && !semantic_type_structure.type_is_i32(index_type) then
     [diagnostic_error(
-      "array index must be i32, got " + semantic_type_structure.type_description(index_type),
+      'array index must be i32, got ' + semantic_type_structure.type_description(index_type),
       bracket_source_span)]
   else
     []
@@ -108,7 +108,7 @@ end
 export fn if_branch_mismatch_diagnostic(branches_mismatch: bool, then_type: Shared<Type>, else_type: Shared<Type>, else_expression: Shared<Expr>) -> [Diagnostic] = do
   if branches_mismatch then
     [diagnostic_error(
-      "if branch types differ: then " + semantic_type_structure.type_description(then_type) + ", else " + semantic_type_structure.type_description(else_type),
+      'if branch types differ: then ' + semantic_type_structure.type_description(then_type) + ', else ' + semantic_type_structure.type_description(else_type),
       expr_span(else_expression))]
   else
     []
@@ -118,7 +118,7 @@ end
 export fn for_loop_range_diagnostic(iterator_type: Shared<Type>, iterator: Shared<Expr>) -> [Diagnostic] = do
   if !semantic_type_structure.type_is_unknown(iterator_type) && !semantic_type_structure.type_is_array(iterator_type) then
     [diagnostic_error(
-      "for loop range must be an array, got " + semantic_type_structure.type_description(iterator_type),
+      'for loop range must be an array, got ' + semantic_type_structure.type_description(iterator_type),
       expr_span(iterator))]
   else
     []
@@ -129,7 +129,7 @@ export fn match_arm_type_mismatch_diagnostic(arm_index: i32, first_arm_type: Sha
   if arm_index > 0 && !semantic_type_structure.type_is_unknown(first_arm_type) && !semantic_type_structure.type_is_unknown(arm_result_type) &&
      !semantic_type_structure.types_structurally_equal(first_arm_type, arm_result_type) then
     [diagnostic_error(
-      "match arm result type " + semantic_type_structure.type_description(arm_result_type) + " does not match first arm type " + semantic_type_structure.type_description(first_arm_type),
+      'match arm result type ' + semantic_type_structure.type_description(arm_result_type) + ' does not match first arm type ' + semantic_type_structure.type_description(first_arm_type),
       expr_span(arm_body))]
   else
     []
@@ -143,22 +143,22 @@ export fn infer_expr_field_diagnostics(object_type: Shared<Type>, field_name: st
   const type_name = match inner_object_type {
     TNamed(name) => name,
     TGeneric(name, _) => name,
-    _ => ""
+    _ => ''
   }
-  if type_name != "" && registry.has_fields(type_name) then
+  if type_name != '' && registry.has_fields(type_name) then
     if !registry.fields_for(type_name).has(field_name) then
-      [diagnostic_error("undefined field: " + field_name + " on " + type_name, field_source_span)]
+      [diagnostic_error('undefined field: ' + field_name + ' on ' + type_name, field_source_span)]
     else
       []
     end
   else if !semantic_type_structure.type_is_unknown(object_type) then
-    if type_name != "" && !registry.has_fields(type_name) then
-      [diagnostic_error("field access needs a record type; " + type_name + " is not one", field_source_span)]
+    if type_name != '' && !registry.has_fields(type_name) then
+      [diagnostic_error('field access needs a record type; ' + type_name + ' is not one', field_source_span)]
     else if semantic_type_structure.type_is_array(object_type) then
-      [diagnostic_error("array value has no record fields for ." + field_name, field_source_span)]
+      [diagnostic_error('array value has no record fields for .' + field_name, field_source_span)]
     else if !semantic_type_structure.type_is_function(object_type) then
       [diagnostic_error(
-        "field access on value without record fields: " + semantic_type_structure.type_description(object_type),
+        'field access on value without record fields: ' + semantic_type_structure.type_description(object_type),
         field_source_span)]
     else
       []

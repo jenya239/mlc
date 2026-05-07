@@ -1,6 +1,6 @@
 // Lexer: source string - token array.
 
-import { TKind, Token, LexOut } from "./ast_tokens"
+import { TKind, Token, LexOut } from './ast_tokens'
 
 type LexState     = LexState     { src: string, pos: i32, line: i32, col: i32 }
 type ScanResult   = ScanResult   { state: LexState, token: Token }
@@ -45,33 +45,33 @@ fn is_ws(character: string) -> bool =
   character == " " || character == "\t" || character == "\r" || character == "\n"
 
 fn keyword_kind(word: string) -> TKind =
-  if      word == "fn"       then KFn
-  else if word == "type"     then KType
-  else if word == "let"      then KLet
-  else if word == "mut"      then KMut
-  else if word == "const"    then KConst
-  else if word == "return"   then KReturn
-  else if word == "break"    then KBreak
-  else if word == "continue" then KContinue
-  else if word == "if"       then KIf
-  else if word == "then"     then KThen
-  else if word == "else"     then KElse
-  else if word == "unless"   then KUnless
-  else if word == "while"    then KWhile
-  else if word == "for"      then KFor
-  else if word == "in"       then KIn
-  else if word == "do"       then KDo
-  else if word == "end"      then KEnd
-  else if word == "match"    then KMatch
-  else if word == "with"     then KWith
-  else if word == "import"   then KImport
-  else if word == "from"     then KFrom
-  else if word == "as"       then KAs
-  else if word == "extern"   then KExtern
-  else if word == "extend"   then KExtend
-  else if word == "where"    then KWhere
-  else if word == "true"     then KTrue
-  else if word == "false"    then KFalse
+  if      word == 'fn'       then KFn
+  else if word == 'type'     then KType
+  else if word == 'let'      then KLet
+  else if word == 'mut'      then KMut
+  else if word == 'const'    then KConst
+  else if word == 'return'   then KReturn
+  else if word == 'break'    then KBreak
+  else if word == 'continue' then KContinue
+  else if word == 'if'       then KIf
+  else if word == 'then'     then KThen
+  else if word == 'else'     then KElse
+  else if word == 'unless'   then KUnless
+  else if word == 'while'    then KWhile
+  else if word == 'for'      then KFor
+  else if word == 'in'       then KIn
+  else if word == 'do'       then KDo
+  else if word == 'end'      then KEnd
+  else if word == 'match'    then KMatch
+  else if word == 'with'     then KWith
+  else if word == 'import'   then KImport
+  else if word == 'from'     then KFrom
+  else if word == 'as'       then KAs
+  else if word == 'extern'   then KExtern
+  else if word == 'extend'   then KExtend
+  else if word == 'where'    then KWhere
+  else if word == 'true'     then KTrue
+  else if word == 'false'    then KFalse
   else Ident(word)
   end
 
@@ -102,15 +102,15 @@ fn try_scan_suffix(state: LexState) -> SuffixScan = do
       cur = cur.lex_advance()
     end
     const candidate = cur.src.byte_substring(start, cur.pos - start)
-    if candidate == "i64" || candidate == "u8" || candidate == "usize" ||
-       candidate == "f64" || candidate == "f32" then
+    if candidate == 'i64' || candidate == 'u8' || candidate == 'usize' ||
+       candidate == 'f64' || candidate == 'f32' then
       SuffixScan { suffix: candidate, after: cur }
     else
       const back = LexState { src: cur.src, pos: start, line: orig_line, col: orig_col }
-      SuffixScan { suffix: "", after: back }
+      SuffixScan { suffix: '', after: back }
     end
   else
-    SuffixScan { suffix: "", after: state }
+    SuffixScan { suffix: '', after: state }
   end
 end
 
@@ -136,11 +136,11 @@ fn scan_int(state: LexState) -> ScanResult = do
     ScanResult { state: scan.after, token: Token { kind: LFloat(raw_float), line: token_line, col: token_col } }
   else
     const scan = try_scan_suffix(current)
-    if scan.suffix == "i64" then
+    if scan.suffix == 'i64' then
       ScanResult { state: scan.after, token: Token { kind: LI64(value.to_string()), line: token_line, col: token_col } }
-    else if scan.suffix == "u8" then
+    else if scan.suffix == 'u8' then
       ScanResult { state: scan.after, token: Token { kind: LU8(value.to_string()), line: token_line, col: token_col } }
-    else if scan.suffix == "usize" then
+    else if scan.suffix == 'usize' then
       ScanResult { state: scan.after, token: Token { kind: LUsize(value.to_string()), line: token_line, col: token_col } }
     else
       ScanResult { state: scan.after, token: Token { kind: LInt(value), line: token_line, col: token_col } }
@@ -153,12 +153,12 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
   const token_col  = state.col
   let mut current = state.lex_advance()
   let mut parts: [string] = []
-  let mut error = ""
+  let mut error = ''
   while !current.eof() && current.current() != "'" do
     if current.current() == "\\" then
       current = current.lex_advance()
       if current.eof() then
-        error = "unterminated escape in single-quoted string"
+        error = 'unterminated escape in single-quoted string'
       else if current.current() == "\\" then
         parts.push("\\"); current = current.lex_advance()
       else if current.current() == "'" then
@@ -167,6 +167,10 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
         parts.push("\n"); current = current.lex_advance()
       else if current.current() == "t" then
         parts.push("\t"); current = current.lex_advance()
+      else if current.current() == "r" then
+        parts.push("\r"); current = current.lex_advance()
+      else if current.current() == "0" then
+        parts.push("\0"); current = current.lex_advance()
       else
         parts.push("\\"); parts.push(current.current()); current = current.lex_advance()
       end
@@ -176,11 +180,11 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
     end
   end
   if current.eof() then
-    error = "unterminated single-quoted string"
+    error = 'unterminated single-quoted string'
   else
     current = current.lex_advance()
   end
-  const joined = parts.join("")
+  const joined = parts.join('')
   const token_kind =
     if joined.length() == 1 then LChar(joined)
     else LStr(joined)
@@ -201,7 +205,7 @@ fn map_escape(character: string) -> string =
   else if character == "0"  then "\0"
   else if character == "{"  then "{"
   else if character == "}"  then "}"
-  else ""
+  else ''
   end
 
 fn scan_string(state: LexState) -> ScanStrResult = do
@@ -209,12 +213,12 @@ fn scan_string(state: LexState) -> ScanStrResult = do
   const token_col  = state.col
   let mut current = state.lex_advance()
   let mut parts: [string] = []
-  let mut error = ""
+  let mut error = ''
   while !current.eof() && current.current() != "\"" do
     if current.current() == "\\" then
       current = current.lex_advance()
       const mapped = map_escape(current.current())
-      if mapped != "" then
+      if mapped != '' then
         parts.push(mapped)
       else
         parts.push("\\")
@@ -227,13 +231,13 @@ fn scan_string(state: LexState) -> ScanStrResult = do
     end
   end
   if current.eof() then
-    error = "unterminated string"
+    error = 'unterminated string'
   else
     current = current.lex_advance()
   end
   ScanStrResult {
     state: current,
-    token: Token { kind: LStr(parts.join("")), line: token_line, col: token_col },
+    token: Token { kind: LStr(parts.join('')), line: token_line, col: token_col },
     error
   }
 end
@@ -264,7 +268,7 @@ fn scan_template(state: LexState) -> ScanStrResult = do
   let mut current = state.lex_advance()
   let mut parts: [string] = []
   let mut current_lit: [string] = []
-  let mut error = ""
+  let mut error = ''
   while !current.eof() && current.current() != "`" do
     if current.current() == "\\" && !current.lex_advance().eof() then
       const next = current.lex_advance().current()
@@ -286,7 +290,7 @@ fn scan_template(state: LexState) -> ScanStrResult = do
         current_lit.push("\\"); current_lit.push(next); current = current.lex_advance()
       end
     else if current.current() == "$" && !current.lex_advance().eof() && current.lex_advance().current() == "{" then
-      parts.push(current_lit.join(""))
+      parts.push(current_lit.join(''))
       current_lit = []
       current = current.lex_advance().lex_advance()
       let mut expr_chars: [string] = []
@@ -306,20 +310,20 @@ fn scan_template(state: LexState) -> ScanStrResult = do
         end
       end
       if depth > 0 then
-        error = "unterminated interpolation in template literal"
+        error = 'unterminated interpolation in template literal'
       end
-      parts.push(expr_chars.join(""))
+      parts.push(expr_chars.join(''))
     else
       current_lit.push(current.current())
       current = current.lex_advance()
     end
   end
   if current.eof() then
-    error = "unterminated template literal"
+    error = 'unterminated template literal'
   else
     current = current.lex_advance()
   end
-  parts.push(current_lit.join(""))
+  parts.push(current_lit.join(''))
   ScanStrResult {
     state: current,
     token: Token { kind: LTemplate(parts), line: token_line, col: token_col },
@@ -359,12 +363,12 @@ fn scan_op(state: LexState) -> ScanResult = do
   if      character == "-" && next == ">" then ScanResult { state: state.lex_advance_by(2), token: state.token(Arrow) }
   else if character == "=" && next == ">" then ScanResult { state: state.lex_advance_by(2), token: state.token(FatArrow) }
   else if character == "|" && next == ">" then ScanResult { state: state.lex_advance_by(2), token: state.token(Pipe) }
-  else if character == "=" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op("==")) }
-  else if character == "!" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op("!=")) }
-  else if character == "<" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op("<=")) }
-  else if character == ">" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op(">=")) }
-  else if character == "&" && next == "&" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op("&&")) }
-  else if character == "|" && next == "|" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op("||")) }
+  else if character == "=" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('==')) }
+  else if character == "!" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('!=')) }
+  else if character == "<" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('<=')) }
+  else if character == ">" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('>=')) }
+  else if character == "&" && next == "&" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('&&')) }
+  else if character == "|" && next == "|" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('||')) }
   else if character == "=" then ScanResult { state: state.lex_advance(), token: state.token(Equal) }
   else if character == "|" then ScanResult { state: state.lex_advance(), token: state.token(Bar) }
   else if character == "?" then ScanResult { state: state.lex_advance(), token: state.token(Question) }
@@ -398,13 +402,13 @@ export fn tokenize(source: string) -> LexOut = do
       const result = scan_int(state); tokens.push(result.token); state = result.state
     else if character == "\"" then
       const result = scan_string(state); tokens.push(result.token); state = result.state
-      if result.error != "" then errors.push(result.error) end
+      if result.error != '' then errors.push(result.error) end
     else if character == "'" then
       const result = scan_single_string(state); tokens.push(result.token); state = result.state
-      if result.error != "" then errors.push(result.error) end
+      if result.error != '' then errors.push(result.error) end
     else if character == "`" then
       const result = scan_template(state); tokens.push(result.token); state = result.state
-      if result.error != "" then errors.push(result.error) end
+      if result.error != '' then errors.push(result.error) end
     else
       const result = scan_op(state); tokens.push(result.token); state = result.state
     end

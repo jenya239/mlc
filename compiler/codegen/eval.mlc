@@ -1,10 +1,10 @@
 // Binding layer: threads gen_expr <-> gen_stmts_str via closures.
 // Public API has no extra parameters; the cross-module dependency is injected here.
 
-import { SExpr, SStmt } from "../semantic_ir"
-import { CodegenContext, GenStmtsResult, GenStmtResult } from "./context"
-import * as expr_eval from "./expr_eval"
-import * as stmt_eval from "./stmt_eval"
+import { SExpr, SStmt } from '../semantic_ir'
+import { CodegenContext, GenStmtsResult, GenStmtResult } from './context'
+import * as expr_eval from './expr_eval'
+import * as stmt_eval from './stmt_eval'
 
 export fn gen_expr(expr: Shared<SExpr>, context: CodegenContext) -> string =
   expr_eval.eval_expr(expr, context, (statements: [Shared<SStmt>], ctx: CodegenContext) => gen_stmts_str(statements, ctx))

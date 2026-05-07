@@ -2,22 +2,22 @@
 // break the import cycle with stmt_eval.mlc. Private helpers thread gen_stmts
 // through; recursive eval_expr calls go directly (same module).
 
-import { SExpr, SStmt, sexpr_type, SExprArray } from "../semantic_ir"
-import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
-import { Type, TArray, TNamed } from "../checker/registry"
-import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from "../checker/semantic_type_structure"
-import { CodegenContext, context_resolve } from "./context"
-import { cpp_safe, map_builtin } from "./cpp_naming"
-import { sem_type_to_cpp } from "./type_gen"
-import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from "./literals"
-import { gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from "./literals"
-import { gen_identifier } from "./identifiers"
-import { is_constructor_call, field_access_operator, cpp_lambda_header_prefix } from "./expression_support"
-import { gen_match } from "./match_gen"
-import { gen_record_expr, gen_record_update_expr } from "./record_gen"
-import { gen_method_expr } from "./method_gen"
-import { stmts_final_ctx } from "./statement_context"
-import * as expression_output from "./expr"
+import { SExpr, SStmt, sexpr_type, SExprArray } from '../semantic_ir'
+import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../semantic_ir'
+import { Type, TArray, TNamed } from '../checker/registry'
+import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from '../checker/semantic_type_structure'
+import { CodegenContext, context_resolve } from './context'
+import { cpp_safe, map_builtin } from './cpp_naming'
+import { sem_type_to_cpp } from './type_gen'
+import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from './literals'
+import { gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from './literals'
+import { gen_identifier } from './identifiers'
+import { is_constructor_call, field_access_operator, cpp_lambda_header_prefix } from './expression_support'
+import { gen_match } from './match_gen'
+import { gen_record_expr, gen_record_update_expr } from './record_gen'
+import { gen_method_expr } from './method_gen'
+import { stmts_final_ctx } from './statement_context'
+import * as expression_output from './expr'
 
 // --- Argument list -----------------------------------------------------------
 
@@ -26,7 +26,7 @@ export fn eval_argument_list(expressions: [Shared<SExpr>], context: CodegenConte
   while index < expressions.length() do
     parts.push(eval_expr(expressions[index], context, gen_stmts)); index = index + 1
   end
-  parts.join(", ")
+  parts.join(', ')
 end
 
 // --- Expression rules --------------------------------------------------------
@@ -34,9 +34,9 @@ end
 fn gen_binary_expr(operation: string, left_expr: Shared<SExpr>, right_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
   const method    = operator_method_for(operation)
   const left_type = sexpr_type(left_expr)
-  const type_name = match left_type { TNamed(n) => n, _ => "" }
-  if method != "" && type_name != "" then
-    type_name + "_" + method + "(" + eval_expr(left_expr, context, gen_stmts) + ", " + eval_expr(right_expr, context, gen_stmts) + ")"
+  const type_name = match left_type { TNamed(n) => n, _ => '' }
+  if method != '' && type_name != '' then
+    type_name + "_" + method + "(" + eval_expr(left_expr, context, gen_stmts) + ', ' + eval_expr(right_expr, context, gen_stmts) + ")"
   else
     expression_output.parenthesized_binary(eval_expr(left_expr, context, gen_stmts), operation, eval_expr(right_expr, context, gen_stmts))
   end
@@ -110,10 +110,10 @@ fn gen_if_expr(
   match if_semantic_type {
     TNamed(type_name) => do
       const type_cpp = context_resolve(context, type_name)
-      if type_cpp == "auto" then
+      if type_cpp == 'auto' then
         expression_output.ternary_conditional(cond_code, then_code, else_code)
       else
-        "[&]() -> " + type_cpp + " {\nif (" + cond_code + ") {\nreturn " + then_code + ";\n} else {\nreturn " + else_code + ";\n}\n}()"
+        '[&]() -> ' + type_cpp + ' {\nif (' + cond_code + ') {\nreturn ' + then_code + ';\n} else {\nreturn ' + else_code + ';\n}\n}()'
       end
     end,
     _ => expression_output.ternary_conditional(cond_code, then_code, else_code)
@@ -152,7 +152,7 @@ fn gen_array_expr(
     TArray(inner_type) => do
       const element_cpp = sem_type_to_cpp(context, inner_type)
       if elements.length() == 0 then expression_output.typed_array_empty_or_untyped_empty(element_cpp)
-      else if element_cpp == "auto" then expression_output.array_literal(eval_argument_list(elements, context, gen_stmts))
+      else if element_cpp == 'auto' then expression_output.array_literal(eval_argument_list(elements, context, gen_stmts))
       else
         expression_output.typed_array_braced_initializer(
           element_cpp,
@@ -209,7 +209,7 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
         parts.push(eval_expr(elements[ki], context, gen_stmts))
         ki = ki + 1
       end
-      "std::make_tuple(" + parts.join(", ") + ")"
+      'std::make_tuple(' + parts.join(', ') + ")"
     end,
     SExprQuestion(inner_expr, _, _)                        => gen_question_expr(inner_expr, context, gen_stmts),
     SExprLambda(parameters, body_expr, _, _)               => gen_lambda_expr(parameters, body_expr, context, gen_stmts),

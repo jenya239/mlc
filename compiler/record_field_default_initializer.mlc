@@ -14,11 +14,11 @@ import {
   ExprIdent,
   ExprBin,
   ExprUn
-} from "./ast"
-import { CodegenContext, context_resolve } from "./codegen/context"
-import * as lit from "./codegen/literals"
-import * as expression_output from "./codegen/expr"
-import { map_builtin_identifier_reference } from "./codegen/cpp_naming"
+} from './ast'
+import { CodegenContext, context_resolve } from './codegen/context'
+import * as lit from './codegen/literals'
+import * as expression_output from './codegen/expr'
+import { map_builtin_identifier_reference } from './codegen/cpp_naming'
 
 fn binary_operator_permitted_for_record_field_default_initializer(operation: string) -> bool =
   operation == "+" ||

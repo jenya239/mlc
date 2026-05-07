@@ -1,10 +1,10 @@
 // --- Expression and pattern parser ---------------------------------------
 
-import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, RecordLitPartsResult, StmtsResult, StmtResult, TypeResult, parser_new } from "./preds"
-import { parse_type } from "./types"
-import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm, FieldVal, ExprIdent, ExprRecord, ExprRecordUpdate, RecordLitPart, RecordLitFields, RecordLitSpread } from "../ast"
-import { TKind, Eof } from "../ast_tokens"
-import { tokenize } from "../lexer"
+import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, RecordLitPartsResult, StmtsResult, StmtResult, TypeResult, parser_new } from './preds'
+import { parse_type } from './types'
+import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm, FieldVal, ExprIdent, ExprRecord, ExprRecordUpdate, RecordLitPart, RecordLitFields, RecordLitSpread } from '../ast'
+import { TKind, Eof } from '../ast_tokens'
+import { tokenize } from '../lexer'
 
 // --- Statement parsers (merged to break exprs<->stmts cycle) --------------
 
@@ -71,13 +71,13 @@ end
 
 fn parse_array_pattern(parser: Parser, bracket_span: Span) -> PatResult = do
   if parser.kind().is_rbracket() then
-    PatResult { pat: Shared.new(PatArray([], "", bracket_span)), parser: parser.advance() }
+    PatResult { pat: Shared.new(PatArray([], '', bracket_span)), parser: parser.advance() }
   else
     const first = parse_pat(parser)
     const pats: [Shared<Pat>] = []
     pats.push(first.pat)
     let mut st = first.parser
-    let mut rest = ""
+    let mut rest = ''
     while st.kind().is_comma() do
       st = st.advance()
       if st.kind().is_spread() then
@@ -138,7 +138,7 @@ fn parse_statement_let(parser: Parser) -> StmtResult = do
     else if k0.is_lbrace() then
       const br_span = name_pos.span_at_cursor()
       const fr = parse_record_pat_fields(name_pos.advance())
-      const pat = Shared.new(PatRecord("", fr.pats, br_span))
+      const pat = Shared.new(PatRecord('', fr.pats, br_span))
       const type_result = parse_after_let_pattern(fr.parser)
       const value_result = parse_expr(type_result.parser)
       const has_else = value_result.parser.kind().is_else()
@@ -371,10 +371,10 @@ fn parse_or(parser: Parser) -> ExprResult = do
   const left = parse_and(parser)
   let mut expr = left.expr
   let mut state = left.parser
-  while state.kind().is_op() && state.kind().op_val() == "||" do
+  while state.kind().is_op() && state.kind().op_val() == '||' do
     const operator_span = state.span_at_cursor()
     const right = parse_and(state.advance())
-    expr = Shared.new(ExprBin("||", expr, right.expr, operator_span))
+    expr = Shared.new(ExprBin('||', expr, right.expr, operator_span))
     state = right.parser
   end
   ExprResult { expr, parser: state }
@@ -384,10 +384,10 @@ fn parse_and(parser: Parser) -> ExprResult = do
   const left = parse_equality(parser)
   let mut expr = left.expr
   let mut state = left.parser
-  while state.kind().is_op() && state.kind().op_val() == "&&" do
+  while state.kind().is_op() && state.kind().op_val() == '&&' do
     const operator_span = state.span_at_cursor()
     const right = parse_equality(state.advance())
-    expr = Shared.new(ExprBin("&&", expr, right.expr, operator_span))
+    expr = Shared.new(ExprBin('&&', expr, right.expr, operator_span))
     state = right.parser
   end
   ExprResult { expr, parser: state }
@@ -400,7 +400,7 @@ fn parse_equality(parser: Parser) -> ExprResult = do
   let mut go = true
   while go do
     const kind = state.kind()
-    if kind.is_op() && (kind.op_val() == "==" || kind.op_val() == "!=") then
+    if kind.is_op() && (kind.op_val() == '==' || kind.op_val() == '!=') then
       const operator_span = state.span_at_cursor()
       const operator_value = kind.op_val()
       const right = parse_pipe(state.advance())
@@ -414,7 +414,7 @@ fn parse_equality(parser: Parser) -> ExprResult = do
 end
 
 fn is_relational_comparison_operator(operator: string) -> bool =
-  operator == "<" || operator == ">" || operator == "<=" || operator == ">="
+  operator == "<" || operator == ">" || operator == '<=' || operator == '>='
 
 fn parse_comparison_relational(parser: Parser) -> ExprResult = do
   const left = parse_add(parser)
@@ -551,18 +551,18 @@ fn parse_arg_list(parser: Parser) -> ExprsResult = do
 end
 
 fn build_template_expr(parts: [string]) -> Shared<Expr> = do
-  let mut result: Shared<Expr> = Shared.new(ExprStr("", span_unknown()))
+  let mut result: Shared<Expr> = Shared.new(ExprStr('', span_unknown()))
   let mut pi = 0
   while pi < parts.length() do
     const part_expr =
       if pi % 2 == 0 then
         Shared.new(ExprStr(parts[pi], span_unknown()))
       else if parts[pi].length() == 0 then
-        Shared.new(ExprStr("", span_unknown()))
+        Shared.new(ExprStr('', span_unknown()))
       else
         const sub_lex = tokenize(parts[pi])
         const sub_parsed = parse_expr(parser_new(sub_lex.tokens))
-        Shared.new(ExprMethod(sub_parsed.expr, "to_string", [], span_unknown()))
+        Shared.new(ExprMethod(sub_parsed.expr, 'to_string', [], span_unknown()))
       end
     if pi == 0 then
       result = part_expr

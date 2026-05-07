@@ -1,16 +1,16 @@
 // Entry point. Pipeline: source - tokenize - parse - load imports - check - transform - gen_module
 
-import { tokenize } from "./lexer"
-import { parse_program_with_source_path } from "./parser/decls"
-import { check_with_context } from "./checker/check"
-import { transform_load_items } from "./checker/transform_decl"
-import { build_registry } from "./checker/registry"
-import { gen_module, GenModuleOut, precompute } from "./codegen/module"
-import { LoadItem, PrecomputedCtx } from "./codegen/context"
-import { NamespaceImportAlias } from "./codegen/decl_index"
-import { path_to_module_base } from "./codegen/cpp_naming"
-import { expand_parameter_destructuring_in_program } from "./checker/param_destructure_expand"
-import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from "./ast"
+import { tokenize } from './lexer'
+import { parse_program_with_source_path } from './parser/decls'
+import { check_with_context } from './checker/check'
+import { transform_load_items } from './checker/transform_decl'
+import { build_registry } from './checker/registry'
+import { gen_module, GenModuleOut, precompute } from './codegen/module'
+import { LoadItem, PrecomputedCtx } from './codegen/context'
+import { NamespaceImportAlias } from './codegen/decl_index'
+import { path_to_module_base } from './codegen/cpp_naming'
+import { expand_parameter_destructuring_in_program } from './checker/param_destructure_expand'
+import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from './ast'
 
 fn dirname(path: string) -> string = do
   let mut last_slash = -1
@@ -19,24 +19,24 @@ fn dirname(path: string) -> string = do
     if path.char_at(index) == "/" then last_slash = index end
     index = index + 1
   end
-  if last_slash <= 0 then "" else path.substring(0, last_slash) end
+  if last_slash <= 0 then '' else path.substring(0, last_slash) end
 end
 
 fn resolve_dotdot(path: string) -> string = do
   let mut p = path
   let mut i = 0
   while i + 4 <= p.length() do
-    if p.substring(i, 4) == "/../" then
+    if p.substring(i, 4) == '/../' then
       let mut j = i - 1
       while j >= 0 && p.char_at(j) != "/" do j = j - 1 end
-      const prefix = if j <= 0 then "" else p.substring(0, j) end
+      const prefix = if j <= 0 then '' else p.substring(0, j) end
       const suffix = p.substring(i + 4, p.length() - i - 4)
-      p = if prefix == "" then suffix else prefix + "/" + suffix end
+      p = if prefix == '' then suffix else prefix + "/" + suffix end
       i = 0
     end
     i = i + 1
   end
-  if p.length() >= 3 && p.substring(0, 3) == "../" then
+  if p.length() >= 3 && p.substring(0, 3) == '../' then
     p = p.substring(3, p.length() - 3)
   end
   p
@@ -44,15 +44,15 @@ end
 
 fn resolve_import_path(base_path: string, import_path: string) -> string = do
   const base_dir = dirname(base_path)
-  const rest = if import_path.length() >= 2 && import_path.substring(0, 2) == "./"
+  const rest = if import_path.length() >= 2 && import_path.substring(0, 2) == './'
     then import_path.substring(2, import_path.length() - 2)
     else import_path
     end
-  const with_ext = if rest.length() >= 4 && rest.substring(rest.length() - 4, 4) == ".mlc"
+  const with_ext = if rest.length() >= 4 && rest.substring(rest.length() - 4, 4) == '.mlc'
     then rest
-    else rest + ".mlc"
+    else rest + '.mlc'
     end
-  const raw = if base_dir == "" then with_ext else base_dir + "/" + with_ext end
+  const raw = if base_dir == '' then with_ext else base_dir + "/" + with_ext end
   resolve_dotdot(raw)
 end
 
@@ -72,17 +72,17 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
   const norm_path = resolve_dotdot(path)
   if cache.has(norm_path) then cache.get(norm_path)
   else if path_in_loaded(norm_path, loaded) then
-    LoadResult { items: [], errors: ["circular: " + norm_path] }
+    LoadResult { items: [], errors: ['circular: ' + norm_path] }
   else
   let cur_loaded = loaded
   cur_loaded.push(norm_path)
   const source = File.read(path)
   if source.length() == 0 && !File.exists(path) then
-    LoadResult { items: [], errors: ["file not found: " + path] }
+    LoadResult { items: [], errors: ['file not found: ' + path] }
   else
   const lex = tokenize(source)
   if lex.has_errors() then
-    LoadResult { items: [], errors: ["lex " + path + ": " + lex.errors[0]] }
+    LoadResult { items: [], errors: ['lex ' + path + ': ' + lex.errors[0]] }
   else
     const prog = parse_program_with_source_path(lex.tokens, norm_path)
     let items: [LoadItem] = []
@@ -189,7 +189,7 @@ end
 fn compile_modular(entry_path: string, out_dir: string) -> Result<string, [string]> = do
   const src = File.read(entry_path)
   const lex = tokenize(src)
-  if lex.has_errors() then Err(["lex: " + lex.errors[0]])
+  if lex.has_errors() then Err(['lex: ' + lex.errors[0]])
   else
     const source_path = resolve_dotdot(entry_path)
     const prog = parse_program_with_source_path(lex.tokens, source_path)
@@ -216,19 +216,19 @@ fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) 
     const s_item = s_items[i]
     const out    = gen_module(s_item, items, expanded_merge_program, precomp)
     const base   = path_to_module_base(s_item.path)
-    const hpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".hpp" else base + ".hpp" end
-    const cpp_path = if out_dir.length() > 0 then out_dir + "/" + base + ".cpp" else base + ".cpp" end
+    const hpp_path = if out_dir.length() > 0 then out_dir + "/" + base + '.hpp' else base + '.hpp' end
+    const cpp_path = if out_dir.length() > 0 then out_dir + "/" + base + '.cpp' else base + '.cpp' end
     File.write(hpp_path, out.h)
     File.write(cpp_path, out.c)
     i = i + 1
   end
-  ""
+  ''
 end
 
 fn format_errs(label: string, errors: [string]) -> string = do
-  let mut output = ""; let mut i = 0
+  let mut output = ''; let mut i = 0
   while i < errors.length() do
-    output = output + label + ": " + errors[i] + "\n"; i = i + 1
+    output = output + label + ': ' + errors[i] + "\n"; i = i + 1
   end
   output
 end
@@ -236,15 +236,15 @@ end
 fn main() -> i32 = do
   const a = args()
   if a.length() == 0 then
-    println("Usage: mlcc <source.mlc> [-o out_dir]")
+    println('Usage: mlcc <source.mlc> [-o out_dir]')
     exit(1)
   end
-  const entry_path = if a.length() >= 3 && a[0] == "-o" then a[2] else a[0] end
-  const out_dir = if a.length() >= 3 && a[0] == "-o" then a[1]
-    else if a.length() >= 3 && a[1] == "-o" then a[2]
-    else "out" end
+  const entry_path = if a.length() >= 3 && a[0] == '-o' then a[2] else a[0] end
+  const out_dir = if a.length() >= 3 && a[0] == '-o' then a[1]
+    else if a.length() >= 3 && a[1] == '-o' then a[2]
+    else 'out' end
   match compile_modular(entry_path, out_dir) {
     Ok(_) => 0,
-    Err(errors) => do print(format_errs("error", errors)); exit(1); 0 end
+    Err(errors) => do print(format_errs('error', errors)); exit(1); 0 end
   }
 end

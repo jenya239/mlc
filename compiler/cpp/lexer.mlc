@@ -1,6 +1,6 @@
 // C++ lexer: source string - [CppToken]
 
-import { LexState, is_alpha, is_digit, is_alnum, is_ws, map_escape, skip_whitespace } from "../lexer"
+import { LexState, is_alpha, is_digit, is_alnum, is_ws, map_escape, skip_whitespace } from '../lexer'
 
 type CppTKind =
   | CKAuto | CKConst | CKConstexpr | CKIf | CKElse | CKWhile | CKFor
@@ -24,33 +24,33 @@ type CppScanStrR = CppScanStrR { st: LexState, tok: CppToken, err: string }
 type CppScanOpR  = CppScanOpR  { st: LexState, tok: CppToken }
 
 fn cpp_keyword_kind(word: string) -> CppTKind =
-  if      word == "auto"       then CKAuto
-  else if word == "const"      then CKConst
-  else if word == "constexpr"  then CKConstexpr
-  else if word == "if"         then CKIf
-  else if word == "else"       then CKElse
-  else if word == "while"      then CKWhile
-  else if word == "for"        then CKFor
-  else if word == "return"     then CKReturn
-  else if word == "break"      then CKBreak
-  else if word == "struct"     then CKStruct
-  else if word == "using"      then CKUsing
-  else if word == "noexcept"   then CKNoexcept
-  else if word == "inline"     then CKInline
-  else if word == "static"     then CKStatic
-  else if word == "void"       then CKVoid
-  else if word == "int"        then CKInt
-  else if word == "bool"       then CKBool
-  else if word == "char"       then CKChar
-  else if word == "true"       then CKTrue
-  else if word == "false"      then CKFalse
-  else if word == "nullptr"    then CKNullptr
-  else if word == "template"   then CKTemplate
-  else if word == "typename"   then CKTypename
-  else if word == "namespace"  then CKNamespace
-  else if word == "new"        then CKNew
-  else if word == "delete"     then CKDelete
-  else if word == "operator"   then CKOperator
+  if      word == 'auto'       then CKAuto
+  else if word == 'const'      then CKConst
+  else if word == 'constexpr'  then CKConstexpr
+  else if word == 'if'         then CKIf
+  else if word == 'else'       then CKElse
+  else if word == 'while'      then CKWhile
+  else if word == 'for'        then CKFor
+  else if word == 'return'     then CKReturn
+  else if word == 'break'      then CKBreak
+  else if word == 'struct'     then CKStruct
+  else if word == 'using'      then CKUsing
+  else if word == 'noexcept'   then CKNoexcept
+  else if word == 'inline'     then CKInline
+  else if word == 'static'     then CKStatic
+  else if word == 'void'       then CKVoid
+  else if word == 'int'        then CKInt
+  else if word == 'bool'       then CKBool
+  else if word == 'char'       then CKChar
+  else if word == 'true'       then CKTrue
+  else if word == 'false'      then CKFalse
+  else if word == 'nullptr'    then CKNullptr
+  else if word == 'template'   then CKTemplate
+  else if word == 'typename'   then CKTypename
+  else if word == 'namespace'  then CKNamespace
+  else if word == 'new'        then CKNew
+  else if word == 'delete'     then CKDelete
+  else if word == 'operator'   then CKOperator
   else CIdent(word)
   end
 
@@ -82,12 +82,12 @@ fn cpp_scan_string(state: LexState) -> CppScanStrR = do
   const column = state.col
   let current = state.advance()
   let parts: [string] = []
-  let error = ""
+  let error = ''
   while !current.eof() && current.current() != "\"" do
     if current.current() == "\\" then
       current = current.advance()
       const mapped = map_escape(current.current())
-      if mapped != "" then parts.push(mapped)
+      if mapped != '' then parts.push(mapped)
       else
         parts.push("\\"); parts.push(current.current())
       end
@@ -97,10 +97,10 @@ fn cpp_scan_string(state: LexState) -> CppScanStrR = do
       current = current.advance()
     end
   end
-  if current.eof() then error = "unterminated string"
+  if current.eof() then error = 'unterminated string'
   else current = current.advance()
   end
-  CppScanStrR { st: current, tok: CppToken { kind: CLStr(parts.join("")), line: line, col: column }, err: error }
+  CppScanStrR { st: current, tok: CppToken { kind: CLStr(parts.join('')), line: line, col: column }, err: error }
 end
 
 fn cpp_scan_op(state: LexState) -> CppScanOpR = do
@@ -146,7 +146,7 @@ fn cpp_tokenize(source: string) -> CppLexOut = do
       let result = cpp_scan_int(state); tokens.push(result.tok); state = result.st
     else if character == "\"" then
       let result = cpp_scan_string(state); tokens.push(result.tok); state = result.st
-      if result.err != "" then errors.push(result.err) end
+      if result.err != '' then errors.push(result.err) end
     else
       let result = cpp_scan_op(state); tokens.push(result.tok); state = result.st
     end

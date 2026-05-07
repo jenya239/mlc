@@ -1,12 +1,12 @@
 // Assertion helpers for codegen unit tests.
 
-import { TestResult, assert_eq_str, assert_true } from "./test_runner"
-import { Program, TypeExpr } from "../ast"
-import { SExpr } from "../semantic_ir"
-import { CodegenContext, create_codegen_context } from "../codegen/context"
-import { gen_expr } from "../codegen/eval"
-import { type_to_cpp } from "../codegen/type_gen"
-import { empty_program } from "./ast_builders"
+import { TestResult, assert_eq_str, assert_true } from './test_runner'
+import { Program, TypeExpr } from '../ast'
+import { SExpr } from '../semantic_ir'
+import { CodegenContext, create_codegen_context } from '../codegen/context'
+import { gen_expr } from '../codegen/eval'
+import { type_to_cpp } from '../codegen/type_gen'
+import { empty_program } from './ast_builders'
 
 export fn empty_codegen_context() -> CodegenContext =
   create_codegen_context(empty_program())
@@ -18,11 +18,11 @@ export fn assert_type_generates(test_name: string, context: CodegenContext, type
   assert_eq_str(test_name, type_to_cpp(context, type_expr), expected_code)
 
 export fn assert_code_contains(test_name: string, actual_code: string, expected_substring: string) -> TestResult =
-  assert_true(test_name + " contains '" + expected_substring + "'", string_contains(actual_code, expected_substring))
+  assert_true(test_name + ' contains \'' + expected_substring + "'", string_contains(actual_code, expected_substring))
 
 export fn assert_code_not_contains(test_name: string, actual_code: string, forbidden_substring: string) -> TestResult =
   assert_true(
-    test_name + " must not contain '" + forbidden_substring + "'",
+    test_name + ' must not contain \'' + forbidden_substring + "'",
     !string_contains(actual_code, forbidden_substring))
 
 fn chars_match_at(haystack: string, start_position: i32, needle: string, needle_length: i32) -> bool = do

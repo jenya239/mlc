@@ -1,18 +1,18 @@
 // Trait bound checking at call sites.
 // No dependency on infer_expr — operates on already-inferred argument types.
 
-import { Diagnostic, Span, diagnostic_error, diagnostics_append } from "../ast"
-import { Type } from "./registry"
-import { CheckContext } from "./check_context"
-import { build_call_type_substitution } from "./call_argument_unify"
+import { Diagnostic, Span, diagnostic_error, diagnostics_append } from '../ast'
+import { Type } from './registry'
+import { CheckContext } from './check_context'
+import { build_call_type_substitution } from './call_argument_unify'
 
 fn type_name_for_bound_check(type_value: Shared<Type>) -> string =
   match type_value {
-    TI32    => "i32",
-    TString => "string",
-    TBool   => "bool",
+    TI32    => 'i32',
+    TString => 'string',
+    TBool   => 'bool',
     TNamed(name) => name,
-    _ => ""
+    _ => ''
   }
 
 fn check_one_type_param_bounds(
@@ -26,13 +26,13 @@ fn check_one_type_param_bounds(
   if substitution.has(type_param) then
     const actual_type = substitution.get(type_param)
     const actual_name = type_name_for_bound_check(actual_type)
-    if actual_name != "" then
+    if actual_name != '' then
       let mut trait_index = 0
       while trait_index < bounds.length() do
         const required_trait = bounds[trait_index]
         if !inference_context.registry.type_implements_trait(actual_name, required_trait) then
           param_errors = diagnostics_append(param_errors, [diagnostic_error(
-            "type " + actual_name + " does not implement " + required_trait,
+            'type ' + actual_name + ' does not implement ' + required_trait,
             call_source_span)])
         end
         trait_index = trait_index + 1

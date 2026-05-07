@@ -1,14 +1,14 @@
 // Function and constructor call type inference.
 // infer_expr_fn injected to break the import cycle with infer.mlc.
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_placeholder } from "../ast"
-import { Type, TNamed } from "./registry"
-import { CheckContext } from "./check_context"
-import { InferResult } from "./infer_result"
-import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor, function_parameter_list } from "./infer_call_support"
-import { call_argument_unification_diagnostics } from "./call_argument_unify"
-import { trait_bound_diagnostics } from "./infer_trait_bounds"
-import { type_is_function } from "./semantic_type_structure"
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_placeholder } from '../ast'
+import { Type, TNamed } from './registry'
+import { CheckContext } from './check_context'
+import { InferResult } from './infer_result'
+import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor, function_parameter_list } from './infer_call_support'
+import { call_argument_unification_diagnostics } from './call_argument_unify'
+import { trait_bound_diagnostics } from './infer_trait_bounds'
+import { type_is_function } from './semantic_type_structure'
 
 type ResolvedArgs = ResolvedArgs { exprs: [Shared<Expr>], errors: [Diagnostic] }
 
@@ -57,9 +57,9 @@ fn reorder_named_to_positional(args: [Shared<Expr>], param_names: [string]) -> R
       ExprNamedArg(name, inner, arg_span) => do
         const slot = find_param_slot(param_names, name)
         if slot == -1 then
-          errors.push(diagnostic_error("unknown parameter name: " + name, arg_span))
+          errors.push(diagnostic_error('unknown parameter name: ' + name, arg_span))
             else if filled[slot] == 1 then
-          errors.push(diagnostic_error("duplicate named arg: " + name, arg_span))
+          errors.push(diagnostic_error('duplicate named arg: ' + name, arg_span))
             else
               result.set(slot, inner)
               filled.set(slot, 1)
@@ -111,7 +111,7 @@ export fn infer_expr_call(
   inference_context: CheckContext,
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
-  const callee_name = match function { ExprIdent(name, _) => name, _ => "" }
+  const callee_name = match function { ExprIdent(name, _) => name, _ => '' }
   const resolved = resolve_named_args(call_arguments, callee_name, inference_context.registry)
   const effective_args = resolved.exprs
   const function_result = infer_expr_fn(function, inference_context)
@@ -125,13 +125,13 @@ export fn infer_expr_call(
     argument_index = argument_index + 1
   end
   const with_arguments = InferResult { inferred_type: function_result.inferred_type, errors: collected_errors }
-  if callee_name != "" && inference_context.registry.has_ctor(callee_name) then
+  if callee_name != '' && inference_context.registry.has_ctor(callee_name) then
     const constructor_output = infer_expr_call_for_constructor_name(
       callee_name, with_arguments, effective_args, call_source_span, inference_context)
     const constructor_parameter_types = inference_context.registry.ctor_params_for(callee_name)
     const algebraic_type_name = match inference_context.registry.ctor_type(callee_name) {
       TNamed(parent_name) => parent_name,
-      _ => ""
+      _ => ''
     }
     const constructor_type_parameter_names =
       inference_context.registry.algebraic_decl_type_parameter_names_for(algebraic_type_name)
@@ -155,7 +155,7 @@ export fn infer_expr_call(
     const callee_parameter_types = function_parameter_list(function_result.inferred_type)
     const max_arity = callee_parameter_types.length()
     const min_arity =
-      if callee_name != "" && inference_context.registry.has_fn(callee_name) then
+      if callee_name != '' && inference_context.registry.has_fn(callee_name) then
         const r = inference_context.registry.required_arity_for_fn(callee_name)
         if r >= 0 then r else max_arity end
       else
@@ -163,7 +163,7 @@ export fn infer_expr_call(
       end
     const got = effective_args.length()
     const callee_type_parameter_names =
-      if callee_name != "" && inference_context.registry.has_fn(callee_name) then
+      if callee_name != '' && inference_context.registry.has_fn(callee_name) then
         inference_context.registry.registered_function_type_parameter_names(callee_name)
       else
         do const empty_callee_type_names: [string] = []; empty_callee_type_names end

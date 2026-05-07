@@ -1,25 +1,25 @@
 // Type inference: dispatcher and per-expression rule functions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span, RecordLitPart } from "../ast"
-import { Type, TTuple, TNamed } from "./registry"
-import { CheckContext, check_context_new } from "./check_context"
-import { InferResult, StmtInferResult, infer_ok } from "./infer_result"
-import * as infer_literal_helpers from "./infer_literals"
-import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } from "./infer_for_support"
-import { infer_question_from_inner_result } from "./infer_question_expression"
-import * as infer_operand_combine from "./infer_operand_combine"
-import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from "./type_diagnostics"
-import { types_structurally_equal, type_is_unknown, type_description, operator_method_for } from "./semantic_type_structure"
-import { infer_expr_call } from "./infer_call"
-import { field_type_from_object, method_return_type_from_object } from "./registry"
-import { infer_expr_identifier } from "./infer_expr_ident"
-import { env_for_pattern } from "./pattern_env"
-import { infer_expr_match } from "./infer_match"
-import { infer_let_pattern_env } from "./let_pattern_infer"
-import { infer_array_hof_method_call, should_infer_as_array_hof } from "./infer_array_method"
-import { infer_result_option_hof_method_call, should_infer_as_result_option_hof } from "./infer_result_option_method"
-import * as record_lit_merge from "./record_lit_merge"
-import { partial_application_desugar_expr } from "./partial_application_desugar"
+import { Expr, Stmt, FieldVal, MatchArm, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span, RecordLitPart } from '../ast'
+import { Type, TTuple, TNamed } from './registry'
+import { CheckContext, check_context_new } from './check_context'
+import { InferResult, StmtInferResult, infer_ok } from './infer_result'
+import * as infer_literal_helpers from './infer_literals'
+import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } from './infer_for_support'
+import { infer_question_from_inner_result } from './infer_question_expression'
+import * as infer_operand_combine from './infer_operand_combine'
+import { match_arm_type_mismatch_diagnostic, infer_expr_field_diagnostics } from './type_diagnostics'
+import { types_structurally_equal, type_is_unknown, type_description, operator_method_for } from './semantic_type_structure'
+import { infer_expr_call } from './infer_call'
+import { field_type_from_object, method_return_type_from_object } from './registry'
+import { infer_expr_identifier } from './infer_expr_ident'
+import { env_for_pattern } from './pattern_env'
+import { infer_expr_match } from './infer_match'
+import { infer_let_pattern_env } from './let_pattern_infer'
+import { infer_array_hof_method_call, should_infer_as_array_hof } from './infer_array_method'
+import { infer_result_option_hof_method_call, should_infer_as_result_option_hof } from './infer_result_option_method'
+import * as record_lit_merge from './record_lit_merge'
+import { partial_application_desugar_expr } from './partial_application_desugar'
 
 // --- Argument / field-value error accumulators ------------------------------
 
@@ -59,7 +59,7 @@ fn infer_field_values_errors(
       const type_mismatch = !type_is_unknown(expected_type) && !type_is_unknown(actual_type) && !types_structurally_equal(expected_type, actual_type)
       const type_errors: [Diagnostic] = if type_mismatch then
         [diagnostic_error(
-          "field " + field_value.name + ": expected " + type_description(expected_type) + ", got " + type_description(actual_type),
+          'field ' + field_value.name + ': expected ' + type_description(expected_type) + ', got ' + type_description(actual_type),
           expr_span(field_value.val))]
       else [] end
       result = InferResult {
@@ -104,7 +104,7 @@ fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>,
   const left_result  = infer_expr(left, inference_context)
   const right_result = infer_expr(right, inference_context)
   const method = operator_method_for(operation)
-  if method != "" then
+  if method != '' then
     const method_type = method_return_type_from_object(left_result.inferred_type, method, inference_context.registry)
     if !type_is_unknown(method_type) then
       InferResult { inferred_type: method_type, errors: diagnostics_append(left_result.errors, right_result.errors) }
@@ -282,7 +282,7 @@ export fn infer_expr_record(type_name: string, lit_parts: [RecordLitPart], infer
   const private_errors: [Diagnostic] =
     if inference_context.registry.is_private_ctor(type_name) &&
        inference_context.current_extend_type != type_name then
-      [diagnostic_error("private constructor: cannot construct " + type_name + " outside its extend block", span)]
+      [diagnostic_error('private constructor: cannot construct ' + type_name + ' outside its extend block', span)]
     else [] end
   let mut result = InferResult { inferred_type: Shared.new(TNamed(type_name)), errors: private_errors }
   const explicit_field_values_flat = record_lit_merge.collect_explicit_field_values_flat(lit_parts)
@@ -303,11 +303,11 @@ export fn infer_expr_record(type_name: string, lit_parts: [RecordLitPart], infer
     end
     result
   else if !inference_context.registry.has_fields(type_name) then
-    result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, "")
+    result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, '')
     InferResult {
       inferred_type: result.inferred_type,
       errors: diagnostics_append(result.errors,
-        [diagnostic_error("record literal spread requires a named record type with fields", span)])
+        [diagnostic_error('record literal spread requires a named record type with fields', span)])
     }
   else
     result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, type_name)
@@ -358,7 +358,7 @@ export fn infer_statements(statements: [Shared<Stmt>], inference_context: CheckC
         const is_refutable: bool = match pattern { PatCtor(_, _, _) => true, _ => false }
         if is_refutable && !has_else then
           collected_errors = diagnostics_append(collected_errors,
-            [diagnostic_error("refutable pattern in let requires `else` branch", source_span)])
+            [diagnostic_error('refutable pattern in let requires `else` branch', source_span)])
         end
         if has_else then do
           const else_result = infer_expr(else_body, check_context_new(current_environment, inference_context.registry))

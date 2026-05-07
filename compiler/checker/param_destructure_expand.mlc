@@ -10,10 +10,10 @@ import {
   TypeExpr,
   Diagnostic, diagnostic_error,
   span_unknown
-} from "../ast"
+} from '../ast'
 
 fn synthetic_destructure_parameter_name(parameter_position_index: i32) -> string =
-  "__mlc_ds" + parameter_position_index.to_string()
+  '__mlc_ds' + parameter_position_index.to_string()
 
 export fn parameter_binding_is_plain_identifier(parameter: Shared<Param>) -> bool =
   match parameter.param_pattern {
@@ -160,7 +160,7 @@ fn extern_parameter_destructure_errors_for_decl_shared(declaration: Shared<Decl>
           while parameter_scan_index < parameters.length() do
             if !parameter_pattern_is_plain(parameters[parameter_scan_index]) then
               scan_errors.push(diagnostic_error(
-                "destructuring parameters are not supported on extern functions",
+                'destructuring parameters are not supported on extern functions',
                 error_span))
             end
             parameter_scan_index = parameter_scan_index + 1

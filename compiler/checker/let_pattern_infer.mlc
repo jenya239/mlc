@@ -1,8 +1,8 @@
 // let-pattern: extend type environment from pattern + RHS type (A3).
 
-import { Pat, span_unknown } from "../ast"
-import { Type, TypeRegistry, field_type_from_object, TNamed, TGeneric, TTuple, TPair } from "./registry"
-import { env_for_pattern_substituted } from "./pattern_env"
+import { Pat, span_unknown } from '../ast'
+import { Type, TypeRegistry, field_type_from_object, TNamed, TGeneric, TTuple, TPair } from './registry'
+import { env_for_pattern_substituted } from './pattern_env'
 
 fn build_let_substitution(value_type: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
   const substitution: Map<string, Shared<Type>> = Map.new()
@@ -57,20 +57,20 @@ fn apply_let_pattern_to_env(
           while i < subs.length() do
             acc = apply_let_pattern_to_env(subs[i], et, acc, registry); i = i + 1
           end
-          if rest != "" then do acc.set(rest, value_type); acc end else acc end
+          if rest != '' then do acc.set(rest, value_type); acc end else acc end
         end,
         _ => base_env
       }
     end,
     PatRecord(rec_name, field_pats, _) => do
-      if rec_name != "" then
+      if rec_name != '' then
         base_env
       else
         let mut acc = base_env; let mut i = 0
         while i < field_pats.length() do
           const fp = field_pats[i]
-          const field_name = match fp { PatIdent(n, _) => n, _ => "" }
-          if field_name != "" then
+          const field_name = match fp { PatIdent(n, _) => n, _ => '' }
+          if field_name != '' then
             const ft = field_type_from_object(value_type, field_name, registry)
             acc = apply_let_pattern_to_env(fp, ft, acc, registry)
           end
@@ -88,7 +88,7 @@ fn record_base_name_for_ordered_tuple_pattern(value_type: Shared<Type>) -> strin
   match value_type {
     TNamed(record_name) => record_name,
     TGeneric(record_name, _) => record_name,
-    _ => ""
+    _ => ''
   }
 
 fn tuple_pattern_environment_using_ordered_record_fields(
@@ -98,7 +98,7 @@ fn tuple_pattern_environment_using_ordered_record_fields(
   registry: TypeRegistry
 ) -> Map<string, Shared<Type>> = do
   const record_lookup_name = record_base_name_for_ordered_tuple_pattern(value_type)
-  if record_lookup_name == "" || !registry.has_fields(record_lookup_name) then base_environment
+  if record_lookup_name == '' || !registry.has_fields(record_lookup_name) then base_environment
   else
     const ordered_field_labels = registry.record_field_names_ordered_for(record_lookup_name)
     if ordered_field_labels.length() != subs.length() then base_environment

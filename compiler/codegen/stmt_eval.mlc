@@ -2,17 +2,17 @@
 // break the import cycle with expr_eval.mlc. Private helpers thread gen_expr_fn
 // through; recursive eval_stmts_str calls go directly (same module).
 
-import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from "../semantic_ir"
-import { gen_let_pattern_statement } from "./let_pat"
-import { Type, TArray, TGeneric, TNamed } from "../checker/registry"
+import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from '../semantic_ir'
+import { gen_let_pattern_statement } from './let_pat'
+import { Type, TArray, TGeneric, TNamed } from '../checker/registry'
 import { CodegenContext, GenStmtsResult, GenStmtResult,
-         update_context_from_statement, context_resolve } from "./context"
-import { cpp_safe } from "./cpp_naming"
-import { generate_conditional_else_with_empty_array_coercion } from "./expression_support"
-import { sem_type_to_cpp } from "./type_gen"
-import { gen_unit_literal } from "./literals"
-import { stmts_final_ctx } from "./statement_context"
-import * as expression_output from "./expr"
+         update_context_from_statement, context_resolve } from './context'
+import { cpp_safe } from './cpp_naming'
+import { generate_conditional_else_with_empty_array_coercion } from './expression_support'
+import { sem_type_to_cpp } from './type_gen'
+import { gen_unit_literal } from './literals'
+import { stmts_final_ctx } from './statement_context'
+import * as expression_output from './expr'
 
 // --- Try unwrap helper -------------------------------------------------------
 
@@ -36,10 +36,10 @@ fn constexpr_binding_value_code(
       match binding_semantic_type {
         TNamed(type_name) => do
           const type_cpp = context_resolve(context, type_name)
-          if type_cpp == "auto" then
+          if type_cpp == 'auto' then
             expression_output.ternary_conditional(cond_code, then_code, else_code)
           else
-            "[&]() -> " + type_cpp + " {\nif (" + cond_code + ") {\nreturn " + then_code + ";\n} else {\nreturn " + else_code + ";\n}\n}()"
+            '[&]() -> ' + type_cpp + ' {\nif (' + cond_code + ') {\nreturn ' + then_code + ';\n} else {\nreturn ' + else_code + ';\n}\n}()'
           end
         end,
         _ => expression_output.ternary_conditional(cond_code, then_code, else_code)
@@ -61,11 +61,11 @@ fn eval_stmt_if_else_suffix(
   gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string
 ) -> string =
   match else_expression {
-    SExprUnit(_, _) => "",
+    SExprUnit(_, _) => '',
     SExprBlock(statements, result_expression, _, _) =>
       if statements.length() == 0 then
         match result_expression {
-          SExprUnit(_, _) => "",
+          SExprUnit(_, _) => '',
           _ => expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
         }
       else expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
@@ -149,13 +149,13 @@ fn eval_elements_code(elements: [Shared<SExpr>], context: CodegenContext, gen_ex
   while index < elements.length() do
     parts.push(gen_expr_fn(elements[index], context)); index = index + 1
   end
-  parts.join(", ")
+  parts.join(', ')
 end
 
 export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> GenStmtResult =
   match stmt {
     SStmtLet(name, _, value, value_type, _) => do
-      const try_identifier = "__try_" + try_counter.to_string()
+      const try_identifier = '__try_' + try_counter.to_string()
       const next_counter = try_counter + 1
       const result = match value {
         SExprQuestion(inner_expr, _, _) =>
@@ -174,14 +174,14 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
               const element_cpp = sem_type_to_cpp(context, inner_type)
               if elements.length() == 0 then
                 expression_output.typed_array_empty_or_untyped_empty(element_cpp)
-              else if element_cpp == "auto" then
+              else if element_cpp == 'auto' then
                 expression_output.array_literal(eval_elements_code(elements, context, gen_expr_fn))
               else
                 expression_output.typed_array_braced_initializer(element_cpp, eval_elements_code(elements, context, gen_expr_fn))
               end
             end,
             _ => if elements.length() == 0 then expression_output.array_string_fallback_empty()
-                 else expression_output.constructor_call_braces("mlc::Array", eval_elements_code(elements, context, gen_expr_fn))
+                 else expression_output.constructor_call_braces('mlc::Array', eval_elements_code(elements, context, gen_expr_fn))
                  end
           }
           GenStmtResult {
@@ -190,13 +190,13 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
           }
         end,
         SExprMethod(map_object, method_name, _, _, _) => do
-          const value_code = if method_name == "new" then
+          const value_code = if method_name == 'new' then
             match map_object {
               SExprIdent(object_name, _, _) =>
-                if object_name == "Map" then
+                if object_name == 'Map' then
                   match value_type {
                     TGeneric(type_name, type_args) =>
-                      if type_name == "Map" && type_args.length() == 2 then
+                      if type_name == 'Map' && type_args.length() == 2 then
                         expression_output.hash_map_empty_instantiation(
                           sem_type_to_cpp(context, type_args[0]),
                           sem_type_to_cpp(context, type_args[1]))
@@ -236,7 +236,7 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
       },
     SStmtExpr(expression, _) => match expression {
       SExprQuestion(inner_expr, _, _) => do
-        const try_identifier = "__try_" + try_counter.to_string()
+        const try_identifier = '__try_' + try_counter.to_string()
         GenStmtResult {
           output: eval_try_unwrap(
             inner_expr,
@@ -253,7 +253,7 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
     SStmtContinue(_) => GenStmtResult { output: expression_output.continue_line(), next_try: try_counter },
     SStmtReturn(expression, _) => match expression {
       SExprQuestion(inner_expr, _, _) => do
-        const try_identifier = "__try_ret_" + try_counter.to_string()
+        const try_identifier = '__try_ret_' + try_counter.to_string()
         GenStmtResult {
           output: eval_try_unwrap(
             inner_expr,
@@ -281,7 +281,7 @@ export fn eval_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenC
     current_context = update_context_from_statement(statements[index], current_context)
     index = index + 1
   end
-  GenStmtsResult { code: parts.join(""), next_try: counter }
+  GenStmtsResult { code: parts.join(''), next_try: counter }
 end
 
 export fn eval_stmts_str(statements: [Shared<SStmt>], context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string = do

@@ -8,7 +8,7 @@ import {
   ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda, ExprNamedArg, ExprWith,
   StmtLet, StmtLetPat, StmtLetConst, StmtExpr, StmtReturn, StmtBreak, StmtContinue,
   span_unknown
-} from "../ast"
+} from '../ast'
 
 type PartialPair = PartialPair { expression: Shared<Expr>, next_serial: i32 }
 
@@ -48,7 +48,7 @@ fn partial_allocate_parameter_names(hole_count: i32, serial_start: i32) -> Parti
   let mut runner = serial_start
   let mut counter = 0
   while counter < hole_count do
-    names.push("partial_application_parameter_" + runner.to_string())
+    names.push('partial_application_parameter_' + runner.to_string())
     runner = runner + 1
     counter = counter + 1
   end

@@ -1,19 +1,19 @@
 // Unit tests for the code generator.
 
-import { TestResult, assert_eq_str } from "./test_runner"
-import { assert_code_contains, assert_code_not_contains } from "./codegen_test_helpers"
-import { gen_expr, gen_argument_list, gen_stmts_str } from "../codegen/eval"
-import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from "../codegen/context"
-import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from "../codegen/type_gen"
-import { gen_program } from "../codegen/module"
-import { tokenize } from "../lexer"
-import { parse_program } from "../parser/decls"
-import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown, PatUnit } from "../ast"
-import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat } from "../semantic_ir"
-import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from "../semantic_ir"
-import { SExprWith } from "../semantic_ir"
-import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple } from "../checker/registry"
-import { TF64, TI64, TU8, TUsize, TChar, TAssoc } from "../checker/registry"
+import { TestResult, assert_eq_str } from './test_runner'
+import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
+import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
+import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from '../codegen/context'
+import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/type_gen'
+import { gen_program } from '../codegen/module'
+import { tokenize } from '../lexer'
+import { parse_program } from '../parser/decls'
+import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown, PatUnit } from '../ast'
+import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat } from '../semantic_ir'
+import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../semantic_ir'
+import { SExprWith } from '../semantic_ir'
+import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple } from '../checker/registry'
+import { TF64, TI64, TU8, TUsize, TChar, TAssoc } from '../checker/registry'
 
 fn i32_t() -> Shared<Type> = Shared.new(TI32)
 fn str_t() -> Shared<Type> = Shared.new(TString)
@@ -48,373 +48,373 @@ export fn codegen_tests() -> [TestResult] = do
 
   const empty_prog = Program { decls: [] }
   const ctx = create_codegen_context(empty_prog)
-  results.push(assert_eq_str("create_codegen_context: gen_expr with ctx",
-    gen_expr(si(42), ctx), "42"))
+  results.push(assert_eq_str('create_codegen_context: gen_expr with ctx',
+    gen_expr(si(42), ctx), '42'))
 
-  results.push(assert_eq_str("TyI32 - 'int'",
-    type_to_cpp(ctx, Shared.new(TyI32)), "int"))
+  results.push(assert_eq_str('TyI32 - \'int\'',
+    type_to_cpp(ctx, Shared.new(TyI32)), 'int'))
 
-  results.push(assert_eq_str("TyString - 'mlc::String'",
-    type_to_cpp(ctx, Shared.new(TyString)), "mlc::String"))
+  results.push(assert_eq_str('TyString - \'mlc::String\'',
+    type_to_cpp(ctx, Shared.new(TyString)), 'mlc::String'))
 
-  results.push(assert_eq_str("TyBool - 'bool'",
-    type_to_cpp(ctx, Shared.new(TyBool)), "bool"))
+  results.push(assert_eq_str('TyBool - \'bool\'',
+    type_to_cpp(ctx, Shared.new(TyBool)), 'bool'))
 
-  results.push(assert_eq_str("TyUnit - 'void'",
-    type_to_cpp(ctx, Shared.new(TyUnit)), "void"))
+  results.push(assert_eq_str('TyUnit - \'void\'',
+    type_to_cpp(ctx, Shared.new(TyUnit)), 'void'))
 
-  results.push(assert_eq_str("TyArray(TyI32) - 'mlc::Array<int>'",
-    type_to_cpp(ctx, Shared.new(TyArray(Shared.new(TyI32)))), "mlc::Array<int>"))
+  results.push(assert_eq_str('TyArray(TyI32) - \'mlc::Array<int>\'',
+    type_to_cpp(ctx, Shared.new(TyArray(Shared.new(TyI32)))), 'mlc::Array<int>'))
 
-  results.push(assert_eq_str("TyShared(TyI32) - 'std::shared_ptr<int>'",
-    type_to_cpp(ctx, Shared.new(TyShared(Shared.new(TyI32)))), "std::shared_ptr<int>"))
+  results.push(assert_eq_str('TyShared(TyI32) - \'std::shared_ptr<int>\'',
+    type_to_cpp(ctx, Shared.new(TyShared(Shared.new(TyI32)))), 'std::shared_ptr<int>'))
 
-  results.push(assert_eq_str("sem_type TPair(i32, string)",
+  results.push(assert_eq_str('sem_type TPair(i32, string)',
     sem_type_to_cpp(ctx, Shared.new(TPair(Shared.new(TI32), Shared.new(TString)))),
-    "std::pair<int, mlc::String>"))
+    'std::pair<int, mlc::String>'))
 
-  results.push(assert_eq_str("sem_type TTuple(i32, string, bool)",
+  results.push(assert_eq_str('sem_type TTuple(i32, string, bool)',
     sem_type_to_cpp(ctx, Shared.new(TTuple([Shared.new(TI32), Shared.new(TString), Shared.new(TBool)]))),
-    "std::tuple<int, mlc::String, bool>"))
+    'std::tuple<int, mlc::String, bool>'))
 
-  results.push(assert_eq_str("sem_type Option<i32> -> std::optional",
-    sem_type_to_cpp(ctx, Shared.new(TGeneric("Option", [Shared.new(TI32)]))),
-    "std::optional<int>"))
+  results.push(assert_eq_str('sem_type Option<i32> -> std::optional',
+    sem_type_to_cpp(ctx, Shared.new(TGeneric('Option', [Shared.new(TI32)]))),
+    'std::optional<int>'))
 
-  results.push(assert_eq_str("ExprInt(42) - '42'",
-    gen_expr(si(42), ctx), "42"))
+  results.push(assert_eq_str('ExprInt(42) - \'42\'',
+    gen_expr(si(42), ctx), '42'))
 
-  results.push(assert_eq_str("ExprQuestion: gen_expr index-based unwrap",
+  results.push(assert_eq_str('ExprQuestion: gen_expr index-based unwrap',
     gen_expr(Shared.new(SExprQuestion(si(7), unk_t(), span_unknown())), ctx),
-    "({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })"))
+    '({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })'))
 
-  results.push(assert_eq_str("ExprBool(true) - 'true'",
-    gen_expr(sb(true), ctx), "true"))
+  results.push(assert_eq_str('ExprBool(true) - \'true\'',
+    gen_expr(sb(true), ctx), 'true'))
 
-  results.push(assert_eq_str("ExprStr('hi') - 'mlc::String(\"hi\", 2)'",
-    gen_expr(ss("hi"), ctx), "mlc::String(\"hi\", 2)"))
+  results.push(assert_eq_str('ExprStr(\'hi\') - \'mlc::String("hi", 2)\'',
+    gen_expr(ss('hi'), ctx), 'mlc::String("hi", 2)'))
 
-  results.push(assert_eq_str("ExprUnit - '/* unit */'",
-    gen_expr(su(), ctx), "/* unit */"))
+  results.push(assert_eq_str('ExprUnit - \'/* unit */\'',
+    gen_expr(su(), ctx), '/* unit */'))
 
-  results.push(assert_eq_str("ExprIdent('x') - 'x'",
+  results.push(assert_eq_str('ExprIdent(\'x\') - \'x\'',
     gen_expr(sid("x"), ctx), "x"))
 
-  results.push(assert_eq_str("ExprIdent('print') - 'mlc::io::print'",
-    gen_expr(sid("print"), ctx), "mlc::io::print"))
+  results.push(assert_eq_str('ExprIdent(\'print\') - \'mlc::io::print\'',
+    gen_expr(sid('print'), ctx), 'mlc::io::print'))
 
-  results.push(assert_eq_str("ExprIdent('println') - 'mlc::io::println'",
-    gen_expr(sid("println"), ctx), "mlc::io::println"))
+  results.push(assert_eq_str('ExprIdent(\'println\') - \'mlc::io::println\'',
+    gen_expr(sid('println'), ctx), 'mlc::io::println'))
 
-  results.push(assert_eq_str("ExprBin add - '(1 + 2)'",
-    gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), "(1 + 2)"))
+  results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
+    gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
 
-  results.push(assert_eq_str("ExprUn neg - '(-42)'",
-    gen_expr(Shared.new(SExprUn("-", si(42), i32_t(), span_unknown())), ctx), "(-42)"))
+  results.push(assert_eq_str('ExprUn neg - \'(-42)\'',
+    gen_expr(Shared.new(SExprUn("-", si(42), i32_t(), span_unknown())), ctx), '(-42)'))
 
-  results.push(assert_eq_str("map_builtin passthrough - 'foo'",
-    map_builtin("foo"), "foo"))
+  results.push(assert_eq_str('map_builtin passthrough - \'foo\'',
+    map_builtin('foo'), 'foo'))
 
   const single_params: [string] = ["x"]
-  results.push(assert_eq_str("ExprLambda single param - '[=](auto x) { return ... }'",
+  results.push(assert_eq_str('ExprLambda single param - \'[=](auto x) { return ... }\'',
     gen_expr(Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown())), ctx),
-    "[=](auto x) { return (x + 1); }"))
+    '[=](auto x) { return (x + 1); }'))
 
   const two_params: [string] = ["a", "b"]
-  results.push(assert_eq_str("ExprLambda two params - '[=](auto a, auto b) { return ... }'",
+  results.push(assert_eq_str('ExprLambda two params - \'[=](auto a, auto b) { return ... }\'',
     gen_expr(Shared.new(SExprLambda(two_params, Shared.new(SExprBin("+", sid("a"), sid("b"), i32_t(), span_unknown())), unk_t(), span_unknown())), ctx),
-    "[=](auto a, auto b) { return (a + b); }"))
+    '[=](auto a, auto b) { return (a + b); }'))
 
   const zero_params: [string] = []
-  results.push(assert_eq_str("ExprLambda zero params - '[]() { return ... }'",
+  results.push(assert_eq_str('ExprLambda zero params - \'[]() { return ... }\'',
     gen_expr(Shared.new(SExprLambda(zero_params, si(42), unk_t(), span_unknown())), ctx),
-    "[]() { return 42; }"))
+    '[]() { return 42; }'))
 
-  results.push(assert_eq_str("map_method: length - length",
-    map_method("length"), "length"))
+  results.push(assert_eq_str('map_method: length - length',
+    map_method('length'), 'length'))
 
-  results.push(assert_eq_str("map_method: len - length",
-    map_method("len"), "length"))
+  results.push(assert_eq_str('map_method: len - length',
+    map_method('len'), 'length'))
 
-  results.push(assert_eq_str("map_method: push - push_back",
-    map_method("push"), "push_back"))
+  results.push(assert_eq_str('map_method: push - push_back',
+    map_method('push'), 'push_back'))
 
-  results.push(assert_eq_str("map_method: upper - upper",
-    map_method("upper"), "upper"))
+  results.push(assert_eq_str('map_method: upper - upper',
+    map_method('upper'), 'upper'))
 
-  results.push(assert_eq_str("map_method: to_upper - upper",
-    map_method("to_upper"), "upper"))
+  results.push(assert_eq_str('map_method: to_upper - upper',
+    map_method('to_upper'), 'upper'))
 
-  results.push(assert_eq_str("map_method: to_lower - lower",
-    map_method("to_lower"), "lower"))
+  results.push(assert_eq_str('map_method: to_lower - lower',
+    map_method('to_lower'), 'lower'))
 
-  results.push(assert_eq_str("map_method: trim passthrough",
-    map_method("trim"), "trim"))
+  results.push(assert_eq_str('map_method: trim passthrough',
+    map_method('trim'), 'trim'))
 
-  results.push(assert_eq_str("map_method: split passthrough",
-    map_method("split"), "split"))
+  results.push(assert_eq_str('map_method: split passthrough',
+    map_method('split'), 'split'))
 
-  results.push(assert_eq_str("map_method: chars passthrough",
-    map_method("chars"), "chars"))
+  results.push(assert_eq_str('map_method: chars passthrough',
+    map_method('chars'), 'chars'))
 
-  results.push(assert_eq_str("map_method: lines passthrough",
-    map_method("lines"), "lines"))
+  results.push(assert_eq_str('map_method: lines passthrough',
+    map_method('lines'), 'lines'))
 
   const call_lambda_args: [Shared<SExpr>] = [si(5), Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown()))]
-  results.push(assert_eq_str("ExprCall with lambda arg",
-    gen_expr(Shared.new(SExprCall(sid("apply"), call_lambda_args, unk_t(), span_unknown())), ctx),
-    "apply(5, [=](auto x) { return (x + 1); })"))
+  results.push(assert_eq_str('ExprCall with lambda arg',
+    gen_expr(Shared.new(SExprCall(sid('apply'), call_lambda_args, unk_t(), span_unknown())), ctx),
+    'apply(5, [=](auto x) { return (x + 1); })'))
 
   const ok_args: [Shared<SExpr>] = [si(42)]
-  results.push(assert_eq_str("ExprCall ctor Ok(42) uses brace init",
-    gen_expr(Shared.new(SExprCall(sid("Ok"), ok_args, unk_t(), span_unknown())), ctx),
-    "Ok{42}"))
+  results.push(assert_eq_str('ExprCall ctor Ok(42) uses brace init',
+    gen_expr(Shared.new(SExprCall(sid('Ok'), ok_args, unk_t(), span_unknown())), ctx),
+    'Ok{42}'))
 
-  const err_args: [Shared<SExpr>] = [ss("oops")]
-  results.push(assert_eq_str("ExprCall ctor Err(str) uses brace init",
-    gen_expr(Shared.new(SExprCall(sid("Err"), err_args, unk_t(), span_unknown())), ctx),
-    "Err{mlc::String(\"oops\", 4)}"))
+  const err_args: [Shared<SExpr>] = [ss('oops')]
+  results.push(assert_eq_str('ExprCall ctor Err(str) uses brace init',
+    gen_expr(Shared.new(SExprCall(sid('Err'), err_args, unk_t(), span_unknown())), ctx),
+    'Err{mlc::String("oops", 4)}'))
 
   // --- ExprIf -------------------------------------------------------------------
 
-  results.push(assert_eq_str("ExprIf",
+  results.push(assert_eq_str('ExprIf',
     gen_expr(Shared.new(SExprIf(sb(true), si(1), si(2), i32_t(), span_unknown())), ctx),
-    "(true ? (1) : (2))"))
+    '(true ? (1) : (2))'))
 
   // --- ExprArray ----------------------------------------------------------------
 
   const arr_elems: [Shared<SExpr>] = [si(1), si(2), si(3)]
-  results.push(assert_eq_str("ExprArray",
+  results.push(assert_eq_str('ExprArray',
     gen_expr(Shared.new(SExprArray(arr_elems, Shared.new(TArray(i32_t())), span_unknown())), ctx),
-    "mlc::Array<int>{1, 2, 3}"))
+    'mlc::Array<int>{1, 2, 3}'))
 
   const empty_arr: [Shared<SExpr>] = []
-  results.push(assert_eq_str("ExprArray empty",
+  results.push(assert_eq_str('ExprArray empty',
     gen_expr(Shared.new(SExprArray(empty_arr, Shared.new(TArray(i32_t())), span_unknown())), ctx),
-    "mlc::Array<int>{}"))
+    'mlc::Array<int>{}'))
 
   // --- ExprIndex ----------------------------------------------------------------
 
-  results.push(assert_eq_str("ExprIndex",
-    gen_expr(Shared.new(SExprIndex(sid("arr"), si(0), i32_t(), span_unknown())), ctx),
-    "arr[0]"))
+  results.push(assert_eq_str('ExprIndex',
+    gen_expr(Shared.new(SExprIndex(sid('arr'), si(0), i32_t(), span_unknown())), ctx),
+    'arr[0]'))
 
   // --- ExprField ----------------------------------------------------------------
 
-  results.push(assert_eq_str("ExprField on ident",
-    gen_expr(Shared.new(SExprField(sid("point"), "x", unk_t(), span_unknown())), ctx),
-    "point.x"))
+  results.push(assert_eq_str('ExprField on ident',
+    gen_expr(Shared.new(SExprField(sid('point'), "x", unk_t(), span_unknown())), ctx),
+    'point.x'))
 
   // --- ExprMethod ---------------------------------------------------------------
 
   const method_args: [Shared<SExpr>] = [si(1)]
-  results.push(assert_eq_str("ExprMethod push",
-    gen_expr(Shared.new(SExprMethod(sid("arr"), "push", method_args, unit_t(), span_unknown())), ctx),
-    "arr.push_back(1)"))
+  results.push(assert_eq_str('ExprMethod push',
+    gen_expr(Shared.new(SExprMethod(sid('arr'), 'push', method_args, unit_t(), span_unknown())), ctx),
+    'arr.push_back(1)'))
 
-  results.push(assert_eq_str("ExprMethod length",
-    gen_expr(Shared.new(SExprMethod(sid("arr"), "length", empty_arr, i32_t(), span_unknown())), ctx),
-    "arr.length()"))
+  results.push(assert_eq_str('ExprMethod length',
+    gen_expr(Shared.new(SExprMethod(sid('arr'), 'length', empty_arr, i32_t(), span_unknown())), ctx),
+    'arr.length()'))
 
-  const result_r_t = Shared.new(TGeneric("Result", [i32_t(), str_t()]))
+  const result_r_t = Shared.new(TGeneric('Result', [i32_t(), str_t()]))
   const s_result = Shared.new(SExprIdent("r", result_r_t, span_unknown()))
   const map_one: [Shared<SExpr>] = [Shared.new(SExprIdent("f", unk_t(), span_unknown()))]
-  results.push(assert_eq_str("ExprMethod Result map",
-    gen_expr(Shared.new(SExprMethod(s_result, "map", map_one, unk_t(), span_unknown())), ctx),
-    "mlc::result::map(r, f)"))
+  results.push(assert_eq_str('ExprMethod Result map',
+    gen_expr(Shared.new(SExprMethod(s_result, 'map', map_one, unk_t(), span_unknown())), ctx),
+    'mlc::result::map(r, f)'))
 
   let namespace_alias_prefixes: Map<string, string> = Map.new()
-  namespace_alias_prefixes.set("helpers", "infer_literals::")
+  namespace_alias_prefixes.set('helpers', 'infer_literals::')
   const context_with_aliases = context_with_namespace_alias_prefixes(ctx, namespace_alias_prefixes)
-  results.push(assert_eq_str("ExprMethod on import-as alias emits namespace::fn()",
-    gen_expr(Shared.new(SExprMethod(sid("helpers"), "infer_expr_integer_literal", empty_arr, unk_t(), span_unknown())), context_with_aliases),
-    "infer_literals::infer_expr_integer_literal()"))
+  results.push(assert_eq_str('ExprMethod on import-as alias emits namespace::fn()',
+    gen_expr(Shared.new(SExprMethod(sid('helpers'), 'infer_expr_integer_literal', empty_arr, unk_t(), span_unknown())), context_with_aliases),
+    'infer_literals::infer_expr_integer_literal()'))
 
   // --- ExprMatch ----------------------------------------------------------------
 
   const pat_arms: [Shared<SMatchArm>] = [
-    smatch_arm(Shared.new(PatInt(1, span_unknown())), ss("one")),
-    smatch_arm(Shared.new(PatWild(span_unknown())), ss("other"))
+    smatch_arm(Shared.new(PatInt(1, span_unknown())), ss('one')),
+    smatch_arm(Shared.new(PatWild(span_unknown())), ss('other'))
   ]
   const match_out = gen_expr(Shared.new(SExprMatch(sid("n"), pat_arms, str_t(), span_unknown())), ctx)
-  results.push(assert_eq_str("ExprMatch contains std::visit",
-    if match_out.contains("std::visit") then "yes" else "no" end, "yes"))
-  results.push(assert_eq_str("ExprMatch contains one",
-    if match_out.contains("\"one\"") then "yes" else "no" end, "yes"))
-  results.push(assert_eq_str("ExprMatch contains other",
-    if match_out.contains("\"other\"") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str('ExprMatch contains std::visit',
+    if match_out.contains('std::visit') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_eq_str('ExprMatch contains one',
+    if match_out.contains('"one"') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_eq_str('ExprMatch contains other',
+    if match_out.contains('"other"') then 'yes' else 'no' end, 'yes'))
 
   // PatOr: expand_or_arms produces two separate lambda arms
   const or_arms: [Shared<SMatchArm>] = [
     smatch_arm(
-      Shared.new(PatOr([Shared.new(PatCtor("Circle", [Shared.new(PatWild(span_unknown()))], span_unknown())), Shared.new(PatCtor("Square", [Shared.new(PatWild(span_unknown()))], span_unknown()))], span_unknown())),
+      Shared.new(PatOr([Shared.new(PatCtor('Circle', [Shared.new(PatWild(span_unknown()))], span_unknown())), Shared.new(PatCtor('Square', [Shared.new(PatWild(span_unknown()))], span_unknown()))], span_unknown())),
       ss("r"))
   ]
   const or_match_out = gen_expr(Shared.new(SExprMatch(sid("s"), or_arms, str_t(), span_unknown())), ctx)
-  results.push(assert_eq_str("PatOr expanded: Circle lambda present",
-    if or_match_out.contains("Circle") then "yes" else "no" end, "yes"))
-  results.push(assert_eq_str("PatOr expanded: Square lambda present",
-    if or_match_out.contains("Square") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str('PatOr expanded: Circle lambda present',
+    if or_match_out.contains('Circle') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_eq_str('PatOr expanded: Square lambda present',
+    if or_match_out.contains('Square') then 'yes' else 'no' end, 'yes'))
 
   const guarded_primitive_program =
-    "fn main() -> i32 = match 5 { n if n > 0 => 1, else => 0 }\n"
+    'fn main() -> i32 = match 5 { n if n > 0 => 1, else => 0 }\n'
   const guarded_primitive_cpp = gen_program(parse_program(tokenize(guarded_primitive_program).tokens))
-  results.push(assert_eq_str("match guard on primitive avoids std::visit",
-    if guarded_primitive_cpp.contains("std::visit") then "has_visit" else "no_visit" end, "no_visit"))
-  results.push(assert_code_contains("match guard emits typed IIFE", guarded_primitive_cpp, "[&]() -> int"))
+  results.push(assert_eq_str('match guard on primitive avoids std::visit',
+    if guarded_primitive_cpp.contains('std::visit') then 'has_visit' else 'no_visit' end, 'no_visit'))
+  results.push(assert_code_contains('match guard emits typed IIFE', guarded_primitive_cpp, '[&]() -> int'))
 
   const plain_sum_program =
-    "type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0 end\nfn main() -> i32 = f(A(1))\n"
+    'type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0 end\nfn main() -> i32 = f(A(1))\n'
   const plain_sum_cpp = gen_program(parse_program(tokenize(plain_sum_program).tokens))
-  results.push(assert_eq_str("match sum without guard keeps std::visit",
-    if plain_sum_cpp.contains("std::visit") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str('match sum without guard keeps std::visit',
+    if plain_sum_cpp.contains('std::visit') then 'yes' else 'no' end, 'yes'))
 
   const guarded_sum_program =
-    "type U = A(i32) | B\nfn g(x: U) -> i32 = match x | A(n) if n > 0 => n | A(_) => 0 | B => -1 end\nfn main() -> i32 = g(A(3))\n"
+    'type U = A(i32) | B\nfn g(x: U) -> i32 = match x | A(n) if n > 0 => n | A(_) => 0 | B => -1 end\nfn main() -> i32 = g(A(3))\n'
   const guarded_sum_cpp = gen_program(parse_program(tokenize(guarded_sum_program).tokens))
-  results.push(assert_eq_str("match sum with guard avoids std::visit",
-    if guarded_sum_cpp.contains("std::visit") then "has_visit" else "no_visit" end, "no_visit"))
+  results.push(assert_eq_str('match sum with guard avoids std::visit',
+    if guarded_sum_cpp.contains('std::visit') then 'has_visit' else 'no_visit' end, 'no_visit'))
 
   const mixed_guard_program =
-    "type V = A(i32) | B\nfn h(x: V) -> i32 = match x | A(n) => n | B if true => 0 end\nfn main() -> i32 = h(B)\n"
+    'type V = A(i32) | B\nfn h(x: V) -> i32 = match x | A(n) => n | B if true => 0 end\nfn main() -> i32 = h(B)\n'
   const mixed_guard_cpp = gen_program(parse_program(tokenize(mixed_guard_program).tokens))
-  results.push(assert_eq_str("match mixed arms use guarded lowering when any guard present",
-    if mixed_guard_cpp.contains("std::visit") then "has_visit" else "no_visit" end, "no_visit"))
+  results.push(assert_eq_str('match mixed arms use guarded lowering when any guard present',
+    if mixed_guard_cpp.contains('std::visit') then 'has_visit' else 'no_visit' end, 'no_visit'))
 
   // --- ExprWhile ----------------------------------------------------------------
 
   const while_body: [Shared<SStmt>] = [Shared.new(SStmtExpr(si(0), span_unknown()))]
   const while_out = gen_expr(Shared.new(SExprWhile(sb(true), while_body, unit_t(), span_unknown())), ctx)
-  results.push(assert_eq_str("ExprWhile contains while (true)",
-    if while_out.contains("while (true)") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str('ExprWhile contains while (true)',
+    if while_out.contains('while (true)') then 'yes' else 'no' end, 'yes'))
 
   // --- ExprBlock ----------------------------------------------------------------
 
   const block_stmts: [Shared<SStmt>] = [Shared.new(SStmtLet("x", false, si(1), i32_t(), span_unknown()))]
-  results.push(assert_eq_str("ExprBlock",
+  results.push(assert_eq_str('ExprBlock',
     gen_expr(Shared.new(SExprBlock(block_stmts, sid("x"), i32_t(), span_unknown())), ctx),
-    "[&]() {\nauto x = 1;\nreturn x;\n}()"))
+    '[&]() {\nauto x = 1;\nreturn x;\n}()'))
 
-  results.push(assert_eq_str("gen_stmts_str: let const emits constexpr",
-    gen_stmts_str([Shared.new(SStmtLetConst("limit", si(42), i32_t(), span_unknown()))], ctx),
-    "constexpr auto limit = 42;\n"))
+  results.push(assert_eq_str('gen_stmts_str: let const emits constexpr',
+    gen_stmts_str([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx),
+    'constexpr auto limit = 42;\n'))
 
   // --- ExprRecord ---------------------------------------------------------------
 
   const fv_a: [Shared<SFieldVal>] = [Shared.new(SFieldVal { name: "a", val: si(1) }), Shared.new(SFieldVal { name: "b", val: si(2) })]
-  results.push(assert_eq_str("ExprRecord positional",
-    gen_expr(Shared.new(SExprRecord("Point", fv_a, Shared.new(TNamed("Point")), span_unknown())), ctx),
-    "Point{1, 2}"))
+  results.push(assert_eq_str('ExprRecord positional',
+    gen_expr(Shared.new(SExprRecord('Point', fv_a, Shared.new(TNamed('Point')), span_unknown())), ctx),
+    'Point{1, 2}'))
 
   // --- DeclFn via gen_program ---------------------------------------------------
 
   const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })]
   const fn_body = Shared.new(ExprBin("*", Shared.new(ExprIdent("n", span_unknown())), Shared.new(ExprInt(2, span_unknown())), span_unknown()))
-  const fn_decl = DeclFn("double_it", [], [], fn_param, Shared.new(TyI32), fn_body, [])
+  const fn_decl = DeclFn('double_it', [], [], fn_param, Shared.new(TyI32), fn_body, [])
   const fn_prog = Program { decls: [Shared.new(DeclExported(Shared.new(fn_decl)))] }
   const fn_prog_out = gen_program(fn_prog)
-  results.push(assert_eq_str("DeclFn: signature in output",
-    if fn_prog_out.contains("double_it") then "yes" else "no" end,
-    "yes"))
-  results.push(assert_eq_str("DeclFn: param type in output",
-    if fn_prog_out.contains("int n") then "yes" else "no" end,
-    "yes"))
-  results.push(assert_eq_str("DeclFn: body in output",
-    if fn_prog_out.contains("return (n * 2)") then "yes" else "no" end,
-    "yes"))
+  results.push(assert_eq_str('DeclFn: signature in output',
+    if fn_prog_out.contains('double_it') then 'yes' else 'no' end,
+    'yes'))
+  results.push(assert_eq_str('DeclFn: param type in output',
+    if fn_prog_out.contains('int n') then 'yes' else 'no' end,
+    'yes'))
+  results.push(assert_eq_str('DeclFn: body in output',
+    if fn_prog_out.contains('return (n * 2)') then 'yes' else 'no' end,
+    'yes'))
 
   const d3_trait_parameter_source =
-    "type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()"
+    'type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()'
   const d3_trait_parameter_output = gen_program(parse_program(tokenize(d3_trait_parameter_source).tokens))
-  results.push(assert_code_contains("D3 gen_program: concept Display", d3_trait_parameter_output, "concept Display"))
-  results.push(assert_code_contains("D3 gen_program: requires in trait concept", d3_trait_parameter_output, "requires"))
-  results.push(assert_code_contains("D3 gen_program: parameter uses Display constraint", d3_trait_parameter_output, "f(Display"))
+  results.push(assert_code_contains('D3 gen_program: concept Display', d3_trait_parameter_output, 'concept Display'))
+  results.push(assert_code_contains('D3 gen_program: requires in trait concept', d3_trait_parameter_output, 'requires'))
+  results.push(assert_code_contains('D3 gen_program: parameter uses Display constraint', d3_trait_parameter_output, 'f(Display'))
 
   const d3_two_trait_parameter_source =
-    "type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()"
+    'type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()'
   const d3_two_trait_parameter_output = gen_program(parse_program(tokenize(d3_two_trait_parameter_source).tokens))
-  results.push(assert_code_contains("D3 gen_program: first Display parameter", d3_two_trait_parameter_output, "Display first"))
+  results.push(assert_code_contains('D3 gen_program: first Display parameter', d3_two_trait_parameter_output, 'Display first'))
   const d4_where_trait_bounds_source =
-    "type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()"
+    'type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()'
   const d4_where_trait_bounds_output = gen_program(parse_program(tokenize(d4_where_trait_bounds_source).tokens))
-  results.push(assert_code_contains("D4 gen_program: requires Display", d4_where_trait_bounds_output, "Display"))
-  results.push(assert_code_contains("D4 gen_program: requires EqCompare", d4_where_trait_bounds_output, "EqCompare"))
+  results.push(assert_code_contains('D4 gen_program: requires Display', d4_where_trait_bounds_output, 'Display'))
+  results.push(assert_code_contains('D4 gen_program: requires EqCompare', d4_where_trait_bounds_output, 'EqCompare'))
 
   const result_type_params: [string] = ["T", "E"]
   const ok_fields:  [Shared<TypeExpr>] = [Shared.new(TyNamed("T"))]
   const err_fields: [Shared<TypeExpr>] = [Shared.new(TyNamed("E"))]
   const result_variants: [Shared<TypeVariant>] = [
-    Shared.new(VarTuple("Ok",  ok_fields, false)),
-    Shared.new(VarTuple("Err", err_fields, false))
+    Shared.new(VarTuple('Ok',  ok_fields, false)),
+    Shared.new(VarTuple('Err', err_fields, false))
   ]
   const expected_fwd =
-    "template<typename T>\nstruct Ok;\n" +
-    "template<typename E>\nstruct Err;\n" +
-    "template<typename T, typename E>\nusing Result = std::variant<Ok<T>, Err<E>>;\n"
+    'template<typename T>\nstruct Ok;\n' +
+    'template<typename E>\nstruct Err;\n' +
+    'template<typename T, typename E>\nusing Result = std::variant<Ok<T>, Err<E>>;\n'
   const expected_body =
-    "template<typename T>\nstruct Ok {T field0;};\n" +
-    "template<typename E>\nstruct Err {E field0;};\n"
-  results.push(assert_eq_str("generic type Result<T,E> = Ok(T) | Err(E) codegen",
-    gen_type_decl(ctx, "Result", result_type_params, result_variants),
+    'template<typename T>\nstruct Ok {T field0;};\n' +
+    'template<typename E>\nstruct Err {E field0;};\n'
+  results.push(assert_eq_str('generic type Result<T,E> = Ok(T) | Err(E) codegen',
+    gen_type_decl(ctx, 'Result', result_type_params, result_variants),
     expected_fwd + expected_body))
 
   // -- Multiline string literal codegen ------------------------------------
 
-  results.push(assert_eq_str("string literal with embedded newline - escapes to \\n in C++",
-    gen_expr(ss("hello\nworld"), ctx),
-    "mlc::String(\"hello\\nworld\", 11)"))
+  results.push(assert_eq_str('string literal with embedded newline - escapes to \\n in C++',
+    gen_expr(ss('hello\nworld'), ctx),
+    'mlc::String("hello\\nworld", 11)'))
 
-  results.push(assert_eq_str("string literal with tab - escapes to \\t",
-    gen_expr(ss("a\tb"), ctx),
-    "mlc::String(\"a\\tb\", 3)"))
+  results.push(assert_eq_str('string literal with tab - escapes to \\t',
+    gen_expr(ss('a\tb'), ctx),
+    'mlc::String("a\\tb", 3)'))
 
-  results.push(assert_eq_str("string literal with backslash - escapes to \\\\",
-    gen_expr(ss("a\\b"), ctx),
-    "mlc::String(\"a\\\\b\", 3)"))
+  results.push(assert_eq_str('string literal with backslash - escapes to \\\\',
+    gen_expr(ss('a\\b'), ctx),
+    'mlc::String("a\\\\b", 3)'))
 
-  results.push(assert_eq_str("string literal with double quote - escapes to \\\"",
-    gen_expr(ss("say \"hi\""), ctx),
-    "mlc::String(\"say \\\"hi\\\"\", 8)"))
+  results.push(assert_eq_str('string literal with double quote - escapes to \\"',
+    gen_expr(ss('say "hi"'), ctx),
+    'mlc::String("say \\"hi\\"", 8)'))
 
-  const letpat_ctor_pat = Shared.new(PatCtor("Some", [Shared.new(PatIdent("v", span_unknown()))], span_unknown()))
+  const letpat_ctor_pat = Shared.new(PatCtor('Some', [Shared.new(PatIdent("v", span_unknown()))], span_unknown()))
   const letpat_else_body = Shared.new(SExprInt(0, i32_t(), span_unknown()))
-  const letpat_with_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid("opt"), Shared.new(TNamed("Opt")), true, letpat_else_body, span_unknown()))
-  const letpat_no_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid("opt"), Shared.new(TNamed("Opt")), false, letpat_else_body, span_unknown()))
+  const letpat_with_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), true, letpat_else_body, span_unknown()))
+  const letpat_no_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), false, letpat_else_body, span_unknown()))
   const letpat_with_else_out = gen_stmts_str([letpat_with_else], ctx)
   const letpat_no_else_out = gen_stmts_str([letpat_no_else], ctx)
-  results.push(assert_eq_str("let-else: with else no abort",
-    if letpat_with_else_out.contains("abort") then "abort" else "no-abort" end, "no-abort"))
-  results.push(assert_eq_str("let-else: without else uses abort",
-    if letpat_no_else_out.contains("abort") then "abort" else "no-abort" end, "abort"))
+  results.push(assert_eq_str('let-else: with else no abort',
+    if letpat_with_else_out.contains('abort') then 'abort' else 'no-abort' end, 'no-abort'))
+  results.push(assert_eq_str('let-else: without else uses abort',
+    if letpat_no_else_out.contains('abort') then 'abort' else 'no-abort' end, 'abort'))
 
   // --- Phantom type codegen ---------------------------------------------------
 
   const phantom_fds: [Shared<FieldDef>] = [Shared.new(FieldDef {
-    name: "value",
+    name: 'value',
     typ: Shared.new(TyI32),
     has_default_expression: false,
     default_expression: Shared.new(ExprUnit(span_unknown()))
   })]
-  const phantom_variants_1: [Shared<TypeVariant>] = [Shared.new(VarRecord("Ast", phantom_fds, false))]
-  const phantom_type_out = gen_type_decl(ctx, "Ast", ["Phase"], phantom_variants_1)
-  results.push(assert_eq_str("phantom single-variant: template<typename Phase> in output",
-    if phantom_type_out.contains("typename Phase") then "yes" else "no" end, "yes"))
+  const phantom_variants_1: [Shared<TypeVariant>] = [Shared.new(VarRecord('Ast', phantom_fds, false))]
+  const phantom_type_out = gen_type_decl(ctx, 'Ast', ['Phase'], phantom_variants_1)
+  results.push(assert_eq_str('phantom single-variant: template<typename Phase> in output',
+    if phantom_type_out.contains('typename Phase') then 'yes' else 'no' end, 'yes'))
 
   const tagged_variants: [Shared<TypeVariant>] = [
-    Shared.new(VarTuple("Active", [Shared.new(TyI32)], false)),
-    Shared.new(VarUnit("Inactive", false))
+    Shared.new(VarTuple('Active', [Shared.new(TyI32)], false)),
+    Shared.new(VarUnit('Inactive', false))
   ]
-  const tagged_out = gen_type_decl(ctx, "Tagged", ["Tag"], tagged_variants)
-  results.push(assert_eq_str("phantom multi-variant: Active<Tag> in alias",
-    if tagged_out.contains("Active<Tag>") then "yes" else "no" end, "yes"))
-  results.push(assert_eq_str("phantom multi-variant: template<typename Tag> on Active struct",
-    if tagged_out.contains("template<typename Tag>\nstruct Active") then "yes" else "no" end, "yes"))
+  const tagged_out = gen_type_decl(ctx, 'Tagged', ['Tag'], tagged_variants)
+  results.push(assert_eq_str('phantom multi-variant: Active<Tag> in alias',
+    if tagged_out.contains('Active<Tag>') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_eq_str('phantom multi-variant: template<typename Tag> on Active struct',
+    if tagged_out.contains('template<typename Tag>\nstruct Active') then 'yes' else 'no' end, 'yes'))
 
-  const phantom_rec_type = Shared.new(TGeneric("Ast", [Shared.new(TNamed("Unvalidated"))]))
+  const phantom_rec_type = Shared.new(TGeneric('Ast', [Shared.new(TNamed('Unvalidated'))]))
   const phantom_rec_fvals: [Shared<SFieldVal>] = []
-  const phantom_rec_expr = Shared.new(SExprRecord("Ast", phantom_rec_fvals, phantom_rec_type, span_unknown()))
-  results.push(assert_eq_str("phantom record expr: Ast<Unvalidated>{}",
-    gen_expr(phantom_rec_expr, ctx), "Ast<Unvalidated>{}"))
+  const phantom_rec_expr = Shared.new(SExprRecord('Ast', phantom_rec_fvals, phantom_rec_type, span_unknown()))
+  results.push(assert_eq_str('phantom record expr: Ast<Unvalidated>{}',
+    gen_expr(phantom_rec_expr, ctx), 'Ast<Unvalidated>{}'))
 
   // C4: numeric tower
   const f64_t = Shared.new(TF64)
@@ -423,82 +423,82 @@ export fn codegen_tests() -> [TestResult] = do
   const usize_t = Shared.new(TUsize)
   const char_t = Shared.new(TChar)
 
-  results.push(assert_eq_str("c4: f64 literal codegen",
-    gen_expr(Shared.new(SExprFloat("3.14", f64_t, span_unknown())), ctx), "3.14"))
+  results.push(assert_eq_str('c4: f64 literal codegen',
+    gen_expr(Shared.new(SExprFloat('3.14', f64_t, span_unknown())), ctx), '3.14'))
 
-  results.push(assert_eq_str("c4: i64 literal codegen",
-    gen_expr(Shared.new(SExprI64("42", i64_t, span_unknown())), ctx), "42"))
+  results.push(assert_eq_str('c4: i64 literal codegen',
+    gen_expr(Shared.new(SExprI64('42', i64_t, span_unknown())), ctx), '42'))
 
-  results.push(assert_eq_str("c4: u8 literal codegen",
-    gen_expr(Shared.new(SExprU8("255", u8_t, span_unknown())), ctx), "static_cast<uint8_t>(255)"))
+  results.push(assert_eq_str('c4: u8 literal codegen',
+    gen_expr(Shared.new(SExprU8('255', u8_t, span_unknown())), ctx), 'static_cast<uint8_t>(255)'))
 
-  results.push(assert_eq_str("c4: usize literal codegen",
-    gen_expr(Shared.new(SExprUsize("100", usize_t, span_unknown())), ctx), "static_cast<size_t>(100)"))
+  results.push(assert_eq_str('c4: usize literal codegen',
+    gen_expr(Shared.new(SExprUsize('100', usize_t, span_unknown())), ctx), 'static_cast<size_t>(100)'))
 
-  results.push(assert_eq_str("c4: char literal codegen",
-    gen_expr(Shared.new(SExprChar("a", char_t, span_unknown())), ctx), "static_cast<char32_t>(a)"))
+  results.push(assert_eq_str('c4: char literal codegen',
+    gen_expr(Shared.new(SExprChar("a", char_t, span_unknown())), ctx), 'static_cast<char32_t>(a)'))
 
-  results.push(assert_eq_str("c4: sem_type_to_cpp TI64",
-    sem_type_to_cpp(ctx, i64_t), "int64_t"))
+  results.push(assert_eq_str('c4: sem_type_to_cpp TI64',
+    sem_type_to_cpp(ctx, i64_t), 'int64_t'))
 
-  results.push(assert_eq_str("c4: sem_type_to_cpp TF64",
-    sem_type_to_cpp(ctx, f64_t), "double"))
+  results.push(assert_eq_str('c4: sem_type_to_cpp TF64',
+    sem_type_to_cpp(ctx, f64_t), 'double'))
 
-  results.push(assert_eq_str("c4: sem_type_to_cpp TU8",
-    sem_type_to_cpp(ctx, u8_t), "uint8_t"))
+  results.push(assert_eq_str('c4: sem_type_to_cpp TU8',
+    sem_type_to_cpp(ctx, u8_t), 'uint8_t'))
 
-  results.push(assert_eq_str("c4: sem_type_to_cpp TUsize",
-    sem_type_to_cpp(ctx, usize_t), "size_t"))
+  results.push(assert_eq_str('c4: sem_type_to_cpp TUsize',
+    sem_type_to_cpp(ctx, usize_t), 'size_t'))
 
-  results.push(assert_eq_str("c4: sem_type_to_cpp TChar",
-    sem_type_to_cpp(ctx, char_t), "char32_t"))
+  results.push(assert_eq_str('c4: sem_type_to_cpp TChar',
+    sem_type_to_cpp(ctx, char_t), 'char32_t'))
 
   const with_body: [Shared<SStmt>] = [Shared.new(SStmtExpr(si(0), span_unknown()))]
-  const with_out = gen_expr(Shared.new(SExprWith(si(1), "res", with_body, unit_t(), span_unknown())), ctx)
-  results.push(assert_eq_str("c5: SExprWith contains auto res =",
-    if with_out.contains("auto res =") then "yes" else "no" end, "yes"))
-  results.push(assert_eq_str("c5: SExprWith contains res.drop()",
-    if with_out.contains("res.drop()") then "yes" else "no" end, "yes"))
+  const with_out = gen_expr(Shared.new(SExprWith(si(1), 'res', with_body, unit_t(), span_unknown())), ctx)
+  results.push(assert_eq_str('c5: SExprWith contains auto res =',
+    if with_out.contains('auto res =') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_eq_str('c5: SExprWith contains res.drop()',
+    if with_out.contains('res.drop()') then 'yes' else 'no' end, 'yes'))
 
-  const assoc_t = Shared.new(TAssoc("I", "Item"))
-  results.push(assert_eq_str("d1: sem_type_to_cpp TAssoc",
-    sem_type_to_cpp(ctx, assoc_t), "typename I::Item"))
+  const assoc_t = Shared.new(TAssoc("I", 'Item'))
+  results.push(assert_eq_str('d1: sem_type_to_cpp TAssoc',
+    sem_type_to_cpp(ctx, assoc_t), 'typename I::Item'))
 
-  const assoc_prog_src = "type Iter { type Item } type Box<T> = { val: T } extend Box<T>: Iter { type Item = T fn Iter_next(self: Box<T>) -> i32 = 0 }"
+  const assoc_prog_src = 'type Iter { type Item } type Box<T> = { val: T } extend Box<T>: Iter { type Item = T fn Iter_next(self: Box<T>) -> i32 = 0 }'
   const assoc_prog_out = gen_program(parse_program(tokenize(assoc_prog_src).tokens))
-  results.push(assert_eq_str("d1: gen_program struct contains using Item =",
-    if assoc_prog_out.contains("using Item =") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str('d1: gen_program struct contains using Item =',
+    if assoc_prog_out.contains('using Item =') then 'yes' else 'no' end, 'yes'))
 
-  const op_prog_src = "type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0"
+  const op_prog_src = 'type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0'
   const op_prog_out = gen_program(parse_program(tokenize(op_prog_src).tokens))
-  results.push(assert_eq_str("d2: gen_program Vec2 + Vec2 desugars to Vec2_add",
-    if op_prog_out.contains("Vec2_add(") then "yes" else "no" end, "yes"))
+  results.push(assert_eq_str('d2: gen_program Vec2 + Vec2 desugars to Vec2_add',
+    if op_prog_out.contains('Vec2_add(') then 'yes' else 'no' end, 'yes'))
 
   const codegen_invariant_tail_after_else_if_chain =
-    "export fn tail_after_chain(kind: string, extra: i32) -> i32 = do\n  let mut accumulator = 0\n  if kind == \"a\" then\n    accumulator = 1\n  else if kind == \"b\" then\n    accumulator = 2\n  else\n    accumulator = 3\n  end\n  accumulator + extra\nend\n\nexport fn main() -> i32 = tail_after_chain(\"a\", 100)"
+    'export fn tail_after_chain(kind: string, extra: i32) -> i32 = do\n  let mut accumulator = 0\n  if kind == "a" then\n    accumulator = 1\n  else if kind == "b" then\n    accumulator = 2\n  else\n    accumulator = 3\n  end\n  accumulator + extra\nend\n\nexport fn main() -> i32 = tail_after_chain("a", 100)'
   const codegen_tail_chain_cpp = gen_program(parse_program(tokenize(codegen_invariant_tail_after_else_if_chain).tokens))
-  results.push(assert_code_contains("gen_program: else-if chain keeps trailing tail expr",
-    codegen_tail_chain_cpp, "accumulator + extra"))
-  results.push(assert_code_contains("gen_program: else-if chain emits return of tail",
-    codegen_tail_chain_cpp, "return"))
-  results.push(assert_code_not_contains("gen_program: else-if chain has no stray export marker",
-    codegen_tail_chain_cpp, "export_;"))
+  results.push(assert_code_contains('gen_program: else-if chain keeps trailing tail expr',
+    codegen_tail_chain_cpp, 'accumulator + extra'))
+  results.push(assert_code_contains('gen_program: else-if chain emits return of tail',
+    codegen_tail_chain_cpp, 'return'))
+  results.push(assert_code_not_contains('gen_program: else-if chain has no stray export marker',
+    codegen_tail_chain_cpp, 'export_;'))
 
   const codegen_invariant_twin_if_zip_join_style =
-    "export fn twin_branch(kind: string, has_arg: bool) -> i32 = do\n  let mut diagnostics_weight = 0\n  if has_arg then\n    if kind == \"zip\" then\n      diagnostics_weight = 1\n    end\n    if kind == \"join\" then\n      diagnostics_weight = diagnostics_weight + 2\n    end\n  end\n  diagnostics_weight + 50\nend\n\nexport fn main() -> i32 = twin_branch(\"zip\", true)"
+    'export fn twin_branch(kind: string, has_arg: bool) -> i32 = do\n  let mut diagnostics_weight = 0\n  if has_arg then\n    if kind == "zip" then\n      diagnostics_weight = 1\n    end\n    if kind == "join" then\n      diagnostics_weight = diagnostics_weight + 2\n    end\n  end\n  diagnostics_weight + 50\nend\n\nexport fn main() -> i32 = twin_branch("zip", true)'
   const codegen_twin_if_cpp = gen_program(parse_program(tokenize(codegen_invariant_twin_if_zip_join_style).tokens))
-  results.push(assert_code_contains("gen_program: twin if emits final accumulator tail",
-    codegen_twin_if_cpp, "diagnostics_weight + 50"))
-  results.push(assert_code_not_contains("gen_program: twin if has no stray export marker",
-    codegen_twin_if_cpp, "export_;"))
+  results.push(assert_code_contains('gen_program: twin if emits final accumulator tail',
+    codegen_twin_if_cpp, 'diagnostics_weight + 50'))
+  results.push(assert_code_not_contains('gen_program: twin if has no stray export marker',
+    codegen_twin_if_cpp, 'export_;'))
 
   const codegen_invariant_if_else_flattened =
-    "fn merge_unknown_inner(then_inner: i32, else_errors: i32) -> i32 = do\n  if then_inner == 0 then else_errors + 10\n  else then_inner + else_errors\n  end\nend\n\nexport fn conditional_flat(use_merge: bool, then_inner: i32, else_errors: i32) -> i32 = do\n  if !use_merge then else_errors\n  else merge_unknown_inner(then_inner, else_errors)\n  end\nend\n\nexport fn main() -> i32 = conditional_flat(true, 0, 5)"
+    'fn merge_unknown_inner(then_inner: i32, else_errors: i32) -> i32 = do\n  if then_inner == 0 then else_errors + 10\n  else then_inner + else_errors\n  end\nend\n\nexport fn conditional_flat(use_merge: bool, then_inner: i32, else_errors: i32) -> i32 = do\n  if !use_merge then else_errors\n  else merge_unknown_inner(then_inner, else_errors)\n  end\nend\n\nexport fn main() -> i32 = conditional_flat(true, 0, 5)'
   const codegen_if_else_flat_cpp = gen_program(parse_program(tokenize(codegen_invariant_if_else_flattened).tokens))
-  results.push(assert_code_contains("gen_program: flattened else branch references helper",
-    codegen_if_else_flat_cpp, "merge_unknown_inner"))
-  results.push(assert_code_not_contains("gen_program: flattened if/else has no stray export marker",
-    codegen_if_else_flat_cpp, "export_;"))
+  results.push(assert_code_contains('gen_program: flattened else branch references helper',
+    codegen_if_else_flat_cpp, 'merge_unknown_inner'))
+  results.push(assert_code_not_contains('gen_program: flattened if/else has no stray export marker',
+    codegen_if_else_flat_cpp, 'export_;'))
 
   results
 end

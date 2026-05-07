@@ -1,13 +1,13 @@
 // Test entry point. Runs all test suites.
 // Uses import for modular build (build_tests.sh).
 
-import { lexer_tests } from "./test_lexer"
-import { parser_tests } from "./test_parser"
-import { checker_tests } from "./test_checker"
-import { codegen_tests } from "./test_codegen"
-import { pipe_and_record_update_tests } from "./test_pipe_and_record_update"
-import { decl_gen_tests } from "./test_decl_gen"
-import { TestResult, run_all } from "./test_runner"
+import { lexer_tests } from './test_lexer'
+import { parser_tests } from './test_parser'
+import { checker_tests } from './test_checker'
+import { codegen_tests } from './test_codegen'
+import { pipe_and_record_update_tests } from './test_pipe_and_record_update'
+import { decl_gen_tests } from './test_decl_gen'
+import { TestResult, run_all } from './test_runner'
 
 fn all_tests() -> [TestResult] = do
   let mut all: [TestResult] = []

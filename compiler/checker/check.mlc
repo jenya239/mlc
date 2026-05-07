@@ -3,19 +3,19 @@
 import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
          Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span,
          Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span,
-         span_unknown, TypeVariant } from "../ast"
-import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from "../ast"
-import { check_names_expr } from "./names"
-import { check_fn_body_mutations } from "./check_mutations"
-import { Type, TypeRegistry, build_registry, type_from_annotation } from "./registry"
-import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from "./trait_param_expand"
-import { expand_parameter_destructuring_in_program, extern_parameter_destructure_diagnostics, parameter_binding_is_plain_identifier } from "./param_destructure_expand"
-import { derive_clause_diagnostics } from "./derive_validation"
-import { infer_expr } from "./infer"
-import { check_context_new } from "./check_context"
-import { types_structurally_equal, type_is_unknown, type_description } from "./semantic_type_structure"
-import { record_field_default_expression_acceptable_for_codegen } from "../record_field_default_initializer"
-import { partial_application_desugar_expr } from "./partial_application_desugar"
+         span_unknown, TypeVariant } from '../ast'
+import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../ast'
+import { check_names_expr } from './names'
+import { check_fn_body_mutations } from './check_mutations'
+import { Type, TypeRegistry, build_registry, type_from_annotation } from './registry'
+import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from './trait_param_expand'
+import { expand_parameter_destructuring_in_program, extern_parameter_destructure_diagnostics, parameter_binding_is_plain_identifier } from './param_destructure_expand'
+import { derive_clause_diagnostics } from './derive_validation'
+import { infer_expr } from './infer'
+import { check_context_new } from './check_context'
+import { types_structurally_equal, type_is_unknown, type_description } from './semantic_type_structure'
+import { record_field_default_expression_acceptable_for_codegen } from '../record_field_default_initializer'
+import { partial_application_desugar_expr } from './partial_application_desugar'
 
 fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
   let mut optional_began = false
@@ -57,7 +57,7 @@ fn record_field_default_value_diagnostics(
           while generic_field_scan_index < field_defs_generic_scan.length() do
             if field_defs_generic_scan[generic_field_scan_index].has_default_expression then
               diagnostics_accumulator.push(diagnostic_error(
-                "record field default values are not supported when the type has generic parameters",
+                'record field default values are not supported when the type has generic parameters',
                 span_unknown()))
             end
             generic_field_scan_index = generic_field_scan_index + 1
@@ -81,7 +81,7 @@ fn record_field_default_value_diagnostics(
             const default_ast_expression = field_defs_literal_scan[literal_field_scan_index].default_expression
             if !record_field_default_expression_acceptable_for_codegen(default_ast_expression) then
               diagnostics_accumulator.push(diagnostic_error(
-                "record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)",
+                'record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)',
                 expr_span(default_ast_expression)))
             else
               const inferred_default_result = infer_expr(default_ast_expression, record_default_inference_context)
@@ -92,7 +92,7 @@ fn record_field_default_value_diagnostics(
                  type_is_checkable(inferred_default_result.inferred_type, registry) &&
                  !types_structurally_equal(annotated_field_type, inferred_default_result.inferred_type) then
                 diagnostics_accumulator.push(diagnostic_error(
-                  "record field default type mismatch for field \"" +
+                  'record field default type mismatch for field "' +
                     field_defs_literal_scan[literal_field_scan_index].name + "\"",
                   expr_span(default_ast_expression)))
               end
@@ -122,7 +122,7 @@ fn param_default_diagnostics(
 ) -> [Diagnostic] = do
   let mut out: [Diagnostic] = []
   if !param_defaults_in_tail(parameters) then
-    out.push(diagnostic_error("parameter defaults must be trailing", expr_span(body)))
+    out.push(diagnostic_error('parameter defaults must be trailing', expr_span(body)))
   end
   let mut has_any_default = false
   let mut j = 0
@@ -131,29 +131,29 @@ fn param_default_diagnostics(
     j = j + 1
   end
   if type_parameters.length() > 0 && has_any_default then
-    out.push(diagnostic_error("default parameters are not allowed on generic functions yet", expr_span(body)))
+    out.push(diagnostic_error('default parameters are not allowed on generic functions yet', expr_span(body)))
   end
   if is_extern_body(body) && has_any_default then
-    out.push(diagnostic_error("default parameters are not allowed on extern functions", expr_span(body)))
+    out.push(diagnostic_error('default parameters are not allowed on extern functions', expr_span(body)))
   end
   const empty_type_environment: Map<string, Shared<Type>> = Map.new()
   const default_infer_context = check_context_new(empty_type_environment, registry)
   let mut p = 0
   while p < parameters.length() do
     if parameters[p].has_default && !parameter_binding_is_plain_identifier(parameters[p]) then
-      out.push(diagnostic_error("default values are not supported for destructuring parameters", expr_span(body)))
+      out.push(diagnostic_error('default values are not supported for destructuring parameters', expr_span(body)))
     end
     if parameters[p].has_default then
       const param_default_expr = parameters[p].default
       if !default_expr_mvp_ok(param_default_expr) then
-        out.push(diagnostic_error("parameter default must be a literal in this version", expr_span(param_default_expr)))
+        out.push(diagnostic_error('parameter default must be a literal in this version', expr_span(param_default_expr)))
       else
         const default_infer = infer_expr(param_default_expr, default_infer_context)
         out = diagnostics_append(out, default_infer.errors)
         const param_expected_type = type_from_annotation(param_typ(parameters[p]))
         if type_is_checkable(param_expected_type, registry) && type_is_checkable(default_infer.inferred_type, registry) && !types_structurally_equal(param_expected_type, default_infer.inferred_type) then
           out.push(diagnostic_error(
-            "parameter default: expected " + type_description(param_expected_type) + ", got " + type_description(default_infer.inferred_type),
+            'parameter default: expected ' + type_description(param_expected_type) + ', got ' + type_description(default_infer.inferred_type),
             expr_span(param_default_expr)))
         end
       end
@@ -183,7 +183,7 @@ fn where_clause_unknown_parameter_diagnostics(
     const entry = where_entries[entry_index]
     if !type_parameter_name_known(type_parameter_names, entry.parameter_name) then
       collected.push(diagnostic_error(
-        "where clause names unknown type parameter \"" + entry.parameter_name + "\"",
+        'where clause names unknown type parameter "' + entry.parameter_name + "\"",
         source_span))
     end
     entry_index = entry_index + 1
@@ -193,10 +193,10 @@ end
 
 fn collect_globals(program: Program) -> Map<string, bool> = do
   let names: Map<string, bool> = Map.new()
-  names.set("true", true); names.set("false", true); names.set("exit", true)
-  names.set("print", true); names.set("println", true); names.set("args", true)
-  names.set("File", true); names.set("Shared", true); names.set("Map", true)
-  names.set("Ok", true); names.set("Err", true); names.set("Result", true)
+  names.set('true', true); names.set('false', true); names.set('exit', true)
+  names.set('print', true); names.set('println', true); names.set('args', true)
+  names.set('File', true); names.set('Shared', true); names.set('Map', true)
+  names.set('Ok', true); names.set('Err', true); names.set('Result', true)
   let mut index = 0
   while index < program.decls.length() do
     match decl_inner(program.decls[index]) {
@@ -320,7 +320,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         const return_type_errors: [Diagnostic] =
           if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_structurally_equal(expected_type, actual_type) then
             [diagnostic_error(
-              "return type: expected " + type_description(expected_type) + ", got " + type_description(actual_type),
+              'return type: expected ' + type_description(expected_type) + ', got ' + type_description(actual_type),
               expr_span(body))]
           else [] end
         all_diagnostics = diagnostics_append(

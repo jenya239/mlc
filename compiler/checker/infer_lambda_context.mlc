@@ -1,9 +1,9 @@
 // Lambda inference with known parameter types (call-site context).
 
-import { Expr } from "../ast"
-import { Type } from "./registry"
-import { CheckContext, check_context_new } from "./check_context"
-import { InferResult } from "./infer_result"
+import { Expr } from '../ast'
+import { Type } from './registry'
+import { CheckContext, check_context_new } from './check_context'
+import { InferResult } from './infer_result'
 
 export fn infer_lambda_with_param_types(
   parameter_names: [string],

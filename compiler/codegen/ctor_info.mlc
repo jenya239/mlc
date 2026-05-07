@@ -1,7 +1,7 @@
 // Constructor type info: shared/array position tracking for variant constructors.
 
-import { TypeExpr, TypeVariant, Decl, FieldDef, decl_inner } from "../ast"
-import { is_shared_type, is_shared_array_type } from "./param_analysis"
+import { TypeExpr, TypeVariant, Decl, FieldDef, decl_inner } from '../ast'
+import { is_shared_type, is_shared_array_type } from './param_analysis'
 
 export type CtorTypeInfo = CtorTypeInfo { name: string, shared_pos: [i32], shared_arr_pos: [i32] }
 
@@ -57,7 +57,7 @@ export fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<Cto
 end
 
 export fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], cti_name: string) -> Shared<CtorTypeInfo> = do
-  let mut result: Shared<CtorTypeInfo> = Shared.new(CtorTypeInfo { name: "", shared_pos: [], shared_arr_pos: [] })
+  let mut result: Shared<CtorTypeInfo> = Shared.new(CtorTypeInfo { name: '', shared_pos: [], shared_arr_pos: [] })
   let mut i = 0
   while i < infos.length() do
     if infos[i].name == cti_name then result = infos[i] end; i = i + 1

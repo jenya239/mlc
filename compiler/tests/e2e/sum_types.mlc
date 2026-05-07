@@ -8,14 +8,14 @@ fn area(s: Shape) -> i32 =
 
 fn describe(s: Shape) -> string =
   match s {
-    Circle(_) => "circle",
-    Rect(_, _) => "rect"
+    Circle(_) => 'circle',
+    Rect(_, _) => 'rect'
   }
 
 fn main() -> i32 = do
   const c = Circle(5)
   const r = Rect(3, 4)
-  println(describe(c) + ": " + area(c).to_string())
-  println(describe(r) + ": " + area(r).to_string())
+  println(describe(c) + ': ' + area(c).to_string())
+  println(describe(r) + ': ' + area(r).to_string())
   0
 end

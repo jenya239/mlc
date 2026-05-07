@@ -1,11 +1,11 @@
 // Combine InferResult values after subexpressions are inferred (no infer_expr).
 
-import { Expr, ExprArray, Span, diagnostics_append } from "../ast"
-import { InferResult } from "./infer_result"
-import { Type, TypeRegistry, field_type_from_object, method_return_type_from_object } from "./registry"
-import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from "./semantic_type_structure"
-import { infer_binary_operand_diagnostics } from "./binary_diagnostics"
-import { infer_builtin_method_receiver_diagnostics } from "./method_receiver_diagnostics"
+import { Expr, ExprArray, Span, diagnostics_append } from '../ast'
+import { InferResult } from './infer_result'
+import { Type, TypeRegistry, field_type_from_object, method_return_type_from_object } from './registry'
+import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from './semantic_type_structure'
+import { infer_binary_operand_diagnostics } from './binary_diagnostics'
+import { infer_builtin_method_receiver_diagnostics } from './method_receiver_diagnostics'
 import {
   unary_minus_diagnostic,
   unary_bang_diagnostic,
@@ -14,7 +14,7 @@ import {
   index_not_i32_diagnostic,
   if_branch_mismatch_diagnostic,
   infer_expr_field_diagnostics
-} from "./type_diagnostics"
+} from './type_diagnostics'
 
 export fn infer_binary_from_operand_results(
   operation: string,

@@ -1,13 +1,13 @@
 // Context types and mutation for the code generator.
 
-import { Program, Pat } from "../ast"
-import { SStmt, SExpr, sexpr_type } from "../semantic_ir"
-import { Type } from "../checker/registry"
-import { cpp_safe } from "./cpp_naming"
-import { LoadItem, FieldOrder, list_contains, lookup_fields, build_qualified, build_item_index } from "./decl_index"
-import { build_field_orders, build_method_owners_from_decls, build_variant_types_from_decls, build_generic_variants_from_decls, add_method_owners_from_decls } from "./type_index"
-import { CtorTypeInfo, build_ctor_type_infos_from_decls, lookup_ctor_type_info } from "./ctor_info"
-import { is_shared_type, is_shared_array_type, is_shared_map_type, array_elem_name, collect_shared_params, collect_shared_array_params, collect_array_elem_types, collect_shared_map_params, collect_value_params } from "./param_analysis"
+import { Program, Pat } from '../ast'
+import { SStmt, SExpr, sexpr_type } from '../semantic_ir'
+import { Type } from '../checker/registry'
+import { cpp_safe } from './cpp_naming'
+import { LoadItem, FieldOrder, list_contains, lookup_fields, build_qualified, build_item_index } from './decl_index'
+import { build_field_orders, build_method_owners_from_decls, build_variant_types_from_decls, build_generic_variants_from_decls, add_method_owners_from_decls } from './type_index'
+import { CtorTypeInfo, build_ctor_type_infos_from_decls, lookup_ctor_type_info } from './ctor_info'
+import { is_shared_type, is_shared_array_type, is_shared_map_type, array_elem_name, collect_shared_params, collect_shared_array_params, collect_array_elem_types, collect_shared_map_params, collect_value_params } from './param_analysis'
 
 export type CodegenContext = CodegenContext {
   field_orders: [Shared<FieldOrder>],
@@ -96,7 +96,7 @@ fn collect_pat_bind_names_for_context(pat: Shared<Pat>, mut accumulator: [string
       while j < subs.length() do
         accumulator = collect_pat_bind_names_for_context(subs[j], accumulator); j = j + 1
       end
-      if rest != "" && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
+      if rest != '' && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
     end,
     _ => accumulator
   }
@@ -127,10 +127,10 @@ export fn update_context_from_statement(stmt: Shared<SStmt>, context: CodegenCon
 export fn create_codegen_context(prog: Program) -> CodegenContext =
   CodegenContext {
     field_orders: build_field_orders(prog),
-    namespace_prefix: "",
+    namespace_prefix: '',
     qualified: Map.new(),
     namespace_alias_prefixes: Map.new(),
-    self_type: "",
+    self_type: '',
     method_owners: build_method_owners_from_decls(prog.decls),
     shared_params: [],
     shared_array_params: [],

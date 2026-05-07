@@ -1,9 +1,9 @@
 // Result unwrap (?): Ok type from Result-like generic in inferred inner type.
 
-import { Span, Diagnostic, diagnostic_error, diagnostics_append } from "../ast"
-import { InferResult } from "./infer_result"
-import { Type, TUnknown } from "./registry"
-import { type_description } from "./semantic_type_structure"
+import { Span, Diagnostic, diagnostic_error, diagnostics_append } from '../ast'
+import { InferResult } from './infer_result'
+import { Type, TUnknown } from './registry'
+import { type_description } from './semantic_type_structure'
 
 export fn infer_question_from_inner_result(inner_result: InferResult, question_span: Span) -> InferResult = do
   match inner_result.inferred_type {
@@ -14,7 +14,7 @@ export fn infer_question_from_inner_result(inner_result: InferResult, question_s
     TUnknown => inner_result,
     _ => do
       const error: [Diagnostic] = [diagnostic_error(
-        "? operator requires a Result type, got " + type_description(inner_result.inferred_type),
+        '? operator requires a Result type, got ' + type_description(inner_result.inferred_type),
         question_span)]
       InferResult {
         inferred_type: Shared.new(TUnknown),

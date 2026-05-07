@@ -2,8 +2,8 @@
 // Matches Ruby ExpressionVisitor#build_record_fields order: spreads fill gaps by target field order,
 // earlier spread wins over later spread for the same key; explicit literal keys override spreads.
 
-import { Expr, FieldVal, RecordLitPart, ExprField, expr_span, Diagnostic, diagnostic_error, Span } from "../ast"
-import { TypeRegistry, Type, TGeneric, TShared } from "./registry"
+import { Expr, FieldVal, RecordLitPart, ExprField, expr_span, Diagnostic, diagnostic_error, Span } from '../ast'
+import { TypeRegistry, Type, TGeneric, TShared } from './registry'
 
 fn field_values_map_from_flat(field_values: [Shared<FieldVal>]) -> Map<string, Shared<FieldVal>> = do
   let accumulator: Map<string, Shared<FieldVal>> = Map.new()
@@ -57,7 +57,7 @@ fn record_type_base_name(value_type: Shared<Type>) -> string =
     TNamed(name) => name,
     TGeneric(name, _) => name,
     TShared(inner) => record_type_base_name(inner),
-    _ => ""
+    _ => ''
   }
 
 fn explicit_field_map_last_wins(parts: [RecordLitPart]) -> Map<string, Shared<FieldVal>> = do
@@ -129,7 +129,7 @@ export fn merge_record_literal_parts_to_field_values(
         const spread_value_type = spread_types_in_order[spread_type_index]
         spread_type_index = spread_type_index + 1
         const spread_base_name = record_type_base_name(spread_value_type)
-        if spread_base_name != "" && registry.has_fields(spread_base_name) then
+        if spread_base_name != '' && registry.has_fields(spread_base_name) then
           const spread_field_types = registry.fields_for(spread_base_name)
           let mut ordered_index = 0
           while ordered_index < ordered_target_field_names.length() do
@@ -185,7 +185,7 @@ export fn diagnostics_missing_fields_for_ordered_record(
       end
       if !found_present && !registry.record_field_has_default_expression(type_name, expected_field_name) then
         missing_field_diagnostics.push(
-          diagnostic_error("missing field \"" + expected_field_name + "\" in record literal", span))
+          diagnostic_error('missing field "' + expected_field_name + '" in record literal', span))
       end
       ordered_index = ordered_index + 1
     end

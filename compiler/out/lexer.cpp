@@ -189,9 +189,19 @@ if (LexState_current(current) == mlc::String("t")){
 parts.push_back(mlc::String("\t"));
 current = LexState_lex_advance(current);
 } else {
+if (LexState_current(current) == mlc::String("r")){
+parts.push_back(mlc::String("\r"));
+current = LexState_lex_advance(current);
+} else {
+if (LexState_current(current) == mlc::String("0")){
+parts.push_back(mlc::String("\0", 1));
+current = LexState_lex_advance(current);
+} else {
 parts.push_back(mlc::String("\\"));
 parts.push_back(LexState_current(current));
 current = LexState_lex_advance(current);
+}
+}
 }
 }
 }

@@ -1,7 +1,7 @@
 // --- Semantic type --------------------------------------------------------
 
-import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name, Expr } from "../ast"
-import { expand_trait_as_param_program } from "./trait_param_expand"
+import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name, Expr } from '../ast'
+import { expand_trait_as_param_program } from './trait_param_expand'
 
 export type Type =
   | TI32 | TString | TBool | TUnit
@@ -133,7 +133,7 @@ export extend TypeRegistry {
     else do const empty: [string] = []; empty end end
 
   fn resolve_assoc(self, type_name: string, trait_name: string, assoc_name: string) -> Shared<Type> = do
-    const key = type_name + "::" + trait_name
+    const key = type_name + '::' + trait_name
     if self.assoc_type_bindings.has(key) then
       const bindings = self.assoc_type_bindings.get(key)
       if bindings.has(assoc_name) then bindings.get(assoc_name)
@@ -145,32 +145,32 @@ export extend TypeRegistry {
 export fn empty_registry() -> TypeRegistry = do
   const ctor_types:  Map<string, Shared<Type>> = Map.new()
   const ctor_params: Map<string, [Shared<Type>]> = Map.new()
-  ctor_types.set("Ok",  Shared.new(TNamed("Result")))
-  ctor_types.set("Err", Shared.new(TNamed("Result")))
+  ctor_types.set('Ok',  Shared.new(TNamed('Result')))
+  ctor_types.set('Err', Shared.new(TNamed('Result')))
   const ok_params:  [Shared<Type>] = []
   const err_params: [Shared<Type>] = []
   ok_params.push(Shared.new(TUnknown))
   err_params.push(Shared.new(TUnknown))
-  ctor_params.set("Ok",  ok_params)
-  ctor_params.set("Err", err_params)
+  ctor_params.set('Ok',  ok_params)
+  ctor_params.set('Err', err_params)
   const builtin_function_types: Map<string, Shared<Type>> = Map.new()
   builtin_function_types.set(
-    "print",
+    'print',
     Shared.new(TFn([Shared.new(TString)], Shared.new(TUnit))))
   builtin_function_types.set(
-    "println",
+    'println',
     Shared.new(TFn([Shared.new(TString)], Shared.new(TUnit))))
   builtin_function_types.set(
-    "exit",
+    'exit',
     Shared.new(TFn([Shared.new(TI32)], Shared.new(TUnit))))
   builtin_function_types.set(
-    "args",
+    'args',
     Shared.new(TFn([], Shared.new(TArray(Shared.new(TString))))))
   const fn_req: Map<string, i32> = Map.new()
-  fn_req.set("print", 1)
-  fn_req.set("println", 1)
-  fn_req.set("exit", 1)
-  fn_req.set("args", 0)
+  fn_req.set('print', 1)
+  fn_req.set('println', 1)
+  fn_req.set('exit', 1)
+  fn_req.set('args', 0)
   const empty_private_ctors: [string] = []
   TypeRegistry {
     fn_types: builtin_function_types,
@@ -199,17 +199,17 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     TyBool    => Shared.new(TBool),
     TyUnit    => Shared.new(TUnit),
     TyNamed(name)   =>
-      if name == "i64" then Shared.new(TI64)
-      else if name == "f64" then Shared.new(TF64)
-      else if name == "u8" then Shared.new(TU8)
-      else if name == "usize" then Shared.new(TUsize)
-      else if name == "char" then Shared.new(TChar)
+      if name == 'i64' then Shared.new(TI64)
+      else if name == 'f64' then Shared.new(TF64)
+      else if name == 'u8' then Shared.new(TU8)
+      else if name == 'usize' then Shared.new(TUsize)
+      else if name == 'char' then Shared.new(TChar)
       else Shared.new(TNamed(name))
       end,
     TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),
     TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),
     TyGeneric(name, targs) =>
-      if name == "ref" && targs.length() == 1 then type_from_annotation(targs[0])
+      if name == 'ref' && targs.length() == 1 then type_from_annotation(targs[0])
       else do
         let mut typed_args: [Shared<Type>] = []; let mut i = 0
         while i < targs.length() do typed_args.push(type_from_annotation(targs[i])); i = i + 1 end
@@ -277,7 +277,7 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
         const m = methods[i]
         match m {
           DeclAssocBind(assoc_name, type_expr, _) => do
-            const key = type_name + "::" + trait_name
+            const key = type_name + '::' + trait_name
             const empty_bindings: Map<string, Shared<Type>> = Map.new()
             const bindings: Map<string, Shared<Type>> =
               if registry.assoc_type_bindings.has(key) then registry.assoc_type_bindings.get(key)
@@ -428,9 +428,9 @@ export fn field_type_from_object(object_type: Shared<Type>, field_name: string, 
   const type_name = match inner_type {
     TNamed(name) => name,
     TGeneric(name, _) => name,
-    _ => ""
+    _ => ''
   }
-  if type_name != "" && registry.has_fields(type_name) then
+  if type_name != '' && registry.has_fields(type_name) then
     const field_map = registry.fields_for(type_name)
     if field_map.has(field_name) then field_map.get(field_name) else Shared.new(TUnknown) end
   else Shared.new(TUnknown)
@@ -439,8 +439,8 @@ end
 
 export fn method_return_type_from_object(object_type: Shared<Type>, method_name: string, registry: TypeRegistry) -> Shared<Type> = do
   const inner_type = match object_type { TShared(inner) => inner, _ => object_type }
-  const type_name = match inner_type { TNamed(name) => name, _ => "" }
-  if type_name == "" then Shared.new(TUnknown)
+  const type_name = match inner_type { TNamed(name) => name, _ => '' }
+  if type_name == '' then Shared.new(TUnknown)
   else
     const mangled = type_name + "_" + method_name
     if registry.has_fn(mangled) then

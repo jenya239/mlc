@@ -1,12 +1,12 @@
 // Call / non-constructor inference helpers (no infer_expr dependency).
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append } from "../ast"
-import { Type } from "./registry"
-import { CheckContext } from "./check_context"
-import { TypeRegistry } from "./registry"
-import { InferResult } from "./infer_result"
-import { constructor_arity_diagnostics, call_arity_diagnostics, call_arity_range_diagnostics } from "./type_diagnostics"
-import * as semantic_type_structure from "./semantic_type_structure"
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append } from '../ast'
+import { Type } from './registry'
+import { CheckContext } from './check_context'
+import { TypeRegistry } from './registry'
+import { InferResult } from './infer_result'
+import { constructor_arity_diagnostics, call_arity_diagnostics, call_arity_range_diagnostics } from './type_diagnostics'
+import * as semantic_type_structure from './semantic_type_structure'
 
 export fn infer_expr_call_for_constructor_name(
   constructor_name: string,
@@ -21,11 +21,11 @@ export fn infer_expr_call_for_constructor_name(
     call_arguments.length(),
     call_source_span)
   const ctor_type = inference_context.registry.ctor_type(constructor_name)
-  const owner_name = match ctor_type { TNamed(n) => n, _ => "" }
+  const owner_name = match ctor_type { TNamed(n) => n, _ => '' }
   const private_errors: [Diagnostic] =
     if inference_context.registry.is_private_ctor(constructor_name) &&
        inference_context.current_extend_type != owner_name then
-      [diagnostic_error("private constructor: cannot construct " + constructor_name + " outside its extend block", call_source_span)]
+      [diagnostic_error('private constructor: cannot construct ' + constructor_name + ' outside its extend block', call_source_span)]
     else [] end
   InferResult {
     inferred_type: ctor_type,
@@ -45,7 +45,7 @@ export fn infer_expr_call_non_constructor_arity_only(
   const parameter_types = semantic_type_structure.function_parameter_list(function_result.inferred_type)
   const max_arity = parameter_types.length()
   const min_arity =
-    if callee_name != "" && registry.has_fn(callee_name) then
+    if callee_name != '' && registry.has_fn(callee_name) then
       const r = registry.required_arity_for_fn(callee_name)
       if r >= 0 then r else max_arity end
     else
@@ -75,7 +75,7 @@ export fn infer_expr_call_non_constructor_not_callable(
       inferred_type: Shared.new(TUnknown),
       errors: diagnostics_append(base.errors, [
         diagnostic_error(
-          "called value is not a function (got " + semantic_type_structure.type_description(function_result.inferred_type) + ")",
+          'called value is not a function (got ' + semantic_type_structure.type_description(function_result.inferred_type) + ")",
           call_source_span)])
     }
   end

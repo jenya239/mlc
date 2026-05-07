@@ -1,18 +1,18 @@
 // Match expression type inference.
 // infer_expr injected as a parameter to break the import cycle with infer.mlc.
 
-import { Expr, MatchArm, Diagnostic, diagnostics_append, diagnostic_error, expr_span, Pat, PatTuple, PatArray } from "../ast"
-import { Type } from "./registry"
-import { CheckContext, check_context_new } from "./check_context"
-import { InferResult } from "./infer_result"
-import { match_arm_type_mismatch_diagnostic } from "./type_diagnostics"
-import { env_for_pattern_substituted } from "./pattern_env"
-import { type_is_bool, type_is_unknown } from "./semantic_type_structure"
+import { Expr, MatchArm, Diagnostic, diagnostics_append, diagnostic_error, expr_span, Pat, PatTuple, PatArray } from '../ast'
+import { Type } from './registry'
+import { CheckContext, check_context_new } from './check_context'
+import { InferResult } from './infer_result'
+import { match_arm_type_mismatch_diagnostic } from './type_diagnostics'
+import { env_for_pattern_substituted } from './pattern_env'
+import { type_is_bool, type_is_unknown } from './semantic_type_structure'
 
 fn pattern_guard_unsupported_tuple_or_array_diagnostic(pattern: Shared<Pat>) -> [Diagnostic] =
   match pattern {
-    PatTuple(_, span)    => [ diagnostic_error("match guard is not supported with tuple patterns", span) ],
-    PatArray(_, _, span) => [ diagnostic_error("match guard is not supported with array patterns", span) ],
+    PatTuple(_, span)    => [ diagnostic_error('match guard is not supported with tuple patterns', span) ],
+    PatArray(_, _, span) => [ diagnostic_error('match guard is not supported with array patterns', span) ],
     _                    => do let empty_list: [Diagnostic] = []; empty_list end
   }
 
@@ -51,7 +51,7 @@ export fn infer_expr_match(
       collected_errors = diagnostics_append(collected_errors, guard_inference.errors)
       if !type_is_unknown(guard_inference.inferred_type) && !type_is_bool(guard_inference.inferred_type) then
         collected_errors =
-          diagnostics_append(collected_errors, [ diagnostic_error("match guard must have type bool", expr_span(arms[arm_index].when_condition)) ])
+          diagnostics_append(collected_errors, [ diagnostic_error('match guard must have type bool', expr_span(arms[arm_index].when_condition)) ])
       end
     end
     const arm_result      = infer_expr_fn(arms[arm_index].body, arm_context)

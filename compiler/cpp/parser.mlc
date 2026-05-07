@@ -10,7 +10,7 @@ type CppTypeResult = CppTypeResult { type_string: string, position: i32 }
 fn parse_include_skip(tokens: [CppToken], position: i32) -> i32 = do
   let pos = position
   if cpp_is_hash(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
-  if cpp_is_identifier(cpp_token_kind_at(tokens, pos)) && cpp_get_identifier(cpp_token_kind_at(tokens, pos)) == "include" then pos = pos + 1 end
+  if cpp_is_identifier(cpp_token_kind_at(tokens, pos)) && cpp_get_identifier(cpp_token_kind_at(tokens, pos)) == 'include' then pos = pos + 1 end
   pos
 end
 
@@ -26,7 +26,7 @@ fn parse_type_tokens(tokens: [CppToken], position: i32) -> CppTypeResult = do
     if cpp_is_angle(kind) then depth = depth + 1
     else if cpp_is_right_angle(kind) then depth = if depth > 0 then depth - 1 else 0 end
     end
-    if part != "" then parts.push(part) end
+    if part != '' then parts.push(part) end
     pos = pos + 1
   end
   CppTypeResult { type_string: parts.join(" "), position: pos }
@@ -42,7 +42,7 @@ fn parse_include_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
     const path = cpp_get_string(kind)
     CppDeclResult { decl: Shared.new(CppInclude(false, path)), position: after_skip + 1 }
   else
-    CppDeclResult { decl: Shared.new(CppInclude(true, "")), position: after_skip }
+    CppDeclResult { decl: Shared.new(CppInclude(true, '')), position: after_skip }
   end
 end
 
@@ -75,7 +75,7 @@ fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
         index = index + 1
       end
       const field_name = if last_space >= 0 then typ_and_name.substring(last_space + 1, typ_and_name.length() - last_space - 1) else typ_and_name end
-      const field_type = if last_space > 0 then typ_and_name.substring(0, last_space) else "int" end
+      const field_type = if last_space > 0 then typ_and_name.substring(0, last_space) else 'int' end
       pos = type_result.position
       if cpp_is_semicolon(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
       fields.push(Shared.new(CppField { typ: field_type, name: field_name }))
@@ -90,12 +90,12 @@ fn cpp_parse_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
   if cpp_is_hash(kind) then parse_include_decl(tokens, position)
   else if cpp_is_using_keyword(kind) then parse_using_decl(tokens, position)
   else if cpp_is_struct_keyword(kind) then parse_struct_decl(tokens, position)
-  else CppDeclResult { decl: Shared.new(CppInclude(true, "__skip__")), position: position }
+  else CppDeclResult { decl: Shared.new(CppInclude(true, '__skip__')), position: position }
   end
 end
 
 fn cpp_is_skip_decl(decl: Shared<CppDecl>) -> bool =
-  match decl { CppInclude(is_angle, path) => is_angle && path == "__skip__", _ => false }
+  match decl { CppInclude(is_angle, path) => is_angle && path == '__skip__', _ => false }
 
 fn cpp_parse(tokens: [CppToken]) -> CppParseResult = do
   const decls: [Shared<CppDecl>] = []

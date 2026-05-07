@@ -1,10 +1,10 @@
 // TypeExpr predicates and param collectors (no CodegenContext dependency).
 
-import { TypeExpr, Param } from "../ast"
+import { TypeExpr, Param } from '../ast'
 
 export fn is_shared_type(t: Shared<TypeExpr>) -> bool =
   match t {
-    TyGeneric(n, _) => n == "Shared",
+    TyGeneric(n, _) => n == 'Shared',
     TyShared(_) => true,
     _ => false
   }
@@ -14,12 +14,12 @@ export fn is_shared_array_type(t: Shared<TypeExpr>) -> bool =
 
 export fn is_shared_map_type(t: Shared<TypeExpr>) -> bool =
   match t {
-    TyGeneric(n, targs) => n == "Map" && targs.length() >= 2 && is_shared_type(targs[1]),
+    TyGeneric(n, targs) => n == 'Map' && targs.length() >= 2 && is_shared_type(targs[1]),
     _ => false
   }
 
 export fn array_elem_name(t: Shared<TypeExpr>) -> string =
-  match t { TyArray(inner) => match inner { TyNamed(n) => n, _ => "" }, _ => "" }
+  match t { TyArray(inner) => match inner { TyNamed(n) => n, _ => '' }, _ => '' }
 
 export fn collect_shared_params(params: [Shared<Param>]) -> [string] = do
   let result: [string] = []; let mut i = 0

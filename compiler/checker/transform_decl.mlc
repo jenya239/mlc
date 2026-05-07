@@ -1,14 +1,14 @@
 // Declaration, program, and load-item AST → SemanticIR transforms.
 // Not called back by transform_expr/transform_stmts; imports from transform.mlc.
 
-import { Decl, TypeVariant, Param, Program, Stmt, Span } from "../ast"
-import { expand_declarations_with_trait_context } from "./trait_param_expand"
-import { expand_parameter_destructuring_in_program } from "./param_destructure_expand"
-import { Type, TypeRegistry, type_from_annotation } from "./registry"
-import { SDecl, SProgram, SLoadItem, SNamespaceImportAlias } from "../semantic_ir"
-import { LoadItem, NamespaceImportAlias } from "../codegen/decl_index"
-import { TransformContext, TransformStmtsResult, transform_expr, coerce_expr_to_type } from "./transform"
-import { transform_stmts } from "./transform_stmts"
+import { Decl, TypeVariant, Param, Program, Stmt, Span } from '../ast'
+import { expand_declarations_with_trait_context } from './trait_param_expand'
+import { expand_parameter_destructuring_in_program } from './param_destructure_expand'
+import { Type, TypeRegistry, type_from_annotation } from './registry'
+import { SDecl, SProgram, SLoadItem, SNamespaceImportAlias } from '../semantic_ir'
+import { LoadItem, NamespaceImportAlias } from '../codegen/decl_index'
+import { TransformContext, TransformStmtsResult, transform_expr, coerce_expr_to_type } from './transform'
+import { transform_stmts } from './transform_stmts'
 
 fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<SDecl> =
   match declaration {
@@ -37,7 +37,7 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
     end,
     DeclImport(path, names) => Shared.new(SDeclImport(path, names)),
     DeclExported(inner)     => Shared.new(SDeclExported(transform_decl(inner, registry))),
-    DeclAssocType(_, _)     => Shared.new(SDeclImport("", [])),
+    DeclAssocType(_, _)     => Shared.new(SDeclImport('', [])),
     DeclAssocBind(name, type_expr, span) => Shared.new(SDeclAssocBind(name, type_from_annotation(type_expr), span))
   }
 

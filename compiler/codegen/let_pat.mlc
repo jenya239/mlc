@@ -1,17 +1,17 @@
 // SStmtLetPat: structured let — tuple/record/array/ctor (A3).
 
-import { Pat, PatIdent } from "../ast"
-import { SExpr } from "../semantic_ir"
-import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from "../checker/registry"
-import { CodegenContext, list_contains, context_resolve } from "./context"
-import { lookup_fields } from "./decl_index"
-import { sem_type_to_cpp } from "./type_gen"
-import { cpp_safe } from "./cpp_naming"
-import { pat_bind_names } from "./match_analysis"
-import * as expression_output from "./expr"
+import { Pat, PatIdent } from '../ast'
+import { SExpr } from '../semantic_ir'
+import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../checker/registry'
+import { CodegenContext, list_contains, context_resolve } from './context'
+import { lookup_fields } from './decl_index'
+import { sem_type_to_cpp } from './type_gen'
+import { cpp_safe } from './cpp_naming'
+import { pat_bind_names } from './match_analysis'
+import * as expression_output from './expr'
 
 fn gen_let_array_rest_slice(temp: string, from_index: i32, element_cpp: string) -> string =
-  "mlc::Array<" + element_cpp + ">(" + temp + ".cbegin() + " + from_index.to_string() + ", " + temp + ".cend())"
+  'mlc::Array<' + element_cpp + '>(' + temp + '.cbegin() + ' + from_index.to_string() + ', ' + temp + '.cend())'
 
 export fn gen_let_pattern_statement(
   pat: Shared<Pat>,
@@ -29,88 +29,88 @@ export fn gen_let_pattern_statement(
       match value_type {
         TTuple(_) | TPair(_, _) => do
           const primitive_tuple_binding_names = pat_bind_names(subs)
-          "{\nauto __lt = " + rhs + ";\n" + expression_output.tuple_destructure_binding(primitive_tuple_binding_names, "__lt") + "\n}\n"
+          '{\nauto __lt = ' + rhs + ';\n' + expression_output.tuple_destructure_binding(primitive_tuple_binding_names, '__lt') + '\n}\n'
         end,
         _ => do
           const record_codegen_name = match value_type {
             TNamed(record_nominal_name) => record_nominal_name,
             TGeneric(record_nominal_name, _) => record_nominal_name,
-            _ => ""
+            _ => ''
           }
-          if record_codegen_name != "" then
+          if record_codegen_name != '' then
             const ordered_member_labels = lookup_fields(context.field_orders, record_codegen_name)
             if ordered_member_labels.length() == subs.length() && subs.length() > 0 then
-              let mut record_ordered_tuple_fragment = "{\nauto __lt = " + rhs + ";\n"
+              let mut record_ordered_tuple_fragment = '{\nauto __lt = ' + rhs + ';\n'
               let mut member_slot_index = 0
               while member_slot_index < subs.length() do
                 match subs[member_slot_index] {
                   PatIdent(binding_member_name, _) => do
                     record_ordered_tuple_fragment = record_ordered_tuple_fragment + expression_output.auto_binding_statement(
                       cpp_safe(binding_member_name),
-                      "__lt." + cpp_safe(ordered_member_labels[member_slot_index]))
+                      '__lt.' + cpp_safe(ordered_member_labels[member_slot_index]))
                   end,
                   _ => do end
                 }
                 member_slot_index = member_slot_index + 1
               end
-              record_ordered_tuple_fragment + "}\n"
+              record_ordered_tuple_fragment + '}\n'
             else
               const fallback_binding_names = pat_bind_names(subs)
-              "{\nauto __lt = " + rhs + ";\n" + expression_output.tuple_destructure_binding(fallback_binding_names, "__lt") + "\n}\n"
+              '{\nauto __lt = ' + rhs + ';\n' + expression_output.tuple_destructure_binding(fallback_binding_names, '__lt') + '\n}\n'
             end
           else
             const outer_fallback_binding_names = pat_bind_names(subs)
-            "{\nauto __lt = " + rhs + ";\n" + expression_output.tuple_destructure_binding(outer_fallback_binding_names, "__lt") + "\n}\n"
+            '{\nauto __lt = ' + rhs + ';\n' + expression_output.tuple_destructure_binding(outer_fallback_binding_names, '__lt') + '\n}\n'
           end
         end
       }
     end,
     PatRecord(_, field_pats, _) => do
-      let mut b = "{\nauto __lt = " + rhs + ";\n"
+      let mut b = '{\nauto __lt = ' + rhs + ';\n'
       let mut i = 0
       while i < field_pats.length() do
         match field_pats[i] {
           PatIdent(fname, _) => do
-            b = b + expression_output.auto_binding_statement(cpp_safe(fname), "__lt." + cpp_safe(fname))
+            b = b + expression_output.auto_binding_statement(cpp_safe(fname), '__lt.' + cpp_safe(fname))
           end,
           _ => do end
         }
         i = i + 1
       end
-      b + "}\n"
+      b + '}\n'
     end,
     PatArray(subs, rest, _) => do
-      const et = match value_type { TArray(inn) => sem_type_to_cpp(context, inn), _ => "auto" }
-      let mut b = "{\nauto __lt = " + rhs + ";\n"
+      const et = match value_type { TArray(inn) => sem_type_to_cpp(context, inn), _ => 'auto' }
+      let mut b = '{\nauto __lt = ' + rhs + ';\n'
       let mut j = 0
       while j < subs.length() do
         match subs[j] {
           PatIdent(n, _) => do
-            b = b + "auto " + cpp_safe(n) + " = __lt[" + j.to_string() + "];\n"
+            b = b + 'auto ' + cpp_safe(n) + ' = __lt[' + j.to_string() + '];\n'
           end,
           _ => do end
         }
         j = j + 1
       end
-      if rest != "" then
-        b = b + "auto " + cpp_safe(rest) + " = " + gen_let_array_rest_slice("__lt", subs.length(), et) + ";\n"
+      if rest != '' then
+        b = b + 'auto ' + cpp_safe(rest) + ' = ' + gen_let_array_rest_slice('__lt', subs.length(), et) + ';\n'
       end
-      b + "}\n"
+      b + '}\n'
     end,
     PatCtor(ctor_name, sub_patterns, _) => do
       const q = context_resolve(context, ctor_name)
       const bind =
-        if sub_patterns.length() == 0 then ""
-        else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), "__b")
+        if sub_patterns.length() == 0 then ''
+        else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), '__b')
         end
       const is_generic = list_contains(context.generic_variants, ctor_name)
-      const targs = if is_generic then "<auto>" else "" end
-      const else_code = if has_else then eval_fn(else_body, context) else "std::abort();" end
-      "{\n" +
-      "auto __lt = " + rhs + ";\n" +
-      "if (!std::holds_alternative<" + q + targs + ">(__lt)) { " + else_code + " }\n" +
-      "const " + q + targs + "& __b = std::get<" + q + targs + ">(__lt);\n" +
-      bind + "\n}\n"
+      const targs = if is_generic then '<auto>' else '' end
+      const else_code = if has_else then eval_fn(else_body, context) else 'std::abort();' end
+      '{\n' +
+      'auto __lt = ' + rhs + ';\n' +
+      'if (!std::holds_alternative<' + q + targs + '>(__lt)) { ' + else_code + ' }\n' +
+      'const ' + q + targs + '& __b = std::get<' + q + targs + '>(__lt);\n' +
+      bind + '\n}\n'
     end,
     _ => expression_output.suffix_semicolon_newline(rhs)
   }

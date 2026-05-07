@@ -1,6 +1,6 @@
 // Structural helpers for semantic Type (checker). Grows toward unify/substitute (roadmap).
 
-import { Type } from "./registry"
+import { Type } from './registry'
 
 export fn type_is_unknown(type_value: Shared<Type>) -> bool =
   match type_value { TUnknown => true, _ => false }
@@ -147,8 +147,8 @@ export fn type_is_string(type_value: Shared<Type>) -> bool =
 
 export fn receiver_type_is_map(receiver_type: Shared<Type>) -> bool =
   match receiver_type {
-    TNamed(name)      => name == "Map",
-    TGeneric(name, _) => name == "Map",
+    TNamed(name)      => name == 'Map',
+    TGeneric(name, _) => name == 'Map',
     _ => false
   }
 
@@ -173,23 +173,23 @@ end
 
 export fn type_description(type_value: Shared<Type>) -> string =
   match type_value {
-    TI32       => "i32",
-    TString    => "string",
-    TBool      => "bool",
-    TUnit      => "unit",
-    TI64       => "i64",
-    TF64       => "f64",
-    TU8        => "u8",
-    TUsize     => "usize",
-    TChar      => "char",
-    TUnknown   => "unknown",
-    TArray(_)  => "array",
-    TShared(_) => "shared",
+    TI32       => 'i32',
+    TString    => 'string',
+    TBool      => 'bool',
+    TUnit      => 'unit',
+    TI64       => 'i64',
+    TF64       => 'f64',
+    TU8        => 'u8',
+    TUsize     => 'usize',
+    TChar      => 'char',
+    TUnknown   => 'unknown',
+    TArray(_)  => 'array',
+    TShared(_) => 'shared',
     TNamed(type_name)      => type_name,
     TGeneric(type_name, _) => type_name,
-    TPair(_, _) => "pair",
-    TTuple(_)   => "tuple",
-    TFn(_, _)  => "function",
+    TPair(_, _) => 'pair',
+    TTuple(_)   => 'tuple',
+    TFn(_, _)  => 'function',
     TAssoc(p, a) => p + "." + a
   }
 
@@ -212,27 +212,27 @@ export fn types_allowed_for_logical_and_or(left_type: Shared<Type>, right_type: 
   (match left_type { TBool => match right_type { TBool => true, _ => false }, _ => false })
 
 export fn builtin_method_return_type(method_name: string) -> Shared<Type> = do
-  if method_name == "length" || method_name == "size" || method_name == "to_i" then Shared.new(TI32)
-  else if method_name == "push" || method_name == "set" || method_name == "remove" then Shared.new(TUnit)
-  else if method_name == "keys" || method_name == "values" then Shared.new(TArray(Shared.new(TUnknown)))
-  else if method_name == "char_at" || method_name == "join" || method_name == "to_string"
-       || method_name == "substring" || method_name == "to_lower" then Shared.new(TString)
-  else if method_name == "has" then Shared.new(TBool)
+  if method_name == 'length' || method_name == 'size' || method_name == 'to_i' then Shared.new(TI32)
+  else if method_name == 'push' || method_name == 'set' || method_name == 'remove' then Shared.new(TUnit)
+  else if method_name == 'keys' || method_name == 'values' then Shared.new(TArray(Shared.new(TUnknown)))
+  else if method_name == 'char_at' || method_name == 'join' || method_name == 'to_string'
+       || method_name == 'substring' || method_name == 'to_lower' then Shared.new(TString)
+  else if method_name == 'has' then Shared.new(TBool)
   else Shared.new(TUnknown)
   end
 end
 
 export fn builtin_method_expected_argument_count(method_name: string) -> i32 = do
-  if method_name == "push" then 1
-  else if method_name == "set" then 2
-  else if method_name == "length" || method_name == "size" then 0
-  else if method_name == "to_i" || method_name == "to_lower" then 0
-  else if method_name == "char_at" then 1
-  else if method_name == "substring" then 2
-  else if method_name == "join" then 1
-  else if method_name == "to_string" then 0
-  else if method_name == "has" || method_name == "get" || method_name == "remove" then 1
-  else if method_name == "keys" || method_name == "values" then 0
+  if method_name == 'push' then 1
+  else if method_name == 'set' then 2
+  else if method_name == 'length' || method_name == 'size' then 0
+  else if method_name == 'to_i' || method_name == 'to_lower' then 0
+  else if method_name == 'char_at' then 1
+  else if method_name == 'substring' then 2
+  else if method_name == 'join' then 1
+  else if method_name == 'to_string' then 0
+  else if method_name == 'has' || method_name == 'get' || method_name == 'remove' then 1
+  else if method_name == 'keys' || method_name == 'values' then 0
   else -1
   end
 end
@@ -276,10 +276,10 @@ export fn substitute_type(type_value: Shared<Type>, substitution: Map<string, Sh
   }
 
 export fn operator_method_for(operation: string) -> string =
-  if      operation == "+" then "add"
-  else if operation == "-" then "sub"
-  else if operation == "*" then "mul"
-  else if operation == "/" then "div"
-  else if operation == "%" then "rem"
-  else ""
+  if      operation == "+" then 'add'
+  else if operation == "-" then 'sub'
+  else if operation == "*" then 'mul'
+  else if operation == "/" then 'div'
+  else if operation == "%" then 'rem'
+  else ''
   end

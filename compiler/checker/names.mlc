@@ -1,7 +1,7 @@
 // Checker: name resolution.
 
 import { Expr, Stmt, Pat, FieldVal, MatchArm, RecordLitPart, RecordLitFields, RecordLitSpread,
-         Diagnostic, Span, diagnostic_error, diagnostics_append, span_unknown } from "../ast"
+         Diagnostic, Span, diagnostic_error, diagnostics_append, span_unknown } from '../ast'
 
 fn scope_contains(scope: [string], name: string) -> bool = do
   let mut found = false; let mut index = 0
@@ -46,7 +46,7 @@ fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> 
       while index < subs.length() do
         accumulator = collect_pattern_bindings(subs[index], accumulator); index = index + 1
       end
-      if rest != "" && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
+      if rest != '' && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
     end,
     PatOr(alts, _) => if alts.length() > 0 then collect_pattern_bindings(alts[0], accumulator) else accumulator end,
     _ => accumulator
@@ -58,7 +58,7 @@ end
 fn check_names_identifier(name: string, locals: [string], globals: Map<string, bool>, source_span: Span) -> [Diagnostic] = do
   let collected: [Diagnostic] = []
   if !scope_contains(locals, name) && !globals.has(name) then
-    collected.push(diagnostic_error("undefined: " + name, source_span))
+    collected.push(diagnostic_error('undefined: ' + name, source_span))
   end
   collected
 end

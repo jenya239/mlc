@@ -1,14 +1,14 @@
 // Record and record-update code generation.
 // eval_expr_fn injected to break the import cycle with expr_eval.mlc.
 
-import { SExpr, SStmt, SFieldVal } from "../semantic_ir"
-import { Type, TUnknown } from "../checker/registry"
-import { CodegenContext, lookup_fields, context_resolve } from "./context"
-import { sem_type_to_cpp } from "./type_gen"
-import { find_field_value } from "./expression_support"
-import { cpp_safe } from "./cpp_naming"
-import { span_unknown } from "../ast"
-import * as expression_output from "./expr"
+import { SExpr, SStmt, SFieldVal } from '../semantic_ir'
+import { Type, TUnknown } from '../checker/registry'
+import { CodegenContext, lookup_fields, context_resolve } from './context'
+import { sem_type_to_cpp } from './type_gen'
+import { find_field_value } from './expression_support'
+import { cpp_safe } from './cpp_naming'
+import { span_unknown } from '../ast'
+import * as expression_output from './expr'
 
 fn gen_record_ordered(field_values: [Shared<SFieldVal>], field_order: [string], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string) -> string = do
   let parts: [string] = []; let mut index = 0
@@ -16,7 +16,7 @@ fn gen_record_ordered(field_values: [Shared<SFieldVal>], field_order: [string], 
     let value = find_field_value(field_values, field_order[index])
     parts.push(eval_expr_fn(value, context, gen_stmts)); index = index + 1
   end
-  parts.join(", ")
+  parts.join(', ')
 end
 
 fn gen_record_unordered(field_values: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string) -> string = do
@@ -24,14 +24,14 @@ fn gen_record_unordered(field_values: [Shared<SFieldVal>], context: CodegenConte
   while index < field_values.length() do
     parts.push(eval_expr_fn(field_values[index].val, context, gen_stmts)); index = index + 1
   end
-  parts.join(", ")
+  parts.join(', ')
 end
 
 fn gen_record_update_ordered(base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], field_order: [string], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string) -> string = do
   let parts: [string] = []; let mut index = 0
   while index < field_order.length() do
     const field_name = field_order[index]
-    let mut value_string = ""
+    let mut value_string = ''
     let mut override_found = false
     let mut override_index = 0
     while override_index < overrides.length() do
@@ -46,7 +46,7 @@ fn gen_record_update_ordered(base_expr: Shared<SExpr>, overrides: [Shared<SField
     end
     parts.push(value_string); index = index + 1
   end
-  parts.join(", ")
+  parts.join(', ')
 end
 
 fn gen_record_update_lazy(base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string) -> string = do
@@ -54,12 +54,12 @@ fn gen_record_update_lazy(base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal
   let mut index = 0
   while index < overrides.length() do
     parts.push(expression_output.mutable_member_assignment(
-      "__upd",
+      '__upd',
       cpp_safe(overrides[index].name),
       eval_expr_fn(overrides[index].val, context, gen_stmts)))
     index = index + 1
   end
-  expression_output.record_update_lazy_closure(parts.join(""))
+  expression_output.record_update_lazy_closure(parts.join(''))
 end
 
 export fn gen_record_expr(type_name: string, field_values: [Shared<SFieldVal>], expr_type: Shared<Type>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string) -> string = do

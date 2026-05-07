@@ -1,7 +1,7 @@
 // Parser state, result types, and token kind predicates.
 
-import { TKind, Token, LexOut } from "../ast_tokens"
-import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound, RecordLitPart } from "../ast"
+import { TKind, Token, LexOut } from '../ast_tokens'
+import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound, RecordLitPart } from '../ast'
 
 // --- Parser state ---------------------------------------------------------
 
@@ -11,7 +11,7 @@ export fn parser_new_with_source_path(tokens: [Token], source_path: string) -> P
   Parser { tokens: tokens, pos: 0, source_path: source_path, suppress_lambda_shorthand: false }
 
 export fn parser_new(tokens: [Token]) -> Parser =
-  parser_new_with_source_path(tokens, "")
+  parser_new_with_source_path(tokens, '')
 
 fn parser_kind(parser: Parser) -> TKind = do
   const tok: Token = parser.tokens[parser.pos]; tok.kind
@@ -97,10 +97,10 @@ fn is_left_bracket(kind: TKind)  -> bool = match kind { LBracket  => true, _ => 
 fn is_right_bracket(kind: TKind) -> bool = match kind { RBracket  => true, _ => false }
 fn is_operator(kind: TKind)      -> bool = match kind { Op(_)     => true, _ => false }
 
-fn get_ident(kind: TKind)        -> string = match kind { Ident(name) => name, _ => "" }
+fn get_ident(kind: TKind)        -> string = match kind { Ident(name) => name, _ => '' }
 fn get_int_literal(kind: TKind)  -> i32    = match kind { LInt(n)    => n,    _ => 0 }
-fn get_str_literal(kind: TKind)  -> string = match kind { LStr(s)    => s,    _ => "" }
-fn get_operator(kind: TKind)     -> string = match kind { Op(s)      => s,    _ => "" }
+fn get_str_literal(kind: TKind)  -> string = match kind { LStr(s)    => s,    _ => '' }
+fn get_operator(kind: TKind)     -> string = match kind { Op(s)      => s,    _ => '' }
 
 export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"
@@ -159,20 +159,20 @@ export extend TKind {
   fn is_lbracket(self) -> bool = match self { LBracket  => true, _ => false }
   fn is_rbracket(self) -> bool = match self { RBracket  => true, _ => false }
   fn is_op(self)       -> bool = match self { Op(_)     => true, _ => false }
-  fn ident(self)       -> string = match self { Ident(name) => name, _ => "" }
+  fn ident(self)       -> string = match self { Ident(name) => name, _ => '' }
   fn int_val(self)     -> i32    = match self { LInt(n)     => n,    _ => 0 }
-  fn str_val(self)     -> string = match self { LStr(s)     => s,    _ => "" }
-  fn op_val(self)      -> string = match self { Op(s)       => s,    _ => "" }
+  fn str_val(self)     -> string = match self { LStr(s)     => s,    _ => '' }
+  fn op_val(self)      -> string = match self { Op(s)       => s,    _ => '' }
   fn is_float(self)    -> bool   = match self { LFloat(_)   => true, _ => false }
   fn is_i64(self)      -> bool   = match self { LI64(_)     => true, _ => false }
   fn is_u8(self)       -> bool   = match self { LU8(_)      => true, _ => false }
   fn is_usize(self)    -> bool   = match self { LUsize(_)   => true, _ => false }
   fn is_char_lit(self) -> bool   = match self { LChar(_)    => true, _ => false }
-  fn float_val(self)   -> string = match self { LFloat(s)   => s,    _ => "" }
-  fn i64_val(self)     -> string = match self { LI64(s)     => s,    _ => "" }
-  fn u8_val(self)      -> string = match self { LU8(s)      => s,    _ => "" }
-  fn usize_val(self)   -> string = match self { LUsize(s)   => s,    _ => "" }
-  fn char_val(self)    -> string = match self { LChar(s)    => s,    _ => "" }
+  fn float_val(self)   -> string = match self { LFloat(s)   => s,    _ => '' }
+  fn i64_val(self)     -> string = match self { LI64(s)     => s,    _ => '' }
+  fn u8_val(self)      -> string = match self { LU8(s)      => s,    _ => '' }
+  fn usize_val(self)   -> string = match self { LUsize(s)   => s,    _ => '' }
+  fn char_val(self)    -> string = match self { LChar(s)    => s,    _ => '' }
 }
 
 // --- extend Parser --------------------------------------------------------

@@ -1,11 +1,11 @@
 // Unit tests for the parser (parse_program function).
 
-import { TestResult, assert_eq_int, assert_true } from "./test_runner"
-import { tokenize } from "../lexer"
-import { parse_program } from "../parser/decls"
-import { Decl, DeclFn, DeclType, DeclExtend, DeclImport, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, PatWild, PatIdent, ExprBlock, Stmt, StmtLetPat } from "../ast"
-import { parse_expr } from "../parser/exprs"
-import { parser_new } from "../parser/preds"
+import { TestResult, assert_eq_int, assert_true } from './test_runner'
+import { tokenize } from '../lexer'
+import { parse_program } from '../parser/decls'
+import { Decl, DeclFn, DeclType, DeclExtend, DeclImport, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, PatWild, PatIdent, ExprBlock, Stmt, StmtLetPat } from '../ast'
+import { parse_expr } from '../parser/exprs'
+import { parser_new } from '../parser/preds'
 
 fn parse_source(source: string) -> Program =
   parse_program(tokenize(source).tokens)
@@ -33,7 +33,7 @@ fn expr_call_one_ident_argument(expression: Shared<Expr>, expected_function: str
 fn pipe_case_logical_or_over_pipeline(expression: Shared<Expr>) -> bool =
   match expression {
     ExprBin(binary_operator, left_logical, right_logical, _) =>
-      if binary_operator != "||" then false
+      if binary_operator != '||' then false
       else
         match left_logical {
           ExprIdent(left_name, _) =>
@@ -47,7 +47,7 @@ fn pipe_case_logical_or_over_pipeline(expression: Shared<Expr>) -> bool =
 fn pipe_case_logical_and_over_pipeline(expression: Shared<Expr>) -> bool =
   match expression {
     ExprBin(binary_operator, left_conjunct, right_conjunct, _) =>
-      if binary_operator != "&&" then false
+      if binary_operator != '&&' then false
       else
         match left_conjunct {
           ExprIdent(left_name, _) =>
@@ -61,7 +61,7 @@ fn pipe_case_logical_and_over_pipeline(expression: Shared<Expr>) -> bool =
 fn pipe_case_equality_right_operand_contains_pipeline(expression: Shared<Expr>) -> bool =
   match expression {
     ExprBin(binary_operator, left_equals, right_equals, _) =>
-      if binary_operator != "==" then false
+      if binary_operator != '==' then false
       else
         match left_equals {
           ExprIdent(left_name, _) =>
@@ -96,7 +96,7 @@ fn pipe_pipeline_left_equals_shape(left_equals: Shared<Expr>, right_equals: Shar
 fn pipe_case_pipeline_binds_tighter_than_equality_on_left(expression: Shared<Expr>) -> bool =
   match expression {
     ExprBin(binary_operator, left_equals, right_equals, _) =>
-      if binary_operator != "==" then false
+      if binary_operator != '==' then false
       else pipe_pipeline_left_equals_shape(left_equals, right_equals)
       end,
     _ => false
@@ -124,13 +124,13 @@ fn expr_match_arm_has_guard(parsed_expression: Shared<Expr>, arm_index: i32) -> 
 fn expr_guard_binary_operation(candidate_guard: Shared<Expr>) -> string =
   match candidate_guard {
     ExprBin(binary_operation, _, _, _) => binary_operation,
-    _ => ""
+    _ => ''
   }
 
 fn expr_pat_ident_binding_name(pattern: Shared<Pat>) -> string =
   match pattern {
     PatIdent(binding_name, _) => binding_name,
-    _ => ""
+    _ => ''
   }
 
 fn expr_pat_or_alt_count(pattern: Shared<Pat>) -> i32 =
@@ -146,19 +146,19 @@ fn expr_pat_or_alt_count(pattern: Shared<Pat>) -> i32 =
 fn expr_match_arm_guard_binary_operation(parsed_expression: Shared<Expr>, arm_index: i32) -> string =
   match parsed_expression {
     ExprMatch(_, arms, _) =>
-      if arm_index < 0 || arm_index >= arms.length() then ""
+      if arm_index < 0 || arm_index >= arms.length() then ''
       else expr_guard_binary_operation(arms[arm_index].when_condition)
       end,
-    _ => ""
+    _ => ''
   }
 
 fn expr_match_arm_pat_ident_name(parsed_expression: Shared<Expr>, arm_index: i32) -> string =
   match parsed_expression {
     ExprMatch(_, arms, _) =>
-      if arm_index < 0 || arm_index >= arms.length() then ""
+      if arm_index < 0 || arm_index >= arms.length() then ''
       else expr_pat_ident_binding_name(arms[arm_index].pat)
       end,
-    _ => ""
+    _ => ''
   }
 
 fn expr_match_arm_pat_or_alt_count(parsed_expression: Shared<Expr>, arm_index: i32) -> i32 =
@@ -171,13 +171,13 @@ fn expr_match_arm_pat_or_alt_count(parsed_expression: Shared<Expr>, arm_index: i
   }
 
 fn sample_parse_match_guard_brace() -> Shared<Expr> =
-  parse_expr_source("match score { n if n >= 90 => 1 }")
+  parse_expr_source('match score { n if n >= 90 => 1 }')
 
 fn sample_parse_match_guard_pipe() -> Shared<Expr> =
-  parse_expr_source("match x | n if n > 0 => 1 end")
+  parse_expr_source('match x | n if n > 0 => 1 end')
 
 fn sample_parse_match_guard_or_pattern() -> Shared<Expr> =
-  parse_expr_source("match x { A(r) | B(r) if r > 0 => r }")
+  parse_expr_source('match x { A(r) | B(r) if r > 0 => r }')
 
 fn decl_count(source: string) -> i32 =
   parse_source(source).decls.length()
@@ -191,62 +191,62 @@ fn second_decl(source: string) -> Shared<Decl> =
 export fn parser_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  results.push(assert_eq_int("empty source - 0 decls",
-    decl_count(""), 0))
+  results.push(assert_eq_int('empty source - 0 decls',
+    decl_count(''), 0))
 
-  results.push(assert_eq_int("single fn decl - 1 decl",
-    decl_count("fn f() -> i32 = 42"), 1))
+  results.push(assert_eq_int('single fn decl - 1 decl',
+    decl_count('fn f() -> i32 = 42'), 1))
 
-  results.push(assert_eq_int("two fn decls - 2 decls",
-    decl_count("fn f() -> i32 = 1\nfn g() -> i32 = 2"), 2))
+  results.push(assert_eq_int('two fn decls - 2 decls',
+    decl_count('fn f() -> i32 = 1\nfn g() -> i32 = 2'), 2))
 
-  results.push(assert_eq_int("type decl - 1 decl",
-    decl_count("type Color = Red | Green | Blue"), 1))
+  results.push(assert_eq_int('type decl - 1 decl',
+    decl_count('type Color = Red | Green | Blue'), 1))
 
-  results.push(assert_eq_int("fn with params - 1 decl",
-    decl_count("fn add(x: i32, y: i32) -> i32 = x + y"), 1))
+  results.push(assert_eq_int('fn with params - 1 decl',
+    decl_count('fn add(x: i32, y: i32) -> i32 = x + y'), 1))
 
-  results.push(assert_eq_int("fn with default param - 1 decl",
-    decl_count("fn f(a: i32 = 1) -> i32 = a"), 1))
+  results.push(assert_eq_int('fn with default param - 1 decl',
+    decl_count('fn f(a: i32 = 1) -> i32 = a'), 1))
 
-  results.push(assert_eq_int("fn with do block - 1 decl",
-    decl_count("fn f() -> i32 = do\n  const x = 1\n  x\nend"), 1))
+  results.push(assert_eq_int('fn with do block - 1 decl',
+    decl_count('fn f() -> i32 = do\n  const x = 1\n  x\nend'), 1))
 
-  results.push(assert_eq_int("type + fn - 2 decls",
-    decl_count("type Color = Red\nfn f() -> i32 = 1"), 2))
+  results.push(assert_eq_int('type + fn - 2 decls',
+    decl_count('type Color = Red\nfn f() -> i32 = 1'), 2))
 
-  results.push(assert_eq_int("record type field default expression — parse decl count",
-    decl_count("type Line = { offset: i32 = 10 + 20 }\nfn main() -> i32 = 0"), 2))
+  results.push(assert_eq_int('record type field default expression — parse decl count',
+    decl_count('type Line = { offset: i32 = 10 + 20 }\nfn main() -> i32 = 0'), 2))
 
-  results.push(assert_true("fn decl is DeclFn",
-    match first_decl("fn f() -> i32 = 42") {
+  results.push(assert_true('fn decl is DeclFn',
+    match first_decl('fn f() -> i32 = 42') {
       DeclFn(_, _, _, _, _, _, _) => true,
       _ => false
     }))
 
-  results.push(assert_true("type decl is DeclType",
-    match first_decl("type Color = Red | Green") {
+  results.push(assert_true('type decl is DeclType',
+    match first_decl('type Color = Red | Green') {
       DeclType(_, _, _, _) => true,
       _ => false
     }))
 
-  results.push(assert_eq_int("fn with if expr - 1 decl",
-    decl_count("fn f(x: i32) -> i32 = if x > 0 then 1 else 0 end"), 1))
+  results.push(assert_eq_int('fn with if expr - 1 decl',
+    decl_count('fn f(x: i32) -> i32 = if x > 0 then 1 else 0 end'), 1))
 
-  results.push(assert_eq_int("fn with for-in - 1 decl",
-    decl_count("fn f(items: [i32]) -> i32 = do\n  let mut s = 0\n  for x in items do\n    s = s + x\n  end\n  s\nend"), 1))
+  results.push(assert_eq_int('fn with for-in - 1 decl',
+    decl_count('fn f(items: [i32]) -> i32 = do\n  let mut s = 0\n  for x in items do\n    s = s + x\n  end\n  s\nend'), 1))
 
-  results.push(assert_eq_int("type + fn with match pipe arms - 2 decls",
-    decl_count("type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0\n"), 2))
+  results.push(assert_eq_int('type + fn with match pipe arms - 2 decls',
+    decl_count('type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0\n'), 2))
 
-  results.push(assert_eq_int("trait plus fn with where clause — 2 decls",
-    decl_count("type Display { fn to_string(self: Self) -> string }\nfn f<T>(x: T) -> unit where T: Display = ()"), 2))
+  results.push(assert_eq_int('trait plus fn with where clause — 2 decls',
+    decl_count('type Display { fn to_string(self: Self) -> string }\nfn f<T>(x: T) -> unit where T: Display = ()'), 2))
 
-  results.push(assert_eq_int("fn with parenthesized lambda - 1 decl",
-    decl_count("fn f() -> i32 = (() => 7)()"), 1))
+  results.push(assert_eq_int('fn with parenthesized lambda - 1 decl',
+    decl_count('fn f() -> i32 = (() => 7)()'), 1))
 
-  results.push(assert_true("extend method: self with type and extra param",
-    match second_decl("type R = { a: i32 }\nextend R {\n  fn m(self: R, x: i32) -> i32 = x\n}") {
+  results.push(assert_true('extend method: self with type and extra param',
+    match second_decl('type R = { a: i32 }\nextend R {\n  fn m(self: R, x: i32) -> i32 = x\n}') {
       DeclExtend(_, _, methods) =>
         match methods[0] {
           DeclFn(_, _, _, parameters, _, _, _) => parameters.length() == 2,
@@ -255,35 +255,35 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_eq_int("import star-as - 1 decl",
-    decl_count("import * as helpers from \"./infer_literals.mlc\""), 1))
+  results.push(assert_eq_int('import star-as - 1 decl',
+    decl_count('import * as helpers from "./infer_literals.mlc"'), 1))
 
-  results.push(assert_true("import star-as: path and symbols",
-    match first_decl("import * as helpers from \"./infer_literals.mlc\"") {
+  results.push(assert_true('import star-as: path and symbols',
+    match first_decl('import * as helpers from "./infer_literals.mlc"') {
       DeclImport(path, symbols) =>
-        path == "./infer_literals.mlc" && symbols.length() == 2 && symbols[0] == "*" && symbols[1] == "helpers",
+        path == './infer_literals.mlc' && symbols.length() == 2 && symbols[0] == "*" && symbols[1] == 'helpers',
       _ => false
     }))
 
-  results.push(assert_eq_int("import named list - 1 decl",
-    decl_count("import { foo, bar } from \"./mod.mlc\""), 1))
+  results.push(assert_eq_int('import named list - 1 decl',
+    decl_count('import { foo, bar } from "./mod.mlc"'), 1))
 
-  results.push(assert_true("import named list: path and symbols order",
-    match first_decl("import { foo, bar } from \"./mod.mlc\"") {
+  results.push(assert_true('import named list: path and symbols order',
+    match first_decl('import { foo, bar } from "./mod.mlc"') {
       DeclImport(path, symbols) =>
-        path == "./mod.mlc" && symbols.length() == 2 && symbols[0] == "foo" && symbols[1] == "bar",
+        path == './mod.mlc' && symbols.length() == 2 && symbols[0] == 'foo' && symbols[1] == 'bar',
       _ => false
     }))
 
-  results.push(assert_true("import single name in braces",
-    match first_decl("import { only } from \"./one.mlc\"") {
-      DeclImport(path, symbols) => path == "./one.mlc" && symbols.length() == 1 && symbols[0] == "only",
+  results.push(assert_true('import single name in braces',
+    match first_decl('import { only } from "./one.mlc"') {
+      DeclImport(path, symbols) => path == './one.mlc' && symbols.length() == 1 && symbols[0] == 'only',
       _ => false
     }))
 
   // Or-pattern tests (B2)
-  results.push(assert_true("or-pattern brace-style: PatOr produced",
-    match parse_expr_source("match x { A(r) | B(r) => r }") {
+  results.push(assert_true('or-pattern brace-style: PatOr produced',
+    match parse_expr_source('match x { A(r) | B(r) => r }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
           match arms[0].pat {
@@ -294,8 +294,8 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_true("or-pattern pipe-style: PatOr produced",
-    match parse_expr_source("match x | A(r) | B(r) => r end") {
+  results.push(assert_true('or-pattern pipe-style: PatOr produced',
+    match parse_expr_source('match x | A(r) | B(r) => r end') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
           match arms[0].pat {
@@ -306,8 +306,8 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_true("unit or-pattern: PatOr produced",
-    match parse_expr_source("match x { Red | Green => 1, Blue => 2 }") {
+  results.push(assert_true('unit or-pattern: PatOr produced',
+    match parse_expr_source('match x { Red | Green => 1, Blue => 2 }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 2 then
           match arms[0].pat {
@@ -318,8 +318,8 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_true("single pattern: no PatOr, no guard",
-    match parse_expr_source("match x { A(r) => r }") {
+  results.push(assert_true('single pattern: no PatOr, no guard',
+    match parse_expr_source('match x { A(r) => r }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
           if arms[0].has_guard then false
@@ -333,25 +333,25 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_true("match arm guard brace-style",
+  results.push(assert_true('match arm guard brace-style',
     expr_match_arm_count(sample_parse_match_guard_brace()) == 1 &&
     expr_match_arm_has_guard(sample_parse_match_guard_brace(), 0) &&
     expr_match_arm_pat_ident_name(sample_parse_match_guard_brace(), 0) == "n" &&
-    expr_match_arm_guard_binary_operation(sample_parse_match_guard_brace(), 0) == ">="))
+    expr_match_arm_guard_binary_operation(sample_parse_match_guard_brace(), 0) == '>='))
 
-  results.push(assert_true("match arm guard pipe-style",
+  results.push(assert_true('match arm guard pipe-style',
     expr_match_arm_count(sample_parse_match_guard_pipe()) == 1 &&
     expr_match_arm_has_guard(sample_parse_match_guard_pipe(), 0) &&
     expr_match_arm_guard_binary_operation(sample_parse_match_guard_pipe(), 0) == ">"))
 
-  results.push(assert_true("or-pattern with shared guard after alternatives",
+  results.push(assert_true('or-pattern with shared guard after alternatives',
     expr_match_arm_count(sample_parse_match_guard_or_pattern()) == 1 &&
     expr_match_arm_has_guard(sample_parse_match_guard_or_pattern(), 0) &&
     expr_match_arm_pat_or_alt_count(sample_parse_match_guard_or_pattern(), 0) == 2 &&
     expr_match_arm_guard_binary_operation(sample_parse_match_guard_or_pattern(), 0) == ">"))
 
-  results.push(assert_true("match catch-all: else => synonyms wildcard PatWild",
-    match parse_expr_source("match x { 1 => 0, else => 1 }") {
+  results.push(assert_true('match catch-all: else => synonyms wildcard PatWild',
+    match parse_expr_source('match x { 1 => 0, else => 1 }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 2 then
           match arms[1].pat {
@@ -363,28 +363,28 @@ export fn parser_tests() -> [TestResult] = do
     }))
 
   // Template literal parser tests
-  results.push(assert_eq_int("plain template literal - 1 decl",
-    decl_count("fn f() -> string = `hello`"), 1))
-  results.push(assert_eq_int("template with interpolation - 1 decl",
+  results.push(assert_eq_int('plain template literal - 1 decl',
+    decl_count('fn f() -> string = `hello`'), 1))
+  results.push(assert_eq_int('template with interpolation - 1 decl',
     decl_count("fn f(x: i32) -> string = `a \${x} b`"), 1))
-  results.push(assert_true("plain template parses to ExprStr",
-    match parse_expr_source("`hello`") {
-      ExprStr(s, _) => s == "hello",
+  results.push(assert_true('plain template parses to ExprStr',
+    match parse_expr_source('`hello`') {
+      ExprStr(s, _) => s == 'hello',
       _ => false
     }))
-  results.push(assert_true("template with interp parses to ExprBin",
+  results.push(assert_true('template with interp parses to ExprBin',
     match parse_expr_source("`a \${x}`") {
       ExprBin(op, _, _, _) => op == "+",
       _ => false
     }))
-  results.push(assert_true("template with only interp parses to ExprBin",
+  results.push(assert_true('template with only interp parses to ExprBin',
     match parse_expr_source("`\${x}`") {
       ExprBin(op, _, _, _) => op == "+",
       _ => false
     }))
 
-  results.push(assert_true("let-else: has_else=true when else present",
-    match parse_expr_source("do\n  let Some(v) = opt else return 0 end\n  0\nend") {
+  results.push(assert_true('let-else: has_else=true when else present',
+    match parse_expr_source('do\n  let Some(v) = opt else return 0 end\n  0\nend') {
       ExprBlock(stmts, _, _) =>
         if stmts.length() >= 1 then
           match stmts[0] {
@@ -395,8 +395,8 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_true("let-else: has_else=false without else",
-    match parse_expr_source("do\n  let {x} = pt\n  0\nend") {
+  results.push(assert_true('let-else: has_else=false without else',
+    match parse_expr_source('do\n  let {x} = pt\n  0\nend') {
       ExprBlock(stmts, _, _) =>
         if stmts.length() >= 1 then
           match stmts[0] {
@@ -407,17 +407,17 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_true("pipe precedence: logical or binds looser than pipeline",
-    pipe_case_logical_or_over_pipeline(parse_expr_source("a || b |> c"))))
+  results.push(assert_true('pipe precedence: logical or binds looser than pipeline',
+    pipe_case_logical_or_over_pipeline(parse_expr_source('a || b |> c'))))
 
-  results.push(assert_true("pipe precedence: logical and binds looser than pipeline",
-    pipe_case_logical_and_over_pipeline(parse_expr_source("a && b |> c"))))
+  results.push(assert_true('pipe precedence: logical and binds looser than pipeline',
+    pipe_case_logical_and_over_pipeline(parse_expr_source('a && b |> c'))))
 
-  results.push(assert_true("pipe precedence: equality binds tighter than pipeline on right",
-    pipe_case_equality_right_operand_contains_pipeline(parse_expr_source("a == b |> c"))))
+  results.push(assert_true('pipe precedence: equality binds tighter than pipeline on right',
+    pipe_case_equality_right_operand_contains_pipeline(parse_expr_source('a == b |> c'))))
 
-  results.push(assert_true("pipe precedence: pipeline binds tighter than equality on left",
-    pipe_case_pipeline_binds_tighter_than_equality_on_left(parse_expr_source("a |> b == c"))))
+  results.push(assert_true('pipe precedence: pipeline binds tighter than equality on left',
+    pipe_case_pipeline_binds_tighter_than_equality_on_left(parse_expr_source('a |> b == c'))))
 
   results
 end

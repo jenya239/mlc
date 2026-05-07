@@ -1,7 +1,7 @@
 // Builder functions for constructing AST nodes in tests.
 // Eliminates Shared.new(...) verbosity and makes test intent clear.
 
-import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown, ExprUnit, ExprBool, ExprRecord, RecordLitPart, RecordLitFields, PatUnit } from "../ast"
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown, ExprUnit, ExprBool, ExprRecord, RecordLitPart, RecordLitFields, PatUnit } from '../ast'
 
 // --- Program ------------------------------------------------------------------
 

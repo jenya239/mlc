@@ -1,7 +1,7 @@
 type Result<T, E> = Ok(T) | Err(E)
 
 fn safe_div(a: i32, b: i32) -> Result<i32, string> =
-  if b == 0 then Err("division by zero") else Ok(a / b) end
+  if b == 0 then Err('division by zero') else Ok(a / b) end
 
 fn compute(divisor: i32) -> Result<i32, string> =
   Ok(safe_div(10, divisor)? + 1)

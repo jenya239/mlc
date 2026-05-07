@@ -1,9 +1,9 @@
 // Type inference for array higher-order methods (map, filter, fold, ...).
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_span } from "../ast"
-import { Type } from "./registry"
-import { CheckContext } from "./check_context"
-import { InferResult } from "./infer_result"
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_span } from '../ast'
+import { Type } from './registry'
+import { CheckContext } from './check_context'
+import { InferResult } from './infer_result'
 import {
   array_element_type_from_array_type,
   type_is_unknown,
@@ -14,11 +14,11 @@ import {
   type_is_i32,
   type_is_string,
   function_return_type
-} from "./semantic_type_structure"
-import { array_hof_call_result_type, is_array_hof_method } from "./array_method_types"
-import { infer_lambda_with_param_types } from "./infer_lambda_context"
-import { infer_builtin_method_receiver_diagnostics } from "./method_receiver_diagnostics"
-import { method_arity_after_receiver } from "./type_diagnostics"
+} from './semantic_type_structure'
+import { array_hof_call_result_type, is_array_hof_method } from './array_method_types'
+import { infer_lambda_with_param_types } from './infer_lambda_context'
+import { infer_builtin_method_receiver_diagnostics } from './method_receiver_diagnostics'
+import { method_arity_after_receiver } from './type_diagnostics'
 
 fn infer_expr_maybe_lambda(
   expression: Shared<Expr>,
@@ -43,7 +43,7 @@ fn append_lambda_arity_diag(
       if parameter_names.length() != expected_params then
         diagnostics_append(errors, [
           diagnostic_error(
-            "method " + method_name + " expects a lambda with " + expected_params.to_string() + " parameter(s)",
+            'method ' + method_name + ' expects a lambda with ' + expected_params.to_string() + ' parameter(s)',
             expr_span(expression))])
       else
         errors
@@ -56,7 +56,7 @@ fn append_predicate_bool_diag(errors: [Diagnostic], lambda_expr: Shared<Expr>, f
   if !type_is_unknown(ret) && !type_is_bool(ret) then
     diagnostics_append(errors, [
       diagnostic_error(
-        "method " + method_name + " expects a predicate returning bool, got " + type_description(ret),
+        'method ' + method_name + ' expects a predicate returning bool, got ' + type_description(ret),
         expr_span(lambda_expr))])
   else
     errors
@@ -64,8 +64,8 @@ fn append_predicate_bool_diag(errors: [Diagnostic], lambda_expr: Shared<Expr>, f
 end
 
 fn method_expects_bool_predicate(method_name: string) -> bool =
-  method_name == "filter" || method_name == "any" || method_name == "all"
-  || method_name == "find_index" || method_name == "find"
+  method_name == 'filter' || method_name == 'any' || method_name == 'all'
+  || method_name == 'find_index' || method_name == 'find'
 
 export fn infer_array_hof_method_call(
   object_result: InferResult,
@@ -83,7 +83,7 @@ export fn infer_array_hof_method_call(
   let mut merged = object_result
   let mut arg_types: [Shared<Type>] = []
 
-  if method_name == "fold" then
+  if method_name == 'fold' then
     if method_arguments.length() > 0 then
       const init_result = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(init_result)
@@ -100,8 +100,8 @@ export fn infer_array_hof_method_call(
           if !type_is_unknown(acc_type) && !type_is_unknown(lam_ret) && !types_structurally_equal(lam_ret, acc_type) then
             diagnostics_append(lam_errors, [
               diagnostic_error(
-                "fold step function must return the same type as the accumulator (expected "
-                  + type_description(acc_type) + ", got " + type_description(lam_ret) + ")",
+                'fold step function must return the same type as the accumulator (expected '
+                  + type_description(acc_type) + ', got ' + type_description(lam_ret) + ")",
                 expr_span(method_arguments[1]))])
           else
             lam_errors
@@ -110,31 +110,31 @@ export fn infer_array_hof_method_call(
         arg_types.push(lam_result.inferred_type)
       end
     end
-  else if method_name == "zip" || method_name == "join" then
+  else if method_name == 'zip' || method_name == 'join' then
     let mut zip_or_join_diagnostics: [Diagnostic] = []
     if method_arguments.length() > 0 then
       const arg0_result = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(arg0_result)
       arg_types.push(arg0_result.inferred_type)
-      if method_name == "zip" then
+      if method_name == 'zip' then
         if !type_is_unknown(arg0_result.inferred_type) && !type_is_array(arg0_result.inferred_type) then
           zip_or_join_diagnostics = [
             diagnostic_error(
-              "method zip expects an array argument, got " + type_description(arg0_result.inferred_type),
+              'method zip expects an array argument, got ' + type_description(arg0_result.inferred_type),
               expr_span(method_arguments[0]))]
         end
       end
-      if method_name == "join" then
+      if method_name == 'join' then
         if !type_is_unknown(element_type) && !type_is_string(element_type) then
           zip_or_join_diagnostics = [
             diagnostic_error(
-              "method join expects an array of string elements, got " + type_description(element_type),
+              'method join expects an array of string elements, got ' + type_description(element_type),
               method_span)]
         end
         if !type_is_unknown(arg0_result.inferred_type) && !type_is_string(arg0_result.inferred_type) then
           zip_or_join_diagnostics = diagnostics_append(zip_or_join_diagnostics, [
             diagnostic_error(
-              "method join expects string separator, got " + type_description(arg0_result.inferred_type),
+              'method join expects string separator, got ' + type_description(arg0_result.inferred_type),
               expr_span(method_arguments[0]))])
         end
       end
@@ -143,7 +143,7 @@ export fn infer_array_hof_method_call(
         errors:        diagnostics_append(merged.errors, zip_or_join_diagnostics)
       }
     end
-  else if method_name == "take" || method_name == "drop" then
+  else if method_name == 'take' || method_name == 'drop' then
     if method_arguments.length() > 0 then
       const n_result = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(n_result)
@@ -152,23 +152,23 @@ export fn infer_array_hof_method_call(
       if !type_is_unknown(n_result.inferred_type) && !type_is_i32(n_result.inferred_type) then
         count_errors = [
           diagnostic_error(
-            "method " + method_name + " expects i32, got " + type_description(n_result.inferred_type),
+            'method ' + method_name + ' expects i32, got ' + type_description(n_result.inferred_type),
             expr_span(method_arguments[0]))]
       end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, count_errors) }
     end
-  else if method_name == "enumerate" || method_name == "sum" || method_name == "flat" then
+  else if method_name == 'enumerate' || method_name == 'sum' || method_name == 'flat' then
     let mut extra: [Diagnostic] = []
-    if method_name == "sum" && !type_is_unknown(element_type) && !type_is_i32(element_type) then
+    if method_name == 'sum' && !type_is_unknown(element_type) && !type_is_i32(element_type) then
       extra = [
         diagnostic_error(
-          "method sum expects i32 array elements, got " + type_description(element_type),
+          'method sum expects i32 array elements, got ' + type_description(element_type),
           method_span)]
     end
-    if method_name == "flat" && !type_is_array(element_type) && !type_is_unknown(element_type) then
+    if method_name == 'flat' && !type_is_array(element_type) && !type_is_unknown(element_type) then
       extra = [
         diagnostic_error(
-          "method flat expects an array of arrays, got " + type_description(element_type),
+          'method flat expects an array of arrays, got ' + type_description(element_type),
           method_span)]
     end
     merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
@@ -186,12 +186,12 @@ export fn infer_array_hof_method_call(
           lam_errors
         end
       lam_errors =
-        if method_name == "flat_map" then
+        if method_name == 'flat_map' then
           const cb_ret = function_return_type(lam_result.inferred_type)
           if !type_is_unknown(cb_ret) && !type_is_array(cb_ret) then
             diagnostics_append(lam_errors, [
               diagnostic_error(
-                "flat_map callback must return an array, got " + type_description(cb_ret),
+                'flat_map callback must return an array, got ' + type_description(cb_ret),
                 expr_span(method_arguments[0]))])
           else
             lam_errors

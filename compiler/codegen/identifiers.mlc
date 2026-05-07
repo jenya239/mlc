@@ -1,16 +1,16 @@
-import { CodegenContext, context_resolve, lookup_fields, list_contains } from "./context"
-import { cpp_safe, map_builtin_identifier_reference } from "./cpp_naming"
+import { CodegenContext, context_resolve, lookup_fields, list_contains } from './context'
+import { cpp_safe, map_builtin_identifier_reference } from './cpp_naming'
 
 fn resolve_identifier_in_self_context(name: string, context: CodegenContext) -> string = do
   const self_fields = lookup_fields(context.field_orders, context.self_type)
-  const is_known_field = name == "errors" || name == "kind" || name == "tokens" || name == "line" || name == "col" || name == "inferred_type" || name == "type_env"
+  const is_known_field = name == 'errors' || name == 'kind' || name == 'tokens' || name == 'line' || name == 'col' || name == 'inferred_type' || name == 'type_env'
   if list_contains(self_fields, name) || is_known_field then
-    "self." + cpp_safe(name)
+    'self.' + cpp_safe(name)
   else
     const mapped = map_builtin_identifier_reference(name)
     const resolved = context_resolve(context, mapped)
     const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
-    if needs_constructor_brace then resolved + "{}" else resolved end
+    if needs_constructor_brace then resolved + '{}' else resolved end
   end
 end
 
@@ -21,5 +21,5 @@ export fn gen_identifier(name: string, context: CodegenContext) -> string =
     const mapped = map_builtin_identifier_reference(name)
     const resolved = context_resolve(context, mapped)
     const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
-    if needs_constructor_brace then resolved + "{}" else resolved end
+    if needs_constructor_brace then resolved + '{}' else resolved end
   end

@@ -1,20 +1,20 @@
 // Leaf helpers for eval (no gen_expr dependency).
 
-import { span_unknown } from "../ast"
-import { SExpr, SFieldVal, SExprUnit, sexpr_type, SExprArray } from "../semantic_ir"
-import { Type, TArray, TUnit, TShared } from "../checker/registry"
-import { CodegenContext, context_resolve, lookup_fields, list_contains } from "./context"
-import { cpp_safe, map_builtin_identifier_reference } from "./cpp_naming"
+import { span_unknown } from '../ast'
+import { SExpr, SFieldVal, SExprUnit, sexpr_type, SExprArray } from '../semantic_ir'
+import { Type, TArray, TUnit, TShared } from '../checker/registry'
+import { CodegenContext, context_resolve, lookup_fields, list_contains } from './context'
+import { cpp_safe, map_builtin_identifier_reference } from './cpp_naming'
 
 export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
-  const capture = if parameters.length() == 0 then "[]" else "[=]" end
-  const parameter_list = if parameters.length() == 0 then ""
+  const capture = if parameters.length() == 0 then '[]' else '[=]' end
+  const parameter_list = if parameters.length() == 0 then ''
     else do
       let parts: [string] = []; let mut index = 0
       while index < parameters.length() do
-        parts.push("auto " + cpp_safe(parameters[index])); index = index + 1
+        parts.push('auto ' + cpp_safe(parameters[index])); index = index + 1
       end
-      parts.join(", ")
+      parts.join(', ')
     end
     end
   capture + "(" + parameter_list + ")"
@@ -38,8 +38,8 @@ export fn is_constructor_call(function_expr: Shared<SExpr>) -> bool =
 
 export fn resolve_object_code_in_self_context(object_name: string, context: CodegenContext) -> string = do
   const self_fields = lookup_fields(context.field_orders, context.self_type)
-  const is_known_field = object_name == "errors" || object_name == "kind" || object_name == "tokens" || object_name == "line" || object_name == "col" || object_name == "inferred_type" || object_name == "type_env"
-  if list_contains(self_fields, object_name) || is_known_field then "self." + cpp_safe(object_name)
+  const is_known_field = object_name == 'errors' || object_name == 'kind' || object_name == 'tokens' || object_name == 'line' || object_name == 'col' || object_name == 'inferred_type' || object_name == 'type_env'
+  if list_contains(self_fields, object_name) || is_known_field then 'self.' + cpp_safe(object_name)
   else context_resolve(context, map_builtin_identifier_reference(object_name))
   end
 end
@@ -48,21 +48,21 @@ end
 export fn infer_shared_new_type_name(argument: Shared<SExpr>, context: CodegenContext) -> string = do
   const type_name = match sexpr_type(argument) {
     TNamed(name)   => name,
-    TShared(inner) => match inner { TNamed(name) => name, _ => "" },
-    _              => ""
+    TShared(inner) => match inner { TNamed(name) => name, _ => '' },
+    _              => ''
   }
-  if type_name.length() > 0 then context_resolve(context, type_name) else "auto" end
+  if type_name.length() > 0 then context_resolve(context, type_name) else 'auto' end
 end
 
 export fn cpp_function_name_for_file_method(method_name: string) -> string =
-  if method_name == "read" then "mlc::file::read_to_string"
-  else if method_name == "write" then "mlc::file::write_string"
-  else "mlc::file::" + method_name
+  if method_name == 'read' then 'mlc::file::read_to_string'
+  else if method_name == 'write' then 'mlc::file::write_string'
+  else 'mlc::file::' + method_name
   end
 
 // Determine whether field access should use -> (shared) or . (value).
 export fn field_access_operator(object: Shared<SExpr>, context: CodegenContext) -> string =
-  match sexpr_type(object) { TShared(_) => "->", _ => "." }
+  match sexpr_type(object) { TShared(_) => '->', _ => "." }
 
 // Prefer preferred_array_semantic_type (annotated binding / SExprIf carrier) so empty [] matches TArray element.
 export fn generate_conditional_else_with_empty_array_coercion(

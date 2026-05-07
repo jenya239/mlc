@@ -2,8 +2,8 @@
 // Mirrors Ruby's MLC::SemanticIR::Expr hierarchy (nodes.rb).
 // Produced by checker/transform.mlc; consumed by codegen/.
 
-import { Type } from "./checker/registry"
-import { Pat, Span, TypeVariant, Param, Decl, WhereClauseBound } from "./ast"
+import { Type } from './checker/registry'
+import { Pat, Span, TypeVariant, Param, Decl, WhereClauseBound } from './ast'
 
 // Forward-declare SExpr so records referencing it can be defined first.
 export type SMatchArm = SMatchArm {

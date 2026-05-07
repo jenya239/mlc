@@ -1,8 +1,8 @@
 // Mutation check: verify that x = value only applies to let mut bindings.
 // Separate pass from names.mlc; builds its own mutable-names scope.
 
-import { Expr, Stmt, FieldVal, MatchArm, Param, Diagnostic, diagnostic_error, diagnostics_append, RecordLitPart, RecordLitFields, RecordLitSpread } from "../ast"
-import { pattern_bindings } from "./names"
+import { Expr, Stmt, FieldVal, MatchArm, Param, Diagnostic, diagnostic_error, diagnostics_append, RecordLitPart, RecordLitFields, RecordLitSpread } from '../ast'
+import { pattern_bindings } from './names'
 
 fn scope_has(scope: [string], name: string) -> bool = do
   let mut found = false; let mut index = 0
@@ -21,7 +21,7 @@ fn check_mutation_expr(expression: Shared<Expr>, mutable_locals: [string]) -> [D
         const assignment_errors = match left {
           ExprIdent(name, span) =>
             if !scope_has(mutable_locals, name) then
-              [diagnostic_error("cannot assign to immutable binding: " + name, span)]
+              [diagnostic_error('cannot assign to immutable binding: ' + name, span)]
             else
               do let empty: [Diagnostic] = []; empty end
             end,

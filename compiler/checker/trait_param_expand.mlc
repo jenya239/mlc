@@ -9,7 +9,7 @@ import {
   WhereClauseBound,
   param_name, param_typ,
   Diagnostic, diagnostic_error, span_unknown
-} from "../ast"
+} from '../ast'
 
 export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnostic] = do
   let trait_declaration_names: Map<string, bool> = Map.new()
@@ -27,7 +27,7 @@ export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnos
         DeclType(type_name, _, _, _) => do
           if trait_declaration_names.has(type_name) then
             conflicts.push(diagnostic_error(
-              "the name \"" + type_name + "\" is declared as both a type and a trait",
+              'the name "' + type_name + '" is declared as both a type and a trait',
               span_unknown()))
           end
           nominal_type_declaration_names.set(type_name, true); ()
@@ -35,7 +35,7 @@ export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnos
         DeclTrait(trait_name, _, _) => do
           if nominal_type_declaration_names.has(trait_name) then
             conflicts.push(diagnostic_error(
-              "the name \"" + trait_name + "\" is declared as both a type and a trait",
+              'the name "' + trait_name + '" is declared as both a type and a trait',
               span_unknown()))
           end
           trait_declaration_names.set(trait_name, true); ()
@@ -117,7 +117,7 @@ fn expand_type_expression_for_trait_param(
       if explicit_type_parameter_environment.has(name) then
         TraitExpandChunk { type_expression, next_counter: synthetic_counter, appended_type_parameter_names: [], appended_trait_bounds_rows: [] }
       else if trait_declaration_names.has(name) && !nominal_type_declaration_names.has(name) then
-        const synthetic_name = "__trait_param_" + synthetic_counter.to_string()
+        const synthetic_name = '__trait_param_' + synthetic_counter.to_string()
         const single_trait_row: [string] = [name]
         const bounds_wrapper: [[string]] = [single_trait_row]
         TraitExpandChunk {

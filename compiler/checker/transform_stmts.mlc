@@ -2,12 +2,12 @@
 // Imports transform_expr from transform.mlc and passes itself as stmts_fn,
 // mirroring the gen_stmts / eval_expr pattern in codegen.
 
-import { Stmt } from "../ast"
-import { Type, type_from_annotation } from "./registry"
-import { SStmt, SExpr, sexpr_type } from "../semantic_ir"
+import { Stmt } from '../ast'
+import { Type, type_from_annotation } from './registry'
+import { SStmt, SExpr, sexpr_type } from '../semantic_ir'
 import { TransformContext, TransformStmtsResult,
-         transform_expr, transform_context_with_env, coerce_expr_to_type } from "./transform"
-import { infer_let_pattern_env } from "./let_pattern_infer"
+         transform_expr, transform_context_with_env, coerce_expr_to_type } from './transform'
+import { infer_let_pattern_env } from './let_pattern_infer'
 
 export fn transform_stmts(
   statements: [Shared<Stmt>],

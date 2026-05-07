@@ -1,9 +1,9 @@
 // For-loop iterator: range diagnostic merge and element type from iterator type.
 
-import { Expr, diagnostics_append } from "../ast"
-import { InferResult } from "./infer_result"
-import { Type } from "./registry"
-import { for_loop_range_diagnostic } from "./type_diagnostics"
+import { Expr, diagnostics_append } from '../ast'
+import { InferResult } from './infer_result'
+import { Type } from './registry'
+import { for_loop_range_diagnostic } from './type_diagnostics'
 
 export fn infer_for_iterator_with_range_rules(iterator_base: InferResult, iterator_expression: Shared<Expr>) -> InferResult =
   InferResult {
