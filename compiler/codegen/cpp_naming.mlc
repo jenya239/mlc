@@ -36,11 +36,11 @@ export fn cpp_keyword(name: string) -> bool =
   || name == 'this' || name == 'thread_local' || name == 'volatile' || name == 'wchar_t'
 
 export fn cpp_safe(name: string) -> string =
-  if cpp_keyword(name) then name + "_" else name end
+  if cpp_keyword(name) then `${name}_` else name end
 
 export fn lower_first(name: string) -> string =
   if name.length() == 0 then name
-  else name.char_at(0).to_lower() + name.substring(1, name.length())
+  else `${name.char_at(0).to_lower()}${name.substring(1, name.length())}`
   end
 
 export fn map_method(method_name: string) -> string =
@@ -87,16 +87,9 @@ end
 
 export fn template_prefix(type_params: [string]) -> string =
   if type_params.length() > 0 then
-    'template<typename ' + type_params.join(', typename ') + '>\n'
+    `template<typename ${type_params.join(', typename ')}>\n`
   else ''
   end
 
-export fn include_lines(import_paths: [string]) -> string = do
-  let lines: [string] = []
-  let mut i = 0
-  while i < import_paths.length() do
-    lines.push('#include "' + path_to_module_base(import_paths[i]) + '.hpp"\n')
-    i = i + 1
-  end
-  lines.join('')
-end
+export fn include_lines(import_paths: [string]) -> string =
+  import_paths.map(path => `#include "${path_to_module_base(path)}.hpp"\n`).join('')
