@@ -912,6 +912,9 @@ fn parse_match_expr(parser: Parser, header_span: Span) -> ExprResult = do
   if next.is_lbrace() then
     const arms = parse_arms_brace(subject.parser.advance())
     ExprResult { expr: Shared.new(ExprMatch(subject.expr, arms.arms, header_span)), parser: arms.parser }
+  else if next.is_do() then
+    const arms = parse_arms_do_delimited(subject.parser.advance())
+    ExprResult { expr: Shared.new(ExprMatch(subject.expr, arms.arms, header_span)), parser: arms.parser }
   else
     const arms = parse_arms_pipe(subject.parser)
     ExprResult { expr: Shared.new(ExprMatch(subject.expr, arms.arms, header_span)), parser: arms.parser }
@@ -955,6 +958,20 @@ fn parse_arms_brace(parser: Parser) -> ArmsResult = do
     if state.kind().is_comma() then state = state.advance() end
   end
   ArmsResult { arms, parser: state.advance() }
+end
+
+fn parse_arms_do_delimited(parser: Parser) -> ArmsResult = do
+  const arms: [Shared<MatchArm>] = []
+  let mut state = parser.skip_semi()
+  while !state.kind().is_end() && !state.at_eof() do
+    if state.kind().is_bar() then state = state.advance() end
+    const pat_result = parse_or_pat(state)
+    const finished_match_arm = parse_match_arm(pat_result)
+    arms.push(finished_match_arm.arm)
+    state = finished_match_arm.parser.skip_semi()
+  end
+  const after_delimiter = if state.kind().is_end() then state.advance() else state end
+  ArmsResult { arms, parser: after_delimiter }
 end
 
 fn parse_arms_pipe(parser: Parser) -> ArmsResult = do

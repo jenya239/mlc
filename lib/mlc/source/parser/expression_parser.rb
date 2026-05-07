@@ -895,6 +895,8 @@ module MLC
 
             consume(:RBRACE)
           else
+            consume(:DO) if current.type == :DO
+
             parse_pipe_style_match_arms(arms)
           end
 

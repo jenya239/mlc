@@ -350,6 +350,18 @@ export fn parser_tests() -> [TestResult] = do
     expr_match_arm_pat_or_alt_count(sample_parse_match_guard_or_pattern(), 0) == 2 &&
     expr_match_arm_guard_binary_operation(sample_parse_match_guard_or_pattern(), 0) == ">"))
 
+  results.push(assert_true('match do delimiter with inner do arm body',
+    match parse_expr_source('match x do\n  0 =>\n    do\n      2\n    end\n  _ => 3\nend') {
+      ExprMatch(_, arms, _) =>
+        if arms.length() == 2 then
+          match arms[0].body {
+            ExprBlock(_, _, _) => true,
+            _ => false
+          }
+        else false end,
+      _ => false
+    }))
+
   results.push(assert_true('match catch-all: else => synonyms wildcard PatWild',
     match parse_expr_source('match x { 1 => 0, else => 1 }') {
       ExprMatch(_, arms, _) =>

@@ -148,6 +148,30 @@
 
 ---
 
+## F2 — `match` с оболочкой `do` … `end`
+
+### Эталон (Ruby)
+
+- Парсинг: [lib/mlc/source/parser/expression_parser.rb](lib/mlc/source/parser/expression_parser.rb) — `parse_match_expression`, опциональный `consume(:DO)` перед `parse_pipe_style_match_arms`; тело ветки `parse_match_arm_body_node` (в т.ч. `do`).
+
+### Self-hosted (mlcc)
+
+- [compiler/parser/exprs.mlc](compiler/parser/exprs.mlc): ветка `match scrutinee do … end` — `parse_arms_do_delimited`; сохраняются `{ … }` и `\| … end`.
+
+### Файлы для правок
+
+| Назначение | Путь |
+|------------|------|
+| Ruby: матч | `lib/mlc/source/parser/expression_parser.rb` |
+| mlcc: матч | `compiler/parser/exprs.mlc` |
+
+### Тесты
+
+- Ruby: `test/mlc/pattern_matching_test.rb`.
+- mlcc: `compiler/tests/test_parser.mlc`; `rake test_compiler_mlc`.
+
+---
+
 ## Прочее
 
 - В импортах MLC **не ставить завершающую запятую** в списке символов в фигурных скобках `{ … }` — Ruby-парсер bootstrap даёт ошибку (`Expected IDENTIFIER, got RBRACE`).

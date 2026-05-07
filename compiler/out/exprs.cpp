@@ -147,6 +147,8 @@ exprs::MatchArmParseOutcome parse_match_arm(preds::PatResult pat_result) noexcep
 
 preds::ArmsResult parse_arms_brace(preds::Parser parser) noexcept;
 
+preds::ArmsResult parse_arms_do_delimited(preds::Parser parser) noexcept;
+
 preds::ArmsResult parse_arms_pipe(preds::Parser parser) noexcept;
 
 preds::ArmsResult parse_arms(preds::Parser parser) noexcept;
@@ -978,6 +980,9 @@ ast_tokens::TKind next = preds::Parser_kind(subject.parser);
 return preds::TKind_is_lbrace(next) ? [&]() -> preds::ExprResult { 
   preds::ArmsResult arms = parse_arms_brace(preds::Parser_advance(subject.parser));
   return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprMatch(subject.expr, arms.arms, header_span)), arms.parser};
+ }() : preds::TKind_is_do(next) ? [&]() -> preds::ExprResult { 
+  preds::ArmsResult arms = parse_arms_do_delimited(preds::Parser_advance(subject.parser));
+  return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprMatch(subject.expr, arms.arms, header_span)), arms.parser};
  }() : [&]() -> preds::ExprResult { 
   preds::ArmsResult arms = parse_arms_pipe(subject.parser);
   return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprMatch(subject.expr, arms.arms, header_span)), arms.parser};
@@ -1023,6 +1028,26 @@ state = preds::Parser_advance(state);
 }
 }
 return preds::ArmsResult{arms, preds::Parser_advance(state)};
+}
+
+preds::ArmsResult parse_arms_do_delimited(preds::Parser parser) noexcept{
+mlc::Array<std::shared_ptr<ast::MatchArm>> arms = {};
+preds::Parser state = preds::Parser_skip_semi(parser);
+while (!preds::TKind_is_end(preds::Parser_kind(state)) && !preds::Parser_at_eof(state)){
+{
+if (preds::TKind_is_bar(preds::Parser_kind(state))){
+{
+state = preds::Parser_advance(state);
+}
+}
+preds::PatResult pat_result = parse_or_pat(state);
+exprs::MatchArmParseOutcome finished_match_arm = parse_match_arm(pat_result);
+arms.push_back(finished_match_arm.arm);
+state = preds::Parser_skip_semi(finished_match_arm.parser);
+}
+}
+preds::Parser after_delimiter = preds::TKind_is_end(preds::Parser_kind(state)) ? preds::Parser_advance(state) : state;
+return preds::ArmsResult{arms, after_delimiter};
 }
 
 preds::ArmsResult parse_arms_pipe(preds::Parser parser) noexcept{

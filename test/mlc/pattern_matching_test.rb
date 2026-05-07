@@ -143,6 +143,29 @@ class MLCPatternMatchingTest < Minitest::Test
     assert_instance_of MLC::Source::AST::BlockExpr, arm1[:body]
   end
 
+  def test_match_outer_do_wraps_arms
+    mlc_source = <<~MLCORA
+      fn test(x: i32) -> i32 =
+        match x do
+          0 =>
+            do
+              2
+            end
+          _ => 3
+        end
+    MLCORA
+
+    ast = MLC.parse(mlc_source)
+    refute_nil ast
+    func = ast.declarations.first
+    match_expr = func.body
+    assert_instance_of MLC::Source::AST::MatchExpr, match_expr
+    assert_equal 2, match_expr.arms.length
+    arm_inner_do = match_expr.arms[0][:body]
+    assert_instance_of MLC::Source::AST::BlockExpr, arm_inner_do
+    refute_nil arm_inner_do.result_expr
+  end
+
   def test_match_statement_lowering_is_void_visit
     mlc_source = <<~MLCORA
       type Result = Ok(i32) | Err
