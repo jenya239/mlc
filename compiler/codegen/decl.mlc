@@ -3,8 +3,8 @@
 import { TypeVariant, TypeExpr, Param, Decl } from '../ast'
 import { SDecl, SExpr, SExprExtern, sdecl_inner } from '../semantic_ir'
 import { Type } from '../checker/registry'
-import { CodegenContext, CtorTypeInfo,
-         context_resolve, make_body_context,
+import { CodegenContext,
+         make_body_context,
          collect_shared_params, collect_shared_array_params, collect_array_elem_types,
          collect_shared_map_params, collect_value_params } from './context'
 import { cpp_safe } from './cpp_naming'
@@ -14,18 +14,11 @@ import { gen_fn_body } from './return_body'
 import * as expression_output from './expr'
 import { gen_params_proto, gen_params_def, gen_trait_decl, gen_extend_wrapper_protos, gen_decl_extend } from './decl_extend'
 
-// --- Context builder methods -------------------------------------------------
-
-extend CodegenContext {
-  fn for_type_body(self: CodegenContext, type_name: string) -> CodegenContext =
-    make_body_context(self, [], [], Map.new(), [], type_name, [], [])
-}
-
 // --- Function prototype and declaration --------------------------------------
 
 export fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[string]], params: [Shared<Param>], return_type: Shared<Type>, context: CodegenContext) -> string = do
   const prefix = template_prefix(type_params) + requires_clause(type_params, type_bounds)
-  const safe_name = context_resolve(context, name)
+  const safe_name = context.resolve(name)
   const prototype_context = if params.length() > 0 && params[0].name == 'self' then
     match params[0].typ {
       TyNamed(type_name) => do
@@ -69,7 +62,7 @@ end
 
 export fn gen_fn_decl(name: string, type_params: [string], type_bounds: [[string]], params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SExpr>, context: CodegenContext) -> string = do
   const prefix = template_prefix(type_params) + requires_clause(type_params, type_bounds)
-  const safe_name = context_resolve(context, name)
+  const safe_name = context.resolve(name)
   const body_context = compute_fn_body_context(name, params, context)
   const prototype_context = if params.length() > 0 && params[0].name == 'self' then body_context else context end
   if name == 'main' && params.length() == 0 then
@@ -99,7 +92,7 @@ export fn gen_decl(decl: Shared<SDecl>, context: CodegenContext) -> string =
       match body { SExprExtern(_, _) => '', _ => gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context) },
     SDeclExtend(type_name, trait_name, methods) =>
       gen_decl_extend(type_name, trait_name, methods, context,
-        (ctx: CodegenContext, name: string) => context_resolve(ctx, name),
+        (ctx: CodegenContext, name: string) => ctx.resolve(name),
         (decl: Shared<SDecl>, ctx: CodegenContext) => gen_decl(decl, ctx)),
     SDeclImport(_, _) => '',
     SDeclExported(d) => gen_decl(d, context),
@@ -114,11 +107,7 @@ export fn gen_proto(decl: Shared<SDecl>, context: CodegenContext) -> string =
       match body { SExprExtern(_, _) => '', _ => gen_fn_proto(name, type_params, type_bounds, params, ret, context) },
     SDeclExtend(type_name, _, methods) => do
       const extend_context = context.for_type_body(type_name)
-      let parts: [string] = []; let mut index = 0
-      while index < methods.length() do
-        parts.push(gen_proto(methods[index], extend_context)); index = index + 1
-      end
-      parts.join('')
+      methods.map(method => gen_proto(method, extend_context)).join('')
     end,
     SDeclImport(_, _) => '',
     SDeclExported(d) => gen_proto(d, context),
@@ -127,86 +116,78 @@ export fn gen_proto(decl: Shared<SDecl>, context: CodegenContext) -> string =
 
 // --- Whole-program helpers ---------------------------------------------------
 
-export fn decls_have_main(decls: [Shared<SDecl>]) -> bool = do
-  let mut found = false; let mut index = 0
-  while index < decls.length() do
-    const inner = sdecl_inner(decls[index])
-    const is_main = match inner {
-      SDeclFn(name, _, _, _, _, _, _) => name == 'main',
-      _ => false
-    }
-    if is_main then found = true end
-    index = index + 1
-  end
-  found
-end
+fn inner_declaration_is_main(declaration: Shared<SDecl>) -> bool =
+  match sdecl_inner(declaration) {
+    SDeclFn(name, _, _, _, _, _, _) => name == 'main',
+    _ => false
+  }
 
-export fn collect_decl_parts(decls: [Shared<SDecl>], context: CodegenContext, phase: i32) -> [string] = do
-  let parts: [string] = []
-  if phase == 0 then
-    let mut index = 0
-    while index < decls.length() do
-      const wrapper = match decls[index] {
-        SDeclExtend(type_name, trait_name, methods) => gen_extend_wrapper_protos(type_name, trait_name, methods, context),
-        SDeclExported(d) => match sdecl_inner(d) {
-          SDeclExtend(type_name, trait_name, methods) => gen_extend_wrapper_protos(type_name, trait_name, methods, context),
-          _ => ''
-        },
+export fn decls_have_main(decls: [Shared<SDecl>]) -> bool =
+  decls.any(declaration => inner_declaration_is_main(declaration))
+
+fn extend_wrapper_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext) -> string =
+  match declaration {
+    SDeclExtend(type_name, trait_name, methods) => gen_extend_wrapper_protos(type_name, trait_name, methods, codegen_context),
+    SDeclExported(inner_declaration) => match sdecl_inner(inner_declaration) {
+      SDeclExtend(type_name, trait_name, methods) => gen_extend_wrapper_protos(type_name, trait_name, methods, codegen_context),
+      _ => ''
+    },
+    _ => ''
+  }
+
+fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, phase: i32) -> string =
+  match declaration {
+    SDeclType(type_name, type_params, variants, derive_traits) =>
+      if phase == 0 then gen_type_decl_fwd_only(codegen_context, type_name, type_params, variants)
+      else if phase == 1 then
+        gen_type_decl_body_only(codegen_context, type_name, type_params, variants) +
+        gen_derive_methods(codegen_context, type_name, variants, derive_traits)
+      else ''
+      end,
+    SDeclTrait(name, type_params, methods) =>
+      if phase == 0 then gen_trait_decl(codegen_context, name, type_params, methods)
+      else ''
+      end,
+    SDeclFn(_, _, _, _, _, _, _) =>
+      if phase == 2 then gen_proto(declaration, codegen_context)
+      else if phase == 3 then gen_decl(declaration, codegen_context)
+      else ''
+      end,
+    SDeclExtend(_, _, _) =>
+      if phase == 2 then gen_proto(declaration, codegen_context)
+      else if phase == 3 then gen_decl(declaration, codegen_context)
+      else ''
+      end,
+    SDeclImport(_, _) => '',
+    SDeclAssocBind(_, _, _) => '',
+    SDeclExported(inner_declaration) =>
+      if phase == 0 then match sdecl_inner(inner_declaration) {
+        SDeclType(type_name, type_params, variants, _) => gen_type_decl_fwd_only(codegen_context, type_name, type_params, variants),
+        SDeclTrait(name, type_params, methods) => gen_trait_decl(codegen_context, name, type_params, methods),
         _ => ''
       }
-      if wrapper.length() > 0 then parts.push(wrapper) end
-      index = index + 1
+      else if phase == 1 then match sdecl_inner(inner_declaration) {
+        SDeclType(type_name, type_params, variants, derive_traits) =>
+          gen_type_decl_body_only(codegen_context, type_name, type_params, variants) +
+          gen_derive_methods(codegen_context, type_name, variants, derive_traits),
+        _ => ''
+      }
+      else if phase == 2 then gen_proto(inner_declaration, codegen_context)
+      else if phase == 3 then match sdecl_inner(inner_declaration) {
+        SDeclType(_, _, _, _) => '',
+        SDeclTrait(_, _, _) => '',
+        _ => gen_decl(inner_declaration, codegen_context)
+      }
+      else ''
+      end
+  }
+
+export fn collect_decl_parts(decls: [Shared<SDecl>], context: CodegenContext, phase: i32) -> [string] = do
+  const wrapper_segments =
+    if phase == 0 then
+      decls.map(declaration => extend_wrapper_segment(declaration, context)).filter(segment => segment.length() > 0)
+    else []
     end
-  end
-  let mut index = 0
-  while index < decls.length() do
-    const segment = match decls[index] {
-      SDeclType(type_name, type_params, variants, derive_traits) =>
-        if phase == 0 then gen_type_decl_fwd_only(context, type_name, type_params, variants)
-        else if phase == 1 then
-          gen_type_decl_body_only(context, type_name, type_params, variants) +
-          gen_derive_methods(context, type_name, variants, derive_traits)
-        else ''
-        end,
-      SDeclTrait(name, type_params, methods) =>
-        if phase == 0 then gen_trait_decl(context, name, type_params, methods)
-        else ''
-        end,
-      SDeclFn(_, _, _, _, _, _, _) =>
-        if phase == 2 then gen_proto(decls[index], context)
-        else if phase == 3 then gen_decl(decls[index], context)
-        else ''
-        end,
-      SDeclExtend(_, _, _) =>
-        if phase == 2 then gen_proto(decls[index], context)
-        else if phase == 3 then gen_decl(decls[index], context)
-        else ''
-        end,
-      SDeclImport(_, _) => '',
-      SDeclAssocBind(_, _, _) => '',
-      SDeclExported(d) =>
-        if phase == 0 then match sdecl_inner(d) {
-          SDeclType(type_name, type_params, variants, _) => gen_type_decl_fwd_only(context, type_name, type_params, variants),
-          SDeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
-          _ => ''
-        }
-        else if phase == 1 then match sdecl_inner(d) {
-          SDeclType(type_name, type_params, variants, derive_traits) =>
-            gen_type_decl_body_only(context, type_name, type_params, variants) +
-            gen_derive_methods(context, type_name, variants, derive_traits),
-          _ => ''
-        }
-        else if phase == 2 then gen_proto(d, context)
-        else if phase == 3 then match sdecl_inner(d) {
-          SDeclType(_, _, _, _) => '',
-          SDeclTrait(_, _, _) => '',
-          _ => gen_decl(d, context)
-        }
-        else ''
-        end
-    }
-    if segment.length() > 0 then parts.push(segment) end
-    index = index + 1
-  end
-  parts
+  wrapper_segments.concat(
+    decls.map(declaration => decl_segment(declaration, context, phase)).filter(segment => segment.length() > 0))
 end

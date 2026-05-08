@@ -116,7 +116,7 @@ std::visit(overloaded{
   [&](const SDeclFn& sdeclfn) {
 auto [mangled, _w0, _w1, params, ret_type, _w2, _w3] = sdeclfn;
 {
-context::CodegenContext wrapper_context = context::make_body_context(context, {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, type_name, {}, {});
+context::CodegenContext wrapper_context = context::CodegenContext_for_type_body(context, type_name);
 mlc::String method_name = extract_method_name(mangled, type_name);
 mlc::String ret_cpp = type_gen::sem_type_to_cpp(wrapper_context, ret_type);
 mlc::String params_str = gen_params_proto(wrapper_context, params);
@@ -135,7 +135,7 @@ method_index = method_index + 1;
  }();}
 
 mlc::String gen_extend_trait_wrapper(mlc::String type_name, mlc::String mangled, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> ret_type, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept{
-context::CodegenContext wrapper_context = context::make_body_context(context, {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, type_name, {}, {});
+context::CodegenContext wrapper_context = context::CodegenContext_for_type_body(context, type_name);
 mlc::String method_name = extract_method_name(mangled, type_name);
 mlc::String ret_cpp = type_gen::sem_type_to_cpp(wrapper_context, ret_type);
 mlc::String fn_resolved = context_resolve_fn(context, mangled);
@@ -201,7 +201,7 @@ return parts;
 }
 
 mlc::String gen_decl_extend(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn, std::function<mlc::String(std::shared_ptr<semantic_ir::SDecl>, context::CodegenContext)> gen_decl_fn) noexcept{
-context::CodegenContext extend_context = context::make_body_context(context, {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, type_name, {}, {});
+context::CodegenContext extend_context = context::CodegenContext_for_type_body(context, type_name);
 mlc::Array<mlc::String> method_parts = gen_extend_method_parts(type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn);
 mlc::String methods_str = method_parts.join(mlc::String(""));
 return trait_name.length() > 0 ? [&]() -> mlc::String { 

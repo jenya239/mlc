@@ -109,7 +109,7 @@ mlc::Array<semantic_ir::SNamespaceImportAlias> namespace_aliases = s_item.namesp
 mlc::HashMap<mlc::String, mlc::String> qualified = decl_index::build_qualified(s_item.imports, all_items);
 mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes = decl_index::build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases));
 context::CodegenContext base_context = context::CodegenContext{precomp.field_orders, mlc::String(""), qualified, namespace_alias_prefixes, mlc::String(""), type_index::build_method_owners_from_decls(full_prog.decls), {}, {}, mlc::HashMap<mlc::String, mlc::String>(), {}, precomp.ctor_type_infos, precomp.variant_types, {}, {}, precomp.generic_variants, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>()};
-context::CodegenContext context = context::context_with_struct_using_lines(base_context, build_struct_using_lines(s_item.decls, base_context));
+context::CodegenContext context = context::CodegenContext_with_struct_using_lines(base_context, build_struct_using_lines(s_item.decls, base_context));
 mlc::String module_namespace = base == mlc::String("main") ? mlc::String("mlc_main") : base;
 bool is_entry = decl::decls_have_main(s_item.decls);
 mlc::String std_includes = expr::standard_translation_unit_runtime_headers() + cpp_naming::include_lines(s_item.imports) + mlc::String("\n");

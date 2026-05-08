@@ -3,7 +3,7 @@
 
 import { SExpr, SStmt, sexpr_type } from '../semantic_ir'
 import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../checker/registry'
-import { CodegenContext, context_resolve, context_add_shared } from './context'
+import { CodegenContext } from './context'
 import { cpp_safe, map_method, map_builtin_identifier_reference } from './cpp_naming'
 import { resolve_object_code_in_self_context, infer_shared_new_type_name,
          cpp_function_name_for_file_method } from './expression_support'
@@ -14,13 +14,8 @@ fn gen_arg_list(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string = do
-  let parts: [string] = []; let mut index = 0
-  while index < arguments.length() do
-    parts.push(eval_expr_fn(arguments[index], context, gen_stmts)); index = index + 1
-  end
-  parts.join(', ')
-end
+) -> string =
+  arguments.map(argument => eval_expr_fn(argument, context, gen_stmts)).join(', ')
 
 fn gen_object_code(
   object: Shared<SExpr>,
@@ -31,7 +26,7 @@ fn gen_object_code(
   match object {
     SExprIdent(name, _, _) =>
       if context.self_type.length() > 0 then resolve_object_code_in_self_context(name, context)
-      else context_resolve(context, map_builtin_identifier_reference(name))
+      else context.resolve(map_builtin_identifier_reference(name))
       end,
     _ => eval_expr_fn(object, context, gen_stmts)
   }
@@ -67,7 +62,7 @@ fn gen_method_owner_call(
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
   const mangled_name = context.method_owners.get(method_name)
-  const function_name = context_resolve(context, mangled_name)
+  const function_name = context.resolve(mangled_name)
   if arguments.length() == 0 then expression_output.function_call_parentheses(function_name, object_code)
   else expression_output.function_call_parentheses(
     function_name,
@@ -97,7 +92,7 @@ fn gen_method_namespace_alias(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
-  const call_base = static_prefix + map_method(method_name)
+  const call_base = `${static_prefix}${map_method(method_name)}`
   if arguments.length() == 0 then expression_output.function_call_parentheses(call_base, '')
   else expression_output.function_call_parentheses(call_base, gen_arg_list(arguments, context, gen_stmts, eval_expr_fn))
   end
@@ -116,7 +111,7 @@ fn object_type_name_for_dispatch(type_value: Shared<Type>) -> string =
 fn is_user_defined_method_for_type(method_name: string, type_name: string, context: CodegenContext) -> bool =
   context.method_owners.has(method_name) &&
   type_name != '' &&
-  context.method_owners.get(method_name) == type_name + "_" + method_name
+  context.method_owners.get(method_name) == `${type_name}_${method_name}`
 
 fn gen_method_expr_after_object(
   object_code: string,
@@ -152,7 +147,7 @@ fn gen_result_option_combinator_call(
 ) -> string = do
   const base = if is_option then 'mlc::opt::' else 'mlc::result::' end
   const cpp_name = if !is_option && method_name == 'ok' then 'ok_into_optional' else method_name end
-  const callee = base + cpp_name
+  const callee = `${base}${cpp_name}`
   if arguments.length() == 0 then
     expression_output.function_call_parentheses(callee, object_code)
   else

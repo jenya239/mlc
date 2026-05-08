@@ -1,7 +1,7 @@
 // Context types and mutation for the code generator.
 
 import { Program, Pat } from '../ast'
-import { SStmt, SExpr, sexpr_type } from '../semantic_ir'
+import { SStmt } from '../semantic_ir'
 import { Type } from '../checker/registry'
 import { cpp_safe } from './cpp_naming'
 import { LoadItem, FieldOrder, list_contains, lookup_fields, build_qualified, build_item_index } from './decl_index'
@@ -50,61 +50,34 @@ export fn context_resolve(context: CodegenContext, name: string) -> string =
   else cpp_safe(name)
   end
 
-extend CodegenContext {
-  fn resolve(self, name: string) -> string = context_resolve(self, name)
-}
-
-export fn make_body_context(base: CodegenContext, shared_params: [string], shared_array_params: [string], array_elem_types: Map<string, string>, shared_map_params: [string], self_type: string, value_params: [string], match_deref_params: [string]) -> CodegenContext =
-  CodegenContext { field_orders: base.field_orders, namespace_prefix: base.namespace_prefix, qualified: base.qualified, namespace_alias_prefixes: base.namespace_alias_prefixes, self_type: self_type, method_owners: base.method_owners, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, ctor_type_infos: base.ctor_type_infos, variant_types: base.variant_types, value_params: value_params, match_deref_params: match_deref_params, generic_variants: base.generic_variants, struct_using_lines: base.struct_using_lines }
-
-export fn context_add_shared(context: CodegenContext, name: string) -> CodegenContext = do
-  let new_shared_params = context.shared_params; new_shared_params.push(name)
-  make_body_context(context, new_shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, context.value_params, context.match_deref_params)
-end
-
-export fn context_add_shared_array(context: CodegenContext, name: string) -> CodegenContext = do
-  let new_shared_array_params = context.shared_array_params; new_shared_array_params.push(name)
-  make_body_context(context, context.shared_params, new_shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, context.value_params, context.match_deref_params)
-end
-
-export fn context_add_value(context: CodegenContext, name: string) -> CodegenContext = do
-  let new_value_params = context.value_params; new_value_params.push(name)
-  make_body_context(context, context.shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, new_value_params, context.match_deref_params)
-end
-
-export fn context_add_match_deref(context: CodegenContext, name: string) -> CodegenContext = do
-  let md = context.match_deref_params; md.push(name)
-  make_body_context(context, context.shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.self_type, context.value_params, md)
-end
-
 fn collect_pat_bind_names_for_context(pat: Shared<Pat>, mut accumulator: [string]) -> [string] = do
   match pat {
     PatIdent(n, _) => do accumulator.push(n); accumulator end,
     PatCtor(_, subs, _) => do
-      let mut j = 0
-      while j < subs.length() do
-        accumulator = collect_pat_bind_names_for_context(subs[j], accumulator); j = j + 1
+      let mut index = 0
+      while index < subs.length() do
+        accumulator = collect_pat_bind_names_for_context(subs[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatRecord(_, fps, _) => do
-      let mut j = 0
-      while j < fps.length() do
-        accumulator = collect_pat_bind_names_for_context(fps[j], accumulator); j = j + 1
+    PatRecord(_, field_patterns, _) => do
+      let mut index = 0
+      while index < field_patterns.length() do
+        accumulator = collect_pat_bind_names_for_context(field_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
     PatTuple(subs, _) => do
-      let mut j = 0
-      while j < subs.length() do
-        accumulator = collect_pat_bind_names_for_context(subs[j], accumulator); j = j + 1
+      let mut index = 0
+      while index < subs.length() do
+        accumulator = collect_pat_bind_names_for_context(subs[index], accumulator); index = index + 1
       end
       accumulator
     end,
     PatArray(subs, rest, _) => do
-      let mut j = 0
-      while j < subs.length() do
-        accumulator = collect_pat_bind_names_for_context(subs[j], accumulator); j = j + 1
+      let mut index = 0
+      while index < subs.length() do
+        accumulator = collect_pat_bind_names_for_context(subs[index], accumulator); index = index + 1
       end
       if rest != '' && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
     end,
@@ -112,27 +85,72 @@ fn collect_pat_bind_names_for_context(pat: Shared<Pat>, mut accumulator: [string
   }
 end
 
-// Update codegen context based on a typed statement's binding type.
-// With SStmt, the type is embedded — no TypeExpr heuristics needed.
-export fn update_context_from_statement(stmt: Shared<SStmt>, context: CodegenContext) -> CodegenContext =
-  match stmt {
-    SStmtLetConst(binding_name, _, _, _) => context_add_value(context, binding_name),
-    SStmtLet(binding_name, _, _, value_type, _) =>
-      match value_type {
-        TShared(_)      => context_add_shared(context, binding_name),
-        TArray(inner)   => match inner { TShared(_) => context_add_shared_array(context, binding_name), _ => context_add_value(context, binding_name) },
-        _               => context_add_value(context, binding_name)
-      },
-    SStmtLetPat(pat, _, _, _, _, _, _) => do
-      const names = collect_pat_bind_names_for_context(pat, [])
-      let mut c = context; let mut k = 0
-      while k < names.length() do
-        c = context_add_value(c, names[k]); k = k + 1
-      end
-      c
-    end,
-    _ => context
-  }
+extend CodegenContext {
+  fn resolve(self: CodegenContext, name: string) -> string = context_resolve(self, name)
+
+  fn for_type_body(self: CodegenContext, type_name: string) -> CodegenContext =
+    CodegenContext { ...self, shared_params: [], shared_array_params: [], array_elem_types: Map.new(), shared_map_params: [], self_type: type_name, value_params: [], match_deref_params: [] }
+
+  fn add_shared(self: CodegenContext, name: string) -> CodegenContext = do
+    let new_shared_params = self.shared_params; new_shared_params.push(name)
+    CodegenContext { ...self, shared_params: new_shared_params }
+  end
+
+  fn add_shared_array(self: CodegenContext, name: string) -> CodegenContext = do
+    let new_shared_array_params = self.shared_array_params; new_shared_array_params.push(name)
+    CodegenContext { ...self, shared_array_params: new_shared_array_params }
+  end
+
+  fn add_value(self: CodegenContext, name: string) -> CodegenContext = do
+    let new_value_params = self.value_params; new_value_params.push(name)
+    CodegenContext { ...self, value_params: new_value_params }
+  end
+
+  fn add_match_deref(self: CodegenContext, name: string) -> CodegenContext = do
+    let new_match_deref_params = self.match_deref_params; new_match_deref_params.push(name)
+    CodegenContext { ...self, match_deref_params: new_match_deref_params }
+  end
+
+  fn with_struct_using_lines(self: CodegenContext, lines: Map<string, [string]>) -> CodegenContext =
+    CodegenContext { ...self, struct_using_lines: lines }
+
+  fn with_namespace_alias_prefixes(self: CodegenContext, prefixes: Map<string, string>) -> CodegenContext =
+    CodegenContext { ...self, namespace_alias_prefixes: prefixes }
+
+  fn update_from_statement(self: CodegenContext, statement: Shared<SStmt>) -> CodegenContext =
+    match statement {
+      SStmtLetConst(binding_name, _, _, _) => self.add_value(binding_name),
+      SStmtLet(binding_name, _, _, value_type, _) =>
+        match value_type {
+          TShared(_)      => self.add_shared(binding_name),
+          TArray(inner)   => match inner { TShared(_) => self.add_shared_array(binding_name), _ => self.add_value(binding_name) },
+          _               => self.add_value(binding_name)
+        },
+      SStmtLetPat(pattern, _, _, _, _, _, _) => do
+        const names = collect_pat_bind_names_for_context(pattern, [])
+        let mut codegen_context = self; let mut name_index = 0
+        while name_index < names.length() do
+          codegen_context = codegen_context.add_value(names[name_index]); name_index = name_index + 1
+        end
+        codegen_context
+      end,
+      _ => self
+    }
+}
+
+export fn make_body_context(base: CodegenContext, shared_params: [string], shared_array_params: [string], array_elem_types: Map<string, string>, shared_map_params: [string], self_type: string, value_params: [string], match_deref_params: [string]) -> CodegenContext =
+  CodegenContext { ...base, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, self_type: self_type, value_params: value_params, match_deref_params: match_deref_params }
+
+export fn context_add_shared(context: CodegenContext, name: string) -> CodegenContext = context.add_shared(name)
+
+export fn context_add_shared_array(context: CodegenContext, name: string) -> CodegenContext = context.add_shared_array(name)
+
+export fn context_add_value(context: CodegenContext, name: string) -> CodegenContext = context.add_value(name)
+
+export fn context_add_match_deref(context: CodegenContext, name: string) -> CodegenContext = context.add_match_deref(name)
+
+export fn update_context_from_statement(statement: Shared<SStmt>, context: CodegenContext) -> CodegenContext =
+  context.update_from_statement(statement)
 
 export fn create_codegen_context(prog: Program) -> CodegenContext =
   CodegenContext {
@@ -158,44 +176,10 @@ export fn context_with_struct_using_lines(
   base: CodegenContext,
   struct_using_lines: Map<string, [string]>
 ) -> CodegenContext =
-  CodegenContext {
-    field_orders: base.field_orders,
-    namespace_prefix: base.namespace_prefix,
-    qualified: base.qualified,
-    namespace_alias_prefixes: base.namespace_alias_prefixes,
-    self_type: base.self_type,
-    method_owners: base.method_owners,
-    shared_params: base.shared_params,
-    shared_array_params: base.shared_array_params,
-    array_elem_types: base.array_elem_types,
-    shared_map_params: base.shared_map_params,
-    ctor_type_infos: base.ctor_type_infos,
-    variant_types: base.variant_types,
-    value_params: base.value_params,
-    match_deref_params: base.match_deref_params,
-    generic_variants: base.generic_variants,
-    struct_using_lines: struct_using_lines
-  }
+  base.with_struct_using_lines(struct_using_lines)
 
 export fn context_with_namespace_alias_prefixes(
   base: CodegenContext,
   namespace_alias_prefixes: Map<string, string>
 ) -> CodegenContext =
-  CodegenContext {
-    field_orders: base.field_orders,
-    namespace_prefix: base.namespace_prefix,
-    qualified: base.qualified,
-    namespace_alias_prefixes: namespace_alias_prefixes,
-    self_type: base.self_type,
-    method_owners: base.method_owners,
-    shared_params: base.shared_params,
-    shared_array_params: base.shared_array_params,
-    array_elem_types: base.array_elem_types,
-    shared_map_params: base.shared_map_params,
-    ctor_type_infos: base.ctor_type_infos,
-    variant_types: base.variant_types,
-    value_params: base.value_params,
-    match_deref_params: base.match_deref_params,
-    generic_variants: base.generic_variants,
-    struct_using_lines: base.struct_using_lines
-  }
+  base.with_namespace_alias_prefixes(namespace_alias_prefixes)

@@ -5,8 +5,7 @@
 import { Pat } from '../ast'
 import { SExpr, SStmt, SMatchArm } from '../semantic_ir'
 import { CodegenContext, CtorTypeInfo,
-         list_contains, lookup_ctor_type_info,
-         context_add_shared, context_add_shared_array, context_add_value } from './context'
+         list_contains, lookup_ctor_type_info } from './context'
 import { cpp_safe, lower_first } from './cpp_naming'
 import { first_arm_needs_deref, pat_bind_names } from './match_analysis'
 import * as expression_output from './expr'
@@ -29,7 +28,7 @@ fn record_field_bind_step(
       RecordFieldBindAccum {
         field_bindings: accumulated.field_bindings +
           expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name),
-        arm_context: context_add_value(accumulated.arm_context, field_name)
+        arm_context: accumulated.arm_context.add_value(field_name)
       },
     _ => accumulated
   }
@@ -55,13 +54,13 @@ fn codegen_context_with_ctor_field_bindings(
     match sub_patterns[pattern_index] {
       PatIdent(pattern_name, _) => do
         if ctor_type_information.shared_pos.contains(pattern_index) then
-          arm_context = context_add_shared(arm_context, pattern_name)
+          arm_context = arm_context.add_shared(pattern_name)
         end
         if ctor_type_information.shared_arr_pos.contains(pattern_index) then
-          arm_context = context_add_shared_array(arm_context, pattern_name)
+          arm_context = arm_context.add_shared_array(pattern_name)
         end
         if (!ctor_type_information.shared_pos.contains(pattern_index)) && (!ctor_type_information.shared_arr_pos.contains(pattern_index)) then
-          arm_context = context_add_value(arm_context, pattern_name)
+          arm_context = arm_context.add_value(pattern_name)
         end
       end,
       _ => do end
@@ -179,7 +178,7 @@ fn gen_guarded_identifier_binding_arm_fragment(
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
   const binding_cpp_safe = cpp_safe(binding_name)
-  const extended_context = context_add_value(context, binding_name)
+  const extended_context = context.add_value(binding_name)
   const binding_statement = `auto ${binding_cpp_safe} = ${subject_holder_name};\n`
   const body_code = eval_expr_fn(arm.body, extended_context, gen_stmts)
   if arm.has_guard then
@@ -327,7 +326,7 @@ export fn gen_arm(
     PatIdent(name, _) =>
       expression_output.match_arm_binding_identifier(
         cpp_safe(name),
-        eval_expr_fn(arm.body, context_add_value(context, name), gen_stmts)),
+        eval_expr_fn(arm.body, context.add_value(name), gen_stmts)),
     PatCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_fn),
     PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts, eval_expr_fn),
     PatTuple(_, _)                     => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),

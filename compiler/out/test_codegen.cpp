@@ -148,7 +148,7 @@ mlc::Array<std::shared_ptr<semantic_ir::SExpr>> map_one = mlc::Array<std::shared
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod Result map"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(s_result, mlc::String("map"), map_one, unk_t(), ast::span_unknown())), ctx), mlc::String("mlc::result::map(r, f)")));
 mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes = mlc::HashMap<mlc::String, mlc::String>();
 namespace_alias_prefixes.set(mlc::String("helpers"), mlc::String("infer_literals::"));
-context::CodegenContext context_with_aliases = context::context_with_namespace_alias_prefixes(ctx, namespace_alias_prefixes);
+context::CodegenContext context_with_aliases = context::CodegenContext_with_namespace_alias_prefixes(ctx, namespace_alias_prefixes);
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod on import-as alias emits namespace::fn()"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(sid(mlc::String("helpers")), mlc::String("infer_expr_integer_literal"), empty_arr, unk_t(), ast::span_unknown())), context_with_aliases), mlc::String("infer_literals::infer_expr_integer_literal()")));
 mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> pat_arms = mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>>{smatch_arm(std::make_shared<ast::Pat>(ast::PatInt(1, ast::span_unknown())), ss(mlc::String("one"))), smatch_arm(std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown())), ss(mlc::String("other")))};
 mlc::String match_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMatch(sid(mlc::String("n")), pat_arms, str_t(), ast::span_unknown())), ctx);

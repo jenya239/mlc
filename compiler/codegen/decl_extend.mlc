@@ -5,7 +5,7 @@ import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../ast'
 import * as lit from './literals'
 import { SDecl, SExpr, SExprExtern } from '../semantic_ir'
 import { Type } from '../checker/registry'
-import { CodegenContext, make_body_context } from './context'
+import { CodegenContext } from './context'
 import { cpp_safe } from './cpp_naming'
 import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp } from './type_gen'
 import * as expression_output from './expr'
@@ -93,7 +93,7 @@ export fn gen_extend_wrapper_protos(type_name: string, trait_name: string, metho
     while method_index < methods.length() do
       match methods[method_index] {
         SDeclFn(mangled, _, _, params, ret_type, _, _) => do
-          const wrapper_context = make_body_context(context, [], [], Map.new(), [], type_name, [], [])
+          const wrapper_context = context.for_type_body(type_name)
           const method_name = extract_method_name(mangled, type_name)
           const ret_cpp = sem_type_to_cpp(wrapper_context, ret_type)
           const params_str = gen_params_proto(wrapper_context, params)
@@ -110,7 +110,7 @@ export fn gen_extend_wrapper_protos(type_name: string, trait_name: string, metho
   end
 
 fn gen_extend_trait_wrapper(type_name: string, mangled: string, params: [Shared<Param>], ret_type: Shared<Type>, context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string) -> string = do
-  const wrapper_context = make_body_context(context, [], [], Map.new(), [], type_name, [], [])
+  const wrapper_context = context.for_type_body(type_name)
   const method_name = extract_method_name(mangled, type_name)
   const ret_cpp = sem_type_to_cpp(wrapper_context, ret_type)
   const fn_resolved = context_resolve_fn(context, mangled)
@@ -178,7 +178,7 @@ fn gen_extend_method_parts(type_name: string, trait_name: string, methods: [Shar
 end
 
 export fn gen_decl_extend(type_name: string, trait_name: string, methods: [Shared<SDecl>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SDecl>, CodegenContext) -> string) -> string = do
-  const extend_context = make_body_context(context, [], [], Map.new(), [], type_name, [], [])
+  const extend_context = context.for_type_body(type_name)
   const method_parts = gen_extend_method_parts(type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn)
   const methods_str = method_parts.join('')
   if trait_name.length() > 0 then

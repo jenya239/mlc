@@ -43,7 +43,7 @@ context::CodegenContext context_add_value(context::CodegenContext context, mlc::
 
 context::CodegenContext context_add_match_deref(context::CodegenContext context, mlc::String name) noexcept;
 
-context::CodegenContext update_context_from_statement(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context) noexcept;
+context::CodegenContext update_context_from_statement(std::shared_ptr<semantic_ir::SStmt> statement, context::CodegenContext context) noexcept;
 
 context::CodegenContext create_codegen_context(ast::Program prog) noexcept;
 
@@ -54,6 +54,22 @@ context::CodegenContext context_with_namespace_alias_prefixes(context::CodegenCo
 context::GenStmtsResult GenStmtsResult_append_stmt(context::GenStmtsResult self, context::GenStmtResult statement_result) noexcept;
 
 mlc::String CodegenContext_resolve(context::CodegenContext self, mlc::String name) noexcept;
+
+context::CodegenContext CodegenContext_for_type_body(context::CodegenContext self, mlc::String type_name) noexcept;
+
+context::CodegenContext CodegenContext_add_shared(context::CodegenContext self, mlc::String name) noexcept;
+
+context::CodegenContext CodegenContext_add_shared_array(context::CodegenContext self, mlc::String name) noexcept;
+
+context::CodegenContext CodegenContext_add_value(context::CodegenContext self, mlc::String name) noexcept;
+
+context::CodegenContext CodegenContext_add_match_deref(context::CodegenContext self, mlc::String name) noexcept;
+
+context::CodegenContext CodegenContext_with_struct_using_lines(context::CodegenContext self, mlc::HashMap<mlc::String, mlc::Array<mlc::String>> lines) noexcept;
+
+context::CodegenContext CodegenContext_with_namespace_alias_prefixes(context::CodegenContext self, mlc::HashMap<mlc::String, mlc::String> prefixes) noexcept;
+
+context::CodegenContext CodegenContext_update_from_statement(context::CodegenContext self, std::shared_ptr<semantic_ir::SStmt> statement) noexcept;
 
 } // namespace context
 
