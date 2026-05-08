@@ -22,6 +22,8 @@ mlc::Array<ast::Diagnostic> check_names_expr(std::shared_ptr<ast::Expr> expressi
 
 names::NameCheckResult check_names_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
 
+mlc::Array<ast::Diagnostic> NameCheckResult_append_expression_diagnostics(names::NameCheckResult self, mlc::Array<ast::Diagnostic> expression_diagnostics) noexcept;
+
 } // namespace names
 
 #endif // NAMES_HPP

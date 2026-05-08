@@ -124,15 +124,17 @@ module MLC
             end
           end
 
-          # Non-exported extend helpers that other modules call must appear in the
-          # header (e.g. infer_result::InferResult_with_type). Restrict to names
-          # generated for InferResult so we do not declare LexState_* with a type
-          # that exists only in the .cpp.
+          # Non-exported extend helpers whose receiver type IS exported must appear
+          # in the header so other modules can call them via instance-method syntax.
+          exported_type_names = module_node&.items&.grep(SemanticIR::TypeDecl)
+                                            &.select(&:exported)
+                                            &.map(&:name)
+                                            &.to_set || Set.new
           module_node&.items&.each do |item|
             next unless item.is_a?(SemanticIR::Func)
             next if item.external
             next if item.exported
-            next unless item.name.match?(/\AInferResult_/)
+            next unless exported_type_names.any? { |type_name| item.name.start_with?("#{type_name}_") }
 
             lines << generate_function_declaration(item)
             lines << ""

@@ -44,6 +44,10 @@ export fn context_resolve(context: CodegenContext, name: string) -> string =
   else cpp_safe(name)
   end
 
+extend CodegenContext {
+  fn resolve(self, name: string) -> string = context_resolve(self, name)
+}
+
 export fn make_body_context(base: CodegenContext, shared_params: [string], shared_array_params: [string], array_elem_types: Map<string, string>, shared_map_params: [string], self_type: string, value_params: [string], match_deref_params: [string]) -> CodegenContext =
   CodegenContext { field_orders: base.field_orders, namespace_prefix: base.namespace_prefix, qualified: base.qualified, namespace_alias_prefixes: base.namespace_alias_prefixes, self_type: self_type, method_owners: base.method_owners, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, ctor_type_infos: base.ctor_type_infos, variant_types: base.variant_types, value_params: value_params, match_deref_params: match_deref_params, generic_variants: base.generic_variants, struct_using_lines: base.struct_using_lines }
 

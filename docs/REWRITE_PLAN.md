@@ -937,14 +937,15 @@ statements.fold(
 
 ### Порядок структурных изменений
 
-Структурные изменения вносятся **до** соответствующих шагов переписывания:
-
-1. `extend Pat { fn bind_names }` в `ast.mlc` → убирает дублирование (перед шагом 10)
-2. `extend CodegenContext` в `context.mlc` → перед шагами 3–9
-3. `extend CheckContext` в `check_context.mlc` → перед шагами 10–17
-4. `extend InferResult { fn absorb_expressions, fn absorb_all }` → перед шагом 13
-5. `extend GenStmtsResult { fn append_stmt }` → перед шагом 6
-6. `PRIMITIVE_CPP_TYPES` константа → часть шага 4
+| Изменение | Содержание | Когда |
+|-----------|-----------|-------|
+| **С1 частично** | `extend CodegenContext { fn resolve }` в `context.mlc`; заменить `context_resolve(context, name)` → `context.resolve(name)` в `type_gen.mlc` | Шаг 4 |
+| **С1 полностью** | Все остальные методы `CodegenContext` (`add_shared`, `add_value`, `with_self_type`, record spread вместо `make_body_context` с 8 параметрами) | Перед шагом 7 (record_gen, method_gen, decl) |
+| **С6** | `extend GenStmtsResult { fn append_stmt }` — fold вместо while по statements | Шаг 6 (`stmt_eval.mlc`) |
+| **С2** | `extend CheckContext { fn bind, fn lookup, fn with_extend_type }` — создание контекста без `check_context_new` | Перед шагом 10 (checker: pattern_env, let_pattern_infer) |
+| **С3** | `extend Pat { fn bind_names }` в `ast.mlc` — убирает 3 дублирующихся рекурсивных обхода Pat | Перед шагом 10 |
+| **С4** | `extend InferResult { fn absorb_expressions, fn absorb_all }` — устраняет `infer_arguments_errors` | Перед шагом 13 (`infer.mlc`) |
+| **С5** | `PRIMITIVE_CPP_TYPES` Map | Пропустить: `Map.from_pairs` не реализован, module-level const с Map-мутацией не поддерживается |
 
 ---
 
