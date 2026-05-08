@@ -21,6 +21,8 @@ using namespace ctor_info;
 using namespace param_analysis;
 using namespace ast_tokens;
 
+context::GenStmtsResult GenStmtsResult_append_stmt(context::GenStmtsResult self, context::GenStmtResult statement_result) noexcept;
+
 mlc::String context_resolve(context::CodegenContext context, mlc::String name) noexcept;
 
 mlc::String CodegenContext_resolve(context::CodegenContext self, mlc::String name) noexcept;
@@ -44,6 +46,8 @@ context::CodegenContext create_codegen_context(ast::Program prog) noexcept;
 context::CodegenContext context_with_struct_using_lines(context::CodegenContext base, mlc::HashMap<mlc::String, mlc::Array<mlc::String>> struct_using_lines) noexcept;
 
 context::CodegenContext context_with_namespace_alias_prefixes(context::CodegenContext base, mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes) noexcept;
+
+context::GenStmtsResult GenStmtsResult_append_stmt(context::GenStmtsResult self, context::GenStmtResult statement_result) noexcept{return context::GenStmtsResult{self.code + statement_result.output, statement_result.next_try};}
 
 mlc::String context_resolve(context::CodegenContext context, mlc::String name) noexcept{return context.qualified.has(name) ? context.qualified.get(name) + cpp_naming::cpp_safe(name) : context.namespace_prefix.length() > 0 ? context.namespace_prefix + cpp_naming::cpp_safe(name) : cpp_naming::cpp_safe(name);}
 

@@ -24,6 +24,8 @@ using namespace literals;
 using namespace statement_context;
 using namespace expr;
 
+struct StmtsFoldState {context::GenStmtsResult partial_result;context::CodegenContext codegen_context;};
+
 mlc::String constexpr_binding_value_code(std::shared_ptr<semantic_ir::SExpr> value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
 
 mlc::String eval_try_unwrap(std::shared_ptr<semantic_ir::SExpr> inner_expr, context::CodegenContext context, mlc::String try_identifier, mlc::String success_line, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
@@ -40,6 +42,8 @@ mlc::String eval_elements_code(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> e
 
 context::GenStmtResult eval_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
 
+stmt_eval::StmtsFoldState stmts_fold_step(stmt_eval::StmtsFoldState fold_state, std::shared_ptr<semantic_ir::SStmt> statement, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
+
 context::GenStmtsResult eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
 
 mlc::String eval_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
@@ -49,7 +53,7 @@ mlc::String constexpr_binding_value_code(std::shared_ptr<semantic_ir::SExpr> val
   mlc::String then_code = gen_expr_fn(then_branch, context);
   mlc::String else_code = expression_support::generate_conditional_else_with_empty_array_coercion(then_branch, else_branch, binding_semantic_type, context, gen_expr_fn);
   return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*binding_semantic_type))) { auto _v_tnamed = std::get<registry::TNamed>((*binding_semantic_type)); auto [type_name] = _v_tnamed; return [&]() -> mlc::String { 
-  mlc::String type_cpp = context::context_resolve(context, type_name);
+  mlc::String type_cpp = context::CodegenContext_resolve(context, type_name);
   return type_cpp == mlc::String("auto") ? expr::ternary_conditional(cond_code, then_code, else_code) : mlc::String("[&]() -> ") + type_cpp + mlc::String(" {\nif (") + cond_code + mlc::String(") {\nreturn ") + then_code + mlc::String(";\n} else {\nreturn ") + else_code + mlc::String(";\n}\n}()");
  }(); } return expr::ternary_conditional(cond_code, then_code, else_code); }();
  }(); } return gen_expr_fn(value, context); }();}
@@ -82,17 +86,7 @@ mlc::String eval_stmt_expr(std::shared_ptr<semantic_ir::SExpr> expression, conte
   return result_code == literals::gen_unit_literal() ? statements_code : expr::append_trailing_expression_statement(statements_code, result_code);
  }(); } return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); }();}
 
-mlc::String eval_elements_code(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{
-mlc::Array<mlc::String> parts = {};
-int index = 0;
-while (index < elements.size()){
-{
-parts.push_back(gen_expr_fn(elements[index], context));
-index = index + 1;
-}
-}
-return parts.join(mlc::String(", "));
-}
+mlc::String eval_elements_code(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return elements.map([gen_expr_fn, context](std::shared_ptr<semantic_ir::SExpr> element)  { return gen_expr_fn(element, context); }).join(mlc::String(", "));}
 
 context::GenStmtResult eval_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
   [&](const SStmtLet& sstmtlet) -> context::GenStmtResult { auto [name, _w0, value, value_type, _w1] = sstmtlet; return [&]() -> context::GenStmtResult { 
@@ -124,22 +118,12 @@ context::GenStmtResult eval_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> st
  }(); } return context::GenStmtResult{expr::return_line(gen_expr_fn(expression, context)), try_counter}; }(); }
 }, (*stmt)._);}
 
-context::GenStmtsResult eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{
-mlc::Array<mlc::String> parts = {};
-int index = 0;
-context::CodegenContext current_context = std::move(context);
-int counter = try_counter;
-while (index < statements.size()){
-{
-context::GenStmtResult result = eval_stmt_with_try(statements[index], current_context, counter, gen_expr_fn);
-parts.push_back(result.output);
-counter = result.next_try;
-current_context = context::update_context_from_statement(statements[index], current_context);
-index = index + 1;
+stmt_eval::StmtsFoldState stmts_fold_step(stmt_eval::StmtsFoldState fold_state, std::shared_ptr<semantic_ir::SStmt> statement, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{
+context::GenStmtResult statement_result = eval_stmt_with_try(statement, fold_state.codegen_context, fold_state.partial_result.next_try, gen_expr_fn);
+return stmt_eval::StmtsFoldState{context::GenStmtsResult_append_stmt(fold_state.partial_result, statement_result), context::update_context_from_statement(statement, fold_state.codegen_context)};
 }
-}
-return context::GenStmtsResult{parts.join(mlc::String("")), counter};
-}
+
+context::GenStmtsResult eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return statements.fold(stmt_eval::StmtsFoldState{context::GenStmtsResult{mlc::String(""), try_counter}, context}, [gen_expr_fn](stmt_eval::StmtsFoldState fold_state, std::shared_ptr<semantic_ir::SStmt> statement)  { return stmts_fold_step(fold_state, statement, gen_expr_fn); }).partial_result;}
 
 mlc::String eval_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{
 context::GenStmtsResult result = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn);

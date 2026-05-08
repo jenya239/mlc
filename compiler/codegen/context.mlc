@@ -29,6 +29,12 @@ export type CodegenContext = CodegenContext {
 }
 export type GenStmtsResult = GenStmtsResult { code: string, next_try: i32 }
 export type GenStmtResult  = GenStmtResult  { output: string, next_try: i32 }
+
+extend GenStmtsResult {
+  fn append_stmt(self, statement_result: GenStmtResult) -> GenStmtsResult =
+    GenStmtsResult { code: self.code + statement_result.output, next_try: statement_result.next_try }
+}
+
 export type GenModuleOut   = GenModuleOut   { h: string, c: string }
 export type PrecomputedCtx = PrecomputedCtx {
   field_orders: [Shared<FieldOrder>],

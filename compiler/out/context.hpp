@@ -51,6 +51,8 @@ context::CodegenContext context_with_struct_using_lines(context::CodegenContext 
 
 context::CodegenContext context_with_namespace_alias_prefixes(context::CodegenContext base, mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes) noexcept;
 
+context::GenStmtsResult GenStmtsResult_append_stmt(context::GenStmtsResult self, context::GenStmtResult statement_result) noexcept;
+
 mlc::String CodegenContext_resolve(context::CodegenContext self, mlc::String name) noexcept;
 
 } // namespace context
