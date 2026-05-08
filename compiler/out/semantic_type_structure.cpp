@@ -10,6 +10,10 @@ bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept;
 
+bool zipped_shared_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list) noexcept;
+
+bool zipped_suffix_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list, int index) noexcept;
+
 bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept;
 
 std::shared_ptr<registry::Type> array_element_type_from_array_type(std::shared_ptr<registry::Type> array_type) noexcept;
@@ -72,54 +76,16 @@ bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_
   [&](const TArray& tarray) -> bool { auto [inner_left] = tarray; return [&]() { if (std::holds_alternative<registry::TArray>((*right))) { auto _v_tarray = std::get<registry::TArray>((*right)); auto [inner_right] = _v_tarray; return types_structurally_equal(inner_left, inner_right); } return false; }(); },
   [&](const TShared& tshared) -> bool { auto [inner_left] = tshared; return [&]() { if (std::holds_alternative<registry::TShared>((*right))) { auto _v_tshared = std::get<registry::TShared>((*right)); auto [inner_right] = _v_tshared; return types_structurally_equal(inner_left, inner_right); } return false; }(); },
   [&](const TNamed& tnamed) -> bool { auto [left_name] = tnamed; return [&]() { if (std::holds_alternative<registry::TNamed>((*right))) { auto _v_tnamed = std::get<registry::TNamed>((*right)); auto [right_name] = _v_tnamed; return left_name == right_name; } return false; }(); },
-  [&](const TGeneric& tgeneric) -> bool { auto [left_name, left_args] = tgeneric; return [&]() { if (std::holds_alternative<registry::TGeneric>((*right))) { auto _v_tgeneric = std::get<registry::TGeneric>((*right)); auto [right_name, right_args] = _v_tgeneric; return left_name != right_name || left_args.size() != right_args.size() ? false : [&]() -> bool { 
-  int gi = 0;
-  bool gok = true;
-  while (gi < left_args.size() && gok){
-{
-if (!types_structurally_equal(left_args[gi], right_args[gi])){
-{
-gok = false;
-}
-}
-gi = gi + 1;
-}
-}
-  return gok;
- }(); } return false; }(); },
-  [&](const TTuple& ttuple) -> bool { auto [t1] = ttuple; return [&]() { if (std::holds_alternative<registry::TTuple>((*right))) { auto _v_ttuple = std::get<registry::TTuple>((*right)); auto [t2] = _v_ttuple; return t1.size() != t2.size() ? false : [&]() -> bool { 
-  int ti = 0;
-  bool tok = true;
-  while (ti < t1.size() && tok){
-{
-if (!types_structurally_equal(t1[ti], t2[ti])){
-{
-tok = false;
-}
-}
-ti = ti + 1;
-}
-}
-  return tok;
- }(); } if (std::holds_alternative<registry::TPair>((*right))) { auto _v_tpair = std::get<registry::TPair>((*right)); auto [a2, b2] = _v_tpair; return t1.size() == 2 && types_structurally_equal(t1[0], a2) && types_structurally_equal(t1[1], b2); } return false; }(); },
+  [&](const TGeneric& tgeneric) -> bool { auto [left_name, left_args] = tgeneric; return [&]() { if (std::holds_alternative<registry::TGeneric>((*right))) { auto _v_tgeneric = std::get<registry::TGeneric>((*right)); auto [right_name, right_args] = _v_tgeneric; return left_name == right_name && left_args.size() == right_args.size() && zipped_shared_types_structurally_equal(left_args, right_args); } return false; }(); },
+  [&](const TTuple& ttuple) -> bool { auto [t1] = ttuple; return [&]() { if (std::holds_alternative<registry::TTuple>((*right))) { auto _v_ttuple = std::get<registry::TTuple>((*right)); auto [t2] = _v_ttuple; return t1.size() == t2.size() && zipped_shared_types_structurally_equal(t1, t2); } if (std::holds_alternative<registry::TPair>((*right))) { auto _v_tpair = std::get<registry::TPair>((*right)); auto [a2, b2] = _v_tpair; return t1.size() == 2 && types_structurally_equal(t1[0], a2) && types_structurally_equal(t1[1], b2); } return false; }(); },
   [&](const TPair& tpair) -> bool { auto [a1, b1] = tpair; return [&]() { if (std::holds_alternative<registry::TPair>((*right))) { auto _v_tpair = std::get<registry::TPair>((*right)); auto [a2, b2] = _v_tpair; return types_structurally_equal(a1, a2) && types_structurally_equal(b1, b2); } if (std::holds_alternative<registry::TTuple>((*right))) { auto _v_ttuple = std::get<registry::TTuple>((*right)); auto [t2] = _v_ttuple; return t2.size() == 2 && types_structurally_equal(a1, t2[0]) && types_structurally_equal(b1, t2[1]); } return false; }(); },
-  [&](const TFn& tfn) -> bool { auto [left_params, left_ret] = tfn; return [&]() { if (std::holds_alternative<registry::TFn>((*right))) { auto _v_tfn = std::get<registry::TFn>((*right)); auto [right_params, right_ret] = _v_tfn; return left_params.size() != right_params.size() ? false : [&]() -> bool { 
-  int fi = 0;
-  bool fok = true;
-  while (fi < left_params.size() && fok){
-{
-if (!types_structurally_equal(left_params[fi], right_params[fi])){
-{
-fok = false;
-}
-}
-fi = fi + 1;
-}
-}
-  return fok && types_structurally_equal(left_ret, right_ret);
- }(); } return false; }(); },
+  [&](const TFn& tfn) -> bool { auto [left_params, left_ret] = tfn; return [&]() { if (std::holds_alternative<registry::TFn>((*right))) { auto _v_tfn = std::get<registry::TFn>((*right)); auto [right_params, right_ret] = _v_tfn; return left_params.size() == right_params.size() && zipped_shared_types_structurally_equal(left_params, right_params) && types_structurally_equal(left_ret, right_ret); } return false; }(); },
   [&](const TAssoc& tassoc) -> bool { auto [p1, a1] = tassoc; return [&]() { if (std::holds_alternative<registry::TAssoc>((*right))) { auto _v_tassoc = std::get<registry::TAssoc>((*right)); auto [p2, a2] = _v_tassoc; return p1 == p2 && a1 == a2; } return true; }(); }
 }, (*left));}
+
+bool zipped_shared_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list) noexcept{return zipped_suffix_types_structurally_equal(left_list, right_list, 0);}
+
+bool zipped_suffix_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list, int index) noexcept{return index >= left_list.size() ? true : types_structurally_equal(left_list[index], right_list[index]) && zipped_suffix_types_structurally_equal(left_list, right_list, index + 1);}
 
 bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TArray>((*type_value))) { auto _v_tarray = std::get<registry::TArray>((*type_value)); auto [_w0] = _v_tarray; return true; } return false; }();}
 
@@ -226,37 +192,7 @@ int builtin_method_expected_argument_count(mlc::String method_name) noexcept{
 return method_name == mlc::String("push") ? 1 : method_name == mlc::String("set") ? 2 : method_name == mlc::String("length") || method_name == mlc::String("size") ? 0 : method_name == mlc::String("to_i") || method_name == mlc::String("to_lower") ? 0 : method_name == mlc::String("char_at") ? 1 : method_name == mlc::String("substring") ? 2 : method_name == mlc::String("join") ? 1 : method_name == mlc::String("to_string") ? 0 : method_name == mlc::String("has") || method_name == mlc::String("get") || method_name == mlc::String("remove") ? 1 : method_name == mlc::String("keys") || method_name == mlc::String("values") ? 0 : -1;
 }
 
-std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TNamed>((*type_value))) { auto _v_tnamed = std::get<registry::TNamed>((*type_value)); auto [name] = _v_tnamed; return substitution.has(name) ? substitute_type(substitution.get(name), substitution) : type_value; } if (std::holds_alternative<registry::TArray>((*type_value))) { auto _v_tarray = std::get<registry::TArray>((*type_value)); auto [inner] = _v_tarray; return std::make_shared<registry::Type>(registry::TArray(substitute_type(inner, substitution))); } if (std::holds_alternative<registry::TShared>((*type_value))) { auto _v_tshared = std::get<registry::TShared>((*type_value)); auto [inner] = _v_tshared; return std::make_shared<registry::Type>(registry::TShared(substitute_type(inner, substitution))); } if (std::holds_alternative<registry::TGeneric>((*type_value))) { auto _v_tgeneric = std::get<registry::TGeneric>((*type_value)); auto [name, args] = _v_tgeneric; return [&]() -> std::shared_ptr<registry::Type> { 
-  mlc::Array<std::shared_ptr<registry::Type>> new_args = {};
-  int i = 0;
-  while (i < args.size()){
-{
-new_args.push_back(substitute_type(args[i], substitution));
-i = i + 1;
-}
-}
-  return std::make_shared<registry::Type>(registry::TGeneric(name, new_args));
- }(); } if (std::holds_alternative<registry::TPair>((*type_value))) { auto _v_tpair = std::get<registry::TPair>((*type_value)); auto [a, b] = _v_tpair; return std::make_shared<registry::Type>(registry::TPair(substitute_type(a, substitution), substitute_type(b, substitution))); } if (std::holds_alternative<registry::TTuple>((*type_value))) { auto _v_ttuple = std::get<registry::TTuple>((*type_value)); auto [ts] = _v_ttuple; return [&]() -> std::shared_ptr<registry::Type> { 
-  mlc::Array<std::shared_ptr<registry::Type>> new_ts = {};
-  int si = 0;
-  while (si < ts.size()){
-{
-new_ts.push_back(substitute_type(ts[si], substitution));
-si = si + 1;
-}
-}
-  return std::make_shared<registry::Type>(registry::TTuple(new_ts));
- }(); } if (std::holds_alternative<registry::TFn>((*type_value))) { auto _v_tfn = std::get<registry::TFn>((*type_value)); auto [params, ret] = _v_tfn; return [&]() -> std::shared_ptr<registry::Type> { 
-  mlc::Array<std::shared_ptr<registry::Type>> new_params = {};
-  int j = 0;
-  while (j < params.size()){
-{
-new_params.push_back(substitute_type(params[j], substitution));
-j = j + 1;
-}
-}
-  return std::make_shared<registry::Type>(registry::TFn(new_params, substitute_type(ret, substitution)));
- }(); } return type_value; }();}
+std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TNamed>((*type_value))) { auto _v_tnamed = std::get<registry::TNamed>((*type_value)); auto [name] = _v_tnamed; return substitution.has(name) ? substitute_type(substitution.get(name), substitution) : type_value; } if (std::holds_alternative<registry::TArray>((*type_value))) { auto _v_tarray = std::get<registry::TArray>((*type_value)); auto [inner] = _v_tarray; return std::make_shared<registry::Type>(registry::TArray(substitute_type(inner, substitution))); } if (std::holds_alternative<registry::TShared>((*type_value))) { auto _v_tshared = std::get<registry::TShared>((*type_value)); auto [inner] = _v_tshared; return std::make_shared<registry::Type>(registry::TShared(substitute_type(inner, substitution))); } if (std::holds_alternative<registry::TGeneric>((*type_value))) { auto _v_tgeneric = std::get<registry::TGeneric>((*type_value)); auto [name, args] = _v_tgeneric; return std::make_shared<registry::Type>(registry::TGeneric(name, args.map([substitution](std::shared_ptr<registry::Type> arg)  { return substitute_type(arg, substitution); }))); } if (std::holds_alternative<registry::TPair>((*type_value))) { auto _v_tpair = std::get<registry::TPair>((*type_value)); auto [a, b] = _v_tpair; return std::make_shared<registry::Type>(registry::TPair(substitute_type(a, substitution), substitute_type(b, substitution))); } if (std::holds_alternative<registry::TTuple>((*type_value))) { auto _v_ttuple = std::get<registry::TTuple>((*type_value)); auto [parameter_types] = _v_ttuple; return std::make_shared<registry::Type>(registry::TTuple(parameter_types.map([substitution](std::shared_ptr<registry::Type> entry)  { return substitute_type(entry, substitution); }))); } if (std::holds_alternative<registry::TFn>((*type_value))) { auto _v_tfn = std::get<registry::TFn>((*type_value)); auto [parameter_list, ret] = _v_tfn; return std::make_shared<registry::Type>(registry::TFn(parameter_list.map([substitution](std::shared_ptr<registry::Type> param)  { return substitute_type(param, substitution); }), substitute_type(ret, substitution))); } return type_value; }();}
 
 mlc::String operator_method_for(mlc::String operation) noexcept{return operation == mlc::String("+") ? mlc::String("add") : operation == mlc::String("-") ? mlc::String("sub") : operation == mlc::String("*") ? mlc::String("mul") : operation == mlc::String("/") ? mlc::String("div") : operation == mlc::String("%") ? mlc::String("rem") : mlc::String("");}
 
