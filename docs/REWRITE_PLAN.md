@@ -370,32 +370,21 @@ export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string
 
 ### Шаг 5. `codegen/match_gen.mlc` — P1, P4, P7
 
-```mlc
-// ДО
-fn gen_or_pattern_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] = do
-  let result: [Shared<SMatchArm>] = []; let mut i = 0
-  while i < arms.length() do
-    match arms[i] {
-      SMatchArmOr(alts, body, guard) => do
-        let mut j = 0
-        while j < alts.length() do
-          result.push(Shared.new(SMatchArm(alts[j], body, guard))); j = j + 1
-        end
-      end,
-      _ => result.push(arms[i])
-    }
-    i = i + 1
-  end
-  result
-end
+OR в паттерне — это `PatOr` на `arm.pat`, не отдельный вариант `SMatchArm`.
 
-// ПОСЛЕ
-fn gen_or_pattern_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] =
-  arms.flat_map(arm =>
-    match arm {
-      SMatchArmOr(alts, body, guard) => alts.map(alt => Shared.new(SMatchArm(alt, body, guard))),
-      _ => [arm]
-    })
+```mlc
+// ПОСЛЕ (фактическая схема в `expand_or_arms`)
+fn match_arm_with_pattern(arm: Shared<SMatchArm>, pattern: Shared<Pat>) -> Shared<SMatchArm> =
+  Shared.new(SMatchArm { pat: pattern, has_guard: arm.has_guard, when_condition: arm.when_condition, body: arm.body })
+
+fn singleton_or_split(arm: Shared<SMatchArm>) -> [Shared<SMatchArm>] =
+  match arm.pat {
+    PatOr(alts, _) => alts.map(alt => match_arm_with_pattern(arm, alt)),
+    _ => [arm]
+  }
+
+fn expand_or_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] =
+  arms.flat_map(arm => singleton_or_split(arm))
 ```
 
 **Ожидание:** 371 → ~230 LOC.

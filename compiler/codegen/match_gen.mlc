@@ -5,7 +5,7 @@
 import { Pat } from '../ast'
 import { SExpr, SStmt, SMatchArm } from '../semantic_ir'
 import { CodegenContext, CtorTypeInfo,
-         context_resolve, list_contains, lookup_ctor_type_info,
+         list_contains, lookup_ctor_type_info,
          context_add_shared, context_add_shared_array, context_add_value } from './context'
 import { cpp_safe, lower_first } from './cpp_naming'
 import { first_arm_needs_deref, pat_bind_names } from './match_analysis'
@@ -14,13 +14,43 @@ import { Type } from '../checker/registry'
 import { sem_type_to_cpp } from './type_gen'
 import { gen_boolean_literal, gen_integer_literal, gen_string_literal } from './literals'
 
+type RecordFieldBindAccum = RecordFieldBindAccum {
+  field_bindings: string,
+  arm_context: CodegenContext
+}
+
+fn record_field_bind_step(
+  accumulated: RecordFieldBindAccum,
+  field_pattern: Shared<Pat>,
+  lower_name: string
+) -> RecordFieldBindAccum =
+  match field_pattern {
+    PatIdent(field_name, _) =>
+      RecordFieldBindAccum {
+        field_bindings: accumulated.field_bindings +
+          expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name),
+        arm_context: context_add_value(accumulated.arm_context, field_name)
+      },
+    _ => accumulated
+  }
+
+fn record_pattern_field_bindings_and_context(
+  field_patterns: [Shared<Pat>],
+  lower_name: string,
+  start_context: CodegenContext
+) -> RecordFieldBindAccum =
+  field_patterns.fold(
+    RecordFieldBindAccum { field_bindings: '', arm_context: start_context },
+    (accumulated, field_pattern) => record_field_bind_step(accumulated, field_pattern, lower_name))
+
 fn codegen_context_with_ctor_field_bindings(
   constructor_name: string,
   sub_patterns: [Shared<Pat>],
   base_context: CodegenContext
 ) -> CodegenContext = do
   const ctor_type_information: Shared<CtorTypeInfo> = lookup_ctor_type_info(base_context.ctor_type_infos, constructor_name)
-  let mut arm_context = base_context; let mut pattern_index = 0
+  let mut arm_context = base_context
+  let mut pattern_index = 0
   while pattern_index < sub_patterns.length() do
     match sub_patterns[pattern_index] {
       PatIdent(pattern_name, _) => do
@@ -47,7 +77,7 @@ fn gen_arm_ctor(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
-  const qualified_name = context_resolve(context, ctor_name)
+  const qualified_name = context.resolve(ctor_name)
   const lower_name = cpp_safe(lower_first(ctor_name))
   const binding =
     if sub_patterns.length() == 0 then ''
@@ -68,64 +98,42 @@ fn gen_arm_record_pattern(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
-  const qualified_name = context_resolve(context, record_name)
+  const qualified_name = context.resolve(record_name)
   const lower_name = cpp_safe(lower_first(record_name))
   const is_generic = list_contains(context.generic_variants, record_name)
   const type_argument = if is_generic then '<auto>' else '' end
-  let mut field_bindings = ''; let mut arm_context = context; let mut field_index = 0
-  while field_index < field_patterns.length() do
-    match field_patterns[field_index] {
-      PatIdent(field_name, _) => do
-        field_bindings = field_bindings + expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name)
-        arm_context = context_add_value(arm_context, field_name)
-      end,
-      _ => do end
-    }
-    field_index = field_index + 1
-  end
+  const accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context)
   expression_output.match_arm_constructed_value(
     expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
-    field_bindings,
-    eval_expr_fn(arm_body, arm_context, gen_stmts))
+    accumulated.field_bindings,
+    eval_expr_fn(arm_body, accumulated.arm_context, gen_stmts))
 end
 
-fn expand_or_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] = do
-  let result: [Shared<SMatchArm>] = []; let mut i = 0
-  while i < arms.length() do
-    match arms[i].pat {
-      PatOr(alts, _) => do
-        let mut j = 0
-        while j < alts.length() do
-          result.push(Shared.new(SMatchArm {
-            pat: alts[j],
-            has_guard: arms[i].has_guard,
-            when_condition: arms[i].when_condition,
-            body: arms[i].body
-          }))
-          j = j + 1
-        end
-      end,
-      _ => result.push(arms[i])
-    }
-    i = i + 1
-  end
-  result
-end
+fn match_arm_with_pattern(arm: Shared<SMatchArm>, pattern: Shared<Pat>) -> Shared<SMatchArm> =
+  Shared.new(SMatchArm {
+    pat: pattern,
+    has_guard: arm.has_guard,
+    when_condition: arm.when_condition,
+    body: arm.body
+  })
 
-fn expanded_any_guard(expanded_arms: [Shared<SMatchArm>]) -> bool = do
-  let mut arm_index = 0
-  while arm_index < expanded_arms.length() do
-    if expanded_arms[arm_index].has_guard then return true end
-    arm_index = arm_index + 1
-  end
-  false
-end
+fn singleton_or_split(arm: Shared<SMatchArm>) -> [Shared<SMatchArm>] =
+  match arm.pat {
+    PatOr(alts, _) => alts.map(alt => match_arm_with_pattern(arm, alt)),
+    _ => [arm]
+  }
+
+fn expand_or_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] =
+  arms.flat_map(arm => singleton_or_split(arm))
+
+fn expanded_any_guard(expanded_arms: [Shared<SMatchArm>]) -> bool =
+  expanded_arms.any(arm => arm.has_guard)
 
 fn guarded_literal_condition(pattern: Shared<Pat>, variant_access_expression: string) -> string =
   match pattern {
-    PatBool(value, _) => "(" + variant_access_expression + ' == ' + gen_boolean_literal(value) + ")",
-    PatInt(value, _)  => "(" + variant_access_expression + ' == ' + gen_integer_literal(value) + ")",
-    PatStr(value, _)  => "(" + variant_access_expression + ' == ' + gen_string_literal(value) + ")",
+    PatBool(value, _) => `(${variant_access_expression} == ${gen_boolean_literal(value)})`,
+    PatInt(value, _)  => `(${variant_access_expression} == ${gen_integer_literal(value)})`,
+    PatStr(value, _)  => `(${variant_access_expression} == ${gen_string_literal(value)})`,
     _                 => 'false'
   }
 
@@ -155,7 +163,7 @@ fn gen_guarded_literal_arm_fragment(
   const body_code = eval_expr_fn(arm.body, context, gen_stmts)
   if arm.has_guard then
     const guard_code = eval_expr_fn(arm.when_condition, context, gen_stmts)
-    const combined_condition = "(" + condition + ' && (' + guard_code + '))'
+    const combined_condition = `(${condition} && (${guard_code}))`
     expression_output.if_brace_block(combined_condition, expression_output.return_line(body_code)) + "\n"
   else
     expression_output.if_brace_block(condition, expression_output.return_line(body_code)) + "\n"
@@ -172,7 +180,7 @@ fn gen_guarded_identifier_binding_arm_fragment(
 ) -> string = do
   const binding_cpp_safe = cpp_safe(binding_name)
   const extended_context = context_add_value(context, binding_name)
-  const binding_statement = 'auto ' + binding_cpp_safe + ' = ' + subject_holder_name + ';\n'
+  const binding_statement = `auto ${binding_cpp_safe} = ${subject_holder_name};\n`
   const body_code = eval_expr_fn(arm.body, extended_context, gen_stmts)
   if arm.has_guard then
     const guard_code = eval_expr_fn(arm.when_condition, extended_context, gen_stmts)
@@ -193,7 +201,7 @@ fn gen_guarded_constructor_arm_fragment(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
-  const qualified_name = context_resolve(context, constructor_name)
+  const qualified_name = context.resolve(constructor_name)
   const lower_name = cpp_safe(lower_first(constructor_name))
   const binding_prefix =
     if sub_patterns.length() == 0 then ''
@@ -202,10 +210,10 @@ fn gen_guarded_constructor_arm_fragment(
   const type_argument = if list_contains(context.generic_variants, constructor_name) then '<auto>' else '' end
   const arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context)
   const holds_check =
-    'std::holds_alternative<' + qualified_name + type_argument + '>(' + variant_access_expression + ")"
+    `std::holds_alternative<${qualified_name}${type_argument}>(${variant_access_expression})`
   const open_block =
-    'if (' + holds_check + ') {\n' +
-    'const ' + qualified_name + type_argument + '& ' + lower_name + ' = std::get<' + qualified_name + type_argument + '>(' +
+    `if (${holds_check}) {\n` +
+    `const ${qualified_name}${type_argument}& ${lower_name} = std::get<${qualified_name}${type_argument}>(` +
       variant_access_expression + ');\n' +
     binding_prefix
   const body_code = eval_expr_fn(arm.body, arm_context, gen_stmts)
@@ -228,31 +236,21 @@ fn gen_guarded_record_arm_fragment(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
-  const qualified_name = context_resolve(context, record_name)
+  const qualified_name = context.resolve(record_name)
   const lower_name = cpp_safe(lower_first(record_name))
   const type_argument = if list_contains(context.generic_variants, record_name) then '<auto>' else '' end
-  let mut field_bindings = ''; let mut arm_context = context; let mut field_index = 0
-  while field_index < field_patterns.length() do
-    match field_patterns[field_index] {
-      PatIdent(field_name, _) => do
-        field_bindings = field_bindings + expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name)
-        arm_context = context_add_value(arm_context, field_name)
-      end,
-      _ => do end
-    }
-    field_index = field_index + 1
-  end
+  const accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context)
   const holds_check =
-    'std::holds_alternative<' + qualified_name + type_argument + '>(' + variant_access_expression + ")"
+    `std::holds_alternative<${qualified_name}${type_argument}>(${variant_access_expression})`
   const open_block =
-    'if (' + holds_check + ') {\n' +
-    'const ' + qualified_name + type_argument + '& ' + lower_name + ' = std::get<' + qualified_name + type_argument + '>(' +
+    `if (${holds_check}) {\n` +
+    `const ${qualified_name}${type_argument}& ${lower_name} = std::get<${qualified_name}${type_argument}>(` +
       variant_access_expression + ');\n' +
-    field_bindings
-  const body_code = eval_expr_fn(arm.body, arm_context, gen_stmts)
+    accumulated.field_bindings
+  const body_code = eval_expr_fn(arm.body, accumulated.arm_context, gen_stmts)
   const inner =
     if arm.has_guard then
-      const guard_code = eval_expr_fn(arm.when_condition, arm_context, gen_stmts)
+      const guard_code = eval_expr_fn(arm.when_condition, accumulated.arm_context, gen_stmts)
       expression_output.if_brace_block(guard_code, expression_output.return_line(body_code)) + "\n"
     else
       expression_output.return_line(body_code)
@@ -305,23 +303,13 @@ fn gen_match_guarded_expression(
   const needs_dereference =
     if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
   const return_cpp = sem_type_to_cpp(context, match_result_type)
-  let mut inner_body = 'auto __match_subject = ' + subject_code + ';\n'
   const variant_access = expression_output.visit_subject_for_match('__match_subject', needs_dereference)
-  let mut arm_index = 0
-  while arm_index < expanded_arms.length() do
-    inner_body =
-      inner_body +
-      gen_guarded_arm_fragment(
-        expanded_arms[arm_index],
-        variant_access,
-        '__match_subject',
-        context,
-        gen_stmts,
-        eval_expr_fn)
-    arm_index = arm_index + 1
-  end
-  inner_body = inner_body + 'std::abort();\n'
-  '[&]() -> ' + return_cpp + ' {\n' + inner_body + '}()'
+  const fragment_lines =
+    expanded_arms.map(arm =>
+      gen_guarded_arm_fragment(arm, variant_access, '__match_subject', context, gen_stmts, eval_expr_fn))
+  const inner_body =
+    `auto __match_subject = ${subject_code};\n` + fragment_lines.join('') + 'std::abort();\n'
+  `[&]() -> ${return_cpp} {\n${inner_body}}()`
 end
 
 export fn gen_arm(
@@ -357,15 +345,12 @@ export fn gen_match(
   if expanded_any_guard(expanded) then
     gen_match_guarded_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn)
   else
-    let parts: [string] = []; let mut index = 0
-    while index < expanded.length() do
-      parts.push(gen_arm(expanded[index], context, gen_stmts, eval_expr_fn))
-      index = index + 1
-    end
+    const arm_lines =
+      expanded.map(arm => gen_arm(arm, context, gen_stmts, eval_expr_fn))
     const subject_code = eval_expr_fn(subject, context, gen_stmts)
     const needs_deref = if expanded.length() > 0 then first_arm_needs_deref(expanded[0], subject, context) else true end
     expression_output.std_visit_match_expression(
-      parts.join(',\n'),
+      arm_lines.join(',\n'),
       expression_output.visit_subject_for_match(subject_code, needs_deref))
   end
 end
