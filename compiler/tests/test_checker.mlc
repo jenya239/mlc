@@ -767,5 +767,36 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true('E6 bare underscore expression — error',
     check_error_count('fn main() -> i32 = _') > 0))
 
+  const shared_node_decl = 'type Node = { name: string, value: i32 }\n'
+
+  results.push(assert_eq_int('infer: flat_map on Shared<T> with member access — 0 errors',
+    check_error_count(shared_node_decl +
+      'fn f(nodes: [Shared<Node>]) -> [string] = nodes.flat_map(node => [node.name])'), 0))
+
+  results.push(assert_eq_int('infer: any on Shared<T> with member access — 0 errors',
+    check_error_count(shared_node_decl +
+      'fn f(nodes: [Shared<Node>]) -> bool = nodes.any(node => node.value > 0)'), 0))
+
+  results.push(assert_eq_int('infer: all on Shared<T> with member access — 0 errors',
+    check_error_count(shared_node_decl +
+      'fn f(nodes: [Shared<Node>]) -> bool = nodes.all(node => node.value > 0)'), 0))
+
+  results.push(assert_eq_int('infer: none on Shared<T> with member access — 0 errors',
+    check_error_count(shared_node_decl +
+      'fn f(nodes: [Shared<Node>]) -> bool = nodes.none(node => node.value > 0)'), 0))
+
+  results.push(assert_eq_int('infer: find on Shared<T> with member access — 0 errors',
+    check_error_count(shared_node_decl +
+      'type Option<T> = Some(T) | None\n' +
+      'fn f(nodes: [Shared<Node>]) -> Option<Shared<Node>> = nodes.find(node => node.value > 0)'), 0))
+
+  results.push(assert_eq_int('infer: sort_by on Shared<T> with member access — 0 errors',
+    check_error_count(shared_node_decl +
+      'fn f(nodes: [Shared<Node>]) -> [Shared<Node>] = nodes.sort_by(node => node.value)'), 0))
+
+  results.push(assert_eq_int('infer: filter on Shared<T> with member access — 0 errors',
+    check_error_count(shared_node_decl +
+      'fn f(nodes: [Shared<Node>]) -> [Shared<Node>] = nodes.filter(node => node.value > 0)'), 0))
+
   results
 end

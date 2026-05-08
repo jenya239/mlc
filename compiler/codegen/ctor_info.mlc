@@ -17,44 +17,28 @@ fn ctor_type_info_for(ctor_name: string, types: [Shared<TypeExpr>]) -> Shared<Ct
   Shared.new(CtorTypeInfo { name: ctor_name, shared_pos: shared_positions, shared_arr_pos: shared_array_positions })
 end
 
-fn add_ctor_infos_from_variants(variants: [Shared<TypeVariant>]) -> [Shared<CtorTypeInfo>] = do
-  let result: [Shared<CtorTypeInfo>] = []; let mut vi = 0
-  while vi < variants.length() do
-    match variants[vi] {
-      VarTuple(variant_name, types, _) => result.push(ctor_type_info_for(variant_name, types)),
-      VarRecord(variant_name, field_defs, _) => do
-        let types: [Shared<TypeExpr>] = []; let mut fi = 0
-        while fi < field_defs.length() do types.push(field_def_type(field_defs[fi])); fi = fi + 1 end
-        result.push(ctor_type_info_for(variant_name, types))
-      end,
-      VarUnit(_, _) => do end
-    }
-    vi = vi + 1
-  end
-  result
-end
+fn variant_to_ctor_info(variant: Shared<TypeVariant>) -> [Shared<CtorTypeInfo>] =
+  match variant {
+    VarTuple(variant_name, types, _) => [ctor_type_info_for(variant_name, types)],
+    VarRecord(variant_name, field_defs, _) => [ctor_type_info_for(variant_name, field_defs.map(fd => field_def_type(fd)))],
+    VarUnit(_, _) => []
+  }
 
-export fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] = do
-  let result: [Shared<CtorTypeInfo>] = []; let mut i = 0
-  while i < decls.length() do
-    match decls[i] {
-      DeclExported(inner) => match decl_inner(inner) {
-        DeclType(_, _, variants, _) => do
-          let infos = add_ctor_infos_from_variants(variants)
-          let mut ii = 0; while ii < infos.length() do result.push(infos[ii]); ii = ii + 1 end
-        end,
-        _ => do end
-      },
-      DeclType(_, _, variants, _) => do
-        let infos = add_ctor_infos_from_variants(variants)
-        let mut ii = 0; while ii < infos.length() do result.push(infos[ii]); ii = ii + 1 end
-      end,
-      _ => do end
-    }
-    i = i + 1
-  end
-  result
-end
+fn add_ctor_infos_from_variants(variants: [Shared<TypeVariant>]) -> [Shared<CtorTypeInfo>] =
+  variants.flat_map(variant => variant_to_ctor_info(variant))
+
+fn decl_to_ctor_infos(decl: Shared<Decl>) -> [Shared<CtorTypeInfo>] =
+  match decl {
+    DeclExported(inner) => match decl_inner(inner) {
+      DeclType(_, _, variants, _) => add_ctor_infos_from_variants(variants),
+      _ => []
+    },
+    DeclType(_, _, variants, _) => add_ctor_infos_from_variants(variants),
+    _ => []
+  }
+
+export fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] =
+  decls.flat_map(decl => decl_to_ctor_infos(decl))
 
 export fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], cti_name: string) -> Shared<CtorTypeInfo> = do
   let mut result: Shared<CtorTypeInfo> = Shared.new(CtorTypeInfo { name: '', shared_pos: [], shared_arr_pos: [] })

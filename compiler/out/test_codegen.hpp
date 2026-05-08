@@ -18,6 +18,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "registry.hpp"
+#include "ctor_info.hpp"
 
 namespace test_codegen {
 

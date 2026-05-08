@@ -74,5 +74,113 @@ module MLC
       assert_includes cpp, ".map("
       assert_includes cpp, "test_complex"
     end
+
+    SHARED_NODE_TYPE = <<~MLC
+      type Node = { name: string, value: i32 }
+    MLC
+
+    def test_flat_map_shared_lambda_param_type
+      source = SHARED_NODE_TYPE + <<~MLC
+        fn test_fn(nodes: [Shared<Node>]) -> [string] =
+          nodes.flat_map(node => [node.name])
+      MLC
+
+      cpp = MLC.to_cpp(source)
+      assert_includes cpp, "flat_map"
+      assert_match(/\[\]\(std::shared_ptr<\w+> node\)/, cpp)
+      refute_match(/\[\]\(int32_t node\)/, cpp)
+    end
+
+    def test_any_shared_lambda_param_type
+      source = SHARED_NODE_TYPE + <<~MLC
+        fn test_fn(nodes: [Shared<Node>]) -> bool =
+          nodes.any(node => node.value > 0)
+      MLC
+
+      cpp = MLC.to_cpp(source)
+      assert_includes cpp, ".any("
+      assert_match(/\[\]\(std::shared_ptr<\w+> node\)/, cpp)
+      refute_match(/\[\]\(int32_t node\)/, cpp)
+    end
+
+    def test_all_shared_lambda_param_type
+      source = SHARED_NODE_TYPE + <<~MLC
+        fn test_fn(nodes: [Shared<Node>]) -> bool =
+          nodes.all(node => node.value > 0)
+      MLC
+
+      cpp = MLC.to_cpp(source)
+      assert_includes cpp, ".all("
+      assert_match(/\[\]\(std::shared_ptr<\w+> node\)/, cpp)
+      refute_match(/\[\]\(int32_t node\)/, cpp)
+    end
+
+    def test_none_shared_lambda_param_type
+      source = SHARED_NODE_TYPE + <<~MLC
+        fn test_fn(nodes: [Shared<Node>]) -> bool =
+          nodes.none(node => node.value > 0)
+      MLC
+
+      cpp = MLC.to_cpp(source)
+      assert_includes cpp, ".none("
+      assert_match(/\[\]\(std::shared_ptr<\w+> node\)/, cpp)
+      refute_match(/\[\]\(int32_t node\)/, cpp)
+    end
+
+    def test_find_shared_lambda_param_type
+      source = SHARED_NODE_TYPE + <<~MLC
+        fn test_fn(nodes: [Shared<Node>]) -> Shared<Node> =
+          nodes.find(node => node.value > 0)
+      MLC
+
+      cpp = MLC.to_cpp(source)
+      assert_includes cpp, "find"
+      assert_match(/\[\]\(std::shared_ptr<\w+> node\)/, cpp)
+      refute_match(/\[\]\(int32_t node\)/, cpp)
+    end
+
+    def test_sort_by_shared_lambda_param_type
+      source = SHARED_NODE_TYPE + <<~MLC
+        fn test_fn(nodes: [Shared<Node>]) -> [Shared<Node>] =
+          nodes.sort_by(node => node.value)
+      MLC
+
+      cpp = MLC.to_cpp(source)
+      assert_includes cpp, "sort_by"
+      assert_match(/\[\]\(std::shared_ptr<\w+> node\)/, cpp)
+      refute_match(/\[\]\(int32_t node\)/, cpp)
+    end
+
+    def test_enumerate_length_chain
+      source = <<~MLC
+        fn test_fn(a: [i32]) -> i32 = a.enumerate().length()
+      MLC
+
+      cpp = MLC.to_cpp(source)
+      assert_includes cpp, "enumerate"
+      assert_includes cpp, "size()"
+    end
+
+    def test_zip_length_chain
+      source = <<~MLC
+        fn test_fn(a: [i32], b: [string]) -> i32 = a.zip(b).length()
+      MLC
+
+      cpp = MLC.to_cpp(source)
+      assert_includes cpp, "zip"
+      assert_includes cpp, "size()"
+    end
+
+    def test_filter_shared_lambda_param_type
+      source = SHARED_NODE_TYPE + <<~MLC
+        fn test_fn(nodes: [Shared<Node>]) -> [Shared<Node>] =
+          nodes.filter(node => node.value > 0)
+      MLC
+
+      cpp = MLC.to_cpp(source)
+      assert_includes cpp, ".filter("
+      assert_match(/\[\]\(std::shared_ptr<\w+> node\)/, cpp)
+      refute_match(/\[\]\(int32_t node\)/, cpp)
+    end
   end
 end

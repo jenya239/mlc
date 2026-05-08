@@ -1,6 +1,6 @@
 // Unit tests for the code generator.
 
-import { TestResult, assert_eq_str } from './test_runner'
+import { TestResult, assert_eq_str, assert_eq_int } from './test_runner'
 import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
 import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
 import { create_codegen_context, context_with_namespace_alias_prefixes, FieldOrder, map_builtin, map_method } from '../codegen/context'
@@ -14,6 +14,7 @@ import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../semanti
 import { SExprWith } from '../semantic_ir'
 import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple } from '../checker/registry'
 import { TF64, TI64, TU8, TUsize, TChar, TAssoc } from '../checker/registry'
+import { build_ctor_type_infos_from_decls, lookup_ctor_type_info } from '../codegen/ctor_info'
 
 fn i32_t() -> Shared<Type> = Shared.new(TI32)
 fn str_t() -> Shared<Type> = Shared.new(TString)
@@ -499,6 +500,38 @@ export fn codegen_tests() -> [TestResult] = do
     codegen_if_else_flat_cpp, 'merge_unknown_inner'))
   results.push(assert_code_not_contains('gen_program: flattened if/else has no stray export marker',
     codegen_if_else_flat_cpp, 'export_;'))
+
+  const point_type = parse_program(tokenize(
+    'type Point = Point(i32, Shared<i32>)'
+  ).tokens)
+  const point_infos = build_ctor_type_infos_from_decls(point_type.decls)
+  results.push(assert_eq_int('ctor_info: build from sum type — 1 info',
+    point_infos.length(), 1))
+  results.push(assert_eq_str('ctor_info: build — correct name',
+    point_infos[0].name, 'Point'))
+  results.push(assert_eq_int('ctor_info: build — shared_pos has 1 entry',
+    point_infos[0].shared_pos.length(), 1))
+  results.push(assert_eq_int('ctor_info: build — shared_pos[0] == 1',
+    point_infos[0].shared_pos[0], 1))
+  results.push(assert_eq_int('ctor_info: build — shared_arr_pos empty',
+    point_infos[0].shared_arr_pos.length(), 0))
+
+  const found_info = lookup_ctor_type_info(point_infos, 'Point')
+  results.push(assert_eq_str('ctor_info: lookup — finds by name',
+    found_info.name, 'Point'))
+
+  const missing_info = lookup_ctor_type_info(point_infos, 'Missing')
+  results.push(assert_eq_str('ctor_info: lookup — missing returns empty name',
+    missing_info.name, ''))
+
+  const multi_type = parse_program(tokenize(
+    'type Tree = Leaf | Node(Shared<i32>, [Shared<i32>])'
+  ).tokens)
+  const multi_infos = build_ctor_type_infos_from_decls(multi_type.decls)
+  results.push(assert_eq_int('ctor_info: multi-variant — 1 info (VarUnit excluded)', multi_infos.length(), 1))
+  const node_info = lookup_ctor_type_info(multi_infos, 'Node')
+  results.push(assert_eq_int('ctor_info: Node shared_pos — 1', node_info.shared_pos.length(), 1))
+  results.push(assert_eq_int('ctor_info: Node shared_arr_pos — 1', node_info.shared_arr_pos.length(), 1))
 
   results
 end

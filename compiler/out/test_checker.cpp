@@ -253,6 +253,14 @@ mlc::String codegen_invariant_if_else_flattened = mlc::String("fn merge_unknown_
 results.push_back(test_runner::assert_eq_int(mlc::String("codegen invariant: if + else calls helper (flattened match shape) — 0 errors"), check_error_count(codegen_invariant_if_else_flattened), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("E6 partial application: let-bound thunk call — 0 errors"), check_error_count(mlc::String("fn add_numbers(left: i32, right: i32) -> i32 = left + right\nfn main() -> i32 = do\n  let bound = add_numbers(10, _)\n  bound(3)\nend")), 0));
 results.push_back(test_runner::assert_true(mlc::String("E6 bare underscore expression — error"), check_error_count(mlc::String("fn main() -> i32 = _")) > 0));
+mlc::String shared_node_decl = mlc::String("type Node = { name: string, value: i32 }\n");
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: flat_map on Shared<T> with member access — 0 errors"), check_error_count(shared_node_decl + mlc::String("fn f(nodes: [Shared<Node>]) -> [string] = nodes.flat_map(node => [node.name])")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: any on Shared<T> with member access — 0 errors"), check_error_count(shared_node_decl + mlc::String("fn f(nodes: [Shared<Node>]) -> bool = nodes.any(node => node.value > 0)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: all on Shared<T> with member access — 0 errors"), check_error_count(shared_node_decl + mlc::String("fn f(nodes: [Shared<Node>]) -> bool = nodes.all(node => node.value > 0)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: none on Shared<T> with member access — 0 errors"), check_error_count(shared_node_decl + mlc::String("fn f(nodes: [Shared<Node>]) -> bool = nodes.none(node => node.value > 0)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: find on Shared<T> with member access — 0 errors"), check_error_count(shared_node_decl + mlc::String("type Option<T> = Some(T) | None\n") + mlc::String("fn f(nodes: [Shared<Node>]) -> Option<Shared<Node>> = nodes.find(node => node.value > 0)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: sort_by on Shared<T> with member access — 0 errors"), check_error_count(shared_node_decl + mlc::String("fn f(nodes: [Shared<Node>]) -> [Shared<Node>] = nodes.sort_by(node => node.value)")), 0));
+results.push_back(test_runner::assert_eq_int(mlc::String("infer: filter on Shared<T> with member access — 0 errors"), check_error_count(shared_node_decl + mlc::String("fn f(nodes: [Shared<Node>]) -> [Shared<Node>] = nodes.filter(node => node.value > 0)")), 0));
 return results;
 }
 

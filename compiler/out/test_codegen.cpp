@@ -14,6 +14,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "registry.hpp"
+#include "ctor_info.hpp"
 
 namespace test_codegen {
 
@@ -31,6 +32,7 @@ using namespace semantic_ir;
 using namespace semantic_ir;
 using namespace registry;
 using namespace registry;
+using namespace ctor_info;
 using namespace ast_tokens;
 
 std::shared_ptr<registry::Type> i32_t() noexcept;
@@ -269,6 +271,23 @@ mlc::String codegen_invariant_if_else_flattened = mlc::String("fn merge_unknown_
 mlc::String codegen_if_else_flat_cpp = module::gen_program(decls::parse_program(lexer::tokenize(codegen_invariant_if_else_flattened).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: flattened else branch references helper"), codegen_if_else_flat_cpp, mlc::String("merge_unknown_inner")));
 results.push_back(codegen_test_helpers::assert_code_not_contains(mlc::String("gen_program: flattened if/else has no stray export marker"), codegen_if_else_flat_cpp, mlc::String("export_;")));
+ast::Program point_type = decls::parse_program(lexer::tokenize(mlc::String("type Point = Point(i32, Shared<i32>)")).tokens);
+mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> point_infos = ctor_info::build_ctor_type_infos_from_decls(point_type.decls);
+results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: build from sum type — 1 info"), point_infos.size(), 1));
+results.push_back(test_runner::assert_eq_str(mlc::String("ctor_info: build — correct name"), point_infos[0]->name, mlc::String("Point")));
+results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: build — shared_pos has 1 entry"), point_infos[0]->shared_pos.size(), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: build — shared_pos[0] == 1"), point_infos[0]->shared_pos[0], 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: build — shared_arr_pos empty"), point_infos[0]->shared_arr_pos.size(), 0));
+std::shared_ptr<ctor_info::CtorTypeInfo> found_info = ctor_info::lookup_ctor_type_info(point_infos, mlc::String("Point"));
+results.push_back(test_runner::assert_eq_str(mlc::String("ctor_info: lookup — finds by name"), found_info->name, mlc::String("Point")));
+std::shared_ptr<ctor_info::CtorTypeInfo> missing_info = ctor_info::lookup_ctor_type_info(point_infos, mlc::String("Missing"));
+results.push_back(test_runner::assert_eq_str(mlc::String("ctor_info: lookup — missing returns empty name"), missing_info->name, mlc::String("")));
+ast::Program multi_type = decls::parse_program(lexer::tokenize(mlc::String("type Tree = Leaf | Node(Shared<i32>, [Shared<i32>])")).tokens);
+mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> multi_infos = ctor_info::build_ctor_type_infos_from_decls(multi_type.decls);
+results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: multi-variant — 1 info (VarUnit excluded)"), multi_infos.size(), 1));
+std::shared_ptr<ctor_info::CtorTypeInfo> node_info = ctor_info::lookup_ctor_type_info(multi_infos, mlc::String("Node"));
+results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: Node shared_pos — 1"), node_info->shared_pos.size(), 1));
+results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: Node shared_arr_pos — 1"), node_info->shared_arr_pos.size(), 1));
 return results;
 }
 

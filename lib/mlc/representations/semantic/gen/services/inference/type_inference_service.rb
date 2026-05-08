@@ -243,7 +243,10 @@ module MLC
               end
 
               case member_name
-              when "map", "filter"
+              when "map", "filter",
+                   "flat_map", "any", "all", "none", "find", "find_index",
+                   "sort_by", "uniq_by", "group_by", "partition", "count",
+                   "take_while", "drop_while", "each"
                 object_type.is_a?(SemanticIR::ArrayType) ? [object_type.element_type] : []
               when "fold"
                 return [] unless object_type.is_a?(SemanticIR::ArrayType)
@@ -897,8 +900,8 @@ module MLC
                   "index_of" => { args: 1, ret: ->(_t) { prim("i32") } },
                   "concat" => { args: 1, ret: ->(t) { array_of(t) } },
                   "append" => { args: 1, ret: ->(t) { array_of(t) } },
-                  "zip" => { args: 1, ret: ->(_t) { prim("auto") } },
-                  "enumerate" => { args: 0, ret: ->(_t) { prim("auto") } },
+                  "zip" => { args: 1, ret: ->(_t) { SemanticIR::ArrayType.new(element_type: prim("auto")) } },
+                  "enumerate" => { args: 0, ret: ->(_t) { SemanticIR::ArrayType.new(element_type: prim("auto")) } },
                   "min" => { args: 0, ret: ->(t) { element_type_of(t) } },
                   "max" => { args: 0, ret: ->(t) { element_type_of(t) } },
                   "slice" => { args: nil, ret: ->(t) { SemanticIR::ArrayType.new(element_type: t.element_type) } },
@@ -919,7 +922,7 @@ module MLC
                   "rotate" => { args: 1, ret: ->(t) { array_of(t) } },
                   "sample" => { args: 0, ret: ->(t) { element_type_of(t) } },
                   "product" => { args: 0, ret: ->(t) { element_type_of(t) } },
-                  "flat_map" => { args: 1, ret: ->(_t) { prim("auto") } },
+                  "flat_map" => { args: 1, ret: ->(_t) { SemanticIR::ArrayType.new(element_type: prim("auto")) } },
                   # Mutating methods (require let mut)
                   "push" => { args: 1, ret: ->(_t) { SemanticIR::UnitType.new } }, # rubocop:disable Lint/UnusedBlockArgument
                   "pop" => { args: 0, ret: ->(_t) { SemanticIR::UnitType.new } }, # rubocop:disable Lint/UnusedBlockArgument

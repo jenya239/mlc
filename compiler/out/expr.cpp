@@ -234,7 +234,7 @@ mlc::String expression_operation_statement(mlc::String operation, mlc::String le
 
 mlc::String suffix_semicolon_newline(mlc::String expression_code) noexcept{return expression_code + mlc::String(";\n");}
 
-mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line) noexcept{return mlc::String("auto ") + result_variable + mlc::String(" = ") + inner_code + mlc::String(";\n") + mlc::String("if (std::get_if<1>(&") + result_variable + mlc::String(")) return *std::get_if<1>(&") + result_variable + mlc::String(");\n") + success_line;}
+mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line) noexcept{return mlc::String("auto ") + result_variable + mlc::String(" = ") + inner_code + mlc::String(";\nif (std::get_if<1>(&") + result_variable + mlc::String(")) return *std::get_if<1>(&") + result_variable + mlc::String(");\n") + success_line;}
 
 mlc::String auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept{return mlc::String("auto ") + binding_cpp_safe + mlc::String(" = ") + value_code + mlc::String(";\n");}
 
@@ -364,7 +364,7 @@ mlc::String implementation_define_main_as_user_main_line() noexcept{return mlc::
 
 mlc::String implementation_include_quotefile_line(mlc::String header_filename) noexcept{return mlc::String("#include \"") + header_filename + mlc::String("\"\n");}
 
-mlc::String bootstrap_host_main_calling_namespaced_user_main(mlc::String qualified_namespace) noexcept{return mlc::String("\n#undef main\n\n") + mlc::String("static void mlc_cli_set_args(int argc, char** argv) {\n") + mlc::String("  std::vector<mlc::String> arguments;\n") + mlc::String("  arguments.reserve(argc > 0 ? argc - 1 : 0);\n") + mlc::String("  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n") + mlc::String("  mlc::io::set_args(std::move(arguments));\n") + mlc::String("}\n\n") + mlc::String("int main(int argc, char** argv) {\n") + mlc::String("  mlc_cli_set_args(argc, argv);\n") + mlc::String("  return ::") + qualified_namespace + mlc::String("::mlc_user_main(argc, argv);\n") + mlc::String("}\n");}
+mlc::String bootstrap_host_main_calling_namespaced_user_main(mlc::String qualified_namespace) noexcept{return mlc::String("\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::") + qualified_namespace + mlc::String("::mlc_user_main(argc, argv);\n}\n");}
 
 mlc::String cpp_template_typename_header_line(mlc::String template_parameter_list) noexcept{return mlc::String("template<typename ") + template_parameter_list + mlc::String(">\n");}
 
