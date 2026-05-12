@@ -3,7 +3,7 @@
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
 import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from '../ast'
-import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TUnknown, TF64, TI64, TU8, TUsize, TChar, TBool, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from './registry'
+import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from './registry'
 import {
   binary_operation_result_type,
   builtin_method_return_type,
@@ -84,11 +84,28 @@ export fn empty_transform_context() -> TransformContext =
 export fn transform_context_with_env(base: TransformContext, type_env: Map<string, Shared<Type>>) -> TransformContext =
   TransformContext { type_env, registry: base.registry }
 
-fn tunk_args(count: i32) -> [Shared<Type>] = do
-  const args: [Shared<Type>] = []; let mut i = 0
-  while i < count do args.push(Shared.new(TUnknown)); i = i + 1 end
-  args
-end
+// --- Named arg resolution (for transform, no error reporting) ---------------
+
+fn transform_expression_is_named_argument(argument_expression: Shared<Expr>) -> bool =
+  match argument_expression {
+    ExprNamedArg(_, _, _) => true,
+    _ => false
+  }
+
+fn transform_has_named_args(args: [Shared<Expr>]) -> bool =
+  args.any(transform_expression_is_named_argument)
+
+fn transform_find_param_slot(parameter_names: [string], sought_parameter_name: string) -> i32 =
+  parameter_names.find_index(parameter_name => parameter_name == sought_parameter_name)
+
+fn transform_inner_after_stripping_named_label(argument_expression: Shared<Expr>) -> Shared<Expr> =
+  match argument_expression {
+    ExprNamedArg(_, inner_expression, _) => inner_expression,
+    _ => argument_expression
+  }
+
+fn transform_strip_labels(args: [Shared<Expr>]) -> [Shared<Expr>] =
+  args.map(transform_inner_after_stripping_named_label)
 
 // Coerce an SExpr to a target type: empty arrays adopt target element type;
 // phantom-typed records adopt target TGeneric type.
@@ -137,41 +154,6 @@ export type TransformStmtsResult = TransformStmtsResult {
   type_env:   Map<string, Shared<Type>>
 }
 
-// --- Named arg resolution (for transform, no error reporting) ---------------
-
-fn transform_has_named_args(args: [Shared<Expr>]) -> bool = do
-  let mut i = 0; let mut found = false
-  while i < args.length() do
-    match args[i] {
-      ExprNamedArg(_, _, _) => do found = true; () end,
-      _ => ()
-    }
-    i = i + 1
-  end
-  found
-end
-
-fn transform_find_param_slot(param_names: [string], name: string) -> i32 = do
-  let mut i = 0; let mut slot = -1
-  while i < param_names.length() do
-    if param_names[i] == name then slot = i end
-    i = i + 1
-  end
-  slot
-end
-
-fn transform_strip_labels(args: [Shared<Expr>]) -> [Shared<Expr>] = do
-  const stripped: [Shared<Expr>] = []; let mut i = 0
-  while i < args.length() do
-    match args[i] {
-      ExprNamedArg(_, inner, _) => stripped.push(inner),
-      _ => stripped.push(args[i])
-    }
-    i = i + 1
-  end
-  stripped
-end
-
 fn transform_reorder_to_positional(args: [Shared<Expr>], param_names: [string]) -> [Shared<Expr>] = do
   const n = param_names.length()
   let mut result: [Shared<Expr>] = []; let mut filled: [i32] = []
@@ -218,40 +200,84 @@ fn reorder_named_args_for_transform(args: [Shared<Expr>], callee_name: string, r
 
 // --- Helpers ----------------------------------------------------------------
 
-fn transform_exprs(expressions: [Shared<Expr>], transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SExpr>] = do
-  let mut result: [Shared<SExpr>] = []
-  let mut index = 0
-  while index < expressions.length() do
-    result.push(transform_expr(expressions[index], transform_context, stmts_fn))
-    index = index + 1
-  end
-  result
-end
+fn standalone_unknown_cell() -> Shared<Type> =
+  Shared.new(TUnknown)
 
-fn transform_field_vals(field_values: [Shared<FieldVal>], transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SFieldVal>] = do
-  let mut result: [Shared<SFieldVal>] = []
-  let mut index = 0
-  while index < field_values.length() do
-    const typed_val = transform_expr(field_values[index].val, transform_context, stmts_fn)
-    result.push(Shared.new(SFieldVal { name: field_values[index].name, val: typed_val }))
-    index = index + 1
-  end
-  result
-end
+fn transform_exprs(expressions: [Shared<Expr>], transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SExpr>] =
+  expressions.map(
+    expression_under_transform =>
+      transform_expr(expression_under_transform, transform_context, stmts_fn))
+
+fn semantic_field_val_from_source_field_after_transform(
+  field_value_under_transform: Shared<FieldVal>,
+  transform_context: TransformContext,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SFieldVal> =
+  Shared.new(SFieldVal {
+    name: field_value_under_transform.name,
+    val:
+      transform_expr(field_value_under_transform.val, transform_context, stmts_fn),
+  })
+
+fn transform_field_vals(field_values: [Shared<FieldVal>], transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SFieldVal>] =
+  field_values.map(field_value_under_transform =>
+    semantic_field_val_from_source_field_after_transform(
+      field_value_under_transform,
+      transform_context,
+      stmts_fn))
 
 fn build_transform_substitution(subject_type: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
   const substitution: Map<string, Shared<Type>> = Map.new()
   match subject_type {
-    TGeneric(type_name, type_args) => do
-      const param_names = registry.algebraic_decl_type_parameter_names_for(type_name)
-      let mut i = 0
-      while i < param_names.length() && i < type_args.length() do
-        substitution.set(param_names[i], type_args[i]); i = i + 1
+    TGeneric(type_name, type_arguments) => do
+      const algebraic_parameter_names =
+        registry.algebraic_decl_type_parameter_names_for(type_name)
+      let mut algebraic_argument_slot = 0
+      while
+        algebraic_argument_slot < algebraic_parameter_names.length()
+        && algebraic_argument_slot < type_arguments.length()
+      do
+        substitution.set(
+          algebraic_parameter_names[algebraic_argument_slot],
+          type_arguments[algebraic_argument_slot])
+        algebraic_argument_slot = algebraic_argument_slot + 1
       end
     end,
-    _ => do end
+    _ => do end,
   }
   substitution
+end
+
+fn transform_single_match_arm(
+  arm: Shared<MatchArm>,
+  transform_context: TransformContext,
+  substitution: Map<string, Shared<Type>>,
+  scrutinee_type: Shared<Type>,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SMatchArm> = do
+  const arm_environment_after_pattern =
+    env_for_pattern_substituted(
+      transform_context.type_env,
+      arm.pat,
+      transform_context.registry,
+      substitution,
+      scrutinee_type)
+  const arm_transform_context =
+    transform_context_with_env(transform_context, arm_environment_after_pattern)
+  const typed_body_expression =
+    transform_expr(arm.body, arm_transform_context, stmts_fn)
+  const typed_guard_expression =
+    if arm.has_guard then
+      transform_expr(arm.when_condition, arm_transform_context, stmts_fn)
+    else
+      Shared.new(SExprBool(true, Shared.new(TBool), span_unknown()))
+    end
+  Shared.new(SMatchArm {
+    pat: arm.pat,
+    has_guard: arm.has_guard,
+    when_condition: typed_guard_expression,
+    body: typed_body_expression,
+  })
 end
 
 fn transform_match_arms(
@@ -260,26 +286,47 @@ fn transform_match_arms(
   substitution: Map<string, Shared<Type>>,
   scrutinee_type: Shared<Type>,
   stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
-) -> [Shared<SMatchArm>] = do
-  let mut result: [Shared<SMatchArm>] = []
-  let mut index = 0
-  while index < arms.length() do
-    const arm_env     = env_for_pattern_substituted(transform_context.type_env, arms[index].pat, transform_context.registry, substitution, scrutinee_type)
-    const arm_context = transform_context_with_env(transform_context, arm_env)
-    const typed_body  = transform_expr(arms[index].body, arm_context, stmts_fn)
-    const typed_guard =
-      if arms[index].has_guard then transform_expr(arms[index].when_condition, arm_context, stmts_fn)
-      else Shared.new(SExprBool(true, Shared.new(TBool), span_unknown()))
-      end
-    result.push(Shared.new(SMatchArm {
-      pat: arms[index].pat,
-      has_guard: arms[index].has_guard,
-      when_condition: typed_guard,
-      body: typed_body
-    }))
-    index = index + 1
-  end
-  result
+) -> [Shared<SMatchArm>] =
+  arms.map(arm_under_transform =>
+    transform_single_match_arm(
+      arm_under_transform,
+      transform_context,
+      substitution,
+      scrutinee_type,
+      stmts_fn))
+
+type Transform_lambda_parameter_types_fold_state = Transform_lambda_parameter_types_fold_state {
+  type_environment:             Map<string, Shared<Type>>,
+  parameter_type_vector:        [Shared<Type>],
+  next_explicit_type_position: i32,
+}
+
+fn lambda_environment_assign_unknown_placeholder(
+  type_environment_map: Map<string, Shared<Type>>,
+  parameter_binding_name: string
+) -> Map<string, Shared<Type>> = do
+  type_environment_map.set(parameter_binding_name, standalone_unknown_cell())
+  type_environment_map
+end
+
+fn transform_lambda_parameter_types_environment_fold_step(
+  state: Transform_lambda_parameter_types_fold_state,
+  parameter_binding_name: string,
+  optional_explicit_parameter_types: [Shared<Type>]
+) -> Transform_lambda_parameter_types_fold_state = do
+  const resolved_parameter_type =
+    if state.next_explicit_type_position < optional_explicit_parameter_types.length() then
+      optional_explicit_parameter_types[state.next_explicit_type_position]
+    else
+      standalone_unknown_cell()
+    end
+  state.type_environment.set(parameter_binding_name, resolved_parameter_type)
+  state.parameter_type_vector.push(resolved_parameter_type)
+  Transform_lambda_parameter_types_fold_state {
+    type_environment:             state.type_environment,
+    parameter_type_vector:        state.parameter_type_vector,
+    next_explicit_type_position: state.next_explicit_type_position + 1,
+  }
 end
 
 fn transform_expr_lambda_with_param_types(
@@ -290,24 +337,30 @@ fn transform_expr_lambda_with_param_types(
   transform_context: TransformContext,
   stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
 ) -> Shared<SExpr> = do
-  let lambda_env = transform_context.type_env
-  let mut parameter_type_vec: [Shared<Type>] = []
-  let mut parameter_index = 0
-  while parameter_index < parameter_names.length() do
-    const pt =
-      if parameter_index < parameter_types.length() then parameter_types[parameter_index]
-      else Shared.new(TUnknown)
-      end
-    parameter_type_vec.push(pt)
-    lambda_env.set(parameter_names[parameter_index], pt)
-    parameter_index = parameter_index + 1
-  end
-  const lambda_context = transform_context_with_env(transform_context, lambda_env)
-  const typed_body     = transform_expr(body, lambda_context, stmts_fn)
+  let lambda_environment = transform_context.type_env
+  const lambda_parameter_accumulator_after_bind =
+    parameter_names.fold(
+      Transform_lambda_parameter_types_fold_state {
+        type_environment:             lambda_environment,
+        parameter_type_vector:        [],
+        next_explicit_type_position:  0,
+      },
+      (accumulator, parameter_binding_name) =>
+        transform_lambda_parameter_types_environment_fold_step(
+          accumulator,
+          parameter_binding_name,
+          parameter_types))
+  const lambda_context =
+    transform_context_with_env(transform_context, lambda_parameter_accumulator_after_bind.type_environment)
+  const typed_body =
+    transform_expr(body, lambda_context, stmts_fn)
   Shared.new(SExprLambda(
     parameter_names,
     typed_body,
-    Shared.new(TFn(parameter_type_vec, sexpr_type(typed_body))),
+    Shared.new(
+      TFn(
+        lambda_parameter_accumulator_after_bind.parameter_type_vector,
+        sexpr_type(typed_body))),
     source_span))
 end
 
@@ -360,6 +413,16 @@ fn transform_array_hof_method_arguments(
   end
   out
 end
+
+fn inferred_types_from_record_literal_part_for_merge(
+  literal_record_part: RecordLitPart,
+  inference_context_for_spread: CheckContext
+) -> [Shared<Type>] =
+  match literal_record_part {
+    RecordLitSpread(spread_expression) =>
+      [infer_expr(spread_expression, inference_context_for_spread).inferred_type],
+    RecordLitFields(_) => [],
+  }
 
 // --- Expression transform ---------------------------------------------------
 
@@ -443,24 +506,14 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
       const typed_object = transform_expr(object, transform_context, stmts_fn)
       if should_infer_result_option_combinator(sexpr_type(typed_object), method_name) then
         const typed_args   = transform_exprs(method_arguments, transform_context, stmts_fn)
-        let mut arg_types: [Shared<Type>] = []
-        let mut arg_index = 0
-        while arg_index < typed_args.length() do
-          arg_types.push(sexpr_type(typed_args[arg_index]))
-          arg_index = arg_index + 1
-        end
+        const arg_types = typed_args.map(typed_argument => sexpr_type(typed_argument))
         const result_type = result_option_hof_call_result_type(
           sexpr_type(typed_object), method_name, arg_types)
         Shared.new(SExprMethod(typed_object, method_name, typed_args, result_type, source_span))
       else if type_is_array(sexpr_type(typed_object)) && is_array_hof_method(method_name) then
         const typed_args = transform_array_hof_method_arguments(
           typed_object, method_name, method_arguments, transform_context, stmts_fn)
-        let mut arg_types: [Shared<Type>] = []
-        let mut arg_index = 0
-        while arg_index < typed_args.length() do
-          arg_types.push(sexpr_type(typed_args[arg_index]))
-          arg_index = arg_index + 1
-        end
+        const arg_types = typed_args.map(typed_argument => sexpr_type(typed_argument))
         const elem        = array_element_type_from_array_type(sexpr_type(typed_object))
         const result_type = array_hof_call_result_type(elem, method_name, arg_types)
         Shared.new(SExprMethod(typed_object, method_name, typed_args, result_type, source_span))
@@ -547,19 +600,13 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
       if !record_lit_merge.record_literal_contains_spread(lit_parts) then
         merged_field_values_for_transform = record_lit_merge.collect_explicit_field_values_flat(lit_parts)
       else do
-        let mut spread_types_for_merge: [Shared<Type>] = []
         const inference_context_for_literal_spreads =
           check_context_new(transform_context.type_env, transform_context.registry)
-        let mut literal_part_index = 0
-        while literal_part_index < lit_parts.length() do
-          match lit_parts[literal_part_index] {
-            RecordLitSpread(spread_expression) =>
-              spread_types_for_merge.push(
-                infer_expr(spread_expression, inference_context_for_literal_spreads).inferred_type),
-            RecordLitFields(_) => (),
-          }
-          literal_part_index = literal_part_index + 1
-        end
+        const spread_types_for_merge =
+          lit_parts.flat_map(part_under_merge =>
+            inferred_types_from_record_literal_part_for_merge(
+              part_under_merge,
+              inference_context_for_literal_spreads))
         merged_field_values_for_transform =
           record_lit_merge.merge_record_literal_parts_to_field_values(
             type_name, lit_parts, transform_context.registry, spread_types_for_merge)
@@ -573,7 +620,11 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
       const phantom = transform_context.registry.phantom_type_params_for(type_name)
       const all_params = transform_context.registry.algebraic_decl_type_parameter_names_for(type_name)
       const expr_type = if all_params.length() > 0 && phantom.length() == all_params.length()
-        then Shared.new(TGeneric(type_name, tunk_args(all_params.length())))
+        then
+          Shared.new(
+            TGeneric(
+              type_name,
+              all_params.map(_algebraic_type_parameter_placeholder => standalone_unknown_cell())))
         else Shared.new(TNamed(type_name)) end
       Shared.new(SExprRecord(type_name, typed_fields, expr_type, source_span))
     end,
@@ -598,12 +649,8 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
         Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
       else
         const typed = transform_exprs(elements, transform_context, stmts_fn)
-        let mut tuple_types: [Shared<Type>] = []
-        let mut ti = 0
-        while ti < typed.length() do
-          tuple_types.push(sexpr_type(typed[ti]))
-          ti = ti + 1
-        end
+        const tuple_types =
+          typed.map(typed_tuple_member => sexpr_type(typed_tuple_member))
         Shared.new(SExprTuple(typed, Shared.new(TTuple(tuple_types)), source_span))
       end
     end,
@@ -619,15 +666,16 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     end,
 
     ExprLambda(parameter_names, body, source_span) => do
-      let lambda_env = transform_context.type_env
-      let mut parameter_types: [Shared<Type>] = []
-      let mut parameter_index = 0
-      while parameter_index < parameter_names.length() do
-        parameter_types.push(Shared.new(TUnknown))
-        lambda_env.set(parameter_names[parameter_index], Shared.new(TUnknown))
-        parameter_index = parameter_index + 1
-      end
-      const lambda_context = transform_context_with_env(transform_context, lambda_env)
+      let lambda_environment = transform_context.type_env
+      const parameter_types =
+        parameter_names.map(parameter_binding_placeholder => standalone_unknown_cell())
+      parameter_names.fold(
+        lambda_environment,
+        (environment_map, parameter_binding_name) =>
+          lambda_environment_assign_unknown_placeholder(
+            environment_map,
+            parameter_binding_name))
+      const lambda_context = transform_context_with_env(transform_context, lambda_environment)
       const typed_body     = transform_expr(body, lambda_context, stmts_fn)
       const function_type  = Shared.new(TFn(parameter_types, sexpr_type(typed_body)))
       Shared.new(SExprLambda(parameter_names, typed_body, function_type, source_span))
