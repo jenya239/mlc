@@ -35,6 +35,10 @@ bool param_defaults_in_tail(mlc::Array<std::shared_ptr<ast::Param>> parameters) 
 
 bool default_expr_mvp_ok(std::shared_ptr<ast::Expr> e) noexcept;
 
+mlc::Array<ast::Diagnostic> accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_parameters(mlc::Array<ast::Diagnostic> diagnostics_accumulator_so_far, std::shared_ptr<ast::TypeVariant> variant_under_generic_scan) noexcept;
+
+mlc::Array<ast::Diagnostic> accumulate_diagnostics_after_literal_record_default_checks(mlc::Array<ast::Diagnostic> diagnostics_accumulator_so_far, std::shared_ptr<ast::TypeVariant> variant_under_literal_scan, check_context::CheckContext record_default_inference_context, registry::TypeRegistry registry) noexcept;
+
 mlc::Array<ast::Diagnostic> record_field_default_value_diagnostics(mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, registry::TypeRegistry registry) noexcept;
 
 bool is_extern_body(std::shared_ptr<ast::Expr> e) noexcept;
@@ -45,11 +49,19 @@ bool type_parameter_name_known(mlc::Array<mlc::String> type_parameter_names, mlc
 
 mlc::Array<ast::Diagnostic> where_clause_unknown_parameter_diagnostics(mlc::Array<mlc::String> type_parameter_names, mlc::Array<ast::WhereClauseBound> where_entries, ast::Span source_span) noexcept;
 
+mlc::HashMap<mlc::String, bool> global_names_merge_type_constructor_variant_into_map(mlc::HashMap<mlc::String, bool> global_names_so_far, std::shared_ptr<ast::TypeVariant> type_constructor_variant_under_scan) noexcept;
+
+mlc::HashMap<mlc::String, bool> global_names_merge_trait_method_into_map(mlc::HashMap<mlc::String, bool> global_names_so_far, std::shared_ptr<ast::Decl> method_declaration_under_scan) noexcept;
+
+mlc::HashMap<mlc::String, bool> global_names_merge_single_declaration_into_map(mlc::HashMap<mlc::String, bool> global_names_so_far, std::shared_ptr<ast::Decl> declaration_under_scan) noexcept;
+
 mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept;
 
 bool type_is_checkable(std::shared_ptr<registry::Type> type_value, registry::TypeRegistry registry) noexcept;
 
 bool CheckOut_has_errors(check::CheckOut self) noexcept;
+
+mlc::Array<ast::Diagnostic> accumulate_diagnostics_for_single_extend_method(mlc::String extend_type_name, std::shared_ptr<ast::Decl> method_declaration_shared_under_scan, registry::TypeRegistry registry) noexcept;
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full(ast::Program entry, ast::Program full_program) noexcept;
 
@@ -81,76 +93,52 @@ return true;
 
 bool default_expr_mvp_ok(std::shared_ptr<ast::Expr> e) noexcept{return [&]() { if (std::holds_alternative<ast::ExprInt>((*e)._)) { auto _v_exprint = std::get<ast::ExprInt>((*e)._); auto [_w0, _w1] = _v_exprint; return true; } if (std::holds_alternative<ast::ExprStr>((*e)._)) { auto _v_exprstr = std::get<ast::ExprStr>((*e)._); auto [_w0, _w1] = _v_exprstr; return true; } if (std::holds_alternative<ast::ExprBool>((*e)._)) { auto _v_exprbool = std::get<ast::ExprBool>((*e)._); auto [_w0, _w1] = _v_exprbool; return true; } if (std::holds_alternative<ast::ExprUnit>((*e)._)) { auto _v_exprunit = std::get<ast::ExprUnit>((*e)._); auto [_w0] = _v_exprunit; return true; } if (std::holds_alternative<ast::ExprFloat>((*e)._)) { auto _v_exprfloat = std::get<ast::ExprFloat>((*e)._); auto [_w0, _w1] = _v_exprfloat; return true; } if (std::holds_alternative<ast::ExprI64>((*e)._)) { auto _v_expri64 = std::get<ast::ExprI64>((*e)._); auto [_w0, _w1] = _v_expri64; return true; } if (std::holds_alternative<ast::ExprU8>((*e)._)) { auto _v_expru8 = std::get<ast::ExprU8>((*e)._); auto [_w0, _w1] = _v_expru8; return true; } if (std::holds_alternative<ast::ExprUsize>((*e)._)) { auto _v_exprusize = std::get<ast::ExprUsize>((*e)._); auto [_w0, _w1] = _v_exprusize; return true; } if (std::holds_alternative<ast::ExprChar>((*e)._)) { auto _v_exprchar = std::get<ast::ExprChar>((*e)._); auto [_w0, _w1] = _v_exprchar; return true; } return false; }();}
 
+mlc::Array<ast::Diagnostic> accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_parameters(mlc::Array<ast::Diagnostic> diagnostics_accumulator_so_far, std::shared_ptr<ast::TypeVariant> variant_under_generic_scan) noexcept{return std::visit(overloaded{
+  [&](const VarRecord& varrecord) -> mlc::Array<ast::Diagnostic> { auto [_w0, field_definitions_under_variant, _w1] = varrecord; return field_definitions_under_variant.fold(diagnostics_accumulator_so_far, [](mlc::Array<ast::Diagnostic> diagnostic_list_so_far_under_record, std::shared_ptr<ast::FieldDef> record_field_definition_under_scan)  { return [&]() -> mlc::Array<ast::Diagnostic> { 
+  if (record_field_definition_under_scan->has_default_expression){
+{
+diagnostic_list_so_far_under_record.push_back(ast::diagnostic_error(mlc::String("record field default values are not supported when the type has generic parameters"), ast::span_unknown()));
+}
+}
+  return diagnostic_list_so_far_under_record;
+ }(); }); },
+  [&](const VarTuple& vartuple) -> mlc::Array<ast::Diagnostic> { auto [_w0, _w1, _w2] = vartuple; return diagnostics_accumulator_so_far; },
+  [&](const VarUnit& varunit) -> mlc::Array<ast::Diagnostic> { auto [_w0, _w1] = varunit; return diagnostics_accumulator_so_far; }
+}, (*variant_under_generic_scan));}
+
+mlc::Array<ast::Diagnostic> accumulate_diagnostics_after_literal_record_default_checks(mlc::Array<ast::Diagnostic> diagnostics_accumulator_so_far, std::shared_ptr<ast::TypeVariant> variant_under_literal_scan, check_context::CheckContext record_default_inference_context, registry::TypeRegistry registry) noexcept{return std::visit(overloaded{
+  [&](const VarRecord& varrecord) -> mlc::Array<ast::Diagnostic> { auto [_w0, field_definitions_under_literal_scan, _w1] = varrecord; return field_definitions_under_literal_scan.fold(diagnostics_accumulator_so_far, [record_default_inference_context, registry](mlc::Array<ast::Diagnostic> diagnostic_list_so_far_under_fields, std::shared_ptr<ast::FieldDef> record_field_under_literal_definition)  { return !record_field_under_literal_definition->has_default_expression ? diagnostic_list_so_far_under_fields : [&]() -> mlc::Array<ast::Diagnostic> { 
+  std::shared_ptr<ast::Expr> default_ast_expression = record_field_under_literal_definition->default_expression;
+  mlc::Array<ast::Diagnostic> diagnostics_after_field = diagnostic_list_so_far_under_fields;
+  return !record_field_default_initializer::record_field_default_expression_acceptable_for_codegen(default_ast_expression) ? [&]() -> mlc::Array<ast::Diagnostic> { 
+  diagnostics_after_field.push_back(ast::diagnostic_error(mlc::String("record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)"), ast::expr_span(default_ast_expression)));
+  return diagnostics_after_field;
+ }() : [&]() -> mlc::Array<ast::Diagnostic> { 
+  infer_result::InferResult inferred_default_result = infer::infer_expr(default_ast_expression, record_default_inference_context);
+  diagnostics_after_field = ast::diagnostics_append(diagnostics_after_field, inferred_default_result.errors);
+  std::shared_ptr<registry::Type> annotated_field_type = registry::type_from_annotation(record_field_under_literal_definition->typ);
+  if (type_is_checkable(annotated_field_type, registry) && type_is_checkable(inferred_default_result.inferred_type, registry) && !semantic_type_structure::types_structurally_equal(annotated_field_type, inferred_default_result.inferred_type)){
+{
+diagnostics_after_field.push_back(ast::diagnostic_error(mlc::String("record field default type mismatch for field \"") + record_field_under_literal_definition->name + mlc::String("\""), ast::expr_span(default_ast_expression)));
+}
+}
+  return diagnostics_after_field;
+ }();
+ }(); }); },
+  [&](const VarTuple& vartuple) -> mlc::Array<ast::Diagnostic> { auto [_w0, _w1, _w2] = vartuple; return diagnostics_accumulator_so_far; },
+  [&](const VarUnit& varunit) -> mlc::Array<ast::Diagnostic> { auto [_w0, _w1] = varunit; return diagnostics_accumulator_so_far; }
+}, (*variant_under_literal_scan));}
+
 mlc::Array<ast::Diagnostic> record_field_default_value_diagnostics(mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, registry::TypeRegistry registry) noexcept{
 mlc::Array<ast::Diagnostic> diagnostics_accumulator = {};
 if (type_parameters.size() > 0){
 {
-int generic_variant_scan_index = 0;
-[&]() { 
-  while (generic_variant_scan_index < variants.size()){
-{
-std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [_w0, field_defs_generic_scan, _w1] = varrecord; [&]() { 
-  int generic_field_scan_index = 0;
-  return [&]() { 
-  while (generic_field_scan_index < field_defs_generic_scan.size()){
-{
-if (field_defs_generic_scan[generic_field_scan_index]->has_default_expression){
-{
-diagnostics_accumulator.push_back(ast::diagnostic_error(mlc::String("record field default values are not supported when the type has generic parameters"), ast::span_unknown()));
-}
-}
-generic_field_scan_index = generic_field_scan_index + 1;
-}
-}
- }();
- }(); },
-  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; std::make_tuple(); },
-  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; std::make_tuple(); }
-}, (*variants[generic_variant_scan_index]));
-generic_variant_scan_index = generic_variant_scan_index + 1;
-}
-}
- }();
+diagnostics_accumulator = variants.fold(diagnostics_accumulator, [](mlc::Array<ast::Diagnostic> diagnostics_so_far_across_variants, std::shared_ptr<ast::TypeVariant> variant_shared_under_generic_pass)  { return accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_parameters(diagnostics_so_far_across_variants, variant_shared_under_generic_pass); });
 }
 }
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> empty_record_default_environment = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
 check_context::CheckContext record_default_inference_context = check_context::check_context_new(empty_record_default_environment, registry);
-int literal_variant_scan_index = 0;
-while (literal_variant_scan_index < variants.size()){
-{
-std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [_w0, field_defs_literal_scan, _w1] = varrecord; [&]() { 
-  int literal_field_scan_index = 0;
-  return [&]() { 
-  while (literal_field_scan_index < field_defs_literal_scan.size()){
-{
-if (field_defs_literal_scan[literal_field_scan_index]->has_default_expression){
-{
-std::shared_ptr<ast::Expr> default_ast_expression = field_defs_literal_scan[literal_field_scan_index]->default_expression;
-if (!record_field_default_initializer::record_field_default_expression_acceptable_for_codegen(default_ast_expression)){
-diagnostics_accumulator.push_back(ast::diagnostic_error(mlc::String("record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)"), ast::expr_span(default_ast_expression)));
-} else {
-infer_result::InferResult inferred_default_result = infer::infer_expr(default_ast_expression, record_default_inference_context);
-diagnostics_accumulator = ast::diagnostics_append(diagnostics_accumulator, inferred_default_result.errors);
-std::shared_ptr<registry::Type> annotated_field_type = registry::type_from_annotation(field_defs_literal_scan[literal_field_scan_index]->typ);
-if (type_is_checkable(annotated_field_type, registry) && type_is_checkable(inferred_default_result.inferred_type, registry) && !semantic_type_structure::types_structurally_equal(annotated_field_type, inferred_default_result.inferred_type)){
-diagnostics_accumulator.push_back(ast::diagnostic_error(mlc::String("record field default type mismatch for field \"") + field_defs_literal_scan[literal_field_scan_index]->name + mlc::String("\""), ast::expr_span(default_ast_expression)));
-}
-}
-}
-}
-literal_field_scan_index = literal_field_scan_index + 1;
-}
-}
- }();
- }(); },
-  [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; std::make_tuple(); },
-  [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; std::make_tuple(); }
-}, (*variants[literal_variant_scan_index]));
-literal_variant_scan_index = literal_variant_scan_index + 1;
-}
-}
+diagnostics_accumulator = variants.fold(diagnostics_accumulator, [record_default_inference_context, registry](mlc::Array<ast::Diagnostic> diagnostics_so_far_across_variants, std::shared_ptr<ast::TypeVariant> variant_shared_under_literal_pass)  { return accumulate_diagnostics_after_literal_record_default_checks(diagnostics_so_far_across_variants, variant_shared_under_literal_pass, record_default_inference_context, registry); });
 return diagnostics_accumulator;
 }
 
@@ -163,18 +151,7 @@ if (!param_defaults_in_tail(parameters)){
 out.push_back(ast::diagnostic_error(mlc::String("parameter defaults must be trailing"), ast::expr_span(body)));
 }
 }
-bool has_any_default = false;
-int j = 0;
-while (j < parameters.size()){
-{
-if (parameters[j]->has_default){
-{
-has_any_default = true;
-}
-}
-j = j + 1;
-}
-}
+bool has_any_default = parameters.any([](std::shared_ptr<ast::Param> parameter_under_signature)  { return parameter_under_signature->has_default; });
 if (type_parameters.size() > 0 && has_any_default){
 {
 out.push_back(ast::diagnostic_error(mlc::String("default parameters are not allowed on generic functions yet"), ast::expr_span(body)));
@@ -187,66 +164,81 @@ out.push_back(ast::diagnostic_error(mlc::String("default parameters are not allo
 }
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> empty_type_environment = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
 check_context::CheckContext default_infer_context = check_context::check_context_new(empty_type_environment, registry);
-int p = 0;
-while (p < parameters.size()){
+return parameters.fold(out, [body, default_infer_context, registry](mlc::Array<ast::Diagnostic> diagnostic_list_so_far_under_parameters, std::shared_ptr<ast::Param> parameter_under_scan_for_defaults)  { return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> diagnostics_after_parameter = diagnostic_list_so_far_under_parameters;
+  if (parameter_under_scan_for_defaults->has_default && !param_destructure_expand::parameter_binding_is_plain_identifier(parameter_under_scan_for_defaults)){
 {
-if (parameters[p]->has_default && !param_destructure_expand::parameter_binding_is_plain_identifier(parameters[p])){
-{
-out.push_back(ast::diagnostic_error(mlc::String("default values are not supported for destructuring parameters"), ast::expr_span(body)));
+diagnostics_after_parameter.push_back(ast::diagnostic_error(mlc::String("default values are not supported for destructuring parameters"), ast::expr_span(body)));
 }
 }
-if (parameters[p]->has_default){
+  if (parameter_under_scan_for_defaults->has_default){
 {
-std::shared_ptr<ast::Expr> param_default_expr = parameters[p]->default_;
-if (!default_expr_mvp_ok(param_default_expr)){
-out.push_back(ast::diagnostic_error(mlc::String("parameter default must be a literal in this version"), ast::expr_span(param_default_expr)));
+std::shared_ptr<ast::Expr> param_default_expression = parameter_under_scan_for_defaults->default_;
+if (!default_expr_mvp_ok(param_default_expression)){
+diagnostics_after_parameter.push_back(ast::diagnostic_error(mlc::String("parameter default must be a literal in this version"), ast::expr_span(param_default_expression)));
 } else {
-infer_result::InferResult default_infer = infer::infer_expr(param_default_expr, default_infer_context);
-out = ast::diagnostics_append(out, default_infer.errors);
-std::shared_ptr<registry::Type> param_expected_type = registry::type_from_annotation(ast::param_typ(parameters[p]));
-if (type_is_checkable(param_expected_type, registry) && type_is_checkable(default_infer.inferred_type, registry) && !semantic_type_structure::types_structurally_equal(param_expected_type, default_infer.inferred_type)){
-out.push_back(ast::diagnostic_error(mlc::String("parameter default: expected ") + semantic_type_structure::type_description(param_expected_type) + mlc::String(", got ") + semantic_type_structure::type_description(default_infer.inferred_type), ast::expr_span(param_default_expr)));
+infer_result::InferResult default_infer = infer::infer_expr(param_default_expression, default_infer_context);
+diagnostics_after_parameter = ast::diagnostics_append(diagnostics_after_parameter, default_infer.errors);
+std::shared_ptr<registry::Type> parameter_expected_type = registry::type_from_annotation(ast::param_typ(parameter_under_scan_for_defaults));
+if (type_is_checkable(parameter_expected_type, registry) && type_is_checkable(default_infer.inferred_type, registry) && !semantic_type_structure::types_structurally_equal(parameter_expected_type, default_infer.inferred_type)){
+diagnostics_after_parameter.push_back(ast::diagnostic_error(mlc::String("parameter default: expected ") + semantic_type_structure::type_description(parameter_expected_type) + mlc::String(", got ") + semantic_type_structure::type_description(default_infer.inferred_type), ast::expr_span(param_default_expression)));
 }
 }
 }
 }
-p = p + 1;
-}
-}
-return out;
+  return diagnostics_after_parameter;
+ }(); });
 }
 
-bool type_parameter_name_known(mlc::Array<mlc::String> type_parameter_names, mlc::String candidate_name) noexcept{
-int index = 0;
-while (index < type_parameter_names.size()){
-{
-if (type_parameter_names[index] == candidate_name){
-{
-return true;
-}
-}
-index = index + 1;
-}
-}
-return false;
-}
+bool type_parameter_name_known(mlc::Array<mlc::String> type_parameter_names, mlc::String candidate_name) noexcept{return type_parameter_names.any([candidate_name](mlc::String type_parameter_name_under_scan)  { return type_parameter_name_under_scan == candidate_name; });}
 
 mlc::Array<ast::Diagnostic> where_clause_unknown_parameter_diagnostics(mlc::Array<mlc::String> type_parameter_names, mlc::Array<ast::WhereClauseBound> where_entries, ast::Span source_span) noexcept{
-mlc::Array<ast::Diagnostic> collected = {};
-int entry_index = 0;
-while (entry_index < where_entries.size()){
-{
-ast::WhereClauseBound entry = where_entries[entry_index];
-if (!type_parameter_name_known(type_parameter_names, entry.parameter_name)){
-{
-collected.push_back(ast::diagnostic_error(mlc::String("where clause names unknown type parameter \"") + entry.parameter_name + mlc::String("\""), source_span));
+mlc::Array<ast::Diagnostic> initial_where_clause_diagnostics = {};
+return where_entries.fold(initial_where_clause_diagnostics, [type_parameter_names, source_span](mlc::Array<ast::Diagnostic> diagnostics_accumulated_so_far, ast::WhereClauseBound where_entry_under_scan)  { return type_parameter_name_known(type_parameter_names, where_entry_under_scan.parameter_name) ? diagnostics_accumulated_so_far : [&]() -> mlc::Array<ast::Diagnostic> { 
+  diagnostics_accumulated_so_far.push_back(ast::diagnostic_error(mlc::String("where clause names unknown type parameter \"") + where_entry_under_scan.parameter_name + mlc::String("\""), source_span));
+  return diagnostics_accumulated_so_far;
+ }(); });
 }
-}
-entry_index = entry_index + 1;
-}
-}
-return collected;
-}
+
+mlc::HashMap<mlc::String, bool> global_names_merge_type_constructor_variant_into_map(mlc::HashMap<mlc::String, bool> global_names_so_far, std::shared_ptr<ast::TypeVariant> type_constructor_variant_under_scan) noexcept{return std::visit(overloaded{
+  [&](const VarUnit& varunit) -> mlc::HashMap<mlc::String, bool> { auto [variant_name, _w0] = varunit; return [&]() -> mlc::HashMap<mlc::String, bool> { 
+  global_names_so_far.set(variant_name, true);
+  return global_names_so_far;
+ }(); },
+  [&](const VarTuple& vartuple) -> mlc::HashMap<mlc::String, bool> { auto [variant_name, _w0, _w1] = vartuple; return [&]() -> mlc::HashMap<mlc::String, bool> { 
+  global_names_so_far.set(variant_name, true);
+  return global_names_so_far;
+ }(); },
+  [&](const VarRecord& varrecord) -> mlc::HashMap<mlc::String, bool> { auto [variant_name, _w0, _w1] = varrecord; return [&]() -> mlc::HashMap<mlc::String, bool> { 
+  global_names_so_far.set(variant_name, true);
+  return global_names_so_far;
+ }(); }
+}, (*type_constructor_variant_under_scan));}
+
+mlc::HashMap<mlc::String, bool> global_names_merge_trait_method_into_map(mlc::HashMap<mlc::String, bool> global_names_so_far, std::shared_ptr<ast::Decl> method_declaration_under_scan) noexcept{return [&]() -> mlc::HashMap<mlc::String, bool> { if (std::holds_alternative<ast::DeclFn>((*method_declaration_under_scan))) { auto _v_declfn = std::get<ast::DeclFn>((*method_declaration_under_scan)); auto [function_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() -> mlc::HashMap<mlc::String, bool> { 
+  global_names_so_far.set(function_name, true);
+  return global_names_so_far;
+ }(); } return global_names_so_far; }();}
+
+mlc::HashMap<mlc::String, bool> global_names_merge_single_declaration_into_map(mlc::HashMap<mlc::String, bool> global_names_so_far, std::shared_ptr<ast::Decl> declaration_under_scan) noexcept{return std::visit(overloaded{
+  [&](const DeclFn& declfn) -> mlc::HashMap<mlc::String, bool> { auto [name, _w0, _w1, _w2, _w3, _w4, _w5] = declfn; return [&]() -> mlc::HashMap<mlc::String, bool> { 
+  global_names_so_far.set(name, true);
+  return global_names_so_far;
+ }(); },
+  [&](const DeclType& decltype_) -> mlc::HashMap<mlc::String, bool> { auto [name, _w0, variants, _w1] = decltype_; return [&]() -> mlc::HashMap<mlc::String, bool> { 
+  global_names_so_far.set(name, true);
+  return variants.fold(global_names_so_far, [](mlc::HashMap<mlc::String, bool> names_after_type_definition, std::shared_ptr<ast::TypeVariant> variant_shared_under_scan)  { return global_names_merge_type_constructor_variant_into_map(names_after_type_definition, variant_shared_under_scan); });
+ }(); },
+  [&](const DeclTrait& decltrait) -> mlc::HashMap<mlc::String, bool> { auto [name, _w0, methods] = decltrait; return [&]() -> mlc::HashMap<mlc::String, bool> { 
+  global_names_so_far.set(name, true);
+  return methods.fold(global_names_so_far, [](mlc::HashMap<mlc::String, bool> names_after_trait_definition, std::shared_ptr<ast::Decl> method_declaration_shared_under_scan)  { return global_names_merge_trait_method_into_map(names_after_trait_definition, method_declaration_shared_under_scan); });
+ }(); },
+  [&](const DeclExtend& declextend) -> mlc::HashMap<mlc::String, bool> { auto [_w0, _w1, _w2] = declextend; return global_names_so_far; },
+  [&](const DeclImport& declimport) -> mlc::HashMap<mlc::String, bool> { auto [_w0, _w1] = declimport; return global_names_so_far; },
+  [&](const DeclExported& declexported) -> mlc::HashMap<mlc::String, bool> { auto [_w0] = declexported; return global_names_so_far; },
+  [&](const DeclAssocType& declassoctype) -> mlc::HashMap<mlc::String, bool> { auto [_w0, _w1] = declassoctype; return global_names_so_far; },
+  [&](const DeclAssocBind& declassocbind) -> mlc::HashMap<mlc::String, bool> { auto [_w0, _w1, _w2] = declassocbind; return global_names_so_far; }
+}, (*ast::decl_inner(declaration_under_scan)));}
 
 mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
 mlc::HashMap<mlc::String, bool> names = mlc::HashMap<mlc::String, bool>();
@@ -262,62 +254,7 @@ names.set(mlc::String("Map"), true);
 names.set(mlc::String("Ok"), true);
 names.set(mlc::String("Err"), true);
 names.set(mlc::String("Result"), true);
-int index = 0;
-while (index < program.decls.size()){
-{
-std::visit(overloaded{
-  [&](const DeclFn& declfn) -> std::tuple<> { auto [name, _w0, _w1, _w2, _w3, _w4, _w5] = declfn; return [&]() -> std::tuple<> { 
-  names.set(name, true);
-  return std::make_tuple();
- }(); },
-  [&](const DeclType& decltype_) -> std::tuple<> { auto [name, _w0, variants, _w1] = decltype_; return [&]() -> std::tuple<> { 
-  names.set(name, true);
-  int variant_index = 0;
-  while (variant_index < variants.size()){
-{
-std::visit(overloaded{
-  [&](const VarUnit& varunit) -> std::tuple<> { auto [variant_name, _w0] = varunit; return [&]() -> std::tuple<> { 
-  names.set(variant_name, true);
-  return std::make_tuple();
- }(); },
-  [&](const VarTuple& vartuple) -> std::tuple<> { auto [variant_name, _w0, _w1] = vartuple; return [&]() -> std::tuple<> { 
-  names.set(variant_name, true);
-  return std::make_tuple();
- }(); },
-  [&](const VarRecord& varrecord) -> std::tuple<> { auto [variant_name, _w0, _w1] = varrecord; return [&]() -> std::tuple<> { 
-  names.set(variant_name, true);
-  return std::make_tuple();
- }(); }
-}, (*variants[variant_index]));
-variant_index = variant_index + 1;
-}
-}
-  return std::make_tuple();
- }(); },
-  [&](const DeclTrait& decltrait) -> std::tuple<> { auto [name, _w0, methods] = decltrait; return [&]() -> std::tuple<> { 
-  names.set(name, true);
-  int method_index = 0;
-  while (method_index < methods.size()){
-{
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [function_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() -> std::tuple<> { 
-  names.set(function_name, true);
-  return std::make_tuple();
- }(); } return std::make_tuple(); }();
-method_index = method_index + 1;
-}
-}
-  return std::make_tuple();
- }(); },
-  [&](const DeclExtend& declextend) -> std::tuple<> { auto [_w0, _w1, _w2] = declextend; return std::make_tuple(); },
-  [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },
-  [&](const DeclExported& declexported) -> std::tuple<> { auto [_w0] = declexported; return std::make_tuple(); },
-  [&](const DeclAssocType& declassoctype) -> std::tuple<> { auto [_w0, _w1] = declassoctype; return std::make_tuple(); },
-  [&](const DeclAssocBind& declassocbind) -> std::tuple<> { auto [_w0, _w1, _w2] = declassocbind; return std::make_tuple(); }
-}, (*ast::decl_inner(program.decls[index])));
-index = index + 1;
-}
-}
-return names;
+return program.decls.fold(names, [](mlc::HashMap<mlc::String, bool> global_names_so_far, std::shared_ptr<ast::Decl> declaration_shared_under_program)  { return global_names_merge_single_declaration_into_map(global_names_so_far, declaration_shared_under_program); });
 }
 
 bool type_is_checkable(std::shared_ptr<registry::Type> type_value, registry::TypeRegistry registry) noexcept{return [&]() { if (std::holds_alternative<registry::TI32>((*type_value))) {  return true; } if (std::holds_alternative<registry::TString>((*type_value))) {  return true; } if (std::holds_alternative<registry::TBool>((*type_value))) {  return true; } if (std::holds_alternative<registry::TUnit>((*type_value))) {  return true; } if (std::holds_alternative<registry::TI64>((*type_value))) {  return true; } if (std::holds_alternative<registry::TF64>((*type_value))) {  return true; } if (std::holds_alternative<registry::TU8>((*type_value))) {  return true; } if (std::holds_alternative<registry::TUsize>((*type_value))) {  return true; } if (std::holds_alternative<registry::TChar>((*type_value))) {  return true; } if (std::holds_alternative<registry::TArray>((*type_value))) { auto _v_tarray = std::get<registry::TArray>((*type_value)); auto [inner] = _v_tarray; return type_is_checkable(inner, registry); } if (std::holds_alternative<registry::TPair>((*type_value))) { auto _v_tpair = std::get<registry::TPair>((*type_value)); auto [a, b] = _v_tpair; return type_is_checkable(a, registry) && type_is_checkable(b, registry); } if (std::holds_alternative<registry::TTuple>((*type_value))) { auto _v_ttuple = std::get<registry::TTuple>((*type_value)); auto [ts] = _v_ttuple; return [&]() -> bool { 
@@ -343,6 +280,24 @@ i = i + 1;
  }(); } if (std::holds_alternative<registry::TFn>((*type_value))) { auto _v_tfn = std::get<registry::TFn>((*type_value)); auto [_w0, _w1] = _v_tfn; return true; } if (std::holds_alternative<registry::TShared>((*type_value))) { auto _v_tshared = std::get<registry::TShared>((*type_value)); auto [_w0] = _v_tshared; return true; } if (std::holds_alternative<registry::TNamed>((*type_value))) { auto _v_tnamed = std::get<registry::TNamed>((*type_value)); auto [name] = _v_tnamed; return registry::TypeRegistry_has_fields(registry, name); } if (std::holds_alternative<registry::TAssoc>((*type_value))) { auto _v_tassoc = std::get<registry::TAssoc>((*type_value)); auto [_w0, _w1] = _v_tassoc; return true; } return false; }();}
 
 bool CheckOut_has_errors(check::CheckOut self) noexcept{return self.errors.size() > 0;}
+
+mlc::Array<ast::Diagnostic> accumulate_diagnostics_for_single_extend_method(mlc::String extend_type_name, std::shared_ptr<ast::Decl> method_declaration_shared_under_scan, registry::TypeRegistry registry) noexcept{return [&]() -> mlc::Array<ast::Diagnostic> { if (std::holds_alternative<ast::DeclFn>((*method_declaration_shared_under_scan))) { auto _v_declfn = std::get<ast::DeclFn>((*method_declaration_shared_under_scan)); auto [_w0, type_params, _w1, params, _w2, method_body, where_entries] = _v_declfn; return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> method_related_diagnostics = where_clause_unknown_parameter_diagnostics(type_params, where_entries, ast::expr_span(method_body));
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> method_environment = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
+  int parameter_index = 0;
+  while (parameter_index < params.size()){
+{
+method_environment.set(ast::param_name(params[parameter_index]), registry::type_from_annotation(ast::param_typ(params[parameter_index])));
+parameter_index = parameter_index + 1;
+}
+}
+  check_context::CheckContext extend_context = check_context::CheckContext{method_environment, registry, extend_type_name};
+  infer_result::InferResult method_inference_result = infer::infer_expr(method_body, extend_context);
+  return ast::diagnostics_append(method_related_diagnostics, method_inference_result.errors);
+ }(); } return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty_extend_method_diagnostic_branch = {};
+  return empty_extend_method_diagnostic_branch;
+ }(); }();}
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full(ast::Program entry, ast::Program full_program) noexcept{
 mlc::Array<ast::Diagnostic> all_diagnostics = trait_param_expand::trait_and_type_name_conflict_diagnostics(full_program);
@@ -394,27 +349,7 @@ parameter_index = parameter_index + 1;
  }(); },
   [&](const DeclTrait& decltrait) -> std::tuple<> { auto [_w0, _w1, _w2] = decltrait; return std::make_tuple(); },
   [&](const DeclExtend& declextend) -> std::tuple<> { auto [extend_type_name, _w0, methods] = declextend; return [&]() -> std::tuple<> { 
-  int method_index = 0;
-  while (method_index < methods.size()){
-{
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [_w0, type_params, _w1, params, _w2, method_body, where_entries] = _v_declfn; return [&]() -> std::tuple<> { 
-  all_diagnostics = ast::diagnostics_append(all_diagnostics, where_clause_unknown_parameter_diagnostics(type_params, where_entries, ast::expr_span(method_body)));
-  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> method_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
-  int pi = 0;
-  while (pi < params.size()){
-{
-method_env.set(ast::param_name(params[pi]), registry::type_from_annotation(ast::param_typ(params[pi])));
-pi = pi + 1;
-}
-}
-  check_context::CheckContext extend_context = check_context::CheckContext{method_env, registry, extend_type_name};
-  infer_result::InferResult method_result = infer::infer_expr(method_body, extend_context);
-  all_diagnostics = ast::diagnostics_append(all_diagnostics, method_result.errors);
-  return std::make_tuple();
- }(); } return std::make_tuple(); }();
-method_index = method_index + 1;
-}
-}
+  all_diagnostics = methods.fold(all_diagnostics, [extend_type_name, registry](mlc::Array<ast::Diagnostic> diagnostics_so_far_across_extend_methods, std::shared_ptr<ast::Decl> method_shared_under_extend)  { return ast::diagnostics_append(diagnostics_so_far_across_extend_methods, accumulate_diagnostics_for_single_extend_method(extend_type_name, method_shared_under_extend, registry)); });
   return std::make_tuple();
  }(); },
   [&](const DeclImport& declimport) -> std::tuple<> { auto [_w0, _w1] = declimport; return std::make_tuple(); },

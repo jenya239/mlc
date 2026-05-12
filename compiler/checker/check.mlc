@@ -12,7 +12,7 @@ import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_u
 import { expand_parameter_destructuring_in_program, extern_parameter_destructure_diagnostics, parameter_binding_is_plain_identifier } from './param_destructure_expand'
 import { derive_clause_diagnostics } from './derive_validation'
 import { infer_expr } from './infer'
-import { check_context_new } from './check_context'
+import { check_context_new, CheckContext } from './check_context'
 import { types_structurally_equal, type_is_unknown, type_description } from './semantic_type_structure'
 import { record_field_default_expression_acceptable_for_codegen } from '../record_field_default_initializer'
 import { partial_application_desugar_expr } from './partial_application_desugar'
@@ -42,6 +42,70 @@ fn default_expr_mvp_ok(e: Shared<Expr>) -> bool = match e {
   _ => false
 }
 
+fn accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_parameters(
+  diagnostics_accumulator_so_far: [Diagnostic],
+  variant_under_generic_scan: Shared<TypeVariant>,
+) -> [Diagnostic] =
+  match variant_under_generic_scan {
+    VarRecord(_, field_definitions_under_variant, _) =>
+      field_definitions_under_variant.fold(
+        diagnostics_accumulator_so_far,
+        (diagnostic_list_so_far_under_record, record_field_definition_under_scan) => do
+          if record_field_definition_under_scan.has_default_expression then
+            diagnostic_list_so_far_under_record.push(diagnostic_error(
+              'record field default values are not supported when the type has generic parameters',
+              span_unknown()))
+          end
+          diagnostic_list_so_far_under_record
+        end),
+    VarTuple(_, _, _) => diagnostics_accumulator_so_far,
+    VarUnit(_, _)     => diagnostics_accumulator_so_far,
+  }
+
+fn accumulate_diagnostics_after_literal_record_default_checks(
+  diagnostics_accumulator_so_far: [Diagnostic],
+  variant_under_literal_scan: Shared<TypeVariant>,
+  record_default_inference_context: CheckContext,
+  registry: TypeRegistry,
+) -> [Diagnostic] =
+  match variant_under_literal_scan {
+    VarRecord(_, field_definitions_under_literal_scan, _) =>
+      field_definitions_under_literal_scan.fold(
+        diagnostics_accumulator_so_far,
+        (diagnostic_list_so_far_under_fields, record_field_under_literal_definition) =>
+          if !record_field_under_literal_definition.has_default_expression then
+            diagnostic_list_so_far_under_fields
+          else
+            const default_ast_expression = record_field_under_literal_definition.default_expression
+            let mut diagnostics_after_field: [Diagnostic] = diagnostic_list_so_far_under_fields
+            if !record_field_default_expression_acceptable_for_codegen(default_ast_expression) then
+              diagnostics_after_field.push(diagnostic_error(
+                'record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)',
+                expr_span(default_ast_expression)))
+              diagnostics_after_field
+            else
+              const inferred_default_result =
+                infer_expr(default_ast_expression, record_default_inference_context)
+              diagnostics_after_field =
+                diagnostics_append(diagnostics_after_field, inferred_default_result.errors)
+              const annotated_field_type =
+                type_from_annotation(record_field_under_literal_definition.typ)
+              if type_is_checkable(annotated_field_type, registry) &&
+                 type_is_checkable(inferred_default_result.inferred_type, registry) &&
+                 !types_structurally_equal(annotated_field_type, inferred_default_result.inferred_type) then
+                diagnostics_after_field.push(diagnostic_error(
+                  'record field default type mismatch for field "' +
+                    record_field_under_literal_definition.name + "\"",
+                  expr_span(default_ast_expression)))
+              end
+              diagnostics_after_field
+            end
+          end
+      ),
+    VarTuple(_, _, _) => diagnostics_accumulator_so_far,
+    VarUnit(_, _)     => diagnostics_accumulator_so_far,
+  }
+
 fn record_field_default_value_diagnostics(
   type_parameters: [string],
   variants: [Shared<TypeVariant>],
@@ -49,63 +113,31 @@ fn record_field_default_value_diagnostics(
 ) -> [Diagnostic] = do
   let mut diagnostics_accumulator: [Diagnostic] = []
   if type_parameters.length() > 0 then
-    let mut generic_variant_scan_index = 0
-    while generic_variant_scan_index < variants.length() do
-      match variants[generic_variant_scan_index] {
-        VarRecord(_, field_defs_generic_scan, _) => do
-          let mut generic_field_scan_index = 0
-          while generic_field_scan_index < field_defs_generic_scan.length() do
-            if field_defs_generic_scan[generic_field_scan_index].has_default_expression then
-              diagnostics_accumulator.push(diagnostic_error(
-                'record field default values are not supported when the type has generic parameters',
-                span_unknown()))
-            end
-            generic_field_scan_index = generic_field_scan_index + 1
-          end
-        end,
-        VarTuple(_, _, _) => (),
-        VarUnit(_, _) => (),
-      }
-      generic_variant_scan_index = generic_variant_scan_index + 1
-    end
+    diagnostics_accumulator =
+      variants.fold(
+        diagnostics_accumulator,
+        (
+          diagnostics_so_far_across_variants,
+          variant_shared_under_generic_pass,
+        ) =>
+          accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_parameters(
+            diagnostics_so_far_across_variants,
+            variant_shared_under_generic_pass))
   end
   const empty_record_default_environment: Map<string, Shared<Type>> = Map.new()
   const record_default_inference_context = check_context_new(empty_record_default_environment, registry)
-  let mut literal_variant_scan_index = 0
-  while literal_variant_scan_index < variants.length() do
-    match variants[literal_variant_scan_index] {
-      VarRecord(_, field_defs_literal_scan, _) => do
-        let mut literal_field_scan_index = 0
-        while literal_field_scan_index < field_defs_literal_scan.length() do
-          if field_defs_literal_scan[literal_field_scan_index].has_default_expression then
-            const default_ast_expression = field_defs_literal_scan[literal_field_scan_index].default_expression
-            if !record_field_default_expression_acceptable_for_codegen(default_ast_expression) then
-              diagnostics_accumulator.push(diagnostic_error(
-                'record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)',
-                expr_span(default_ast_expression)))
-            else
-              const inferred_default_result = infer_expr(default_ast_expression, record_default_inference_context)
-              diagnostics_accumulator =
-                diagnostics_append(diagnostics_accumulator, inferred_default_result.errors)
-              const annotated_field_type = type_from_annotation(field_defs_literal_scan[literal_field_scan_index].typ)
-              if type_is_checkable(annotated_field_type, registry) &&
-                 type_is_checkable(inferred_default_result.inferred_type, registry) &&
-                 !types_structurally_equal(annotated_field_type, inferred_default_result.inferred_type) then
-                diagnostics_accumulator.push(diagnostic_error(
-                  'record field default type mismatch for field "' +
-                    field_defs_literal_scan[literal_field_scan_index].name + "\"",
-                  expr_span(default_ast_expression)))
-              end
-            end
-          end
-          literal_field_scan_index = literal_field_scan_index + 1
-        end
-      end,
-      VarTuple(_, _, _) => (),
-      VarUnit(_, _) => (),
-    }
-    literal_variant_scan_index = literal_variant_scan_index + 1
-  end
+  diagnostics_accumulator =
+    variants.fold(
+      diagnostics_accumulator,
+      (
+        diagnostics_so_far_across_variants,
+        variant_shared_under_literal_pass,
+      ) =>
+        accumulate_diagnostics_after_literal_record_default_checks(
+          diagnostics_so_far_across_variants,
+          variant_shared_under_literal_pass,
+          record_default_inference_context,
+          registry))
   diagnostics_accumulator
 end
 
@@ -124,12 +156,7 @@ fn param_default_diagnostics(
   if !param_defaults_in_tail(parameters) then
     out.push(diagnostic_error('parameter defaults must be trailing', expr_span(body)))
   end
-  let mut has_any_default = false
-  let mut j = 0
-  while j < parameters.length() do
-    if parameters[j].has_default then has_any_default = true end
-    j = j + 1
-  end
+  const has_any_default = parameters.any(parameter_under_signature => parameter_under_signature.has_default)
   if type_parameters.length() > 0 && has_any_default then
     out.push(diagnostic_error('default parameters are not allowed on generic functions yet', expr_span(body)))
   end
@@ -138,58 +165,130 @@ fn param_default_diagnostics(
   end
   const empty_type_environment: Map<string, Shared<Type>> = Map.new()
   const default_infer_context = check_context_new(empty_type_environment, registry)
-  let mut p = 0
-  while p < parameters.length() do
-    if parameters[p].has_default && !parameter_binding_is_plain_identifier(parameters[p]) then
-      out.push(diagnostic_error('default values are not supported for destructuring parameters', expr_span(body)))
-    end
-    if parameters[p].has_default then
-      const param_default_expr = parameters[p].default
-      if !default_expr_mvp_ok(param_default_expr) then
-        out.push(diagnostic_error('parameter default must be a literal in this version', expr_span(param_default_expr)))
-      else
-        const default_infer = infer_expr(param_default_expr, default_infer_context)
-        out = diagnostics_append(out, default_infer.errors)
-        const param_expected_type = type_from_annotation(param_typ(parameters[p]))
-        if type_is_checkable(param_expected_type, registry) && type_is_checkable(default_infer.inferred_type, registry) && !types_structurally_equal(param_expected_type, default_infer.inferred_type) then
-          out.push(diagnostic_error(
-            'parameter default: expected ' + type_description(param_expected_type) + ', got ' + type_description(default_infer.inferred_type),
-            expr_span(param_default_expr)))
+  parameters.fold(
+    out,
+    (diagnostic_list_so_far_under_parameters, parameter_under_scan_for_defaults) => do
+      let mut diagnostics_after_parameter: [Diagnostic] = diagnostic_list_so_far_under_parameters
+      if parameter_under_scan_for_defaults.has_default &&
+         !parameter_binding_is_plain_identifier(parameter_under_scan_for_defaults) then
+        diagnostics_after_parameter.push(
+          diagnostic_error('default values are not supported for destructuring parameters', expr_span(body)))
+      end
+      if parameter_under_scan_for_defaults.has_default then
+        const param_default_expression = parameter_under_scan_for_defaults.default
+        if !default_expr_mvp_ok(param_default_expression) then
+          diagnostics_after_parameter.push(
+            diagnostic_error(
+              'parameter default must be a literal in this version',
+              expr_span(param_default_expression)))
+        else
+          const default_infer = infer_expr(param_default_expression, default_infer_context)
+          diagnostics_after_parameter =
+            diagnostics_append(diagnostics_after_parameter, default_infer.errors)
+          const parameter_expected_type =
+            type_from_annotation(param_typ(parameter_under_scan_for_defaults))
+          if type_is_checkable(parameter_expected_type, registry) &&
+             type_is_checkable(default_infer.inferred_type, registry) &&
+             !types_structurally_equal(parameter_expected_type, default_infer.inferred_type) then
+            diagnostics_after_parameter.push(diagnostic_error(
+              'parameter default: expected ' + type_description(parameter_expected_type) +
+                ', got ' + type_description(default_infer.inferred_type),
+              expr_span(param_default_expression)))
+          end
         end
       end
-    end
-    p = p + 1
-  end
-  out
+      diagnostics_after_parameter
+    end)
 end
 
-fn type_parameter_name_known(type_parameter_names: [string], candidate_name: string) -> bool = do
-  let mut index = 0
-  while index < type_parameter_names.length() do
-    if type_parameter_names[index] == candidate_name then return true end
-    index = index + 1
-  end
-  false
-end
+fn type_parameter_name_known(type_parameter_names: [string], candidate_name: string) -> bool =
+  type_parameter_names.any(
+    type_parameter_name_under_scan => type_parameter_name_under_scan == candidate_name)
 
 fn where_clause_unknown_parameter_diagnostics(
   type_parameter_names: [string],
   where_entries: [WhereClauseBound],
   source_span: Span
 ) -> [Diagnostic] = do
-  let collected: [Diagnostic] = []
-  let mut entry_index = 0
-  while entry_index < where_entries.length() do
-    const entry = where_entries[entry_index]
-    if !type_parameter_name_known(type_parameter_names, entry.parameter_name) then
-      collected.push(diagnostic_error(
-        'where clause names unknown type parameter "' + entry.parameter_name + "\"",
-        source_span))
-    end
-    entry_index = entry_index + 1
-  end
-  collected
+  let initial_where_clause_diagnostics: [Diagnostic] = []
+  where_entries.fold(
+    initial_where_clause_diagnostics,
+    (diagnostics_accumulated_so_far, where_entry_under_scan) => do
+      if type_parameter_name_known(type_parameter_names, where_entry_under_scan.parameter_name) then
+        diagnostics_accumulated_so_far
+      else
+        diagnostics_accumulated_so_far.push(diagnostic_error(
+          'where clause names unknown type parameter "' + where_entry_under_scan.parameter_name + "\"",
+          source_span))
+        diagnostics_accumulated_so_far
+      end
+    end)
 end
+
+fn global_names_merge_type_constructor_variant_into_map(
+  global_names_so_far: Map<string, bool>,
+  type_constructor_variant_under_scan: Shared<TypeVariant>,
+) -> Map<string, bool> =
+  match type_constructor_variant_under_scan {
+    VarUnit(variant_name, _) => do
+      global_names_so_far.set(variant_name, true)
+      global_names_so_far
+    end,
+    VarTuple(variant_name, _, _) => do
+      global_names_so_far.set(variant_name, true)
+      global_names_so_far
+    end,
+    VarRecord(variant_name, _, _) => do
+      global_names_so_far.set(variant_name, true)
+      global_names_so_far
+    end,
+  }
+
+fn global_names_merge_trait_method_into_map(
+  global_names_so_far: Map<string, bool>,
+  method_declaration_under_scan: Shared<Decl>,
+) -> Map<string, bool> =
+  match method_declaration_under_scan {
+    DeclFn(function_name, _, _, _, _, _, _) => do
+      global_names_so_far.set(function_name, true)
+      global_names_so_far
+    end,
+    _ => global_names_so_far,
+  }
+
+fn global_names_merge_single_declaration_into_map(
+  global_names_so_far: Map<string, bool>,
+  declaration_under_scan: Shared<Decl>,
+) -> Map<string, bool> =
+  match decl_inner(declaration_under_scan) {
+    DeclFn(name, _, _, _, _, _, _) => do
+      global_names_so_far.set(name, true)
+      global_names_so_far
+    end,
+    DeclType(name, _, variants, _) => do
+      global_names_so_far.set(name, true)
+      variants.fold(
+        global_names_so_far,
+        (names_after_type_definition, variant_shared_under_scan) =>
+          global_names_merge_type_constructor_variant_into_map(
+            names_after_type_definition,
+            variant_shared_under_scan))
+    end,
+    DeclTrait(name, _, methods) => do
+      global_names_so_far.set(name, true)
+      methods.fold(
+        global_names_so_far,
+        (names_after_trait_definition, method_declaration_shared_under_scan) =>
+          global_names_merge_trait_method_into_map(
+            names_after_trait_definition,
+            method_declaration_shared_under_scan))
+    end,
+    DeclExtend(_, _, _)    => global_names_so_far,
+    DeclImport(_, _)       => global_names_so_far,
+    DeclExported(_)        => global_names_so_far,
+    DeclAssocType(_, _)    => global_names_so_far,
+    DeclAssocBind(_, _, _) => global_names_so_far,
+  }
 
 fn collect_globals(program: Program) -> Map<string, bool> = do
   let names: Map<string, bool> = Map.new()
@@ -197,42 +296,12 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
   names.set('print', true); names.set('println', true); names.set('args', true)
   names.set('File', true); names.set('Shared', true); names.set('Map', true)
   names.set('Ok', true); names.set('Err', true); names.set('Result', true)
-  let mut index = 0
-  while index < program.decls.length() do
-    match decl_inner(program.decls[index]) {
-      DeclFn(name, _, _, _, _, _, _) => do names.set(name, true); () end,
-      DeclType(name, _, variants, _) => do
-        names.set(name, true); let mut variant_index = 0
-        while variant_index < variants.length() do
-          match variants[variant_index] {
-            VarUnit(variant_name, _)      => do names.set(variant_name, true); () end,
-            VarTuple(variant_name, _, _)  => do names.set(variant_name, true); () end,
-            VarRecord(variant_name, _, _) => do names.set(variant_name, true); () end
-          }
-          variant_index = variant_index + 1
-        end; ()
-      end,
-      DeclTrait(name, _, methods) => do
-        names.set(name, true)
-        let mut method_index = 0
-        while method_index < methods.length() do
-          match methods[method_index] {
-            DeclFn(function_name, _, _, _, _, _, _) => do names.set(function_name, true); () end,
-            _ => do () end
-          }
-          method_index = method_index + 1
-        end
-        ()
-      end,
-      DeclExtend(_, _, _) => do () end,
-      DeclImport(_, _) => do () end,
-      DeclExported(_)  => do () end,
-      DeclAssocType(_, _) => do () end,
-      DeclAssocBind(_, _, _) => do () end
-    }
-    index = index + 1
-  end
-  names
+  program.decls.fold(
+    names,
+    (global_names_so_far, declaration_shared_under_program) =>
+      global_names_merge_single_declaration_into_map(
+        global_names_so_far,
+        declaration_shared_under_program))
 end
 
 // Returns true only for types that are definitively resolved (not type variables or
@@ -281,6 +350,38 @@ export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
 export extend CheckOut {
   fn has_errors(self) -> bool = errors.length() > 0
 }
+
+fn accumulate_diagnostics_for_single_extend_method(
+  extend_type_name: string,
+  method_declaration_shared_under_scan: Shared<Decl>,
+  registry: TypeRegistry,
+) -> [Diagnostic] =
+  match method_declaration_shared_under_scan {
+    DeclFn(_, type_params, _, params, _, method_body, where_entries) => do
+      let method_related_diagnostics =
+        where_clause_unknown_parameter_diagnostics(
+          type_params,
+          where_entries,
+          expr_span(method_body))
+      const method_environment: Map<string, Shared<Type>> = Map.new()
+      let mut parameter_index = 0
+      while parameter_index < params.length() do
+        method_environment.set(
+          param_name(params[parameter_index]),
+          type_from_annotation(param_typ(params[parameter_index])))
+        parameter_index = parameter_index + 1
+      end
+      const extend_context =
+        CheckContext { type_env: method_environment, registry: registry, current_extend_type: extend_type_name }
+      const method_inference_result = infer_expr(method_body, extend_context)
+      diagnostics_append(method_related_diagnostics, method_inference_result.errors)
+    end,
+    _ =>
+      do
+        let empty_extend_method_diagnostic_branch: [Diagnostic] = []
+        empty_extend_method_diagnostic_branch
+      end,
+  }
 
 fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
   let mut all_diagnostics: [Diagnostic] = trait_and_type_name_conflict_diagnostics(full_program)
@@ -338,26 +439,16 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
       end,
       DeclTrait(_, _, _)   => do () end,
       DeclExtend(extend_type_name, _, methods) => do
-        let mut method_index = 0
-        while method_index < methods.length() do
-          match methods[method_index] {
-            DeclFn(_, type_params, _, params, _, method_body, where_entries) => do
-              all_diagnostics = diagnostics_append(all_diagnostics, where_clause_unknown_parameter_diagnostics(type_params, where_entries, expr_span(method_body)))
-              const method_env: Map<string, Shared<Type>> = Map.new()
-              let mut pi = 0
-              while pi < params.length() do
-                method_env.set(param_name(params[pi]), type_from_annotation(param_typ(params[pi])))
-                pi = pi + 1
-              end
-              const extend_context = CheckContext { type_env: method_env, registry: registry, current_extend_type: extend_type_name }
-              const method_result = infer_expr(method_body, extend_context)
-              all_diagnostics = diagnostics_append(all_diagnostics, method_result.errors)
-              ()
-            end,
-            _ => do () end
-          }
-          method_index = method_index + 1
-        end
+        all_diagnostics =
+          methods.fold(
+            all_diagnostics,
+            (diagnostics_so_far_across_extend_methods, method_shared_under_extend) =>
+              diagnostics_append(
+                diagnostics_so_far_across_extend_methods,
+                accumulate_diagnostics_for_single_extend_method(
+                  extend_type_name,
+                  method_shared_under_extend,
+                  registry)))
         ()
       end,
       DeclImport(_, _)     => do () end,

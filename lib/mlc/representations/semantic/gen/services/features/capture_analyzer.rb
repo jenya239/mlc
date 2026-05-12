@@ -208,7 +208,7 @@ module MLC
                 node.elements.each { |elem| visit(elem, bound_vars, free_vars) }
 
               when MLC::Source::AST::RecordLit
-                node.fields.each { |field| visit(field[:value], bound_vars, free_vars) }
+                node.fields.each_value { |field_value| visit(field_value, bound_vars, free_vars) }
 
               when MLC::Source::AST::ForLoop
                 visit(node.iterable, bound_vars, free_vars)
