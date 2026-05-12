@@ -1,22 +1,135 @@
 // let-pattern: extend type environment from pattern + RHS type (A3).
 
-import { Pat, span_unknown } from '../ast'
+import { Pat } from '../ast'
 import { Type, TypeRegistry, field_type_from_object, TNamed, TGeneric, TTuple, TPair } from './registry'
 import { env_for_pattern_substituted } from './pattern_env'
 
-fn build_let_substitution(value_type: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
-  const substitution: Map<string, Shared<Type>> = Map.new()
-  match value_type {
-    TGeneric(type_name, type_args) => do
-      const param_names = registry.algebraic_decl_type_parameter_names_for(type_name)
-      let mut i = 0
-      while i < param_names.length() && i < type_args.length() do
-        substitution.set(param_names[i], type_args[i]); i = i + 1
-      end
-    end,
-    _ => do end
+type Let_generic_substitution_fold_state = Let_generic_substitution_fold_state {
+  substitution_map:                       Map<string, Shared<Type>>,
+  next_algebraic_type_parameter_index:   i32,
+}
+
+fn let_generic_substitution_fold_step(
+  state: Let_generic_substitution_fold_state,
+  algebraic_type_parameter_name: string,
+  algebraic_type_arguments: [Shared<Type>]
+) -> Let_generic_substitution_fold_state = do
+  if state.next_algebraic_type_parameter_index < algebraic_type_arguments.length() then
+    state.substitution_map.set(
+      algebraic_type_parameter_name,
+      algebraic_type_arguments[state.next_algebraic_type_parameter_index])
+  end
+  Let_generic_substitution_fold_state {
+    substitution_map:                   state.substitution_map,
+    next_algebraic_type_parameter_index:
+      state.next_algebraic_type_parameter_index + 1,
   }
-  substitution
+end
+
+type Tuple_or_slot_pattern_environment_fold_state = Tuple_or_slot_pattern_environment_fold_state {
+  pattern_environment:     Map<string, Shared<Type>>,
+  next_component_index: i32,
+}
+
+fn let_tuple_environment_fold_step(
+  state: Tuple_or_slot_pattern_environment_fold_state,
+  tuple_component_pattern: Shared<Pat>,
+  tuple_member_types: [Shared<Type>],
+  registry: TypeRegistry
+) -> Tuple_or_slot_pattern_environment_fold_state = do
+  const tuple_member_type = tuple_member_types[state.next_component_index]
+  Tuple_or_slot_pattern_environment_fold_state {
+    pattern_environment:
+      apply_let_pattern_to_env(tuple_component_pattern, tuple_member_type, state.pattern_environment, registry),
+    next_component_index: state.next_component_index + 1,
+  }
+end
+
+fn let_array_element_patterns_fold_step(
+  state: Tuple_or_slot_pattern_environment_fold_state,
+  array_cell_pattern: Shared<Pat>,
+  array_element_type: Shared<Type>,
+  registry: TypeRegistry
+) -> Tuple_or_slot_pattern_environment_fold_state =
+  Tuple_or_slot_pattern_environment_fold_state {
+    pattern_environment:
+      apply_let_pattern_to_env(array_cell_pattern, array_element_type, state.pattern_environment, registry),
+    next_component_index: state.next_component_index + 1,
+  }
+
+fn let_record_literal_field_pattern_fold_step(
+  field_pattern_environment: Map<string, Shared<Type>>,
+  field_subpattern: Shared<Pat>,
+  let_rhs_object_type: Shared<Type>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> = do
+  const record_field_binding_name =
+    match field_subpattern {
+      PatIdent(binding_name_for_field_literal, _) => binding_name_for_field_literal,
+      _ => ''
+    }
+  if record_field_binding_name != '' then
+    const field_object_type_from_registry =
+      field_type_from_object(let_rhs_object_type, record_field_binding_name, registry)
+    apply_let_pattern_to_env(field_subpattern, field_object_type_from_registry, field_pattern_environment, registry)
+  else field_pattern_environment
+  end
+end
+
+fn ordered_record_tuple_environment_fold_step(
+  state: Tuple_or_slot_pattern_environment_fold_state,
+  tuple_component_pattern_in_record_order: Shared<Pat>,
+  ordered_field_labels: [string],
+  let_rhs_record_object_type: Shared<Type>,
+  registry: TypeRegistry
+) -> Tuple_or_slot_pattern_environment_fold_state = do
+  const label_for_ordered_slot =
+    ordered_field_labels[state.next_component_index]
+  const inferred_field_member_type =
+    field_type_from_object(let_rhs_record_object_type, label_for_ordered_slot, registry)
+  Tuple_or_slot_pattern_environment_fold_state {
+    pattern_environment:
+      apply_let_pattern_to_env(
+        tuple_component_pattern_in_record_order,
+        inferred_field_member_type,
+        state.pattern_environment,
+        registry),
+    next_component_index: state.next_component_index + 1,
+  }
+end
+
+fn register_algebraic_type_arguments_into_substitution_map(
+  registry: TypeRegistry,
+  algebraic_outer_type_name: string,
+  algebraic_type_arguments: [Shared<Type>],
+  substitution_destinations: Map<string, Shared<Type>>
+) -> Map<string, Shared<Type>> = do
+  const algebraic_constructor_type_parameter_names =
+    registry.algebraic_decl_type_parameter_names_for(algebraic_outer_type_name)
+  algebraic_constructor_type_parameter_names.fold(
+    Let_generic_substitution_fold_state {
+      substitution_map:                   substitution_destinations,
+      next_algebraic_type_parameter_index: 0,
+    },
+    (accumulated_substitution_fold_state, type_parameter_binding_name_from_decl) =>
+      let_generic_substitution_fold_step(
+        accumulated_substitution_fold_state,
+        type_parameter_binding_name_from_decl,
+        algebraic_type_arguments))
+  substitution_destinations
+end
+
+fn build_let_substitution(value_type: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  const substitution_map: Map<string, Shared<Type>> = Map.new()
+  match value_type {
+    TGeneric(algebraic_outer_type_name, algebraic_type_arguments) =>
+      register_algebraic_type_arguments_into_substitution_map(
+        registry,
+        algebraic_outer_type_name,
+        algebraic_type_arguments,
+        substitution_map),
+    _ => substitution_map
+  }
 end
 
 fn apply_let_pattern_to_env(
@@ -27,91 +140,141 @@ fn apply_let_pattern_to_env(
 ) -> Map<string, Shared<Type>> = do
   match pat {
     PatWild(_) => base_env,
-    PatIdent(n, _) => do const u = base_env; u.set(n, value_type); u end,
-    PatTuple(subs, _) => do
+    PatIdent(let_binding_name, _) => do
+      const environment_where_ident_binding_is_added = base_env
+      environment_where_ident_binding_is_added.set(let_binding_name, value_type)
+      environment_where_ident_binding_is_added
+    end,
+    PatTuple(tuple_component_patterns, _) => do
       match value_type {
-        TTuple(ts) =>
-          if subs.length() != ts.length() then base_env
+        TTuple(tuple_member_types) =>
+          if tuple_component_patterns.length() != tuple_member_types.length()
+          then base_env
           else
-            let mut acc = base_env
-            let mut j = 0
-            while j < subs.length() do
-              acc = apply_let_pattern_to_env(subs[j], ts[j], acc, registry)
-              j = j + 1
-            end
-            acc
+            tuple_component_patterns
+              .fold(
+                Tuple_or_slot_pattern_environment_fold_state {
+                  pattern_environment: base_env,
+                  next_component_index:                  0,
+                },
+                (state, tuple_component_pattern) =>
+                  let_tuple_environment_fold_step(
+                    state,
+                    tuple_component_pattern,
+                    tuple_member_types,
+                    registry))
+              .pattern_environment
           end,
-        TPair(fst, snd) =>
-          if subs.length() != 2 then base_env
-          else
-            const environment_after_first = apply_let_pattern_to_env(subs[0], fst, base_env, registry)
-            apply_let_pattern_to_env(subs[1], snd, environment_after_first, registry)
+        TPair(first_member_type, second_member_type) =>
+          if tuple_component_patterns.length() != 2
+          then base_env
+          else do
+            const environment_after_first_tuple_component =
+              apply_let_pattern_to_env(tuple_component_patterns[0], first_member_type, base_env, registry)
+            apply_let_pattern_to_env(
+              tuple_component_patterns[1],
+              second_member_type,
+              environment_after_first_tuple_component,
+              registry)
+          end
           end,
-        _ => tuple_pattern_environment_using_ordered_record_fields(subs, value_type, base_env, registry)
+        _ =>
+          tuple_pattern_environment_using_ordered_record_fields(
+            tuple_component_patterns,
+            value_type,
+            base_env,
+            registry)
       }
     end,
-    PatArray(subs, rest, _) => do
+    PatArray(cell_patterns, remainder_binding_name, _) => do
       match value_type {
-        TArray(et) => do
-          let mut acc = base_env; let mut i = 0
-          while i < subs.length() do
-            acc = apply_let_pattern_to_env(subs[i], et, acc, registry); i = i + 1
+        TArray(element_type_inside_array) => do
+          const environment_after_fixed_array_cells =
+            cell_patterns
+              .fold(
+                Tuple_or_slot_pattern_environment_fold_state {
+                  pattern_environment: base_env,
+                  next_component_index:                  0,
+                },
+                (state, cell_pattern) =>
+                  let_array_element_patterns_fold_step(
+                    state,
+                    cell_pattern,
+                    element_type_inside_array,
+                    registry))
+              .pattern_environment
+          if remainder_binding_name != '' then do
+              let mut remainder_tail_environment = environment_after_fixed_array_cells
+              remainder_tail_environment.set(remainder_binding_name, value_type)
+              remainder_tail_environment
+            end
+          else environment_after_fixed_array_cells
           end
-          if rest != '' then do acc.set(rest, value_type); acc end else acc end
         end,
         _ => base_env
       }
     end,
-    PatRecord(rec_name, field_pats, _) => do
-      if rec_name != '' then
+    PatRecord(record_heading_name_or_empty, literal_field_patterns, _) => do
+      if record_heading_name_or_empty != '' then
         base_env
       else
-        let mut acc = base_env; let mut i = 0
-        while i < field_pats.length() do
-          const fp = field_pats[i]
-          const field_name = match fp { PatIdent(n, _) => n, _ => '' }
-          if field_name != '' then
-            const ft = field_type_from_object(value_type, field_name, registry)
-            acc = apply_let_pattern_to_env(fp, ft, acc, registry)
-          end
-          i = i + 1
-        end
-        acc
+        literal_field_patterns.fold(
+          base_env,
+          (field_pattern_environment_so_far, field_subpattern_under_pattern_node) =>
+            let_record_literal_field_pattern_fold_step(
+              field_pattern_environment_so_far,
+              field_subpattern_under_pattern_node,
+              value_type,
+              registry))
       end
     end,
-    PatCtor(_, _, _) => env_for_pattern_substituted(base_env, pat, registry, build_let_substitution(value_type, registry), value_type),
+    PatCtor(_, _, _) =>
+      env_for_pattern_substituted(
+        base_env,
+        pat,
+        registry,
+        build_let_substitution(value_type, registry),
+        value_type),
     _ => base_env
   }
 end
 
 fn record_base_name_for_ordered_tuple_pattern(value_type: Shared<Type>) -> string =
   match value_type {
-    TNamed(record_name) => record_name,
-    TGeneric(record_name, _) => record_name,
+    TNamed(record_name_without_parameters)           => record_name_without_parameters,
+    TGeneric(generic_algebraic_outer_name, _) => generic_algebraic_outer_name,
     _ => ''
   }
 
 fn tuple_pattern_environment_using_ordered_record_fields(
-  subs: [Shared<Pat>],
-  value_type: Shared<Type>,
-  base_environment: Map<string, Shared<Type>>,
+  tuple_component_patterns: [Shared<Pat>],
+  value_type_shaped_like_record_under_tuple_syntax: Shared<Type>,
+  base_environment_before_ordered_fields: Map<string, Shared<Type>>,
   registry: TypeRegistry
 ) -> Map<string, Shared<Type>> = do
-  const record_lookup_name = record_base_name_for_ordered_tuple_pattern(value_type)
-  if record_lookup_name == '' || !registry.has_fields(record_lookup_name) then base_environment
+  const record_lookup_name =
+    record_base_name_for_ordered_tuple_pattern(value_type_shaped_like_record_under_tuple_syntax)
+  if record_lookup_name == '' || !registry.has_fields(record_lookup_name) then base_environment_before_ordered_fields
   else
-    const ordered_field_labels = registry.record_field_names_ordered_for(record_lookup_name)
-    if ordered_field_labels.length() != subs.length() then base_environment
+    const ordered_field_labels_from_registry =
+      registry.record_field_names_ordered_for(record_lookup_name)
+    if ordered_field_labels_from_registry.length() != tuple_component_patterns.length()
+    then base_environment_before_ordered_fields
     else
-      let mut accumulator_environment = base_environment
-      let mut field_slot_index = 0
-      while field_slot_index < subs.length() do
-        const selected_field_label = ordered_field_labels[field_slot_index]
-        const selected_field_type = field_type_from_object(value_type, selected_field_label, registry)
-        accumulator_environment = apply_let_pattern_to_env(subs[field_slot_index], selected_field_type, accumulator_environment, registry)
-        field_slot_index = field_slot_index + 1
-      end
-      accumulator_environment
+      tuple_component_patterns
+        .fold(
+          Tuple_or_slot_pattern_environment_fold_state {
+            pattern_environment: base_environment_before_ordered_fields,
+            next_component_index:                  0,
+          },
+          (state, tuple_component_pattern_in_registry_field_order) =>
+            ordered_record_tuple_environment_fold_step(
+              state,
+              tuple_component_pattern_in_registry_field_order,
+              ordered_field_labels_from_registry,
+              value_type_shaped_like_record_under_tuple_syntax,
+              registry))
+        .pattern_environment
     end
   end
 end
