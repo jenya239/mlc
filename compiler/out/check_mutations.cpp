@@ -9,9 +9,11 @@ using namespace ast;
 using namespace names;
 using namespace ast_tokens;
 
-bool scope_has(mlc::Array<mlc::String> scope, mlc::String name) noexcept;
+bool scope_has(mlc::Array<mlc::String> scope, mlc::String sought_name) noexcept;
 
 mlc::Array<ast::Diagnostic> check_mutation_expr(std::shared_ptr<ast::Expr> expression, mlc::Array<mlc::String> mutable_locals) noexcept;
+
+mlc::Array<ast::Diagnostic> diagnostics_for_record_literal_single_part(ast::RecordLitPart literal_part, mlc::Array<mlc::String> mutable_locals) noexcept;
 
 mlc::Array<ast::Diagnostic> check_mutation_record_lit_parts(mlc::Array<ast::RecordLitPart> lit_parts, mlc::Array<mlc::String> mutable_locals) noexcept;
 
@@ -29,21 +31,7 @@ mlc::Array<ast::Diagnostic> check_mutation_stmts_errors(mlc::Array<std::shared_p
 
 mlc::Array<ast::Diagnostic> check_fn_body_mutations(mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<ast::Expr> body) noexcept;
 
-bool scope_has(mlc::Array<mlc::String> scope, mlc::String name) noexcept{
-bool found = false;
-int index = 0;
-while (index < scope.size() && !found){
-{
-if (scope[index] == name){
-{
-found = true;
-}
-}
-index = index + 1;
-}
-}
-return found;
-}
+bool scope_has(mlc::Array<mlc::String> scope, mlc::String sought_name) noexcept{return scope.any([sought_name](mlc::String scope_entry)  { return scope_entry == sought_name; });}
 
 mlc::Array<ast::Diagnostic> check_mutation_expr(std::shared_ptr<ast::Expr> expression, mlc::Array<mlc::String> mutable_locals) noexcept{return [&]() -> mlc::Array<ast::Diagnostic> { if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [operation, left, right, source_span] = _v_exprbin; return [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> right_errors = check_mutation_expr(right, mutable_locals);
@@ -62,30 +50,12 @@ mlc::Array<ast::Diagnostic> check_mutation_expr(std::shared_ptr<ast::Expr> expre
   return empty;
  }(); }();}
 
-mlc::Array<ast::Diagnostic> check_mutation_record_lit_parts(mlc::Array<ast::RecordLitPart> lit_parts, mlc::Array<mlc::String> mutable_locals) noexcept{
-mlc::Array<ast::Diagnostic> errors = {};
-int part_index = 0;
-while (part_index < lit_parts.size()){
-{
-std::visit(overloaded{
-  [&](const RecordLitFields& recordlitfields) {
-auto [field_values] = recordlitfields;
-{
-errors = ast::diagnostics_append(errors, check_mutation_field_vals(field_values, mutable_locals));
-}
-},
-  [&](const RecordLitSpread& recordlitspread) {
-auto [spread_expression] = recordlitspread;
-{
-errors = ast::diagnostics_append(errors, check_mutation_expr(spread_expression, mutable_locals));
-}
-}
-}, lit_parts[part_index]._);
-part_index = part_index + 1;
-}
-}
-return errors;
-}
+mlc::Array<ast::Diagnostic> diagnostics_for_record_literal_single_part(ast::RecordLitPart literal_part, mlc::Array<mlc::String> mutable_locals) noexcept{return std::visit(overloaded{
+  [&](const RecordLitFields& recordlitfields) -> mlc::Array<ast::Diagnostic> { auto [field_values] = recordlitfields; return check_mutation_field_vals(field_values, mutable_locals); },
+  [&](const RecordLitSpread& recordlitspread) -> mlc::Array<ast::Diagnostic> { auto [spread_expression] = recordlitspread; return check_mutation_expr(spread_expression, mutable_locals); }
+}, literal_part._);}
+
+mlc::Array<ast::Diagnostic> check_mutation_record_lit_parts(mlc::Array<ast::RecordLitPart> lit_parts, mlc::Array<mlc::String> mutable_locals) noexcept{return mlc::collections::flat_map(lit_parts, [mutable_locals](ast::RecordLitPart literal_part_under_check)  { return diagnostics_for_record_literal_single_part(literal_part_under_check, mutable_locals); });}
 
 mlc::Array<ast::Diagnostic> check_mutation_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> arguments, mlc::Array<mlc::String> mutable_locals) noexcept{
 mlc::Array<ast::Diagnostic> errors = check_mutation_expr(function, mutable_locals);
@@ -183,7 +153,7 @@ pi = pi + 1;
 }
   return std::make_tuple();
  }(); },
-  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [name, _w0, value, _w1] = stmtletconst; return [&]() -> std::tuple<> { 
+  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [_w0, _w1, value, _w2] = stmtletconst; return [&]() -> std::tuple<> { 
   errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
   return std::make_tuple();
  }(); },
@@ -238,7 +208,7 @@ pi = pi + 1;
 }
   return std::make_tuple();
  }(); },
-  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [name, _w0, value, _w1] = stmtletconst; return [&]() -> std::tuple<> { 
+  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [_w0, _w1, value, _w2] = stmtletconst; return [&]() -> std::tuple<> { 
   errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
   return std::make_tuple();
  }(); },

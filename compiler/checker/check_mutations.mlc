@@ -4,14 +4,8 @@
 import { Expr, Stmt, FieldVal, MatchArm, Param, Diagnostic, diagnostic_error, diagnostics_append, RecordLitPart, RecordLitFields, RecordLitSpread } from '../ast'
 import { pattern_bindings } from './names'
 
-fn scope_has(scope: [string], name: string) -> bool = do
-  let mut found = false; let mut index = 0
-  while index < scope.length() && !found do
-    if scope[index] == name then found = true end
-    index = index + 1
-  end
-  found
-end
+fn scope_has(scope: [string], sought_name: string) -> bool =
+  scope.any(scope_entry => scope_entry == sought_name)
 
 fn check_mutation_expr(expression: Shared<Expr>, mutable_locals: [string]) -> [Diagnostic] =
   match expression {
@@ -53,56 +47,67 @@ fn check_mutation_expr(expression: Shared<Expr>, mutable_locals: [string]) -> [D
     _                                                => do let empty: [Diagnostic] = []; empty end
   }
 
-fn check_mutation_record_lit_parts(lit_parts: [RecordLitPart], mutable_locals: [string]) -> [Diagnostic] = do
-  let mut errors: [Diagnostic] = []; let mut part_index = 0
-  while part_index < lit_parts.length() do
-    match lit_parts[part_index] {
-      RecordLitFields(field_values) => do
-        errors = diagnostics_append(errors, check_mutation_field_vals(field_values, mutable_locals))
-      end,
-      RecordLitSpread(spread_expression) => do
-        errors = diagnostics_append(errors, check_mutation_expr(spread_expression, mutable_locals))
-      end,
-    }
-    part_index = part_index + 1
-  end
-  errors
-end
+fn diagnostics_for_record_literal_single_part(
+  literal_part: RecordLitPart,
+  mutable_locals: [string]
+) -> [Diagnostic] =
+  match literal_part {
+    RecordLitFields(field_values) =>
+      check_mutation_field_vals(field_values, mutable_locals),
+    RecordLitSpread(spread_expression) =>
+      check_mutation_expr(spread_expression, mutable_locals),
+  }
+
+fn check_mutation_record_lit_parts(lit_parts: [RecordLitPart], mutable_locals: [string]) -> [Diagnostic] =
+  lit_parts.flat_map(literal_part_under_check =>
+    diagnostics_for_record_literal_single_part(literal_part_under_check, mutable_locals))
 
 fn check_mutation_call(function: Shared<Expr>, arguments: [Shared<Expr>], mutable_locals: [string]) -> [Diagnostic] = do
-  let mut errors = check_mutation_expr(function, mutable_locals); let mut index = 0
+  let mut errors = check_mutation_expr(function, mutable_locals)
+  let mut index = 0
   while index < arguments.length() do
-    errors = diagnostics_append(errors, check_mutation_expr(arguments[index], mutable_locals)); index = index + 1
+    errors = diagnostics_append(errors, check_mutation_expr(arguments[index], mutable_locals))
+    index = index + 1
   end
   errors
 end
 
 fn check_mutation_exprs(expressions: [Shared<Expr>], mutable_locals: [string]) -> [Diagnostic] = do
-  let mut errors: [Diagnostic] = []; let mut index = 0
+  let mut errors: [Diagnostic] = []
+  let mut index = 0
   while index < expressions.length() do
-    errors = diagnostics_append(errors, check_mutation_expr(expressions[index], mutable_locals)); index = index + 1
+    errors = diagnostics_append(errors, check_mutation_expr(expressions[index], mutable_locals))
+    index = index + 1
   end
   errors
 end
 
 fn check_mutation_field_vals(field_values: [Shared<FieldVal>], mutable_locals: [string]) -> [Diagnostic] = do
-  let mut errors: [Diagnostic] = []; let mut index = 0
+  let mut errors: [Diagnostic] = []
+  let mut index = 0
   while index < field_values.length() do
-    errors = diagnostics_append(errors, check_mutation_expr(field_values[index].val, mutable_locals)); index = index + 1
+    errors = diagnostics_append(errors, check_mutation_expr(field_values[index].val, mutable_locals))
+    index = index + 1
   end
   errors
 end
 
 fn check_mutation_arms(arms: [Shared<MatchArm>], mutable_locals: [string]) -> [Diagnostic] = do
-  let mut errors: [Diagnostic] = []; let mut index = 0
+  let mut errors: [Diagnostic] = []
+  let mut index = 0
   while index < arms.length() do
     const bindings = pattern_bindings(arms[index].pat)
-    const arm_scope = mutable_locals; let mut binding_index = 0
-    while binding_index < bindings.length() do arm_scope.push(bindings[binding_index]); binding_index = binding_index + 1 end
+    const arm_scope = mutable_locals
+    let mut binding_index = 0
+    while binding_index < bindings.length() do
+      arm_scope.push(bindings[binding_index])
+      binding_index = binding_index + 1
+    end
     if arms[index].has_guard then
       errors = diagnostics_append(errors, check_mutation_expr(arms[index].when_condition, arm_scope))
     end
-    errors = diagnostics_append(errors, check_mutation_expr(arms[index].body, arm_scope)); index = index + 1
+    errors = diagnostics_append(errors, check_mutation_expr(arms[index].body, arm_scope))
+    index = index + 1
   end
   errors
 end
@@ -121,20 +126,29 @@ fn check_mutation_block(statements: [Shared<Stmt>], result: Shared<Expr>, mutabl
       StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
         errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
         if is_mut then do
-          const pnames = pattern_bindings(pattern); let mut pi = 0
+          const pnames = pattern_bindings(pattern)
+          let mut pi = 0
           while pi < pnames.length() do
-            inner_mutable.push(pnames[pi]); pi = pi + 1
+            inner_mutable.push(pnames[pi])
+            pi = pi + 1
           end
         end end
         ()
       end,
-      StmtLetConst(name, _, value, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable)); ()
+      StmtLetConst(_, _, value, _) => do
+        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
+        ()
       end,
-      StmtExpr(expression, _)    => do errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable)); () end,
-      StmtReturn(expression, _)  => do errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable)); () end,
-      StmtBreak(_)               => do () end,
-      StmtContinue(_)            => do () end
+      StmtExpr(expression, _) => do
+        errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable))
+        ()
+      end,
+      StmtReturn(expression, _) => do
+        errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable))
+        ()
+      end,
+      StmtBreak(_)               => (),
+      StmtContinue(_)            => (),
     }
     index = index + 1
   end
@@ -155,20 +169,29 @@ fn check_mutation_stmts_errors(statements: [Shared<Stmt>], mutable_locals: [stri
       StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
         errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
         if is_mut then do
-          const pnames = pattern_bindings(pattern); let mut pi = 0
+          const pnames = pattern_bindings(pattern)
+          let mut pi = 0
           while pi < pnames.length() do
-            inner_mutable.push(pnames[pi]); pi = pi + 1
+            inner_mutable.push(pnames[pi])
+            pi = pi + 1
           end
         end end
         ()
       end,
-      StmtLetConst(name, _, value, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable)); ()
+      StmtLetConst(_, _, value, _) => do
+        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
+        ()
       end,
-      StmtExpr(expression, _)    => do errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable)); () end,
-      StmtReturn(expression, _)  => do errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable)); () end,
-      StmtBreak(_)               => do () end,
-      StmtContinue(_)            => do () end
+      StmtExpr(expression, _) => do
+        errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable))
+        ()
+      end,
+      StmtReturn(expression, _) => do
+        errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable))
+        ()
+      end,
+      StmtBreak(_)               => (),
+      StmtContinue(_)            => (),
     }
     index = index + 1
   end
