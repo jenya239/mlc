@@ -3,14 +3,8 @@
 import { Expr, Stmt, Pat, FieldVal, MatchArm, RecordLitPart, RecordLitFields, RecordLitSpread,
          Diagnostic, Span, diagnostic_error, diagnostics_append, span_unknown } from '../ast'
 
-fn scope_contains(scope: [string], name: string) -> bool = do
-  let mut found = false; let mut index = 0
-  while index < scope.length() && !found do
-    if scope[index] == name then found = true end
-    index = index + 1
-  end
-  found
-end
+fn scope_contains(scope: [string], name: string) -> bool =
+  scope.any(scope_entry => scope_entry == name)
 
 export fn pattern_bindings(pattern: Shared<Pat>) -> [string] = do
   const accumulator: [string] = []
@@ -55,13 +49,10 @@ end
 
 // --- Name check rule functions (per expression form) -----------------------
 
-fn check_names_identifier(name: string, locals: [string], globals: Map<string, bool>, source_span: Span) -> [Diagnostic] = do
-  let collected: [Diagnostic] = []
-  if !scope_contains(locals, name) && !globals.has(name) then
-    collected.push(diagnostic_error('undefined: ' + name, source_span))
+fn check_names_identifier(name: string, locals: [string], globals: Map<string, bool>, source_span: Span) -> [Diagnostic] =
+  if !scope_contains(locals, name) && !globals.has(name) then [diagnostic_error(`undefined: ${name}`, source_span)]
+  else do let empty_ident_diagnostics: [Diagnostic] = []; empty_ident_diagnostics end
   end
-  collected
-end
 
 fn check_names_binary_expression(left: Shared<Expr>, right: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
   diagnostics_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals))
@@ -70,19 +61,19 @@ fn check_names_unary_expression(inner: Shared<Expr>, locals: [string], globals: 
   check_names_expr(inner, locals, globals)
 
 fn check_names_call_expression(function: Shared<Expr>, call_arguments: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  let mut collected = check_names_expr(function, locals, globals); let mut index = 0
-  while index < call_arguments.length() do
-    collected = diagnostics_append(collected, check_names_expr(call_arguments[index], locals, globals)); index = index + 1
-  end
-  collected
+  const diagnostics_from_callable = check_names_expr(function, locals, globals)
+  call_arguments.fold(
+    diagnostics_from_callable,
+    (diagnostics_accumulator, argument_under_call) =>
+      diagnostics_append(diagnostics_accumulator, check_names_expr(argument_under_call, locals, globals)))
 end
 
 fn check_names_method_expression(object: Shared<Expr>, method_arguments: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  let mut collected = check_names_expr(object, locals, globals); let mut index = 0
-  while index < method_arguments.length() do
-    collected = diagnostics_append(collected, check_names_expr(method_arguments[index], locals, globals)); index = index + 1
-  end
-  collected
+  const diagnostics_from_receiver = check_names_expr(object, locals, globals)
+  method_arguments.fold(
+    diagnostics_from_receiver,
+    (diagnostics_accumulator, argument_under_method_call) =>
+      diagnostics_append(diagnostics_accumulator, check_names_expr(argument_under_method_call, locals, globals)))
 end
 
 fn check_names_field_expression(object: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
@@ -119,69 +110,78 @@ fn check_names_with_expression(resource: Shared<Expr>, binder: string, stmts: [S
 end
 
 fn check_names_match_expression(subject: Shared<Expr>, arms: [Shared<MatchArm>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  let mut collected = check_names_expr(subject, locals, globals); let mut arm_index = 0
-  while arm_index < arms.length() do
-    const bindings = pattern_bindings(arms[arm_index].pat)
-    const arm_scope = locals; let mut binding_index = 0
-    while binding_index < bindings.length() do arm_scope.push(bindings[binding_index]); binding_index = binding_index + 1 end
-    if arms[arm_index].has_guard then
-      collected = diagnostics_append(collected, check_names_expr(arms[arm_index].when_condition, arm_scope, globals))
-    end
-    collected = diagnostics_append(collected, check_names_expr(arms[arm_index].body, arm_scope, globals)); arm_index = arm_index + 1
-  end
-  collected
+  const diagnostics_after_subject = check_names_expr(subject, locals, globals)
+  arms.fold(
+    diagnostics_after_subject,
+    (diagnostics_accumulator, arm_under_walk) => do
+      const bindings = pattern_bindings(arm_under_walk.pat)
+      const arm_scope = locals
+      let mut binding_index = 0
+      while binding_index < bindings.length() do
+        arm_scope.push(bindings[binding_index])
+        binding_index = binding_index + 1
+      end
+      const after_guard =
+        if arm_under_walk.has_guard then
+          diagnostics_append(diagnostics_accumulator, check_names_expr(arm_under_walk.when_condition, arm_scope, globals))
+        else
+          diagnostics_accumulator
+        end
+      diagnostics_append(after_guard, check_names_expr(arm_under_walk.body, arm_scope, globals))
+    end)
 end
 
-fn check_names_record_lit_parts(lit_parts: [RecordLitPart], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  let mut collected: [Diagnostic] = []; let mut part_index = 0
-  while part_index < lit_parts.length() do
-    match lit_parts[part_index] {
-      RecordLitFields(field_values) => do
-        collected = diagnostics_append(collected, check_names_record_expression(field_values, locals, globals))
-      end,
-      RecordLitSpread(spread_expression) => do
-        collected = diagnostics_append(collected, check_names_expr(spread_expression, locals, globals))
-      end,
-    }
-    part_index = part_index + 1
-  end
-  collected
-end
+fn diagnostics_for_single_record_literal_name_part(
+  literal_part: RecordLitPart,
+  locals: [string],
+  globals: Map<string, bool>
+) -> [Diagnostic] =
+  match literal_part {
+    RecordLitFields(field_values) =>
+      check_names_record_expression(field_values, locals, globals),
+    RecordLitSpread(spread_expression) =>
+      check_names_expr(spread_expression, locals, globals),
+  }
 
-fn check_names_record_expression(field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  let mut collected: [Diagnostic] = []; let mut index = 0
-  while index < field_values.length() do
-    collected = diagnostics_append(collected, check_names_expr(field_values[index].val, locals, globals)); index = index + 1
-  end
-  collected
-end
+fn check_names_record_lit_parts(lit_parts: [RecordLitPart], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  lit_parts.flat_map(literal_part_under_walk =>
+    diagnostics_for_single_record_literal_name_part(literal_part_under_walk, locals, globals))
 
-fn check_names_record_update_expression(base: Shared<Expr>, field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  let mut collected: [Diagnostic] = check_names_expr(base, locals, globals); let mut index = 0
-  while index < field_values.length() do
-    collected = diagnostics_append(collected, check_names_expr(field_values[index].val, locals, globals)); index = index + 1
-  end
-  collected
-end
+fn check_names_record_expression(field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  field_values.fold(
+    do let starting_record_names: [Diagnostic] = []; starting_record_names end,
+    (diagnostics_accumulator, field_value_under_walk) =>
+      diagnostics_append(diagnostics_accumulator, check_names_expr(field_value_under_walk.val, locals, globals)))
 
-fn check_names_array_expression(elements: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  let mut collected: [Diagnostic] = []; let mut index = 0
-  while index < elements.length() do
-    collected = diagnostics_append(collected, check_names_expr(elements[index], locals, globals)); index = index + 1
-  end
-  collected
-end
+fn check_names_record_update_expression(base: Shared<Expr>, field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  field_values.fold(
+    check_names_expr(base, locals, globals),
+    (diagnostics_accumulator, field_value_under_walk) =>
+      diagnostics_append(diagnostics_accumulator, check_names_expr(field_value_under_walk.val, locals, globals)))
+
+fn check_names_array_expression(elements: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  elements.fold(
+    do let starting_array_names: [Diagnostic] = []; starting_array_names end,
+    (diagnostics_accumulator, element_under_walk) =>
+      diagnostics_append(diagnostics_accumulator, check_names_expr(element_under_walk, locals, globals)))
 
 fn check_names_question_expression(inner: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
   check_names_expr(inner, locals, globals)
 
 fn check_names_lambda_expression(parameter_names: [string], body: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const lambda_locals: [string] = []
-  let mut local_index = 0
-  while local_index < locals.length() do lambda_locals.push(locals[local_index]); local_index = local_index + 1 end
-  let mut parameter_index = 0
-  while parameter_index < parameter_names.length() do lambda_locals.push(parameter_names[parameter_index]); parameter_index = parameter_index + 1 end
-  check_names_expr(body, lambda_locals, globals)
+  const lambda_environment_names =
+    parameter_names.fold(
+      locals.fold(
+        do let enclosing_copied_into_lambda: [string] = []; enclosing_copied_into_lambda end,
+        (accumulated_enclosing_names, enclosing_local_name) => do
+          accumulated_enclosing_names.push(enclosing_local_name)
+          accumulated_enclosing_names
+        end),
+      (accumulated_scope_names, lambda_parameter_name) => do
+        accumulated_scope_names.push(lambda_parameter_name)
+        accumulated_scope_names
+      end)
+  check_names_expr(body, lambda_environment_names, globals)
 end
 
 fn check_names_empty() -> [Diagnostic] = do let empty_list: [Diagnostic] = []; empty_list end
@@ -222,35 +222,40 @@ extend NameCheckResult {
 }
 
 export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult = do
-  let mut collected_diagnostics: [Diagnostic] = []; const scope = locals; let mut index = 0
-  while index < statements.length() do
-    match statements[index] {
+  let mut collected_diagnostics: [Diagnostic] = []; const scope = locals; let mut statement_index = 0
+  while statement_index < statements.length() do
+    match statements[statement_index] {
       StmtLet(name, _, _, value, _) => do
         collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
         scope.push(name); ()
       end,
       StmtLetPat(pattern, _, _, value, has_else, else_body, _) => do
-        collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
-        const pnames = pattern_bindings(pattern)
-        let mut j = 0
-        while j < pnames.length() do
-          scope.push(pnames[j]); j = j + 1
+        collected_diagnostics =
+          diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
+        const bound_pattern_names = pattern_bindings(pattern)
+        let mut pattern_binding_index = 0
+        while pattern_binding_index < bound_pattern_names.length() do
+          scope.push(bound_pattern_names[pattern_binding_index]); pattern_binding_index = pattern_binding_index + 1
         end
         if has_else then
-          collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(else_body, scope, globals))
+          collected_diagnostics =
+            diagnostics_append(collected_diagnostics, check_names_expr(else_body, scope, globals))
         end
         ()
       end,
       StmtLetConst(name, _, value, _) => do
-        collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
+        collected_diagnostics =
+          diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
         scope.push(name); ()
       end,
-      StmtExpr(expression, _) => do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
-      StmtReturn(expression, _) => do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
-      StmtBreak(_)    => do () end,
-      StmtContinue(_) => do () end
+      StmtExpr(expression, _) =>
+        do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
+      StmtReturn(expression, _) =>
+        do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
+      StmtBreak(_)    => (),
+      StmtContinue(_) => (),
     }
-    index = index + 1
+    statement_index = statement_index + 1
   end
   NameCheckResult { diagnostics: collected_diagnostics, scope: scope }
 end
