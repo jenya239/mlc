@@ -2,7 +2,7 @@
 // infer_expr_fn injected to break the import cycle with infer.mlc.
 
 import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_placeholder } from '../ast'
-import { Type, TNamed } from './registry'
+import { Type, TNamed, TypeRegistry } from './registry'
 import { CheckContext } from './check_context'
 import { InferResult } from './infer_result'
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor, function_parameter_list } from './infer_call_support'
@@ -12,37 +12,49 @@ import { type_is_function } from './semantic_type_structure'
 
 type ResolvedArgs = ResolvedArgs { exprs: [Shared<Expr>], errors: [Diagnostic] }
 
-fn has_named_args(args: [Shared<Expr>]) -> bool = do
-  let mut i = 0; let mut found = false
-  while i < args.length() do
-    match args[i] {
-      ExprNamedArg(_, _, _) => do found = true; () end,
-      _ => ()
-    }
-    i = i + 1
-  end
-  found
-end
+type Call_arguments_inference_accumulator = Call_arguments_inference_accumulator {
+  accumulated_errors:           [Diagnostic],
+  inferred_argument_types_list: [Shared<Type>],
+}
 
-fn find_param_slot(param_names: [string], name: string) -> i32 = do
-  let mut i = 0; let mut slot = -1
-  while i < param_names.length() do
-    if param_names[i] == name then slot = i end
-    i = i + 1
-  end
-  slot
-end
+fn expression_is_named_argument(argument_expression: Shared<Expr>) -> bool =
+  match argument_expression {
+    ExprNamedArg(_, _, _) => true,
+    _ => false
+  }
 
-fn strip_named_labels(args: [Shared<Expr>]) -> ResolvedArgs = do
-  const stripped: [Shared<Expr>] = []; let mut i = 0
-  while i < args.length() do
-    match args[i] {
-      ExprNamedArg(_, inner, _) => stripped.push(inner),
-      _ => stripped.push(args[i])
-    }
-    i = i + 1
-  end
-  ResolvedArgs { exprs: stripped, errors: [] }
+fn has_named_args(args: [Shared<Expr>]) -> bool =
+  args.any(expression_is_named_argument)
+
+fn find_param_slot(parameter_names: [string], sought_parameter_name: string) -> i32 =
+  parameter_names.find_index(parameter_name => parameter_name == sought_parameter_name)
+
+fn inner_expression_after_stripping_optional_named_label(argument_expression: Shared<Expr>) -> Shared<Expr> =
+  match argument_expression {
+    ExprNamedArg(_, inner_expression, _) => inner_expression,
+    _ => argument_expression
+  }
+
+fn strip_named_labels(args: [Shared<Expr>]) -> ResolvedArgs =
+  ResolvedArgs {
+    exprs: args.map(inner_expression_after_stripping_optional_named_label),
+    errors: [],
+  }
+
+fn accumulate_inference_for_one_call_argument(
+  accumulator: Call_arguments_inference_accumulator,
+  argument_expression: Shared<Expr>,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> Call_arguments_inference_accumulator = do
+  const inference_for_single_argument =
+    infer_expr_fn(argument_expression, inference_context)
+  accumulator.inferred_argument_types_list.push(inference_for_single_argument.inferred_type)
+  Call_arguments_inference_accumulator {
+    accumulated_errors:
+      diagnostics_append(accumulator.accumulated_errors, inference_for_single_argument.errors),
+    inferred_argument_types_list: accumulator.inferred_argument_types_list,
+  }
 end
 
 fn reorder_named_to_positional(args: [Shared<Expr>], param_names: [string]) -> ResolvedArgs = do
@@ -94,15 +106,8 @@ fn resolve_named_args(args: [Shared<Expr>], callee_name: string, registry: TypeR
     end
   end
 
-fn take_first_param_types(param_types: [Shared<Type>], n: i32) -> [Shared<Type>] = do
-  const out: [Shared<Type>] = []
-  let mut j = 0
-  while j < n && j < param_types.length() do
-    out.push(param_types[j])
-    j = j + 1
-  end
-  out
-end
+fn take_first_param_types(param_types: [Shared<Type>], positional_argument_count: i32) -> [Shared<Type>] =
+  param_types.take(positional_argument_count)
 
 export fn infer_expr_call(
   function: Shared<Expr>,
@@ -115,15 +120,23 @@ export fn infer_expr_call(
   const resolved = resolve_named_args(call_arguments, callee_name, inference_context.registry)
   const effective_args = resolved.exprs
   const function_result = infer_expr_fn(function, inference_context)
-  let mut collected_errors = diagnostics_append(function_result.errors, resolved.errors)
-  const argument_inferred_types: [Shared<Type>] = []
-  let mut argument_index = 0
-  while argument_index < effective_args.length() do
-    const argument_inference = infer_expr_fn(effective_args[argument_index], inference_context)
-    collected_errors = diagnostics_append(collected_errors, argument_inference.errors)
-    argument_inferred_types.push(argument_inference.inferred_type)
-    argument_index = argument_index + 1
-  end
+  const fresh_argument_types_for_accumulator: [Shared<Type>] = []
+  const inference_accumulator_after_arguments =
+    effective_args.fold(
+      Call_arguments_inference_accumulator {
+        accumulated_errors:
+          diagnostics_append(function_result.errors, resolved.errors),
+        inferred_argument_types_list: fresh_argument_types_for_accumulator,
+      },
+      (accumulator_so_far, argument_expression_under_inference) =>
+        accumulate_inference_for_one_call_argument(
+          accumulator_so_far,
+          argument_expression_under_inference,
+          inference_context,
+          infer_expr_fn))
+  const collected_errors = inference_accumulator_after_arguments.accumulated_errors
+  const argument_inferred_types =
+    inference_accumulator_after_arguments.inferred_argument_types_list
   const with_arguments = InferResult { inferred_type: function_result.inferred_type, errors: collected_errors }
   if callee_name != '' && inference_context.registry.has_ctor(callee_name) then
     const constructor_output = infer_expr_call_for_constructor_name(
