@@ -51,7 +51,7 @@ module MLC
                 specifiers: "",
                 body: body_str,
                 capture_suffix: "",
-                params_suffix: " "
+                params_suffix: " mutable"
               )
             end
           end

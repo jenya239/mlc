@@ -49,7 +49,7 @@ bool expression_is_named_argument(std::shared_ptr<ast::Expr> argument_expression
 
 bool has_named_args(mlc::Array<std::shared_ptr<ast::Expr>> args) noexcept{return args.any(expression_is_named_argument);}
 
-int find_param_slot(mlc::Array<mlc::String> parameter_names, mlc::String sought_parameter_name) noexcept{return parameter_names.find_index([sought_parameter_name](mlc::String parameter_name)  { return parameter_name == sought_parameter_name; });}
+int find_param_slot(mlc::Array<mlc::String> parameter_names, mlc::String sought_parameter_name) noexcept{return parameter_names.find_index([sought_parameter_name](mlc::String parameter_name) mutable { return parameter_name == sought_parameter_name; });}
 
 std::shared_ptr<ast::Expr> inner_expression_after_stripping_optional_named_label(std::shared_ptr<ast::Expr> argument_expression) noexcept{return [&]() -> std::shared_ptr<ast::Expr> { if (std::holds_alternative<ast::ExprNamedArg>((*argument_expression)._)) { auto _v_exprnamedarg = std::get<ast::ExprNamedArg>((*argument_expression)._); auto [_w0, inner_expression, _w1] = _v_exprnamedarg; return inner_expression; } return argument_expression; }();}
 
@@ -141,7 +141,7 @@ infer_call::ResolvedArgs resolved = resolve_named_args(call_arguments, callee_na
 mlc::Array<std::shared_ptr<ast::Expr>> effective_args = resolved.exprs;
 infer_result::InferResult function_result = infer_expr_fn(function, inference_context);
 mlc::Array<std::shared_ptr<registry::Type>> fresh_argument_types_for_accumulator = {};
-infer_call::Call_arguments_inference_accumulator inference_accumulator_after_arguments = effective_args.fold(infer_call::Call_arguments_inference_accumulator{ast::diagnostics_append(function_result.errors, resolved.errors), fresh_argument_types_for_accumulator}, [inference_context, infer_expr_fn](infer_call::Call_arguments_inference_accumulator accumulator_so_far, std::shared_ptr<ast::Expr> argument_expression_under_inference)  { return accumulate_inference_for_one_call_argument(accumulator_so_far, argument_expression_under_inference, inference_context, infer_expr_fn); });
+infer_call::Call_arguments_inference_accumulator inference_accumulator_after_arguments = effective_args.fold(infer_call::Call_arguments_inference_accumulator{ast::diagnostics_append(function_result.errors, resolved.errors), fresh_argument_types_for_accumulator}, [inference_context, infer_expr_fn](infer_call::Call_arguments_inference_accumulator accumulator_so_far, std::shared_ptr<ast::Expr> argument_expression_under_inference) mutable { return accumulate_inference_for_one_call_argument(accumulator_so_far, argument_expression_under_inference, inference_context, infer_expr_fn); });
 mlc::Array<ast::Diagnostic> collected_errors = inference_accumulator_after_arguments.accumulated_errors;
 mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types = inference_accumulator_after_arguments.inferred_argument_types_list;
 infer_result::InferResult with_arguments = infer_result::InferResult{function_result.inferred_type, collected_errors};

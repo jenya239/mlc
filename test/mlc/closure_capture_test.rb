@@ -114,4 +114,31 @@ class ClosureCaptureTest < Minitest::Test
     # Lambda should capture 'n' from function parameter
     assert_includes cpp_code, "[n]"
   end
+
+  def test_lambda_emits_mutable_qualifier_when_captures
+    mlc_source = <<~MLCORA
+      fn test() -> i32 =
+        let accumulator = 1;
+        let f = (input: i32) => input + accumulator;
+        f(2)
+    MLCORA
+
+    cpp_code = MLC.to_cpp(mlc_source)
+
+    # Non-const call operator lets mutating methods run on copied captures (arrays, maps, folds).
+    assert_includes cpp_code, ") mutable {"
+  end
+
+  def test_lambda_emits_mutable_qualifier_without_captures
+    mlc_source = <<~MLCORA
+      fn test() -> i32 =
+        let f = (input: i32) => input + 1;
+        f(5)
+    MLCORA
+
+    cpp_code = MLC.to_cpp(mlc_source)
+
+    assert_includes cpp_code, "]("
+    assert_includes cpp_code, ") mutable {"
+  end
 end

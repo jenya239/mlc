@@ -86,7 +86,7 @@ mlc::String eval_stmt_expr(std::shared_ptr<semantic_ir::SExpr> expression, conte
   return result_code == literals::gen_unit_literal() ? statements_code : expr::append_trailing_expression_statement(statements_code, result_code);
  }(); } return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); }();}
 
-mlc::String eval_elements_code(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return elements.map([gen_expr_fn, context](std::shared_ptr<semantic_ir::SExpr> element)  { return gen_expr_fn(element, context); }).join(mlc::String(", "));}
+mlc::String eval_elements_code(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return elements.map([gen_expr_fn, context](std::shared_ptr<semantic_ir::SExpr> element) mutable { return gen_expr_fn(element, context); }).join(mlc::String(", "));}
 
 context::GenStmtResult eval_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
   [&](const SStmtLet& sstmtlet) -> context::GenStmtResult { auto [name, _w0, value, value_type, _w1] = sstmtlet; return [&]() -> context::GenStmtResult { 
@@ -123,7 +123,7 @@ context::GenStmtResult statement_result = eval_stmt_with_try(statement, fold_sta
 return stmt_eval::StmtsFoldState{context::GenStmtsResult_append_stmt(fold_state.partial_result, statement_result), context::update_context_from_statement(statement, fold_state.codegen_context)};
 }
 
-context::GenStmtsResult eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return statements.fold(stmt_eval::StmtsFoldState{context::GenStmtsResult{mlc::String(""), try_counter}, context}, [gen_expr_fn](stmt_eval::StmtsFoldState fold_state, std::shared_ptr<semantic_ir::SStmt> statement)  { return stmts_fold_step(fold_state, statement, gen_expr_fn); }).partial_result;}
+context::GenStmtsResult eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return statements.fold(stmt_eval::StmtsFoldState{context::GenStmtsResult{mlc::String(""), try_counter}, context}, [gen_expr_fn](stmt_eval::StmtsFoldState fold_state, std::shared_ptr<semantic_ir::SStmt> statement) mutable { return stmts_fold_step(fold_state, statement, gen_expr_fn); }).partial_result;}
 
 mlc::String eval_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{
 context::GenStmtsResult result = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn);

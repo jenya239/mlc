@@ -63,147 +63,124 @@ fn check_mutation_record_lit_parts(lit_parts: [RecordLitPart], mutable_locals: [
     diagnostics_for_record_literal_single_part(literal_part_under_check, mutable_locals))
 
 fn check_mutation_call(function: Shared<Expr>, arguments: [Shared<Expr>], mutable_locals: [string]) -> [Diagnostic] = do
-  let mut errors = check_mutation_expr(function, mutable_locals)
-  let mut index = 0
-  while index < arguments.length() do
-    errors = diagnostics_append(errors, check_mutation_expr(arguments[index], mutable_locals))
-    index = index + 1
-  end
-  errors
+  const errors_from_callable = check_mutation_expr(function, mutable_locals)
+  arguments.fold(
+    errors_from_callable,
+    (errors_accumulator, argument_under_call) =>
+      diagnostics_append(errors_accumulator, check_mutation_expr(argument_under_call, mutable_locals)))
 end
 
-fn check_mutation_exprs(expressions: [Shared<Expr>], mutable_locals: [string]) -> [Diagnostic] = do
-  let mut errors: [Diagnostic] = []
-  let mut index = 0
-  while index < expressions.length() do
-    errors = diagnostics_append(errors, check_mutation_expr(expressions[index], mutable_locals))
-    index = index + 1
-  end
-  errors
-end
+fn check_mutation_exprs(expressions: [Shared<Expr>], mutable_locals: [string]) -> [Diagnostic] =
+  expressions.fold(
+    do let empty: [Diagnostic] = []; empty end,
+    (errors_accumulator, expression_under_list) =>
+      diagnostics_append(errors_accumulator, check_mutation_expr(expression_under_list, mutable_locals)))
 
-fn check_mutation_field_vals(field_values: [Shared<FieldVal>], mutable_locals: [string]) -> [Diagnostic] = do
-  let mut errors: [Diagnostic] = []
-  let mut index = 0
-  while index < field_values.length() do
-    errors = diagnostics_append(errors, check_mutation_expr(field_values[index].val, mutable_locals))
-    index = index + 1
-  end
-  errors
-end
+fn check_mutation_field_vals(field_values: [Shared<FieldVal>], mutable_locals: [string]) -> [Diagnostic] =
+  field_values.fold(
+    do let empty: [Diagnostic] = []; empty end,
+    (errors_accumulator, field_value_under_walk) =>
+      diagnostics_append(errors_accumulator, check_mutation_expr(field_value_under_walk.val, mutable_locals)))
 
-fn check_mutation_arms(arms: [Shared<MatchArm>], mutable_locals: [string]) -> [Diagnostic] = do
-  let mut errors: [Diagnostic] = []
-  let mut index = 0
-  while index < arms.length() do
-    const bindings = pattern_bindings(arms[index].pat)
-    const arm_scope = mutable_locals
-    let mut binding_index = 0
-    while binding_index < bindings.length() do
-      arm_scope.push(bindings[binding_index])
-      binding_index = binding_index + 1
-    end
-    if arms[index].has_guard then
-      errors = diagnostics_append(errors, check_mutation_expr(arms[index].when_condition, arm_scope))
-    end
-    errors = diagnostics_append(errors, check_mutation_expr(arms[index].body, arm_scope))
-    index = index + 1
-  end
-  errors
-end
+fn check_mutation_arms(arms: [Shared<MatchArm>], mutable_locals: [string]) -> [Diagnostic] =
+  arms.fold(
+    do let empty: [Diagnostic] = []; empty end,
+    (errors_accumulator, arm_under_walk) => do
+      const bindings = pattern_bindings(arm_under_walk.pat)
+      const arm_scope = mutable_locals
+      let mut binding_index = 0
+      while binding_index < bindings.length() do
+        arm_scope.push(bindings[binding_index])
+        binding_index = binding_index + 1
+      end
+      const after_guard =
+        if arm_under_walk.has_guard then
+          diagnostics_append(errors_accumulator, check_mutation_expr(arm_under_walk.when_condition, arm_scope))
+        else
+          errors_accumulator
+        end
+      diagnostics_append(after_guard, check_mutation_expr(arm_under_walk.body, arm_scope))
+    end)
 
 fn check_mutation_block(statements: [Shared<Stmt>], result: Shared<Expr>, mutable_locals: [string]) -> [Diagnostic] = do
   const inner_mutable = mutable_locals
-  let mut errors: [Diagnostic] = []
-  let mut index = 0
-  while index < statements.length() do
-    match statements[index] {
-      StmtLet(name, is_mut, _, value, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
-        if is_mut then inner_mutable.push(name) end
-        ()
-      end,
-      StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
-        if is_mut then do
-          const pnames = pattern_bindings(pattern)
-          let mut pi = 0
-          while pi < pnames.length() do
-            inner_mutable.push(pnames[pi])
-            pi = pi + 1
-          end
-        end end
-        ()
-      end,
-      StmtLetConst(_, _, value, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
-        ()
-      end,
-      StmtExpr(expression, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable))
-        ()
-      end,
-      StmtReturn(expression, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable))
-        ()
-      end,
-      StmtBreak(_)               => (),
-      StmtContinue(_)            => (),
-    }
-    index = index + 1
-  end
-  diagnostics_append(errors, check_mutation_expr(result, inner_mutable))
+  const statement_errors =
+    statements.fold(
+      do let starting_errors: [Diagnostic] = []; starting_errors end,
+      (errors_accumulator, statement_under_block) => do
+        match statement_under_block {
+          StmtLet(name, is_mut, _, value, _) => do
+            const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable))
+            if is_mut then inner_mutable.push(name) end
+            next_errors
+          end,
+          StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
+            const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable))
+            if is_mut then do
+              const bound_pattern_names = pattern_bindings(pattern)
+              let mut pattern_binding_index = 0
+              while pattern_binding_index < bound_pattern_names.length() do
+                inner_mutable.push(bound_pattern_names[pattern_binding_index])
+                pattern_binding_index = pattern_binding_index + 1
+              end
+            end end
+            next_errors
+          end,
+          StmtLetConst(_, _, value, _) =>
+            diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable)),
+          StmtExpr(expression, _) =>
+            diagnostics_append(errors_accumulator, check_mutation_expr(expression, inner_mutable)),
+          StmtReturn(expression, _) =>
+            diagnostics_append(errors_accumulator, check_mutation_expr(expression, inner_mutable)),
+          StmtBreak(_)               => errors_accumulator,
+          StmtContinue(_)            => errors_accumulator,
+        }
+      end)
+  diagnostics_append(statement_errors, check_mutation_expr(result, inner_mutable))
 end
 
 fn check_mutation_stmts_errors(statements: [Shared<Stmt>], mutable_locals: [string]) -> [Diagnostic] = do
   const inner_mutable = mutable_locals
-  let mut errors: [Diagnostic] = []
-  let mut index = 0
-  while index < statements.length() do
-    match statements[index] {
-      StmtLet(name, is_mut, _, value, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
-        if is_mut then inner_mutable.push(name) end
-        ()
-      end,
-      StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
-        if is_mut then do
-          const pnames = pattern_bindings(pattern)
-          let mut pi = 0
-          while pi < pnames.length() do
-            inner_mutable.push(pnames[pi])
-            pi = pi + 1
-          end
-        end end
-        ()
-      end,
-      StmtLetConst(_, _, value, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(value, inner_mutable))
-        ()
-      end,
-      StmtExpr(expression, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable))
-        ()
-      end,
-      StmtReturn(expression, _) => do
-        errors = diagnostics_append(errors, check_mutation_expr(expression, inner_mutable))
-        ()
-      end,
-      StmtBreak(_)               => (),
-      StmtContinue(_)            => (),
-    }
-    index = index + 1
-  end
-  errors
+  statements.fold(
+    do let starting_errors: [Diagnostic] = []; starting_errors end,
+    (errors_accumulator, statement_under_walk) => do
+      match statement_under_walk {
+        StmtLet(name, is_mut, _, value, _) => do
+          const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable))
+          if is_mut then inner_mutable.push(name) end
+          next_errors
+        end,
+        StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
+          const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable))
+          if is_mut then do
+            const bound_pattern_names = pattern_bindings(pattern)
+            let mut pattern_binding_index = 0
+            while pattern_binding_index < bound_pattern_names.length() do
+              inner_mutable.push(bound_pattern_names[pattern_binding_index])
+              pattern_binding_index = pattern_binding_index + 1
+            end
+          end end
+          next_errors
+        end,
+        StmtLetConst(_, _, value, _) =>
+          diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable)),
+        StmtExpr(expression, _) =>
+          diagnostics_append(errors_accumulator, check_mutation_expr(expression, inner_mutable)),
+        StmtReturn(expression, _) =>
+          diagnostics_append(errors_accumulator, check_mutation_expr(expression, inner_mutable)),
+        StmtBreak(_)               => errors_accumulator,
+        StmtContinue(_)            => errors_accumulator,
+      }
+    end)
 end
 
 export fn check_fn_body_mutations(params: [Shared<Param>], body: Shared<Expr>) -> [Diagnostic] = do
-  const mutable_locals: [string] = []
-  let mut index = 0
-  while index < params.length() do
-    if params[index].is_mut then mutable_locals.push(params[index].name) end
-    index = index + 1
-  end
+  const mutable_locals =
+    params.fold(
+      do let empty_scope: [string] = []; empty_scope end,
+      (parameter_scope, parameter_under_check) => do
+        if parameter_under_check.is_mut then parameter_scope.push(parameter_under_check.name) end
+        parameter_scope
+      end)
   check_mutation_expr(body, mutable_locals)
 end

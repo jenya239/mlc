@@ -44,7 +44,7 @@ index = index + 1;
 }
   return parts.join(mlc::String(", "));
  }();
-return capture + mlc::String("(") + parameter_list + mlc::String(")");
+return capture + mlc::String("(") + parameter_list + mlc::String(") mutable");
 }
 
 std::shared_ptr<semantic_ir::SExpr> find_field_value(mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, mlc::String field_name) noexcept{

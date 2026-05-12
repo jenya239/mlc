@@ -100,6 +100,6 @@ return parts.join(mlc::String(""));
 
 mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept{return type_params.size() > 0 ? mlc::String("template<typename ") + type_params.join(mlc::String(", typename ")) + mlc::String(">\n") : mlc::String("");}
 
-mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept{return import_paths.map([](mlc::String path)  { return mlc::String("#include \"") + path_to_module_base(path) + mlc::String(".hpp\"\n"); }).join(mlc::String(""));}
+mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept{return import_paths.map([](mlc::String path) mutable { return mlc::String("#include \"") + path_to_module_base(path) + mlc::String(".hpp\"\n"); }).join(mlc::String(""));}
 
 } // namespace cpp_naming

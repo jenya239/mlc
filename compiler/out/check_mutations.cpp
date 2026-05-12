@@ -31,7 +31,7 @@ mlc::Array<ast::Diagnostic> check_mutation_stmts_errors(mlc::Array<std::shared_p
 
 mlc::Array<ast::Diagnostic> check_fn_body_mutations(mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<ast::Expr> body) noexcept;
 
-bool scope_has(mlc::Array<mlc::String> scope, mlc::String sought_name) noexcept{return scope.any([sought_name](mlc::String scope_entry)  { return scope_entry == sought_name; });}
+bool scope_has(mlc::Array<mlc::String> scope, mlc::String sought_name) noexcept{return scope.any([sought_name](mlc::String scope_entry) mutable { return scope_entry == sought_name; });}
 
 mlc::Array<ast::Diagnostic> check_mutation_expr(std::shared_ptr<ast::Expr> expression, mlc::Array<mlc::String> mutable_locals) noexcept{return [&]() -> mlc::Array<ast::Diagnostic> { if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [operation, left, right, source_span] = _v_exprbin; return [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> right_errors = check_mutation_expr(right, mutable_locals);
@@ -55,193 +55,135 @@ mlc::Array<ast::Diagnostic> diagnostics_for_record_literal_single_part(ast::Reco
   [&](const RecordLitSpread& recordlitspread) -> mlc::Array<ast::Diagnostic> { auto [spread_expression] = recordlitspread; return check_mutation_expr(spread_expression, mutable_locals); }
 }, literal_part._);}
 
-mlc::Array<ast::Diagnostic> check_mutation_record_lit_parts(mlc::Array<ast::RecordLitPart> lit_parts, mlc::Array<mlc::String> mutable_locals) noexcept{return mlc::collections::flat_map(lit_parts, [mutable_locals](ast::RecordLitPart literal_part_under_check)  { return diagnostics_for_record_literal_single_part(literal_part_under_check, mutable_locals); });}
+mlc::Array<ast::Diagnostic> check_mutation_record_lit_parts(mlc::Array<ast::RecordLitPart> lit_parts, mlc::Array<mlc::String> mutable_locals) noexcept{return mlc::collections::flat_map(lit_parts, [mutable_locals](ast::RecordLitPart literal_part_under_check) mutable { return diagnostics_for_record_literal_single_part(literal_part_under_check, mutable_locals); });}
 
 mlc::Array<ast::Diagnostic> check_mutation_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> arguments, mlc::Array<mlc::String> mutable_locals) noexcept{
-mlc::Array<ast::Diagnostic> errors = check_mutation_expr(function, mutable_locals);
-int index = 0;
-while (index < arguments.size()){
-{
-errors = ast::diagnostics_append(errors, check_mutation_expr(arguments[index], mutable_locals));
-index = index + 1;
-}
-}
-return errors;
+mlc::Array<ast::Diagnostic> errors_from_callable = check_mutation_expr(function, mutable_locals);
+return arguments.fold(errors_from_callable, [mutable_locals](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::Expr> argument_under_call) mutable { return ast::diagnostics_append(errors_accumulator, check_mutation_expr(argument_under_call, mutable_locals)); });
 }
 
-mlc::Array<ast::Diagnostic> check_mutation_exprs(mlc::Array<std::shared_ptr<ast::Expr>> expressions, mlc::Array<mlc::String> mutable_locals) noexcept{
-mlc::Array<ast::Diagnostic> errors = {};
-int index = 0;
-while (index < expressions.size()){
-{
-errors = ast::diagnostics_append(errors, check_mutation_expr(expressions[index], mutable_locals));
-index = index + 1;
-}
-}
-return errors;
-}
+mlc::Array<ast::Diagnostic> check_mutation_exprs(mlc::Array<std::shared_ptr<ast::Expr>> expressions, mlc::Array<mlc::String> mutable_locals) noexcept{return expressions.fold([&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty = {};
+  return empty;
+ }(), [mutable_locals](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::Expr> expression_under_list) mutable { return ast::diagnostics_append(errors_accumulator, check_mutation_expr(expression_under_list, mutable_locals)); });}
 
-mlc::Array<ast::Diagnostic> check_mutation_field_vals(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::Array<mlc::String> mutable_locals) noexcept{
-mlc::Array<ast::Diagnostic> errors = {};
-int index = 0;
-while (index < field_values.size()){
-{
-errors = ast::diagnostics_append(errors, check_mutation_expr(field_values[index]->val, mutable_locals));
-index = index + 1;
-}
-}
-return errors;
-}
+mlc::Array<ast::Diagnostic> check_mutation_field_vals(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::Array<mlc::String> mutable_locals) noexcept{return field_values.fold([&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty = {};
+  return empty;
+ }(), [mutable_locals](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::FieldVal> field_value_under_walk) mutable { return ast::diagnostics_append(errors_accumulator, check_mutation_expr(field_value_under_walk->val, mutable_locals)); });}
 
-mlc::Array<ast::Diagnostic> check_mutation_arms(mlc::Array<std::shared_ptr<ast::MatchArm>> arms, mlc::Array<mlc::String> mutable_locals) noexcept{
-mlc::Array<ast::Diagnostic> errors = {};
-int index = 0;
-while (index < arms.size()){
-{
-mlc::Array<mlc::String> bindings = names::pattern_bindings(arms[index]->pat);
-mlc::Array<mlc::String> arm_scope = mutable_locals;
-int binding_index = 0;
-while (binding_index < bindings.size()){
+mlc::Array<ast::Diagnostic> check_mutation_arms(mlc::Array<std::shared_ptr<ast::MatchArm>> arms, mlc::Array<mlc::String> mutable_locals) noexcept{return arms.fold([&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty = {};
+  return empty;
+ }(), [mutable_locals](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::MatchArm> arm_under_walk) mutable { return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<mlc::String> bindings = names::pattern_bindings(arm_under_walk->pat);
+  mlc::Array<mlc::String> arm_scope = mutable_locals;
+  int binding_index = 0;
+  while (binding_index < bindings.size()){
 {
 arm_scope.push_back(bindings[binding_index]);
 binding_index = binding_index + 1;
 }
 }
-if (arms[index]->has_guard){
-{
-errors = ast::diagnostics_append(errors, check_mutation_expr(arms[index]->when_condition, arm_scope));
-}
-}
-errors = ast::diagnostics_append(errors, check_mutation_expr(arms[index]->body, arm_scope));
-index = index + 1;
-}
-}
-return errors;
-}
+  mlc::Array<ast::Diagnostic> after_guard = arm_under_walk->has_guard ? ast::diagnostics_append(errors_accumulator, check_mutation_expr(arm_under_walk->when_condition, arm_scope)) : errors_accumulator;
+  return ast::diagnostics_append(after_guard, check_mutation_expr(arm_under_walk->body, arm_scope));
+ }(); });}
 
 mlc::Array<ast::Diagnostic> check_mutation_block(mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result, mlc::Array<mlc::String> mutable_locals) noexcept{
 mlc::Array<mlc::String> inner_mutable = mutable_locals;
-mlc::Array<ast::Diagnostic> errors = {};
-int index = 0;
-while (index < statements.size()){
-{
-std::visit(overloaded{
-  [&](const StmtLet& stmtlet) -> std::tuple<> { auto [name, is_mut, _w0, value, _w1] = stmtlet; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
+mlc::Array<ast::Diagnostic> statement_errors = statements.fold([&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> starting_errors = {};
+  return starting_errors;
+ }(), [inner_mutable](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::Stmt> statement_under_block) mutable { return std::visit(overloaded{
+  [&](const StmtLet& stmtlet) -> mlc::Array<ast::Diagnostic> { auto [name, is_mut, _w0, value, _w1] = stmtlet; return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> next_errors = ast::diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable));
   if (is_mut){
 {
 inner_mutable.push_back(name);
 }
 }
-  return std::make_tuple();
+  return next_errors;
  }(); },
-  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, is_mut, _w0, value, _w1, _w2, _w3] = stmtletpat; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
+  [&](const StmtLetPat& stmtletpat) -> mlc::Array<ast::Diagnostic> { auto [pattern, is_mut, _w0, value, _w1, _w2, _w3] = stmtletpat; return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> next_errors = ast::diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable));
   if (is_mut){
 {
-mlc::Array<mlc::String> pnames = names::pattern_bindings(pattern);
-int pi = 0;
+mlc::Array<mlc::String> bound_pattern_names = names::pattern_bindings(pattern);
+int pattern_binding_index = 0;
 [&]() { 
-  while (pi < pnames.size()){
+  while (pattern_binding_index < bound_pattern_names.size()){
 {
-inner_mutable.push_back(pnames[pi]);
-pi = pi + 1;
+inner_mutable.push_back(bound_pattern_names[pattern_binding_index]);
+pattern_binding_index = pattern_binding_index + 1;
 }
 }
  }();
 }
 }
-  return std::make_tuple();
+  return next_errors;
  }(); },
-  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [_w0, _w1, value, _w2] = stmtletconst; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
-  return std::make_tuple();
- }(); },
-  [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expression, _w0] = stmtexpr; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(expression, inner_mutable));
-  return std::make_tuple();
- }(); },
-  [&](const StmtReturn& stmtreturn) -> std::tuple<> { auto [expression, _w0] = stmtreturn; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(expression, inner_mutable));
-  return std::make_tuple();
- }(); },
-  [&](const StmtBreak& stmtbreak) -> std::tuple<> { auto [_w0] = stmtbreak; return std::make_tuple(); },
-  [&](const StmtContinue& stmtcontinue) -> std::tuple<> { auto [_w0] = stmtcontinue; return std::make_tuple(); }
-}, (*statements[index])._);
-index = index + 1;
-}
-}
-return ast::diagnostics_append(errors, check_mutation_expr(result, inner_mutable));
+  [&](const StmtLetConst& stmtletconst) -> mlc::Array<ast::Diagnostic> { auto [_w0, _w1, value, _w2] = stmtletconst; return ast::diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable)); },
+  [&](const StmtExpr& stmtexpr) -> mlc::Array<ast::Diagnostic> { auto [expression, _w0] = stmtexpr; return ast::diagnostics_append(errors_accumulator, check_mutation_expr(expression, inner_mutable)); },
+  [&](const StmtReturn& stmtreturn) -> mlc::Array<ast::Diagnostic> { auto [expression, _w0] = stmtreturn; return ast::diagnostics_append(errors_accumulator, check_mutation_expr(expression, inner_mutable)); },
+  [&](const StmtBreak& stmtbreak) -> mlc::Array<ast::Diagnostic> { auto [_w0] = stmtbreak; return errors_accumulator; },
+  [&](const StmtContinue& stmtcontinue) -> mlc::Array<ast::Diagnostic> { auto [_w0] = stmtcontinue; return errors_accumulator; }
+}, (*statement_under_block)._); });
+return ast::diagnostics_append(statement_errors, check_mutation_expr(result, inner_mutable));
 }
 
 mlc::Array<ast::Diagnostic> check_mutation_stmts_errors(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> mutable_locals) noexcept{
 mlc::Array<mlc::String> inner_mutable = mutable_locals;
-mlc::Array<ast::Diagnostic> errors = {};
-int index = 0;
-while (index < statements.size()){
-{
-std::visit(overloaded{
-  [&](const StmtLet& stmtlet) -> std::tuple<> { auto [name, is_mut, _w0, value, _w1] = stmtlet; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
+return statements.fold([&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> starting_errors = {};
+  return starting_errors;
+ }(), [inner_mutable](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::Stmt> statement_under_walk) mutable { return std::visit(overloaded{
+  [&](const StmtLet& stmtlet) -> mlc::Array<ast::Diagnostic> { auto [name, is_mut, _w0, value, _w1] = stmtlet; return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> next_errors = ast::diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable));
   if (is_mut){
 {
 inner_mutable.push_back(name);
 }
 }
-  return std::make_tuple();
+  return next_errors;
  }(); },
-  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, is_mut, _w0, value, _w1, _w2, _w3] = stmtletpat; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
+  [&](const StmtLetPat& stmtletpat) -> mlc::Array<ast::Diagnostic> { auto [pattern, is_mut, _w0, value, _w1, _w2, _w3] = stmtletpat; return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> next_errors = ast::diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable));
   if (is_mut){
 {
-mlc::Array<mlc::String> pnames = names::pattern_bindings(pattern);
-int pi = 0;
+mlc::Array<mlc::String> bound_pattern_names = names::pattern_bindings(pattern);
+int pattern_binding_index = 0;
 [&]() { 
-  while (pi < pnames.size()){
+  while (pattern_binding_index < bound_pattern_names.size()){
 {
-inner_mutable.push_back(pnames[pi]);
-pi = pi + 1;
+inner_mutable.push_back(bound_pattern_names[pattern_binding_index]);
+pattern_binding_index = pattern_binding_index + 1;
 }
 }
  }();
 }
 }
-  return std::make_tuple();
+  return next_errors;
  }(); },
-  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [_w0, _w1, value, _w2] = stmtletconst; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(value, inner_mutable));
-  return std::make_tuple();
- }(); },
-  [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expression, _w0] = stmtexpr; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(expression, inner_mutable));
-  return std::make_tuple();
- }(); },
-  [&](const StmtReturn& stmtreturn) -> std::tuple<> { auto [expression, _w0] = stmtreturn; return [&]() -> std::tuple<> { 
-  errors = ast::diagnostics_append(errors, check_mutation_expr(expression, inner_mutable));
-  return std::make_tuple();
- }(); },
-  [&](const StmtBreak& stmtbreak) -> std::tuple<> { auto [_w0] = stmtbreak; return std::make_tuple(); },
-  [&](const StmtContinue& stmtcontinue) -> std::tuple<> { auto [_w0] = stmtcontinue; return std::make_tuple(); }
-}, (*statements[index])._);
-index = index + 1;
-}
-}
-return errors;
+  [&](const StmtLetConst& stmtletconst) -> mlc::Array<ast::Diagnostic> { auto [_w0, _w1, value, _w2] = stmtletconst; return ast::diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable)); },
+  [&](const StmtExpr& stmtexpr) -> mlc::Array<ast::Diagnostic> { auto [expression, _w0] = stmtexpr; return ast::diagnostics_append(errors_accumulator, check_mutation_expr(expression, inner_mutable)); },
+  [&](const StmtReturn& stmtreturn) -> mlc::Array<ast::Diagnostic> { auto [expression, _w0] = stmtreturn; return ast::diagnostics_append(errors_accumulator, check_mutation_expr(expression, inner_mutable)); },
+  [&](const StmtBreak& stmtbreak) -> mlc::Array<ast::Diagnostic> { auto [_w0] = stmtbreak; return errors_accumulator; },
+  [&](const StmtContinue& stmtcontinue) -> mlc::Array<ast::Diagnostic> { auto [_w0] = stmtcontinue; return errors_accumulator; }
+}, (*statement_under_walk)._); });
 }
 
 mlc::Array<ast::Diagnostic> check_fn_body_mutations(mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<ast::Expr> body) noexcept{
-mlc::Array<mlc::String> mutable_locals = {};
-int index = 0;
-while (index < params.size()){
+mlc::Array<mlc::String> mutable_locals = params.fold([&]() -> mlc::Array<mlc::String> { 
+  mlc::Array<mlc::String> empty_scope = {};
+  return empty_scope;
+ }(), [](mlc::Array<mlc::String> parameter_scope, std::shared_ptr<ast::Param> parameter_under_check) mutable { return [&]() -> mlc::Array<mlc::String> { 
+  if (parameter_under_check->is_mut){
 {
-if (params[index]->is_mut){
-{
-mutable_locals.push_back(params[index]->name);
+parameter_scope.push_back(parameter_under_check->name);
 }
 }
-index = index + 1;
-}
-}
+  return parameter_scope;
+ }(); });
 return check_mutation_expr(body, mutable_locals);
 }
 

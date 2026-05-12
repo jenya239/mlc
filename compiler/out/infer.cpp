@@ -105,7 +105,7 @@ infer::Statement_sequence_inference_fold_state infer_single_statement_augment_fo
 
 infer_result::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 
-infer_result::InferResult infer_arguments_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept{return expressions.fold(initial, [inference_context](infer_result::InferResult accumulated_inference, std::shared_ptr<ast::Expr> expression_under_inference)  { return infer_result::InferResult_absorb(accumulated_inference, infer_expr(expression_under_inference, inference_context)); });}
+infer_result::InferResult infer_arguments_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept{return expressions.fold(initial, [inference_context](infer_result::InferResult accumulated_inference, std::shared_ptr<ast::Expr> expression_under_inference) mutable { return infer_result::InferResult_absorb(accumulated_inference, infer_expr(expression_under_inference, inference_context)); });}
 
 infer_result::InferResult infer_record_field_binding_value_inference_step(infer_result::InferResult accumulator, std::shared_ptr<ast::FieldVal> field_value, check_context::CheckContext inference_context, mlc::String record_type_name_for_fields) noexcept{
 bool registry_has_ordered_fields_for_type = record_type_name_for_fields.length() > 0 && registry::TypeRegistry_has_fields(inference_context.registry, record_type_name_for_fields);
@@ -120,11 +120,11 @@ return registry_has_ordered_fields_for_type ? [&]() -> infer_result::InferResult
  }() : infer_result::InferResult_absorb(next_result, value_inference);
 }
 
-infer_result::InferResult infer_field_values_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context, mlc::String record_type_name_for_fields) noexcept{return field_values.fold(initial, [inference_context, record_type_name_for_fields](infer_result::InferResult accumulator, std::shared_ptr<ast::FieldVal> field_value_under_inference)  { return infer_record_field_binding_value_inference_step(accumulator, field_value_under_inference, inference_context, record_type_name_for_fields); });}
+infer_result::InferResult infer_field_values_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context, mlc::String record_type_name_for_fields) noexcept{return field_values.fold(initial, [inference_context, record_type_name_for_fields](infer_result::InferResult accumulator, std::shared_ptr<ast::FieldVal> field_value_under_inference) mutable { return infer_record_field_binding_value_inference_step(accumulator, field_value_under_inference, inference_context, record_type_name_for_fields); });}
 
 infer_result::InferResult infer_explicit_record_literal_field_unknown_name_step(infer_result::InferResult accumulator, std::shared_ptr<ast::FieldVal> field_value_binding, mlc::String record_type_name, registry::TypeRegistry registry) noexcept{return infer_result::InferResult{accumulator.inferred_type, ast::diagnostics_append(accumulator.errors, type_diagnostics::infer_expr_field_diagnostics(std::make_shared<registry::Type>(registry::TNamed(record_type_name)), field_value_binding->name, ast::expr_span(field_value_binding->val), registry))};}
 
-infer_result::InferResult infer_explicit_record_literal_field_name_errors(infer_result::InferResult initial, mlc::String record_type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_field_values_flat, registry::TypeRegistry registry) noexcept{return explicit_field_values_flat.fold(initial, [record_type_name, registry](infer_result::InferResult accumulator, std::shared_ptr<ast::FieldVal> field_value_binding)  { return infer_explicit_record_literal_field_unknown_name_step(accumulator, field_value_binding, record_type_name, registry); });}
+infer_result::InferResult infer_explicit_record_literal_field_name_errors(infer_result::InferResult initial, mlc::String record_type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_field_values_flat, registry::TypeRegistry registry) noexcept{return explicit_field_values_flat.fold(initial, [record_type_name, registry](infer_result::InferResult accumulator, std::shared_ptr<ast::FieldVal> field_value_binding) mutable { return infer_explicit_record_literal_field_unknown_name_step(accumulator, field_value_binding, record_type_name, registry); });}
 
 infer_result::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
 infer_result::InferResult left_result = infer_expr(left, inference_context);
@@ -196,7 +196,7 @@ return infer::Infer_tuple_literal_fold_state{infer_result::InferResult_absorb(st
 
 infer_result::InferResult infer_expr_tuple_literal(mlc::Array<std::shared_ptr<ast::Expr>> elements, check_context::CheckContext inference_context) noexcept{
 return elements.size() < 2 ? infer_arguments_errors(infer_result::infer_ok(std::make_shared<registry::Type>((registry::TUnknown{}))), elements, inference_context) : [&]() -> infer_result::InferResult { 
-  infer::Infer_tuple_literal_fold_state folded_tuple_inference = elements.fold(infer::Infer_tuple_literal_fold_state{infer_result::infer_ok(std::make_shared<registry::Type>((registry::TUnknown{}))), {}}, [inference_context](infer::Infer_tuple_literal_fold_state accumulator_state, std::shared_ptr<ast::Expr> tuple_element_under_inference)  { return infer_tuple_literal_element_fold_step(accumulator_state, tuple_element_under_inference, inference_context); });
+  infer::Infer_tuple_literal_fold_state folded_tuple_inference = elements.fold(infer::Infer_tuple_literal_fold_state{infer_result::infer_ok(std::make_shared<registry::Type>((registry::TUnknown{}))), {}}, [inference_context](infer::Infer_tuple_literal_fold_state accumulator_state, std::shared_ptr<ast::Expr> tuple_element_under_inference) mutable { return infer_tuple_literal_element_fold_step(accumulator_state, tuple_element_under_inference, inference_context); });
   return infer_result::InferResult_with_type(folded_tuple_inference.combined_inference, std::make_shared<registry::Type>(registry::TTuple(folded_tuple_inference.member_types)));
  }();
 }
@@ -217,8 +217,8 @@ return type_environment_for_parameters;
 
 infer_result::InferResult infer_expr_lambda(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, check_context::CheckContext inference_context) noexcept{
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> lambda_type_environment = inference_context.type_env;
-mlc::Array<std::shared_ptr<registry::Type>> inferred_unknown_parameter_types = parameter_names.map([](mlc::String unused_lambda_parameter_placeholder)  { return inference_placeholder_unknown_type(); });
-parameter_names.fold(lambda_type_environment, [](mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> environment_map, mlc::String parameter_binding_name)  { return lambda_inference_environment_assign_unknown_placeholder(environment_map, parameter_binding_name); });
+mlc::Array<std::shared_ptr<registry::Type>> inferred_unknown_parameter_types = parameter_names.map([](mlc::String unused_lambda_parameter_placeholder) mutable { return inference_placeholder_unknown_type(); });
+parameter_names.fold(lambda_type_environment, [](mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> environment_map, mlc::String parameter_binding_name) mutable { return lambda_inference_environment_assign_unknown_placeholder(environment_map, parameter_binding_name); });
 check_context::CheckContext lambda_inference_context = check_context::check_context_new(lambda_type_environment, inference_context.registry);
 infer_result::InferResult body_inference = infer_expr(body, lambda_inference_context);
 return infer_result::infer_ok(std::make_shared<registry::Type>(registry::TFn(inferred_unknown_parameter_types, body_inference.inferred_type)));
@@ -269,7 +269,7 @@ infer::Record_literal_spread_inference_fold_state accumulate_record_literal_spre
   [&](const RecordLitFields& recordlitfields) -> infer::Record_literal_spread_inference_fold_state { auto [_w0] = recordlitfields; return fold_state; }
 }, literal_part_under_inference._);}
 
-infer::Record_literal_spread_inference_fold_state infer_record_literal_fold_spread_inference_parts(infer_result::InferResult inference_before_spread_merge, mlc::Array<ast::RecordLitPart> literal_parts_under_inference, check_context::CheckContext inference_context) noexcept{return literal_parts_under_inference.fold(infer::Record_literal_spread_inference_fold_state{inference_before_spread_merge, {}}, [inference_context](infer::Record_literal_spread_inference_fold_state accumulator_fold_state, ast::RecordLitPart literal_part_under_inference)  { return accumulate_record_literal_spread_inference_for_literal_part(accumulator_fold_state, literal_part_under_inference, inference_context); });}
+infer::Record_literal_spread_inference_fold_state infer_record_literal_fold_spread_inference_parts(infer_result::InferResult inference_before_spread_merge, mlc::Array<ast::RecordLitPart> literal_parts_under_inference, check_context::CheckContext inference_context) noexcept{return literal_parts_under_inference.fold(infer::Record_literal_spread_inference_fold_state{inference_before_spread_merge, {}}, [inference_context](infer::Record_literal_spread_inference_fold_state accumulator_fold_state, ast::RecordLitPart literal_part_under_inference) mutable { return accumulate_record_literal_spread_inference_for_literal_part(accumulator_fold_state, literal_part_under_inference, inference_context); });}
 
 infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<ast::RecordLitPart> lit_parts, check_context::CheckContext inference_context, ast::Span span) noexcept{
 mlc::Array<ast::Diagnostic> private_errors = registry::TypeRegistry_is_private_ctor(inference_context.registry, type_name) && inference_context.current_extend_type != type_name ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("private constructor: cannot construct ") + type_name + mlc::String(" outside its extend block"), span)} : mlc::Array<ast::Diagnostic>{};
@@ -347,7 +347,7 @@ next_diagnostics = ast::diagnostics_append(next_diagnostics, else_branch_inferen
 }, (*statement_under_inference)._);}
 
 infer_result::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
-infer::Statement_sequence_inference_fold_state inference_after_statement_sequence = statements.fold(infer::Statement_sequence_inference_fold_state{{}, inference_context.type_env}, [inference_context](infer::Statement_sequence_inference_fold_state accumulator_fold_state, std::shared_ptr<ast::Stmt> statement_under_inference_within_block)  { return infer_single_statement_augment_fold_state(accumulator_fold_state, statement_under_inference_within_block, inference_context.registry); });
+infer::Statement_sequence_inference_fold_state inference_after_statement_sequence = statements.fold(infer::Statement_sequence_inference_fold_state{{}, inference_context.type_env}, [inference_context](infer::Statement_sequence_inference_fold_state accumulator_fold_state, std::shared_ptr<ast::Stmt> statement_under_inference_within_block) mutable { return infer_single_statement_augment_fold_state(accumulator_fold_state, statement_under_inference_within_block, inference_context.registry); });
 return infer_result::StmtInferResult{inference_after_statement_sequence.type_environment_under_construction, inference_after_statement_sequence.diagnostics_collected_so_far};
 }
 

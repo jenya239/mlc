@@ -17,7 +17,7 @@ export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
       parts.join(', ')
     end
     end
-  capture + "(" + parameter_list + ")"
+  capture + "(" + parameter_list + ") mutable"
 end
 
 export fn find_field_value(field_values: [Shared<SFieldVal>], field_name: string) -> Shared<SExpr> = do
