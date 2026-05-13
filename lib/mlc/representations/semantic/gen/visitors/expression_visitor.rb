@@ -151,10 +151,15 @@ module MLC
               inference = @services.type_inference_service
               resolved_args = resolve_named_call_args(node)
               args_ir = []
-              resolved_args.each do |arg|
-                expected = if callee_ir.is_a?(SemanticIR::MemberExpr) && svc.lambda?(arg)
-                             inference.send(:expected_lambda_param_types, callee_ir.object, callee_ir.member, args_ir)
-                           end
+              resolved_args.each_with_index do |arg, argument_index|
+                expected =
+                  if svc.lambda?(arg)
+                    if callee_ir.is_a?(SemanticIR::MemberExpr)
+                      inference.send(:expected_lambda_param_types, callee_ir.object, callee_ir.member, args_ir)
+                    else
+                      inference.expected_lambda_parameter_types_for_function_argument(callee_ir, argument_index)
+                    end
+                  end
                 if expected&.any?
                   args_ir << scope.with_lambda_param_types(expected) { visit(arg) }
                 else

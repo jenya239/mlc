@@ -258,6 +258,21 @@ module MLC
               end
             end
 
+            # Expected parameter types for a lambda passed as positional argument index to a non-generic VarExpr callee.
+            # (MemberExpr HöF paths use expected_lambda_param_types.)
+            def expected_lambda_parameter_types_for_function_argument(callee_ir, argument_index)
+              return [] unless callee_ir.is_a?(SemanticIR::VarExpr)
+
+              info = @function_registry.fetch(callee_ir.name)
+              return [] unless info
+              return [] if info.type_params && !info.type_params.empty?
+
+              formal = info.param_types[argument_index]
+              return [] unless formal.is_a?(SemanticIR::FunctionType)
+
+              formal.params.map { |parameter_entry| parameter_entry[:type] }.compact
+            end
+
             # Infer element type from iterable (for loops)
             def infer_iterable_type(iterable_ir, node: nil)
               if iterable_ir.type.is_a?(SemanticIR::ArrayType)

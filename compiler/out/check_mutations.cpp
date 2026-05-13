@@ -94,7 +94,7 @@ mlc::Array<mlc::String> inner_mutable = mutable_locals;
 mlc::Array<ast::Diagnostic> statement_errors = statements.fold([&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> starting_errors = {};
   return starting_errors;
- }(), [inner_mutable](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::Stmt> statement_under_block) mutable { return std::visit(overloaded{
+ }(), [&inner_mutable](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::Stmt> statement_under_block) mutable { return std::visit(overloaded{
   [&](const StmtLet& stmtlet) -> mlc::Array<ast::Diagnostic> { auto [name, is_mut, _w0, value, _w1] = stmtlet; return [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> next_errors = ast::diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable));
   if (is_mut){
@@ -136,7 +136,7 @@ mlc::Array<mlc::String> inner_mutable = mutable_locals;
 return statements.fold([&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> starting_errors = {};
   return starting_errors;
- }(), [inner_mutable](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::Stmt> statement_under_walk) mutable { return std::visit(overloaded{
+ }(), [&inner_mutable](mlc::Array<ast::Diagnostic> errors_accumulator, std::shared_ptr<ast::Stmt> statement_under_walk) mutable { return std::visit(overloaded{
   [&](const StmtLet& stmtlet) -> mlc::Array<ast::Diagnostic> { auto [name, is_mut, _w0, value, _w1] = stmtlet; return [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> next_errors = ast::diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable));
   if (is_mut){

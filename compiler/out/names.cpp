@@ -225,19 +225,18 @@ mlc::Array<ast::Diagnostic> check_names_expr(std::shared_ptr<ast::Expr> expressi
 mlc::Array<ast::Diagnostic> NameCheckResult_append_expression_diagnostics(names::NameCheckResult self, mlc::Array<ast::Diagnostic> expression_diagnostics) noexcept{return ast::diagnostics_append(self.diagnostics, expression_diagnostics);}
 
 names::NameCheckResult check_names_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
-mlc::Array<ast::Diagnostic> collected_diagnostics = {};
 mlc::Array<mlc::String> scope = locals;
-int statement_index = 0;
-while (statement_index < statements.size()){
-{
-std::visit(overloaded{
-  [&](const StmtLet& stmtlet) -> std::tuple<> { auto [name, _w0, _w1, value, _w2] = stmtlet; return [&]() -> std::tuple<> { 
-  collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals));
+mlc::Array<ast::Diagnostic> collected_diagnostics = statements.fold([&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> starting_statement_diagnostics = {};
+  return starting_statement_diagnostics;
+ }(), [&scope, globals](mlc::Array<ast::Diagnostic> diagnostics_accumulator, std::shared_ptr<ast::Stmt> statement_under_walk) mutable { return std::visit(overloaded{
+  [&](const StmtLet& stmtlet) -> mlc::Array<ast::Diagnostic> { auto [name, _w0, _w1, value, _w2] = stmtlet; return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> next_after_let_value = ast::diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals));
   scope.push_back(name);
-  return std::make_tuple();
+  return next_after_let_value;
  }(); },
-  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, _w0, _w1, value, has_else, else_body, _w2] = stmtletpat; return [&]() -> std::tuple<> { 
-  collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals));
+  [&](const StmtLetPat& stmtletpat) -> mlc::Array<ast::Diagnostic> { auto [pattern, _w0, _w1, value, has_else, else_body, _w2] = stmtletpat; return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> next_after_pattern_let_value = ast::diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals));
   mlc::Array<mlc::String> bound_pattern_names = pattern_bindings(pattern);
   int pattern_binding_index = 0;
   while (pattern_binding_index < bound_pattern_names.size()){
@@ -248,30 +247,21 @@ pattern_binding_index = pattern_binding_index + 1;
 }
   if (has_else){
 {
-collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(else_body, scope, globals));
+next_after_pattern_let_value = ast::diagnostics_append(next_after_pattern_let_value, check_names_expr(else_body, scope, globals));
 }
 }
-  return std::make_tuple();
+  return next_after_pattern_let_value;
  }(); },
-  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [name, _w0, value, _w1] = stmtletconst; return [&]() -> std::tuple<> { 
-  collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals));
+  [&](const StmtLetConst& stmtletconst) -> mlc::Array<ast::Diagnostic> { auto [name, _w0, value, _w1] = stmtletconst; return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> next_after_const = ast::diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals));
   scope.push_back(name);
-  return std::make_tuple();
+  return next_after_const;
  }(); },
-  [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expression, _w0] = stmtexpr; return [&]() -> std::tuple<> { 
-  collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals));
-  return std::make_tuple();
- }(); },
-  [&](const StmtReturn& stmtreturn) -> std::tuple<> { auto [expression, _w0] = stmtreturn; return [&]() -> std::tuple<> { 
-  collected_diagnostics = ast::diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals));
-  return std::make_tuple();
- }(); },
-  [&](const StmtBreak& stmtbreak) -> std::tuple<> { auto [_w0] = stmtbreak; return std::make_tuple(); },
-  [&](const StmtContinue& stmtcontinue) -> std::tuple<> { auto [_w0] = stmtcontinue; return std::make_tuple(); }
-}, (*statements[statement_index])._);
-statement_index = statement_index + 1;
-}
-}
+  [&](const StmtExpr& stmtexpr) -> mlc::Array<ast::Diagnostic> { auto [expression, _w0] = stmtexpr; return ast::diagnostics_append(diagnostics_accumulator, check_names_expr(expression, scope, globals)); },
+  [&](const StmtReturn& stmtreturn) -> mlc::Array<ast::Diagnostic> { auto [expression, _w0] = stmtreturn; return ast::diagnostics_append(diagnostics_accumulator, check_names_expr(expression, scope, globals)); },
+  [&](const StmtBreak& stmtbreak) -> mlc::Array<ast::Diagnostic> { auto [_w0] = stmtbreak; return diagnostics_accumulator; },
+  [&](const StmtContinue& stmtcontinue) -> mlc::Array<ast::Diagnostic> { auto [_w0] = stmtcontinue; return diagnostics_accumulator; }
+}, (*statement_under_walk)._); });
 return names::NameCheckResult{collected_diagnostics, scope};
 }
 

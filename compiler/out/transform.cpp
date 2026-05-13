@@ -65,6 +65,10 @@ std::shared_ptr<registry::Type> standalone_unknown_cell() noexcept;
 
 mlc::Array<std::shared_ptr<semantic_ir::SExpr>> transform_exprs(mlc::Array<std::shared_ptr<ast::Expr>> expressions, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
 
+std::shared_ptr<semantic_ir::SExpr> transform_one_call_argument_using_optional_expected_type(std::shared_ptr<ast::Expr> argument_expression_shared, std::shared_ptr<registry::Type> expected_formal_parameter_type, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
+
+mlc::Array<std::shared_ptr<semantic_ir::SExpr>> transform_call_arguments_using_callee_semantic_type(std::shared_ptr<semantic_ir::SExpr> callee_semantic_expression, mlc::Array<std::shared_ptr<ast::Expr>> argument_expressions_under_call, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
+
 std::shared_ptr<semantic_ir::SFieldVal> semantic_field_val_from_source_field_after_transform(std::shared_ptr<ast::FieldVal> field_value_under_transform, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
 
 mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> transform_field_vals(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
@@ -184,6 +188,26 @@ mlc::Array<std::shared_ptr<ast::Expr>> reorder_named_args_for_transform(mlc::Arr
 std::shared_ptr<registry::Type> standalone_unknown_cell() noexcept{return std::make_shared<registry::Type>((registry::TUnknown{}));}
 
 mlc::Array<std::shared_ptr<semantic_ir::SExpr>> transform_exprs(mlc::Array<std::shared_ptr<ast::Expr>> expressions, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{return expressions.map([transform_context, stmts_fn](std::shared_ptr<ast::Expr> expression_under_transform) mutable { return transform_expr(expression_under_transform, transform_context, stmts_fn); });}
+
+std::shared_ptr<semantic_ir::SExpr> transform_one_call_argument_using_optional_expected_type(std::shared_ptr<ast::Expr> argument_expression_shared, std::shared_ptr<registry::Type> expected_formal_parameter_type, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
+std::shared_ptr<ast::Expr> argument_partially_desugared_shared_expression = partial_application_desugar::partial_application_desugar_expr(argument_expression_shared);
+return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<ast::ExprLambda>((*argument_partially_desugared_shared_expression)._)) { auto _v_exprlambda = std::get<ast::ExprLambda>((*argument_partially_desugared_shared_expression)._); auto [parameter_names, lambda_body, lambda_span] = _v_exprlambda; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TFn>((*expected_formal_parameter_type))) { auto _v_tfn = std::get<registry::TFn>((*expected_formal_parameter_type)); auto [expected_lambda_parameter_semantic_types, _w0] = _v_tfn; return transform_expr_lambda_with_param_types(parameter_names, expected_lambda_parameter_semantic_types, lambda_body, lambda_span, transform_context, stmts_fn); } return transform_expr(argument_expression_shared, transform_context, stmts_fn); }(); } return transform_expr(argument_expression_shared, transform_context, stmts_fn); }();
+}
+
+mlc::Array<std::shared_ptr<semantic_ir::SExpr>> transform_call_arguments_using_callee_semantic_type(std::shared_ptr<semantic_ir::SExpr> callee_semantic_expression, mlc::Array<std::shared_ptr<ast::Expr>> argument_expressions_under_call, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
+return [&]() -> mlc::Array<std::shared_ptr<semantic_ir::SExpr>> { if (std::holds_alternative<registry::TFn>((*semantic_ir::sexpr_type(callee_semantic_expression)))) { auto _v_tfn = std::get<registry::TFn>((*semantic_ir::sexpr_type(callee_semantic_expression))); auto [expected_formal_parameter_types, _w0] = _v_tfn; return [&]() -> mlc::Array<std::shared_ptr<semantic_ir::SExpr>> { 
+  mlc::Array<std::shared_ptr<semantic_ir::SExpr>> transformed_arguments = {};
+  int argument_index_under_call = 0;
+  while (argument_index_under_call < argument_expressions_under_call.size()){
+{
+std::shared_ptr<registry::Type> expected_placeholder_type = argument_index_under_call < expected_formal_parameter_types.size() ? expected_formal_parameter_types[argument_index_under_call] : standalone_unknown_cell();
+transformed_arguments.push_back(transform_one_call_argument_using_optional_expected_type(argument_expressions_under_call[argument_index_under_call], expected_placeholder_type, transform_context, stmts_fn));
+argument_index_under_call = argument_index_under_call + 1;
+}
+}
+  return transformed_arguments;
+ }(); } return transform_exprs(argument_expressions_under_call, transform_context, stmts_fn); }();
+}
 
 std::shared_ptr<semantic_ir::SFieldVal> semantic_field_val_from_source_field_after_transform(std::shared_ptr<ast::FieldVal> field_value_under_transform, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{return std::make_shared<semantic_ir::SFieldVal>(semantic_ir::SFieldVal{field_value_under_transform->name, transform_expr(field_value_under_transform->val, transform_context, stmts_fn)});}
 
@@ -305,7 +329,7 @@ return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative
   mlc::String callee_name = [&]() -> mlc::String { if (std::holds_alternative<ast::ExprIdent>((*function)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*function)._); auto [name, _w0] = _v_exprident; return name; } return mlc::String(""); }();
   mlc::Array<std::shared_ptr<ast::Expr>> resolved_call_args = reorder_named_args_for_transform(call_arguments, callee_name, transform_context.registry);
   std::shared_ptr<semantic_ir::SExpr> typed_fn = transform_expr(function, transform_context, stmts_fn);
-  mlc::Array<std::shared_ptr<semantic_ir::SExpr>> typed_args = transform_exprs(resolved_call_args, transform_context, stmts_fn);
+  mlc::Array<std::shared_ptr<semantic_ir::SExpr>> typed_args = transform_call_arguments_using_callee_semantic_type(typed_fn, resolved_call_args, transform_context, stmts_fn);
   std::shared_ptr<registry::Type> result_type = callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(transform_context.registry, callee_name) ? registry::TypeRegistry_ctor_type(transform_context.registry, callee_name) : [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TFn>((*semantic_ir::sexpr_type(typed_fn)))) { auto _v_tfn = std::get<registry::TFn>((*semantic_ir::sexpr_type(typed_fn))); auto [_w0, return_type] = _v_tfn; return return_type; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
   return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(typed_fn, typed_args, result_type, source_span));
  }(); } if (std::holds_alternative<ast::ExprMethod>((*expression_partial_application)._)) { auto _v_exprmethod = std::get<ast::ExprMethod>((*expression_partial_application)._); auto [object, method_name, method_arguments, source_span] = _v_exprmethod; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 

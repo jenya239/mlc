@@ -11,66 +11,63 @@ import {
   Diagnostic, diagnostic_error, span_unknown
 } from '../ast'
 
+fn each_program_declaration_depth_first(program: Program, handle_declaration: (Shared<Decl>) -> unit) -> unit = do
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    let mut declaration_stack: [Shared<Decl>] = []
+    declaration_stack.push(program.decls[declaration_index])
+    let mut stack_index = 0
+    while stack_index < declaration_stack.length() do
+      const current_declaration = declaration_stack[stack_index]
+      match current_declaration {
+        DeclExported(inner) => do declaration_stack.push(inner); () end,
+        _ => do handle_declaration(current_declaration); () end
+      }
+      stack_index = stack_index + 1
+    end
+    declaration_index = declaration_index + 1
+  end
+end
+
 export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnostic] = do
   let trait_declaration_names: Map<string, bool> = Map.new()
   let nominal_type_declaration_names: Map<string, bool> = Map.new()
   let conflicts: [Diagnostic] = []
-  let mut declaration_index = 0
-  while declaration_index < program.decls.length() do
-    let mut declaration_stack: [Shared<Decl>] = []
-    declaration_stack.push(program.decls[declaration_index])
-    let mut stack_index = 0
-    while stack_index < declaration_stack.length() do
-      const current_declaration = declaration_stack[stack_index]
-      match current_declaration {
-        DeclExported(inner) => do declaration_stack.push(inner); () end,
-        DeclType(type_name, _, _, _) => do
-          if trait_declaration_names.has(type_name) then
-            conflicts.push(diagnostic_error(
-              `the name "${type_name}" is declared as both a type and a trait`,
-              span_unknown()))
-          end
-          nominal_type_declaration_names.set(type_name, true); ()
-        end,
-        DeclTrait(trait_name, _, _) => do
-          if nominal_type_declaration_names.has(trait_name) then
-            conflicts.push(diagnostic_error(
-              `the name "${trait_name}" is declared as both a type and a trait`,
-              span_unknown()))
-          end
-          trait_declaration_names.set(trait_name, true); ()
-        end,
-        _ => ()
-      }
-      stack_index = stack_index + 1
-    end
-    declaration_index = declaration_index + 1
-  end
+  each_program_declaration_depth_first(program, (current_declaration) => do
+    match current_declaration {
+      DeclType(type_name, _, _, _) => do
+        if trait_declaration_names.has(type_name) then
+          conflicts.push(diagnostic_error(
+            `the name "${type_name}" is declared as both a type and a trait`,
+            span_unknown()))
+        end
+        nominal_type_declaration_names.set(type_name, true); ()
+      end,
+      DeclTrait(trait_name, _, _) => do
+        if nominal_type_declaration_names.has(trait_name) then
+          conflicts.push(diagnostic_error(
+            `the name "${trait_name}" is declared as both a type and a trait`,
+            span_unknown()))
+        end
+        trait_declaration_names.set(trait_name, true); ()
+      end,
+      _ => ()
+    }
+  end)
   conflicts
 end
 
-fn fill_trait_and_nominal_maps(program: Program, trait_names: Map<string, bool>, nominal_type_names: Map<string, bool>) -> unit = do
-  let mut declaration_index = 0
-  while declaration_index < program.decls.length() do
-    let mut declaration_stack: [Shared<Decl>] = []
-    declaration_stack.push(program.decls[declaration_index])
-    let mut stack_index = 0
-    while stack_index < declaration_stack.length() do
-      const current_declaration = declaration_stack[stack_index]
-      match current_declaration {
-        DeclExported(inner) => do declaration_stack.push(inner); () end,
-        DeclType(type_name, _, _, _) => do nominal_type_names.set(type_name, true); () end,
-        DeclTrait(trait_name, _, _) => do trait_names.set(trait_name, true); () end,
-        _ => ()
-      }
-      stack_index = stack_index + 1
-    end
-    declaration_index = declaration_index + 1
-  end
-end
+fn fill_trait_and_nominal_maps(program: Program, trait_names: Map<string, bool>, nominal_type_names: Map<string, bool>) -> unit =
+  each_program_declaration_depth_first(program, (current_declaration) => do
+    match current_declaration {
+      DeclType(type_name, _, _, _) => do nominal_type_names.set(type_name, true); () end,
+      DeclTrait(trait_name, _, _) => do trait_names.set(trait_name, true); () end,
+      _ => ()
+    }
+  end)
+
 fn align_trait_bounds_matrix(type_parameter_names: [string], trait_bounds_rows: [[string]]) -> [[string]] = do
-  let aligned: [[string]] = []
-  aligned.concat(trait_bounds_rows)
+  let aligned: [[string]] = trait_bounds_rows.concat([])
   let mut filled_row_count = aligned.length()
   while filled_row_count < type_parameter_names.length() do
     aligned.push([])
@@ -256,8 +253,7 @@ fn expand_decl_fn_trait_parameters(
     explicit_type_parameter_environment.set(type_parameter_single_name, true)
     0
   end)
-  let initial_expanded_function_type_parameter_names: [string] = []
-  initial_expanded_function_type_parameter_names.concat(type_parameter_names)
+  let initial_expanded_function_type_parameter_names: [string] = type_parameter_names.concat([])
   const after_parameter_list_expanded = parameters.fold(
     ExpandedFunctionParametersTraversalState {
       synthetic_counter:                                               0,

@@ -15,6 +15,8 @@ struct FunctionParameterAccumulationUnderTyFn {int synthetic_counter_under_funct
 
 struct ExpandedFunctionParametersTraversalState {int synthetic_counter;mlc::Array<mlc::String> expanded_type_parameter_names;mlc::Array<mlc::Array<mlc::String>> expanded_trait_bounds;mlc::Array<std::shared_ptr<ast::Param>> expanded_parameters;};
 
+void each_program_declaration_depth_first(ast::Program program, std::function<void(std::shared_ptr<ast::Decl>)> handle_declaration) noexcept;
+
 mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept;
 
 void fill_trait_and_nominal_maps(ast::Program program, mlc::HashMap<mlc::String, bool> trait_names, mlc::HashMap<mlc::String, bool> nominal_type_names) noexcept;
@@ -37,12 +39,10 @@ ast::Program expand_trait_as_param_entry_using_full(ast::Program entry, ast::Pro
 
 ast::Program expand_trait_as_param_program(ast::Program program) noexcept;
 
-mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept{
-mlc::HashMap<mlc::String, bool> trait_declaration_names = mlc::HashMap<mlc::String, bool>();
-mlc::HashMap<mlc::String, bool> nominal_type_declaration_names = mlc::HashMap<mlc::String, bool>();
-mlc::Array<ast::Diagnostic> conflicts = {};
+void each_program_declaration_depth_first(ast::Program program, std::function<void(std::shared_ptr<ast::Decl>)> handle_declaration) noexcept{
 int declaration_index = 0;
-while (declaration_index < program.decls.size()){
+return [&]() { 
+  while (declaration_index < program.decls.size()){
 {
 mlc::Array<std::shared_ptr<ast::Decl>> declaration_stack = {};
 declaration_stack.push_back(program.decls[declaration_index]);
@@ -53,7 +53,24 @@ std::shared_ptr<ast::Decl> current_declaration = declaration_stack[stack_index];
 [&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclExported>((*current_declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*current_declaration)); auto [inner] = _v_declexported; return [&]() -> std::tuple<> { 
   declaration_stack.push_back(inner);
   return std::make_tuple();
- }(); } if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltype; return [&]() -> std::tuple<> { 
+ }(); } return [&]() -> std::tuple<> { 
+  handle_declaration(current_declaration);
+  return std::make_tuple();
+ }(); }();
+stack_index = stack_index + 1;
+}
+}
+declaration_index = declaration_index + 1;
+}
+}
+ }();
+}
+
+mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept{
+mlc::HashMap<mlc::String, bool> trait_declaration_names = mlc::HashMap<mlc::String, bool>();
+mlc::HashMap<mlc::String, bool> nominal_type_declaration_names = mlc::HashMap<mlc::String, bool>();
+mlc::Array<ast::Diagnostic> conflicts = {};
+each_program_declaration_depth_first(program, [&trait_declaration_names, &conflicts, &nominal_type_declaration_names](std::shared_ptr<ast::Decl> current_declaration) mutable { return [&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltype; return [&]() -> std::tuple<> { 
   if (trait_declaration_names.has(type_name)){
 {
 conflicts.push_back(ast::diagnostic_error(mlc::String("the name \"") + type_name + mlc::String("\" is declared as both a type and a trait"), ast::span_unknown()));
@@ -69,49 +86,20 @@ conflicts.push_back(ast::diagnostic_error(mlc::String("the name \"") + trait_nam
 }
   trait_declaration_names.set(trait_name, true);
   return std::make_tuple();
- }(); } return std::make_tuple(); }();
-stack_index = stack_index + 1;
-}
-}
-declaration_index = declaration_index + 1;
-}
-}
+ }(); } return std::make_tuple(); }(); });
 return conflicts;
 }
 
-void fill_trait_and_nominal_maps(ast::Program program, mlc::HashMap<mlc::String, bool> trait_names, mlc::HashMap<mlc::String, bool> nominal_type_names) noexcept{
-int declaration_index = 0;
-return [&]() { 
-  while (declaration_index < program.decls.size()){
-{
-mlc::Array<std::shared_ptr<ast::Decl>> declaration_stack = {};
-declaration_stack.push_back(program.decls[declaration_index]);
-int stack_index = 0;
-while (stack_index < declaration_stack.size()){
-{
-std::shared_ptr<ast::Decl> current_declaration = declaration_stack[stack_index];
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclExported>((*current_declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*current_declaration)); auto [inner] = _v_declexported; return [&]() -> std::tuple<> { 
-  declaration_stack.push_back(inner);
-  return std::make_tuple();
- }(); } if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltype; return [&]() -> std::tuple<> { 
+void fill_trait_and_nominal_maps(ast::Program program, mlc::HashMap<mlc::String, bool> trait_names, mlc::HashMap<mlc::String, bool> nominal_type_names) noexcept{return each_program_declaration_depth_first(program, [&nominal_type_names, &trait_names](std::shared_ptr<ast::Decl> current_declaration) mutable { return [&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltype; return [&]() -> std::tuple<> { 
   nominal_type_names.set(type_name, true);
   return std::make_tuple();
  }(); } if (std::holds_alternative<ast::DeclTrait>((*current_declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*current_declaration)); auto [trait_name, _w0, _w1] = _v_decltrait; return [&]() -> std::tuple<> { 
   trait_names.set(trait_name, true);
   return std::make_tuple();
- }(); } return std::make_tuple(); }();
-stack_index = stack_index + 1;
-}
-}
-declaration_index = declaration_index + 1;
-}
-}
- }();
-}
+ }(); } return std::make_tuple(); }(); });}
 
 mlc::Array<mlc::Array<mlc::String>> align_trait_bounds_matrix(mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows) noexcept{
-mlc::Array<mlc::Array<mlc::String>> aligned = {};
-aligned.concat(trait_bounds_rows);
+mlc::Array<mlc::Array<mlc::String>> aligned = trait_bounds_rows.concat({});
 int filled_row_count = aligned.size();
 while (filled_row_count < type_parameter_names.size()){
 {
@@ -165,8 +153,7 @@ type_parameter_names.fold(0, [&explicit_type_parameter_environment](int _, mlc::
   explicit_type_parameter_environment.set(type_parameter_single_name, true);
   return 0;
  }(); });
-mlc::Array<mlc::String> initial_expanded_function_type_parameter_names = {};
-initial_expanded_function_type_parameter_names.concat(type_parameter_names);
+mlc::Array<mlc::String> initial_expanded_function_type_parameter_names = type_parameter_names.concat({});
 trait_param_expand::ExpandedFunctionParametersTraversalState after_parameter_list_expanded = parameters.fold(trait_param_expand::ExpandedFunctionParametersTraversalState{0, initial_expanded_function_type_parameter_names, align_trait_bounds_matrix(type_parameter_names, trait_bounds_rows), {}}, [explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names](trait_param_expand::ExpandedFunctionParametersTraversalState expanded_state_before_traversal_step, std::shared_ptr<ast::Param> parameter_under_traversal_shared) mutable { return [&]() -> trait_param_expand::ExpandedFunctionParametersTraversalState { 
   trait_param_expand::TraitExpandChunk parameter_traversal_expression_chunk = expand_type_expression_for_trait_param(ast::param_typ(parameter_under_traversal_shared), explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, expanded_state_before_traversal_step.synthetic_counter);
   return trait_param_expand::ExpandedFunctionParametersTraversalState{parameter_traversal_expression_chunk.next_counter, expanded_state_before_traversal_step.expanded_type_parameter_names.concat(parameter_traversal_expression_chunk.appended_type_parameter_names), expanded_state_before_traversal_step.expanded_trait_bounds.concat(parameter_traversal_expression_chunk.appended_trait_bounds_rows), expanded_state_before_traversal_step.expanded_parameters.concat(mlc::Array<std::shared_ptr<ast::Param>>{std::make_shared<ast::Param>(ast::Param{ast::param_name(parameter_under_traversal_shared), parameter_under_traversal_shared->is_mut, parameter_traversal_expression_chunk.type_expression, parameter_under_traversal_shared->has_default, parameter_under_traversal_shared->default_, parameter_under_traversal_shared->param_pattern})})};
