@@ -25,7 +25,7 @@ class CaptureAnalyzerMutatingReceiverTest < Minitest::Test
   def analyzer_for_scope_type
     registry = StubVarTypeRegistry.new
     registry.add("scope", Object.new)
-    MLC::Representations::Semantic::Gen::Services::CaptureAnalyzer.new(var_type_registry: registry)
+    MLC::Representations::Semantic::Gen::Services::Features::CaptureAnalyzer.new(var_type_registry: registry)
   end
 
   def test_member_push_marks_receiver_for_reference_capture

@@ -152,7 +152,7 @@ module MLC
                 type_unification_service: @type_unification_service,
                 match_analyzer: @match_analyzer
               )
-              @capture_analyzer = CaptureAnalyzer.new(
+              @capture_analyzer = Features::CaptureAnalyzer.new(
                 var_type_registry: @var_type_registry
               )
               @lambda_service = LambdaService.new(
