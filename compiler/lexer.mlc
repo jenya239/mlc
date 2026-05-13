@@ -24,14 +24,10 @@ extend LexState {
     else LexState { src, pos: pos + 1, line, col: col + 1 }
     end
 
-  fn lex_advance_by(self, count: i32) -> LexState = do
-    let mut state = self
-    let mut i = 0
-    while i < count do state = state.lex_advance(); i = i + 1 end
-    state
-  end
+  fn lex_advance_by(self, advance_count: i32) -> LexState =
+    if advance_count <= 0 then self else self.lex_advance().lex_advance_by(advance_count - 1)
 
-  fn token(self, tk: TKind) -> Token = Token { kind: tk, line, col }
+  fn token(self, token_kind: TKind) -> Token = Token { kind: token_kind, line, col }
 }
 
 fn is_alpha(character: string) -> bool =
@@ -88,25 +84,25 @@ fn scan_ident(state: LexState) -> ScanResult = do
   ScanResult { state: current, token: Token { kind: keyword_kind(word), line: token_line, col: token_col } }
 end
 
-fn is_alpha_lower(c: string) -> bool = c >= "a" && c <= "z"
+fn is_alpha_lower(character: string) -> bool = character >= "a" && character <= "z"
 
 type SuffixScan = SuffixScan { suffix: string, after: LexState }
 
 fn try_scan_suffix(state: LexState) -> SuffixScan = do
+  const numeric_type_suffixes: [string] = ['i64', 'u8', 'usize', 'f64', 'f32']
   if !state.eof() && is_alpha_lower(state.current()) then
     const start = state.pos
     const orig_line = state.line
     const orig_col  = state.col
-    let mut cur = state
-    while !cur.eof() && (is_alpha_lower(cur.current()) || is_digit(cur.current())) do
-      cur = cur.lex_advance()
+    let mut current_state = state
+    while !current_state.eof() && (is_alpha_lower(current_state.current()) || is_digit(current_state.current())) do
+      current_state = current_state.lex_advance()
     end
-    const candidate = cur.src.byte_substring(start, cur.pos - start)
-    if candidate == 'i64' || candidate == 'u8' || candidate == 'usize' ||
-       candidate == 'f64' || candidate == 'f32' then
-      SuffixScan { suffix: candidate, after: cur }
+    const candidate = current_state.src.byte_substring(start, current_state.pos - start)
+    if numeric_type_suffixes.any(suffix_under_scan => suffix_under_scan == candidate) then
+      SuffixScan { suffix: candidate, after: current_state }
     else
-      const back = LexState { src: cur.src, pos: start, line: orig_line, col: orig_col }
+      const back = LexState { src: current_state.src, pos: start, line: orig_line, col: orig_col }
       SuffixScan { suffix: '', after: back }
     end
   else

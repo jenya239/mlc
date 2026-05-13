@@ -22,9 +22,9 @@ mlc::String LexState_peek(lexer::LexState self, int offset) noexcept;
 
 lexer::LexState LexState_lex_advance(lexer::LexState self) noexcept;
 
-lexer::LexState LexState_lex_advance_by(lexer::LexState self, int count) noexcept;
+lexer::LexState LexState_lex_advance_by(lexer::LexState self, int advance_count) noexcept;
 
-ast_tokens::Token LexState_token(lexer::LexState self, ast_tokens::TKind tk) noexcept;
+ast_tokens::Token LexState_token(lexer::LexState self, ast_tokens::TKind token_kind) noexcept;
 
 bool is_alpha(mlc::String character) noexcept;
 
@@ -38,7 +38,7 @@ ast_tokens::TKind keyword_kind(mlc::String word) noexcept;
 
 lexer::ScanResult scan_ident(lexer::LexState state) noexcept;
 
-bool is_alpha_lower(mlc::String c) noexcept;
+bool is_alpha_lower(mlc::String character) noexcept;
 
 lexer::SuffixScan try_scan_suffix(lexer::LexState state) noexcept;
 
@@ -71,19 +71,9 @@ return position >= self.src.byte_size() ? mlc::String("\0", 1) : self.src.byte_a
 
 lexer::LexState LexState_lex_advance(lexer::LexState self) noexcept{return LexState_current(self) == mlc::String("\n") ? lexer::LexState{self.src, self.pos + 1, self.line + 1, 1} : lexer::LexState{self.src, self.pos + 1, self.line, self.col + 1};}
 
-lexer::LexState LexState_lex_advance_by(lexer::LexState self, int count) noexcept{
-lexer::LexState state = std::move(self);
-int i = 0;
-while (i < count){
-{
-state = LexState_lex_advance(state);
-i = i + 1;
-}
-}
-return state;
-}
+lexer::LexState LexState_lex_advance_by(lexer::LexState self, int advance_count) noexcept{return advance_count <= 0 ? self : LexState_lex_advance_by(LexState_lex_advance(self), advance_count - 1);}
 
-ast_tokens::Token LexState_token(lexer::LexState self, ast_tokens::TKind tk) noexcept{return ast_tokens::Token{tk, self.line, self.col};}
+ast_tokens::Token LexState_token(lexer::LexState self, ast_tokens::TKind token_kind) noexcept{return ast_tokens::Token{token_kind, self.line, self.col};}
 
 bool is_alpha(mlc::String character) noexcept{return character >= mlc::String("a") && character <= mlc::String("z") || character >= mlc::String("A") && character <= mlc::String("Z") || character == mlc::String("_");}
 
@@ -110,22 +100,23 @@ mlc::String word = source.byte_substring(start, current.pos - start);
 return lexer::ScanResult{current, ast_tokens::Token{keyword_kind(word), token_line, token_col}};
 }
 
-bool is_alpha_lower(mlc::String c) noexcept{return c >= mlc::String("a") && c <= mlc::String("z");}
+bool is_alpha_lower(mlc::String character) noexcept{return character >= mlc::String("a") && character <= mlc::String("z");}
 
 lexer::SuffixScan try_scan_suffix(lexer::LexState state) noexcept{
+mlc::Array<mlc::String> numeric_type_suffixes = mlc::Array<mlc::String>{mlc::String("i64"), mlc::String("u8"), mlc::String("usize"), mlc::String("f64"), mlc::String("f32")};
 return !LexState_eof(state) && is_alpha_lower(LexState_current(state)) ? [&]() -> lexer::SuffixScan { 
   int start = state.pos;
   int orig_line = state.line;
   int orig_col = state.col;
-  lexer::LexState cur = std::move(state);
-  while (!LexState_eof(cur) && is_alpha_lower(LexState_current(cur)) || is_digit(LexState_current(cur))){
+  lexer::LexState current_state = std::move(state);
+  while (!LexState_eof(current_state) && is_alpha_lower(LexState_current(current_state)) || is_digit(LexState_current(current_state))){
 {
-cur = LexState_lex_advance(cur);
+current_state = LexState_lex_advance(current_state);
 }
 }
-  mlc::String candidate = cur.src.byte_substring(start, cur.pos - start);
-  return candidate == mlc::String("i64") || candidate == mlc::String("u8") || candidate == mlc::String("usize") || candidate == mlc::String("f64") || candidate == mlc::String("f32") ? lexer::SuffixScan{candidate, cur} : [&]() -> lexer::SuffixScan { 
-  lexer::LexState back = lexer::LexState{cur.src, start, orig_line, orig_col};
+  mlc::String candidate = current_state.src.byte_substring(start, current_state.pos - start);
+  return numeric_type_suffixes.any([candidate](mlc::String suffix_under_scan) mutable { return suffix_under_scan == candidate; }) ? lexer::SuffixScan{candidate, current_state} : [&]() -> lexer::SuffixScan { 
+  lexer::LexState back = lexer::LexState{current_state.src, start, orig_line, orig_col};
   return lexer::SuffixScan{mlc::String(""), back};
  }();
  }() : lexer::SuffixScan{mlc::String(""), state};
