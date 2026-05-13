@@ -11,22 +11,17 @@ import {
   Diagnostic, diagnostic_error, span_unknown
 } from '../ast'
 
+fn declaration_without_export_wrappers(declaration: Shared<Decl>) -> Shared<Decl> =
+  match declaration {
+    DeclExported(inner) => declaration_without_export_wrappers(inner),
+    _ => declaration
+  }
+
 fn each_program_declaration_depth_first(program: Program, handle_declaration: (Shared<Decl>) -> unit) -> unit = do
-  let mut declaration_index = 0
-  while declaration_index < program.decls.length() do
-    let mut declaration_stack: [Shared<Decl>] = []
-    declaration_stack.push(program.decls[declaration_index])
-    let mut stack_index = 0
-    while stack_index < declaration_stack.length() do
-      const current_declaration = declaration_stack[stack_index]
-      match current_declaration {
-        DeclExported(inner) => do declaration_stack.push(inner); () end,
-        _ => do handle_declaration(current_declaration); () end
-      }
-      stack_index = stack_index + 1
-    end
-    declaration_index = declaration_index + 1
-  end
+  let fold_traversal_placeholder = program.decls.fold(
+    0,
+    (_, root_declaration_under_program) =>
+      do handle_declaration(declaration_without_export_wrappers(root_declaration_under_program)); 0 end)
 end
 
 export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnostic] = do
@@ -67,13 +62,14 @@ fn fill_trait_and_nominal_maps(program: Program, trait_names: Map<string, bool>,
   end)
 
 fn align_trait_bounds_matrix(type_parameter_names: [string], trait_bounds_rows: [[string]]) -> [[string]] = do
-  let aligned: [[string]] = trait_bounds_rows.concat([])
-  let mut filled_row_count = aligned.length()
-  while filled_row_count < type_parameter_names.length() do
-    aligned.push([])
-    filled_row_count = filled_row_count + 1
-  end
-  aligned
+  const copied_trait_bound_rows = trait_bounds_rows.concat([])
+  const empty_trait_bound_row: [string] = []
+  type_parameter_names
+    .drop(copied_trait_bound_rows.length())
+    .fold(
+      copied_trait_bound_rows,
+      (accumulated_aligned_matrix, _unused_type_parameter_padding_key) =>
+        accumulated_aligned_matrix.concat([empty_trait_bound_row]))
 end
 
 type TraitExpandChunk = TraitExpandChunk {
@@ -96,6 +92,38 @@ type FunctionParameterAccumulationUnderTyFn = FunctionParameterAccumulationUnder
   combined_appended_type_parameter_names_under_function_type:    [string],
   combined_trait_bounds_rows_under_function_type:                [[string]]
 }
+
+fn expand_type_expression_under_array_or_shared_wrapper(
+  inner_type_expression_under_wrapper: Shared<TypeExpr>,
+  explicit_type_parameter_environment: Map<string, bool>,
+  trait_declaration_names: Map<string, bool>,
+  nominal_type_declaration_names: Map<string, bool>,
+  synthetic_counter: i32,
+  output_outer_is_shared_pointer_type: bool
+) -> TraitExpandChunk = do
+  const inner_expansion_chunk =
+    expand_type_expression_for_trait_param(
+      inner_type_expression_under_wrapper,
+      explicit_type_parameter_environment,
+      trait_declaration_names,
+      nominal_type_declaration_names,
+      synthetic_counter)
+  if output_outer_is_shared_pointer_type then
+    TraitExpandChunk {
+      type_expression: Shared.new(TyShared(inner_expansion_chunk.type_expression)),
+      next_counter: inner_expansion_chunk.next_counter,
+      appended_type_parameter_names: inner_expansion_chunk.appended_type_parameter_names,
+      appended_trait_bounds_rows: inner_expansion_chunk.appended_trait_bounds_rows
+    }
+  else
+    TraitExpandChunk {
+      type_expression: Shared.new(TyArray(inner_expansion_chunk.type_expression)),
+      next_counter: inner_expansion_chunk.next_counter,
+      appended_type_parameter_names: inner_expansion_chunk.appended_type_parameter_names,
+      appended_trait_bounds_rows: inner_expansion_chunk.appended_trait_bounds_rows
+    }
+  end
+end
 
 fn expand_type_expression_for_trait_param(
   type_expression: Shared<TypeExpr>,
@@ -121,26 +149,22 @@ fn expand_type_expression_for_trait_param(
       else
         TraitExpandChunk { type_expression, next_counter: synthetic_counter, appended_type_parameter_names: [], appended_trait_bounds_rows: [] }
       end,
-    TyArray(inner) => do
-      const inner_chunk = expand_type_expression_for_trait_param(
-        inner, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter)
-      TraitExpandChunk {
-        type_expression: Shared.new(TyArray(inner_chunk.type_expression)),
-        next_counter: inner_chunk.next_counter,
-        appended_type_parameter_names: inner_chunk.appended_type_parameter_names,
-        appended_trait_bounds_rows: inner_chunk.appended_trait_bounds_rows
-      }
-    end,
-    TyShared(inner) => do
-      const inner_chunk = expand_type_expression_for_trait_param(
-        inner, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter)
-      TraitExpandChunk {
-        type_expression: Shared.new(TyShared(inner_chunk.type_expression)),
-        next_counter: inner_chunk.next_counter,
-        appended_type_parameter_names: inner_chunk.appended_type_parameter_names,
-        appended_trait_bounds_rows: inner_chunk.appended_trait_bounds_rows
-      }
-    end,
+    TyArray(inner_under_array) =>
+      expand_type_expression_under_array_or_shared_wrapper(
+        inner_under_array,
+        explicit_type_parameter_environment,
+        trait_declaration_names,
+        nominal_type_declaration_names,
+        synthetic_counter,
+        false),
+    TyShared(inner_under_shared) =>
+      expand_type_expression_under_array_or_shared_wrapper(
+        inner_under_shared,
+        explicit_type_parameter_environment,
+        trait_declaration_names,
+        nominal_type_declaration_names,
+        synthetic_counter,
+        true),
     TyGeneric(base_name, type_arguments) => do
       const after_generic_arguments = type_arguments.fold(
         TypeArgumentAccumulationForGeneric {

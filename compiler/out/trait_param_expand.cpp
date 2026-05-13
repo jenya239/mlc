@@ -15,6 +15,8 @@ struct FunctionParameterAccumulationUnderTyFn {int synthetic_counter_under_funct
 
 struct ExpandedFunctionParametersTraversalState {int synthetic_counter;mlc::Array<mlc::String> expanded_type_parameter_names;mlc::Array<mlc::Array<mlc::String>> expanded_trait_bounds;mlc::Array<std::shared_ptr<ast::Param>> expanded_parameters;};
 
+std::shared_ptr<ast::Decl> declaration_without_export_wrappers(std::shared_ptr<ast::Decl> declaration) noexcept;
+
 void each_program_declaration_depth_first(ast::Program program, std::function<void(std::shared_ptr<ast::Decl>)> handle_declaration) noexcept;
 
 mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept;
@@ -22,6 +24,8 @@ mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Progra
 void fill_trait_and_nominal_maps(ast::Program program, mlc::HashMap<mlc::String, bool> trait_names, mlc::HashMap<mlc::String, bool> nominal_type_names) noexcept;
 
 mlc::Array<mlc::Array<mlc::String>> align_trait_bounds_matrix(mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows) noexcept;
+
+trait_param_expand::TraitExpandChunk expand_type_expression_under_array_or_shared_wrapper(std::shared_ptr<ast::TypeExpr> inner_type_expression_under_wrapper, mlc::HashMap<mlc::String, bool> explicit_type_parameter_environment, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names, int synthetic_counter, bool output_outer_is_shared_pointer_type) noexcept;
 
 trait_param_expand::TraitExpandChunk expand_type_expression_for_trait_param(std::shared_ptr<ast::TypeExpr> type_expression, mlc::HashMap<mlc::String, bool> explicit_type_parameter_environment, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names, int synthetic_counter) noexcept;
 
@@ -39,31 +43,13 @@ ast::Program expand_trait_as_param_entry_using_full(ast::Program entry, ast::Pro
 
 ast::Program expand_trait_as_param_program(ast::Program program) noexcept;
 
+std::shared_ptr<ast::Decl> declaration_without_export_wrappers(std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() -> std::shared_ptr<ast::Decl> { if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [inner] = _v_declexported; return declaration_without_export_wrappers(inner); } return declaration; }();}
+
 void each_program_declaration_depth_first(ast::Program program, std::function<void(std::shared_ptr<ast::Decl>)> handle_declaration) noexcept{
-int declaration_index = 0;
-return [&]() { 
-  while (declaration_index < program.decls.size()){
-{
-mlc::Array<std::shared_ptr<ast::Decl>> declaration_stack = {};
-declaration_stack.push_back(program.decls[declaration_index]);
-int stack_index = 0;
-while (stack_index < declaration_stack.size()){
-{
-std::shared_ptr<ast::Decl> current_declaration = declaration_stack[stack_index];
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclExported>((*current_declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*current_declaration)); auto [inner] = _v_declexported; return [&]() -> std::tuple<> { 
-  declaration_stack.push_back(inner);
-  return std::make_tuple();
- }(); } return [&]() -> std::tuple<> { 
-  handle_declaration(current_declaration);
-  return std::make_tuple();
- }(); }();
-stack_index = stack_index + 1;
-}
-}
-declaration_index = declaration_index + 1;
-}
-}
- }();
+int fold_traversal_placeholder = program.decls.fold(0, [handle_declaration](int _, std::shared_ptr<ast::Decl> root_declaration_under_program) mutable { return [&]() -> int { 
+  handle_declaration(declaration_without_export_wrappers(root_declaration_under_program));
+  return 0;
+ }(); });
 }
 
 mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept{
@@ -99,15 +85,14 @@ void fill_trait_and_nominal_maps(ast::Program program, mlc::HashMap<mlc::String,
  }(); } return std::make_tuple(); }(); });}
 
 mlc::Array<mlc::Array<mlc::String>> align_trait_bounds_matrix(mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows) noexcept{
-mlc::Array<mlc::Array<mlc::String>> aligned = trait_bounds_rows.concat({});
-int filled_row_count = aligned.size();
-while (filled_row_count < type_parameter_names.size()){
-{
-aligned.push_back({});
-filled_row_count = filled_row_count + 1;
+mlc::Array<mlc::Array<mlc::String>> copied_trait_bound_rows = trait_bounds_rows.concat({});
+mlc::Array<mlc::String> empty_trait_bound_row = {};
+return type_parameter_names.drop(copied_trait_bound_rows.size()).fold(copied_trait_bound_rows, [empty_trait_bound_row](mlc::Array<mlc::Array<mlc::String>> accumulated_aligned_matrix, mlc::String _unused_type_parameter_padding_key) mutable { return accumulated_aligned_matrix.concat(mlc::Array<mlc::Array<mlc::String>>{empty_trait_bound_row}); });
 }
-}
-return aligned;
+
+trait_param_expand::TraitExpandChunk expand_type_expression_under_array_or_shared_wrapper(std::shared_ptr<ast::TypeExpr> inner_type_expression_under_wrapper, mlc::HashMap<mlc::String, bool> explicit_type_parameter_environment, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names, int synthetic_counter, bool output_outer_is_shared_pointer_type) noexcept{
+trait_param_expand::TraitExpandChunk inner_expansion_chunk = expand_type_expression_for_trait_param(inner_type_expression_under_wrapper, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter);
+return output_outer_is_shared_pointer_type ? trait_param_expand::TraitExpandChunk{std::make_shared<ast::TypeExpr>(ast::TyShared(inner_expansion_chunk.type_expression)), inner_expansion_chunk.next_counter, inner_expansion_chunk.appended_type_parameter_names, inner_expansion_chunk.appended_trait_bounds_rows} : trait_param_expand::TraitExpandChunk{std::make_shared<ast::TypeExpr>(ast::TyArray(inner_expansion_chunk.type_expression)), inner_expansion_chunk.next_counter, inner_expansion_chunk.appended_type_parameter_names, inner_expansion_chunk.appended_trait_bounds_rows};
 }
 
 trait_param_expand::TraitExpandChunk expand_type_expression_for_trait_param(std::shared_ptr<ast::TypeExpr> type_expression, mlc::HashMap<mlc::String, bool> explicit_type_parameter_environment, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names, int synthetic_counter) noexcept{return std::visit(overloaded{
@@ -117,14 +102,8 @@ trait_param_expand::TraitExpandChunk expand_type_expression_for_trait_param(std:
   mlc::Array<mlc::Array<mlc::String>> bounds_wrapper = mlc::Array<mlc::Array<mlc::String>>{single_trait_row};
   return trait_param_expand::TraitExpandChunk{std::make_shared<ast::TypeExpr>(ast::TyNamed(synthetic_name)), synthetic_counter + 1, mlc::Array<mlc::String>{synthetic_name}, bounds_wrapper};
  }() : trait_param_expand::TraitExpandChunk{type_expression, synthetic_counter, {}, {}}; },
-  [&](const TyArray& tyarray) -> trait_param_expand::TraitExpandChunk { auto [inner] = tyarray; return [&]() -> trait_param_expand::TraitExpandChunk { 
-  trait_param_expand::TraitExpandChunk inner_chunk = expand_type_expression_for_trait_param(inner, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter);
-  return trait_param_expand::TraitExpandChunk{std::make_shared<ast::TypeExpr>(ast::TyArray(inner_chunk.type_expression)), inner_chunk.next_counter, inner_chunk.appended_type_parameter_names, inner_chunk.appended_trait_bounds_rows};
- }(); },
-  [&](const TyShared& tyshared) -> trait_param_expand::TraitExpandChunk { auto [inner] = tyshared; return [&]() -> trait_param_expand::TraitExpandChunk { 
-  trait_param_expand::TraitExpandChunk inner_chunk = expand_type_expression_for_trait_param(inner, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter);
-  return trait_param_expand::TraitExpandChunk{std::make_shared<ast::TypeExpr>(ast::TyShared(inner_chunk.type_expression)), inner_chunk.next_counter, inner_chunk.appended_type_parameter_names, inner_chunk.appended_trait_bounds_rows};
- }(); },
+  [&](const TyArray& tyarray) -> trait_param_expand::TraitExpandChunk { auto [inner_under_array] = tyarray; return expand_type_expression_under_array_or_shared_wrapper(inner_under_array, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter, false); },
+  [&](const TyShared& tyshared) -> trait_param_expand::TraitExpandChunk { auto [inner_under_shared] = tyshared; return expand_type_expression_under_array_or_shared_wrapper(inner_under_shared, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, synthetic_counter, true); },
   [&](const TyGeneric& tygeneric) -> trait_param_expand::TraitExpandChunk { auto [base_name, type_arguments] = tygeneric; return [&]() -> trait_param_expand::TraitExpandChunk { 
   trait_param_expand::TypeArgumentAccumulationForGeneric after_generic_arguments = type_arguments.fold(trait_param_expand::TypeArgumentAccumulationForGeneric{synthetic_counter, {}, {}, {}}, [explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names](trait_param_expand::TypeArgumentAccumulationForGeneric accumulation_before_step, std::shared_ptr<ast::TypeExpr> generic_argument_under_step) mutable { return [&]() -> trait_param_expand::TypeArgumentAccumulationForGeneric { 
   trait_param_expand::TraitExpandChunk expanded_argument_under_generic = expand_type_expression_for_trait_param(generic_argument_under_step, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, accumulation_before_step.synthetic_counter_under_generic);
