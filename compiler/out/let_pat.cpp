@@ -119,7 +119,7 @@ b = b + mlc::String("auto ") + cpp_naming::cpp_safe(rest) + mlc::String(" = ") +
 }
   return b + mlc::String("}\n");
  }(); } if (std::holds_alternative<ast::PatCtor>((*pat))) { auto _v_patctor = std::get<ast::PatCtor>((*pat)); auto [ctor_name, sub_patterns, _w0] = _v_patctor; return [&]() -> mlc::String { 
-  mlc::String q = context::context_resolve(context, ctor_name);
+  mlc::String q = context::CodegenContext_resolve(context, ctor_name);
   mlc::String bind = sub_patterns.size() == 0 ? mlc::String("") : expr::tuple_destructure_binding(match_analysis::pat_bind_names(sub_patterns), mlc::String("__b"));
   bool is_generic = decl_index::list_contains(context.generic_variants, ctor_name);
   mlc::String targs = is_generic ? mlc::String("<auto>") : mlc::String("");

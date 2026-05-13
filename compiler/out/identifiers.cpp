@@ -17,7 +17,7 @@ mlc::Array<mlc::String> self_fields = decl_index::lookup_fields(context.field_or
 bool is_known_field = name == mlc::String("errors") || name == mlc::String("kind") || name == mlc::String("tokens") || name == mlc::String("line") || name == mlc::String("col") || name == mlc::String("inferred_type") || name == mlc::String("type_env");
 return decl_index::list_contains(self_fields, name) || is_known_field ? mlc::String("self.") + cpp_naming::cpp_safe(name) : [&]() -> mlc::String { 
   mlc::String mapped = cpp_naming::map_builtin_identifier_reference(name);
-  mlc::String resolved = context::context_resolve(context, mapped);
+  mlc::String resolved = context::CodegenContext_resolve(context, mapped);
   bool needs_constructor_brace = name.length() > 0 && name.char_at(0) >= mlc::String("A") && name.char_at(0) <= mlc::String("Z");
   return needs_constructor_brace ? resolved + mlc::String("{}") : resolved;
  }();
@@ -25,7 +25,7 @@ return decl_index::list_contains(self_fields, name) || is_known_field ? mlc::Str
 
 mlc::String gen_identifier(mlc::String name, context::CodegenContext context) noexcept{return context.self_type.length() > 0 ? resolve_identifier_in_self_context(name, context) : [&]() -> mlc::String { 
   mlc::String mapped = cpp_naming::map_builtin_identifier_reference(name);
-  mlc::String resolved = context::context_resolve(context, mapped);
+  mlc::String resolved = context::CodegenContext_resolve(context, mapped);
   bool needs_constructor_brace = name.length() > 0 && name.char_at(0) >= mlc::String("A") && name.char_at(0) <= mlc::String("Z");
   return needs_constructor_brace ? resolved + mlc::String("{}") : resolved;
  }();}

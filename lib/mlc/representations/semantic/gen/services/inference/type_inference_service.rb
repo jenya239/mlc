@@ -258,19 +258,38 @@ module MLC
               end
             end
 
-            # Expected parameter types for a lambda passed as positional argument index to a non-generic VarExpr callee.
+            # Expected parameter types for a lambda passed as positional argument index to a VarExpr callee.
+            # preceding_args_ir: IR for arguments strictly before argument_index (for partial generic instantiation).
             # (MemberExpr HöF paths use expected_lambda_param_types.)
-            def expected_lambda_parameter_types_for_function_argument(callee_ir, argument_index)
+            def expected_lambda_parameter_types_for_function_argument(callee_ir, argument_index, preceding_args_ir = nil)
               return [] unless callee_ir.is_a?(SemanticIR::VarExpr)
 
               info = @function_registry.fetch(callee_ir.name)
               return [] unless info
-              return [] if info.type_params && !info.type_params.empty?
 
               formal = info.param_types[argument_index]
               return [] unless formal.is_a?(SemanticIR::FunctionType)
 
-              formal.params.map { |parameter_entry| parameter_entry[:type] }.compact
+              instantiated_formal =
+                if info.type_params && !info.type_params.empty?
+                  return [] unless preceding_args_ir
+
+                  arg_types = Array.new(info.param_types.length)
+                  preceding_args_ir.each_with_index do |argument_ir, argument_slot_index|
+                    break if argument_slot_index >= info.param_types.length
+
+                    arg_types[argument_slot_index] = argument_ir&.type
+                  end
+
+                  type_map = infer_type_arguments(info.type_params, info.param_types, arg_types)
+                  substitute_type(formal, type_map)
+                else
+                  formal
+                end
+
+              return [] unless instantiated_formal.is_a?(SemanticIR::FunctionType)
+
+              instantiated_formal.params.map { |parameter_entry| parameter_entry[:type] }.compact
             end
 
             # Infer element type from iterable (for loops)

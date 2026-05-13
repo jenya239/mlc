@@ -91,7 +91,7 @@ return method != mlc::String("") && type_name != mlc::String("") ? type_name + m
 
 mlc::String gen_unary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> inner_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return expr::parenthesized_unary(operation, eval_expr(inner_expr, context, gen_stmts));}
 
-mlc::String gen_call_function_code(std::shared_ptr<semantic_ir::SExpr> function_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIdent>((*function_expr)._)) { auto _v_sexprident = std::get<semantic_ir::SExprIdent>((*function_expr)._); auto [name, _w0, _w1] = _v_sexprident; return context::context_resolve(context, cpp_naming::map_builtin(name)); } return eval_expr(function_expr, context, gen_stmts); }();}
+mlc::String gen_call_function_code(std::shared_ptr<semantic_ir::SExpr> function_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIdent>((*function_expr)._)) { auto _v_sexprident = std::get<semantic_ir::SExprIdent>((*function_expr)._); auto [name, _w0, _w1] = _v_sexprident; return context::CodegenContext_resolve(context, cpp_naming::map_builtin(name)); } return eval_expr(function_expr, context, gen_stmts); }();}
 
 mlc::String gen_call_expr(std::shared_ptr<semantic_ir::SExpr> function_expr, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
 mlc::String function_code = gen_call_function_code(function_expr, context, gen_stmts);
@@ -119,7 +119,7 @@ mlc::String cond_code = eval_expr(condition, context, gen_stmts);
 mlc::String then_code = eval_expr(then_expr, context, gen_stmts);
 mlc::String else_code = gen_if_else_code(else_expr, if_semantic_type, then_expr, context, gen_stmts);
 return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*if_semantic_type))) { auto _v_tnamed = std::get<registry::TNamed>((*if_semantic_type)); auto [type_name] = _v_tnamed; return [&]() -> mlc::String { 
-  mlc::String type_cpp = context::context_resolve(context, type_name);
+  mlc::String type_cpp = context::CodegenContext_resolve(context, type_name);
   return type_cpp == mlc::String("auto") ? expr::ternary_conditional(cond_code, then_code, else_code) : mlc::String("[&]() -> ") + type_cpp + mlc::String(" {\nif (") + cond_code + mlc::String(") {\nreturn ") + then_code + mlc::String(";\n} else {\nreturn ") + else_code + mlc::String(";\n}\n}()");
  }(); } return expr::ternary_conditional(cond_code, then_code, else_code); }();
 }

@@ -1,7 +1,7 @@
 import { Pat } from '../ast'
 import { SExpr, SMatchArm, sexpr_type } from '../semantic_ir'
 import { Type } from '../checker/registry'
-import { CodegenContext, context_resolve, list_contains } from './context'
+import { CodegenContext, list_contains } from './context'
 import { cpp_safe } from './cpp_naming'
 
 // Determine if the match subject expression should be dereferenced (*subject).
@@ -12,7 +12,7 @@ export fn subject_needs_deref(subject: Shared<SExpr>, context: CodegenContext) -
 export fn first_arm_needs_deref(first_arm: Shared<SMatchArm>, subject: Shared<SExpr>, context: CodegenContext) -> bool =
   match first_arm.pat {
     PatCtor(name, _, _) => do
-      const resolved = context_resolve(context, name)
+      const resolved = context.resolve(name)
       if resolved.length() >= 12 && resolved.substring(0, 12) == 'ast_tokens::' then false
       else if list_contains(context.generic_variants, name) then false
       else subject_needs_deref(subject, context)

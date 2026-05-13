@@ -3,7 +3,7 @@
 import { span_unknown } from '../ast'
 import { SExpr, SFieldVal, SExprUnit, sexpr_type, SExprArray } from '../semantic_ir'
 import { Type, TArray, TUnit, TShared } from '../checker/registry'
-import { CodegenContext, context_resolve, lookup_fields, list_contains } from './context'
+import { CodegenContext, lookup_fields, list_contains } from './context'
 import { cpp_safe, map_builtin_identifier_reference } from './cpp_naming'
 
 export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
@@ -40,7 +40,7 @@ export fn resolve_object_code_in_self_context(object_name: string, context: Code
   const self_fields = lookup_fields(context.field_orders, context.self_type)
   const is_known_field = object_name == 'errors' || object_name == 'kind' || object_name == 'tokens' || object_name == 'line' || object_name == 'col' || object_name == 'inferred_type' || object_name == 'type_env'
   if list_contains(self_fields, object_name) || is_known_field then 'self.' + cpp_safe(object_name)
-  else context_resolve(context, map_builtin_identifier_reference(object_name))
+  else context.resolve(map_builtin_identifier_reference(object_name))
   end
 end
 
@@ -51,7 +51,7 @@ export fn infer_shared_new_type_name(argument: Shared<SExpr>, context: CodegenCo
     TShared(inner) => match inner { TNamed(name) => name, _ => '' },
     _              => ''
   }
-  if type_name.length() > 0 then context_resolve(context, type_name) else 'auto' end
+  if type_name.length() > 0 then context.resolve(type_name) else 'auto' end
 end
 
 export fn cpp_function_name_for_file_method(method_name: string) -> string =

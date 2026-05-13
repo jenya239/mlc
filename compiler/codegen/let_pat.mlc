@@ -3,7 +3,7 @@
 import { Pat, PatIdent } from '../ast'
 import { SExpr } from '../semantic_ir'
 import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../checker/registry'
-import { CodegenContext, list_contains, context_resolve } from './context'
+import { CodegenContext, list_contains } from './context'
 import { lookup_fields } from './decl_index'
 import { sem_type_to_cpp } from './type_gen'
 import { cpp_safe } from './cpp_naming'
@@ -98,7 +98,7 @@ export fn gen_let_pattern_statement(
       b + '}\n'
     end,
     PatCtor(ctor_name, sub_patterns, _) => do
-      const q = context_resolve(context, ctor_name)
+      const q = context.resolve(ctor_name)
       const bind =
         if sub_patterns.length() == 0 then ''
         else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), '__b')

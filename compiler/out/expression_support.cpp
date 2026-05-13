@@ -68,12 +68,12 @@ bool is_constructor_call(std::shared_ptr<semantic_ir::SExpr> function_expr) noex
 mlc::String resolve_object_code_in_self_context(mlc::String object_name, context::CodegenContext context) noexcept{
 mlc::Array<mlc::String> self_fields = decl_index::lookup_fields(context.field_orders, context.self_type);
 bool is_known_field = object_name == mlc::String("errors") || object_name == mlc::String("kind") || object_name == mlc::String("tokens") || object_name == mlc::String("line") || object_name == mlc::String("col") || object_name == mlc::String("inferred_type") || object_name == mlc::String("type_env");
-return decl_index::list_contains(self_fields, object_name) || is_known_field ? mlc::String("self.") + cpp_naming::cpp_safe(object_name) : context::context_resolve(context, cpp_naming::map_builtin_identifier_reference(object_name));
+return decl_index::list_contains(self_fields, object_name) || is_known_field ? mlc::String("self.") + cpp_naming::cpp_safe(object_name) : context::CodegenContext_resolve(context, cpp_naming::map_builtin_identifier_reference(object_name));
 }
 
 mlc::String infer_shared_new_type_name(std::shared_ptr<semantic_ir::SExpr> argument, context::CodegenContext context) noexcept{
 mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*semantic_ir::sexpr_type(argument)))) { auto _v_tnamed = std::get<registry::TNamed>((*semantic_ir::sexpr_type(argument))); auto [name] = _v_tnamed; return name; } if (std::holds_alternative<registry::TShared>((*semantic_ir::sexpr_type(argument)))) { auto _v_tshared = std::get<registry::TShared>((*semantic_ir::sexpr_type(argument))); auto [inner] = _v_tshared; return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*inner))) { auto _v_tnamed = std::get<registry::TNamed>((*inner)); auto [name] = _v_tnamed; return name; } return mlc::String(""); }(); } return mlc::String(""); }();
-return type_name.length() > 0 ? context::context_resolve(context, type_name) : mlc::String("auto");
+return type_name.length() > 0 ? context::CodegenContext_resolve(context, type_name) : mlc::String("auto");
 }
 
 mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept{return method_name == mlc::String("read") ? mlc::String("mlc::file::read_to_string") : method_name == mlc::String("write") ? mlc::String("mlc::file::write_string") : mlc::String("mlc::file::") + method_name;}

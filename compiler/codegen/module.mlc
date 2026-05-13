@@ -8,8 +8,7 @@ import { NamespaceImportAlias, build_namespace_alias_prefixes } from './decl_ind
 import { LoadItem, CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, build_field_orders, build_variant_types_from_decls,
          build_item_index, build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
-         build_qualified, build_method_owners_from_decls,
-         context_resolve } from './context'
+         build_qualified, build_method_owners_from_decls } from './context'
 import { SDecl } from '../semantic_ir'
 import { sem_type_to_cpp } from './type_gen'
 import { cpp_safe, include_lines, path_to_module_base } from './cpp_naming'

@@ -5,16 +5,37 @@ import { is_shared_type, is_shared_array_type } from './param_analysis'
 
 export type CtorTypeInfo = CtorTypeInfo { name: string, shared_pos: [i32], shared_arr_pos: [i32] }
 
-fn field_def_type(fd: Shared<FieldDef>) -> Shared<TypeExpr> = fd.typ
+type ConstructorArgumentScanState = ConstructorArgumentScanState {
+  next_position_index: i32,
+  shared_positions: [i32],
+  shared_array_positions: [i32]
+}
 
-fn ctor_type_info_for(ctor_name: string, types: [Shared<TypeExpr>]) -> Shared<CtorTypeInfo> = do
-  let shared_positions: [i32] = []; let shared_array_positions: [i32] = []; let mut index = 0
-  while index < types.length() do
-    if is_shared_type(types[index]) then shared_positions.push(index) end
-    if is_shared_array_type(types[index]) then shared_array_positions.push(index) end
-    index = index + 1
-  end
-  Shared.new(CtorTypeInfo { name: ctor_name, shared_pos: shared_positions, shared_arr_pos: shared_array_positions })
+fn field_def_type(field_definition: Shared<FieldDef>) -> Shared<TypeExpr> = field_definition.typ
+
+fn ctor_type_info_for(constructor_name: string, argument_type_expressions: [Shared<TypeExpr>]) -> Shared<CtorTypeInfo> = do
+  const scan_result = argument_type_expressions.fold(
+    ConstructorArgumentScanState { next_position_index: 0, shared_positions: [], shared_array_positions: [] },
+    (accumulated_state, type_expression_under_scan) =>
+      ConstructorArgumentScanState {
+        next_position_index: accumulated_state.next_position_index + 1,
+        shared_positions:
+          if is_shared_type(type_expression_under_scan) then
+            accumulated_state.shared_positions.concat([accumulated_state.next_position_index])
+          else accumulated_state.shared_positions
+          end,
+        shared_array_positions:
+          if is_shared_array_type(type_expression_under_scan) then
+            accumulated_state.shared_array_positions.concat([accumulated_state.next_position_index])
+          else accumulated_state.shared_array_positions
+          end
+      }
+  )
+  Shared.new(CtorTypeInfo {
+    name: constructor_name,
+    shared_pos: scan_result.shared_positions,
+    shared_arr_pos: scan_result.shared_array_positions
+  })
 end
 
 fn variant_to_ctor_info(variant: Shared<TypeVariant>) -> [Shared<CtorTypeInfo>] =
@@ -40,11 +61,8 @@ fn decl_to_ctor_infos(decl: Shared<Decl>) -> [Shared<CtorTypeInfo>] =
 export fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] =
   decls.flat_map(decl => decl_to_ctor_infos(decl))
 
-export fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], cti_name: string) -> Shared<CtorTypeInfo> = do
-  let mut result: Shared<CtorTypeInfo> = Shared.new(CtorTypeInfo { name: '', shared_pos: [], shared_arr_pos: [] })
-  let mut i = 0
-  while i < infos.length() do
-    if infos[i].name == cti_name then result = infos[i] end; i = i + 1
-  end
-  result
-end
+export fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], constructor_lookup_name: string) -> Shared<CtorTypeInfo> =
+  infos.fold(
+    Shared.new(CtorTypeInfo { name: '', shared_pos: [], shared_arr_pos: [] }),
+    (chosen, candidate_info) =>
+      if candidate_info.name == constructor_lookup_name then candidate_info else chosen end)

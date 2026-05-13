@@ -1,4 +1,4 @@
-import { CodegenContext, context_resolve, lookup_fields, list_contains } from './context'
+import { CodegenContext, lookup_fields, list_contains } from './context'
 import { cpp_safe, map_builtin_identifier_reference } from './cpp_naming'
 
 fn resolve_identifier_in_self_context(name: string, context: CodegenContext) -> string = do
@@ -8,7 +8,7 @@ fn resolve_identifier_in_self_context(name: string, context: CodegenContext) -> 
     'self.' + cpp_safe(name)
   else
     const mapped = map_builtin_identifier_reference(name)
-    const resolved = context_resolve(context, mapped)
+    const resolved = context.resolve(mapped)
     const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
     if needs_constructor_brace then resolved + '{}' else resolved end
   end
@@ -19,7 +19,7 @@ export fn gen_identifier(name: string, context: CodegenContext) -> string =
     resolve_identifier_in_self_context(name, context)
   else
     const mapped = map_builtin_identifier_reference(name)
-    const resolved = context_resolve(context, mapped)
+    const resolved = context.resolve(mapped)
     const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
     if needs_constructor_brace then resolved + '{}' else resolved end
   end

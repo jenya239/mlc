@@ -6,7 +6,7 @@ import { SExpr, SStmt, sexpr_type, SExprArray } from '../semantic_ir'
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../semantic_ir'
 import { Type, TArray, TNamed, TFn } from '../checker/registry'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from '../checker/semantic_type_structure'
-import { CodegenContext, context_resolve } from './context'
+import { CodegenContext } from './context'
 import { cpp_safe, map_builtin } from './cpp_naming'
 import { sem_type_to_cpp } from './type_gen'
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from './literals'
@@ -47,7 +47,7 @@ fn gen_unary_expr(operation: string, inner_expr: Shared<SExpr>, context: Codegen
 
 fn gen_call_function_code(function_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   match function_expr {
-    SExprIdent(name, _, _) => context_resolve(context, map_builtin(name)),
+    SExprIdent(name, _, _) => context.resolve(map_builtin(name)),
     _ => eval_expr(function_expr, context, gen_stmts)
   }
 
@@ -109,7 +109,7 @@ fn gen_if_expr(
   const else_code = gen_if_else_code(else_expr, if_semantic_type, then_expr, context, gen_stmts)
   match if_semantic_type {
     TNamed(type_name) => do
-      const type_cpp = context_resolve(context, type_name)
+      const type_cpp = context.resolve(type_name)
       if type_cpp == 'auto' then
         expression_output.ternary_conditional(cond_code, then_code, else_code)
       else

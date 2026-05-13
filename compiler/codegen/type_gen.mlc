@@ -160,16 +160,28 @@ fn variant_record_struct_inline_member_declarations(context: CodegenContext, fie
 export fn variant_ctor_name(variant: Shared<TypeVariant>) -> string =
   match variant { VarUnit(name, _) => name, VarTuple(name, _, _) => name, VarRecord(name, _, _) => name }
 
+type TupleStructCodegenFoldState = TupleStructCodegenFoldState { field_slot_index: i32, declaration_text_so_far: string }
+
+fn tuple_variant_struct_members_fragment(context: CodegenContext, field_types: [Shared<TypeExpr>]) -> string =
+  field_types.fold(
+    TupleStructCodegenFoldState { field_slot_index: 0, declaration_text_so_far: '' },
+    (accumulated_tuple_state, field_type_expression_under_tuple) =>
+      TupleStructCodegenFoldState {
+        field_slot_index: accumulated_tuple_state.field_slot_index + 1,
+        declaration_text_so_far: accumulated_tuple_state.declaration_text_so_far +
+          expression_output.struct_tuple_field_declaration(
+            type_to_cpp(context, field_type_expression_under_tuple),
+            accumulated_tuple_state.field_slot_index.to_string())
+      }
+  ).declaration_text_so_far
+
 fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
   match variant {
     VarUnit(name, _) => expression_output.struct_empty_definition(context.resolve(name)),
-    VarTuple(name, field_types, _) => do
-      let parts: [string] = []; let mut i = 0
-      while i < field_types.length() do
-        parts.push(expression_output.struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), i.to_string())); i = i + 1
-      end
-      expression_output.struct_with_inline_members_definition(context.resolve(name), parts.join(''))
-    end,
+    VarTuple(name, field_types, _) =>
+      expression_output.struct_with_inline_members_definition(
+        context.resolve(name),
+        tuple_variant_struct_members_fragment(context, field_types)),
     VarRecord(name, field_defs, _) =>
       expression_output.struct_with_inline_members_definition(
         context.resolve(name),
@@ -187,13 +199,10 @@ fn gen_single_variant(context: CodegenContext, type_name: string, variant: Share
       expression_output.struct_with_inline_members_definition(
         context.resolve(type_name),
         variant_record_struct_inline_member_declarations(context, field_defs) + struct_extra_using(context, type_name)),
-    VarTuple(_, field_types, _) => do
-      let parts: [string] = []; let mut i = 0
-      while i < field_types.length() do
-        parts.push(expression_output.struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), i.to_string())); i = i + 1
-      end
-      expression_output.struct_with_inline_members_definition(context.resolve(type_name), parts.join('') + struct_extra_using(context, type_name))
-    end,
+    VarTuple(_, field_types, _) =>
+      expression_output.struct_with_inline_members_definition(
+        context.resolve(type_name),
+        tuple_variant_struct_members_fragment(context, field_types) + struct_extra_using(context, type_name)),
     VarUnit(_, _) => expression_output.struct_empty_definition(context.resolve(type_name))
   }
 
@@ -350,6 +359,11 @@ fn derive_hash_std_cpp_type(field_type: Shared<TypeExpr>) -> string =
 fn derive_hash_combine_line(cpp_type: string, access_expr: string) -> string =
   `h ^= std::hash<${cpp_type}>{}(${access_expr}) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);\n`
 
+type TupleHashCodegenFoldState = TupleHashCodegenFoldState {
+  tuple_field_slot: i32,
+  concatenated_combine_lines: string
+}
+
 fn derive_hash_record_operator_body(field_defs: [Shared<FieldDef>]) -> string =
   if field_defs.length() == 0 then 'return static_cast<size_t>(1469598103934665603ULL);\n'
   else
@@ -364,16 +378,21 @@ fn derive_hash_record(type_name: string, field_defs: [Shared<FieldDef>]) -> stri
     operator_body + '  }\n};\n}\n'
 end
 
-fn derive_hash_tuple_variant_inner(variant_struct_name: string, field_types: [Shared<TypeExpr>], discriminant_index: i32) -> string = do
-  let mut inner = derive_hash_combine_line('size_t', discriminant_index.to_string())
-  let mut tuple_index = 0
-  while tuple_index < field_types.length() do
-    const slot_access = `std::get<${variant_struct_name}>(self._).field${tuple_index.to_string()}`
-    inner = inner + derive_hash_combine_line(derive_hash_std_cpp_type(field_types[tuple_index]), slot_access)
-    tuple_index = tuple_index + 1
-  end
-  inner
-end
+fn derive_hash_tuple_variant_inner(variant_struct_name: string, field_types: [Shared<TypeExpr>], discriminant_index: i32) -> string =
+  field_types.fold(
+    TupleHashCodegenFoldState {
+      tuple_field_slot: 0,
+      concatenated_combine_lines: derive_hash_combine_line('size_t', discriminant_index.to_string())
+    },
+    (accumulated_hash_tuple_state, field_type_expression_under_tuple) =>
+      TupleHashCodegenFoldState {
+        tuple_field_slot: accumulated_hash_tuple_state.tuple_field_slot + 1,
+        concatenated_combine_lines: accumulated_hash_tuple_state.concatenated_combine_lines +
+          derive_hash_combine_line(
+            derive_hash_std_cpp_type(field_type_expression_under_tuple),
+            `std::get<${variant_struct_name}>(self._).field${accumulated_hash_tuple_state.tuple_field_slot.to_string()}`)
+      }
+  ).concatenated_combine_lines
 
 fn derive_hash_record_variant_inner(variant_struct_name: string, field_defs: [Shared<FieldDef>], discriminant_index: i32) -> string =
   field_defs.fold(derive_hash_combine_line('size_t', discriminant_index.to_string()), (acc, fd) =>
@@ -401,15 +420,24 @@ fn derive_hash_sum_branch(variant: Shared<TypeVariant>, discriminant_index: i32)
   `if (std::holds_alternative<${constructor_name}>(self._)) {\n    ` + variant_inner + `    return h;\n  }\n`
 end
 
-fn derive_hash_sum_operator_body(variants: [Shared<TypeVariant>]) -> string = do
-  let mut inner = 'size_t h = 1469598103934665603ULL;\n'
-  let mut variant_index = 0
-  while variant_index < variants.length() do
-    inner = inner + derive_hash_sum_branch(variants[variant_index], variant_index)
-    variant_index = variant_index + 1
-  end
-  inner + 'return h;\n'
-end
+type HashSumOperatorFoldState = HashSumOperatorFoldState {
+  next_discriminant_index: i32,
+  operator_body_text: string
+}
+
+fn derive_hash_sum_operator_body(variants: [Shared<TypeVariant>]) -> string =
+  variants.fold(
+    HashSumOperatorFoldState {
+      next_discriminant_index: 0,
+      operator_body_text: 'size_t h = 1469598103934665603ULL;\n'
+    },
+    (accumulated_hash_sum_state, variant_under_hash_sum) =>
+      HashSumOperatorFoldState {
+        next_discriminant_index: accumulated_hash_sum_state.next_discriminant_index + 1,
+        operator_body_text: accumulated_hash_sum_state.operator_body_text +
+          derive_hash_sum_branch(variant_under_hash_sum, accumulated_hash_sum_state.next_discriminant_index)
+      }
+  ).operator_body_text + 'return h;\n'
 
 fn derive_hash_sum(type_name: string, variants: [Shared<TypeVariant>]) -> string = do
   const operator_body = derive_hash_sum_operator_body(variants)

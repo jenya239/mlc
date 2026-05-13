@@ -322,6 +322,37 @@ class TypeInferenceServiceTest < Minitest::Test
     assert_equal [], result
   end
 
+  def test_expected_lambda_parameter_types_for_generic_callee_using_preceding_args
+    generic_parameter = MLC::SemanticIR::Builder.type_variable("T")
+    lambda_formal =
+      MLC::SemanticIR::Builder.function_type(
+        [{ type: generic_parameter }],
+        MLC::SemanticIR::Builder.primitive_type("i32")
+      )
+    info = MockFunctionInfo.new(
+      type_params: [generic_parameter],
+      param_types: [
+        generic_parameter,
+        lambda_formal
+      ],
+      ret_type: MLC::SemanticIR::Builder.primitive_type("i32")
+    )
+    @function_registry.register("apply_fn", info)
+
+    callee_ir = MLC::SemanticIR::Builder.var_expr("apply_fn", MLC::SemanticIR::Builder.primitive_type("auto"))
+    first_argument_type = MLC::SemanticIR::Builder.primitive_type("string")
+    preceding_args_ir = [Struct.new(:type).new(first_argument_type)]
+
+    result = @service.expected_lambda_parameter_types_for_function_argument(
+      callee_ir,
+      1,
+      preceding_args_ir
+    )
+
+    assert_equal 1, result.length
+    assert_equal "string", result.first.name
+  end
+
   # ========== Mock Classes ==========
 
   class MockVarTypeRegistry

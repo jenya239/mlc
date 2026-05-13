@@ -157,7 +157,7 @@ module MLC
                     if callee_ir.is_a?(SemanticIR::MemberExpr)
                       inference.send(:expected_lambda_param_types, callee_ir.object, callee_ir.member, args_ir)
                     else
-                      inference.expected_lambda_parameter_types_for_function_argument(callee_ir, argument_index)
+                      inference.expected_lambda_parameter_types_for_function_argument(callee_ir, argument_index, args_ir)
                     end
                   end
                 if expected&.any?

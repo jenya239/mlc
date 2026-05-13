@@ -9,9 +9,11 @@ using namespace ast;
 using namespace param_analysis;
 using namespace ast_tokens;
 
-std::shared_ptr<ast::TypeExpr> field_def_type(std::shared_ptr<ast::FieldDef> fd) noexcept;
+struct ConstructorArgumentScanState {int next_position_index;mlc::Array<int> shared_positions;mlc::Array<int> shared_array_positions;};
 
-std::shared_ptr<ctor_info::CtorTypeInfo> ctor_type_info_for(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> types) noexcept;
+std::shared_ptr<ast::TypeExpr> field_def_type(std::shared_ptr<ast::FieldDef> field_definition) noexcept;
+
+std::shared_ptr<ctor_info::CtorTypeInfo> ctor_type_info_for(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> argument_type_expressions) noexcept;
 
 mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> variant_to_ctor_info(std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
@@ -21,30 +23,13 @@ mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> decl_to_ctor_infos(std::sha
 
 mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_infos_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept;
 
-std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String cti_name) noexcept;
+std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept;
 
-std::shared_ptr<ast::TypeExpr> field_def_type(std::shared_ptr<ast::FieldDef> fd) noexcept{return fd->typ;}
+std::shared_ptr<ast::TypeExpr> field_def_type(std::shared_ptr<ast::FieldDef> field_definition) noexcept{return field_definition->typ;}
 
-std::shared_ptr<ctor_info::CtorTypeInfo> ctor_type_info_for(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> types) noexcept{
-mlc::Array<int> shared_positions = {};
-mlc::Array<int> shared_array_positions = {};
-int index = 0;
-while (index < types.size()){
-{
-if (param_analysis::is_shared_type(types[index])){
-{
-shared_positions.push_back(index);
-}
-}
-if (param_analysis::is_shared_array_type(types[index])){
-{
-shared_array_positions.push_back(index);
-}
-}
-index = index + 1;
-}
-}
-return std::make_shared<ctor_info::CtorTypeInfo>(ctor_info::CtorTypeInfo{ctor_name, shared_positions, shared_array_positions});
+std::shared_ptr<ctor_info::CtorTypeInfo> ctor_type_info_for(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> argument_type_expressions) noexcept{
+ctor_info::ConstructorArgumentScanState scan_result = argument_type_expressions.fold(ctor_info::ConstructorArgumentScanState{0, {}, {}}, [](ctor_info::ConstructorArgumentScanState accumulated_state, std::shared_ptr<ast::TypeExpr> type_expression_under_scan) mutable { return ctor_info::ConstructorArgumentScanState{accumulated_state.next_position_index + 1, param_analysis::is_shared_type(type_expression_under_scan) ? accumulated_state.shared_positions.concat(mlc::Array<int>{accumulated_state.next_position_index}) : accumulated_state.shared_positions, param_analysis::is_shared_array_type(type_expression_under_scan) ? accumulated_state.shared_array_positions.concat(mlc::Array<int>{accumulated_state.next_position_index}) : accumulated_state.shared_array_positions}; });
+return std::make_shared<ctor_info::CtorTypeInfo>(ctor_info::CtorTypeInfo{constructor_name, scan_result.shared_positions, scan_result.shared_array_positions});
 }
 
 mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> variant_to_ctor_info(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
@@ -59,20 +44,6 @@ mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> decl_to_ctor_infos(std::sha
 
 mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_infos_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept{return mlc::collections::flat_map(decls, [](std::shared_ptr<ast::Decl> decl) mutable { return decl_to_ctor_infos(decl); });}
 
-std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String cti_name) noexcept{
-std::shared_ptr<ctor_info::CtorTypeInfo> result = std::make_shared<ctor_info::CtorTypeInfo>(ctor_info::CtorTypeInfo{mlc::String(""), {}, {}});
-int i = 0;
-while (i < infos.size()){
-{
-if (infos[i]->name == cti_name){
-{
-result = infos[i];
-}
-}
-i = i + 1;
-}
-}
-return result;
-}
+std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept{return infos.fold(std::make_shared<ctor_info::CtorTypeInfo>(ctor_info::CtorTypeInfo{mlc::String(""), {}, {}}), [constructor_lookup_name](std::shared_ptr<ctor_info::CtorTypeInfo> chosen, std::shared_ptr<ctor_info::CtorTypeInfo> candidate_info) mutable { return candidate_info->name == constructor_lookup_name ? candidate_info : chosen; });}
 
 } // namespace ctor_info

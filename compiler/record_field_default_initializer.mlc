@@ -15,7 +15,7 @@ import {
   ExprBin,
   ExprUn
 } from './ast'
-import { CodegenContext, context_resolve } from './codegen/context'
+import { CodegenContext } from './codegen/context'
 import * as lit from './codegen/literals'
 import * as expression_output from './codegen/expr'
 import { map_builtin_identifier_reference } from './codegen/cpp_naming'
@@ -43,7 +43,7 @@ export fn record_field_default_expression_acceptable_for_codegen(expression: Sha
   }
 
 fn record_field_default_identifier_cpp(name: string, context: CodegenContext) -> string =
-  context_resolve(context, map_builtin_identifier_reference(name))
+  context.resolve(map_builtin_identifier_reference(name))
 
 export fn record_field_default_expression_cpp_initializer(expression: Shared<Expr>, context: CodegenContext) -> string =
   match expression {
