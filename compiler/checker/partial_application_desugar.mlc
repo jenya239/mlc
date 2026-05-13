@@ -5,9 +5,9 @@ import {
   ExprInt, ExprStr, ExprBool, ExprUnit, ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar,
   ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex,
   ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate,
-  ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda, ExprNamedArg, ExprWith,
+  ExprArray, ExprTuple, ExprQuestion,   ExprExtern, ExprLambda, ExprNamedArg, ExprWith,
   StmtLet, StmtLetPat, StmtLetConst, StmtExpr, StmtReturn, StmtBreak, StmtContinue,
-  span_unknown
+  Span
 } from '../ast'
 
 type PartialPair = PartialPair { expression: Shared<Expr>, next_serial: i32 }
@@ -17,9 +17,24 @@ fn partial_application_leaf_partial_pair(leaf_expression: Shared<Expr>, serial: 
 
 type StatementsPartialPair = StatementsPartialPair { statements: [Shared<Stmt>], next_serial: i32 }
 
+type StatementsBlockAccumulator = StatementsBlockAccumulator {
+  accumulated_statements: [Shared<Stmt>],
+  next_serial: i32
+}
+
 type ArgumentsPartialPair = ArgumentsPartialPair { arguments: [Shared<Expr>], next_serial: i32 }
 
+type ExpressionListAccumulator = ExpressionListAccumulator {
+  mapped_expressions: [Shared<Expr>],
+  next_serial: i32
+}
+
 type RecordLitPartsPartialPair = RecordLitPartsPartialPair { parts: [RecordLitPart], next_serial: i32 }
+
+type FieldValuesAccumulator = FieldValuesAccumulator {
+  mapped_field_values: [Shared<FieldVal>],
+  next_serial: i32
+}
 
 type PartialNamesAllocation = PartialNamesAllocation { names: [string], next_serial: i32 }
 
@@ -28,11 +43,6 @@ fn expr_is_placeholder(expression: Shared<Expr>) -> bool =
     ExprIdent(name, _) => name == "_",
     _ => false
   }
-
-fn partial_array_append_expression(elements: [Shared<Expr>], element: Shared<Expr>) -> [Shared<Expr>] = do
-  elements.push(element)
-  elements
-end
 
 fn partial_placeholder_delta_for_argument(argument: Shared<Expr>) -> i32 =
   match argument {
@@ -43,27 +53,53 @@ fn partial_placeholder_delta_for_argument(argument: Shared<Expr>) -> i32 =
     _ => 0
   }
 
-fn partial_allocate_parameter_names(hole_count: i32, serial_start: i32) -> PartialNamesAllocation = do
-  const names: [string] = []
-  let mut runner = serial_start
-  let mut counter = 0
-  while counter < hole_count do
-    names.push('partial_application_parameter_' + runner.to_string())
-    runner = runner + 1
-    counter = counter + 1
+fn partial_allocate_parameter_names(hole_count: i32, serial_start: i32) -> PartialNamesAllocation =
+  if hole_count <= 0 then
+    PartialNamesAllocation { names: [], next_serial: serial_start }
+  else
+    const tail_allocation = partial_allocate_parameter_names(hole_count - 1, serial_start + 1)
+    PartialNamesAllocation {
+      names: ['partial_application_parameter_' + serial_start.to_string()].concat(tail_allocation.names),
+      next_serial: tail_allocation.next_serial
+    }
   end
-  PartialNamesAllocation { names, next_serial: runner }
-end
 
-fn partial_count_placeholder_arguments(arguments: [Shared<Expr>]) -> i32 = do
-  let mut total = 0
-  let mut argument_index = 0
-  while argument_index < arguments.length() do
-    total = total + partial_placeholder_delta_for_argument(arguments[argument_index])
-    argument_index = argument_index + 1
-  end
-  total
-end
+fn partial_count_placeholder_arguments(arguments: [Shared<Expr>]) -> i32 =
+  arguments.fold(0, (accumulated_total, argument_under_scan) =>
+    accumulated_total + partial_placeholder_delta_for_argument(argument_under_scan)
+  )
+
+fn partial_application_desugar_expression_element_sequence(
+  elements: [Shared<Expr>],
+  initial_serial: i32
+) -> ExpressionListAccumulator =
+  elements.fold(
+    ExpressionListAccumulator { mapped_expressions: [], next_serial: initial_serial },
+    (accumulated, element_under_sequence) => do
+      const element_partial = partial_application_desugar_inner(element_under_sequence, accumulated.next_serial)
+      ExpressionListAccumulator {
+        mapped_expressions: accumulated.mapped_expressions.concat([element_partial.expression]),
+        next_serial: element_partial.next_serial
+      }
+    end
+  )
+
+fn partial_application_desugar_field_values_sequence(
+  field_values: [Shared<FieldVal>],
+  initial_serial: i32
+) -> FieldValuesAccumulator =
+  field_values.fold(
+    FieldValuesAccumulator { mapped_field_values: [], next_serial: initial_serial },
+    (accumulated, field_value_under_sequence) => do
+      const value_partial = partial_application_desugar_inner(field_value_under_sequence.val, accumulated.next_serial)
+      FieldValuesAccumulator {
+        mapped_field_values: accumulated.mapped_field_values.concat([
+          Shared.new(FieldVal { name: field_value_under_sequence.name, val: value_partial.expression })
+        ]),
+        next_serial: value_partial.next_serial
+      }
+    end
+  )
 
 fn partial_replace_call_arguments_inner(
   arguments: [Shared<Expr>],
@@ -77,15 +113,15 @@ fn partial_replace_call_arguments_inner(
   else match arguments[argument_index] {
     ExprNamedArg(label, inner, span_named) =>
       if expr_is_placeholder(inner) then
-        partial_replace_call_arguments_inner(
+          partial_replace_call_arguments_inner(
           arguments,
           parameter_names,
           fallback_span,
           argument_index + 1,
           name_index + 1,
-          partial_array_append_expression(
-            output,
-            Shared.new(ExprNamedArg(label, Shared.new(ExprIdent(parameter_names[name_index], fallback_span)), span_named))))
+          output.concat([
+            Shared.new(ExprNamedArg(label, Shared.new(ExprIdent(parameter_names[name_index], fallback_span)), span_named))
+          ]))
       else
         partial_replace_call_arguments_inner(
           arguments,
@@ -93,27 +129,25 @@ fn partial_replace_call_arguments_inner(
           fallback_span,
           argument_index + 1,
           name_index,
-          partial_array_append_expression(output, arguments[argument_index]))
+          output.concat([arguments[argument_index]]))
       end,
     ExprIdent(name, _) =>
       if name == "_" then
-        partial_replace_call_arguments_inner(
+          partial_replace_call_arguments_inner(
           arguments,
           parameter_names,
           fallback_span,
           argument_index + 1,
           name_index + 1,
-          partial_array_append_expression(
-            output,
-            Shared.new(ExprIdent(parameter_names[name_index], fallback_span))))
+          output.concat([Shared.new(ExprIdent(parameter_names[name_index], fallback_span))]))
       else
-        partial_replace_call_arguments_inner(
+          partial_replace_call_arguments_inner(
           arguments,
           parameter_names,
           fallback_span,
           argument_index + 1,
           name_index,
-          partial_array_append_expression(output, arguments[argument_index]))
+          output.concat([arguments[argument_index]]))
       end,
     _ =>
       partial_replace_call_arguments_inner(
@@ -122,7 +156,7 @@ fn partial_replace_call_arguments_inner(
         fallback_span,
         argument_index + 1,
         name_index,
-        partial_array_append_expression(output, arguments[argument_index]))
+        output.concat([arguments[argument_index]]))
   }
 
 fn partial_replace_call_arguments(
@@ -190,7 +224,7 @@ fn partial_application_map_arguments_at(
         arguments,
         index + 1,
         inner_pair.next_serial,
-        partial_array_append_expression(mapped, Shared.new(ExprNamedArg(label, inner_pair.expression, span_named))))
+        mapped.concat([Shared.new(ExprNamedArg(label, inner_pair.expression, span_named))]))
     end,
     _ => do
       const argument_pair = partial_application_desugar_inner(arguments[index], serial)
@@ -198,7 +232,7 @@ fn partial_application_map_arguments_at(
         arguments,
         index + 1,
         argument_pair.next_serial,
-        partial_array_append_expression(mapped, argument_pair.expression))
+        mapped.concat([argument_pair.expression]))
     end
   }
 
@@ -207,45 +241,41 @@ fn partial_application_map_arguments(arguments: [Shared<Expr>], serial: i32) -> 
 
 fn partial_application_desugar_record_lit_parts(parts: [RecordLitPart], serial: i32) -> RecordLitPartsPartialPair = do
   const output_parts: [RecordLitPart] = []
-  let mut next_serial = serial
-  let mut index = 0
-  while index < parts.length() do
-    match parts[index] {
-      RecordLitFields(field_values) => do
-        const mapped_fields: [Shared<FieldVal>] = []
-        let mut field_index = 0
-        while field_index < field_values.length() do
-          const value_pair = partial_application_desugar_inner(field_values[field_index].val, next_serial)
-          mapped_fields.push(Shared.new(FieldVal { name: field_values[field_index].name, val: value_pair.expression }))
-          next_serial = value_pair.next_serial
-          field_index = field_index + 1
+  const next_serial_after_fold = parts.fold(
+    serial,
+    (next_serial_under_fold, part_under_scan) => do
+      match part_under_scan {
+        RecordLitFields(field_values_under_part) => do
+          const fields_accumulator = partial_application_desugar_field_values_sequence(
+            field_values_under_part,
+            next_serial_under_fold
+          )
+          output_parts.push(RecordLitFields(fields_accumulator.mapped_field_values))
+          fields_accumulator.next_serial
+        end,
+        RecordLitSpread(spread_expression_under_part) => do
+          const spread_partial = partial_application_desugar_inner(spread_expression_under_part, next_serial_under_fold)
+          output_parts.push(RecordLitSpread(spread_partial.expression))
+          spread_partial.next_serial
         end
-        output_parts.push(RecordLitFields(mapped_fields))
-        output_parts
-      end,
-      RecordLitSpread(spread_expression) => do
-        const spread_pair = partial_application_desugar_inner(spread_expression, next_serial)
-        output_parts.push(RecordLitSpread(spread_pair.expression))
-        next_serial = spread_pair.next_serial
-        output_parts
-      end
-    }
-    index = index + 1
-  end
-  RecordLitPartsPartialPair { parts: output_parts, next_serial }
+      }
+    end
+  )
+  RecordLitPartsPartialPair { parts: output_parts, next_serial: next_serial_after_fold }
 end
 
 fn partial_application_desugar_statements_block(statements: [Shared<Stmt>], serial: i32) -> StatementsPartialPair = do
-  const output: [Shared<Stmt>] = []
-  let mut next_serial = serial
-  let mut index = 0
-  while index < statements.length() do
-    const statement_pair = partial_application_desugar_statement(statements[index], next_serial)
-    output.push(statement_pair.statement)
-    next_serial = statement_pair.next_serial
-    index = index + 1
-  end
-  StatementsPartialPair { statements: output, next_serial }
+  const block_fold = statements.fold(
+    StatementsBlockAccumulator { accumulated_statements: [], next_serial: serial },
+    (accumulated, statement_under_block) => do
+      const statement_partial = partial_application_desugar_statement(statement_under_block, accumulated.next_serial)
+      StatementsBlockAccumulator {
+        accumulated_statements: accumulated.accumulated_statements.concat([statement_partial.statement]),
+        next_serial: statement_partial.next_serial
+      }
+    end
+  )
+  StatementsPartialPair { statements: block_fold.accumulated_statements, next_serial: block_fold.next_serial }
 end
 
 type StmtPartialPair = StmtPartialPair { statement: Shared<Stmt>, next_serial: i32 }
@@ -294,24 +324,23 @@ fn partial_application_desugar_statement(statement: Shared<Stmt>, serial: i32) -
 
 type MatchArmsPartialPair = MatchArmsPartialPair { arms: [Shared<MatchArm>], next_serial: i32 }
 
-fn partial_application_desugar_match_arms_list(arms: [Shared<MatchArm>], serial: i32) -> MatchArmsPartialPair = do
-  const output_arms: [Shared<MatchArm>] = []
-  let mut next_serial = serial
-  let mut index = 0
-  while index < arms.length() do
-    const guard_pair = partial_application_desugar_inner(arms[index].when_condition, next_serial)
-    const body_pair = partial_application_desugar_inner(arms[index].body, guard_pair.next_serial)
-    output_arms.push(Shared.new(MatchArm {
-      pat: arms[index].pat,
-      has_guard: arms[index].has_guard,
-      when_condition: guard_pair.expression,
-      body: body_pair.expression
-    }))
-    next_serial = body_pair.next_serial
-    index = index + 1
-  end
-  MatchArmsPartialPair { arms: output_arms, next_serial }
-end
+fn partial_application_desugar_match_arms_list(arms: [Shared<MatchArm>], serial: i32) -> MatchArmsPartialPair =
+  arms.fold(
+    MatchArmsPartialPair { arms: [], next_serial: serial },
+    (accumulated, arm_shared_under_match) => do
+      const guard_pair = partial_application_desugar_inner(arm_shared_under_match.when_condition, accumulated.next_serial)
+      const body_pair = partial_application_desugar_inner(arm_shared_under_match.body, guard_pair.next_serial)
+      MatchArmsPartialPair {
+        arms: accumulated.arms.concat([Shared.new(MatchArm {
+          pat: arm_shared_under_match.pat,
+          has_guard: arm_shared_under_match.has_guard,
+          when_condition: guard_pair.expression,
+          body: body_pair.expression
+        })]),
+        next_serial: body_pair.next_serial
+      }
+    end
+  )
 
 fn partial_application_desugar_inner(expression: Shared<Expr>, serial: i32) -> PartialPair =
   match expression {
@@ -427,48 +456,29 @@ fn partial_application_desugar_inner(expression: Shared<Expr>, serial: i32) -> P
     end,
     ExprRecordUpdate(type_name, base_expression, field_values, span_update) => do
       const base_pair = partial_application_desugar_inner(base_expression, serial)
-      let mut next_serial = base_pair.next_serial
-      const mapped_fields: [Shared<FieldVal>] = []
-      let mut field_index = 0
-      while field_index < field_values.length() do
-        const value_pair = partial_application_desugar_inner(field_values[field_index].val, next_serial)
-        mapped_fields.push(Shared.new(FieldVal { name: field_values[field_index].name, val: value_pair.expression }))
-        next_serial = value_pair.next_serial
-        field_index = field_index + 1
-      end
+      const fields_accumulator = partial_application_desugar_field_values_sequence(field_values, base_pair.next_serial)
       PartialPair {
-        expression: Shared.new(ExprRecordUpdate(type_name, base_pair.expression, mapped_fields, span_update)),
-        next_serial
+        expression: Shared.new(ExprRecordUpdate(
+          type_name,
+          base_pair.expression,
+          fields_accumulator.mapped_field_values,
+          span_update
+        )),
+        next_serial: fields_accumulator.next_serial
       }
     end,
     ExprArray(elements, span_array) => do
-      const mapped_elements: [Shared<Expr>] = []
-      let mut next_serial = serial
-      let mut element_index = 0
-      while element_index < elements.length() do
-        const element_pair = partial_application_desugar_inner(elements[element_index], next_serial)
-        mapped_elements.push(element_pair.expression)
-        next_serial = element_pair.next_serial
-        element_index = element_index + 1
-      end
+      const element_accumulator = partial_application_desugar_expression_element_sequence(elements, serial)
       PartialPair {
-        expression: Shared.new(ExprArray(mapped_elements, span_array)),
-        next_serial
+        expression: Shared.new(ExprArray(element_accumulator.mapped_expressions, span_array)),
+        next_serial: element_accumulator.next_serial
       }
     end,
     ExprTuple(elements, span_tuple) => do
-      const mapped_elements: [Shared<Expr>] = []
-      let mut next_serial = serial
-      let mut element_index = 0
-      while element_index < elements.length() do
-        const element_pair = partial_application_desugar_inner(elements[element_index], next_serial)
-        mapped_elements.push(element_pair.expression)
-        next_serial = element_pair.next_serial
-        element_index = element_index + 1
-      end
+      const element_accumulator = partial_application_desugar_expression_element_sequence(elements, serial)
       PartialPair {
-        expression: Shared.new(ExprTuple(mapped_elements, span_tuple)),
-        next_serial
+        expression: Shared.new(ExprTuple(element_accumulator.mapped_expressions, span_tuple)),
+        next_serial: element_accumulator.next_serial
       }
     end,
     ExprQuestion(inner_question, span_question) => do
