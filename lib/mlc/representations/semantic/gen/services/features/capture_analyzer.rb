@@ -62,17 +62,84 @@ module MLC
                 collect_assignments(node.value, param_names, assigned) if node.respond_to?(:value)
               when MLC::Source::AST::Lambda
                 # Don't recurse into nested lambdas for outer-scope assignments
+              when MLC::Source::AST::Call
+                mark_receiver_if_mutating_collection_method!(node.callee, param_names, assigned)
+                collect_assignments(node.callee, param_names, assigned)
+                Array(node.args).each do |argument_node|
+                  next if argument_node.is_a?(MLC::Source::AST::Lambda)
+
+                  if argument_node.is_a?(MLC::Source::AST::NamedArg)
+                    collect_assignments(argument_node.value, param_names, assigned)
+                  else
+                    collect_assignments(argument_node, param_names, assigned)
+                  end
+                end
+              when MLC::Source::AST::SafeCall
+                mark_receiver_if_mutating_safe_call!(node, param_names, assigned)
+                collect_assignments(node.object, param_names, assigned)
+                Array(node.args).each do |argument_node|
+                  next if argument_node.is_a?(MLC::Source::AST::Lambda)
+
+                  if argument_node.is_a?(MLC::Source::AST::NamedArg)
+                    collect_assignments(argument_node.value, param_names, assigned)
+                  else
+                    collect_assignments(argument_node, param_names, assigned)
+                  end
+                end
+              when MLC::Source::AST::MatchExpr
+                collect_assignments(node.scrutinee, param_names, assigned)
+                Array(node.arms).each do |arm|
+                  guard = arm[:guard] || arm["guard"]
+                  body = arm[:body] || arm["body"]
+                  collect_assignments(guard, param_names, assigned) if guard
+                  collect_assignments(body, param_names, assigned) if body
+                end
+              when MLC::Source::AST::PipeOp
+                collect_assignments(node.left, param_names, assigned)
+                collect_assignments(node.right, param_names, assigned)
               else
-                %i[body statements value condition then_branch else_branch result result_expr].each do |m|
-                  next unless node.respond_to?(m)
-                  child = node.send(m)
+                mutating_child_accessor_list.each do |method_name_symbol|
+                  next unless node.respond_to?(method_name_symbol)
+
+                  child = node.send(method_name_symbol)
                   if child.is_a?(Array)
-                    child.each { |c| collect_assignments(c, param_names, assigned) }
+                    child.each { |child_node| collect_assignments(child_node, param_names, assigned) }
                   else
                     collect_assignments(child, param_names, assigned)
                   end
                 end
               end
+            end
+
+            def mutating_child_accessor_list
+              %i[
+                body statements stmts expr value condition then_branch else_branch
+                result result_expr left right scrutinee iterable else_body
+              ]
+            end
+
+            def mark_receiver_if_mutating_collection_method!(callee_expression, param_names, assigned)
+              return unless callee_expression.is_a?(MLC::Source::AST::MemberAccess)
+
+              receiver = callee_expression.object
+              return unless receiver.is_a?(MLC::Source::AST::VarRef) && !param_names.include?(receiver.name)
+
+              method_name_text = callee_expression.member.to_s
+              assigned.add(receiver.name) if mutating_collection_method?(method_name_text)
+            end
+
+            def mark_receiver_if_mutating_safe_call!(safe_call_expression, param_names, assigned)
+              receiver_object = safe_call_expression.object
+              return unless receiver_object.is_a?(MLC::Source::AST::VarRef) && !param_names.include?(receiver_object.name)
+
+              method_name_text = safe_call_expression.method_name.to_s
+              assigned.add(receiver_object.name) if mutating_collection_method?(method_name_text)
+            end
+
+            def mutating_collection_method?(method_name_text)
+              %w[
+                push push_back pop pop_back set insert remove erase clear
+              ].include?(method_name_text)
             end
 
             # Extract parameter names from lambda params

@@ -222,40 +222,46 @@ extend NameCheckResult {
 }
 
 export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult = do
-  let mut collected_diagnostics: [Diagnostic] = []; const scope = locals; let mut statement_index = 0
-  while statement_index < statements.length() do
-    match statements[statement_index] {
-      StmtLet(name, _, _, value, _) => do
-        collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
-        scope.push(name); ()
-      end,
-      StmtLetPat(pattern, _, _, value, has_else, else_body, _) => do
-        collected_diagnostics =
-          diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
-        const bound_pattern_names = pattern_bindings(pattern)
-        let mut pattern_binding_index = 0
-        while pattern_binding_index < bound_pattern_names.length() do
-          scope.push(bound_pattern_names[pattern_binding_index]); pattern_binding_index = pattern_binding_index + 1
-        end
-        if has_else then
-          collected_diagnostics =
-            diagnostics_append(collected_diagnostics, check_names_expr(else_body, scope, globals))
-        end
-        ()
-      end,
-      StmtLetConst(name, _, value, _) => do
-        collected_diagnostics =
-          diagnostics_append(collected_diagnostics, check_names_expr(value, scope, globals))
-        scope.push(name); ()
-      end,
-      StmtExpr(expression, _) =>
-        do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
-      StmtReturn(expression, _) =>
-        do collected_diagnostics = diagnostics_append(collected_diagnostics, check_names_expr(expression, scope, globals)); () end,
-      StmtBreak(_)    => (),
-      StmtContinue(_) => (),
-    }
-    statement_index = statement_index + 1
-  end
+  const scope = locals
+  const collected_diagnostics =
+    statements.fold(
+      do let starting_statement_diagnostics: [Diagnostic] = []; starting_statement_diagnostics end,
+      (diagnostics_accumulator, statement_under_walk) => do
+        match statement_under_walk {
+          StmtLet(name, _, _, value, _) => do
+            const next_after_let_value =
+              diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals))
+            scope.push(name)
+            next_after_let_value
+          end,
+          StmtLetPat(pattern, _, _, value, has_else, else_body, _) => do
+            let mut next_after_pattern_let_value =
+              diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals))
+            const bound_pattern_names = pattern_bindings(pattern)
+            let mut pattern_binding_index = 0
+            while pattern_binding_index < bound_pattern_names.length() do
+              scope.push(bound_pattern_names[pattern_binding_index])
+              pattern_binding_index = pattern_binding_index + 1
+            end
+            if has_else then
+              next_after_pattern_let_value =
+                diagnostics_append(next_after_pattern_let_value, check_names_expr(else_body, scope, globals))
+            end
+            next_after_pattern_let_value
+          end,
+          StmtLetConst(name, _, value, _) => do
+            const next_after_const =
+              diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals))
+            scope.push(name)
+            next_after_const
+          end,
+          StmtExpr(expression, _) =>
+            diagnostics_append(diagnostics_accumulator, check_names_expr(expression, scope, globals)),
+          StmtReturn(expression, _) =>
+            diagnostics_append(diagnostics_accumulator, check_names_expr(expression, scope, globals)),
+          StmtBreak(_)    => diagnostics_accumulator,
+          StmtContinue(_) => diagnostics_accumulator,
+        }
+      end)
   NameCheckResult { diagnostics: collected_diagnostics, scope: scope }
 end
