@@ -125,13 +125,23 @@ module MLC
                          )
                        else
                          @container.expected_return_type = func.ret_type
-                         body_expr = @context.lower_expression(func.body)
-                         CppAst::Nodes::BlockStatement.new(
-                           statements: [CppAst::Nodes::ReturnStatement.new(expression: body_expr)],
-                           statement_trailings: [""],
-                           lbrace_suffix: "",
-                           rbrace_prefix: ""
-                         )
+                         if @context.should_lower_as_statement?(func.body)
+                           statement_body = @context.lower_statement(func.body)
+                           CppAst::Nodes::BlockStatement.new(
+                             statements: [statement_body],
+                             statement_trailings: ["\n"],
+                             lbrace_suffix: "\n",
+                             rbrace_prefix: ""
+                           )
+                         else
+                           body_expr = @context.lower_expression(func.body)
+                           CppAst::Nodes::BlockStatement.new(
+                             statements: [CppAst::Nodes::ReturnStatement.new(expression: body_expr)],
+                             statement_trailings: [""],
+                             lbrace_suffix: "",
+                             rbrace_prefix: ""
+                           )
+                         end
                        end
 
           # Reset flags after processing function body
@@ -403,12 +413,16 @@ module MLC
 
           # Skip unit literals - they represent void/no value
           if block_expr.result && !block_expr.result.is_a?(SemanticIR::UnitLiteral)
-            result_expr = @context.lower_expression(block_expr.result)
-            statements << if emit_return
-                            CppAst::Nodes::ReturnStatement.new(expression: result_expr)
-                          else
-                            CppAst::Nodes::ExpressionStatement.new(expression: result_expr)
-                          end
+            if @context.should_lower_as_statement?(block_expr.result)
+              statements << @context.lower_statement(block_expr.result)
+            else
+              result_expr = @context.lower_expression(block_expr.result)
+              statements << if emit_return
+                              CppAst::Nodes::ReturnStatement.new(expression: result_expr)
+                            else
+                              CppAst::Nodes::ExpressionStatement.new(expression: result_expr)
+                            end
+            end
           end
 
           statements
