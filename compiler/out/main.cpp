@@ -57,74 +57,60 @@ mlc::String format_errs(mlc::String label, mlc::Array<mlc::String> errors) noexc
 int main(int argc, char** argv) noexcept;
 
 mlc::String dirname(mlc::String path) noexcept{
-int last_slash = -1;
-int index = 0;
-while (index < path.length()){
+int last_slash_index = -1;
+int path_character_index = 0;
+while (path_character_index < path.length()){
 {
-if (path.char_at(index) == mlc::String("/")){
+if (path.char_at(path_character_index) == mlc::String("/")){
 {
-last_slash = index;
+last_slash_index = path_character_index;
 }
 }
-index = index + 1;
+path_character_index = path_character_index + 1;
 }
 }
-return last_slash <= 0 ? mlc::String("") : path.substring(0, last_slash);
+return last_slash_index <= 0 ? mlc::String("") : path.substring(0, last_slash_index);
 }
 
 mlc::String resolve_dotdot(mlc::String path) noexcept{
-mlc::String p = path;
-int i = 0;
-while (i + 4 <= p.length()){
+mlc::String remaining_path = path;
+int scan_index = 0;
+while (scan_index + 4 <= remaining_path.length()){
 {
-if (p.substring(i, 4) == mlc::String("/../")){
+if (remaining_path.substring(scan_index, 4) == mlc::String("/../")){
 {
-int j = i - 1;
-while (j >= 0 && p.char_at(j) != mlc::String("/")){
+int reverse_segment_index = scan_index - 1;
+while (reverse_segment_index >= 0 && remaining_path.char_at(reverse_segment_index) != mlc::String("/")){
 {
-j = j - 1;
+reverse_segment_index = reverse_segment_index - 1;
 }
 }
-mlc::String prefix = j <= 0 ? mlc::String("") : p.substring(0, j);
-mlc::String suffix = p.substring(i + 4, p.length() - i - 4);
-p = prefix == mlc::String("") ? suffix : prefix + mlc::String("/") + suffix;
-i = 0;
+mlc::String prefix_part = reverse_segment_index <= 0 ? mlc::String("") : remaining_path.substring(0, reverse_segment_index);
+mlc::String suffix_part = remaining_path.substring(scan_index + 4, remaining_path.length() - scan_index - 4);
+remaining_path = prefix_part == mlc::String("") ? suffix_part : prefix_part + mlc::String("/") + suffix_part;
+scan_index = 0;
 }
 }
-i = i + 1;
+scan_index = scan_index + 1;
 }
 }
-if (p.length() >= 3 && p.substring(0, 3) == mlc::String("../")){
+if (remaining_path.length() >= 3 && remaining_path.substring(0, 3) == mlc::String("../")){
 {
-p = p.substring(3, p.length() - 3);
+remaining_path = remaining_path.substring(3, remaining_path.length() - 3);
 }
 }
-return p;
+return remaining_path;
 }
 
 mlc::String resolve_import_path(mlc::String base_path, mlc::String import_path) noexcept{
 mlc::String base_dir = dirname(base_path);
 mlc::String rest = import_path.length() >= 2 && import_path.substring(0, 2) == mlc::String("./") ? import_path.substring(2, import_path.length() - 2) : import_path;
-mlc::String with_ext = rest.length() >= 4 && rest.substring(rest.length() - 4, 4) == mlc::String(".mlc") ? rest : rest + mlc::String(".mlc");
-mlc::String raw = base_dir == mlc::String("") ? with_ext : base_dir + mlc::String("/") + with_ext;
-return resolve_dotdot(raw);
+mlc::String with_extension = rest.length() >= 4 && rest.substring(rest.length() - 4, 4) == mlc::String(".mlc") ? rest : rest + mlc::String(".mlc");
+mlc::String combined_before_normalization = base_dir == mlc::String("") ? with_extension : base_dir + mlc::String("/") + with_extension;
+return resolve_dotdot(combined_before_normalization);
 }
 
-bool path_in_loaded(mlc::String path, mlc::Array<mlc::String> loaded) noexcept{
-bool found = false;
-int i = 0;
-while (i < loaded.size()){
-{
-if (loaded[i] == path){
-{
-found = true;
-}
-}
-i = i + 1;
-}
-}
-return found;
-}
+bool path_in_loaded(mlc::String path, mlc::Array<mlc::String> loaded) noexcept{return loaded.any([path](mlc::String existing_path) mutable { return existing_path == path; });}
 
 LoadResult load_module_impl(mlc::String path, mlc::Array<mlc::String> loaded, mlc::HashMap<mlc::String, LoadResult>& cache) noexcept{
 mlc::String norm_path = resolve_dotdot(path);
@@ -155,21 +141,16 @@ my_namespace_import_aliases.push_back(decl_index::NamespaceImportAlias{symbols[1
 }
   LoadResult dep_result = load_module_impl(resolved, cur_loaded, cache);
   all_errors = ast::errs_append(all_errors, dep_result.errors);
-  int dep_i = 0;
-  return [&]() { 
-  while (dep_i < dep_result.items.size()){
+  std::tuple<> unit_placeholder = std::make_tuple();
+  unit_placeholder = dep_result.items.fold(unit_placeholder, [&seen, &items](std::tuple<> _, decl_index::LoadItem dependency_item) mutable { return [&]() -> std::tuple<> { 
+  if (!path_in_loaded(dependency_item.path, seen)){
 {
-decl_index::LoadItem item = dep_result.items[dep_i];
-if (!path_in_loaded(item.path, seen)){
-{
-seen.push_back(item.path);
-items.push_back(item);
+seen.push_back(dependency_item.path);
+items.push_back(dependency_item);
 }
 }
-dep_i = dep_i + 1;
-}
-}
- }();
+  return std::make_tuple();
+ }(); });
  }(); } if (std::holds_alternative<ast::DeclExported>((*prog.decls[index]))) { auto _v_declexported = std::get<ast::DeclExported>((*prog.decls[index])); auto [d] = _v_declexported; return my_decls.push_back(prog.decls[index]); } return my_decls.push_back(prog.decls[index]); }();
 index = index + 1;
 }
@@ -207,30 +188,21 @@ entry_namespace_import_aliases.push_back(decl_index::NamespaceImportAlias{symbol
 }
   LoadResult dep_result = load_module(resolved, cache);
   all_errors = ast::errs_append(all_errors, dep_result.errors);
-  int dep_i = 0;
-  return [&]() { 
-  while (dep_i < dep_result.items.size()){
+  std::tuple<> unit_placeholder = std::make_tuple();
+  unit_placeholder = dep_result.items.fold(unit_placeholder, [&seen_paths, &items_ordered, all_decls](std::tuple<> _, decl_index::LoadItem dependency_item) mutable { return [&]() -> std::tuple<> { 
+  if (!path_in_loaded(dependency_item.path, seen_paths)){
 {
-decl_index::LoadItem item = dep_result.items[dep_i];
-if (!path_in_loaded(item.path, seen_paths)){
-{
-seen_paths.push_back(item.path);
-items_ordered.push_back(item);
-int d = 0;
-[&]() { 
-  while (d < item.decls.size()){
-{
-all_decls.push_back(item.decls[d]);
-d = d + 1;
+seen_paths.push_back(dependency_item.path);
+items_ordered.push_back(dependency_item);
+std::tuple<> inner_unit = std::make_tuple();
+inner_unit = dependency_item.decls.fold(inner_unit, [&all_decls](std::tuple<> _, std::shared_ptr<ast::Decl> declaration_shared) mutable { return [&]() -> std::tuple<> { 
+  all_decls.push_back(declaration_shared);
+  return std::make_tuple();
+ }(); });
 }
 }
- }();
-}
-}
-dep_i = dep_i + 1;
-}
-}
- }();
+  return std::make_tuple();
+ }(); });
  }(); } if (std::holds_alternative<ast::DeclExported>((*prog.decls[index]))) { auto _v_declexported = std::get<ast::DeclExported>((*prog.decls[index])); auto [d] = _v_declexported; return [&]() { 
   entry_decls.push_back(d);
   return all_decls.push_back(d);
@@ -247,17 +219,16 @@ return MergeResult{ast::Program{all_decls}, all_errors, items_ordered};
 }
 
 ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir) noexcept{
-mlc::String src = mlc::file::read_to_string(entry_path);
-ast_tokens::LexOut lex = lexer::tokenize(src);
+ast_tokens::LexOut lex = lexer::tokenize(mlc::file::read_to_string(entry_path));
 return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(mlc::Array<mlc::String>{mlc::String("lex: ") + lex.errors[0]})) : ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   mlc::String source_path = resolve_dotdot(entry_path);
-  ast::Program prog = decls::parse_program_with_source_path(lex.tokens, source_path);
-  MergeResult merged = merge_program(entry_path, prog);
+  ast::Program parsed_program = decls::parse_program_with_source_path(lex.tokens, source_path);
+  MergeResult merged = merge_program(entry_path, parsed_program);
   return merged.errors.size() > 0 ? ast::Result<mlc::String, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(merged.errors)) : ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
-  int n = merged.items.size();
-  decl_index::LoadItem entry_item = merged.items[n - 1];
-  ast::Program entry_prog = ast::Program{entry_item.decls};
-  auto __try__checked = check::check_with_context(entry_prog, merged.prog);
+  int merged_item_count = merged.items.size();
+  decl_index::LoadItem entry_load_item = merged.items[merged_item_count - 1];
+  ast::Program entry_only_program = ast::Program{entry_load_item.decls};
+  auto __try__checked = check::check_with_context(entry_only_program, merged.prog);
   if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try__checked)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try__checked));
   check::CheckOut _checked = std::get<ast::Ok<check::CheckOut>>(__try__checked).field0;
   return ast::Ok<mlc::String>(compile_modular_loop(merged.items, merged.prog, out_dir));
@@ -268,47 +239,34 @@ return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<
 mlc::String compile_modular_loop(mlc::Array<decl_index::LoadItem> items, ast::Program full_prog, mlc::String out_dir) noexcept{
 ast::Program expanded_merge_program = param_destructure_expand::expand_parameter_destructuring_in_program(full_prog);
 registry::TypeRegistry registry = registry::build_registry(expanded_merge_program);
-mlc::Array<semantic_ir::SLoadItem> s_items = transform_decl::transform_load_items(items, registry, expanded_merge_program);
-context::PrecomputedCtx precomp = module::precompute(expanded_merge_program, items);
-int i = 0;
-while (i < s_items.size()){
-{
-semantic_ir::SLoadItem s_item = s_items[i];
-context::GenModuleOut out = module::gen_module(s_item, items, expanded_merge_program, precomp);
-mlc::String base = cpp_naming::path_to_module_base(s_item.path);
-mlc::String hpp_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + base + mlc::String(".hpp") : base + mlc::String(".hpp");
-mlc::String cpp_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + base + mlc::String(".cpp") : base + mlc::String(".cpp");
-mlc::file::write_string(hpp_path, out.h);
-mlc::file::write_string(cpp_path, out.c);
-i = i + 1;
-}
-}
+mlc::Array<semantic_ir::SLoadItem> transformed_items = transform_decl::transform_load_items(items, registry, expanded_merge_program);
+context::PrecomputedCtx precomputed = module::precompute(expanded_merge_program, items);
+std::tuple<> unit_placeholder = std::make_tuple();
+unit_placeholder = transformed_items.fold(unit_placeholder, [items, expanded_merge_program, precomputed, out_dir](std::tuple<> _, semantic_ir::SLoadItem transformed_load_item) mutable { return [&]() -> std::tuple<> { 
+  context::GenModuleOut generated_output = module::gen_module(transformed_load_item, items, expanded_merge_program, precomputed);
+  mlc::String module_base = cpp_naming::path_to_module_base(transformed_load_item.path);
+  mlc::String header_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + module_base + mlc::String(".hpp") : module_base + mlc::String(".hpp");
+  mlc::String implementation_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + module_base + mlc::String(".cpp") : module_base + mlc::String(".cpp");
+  mlc::file::write_string(header_path, generated_output.h);
+  mlc::file::write_string(implementation_path, generated_output.c);
+  return std::make_tuple();
+ }(); });
 return mlc::String("");
 }
 
-mlc::String format_errs(mlc::String label, mlc::Array<mlc::String> errors) noexcept{
-mlc::String output = mlc::String("");
-int i = 0;
-while (i < errors.size()){
-{
-output = output + label + mlc::String(": ") + errors[i] + mlc::String("\n");
-i = i + 1;
-}
-}
-return output;
-}
+mlc::String format_errs(mlc::String label, mlc::Array<mlc::String> errors) noexcept{return errors.map([label](mlc::String message_line) mutable { return label + mlc::String(": ") + message_line + mlc::String("\n"); }).join(mlc::String(""));}
 
 int main(int argc, char** argv) noexcept{
 mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));
-mlc::Array<mlc::String> a = mlc::io::args();
-if (a.size() == 0){
+mlc::Array<mlc::String> command_line_arguments = mlc::io::args();
+if (command_line_arguments.size() == 0){
 {
 mlc::io::println(mlc::String("Usage: mlcc <source.mlc> [-o out_dir]"));
 mlc::io::exit(1);
 }
 }
-mlc::String entry_path = a.size() >= 3 && a[0] == mlc::String("-o") ? a[2] : a[0];
-mlc::String out_dir = a.size() >= 3 && a[0] == mlc::String("-o") ? a[1] : a.size() >= 3 && a[1] == mlc::String("-o") ? a[2] : mlc::String("out");
+mlc::String entry_path = command_line_arguments.size() >= 3 && command_line_arguments[0] == mlc::String("-o") ? command_line_arguments[2] : command_line_arguments[0];
+mlc::String out_dir = command_line_arguments.size() >= 3 && command_line_arguments[0] == mlc::String("-o") ? command_line_arguments[1] : command_line_arguments.size() >= 3 && command_line_arguments[1] == mlc::String("-o") ? command_line_arguments[2] : mlc::String("out");
 return std::visit(overloaded{
   [&](const ast::Ok<mlc::String>& ok) -> int { auto [_w0] = ok; return 0; },
   [&](const ast::Err<mlc::Array<mlc::String>>& err) -> int { auto [errors] = err; return [&]() -> int { 

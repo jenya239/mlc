@@ -5,41 +5,44 @@ import { parse_program_with_source_path } from './parser/decls'
 import { check_with_context } from './checker/check'
 import { transform_load_items } from './checker/transform_decl'
 import { build_registry } from './checker/registry'
-import { gen_module, GenModuleOut, precompute } from './codegen/module'
-import { LoadItem, PrecomputedCtx } from './codegen/context'
+import { gen_module, precompute } from './codegen/module'
+import { LoadItem } from './codegen/context'
 import { NamespaceImportAlias } from './codegen/decl_index'
 import { path_to_module_base } from './codegen/cpp_naming'
 import { expand_parameter_destructuring_in_program } from './checker/param_destructure_expand'
 import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from './ast'
 
 fn dirname(path: string) -> string = do
-  let mut last_slash = -1
-  let mut index = 0
-  while index < path.length() do
-    if path.char_at(index) == "/" then last_slash = index end
-    index = index + 1
+  let mut last_slash_index = -1
+  let mut path_character_index = 0
+  while path_character_index < path.length() do
+    if path.char_at(path_character_index) == "/" then last_slash_index = path_character_index end
+    path_character_index = path_character_index + 1
   end
-  if last_slash <= 0 then '' else path.substring(0, last_slash) end
+  if last_slash_index <= 0 then '' else path.substring(0, last_slash_index) end
 end
 
 fn resolve_dotdot(path: string) -> string = do
-  let mut p = path
-  let mut i = 0
-  while i + 4 <= p.length() do
-    if p.substring(i, 4) == '/../' then
-      let mut j = i - 1
-      while j >= 0 && p.char_at(j) != "/" do j = j - 1 end
-      const prefix = if j <= 0 then '' else p.substring(0, j) end
-      const suffix = p.substring(i + 4, p.length() - i - 4)
-      p = if prefix == '' then suffix else prefix + "/" + suffix end
-      i = 0
+  let mut remaining_path = path
+  let mut scan_index = 0
+  while scan_index + 4 <= remaining_path.length() do
+    if remaining_path.substring(scan_index, 4) == '/../' then
+      let mut reverse_segment_index = scan_index - 1
+      while reverse_segment_index >= 0 && remaining_path.char_at(reverse_segment_index) != "/" do
+        reverse_segment_index = reverse_segment_index - 1
+      end
+      const prefix_part = if reverse_segment_index <= 0 then '' else remaining_path.substring(0, reverse_segment_index) end
+      const suffix_part = remaining_path.substring(scan_index + 4, remaining_path.length() - scan_index - 4)
+      remaining_path =
+        if prefix_part == '' then suffix_part else `${prefix_part}/${suffix_part}` end
+      scan_index = 0
     end
-    i = i + 1
+    scan_index = scan_index + 1
   end
-  if p.length() >= 3 && p.substring(0, 3) == '../' then
-    p = p.substring(3, p.length() - 3)
+  if remaining_path.length() >= 3 && remaining_path.substring(0, 3) == '../' then
+    remaining_path = remaining_path.substring(3, remaining_path.length() - 3)
   end
-  p
+  remaining_path
 end
 
 fn resolve_import_path(base_path: string, import_path: string) -> string = do
@@ -48,23 +51,16 @@ fn resolve_import_path(base_path: string, import_path: string) -> string = do
     then import_path.substring(2, import_path.length() - 2)
     else import_path
     end
-  const with_ext = if rest.length() >= 4 && rest.substring(rest.length() - 4, 4) == '.mlc'
+  const with_extension = if rest.length() >= 4 && rest.substring(rest.length() - 4, 4) == '.mlc'
     then rest
-    else rest + '.mlc'
+    else `${rest}.mlc`
     end
-  const raw = if base_dir == '' then with_ext else base_dir + "/" + with_ext end
-  resolve_dotdot(raw)
+  const combined_before_normalization = if base_dir == '' then with_extension else `${base_dir}/${with_extension}` end
+  resolve_dotdot(combined_before_normalization)
 end
 
-fn path_in_loaded(path: string, loaded: [string]) -> bool = do
-  let mut found = false
-  let mut i = 0
-  while i < loaded.length() do
-    if loaded[i] == path then found = true end
-    i = i + 1
-  end
-  found
-end
+fn path_in_loaded(path: string, loaded: [string]) -> bool =
+  loaded.any(existing_path => existing_path == path)
 
 type LoadResult = LoadResult { items: [LoadItem], errors: [string] }
 
@@ -72,17 +68,17 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
   const norm_path = resolve_dotdot(path)
   if cache.has(norm_path) then cache.get(norm_path)
   else if path_in_loaded(norm_path, loaded) then
-    LoadResult { items: [], errors: ['circular: ' + norm_path] }
+    LoadResult { items: [], errors: [`circular: ${norm_path}`] }
   else
   let cur_loaded = loaded
   cur_loaded.push(norm_path)
   const source = File.read(path)
   if source.length() == 0 && !File.exists(path) then
-    LoadResult { items: [], errors: ['file not found: ' + path] }
+    LoadResult { items: [], errors: [`file not found: ${path}`] }
   else
   const lex = tokenize(source)
   if lex.has_errors() then
-    LoadResult { items: [], errors: ['lex ' + path + ': ' + lex.errors[0]] }
+    LoadResult { items: [], errors: [`lex ${path}: ${lex.errors[0]}`] }
   else
     const prog = parse_program_with_source_path(lex.tokens, norm_path)
     let items: [LoadItem] = []
@@ -102,15 +98,14 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
           end
           const dep_result = load_module_impl(resolved, cur_loaded, cache)
           all_errors = errs_append(all_errors, dep_result.errors)
-          let mut dep_i = 0
-          while dep_i < dep_result.items.length() do
-            const item = dep_result.items[dep_i]
-            if !path_in_loaded(item.path, seen) then
-              seen.push(item.path)
-              items.push(item)
+          let mut unit_placeholder = ()
+          unit_placeholder = dep_result.items.fold(unit_placeholder, (_, dependency_item) => do
+            if !path_in_loaded(dependency_item.path, seen) then
+              seen.push(dependency_item.path)
+              items.push(dependency_item)
             end
-            dep_i = dep_i + 1
-          end
+            ()
+          end)
         end,
         DeclExported(d) => my_decls.push(prog.decls[index]),
         _ => my_decls.push(prog.decls[index])
@@ -157,19 +152,19 @@ fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
         end
         const dep_result = load_module(resolved, cache)
         all_errors = errs_append(all_errors, dep_result.errors)
-        let mut dep_i = 0
-        while dep_i < dep_result.items.length() do
-          const item = dep_result.items[dep_i]
-          if !path_in_loaded(item.path, seen_paths) then
-            seen_paths.push(item.path)
-            items_ordered.push(item)
-            let mut d = 0
-            while d < item.decls.length() do
-              all_decls.push(item.decls[d]); d = d + 1
-            end
+        let mut unit_placeholder = ()
+        unit_placeholder = dep_result.items.fold(unit_placeholder, (_, dependency_item) => do
+          if !path_in_loaded(dependency_item.path, seen_paths) then
+            seen_paths.push(dependency_item.path)
+            items_ordered.push(dependency_item)
+            let mut inner_unit = ()
+            inner_unit = dependency_item.decls.fold(inner_unit, (_, declaration_shared) => do
+              all_decls.push(declaration_shared)
+              ()
+            end)
           end
-          dep_i = dep_i + 1
-        end
+          ()
+        end)
       end,
       DeclExported(d) => do entry_decls.push(d); all_decls.push(d) end,
       _ => do entry_decls.push(prog.decls[index]); all_decls.push(prog.decls[index]) end
@@ -187,19 +182,18 @@ fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
 end
 
 fn compile_modular(entry_path: string, out_dir: string) -> Result<string, [string]> = do
-  const src = File.read(entry_path)
-  const lex = tokenize(src)
-  if lex.has_errors() then Err(['lex: ' + lex.errors[0]])
+  const lex = tokenize(File.read(entry_path))
+  if lex.has_errors() then Err([`lex: ${lex.errors[0]}`])
   else
     const source_path = resolve_dotdot(entry_path)
-    const prog = parse_program_with_source_path(lex.tokens, source_path)
-    const merged = merge_program(entry_path, prog)
+    const parsed_program = parse_program_with_source_path(lex.tokens, source_path)
+    const merged = merge_program(entry_path, parsed_program)
     if merged.errors.length() > 0 then Err(merged.errors)
     else do
-      const n = merged.items.length()
-      const entry_item = merged.items[n - 1]
-      const entry_prog = Program { decls: entry_item.decls }
-      const _checked = check_with_context(entry_prog, merged.prog)?
+      const merged_item_count = merged.items.length()
+      const entry_load_item = merged.items[merged_item_count - 1]
+      const entry_only_program = Program { decls: entry_load_item.decls }
+      const _checked = check_with_context(entry_only_program, merged.prog)?
       Ok(compile_modular_loop(merged.items, merged.prog, out_dir))
     end
     end
@@ -208,43 +202,44 @@ end
 
 fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) -> string = do
   const expanded_merge_program = expand_parameter_destructuring_in_program(full_prog)
-  const registry  = build_registry(expanded_merge_program)
-  const s_items   = transform_load_items(items, registry, expanded_merge_program)
-  const precomp   = precompute(expanded_merge_program, items)
-  let mut i = 0
-  while i < s_items.length() do
-    const s_item = s_items[i]
-    const out    = gen_module(s_item, items, expanded_merge_program, precomp)
-    const base   = path_to_module_base(s_item.path)
-    const hpp_path = if out_dir.length() > 0 then out_dir + "/" + base + '.hpp' else base + '.hpp' end
-    const cpp_path = if out_dir.length() > 0 then out_dir + "/" + base + '.cpp' else base + '.cpp' end
-    File.write(hpp_path, out.h)
-    File.write(cpp_path, out.c)
-    i = i + 1
-  end
+  const registry = build_registry(expanded_merge_program)
+  const transformed_items = transform_load_items(items, registry, expanded_merge_program)
+  const precomputed = precompute(expanded_merge_program, items)
+  let mut unit_placeholder = ()
+  unit_placeholder = transformed_items.fold(unit_placeholder, (_, transformed_load_item) => do
+    const generated_output = gen_module(transformed_load_item, items, expanded_merge_program, precomputed)
+    const module_base = path_to_module_base(transformed_load_item.path)
+    const header_path =
+      if out_dir.length() > 0 then `${out_dir}/${module_base}.hpp` else `${module_base}.hpp` end
+    const implementation_path =
+      if out_dir.length() > 0 then `${out_dir}/${module_base}.cpp` else `${module_base}.cpp` end
+    File.write(header_path, generated_output.h)
+    File.write(implementation_path, generated_output.c)
+    ()
+  end)
   ''
 end
 
-fn format_errs(label: string, errors: [string]) -> string = do
-  let mut output = ''; let mut i = 0
-  while i < errors.length() do
-    output = output + label + ': ' + errors[i] + "\n"; i = i + 1
-  end
-  output
-end
+fn format_errs(label: string, errors: [string]) -> string =
+  errors.map(message_line => `${label}: ${message_line}\n`).join('')
 
 fn main() -> i32 = do
-  const a = args()
-  if a.length() == 0 then
+  const command_line_arguments = args()
+  if command_line_arguments.length() == 0 then
     println('Usage: mlcc <source.mlc> [-o out_dir]')
     exit(1)
   end
-  const entry_path = if a.length() >= 3 && a[0] == '-o' then a[2] else a[0] end
-  const out_dir = if a.length() >= 3 && a[0] == '-o' then a[1]
-    else if a.length() >= 3 && a[1] == '-o' then a[2]
+  const entry_path =
+    if command_line_arguments.length() >= 3 && command_line_arguments[0] == '-o' then command_line_arguments[2]
+    else command_line_arguments[0]
+    end
+  const out_dir =
+    if command_line_arguments.length() >= 3 && command_line_arguments[0] == '-o' then command_line_arguments[1]
+    else if command_line_arguments.length() >= 3 && command_line_arguments[1] == '-o' then command_line_arguments[2]
     else 'out' end
   match compile_modular(entry_path, out_dir) {
     Ok(_) => 0,
-    Err(errors) => do print(format_errs('error', errors)); exit(1); 0 end
+    Err(errors) =>
+      do print(format_errs('error', errors)); exit(1); 0 end
   }
 end
