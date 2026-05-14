@@ -8,26 +8,27 @@ type ScanStrResult = ScanStrResult { state: LexState, token: Token, error: strin
 
 extend LexState {
   fn eof(self) -> bool =
-    pos >= src.byte_size()
+    self.pos >= self.src.byte_size()
 
   fn current(self) -> string =
-    if self.eof() then "\0" else src.byte_at(pos) end
+    if self.eof() then "\0" else self.src.byte_at(self.pos) end
 
   fn peek(self, offset: i32) -> string = do
-    const position = pos + offset
-    if position >= src.byte_size() then "\0" else src.byte_at(position) end
+    const position = self.pos + offset
+    if position >= self.src.byte_size() then "\0" else self.src.byte_at(position) end
   end
 
   fn lex_advance(self) -> LexState =
     if self.current() == "\n"
-    then LexState { src, pos: pos + 1, line: line + 1, col: 1 }
-    else LexState { src, pos: pos + 1, line, col: col + 1 }
+    then LexState { src: self.src, pos: self.pos + 1, line: self.line + 1, col: 1 }
+    else LexState { src: self.src, pos: self.pos + 1, line: self.line, col: self.col + 1 }
     end
 
   fn lex_advance_by(self, advance_count: i32) -> LexState =
     if advance_count <= 0 then self else self.lex_advance().lex_advance_by(advance_count - 1)
 
-  fn token(self, token_kind: TKind) -> Token = Token { kind: token_kind, line, col }
+  fn token(self, token_kind: TKind) -> Token =
+    Token { kind: token_kind, line: self.line, col: self.col }
 }
 
 fn is_alpha(character: string) -> bool =
@@ -384,6 +385,11 @@ fn scan_op(state: LexState) -> ScanResult = do
   end
 end
 
+fn accumulate_nonempty_scan_message_into_errors(mut error_messages: [string], message_under_scan: string) -> () = do
+  if message_under_scan != '' then error_messages.push(message_under_scan) else () end
+  ()
+end
+
 export fn tokenize(source: string) -> LexOut = do
   let mut state = LexState { src: source, pos: 0, line: 1, col: 1 }
   const tokens: [Token] = []
@@ -394,19 +400,25 @@ export fn tokenize(source: string) -> LexOut = do
     const character = state.current()
     if is_alpha(character) then
       const result = scan_ident(state); tokens.push(result.token); state = result.state
+      ()
     else if is_digit(character) then
       const result = scan_int(state); tokens.push(result.token); state = result.state
+      ()
     else if character == "\"" then
       const result = scan_string(state); tokens.push(result.token); state = result.state
-      if result.error != '' then errors.push(result.error) end
+      accumulate_nonempty_scan_message_into_errors(errors, result.error)
+      ()
     else if character == "'" then
       const result = scan_single_string(state); tokens.push(result.token); state = result.state
-      if result.error != '' then errors.push(result.error) end
+      accumulate_nonempty_scan_message_into_errors(errors, result.error)
+      ()
     else if character == "`" then
       const result = scan_template(state); tokens.push(result.token); state = result.state
-      if result.error != '' then errors.push(result.error) end
+      accumulate_nonempty_scan_message_into_errors(errors, result.error)
+      ()
     else
       const result = scan_op(state); tokens.push(result.token); state = result.state
+      ()
     end
   end
   tokens.push(state.token(Eof))

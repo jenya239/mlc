@@ -11,7 +11,7 @@ bool scope_contains(mlc::Array<mlc::String> scope, mlc::String name) noexcept;
 
 mlc::Array<mlc::String> pattern_bindings(std::shared_ptr<ast::Pat> pattern) noexcept;
 
-mlc::Array<mlc::String> collect_pattern_bindings(std::shared_ptr<ast::Pat> pattern, mlc::Array<mlc::String> accumulator) noexcept;
+mlc::Array<mlc::String> collect_pattern_bindings(std::shared_ptr<ast::Pat> pattern, mlc::Array<mlc::String>& accumulator) noexcept;
 
 mlc::Array<ast::Diagnostic> check_names_identifier(mlc::String name, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals, ast::Span source_span) noexcept;
 
@@ -68,7 +68,7 @@ mlc::Array<mlc::String> accumulator = {};
 return collect_pattern_bindings(pattern, accumulator);
 }
 
-mlc::Array<mlc::String> collect_pattern_bindings(std::shared_ptr<ast::Pat> pattern, mlc::Array<mlc::String> accumulator) noexcept{
+mlc::Array<mlc::String> collect_pattern_bindings(std::shared_ptr<ast::Pat> pattern, mlc::Array<mlc::String>& accumulator) noexcept{
 return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::PatIdent>((*pattern))) { auto _v_patident = std::get<ast::PatIdent>((*pattern)); auto [name, _w0] = _v_patident; return [&]() -> mlc::Array<mlc::String> { 
   accumulator.push_back(name);
   return accumulator;

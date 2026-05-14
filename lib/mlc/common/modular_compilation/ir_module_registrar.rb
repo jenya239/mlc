@@ -57,13 +57,15 @@ module MLC
           ptypes = func.params.map(&:type)
           req = func.params.find_index { |p| p.default } || ptypes.length
           pnames = func.params.map(&:name).map(&:to_s)
+          param_mutability_flags = func.params.map { |each_semantic_ir_parameter| !!each_semantic_ir_parameter.mutable }
           info = MLC::Registries::FunctionSignature.new(
             func.name,
             ptypes,
             func.ret_type,
             func.type_params || [],
             req,
-            pnames
+            pnames,
+            param_mutability_flags
           )
           @function_registry.register(
             func.name,

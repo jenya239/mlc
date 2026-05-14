@@ -3,7 +3,7 @@
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
 import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from '../ast'
-import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from './registry'
+import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from './registry'
 import {
   binary_operation_result_type,
   builtin_method_return_type,
@@ -23,6 +23,56 @@ import { check_context_new } from './check_context'
 import * as record_lit_merge from './record_lit_merge'
 import { partial_application_desugar_expr } from './partial_application_desugar'
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprArray, SExprIf, SExprBlock, SExprBool } from '../semantic_ir'
+
+fn receiver_type_key_for_method_dispatch(receiver_semantic_type: Shared<Type>) -> string =
+  match receiver_semantic_type {
+    TNamed(name) => name,
+    TShared(inner) => match inner { TNamed(inner_name) => inner_name, _ => '' },
+    _ => '',
+  }
+
+fn direct_call_parameter_mutability_flags(registry: TypeRegistry, callee_name: string, positional_argument_count: i32) -> [i32] = do
+  if callee_name == '' then
+    do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
+  else
+    do
+      const stored = registry.parameter_mutability_flags_for(callee_name)
+      if stored.length() != positional_argument_count then
+        do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
+      else
+        stored
+      end
+    end
+  end
+end
+
+fn instance_method_receiver_and_parameters_mutability_pattern(
+  registry: TypeRegistry,
+  receiver_semantic_type: Shared<Type>,
+  method_name: string,
+  method_argument_count: i32
+) -> [i32] = do
+  const receiver_key = receiver_type_key_for_method_dispatch(receiver_semantic_type)
+  if receiver_key == '' then
+    do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
+  else
+    do
+      const mangled = receiver_key + "_" + method_name
+      if !registry.has_fn(mangled) then
+        do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
+      else
+        do
+          const stored = registry.parameter_mutability_flags_for(mangled)
+          if stored.length() != method_argument_count + 1 then
+            do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
+          else
+            stored
+          end
+        end
+      end
+    end
+  end
+end
 
 fn coerce_unknown_else_array_when_then_known_inner(
   elements: [Shared<SExpr>],
@@ -556,7 +606,9 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
         else
           match sexpr_type(typed_fn) { TFn(_, return_type) => return_type, _ => Shared.new(TUnknown) }
         end
-      Shared.new(SExprCall(typed_fn, typed_args, result_type, source_span))
+      const call_parameter_mutability_flags =
+        direct_call_parameter_mutability_flags(transform_context.registry, callee_name, typed_args.length())
+      Shared.new(SExprCall(typed_fn, typed_args, call_parameter_mutability_flags, result_type, source_span))
     end,
 
     ExprMethod(object, method_name, method_arguments, source_span) => do
@@ -566,14 +618,26 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
         const arg_types = typed_args.map(typed_argument => sexpr_type(typed_argument))
         const result_type = result_option_hof_call_result_type(
           sexpr_type(typed_object), method_name, arg_types)
-        Shared.new(SExprMethod(typed_object, method_name, typed_args, result_type, source_span))
+        const method_parameter_mutability_flags =
+          instance_method_receiver_and_parameters_mutability_pattern(
+            transform_context.registry,
+            sexpr_type(typed_object),
+            method_name,
+            typed_args.length())
+        Shared.new(SExprMethod(typed_object, method_name, typed_args, method_parameter_mutability_flags, result_type, source_span))
       else if type_is_array(sexpr_type(typed_object)) && is_array_hof_method(method_name) then
         const typed_args = transform_array_hof_method_arguments(
           typed_object, method_name, method_arguments, transform_context, stmts_fn)
         const arg_types = typed_args.map(typed_argument => sexpr_type(typed_argument))
         const elem        = array_element_type_from_array_type(sexpr_type(typed_object))
         const result_type = array_hof_call_result_type(elem, method_name, arg_types)
-        Shared.new(SExprMethod(typed_object, method_name, typed_args, result_type, source_span))
+        const method_parameter_mutability_flags =
+          instance_method_receiver_and_parameters_mutability_pattern(
+            transform_context.registry,
+            sexpr_type(typed_object),
+            method_name,
+            typed_args.length())
+        Shared.new(SExprMethod(typed_object, method_name, typed_args, method_parameter_mutability_flags, result_type, source_span))
       else
         const typed_args   = transform_exprs(method_arguments, transform_context, stmts_fn)
         const builtin_type = builtin_method_return_type(method_name)
@@ -582,7 +646,13 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
             method_return_type_from_object(sexpr_type(typed_object), method_name, transform_context.registry)
           else builtin_type
           end
-        Shared.new(SExprMethod(typed_object, method_name, typed_args, result_type, source_span))
+        const method_parameter_mutability_flags =
+          instance_method_receiver_and_parameters_mutability_pattern(
+            transform_context.registry,
+            sexpr_type(typed_object),
+            method_name,
+            typed_args.length())
+        Shared.new(SExprMethod(typed_object, method_name, typed_args, method_parameter_mutability_flags, result_type, source_span))
       end
     end,
 

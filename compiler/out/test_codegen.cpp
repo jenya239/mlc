@@ -57,6 +57,8 @@ std::shared_ptr<semantic_ir::SExpr> sid(mlc::String name) noexcept;
 
 std::shared_ptr<semantic_ir::SExpr> su() noexcept;
 
+mlc::Array<int> empty_parameter_mutability_pattern() noexcept;
+
 std::shared_ptr<semantic_ir::SMatchArm> smatch_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<semantic_ir::SExpr> body_expression) noexcept;
 
 std::shared_ptr<semantic_ir::SMatchArm> smatch_arm_guarded(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<semantic_ir::SExpr> when_condition_expression, std::shared_ptr<semantic_ir::SExpr> body_expression) noexcept;
@@ -82,6 +84,11 @@ std::shared_ptr<semantic_ir::SExpr> sb(bool v) noexcept{return std::make_shared<
 std::shared_ptr<semantic_ir::SExpr> sid(mlc::String name) noexcept{return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIdent(name, unk_t(), ast::span_unknown()));}
 
 std::shared_ptr<semantic_ir::SExpr> su() noexcept{return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUnit(unit_t(), ast::span_unknown()));}
+
+mlc::Array<int> empty_parameter_mutability_pattern() noexcept{
+mlc::Array<int> pattern = {};
+return pattern;
+}
 
 std::shared_ptr<semantic_ir::SMatchArm> smatch_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<semantic_ir::SExpr> body_expression) noexcept{return std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{pattern, false, std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprBool(true, bool_t(), ast::span_unknown())), body_expression});}
 
@@ -135,29 +142,35 @@ results.push_back(test_runner::assert_eq_str(mlc::String("map_method: split pass
 results.push_back(test_runner::assert_eq_str(mlc::String("map_method: chars passthrough"), cpp_naming::map_method(mlc::String("chars")), mlc::String("chars")));
 results.push_back(test_runner::assert_eq_str(mlc::String("map_method: lines passthrough"), cpp_naming::map_method(mlc::String("lines")), mlc::String("lines")));
 mlc::Array<std::shared_ptr<semantic_ir::SExpr>> call_lambda_args = mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{si(5), std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprLambda(single_params, std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprBin(mlc::String("+"), sid(mlc::String("x")), si(1), i32_t(), ast::span_unknown())), unk_t(), ast::span_unknown()))};
-results.push_back(test_runner::assert_eq_str(mlc::String("ExprCall with lambda arg"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(sid(mlc::String("apply")), call_lambda_args, unk_t(), ast::span_unknown())), ctx), mlc::String("apply(5, [=](auto x) mutable { return (x + 1); })")));
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprCall with lambda arg"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(sid(mlc::String("apply")), call_lambda_args, empty_parameter_mutability_pattern(), unk_t(), ast::span_unknown())), ctx), mlc::String("apply(5, [=](auto x) mutable { return (x + 1); })")));
 mlc::Array<std::shared_ptr<semantic_ir::SExpr>> ok_args = mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{si(42)};
-results.push_back(test_runner::assert_eq_str(mlc::String("ExprCall ctor Ok(42) uses brace init"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(sid(mlc::String("Ok")), ok_args, unk_t(), ast::span_unknown())), ctx), mlc::String("Ok{42}")));
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprCall ctor Ok(42) uses brace init"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(sid(mlc::String("Ok")), ok_args, empty_parameter_mutability_pattern(), unk_t(), ast::span_unknown())), ctx), mlc::String("Ok{42}")));
 mlc::Array<std::shared_ptr<semantic_ir::SExpr>> err_args = mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{ss(mlc::String("oops"))};
-results.push_back(test_runner::assert_eq_str(mlc::String("ExprCall ctor Err(str) uses brace init"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(sid(mlc::String("Err")), err_args, unk_t(), ast::span_unknown())), ctx), mlc::String("Err{mlc::String(\"oops\", 4)}")));
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprCall ctor Err(str) uses brace init"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(sid(mlc::String("Err")), err_args, empty_parameter_mutability_pattern(), unk_t(), ast::span_unknown())), ctx), mlc::String("Err{mlc::String(\"oops\", 4)}")));
+mlc::Array<std::shared_ptr<semantic_ir::SExpr>> empty_arr = {};
+mlc::Array<int> mut_actual_first_parameter = {};
+mut_actual_first_parameter.push_back(1);
+std::shared_ptr<semantic_ir::SExpr> inner_call_under_mut_actual_test = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(sid(mlc::String("spawn_inner")), empty_arr, empty_parameter_mutability_pattern(), unk_t(), ast::span_unknown()));
+std::shared_ptr<semantic_ir::SExpr> outer_under_mut_actual_test_expression = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(sid(mlc::String("consume_mut_first")), mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{inner_call_under_mut_actual_test}, mut_actual_first_parameter, unk_t(), ast::span_unknown()));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("mutable first positional actual argument lowers with holder IIFE"), eval::gen_expr(outer_under_mut_actual_test_expression, ctx), mlc::String("__mut_actual_argument_holder_0")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("mutable first positional actual argument lowers with return prelude"), eval::gen_expr(outer_under_mut_actual_test_expression, ctx), mlc::String("[&]()")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprIf"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIf(sb(true), si(1), si(2), i32_t(), ast::span_unknown())), ctx), mlc::String("(true ? (1) : (2))")));
 mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arr_elems = mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{si(1), si(2), si(3)};
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprArray"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray(arr_elems, std::make_shared<registry::Type>(registry::TArray(i32_t())), ast::span_unknown())), ctx), mlc::String("mlc::Array<int>{1, 2, 3}")));
-mlc::Array<std::shared_ptr<semantic_ir::SExpr>> empty_arr = {};
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprArray empty"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray(empty_arr, std::make_shared<registry::Type>(registry::TArray(i32_t())), ast::span_unknown())), ctx), mlc::String("mlc::Array<int>{}")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprIndex"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIndex(sid(mlc::String("arr")), si(0), i32_t(), ast::span_unknown())), ctx), mlc::String("arr[0]")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprField on ident"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprField(sid(mlc::String("point")), mlc::String("x"), unk_t(), ast::span_unknown())), ctx), mlc::String("point.x")));
 mlc::Array<std::shared_ptr<semantic_ir::SExpr>> method_args = mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{si(1)};
-results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod push"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(sid(mlc::String("arr")), mlc::String("push"), method_args, unit_t(), ast::span_unknown())), ctx), mlc::String("arr.push_back(1)")));
-results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod length"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(sid(mlc::String("arr")), mlc::String("length"), empty_arr, i32_t(), ast::span_unknown())), ctx), mlc::String("arr.length()")));
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod push"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(sid(mlc::String("arr")), mlc::String("push"), method_args, empty_parameter_mutability_pattern(), unit_t(), ast::span_unknown())), ctx), mlc::String("arr.push_back(1)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod length"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(sid(mlc::String("arr")), mlc::String("length"), empty_arr, empty_parameter_mutability_pattern(), i32_t(), ast::span_unknown())), ctx), mlc::String("arr.length()")));
 std::shared_ptr<registry::Type> result_r_t = std::make_shared<registry::Type>(registry::TGeneric(mlc::String("Result"), mlc::Array<std::shared_ptr<registry::Type>>{i32_t(), str_t()}));
 std::shared_ptr<semantic_ir::SExpr> s_result = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIdent(mlc::String("r"), result_r_t, ast::span_unknown()));
 mlc::Array<std::shared_ptr<semantic_ir::SExpr>> map_one = mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIdent(mlc::String("f"), unk_t(), ast::span_unknown()))};
-results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod Result map"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(s_result, mlc::String("map"), map_one, unk_t(), ast::span_unknown())), ctx), mlc::String("mlc::result::map(r, f)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod Result map"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(s_result, mlc::String("map"), map_one, empty_parameter_mutability_pattern(), unk_t(), ast::span_unknown())), ctx), mlc::String("mlc::result::map(r, f)")));
 mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes = mlc::HashMap<mlc::String, mlc::String>();
 namespace_alias_prefixes.set(mlc::String("helpers"), mlc::String("infer_literals::"));
 context::CodegenContext context_with_aliases = context::CodegenContext_with_namespace_alias_prefixes(ctx, namespace_alias_prefixes);
-results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod on import-as alias emits namespace::fn()"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(sid(mlc::String("helpers")), mlc::String("infer_expr_integer_literal"), empty_arr, unk_t(), ast::span_unknown())), context_with_aliases), mlc::String("infer_literals::infer_expr_integer_literal()")));
+results.push_back(test_runner::assert_eq_str(mlc::String("ExprMethod on import-as alias emits namespace::fn()"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(sid(mlc::String("helpers")), mlc::String("infer_expr_integer_literal"), empty_arr, empty_parameter_mutability_pattern(), unk_t(), ast::span_unknown())), context_with_aliases), mlc::String("infer_literals::infer_expr_integer_literal()")));
 mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> pat_arms = mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>>{smatch_arm(std::make_shared<ast::Pat>(ast::PatInt(1, ast::span_unknown())), ss(mlc::String("one"))), smatch_arm(std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown())), ss(mlc::String("other")))};
 mlc::String match_out = eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMatch(sid(mlc::String("n")), pat_arms, str_t(), ast::span_unknown())), ctx);
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprMatch contains std::visit"), match_out.contains(mlc::String("std::visit")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));

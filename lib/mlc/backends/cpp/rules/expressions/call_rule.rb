@@ -146,11 +146,8 @@ module MLC
                 return callee if src.end_with?("{}") || src.match?(/\([^)]*\{\}\)\z/)
               end
 
-              call_expr = context.factory.function_call(
-                callee: callee,
-                arguments: args,
-                argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
-              )
+              call_expr =
+                lower_call_with_cpp_mutable_actual_argument_holders(node, callee, callee_param_types, args)
               wrap_lowered_cyclic_sum_variant(node, call_expr)
             end
 
@@ -163,6 +160,131 @@ module MLC
               return lowered_cpp unless wrapped_source
 
               context.factory.raw_expression(code: wrapped_source)
+            end
+
+            # mut parameters lower to non-const C++ references. Prvalues must be captured in a local
+            # before invoking the callee (otherwise g++ rejects binding).
+            def lower_call_with_cpp_mutable_actual_argument_holders(
+              call_expression,
+              callee_expression,
+              callee_parameter_type_entries,
+              lowered_actual_argument_expressions
+            )
+              mutability_pattern = callee_mutability_boolean_pattern_from_declaration(call_expression)
+              if mutability_pattern.nil? || mutability_pattern.empty? ||
+                 mutability_pattern.length != call_expression.args.length
+                return build_plain_cpp_function_call(callee_expression, lowered_actual_argument_expressions)
+              end
+
+              actual_argument_positions_needing_holder = []
+              call_expression.args.each_with_index do |each_semantic_actual_argument_expression, argument_index|
+                next unless mutability_pattern[argument_index]
+                next if semantic_expression_is_stable_cpp_actual_argument_reference?(each_semantic_actual_argument_expression)
+                actual_argument_positions_needing_holder << argument_index
+              end
+
+              if actual_argument_positions_needing_holder.empty?
+                return build_plain_cpp_function_call(callee_expression, lowered_actual_argument_expressions)
+              end
+
+              holder_prelude_source_lines = []
+              argument_cpp_sources = lowered_actual_argument_expressions.each_with_index.map do |each_lowered_argument, argument_index|
+                if actual_argument_positions_needing_holder.include?(argument_index)
+                  holder_variable_name = context.generate_temp_name
+                  cpp_type_for_holder = cpp_holder_type_spelling_for_mutable_actual_argument(
+                    argument_index,
+                    callee_parameter_type_entries,
+                    call_expression.args[argument_index]
+                  )
+                  holder_prelude_source_lines << "#{cpp_type_for_holder} #{holder_variable_name} = #{each_lowered_argument.to_source};"
+                  holder_variable_name
+                else
+                  each_lowered_argument.to_source
+                end
+              end
+
+              parentheses_call_fragment = "#{callee_expression.to_source}(#{argument_cpp_sources.join(', ')})"
+              prelude_fragment = holder_prelude_source_lines.join(" ")
+              closure_body_fragment = "#{prelude_fragment} return #{parentheses_call_fragment};"
+              context.factory.raw_expression(code: "[&]() { #{closure_body_fragment} }()")
+            end
+
+            def build_plain_cpp_function_call(callee_expression, lowered_actual_argument_expressions)
+              argument_separators =
+                lowered_actual_argument_expressions.size > 1 ? Array.new(lowered_actual_argument_expressions.size - 1, ", ") : []
+              context.factory.function_call(
+                callee: callee_expression,
+                arguments: lowered_actual_argument_expressions,
+                argument_separators: argument_separators
+              )
+            end
+
+            def callee_mutability_boolean_pattern_from_declaration(call_expression)
+              return nil unless function_registry
+              return nil unless context.checker.var_expr?(call_expression.callee)
+
+              registration_container_entry = function_registry.fetch_entry(call_expression.callee.name)
+              return nil unless registration_container_entry
+
+              signature_information = registration_container_entry.info
+              stored_pattern = signature_information&.param_mutability_flags
+              return stored_pattern if stored_pattern&.length == call_expression.args.length
+
+              function_declaration_ast_node = registration_container_entry.ast_node
+              return nil unless function_declaration_ast_node&.respond_to?(:params)
+              return nil unless function_declaration_ast_node.params.length == call_expression.args.length
+
+              function_declaration_ast_node.params.map do |each_parameter_declaration|
+                !!(each_parameter_declaration.respond_to?(:mutable) && each_parameter_declaration.mutable)
+              end
+            rescue StandardError
+              nil
+            end
+
+            def semantic_expression_is_stable_cpp_actual_argument_reference?(semantic_expression)
+              walker = semantic_expression
+              loop do
+                case walker
+                when MLC::SemanticIR::VarExpr
+                  return true
+                when MLC::SemanticIR::MemberExpr
+                  walker = walker.object
+                when MLC::SemanticIR::IndexExpr
+                  walker = walker.object
+                else
+                  return false
+                end
+              end
+            end
+
+            def unwrap_mut_reference_layers_for_actual_argument_placeholder_type(type_descriptor)
+              result = type_descriptor
+              while result.is_a?(MLC::SemanticIR::MutRefType)
+                result = result.inner_type
+              end
+              result
+            end
+
+            def cpp_holder_type_spelling_for_mutable_actual_argument(
+              argument_index,
+              callee_parameter_type_entries,
+              semantic_actual_argument_expression
+            )
+              parameter_entry = callee_parameter_type_entries[argument_index]
+              parameter_semantic_type =
+                unwrap_mut_reference_layers_for_actual_argument_placeholder_type(
+                  parameter_entry.is_a?(Hash) ? parameter_entry[:type] : parameter_entry
+                )
+              placeholder_from_argument_semantics =
+                unwrap_mut_reference_layers_for_actual_argument_placeholder_type(
+                  semantic_actual_argument_expression&.type
+                )
+              return map_type(parameter_semantic_type) if parameter_semantic_type
+              return map_type(placeholder_from_argument_semantics) if placeholder_from_argument_semantics
+
+              "auto"
+            rescue StandardError
+              "auto"
             end
 
             def cyclic_sum_variant_wrap_source(expression_ir, inner_cpp_source)

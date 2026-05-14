@@ -189,7 +189,7 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
             next_try: try_counter
           }
         end,
-        SExprMethod(map_object, method_name, _, _, _) => do
+        SExprMethod(map_object, method_name, _, _, _, _) => do
           const value_code = if method_name == 'new' then
             match map_object {
               SExprIdent(object_name, _, _) =>

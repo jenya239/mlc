@@ -12,11 +12,23 @@ test_runner::TestResult assert_diagnostic_at(mlc::String test_name, mlc::String 
 
 mlc::String run_all(mlc::Array<test_runner::TestResult> results) noexcept;
 
-test_runner::TestResult assert_true(mlc::String test_name, bool condition) noexcept{return condition ? test_runner::TestResult(Pass{test_name}) : test_runner::TestResult(Fail{test_name, mlc::String("expected true, got false")});}
+test_runner::TestResult assert_true(mlc::String test_name, bool condition) noexcept{
+test_runner::TestResult pass_variant = Pass{test_name};
+test_runner::TestResult fail_variant = Fail{test_name, mlc::String("expected true, got false")};
+return condition ? pass_variant : fail_variant;
+}
 
-test_runner::TestResult assert_eq_int(mlc::String test_name, int actual, int expected) noexcept{return actual == expected ? test_runner::TestResult(Pass{test_name}) : test_runner::TestResult(Fail{test_name, mlc::String("expected ") + mlc::to_string(expected) + mlc::String(", got ") + mlc::to_string(actual)});}
+test_runner::TestResult assert_eq_int(mlc::String test_name, int actual, int expected) noexcept{
+test_runner::TestResult pass_variant = Pass{test_name};
+test_runner::TestResult fail_variant = Fail{test_name, mlc::String("expected ") + mlc::to_string(expected) + mlc::String(", got ") + mlc::to_string(actual)};
+return actual == expected ? pass_variant : fail_variant;
+}
 
-test_runner::TestResult assert_eq_str(mlc::String test_name, mlc::String actual, mlc::String expected) noexcept{return actual == expected ? test_runner::TestResult(Pass{test_name}) : test_runner::TestResult(Fail{test_name, mlc::String("expected '") + expected + mlc::String("', got '") + actual + mlc::String("'")});}
+test_runner::TestResult assert_eq_str(mlc::String test_name, mlc::String actual, mlc::String expected) noexcept{
+test_runner::TestResult pass_variant = Pass{test_name};
+test_runner::TestResult fail_variant = Fail{test_name, mlc::String("expected '") + expected + mlc::String("', got '") + actual + mlc::String("'")};
+return actual == expected ? pass_variant : fail_variant;
+}
 
 test_runner::TestResult assert_diagnostic_at(mlc::String test_name, mlc::String formatted_diagnostic, int expected_line, int expected_column, mlc::String message_needle) noexcept{
 mlc::String position_part = mlc::to_string(expected_line) + mlc::String(":") + mlc::to_string(expected_column) + mlc::String(": ");

@@ -32,11 +32,13 @@ mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept;
 
 std::shared_ptr<ast::TypeExpr> param_typ(std::shared_ptr<ast::Param> p) noexcept;
 
+bool param_is_mut(std::shared_ptr<ast::Param> p) noexcept;
+
 std::shared_ptr<ast::Decl> decl_inner(std::shared_ptr<ast::Decl> decl) noexcept;
 
 mlc::String decl_name(std::shared_ptr<ast::Decl> decl) noexcept;
 
-mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String> dst, mlc::Array<mlc::String> src) noexcept;
+mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc::String> src) noexcept;
 
 ast::Span span_unknown() noexcept{return ast::Span{mlc::String(""), 0, 0};}
 
@@ -52,14 +54,15 @@ return diagnostic.span.line > 0 && diagnostic.span.file.length() > 0 ? diagnosti
 }
 
 mlc::Array<ast::Diagnostic> diagnostics_append(mlc::Array<ast::Diagnostic> destination, mlc::Array<ast::Diagnostic> source) noexcept{
+mlc::Array<ast::Diagnostic> accumulator = destination;
 int index = 0;
 while (index < source.size()){
 {
-destination.push_back(source[index]);
+accumulator.push_back(source[index]);
 index = index + 1;
 }
 }
-return destination;
+return accumulator;
 }
 
 mlc::Array<ast::Diagnostic> infer_messages_as_diagnostics(mlc::Array<mlc::String> messages) noexcept{
@@ -116,6 +119,8 @@ mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept{return p->name;}
 
 std::shared_ptr<ast::TypeExpr> param_typ(std::shared_ptr<ast::Param> p) noexcept{return p->typ;}
 
+bool param_is_mut(std::shared_ptr<ast::Param> p) noexcept{return p->is_mut;}
+
 std::shared_ptr<ast::Decl> decl_inner(std::shared_ptr<ast::Decl> decl) noexcept{
 std::shared_ptr<ast::Decl> unwrapped = decl;
 return std::visit(overloaded{
@@ -144,7 +149,7 @@ return std::visit(overloaded{
 }, (*unwrapped));
 }
 
-mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String> dst, mlc::Array<mlc::String> src) noexcept{
+mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc::String> src) noexcept{
 int i = 0;
 while (i < src.size()){
 {

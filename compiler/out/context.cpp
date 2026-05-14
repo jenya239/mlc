@@ -25,7 +25,7 @@ context::GenStmtsResult GenStmtsResult_append_stmt(context::GenStmtsResult self,
 
 mlc::String context_resolve(context::CodegenContext context, mlc::String name) noexcept;
 
-mlc::Array<mlc::String> collect_pat_bind_names_for_context(std::shared_ptr<ast::Pat> pat, mlc::Array<mlc::String> accumulator) noexcept;
+mlc::Array<mlc::String> collect_pat_bind_names_for_context(std::shared_ptr<ast::Pat> pat, mlc::Array<mlc::String>& accumulator) noexcept;
 
 mlc::String CodegenContext_resolve(context::CodegenContext self, mlc::String name) noexcept;
 
@@ -67,7 +67,7 @@ context::GenStmtsResult GenStmtsResult_append_stmt(context::GenStmtsResult self,
 
 mlc::String context_resolve(context::CodegenContext context, mlc::String name) noexcept{return context.qualified.has(name) ? context.qualified.get(name) + cpp_naming::cpp_safe(name) : context.namespace_prefix.length() > 0 ? context.namespace_prefix + cpp_naming::cpp_safe(name) : cpp_naming::cpp_safe(name);}
 
-mlc::Array<mlc::String> collect_pat_bind_names_for_context(std::shared_ptr<ast::Pat> pat, mlc::Array<mlc::String> accumulator) noexcept{
+mlc::Array<mlc::String> collect_pat_bind_names_for_context(std::shared_ptr<ast::Pat> pat, mlc::Array<mlc::String>& accumulator) noexcept{
 return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::PatIdent>((*pat))) { auto _v_patident = std::get<ast::PatIdent>((*pat)); auto [n, _w0] = _v_patident; return [&]() -> mlc::Array<mlc::String> { 
   accumulator.push_back(n);
   return accumulator;
@@ -146,7 +146,7 @@ context::CodegenContext CodegenContext_with_struct_using_lines(context::CodegenC
 context::CodegenContext CodegenContext_with_namespace_alias_prefixes(context::CodegenContext self, mlc::HashMap<mlc::String, mlc::String> prefixes) noexcept{return context::CodegenContext{self.field_orders, self.namespace_prefix, self.qualified, prefixes, self.self_type, self.method_owners, self.shared_params, self.shared_array_params, self.array_elem_types, self.shared_map_params, self.ctor_type_infos, self.variant_types, self.value_params, self.match_deref_params, self.generic_variants, self.struct_using_lines};}
 
 context::CodegenContext CodegenContext_update_from_statement(context::CodegenContext self, std::shared_ptr<semantic_ir::SStmt> statement) noexcept{return [&]() -> context::CodegenContext { if (std::holds_alternative<semantic_ir::SStmtLetConst>((*statement)._)) { auto _v_sstmtletconst = std::get<semantic_ir::SStmtLetConst>((*statement)._); auto [binding_name, _w0, _w1, _w2] = _v_sstmtletconst; return CodegenContext_add_value(self, binding_name); } if (std::holds_alternative<semantic_ir::SStmtLet>((*statement)._)) { auto _v_sstmtlet = std::get<semantic_ir::SStmtLet>((*statement)._); auto [binding_name, _w0, _w1, value_type, _w2] = _v_sstmtlet; return [&]() -> context::CodegenContext { if (std::holds_alternative<registry::TShared>((*value_type))) { auto _v_tshared = std::get<registry::TShared>((*value_type)); auto [_w0] = _v_tshared; return CodegenContext_add_shared(self, binding_name); } if (std::holds_alternative<registry::TArray>((*value_type))) { auto _v_tarray = std::get<registry::TArray>((*value_type)); auto [inner] = _v_tarray; return [&]() -> context::CodegenContext { if (std::holds_alternative<registry::TShared>((*inner))) { auto _v_tshared = std::get<registry::TShared>((*inner)); auto [_w0] = _v_tshared; return CodegenContext_add_shared_array(self, binding_name); } return CodegenContext_add_value(self, binding_name); }(); } return CodegenContext_add_value(self, binding_name); }(); } if (std::holds_alternative<semantic_ir::SStmtLetPat>((*statement)._)) { auto _v_sstmtletpat = std::get<semantic_ir::SStmtLetPat>((*statement)._); auto [pattern, _w0, _w1, _w2, _w3, _w4, _w5] = _v_sstmtletpat; return [&]() -> context::CodegenContext { 
-  mlc::Array<mlc::String> names = collect_pat_bind_names_for_context(pattern, {});
+  mlc::Array<mlc::String> names = [&]() { mlc::Array<mlc::String> __tmp_0 = {}; return collect_pat_bind_names_for_context(pattern, __tmp_0); }();
   context::CodegenContext codegen_context = std::move(self);
   int name_index = 0;
   while (name_index < names.size()){

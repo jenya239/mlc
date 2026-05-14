@@ -2,20 +2,29 @@
 
 export type TestResult = Pass { name: string } | Fail { name: string, message: string }
 
-export fn assert_true(test_name: string, condition: bool) -> TestResult =
-  if condition then Pass { name: test_name }
-  else Fail { name: test_name, message: 'expected true, got false' }
-  end
+export fn assert_true(test_name: string, condition: bool) -> TestResult = do
+  const pass_variant: TestResult = Pass { name: test_name }
+  const fail_variant: TestResult =
+    Fail { name: test_name, message: 'expected true, got false' }
+  if condition then pass_variant else fail_variant end
+end
 
-export fn assert_eq_int(test_name: string, actual: i32, expected: i32) -> TestResult =
-  if actual == expected then Pass { name: test_name }
-  else Fail { name: test_name, message: 'expected ' + expected.to_string() + ', got ' + actual.to_string() }
-  end
+export fn assert_eq_int(test_name: string, actual: i32, expected: i32) -> TestResult = do
+  const pass_variant: TestResult = Pass { name: test_name }
+  const fail_variant: TestResult =
+    Fail {
+      name: test_name,
+      message: 'expected ' + expected.to_string() + ', got ' + actual.to_string(),
+    }
+  if actual == expected then pass_variant else fail_variant end
+end
 
-export fn assert_eq_str(test_name: string, actual: string, expected: string) -> TestResult =
-  if actual == expected then Pass { name: test_name }
-  else Fail { name: test_name, message: `expected '${expected}', got '${actual}'` }
-  end
+export fn assert_eq_str(test_name: string, actual: string, expected: string) -> TestResult = do
+  const pass_variant: TestResult = Pass { name: test_name }
+  const fail_variant: TestResult =
+    Fail { name: test_name, message: `expected '${expected}', got '${actual}'` }
+  if actual == expected then pass_variant else fail_variant end
+end
 
 // `formatted_diagnostic` is like `diagnostic_format` from the checker: "message at line:column".
 export fn assert_diagnostic_at(

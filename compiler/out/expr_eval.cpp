@@ -16,6 +16,7 @@
 #include "method_gen.hpp"
 #include "statement_context.hpp"
 #include "expr.hpp"
+#include "mut_actual_argument.hpp"
 
 namespace expr_eval {
 
@@ -35,6 +36,7 @@ using namespace record_gen;
 using namespace method_gen;
 using namespace statement_context;
 using namespace expr;
+using namespace mut_actual_argument;
 
 mlc::String eval_argument_list(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> expressions, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
@@ -44,7 +46,7 @@ mlc::String gen_unary_expr(mlc::String operation, std::shared_ptr<semantic_ir::S
 
 mlc::String gen_call_function_code(std::shared_ptr<semantic_ir::SExpr> function_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
-mlc::String gen_call_expr(std::shared_ptr<semantic_ir::SExpr> function_expr, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
+mlc::String gen_call_expr(std::shared_ptr<semantic_ir::SExpr> function_expr, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> call_parameter_mutability_flags, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
 
 mlc::String gen_field_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
@@ -93,10 +95,12 @@ mlc::String gen_unary_expr(mlc::String operation, std::shared_ptr<semantic_ir::S
 
 mlc::String gen_call_function_code(std::shared_ptr<semantic_ir::SExpr> function_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIdent>((*function_expr)._)) { auto _v_sexprident = std::get<semantic_ir::SExprIdent>((*function_expr)._); auto [name, _w0, _w1] = _v_sexprident; return context::CodegenContext_resolve(context, cpp_naming::map_builtin(name)); } return eval_expr(function_expr, context, gen_stmts); }();}
 
-mlc::String gen_call_expr(std::shared_ptr<semantic_ir::SExpr> function_expr, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
+mlc::String gen_call_expr(std::shared_ptr<semantic_ir::SExpr> function_expr, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> call_parameter_mutability_flags, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{
 mlc::String function_code = gen_call_function_code(function_expr, context, gen_stmts);
-mlc::String argument_list = eval_argument_list(arguments, context, gen_stmts);
-return expression_support::is_constructor_call(function_expr) ? expr::constructor_call_braces(function_code, argument_list) : expr::function_call_parentheses(function_code, argument_list);
+mut_actual_argument::MutActualArgumentMaterializationOutcome materialization_outcome = mut_actual_argument::materialize_positional_actual_arguments_maybe_holding_mut_references(arguments, call_parameter_mutability_flags, context, gen_stmts, evaluate_expression);
+mlc::String argument_list = materialization_outcome.materialized_argument_fragments.join(mlc::String(", "));
+mlc::String invoke_expression = expression_support::is_constructor_call(function_expr) ? expr::constructor_call_braces(function_code, argument_list) : expr::function_call_parentheses(function_code, argument_list);
+return mut_actual_argument::wrap_invoke_with_mut_actual_argument_holder_prelude_if_any(materialization_outcome.prelude_block, invoke_expression);
 }
 
 mlc::String gen_field_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
@@ -174,8 +178,8 @@ mlc::String eval_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::Codegen
   [&](const SExprIdent& sexprident) -> mlc::String { auto [name, _w0, _w1] = sexprident; return identifiers::gen_identifier(name, context); },
   [&](const SExprBin& sexprbin) -> mlc::String { auto [operation, left_expr, right_expr, _w0, _w1] = sexprbin; return gen_binary_expr(operation, left_expr, right_expr, context, gen_stmts); },
   [&](const SExprUn& sexprun) -> mlc::String { auto [operation, inner_expr, _w0, _w1] = sexprun; return gen_unary_expr(operation, inner_expr, context, gen_stmts); },
-  [&](const SExprCall& sexprcall) -> mlc::String { auto [function_expr, arguments, _w0, _w1] = sexprcall; return gen_call_expr(function_expr, arguments, context, gen_stmts); },
-  [&](const SExprMethod& sexprmethod) -> mlc::String { auto [object, method_name, arguments, _w0, _w1] = sexprmethod; return method_gen::gen_method_expr(object, method_name, arguments, context, gen_stmts, eval_expr); },
+  [&](const SExprCall& sexprcall) -> mlc::String { auto [function_expression, arguments, call_parameter_mutability_flags, _w0, _w1] = sexprcall; return gen_call_expr(function_expression, arguments, call_parameter_mutability_flags, context, gen_stmts, eval_expr); },
+  [&](const SExprMethod& sexprmethod) -> mlc::String { auto [method_object, method_name, arguments, receiver_and_parameter_mut_flags, _w0, _w1] = sexprmethod; return method_gen::gen_method_expr(method_object, method_name, arguments, receiver_and_parameter_mut_flags, context, gen_stmts, eval_expr); },
   [&](const SExprField& sexprfield) -> mlc::String { auto [object, field_name, _w0, _w1] = sexprfield; return gen_field_expr(object, field_name, context, gen_stmts); },
   [&](const SExprIndex& sexprindex) -> mlc::String { auto [object, index_expr, _w0, _w1] = sexprindex; return gen_index_expr(object, index_expr, context, gen_stmts); },
   [&](const SExprIf& sexprif) -> mlc::String { auto [condition, then_expr, else_expr, if_semantic_type, _w0] = sexprif; return gen_if_expr(condition, then_expr, else_expr, if_semantic_type, context, gen_stmts); },

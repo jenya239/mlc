@@ -347,7 +347,7 @@ fn type_is_checkable(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
 export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
 
 export extend CheckOut {
-  fn has_errors(self) -> bool = errors.length() > 0
+  fn has_errors(self) -> bool = self.errors.length() > 0
 }
 
 fn accumulate_diagnostics_for_single_extend_method(

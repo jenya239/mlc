@@ -31,6 +31,12 @@ using namespace ast_tokens;
 
 struct Transform_lambda_parameter_types_fold_state {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment;mlc::Array<std::shared_ptr<registry::Type>> parameter_type_vector;int next_explicit_type_position;};
 
+mlc::String receiver_type_key_for_method_dispatch(std::shared_ptr<registry::Type> receiver_semantic_type) noexcept;
+
+mlc::Array<int> direct_call_parameter_mutability_flags(registry::TypeRegistry registry, mlc::String callee_name, int positional_argument_count) noexcept;
+
+mlc::Array<int> instance_method_receiver_and_parameters_mutability_pattern(registry::TypeRegistry registry, std::shared_ptr<registry::Type> receiver_semantic_type, mlc::String method_name, int method_argument_count) noexcept;
+
 std::shared_ptr<semantic_ir::SExpr> coerce_unknown_else_array_when_then_known_inner(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, ast::Span span_else, std::shared_ptr<registry::Type> inner_then, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept;
 
 std::shared_ptr<semantic_ir::SExpr> conditional_else_coerce_empty_array_using_then_type(std::shared_ptr<semantic_ir::SExpr> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept;
@@ -92,6 +98,41 @@ mlc::Array<std::shared_ptr<semantic_ir::SExpr>> transform_array_hof_method_argum
 mlc::Array<std::shared_ptr<registry::Type>> inferred_types_from_record_literal_part_for_merge(ast::RecordLitPart literal_record_part, check_context::CheckContext inference_context_for_spread) noexcept;
 
 std::shared_ptr<semantic_ir::SExpr> transform_expr(std::shared_ptr<ast::Expr> expression, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
+
+mlc::String receiver_type_key_for_method_dispatch(std::shared_ptr<registry::Type> receiver_semantic_type) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*receiver_semantic_type))) { auto _v_tnamed = std::get<registry::TNamed>((*receiver_semantic_type)); auto [name] = _v_tnamed; return name; } if (std::holds_alternative<registry::TShared>((*receiver_semantic_type))) { auto _v_tshared = std::get<registry::TShared>((*receiver_semantic_type)); auto [inner] = _v_tshared; return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*inner))) { auto _v_tnamed = std::get<registry::TNamed>((*inner)); auto [inner_name] = _v_tnamed; return inner_name; } return mlc::String(""); }(); } return mlc::String(""); }();}
+
+mlc::Array<int> direct_call_parameter_mutability_flags(registry::TypeRegistry registry, mlc::String callee_name, int positional_argument_count) noexcept{
+return callee_name == mlc::String("") ? [&]() -> mlc::Array<int> { 
+  mlc::Array<int> empty_mutability_pattern = {};
+  return empty_mutability_pattern;
+ }() : [&]() -> mlc::Array<int> { 
+  mlc::Array<int> stored = registry::TypeRegistry_parameter_mutability_flags_for(registry, callee_name);
+  return stored.size() != positional_argument_count ? [&]() -> mlc::Array<int> { 
+  mlc::Array<int> empty_mutability_pattern = {};
+  return empty_mutability_pattern;
+ }() : stored;
+ }();
+}
+
+mlc::Array<int> instance_method_receiver_and_parameters_mutability_pattern(registry::TypeRegistry registry, std::shared_ptr<registry::Type> receiver_semantic_type, mlc::String method_name, int method_argument_count) noexcept{
+mlc::String receiver_key = receiver_type_key_for_method_dispatch(receiver_semantic_type);
+return receiver_key == mlc::String("") ? [&]() -> mlc::Array<int> { 
+  mlc::Array<int> empty_mutability_pattern = {};
+  return empty_mutability_pattern;
+ }() : [&]() -> mlc::Array<int> { 
+  mlc::String mangled = receiver_key + mlc::String("_") + method_name;
+  return !registry::TypeRegistry_has_fn(registry, mangled) ? [&]() -> mlc::Array<int> { 
+  mlc::Array<int> empty_mutability_pattern = {};
+  return empty_mutability_pattern;
+ }() : [&]() -> mlc::Array<int> { 
+  mlc::Array<int> stored = registry::TypeRegistry_parameter_mutability_flags_for(registry, mangled);
+  return stored.size() != method_argument_count + 1 ? [&]() -> mlc::Array<int> { 
+  mlc::Array<int> empty_mutability_pattern = {};
+  return empty_mutability_pattern;
+ }() : stored;
+ }();
+ }();
+}
 
 std::shared_ptr<semantic_ir::SExpr> coerce_unknown_else_array_when_then_known_inner(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, ast::Span span_else, std::shared_ptr<registry::Type> inner_then, std::shared_ptr<semantic_ir::SExpr> typed_else) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_else)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_else))); auto [inner_else] = _v_tarray; return semantic_type_structure::type_is_unknown(inner_else) ? std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray(elements, std::make_shared<registry::Type>(registry::TArray(inner_then)), span_else)) : typed_else; } return typed_else; }();}
 
@@ -331,25 +372,29 @@ return [&]() -> std::shared_ptr<semantic_ir::SExpr> { if (std::holds_alternative
   std::shared_ptr<semantic_ir::SExpr> typed_fn = transform_expr(function, transform_context, stmts_fn);
   mlc::Array<std::shared_ptr<semantic_ir::SExpr>> typed_args = transform_call_arguments_using_callee_semantic_type(typed_fn, resolved_call_args, transform_context, stmts_fn);
   std::shared_ptr<registry::Type> result_type = callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(transform_context.registry, callee_name) ? registry::TypeRegistry_ctor_type(transform_context.registry, callee_name) : [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TFn>((*semantic_ir::sexpr_type(typed_fn)))) { auto _v_tfn = std::get<registry::TFn>((*semantic_ir::sexpr_type(typed_fn))); auto [_w0, return_type] = _v_tfn; return return_type; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
-  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(typed_fn, typed_args, result_type, source_span));
+  mlc::Array<int> call_parameter_mutability_flags = direct_call_parameter_mutability_flags(transform_context.registry, callee_name, typed_args.size());
+  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(typed_fn, typed_args, call_parameter_mutability_flags, result_type, source_span));
  }(); } if (std::holds_alternative<ast::ExprMethod>((*expression_partial_application)._)) { auto _v_exprmethod = std::get<ast::ExprMethod>((*expression_partial_application)._); auto [object, method_name, method_arguments, source_span] = _v_exprmethod; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   std::shared_ptr<semantic_ir::SExpr> typed_object = transform_expr(object, transform_context, stmts_fn);
   return result_option_method_types::should_infer_result_option_combinator(semantic_ir::sexpr_type(typed_object), method_name) ? [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   mlc::Array<std::shared_ptr<semantic_ir::SExpr>> typed_args = transform_exprs(method_arguments, transform_context, stmts_fn);
   mlc::Array<std::shared_ptr<registry::Type>> arg_types = typed_args.map([](std::shared_ptr<semantic_ir::SExpr> typed_argument) mutable { return semantic_ir::sexpr_type(typed_argument); });
   std::shared_ptr<registry::Type> result_type = result_option_method_types::result_option_hof_call_result_type(semantic_ir::sexpr_type(typed_object), method_name, arg_types);
-  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(typed_object, method_name, typed_args, result_type, source_span));
+  mlc::Array<int> method_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(transform_context.registry, semantic_ir::sexpr_type(typed_object), method_name, typed_args.size());
+  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(typed_object, method_name, typed_args, method_parameter_mutability_flags, result_type, source_span));
  }() : semantic_type_structure::type_is_array(semantic_ir::sexpr_type(typed_object)) && array_method_types::is_array_hof_method(method_name) ? [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   mlc::Array<std::shared_ptr<semantic_ir::SExpr>> typed_args = transform_array_hof_method_arguments(typed_object, method_name, method_arguments, transform_context, stmts_fn);
   mlc::Array<std::shared_ptr<registry::Type>> arg_types = typed_args.map([](std::shared_ptr<semantic_ir::SExpr> typed_argument) mutable { return semantic_ir::sexpr_type(typed_argument); });
   std::shared_ptr<registry::Type> elem = semantic_type_structure::array_element_type_from_array_type(semantic_ir::sexpr_type(typed_object));
   std::shared_ptr<registry::Type> result_type = array_method_types::array_hof_call_result_type(elem, method_name, arg_types);
-  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(typed_object, method_name, typed_args, result_type, source_span));
+  mlc::Array<int> method_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(transform_context.registry, semantic_ir::sexpr_type(typed_object), method_name, typed_args.size());
+  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(typed_object, method_name, typed_args, method_parameter_mutability_flags, result_type, source_span));
  }() : [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   mlc::Array<std::shared_ptr<semantic_ir::SExpr>> typed_args = transform_exprs(method_arguments, transform_context, stmts_fn);
   std::shared_ptr<registry::Type> builtin_type = semantic_type_structure::builtin_method_return_type(method_name);
   std::shared_ptr<registry::Type> result_type = semantic_type_structure::type_is_unknown(builtin_type) ? registry::method_return_type_from_object(semantic_ir::sexpr_type(typed_object), method_name, transform_context.registry) : builtin_type;
-  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(typed_object, method_name, typed_args, result_type, source_span));
+  mlc::Array<int> method_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(transform_context.registry, semantic_ir::sexpr_type(typed_object), method_name, typed_args.size());
+  return std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(typed_object, method_name, typed_args, method_parameter_mutability_flags, result_type, source_span));
  }();
  }(); } if (std::holds_alternative<ast::ExprField>((*expression_partial_application)._)) { auto _v_exprfield = std::get<ast::ExprField>((*expression_partial_application)._); auto [object, field_name, source_span] = _v_exprfield; return [&]() -> std::shared_ptr<semantic_ir::SExpr> { 
   std::shared_ptr<semantic_ir::SExpr> typed_object = transform_expr(object, transform_context, stmts_fn);

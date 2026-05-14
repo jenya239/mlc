@@ -29,6 +29,8 @@ fn sb(v: bool) -> Shared<SExpr> = Shared.new(SExprBool(v, bool_t(), span_unknown
 fn sid(name: string) -> Shared<SExpr> = Shared.new(SExprIdent(name, unk_t(), span_unknown()))
 fn su() -> Shared<SExpr> = Shared.new(SExprUnit(unit_t(), span_unknown()))
 
+fn empty_parameter_mutability_pattern() -> [i32] = do let pattern: [i32] = []; pattern end
+
 fn smatch_arm(pattern: Shared<Pat>, body_expression: Shared<SExpr>) -> Shared<SMatchArm> =
   Shared.new(SMatchArm {
     pat: pattern,
@@ -181,18 +183,40 @@ export fn codegen_tests() -> [TestResult] = do
 
   const call_lambda_args: [Shared<SExpr>] = [si(5), Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown()))]
   results.push(assert_eq_str('ExprCall with lambda arg',
-    gen_expr(Shared.new(SExprCall(sid('apply'), call_lambda_args, unk_t(), span_unknown())), ctx),
+    gen_expr(Shared.new(SExprCall(sid('apply'), call_lambda_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
     'apply(5, [=](auto x) mutable { return (x + 1); })'))
 
   const ok_args: [Shared<SExpr>] = [si(42)]
   results.push(assert_eq_str('ExprCall ctor Ok(42) uses brace init',
-    gen_expr(Shared.new(SExprCall(sid('Ok'), ok_args, unk_t(), span_unknown())), ctx),
+    gen_expr(Shared.new(SExprCall(sid('Ok'), ok_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
     'Ok{42}'))
 
   const err_args: [Shared<SExpr>] = [ss('oops')]
   results.push(assert_eq_str('ExprCall ctor Err(str) uses brace init',
-    gen_expr(Shared.new(SExprCall(sid('Err'), err_args, unk_t(), span_unknown())), ctx),
+    gen_expr(Shared.new(SExprCall(sid('Err'), err_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
     'Err{mlc::String("oops", 4)}'))
+
+  const empty_arr: [Shared<SExpr>] = []
+
+  const mut_actual_first_parameter: [i32] = []
+  mut_actual_first_parameter.push(1)
+  const inner_call_under_mut_actual_test =
+    Shared.new(SExprCall(sid('spawn_inner'), empty_arr, empty_parameter_mutability_pattern(), unk_t(), span_unknown()))
+  const outer_under_mut_actual_test_expression =
+    Shared.new(SExprCall(
+      sid('consume_mut_first'),
+      [inner_call_under_mut_actual_test],
+      mut_actual_first_parameter,
+      unk_t(),
+      span_unknown()))
+  results.push(assert_code_contains(
+    'mutable first positional actual argument lowers with holder IIFE',
+    gen_expr(outer_under_mut_actual_test_expression, ctx),
+    '__mut_actual_argument_holder_0'))
+  results.push(assert_code_contains(
+    'mutable first positional actual argument lowers with return prelude',
+    gen_expr(outer_under_mut_actual_test_expression, ctx),
+    '[&]()'))
 
   // --- ExprIf -------------------------------------------------------------------
 
@@ -207,7 +231,6 @@ export fn codegen_tests() -> [TestResult] = do
     gen_expr(Shared.new(SExprArray(arr_elems, Shared.new(TArray(i32_t())), span_unknown())), ctx),
     'mlc::Array<int>{1, 2, 3}'))
 
-  const empty_arr: [Shared<SExpr>] = []
   results.push(assert_eq_str('ExprArray empty',
     gen_expr(Shared.new(SExprArray(empty_arr, Shared.new(TArray(i32_t())), span_unknown())), ctx),
     'mlc::Array<int>{}'))
@@ -228,25 +251,25 @@ export fn codegen_tests() -> [TestResult] = do
 
   const method_args: [Shared<SExpr>] = [si(1)]
   results.push(assert_eq_str('ExprMethod push',
-    gen_expr(Shared.new(SExprMethod(sid('arr'), 'push', method_args, unit_t(), span_unknown())), ctx),
+    gen_expr(Shared.new(SExprMethod(sid('arr'), 'push', method_args, empty_parameter_mutability_pattern(), unit_t(), span_unknown())), ctx),
     'arr.push_back(1)'))
 
   results.push(assert_eq_str('ExprMethod length',
-    gen_expr(Shared.new(SExprMethod(sid('arr'), 'length', empty_arr, i32_t(), span_unknown())), ctx),
+    gen_expr(Shared.new(SExprMethod(sid('arr'), 'length', empty_arr, empty_parameter_mutability_pattern(), i32_t(), span_unknown())), ctx),
     'arr.length()'))
 
   const result_r_t = Shared.new(TGeneric('Result', [i32_t(), str_t()]))
   const s_result = Shared.new(SExprIdent("r", result_r_t, span_unknown()))
   const map_one: [Shared<SExpr>] = [Shared.new(SExprIdent("f", unk_t(), span_unknown()))]
   results.push(assert_eq_str('ExprMethod Result map',
-    gen_expr(Shared.new(SExprMethod(s_result, 'map', map_one, unk_t(), span_unknown())), ctx),
+    gen_expr(Shared.new(SExprMethod(s_result, 'map', map_one, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
     'mlc::result::map(r, f)'))
 
   let namespace_alias_prefixes: Map<string, string> = Map.new()
   namespace_alias_prefixes.set('helpers', 'infer_literals::')
   const context_with_aliases = ctx.with_namespace_alias_prefixes(namespace_alias_prefixes)
   results.push(assert_eq_str('ExprMethod on import-as alias emits namespace::fn()',
-    gen_expr(Shared.new(SExprMethod(sid('helpers'), 'infer_expr_integer_literal', empty_arr, unk_t(), span_unknown())), context_with_aliases),
+    gen_expr(Shared.new(SExprMethod(sid('helpers'), 'infer_expr_integer_literal', empty_arr, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context_with_aliases),
     'infer_literals::infer_expr_integer_literal()'))
 
   // --- ExprMatch ----------------------------------------------------------------

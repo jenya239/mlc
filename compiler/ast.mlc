@@ -29,12 +29,13 @@ export fn diagnostic_format(diagnostic: Diagnostic) -> string = do
   end
 end
 
-export fn diagnostics_append(mut destination: [Diagnostic], source: [Diagnostic]) -> [Diagnostic] = do
+export fn diagnostics_append(destination: [Diagnostic], source: [Diagnostic]) -> [Diagnostic] = do
+  let mut accumulator = destination
   let mut index = 0
   while index < source.length() do
-    destination.push(source[index]); index = index + 1
+    accumulator.push(source[index]); index = index + 1
   end
-  destination
+  accumulator
 end
 
 export fn infer_messages_as_diagnostics(messages: [string]) -> [Diagnostic] = do
@@ -216,6 +217,7 @@ export type Program = Program { decls: [Shared<Decl>] }
 
 export fn param_name(p: Shared<Param>) -> string = p.name
 export fn param_typ(p: Shared<Param>) -> Shared<TypeExpr> = p.typ
+export fn param_is_mut(p: Shared<Param>) -> bool = p.is_mut
 
 export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
   const unwrapped: Shared<Decl> = decl

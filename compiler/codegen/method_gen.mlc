@@ -1,46 +1,28 @@
 // Method call code generation.
 // eval_expr_fn injected to break the import cycle with expr_eval.mlc.
 
-import { SExpr, SStmt, sexpr_type } from '../semantic_ir'
+import { SExpr, SStmt, SExprIdent, sexpr_type } from '../semantic_ir'
 import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../checker/registry'
 import { CodegenContext } from './context'
-import { cpp_safe, map_method, map_builtin_identifier_reference } from './cpp_naming'
-import { resolve_object_code_in_self_context, infer_shared_new_type_name,
+import { map_method } from './cpp_naming'
+import { infer_shared_new_type_name,
          cpp_function_name_for_file_method } from './expression_support'
+import * as mut_actual_argument from './mut_actual_argument'
 import * as expression_output from './expr'
 
-fn gen_arg_list(
-  arguments: [Shared<SExpr>],
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  arguments.map(argument => eval_expr_fn(argument, context, gen_stmts)).join(', ')
-
-fn gen_object_code(
-  object: Shared<SExpr>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  match object {
-    SExprIdent(name, _, _) =>
-      if context.self_type.length() > 0 then resolve_object_code_in_self_context(name, context)
-      else context.resolve(map_builtin_identifier_reference(name))
-      end,
-    _ => eval_expr_fn(object, context, gen_stmts)
-  }
-
-fn gen_method_file(
+fn gen_method_file_using_trailing_argument_fragments(
   method_name: string,
-  arguments: [Shared<SExpr>],
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  trailing_arguments_joined: string,
 ) -> string =
-  expression_output.function_call_parentheses(
-    cpp_function_name_for_file_method(method_name),
-    gen_arg_list(arguments, context, gen_stmts, eval_expr_fn))
+  if trailing_arguments_joined.length() == 0 then
+    expression_output.function_call_parentheses(
+      cpp_function_name_for_file_method(method_name),
+      '')
+  else
+    expression_output.function_call_parentheses(
+      cpp_function_name_for_file_method(method_name),
+      trailing_arguments_joined)
+  end
 
 fn gen_method_shared_new(
   argument: Shared<SExpr>,
@@ -53,48 +35,42 @@ fn gen_method_shared_new(
   expression_output.make_shared_call(type_name, argument_code)
 end
 
-fn gen_method_owner_call(
-  object_code: string,
+fn gen_method_owner_call_using_fragments(
+  receiver_fragment: string,
   method_name: string,
-  arguments: [Shared<SExpr>],
+  trailing_arguments_joined: string,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
   const mangled_name = context.method_owners.get(method_name)
   const function_name = context.resolve(mangled_name)
-  if arguments.length() == 0 then expression_output.function_call_parentheses(function_name, object_code)
-  else expression_output.function_call_parentheses(
-    function_name,
-    expression_output.comma_separated_pair(object_code, gen_arg_list(arguments, context, gen_stmts, eval_expr_fn)))
+  if trailing_arguments_joined.length() == 0 then
+    expression_output.function_call_parentheses(function_name, receiver_fragment)
+  else
+    expression_output.function_call_parentheses(
+      function_name,
+      expression_output.comma_separated_pair(receiver_fragment, trailing_arguments_joined))
   end
 end
 
-fn gen_method_builtin(
-  object_code: string,
+fn gen_method_builtin_using_fragments(
+  receiver_fragment: string,
   method_name: string,
-  arguments: [Shared<SExpr>],
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  trailing_arguments_joined: string,
 ) -> string = do
-  const call_base = expression_output.dot_member_access(object_code, map_method(method_name))
-  if arguments.length() == 0 then expression_output.function_call_parentheses(call_base, '')
-  else expression_output.function_call_parentheses(call_base, gen_arg_list(arguments, context, gen_stmts, eval_expr_fn))
+  const call_base = expression_output.dot_member_access(receiver_fragment, map_method(method_name))
+  if trailing_arguments_joined.length() == 0 then expression_output.function_call_parentheses(call_base, '')
+  else expression_output.function_call_parentheses(call_base, trailing_arguments_joined)
   end
 end
 
-fn gen_method_namespace_alias(
+fn gen_method_namespace_alias_using_fragments(
   static_prefix: string,
   method_name: string,
-  arguments: [Shared<SExpr>],
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  trailing_arguments_joined: string,
 ) -> string = do
   const call_base = `${static_prefix}${map_method(method_name)}`
-  if arguments.length() == 0 then expression_output.function_call_parentheses(call_base, '')
-  else expression_output.function_call_parentheses(call_base, gen_arg_list(arguments, context, gen_stmts, eval_expr_fn))
+  if trailing_arguments_joined.length() == 0 then expression_output.function_call_parentheses(call_base, '')
+  else expression_output.function_call_parentheses(call_base, trailing_arguments_joined)
   end
 end
 
@@ -113,89 +89,145 @@ fn is_user_defined_method_for_type(method_name: string, type_name: string, conte
   type_name != '' &&
   context.method_owners.get(method_name) == `${type_name}_${method_name}`
 
-fn gen_method_expr_after_object(
-  object_code: string,
+fn trailing_argument_fragments_join(fragments: [string]) -> string = fragments.join(', ')
+
+fn gen_method_expr_after_object_using_fragments(
+  receiver_fragment: string,
   object_type_name: string,
   method_name: string,
-  arguments: [Shared<SExpr>],
+  trailing_arguments_joined: string,
+  argument_count: i32,
   context: CodegenContext,
+  original_object_expression: Shared<SExpr>,
+  original_trailing_arguments: [Shared<SExpr>],
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string =
-  if object_code == 'File' then
-    gen_method_file(method_name, arguments, context, gen_stmts, eval_expr_fn)
-  else if object_code == 'Map' && method_name == 'new' then
+  if receiver_fragment == 'File' then
+    gen_method_file_using_trailing_argument_fragments(method_name, trailing_arguments_joined)
+  else if receiver_fragment == 'Map' && method_name == 'new' then
     expression_output.empty_map_initializer()
-  else if object_code == 'Shared' && method_name == 'new' && arguments.length() == 1 then
-    gen_method_shared_new(arguments[0], context, gen_stmts, eval_expr_fn)
+  else if receiver_fragment == 'Shared' && method_name == 'new' && argument_count == 1 then
+    gen_method_shared_new(original_trailing_arguments[0], context, gen_stmts, eval_expr_fn)
   else if is_user_defined_method_for_type(method_name, object_type_name, context) then
-    gen_method_owner_call(object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
-  else if method_name == 'to_string' && arguments.length() == 0 then
-    expression_output.runtime_to_string_call(object_code)
+    gen_method_owner_call_using_fragments(receiver_fragment, method_name, trailing_arguments_joined, context)
+  else if method_name == 'to_string' && argument_count == 0 then
+    expression_output.runtime_to_string_call(receiver_fragment)
   else
-    gen_method_builtin(object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+    gen_method_builtin_using_fragments(receiver_fragment, method_name, trailing_arguments_joined)
   end
 
-fn gen_result_option_combinator_call(
+fn gen_result_option_combinator_call_using_fragments(
   is_option: bool,
-  object_code: string,
+  receiver_fragment: string,
   method_name: string,
-  arguments: [Shared<SExpr>],
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  trailing_arguments_joined: string,
 ) -> string = do
   const base = if is_option then 'mlc::opt::' else 'mlc::result::' end
   const cpp_name = if !is_option && method_name == 'ok' then 'ok_into_optional' else method_name end
   const callee = `${base}${cpp_name}`
-  if arguments.length() == 0 then
-    expression_output.function_call_parentheses(callee, object_code)
+  if trailing_arguments_joined.length() == 0 then
+    expression_output.function_call_parentheses(callee, receiver_fragment)
   else
     expression_output.function_call_parentheses(
-      callee, expression_output.comma_separated_pair(object_code, gen_arg_list(arguments, context, gen_stmts, eval_expr_fn)))
+      callee,
+      expression_output.comma_separated_pair(receiver_fragment, trailing_arguments_joined))
   end
+end
+
+fn build_positional_receiver_and_arguments(object: Shared<SExpr>, trailing_arguments: [Shared<SExpr>]) -> [Shared<SExpr>] = do
+  let positional: [Shared<SExpr>] = []
+  positional.push(object)
+  let mut argument_walk_index = 0
+  while argument_walk_index < trailing_arguments.length() do
+    positional.push(trailing_arguments[argument_walk_index])
+    argument_walk_index = argument_walk_index + 1
+  end
+  positional
 end
 
 export fn gen_method_expr(
   object: Shared<SExpr>,
   method_name: string,
   arguments: [Shared<SExpr>],
+  receiver_and_method_parameter_mutability_flags: [i32],
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
   const object_type = sexpr_type(object)
   const object_type_name = object_type_name_for_dispatch(object_type)
-  const object_code = gen_object_code(object, context, gen_stmts, eval_expr_fn)
+  const positional_argument_expressions = build_positional_receiver_and_arguments(object, arguments)
+  const materialization_outcome =
+    mut_actual_argument.materialize_positional_actual_arguments_maybe_holding_mut_references(
+      positional_argument_expressions,
+      receiver_and_method_parameter_mutability_flags,
+      context,
+      gen_stmts,
+      eval_expr_fn)
+  const receiver_fragment = materialization_outcome.materialized_argument_fragments[0]
+  let trailing_argument_fragments: [string] = []
+  let mut tail_fragment_index = 1
+  while tail_fragment_index < materialization_outcome.materialized_argument_fragments.length() do
+    trailing_argument_fragments.push(materialization_outcome.materialized_argument_fragments[tail_fragment_index])
+    tail_fragment_index = tail_fragment_index + 1
+  end
+  const trailing_arguments_joined = trailing_argument_fragments_join(trailing_argument_fragments)
   const ro_code = match object_type {
     TGeneric(gname, _) =>
       if gname == 'Result' then
-        gen_result_option_combinator_call(false, object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+        gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
       else if gname == 'Option' then
-        gen_result_option_combinator_call(true, object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+        gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
       else
         ''
       end,
-    TNamed(n) =>
-      if n == 'Result' then
-        gen_result_option_combinator_call(false, object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
-      else if n == 'Option' then
-        gen_result_option_combinator_call(true, object_code, method_name, arguments, context, gen_stmts, eval_expr_fn)
+    TNamed(receiver_named) =>
+      if receiver_named == 'Result' then
+        gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
+      else if receiver_named == 'Option' then
+        gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
       else
         ''
       end,
-    _ => ''
+    _ => '',
   }
-  if ro_code != '' then ro_code
-  else
-  match object {
-    SExprIdent(object_name, _, _) =>
-      if context.namespace_alias_prefixes.has(object_name) then
-        gen_method_namespace_alias(context.namespace_alias_prefixes.get(object_name), method_name, arguments, context, gen_stmts, eval_expr_fn)
-      else
-        gen_method_expr_after_object(object_code, object_type_name, method_name, arguments, context, gen_stmts, eval_expr_fn)
-      end,
-    _ => gen_method_expr_after_object(object_code, object_type_name, method_name, arguments, context, gen_stmts, eval_expr_fn)
-  }
-  end
+  const invoke_expression =
+    if ro_code != '' then ro_code
+    else match object {
+      SExprIdent(namespace_object_name, _, _) =>
+        if context.namespace_alias_prefixes.has(namespace_object_name) then
+          gen_method_namespace_alias_using_fragments(
+            context.namespace_alias_prefixes.get(namespace_object_name),
+            method_name,
+            trailing_arguments_joined)
+        else
+          gen_method_expr_after_object_using_fragments(
+            receiver_fragment,
+            object_type_name,
+            method_name,
+            trailing_arguments_joined,
+            arguments.length(),
+            context,
+            object,
+            arguments,
+            gen_stmts,
+            eval_expr_fn)
+        end,
+      _ =>
+        gen_method_expr_after_object_using_fragments(
+          receiver_fragment,
+          object_type_name,
+          method_name,
+          trailing_arguments_joined,
+          arguments.length(),
+          context,
+          object,
+          arguments,
+          gen_stmts,
+          eval_expr_fn),
+    }
+  mut_actual_argument.wrap_invoke_with_mut_actual_argument_holder_prelude_if_any(
+    materialization_outcome.prelude_block,
+    invoke_expression)
 end

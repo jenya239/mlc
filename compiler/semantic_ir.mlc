@@ -30,8 +30,8 @@ export type SExpr =
   | SExprIdent(string, Shared<Type>, Span)
   | SExprBin(string, Shared<SExpr>, Shared<SExpr>, Shared<Type>, Span)
   | SExprUn(string, Shared<SExpr>, Shared<Type>, Span)
-  | SExprCall(Shared<SExpr>, [Shared<SExpr>], Shared<Type>, Span)
-  | SExprMethod(Shared<SExpr>, string, [Shared<SExpr>], Shared<Type>, Span)
+  | SExprCall(Shared<SExpr>, [Shared<SExpr>], [i32], Shared<Type>, Span)
+  | SExprMethod(Shared<SExpr>, string, [Shared<SExpr>], [i32], Shared<Type>, Span)
   | SExprField(Shared<SExpr>, string, Shared<Type>, Span)
   | SExprIndex(Shared<SExpr>, Shared<SExpr>, Shared<Type>, Span)
   | SExprIf(Shared<SExpr>, Shared<SExpr>, Shared<SExpr>, Shared<Type>, Span)
@@ -100,8 +100,8 @@ export fn sexpr_type(expression: Shared<SExpr>) -> Shared<Type> =
     SExprIdent(_, t, _)                => t,
     SExprBin(_, _, _, t, _)            => t,
     SExprUn(_, _, t, _)                => t,
-    SExprCall(_, _, t, _)              => t,
-    SExprMethod(_, _, _, t, _)         => t,
+    SExprCall(_, _, _, t, _)             => t,
+    SExprMethod(_, _, _, _, t, _)        => t,
     SExprField(_, _, t, _)             => t,
     SExprIndex(_, _, t, _)             => t,
     SExprIf(_, _, _, t, _)             => t,
@@ -133,8 +133,8 @@ export fn sexpr_span(expression: Shared<SExpr>) -> Span =
     SExprIdent(_, _, s)                => s,
     SExprBin(_, _, _, _, s)            => s,
     SExprUn(_, _, _, s)                => s,
-    SExprCall(_, _, _, s)              => s,
-    SExprMethod(_, _, _, _, s)         => s,
+    SExprCall(_, _, _, _, s)             => s,
+    SExprMethod(_, _, _, _, _, s)        => s,
     SExprField(_, _, _, s)             => s,
     SExprIndex(_, _, _, s)             => s,
     SExprIf(_, _, _, _, s)             => s,

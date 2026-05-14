@@ -218,7 +218,7 @@ export type NameCheckResult = NameCheckResult { diagnostics: [Diagnostic], scope
 
 extend NameCheckResult {
   fn append_expression_diagnostics(self, expression_diagnostics: [Diagnostic]) -> [Diagnostic] =
-    diagnostics_append(diagnostics, expression_diagnostics)
+    diagnostics_append(self.diagnostics, expression_diagnostics)
 }
 
 export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult = do

@@ -178,30 +178,45 @@ export extend TKind {
 // --- extend Parser --------------------------------------------------------
 
 export extend Parser {
-  fn kind(self) -> TKind = do const tok: Token = tokens[pos]; tok.kind end
-  fn lambda_shorthand_suppression_active(self) -> bool = suppress_lambda_shorthand
+  fn kind(self) -> TKind = do const tok: Token = self.tokens[self.pos]; tok.kind end
+  fn lambda_shorthand_suppression_active(self) -> bool = self.suppress_lambda_shorthand
   fn with_lambda_shorthand_suppressed(self, value: bool) -> Parser =
-    Parser { tokens, pos, source_path: source_path, suppress_lambda_shorthand: value }
+    Parser {
+      tokens: self.tokens,
+      pos: self.pos,
+      source_path: self.source_path,
+      suppress_lambda_shorthand: value,
+    }
   fn advance(self)   -> Parser =
-    Parser { tokens, pos: pos + 1, source_path: source_path, suppress_lambda_shorthand: suppress_lambda_shorthand }
+    Parser {
+      tokens: self.tokens,
+      pos: self.pos + 1,
+      source_path: self.source_path,
+      suppress_lambda_shorthand: self.suppress_lambda_shorthand,
+    }
   fn advance_by(self, count: i32) -> Parser =
-    Parser { tokens, pos: pos + count, source_path: source_path, suppress_lambda_shorthand: suppress_lambda_shorthand }
+    Parser {
+      tokens: self.tokens,
+      pos: self.pos + count,
+      source_path: self.source_path,
+      suppress_lambda_shorthand: self.suppress_lambda_shorthand,
+    }
   fn at_eof(self) -> bool =
-    if pos >= tokens.length() then true
+    if self.pos >= self.tokens.length() then true
     else
-      const tok: Token = tokens[pos]; tok.kind.is_eof()
+      const tok: Token = self.tokens[self.pos]; tok.kind.is_eof()
     end
   fn skip_semi(self) -> Parser = do
-    const tok: Token = tokens[pos]
+    const tok: Token = self.tokens[self.pos]
     match tok.kind { Semicolon => self.advance(), _ => self }
   end
   fn span_at_cursor(self) -> Span = do
-    const tok: Token = tokens[pos]
-    Span { file: source_path, line: tok.line, column: tok.col }
+    const tok: Token = self.tokens[self.pos]
+    Span { file: self.source_path, line: tok.line, column: tok.col }
   end
   fn prev_line(self) -> i32 = do
-    if pos > 0 then
-      const tok: Token = tokens[pos - 1]; tok.line
+    if self.pos > 0 then
+      const tok: Token = self.tokens[self.pos - 1]; tok.line
     else 0 end
   end
 }

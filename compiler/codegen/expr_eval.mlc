@@ -18,6 +18,7 @@ import { gen_record_expr, gen_record_update_expr } from './record_gen'
 import { gen_method_expr } from './method_gen'
 import { stmts_final_ctx } from './statement_context'
 import * as expression_output from './expr'
+import * as mut_actual_argument from './mut_actual_argument'
 
 // --- Argument list -----------------------------------------------------------
 
@@ -51,12 +52,30 @@ fn gen_call_function_code(function_expr: Shared<SExpr>, context: CodegenContext,
     _ => eval_expr(function_expr, context, gen_stmts)
   }
 
-fn gen_call_expr(function_expr: Shared<SExpr>, arguments: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
+fn gen_call_expr(
+  function_expr: Shared<SExpr>,
+  arguments: [Shared<SExpr>],
+  call_parameter_mutability_flags: [i32],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string,
+) -> string = do
   const function_code = gen_call_function_code(function_expr, context, gen_stmts)
-  const argument_list = eval_argument_list(arguments, context, gen_stmts)
-  if is_constructor_call(function_expr) then expression_output.constructor_call_braces(function_code, argument_list)
-  else expression_output.function_call_parentheses(function_code, argument_list)
-  end
+  const materialization_outcome =
+    mut_actual_argument.materialize_positional_actual_arguments_maybe_holding_mut_references(
+      arguments,
+      call_parameter_mutability_flags,
+      context,
+      gen_stmts,
+      evaluate_expression)
+  const argument_list = materialization_outcome.materialized_argument_fragments.join(', ')
+  const invoke_expression =
+    if is_constructor_call(function_expr) then expression_output.constructor_call_braces(function_code, argument_list)
+    else expression_output.function_call_parentheses(function_code, argument_list)
+    end
+  mut_actual_argument.wrap_invoke_with_mut_actual_argument_holder_prelude_if_any(
+    materialization_outcome.prelude_block,
+    invoke_expression)
 end
 
 fn gen_field_expr(object: Shared<SExpr>, field_name: string, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
@@ -226,8 +245,17 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprIdent(name, _, _)                                 => gen_identifier(name, context),
     SExprBin(operation, left_expr, right_expr, _, _)       => gen_binary_expr(operation, left_expr, right_expr, context, gen_stmts),
     SExprUn(operation, inner_expr, _, _)                   => gen_unary_expr(operation, inner_expr, context, gen_stmts),
-    SExprCall(function_expr, arguments, _, _)              => gen_call_expr(function_expr, arguments, context, gen_stmts),
-    SExprMethod(object, method_name, arguments, _, _)      => gen_method_expr(object, method_name, arguments, context, gen_stmts, eval_expr),
+    SExprCall(function_expression, arguments, call_parameter_mutability_flags, _, _) =>
+      gen_call_expr(function_expression, arguments, call_parameter_mutability_flags, context, gen_stmts, eval_expr),
+    SExprMethod(method_object, method_name, arguments, receiver_and_parameter_mut_flags, _, _) =>
+      gen_method_expr(
+        method_object,
+        method_name,
+        arguments,
+        receiver_and_parameter_mut_flags,
+        context,
+        gen_stmts,
+        eval_expr),
     SExprField(object, field_name, _, _)                   => gen_field_expr(object, field_name, context, gen_stmts),
     SExprIndex(object, index_expr, _, _)                   => gen_index_expr(object, index_expr, context, gen_stmts),
     SExprIf(condition, then_expr, else_expr, if_semantic_type, _) =>

@@ -1,6 +1,6 @@
 // --- Semantic type --------------------------------------------------------
 
-import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name, Expr } from '../ast'
+import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name, param_is_mut, Expr } from '../ast'
 import { expand_trait_as_param_program } from './trait_param_expand'
 
 export type Type =
@@ -22,6 +22,7 @@ export type TypeRegistry = TypeRegistry {
   fn_types:    Map<string, Shared<Type>>,
   function_type_parameter_names: Map<string, [string]>,
   function_parameter_names: Map<string, [string]>,
+  function_parameter_mutability_flags: Map<string, [i32]>,
   function_required_arity: Map<string, i32>,
   function_trait_bounds: Map<string, [[string]]>,
   ctor_types:  Map<string, Shared<Type>>,
@@ -39,10 +40,10 @@ export type TypeRegistry = TypeRegistry {
 
 export extend TypeRegistry {
   fn fn_type(self, name: string) -> Shared<Type> =
-    fn_types.get(name)
+    self.fn_types.get(name)
 
   fn has_fn(self, name: string) -> bool =
-    fn_types.has(name)
+    self.fn_types.has(name)
 
   fn registered_function_type_parameter_names(self, function_name: string) -> [string] =
     if self.function_type_parameter_names.has(function_name) then
@@ -56,6 +57,13 @@ export extend TypeRegistry {
       self.function_parameter_names.get(fn_name)
     else
       do const empty_param_names: [string] = []; empty_param_names end
+    end
+
+  fn parameter_mutability_flags_for(self, fn_name: string) -> [i32] =
+    if self.function_parameter_mutability_flags.has(fn_name) then
+      self.function_parameter_mutability_flags.get(fn_name)
+    else
+      do const empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
     end
 
   fn algebraic_decl_type_parameter_names_for(self, algebraic_type_name: string) -> [string] =
@@ -73,47 +81,47 @@ export extend TypeRegistry {
     end
 
   fn ctor_type(self, name: string) -> Shared<Type> =
-    ctor_types.get(name)
+    self.ctor_types.get(name)
 
   fn has_ctor(self, name: string) -> bool =
-    ctor_types.has(name)
+    self.ctor_types.has(name)
 
   fn ctor_params_for(self, name: string) -> [Shared<Type>] =
-    if ctor_params.has(name) then ctor_params.get(name) else [] end
+    if self.ctor_params.has(name) then self.ctor_params.get(name) else [] end
 
   fn fields_for(self, type_name: string) -> Map<string, Shared<Type>> =
-    field_types.get(type_name)
+    self.field_types.get(type_name)
 
   fn record_field_names_ordered_for(self, algebraic_or_variant_name: string) -> [string] =
-    if record_field_names_ordered.has(algebraic_or_variant_name) then
-      record_field_names_ordered.get(algebraic_or_variant_name)
+    if self.record_field_names_ordered.has(algebraic_or_variant_name) then
+      self.record_field_names_ordered.get(algebraic_or_variant_name)
     else
       do const empty_names: [string] = []; empty_names end
     end
 
   fn record_field_has_default_expression(self, nominal_record_key: string, field_label: string) -> bool =
-    record_literal_field_defaults.has(nominal_record_key) &&
-    record_literal_field_defaults.get(nominal_record_key).has(field_label)
+    self.record_literal_field_defaults.has(nominal_record_key) &&
+    self.record_literal_field_defaults.get(nominal_record_key).has(field_label)
 
   fn record_field_default_expression_ast(self, nominal_record_key: string, field_label: string) -> Shared<Expr> =
-    record_literal_field_defaults.get(nominal_record_key).get(field_label)
+    self.record_literal_field_defaults.get(nominal_record_key).get(field_label)
 
   fn has_fields(self, type_name: string) -> bool =
-    field_types.has(type_name)
+    self.field_types.has(type_name)
 
   fn type_implements_trait(self, type_name: string, trait_name: string) -> bool =
-    trait_impls.has(type_name) &&
-    trait_impls.get(type_name).any(trait_implementation => trait_implementation == trait_name)
+    self.trait_impls.has(type_name) &&
+    self.trait_impls.get(type_name).any(trait_implementation => trait_implementation == trait_name)
 
   fn fn_trait_bounds(self, fn_name: string) -> [[string]] =
-    if function_trait_bounds.has(fn_name) then function_trait_bounds.get(fn_name)
+    if self.function_trait_bounds.has(fn_name) then self.function_trait_bounds.get(fn_name)
     else do const empty_bounds: [[string]] = []; empty_bounds end end
 
   fn required_arity_for_fn(self, fn_name: string) -> i32 =
     if self.function_required_arity.has(fn_name) then self.function_required_arity.get(fn_name) else -1 end
 
   fn is_private_ctor(self, name: string) -> bool =
-    private_ctors.any(constructor_name => constructor_name == name)
+    self.private_ctors.any(constructor_name => constructor_name == name)
 
   fn trait_assoc_names(self, trait_name: string) -> [string] =
     if self.trait_assoc_types.has(trait_name) then self.trait_assoc_types.get(trait_name)
@@ -163,6 +171,7 @@ export fn empty_registry() -> TypeRegistry = do
     fn_types: builtin_function_types,
     function_type_parameter_names: Map.new(),
     function_parameter_names: Map.new(),
+    function_parameter_mutability_flags: Map.new(),
     function_required_arity: fn_req,
     function_trait_bounds: Map.new(),
     ctor_types: ctor_types,
@@ -271,9 +280,12 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
     DeclFn(name, type_parameters, trait_bounds, parameters, return_type, _, _) => do
       const param_types = parameters.map(parameter => type_from_annotation(param_typ(parameter)))
       const parameter_names = parameters.map(parameter => param_name(parameter))
+      const parameter_mutability_flags =
+        parameters.map(parameter => if param_is_mut(parameter) then 1 else 0)
       registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
       registry.function_type_parameter_names.set(name, type_parameters)
       registry.function_parameter_names.set(name, parameter_names)
+      registry.function_parameter_mutability_flags.set(name, parameter_mutability_flags)
       registry.function_required_arity.set(name, required_arity_from_params(parameters))
       if trait_bounds.length() > 0 then registry.function_trait_bounds.set(name, trait_bounds) end
       registry

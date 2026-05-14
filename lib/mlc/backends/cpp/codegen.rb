@@ -74,7 +74,11 @@ module MLC
           end
 
           func.params.map do |param|
-            base = "#{@context.map_type(param.type)} #{@context.sanitize_identifier(param.name)}"
+            cpp_type = @context.map_type(param.type)
+            if param.respond_to?(:mutable) && param.mutable && !param.type.is_a?(SemanticIR::MutRefType)
+              cpp_type = "#{cpp_type}&"
+            end
+            base = "#{cpp_type} #{@context.sanitize_identifier(param.name)}"
             if include_default_values && param.default
               base + " = " + @context.lower_expression(param.default).to_source
             else

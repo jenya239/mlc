@@ -58,6 +58,8 @@ lexer::LexState skip_whitespace(lexer::LexState state) noexcept;
 
 lexer::ScanResult scan_op(lexer::LexState state) noexcept;
 
+std::tuple<> accumulate_nonempty_scan_message_into_errors(mlc::Array<mlc::String>& error_messages, mlc::String message_under_scan) noexcept;
+
 ast_tokens::LexOut tokenize(mlc::String source) noexcept;
 
 bool LexState_eof(lexer::LexState self) noexcept{return self.pos >= self.src.byte_size();}
@@ -465,6 +467,19 @@ mlc::String next = LexState_peek(state, 1);
 return character == mlc::String("-") && next == mlc::String(">") ? lexer::ScanResult{LexState_lex_advance_by(state, 2), LexState_token(state, (ast_tokens::Arrow{}))} : character == mlc::String("=") && next == mlc::String(">") ? lexer::ScanResult{LexState_lex_advance_by(state, 2), LexState_token(state, (ast_tokens::FatArrow{}))} : character == mlc::String("|") && next == mlc::String(">") ? lexer::ScanResult{LexState_lex_advance_by(state, 2), LexState_token(state, (ast_tokens::Pipe{}))} : character == mlc::String("=") && next == mlc::String("=") ? lexer::ScanResult{LexState_lex_advance_by(state, 2), LexState_token(state, ast_tokens::Op(mlc::String("==")))} : character == mlc::String("!") && next == mlc::String("=") ? lexer::ScanResult{LexState_lex_advance_by(state, 2), LexState_token(state, ast_tokens::Op(mlc::String("!=")))} : character == mlc::String("<") && next == mlc::String("=") ? lexer::ScanResult{LexState_lex_advance_by(state, 2), LexState_token(state, ast_tokens::Op(mlc::String("<=")))} : character == mlc::String(">") && next == mlc::String("=") ? lexer::ScanResult{LexState_lex_advance_by(state, 2), LexState_token(state, ast_tokens::Op(mlc::String(">=")))} : character == mlc::String("&") && next == mlc::String("&") ? lexer::ScanResult{LexState_lex_advance_by(state, 2), LexState_token(state, ast_tokens::Op(mlc::String("&&")))} : character == mlc::String("|") && next == mlc::String("|") ? lexer::ScanResult{LexState_lex_advance_by(state, 2), LexState_token(state, ast_tokens::Op(mlc::String("||")))} : character == mlc::String("=") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::Equal{}))} : character == mlc::String("|") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::Bar{}))} : character == mlc::String("?") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::Question{}))} : character == mlc::String(".") && next == mlc::String(".") && LexState_peek(state, 2) == mlc::String(".") ? lexer::ScanResult{LexState_lex_advance_by(state, 3), LexState_token(state, (ast_tokens::Spread{}))} : character == mlc::String(".") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::Dot{}))} : character == mlc::String("(") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::LParen{}))} : character == mlc::String(")") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::RParen{}))} : character == mlc::String("{") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::LBrace{}))} : character == mlc::String("}") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::RBrace{}))} : character == mlc::String("[") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::LBracket{}))} : character == mlc::String("]") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::RBracket{}))} : character == mlc::String(",") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::Comma{}))} : character == mlc::String(";") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::Semicolon{}))} : character == mlc::String(":") ? lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, (ast_tokens::Colon{}))} : lexer::ScanResult{LexState_lex_advance(state), LexState_token(state, ast_tokens::Op(character))};
 }
 
+std::tuple<> accumulate_nonempty_scan_message_into_errors(mlc::Array<mlc::String>& error_messages, mlc::String message_under_scan) noexcept{
+if (message_under_scan != mlc::String("")){
+{
+error_messages.push_back(message_under_scan);
+}
+} else {
+{
+std::make_tuple();
+}
+}
+return std::make_tuple();
+}
+
 ast_tokens::LexOut tokenize(mlc::String source) noexcept{
 lexer::LexState state = lexer::LexState{source, 0, 1, 1};
 mlc::Array<ast_tokens::Token> tokens = {};
@@ -478,52 +493,40 @@ break;
 }
 }
 mlc::String character = LexState_current(state);
-if (is_alpha(character)){
-{
-lexer::ScanResult result = scan_ident(state);
-tokens.push_back(result.token);
-state = result.state;
-}
-} else {
-{
-if (is_digit(character)){
-lexer::ScanResult result = scan_int(state);
-tokens.push_back(result.token);
-state = result.state;
-} else {
-if (character == mlc::String("\"")){
-lexer::ScanStrResult result = scan_string(state);
-tokens.push_back(result.token);
-state = result.state;
-if (result.error != mlc::String("")){
-errors.push_back(result.error);
-}
-} else {
-if (character == mlc::String("'")){
-lexer::ScanStrResult result = scan_single_string(state);
-tokens.push_back(result.token);
-state = result.state;
-if (result.error != mlc::String("")){
-errors.push_back(result.error);
-}
-} else {
-if (character == mlc::String("`")){
-lexer::ScanStrResult result = scan_template(state);
-tokens.push_back(result.token);
-state = result.state;
-if (result.error != mlc::String("")){
-errors.push_back(result.error);
-}
-} else {
-lexer::ScanResult result = scan_op(state);
-tokens.push_back(result.token);
-state = result.state;
-}
-}
-}
-}
-}
-}
+is_alpha(character) ? [&]() -> std::tuple<> { 
+  lexer::ScanResult result = scan_ident(state);
+  tokens.push_back(result.token);
+  state = result.state;
+  return std::make_tuple();
+ }() : is_digit(character) ? [&]() -> std::tuple<> { 
+  lexer::ScanResult result = scan_int(state);
+  tokens.push_back(result.token);
+  state = result.state;
+  return std::make_tuple();
+ }() : character == mlc::String("\"") ? [&]() -> std::tuple<> { 
+  lexer::ScanStrResult result = scan_string(state);
+  tokens.push_back(result.token);
+  state = result.state;
+  accumulate_nonempty_scan_message_into_errors(errors, result.error);
+  return std::make_tuple();
+ }() : character == mlc::String("'") ? [&]() -> std::tuple<> { 
+  lexer::ScanStrResult result = scan_single_string(state);
+  tokens.push_back(result.token);
+  state = result.state;
+  accumulate_nonempty_scan_message_into_errors(errors, result.error);
+  return std::make_tuple();
+ }() : character == mlc::String("`") ? [&]() -> std::tuple<> { 
+  lexer::ScanStrResult result = scan_template(state);
+  tokens.push_back(result.token);
+  state = result.state;
+  accumulate_nonempty_scan_message_into_errors(errors, result.error);
+  return std::make_tuple();
+ }() : [&]() -> std::tuple<> { 
+  lexer::ScanResult result = scan_op(state);
+  tokens.push_back(result.token);
+  state = result.state;
+  return std::make_tuple();
+ }();
 }
 }
 tokens.push_back(LexState_token(state, (ast_tokens::Eof{})));

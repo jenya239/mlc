@@ -119,11 +119,13 @@ mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept;
 
 std::shared_ptr<ast::TypeExpr> param_typ(std::shared_ptr<ast::Param> p) noexcept;
 
+bool param_is_mut(std::shared_ptr<ast::Param> p) noexcept;
+
 std::shared_ptr<ast::Decl> decl_inner(std::shared_ptr<ast::Decl> decl) noexcept;
 
 mlc::String decl_name(std::shared_ptr<ast::Decl> decl) noexcept;
 
-mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String> dst, mlc::Array<mlc::String> src) noexcept;
+mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc::String> src) noexcept;
 
 } // namespace ast
 

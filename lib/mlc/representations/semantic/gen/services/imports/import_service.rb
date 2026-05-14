@@ -83,15 +83,30 @@ module MLC
 
               canonical_name = metadata.qualified_name || [module_info.name, metadata.name].join('.')
 
+              if function_registry.registered?(canonical_name)
+                register_aliases(function_registry, metadata.name, canonical_name, module_info.name, alias_name)
+                return
+              end
+
               ptypes = params.map { |p| p[:type] }
               pnames = params.map { |p| p[:name].to_s }
+              param_mutability_flags =
+                if decl&.respond_to?(:params) && decl.params.length == ptypes.length
+                  decl.params.map do |each_parameter_declaration_ast|
+                    !!(each_parameter_declaration_ast.respond_to?(:mutable) &&
+                      each_parameter_declaration_ast.mutable)
+                  end
+                else
+                  Array.new(ptypes.length, false)
+                end
               info = MLC::Registries::FunctionSignature.new(
                 metadata.name,
                 ptypes,
                 ret_type,
                 type_params,
                 ptypes.length,
-                pnames
+                pnames,
+                param_mutability_flags
               )
 
               function_registry.register(

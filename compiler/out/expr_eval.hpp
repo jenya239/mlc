@@ -20,6 +20,7 @@
 #include "method_gen.hpp"
 #include "statement_context.hpp"
 #include "expr.hpp"
+#include "mut_actual_argument.hpp"
 
 namespace expr_eval {
 

@@ -20,11 +20,11 @@ extend Shared<T> {
 }
 
 export extend LexOut {
-  fn has_errors(self) -> bool = errors.length() > 0
+  fn has_errors(self) -> bool = self.errors.length() > 0
 }
 
 export extend Token {
-  fn kind_value(self) -> TKind = kind
-  fn line_number(self) -> i32 = line
-  fn column(self) -> i32 = col
+  fn kind_value(self) -> TKind = self.kind
+  fn line_number(self) -> i32 = self.line
+  fn column(self) -> i32 = self.col
 }

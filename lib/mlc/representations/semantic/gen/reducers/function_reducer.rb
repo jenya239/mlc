@@ -23,8 +23,6 @@ module MLC
             end
 
             def register_signature(func_decl)
-              return @function_registry.fetch(func_decl.name) if @function_registry.registered?(func_decl.name)
-
               type_params = @type_checker.normalize_type_params(func_decl.type_params)
               signature = nil
 

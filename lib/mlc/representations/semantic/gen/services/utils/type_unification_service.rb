@@ -107,8 +107,22 @@ module MLC
               end
               substituted_ret_type = apply_type_substitutions(info.ret_type, substitutions)
 
+              substituted_mutability_flags =
+                if info.respond_to?(:param_mutability_flags) &&
+                   info.param_mutability_flags&.length == substituted_params.length
+                  info.param_mutability_flags
+                else
+                  Array.new(substituted_params.length, false)
+                end
+
               MLC::Registries::FunctionSignature.new(
-                info.name, substituted_params, substituted_ret_type, info.type_params, info.required_arity, info.param_names || []
+                info.name,
+                substituted_params,
+                substituted_ret_type,
+                info.type_params,
+                info.required_arity,
+                info.param_names || [],
+                substituted_mutability_flags
               )
             end
 
@@ -128,10 +142,10 @@ module MLC
               case name
               when 'Some'
                 # Some(value) has one parameter of type T
-                MLC::Registries::FunctionSignature.new('Some', [inner_type], scrutinee_type, [], 1, [])
+                MLC::Registries::FunctionSignature.new('Some', [inner_type], scrutinee_type, [], 1, [], [false])
               when 'None'
                 # None has no parameters
-                MLC::Registries::FunctionSignature.new('None', [], scrutinee_type, [], 0, [])
+                MLC::Registries::FunctionSignature.new('None', [], scrutinee_type, [], 0, [], [])
               end
             end
 
