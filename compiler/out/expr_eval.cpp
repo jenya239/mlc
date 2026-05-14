@@ -72,17 +72,7 @@ mlc::String gen_lambda_expr(mlc::Array<mlc::String> parameter_binding_names, std
 
 mlc::String eval_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
-mlc::String eval_argument_list(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> expressions, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
-mlc::Array<mlc::String> parts = {};
-int index = 0;
-while (index < expressions.size()){
-{
-parts.push_back(eval_expr(expressions[index], context, gen_stmts));
-index = index + 1;
-}
-}
-return parts.join(mlc::String(", "));
-}
+mlc::String eval_argument_list(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> expressions, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return expressions.map([context, gen_stmts](std::shared_ptr<semantic_ir::SExpr> expression) mutable { return eval_expr(expression, context, gen_stmts); }).join(mlc::String(", "));}
 
 mlc::String gen_binary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expr, std::shared_ptr<semantic_ir::SExpr> right_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
 mlc::String method = semantic_type_structure::operator_method_for(operation);
@@ -190,17 +180,7 @@ mlc::String eval_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::Codegen
   [&](const SExprRecord& sexprrecord) -> mlc::String { auto [type_name, field_values, expr_type, _w0] = sexprrecord; return record_gen::gen_record_expr(type_name, field_values, expr_type, context, gen_stmts, eval_expr); },
   [&](const SExprRecordUpdate& sexprrecordupdate) -> mlc::String { auto [type_name, base_expr, overrides, _w0, _w1] = sexprrecordupdate; return record_gen::gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr); },
   [&](const SExprArray& sexprarray) -> mlc::String { auto [elements, container_semantic_type, _w0] = sexprarray; return gen_array_expr(elements, container_semantic_type, context, gen_stmts); },
-  [&](const SExprTuple& sexprtuple) -> mlc::String { auto [elements, _w0, _w1] = sexprtuple; return [&]() -> mlc::String { 
-  mlc::Array<mlc::String> parts = {};
-  int ki = 0;
-  while (ki < elements.size()){
-{
-parts.push_back(eval_expr(elements[ki], context, gen_stmts));
-ki = ki + 1;
-}
-}
-  return mlc::String("std::make_tuple(") + parts.join(mlc::String(", ")) + mlc::String(")");
- }(); },
+  [&](const SExprTuple& sexprtuple) -> mlc::String { auto [elements, _w0, _w1] = sexprtuple; return mlc::String("std::make_tuple(") + elements.map([context, gen_stmts](std::shared_ptr<semantic_ir::SExpr> element) mutable { return eval_expr(element, context, gen_stmts); }).join(mlc::String(", ")) + mlc::String(")"); },
   [&](const SExprQuestion& sexprquestion) -> mlc::String { auto [inner_expr, _w0, _w1] = sexprquestion; return gen_question_expr(inner_expr, context, gen_stmts); },
   [&](const SExprLambda& sexprlambda) -> mlc::String { auto [parameters, body_expr, lambda_annotation_type, _w0] = sexprlambda; return gen_lambda_expr(parameters, body_expr, lambda_annotation_type, context, gen_stmts); },
   [&](const SExprWith& sexprwith) -> mlc::String { auto [resource, binder, stmts, _w0, _w1] = sexprwith; return [&]() -> mlc::String { 

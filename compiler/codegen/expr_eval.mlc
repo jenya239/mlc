@@ -22,13 +22,8 @@ import * as mut_actual_argument from './mut_actual_argument'
 
 // --- Argument list -----------------------------------------------------------
 
-export fn eval_argument_list(expressions: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
-  let parts: [string] = []; let mut index = 0
-  while index < expressions.length() do
-    parts.push(eval_expr(expressions[index], context, gen_stmts)); index = index + 1
-  end
-  parts.join(', ')
-end
+export fn eval_argument_list(expressions: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
+  expressions.map(expression => eval_expr(expression, context, gen_stmts)).join(', ')
 
 // --- Expression rules --------------------------------------------------------
 
@@ -37,7 +32,7 @@ fn gen_binary_expr(operation: string, left_expr: Shared<SExpr>, right_expr: Shar
   const left_type = sexpr_type(left_expr)
   const type_name = match left_type { TNamed(n) => n, _ => '' }
   if method != '' && type_name != '' then
-    type_name + "_" + method + "(" + eval_expr(left_expr, context, gen_stmts) + ', ' + eval_expr(right_expr, context, gen_stmts) + ")"
+    `${type_name}_${method}(${eval_expr(left_expr, context, gen_stmts)}, ${eval_expr(right_expr, context, gen_stmts)})`
   else
     expression_output.parenthesized_binary(eval_expr(left_expr, context, gen_stmts), operation, eval_expr(right_expr, context, gen_stmts))
   end
@@ -144,9 +139,8 @@ fn gen_block_expr(statements: [Shared<SStmt>], result_expr: Shared<SExpr>, conte
     eval_expr(result_expr, context, gen_stmts)
   else
     const body =
-      gen_stmts(statements, context) +
-      expression_output.block_immediate_function_return_fragment(
-        eval_expr(result_expr, stmts_final_ctx(statements, context), gen_stmts))
+      `${gen_stmts(statements, context)}${expression_output.block_immediate_function_return_fragment(
+        eval_expr(result_expr, stmts_final_ctx(statements, context), gen_stmts))}`
     expression_output.block_as_immediate_invoked_function_expression(body)
   end
 
@@ -207,7 +201,7 @@ fn cpp_lambda_header_from_semantic_function_type(
               cpp_safe(parameter_binding_names[lambda_parameter_index])))
           lambda_parameter_index = lambda_parameter_index + 1
         end
-        capture_clause + "(" + formatted_parameter_declarations.join(", ") + ") mutable"
+        `${capture_clause}(${formatted_parameter_declarations.join(', ')}) mutable`
       end,
     _ =>
       cpp_lambda_header_prefix(parameter_binding_names)
@@ -269,15 +263,8 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr),
     SExprArray(elements, container_semantic_type, _) =>
       gen_array_expr(elements, container_semantic_type, context, gen_stmts),
-    SExprTuple(elements, _, _) => do
-      let mut parts: [string] = []
-      let mut ki = 0
-      while ki < elements.length() do
-        parts.push(eval_expr(elements[ki], context, gen_stmts))
-        ki = ki + 1
-      end
-      'std::make_tuple(' + parts.join(', ') + ")"
-    end,
+    SExprTuple(elements, _, _) =>
+      `std::make_tuple(${elements.map(element => eval_expr(element, context, gen_stmts)).join(', ')})`,
     SExprQuestion(inner_expr, _, _)                        => gen_question_expr(inner_expr, context, gen_stmts),
     SExprLambda(parameters, body_expr, lambda_annotation_type, _) =>
       gen_lambda_expr(parameters, body_expr, lambda_annotation_type, context, gen_stmts),
