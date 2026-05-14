@@ -305,22 +305,25 @@ fn parse_pat(parser: Parser) -> PatResult = do
   end
 end
 
-fn parse_pat_args(parser: Parser) -> PatsResult = do
+fn comma_separated_pat_suffix_from_first(first: PatResult) -> PatsResult = do
   const pats: [Shared<Pat>] = []
-  if parser.kind().is_rparen() then
-    PatsResult { pats, parser: parser.advance() }
-  else
-    const first = parse_pat(parser)
-    pats.push(first.pat)
-    let mut state = first.parser
-    while state.kind().is_comma() do
-      const next = parse_pat(state.advance())
-      pats.push(next.pat)
-      state = next.parser
-    end
-    PatsResult { pats, parser: state.advance() }
+  pats.push(first.pat)
+  let mut state = first.parser
+  while state.kind().is_comma() do
+    const next = parse_pat(state.advance())
+    pats.push(next.pat)
+    state = next.parser
   end
+  PatsResult { pats, parser: state }
 end
+
+fn parse_pat_args(parser: Parser) -> PatsResult =
+  if parser.kind().is_rparen() then
+    PatsResult { pats: [], parser: parser.advance() }
+  else
+    const suffix = comma_separated_pat_suffix_from_first(parse_pat(parser))
+    PatsResult { pats: suffix.pats, parser: suffix.parser.advance() }
+  end
 
 export fn parse_record_pat_fields(parser: Parser) -> PatsResult = do
   const pats: [Shared<Pat>] = []
@@ -341,14 +344,8 @@ export fn parse_expr(parser: Parser) -> ExprResult = parse_or(parser)
 
 export fn pipe_desugar(left_expr: Shared<Expr>, right_expr: Shared<Expr>) -> Shared<Expr> =
   match right_expr {
-    ExprCall(callee, existing_args, _) => do
-      const new_args: [Shared<Expr>] = [left_expr]
-      let mut i = 0
-      while i < existing_args.length() do
-        new_args.push(existing_args[i]); i = i + 1
-      end
-      Shared.new(ExprCall(callee, new_args, span_unknown()))
-    end,
+    ExprCall(callee, existing_args, _) =>
+      Shared.new(ExprCall(callee, [left_expr].concat(existing_args), span_unknown())),
     _ => do
       const call_args: [Shared<Expr>] = [left_expr]
       Shared.new(ExprCall(right_expr, call_args, span_unknown()))
@@ -365,6 +362,18 @@ fn parse_pipe(parser: Parser) -> ExprResult = do
     state = right.parser
   end
   ExprResult { expr, parser: state }
+end
+
+fn comma_separated_expr_suffix_from_first(first: ExprResult) -> ExprsResult = do
+  const exprs: [Shared<Expr>] = []
+  exprs.push(first.expr)
+  let mut state = first.parser
+  while state.kind().is_comma() do
+    const next = parse_expr(state.advance())
+    exprs.push(next.expr)
+    state = next.parser
+  end
+  ExprsResult { exprs, parser: state }
 end
 
 fn parse_or(parser: Parser) -> ExprResult = do
@@ -616,18 +625,11 @@ fn parse_primary_parenthesized(parser: Parser) -> ExprResult = do
   else
     const e0 = parse_expr(parser.advance())
     if e0.parser.kind().is_comma() then
-      const elts: [Shared<Expr>] = []
-      elts.push(e0.expr)
-      let mut st = e0.parser
-      while st.kind().is_comma() do
-        const en = parse_expr(st.advance())
-        elts.push(en.expr)
-        st = en.parser
-      end
-      if st.kind().is_rparen() then
+      const suffix = comma_separated_expr_suffix_from_first(e0)
+      if suffix.parser.kind().is_rparen() then
         ExprResult {
-          expr: Shared.new(ExprTuple(elts, open_paren_span)),
-          parser: st.advance()
+          expr: Shared.new(ExprTuple(suffix.exprs, open_paren_span)),
+          parser: suffix.parser.advance()
         }
       else
         ExprResult { expr: e0.expr, parser: e0.parser }
@@ -794,22 +796,13 @@ fn parse_lambda_params(parser: Parser) -> NamesResult = do
   NamesResult { exprs: names, parser: state.advance() }
 end
 
-fn parse_array_lit(parser: Parser, header_span: Span) -> ExprResult = do
-  const exprs: [Shared<Expr>] = []
+fn parse_array_lit(parser: Parser, header_span: Span) -> ExprResult =
   if parser.kind().is_rbracket() then
-    ExprResult { expr: Shared.new(ExprArray(exprs, header_span)), parser: parser.advance() }
+    ExprResult { expr: Shared.new(ExprArray([], header_span)), parser: parser.advance() }
   else
-    const first = parse_expr(parser)
-    exprs.push(first.expr)
-    let mut state = first.parser
-    while state.kind().is_comma() do
-      const next = parse_expr(state.advance())
-      exprs.push(next.expr)
-      state = next.parser
-    end
-    ExprResult { expr: Shared.new(ExprArray(exprs, header_span)), parser: state.advance() }
+    const suffix = comma_separated_expr_suffix_from_first(parse_expr(parser))
+    ExprResult { expr: Shared.new(ExprArray(suffix.exprs, header_span)), parser: suffix.parser.advance() }
   end
-end
 
 export fn parse_if_expr(parser: Parser) -> ExprResult = do
   const header_span = parser.span_at_cursor()
