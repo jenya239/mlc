@@ -13,22 +13,29 @@ export fn parse_type(parser: Parser) -> TypeResult = do
   end
 end
 
-fn parse_paren_types(parser: Parser) -> TypesResult = do
+fn comma_separated_type_suffix_from_first(first: TypeResult) -> TypesResult = do
   const types: [Shared<TypeExpr>] = []
-  if parser.kind().is_rparen() then
-    TypesResult { types, parser: parser.advance() }
-  else
-    const first = parse_type(parser)
-    types.push(first.type_expr)
-    let mut state = first.parser
-    while state.kind().is_comma() do
-      const next = parse_type(state.advance())
-      types.push(next.type_expr)
-      state = next.parser
-    end
-    TypesResult { types, parser: if state.kind().is_rparen() then state.advance() else state end }
+  types.push(first.type_expr)
+  let mut state = first.parser
+  while state.kind().is_comma() do
+    const next = parse_type(state.advance())
+    types.push(next.type_expr)
+    state = next.parser
   end
+  TypesResult { types, parser: state }
 end
+
+fn parse_paren_types(parser: Parser) -> TypesResult =
+  if parser.kind().is_rparen() then
+    TypesResult { types: [], parser: parser.advance() }
+  else
+    const suffix = comma_separated_type_suffix_from_first(parse_type(parser))
+    TypesResult {
+      types: suffix.types,
+      parser:
+        if suffix.parser.kind().is_rparen() then suffix.parser.advance() else suffix.parser end
+    }
+  end
 
 fn parse_base_type(parser: Parser) -> TypeResult = do
   const kind = parser.kind()
@@ -78,18 +85,10 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
 end
 
 fn parse_type_args(parser: Parser) -> TypesResult = do
-  const types: [Shared<TypeExpr>] = []
-  const first = parse_type(parser)
-  types.push(first.type_expr)
-  let mut state = first.parser
-  while state.kind().is_comma() do
-    const next = parse_type(state.advance())
-    types.push(next.type_expr)
-    state = next.parser
-  end
-  const end_state =
-    if state.kind().is_op() && state.kind().op_val() == ">" then state.advance()
-    else state
+  const suffix = comma_separated_type_suffix_from_first(parse_type(parser))
+  const closing_state =
+    if suffix.parser.kind().is_op() && suffix.parser.kind().op_val() == ">" then suffix.parser.advance()
+    else suffix.parser
     end
-  TypesResult { types, parser: end_state }
+  TypesResult { types: suffix.types, parser: closing_state }
 end
