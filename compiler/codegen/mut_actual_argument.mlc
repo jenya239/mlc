@@ -28,35 +28,36 @@ export fn materialize_positional_actual_arguments_maybe_holding_mut_references(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> MutActualArgumentMaterializationOutcome = do
-  const argument_count = positional_argument_expressions.length()
-  let mut prelude_block = ''
-  let materialized_argument_fragments: [string] = []
-  if mut_parameter_flags.length() != argument_count then
-    let mut plain_index = 0
-    while plain_index < argument_count do
-      materialized_argument_fragments.push(
-        evaluate_expression(positional_argument_expressions[plain_index], context, gen_stmts))
-      plain_index = plain_index + 1
-    end
-    MutActualArgumentMaterializationOutcome { prelude_block: prelude_block, materialized_argument_fragments: materialized_argument_fragments }
+) -> MutActualArgumentMaterializationOutcome =
+  if mut_parameter_flags.length() != positional_argument_expressions.length() then
+    MutActualArgumentMaterializationOutcome {
+      prelude_block: '',
+      materialized_argument_fragments: positional_argument_expressions.map(expression =>
+        evaluate_expression(expression, context, gen_stmts)),
+    }
   else
-    let mut position_index = 0
-    while position_index < argument_count do
-      const evaluated_fragment =
-        evaluate_expression(positional_argument_expressions[position_index], context, gen_stmts)
-      if mut_parameter_flags[position_index] != 0 &&
-        !sexpr_is_stable_reference_for_cpp_mut_parameter(positional_argument_expressions[position_index]) then
-        const holder_variable_name = '__mut_actual_argument_holder_' + position_index.to_string()
-        const holder_type_spelling = sem_type_to_cpp(context, sexpr_type(positional_argument_expressions[position_index]))
-        prelude_block =
-          prelude_block + holder_type_spelling + " " + holder_variable_name + " = " + evaluated_fragment + ";\n"
-        materialized_argument_fragments.push(holder_variable_name)
-      else
-        materialized_argument_fragments.push(evaluated_fragment)
-      end
-      position_index = position_index + 1
-    end
-    MutActualArgumentMaterializationOutcome { prelude_block: prelude_block, materialized_argument_fragments: materialized_argument_fragments }
+    positional_argument_expressions.fold(
+      MutActualArgumentMaterializationOutcome { prelude_block: '', materialized_argument_fragments: [] },
+      (accumulator, positional_argument_expression) => do
+        const position_index = accumulator.materialized_argument_fragments.length()
+        const evaluated_fragment =
+          evaluate_expression(positional_argument_expression, context, gen_stmts)
+        if mut_parameter_flags[position_index] != 0 &&
+          !sexpr_is_stable_reference_for_cpp_mut_parameter(positional_argument_expression) then
+          const holder_variable_name = `__mut_actual_argument_holder_${position_index.to_string()}`
+          const holder_type_spelling = sem_type_to_cpp(context, sexpr_type(positional_argument_expression))
+          MutActualArgumentMaterializationOutcome {
+            prelude_block:
+              `${accumulator.prelude_block}${holder_type_spelling} ${holder_variable_name} = ${evaluated_fragment};\n`,
+            materialized_argument_fragments:
+              accumulator.materialized_argument_fragments.concat([holder_variable_name]),
+          }
+        else
+          MutActualArgumentMaterializationOutcome {
+            prelude_block: accumulator.prelude_block,
+            materialized_argument_fragments:
+              accumulator.materialized_argument_fragments.concat([evaluated_fragment]),
+          }
+        end
+      end)
   end
-end
