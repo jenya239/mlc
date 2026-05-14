@@ -419,25 +419,6 @@ fn parse_tuple_parameter_pattern(tuple_span: Span, parser_after_open_paren: Pars
   end
 end
 
-fn parse_params(parser: Parser) -> ParamsResult = do
-  const params: [Shared<Param>] = []
-  if parser.kind().is_rparen() then
-    ParamsResult { params, parser: parser.advance() }
-  else
-    const first_parameter = parse_param(parser, 0)
-    params.push(first_parameter.param)
-    let mut state = first_parameter.parser
-    let mut parameter_slot_index = 1
-    while state.kind().is_comma() do
-      const next_parameter = parse_param(state.advance(), parameter_slot_index)
-      params.push(next_parameter.param)
-      state = next_parameter.parser
-      parameter_slot_index = parameter_slot_index + 1
-    end
-    ParamsResult { params, parser: state.advance() }
-  end
-end
-
 fn plain_identifier_parameter_pattern_marker() -> Shared<Pat> =
   Shared.new(PatUnit(span_unknown()))
 
@@ -550,6 +531,28 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
   end
 end
 
+fn comma_separated_params_suffix_from_first(first: ParamResult) -> ParamsResult = do
+  const params: [Shared<Param>] = []
+  params.push(first.param)
+  let mut state = first.parser
+  let mut parameter_slot_index = 1
+  while state.kind().is_comma() do
+    const next = parse_param(state.advance(), parameter_slot_index)
+    params.push(next.param)
+    state = next.parser
+    parameter_slot_index = parameter_slot_index + 1
+  end
+  ParamsResult { params, parser: state }
+end
+
+fn parse_params(parser: Parser) -> ParamsResult =
+  if parser.kind().is_rparen() then
+    ParamsResult { params: [], parser: parser.advance() }
+  else
+    const suffix = comma_separated_params_suffix_from_first(parse_param(parser, 0))
+    ParamsResult { params: suffix.params, parser: suffix.parser.advance() }
+  end
+
 type DeriveResult = DeriveResult { traits: [string], parser: Parser }
 
 fn parse_derive_clause(parser: Parser) -> DeriveResult = do
@@ -639,9 +642,8 @@ fn parse_variant(parser: Parser) -> VariantResult = do
   end
 end
 
-fn parse_tuple_types(parser: Parser) -> TypesResult = do
+fn comma_separated_type_suffix_from_first(first: TypeResult) -> TypesResult = do
   const types: [Shared<TypeExpr>] = []
-  const first = parse_type(parser)
   types.push(first.type_expr)
   let mut state = first.parser
   while state.kind().is_comma() do
@@ -649,7 +651,12 @@ fn parse_tuple_types(parser: Parser) -> TypesResult = do
     types.push(next.type_expr)
     state = next.parser
   end
-  TypesResult { types, parser: state.advance() }
+  TypesResult { types, parser: state }
+end
+
+fn parse_tuple_types(parser: Parser) -> TypesResult = do
+  const suffix = comma_separated_type_suffix_from_first(parse_type(parser))
+  TypesResult { types: suffix.types, parser: suffix.parser.advance() }
 end
 
 fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -> TraitBodyResult = do

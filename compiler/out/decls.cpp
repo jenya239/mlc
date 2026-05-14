@@ -59,11 +59,13 @@ preds::PatResult parse_tuple_parameter_binding_element(preds::Parser binding_par
 
 preds::PatResult parse_tuple_parameter_pattern(ast::Span tuple_span, preds::Parser parser_after_open_paren) noexcept;
 
-preds::ParamsResult parse_params(preds::Parser parser) noexcept;
-
 std::shared_ptr<ast::Pat> plain_identifier_parameter_pattern_marker() noexcept;
 
 preds::ParamResult parse_param(preds::Parser parser_for_parameter, int parameter_slot_index) noexcept;
+
+preds::ParamsResult comma_separated_params_suffix_from_first(preds::ParamResult first) noexcept;
+
+preds::ParamsResult parse_params(preds::Parser parser) noexcept;
 
 decls::DeriveResult parse_derive_clause(preds::Parser parser) noexcept;
 
@@ -76,6 +78,8 @@ bool parse_variants_continue(preds::Parser state) noexcept;
 preds::VariantsResult parse_variants(preds::Parser parser) noexcept;
 
 preds::VariantResult parse_variant(preds::Parser parser) noexcept;
+
+preds::TypesResult comma_separated_type_suffix_from_first(preds::TypeResult first) noexcept;
 
 preds::TypesResult parse_tuple_types(preds::Parser parser) noexcept;
 
@@ -548,25 +552,6 @@ tuple_parse_finished = true;
  }();
 }
 
-preds::ParamsResult parse_params(preds::Parser parser) noexcept{
-mlc::Array<std::shared_ptr<ast::Param>> params = {};
-return preds::TKind_is_rparen(preds::Parser_kind(parser)) ? preds::ParamsResult{params, preds::Parser_advance(parser)} : [&]() -> preds::ParamsResult { 
-  preds::ParamResult first_parameter = parse_param(parser, 0);
-  params.push_back(first_parameter.param);
-  preds::Parser state = first_parameter.parser;
-  int parameter_slot_index = 1;
-  while (preds::TKind_is_comma(preds::Parser_kind(state))){
-{
-preds::ParamResult next_parameter = parse_param(preds::Parser_advance(state), parameter_slot_index);
-params.push_back(next_parameter.param);
-state = next_parameter.parser;
-parameter_slot_index = parameter_slot_index + 1;
-}
-}
-  return preds::ParamsResult{params, preds::Parser_advance(state)};
- }();
-}
-
 std::shared_ptr<ast::Pat> plain_identifier_parameter_pattern_marker() noexcept{return std::make_shared<ast::Pat>(ast::PatUnit(ast::span_unknown()));}
 
 preds::ParamResult parse_param(preds::Parser parser_for_parameter, int parameter_slot_index) noexcept{
@@ -608,6 +593,27 @@ return preds::TKind_is_lbrace(preds::Parser_kind(cursor_after_mutability_keyword
  }() : preds::ParamResult{std::make_shared<ast::Param>(ast::Param{binding_name, mutable_binding_requested, plain_binding_type_parse.type_expr, false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())), plain_identifier_parameter_pattern_marker()}), remainder_after_plain_type};
  }();
 }
+
+preds::ParamsResult comma_separated_params_suffix_from_first(preds::ParamResult first) noexcept{
+mlc::Array<std::shared_ptr<ast::Param>> params = {};
+params.push_back(first.param);
+preds::Parser state = first.parser;
+int parameter_slot_index = 1;
+while (preds::TKind_is_comma(preds::Parser_kind(state))){
+{
+preds::ParamResult next = parse_param(preds::Parser_advance(state), parameter_slot_index);
+params.push_back(next.param);
+state = next.parser;
+parameter_slot_index = parameter_slot_index + 1;
+}
+}
+return preds::ParamsResult{params, state};
+}
+
+preds::ParamsResult parse_params(preds::Parser parser) noexcept{return preds::TKind_is_rparen(preds::Parser_kind(parser)) ? preds::ParamsResult{{}, preds::Parser_advance(parser)} : [&]() -> preds::ParamsResult { 
+  preds::ParamsResult suffix = comma_separated_params_suffix_from_first(parse_param(parser, 0));
+  return preds::ParamsResult{suffix.params, preds::Parser_advance(suffix.parser)};
+ }();}
 
 decls::DeriveResult parse_derive_clause(preds::Parser parser) noexcept{
 return preds::TKind_is_ident(preds::Parser_kind(parser)) && preds::TKind_ident(preds::Parser_kind(parser)) == mlc::String("derive") ? [&]() -> decls::DeriveResult { 
@@ -701,9 +707,8 @@ return preds::TKind_is_lparen(preds::Parser_kind(after_name)) ? [&]() -> preds::
  }() : preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarUnit(variant_name, is_private)), after_name};
 }
 
-preds::TypesResult parse_tuple_types(preds::Parser parser) noexcept{
+preds::TypesResult comma_separated_type_suffix_from_first(preds::TypeResult first) noexcept{
 mlc::Array<std::shared_ptr<ast::TypeExpr>> types = {};
-preds::TypeResult first = types::parse_type(parser);
 types.push_back(first.type_expr);
 preds::Parser state = first.parser;
 while (preds::TKind_is_comma(preds::Parser_kind(state))){
@@ -713,7 +718,12 @@ types.push_back(next.type_expr);
 state = next.parser;
 }
 }
-return preds::TypesResult{types, preds::Parser_advance(state)};
+return preds::TypesResult{types, state};
+}
+
+preds::TypesResult parse_tuple_types(preds::Parser parser) noexcept{
+preds::TypesResult suffix = comma_separated_type_suffix_from_first(types::parse_type(parser));
+return preds::TypesResult{suffix.types, preds::Parser_advance(suffix.parser)};
 }
 
 preds::TraitBodyResult parse_trait_body(preds::Parser parser, mlc::String trait_name, mlc::Array<mlc::String> type_params) noexcept{
