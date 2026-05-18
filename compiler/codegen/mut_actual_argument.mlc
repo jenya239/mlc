@@ -21,6 +21,7 @@ export fn sexpr_is_stable_reference_for_cpp_mut_parameter(actual_argument: Share
 export fn wrap_invoke_with_mut_actual_argument_holder_prelude_if_any(prelude_block: string, invoke_expression: string) -> string =
   if prelude_block.length() == 0 then invoke_expression
   else `[&]() {\n${prelude_block}\nreturn ${invoke_expression};\n}()`
+  end
 
 export fn materialize_positional_actual_arguments_maybe_holding_mut_references(
   positional_argument_expressions: [Shared<SExpr>],

@@ -32,7 +32,7 @@ mlc::String field_access_operator(std::shared_ptr<semantic_ir::SExpr> object, co
 mlc::String generate_conditional_else_with_empty_array_coercion(std::shared_ptr<semantic_ir::SExpr> then_expression, std::shared_ptr<semantic_ir::SExpr> else_expression, std::shared_ptr<registry::Type> preferred_array_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> evaluate_expression) noexcept;
 
 mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept{
-mlc::String capture = parameters.size() == 0 ? mlc::String("[]") : mlc::String("[=]");
+mlc::String capture = parameters.size() == 0 ? mlc::String("[]") : mlc::String("[&]");
 mlc::String parameter_list = parameters.size() == 0 ? mlc::String("") : [&]() -> mlc::String { 
   mlc::Array<mlc::String> parts = {};
   int index = 0;

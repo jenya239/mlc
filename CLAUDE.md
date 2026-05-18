@@ -14,7 +14,7 @@
 
 MLC — компилятор языка программирования. Цель: self-hosted compiler.
 
-- Self-hosted исходники: `compiler/`. Детальный roadmap: `docs/ROADMAP.md`. Политика Ruby: `docs/SELF_HOSTED_PLAN.md`.
+- Self-hosted исходники: `compiler/`. План развития: `docs/PLAN.md`. Паритет и краевые случаи Ruby ⇄ mlcc: `docs/mlc2.md`.
 - `lib/mlc/` не удалять — эталон семантики и codegen, резерв при регрессиях.
 
 ### Два компилятора
@@ -24,8 +24,8 @@ MLC — компилятор языка программирования. Цел
 | Путь | `lib/mlc/` | `compiler/` |
 | Сборка | — (интерпретатор) | `compiler/build.sh` → `compiler/out/mlcc` |
 | Пайплайн | `MLC → SemanticIR → C++ AST DSL → C++ source` | `MLC → AST → checker → codegen → C++ source` |
-| Тесты | `rake test_mlc` (1106 runs) | `rake test_compiler_mlc` (192 теста) |
-| Статус | Эталон, полный стек | Компилирует весь `compiler/`, E2E работает |
+| Тесты | `rake test_mlc` (1106 runs) | `rake test_compiler_mlc` (447 тестов) |
+| Статус | Эталон, полный стек | Модульный `compiler/main.mlc`; проверка mlcc2 + `diff` см. README и `.cursor/rules/mlcc-self-host-verification.mdc` |
 
 ### Ключевые компоненты
 
@@ -84,7 +84,7 @@ bundle exec rake test_mlc                            # test/mlc/** (быстро
 bundle exec rake test_unit                           # весь test/ кроме integration
 
 # Self-hosted: тесты
-bundle exec rake test_compiler_mlc                  # compiler/tests/ → 192 теста
+bundle exec rake test_compiler_mlc                  # compiler/tests/ → 447 тестов (run_tests, не mlcc)
 bundle exec rake test_self_hosted_stack             # test_mlc + test_compiler_mlc
 compiler/tests/e2e/run_e2e.sh [mlcc_binary]         # E2E: 4 программы
 compiler/tests/build_tests_self.sh [mlcc_binary]    # unit-тесты через self-hosted бинарь
@@ -93,6 +93,12 @@ compiler/tests/build_tests_self.sh [mlcc_binary]    # unit-тесты через
 compiler/build.sh                                   # Ruby → mlcc
 MLCC_BOOTSTRAP=1 compiler/build.sh                 # Ruby → mlcc → mlcc_bootstrap (g++)
 ```
+
+### Self-hosted mlcc — проверка (не пропускать)
+
+- `rake test_compiler_mlc` обновляет **run_tests** через Ruby; **`compiler/out/mlcc` от этого не пересобирается**. После правок в `compiler/**` нужен **`compiler/build.sh`** для актуального mlcc.
+- Не считать работу завершённой без проверки self-host: свежий `mlcc` → трансляция **`compiler/main.mlc`** (`mlcc -o <dir> …`); при сомнениях — **`g++`** по выходу. При нехватке места в `/tmp` задать **`TMPDIR`** в дереве репозитория.
+- Правило в репозитории: `.cursor/rules/mlcc-self-host-verification.mdc`.
 
 ### Важные соглашения
 

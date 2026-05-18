@@ -51,30 +51,10 @@ return std::visit(overloaded{[&](const registry::TI32& tI32) { return std::visit
 [&](const registry::TNamed& tNamed) { auto [left_name] = tNamed; return std::visit(overloaded{[&](const registry::TNamed& tNamed) { auto [right_name] = tNamed; return (left_name == right_name); },
 [&](const auto& __v) { return false; }
 }, (*right)); },
-[&](const registry::TGeneric& tGeneric) { auto [left_name, left_args] = tGeneric; return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [right_name, right_args] = tGeneric; return (((left_name != right_name) || (left_args.length() != right_args.length())) ? false : [&]() {
-auto gi = 0;
-auto gok = true;
-while (((gi < left_args.length()) && gok)) {
-if ((!types_structurally_equal(left_args[gi], right_args[gi]))) {
-gok = false;
-}
-gi = (gi + 1);
-}
-return gok;
-}()); },
+[&](const registry::TGeneric& tGeneric) { auto [left_name, left_args] = tGeneric; return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [right_name, right_args] = tGeneric; return (((left_name == right_name) && (left_args.length() == right_args.length())) && zipped_shared_types_structurally_equal(left_args, right_args)); },
 [&](const auto& __v) { return false; }
 }, (*right)); },
-[&](const registry::TTuple& tTuple) { auto [t1] = tTuple; return std::visit(overloaded{[&](const registry::TTuple& tTuple) { auto [t2] = tTuple; return ((t1.length() != t2.length()) ? false : [&]() {
-auto ti = 0;
-auto tok = true;
-while (((ti < t1.length()) && tok)) {
-if ((!types_structurally_equal(t1[ti], t2[ti]))) {
-tok = false;
-}
-ti = (ti + 1);
-}
-return tok;
-}()); },
+[&](const registry::TTuple& tTuple) { auto [t1] = tTuple; return std::visit(overloaded{[&](const registry::TTuple& tTuple) { auto [t2] = tTuple; return ((t1.length() == t2.length()) && zipped_shared_types_structurally_equal(t1, t2)); },
 [&](const registry::TPair& tPair) { auto [a2, b2] = tPair; return (((t1.length() == 2) && types_structurally_equal(t1[0], a2)) && types_structurally_equal(t1[1], b2)); },
 [&](const auto& __v) { return false; }
 }, (*right)); },
@@ -82,23 +62,23 @@ return tok;
 [&](const registry::TTuple& tTuple) { auto [t2] = tTuple; return (((t2.length() == 2) && types_structurally_equal(a1, t2[0])) && types_structurally_equal(b1, t2[1])); },
 [&](const auto& __v) { return false; }
 }, (*right)); },
-[&](const registry::TFn& tFn) { auto [left_params, left_ret] = tFn; return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [right_params, right_ret] = tFn; return ((left_params.length() != right_params.length()) ? false : [&]() {
-auto fi = 0;
-auto fok = true;
-while (((fi < left_params.length()) && fok)) {
-if ((!types_structurally_equal(left_params[fi], right_params[fi]))) {
-fok = false;
-}
-fi = (fi + 1);
-}
-return (fok && types_structurally_equal(left_ret, right_ret));
-}()); },
+[&](const registry::TFn& tFn) { auto [left_params, left_ret] = tFn; return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [right_params, right_ret] = tFn; return (((left_params.length() == right_params.length()) && zipped_shared_types_structurally_equal(left_params, right_params)) && types_structurally_equal(left_ret, right_ret)); },
 [&](const auto& __v) { return false; }
 }, (*right)); },
 [&](const registry::TAssoc& tAssoc) { auto [p1, a1] = tAssoc; return std::visit(overloaded{[&](const registry::TAssoc& tAssoc) { auto [p2, a2] = tAssoc; return ((p1 == p2) && (a1 == a2)); },
 [&](const auto& __v) { return true; }
 }, (*right)); }
 }, (*left));
+}
+}
+bool zipped_shared_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list) noexcept{
+return zipped_suffix_types_structurally_equal(left_list, right_list, 0);
+}
+bool zipped_suffix_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list, int index) noexcept{
+if ((index >= left_list.length())) {
+return true;
+} else {
+return (types_structurally_equal(left_list[index], right_list[index]) && zipped_suffix_types_structurally_equal(left_list, right_list, (index + 1)));
 }
 }
 bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept{
@@ -127,7 +107,7 @@ return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [__0, __1] = t
 }, (*type_value));
 }
 mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept{
-return {};
+return mlc::Array<std::shared_ptr<registry::Type>>{};
 }
 std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::Type> function_type) noexcept{
 return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [__0, return_type] = tFn; return return_type; },
@@ -334,37 +314,13 @@ return (-1);
 
 }
 std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
-return std::visit(overloaded{[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return (substitution.has(name) ? substitute_type(substitution.get(name), substitution) : type_value); },
+return std::visit(overloaded{[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return (substitution.has(name) ? (substitute_type(substitution.get(name), substitution)) : (type_value)); },
 [&](const registry::TArray& tArray) { auto [inner] = tArray; return std::make_shared<registry::Type>(registry::TArray{substitute_type(inner, substitution)}); },
 [&](const registry::TShared& tShared) { auto [inner] = tShared; return std::make_shared<registry::Type>(registry::TShared{substitute_type(inner, substitution)}); },
-[&](const registry::TGeneric& tGeneric) { auto [name, args] = tGeneric; return [&]() {
-auto new_args = mlc::Array<std::shared_ptr<registry::Type>>{};
-auto i = 0;
-while ((i < mlc::io::args.length())) {
-new_args.push_back(substitute_type(mlc::io::args[i], substitution));
-i = (i + 1);
-}
-return std::make_shared<registry::Type>(registry::TGeneric{name, new_args});
-}(); },
+[&](const registry::TGeneric& tGeneric) { auto [name, args] = tGeneric; return std::make_shared<registry::Type>(registry::TGeneric{name, args.map([=](std::shared_ptr<registry::Type> arg) mutable { return substitute_type(arg, substitution); })}); },
 [&](const registry::TPair& tPair) { auto [a, b] = tPair; return std::make_shared<registry::Type>(registry::TPair{substitute_type(a, substitution), substitute_type(b, substitution)}); },
-[&](const registry::TTuple& tTuple) { auto [ts] = tTuple; return [&]() {
-auto new_ts = mlc::Array<std::shared_ptr<registry::Type>>{};
-auto si = 0;
-while ((si < ts.length())) {
-new_ts.push_back(substitute_type(ts[si], substitution));
-si = (si + 1);
-}
-return std::make_shared<registry::Type>(registry::TTuple{new_ts});
-}(); },
-[&](const registry::TFn& tFn) { auto [params, ret] = tFn; return [&]() {
-auto new_params = mlc::Array<std::shared_ptr<registry::Type>>{};
-auto j = 0;
-while ((j < params.length())) {
-new_params.push_back(substitute_type(params[j], substitution));
-j = (j + 1);
-}
-return std::make_shared<registry::Type>(registry::TFn{new_params, substitute_type(ret, substitution)});
-}(); },
+[&](const registry::TTuple& tTuple) { auto [parameter_types] = tTuple; return std::make_shared<registry::Type>(registry::TTuple{parameter_types.map([=](std::shared_ptr<registry::Type> entry) mutable { return substitute_type(entry, substitution); })}); },
+[&](const registry::TFn& tFn) { auto [parameter_list, ret] = tFn; return std::make_shared<registry::Type>(registry::TFn{parameter_list.map([=](std::shared_ptr<registry::Type> param) mutable { return substitute_type(param, substitution); }), substitute_type(ret, substitution)}); },
 [&](const auto& __v) { return type_value; }
 }, (*type_value));
 }

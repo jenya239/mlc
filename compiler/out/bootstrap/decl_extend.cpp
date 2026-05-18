@@ -80,7 +80,7 @@ auto wrappers = mlc::String("", 0);
 auto method_index = 0;
 while ((method_index < methods.length())) {
 std::visit(overloaded{[&](const semantic_ir::SDeclFn& sDeclFn) { auto [mangled, __1, __2, params, ret_type, __5, __6] = sDeclFn; return [&]() {
-auto wrapper_context = context::make_body_context(context, {}, {}, {}, {}, type_name, {}, {});
+auto wrapper_context = CodegenContext_for_type_body(context, type_name);
 auto method_name = extract_method_name(mangled, type_name);
 auto ret_cpp = type_gen::sem_type_to_cpp(wrapper_context, ret_type);
 auto params_str = gen_params_proto(wrapper_context, params);
@@ -95,7 +95,7 @@ return wrappers;
 }
 }
 mlc::String gen_extend_trait_wrapper(mlc::String type_name, mlc::String mangled, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> ret_type, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept{
-auto wrapper_context = context::make_body_context(context, {}, {}, {}, {}, type_name, {}, {});
+auto wrapper_context = CodegenContext_for_type_body(context, type_name);
 auto method_name = extract_method_name(mangled, type_name);
 auto ret_cpp = type_gen::sem_type_to_cpp(wrapper_context, ret_type);
 auto fn_resolved = context_resolve_fn(context, mangled);
@@ -152,7 +152,7 @@ method_index = (method_index + 1);
 return parts;
 }
 mlc::String gen_decl_extend(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn, std::function<mlc::String(std::shared_ptr<semantic_ir::SDecl>, context::CodegenContext)> gen_decl_fn) noexcept{
-auto extend_context = context::make_body_context(context, {}, {}, {}, {}, type_name, {}, {});
+auto extend_context = CodegenContext_for_type_body(context, type_name);
 auto method_parts = gen_extend_method_parts(type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn);
 auto methods_str = method_parts.join(mlc::String("", 0));
 if ((trait_name.length() > 0)) {

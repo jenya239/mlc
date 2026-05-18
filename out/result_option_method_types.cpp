@@ -35,20 +35,20 @@ return 1;
 }
 }
 std::shared_ptr<registry::Type> result_ok_type(std::shared_ptr<registry::Type> result_type) noexcept{
-return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [name, a] = tGeneric; return (((name == mlc::String("Result", 6)) && (a.length() >= 1)) ? a[0] : std::make_shared<registry::Type>(registry::TUnknown{})); },
-[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return ((name == mlc::String("Result", 6)) ? std::make_shared<registry::Type>(registry::TUnknown{}) : std::make_shared<registry::Type>(registry::TUnknown{})); },
+return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [name, a] = tGeneric; return (((name == mlc::String("Result", 6)) && (a.length() >= 1)) ? (a[0]) : (std::make_shared<registry::Type>(registry::TUnknown{}))); },
+[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return ((name == mlc::String("Result", 6)) ? (std::make_shared<registry::Type>(registry::TUnknown{})) : (std::make_shared<registry::Type>(registry::TUnknown{}))); },
 [&](const auto& __v) { return std::make_shared<registry::Type>(registry::TUnknown{}); }
 }, (*result_type));
 }
 std::shared_ptr<registry::Type> result_err_type(std::shared_ptr<registry::Type> result_type) noexcept{
-return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [name, a] = tGeneric; return (((name == mlc::String("Result", 6)) && (a.length() >= 2)) ? a[1] : std::make_shared<registry::Type>(registry::TUnknown{})); },
-[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return ((name == mlc::String("Result", 6)) ? std::make_shared<registry::Type>(registry::TUnknown{}) : std::make_shared<registry::Type>(registry::TUnknown{})); },
+return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [name, a] = tGeneric; return (((name == mlc::String("Result", 6)) && (a.length() >= 2)) ? (a[1]) : (std::make_shared<registry::Type>(registry::TUnknown{}))); },
+[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return ((name == mlc::String("Result", 6)) ? (std::make_shared<registry::Type>(registry::TUnknown{})) : (std::make_shared<registry::Type>(registry::TUnknown{}))); },
 [&](const auto& __v) { return std::make_shared<registry::Type>(registry::TUnknown{}); }
 }, (*result_type));
 }
 std::shared_ptr<registry::Type> option_inner_type(std::shared_ptr<registry::Type> opt_type) noexcept{
-return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [name, a] = tGeneric; return (((name == mlc::String("Option", 6)) && (a.length() >= 1)) ? a[0] : std::make_shared<registry::Type>(registry::TUnknown{})); },
-[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return ((name == mlc::String("Option", 6)) ? std::make_shared<registry::Type>(registry::TUnknown{}) : std::make_shared<registry::Type>(registry::TUnknown{})); },
+return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [name, a] = tGeneric; return (((name == mlc::String("Option", 6)) && (a.length() >= 1)) ? (a[0]) : (std::make_shared<registry::Type>(registry::TUnknown{}))); },
+[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return ((name == mlc::String("Option", 6)) ? (std::make_shared<registry::Type>(registry::TUnknown{})) : (std::make_shared<registry::Type>(registry::TUnknown{}))); },
 [&](const auto& __v) { return std::make_shared<registry::Type>(registry::TUnknown{}); }
 }, (*opt_type));
 }
@@ -58,13 +58,13 @@ auto t_type = result_ok_type(receiver_type);
 auto e_type = result_err_type(receiver_type);
 if ((method_name == mlc::String("map", 3))) {
 if ((arg_inferred_types.length() > 0)) {
-return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Result", 6), mlc::Array{semantic_type_structure::function_return_type(arg_inferred_types[0]), e_type}});
+return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Result", 6), mlc::Array<std::shared_ptr<registry::Type>>{semantic_type_structure::function_return_type(arg_inferred_types[0]), e_type}});
 } else {
 return std::make_shared<registry::Type>(registry::TUnknown{});
 }
 } else if ((method_name == mlc::String("map_err", 7))) {
 if ((arg_inferred_types.length() > 0)) {
-return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Result", 6), mlc::Array{t_type, semantic_type_structure::function_return_type(arg_inferred_types[0])}});
+return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Result", 6), mlc::Array<std::shared_ptr<registry::Type>>{t_type, semantic_type_structure::function_return_type(arg_inferred_types[0])}});
 } else {
 return std::make_shared<registry::Type>(registry::TUnknown{});
 }
@@ -77,7 +77,7 @@ return std::make_shared<registry::Type>(registry::TUnknown{});
 } else if (((method_name == mlc::String("unwrap_or", 9)) || (method_name == mlc::String("unwrap_or_else", 14)))) {
 return t_type;
 } else if ((method_name == mlc::String("ok", 2))) {
-return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Option", 6), mlc::Array{t_type}});
+return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Option", 6), mlc::Array<std::shared_ptr<registry::Type>>{t_type}});
 } else {
 return std::make_shared<registry::Type>(registry::TUnknown{});
 }
@@ -89,7 +89,7 @@ return std::make_shared<registry::Type>(registry::TUnknown{});
 auto opt_t = option_inner_type(receiver_type);
 if ((method_name == mlc::String("map", 3))) {
 if ((arg_inferred_types.length() > 0)) {
-return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Option", 6), mlc::Array{semantic_type_structure::function_return_type(arg_inferred_types[0])}});
+return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Option", 6), mlc::Array<std::shared_ptr<registry::Type>>{semantic_type_structure::function_return_type(arg_inferred_types[0])}});
 } else {
 return std::make_shared<registry::Type>(registry::TUnknown{});
 }
@@ -108,10 +108,10 @@ return std::make_shared<registry::Type>(registry::TUnknown{});
 } else if ((method_name == mlc::String("unwrap_or", 9))) {
 return opt_t;
 } else if ((method_name == mlc::String("filter", 6))) {
-return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Option", 6), mlc::Array{opt_t}});
+return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Option", 6), mlc::Array<std::shared_ptr<registry::Type>>{opt_t}});
 } else if ((method_name == mlc::String("ok_or", 5))) {
 if ((arg_inferred_types.length() > 0)) {
-return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Result", 6), mlc::Array{opt_t, arg_inferred_types[0]}});
+return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Result", 6), mlc::Array<std::shared_ptr<registry::Type>>{opt_t, arg_inferred_types[0]}});
 } else {
 return std::make_shared<registry::Type>(registry::TUnknown{});
 }

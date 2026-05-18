@@ -18,7 +18,7 @@ std::visit(overloaded{[&](const ast::DeclTrait& declTrait) { auto [trait_name, _
 auto mi = 0;
 return [&]() {
 while ((mi < methods.length())) {
-std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [fn_name, __1, __2, __3, __4, __5] = declFn; return [&]() {
+std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [fn_name, __1, __2, __3, __4, __5, __6] = declFn; return [&]() {
 auto unmangled = extract_method_name(fn_name, trait_name);
 if ((!owners.has(unmangled))) {
 owners.set(unmangled, fn_name);
@@ -35,7 +35,7 @@ mi = (mi + 1);
 auto mi = 0;
 return [&]() {
 while ((mi < methods.length())) {
-std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [fn_name, __1, __2, __3, __4, __5] = declFn; return [&]() {
+std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [fn_name, __1, __2, __3, __4, __5, __6] = declFn; return [&]() {
 auto unmangled = extract_method_name(fn_name, type_name);
 if ((!owners.has(unmangled))) {
 owners.set(unmangled, fn_name);
@@ -137,7 +137,7 @@ vi = (vi + 1);
 }
 }();
 }(); },
-[&](const ast::DeclFn& declFn) { auto [__0, __1, __2, __3, __4, __5] = declFn; return /* unit */; },
+[&](const ast::DeclFn& declFn) { auto [__0, __1, __2, __3, __4, __5, __6] = declFn; return /* unit */; },
 [&](const ast::DeclTrait& declTrait) { auto [__0, __1, __2] = declTrait; return /* unit */; },
 [&](const ast::DeclExtend& declExtend) { auto [__0, __1, __2] = declExtend; return /* unit */; },
 [&](const ast::DeclImport& declImport) { auto [__0, __1] = declImport; return /* unit */; },
@@ -169,7 +169,7 @@ vi = (vi + 1);
 }
 }();
 }(); },
-[&](const ast::DeclFn& declFn) { auto [__0, __1, __2, __3, __4, __5] = declFn; return /* unit */; },
+[&](const ast::DeclFn& declFn) { auto [__0, __1, __2, __3, __4, __5, __6] = declFn; return /* unit */; },
 [&](const ast::DeclTrait& declTrait) { auto [__0, __1, __2] = declTrait; return /* unit */; },
 [&](const ast::DeclExtend& declExtend) { auto [__0, __1, __2] = declExtend; return /* unit */; },
 [&](const ast::DeclImport& declImport) { auto [__0, __1] = declImport; return /* unit */; },

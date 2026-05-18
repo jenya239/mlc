@@ -49,7 +49,7 @@ return std::make_shared<registry::Type>(registry::TBool{});
 } else if ((method_name == mlc::String("find_index", 10))) {
 return std::make_shared<registry::Type>(registry::TI32{});
 } else if ((method_name == mlc::String("find", 4))) {
-return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Option", 6), mlc::Array{element_type}});
+return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Option", 6), mlc::Array<std::shared_ptr<registry::Type>>{element_type}});
 } else if (((method_name == mlc::String("take", 4)) || (method_name == mlc::String("drop", 4)))) {
 return std::make_shared<registry::Type>(registry::TArray{element_type});
 } else if ((method_name == mlc::String("zip", 3))) {

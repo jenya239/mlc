@@ -128,7 +128,7 @@ export fn variant_field_typeexprs(variant: Shared<TypeVariant>) -> [Shared<TypeE
   match variant {
     VarTuple(_, fts, _)  => fts,
     VarRecord(_, fds, _) => fds.map(fd => fd.typ),
-    VarUnit(_, _)        => []
+    VarUnit(_, _)        => do let empty: [Shared<TypeExpr>] = []; empty end
   }
 
 export fn variant_used_type_params(type_params: [string], variant: Shared<TypeVariant>) -> [string] = do

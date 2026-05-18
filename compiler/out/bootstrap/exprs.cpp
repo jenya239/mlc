@@ -330,12 +330,8 @@ return parse_pattern_fallback_wildcard(parser);
 
 
 }
-preds::PatsResult parse_pat_args(preds::Parser parser) noexcept{
+preds::PatsResult comma_separated_pat_suffix_from_first(preds::PatResult first) noexcept{
 auto pats = mlc::Array<std::shared_ptr<ast::Pat>>{};
-if (preds::TKind_is_rparen(preds::Parser_kind(parser))) {
-return preds::PatsResult{pats, preds::Parser_advance(parser)};
-} else {
-auto first = parse_pat(parser);
 pats.push_back(first.pat);
 auto state = first.parser;
 while (preds::TKind_is_comma(preds::Parser_kind(state))) {
@@ -343,7 +339,14 @@ auto next = parse_pat(preds::Parser_advance(state));
 pats.push_back(next.pat);
 state = next.parser;
 }
-return preds::PatsResult{pats, preds::Parser_advance(state)};
+return preds::PatsResult{pats, state};
+}
+preds::PatsResult parse_pat_args(preds::Parser parser) noexcept{
+if (preds::TKind_is_rparen(preds::Parser_kind(parser))) {
+return preds::PatsResult{{}, preds::Parser_advance(parser)};
+} else {
+auto suffix = comma_separated_pat_suffix_from_first(parse_pat(parser));
+return preds::PatsResult{suffix.pats, preds::Parser_advance(suffix.parser)};
 }
 }
 preds::PatsResult parse_record_pat_fields(preds::Parser parser) noexcept{
@@ -361,18 +364,10 @@ state = preds::Parser_advance(state);
 return preds::PatsResult{pats, preds::Parser_advance(state)};
 }
 preds::ExprResult parse_expr(preds::Parser parser) noexcept{
-return parse_pipe(parser);
+return parse_or(parser);
 }
 std::shared_ptr<ast::Expr> pipe_desugar(std::shared_ptr<ast::Expr> left_expr, std::shared_ptr<ast::Expr> right_expr) noexcept{
-return std::visit(overloaded{[&](const ast::ExprCall& exprCall) { auto [callee, existing_args, __2] = exprCall; return [&]() {
-auto new_args = mlc::Array<std::shared_ptr<ast::Expr>>{left_expr};
-auto i = 0;
-while ((i < existing_args.length())) {
-new_args.push_back(existing_args[i]);
-i = (i + 1);
-}
-return std::make_shared<ast::Expr>(ast::ExprCall{callee, new_args, ast::span_unknown()});
-}(); },
+return std::visit(overloaded{[&](const ast::ExprCall& exprCall) { auto [callee, existing_args, __2] = exprCall; return std::make_shared<ast::Expr>(ast::ExprCall{callee, mlc::Array<std::shared_ptr<ast::Expr>>{left_expr}.concat(existing_args), ast::span_unknown()}); },
 [&](const auto& __v) { return [&]() {
 auto call_args = mlc::Array<std::shared_ptr<ast::Expr>>{left_expr};
 return std::make_shared<ast::Expr>(ast::ExprCall{right_expr, call_args, ast::span_unknown()});
@@ -380,15 +375,26 @@ return std::make_shared<ast::Expr>(ast::ExprCall{right_expr, call_args, ast::spa
 }, (*right_expr));
 }
 preds::ExprResult parse_pipe(preds::Parser parser) noexcept{
-auto left = parse_or(parser);
+auto left = parse_comparison_relational(parser);
 auto expr = left.expr;
 auto state = left.parser;
 while (preds::TKind_is_pipe(preds::Parser_kind(state))) {
-auto right = parse_or(preds::Parser_advance(state));
+auto right = parse_comparison_relational(preds::Parser_advance(state));
 expr = pipe_desugar(expr, right.expr);
 state = right.parser;
 }
 return preds::ExprResult{expr, state};
+}
+preds::ExprsResult comma_separated_expr_suffix_from_first(preds::ExprResult first) noexcept{
+auto exprs = mlc::Array<std::shared_ptr<ast::Expr>>{};
+exprs.push_back(first.expr);
+auto state = first.parser;
+while (preds::TKind_is_comma(preds::Parser_kind(state))) {
+auto next = parse_expr(preds::Parser_advance(state));
+exprs.push_back(next.expr);
+state = next.parser;
+}
+return preds::ExprsResult{exprs, state};
 }
 preds::ExprResult parse_or(preds::Parser parser) noexcept{
 auto left = parse_and(parser);
@@ -403,30 +409,55 @@ state = right.parser;
 return preds::ExprResult{expr, state};
 }
 preds::ExprResult parse_and(preds::Parser parser) noexcept{
-auto left = parse_cmp(parser);
+auto left = parse_equality(parser);
 auto expr = left.expr;
 auto state = left.parser;
 while ((preds::TKind_is_op(preds::Parser_kind(state)) && (preds::TKind_op_val(preds::Parser_kind(state)) == mlc::String("&&", 2)))) {
 auto operator_span = preds::Parser_span_at_cursor(state);
-auto right = parse_cmp(preds::Parser_advance(state));
+auto right = parse_equality(preds::Parser_advance(state));
 expr = std::make_shared<ast::Expr>(ast::ExprBin{mlc::String("&&", 2), expr, right.expr, operator_span});
 state = right.parser;
 }
 return preds::ExprResult{expr, state};
 }
-bool is_cmp_op(mlc::String op) noexcept{
-return ((((((op == mlc::String("==", 2)) || (op == mlc::String("!=", 2))) || (op == mlc::String("<", 1))) || (op == mlc::String(">", 1))) || (op == mlc::String("<=", 2))) || (op == mlc::String(">=", 2)));
+preds::ExprResult parse_equality(preds::Parser parser) noexcept{
+auto left = parse_pipe(parser);
+auto expr = left.expr;
+auto state = left.parser;
+auto go = true;
+while (go) {
+auto kind = preds::Parser_kind(state);
+if ((preds::TKind_is_op(kind) && ((preds::TKind_op_val(kind) == mlc::String("==", 2)) || (preds::TKind_op_val(kind) == mlc::String("!=", 2))))) {
+auto operator_span = preds::Parser_span_at_cursor(state);
+auto operator_value = preds::TKind_op_val(kind);
+auto right = parse_pipe(preds::Parser_advance(state));
+expr = std::make_shared<ast::Expr>(ast::ExprBin{operator_value, expr, right.expr, operator_span});
+state = right.parser;
+} else {
+go = false;
 }
-preds::ExprResult parse_cmp(preds::Parser parser) noexcept{
+}
+return preds::ExprResult{expr, state};
+}
+bool is_relational_comparison_operator(mlc::String operator_) noexcept{
+return ((((operator_ == mlc::String("<", 1)) || (operator_ == mlc::String(">", 1))) || (operator_ == mlc::String("<=", 2))) || (operator_ == mlc::String(">=", 2)));
+}
+preds::ExprResult parse_comparison_relational(preds::Parser parser) noexcept{
 auto left = parse_add(parser);
 auto expr = left.expr;
 auto state = left.parser;
+auto go = true;
+while (go) {
 auto kind = preds::Parser_kind(state);
-if ((preds::TKind_is_op(kind) && is_cmp_op(preds::TKind_op_val(kind)))) {
+if ((preds::TKind_is_op(kind) && is_relational_comparison_operator(preds::TKind_op_val(kind)))) {
 auto operator_span = preds::Parser_span_at_cursor(state);
+auto operator_value = preds::TKind_op_val(kind);
 auto right = parse_add(preds::Parser_advance(state));
-expr = std::make_shared<ast::Expr>(ast::ExprBin{preds::TKind_op_val(kind), expr, right.expr, operator_span});
+expr = std::make_shared<ast::Expr>(ast::ExprBin{operator_value, expr, right.expr, operator_span});
 state = right.parser;
+} else {
+go = false;
+}
 }
 return preds::ExprResult{expr, state};
 }
@@ -579,34 +610,28 @@ return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprBool{value, source
 preds::ExprResult parse_primary_parenthesized(preds::Parser parser) noexcept{
 auto open_paren_span = preds::Parser_span_at_cursor(parser);
 if (preds::TKind_is_rparen(preds::Parser_kind(preds::Parser_advance(parser)))) {
-if (preds::TKind_is_fat_arrow(preds::Parser_kind(preds::Parser_advance_by(parser, 2)))) {
+auto after_close = preds::Parser_advance_by(parser, 2);
+if ((preds::TKind_is_fat_arrow(preds::Parser_kind(after_close)) && (!preds::Parser_lambda_shorthand_suppression_active(parser)))) {
 auto params = mlc::Array<mlc::String>{};
 auto body = parse_expr(preds::Parser_advance_by(parser, 3));
 return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprLambda{params, body.expr, open_paren_span}), body.parser};
 } else {
-return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprUnit{open_paren_span}), preds::Parser_advance_by(parser, 2)};
+return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprUnit{open_paren_span}), after_close};
 }
-} else if (looks_like_typed_lambda_params(preds::Parser_advance(parser))) {
+} else if (((!preds::Parser_lambda_shorthand_suppression_active(parser)) && looks_like_typed_lambda_params(preds::Parser_advance(parser)))) {
 auto param_result = parse_typed_lambda_params(preds::Parser_advance(parser));
 auto body = parse_expr(preds::Parser_advance(param_result.parser));
 return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprLambda{param_result.exprs, body.expr, open_paren_span}), body.parser};
-} else if (looks_like_lambda_params(preds::Parser_advance(parser))) {
+} else if (((!preds::Parser_lambda_shorthand_suppression_active(parser)) && looks_like_lambda_params(preds::Parser_advance(parser)))) {
 auto param_result = parse_lambda_params(preds::Parser_advance(parser));
 auto body = parse_expr(preds::Parser_advance(param_result.parser));
 return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprLambda{param_result.exprs, body.expr, open_paren_span}), body.parser};
 } else {
 auto e0 = parse_expr(preds::Parser_advance(parser));
 if (preds::TKind_is_comma(preds::Parser_kind(e0.parser))) {
-auto elts = mlc::Array<std::shared_ptr<ast::Expr>>{};
-elts.push_back(e0.expr);
-auto st = e0.parser;
-while (preds::TKind_is_comma(preds::Parser_kind(st))) {
-auto en = parse_expr(preds::Parser_advance(st));
-elts.push_back(en.expr);
-st = en.parser;
-}
-if (preds::TKind_is_rparen(preds::Parser_kind(st))) {
-return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprTuple{elts, open_paren_span}), preds::Parser_advance(st)};
+auto suffix = comma_separated_expr_suffix_from_first(e0);
+if (preds::TKind_is_rparen(preds::Parser_kind(suffix.parser))) {
+return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprTuple{suffix.exprs, open_paren_span}), preds::Parser_advance(suffix.parser)};
 } else {
 return preds::ExprResult{e0.expr, e0.parser};
 }
@@ -646,7 +671,7 @@ return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprBlock{statements, 
 preds::ExprResult parse_primary_identifier(preds::Parser parser, mlc::String name) noexcept{
 auto source_span = preds::Parser_span_at_cursor(parser);
 auto after_name = preds::Parser_advance(parser);
-if (preds::TKind_is_fat_arrow(preds::Parser_kind(after_name))) {
+if ((preds::TKind_is_fat_arrow(preds::Parser_kind(after_name)) && (!preds::Parser_lambda_shorthand_suppression_active(parser)))) {
 auto parameters = mlc::Array<mlc::String>{name};
 auto body = parse_expr(preds::Parser_advance(after_name));
 return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprLambda{parameters, body.expr, source_span}), body.parser};
@@ -786,19 +811,11 @@ state = preds::Parser_advance(state);
 return preds::NamesResult{names, preds::Parser_advance(state)};
 }
 preds::ExprResult parse_array_lit(preds::Parser parser, ast::Span header_span) noexcept{
-auto exprs = mlc::Array<std::shared_ptr<ast::Expr>>{};
 if (preds::TKind_is_rbracket(preds::Parser_kind(parser))) {
-return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprArray{exprs, header_span}), preds::Parser_advance(parser)};
+return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprArray{{}, header_span}), preds::Parser_advance(parser)};
 } else {
-auto first = parse_expr(parser);
-exprs.push_back(first.expr);
-auto state = first.parser;
-while (preds::TKind_is_comma(preds::Parser_kind(state))) {
-auto next = parse_expr(preds::Parser_advance(state));
-exprs.push_back(next.expr);
-state = next.parser;
-}
-return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprArray{exprs, header_span}), preds::Parser_advance(state)};
+auto suffix = comma_separated_expr_suffix_from_first(parse_expr(parser));
+return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprArray{suffix.exprs, header_span}), preds::Parser_advance(suffix.parser)};
 }
 }
 preds::ExprResult parse_if_expr(preds::Parser parser) noexcept{
@@ -898,10 +915,28 @@ auto next = preds::Parser_kind(subject.parser);
 if (preds::TKind_is_lbrace(next)) {
 auto arms = parse_arms_brace(preds::Parser_advance(subject.parser));
 return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprMatch{subject.expr, arms.arms, header_span}), arms.parser};
+} else if (preds::TKind_is_do(next)) {
+auto arms = parse_arms_do_delimited(preds::Parser_advance(subject.parser));
+return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprMatch{subject.expr, arms.arms, header_span}), arms.parser};
 } else {
 auto arms = parse_arms_pipe(subject.parser);
 return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprMatch{subject.expr, arms.arms, header_span}), arms.parser};
 }
+
+}
+MatchArmParseOutcome parse_match_arm(preds::PatResult pat_result) noexcept{
+auto after_pattern = pat_result.parser;
+auto has_guard = false;
+auto guard_expression = std::make_shared<ast::Expr>(ast::ExprBool{true, ast::span_unknown()});
+if (preds::TKind_is_if(preds::Parser_kind(after_pattern))) {
+auto guard_expression_result = parse_expr(preds::Parser_with_lambda_shorthand_suppressed(preds::Parser_advance(after_pattern), true));
+guard_expression = guard_expression_result.expr;
+has_guard = true;
+after_pattern = guard_expression_result.parser;
+}
+auto after_fat_arrow = preds::Parser_advance(after_pattern);
+auto body_expression_result = parse_expr(after_fat_arrow);
+return MatchArmParseOutcome{std::make_shared<ast::MatchArm>(ast::MatchArm{pat_result.pat, has_guard, guard_expression, body_expression_result.expr}), body_expression_result.parser};
 }
 preds::ArmsResult parse_arms_brace(preds::Parser parser) noexcept{
 auto arms = mlc::Array<std::shared_ptr<ast::MatchArm>>{};
@@ -911,23 +946,44 @@ if (preds::TKind_is_bar(preds::Parser_kind(state))) {
 state = preds::Parser_advance(state);
 }
 auto pat_result = parse_or_pat(state);
-auto body_result = parse_expr(preds::Parser_advance(pat_result.parser));
-arms.push_back(std::make_shared<ast::MatchArm>(ast::MatchArm{pat_result.pat, body_result.expr}));
-state = body_result.parser;
+auto finished_match_arm = parse_match_arm(pat_result);
+arms.push_back(finished_match_arm.arm);
+state = finished_match_arm.parser;
 if (preds::TKind_is_comma(preds::Parser_kind(state))) {
 state = preds::Parser_advance(state);
 }
 }
 return preds::ArmsResult{arms, preds::Parser_advance(state)};
 }
+preds::ArmsResult parse_arms_do_delimited(preds::Parser parser) noexcept{
+auto arms = mlc::Array<std::shared_ptr<ast::MatchArm>>{};
+auto state = preds::Parser_skip_semi(parser);
+while (((!preds::TKind_is_end(preds::Parser_kind(state))) && (!preds::Parser_at_eof(state)))) {
+if (preds::TKind_is_bar(preds::Parser_kind(state))) {
+state = preds::Parser_advance(state);
+}
+auto pat_result = parse_or_pat(state);
+auto finished_match_arm = parse_match_arm(pat_result);
+arms.push_back(finished_match_arm.arm);
+state = preds::Parser_skip_semi(finished_match_arm.parser);
+}
+auto after_delimiter = [&]() -> preds::Parser {
+if (preds::TKind_is_end(preds::Parser_kind(state))) {
+return preds::Parser_advance(state);
+} else {
+return state;
+}
+}();
+return preds::ArmsResult{arms, after_delimiter};
+}
 preds::ArmsResult parse_arms_pipe(preds::Parser parser) noexcept{
 auto arms = mlc::Array<std::shared_ptr<ast::MatchArm>>{};
 auto state = parser;
 while (preds::TKind_is_bar(preds::Parser_kind(state))) {
 auto pat_result = parse_or_pat(preds::Parser_advance(state));
-auto body_result = parse_expr(preds::Parser_advance(pat_result.parser));
-arms.push_back(std::make_shared<ast::MatchArm>(ast::MatchArm{pat_result.pat, body_result.expr}));
-state = body_result.parser;
+auto finished_match_arm = parse_match_arm(pat_result);
+arms.push_back(finished_match_arm.arm);
+state = finished_match_arm.parser;
 }
 if (preds::TKind_is_end(preds::Parser_kind(state))) {
 state = preds::Parser_advance(state);
@@ -937,39 +993,59 @@ return preds::ArmsResult{arms, state};
 preds::ArmsResult parse_arms(preds::Parser parser) noexcept{
 return parse_arms_brace(parser);
 }
-preds::FieldValsResult parse_record_fields(preds::Parser parser) noexcept{
-auto field_vals = mlc::Array<std::shared_ptr<ast::FieldVal>>{};
+preds::RecordLitPartsResult parse_record_lit_parts(preds::Parser parser) noexcept{
+auto lit_parts = mlc::Array<ast::RecordLitPart>{};
+auto current_field_vals = mlc::Array<std::shared_ptr<ast::FieldVal>>{};
 auto state = parser;
 while (((!preds::TKind_is_rbrace(preds::Parser_kind(state))) && (!preds::Parser_at_eof(state)))) {
+if (preds::TKind_is_spread(preds::Parser_kind(state))) {
+if ((current_field_vals.length() > 0)) {
+lit_parts.push_back(ast::RecordLitFields{current_field_vals});
+current_field_vals = [&]() {
+auto cleared_segment = mlc::Array<std::shared_ptr<ast::FieldVal>>{};
+return cleared_segment;
+}();
+}
+auto spread_value_result = parse_expr(preds::Parser_advance(state));
+lit_parts.push_back(ast::RecordLitSpread{spread_value_result.expr});
+state = spread_value_result.parser;
+if (preds::TKind_is_comma(preds::Parser_kind(state))) {
+state = preds::Parser_advance(state);
+}
+} else {
 auto field_span = preds::Parser_span_at_cursor(state);
 auto field_name = preds::TKind_ident(preds::Parser_kind(state));
-auto after_name = preds::Parser_advance(state);
-if (preds::TKind_is_colon(preds::Parser_kind(after_name))) {
-auto value_result = parse_expr(preds::Parser_advance(after_name));
-field_vals.push_back(std::make_shared<ast::FieldVal>(ast::FieldVal{field_name, value_result.expr}));
-state = value_result.parser;
+auto after_field_name = preds::Parser_advance(state);
+if (preds::TKind_is_colon(preds::Parser_kind(after_field_name))) {
+auto field_value_result = parse_expr(preds::Parser_advance(after_field_name));
+current_field_vals.push_back(std::make_shared<ast::FieldVal>(ast::FieldVal{field_name, field_value_result.expr}));
+state = field_value_result.parser;
 } else {
-field_vals.push_back(std::make_shared<ast::FieldVal>(ast::FieldVal{field_name, std::make_shared<ast::Expr>(ast::ExprIdent{field_name, field_span})}));
-state = after_name;
+current_field_vals.push_back(std::make_shared<ast::FieldVal>(ast::FieldVal{field_name, std::make_shared<ast::Expr>(ast::ExprIdent{field_name, field_span})}));
+state = after_field_name;
 }
 if (preds::TKind_is_comma(preds::Parser_kind(state))) {
 state = preds::Parser_advance(state);
 }
 }
-return preds::FieldValsResult{field_vals, preds::Parser_advance(state)};
+}
+if ((current_field_vals.length() > 0)) {
+lit_parts.push_back(ast::RecordLitFields{current_field_vals});
+}
+return preds::RecordLitPartsResult{lit_parts, preds::Parser_advance(state)};
 }
 preds::ExprResult parse_record_expr(preds::Parser parser, mlc::String record_name, ast::Span record_span) noexcept{
-if (preds::TKind_is_spread(preds::Parser_kind(parser))) {
-auto base_result = parse_expr(preds::Parser_advance(parser));
-auto after_base = base_result.parser;
-if (preds::TKind_is_comma(preds::Parser_kind(after_base))) {
-after_base = preds::Parser_advance(after_base);
-}
-auto fields_result = parse_record_fields(after_base);
-return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecordUpdate{record_name, base_result.expr, fields_result.field_vals, record_span}), fields_result.parser};
+auto parsed_lit_parts = parse_record_lit_parts(parser);
+auto lit_parts = parsed_lit_parts.lit_parts;
+auto after_record_body = parsed_lit_parts.parser;
+if ((lit_parts.length() == 2)) {
+return std::visit(overloaded{[&](const ast::RecordLitSpread& recordLitSpread) { auto [base_expression] = recordLitSpread; return std::visit(overloaded{[&](const ast::RecordLitFields& recordLitFields) { auto [override_fields] = recordLitFields; return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecordUpdate{record_name, base_expression, override_fields, record_span}), after_record_body}; },
+[&](const ast::RecordLitSpread& recordLitSpread) { auto [__0] = recordLitSpread; return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecord{record_name, lit_parts, record_span}), after_record_body}; }
+}, lit_parts[1]); },
+[&](const ast::RecordLitFields& recordLitFields) { auto [__0] = recordLitFields; return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecord{record_name, lit_parts, record_span}), after_record_body}; }
+}, lit_parts[0]);
 } else {
-auto fields_result = parse_record_fields(parser);
-return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecord{record_name, fields_result.field_vals, record_span}), fields_result.parser};
+return preds::ExprResult{std::make_shared<ast::Expr>(ast::ExprRecord{record_name, lit_parts, record_span}), after_record_body};
 }
 }
 

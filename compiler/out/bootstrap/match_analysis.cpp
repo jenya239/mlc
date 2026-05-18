@@ -10,10 +10,10 @@ return std::visit(overloaded{[&](const registry::TShared& tShared) { auto [__0] 
 }
 bool first_arm_needs_deref(std::shared_ptr<semantic_ir::SMatchArm> first_arm, std::shared_ptr<semantic_ir::SExpr> subject, context::CodegenContext context) noexcept{
 return std::visit(overloaded{[&](const ast::PatCtor& patCtor) { auto [name, __1, __2] = patCtor; return [&]() {
-auto resolved = context::context_resolve(context, name);
+auto resolved = CodegenContext_resolve(context, name);
 return (((resolved.length() >= 12) && (resolved.substring(0, 12) == mlc::String("ast_tokens::", 12))) ? (false) : ((decl_index::list_contains(context.generic_variants, name) ? (false) : (subject_needs_deref(subject, context)))));
 }(); },
-[&](const ast::PatOr& patOr) { auto [alts, __1] = patOr; return ((alts.length() > 0) ? (first_arm_needs_deref(std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{alts[0], first_arm->body}), subject, context)) : (subject_needs_deref(subject, context))); },
+[&](const ast::PatOr& patOr) { auto [alts, __1] = patOr; return ((alts.length() > 0) ? (first_arm_needs_deref(std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{alts[0], first_arm->has_guard, first_arm->when_condition, first_arm->body}), subject, context)) : (subject_needs_deref(subject, context))); },
 [&](const auto& __v) { return subject_needs_deref(subject, context); }
 }, (*first_arm->pat));
 }

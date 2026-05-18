@@ -53,7 +53,7 @@ fn gen_call_expr(
   call_parameter_mutability_flags: [i32],
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
   const function_code = gen_call_function_code(function_expr, context, gen_stmts)
   const materialization_outcome =
@@ -186,7 +186,7 @@ fn cpp_lambda_header_from_semantic_function_type(
   context: CodegenContext
 ) -> string = do
   const capture_clause =
-    if parameter_binding_names.length() == 0 then '[]' else '[=]' end
+    if parameter_binding_names.length() == 0 then '[]' else '[&]' end
   match semantic_function_type_for_lambda {
     TFn(lambda_parameter_semantic_types, _) =>
       if lambda_parameter_semantic_types.length() != parameter_binding_names.length() then
@@ -195,9 +195,11 @@ fn cpp_lambda_header_from_semantic_function_type(
         let formatted_parameter_declarations: [string] = []
         let mut lambda_parameter_index = 0
         while lambda_parameter_index < parameter_binding_names.length() do
+          const raw_param_type = sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index])
+          const param_type_cpp = if raw_param_type == 'void' then 'std::tuple<>' else raw_param_type end
           formatted_parameter_declarations.push(
             expression_output.parameter_declaration_item(
-              sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index]),
+              param_type_cpp,
               cpp_safe(parameter_binding_names[lambda_parameter_index])))
           lambda_parameter_index = lambda_parameter_index + 1
         end

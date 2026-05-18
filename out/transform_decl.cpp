@@ -4,7 +4,7 @@
 namespace transform_decl {
 
 std::shared_ptr<semantic_ir::SDecl> transform_decl(std::shared_ptr<ast::Decl> declaration, registry::TypeRegistry registry) noexcept{
-return std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [name, type_params, trait_bounds, params, return_type_expr, body] = declFn; return [&]() {
+return std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [name, type_params, trait_bounds, params, return_type_expr, body, where_clause_bounds_entries] = declFn; return [&]() {
 auto param_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
 auto index = 0;
 while ((index < params.length())) {
@@ -13,9 +13,9 @@ index = (index + 1);
 }
 auto return_type = registry::type_from_annotation(return_type_expr);
 auto initial_context = transform::TransformContext{param_env, registry};
-auto typed_body = transform::transform_expr(body, initial_context, [=](auto stmts, auto ctx) { return transform_stmts::transform_stmts(stmts, ctx); });
+auto typed_body = transform::transform_expr(body, initial_context, [=](mlc::Array<std::shared_ptr<ast::Stmt>> stmts, transform::TransformContext ctx) mutable { return transform_stmts::transform_stmts(stmts, ctx); });
 auto coerced_body = transform::coerce_expr_to_type(typed_body, return_type);
-return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn{name, type_params, trait_bounds, params, return_type, coerced_body});
+return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclFn{name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries});
 }(); },
 [&](const ast::DeclType& declType) { auto [type_name, type_params, variants, derive_traits] = declType; return std::make_shared<semantic_ir::SDecl>(semantic_ir::SDeclType{type_name, type_params, variants, derive_traits}); },
 [&](const ast::DeclTrait& declTrait) { auto [trait_name, type_params, methods] = declTrait; return [&]() {
@@ -59,7 +59,8 @@ auto result = mlc::Array<semantic_ir::SLoadItem>{};
 auto index = 0;
 while ((index < items.length())) {
 auto item = items[index];
-auto expanded_declarations = trait_param_expand::expand_declarations_with_trait_context(item.decls, program_for_trait_maps);
+auto destructured_entry_declarations = param_destructure_expand::expand_parameter_destructuring_in_program(ast::Program{item.decls}).decls;
+auto expanded_declarations = trait_param_expand::expand_declarations_with_trait_context(destructured_entry_declarations, program_for_trait_maps);
 auto typed_decls = transform_decls(expanded_declarations, registry);
 result.push_back(semantic_ir::SLoadItem{item.path, typed_decls, item.imports, to_semantic_namespace_aliases(item.namespace_import_aliases)});
 index = (index + 1);

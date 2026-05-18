@@ -10,6 +10,8 @@ namespace semantic_type_structure {
 
 bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
 bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept;
+bool zipped_shared_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list) noexcept;
+bool zipped_suffix_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list, int index) noexcept;
 bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept;
 std::shared_ptr<registry::Type> array_element_type_from_array_type(std::shared_ptr<registry::Type> array_type) noexcept;
 bool type_is_shared_pointer(std::shared_ptr<registry::Type> type_value) noexcept;

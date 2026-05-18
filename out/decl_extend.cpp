@@ -54,13 +54,13 @@ index = (index + 1);
 return parts.join(mlc::String(", ", 2));
 }
 mlc::String gen_trait_decl(context::CodegenContext context, mlc::String trait_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept{
-auto self_param = ((type_params.length() > 0) ? type_params[0] : mlc::String("T", 1));
-auto tparam = ((type_params.length() > 0) ? type_params.join(mlc::String(", ", 2)) : mlc::String("T", 1));
+auto self_param = ((type_params.length() > 0) ? (type_params[0]) : (mlc::String("T", 1)));
+auto tparam = ((type_params.length() > 0) ? (type_params.join(mlc::String(", ", 2))) : (mlc::String("T", 1)));
 auto template_header = expr::cpp_template_typename_header_line(tparam);
 auto req_parts = mlc::Array<mlc::String>{};
 auto method_index = 0;
 while ((method_index < methods.length())) {
-std::visit(overloaded{[&](const semantic_ir::SDeclFn& sDeclFn) { auto [mangled, __1, __2, params, ret_type, __5] = sDeclFn; return [&]() {
+std::visit(overloaded{[&](const semantic_ir::SDeclFn& sDeclFn) { auto [mangled, __1, __2, params, ret_type, __5, __6] = sDeclFn; return [&]() {
 auto method_name = extract_method_name(mangled, trait_name);
 auto ret_cpp = type_gen::type_to_cpp(context, std::make_shared<ast::TypeExpr>(ast::TyUnit{}));
 return req_parts.push_back(expr::concept_requires_expression_method_returns_convertible(method_name, ret_cpp));
@@ -79,8 +79,8 @@ return mlc::String("", 0);
 auto wrappers = mlc::String("", 0);
 auto method_index = 0;
 while ((method_index < methods.length())) {
-std::visit(overloaded{[&](const semantic_ir::SDeclFn& sDeclFn) { auto [mangled, __1, __2, params, ret_type, __5] = sDeclFn; return [&]() {
-auto wrapper_context = context::make_body_context(context, {}, {}, {}, {}, type_name, {}, {});
+std::visit(overloaded{[&](const semantic_ir::SDeclFn& sDeclFn) { auto [mangled, __1, __2, params, ret_type, __5, __6] = sDeclFn; return [&]() {
+auto wrapper_context = CodegenContext_for_type_body(context, type_name);
 auto method_name = extract_method_name(mangled, type_name);
 auto ret_cpp = type_gen::sem_type_to_cpp(wrapper_context, ret_type);
 auto params_str = gen_params_proto(wrapper_context, params);
@@ -95,7 +95,7 @@ return wrappers;
 }
 }
 mlc::String gen_extend_trait_wrapper(mlc::String type_name, mlc::String mangled, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> ret_type, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept{
-auto wrapper_context = context::make_body_context(context, {}, {}, {}, {}, type_name, {}, {});
+auto wrapper_context = CodegenContext_for_type_body(context, type_name);
 auto method_name = extract_method_name(mangled, type_name);
 auto ret_cpp = type_gen::sem_type_to_cpp(wrapper_context, ret_type);
 auto fn_resolved = context_resolve_fn(context, mangled);
@@ -112,7 +112,7 @@ mlc::String gen_extend_trait_wrappers(mlc::String type_name, mlc::Array<std::sha
 auto wrappers = mlc::String("", 0);
 auto method_index = 0;
 while ((method_index < methods.length())) {
-std::visit(overloaded{[&](const semantic_ir::SDeclFn& sDeclFn) { auto [mangled, __1, __2, params, ret_type, __5] = sDeclFn; return [&]() {
+std::visit(overloaded{[&](const semantic_ir::SDeclFn& sDeclFn) { auto [mangled, __1, __2, params, ret_type, __5, __6] = sDeclFn; return [&]() {
 wrappers = (wrappers + gen_extend_trait_wrapper(type_name, mangled, params, ret_type, context, context_resolve_fn));
 return /* unit */;
 }(); },
@@ -123,7 +123,7 @@ method_index = (method_index + 1);
 return wrappers;
 }
 mlc::String gen_extend_extern_method(mlc::String mangled, mlc::String type_name, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> ret_type, mlc::String trait_name, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept{
-auto method_name = ((trait_name.length() > 0) ? extract_method_name(mangled, type_name) : mlc::String("", 0));
+auto method_name = ((trait_name.length() > 0) ? (extract_method_name(mangled, type_name)) : (mlc::String("", 0)));
 if ((((type_name == mlc::String("i32", 3)) && (method_name == mlc::String("to_string", 9))) && (params.length() > 0))) {
 auto ret_cpp = type_gen::sem_type_to_cpp(context, ret_type);
 auto params_str = gen_params_def(context, params);
@@ -136,7 +136,7 @@ mlc::Array<mlc::String> gen_extend_method_parts(mlc::String type_name, mlc::Stri
 auto parts = mlc::Array<mlc::String>{};
 auto method_index = 0;
 while ((method_index < methods.length())) {
-std::visit(overloaded{[&](const semantic_ir::SDeclFn& sDeclFn) { auto [mangled, __1, __2, params, ret_type, body] = sDeclFn; return std::visit(overloaded{[&](const semantic_ir::SExprExtern& sExprExtern) { auto [__0, __1] = sExprExtern; return [&]() {
+std::visit(overloaded{[&](const semantic_ir::SDeclFn& sDeclFn) { auto [mangled, __1, __2, params, ret_type, body, __6] = sDeclFn; return std::visit(overloaded{[&](const semantic_ir::SExprExtern& sExprExtern) { auto [__0, __1] = sExprExtern; return [&]() {
 auto generated = gen_extend_extern_method(mangled, type_name, params, ret_type, trait_name, context, context_resolve_fn);
 if ((generated.length() > 0)) {
 parts.push_back(generated);
@@ -152,7 +152,7 @@ method_index = (method_index + 1);
 return parts;
 }
 mlc::String gen_decl_extend(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn, std::function<mlc::String(std::shared_ptr<semantic_ir::SDecl>, context::CodegenContext)> gen_decl_fn) noexcept{
-auto extend_context = context::make_body_context(context, {}, {}, {}, {}, type_name, {}, {});
+auto extend_context = CodegenContext_for_type_body(context, type_name);
 auto method_parts = gen_extend_method_parts(type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn);
 auto methods_str = method_parts.join(mlc::String("", 0));
 if ((trait_name.length() > 0)) {

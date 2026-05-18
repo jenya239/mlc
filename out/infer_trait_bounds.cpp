@@ -22,7 +22,7 @@ auto trait_index = 0;
 while ((trait_index < bounds.length())) {
 auto required_trait = bounds[trait_index];
 if ((!registry::TypeRegistry_type_implements_trait(inference_context.registry, actual_name, required_trait))) {
-param_errors = ast::diagnostics_append(param_errors, mlc::Array{ast::diagnostic_error((((mlc::String("type ", 5) + actual_name) + mlc::String(" does not implement ", 20)) + required_trait), call_source_span)});
+param_errors = ast::diagnostics_append(param_errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error((((mlc::String("type ", 5) + actual_name) + mlc::String(" does not implement ", 20)) + required_trait), call_source_span)});
 }
 trait_index = (trait_index + 1);
 }

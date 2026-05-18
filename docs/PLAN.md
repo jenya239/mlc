@@ -11,15 +11,11 @@ Source → Lexer → Tokens → Parser → AST → Checker → SemanticIR → Co
 Codegen генерирует C++ **строками напрямую** из SemanticIR. Нет промежуточного C++ AST как цели.
 `compiler/cpp/ast.mlc` существует, но используется только для парсинга C++ (для теста), не для эмиссии.
 
-### Производительность (fibonacci.mlc)
+### Производительность
 
-| Компилятор | Время | Разница |
-|---|---|---|
-| mlcc (self-hosted, native) | ~11 мс | baseline |
-| Ruby bootstrap | ~19 с | **~1700x медленнее** |
-
-Ruby — сравнение нечестное (startup cost), но демонстрирует порядок величин.
-Для Reddit-поста это убедительный факт с конкретными числами.
+- Маленькие программы (например `fibonacci.mlc`): нативный `mlcc` на порядки быстрее полного запуска Ruby (у Ruby большой startup).
+- Полная трансляция `compiler/main.mlc`: ориентир порядка **нескольких секунд** у `mlcc` (native) против **десятков секунд** у Ruby только на `ModularCompiler#compile` (без g++); замеры держать в правиле `.cursor/rules/mlcc-self-host-verification.mdc`.
+- Рост числа деклараций: избегать наивного `fold` по большим структурам с COW-`Map` при копировании аккумулятора (пример исправления: `build_registry` — мутация одного `TypeRegistry` через `ref mut`, см. `compiler/checker/registry.mlc`).
 
 ### Проблемы структуры
 
@@ -28,7 +24,8 @@ Ruby — сравнение нечестное (startup cost), но демонс
 - Диагностика ошибок слабая: нет span в части сообщений.
 - `out/` содержит ~150 файлов .cpp/.hpp — артефакты, не версионируются, засоряют workspace.
 - Отсутствует fuzzing / property-based тесты.
-- E2E тестов 6, unit тестов checker/codegen ~192.
+- E2E через `compiler/tests/e2e/`; unit+integration self-hosted стека: **`rake test_compiler_mlc`** (~447 прогонов после сборки `run_tests`).
+- После изменений **checker/codegen/main.mlc**: обязательно **`compiler/build.sh`**, трансляция `compiler/main.mlc` и при необходимости проверка **идентичности** выхода mlcc и mlcc2 (`diff -rq`), см. `README.md`.
 
 ---
 

@@ -6,7 +6,7 @@ namespace decl_index {
 mlc::Array<mlc::String> decl_export_names(std::shared_ptr<ast::Decl> decl) noexcept{
 auto names = mlc::Array<mlc::String>{};
 std::visit(overloaded{[&](const ast::DeclExported& declExported) { auto [d] = declExported; return [&]() {
-std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [name, __1, __2, __3, __4, __5] = declFn; return [&]() {
+std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [name, __1, __2, __3, __4, __5, __6] = declFn; return [&]() {
 names.push_back(name);
 /* unit */;
 return /* unit */;
@@ -40,7 +40,7 @@ return /* unit */;
 names.push_back(name);
 auto mi = 0;
 while ((mi < methods.length())) {
-std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [fn_name, __1, __2, __3, __4, __5] = declFn; return [&]() {
+std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [fn_name, __1, __2, __3, __4, __5, __6] = declFn; return [&]() {
 names.push_back(fn_name);
 /* unit */;
 return /* unit */;
@@ -58,7 +58,7 @@ return /* unit */;
 [&](const ast::DeclExtend& declExtend) { auto [__0, __1, methods] = declExtend; return [&]() {
 auto mi = 0;
 while ((mi < methods.length())) {
-std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [fn_name, __1, __2, __3, __4, __5] = declFn; return [&]() {
+std::visit(overloaded{[&](const ast::DeclFn& declFn) { auto [fn_name, __1, __2, __3, __4, __5, __6] = declFn; return [&]() {
 names.push_back(fn_name);
 /* unit */;
 return /* unit */;

@@ -36,7 +36,7 @@
 - [ ] **Граф импортов `.mlc` без циклов** — `ModuleGraph` при сборке; новый модуль не должен создавать `infer.mlc` ↔ `X.mlc` ↔ `infer.mlc`.
 - [ ] **Checker:** граница — AST/transform/registry/infer/codegen consumer; не смешивать вывод типов с генерацией C++.
 - [ ] **Codegen:** на входе трансформированная программа (`SProgram` / `SExpr` и т.д. из `checker/transform`); не тащить checker-логику обратно в eval.
-- [ ] **Ruby SemanticGen — области видимости:** во вложенных `do`/`match` именованный `import { f }` может быть невидим; паттерн **`import * as alias`** и **`alias.f(...)`** (см. `docs/SELF_HOSTED_PLAN.md`). Несколько `import { … } from` из разных файлов в одном модуле иногда ломают разрешение имён в телах — после сплита гонять `compiler/build.sh`.
+- [ ] **Ruby SemanticGen — области видимости:** во вложенных `do`/`match` именованный `import { f }` может быть невидим; паттерн **`import * as alias`** и **`alias.f(...)`** (см. `docs/mlc2.md`, `README.md`). Несколько `import { … } from` из разных файлов в одном модуле иногда ломают разрешение имён в телах — после сплита гонять `compiler/build.sh`.
 - [ ] **C++ генерация:** параметры вида `context` могут затенять namespace `context` в `.cpp`; межмодульные вызовы в таких функциях — через обёртки в том же модуле или **абсолютная квалификация** `::context::...` (если доработан backend).
 
 ---
@@ -52,7 +52,7 @@
 
 ## 6. Документация и согласованность
 
-- [ ] Пути: **codegen — каталог** `compiler/codegen/`, не «один `codegen.mlc`» (см. `README.md`, `CLAUDE.md`, `docs/ROADMAP.md`).
+- [ ] Пути: **codegen — каталог** `compiler/codegen/`, не «один `codegen.mlc`» (см. `README.md`, `CLAUDE.md`, `docs/PLAN.md`).
 - [ ] Число MLC-тестов в таблицах — периодически синхронизировать с фактическим выводом `rake test_compiler_mlc` (сейчас ориентир: 192).
 - [ ] Черновики в `docs/*.md` вне git: не считать источником истины до мержа.
 
@@ -61,7 +61,7 @@
 ## 7. Перед релизом / крупным тегом (если появится)
 
 - [ ] Все пункты разделов 1 и 2.
-- [ ] `MLCC_BOOTSTRAP=1 compiler/build.sh` — опционально, см. `docs/SELF_HOSTED_PLAN.md`.
+- [ ] `MLCC_BOOTSTRAP=1 compiler/build.sh` — опционально, см. `README.md` / `docs/PLAN.md`.
 - [ ] Зафиксировать версию/ревизию и хеш коммита в заметке к релизу.
 
 ---

@@ -181,7 +181,10 @@ bool type_param_in_typeexpr_list(mlc::String param, mlc::Array<std::shared_ptr<a
 mlc::Array<std::shared_ptr<ast::TypeExpr>> variant_field_typeexprs(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
   [&](const VarTuple& vartuple) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fts, _w1] = vartuple; return fts; },
   [&](const VarRecord& varrecord) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, fds, _w1] = varrecord; return fds.map([](std::shared_ptr<ast::FieldDef> fd) mutable { return fd->typ; }); },
-  [&](const VarUnit& varunit) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, _w1] = varunit; return {}; }
+  [&](const VarUnit& varunit) -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { auto [_w0, _w1] = varunit; return [&]() -> mlc::Array<std::shared_ptr<ast::TypeExpr>> { 
+  mlc::Array<std::shared_ptr<ast::TypeExpr>> empty = {};
+  return empty;
+ }(); }
 }, (*variant));}
 
 mlc::Array<mlc::String> variant_used_type_params(mlc::Array<mlc::String> type_params, std::shared_ptr<ast::TypeVariant> variant) noexcept{

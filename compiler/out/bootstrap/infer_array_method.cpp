@@ -9,14 +9,14 @@ return std::visit(overloaded{[&](const ast::ExprLambda& exprLambda) { auto [para
 }, (*expression));
 }
 mlc::Array<ast::Diagnostic> append_lambda_arity_diag(mlc::Array<ast::Diagnostic> errors, std::shared_ptr<ast::Expr> expression, int expected_params, mlc::String method_name) noexcept{
-return std::visit(overloaded{[&](const ast::ExprLambda& exprLambda) { auto [parameter_names, __1, __2] = exprLambda; return ((parameter_names.length() != expected_params) ? (ast::diagnostics_append(errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((((mlc::String("method ", 7) + method_name) + mlc::String(" expects a lambda with ", 23)) + mlc::to_string(expected_params)) + mlc::String(" parameter(s)", 13)), ast::expr_span(expression))})) : (errors)); },
+return std::visit(overloaded{[&](const ast::ExprLambda& exprLambda) { auto [parameter_names, __1, __2] = exprLambda; return ((parameter_names.length() != expected_params) ? (ast::diagnostics_append(errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((((mlc::String("method ", 7) + mlc::to_string(method_name)) + mlc::String(" expects a lambda with ", 23)) + mlc::to_string(mlc::to_string(expected_params))) + mlc::String(" parameter(s)", 13)), ast::expr_span(expression))})) : (errors)); },
 [&](const auto& __v) { return errors; }
 }, (*expression));
 }
 mlc::Array<ast::Diagnostic> append_predicate_bool_diag(mlc::Array<ast::Diagnostic> errors, std::shared_ptr<ast::Expr> lambda_expr, std::shared_ptr<registry::Type> fn_type, mlc::String method_name) noexcept{
 auto ret = semantic_type_structure::function_return_type(fn_type);
 if (((!semantic_type_structure::type_is_unknown(ret)) && (!semantic_type_structure::type_is_bool(ret)))) {
-return ast::diagnostics_append(errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error((((mlc::String("method ", 7) + method_name) + mlc::String(" expects a predicate returning bool, got ", 41)) + semantic_type_structure::type_description(ret)), ast::expr_span(lambda_expr))});
+return ast::diagnostics_append(errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((((mlc::String("method ", 7) + mlc::to_string(method_name)) + mlc::String(" expects a predicate returning bool, got ", 41)) + mlc::to_string(semantic_type_structure::type_description(ret))) + mlc::String("", 0)), ast::expr_span(lambda_expr))});
 } else {
 return errors;
 }
@@ -37,12 +37,12 @@ merged = InferResult_absorb(merged, init_result);
 arg_types.push_back(init_result.inferred_type);
 if ((method_arguments.length() > 1)) {
 auto acc_type = init_result.inferred_type;
-auto lam_errors = append_lambda_arity_diag({}, method_arguments[1], 2, method_name);
+auto lam_errors = append_lambda_arity_diag(mlc::Array<ast::Diagnostic>{}, method_arguments[1], 2, method_name);
 auto lam_result = infer_expr_maybe_lambda(method_arguments[1], mlc::Array<std::shared_ptr<registry::Type>>{acc_type, element_type}, inference_context, infer_expr_fn);
 merged = InferResult_absorb(merged, infer_result::InferResult{lam_result.inferred_type, lam_result.errors});
 lam_errors = append_lambda_arity_diag(lam_errors, method_arguments[1], 2, method_name);
 auto lam_ret = semantic_type_structure::function_return_type(lam_result.inferred_type);
-lam_errors = ((((!semantic_type_structure::type_is_unknown(acc_type)) && (!semantic_type_structure::type_is_unknown(lam_ret))) && (!semantic_type_structure::types_structurally_equal(lam_ret, acc_type))) ? (ast::diagnostics_append(lam_errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((((mlc::String("fold step function must return the same type as the accumulator (expected ", 74) + semantic_type_structure::type_description(acc_type)) + mlc::String(", got ", 6)) + semantic_type_structure::type_description(lam_ret)) + mlc::String(")", 1)), ast::expr_span(method_arguments[1]))})) : (lam_errors));
+lam_errors = ((((!semantic_type_structure::type_is_unknown(acc_type)) && (!semantic_type_structure::type_is_unknown(lam_ret))) && (!semantic_type_structure::types_structurally_equal(lam_ret, acc_type))) ? (ast::diagnostics_append(lam_errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((((mlc::String("fold step function must return the same type as the accumulator (expected ", 74) + mlc::to_string(semantic_type_structure::type_description(acc_type))) + mlc::String(", got ", 6)) + mlc::to_string(semantic_type_structure::type_description(lam_ret))) + mlc::String(")", 1)), ast::expr_span(method_arguments[1]))})) : (lam_errors));
 merged = infer_result::InferResult{merged.inferred_type, ast::diagnostics_append(merged.errors, lam_errors)};
 arg_types.push_back(lam_result.inferred_type);
 }
@@ -55,15 +55,15 @@ merged = InferResult_absorb(merged, arg0_result);
 arg_types.push_back(arg0_result.inferred_type);
 if ((method_name == mlc::String("zip", 3))) {
 if (((!semantic_type_structure::type_is_unknown(arg0_result.inferred_type)) && (!semantic_type_structure::type_is_array(arg0_result.inferred_type)))) {
-zip_or_join_diagnostics = mlc::Array<ast::Diagnostic>{ast::diagnostic_error((mlc::String("method zip expects an array argument, got ", 42) + semantic_type_structure::type_description(arg0_result.inferred_type)), ast::expr_span(method_arguments[0]))};
+zip_or_join_diagnostics = mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((mlc::String("method zip expects an array argument, got ", 42) + mlc::to_string(semantic_type_structure::type_description(arg0_result.inferred_type))) + mlc::String("", 0)), ast::expr_span(method_arguments[0]))};
 }
 }
 if ((method_name == mlc::String("join", 4))) {
 if (((!semantic_type_structure::type_is_unknown(element_type)) && (!semantic_type_structure::type_is_string(element_type)))) {
-zip_or_join_diagnostics = mlc::Array<ast::Diagnostic>{ast::diagnostic_error((mlc::String("method join expects an array of string elements, got ", 53) + semantic_type_structure::type_description(element_type)), method_span)};
+zip_or_join_diagnostics = mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((mlc::String("method join expects an array of string elements, got ", 53) + mlc::to_string(semantic_type_structure::type_description(element_type))) + mlc::String("", 0)), method_span)};
 }
 if (((!semantic_type_structure::type_is_unknown(arg0_result.inferred_type)) && (!semantic_type_structure::type_is_string(arg0_result.inferred_type)))) {
-zip_or_join_diagnostics = ast::diagnostics_append(zip_or_join_diagnostics, mlc::Array<ast::Diagnostic>{ast::diagnostic_error((mlc::String("method join expects string separator, got ", 42) + semantic_type_structure::type_description(arg0_result.inferred_type)), ast::expr_span(method_arguments[0]))});
+zip_or_join_diagnostics = ast::diagnostics_append(zip_or_join_diagnostics, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((mlc::String("method join expects string separator, got ", 42) + mlc::to_string(semantic_type_structure::type_description(arg0_result.inferred_type))) + mlc::String("", 0)), ast::expr_span(method_arguments[0]))});
 }
 }
 merged = infer_result::InferResult{merged.inferred_type, ast::diagnostics_append(merged.errors, zip_or_join_diagnostics)};
@@ -75,29 +75,29 @@ merged = InferResult_absorb(merged, n_result);
 arg_types.push_back(n_result.inferred_type);
 auto count_errors = mlc::Array<ast::Diagnostic>{};
 if (((!semantic_type_structure::type_is_unknown(n_result.inferred_type)) && (!semantic_type_structure::type_is_i32(n_result.inferred_type)))) {
-count_errors = mlc::Array<ast::Diagnostic>{ast::diagnostic_error((((mlc::String("method ", 7) + method_name) + mlc::String(" expects i32, got ", 18)) + semantic_type_structure::type_description(n_result.inferred_type)), ast::expr_span(method_arguments[0]))};
+count_errors = mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((((mlc::String("method ", 7) + mlc::to_string(method_name)) + mlc::String(" expects i32, got ", 18)) + mlc::to_string(semantic_type_structure::type_description(n_result.inferred_type))) + mlc::String("", 0)), ast::expr_span(method_arguments[0]))};
 }
 merged = infer_result::InferResult{merged.inferred_type, ast::diagnostics_append(merged.errors, count_errors)};
 }
 } else if ((((method_name == mlc::String("enumerate", 9)) || (method_name == mlc::String("sum", 3))) || (method_name == mlc::String("flat", 4)))) {
 auto extra = mlc::Array<ast::Diagnostic>{};
 if ((((method_name == mlc::String("sum", 3)) && (!semantic_type_structure::type_is_unknown(element_type))) && (!semantic_type_structure::type_is_i32(element_type)))) {
-extra = mlc::Array<ast::Diagnostic>{ast::diagnostic_error((mlc::String("method sum expects i32 array elements, got ", 43) + semantic_type_structure::type_description(element_type)), method_span)};
+extra = mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((mlc::String("method sum expects i32 array elements, got ", 43) + mlc::to_string(semantic_type_structure::type_description(element_type))) + mlc::String("", 0)), method_span)};
 }
 if ((((method_name == mlc::String("flat", 4)) && (!semantic_type_structure::type_is_array(element_type))) && (!semantic_type_structure::type_is_unknown(element_type)))) {
-extra = mlc::Array<ast::Diagnostic>{ast::diagnostic_error((mlc::String("method flat expects an array of arrays, got ", 44) + semantic_type_structure::type_description(element_type)), method_span)};
+extra = mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((mlc::String("method flat expects an array of arrays, got ", 44) + mlc::to_string(semantic_type_structure::type_description(element_type))) + mlc::String("", 0)), method_span)};
 }
 merged = infer_result::InferResult{merged.inferred_type, ast::diagnostics_append(merged.errors, extra)};
 } else {
 if ((method_arguments.length() > 0)) {
-auto lam_errors = append_lambda_arity_diag({}, method_arguments[0], 1, method_name);
+auto lam_errors = append_lambda_arity_diag(mlc::Array<ast::Diagnostic>{}, method_arguments[0], 1, method_name);
 auto lam_result = infer_expr_maybe_lambda(method_arguments[0], mlc::Array<std::shared_ptr<registry::Type>>{element_type}, inference_context, infer_expr_fn);
 merged = InferResult_absorb(merged, lam_result);
 lam_errors = append_lambda_arity_diag(lam_errors, method_arguments[0], 1, method_name);
 lam_errors = (method_expects_bool_predicate(method_name) ? (append_predicate_bool_diag(lam_errors, method_arguments[0], lam_result.inferred_type, method_name)) : (lam_errors));
 lam_errors = ((method_name == mlc::String("flat_map", 8)) ? ([&]() {
 auto cb_ret = semantic_type_structure::function_return_type(lam_result.inferred_type);
-return (((!semantic_type_structure::type_is_unknown(cb_ret)) && (!semantic_type_structure::type_is_array(cb_ret))) ? (ast::diagnostics_append(lam_errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error((mlc::String("flat_map callback must return an array, got ", 44) + semantic_type_structure::type_description(cb_ret)), ast::expr_span(method_arguments[0]))})) : (lam_errors));
+return (((!semantic_type_structure::type_is_unknown(cb_ret)) && (!semantic_type_structure::type_is_array(cb_ret))) ? (ast::diagnostics_append(lam_errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(((mlc::String("flat_map callback must return an array, got ", 44) + mlc::to_string(semantic_type_structure::type_description(cb_ret))) + mlc::String("", 0)), ast::expr_span(method_arguments[0]))})) : (lam_errors));
 }()) : (lam_errors));
 merged = infer_result::InferResult{merged.inferred_type, ast::diagnostics_append(merged.errors, lam_errors)};
 arg_types.push_back(lam_result.inferred_type);

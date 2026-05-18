@@ -26,6 +26,7 @@ extend LexState {
 
   fn lex_advance_by(self, advance_count: i32) -> LexState =
     if advance_count <= 0 then self else self.lex_advance().lex_advance_by(advance_count - 1)
+    end
 
   fn token(self, token_kind: TKind) -> Token =
     Token { kind: token_kind, line: self.line, col: self.col }

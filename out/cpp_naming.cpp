@@ -27,7 +27,7 @@ return (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
 }
 mlc::String cpp_safe(mlc::String name) noexcept{
 if (cpp_keyword(name)) {
-return (name + mlc::String("_", 1));
+return ((mlc::String("", 0) + mlc::to_string(name)) + mlc::String("_", 1));
 } else {
 return name;
 }
@@ -36,7 +36,7 @@ mlc::String lower_first(mlc::String name) noexcept{
 if ((name.length() == 0)) {
 return name;
 } else {
-return (name.char_at(0).lower() + name.substring(1, name.length()));
+return ((((mlc::String("", 0) + mlc::to_string(name.char_at(0).lower())) + mlc::String("", 0)) + mlc::to_string(name.substring(1, name.length()))) + mlc::String("", 0));
 }
 }
 mlc::String map_method(mlc::String method_name) noexcept{
@@ -77,6 +77,13 @@ return name;
 
 
 }
+mlc::String map_builtin_identifier_reference(mlc::String name) noexcept{
+if ((name == mlc::String("args", 4))) {
+return name;
+} else {
+return map_builtin(name);
+}
+}
 mlc::String escape_str(mlc::String input) noexcept{
 auto parts = mlc::Array<mlc::String>{};
 auto i = 0;
@@ -108,19 +115,13 @@ return parts.join(mlc::String("", 0));
 }
 mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept{
 if ((type_params.length() > 0)) {
-return ((mlc::String("template<typename ", 18) + type_params.join(mlc::String(", typename ", 11))) + mlc::String(">\n", 2));
+return ((mlc::String("template<typename ", 18) + mlc::to_string(type_params.join(mlc::String(", typename ", 11)))) + mlc::String(">\n", 2));
 } else {
 return mlc::String("", 0);
 }
 }
 mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept{
-auto lines = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < import_paths.length())) {
-lines.push_back(((mlc::String("#include \"", 10) + path_to_module_base(import_paths[i])) + mlc::String(".hpp\"\n", 6)));
-i = (i + 1);
-}
-return lines.join(mlc::String("", 0));
+return import_paths.map([=](mlc::String path) mutable { return ((mlc::String("#include \"", 10) + mlc::to_string(path_to_module_base(path))) + mlc::String(".hpp\"\n", 6)); }).join(mlc::String("", 0));
 }
 
 } // namespace cpp_naming

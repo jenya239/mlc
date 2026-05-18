@@ -14,7 +14,7 @@ index = (index + 1);
 }
 return parts.join(mlc::String(", ", 2));
 }()));
-return (((capture + mlc::String("(", 1)) + parameter_list) + mlc::String(")", 1));
+return (((capture + mlc::String("(", 1)) + parameter_list) + mlc::String(") mutable", 9));
 }
 std::shared_ptr<semantic_ir::SExpr> find_field_value(mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, mlc::String field_name) noexcept{
 auto result = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUnit{std::make_shared<registry::Type>(registry::TUnit{}), ast::span_unknown()});
@@ -38,7 +38,7 @@ auto is_known_field = (((((((object_name == mlc::String("errors", 6)) || (object
 if ((decl_index::list_contains(self_fields, object_name) || is_known_field)) {
 return (mlc::String("self.", 5) + cpp_naming::cpp_safe(object_name));
 } else {
-return context::context_resolve(context, cpp_naming::map_builtin_identifier_reference(object_name));
+return CodegenContext_resolve(context, cpp_naming::map_builtin_identifier_reference(object_name));
 }
 }
 mlc::String infer_shared_new_type_name(std::shared_ptr<semantic_ir::SExpr> argument, context::CodegenContext context) noexcept{
@@ -49,7 +49,7 @@ auto type_name = std::visit(overloaded{[&](const registry::TNamed& tNamed) { aut
 [&](const auto& __v) { return mlc::String("", 0); }
 }, (*semantic_ir::sexpr_type(argument)));
 if ((type_name.length() > 0)) {
-return context::context_resolve(context, type_name);
+return CodegenContext_resolve(context, type_name);
 } else {
 return mlc::String("auto", 4);
 }

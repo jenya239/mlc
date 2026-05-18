@@ -4,13 +4,7 @@
 namespace expr_eval {
 
 mlc::String eval_argument_list(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> expressions, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
-auto parts = mlc::Array<mlc::String>{};
-auto index = 0;
-while ((index < expressions.length())) {
-parts.push_back(eval_expr(expressions[index], context, gen_stmts));
-index = (index + 1);
-}
-return parts.join(mlc::String(", ", 2));
+return expressions.map([=](std::shared_ptr<semantic_ir::SExpr> expression) mutable { return eval_expr(expression, context, gen_stmts); }).join(mlc::String(", ", 2));
 }
 mlc::String gen_binary_expr(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expr, std::shared_ptr<semantic_ir::SExpr> right_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
 auto method = semantic_type_structure::operator_method_for(operation);
@@ -19,7 +13,7 @@ auto type_name = std::visit(overloaded{[&](const registry::TNamed& tNamed) { aut
 [&](const auto& __v) { return mlc::String("", 0); }
 }, (*left_type));
 if (((method != mlc::String("", 0)) && (type_name != mlc::String("", 0)))) {
-return (((((((type_name + mlc::String("_", 1)) + method) + mlc::String("(", 1)) + eval_expr(left_expr, context, gen_stmts)) + mlc::String(", ", 2)) + eval_expr(right_expr, context, gen_stmts)) + mlc::String(")", 1));
+return ((((((((mlc::String("", 0) + mlc::to_string(type_name)) + mlc::String("_", 1)) + mlc::to_string(method)) + mlc::String("(", 1)) + mlc::to_string(eval_expr(left_expr, context, gen_stmts))) + mlc::String(", ", 2)) + mlc::to_string(eval_expr(right_expr, context, gen_stmts))) + mlc::String(")", 1));
 } else {
 return expr::parenthesized_binary(eval_expr(left_expr, context, gen_stmts), operation, eval_expr(right_expr, context, gen_stmts));
 }
@@ -28,23 +22,195 @@ mlc::String gen_unary_expr(mlc::String operation, std::shared_ptr<semantic_ir::S
 return expr::parenthesized_unary(operation, eval_expr(inner_expr, context, gen_stmts));
 }
 mlc::String gen_call_function_code(std::shared_ptr<semantic_ir::SExpr> function_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
-return std::visit(overloaded{[&](const semantic_ir::SExprIdent& sExprIdent) { auto [name, __1, __2] = sExprIdent; return context::context_resolve(context, cpp_naming::map_builtin(name)); },
+return std::visit(overloaded{[&](const semantic_ir::SExprIdent& sExprIdent) { auto [name, __1, __2] = sExprIdent; return CodegenContext_resolve(context, cpp_naming::map_builtin(name)); },
 [&](const auto& __v) { return eval_expr(function_expr, context, gen_stmts); }
 }, (*function_expr));
 }
-mlc::String gen_call_expr(std::shared_ptr<semantic_ir::SExpr> function_expr, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
-auto function_code = gen_call_function_code(function_expr, context, gen_stmts);
-auto argument_list = eval_argument_list(arguments, context, gen_stmts);
-if (expression_support::is_constructor_call(function_expr)) {
-return expr::constructor_call_braces(function_code, argument_list);
-} else {
-return expr::function_call_parentheses(function_code, argument_list);
+void gen_call_expr(std::shared_ptr<semantic_ir::SExpr> function_expr, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> call_parameter_mutability_flags, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression, mlc::String ) noexcept{
+return ((Shared{} < semantic_ir::SExpr{}) > /* unit */);
 }
+void __skip__() noexcept{
+return /* unit */;
 }
-mlc::String gen_field_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
-auto object_code = eval_expr(object, context, gen_stmts);
-auto operator_ = expression_support::field_access_operator(object, context);
-return expr::field_access(object_code, operator_, cpp_naming::cpp_safe(field_name));
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
+}
+void __skip__() noexcept{
+return /* unit */;
 }
 mlc::String gen_index_expr(std::shared_ptr<semantic_ir::SExpr> object, std::shared_ptr<semantic_ir::SExpr> index_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
 return expr::index_subscript(eval_expr(object, context, gen_stmts), eval_expr(index_expr, context, gen_stmts));
@@ -64,8 +230,8 @@ auto cond_code = eval_expr(condition, context, gen_stmts);
 auto then_code = eval_expr(then_expr, context, gen_stmts);
 auto else_code = gen_if_else_code(else_expr, if_semantic_type, then_expr, context, gen_stmts);
 return std::visit(overloaded{[&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return [&]() {
-auto type_cpp = context::context_resolve(context, type_name);
-return ((type_cpp == mlc::String("auto", 4)) ? (expr::ternary_conditional(cond_code, then_code, else_code)) : (((((((((mlc::String("[&]() -> ", 9) + type_cpp) + mlc::String(" {\nif (", 7)) + cond_code) + mlc::String(") {\nreturn ", 11)) + then_code) + mlc::String(";\n} else {\nreturn ", 18)) + else_code) + mlc::String(";\n}\n}()", 7))));
+auto type_cpp = CodegenContext_resolve(context, type_name);
+return ((type_cpp == mlc::String("auto", 4)) ? (expr::ternary_conditional(cond_code, then_code, else_code)) : (((((((((mlc::String("[&]() -> ", 9) + mlc::to_string(type_cpp)) + mlc::String(" {\nif (", 7)) + mlc::to_string(cond_code)) + mlc::String(") {\nreturn ", 11)) + mlc::to_string(then_code)) + mlc::String(";\n} else {\nreturn ", 18)) + mlc::to_string(else_code)) + mlc::String(";\n}\n}()", 7))));
 }(); },
 [&](const auto& __v) { return expr::ternary_conditional(cond_code, then_code, else_code); }
 }, (*if_semantic_type));
@@ -74,7 +240,7 @@ mlc::String gen_block_expr(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> state
 if ((statements.length() == 0)) {
 return eval_expr(result_expr, context, gen_stmts);
 } else {
-auto body = (gen_stmts(statements, context) + expr::block_immediate_function_return_fragment(eval_expr(result_expr, statement_context::stmts_final_ctx(statements, context), gen_stmts)));
+auto body = ((((mlc::String("", 0) + mlc::to_string(gen_stmts(statements, context))) + mlc::String("", 0)) + mlc::to_string(expr::block_immediate_function_return_fragment(eval_expr(result_expr, statement_context::stmts_final_ctx(statements, context), gen_stmts)))) + mlc::String("", 0));
 return expr::block_as_immediate_invoked_function_expression(body);
 }
 }
@@ -96,8 +262,22 @@ mlc::String gen_question_expr(std::shared_ptr<semantic_ir::SExpr> inner_expr, co
 auto inner_code = eval_expr(inner_expr, context, gen_stmts);
 return expr::question_try_result(inner_code);
 }
-mlc::String gen_lambda_expr(mlc::Array<mlc::String> parameters, std::shared_ptr<semantic_ir::SExpr> body_expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
-return expr::lambda_with_return(expression_support::cpp_lambda_header_prefix(parameters), eval_expr(body_expr, context, gen_stmts));
+mlc::String cpp_lambda_header_from_semantic_function_type(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<registry::Type> semantic_function_type_for_lambda, context::CodegenContext context) noexcept{
+auto capture_clause = ((parameter_binding_names.length() == 0) ? (mlc::String("[]", 2)) : (mlc::String("[=]", 3)));
+return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [lambda_parameter_semantic_types, __1] = tFn; return ((lambda_parameter_semantic_types.length() != parameter_binding_names.length()) ? (expression_support::cpp_lambda_header_prefix(parameter_binding_names)) : ([&]() {
+auto formatted_parameter_declarations = mlc::Array<mlc::String>{};
+auto lambda_parameter_index = 0;
+while ((lambda_parameter_index < parameter_binding_names.length())) {
+formatted_parameter_declarations.push_back(expr::parameter_declaration_item(type_gen::sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index]), cpp_naming::cpp_safe(parameter_binding_names[lambda_parameter_index])));
+lambda_parameter_index = (lambda_parameter_index + 1);
+}
+return ((((mlc::String("", 0) + mlc::to_string(capture_clause)) + mlc::String("(", 1)) + mlc::to_string(formatted_parameter_declarations.join(mlc::String(", ", 2)))) + mlc::String(") mutable", 9));
+}())); },
+[&](const auto& __v) { return expression_support::cpp_lambda_header_prefix(parameter_binding_names); }
+}, (*semantic_function_type_for_lambda));
+}
+mlc::String gen_lambda_expr(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<semantic_ir::SExpr> body_expression_under_lambda, std::shared_ptr<registry::Type> semantic_function_type_for_lambda_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
+return expr::lambda_with_return(cpp_lambda_header_from_semantic_function_type(parameter_binding_names, semantic_function_type_for_lambda_expression, context), eval_expr(body_expression_under_lambda, context, gen_stmts));
 }
 mlc::String eval_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
 return std::visit(overloaded{[&](const semantic_ir::SExprInt& sExprInt) { auto [integer_value, __1, __2] = sExprInt; return literals::gen_integer_literal(integer_value); },
@@ -113,29 +293,21 @@ return std::visit(overloaded{[&](const semantic_ir::SExprInt& sExprInt) { auto [
 [&](const semantic_ir::SExprIdent& sExprIdent) { auto [name, __1, __2] = sExprIdent; return identifiers::gen_identifier(name, context); },
 [&](const semantic_ir::SExprBin& sExprBin) { auto [operation, left_expr, right_expr, __3, __4] = sExprBin; return gen_binary_expr(operation, left_expr, right_expr, context, gen_stmts); },
 [&](const semantic_ir::SExprUn& sExprUn) { auto [operation, inner_expr, __2, __3] = sExprUn; return gen_unary_expr(operation, inner_expr, context, gen_stmts); },
-[&](const semantic_ir::SExprCall& sExprCall) { auto [function_expr, arguments, __2, __3] = sExprCall; return gen_call_expr(function_expr, arguments, context, gen_stmts); },
-[&](const semantic_ir::SExprMethod& sExprMethod) { auto [object, method_name, arguments, __3, __4] = sExprMethod; return method_gen::gen_method_expr(object, method_name, arguments, context, gen_stmts, eval_expr); },
+[&](const semantic_ir::SExprCall& sExprCall) { auto [function_expression, arguments, call_parameter_mutability_flags, __3, __4] = sExprCall; return gen_call_expr(function_expression, arguments, call_parameter_mutability_flags, context, gen_stmts, eval_expr); },
+[&](const semantic_ir::SExprMethod& sExprMethod) { auto [method_object, method_name, arguments, receiver_and_parameter_mut_flags, __4, __5] = sExprMethod; return method_gen::gen_method_expr(method_object, method_name, arguments, receiver_and_parameter_mut_flags, context, gen_stmts, eval_expr); },
 [&](const semantic_ir::SExprField& sExprField) { auto [object, field_name, __2, __3] = sExprField; return gen_field_expr(object, field_name, context, gen_stmts); },
 [&](const semantic_ir::SExprIndex& sExprIndex) { auto [object, index_expr, __2, __3] = sExprIndex; return gen_index_expr(object, index_expr, context, gen_stmts); },
 [&](const semantic_ir::SExprIf& sExprIf) { auto [condition, then_expr, else_expr, if_semantic_type, __4] = sExprIf; return gen_if_expr(condition, then_expr, else_expr, if_semantic_type, context, gen_stmts); },
 [&](const semantic_ir::SExprBlock& sExprBlock) { auto [statements, result_expr, __2, __3] = sExprBlock; return gen_block_expr(statements, result_expr, context, gen_stmts); },
 [&](const semantic_ir::SExprWhile& sExprWhile) { auto [condition, statements, __2, __3] = sExprWhile; return gen_while_expr(condition, statements, context, gen_stmts); },
 [&](const semantic_ir::SExprFor& sExprFor) { auto [variable, iterator, statements, __3, __4] = sExprFor; return gen_for_expr(variable, iterator, statements, context, gen_stmts); },
-[&](const semantic_ir::SExprMatch& sExprMatch) { auto [subject, arms, __2, __3] = sExprMatch; return match_gen::gen_match(subject, arms, context, gen_stmts, eval_expr); },
+[&](const semantic_ir::SExprMatch& sExprMatch) { auto [subject, arms, match_semantic_type, __3] = sExprMatch; return match_gen::gen_match(subject, arms, match_semantic_type, context, gen_stmts, eval_expr); },
 [&](const semantic_ir::SExprRecord& sExprRecord) { auto [type_name, field_values, expr_type, __3] = sExprRecord; return record_gen::gen_record_expr(type_name, field_values, expr_type, context, gen_stmts, eval_expr); },
 [&](const semantic_ir::SExprRecordUpdate& sExprRecordUpdate) { auto [type_name, base_expr, overrides, __3, __4] = sExprRecordUpdate; return record_gen::gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr); },
 [&](const semantic_ir::SExprArray& sExprArray) { auto [elements, container_semantic_type, __2] = sExprArray; return gen_array_expr(elements, container_semantic_type, context, gen_stmts); },
-[&](const semantic_ir::SExprTuple& sExprTuple) { auto [elements, __1, __2] = sExprTuple; return [&]() {
-auto parts = mlc::Array<mlc::String>{};
-auto ki = 0;
-while ((ki < elements.length())) {
-parts.push_back(eval_expr(elements[ki], context, gen_stmts));
-ki = (ki + 1);
-}
-return ((mlc::String("std::make_tuple(", 16) + parts.join(mlc::String(", ", 2))) + mlc::String(")", 1));
-}(); },
+[&](const semantic_ir::SExprTuple& sExprTuple) { auto [elements, __1, __2] = sExprTuple; return ((mlc::String("std::make_tuple(", 16) + mlc::to_string(elements.map([=](std::shared_ptr<semantic_ir::SExpr> element) mutable { return eval_expr(element, context, gen_stmts); }).join(mlc::String(", ", 2)))) + mlc::String(")", 1)); },
 [&](const semantic_ir::SExprQuestion& sExprQuestion) { auto [inner_expr, __1, __2] = sExprQuestion; return gen_question_expr(inner_expr, context, gen_stmts); },
-[&](const semantic_ir::SExprLambda& sExprLambda) { auto [parameters, body_expr, __2, __3] = sExprLambda; return gen_lambda_expr(parameters, body_expr, context, gen_stmts); },
+[&](const semantic_ir::SExprLambda& sExprLambda) { auto [parameters, body_expr, lambda_annotation_type, __3] = sExprLambda; return gen_lambda_expr(parameters, body_expr, lambda_annotation_type, context, gen_stmts); },
 [&](const semantic_ir::SExprWith& sExprWith) { auto [resource, binder, stmts, __3, __4] = sExprWith; return [&]() {
 auto resource_code = eval_expr(resource, context, gen_stmts);
 auto body_code = gen_stmts(stmts, context);

@@ -40,7 +40,7 @@ auto collected = mlc::Array<ast::Diagnostic>{};
 auto field_index = 0;
 while ((field_index < field_types.length())) {
 auto slot_label = (mlc::String("_", 1) + mlc::to_string(field_index));
-auto chunk = derive_hash_field_error(((mlc::String("variant \"", 9) + variant_name) + mlc::String("\"", 1)), slot_label, field_types[field_index], diagnostic_span);
+auto chunk = derive_hash_field_error(((mlc::String("variant \"", 9) + mlc::to_string(variant_name)) + mlc::String("\"", 1)), slot_label, field_types[field_index], diagnostic_span);
 auto merge_index = 0;
 while ((merge_index < chunk.length())) {
 collected.push_back(chunk[merge_index]);
@@ -55,7 +55,7 @@ auto collected = mlc::Array<ast::Diagnostic>{};
 auto field_index = 0;
 while ((field_index < field_defs.length())) {
 auto field_definition = field_defs[field_index];
-auto chunk = derive_hash_field_error(((mlc::String("variant \"", 9) + variant_name) + mlc::String("\"", 1)), field_definition->name, field_definition->typ, diagnostic_span);
+auto chunk = derive_hash_field_error(((mlc::String("variant \"", 9) + mlc::to_string(variant_name)) + mlc::String("\"", 1)), field_definition->name, field_definition->typ, diagnostic_span);
 auto merge_index = 0;
 while ((merge_index < chunk.length())) {
 collected.push_back(chunk[merge_index]);
@@ -91,12 +91,12 @@ auto trait_index = 0;
 while ((trait_index < derive_trait_names.length())) {
 auto trait_name = derive_trait_names[trait_index];
 if (seen.has(trait_name)) {
-collected.push_back(ast::diagnostic_error(((mlc::String("duplicate derive trait \"", 24) + trait_name) + mlc::String("\"", 1)), diagnostic_span));
+collected.push_back(ast::diagnostic_error(((mlc::String("duplicate derive trait \"", 24) + mlc::to_string(trait_name)) + mlc::String("\"", 1)), diagnostic_span));
 } else {
 seen.set(trait_name, true);
 }
 if ((!derive_trait_name_allowed(trait_name))) {
-collected.push_back(ast::diagnostic_error(((mlc::String("unknown derive trait \"", 22) + trait_name) + mlc::String("\"", 1)), diagnostic_span));
+collected.push_back(ast::diagnostic_error(((mlc::String("unknown derive trait \"", 22) + mlc::to_string(trait_name)) + mlc::String("\"", 1)), diagnostic_span));
 }
 trait_index = (trait_index + 1);
 }

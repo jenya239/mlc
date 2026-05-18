@@ -12,6 +12,7 @@
 
 namespace exprs {
 
+struct MatchArmParseOutcome {std::shared_ptr<ast::MatchArm> arm;preds::Parser parser;};
 preds::StmtsResult parse_stmts_until_end(preds::Parser parser) noexcept;
 preds::StmtsResult parse_stmts_until_else_end(preds::Parser parser) noexcept;
 preds::StmtResult parse_statement_let_const(preds::Parser parser, ast::Span statement_span) noexcept;
@@ -31,15 +32,18 @@ preds::PatResult parse_pattern_boolean(preds::Parser parser, bool value) noexcep
 preds::PatResult parse_pattern_fallback_wildcard(preds::Parser parser) noexcept;
 preds::PatResult parse_or_pat(preds::Parser parser) noexcept;
 preds::PatResult parse_pat(preds::Parser parser) noexcept;
+preds::PatsResult comma_separated_pat_suffix_from_first(preds::PatResult first) noexcept;
 preds::PatsResult parse_pat_args(preds::Parser parser) noexcept;
 preds::PatsResult parse_record_pat_fields(preds::Parser parser) noexcept;
 preds::ExprResult parse_expr(preds::Parser parser) noexcept;
 std::shared_ptr<ast::Expr> pipe_desugar(std::shared_ptr<ast::Expr> left_expr, std::shared_ptr<ast::Expr> right_expr) noexcept;
 preds::ExprResult parse_pipe(preds::Parser parser) noexcept;
+preds::ExprsResult comma_separated_expr_suffix_from_first(preds::ExprResult first) noexcept;
 preds::ExprResult parse_or(preds::Parser parser) noexcept;
 preds::ExprResult parse_and(preds::Parser parser) noexcept;
-bool is_cmp_op(mlc::String op) noexcept;
-preds::ExprResult parse_cmp(preds::Parser parser) noexcept;
+preds::ExprResult parse_equality(preds::Parser parser) noexcept;
+bool is_relational_comparison_operator(mlc::String operator_) noexcept;
+preds::ExprResult parse_comparison_relational(preds::Parser parser) noexcept;
 preds::ExprResult parse_add(preds::Parser parser) noexcept;
 preds::ExprResult parse_mul(preds::Parser parser) noexcept;
 preds::ExprResult parse_unary(preds::Parser parser) noexcept;
@@ -75,10 +79,12 @@ preds::ExprResult parse_while_expr(preds::Parser parser, ast::Span header_span) 
 preds::ExprResult parse_for_expr(preds::Parser parser, ast::Span header_span) noexcept;
 preds::ExprResult parse_with_expr(preds::Parser parser, ast::Span header_span) noexcept;
 preds::ExprResult parse_match_expr(preds::Parser parser, ast::Span header_span) noexcept;
+MatchArmParseOutcome parse_match_arm(preds::PatResult pat_result) noexcept;
 preds::ArmsResult parse_arms_brace(preds::Parser parser) noexcept;
+preds::ArmsResult parse_arms_do_delimited(preds::Parser parser) noexcept;
 preds::ArmsResult parse_arms_pipe(preds::Parser parser) noexcept;
 preds::ArmsResult parse_arms(preds::Parser parser) noexcept;
-preds::FieldValsResult parse_record_fields(preds::Parser parser) noexcept;
+preds::RecordLitPartsResult parse_record_lit_parts(preds::Parser parser) noexcept;
 preds::ExprResult parse_record_expr(preds::Parser parser, mlc::String record_name, ast::Span record_span) noexcept;
 
 } // namespace exprs

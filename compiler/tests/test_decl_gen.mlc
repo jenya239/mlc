@@ -67,7 +67,7 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('gen_fn_decl: unit return',
     gen_fn_decl('nothing', [], [], [], tunit(), make_unit_expr(), context),
-    'void nothing() noexcept{\nreturn /* unit */;\n}\n'))
+    'void nothing() noexcept{\n}\n'))
 
   // --- gen_decl with SDeclFn ---------------------------------------------------
 

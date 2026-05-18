@@ -141,16 +141,21 @@ my_namespace_import_aliases.push_back(decl_index::NamespaceImportAlias{symbols[1
 }
   LoadResult dep_result = load_module_impl(resolved, cur_loaded, cache);
   all_errors = ast::errs_append(all_errors, dep_result.errors);
-  std::tuple<> unit_placeholder = std::make_tuple();
-  unit_placeholder = dep_result.items.fold(unit_placeholder, [&seen, &items](std::tuple<> _, decl_index::LoadItem dependency_item) mutable { return [&]() -> std::tuple<> { 
-  if (!path_in_loaded(dependency_item.path, seen)){
+  int dep_item_index = 0;
+  return [&]() { 
+  while (dep_item_index < dep_result.items.size()){
+{
+decl_index::LoadItem dependency_item = dep_result.items[dep_item_index];
+if (!path_in_loaded(dependency_item.path, seen)){
 {
 seen.push_back(dependency_item.path);
 items.push_back(dependency_item);
 }
 }
-  return std::make_tuple();
- }(); });
+dep_item_index = dep_item_index + 1;
+}
+}
+ }();
  }(); } if (std::holds_alternative<ast::DeclExported>((*prog.decls[index]))) { auto _v_declexported = std::get<ast::DeclExported>((*prog.decls[index])); auto [d] = _v_declexported; return my_decls.push_back(prog.decls[index]); } return my_decls.push_back(prog.decls[index]); }();
 index = index + 1;
 }
@@ -188,21 +193,30 @@ entry_namespace_import_aliases.push_back(decl_index::NamespaceImportAlias{symbol
 }
   LoadResult dep_result = load_module(resolved, cache);
   all_errors = ast::errs_append(all_errors, dep_result.errors);
-  std::tuple<> unit_placeholder = std::make_tuple();
-  unit_placeholder = dep_result.items.fold(unit_placeholder, [&seen_paths, &items_ordered, all_decls](std::tuple<> _, decl_index::LoadItem dependency_item) mutable { return [&]() -> std::tuple<> { 
-  if (!path_in_loaded(dependency_item.path, seen_paths)){
+  int dep_item_index = 0;
+  return [&]() { 
+  while (dep_item_index < dep_result.items.size()){
+{
+decl_index::LoadItem dependency_item = dep_result.items[dep_item_index];
+if (!path_in_loaded(dependency_item.path, seen_paths)){
 {
 seen_paths.push_back(dependency_item.path);
 items_ordered.push_back(dependency_item);
-std::tuple<> inner_unit = std::make_tuple();
-inner_unit = dependency_item.decls.fold(inner_unit, [&all_decls](std::tuple<> _, std::shared_ptr<ast::Decl> declaration_shared) mutable { return [&]() -> std::tuple<> { 
-  all_decls.push_back(declaration_shared);
-  return std::make_tuple();
- }(); });
+int decl_inner_index = 0;
+[&]() { 
+  while (decl_inner_index < dependency_item.decls.size()){
+{
+all_decls.push_back(dependency_item.decls[decl_inner_index]);
+decl_inner_index = decl_inner_index + 1;
 }
 }
-  return std::make_tuple();
- }(); });
+ }();
+}
+}
+dep_item_index = dep_item_index + 1;
+}
+}
+ }();
  }(); } if (std::holds_alternative<ast::DeclExported>((*prog.decls[index]))) { auto _v_declexported = std::get<ast::DeclExported>((*prog.decls[index])); auto [d] = _v_declexported; return [&]() { 
   entry_decls.push_back(d);
   return all_decls.push_back(d);

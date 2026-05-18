@@ -167,7 +167,7 @@ fn extern_parameter_destructure_errors_for_decl_shared(declaration: Shared<Decl>
           end
           scan_errors
         end,
-        _ => []
+        _ => do let empty: [Diagnostic] = []; empty end
       },
     DeclExported(inner_declaration) =>
       extern_parameter_destructure_errors_for_decl_shared(inner_declaration),
@@ -182,7 +182,7 @@ fn extern_parameter_destructure_errors_for_decl_shared(declaration: Shared<Decl>
       end
       concatenated_errors
     end,
-    _ => []
+    _ => do let empty: [Diagnostic] = []; empty end
   }
 
 export fn extern_parameter_destructure_diagnostics(program: Program) -> [Diagnostic] = do

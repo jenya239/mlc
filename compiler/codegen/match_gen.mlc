@@ -9,7 +9,7 @@ import { CodegenContext, CtorTypeInfo,
 import { cpp_safe, lower_first } from './cpp_naming'
 import { first_arm_needs_deref, pat_bind_names } from './match_analysis'
 import * as expression_output from './expr'
-import { Type } from '../checker/registry'
+import { Type, TUnit } from '../checker/registry'
 import { sem_type_to_cpp } from './type_gen'
 import { gen_boolean_literal, gen_integer_literal, gen_string_literal } from './literals'
 
@@ -17,6 +17,9 @@ type RecordFieldBindAccum = RecordFieldBindAccum {
   field_bindings: string,
   arm_context: CodegenContext
 }
+
+fn match_visit_uses_void_lambdas(match_result_type: Shared<Type>) -> bool =
+  match match_result_type { TUnit => true, _ => false }
 
 fn record_field_bind_step(
   accumulated: RecordFieldBindAccum,
@@ -74,7 +77,8 @@ fn gen_arm_ctor(
   ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared<SExpr>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string,
+  visit_void: bool
 ) -> string = do
   const qualified_name = context.resolve(ctor_name)
   const lower_name = cpp_safe(lower_first(ctor_name))
@@ -85,27 +89,31 @@ fn gen_arm_ctor(
   const is_generic = list_contains(context.generic_variants, ctor_name)
   const type_argument = if is_generic then '<auto>' else '' end
   const arm_context = codegen_context_with_ctor_field_bindings(ctor_name, sub_patterns, context)
-  expression_output.match_arm_constructed_value(
-    expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
-    binding,
-    eval_expr_fn(arm_body, arm_context, gen_stmts))
+  const param = expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name)
+  const body_code = eval_expr_fn(arm_body, arm_context, gen_stmts)
+  if visit_void then expression_output.match_arm_constructed_value_void(param, binding, body_code)
+  else expression_output.match_arm_constructed_value(param, binding, body_code)
+  end
 end
 
 fn gen_arm_record_pattern(
   record_name: string, field_patterns: [Shared<Pat>], arm_body: Shared<SExpr>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string,
+  visit_void: bool
 ) -> string = do
   const qualified_name = context.resolve(record_name)
   const lower_name = cpp_safe(lower_first(record_name))
   const is_generic = list_contains(context.generic_variants, record_name)
   const type_argument = if is_generic then '<auto>' else '' end
   const accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context)
-  expression_output.match_arm_constructed_value(
-    expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name),
-    accumulated.field_bindings,
-    eval_expr_fn(arm_body, accumulated.arm_context, gen_stmts))
+  const param = expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name)
+  const body_code = eval_expr_fn(arm_body, accumulated.arm_context, gen_stmts)
+  if visit_void then
+    expression_output.match_arm_constructed_value_void(param, accumulated.field_bindings, body_code)
+  else expression_output.match_arm_constructed_value(param, accumulated.field_bindings, body_code)
+  end
 end
 
 fn match_arm_with_pattern(arm: Shared<SMatchArm>, pattern: Shared<Pat>) -> Shared<SMatchArm> =
@@ -315,23 +323,54 @@ export fn gen_arm(
   arm: Shared<SMatchArm>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string,
+  visit_void: bool
 ) -> string =
   match arm.pat {
-    PatWild(_)        => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
-    PatUnit(_)        => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
-    PatBool(_, _)     => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
-    PatInt(_, _)      => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
-    PatStr(_, _)      => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
+    PatWild(_) =>
+      if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
+      else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      end,
+    PatUnit(_) =>
+      if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
+      else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      end,
+    PatBool(_, _) =>
+      if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
+      else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      end,
+    PatInt(_, _) =>
+      if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
+      else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      end,
+    PatStr(_, _) =>
+      if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
+      else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      end,
     PatIdent(name, _) =>
-      expression_output.match_arm_binding_identifier(
-        cpp_safe(name),
-        eval_expr_fn(arm.body, context.add_value(name), gen_stmts)),
-    PatCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_fn),
-    PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts, eval_expr_fn),
-    PatTuple(_, _)                     => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
-    PatArray(_, _, _)                  => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts)),
-    PatOr(_, _)                        => expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      if visit_void then
+        expression_output.match_arm_binding_identifier_void(
+          cpp_safe(name),
+          eval_expr_fn(arm.body, context.add_value(name), gen_stmts))
+      else
+        expression_output.match_arm_binding_identifier(
+          cpp_safe(name),
+          eval_expr_fn(arm.body, context.add_value(name), gen_stmts))
+      end,
+    PatCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_fn, visit_void),
+    PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts, eval_expr_fn, visit_void),
+    PatTuple(_, _) =>
+      if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
+      else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      end,
+    PatArray(_, _, _) =>
+      if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
+      else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      end,
+    PatOr(_, _) =>
+      if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
+      else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      end
   }
 
 export fn gen_match(
@@ -344,8 +383,9 @@ export fn gen_match(
   if expanded_any_guard(expanded) then
     gen_match_guarded_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn)
   else
+    const visit_void = match_visit_uses_void_lambdas(match_result_type)
     const arm_lines =
-      expanded.map(arm => gen_arm(arm, context, gen_stmts, eval_expr_fn))
+      expanded.map(arm => gen_arm(arm, context, gen_stmts, eval_expr_fn, visit_void))
     const subject_code = eval_expr_fn(subject, context, gen_stmts)
     const needs_deref = if expanded.length() > 0 then first_arm_needs_deref(expanded[0], subject, context) else true end
     expression_output.std_visit_match_expression(

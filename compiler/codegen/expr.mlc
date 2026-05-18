@@ -39,8 +39,14 @@ export fn std_visit_match_expression(arm_lambdas: string, visit_subject: string)
 export fn match_arm_wild_or_unit_return(return_expression_code: string) -> string =
   `[&](const auto& __v) { return ${return_expression_code}; }`
 
+export fn match_arm_wild_or_unit_statement(body_expression_code: string) -> string =
+  `[&](const auto& __v) -> void { ${body_expression_code}; }`
+
 export fn match_arm_binding_identifier(parameter_cpp_safe: string, return_expression_code: string) -> string =
   `[&](const auto& ${parameter_cpp_safe}) { return ${return_expression_code}; }`
+
+export fn match_arm_binding_identifier_void(parameter_cpp_safe: string, body_expression_code: string) -> string =
+  `[&](const auto& ${parameter_cpp_safe}) -> void { ${body_expression_code}; }`
 
 export fn match_arm_constructed_value(
   const_reference_parameter: string,
@@ -48,6 +54,13 @@ export fn match_arm_constructed_value(
   return_expression_code: string
 ) -> string =
   `[&](${const_reference_parameter}) { ${binding_prefix}return ${return_expression_code}; }`
+
+export fn match_arm_constructed_value_void(
+  const_reference_parameter: string,
+  binding_prefix: string,
+  body_expression_code: string
+) -> string =
+  `[&](${const_reference_parameter}) -> void { ${binding_prefix}${body_expression_code}; }`
 
 export fn record_initializer(type_resolved: string, values_comma_separated: string) -> string =
   `${type_resolved}{${values_comma_separated}}`

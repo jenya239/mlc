@@ -98,14 +98,15 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
           end
           const dep_result = load_module_impl(resolved, cur_loaded, cache)
           all_errors = errs_append(all_errors, dep_result.errors)
-          let mut unit_placeholder = ()
-          unit_placeholder = dep_result.items.fold(unit_placeholder, (_, dependency_item) => do
+          let mut dep_item_index = 0
+          while dep_item_index < dep_result.items.length() do
+            const dependency_item = dep_result.items[dep_item_index]
             if !path_in_loaded(dependency_item.path, seen) then
               seen.push(dependency_item.path)
               items.push(dependency_item)
             end
-            ()
-          end)
+            dep_item_index = dep_item_index + 1
+          end
         end,
         DeclExported(d) => my_decls.push(prog.decls[index]),
         _ => my_decls.push(prog.decls[index])
@@ -152,19 +153,20 @@ fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
         end
         const dep_result = load_module(resolved, cache)
         all_errors = errs_append(all_errors, dep_result.errors)
-        let mut unit_placeholder = ()
-        unit_placeholder = dep_result.items.fold(unit_placeholder, (_, dependency_item) => do
+        let mut dep_item_index = 0
+        while dep_item_index < dep_result.items.length() do
+          const dependency_item = dep_result.items[dep_item_index]
           if !path_in_loaded(dependency_item.path, seen_paths) then
             seen_paths.push(dependency_item.path)
             items_ordered.push(dependency_item)
-            let mut inner_unit = ()
-            inner_unit = dependency_item.decls.fold(inner_unit, (_, declaration_shared) => do
-              all_decls.push(declaration_shared)
-              ()
-            end)
+            let mut decl_inner_index = 0
+            while decl_inner_index < dependency_item.decls.length() do
+              all_decls.push(dependency_item.decls[decl_inner_index])
+              decl_inner_index = decl_inner_index + 1
+            end
           end
-          ()
-        end)
+          dep_item_index = dep_item_index + 1
+        end
       end,
       DeclExported(d) => do entry_decls.push(d); all_decls.push(d) end,
       _ => do entry_decls.push(prog.decls[index]); all_decls.push(prog.decls[index]) end

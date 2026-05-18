@@ -3,72 +3,29 @@
 
 namespace infer_call {
 
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
-}
-void __skip__() noexcept{
-return /* unit */;
+bool expression_is_named_argument(std::shared_ptr<ast::Expr> argument_expression) noexcept{
+return std::visit(overloaded{[&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, __1, __2] = exprNamedArg; return true; },
+[&](const auto& __v) { return false; }
+}, (*argument_expression));
 }
 bool has_named_args(mlc::Array<std::shared_ptr<ast::Expr>> args) noexcept{
-auto i = 0;
-auto found = false;
-while ((i < mlc::io::args.length())) {
-std::visit(overloaded{[&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, __1, __2] = exprNamedArg; return [&]() {
-found = true;
-/* unit */;
-return /* unit */;
-}(); },
-[&](const auto& __v) { return /* unit */; }
-}, (*mlc::io::args[i]));
-i = (i + 1);
+return args.any(expression_is_named_argument);
 }
-return found;
+int find_param_slot(mlc::Array<mlc::String> parameter_names, mlc::String sought_parameter_name) noexcept{
+return parameter_names.find_index([=](mlc::String parameter_name) mutable { return (parameter_name == sought_parameter_name); });
 }
-int find_param_slot(mlc::Array<mlc::String> param_names, mlc::String name) noexcept{
-auto i = 0;
-auto slot = (-1);
-while ((i < param_names.length())) {
-if ((param_names[i] == name)) {
-slot = i;
-}
-i = (i + 1);
-}
-return slot;
+std::shared_ptr<ast::Expr> inner_expression_after_stripping_optional_named_label(std::shared_ptr<ast::Expr> argument_expression) noexcept{
+return std::visit(overloaded{[&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, inner_expression, __2] = exprNamedArg; return inner_expression; },
+[&](const auto& __v) { return argument_expression; }
+}, (*argument_expression));
 }
 ResolvedArgs strip_named_labels(mlc::Array<std::shared_ptr<ast::Expr>> args) noexcept{
-auto stripped = mlc::Array<std::shared_ptr<ast::Expr>>{};
-auto i = 0;
-while ((i < mlc::io::args.length())) {
-std::visit(overloaded{[&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, inner, __2] = exprNamedArg; return stripped.push_back(inner); },
-[&](const auto& __v) { return stripped.push_back(mlc::io::args[i]); }
-}, (*mlc::io::args[i]));
-i = (i + 1);
+return ResolvedArgs{args.map(inner_expression_after_stripping_optional_named_label), {}};
 }
-return ResolvedArgs{stripped, {}};
+Call_arguments_inference_accumulator accumulate_inference_for_one_call_argument(Call_arguments_inference_accumulator accumulator, std::shared_ptr<ast::Expr> argument_expression, check_context::CheckContext inference_context, std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)> infer_expr_fn) noexcept{
+auto inference_for_single_argument = infer_expr_fn(argument_expression, inference_context);
+accumulator.inferred_argument_types_list.push_back(inference_for_single_argument.inferred_type);
+return Call_arguments_inference_accumulator{ast::diagnostics_append(accumulator.accumulated_errors, inference_for_single_argument.errors), accumulator.inferred_argument_types_list};
 }
 ResolvedArgs reorder_named_to_positional(mlc::Array<std::shared_ptr<ast::Expr>> args, mlc::Array<mlc::String> param_names) noexcept{
 auto n = param_names.length();
@@ -83,7 +40,7 @@ k = (k + 1);
 auto errors = mlc::Array<ast::Diagnostic>{};
 auto pos_slot = 0;
 auto i = 0;
-while ((i < mlc::io::args.length())) {
+while ((i < args.length())) {
 std::visit(overloaded{[&](const ast::ExprNamedArg& exprNamedArg) { auto [name, inner, arg_span] = exprNamedArg; return [&]() {
 auto slot = find_param_slot(param_names, name);
 if ((slot == (-1))) {
@@ -103,14 +60,14 @@ while (((pos_slot < n) && (filled[pos_slot] == 1))) {
 pos_slot = (pos_slot + 1);
 }
 if ((pos_slot < n)) {
-result.set(pos_slot, mlc::io::args[i]);
+result.set(pos_slot, args[i]);
 filled.set(pos_slot, 1);
 pos_slot = (pos_slot + 1);
 }
 /* unit */;
 return /* unit */;
 }(); }
-}, (*mlc::io::args[i]));
+}, (*args[i]));
 i = (i + 1);
 }
 auto compact = mlc::Array<std::shared_ptr<ast::Expr>>{};
@@ -124,42 +81,31 @@ j = (j + 1);
 return ResolvedArgs{compact, errors};
 }
 ResolvedArgs resolve_named_args(mlc::Array<std::shared_ptr<ast::Expr>> args, mlc::String callee_name, registry::TypeRegistry registry) noexcept{
-if ((!has_named_args(mlc::io::args))) {
-return ResolvedArgs{mlc::io::args, {}};
+if ((!has_named_args(args))) {
+return ResolvedArgs{args, {}};
 } else {
 auto param_names = registry::TypeRegistry_parameter_names_for(registry, callee_name);
 if ((param_names.length() == 0)) {
-return strip_named_labels(mlc::io::args);
+return strip_named_labels(args);
 } else {
-return reorder_named_to_positional(mlc::io::args, param_names);
+return reorder_named_to_positional(args, param_names);
 }
 }
 }
-mlc::Array<std::shared_ptr<registry::Type>> take_first_param_types(mlc::Array<std::shared_ptr<registry::Type>> param_types, int n) noexcept{
-auto out = mlc::Array<std::shared_ptr<registry::Type>>{};
-auto j = 0;
-while (((j < n) && (j < param_types.length()))) {
-out.push_back(param_types[j]);
-j = (j + 1);
+mlc::Array<std::shared_ptr<registry::Type>> take_first_param_types(mlc::Array<std::shared_ptr<registry::Type>> param_types, int positional_argument_count) noexcept{
+return param_types.take(positional_argument_count);
 }
-return out;
-}
-infer_result::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context, InferExprFn infer_expr_fn) noexcept{
+infer_result::InferResult infer_expr_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span call_source_span, check_context::CheckContext inference_context, std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)> infer_expr_fn) noexcept{
 auto callee_name = std::visit(overloaded{[&](const ast::ExprIdent& exprIdent) { auto [name, __1] = exprIdent; return name; },
 [&](const auto& __v) { return mlc::String("", 0); }
 }, (*function));
 auto resolved = resolve_named_args(call_arguments, callee_name, inference_context.registry);
 auto effective_args = resolved.exprs;
 auto function_result = infer_expr_fn(function, inference_context);
-auto collected_errors = ast::diagnostics_append(function_result.errors, resolved.errors);
-auto argument_inferred_types = mlc::Array<std::shared_ptr<registry::Type>>{};
-auto argument_index = 0;
-while ((argument_index < effective_args.length())) {
-auto argument_inference = infer_expr_fn(effective_args[argument_index], inference_context);
-collected_errors = ast::diagnostics_append(collected_errors, argument_inference.errors);
-argument_inferred_types.push_back(argument_inference.inferred_type);
-argument_index = (argument_index + 1);
-}
+auto fresh_argument_types_for_accumulator = mlc::Array<std::shared_ptr<registry::Type>>{};
+auto inference_accumulator_after_arguments = effective_args.fold(Call_arguments_inference_accumulator{ast::diagnostics_append(function_result.errors, resolved.errors), fresh_argument_types_for_accumulator}, [=](Call_arguments_inference_accumulator accumulator_so_far, std::shared_ptr<ast::Expr> argument_expression_under_inference) mutable { return accumulate_inference_for_one_call_argument(accumulator_so_far, argument_expression_under_inference, inference_context, infer_expr_fn); });
+auto collected_errors = inference_accumulator_after_arguments.accumulated_errors;
+auto argument_inferred_types = inference_accumulator_after_arguments.inferred_argument_types_list;
 auto with_arguments = infer_result::InferResult{function_result.inferred_type, collected_errors};
 if (((callee_name != mlc::String("", 0)) && registry::TypeRegistry_has_ctor(inference_context.registry, callee_name))) {
 auto constructor_output = infer_call_support::infer_expr_call_for_constructor_name(callee_name, with_arguments, effective_args, call_source_span, inference_context);
@@ -177,15 +123,15 @@ return constructor_output;
 auto non_constructor_output = infer_call_support::infer_expr_call_non_constructor(function_result, with_arguments, effective_args, call_source_span, inference_context.registry, callee_name);
 auto callee_parameter_types = semantic_type_structure::function_parameter_list(function_result.inferred_type);
 auto max_arity = callee_parameter_types.length();
-auto min_arity = (((callee_name != mlc::String("", 0)) && registry::TypeRegistry_has_fn(inference_context.registry, callee_name)) ? [&]() {
+auto min_arity = (((callee_name != mlc::String("", 0)) && registry::TypeRegistry_has_fn(inference_context.registry, callee_name)) ? ([&]() {
 auto r = registry::TypeRegistry_required_arity_for_fn(inference_context.registry, callee_name);
-return ((r >= 0) ? r : max_arity);
-}() : max_arity);
+return ((r >= 0) ? (r) : (max_arity));
+}()) : (max_arity));
 auto got = effective_args.length();
-auto callee_type_parameter_names = (((callee_name != mlc::String("", 0)) && registry::TypeRegistry_has_fn(inference_context.registry, callee_name)) ? registry::TypeRegistry_registered_function_type_parameter_names(inference_context.registry, callee_name) : [&]() {
+auto callee_type_parameter_names = (((callee_name != mlc::String("", 0)) && registry::TypeRegistry_has_fn(inference_context.registry, callee_name)) ? (registry::TypeRegistry_registered_function_type_parameter_names(inference_context.registry, callee_name)) : ([&]() {
 auto empty_callee_type_names = mlc::Array<mlc::String>{};
 return empty_callee_type_names;
-}());
+}()));
 if (((semantic_type_structure::type_is_function(function_result.inferred_type) && (got >= min_arity)) && (got <= max_arity))) {
 auto params_for_unify = take_first_param_types(callee_parameter_types, got);
 auto unification_errors = call_argument_unify::call_argument_unification_diagnostics(params_for_unify, argument_inferred_types, callee_type_parameter_names, effective_args);

@@ -13,12 +13,8 @@ return preds::TypeResult{std::make_shared<ast::TypeExpr>(ast::TyFn{params, ret.t
 return base;
 }
 }
-preds::TypesResult parse_paren_types(preds::Parser parser) noexcept{
+preds::TypesResult comma_separated_type_suffix_from_first(preds::TypeResult first) noexcept{
 auto types = mlc::Array<std::shared_ptr<ast::TypeExpr>>{};
-if (preds::TKind_is_rparen(preds::Parser_kind(parser))) {
-return preds::TypesResult{types, preds::Parser_advance(parser)};
-} else {
-auto first = parse_type(parser);
 types.push_back(first.type_expr);
 auto state = first.parser;
 while (preds::TKind_is_comma(preds::Parser_kind(state))) {
@@ -26,11 +22,18 @@ auto next = parse_type(preds::Parser_advance(state));
 types.push_back(next.type_expr);
 state = next.parser;
 }
-return preds::TypesResult{types, [&]() -> preds::Parser {
-if (preds::TKind_is_rparen(preds::Parser_kind(state))) {
-return preds::Parser_advance(state);
+return preds::TypesResult{types, state};
+}
+preds::TypesResult parse_paren_types(preds::Parser parser) noexcept{
+if (preds::TKind_is_rparen(preds::Parser_kind(parser))) {
+return preds::TypesResult{{}, preds::Parser_advance(parser)};
 } else {
-return state;
+auto suffix = comma_separated_type_suffix_from_first(parse_type(parser));
+return preds::TypesResult{suffix.types, [&]() -> preds::Parser {
+if (preds::TKind_is_rparen(preds::Parser_kind(suffix.parser))) {
+return preds::Parser_advance(suffix.parser);
+} else {
+return suffix.parser;
 }
 }()};
 }
@@ -94,23 +97,15 @@ return preds::TypeResult{std::make_shared<ast::TypeExpr>(ast::TyUnit{}), preds::
 
 }
 preds::TypesResult parse_type_args(preds::Parser parser) noexcept{
-auto types = mlc::Array<std::shared_ptr<ast::TypeExpr>>{};
-auto first = parse_type(parser);
-types.push_back(first.type_expr);
-auto state = first.parser;
-while (preds::TKind_is_comma(preds::Parser_kind(state))) {
-auto next = parse_type(preds::Parser_advance(state));
-types.push_back(next.type_expr);
-state = next.parser;
-}
-auto end_state = [&]() -> preds::Parser {
-if ((preds::TKind_is_op(preds::Parser_kind(state)) && (preds::TKind_op_val(preds::Parser_kind(state)) == mlc::String(">", 1)))) {
-return preds::Parser_advance(state);
+auto suffix = comma_separated_type_suffix_from_first(parse_type(parser));
+auto closing_state = [&]() -> preds::Parser {
+if ((preds::TKind_is_op(preds::Parser_kind(suffix.parser)) && (preds::TKind_op_val(preds::Parser_kind(suffix.parser)) == mlc::String(">", 1)))) {
+return preds::Parser_advance(suffix.parser);
 } else {
-return state;
+return suffix.parser;
 }
 }();
-return preds::TypesResult{types, end_state};
+return preds::TypesResult{suffix.types, closing_state};
 }
 
 } // namespace types

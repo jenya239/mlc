@@ -145,7 +145,10 @@ parameter_scan_index = parameter_scan_index + 1;
 }
 }
   return scan_errors;
- }(); } return {}; }(); } if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [inner_declaration] = _v_declexported; return extern_parameter_destructure_errors_for_decl_shared(inner_declaration); } if (std::holds_alternative<ast::DeclExtend>((*declaration))) { auto _v_declextend = std::get<ast::DeclExtend>((*declaration)); auto [_w0, _w1, methods] = _v_declextend; return [&]() -> mlc::Array<ast::Diagnostic> { 
+ }(); } return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty = {};
+  return empty;
+ }(); }(); } if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [inner_declaration] = _v_declexported; return extern_parameter_destructure_errors_for_decl_shared(inner_declaration); } if (std::holds_alternative<ast::DeclExtend>((*declaration))) { auto _v_declextend = std::get<ast::DeclExtend>((*declaration)); auto [_w0, _w1, methods] = _v_declextend; return [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> concatenated_errors = {};
   int method_scan_index = 0;
   while (method_scan_index < methods.size()){
@@ -155,7 +158,10 @@ method_scan_index = method_scan_index + 1;
 }
 }
   return concatenated_errors;
- }(); } return {}; }();}
+ }(); } return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty = {};
+  return empty;
+ }(); }();}
 
 mlc::Array<ast::Diagnostic> extern_parameter_destructure_diagnostics(ast::Program program) noexcept{
 mlc::Array<ast::Diagnostic> all_errors = {};

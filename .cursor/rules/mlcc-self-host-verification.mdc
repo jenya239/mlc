@@ -1,0 +1,51 @@
+---
+description: Обязательная проверка self-hosted mlcc; не путать с Ruby-only тестами
+alwaysApply: true
+---
+
+# Self-hosted mlcc — дисциплина проверки
+
+Просчёт вида «всё зелёное, а mlcc устарел / self-host не проверялся» недопустим.
+
+## Факты
+
+- `bundle exec rake test_compiler_mlc` собирает и запускает **`compiler/out/run_tests`** через **Ruby** `ModularCompiler`. Это **не** пересобирает **`compiler/out/mlcc`**.
+- Актуальный бинарь mlcc после правок в `compiler/**/*.mlc`: **`compiler/build.sh`** (или явный путь из `docs`, если иной).
+- **Полная самосборка** в смысле проекта: свежий `mlcc` успешно транслирует **`compiler/main.mlc`** во все модули C++ (`mlcc -o <dir> compiler/main.mlc`) и при регрессиях — **линковка** `g++` по сгенерированным `.cpp`. При переполнении `/tmp` использовать **`TMPDIR`** внутри репозитория.
+
+## Требование к агенту
+
+После затрагивания checker, codegen, `compiler/main.mlc`, лексера/парсера self-hosted: не закрывать задачу словами «готово», не прогнав **как минимум** `compiler/build.sh` и **self-compile entry** `compiler/main.mlc` тем же `compiler/out/mlcc`, что только что собрали.
+
+Не утверждать эквивалентность Ruby и mlcc без проверки на бинаре mlcc.
+
+## Проверка идентичности (self-hosting correctness)
+
+После любых изменений codegen или checker: собрать mlcc2 из C++ сгенерированного mlcc, запустить mlcc2 на том же исходнике, убедиться что вывод идентичен:
+
+```bash
+compiler/out/mlcc -o /tmp/mlc_p1 compiler/main.mlc
+g++ -std=c++20 -I /tmp/mlc_p1 -I runtime/include /tmp/mlc_p1/*.cpp runtime/src/io/io.cpp runtime/src/core/string.cpp -o /tmp/mlcc2
+/tmp/mlcc2 -o /tmp/mlc_p2 compiler/main.mlc
+diff -r /tmp/mlc_p1 /tmp/mlc_p2  # должно быть IDENTICAL
+```
+
+Если diff не пустой — codegen недетерминирован или mlcc2 работает иначе чем mlcc. Это блокер.
+
+## Производительность (бенчмарк трансляции MLC→C++)
+
+Ориентир (50+ модулей `compiler/main.mlc`):
+- **mlcc** (g++ -O2): ~4–5s
+- **Ruby**: ~15–20s (без startup)
+
+При изменениях codegen или алгоритмов checker: замерять время трансляции с помощью `time compiler/out/mlcc -o /tmp/... compiler/main.mlc`. Регрессия >2× относительно ориентира — повод для анализа.
+
+Замер Ruby (только трансляция, без startup и g++):
+```bash
+bundle exec ruby -e '
+require "mlc/common/index"; require "mlc/common/modular_compilation/modular_compiler"
+c = MLC::Common::ModularCompilation::ModularCompiler.new(entry_path: ARGV[0], out_dir: ARGV[1], root_dir: File.dirname(ARGV[0]), binary_name: "mlcc")
+t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC); c.compile; t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+puts "Ruby: #{((t1-t0)*1000).round}ms"
+' compiler/main.mlc /tmp/mlc_ruby
+```

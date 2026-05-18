@@ -138,13 +138,15 @@ return expr::question_try_result(inner_code);
 }
 
 mlc::String cpp_lambda_header_from_semantic_function_type(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<registry::Type> semantic_function_type_for_lambda, context::CodegenContext context) noexcept{
-mlc::String capture_clause = parameter_binding_names.size() == 0 ? mlc::String("[]") : mlc::String("[=]");
+mlc::String capture_clause = parameter_binding_names.size() == 0 ? mlc::String("[]") : mlc::String("[&]");
 return [&]() -> mlc::String { if (std::holds_alternative<registry::TFn>((*semantic_function_type_for_lambda))) { auto _v_tfn = std::get<registry::TFn>((*semantic_function_type_for_lambda)); auto [lambda_parameter_semantic_types, _w0] = _v_tfn; return lambda_parameter_semantic_types.size() != parameter_binding_names.size() ? expression_support::cpp_lambda_header_prefix(parameter_binding_names) : [&]() -> mlc::String { 
   mlc::Array<mlc::String> formatted_parameter_declarations = {};
   int lambda_parameter_index = 0;
   while (lambda_parameter_index < parameter_binding_names.size()){
 {
-formatted_parameter_declarations.push_back(expr::parameter_declaration_item(type_gen::sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index]), cpp_naming::cpp_safe(parameter_binding_names[lambda_parameter_index])));
+mlc::String raw_param_type = type_gen::sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index]);
+mlc::String param_type_cpp = raw_param_type == mlc::String("void") ? mlc::String("std::tuple<>") : raw_param_type;
+formatted_parameter_declarations.push_back(expr::parameter_declaration_item(param_type_cpp, cpp_naming::cpp_safe(parameter_binding_names[lambda_parameter_index])));
 lambda_parameter_index = lambda_parameter_index + 1;
 }
 }

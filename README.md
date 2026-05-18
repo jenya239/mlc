@@ -2,37 +2,59 @@
 
 Экспериментальный самохостящийся компилятор. MLC-исходники → C++20.
 
-## Статус (март 2026)
+## Статус (май 2026)
 
-- **Bootstrap достигнут**: `mlcc` компилирует сам себя. Третье поколение бинарника работает корректно.
-- **Ruby-компилятор**: 1106 unit-тестов, 0 failures — используется как bootstrap-база.
-- **Self-hosted `mlcc`**: компилирует весь `compiler/` из MLC в C++, результат компилируется g++.
+- **Bootstrap**: `compiler/build.sh` — Ruby → C++ для всего `compiler/`, затем `g++` → `compiler/out/mlcc` (полный прогон ~15 мин в типичной среде).
+- **447 тестов** self-hosted компилятора (`rake test_compiler_mlc`): они пересобирают **только** `compiler/out/run_tests` через Ruby; **свежий `mlcc` после правок в `compiler/**` — только `compiler/build.sh`**.
+- **Самосборка**: точка входа `compiler/main.mlc` с импортами — `compiler/out/mlcc -o <dir> compiler/main.mlc`; контроль корректности кодогена: второй проход бинарём, собранным из выхода первого (`mlcc2`), и **`diff -rq` двух каталогов C++** (ожидается пустой diff). При нехватке `/tmp` задать `TMPDIR` внутри репозитория.
+- Ruby-компилятор (`lib/mlc/`): ~1106 unit-тестов — bootstrap и эталон семантики, не удаляется.
 
 ## Архитектура
 
 ```
-MLC source → Lexer/Parser → AST → NameCheck/TypeInfer → Codegen → C++20
+MLC source → Lexer → Parser → AST → Checker (name resolution + type inference)
+           → SemanticIR → Codegen → C++20
 ```
 
 Два компилятора:
 
-| Компилятор | Путь | Описание |
-|------------|------|----------|
-| Ruby (bootstrap) | `lib/mlc/` | Полнофункциональный, используется для сборки `mlcc` |
-| Self-hosted | `compiler/` | MLC-на-MLC, цель проекта |
+| Компилятор | Путь | Статус |
+|---|---|---|
+| Self-hosted (`mlcc`) | `compiler/` | Модульная сборка `compiler/main.mlc` → C++; E2E и двойной проход (mlcc/mlcc2) |
+| Ruby (bootstrap) | `lib/mlc/` | Полнофункциональный эталон, не удаляется |
+
+## Быстрый старт
+
+```bash
+# Собрать mlcc из исходников
+compiler/build.sh
+# → compiler/out/mlcc
+
+# Скомпилировать MLC-программу
+compiler/out/mlcc path/to/main.mlc
+# → path/to/out/main.cpp, main.hpp
+
+# Скомпилировать и запустить
+g++ -std=c++20 -I runtime/include \
+    path/to/out/main.cpp \
+    runtime/src/io/io.cpp runtime/src/core/string.cpp \
+    -o my_program && ./my_program
+```
 
 ## Синтаксис
 
 ```mlc
+type Shape = Circle { radius: i32 } | Rect { width: i32, height: i32 }
+
 fn area(shape: Shared<Shape>) -> i32 =
-  match shape
-  | Circle { radius } => radius * radius
-  | Rect { width, height } => width * height
-  end
+  match shape {
+    Circle { radius } => radius * radius,
+    Rect { width, height } => width * height
+  }
 
 fn main() -> i32 = do
   const name = "world"
-  println(f"hello {name}")
+  println(`hello ${name}`)
   let mut count = 0
   while count < 3 do count = count + 1 end
   0
@@ -42,111 +64,105 @@ end
 ### Ключевые конструкции
 
 | Конструкция | Синтаксис |
-|-------------|-----------|
+|---|---|
 | Функция | `fn name(args) -> T = expr` |
 | Do-блок | `fn f() -> T = do stmts... expr end` |
-| Неизменяемая привязка | `const x = expr` или `let x = expr` |
-| Изменяемая привязка | `let mut x = expr` (присваивание `x = …` только с `mut`) |
-| Compile-time константа | `let const x = expr` |
+| Неизменяемая привязка | `const x = expr` / `let x = expr` |
+| Изменяемая привязка | `let mut x = expr` |
 | Record-тип | `type Point = Point { x: i32, y: i32 }` |
-| Sum-тип | `type Shape = Circle { r: i32 } \| Rect { w: i32, h: i32 }` |
-| Pattern matching | `match expr \| Pattern => body end` |
-| Record destructuring | `match s \| Circle { radius } => ...` |
+| Sum-тип | `type Shape = Circle(i32) \| Rect { w: i32, h: i32 }` |
+| Pattern matching | `match expr { Pattern => body, ... }` |
 | Instance-метод | `extend Type { fn method(self: Type) -> T = ... }` |
-| Static-вызов | `Type.method()` |
-| Instance-вызов | `obj.method()` → `Type_method(obj)` |
-| Массив | `[string]`, `arr.push(x)`, `arr[i]` |
-| HashMap | `[string: i32]`, `map.set(k,v)`, `map.get(k)` |
+| Trait | `trait Eq { fn eq(self: T, other: T) -> bool }` |
+| Result / ? | `fn f() -> Result<T, E> = risky_call()?` |
+| Массив | `[T]`, `arr.push(x)`, `arr.map(f)` |
+| HashMap | `Map<K, V>`, `map.set(k, v)`, `map.get(k)` |
 | Shared pointer | `Shared<T>`, `Shared.new(val)` |
-| F-string | `f"hello {name}, count={count}"` |
-| Импорт | `import { Type, fn } from "./module"` |
+| Интерполяция | `` `hello ${name}` `` |
+| Импорт | `import { Type, fn_name } from "./module"` |
 
-### Типы
+### Примитивные типы
 
 ```
-i32  i64  f32  f64  bool  string  unit
-[T]              — Array<T> (COW)
-[K: V]           — HashMap<K,V> (COW)
-Shared<T>        — std::shared_ptr<T>
+i32  i64  u8  usize  f64  bool  char  string  unit
+[T]         — Array<T> (COW)
+Map<K,V>    — HashMap<K,V> (COW)
+Shared<T>   — std::shared_ptr<T>
 ```
 
-## Команды
+## Генерируемый C++
 
-```bash
-# Unit-тесты (быстро, ~50 сек)
-bundle exec ruby -Ilib:test -e "Dir['test/mlc/**/*_test.rb'].each { |f| require_relative f }"
+MLC sum-тип и pattern matching → `std::variant` + `std::visit`:
 
-# Только test/mlc/** (~1100 тестов)
-bundle exec rake test_mlc
+```mlc
+type Shape = Circle { radius: i32 } | Rect { width: i32, height: i32 }
 
-# Как в CI: весь unit-слой (test/ кроме integration)
-bundle exec rake test_unit
+fn area(s: Shared<Shape>) -> i32 =
+  match s {
+    Circle { radius } => radius * radius,
+    Rect { width, height } => width * height
+  }
+```
 
-# Тесты self-hosted компилятора (compiler/tests, нужен g++)
-bundle exec rake test_compiler_mlc
+```cpp
+struct Circle { int radius; };
+struct Rect   { int width; int height; };
+using Shape = std::variant<Circle, Rect>;
 
-# Минимум: test_mlc + test_compiler_mlc
-bundle exec rake test_self_hosted_stack
-
-# Весь test/ кроме integration (шире, чем test_mlc)
-bundle exec rake test_unit
-
-# Полный план и политика Ruby (резерв + bootstrap): docs/SELF_HOSTED_PLAN.md
-
-# Собрать mlcc из исходников
-compiler/build.sh
-
-# Скомпилировать MLC-программу
-compiler/out/mlcc path/to/main.mlc
-# → генерирует path/to/out/*.cpp и *.hpp
-
-# Скомпилировать и запустить вручную
-g++ -std=c++20 -I runtime/include \
-    path/to/out/main.cpp \
-    runtime/src/io/io.cpp runtime/src/core/string.cpp \
-    -o my_program
+int area(std::shared_ptr<Shape> s) {
+    return std::visit(overloaded{
+        [&](const Circle& __v) { const auto& radius = __v.radius; return (radius * radius); },
+        [&](const Rect&   __v) { const auto& width = __v.width; const auto& height = __v.height; return (width * height); }
+    }, (*s));
+}
 ```
 
 ## Структура проекта
 
 ```
-compiler/           — self-hosted компилятор (MLC-исходники)
+compiler/           — self-hosted компилятор (~23K строк MLC)
   main.mlc          — точка входа
-  ast.mlc           — AST-узлы
-  lexer.mlc         — лексер
-  parser/           — парсер (exprs, decls, types, preds)
-  checker/          — name resolution, type inference, registry
-  codegen/          — генерация C++ (module, eval, decl, …)
-  out/              — скомпилированный mlcc (бинарник + C++)
-lib/mlc/            — Ruby bootstrap-компилятор (эталон и резерв, не удаляется)
-runtime/            — C++20 runtime
-  include/mlc/      — заголовки (String, Array, HashMap, io)
-  src/              — реализации (string.cpp, io.cpp)
-test/mlc/           — unit-тесты Ruby-компилятора
+  lexer.mlc, ast.mlc
+  parser/           — exprs, decls, types, predicates
+  checker/          — name resolution, type inference, transform → SemanticIR
+  codegen/          — генерация C++ из SemanticIR
+  cpp/              — C++ AST (для парсинга C++ в тестах)
+  tests/            — unit + e2e тесты
+  out/              — скомпилированный mlcc (бинарник + артефакты)
+lib/mlc/            — Ruby bootstrap-компилятор (эталон, не удаляется)
+runtime/            — C++20 runtime (String COW, Array COW, HashMap COW, io)
+test/mlc/           — unit-тесты Ruby-компилятора (~1100 тестов)
+docs/               — архитектура, план развития, дизайн языка
 ```
 
-## Генерируемый C++
+## Тесты
 
-Sum-тип и pattern matching:
-```mlc
-type Shape = Circle { radius: i32 } | Rect { width: i32, height: i32 }
+```bash
+# Self-hosted компилятор (447 тестов, ~10 мин включая сборку)
+bundle exec rake test_compiler_mlc
 
-fn area(s: Shared<Shape>) -> i32 =
-  match s
-  | Circle { radius } => radius * radius
-  | Rect { width, height } => width * height
-  end
+# Ruby-компилятор (1106 тестов, быстро)
+bundle exec rake test_mlc
+
+# Оба
+bundle exec rake test_self_hosted_stack
+
+# E2E: 4 программы через mlcc + g++
+compiler/tests/e2e/run_e2e.sh compiler/out/mlcc
 ```
-→
-```cpp
-struct Circle { int32_t radius; };
-struct Rect   { int32_t width; int32_t height; };
-using Shape = std::variant<Circle, Rect>;
 
-int32_t area(std::shared_ptr<Shape> s) noexcept {
-    return std::visit(overloaded{
-        [&](const Circle& circle) { const auto& radius = circle.radius; return (radius * radius); },
-        [&](const Rect& rect)     { const auto& width = rect.width; const auto& height = rect.height; return (width * height); }
-    }, (*s));
-}
+### Самопроверка mlcc (после правок checker/codegen)
+
+```bash
+export TMPDIR=/path/in/repo/tmp   # при нехватке /tmp
+
+compiler/out/mlcc -o "$TMPDIR/mlc_p1" compiler/main.mlc
+g++ -std=c++20 -I "$TMPDIR/mlc_p1" -I runtime/include \
+  "$TMPDIR/mlc_p1"/*.cpp runtime/src/io/io.cpp runtime/src/core/string.cpp -O2 -o "$TMPDIR/mlcc2"
+"$TMPDIR/mlcc2" -o "$TMPDIR/mlc_p2" compiler/main.mlc
+diff -rq "$TMPDIR/mlc_p1" "$TMPDIR/mlc_p2"   # должно быть пусто
 ```
+
+## Roadmap
+
+`docs/PLAN.md` — архитектурный план, целевая структура файлов, паттерны, Reddit-презентация.

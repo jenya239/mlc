@@ -158,6 +158,7 @@ fn partial_replace_call_arguments_inner(
         name_index,
         output.concat([arguments[argument_index]]))
   }
+  end
 
 fn partial_replace_call_arguments(
   arguments: [Shared<Expr>],
@@ -235,6 +236,7 @@ fn partial_application_map_arguments_at(
         mapped.concat([argument_pair.expression]))
     end
   }
+  end
 
 fn partial_application_map_arguments(arguments: [Shared<Expr>], serial: i32) -> ArgumentsPartialPair =
   partial_application_map_arguments_at(arguments, 0, serial, [])

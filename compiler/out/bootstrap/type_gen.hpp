@@ -6,12 +6,16 @@
 
 #include "ast.hpp"
 #include "registry.hpp"
+#include "record_field_default_initializer.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "expr.hpp"
 
 namespace type_gen {
 
+struct TupleStructCodegenFoldState {int field_slot_index;mlc::String declaration_text_so_far;};
+struct TupleHashCodegenFoldState {int tuple_field_slot;mlc::String concatenated_combine_lines;};
+struct HashSumOperatorFoldState {int next_discriminant_index;mlc::String operator_body_text;};
 mlc::String cpp_generic_base_name(context::CodegenContext context, mlc::String type_name) noexcept;
 mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept;
 mlc::String type_name_to_cpp(context::CodegenContext context, mlc::String type_name) noexcept;
@@ -22,11 +26,17 @@ mlc::Array<std::shared_ptr<ast::TypeExpr>> variant_field_typeexprs(std::shared_p
 mlc::Array<mlc::String> variant_used_type_params(mlc::Array<mlc::String> type_params, std::shared_ptr<ast::TypeVariant> variant) noexcept;
 mlc::Array<mlc::String> union_string_lists(mlc::Array<mlc::String> a, mlc::Array<mlc::String> b) noexcept;
 mlc::Array<mlc::String> type_phantom_params_for_variants(mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+mlc::String field_def_member_declaration(context::CodegenContext context, std::shared_ptr<ast::FieldDef> fd) noexcept;
+mlc::String variant_record_struct_inline_member_declarations(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept;
 mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept;
+mlc::String tuple_variant_struct_members_fragment(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types) noexcept;
 mlc::String gen_variant_struct(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept;
 mlc::String struct_extra_using(context::CodegenContext context, mlc::String type_name) noexcept;
 mlc::String gen_single_variant(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept;
+mlc::String variant_forward_decl_line(context::CodegenContext context, mlc::Array<mlc::String> type_params, mlc::Array<mlc::String> phantom, std::shared_ptr<ast::TypeVariant> v) noexcept;
+mlc::String variant_alias_part(context::CodegenContext context, mlc::Array<mlc::String> type_params, mlc::Array<mlc::String> phantom, std::shared_ptr<ast::TypeVariant> v) noexcept;
 mlc::String gen_adt_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+mlc::String variant_def_with_prefix(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::String> phantom, std::shared_ptr<ast::TypeVariant> v) noexcept;
 mlc::String gen_adt_defs(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 mlc::String gen_type_decl_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 mlc::String gen_type_decl_body(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;

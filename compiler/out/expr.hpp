@@ -34,9 +34,15 @@ mlc::String std_visit_match_expression(mlc::String arm_lambdas, mlc::String visi
 
 mlc::String match_arm_wild_or_unit_return(mlc::String return_expression_code) noexcept;
 
+mlc::String match_arm_wild_or_unit_statement(mlc::String body_expression_code) noexcept;
+
 mlc::String match_arm_binding_identifier(mlc::String parameter_cpp_safe, mlc::String return_expression_code) noexcept;
 
+mlc::String match_arm_binding_identifier_void(mlc::String parameter_cpp_safe, mlc::String body_expression_code) noexcept;
+
 mlc::String match_arm_constructed_value(mlc::String const_reference_parameter, mlc::String binding_prefix, mlc::String return_expression_code) noexcept;
+
+mlc::String match_arm_constructed_value_void(mlc::String const_reference_parameter, mlc::String binding_prefix, mlc::String body_expression_code) noexcept;
 
 mlc::String record_initializer(mlc::String type_resolved, mlc::String values_comma_separated) noexcept;
 

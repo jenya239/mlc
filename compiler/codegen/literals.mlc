@@ -11,7 +11,7 @@ export fn gen_string_literal(string_value: string) -> string =
 export fn gen_boolean_literal(boolean_value: bool) -> string =
   if boolean_value then 'true' else 'false' end
 
-export fn gen_unit_literal() -> string = '/* unit */'
+export fn gen_unit_literal() -> string = 'std::make_tuple()'
 
 export fn gen_extern_placeholder() -> string = ''
 

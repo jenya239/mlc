@@ -32,7 +32,7 @@ mlc::String gen_string_literal(mlc::String string_value) noexcept{return mlc::St
 
 mlc::String gen_boolean_literal(bool boolean_value) noexcept{return boolean_value ? mlc::String("true") : mlc::String("false");}
 
-mlc::String gen_unit_literal() noexcept{return mlc::String("/* unit */");}
+mlc::String gen_unit_literal() noexcept{return mlc::String("std::make_tuple()");}
 
 mlc::String gen_extern_placeholder() noexcept{return mlc::String("");}
 

@@ -9,7 +9,7 @@ return mlc::String("mlc::HashMap", 12);
 } else if ((type_name == mlc::String("Shared", 6))) {
 return mlc::String("std::shared_ptr", 15);
 } else {
-return context::context_resolve(context, type_name);
+return CodegenContext_resolve(context, type_name);
 }
 
 }
@@ -26,28 +26,12 @@ return std::visit(overloaded{[&](const registry::TI32& tI32) { return mlc::Strin
 [&](const registry::TUnknown& tUnknown) { return mlc::String("auto", 4); },
 [&](const registry::TArray& tArray) { auto [inner] = tArray; return expr::cpp_array_type_element(sem_type_to_cpp(context, inner)); },
 [&](const registry::TShared& tShared) { auto [inner] = tShared; return expr::cpp_shared_pointer_type(sem_type_to_cpp(context, inner)); },
-[&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return context::context_resolve(context, type_name); },
-[&](const registry::TTuple& tTuple) { auto [ts] = tTuple; return [&]() {
-auto tparts = mlc::Array<mlc::String>{};
-auto ti = 0;
-while ((ti < ts.length())) {
-tparts.push_back(sem_type_to_cpp(context, ts[ti]));
-ti = (ti + 1);
-}
-return ((mlc::String("std::tuple<", 11) + tparts.join(mlc::String(", ", 2))) + mlc::String(">", 1));
-}(); },
-[&](const registry::TPair& tPair) { auto [left, right] = tPair; return ((((mlc::String("std::pair<", 10) + sem_type_to_cpp(context, left)) + mlc::String(", ", 2)) + sem_type_to_cpp(context, right)) + mlc::String(">", 1)); },
-[&](const registry::TGeneric& tGeneric) { auto [type_name, type_args] = tGeneric; return (((type_name == mlc::String("Option", 6)) && (type_args.length() == 1)) ? (((mlc::String("std::optional<", 14) + sem_type_to_cpp(context, type_args[0])) + mlc::String(">", 1))) : (((type_args.length() == 0) ? (cpp_generic_base_name(context, type_name)) : (((type_args.length() == 1) ? (expr::cpp_template_single_type_argument(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_args[0]))) : (expr::cpp_template_two_type_arguments(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_args[0]), sem_type_to_cpp(context, type_args[1])))))))); },
-[&](const registry::TFn& tFn) { auto [param_types, return_type] = tFn; return [&]() {
-auto parts = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < param_types.length())) {
-parts.push_back(sem_type_to_cpp(context, param_types[i]));
-i = (i + 1);
-}
-return expr::cpp_std_function_type(sem_type_to_cpp(context, return_type), parts.join(mlc::String(", ", 2)));
-}(); },
-[&](const registry::TAssoc& tAssoc) { auto [param, assoc] = tAssoc; return (((mlc::String("typename ", 9) + cpp_naming::cpp_safe(param)) + mlc::String("::", 2)) + assoc); }
+[&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return CodegenContext_resolve(context, type_name); },
+[&](const registry::TTuple& tTuple) { auto [types] = tTuple; return ((mlc::String("std::tuple<", 11) + mlc::to_string(types.map([=](std::shared_ptr<registry::Type> t) mutable { return sem_type_to_cpp(context, t); }).join(mlc::String(", ", 2)))) + mlc::String(">", 1)); },
+[&](const registry::TPair& tPair) { auto [left, right] = tPair; return ((((mlc::String("std::pair<", 10) + mlc::to_string(sem_type_to_cpp(context, left))) + mlc::String(", ", 2)) + mlc::to_string(sem_type_to_cpp(context, right))) + mlc::String(">", 1)); },
+[&](const registry::TGeneric& tGeneric) { auto [type_name, type_args] = tGeneric; return (((type_name == mlc::String("Option", 6)) && (type_args.length() == 1)) ? (((mlc::String("std::optional<", 14) + mlc::to_string(sem_type_to_cpp(context, type_args[0]))) + mlc::String(">", 1))) : (((type_args.length() == 0) ? (cpp_generic_base_name(context, type_name)) : (((type_args.length() == 1) ? (expr::cpp_template_single_type_argument(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_args[0]))) : (expr::cpp_template_two_type_arguments(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_args[0]), sem_type_to_cpp(context, type_args[1])))))))); },
+[&](const registry::TFn& tFn) { auto [param_types, return_type] = tFn; return expr::cpp_std_function_type(sem_type_to_cpp(context, return_type), param_types.map([=](std::shared_ptr<registry::Type> t) mutable { return sem_type_to_cpp(context, t); }).join(mlc::String(", ", 2))); },
+[&](const registry::TAssoc& tAssoc) { auto [param, assoc] = tAssoc; return ((((mlc::String("typename ", 9) + mlc::to_string(cpp_naming::cpp_safe(param))) + mlc::String("::", 2)) + mlc::to_string(assoc)) + mlc::String("", 0)); }
 }, (*semantic_type));
 }
 mlc::String type_name_to_cpp(context::CodegenContext context, mlc::String type_name) noexcept{
@@ -76,7 +60,7 @@ return type_name_to_cpp(context, context.self_type);
 return mlc::String("void", 4);
 }
 } else {
-return context::context_resolve(context, type_name);
+return CodegenContext_resolve(context, type_name);
 }
 
 
@@ -97,19 +81,11 @@ return std::visit(overloaded{[&](const ast::TyI32& tyI32) { return mlc::String("
 [&](const ast::TyArray& tyArray) { auto [inner] = tyArray; return expr::cpp_array_type_element(type_to_cpp(context, inner)); },
 [&](const ast::TyShared& tyShared) { auto [inner] = tyShared; return expr::cpp_shared_pointer_type(type_to_cpp(context, inner)); },
 [&](const ast::TyGeneric& tyGeneric) { auto [name, targs] = tyGeneric; return (((name == mlc::String("ref", 3)) && (targs.length() == 1)) ? (expr::cpp_lvalue_reference_suffix(type_to_cpp(context, targs[0]))) : ([&]() {
-auto safe = ((name == mlc::String("Map", 3)) ? (mlc::String("mlc::HashMap", 12)) : (((name == mlc::String("Shared", 6)) ? (mlc::String("std::shared_ptr", 15)) : (context::context_resolve(context, name)))));
+auto safe = ((name == mlc::String("Map", 3)) ? (mlc::String("mlc::HashMap", 12)) : (((name == mlc::String("Shared", 6)) ? (mlc::String("std::shared_ptr", 15)) : (CodegenContext_resolve(context, name)))));
 return ((targs.length() == 0) ? (safe) : (((targs.length() == 1) ? (expr::cpp_template_single_type_argument(safe, type_to_cpp(context, targs[0]))) : (expr::cpp_template_two_type_arguments(safe, type_to_cpp(context, targs[0]), type_to_cpp(context, targs[1]))))));
 }())); },
-[&](const ast::TyFn& tyFn) { auto [params, ret] = tyFn; return [&]() {
-auto param_types = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < params.length())) {
-param_types.push_back(type_to_cpp(context, params[i]));
-i = (i + 1);
-}
-return expr::cpp_std_function_type(type_to_cpp(context, ret), param_types.join(mlc::String(", ", 2)));
-}(); },
-[&](const ast::TyAssoc& tyAssoc) { auto [param, assoc] = tyAssoc; return (((mlc::String("typename ", 9) + cpp_naming::cpp_safe(param)) + mlc::String("::", 2)) + assoc); }
+[&](const ast::TyFn& tyFn) { auto [params, ret] = tyFn; return expr::cpp_std_function_type(type_to_cpp(context, ret), params.map([=](std::shared_ptr<ast::TypeExpr> p) mutable { return type_to_cpp(context, p); }).join(mlc::String(", ", 2))); },
+[&](const ast::TyAssoc& tyAssoc) { auto [param, assoc] = tyAssoc; return ((((mlc::String("typename ", 9) + mlc::to_string(cpp_naming::cpp_safe(param))) + mlc::String("::", 2)) + mlc::to_string(assoc)) + mlc::String("", 0)); }
 }, (*type_expr));
 }
 bool type_param_in_typeexpr(mlc::String param, std::shared_ptr<ast::TypeExpr> t) noexcept{
@@ -123,90 +99,35 @@ return std::visit(overloaded{[&](const ast::TyNamed& tyNamed) { auto [name] = ty
 }, (*t));
 }
 bool type_param_in_typeexpr_list(mlc::String param, mlc::Array<std::shared_ptr<ast::TypeExpr>> types) noexcept{
-auto found = false;
-auto i = 0;
-while ((i < types.length())) {
-if ((!found)) {
-found = type_param_in_typeexpr(param, types[i]);
-}
-i = (i + 1);
-}
-return found;
+return types.any([=](std::shared_ptr<ast::TypeExpr> t) mutable { return type_param_in_typeexpr(param, t); });
 }
 mlc::Array<std::shared_ptr<ast::TypeExpr>> variant_field_typeexprs(std::shared_ptr<ast::TypeVariant> variant) noexcept{
 return std::visit(overloaded{[&](const ast::VarTuple& varTuple) { auto [__0, fts, __2] = varTuple; return fts; },
-[&](const ast::VarRecord& varRecord) { auto [__0, fds, __2] = varRecord; return [&]() {
-auto result = mlc::Array<std::shared_ptr<ast::TypeExpr>>{};
-auto i = 0;
-while ((i < fds.length())) {
-result.push_back(fds[i]->typ);
-i = (i + 1);
-}
-return result;
-}(); },
-[&](const ast::VarUnit& varUnit) { auto [__0, __1] = varUnit; return [&]() {
-auto r = mlc::Array<std::shared_ptr<ast::TypeExpr>>{};
-return r;
-}(); }
+[&](const ast::VarRecord& varRecord) { auto [__0, fds, __2] = varRecord; return fds.map([=](std::shared_ptr<ast::FieldDef> fd) mutable { return fd->typ; }); },
+[&](const ast::VarUnit& varUnit) { auto [__0, __1] = varUnit; return {}; }
 }, (*variant));
 }
 mlc::Array<mlc::String> variant_used_type_params(mlc::Array<mlc::String> type_params, std::shared_ptr<ast::TypeVariant> variant) noexcept{
 auto field_types = variant_field_typeexprs(variant);
-auto used = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < type_params.length())) {
-if (type_param_in_typeexpr_list(type_params[i], field_types)) {
-used.push_back(type_params[i]);
-}
-i = (i + 1);
-}
-return used;
+return type_params.filter([=](mlc::String p) mutable { return type_param_in_typeexpr_list(p, field_types); });
 }
 mlc::Array<mlc::String> union_string_lists(mlc::Array<mlc::String> a, mlc::Array<mlc::String> b) noexcept{
-auto result = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < a.length())) {
-result.push_back(a[i]);
-i = (i + 1);
-}
-i = 0;
-while ((i < b.length())) {
-auto found = false;
-auto j = 0;
-while ((j < a.length())) {
-if ((a[j] == b[i])) {
-found = true;
-}
-j = (j + 1);
-}
-if ((!found)) {
-result.push_back(b[i]);
-}
-i = (i + 1);
-}
-return result;
+return a.concat(b.filter([=](mlc::String s) mutable { return (!a.any([=](mlc::String x) mutable { return (x == s); })); }));
 }
 mlc::Array<mlc::String> type_phantom_params_for_variants(mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
-auto all_fields = mlc::Array<std::shared_ptr<ast::TypeExpr>>{};
-auto vi = 0;
-while ((vi < variants.length())) {
-auto fts = variant_field_typeexprs(variants[vi]);
-auto fi = 0;
-while ((fi < fts.length())) {
-all_fields.push_back(fts[fi]);
-fi = (fi + 1);
+auto all_fields = variants.flat_map([=](std::shared_ptr<ast::TypeVariant> v) mutable { return variant_field_typeexprs(v); });
+return type_params.filter([=](mlc::String p) mutable { return (!type_param_in_typeexpr_list(p, all_fields)); });
 }
-vi = (vi + 1);
+mlc::String field_def_member_declaration(context::CodegenContext context, std::shared_ptr<ast::FieldDef> fd) noexcept{
+auto base = expr::struct_named_field_declaration(type_to_cpp(context, fd->typ), cpp_naming::cpp_safe(fd->name));
+if ((fd->has_default_expression && record_field_default_initializer::record_field_default_expression_acceptable_for_codegen(fd->default_expression))) {
+return ((base + mlc::String(" = ", 3)) + record_field_default_initializer::record_field_default_expression_cpp_initializer(fd->default_expression, context));
+} else {
+return base;
 }
-auto phantom = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < type_params.length())) {
-if ((!type_param_in_typeexpr_list(type_params[i], all_fields))) {
-phantom.push_back(type_params[i]);
 }
-i = (i + 1);
-}
-return phantom;
+mlc::String variant_record_struct_inline_member_declarations(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept{
+return field_definitions.map([=](std::shared_ptr<ast::FieldDef> fd) mutable { return field_def_member_declaration(context, fd); }).join(mlc::String("", 0));
 }
 mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept{
 return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [name, __1] = varUnit; return name; },
@@ -214,94 +135,53 @@ return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [name, __1]
 [&](const ast::VarRecord& varRecord) { auto [name, __1, __2] = varRecord; return name; }
 }, (*variant));
 }
+mlc::String tuple_variant_struct_members_fragment(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types) noexcept{
+return field_types.fold(TupleStructCodegenFoldState{0, mlc::String("", 0)}, [=](TupleStructCodegenFoldState accumulated_tuple_state, std::shared_ptr<ast::TypeExpr> field_type_expression_under_tuple) mutable { return TupleStructCodegenFoldState{(accumulated_tuple_state.field_slot_index + 1), (accumulated_tuple_state.declaration_text_so_far + expr::struct_tuple_field_declaration(type_to_cpp(context, field_type_expression_under_tuple), mlc::to_string(accumulated_tuple_state.field_slot_index)))}; }).declaration_text_so_far;
+}
 mlc::String gen_variant_struct(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{
-return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [name, __1] = varUnit; return expr::struct_empty_definition(context::context_resolve(context, name)); },
-[&](const ast::VarTuple& varTuple) { auto [name, field_types, __2] = varTuple; return [&]() {
-auto parts = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < field_types.length())) {
-parts.push_back(expr::struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), mlc::to_string(i)));
-i = (i + 1);
-}
-return expr::struct_with_inline_members_definition(context::context_resolve(context, name), parts.join(mlc::String("", 0)));
-}(); },
-[&](const ast::VarRecord& varRecord) { auto [name, field_defs, __2] = varRecord; return [&]() {
-auto parts = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < field_defs.length())) {
-parts.push_back(expr::struct_named_field_declaration(type_to_cpp(context, field_defs[i]->typ), cpp_naming::cpp_safe(field_defs[i]->name)));
-i = (i + 1);
-}
-return expr::struct_with_inline_members_definition(context::context_resolve(context, name), parts.join(mlc::String("", 0)));
-}(); }
+return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [name, __1] = varUnit; return expr::struct_empty_definition(CodegenContext_resolve(context, name)); },
+[&](const ast::VarTuple& varTuple) { auto [name, field_types, __2] = varTuple; return expr::struct_with_inline_members_definition(CodegenContext_resolve(context, name), tuple_variant_struct_members_fragment(context, field_types)); },
+[&](const ast::VarRecord& varRecord) { auto [name, field_defs, __2] = varRecord; return expr::struct_with_inline_members_definition(CodegenContext_resolve(context, name), variant_record_struct_inline_member_declarations(context, field_defs)); }
 }, (*variant));
 }
 mlc::String struct_extra_using(context::CodegenContext context, mlc::String type_name) noexcept{
 if (context.struct_using_lines.has(type_name)) {
-auto lines = context.struct_using_lines.get(type_name);
-auto result = mlc::String("", 0);
-/* unit */;
-auto k = 0;
-while ((k < lines.length())) {
-result = (result + lines[k]);
-k = (k + 1);
-}
-return result;
+return context.struct_using_lines.get(type_name).join(mlc::String("", 0));
 } else {
 return mlc::String("", 0);
 }
 }
 mlc::String gen_single_variant(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{
-return std::visit(overloaded{[&](const ast::VarRecord& varRecord) { auto [__0, field_defs, __2] = varRecord; return [&]() {
-auto parts = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < field_defs.length())) {
-parts.push_back(expr::struct_named_field_declaration(type_to_cpp(context, field_defs[i]->typ), cpp_naming::cpp_safe(field_defs[i]->name)));
-i = (i + 1);
-}
-return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), (parts.join(mlc::String("", 0)) + struct_extra_using(context, type_name)));
-}(); },
-[&](const ast::VarTuple& varTuple) { auto [__0, field_types, __2] = varTuple; return [&]() {
-auto parts = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < field_types.length())) {
-parts.push_back(expr::struct_tuple_field_declaration(type_to_cpp(context, field_types[i]), mlc::to_string(i)));
-i = (i + 1);
-}
-return expr::struct_with_inline_members_definition(context::context_resolve(context, type_name), (parts.join(mlc::String("", 0)) + struct_extra_using(context, type_name)));
-}(); },
-[&](const ast::VarUnit& varUnit) { auto [__0, __1] = varUnit; return expr::struct_empty_definition(context::context_resolve(context, type_name)); }
+return std::visit(overloaded{[&](const ast::VarRecord& varRecord) { auto [__0, field_defs, __2] = varRecord; return expr::struct_with_inline_members_definition(CodegenContext_resolve(context, type_name), (variant_record_struct_inline_member_declarations(context, field_defs) + struct_extra_using(context, type_name))); },
+[&](const ast::VarTuple& varTuple) { auto [__0, field_types, __2] = varTuple; return expr::struct_with_inline_members_definition(CodegenContext_resolve(context, type_name), (tuple_variant_struct_members_fragment(context, field_types) + struct_extra_using(context, type_name))); },
+[&](const ast::VarUnit& varUnit) { auto [__0, __1] = varUnit; return expr::struct_empty_definition(CodegenContext_resolve(context, type_name)); }
 }, (*variant));
+}
+mlc::String variant_forward_decl_line(context::CodegenContext context, mlc::Array<mlc::String> type_params, mlc::Array<mlc::String> phantom, std::shared_ptr<ast::TypeVariant> v) noexcept{
+auto variant_name = CodegenContext_resolve(context, variant_ctor_name(v));
+auto used = union_string_lists(variant_used_type_params(type_params, v), phantom);
+return expr::struct_forward_declaration_line(cpp_naming::template_prefix(used), variant_name);
+}
+mlc::String variant_alias_part(context::CodegenContext context, mlc::Array<mlc::String> type_params, mlc::Array<mlc::String> phantom, std::shared_ptr<ast::TypeVariant> v) noexcept{
+auto variant_name = CodegenContext_resolve(context, variant_ctor_name(v));
+auto used = union_string_lists(variant_used_type_params(type_params, v), phantom);
+auto var_targs = ((used.length() > 0) ? (((mlc::String("<", 1) + mlc::to_string(used.join(mlc::String(", ", 2)))) + mlc::String(">", 1))) : (mlc::String("", 0)));
+return (variant_name + var_targs);
 }
 mlc::String gen_adt_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
 auto full_prefix = cpp_naming::template_prefix(type_params);
 auto phantom = type_phantom_params_for_variants(type_params, variants);
-auto parts = mlc::Array<mlc::String>{};
-auto alias_parts = mlc::Array<mlc::String>{};
-auto index = 0;
-while ((index < variants.length())) {
-auto v = variants[index];
-auto variant_name = context::context_resolve(context, variant_ctor_name(v));
-auto used = union_string_lists(variant_used_type_params(type_params, v), phantom);
-auto var_prefix = cpp_naming::template_prefix(used);
-auto var_targs = ((used.length() > 0) ? (((mlc::String("<", 1) + used.join(mlc::String(", ", 2))) + mlc::String(">", 1))) : (mlc::String("", 0)));
-alias_parts.push_back((variant_name + var_targs));
-parts.push_back(expr::struct_forward_declaration_line(var_prefix, variant_name));
-index = (index + 1);
+auto forward_decls = variants.map([=](std::shared_ptr<ast::TypeVariant> v) mutable { return variant_forward_decl_line(context, type_params, phantom, v); }).join(mlc::String("", 0));
+auto alias_parts = variants.map([=](std::shared_ptr<ast::TypeVariant> v) mutable { return variant_alias_part(context, type_params, phantom, v); }).join(mlc::String(", ", 2));
+return (forward_decls + expr::variant_using_alias_definition_line(full_prefix, CodegenContext_resolve(context, type_name), alias_parts));
 }
-return (parts.join(mlc::String("", 0)) + expr::variant_using_alias_definition_line(full_prefix, context::context_resolve(context, type_name), alias_parts.join(mlc::String(", ", 2))));
+mlc::String variant_def_with_prefix(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::String> phantom, std::shared_ptr<ast::TypeVariant> v) noexcept{
+auto used = union_string_lists(variant_used_type_params(type_params, v), phantom);
+return (cpp_naming::template_prefix(used) + gen_variant_struct(context, type_name, v));
 }
 mlc::String gen_adt_defs(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
 auto phantom = type_phantom_params_for_variants(type_params, variants);
-auto parts = mlc::Array<mlc::String>{};
-auto i = 0;
-while ((i < variants.length())) {
-auto v = variants[i];
-auto used = union_string_lists(variant_used_type_params(type_params, v), phantom);
-parts.push_back((cpp_naming::template_prefix(used) + gen_variant_struct(context, type_name, v)));
-i = (i + 1);
-}
-return parts.join(mlc::String("", 0));
+return variants.map([=](std::shared_ptr<ast::TypeVariant> v) mutable { return variant_def_with_prefix(context, type_name, type_params, phantom, v); }).join(mlc::String("", 0));
 }
 mlc::String gen_type_decl_fwd(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
 if ((variants.length() == 1)) {
@@ -321,89 +201,68 @@ mlc::String gen_type_decl(context::CodegenContext context, mlc::String type_name
 return (gen_type_decl_fwd(context, type_name, type_params, variants) + gen_type_decl_body(context, type_name, type_params, variants));
 }
 mlc::String derive_field_display(mlc::String field_name, std::shared_ptr<ast::TypeExpr> field_type) noexcept{
-return std::visit(overloaded{[&](const ast::TyString& tyString) { return (mlc::String("self.", 5) + field_name); },
-[&](const auto& __v) { return ((mlc::String("mlc::to_string(self.", 20) + field_name) + mlc::String(")", 1)); }
+return std::visit(overloaded{[&](const ast::TyString& tyString) { return ((mlc::String("self.", 5) + mlc::to_string(field_name)) + mlc::String("", 0)); },
+[&](const auto& __v) { return ((mlc::String("mlc::to_string(self.", 20) + mlc::to_string(field_name)) + mlc::String(")", 1)); }
 }, (*field_type));
 }
 mlc::String derive_display_record_fields(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
-auto body = (((((mlc::String("mlc::String(\"", 13) + type_name) + mlc::String(" { ", 3)) + field_defs[0]->name) + mlc::String(": \") + ", 7)) + derive_field_display(field_defs[0]->name, field_defs[0]->typ));
-auto i = 1;
-while ((i < field_defs.length())) {
-body = ((((body + mlc::String(" + mlc::String(\", ", 18)) + field_defs[i]->name) + mlc::String(": \") + ", 7)) + derive_field_display(field_defs[i]->name, field_defs[i]->typ));
-i = (i + 1);
-}
-return (body + mlc::String(" + mlc::String(\" }\")", 20));
+return ((((((((mlc::String("mlc::String(\"", 13) + mlc::to_string(type_name)) + mlc::String(" { ", 3)) + mlc::to_string(field_defs[0]->name)) + mlc::String(": \") + ", 7)) + mlc::to_string(derive_field_display(field_defs[0]->name, field_defs[0]->typ))) + mlc::String("", 0)) + field_defs.drop(1).fold(mlc::String("", 0), [=](mlc::String acc, std::shared_ptr<ast::FieldDef> fd) mutable { return (acc + ((((mlc::String(" + mlc::String(\", ", 18) + mlc::to_string(fd->name)) + mlc::String(": \") + ", 7)) + mlc::to_string(derive_field_display(fd->name, fd->typ))) + mlc::String("", 0))); })) + mlc::String(" + mlc::String(\" }\")", 20));
 }
 mlc::String derive_display_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
-auto sig = ((((mlc::String("mlc::String ", 12) + type_name) + mlc::String("_to_string(const ", 17)) + type_name) + mlc::String("& self) noexcept", 16));
+auto sig = ((((mlc::String("mlc::String ", 12) + mlc::to_string(type_name)) + mlc::String("_to_string(const ", 17)) + mlc::to_string(type_name)) + mlc::String("& self) noexcept", 16));
 if ((field_defs.length() == 0)) {
-return (((sig + mlc::String(" { return mlc::String(\"", 23)) + type_name) + mlc::String(" {}\"); }\n", 9));
+return (sig + ((mlc::String(" { return mlc::String(\"", 23) + mlc::to_string(type_name)) + mlc::String(" {}\"); }\n", 9)));
 } else {
 return (((sig + mlc::String(" {\n  return ", 12)) + derive_display_record_fields(type_name, field_defs)) + mlc::String(";\n}\n", 4));
 }
 }
 mlc::String derive_display_variant_case(std::shared_ptr<ast::TypeVariant> variant) noexcept{
-return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [name, __1] = varUnit; return ((((mlc::String("  if (std::holds_alternative<", 29) + name) + mlc::String(">(self._)) return mlc::String(\"", 31)) + name) + mlc::String("\");\n", 4)); },
-[&](const ast::VarTuple& varTuple) { auto [name, field_types, __2] = varTuple; return ((field_types.length() == 0) ? (((((mlc::String("  if (std::holds_alternative<", 29) + name) + mlc::String(">(self._)) return mlc::String(\"", 31)) + name) + mlc::String("\");\n", 4))) : (((((((mlc::String("  if (std::holds_alternative<", 29) + name) + mlc::String(">(self._)) return mlc::String(\"", 31)) + name) + mlc::String("(\") + mlc::to_string(std::get<", 30)) + name) + mlc::String(">(self._)._0) + mlc::String(\")\");\n", 34)))); },
+return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [name, __1] = varUnit; return ((((mlc::String("  if (std::holds_alternative<", 29) + mlc::to_string(name)) + mlc::String(">(self._)) return mlc::String(\"", 31)) + mlc::to_string(name)) + mlc::String("\");\n", 4)); },
+[&](const ast::VarTuple& varTuple) { auto [name, field_types, __2] = varTuple; return ((field_types.length() == 0) ? (((((mlc::String("  if (std::holds_alternative<", 29) + mlc::to_string(name)) + mlc::String(">(self._)) return mlc::String(\"", 31)) + mlc::to_string(name)) + mlc::String("\");\n", 4))) : (((((((mlc::String("  if (std::holds_alternative<", 29) + mlc::to_string(name)) + mlc::String(">(self._)) return mlc::String(\"", 31)) + mlc::to_string(name)) + mlc::String("(\") + mlc::to_string(std::get<", 30)) + mlc::to_string(name)) + mlc::String(">(self._)._0) + mlc::String(\")\");\n", 34)))); },
 [&](const ast::VarRecord& varRecord) { auto [name, fds, __2] = varRecord; return derive_display_variant_record(name, fds); }
 }, (*variant));
 }
 mlc::String derive_display_variant_record(mlc::String name, mlc::Array<std::shared_ptr<ast::FieldDef>> fds) noexcept{
 if ((fds.length() == 0)) {
-return ((((mlc::String("  if (std::holds_alternative<", 29) + name) + mlc::String(">(self._)) return mlc::String(\"", 31)) + name) + mlc::String("\");\n", 4));
+return ((((mlc::String("  if (std::holds_alternative<", 29) + mlc::to_string(name)) + mlc::String(">(self._)) return mlc::String(\"", 31)) + mlc::to_string(name)) + mlc::String("\");\n", 4));
 } else {
-auto parts = ((((mlc::String("mlc::to_string(std::get<", 24) + name) + mlc::String(">(self._).", 10)) + fds[0]->name) + mlc::String(")", 1));
-auto fi = 1;
-while ((fi < fds.length())) {
-parts = (((((parts + mlc::String(" + mlc::String(\", \") + mlc::to_string(std::get<", 47)) + name) + mlc::String(">(self._).", 10)) + fds[fi]->name) + mlc::String(")", 1));
-fi = (fi + 1);
-}
-return ((((((mlc::String("  if (std::holds_alternative<", 29) + name) + mlc::String(">(self._)) return mlc::String(\"", 31)) + name) + mlc::String("(\") + ", 6)) + parts) + mlc::String(" + mlc::String(\")\");\n", 21));
+auto parts = (((((mlc::String("mlc::to_string(std::get<", 24) + mlc::to_string(name)) + mlc::String(">(self._).", 10)) + mlc::to_string(fds[0]->name)) + mlc::String(")", 1)) + fds.drop(1).fold(mlc::String("", 0), [=](mlc::String acc, std::shared_ptr<ast::FieldDef> fd) mutable { return (acc + ((((mlc::String(" + mlc::String(\", \") + mlc::to_string(std::get<", 47) + mlc::to_string(name)) + mlc::String(">(self._).", 10)) + mlc::to_string(fd->name)) + mlc::String(")", 1))); }));
+return ((((((mlc::String("  if (std::holds_alternative<", 29) + mlc::to_string(name)) + mlc::String(">(self._)) return mlc::String(\"", 31)) + mlc::to_string(name)) + mlc::String("(\") + ", 6)) + mlc::to_string(parts)) + mlc::String(" + mlc::String(\")\");\n", 21));
 }
 }
 mlc::String derive_display_sum(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
-auto cases = mlc::String("", 0);
-auto i = 0;
-while ((i < variants.length())) {
-cases = (cases + derive_display_variant_case(variants[i]));
-i = (i + 1);
-}
-return ((((((mlc::String("mlc::String ", 12) + type_name) + mlc::String("_to_string(const ", 17)) + type_name) + mlc::String("& self) noexcept {\n", 19)) + cases) + mlc::String("  return mlc::String(\"\");\n}\n", 28));
+auto cases = variants.map([=](std::shared_ptr<ast::TypeVariant> v) mutable { return derive_display_variant_case(v); }).join(mlc::String("", 0));
+return ((((((mlc::String("mlc::String ", 12) + mlc::to_string(type_name)) + mlc::String("_to_string(const ", 17)) + mlc::to_string(type_name)) + mlc::String("& self) noexcept {\n", 19)) + cases) + mlc::String("  return mlc::String(\"\");\n}\n", 28));
 }
 mlc::String derive_eq_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
-auto sig = ((((mlc::String("bool operator==(const ", 22) + type_name) + mlc::String("& a, const ", 11)) + type_name) + mlc::String("& b) noexcept", 13));
+auto sig = ((((mlc::String("bool operator==(const ", 22) + mlc::to_string(type_name)) + mlc::String("& a, const ", 11)) + mlc::to_string(type_name)) + mlc::String("& b) noexcept", 13));
 if ((field_defs.length() == 0)) {
 return (sig + mlc::String(" { return true; }\n", 18));
 } else {
-auto cond = (((mlc::String("a.", 2) + field_defs[0]->name) + mlc::String(" == b.", 6)) + field_defs[0]->name);
-auto i = 1;
-while ((i < field_defs.length())) {
-cond = ((((cond + mlc::String(" && a.", 6)) + field_defs[i]->name) + mlc::String(" == b.", 6)) + field_defs[i]->name);
-i = (i + 1);
-}
+auto cond = (((((mlc::String("a.", 2) + mlc::to_string(field_defs[0]->name)) + mlc::String(" == b.", 6)) + mlc::to_string(field_defs[0]->name)) + mlc::String("", 0)) + field_defs.drop(1).fold(mlc::String("", 0), [=](mlc::String acc, std::shared_ptr<ast::FieldDef> fd) mutable { return (acc + ((((mlc::String(" && a.", 6) + mlc::to_string(fd->name)) + mlc::String(" == b.", 6)) + mlc::to_string(fd->name)) + mlc::String("", 0))); }));
 return (((sig + mlc::String(" { return ", 10)) + cond) + mlc::String("; }\n", 4));
 }
 }
 mlc::String derive_eq_sum(mlc::String type_name) noexcept{
-return ((((mlc::String("bool operator==(const ", 22) + type_name) + mlc::String("& a, const ", 11)) + type_name) + mlc::String("& b) noexcept { return a._ == b._; }\n", 37));
+return ((((mlc::String("bool operator==(const ", 22) + mlc::to_string(type_name)) + mlc::String("& a, const ", 11)) + mlc::to_string(type_name)) + mlc::String("& b) noexcept { return a._ == b._; }\n", 37));
 }
 mlc::String derive_ord_build_cond(mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
-auto cond = (((mlc::String("a.", 2) + field_defs[0]->name) + mlc::String(" < b.", 5)) + field_defs[0]->name);
+auto cond = ((((mlc::String("a.", 2) + mlc::to_string(field_defs[0]->name)) + mlc::String(" < b.", 5)) + mlc::to_string(field_defs[0]->name)) + mlc::String("", 0));
 auto i = 1;
 while ((i < field_defs.length())) {
-auto prev_eq = (((mlc::String("a.", 2) + field_defs[0]->name) + mlc::String(" == b.", 6)) + field_defs[0]->name);
+auto prev_eq = ((((mlc::String("a.", 2) + mlc::to_string(field_defs[0]->name)) + mlc::String(" == b.", 6)) + mlc::to_string(field_defs[0]->name)) + mlc::String("", 0));
 auto j = 1;
 while ((j < i)) {
-prev_eq = ((((prev_eq + mlc::String(" && a.", 6)) + field_defs[j]->name) + mlc::String(" == b.", 6)) + field_defs[j]->name);
+prev_eq = (prev_eq + ((((mlc::String(" && a.", 6) + mlc::to_string(field_defs[j]->name)) + mlc::String(" == b.", 6)) + mlc::to_string(field_defs[j]->name)) + mlc::String("", 0)));
 j = (j + 1);
 }
-cond = (((((((cond + mlc::String(" || (", 5)) + prev_eq) + mlc::String(" && a.", 6)) + field_defs[i]->name) + mlc::String(" < b.", 5)) + field_defs[i]->name) + mlc::String(")", 1));
+cond = (cond + ((((((mlc::String(" || (", 5) + mlc::to_string(prev_eq)) + mlc::String(" && a.", 6)) + mlc::to_string(field_defs[i]->name)) + mlc::String(" < b.", 5)) + mlc::to_string(field_defs[i]->name)) + mlc::String(")", 1)));
 i = (i + 1);
 }
 return cond;
 }
 mlc::String derive_ord_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
-auto sig = ((((mlc::String("bool operator<(const ", 21) + type_name) + mlc::String("& a, const ", 11)) + type_name) + mlc::String("& b) noexcept", 13));
+auto sig = ((((mlc::String("bool operator<(const ", 21) + mlc::to_string(type_name)) + mlc::String("& a, const ", 11)) + mlc::to_string(type_name)) + mlc::String("& b) noexcept", 13));
 if ((field_defs.length() == 0)) {
 return (sig + mlc::String(" { return false; }\n", 19));
 } else {
@@ -411,7 +270,7 @@ return (((sig + mlc::String(" { return ", 10)) + derive_ord_build_cond(field_def
 }
 }
 mlc::String derive_ord_sum(mlc::String type_name) noexcept{
-return ((((mlc::String("bool operator<(const ", 21) + type_name) + mlc::String("& a, const ", 11)) + type_name) + mlc::String("& b) noexcept { return a._ < b._; }\n", 36));
+return ((((mlc::String("bool operator<(const ", 21) + mlc::to_string(type_name)) + mlc::String("& a, const ", 11)) + mlc::to_string(type_name)) + mlc::String("& b) noexcept { return a._ < b._; }\n", 36));
 }
 mlc::String derive_hash_std_cpp_type(std::shared_ptr<ast::TypeExpr> field_type) noexcept{
 return std::visit(overloaded{[&](const ast::TyString& tyString) { return mlc::String("mlc::String", 11); },
@@ -421,47 +280,24 @@ return std::visit(overloaded{[&](const ast::TyString& tyString) { return mlc::St
 }, (*field_type));
 }
 mlc::String derive_hash_combine_line(mlc::String cpp_type, mlc::String access_expr) noexcept{
-return ((((mlc::String("h ^= std::hash<", 15) + cpp_type) + mlc::String(">{}(", 4)) + access_expr) + mlc::String(") + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);\n", 49));
+return ((((mlc::String("h ^= std::hash<", 15) + mlc::to_string(cpp_type)) + mlc::String(">{}(", 4)) + mlc::to_string(access_expr)) + mlc::String(") + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);\n", 49));
 }
 mlc::String derive_hash_record_operator_body(mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
 if ((field_defs.length() == 0)) {
 return mlc::String("return static_cast<size_t>(1469598103934665603ULL);\n", 52);
 } else {
-auto inner = mlc::String("size_t h = 1469598103934665603ULL;\n", 35);
-auto field_index = 0;
-while ((field_index < field_defs.length())) {
-auto cpp_type_name = derive_hash_std_cpp_type(field_defs[field_index]->typ);
-inner = (inner + derive_hash_combine_line(cpp_type_name, (mlc::String("self.", 5) + field_defs[field_index]->name)));
-field_index = (field_index + 1);
-}
-return (inner + mlc::String("return h;\n", 10));
+return (field_defs.fold(mlc::String("size_t h = 1469598103934665603ULL;\n", 35), [=](mlc::String acc, std::shared_ptr<ast::FieldDef> fd) mutable { return (acc + derive_hash_combine_line(derive_hash_std_cpp_type(fd->typ), ((mlc::String("self.", 5) + mlc::to_string(fd->name)) + mlc::String("", 0)))); }) + mlc::String("return h;\n", 10));
 }
 }
 mlc::String derive_hash_record(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs) noexcept{
 auto operator_body = derive_hash_record_operator_body(field_defs);
-return ((((((mlc::String("namespace std {\ntemplate<>\nstruct hash<", 39) + type_name) + mlc::String("> {\n  size_t operator()(const ", 30)) + type_name) + mlc::String("& self) const noexcept {\n    ", 29)) + operator_body) + mlc::String("  }\n};\n}\n", 9));
+return ((((((mlc::String("namespace std {\ntemplate<>\nstruct hash<", 39) + mlc::to_string(type_name)) + mlc::String("> {\n  size_t operator()(const ", 30)) + mlc::to_string(type_name)) + mlc::String("& self) const noexcept {\n    ", 29)) + operator_body) + mlc::String("  }\n};\n}\n", 9));
 }
 mlc::String derive_hash_tuple_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types, int discriminant_index) noexcept{
-auto inner = derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index));
-auto tuple_index = 0;
-while ((tuple_index < field_types.length())) {
-auto cpp_type_name = derive_hash_std_cpp_type(field_types[tuple_index]);
-auto slot_access = (((mlc::String("std::get<", 9) + variant_struct_name) + mlc::String(">(self._).field", 15)) + mlc::to_string(tuple_index));
-inner = (inner + derive_hash_combine_line(cpp_type_name, slot_access));
-tuple_index = (tuple_index + 1);
-}
-return inner;
+return field_types.fold(TupleHashCodegenFoldState{0, derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index))}, [=](TupleHashCodegenFoldState accumulated_hash_tuple_state, std::shared_ptr<ast::TypeExpr> field_type_expression_under_tuple) mutable { return TupleHashCodegenFoldState{(accumulated_hash_tuple_state.tuple_field_slot + 1), (accumulated_hash_tuple_state.concatenated_combine_lines + derive_hash_combine_line(derive_hash_std_cpp_type(field_type_expression_under_tuple), ((((mlc::String("std::get<", 9) + mlc::to_string(variant_struct_name)) + mlc::String(">(self._).field", 15)) + mlc::to_string(mlc::to_string(accumulated_hash_tuple_state.tuple_field_slot))) + mlc::String("", 0))))}; }).concatenated_combine_lines;
 }
 mlc::String derive_hash_record_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs, int discriminant_index) noexcept{
-auto inner = derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index));
-auto field_index = 0;
-while ((field_index < field_defs.length())) {
-auto cpp_type_name = derive_hash_std_cpp_type(field_defs[field_index]->typ);
-auto variant_member_access_expression = (((mlc::String("std::get<", 9) + variant_struct_name) + mlc::String(">(self._).", 10)) + field_defs[field_index]->name);
-inner = (inner + derive_hash_combine_line(cpp_type_name, variant_member_access_expression));
-field_index = (field_index + 1);
-}
-return inner;
+return field_defs.fold(derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index)), [=](mlc::String acc, std::shared_ptr<ast::FieldDef> fd) mutable { return (acc + derive_hash_combine_line(derive_hash_std_cpp_type(fd->typ), ((((mlc::String("std::get<", 9) + mlc::to_string(variant_struct_name)) + mlc::String(">(self._).", 10)) + mlc::to_string(fd->name)) + mlc::String("", 0)))); });
 }
 mlc::String derive_hash_sum_variant_inner(std::shared_ptr<ast::TypeVariant> variant, int discriminant_index) noexcept{
 return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [__0, __1] = varUnit; return derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index)); },
@@ -478,20 +314,14 @@ return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [name, __1]
 mlc::String derive_hash_sum_branch(std::shared_ptr<ast::TypeVariant> variant, int discriminant_index) noexcept{
 auto constructor_name = type_variant_constructor_name(variant);
 auto variant_inner = derive_hash_sum_variant_inner(variant, discriminant_index);
-return ((((mlc::String("if (std::holds_alternative<", 27) + constructor_name) + mlc::String(">(self._)) {\n    ", 17)) + variant_inner) + mlc::String("    return h;\n  }\n", 18));
+return ((((mlc::String("if (std::holds_alternative<", 27) + mlc::to_string(constructor_name)) + mlc::String(">(self._)) {\n    ", 17)) + variant_inner) + mlc::String("    return h;\n  }\n", 18));
 }
 mlc::String derive_hash_sum_operator_body(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
-auto inner = mlc::String("size_t h = 1469598103934665603ULL;\n", 35);
-auto variant_index = 0;
-while ((variant_index < variants.length())) {
-inner = (inner + derive_hash_sum_branch(variants[variant_index], variant_index));
-variant_index = (variant_index + 1);
-}
-return (inner + mlc::String("return h;\n", 10));
+return (variants.fold(HashSumOperatorFoldState{0, mlc::String("size_t h = 1469598103934665603ULL;\n", 35)}, [=](HashSumOperatorFoldState accumulated_hash_sum_state, std::shared_ptr<ast::TypeVariant> variant_under_hash_sum) mutable { return HashSumOperatorFoldState{(accumulated_hash_sum_state.next_discriminant_index + 1), (accumulated_hash_sum_state.operator_body_text + derive_hash_sum_branch(variant_under_hash_sum, accumulated_hash_sum_state.next_discriminant_index))}; }).operator_body_text + mlc::String("return h;\n", 10));
 }
 mlc::String derive_hash_sum(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
 auto operator_body = derive_hash_sum_operator_body(variants);
-return ((((((mlc::String("namespace std {\ntemplate<>\nstruct hash<", 39) + type_name) + mlc::String("> {\n  size_t operator()(const ", 30)) + type_name) + mlc::String("& self) const noexcept {\n    ", 29)) + operator_body) + mlc::String("  }\n};\n}\n", 9));
+return ((((((mlc::String("namespace std {\ntemplate<>\nstruct hash<", 39) + mlc::to_string(type_name)) + mlc::String("> {\n  size_t operator()(const ", 30)) + mlc::to_string(type_name)) + mlc::String("& self) const noexcept {\n    ", 29)) + operator_body) + mlc::String("  }\n};\n}\n", 9));
 }
 bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
 if ((variants.length() != 1)) {
@@ -546,14 +376,7 @@ if ((derive_traits.length() == 0)) {
 return mlc::String("", 0);
 } else {
 auto is_record = variants_is_single_record(variants);
-auto result = mlc::String("", 0);
-auto i = 0;
-while ((i < derive_traits.length())) {
-auto trait_code = (is_record ? (gen_derive_record_trait(type_name, variants, derive_traits[i])) : (gen_derive_sum_trait(type_name, variants, derive_traits[i])));
-result = (result + trait_code);
-i = (i + 1);
-}
-return result;
+return derive_traits.map([=](mlc::String trait_name) mutable { return (is_record ? (gen_derive_record_trait(type_name, variants, trait_name)) : (gen_derive_sum_trait(type_name, variants, trait_name))); }).join(mlc::String("", 0));
 }
 }
 mlc::String gen_type_decl_fwd_only(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{

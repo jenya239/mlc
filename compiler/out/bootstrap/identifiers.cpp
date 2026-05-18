@@ -10,7 +10,7 @@ if ((decl_index::list_contains(self_fields, name) || is_known_field)) {
 return (mlc::String("self.", 5) + cpp_naming::cpp_safe(name));
 } else {
 auto mapped = cpp_naming::map_builtin_identifier_reference(name);
-auto resolved = context::context_resolve(context, mapped);
+auto resolved = CodegenContext_resolve(context, mapped);
 auto needs_constructor_brace = (((name.length() > 0) && (name.char_at(0) >= mlc::String("A", 1))) && (name.char_at(0) <= mlc::String("Z", 1)));
 if (needs_constructor_brace) {
 return (resolved + mlc::String("{}", 2));
@@ -24,7 +24,7 @@ if ((context.self_type.length() > 0)) {
 return resolve_identifier_in_self_context(name, context);
 } else {
 auto mapped = cpp_naming::map_builtin_identifier_reference(name);
-auto resolved = context::context_resolve(context, mapped);
+auto resolved = CodegenContext_resolve(context, mapped);
 auto needs_constructor_brace = (((name.length() > 0) && (name.char_at(0) >= mlc::String("A", 1))) && (name.char_at(0) <= mlc::String("Z", 1)));
 if (needs_constructor_brace) {
 return (resolved + mlc::String("{}", 2));

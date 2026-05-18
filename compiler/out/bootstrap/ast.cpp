@@ -27,12 +27,13 @@ return message_part;
 
 }
 mlc::Array<Diagnostic> diagnostics_append(mlc::Array<Diagnostic> destination, mlc::Array<Diagnostic> source) noexcept{
+auto accumulator = destination;
 auto index = 0;
 while ((index < source.length())) {
-destination.push_back(source[index]);
+accumulator.push_back(source[index]);
 index = (index + 1);
 }
-return destination;
+return accumulator;
 }
 mlc::Array<Diagnostic> infer_messages_as_diagnostics(mlc::Array<mlc::String> messages) noexcept{
 auto collected = mlc::Array<Diagnostic>{};
@@ -115,6 +116,9 @@ return p->name;
 }
 std::shared_ptr<TypeExpr> param_typ(std::shared_ptr<Param> p) noexcept{
 return p->typ;
+}
+bool param_is_mut(std::shared_ptr<Param> p) noexcept{
+return p->is_mut;
 }
 std::shared_ptr<Decl> decl_inner(std::shared_ptr<Decl> decl) noexcept{
 auto unwrapped = decl;

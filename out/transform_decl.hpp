@@ -6,6 +6,7 @@
 
 #include "ast.hpp"
 #include "trait_param_expand.hpp"
+#include "param_destructure_expand.hpp"
 #include "registry.hpp"
 #include "semantic_ir.hpp"
 #include "decl_index.hpp"

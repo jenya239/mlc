@@ -56,6 +56,7 @@ export fn gen_return_body(expr: Shared<SExpr>, context: CodegenContext) -> strin
       }
       expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
     end,
+    SExprUnit(_, _) => '',
     SExprQuestion(inner_expr, _, _) => do
       const try_identifier = '__try_ret'
       gen_try_unwrap(

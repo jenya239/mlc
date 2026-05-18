@@ -44,7 +44,7 @@ fn default_expr_mvp_ok(e: Shared<Expr>) -> bool = match e {
 
 fn accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_parameters(
   diagnostics_accumulator_so_far: [Diagnostic],
-  variant_under_generic_scan: Shared<TypeVariant>,
+  variant_under_generic_scan: Shared<TypeVariant>
 ) -> [Diagnostic] =
   match variant_under_generic_scan {
     VarRecord(_, field_definitions_under_variant, _) =>
@@ -66,7 +66,7 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
   diagnostics_accumulator_so_far: [Diagnostic],
   variant_under_literal_scan: Shared<TypeVariant>,
   record_default_inference_context: CheckContext,
-  registry: TypeRegistry,
+  registry: TypeRegistry
 ) -> [Diagnostic] =
   match variant_under_literal_scan {
     VarRecord(_, field_definitions_under_literal_scan, _) =>
@@ -117,7 +117,7 @@ fn record_field_default_value_diagnostics(
         diagnostics_accumulator,
         (
           diagnostics_so_far_across_variants,
-          variant_shared_under_generic_pass,
+          variant_shared_under_generic_pass
         ) =>
           accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_parameters(
             diagnostics_so_far_across_variants,
@@ -130,7 +130,7 @@ fn record_field_default_value_diagnostics(
       diagnostics_accumulator,
       (
         diagnostics_so_far_across_variants,
-        variant_shared_under_literal_pass,
+        variant_shared_under_literal_pass
       ) =>
         accumulate_diagnostics_after_literal_record_default_checks(
           diagnostics_so_far_across_variants,
@@ -226,7 +226,7 @@ end
 
 fn global_names_merge_type_constructor_variant_into_map(
   global_names_so_far: Map<string, bool>,
-  type_constructor_variant_under_scan: Shared<TypeVariant>,
+  type_constructor_variant_under_scan: Shared<TypeVariant>
 ) -> Map<string, bool> =
   match type_constructor_variant_under_scan {
     VarUnit(variant_name, _) => do
@@ -245,7 +245,7 @@ fn global_names_merge_type_constructor_variant_into_map(
 
 fn global_names_merge_trait_method_into_map(
   global_names_so_far: Map<string, bool>,
-  method_declaration_under_scan: Shared<Decl>,
+  method_declaration_under_scan: Shared<Decl>
 ) -> Map<string, bool> =
   match method_declaration_under_scan {
     DeclFn(function_name, _, _, _, _, _, _) => do
@@ -257,7 +257,7 @@ fn global_names_merge_trait_method_into_map(
 
 fn global_names_merge_single_declaration_into_map(
   global_names_so_far: Map<string, bool>,
-  declaration_under_scan: Shared<Decl>,
+  declaration_under_scan: Shared<Decl>
 ) -> Map<string, bool> =
   match decl_inner(declaration_under_scan) {
     DeclFn(name, _, _, _, _, _, _) => do
@@ -353,7 +353,7 @@ export extend CheckOut {
 fn accumulate_diagnostics_for_single_extend_method(
   extend_type_name: string,
   method_declaration_shared_under_scan: Shared<Decl>,
-  registry: TypeRegistry,
+  registry: TypeRegistry
 ) -> [Diagnostic] =
   match method_declaration_shared_under_scan {
     DeclFn(_, type_params, _, params, _, method_body, where_entries) => do

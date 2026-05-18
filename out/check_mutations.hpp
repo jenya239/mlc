@@ -9,8 +9,10 @@
 
 namespace check_mutations {
 
-bool scope_has(mlc::Array<mlc::String> scope, mlc::String name) noexcept;
+bool scope_has(mlc::Array<mlc::String> scope, mlc::String sought_name) noexcept;
 mlc::Array<ast::Diagnostic> check_mutation_expr(std::shared_ptr<ast::Expr> expression, mlc::Array<mlc::String> mutable_locals) noexcept;
+mlc::Array<ast::Diagnostic> diagnostics_for_record_literal_single_part(ast::RecordLitPart literal_part, mlc::Array<mlc::String> mutable_locals) noexcept;
+mlc::Array<ast::Diagnostic> check_mutation_record_lit_parts(mlc::Array<ast::RecordLitPart> lit_parts, mlc::Array<mlc::String> mutable_locals) noexcept;
 mlc::Array<ast::Diagnostic> check_mutation_call(std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> arguments, mlc::Array<mlc::String> mutable_locals) noexcept;
 mlc::Array<ast::Diagnostic> check_mutation_exprs(mlc::Array<std::shared_ptr<ast::Expr>> expressions, mlc::Array<mlc::String> mutable_locals) noexcept;
 mlc::Array<ast::Diagnostic> check_mutation_field_vals(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::Array<mlc::String> mutable_locals) noexcept;

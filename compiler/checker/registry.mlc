@@ -223,18 +223,23 @@ fn required_arity_from_params(params: [Shared<Param>]) -> i32 = do
   params.length()
 end
 
-export fn build_registry(program: Program) -> TypeRegistry =
-  expand_trait_as_param_program(program).decls.fold(
-    empty_registry(),
-    (registry_so_far, declaration) => register_decl(registry_so_far, declaration))
+export fn build_registry(program: Program) -> TypeRegistry = do
+  const expanded = expand_trait_as_param_program(program)
+  let mut registry = empty_registry()
+  let mut index = 0
+  while index < expanded.decls.length() do
+    register_decl_into(registry, expanded.decls[index])
+    index = index + 1
+  end
+  registry
+end
 
-fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry = do
+fn register_decl_into(registry: ref mut TypeRegistry, decl: Shared<Decl>) -> unit = do
   match decl {
     DeclTrait(trait_name, _, methods) => do
       let mut i = 0
       while i < methods.length() do
-        const m = methods[i]
-        match m {
+        match methods[i] {
           DeclAssocType(assoc_name, _) => do
             const existing: [string] =
               if registry.trait_assoc_types.has(trait_name) then registry.trait_assoc_types.get(trait_name)
@@ -243,11 +248,10 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
             registry.trait_assoc_types.set(trait_name, existing)
             ()
           end,
-          _ => do registry = register_decl(registry, m); () end
+          _ => do register_decl_into(registry, methods[i]); () end
         }
         i = i + 1
       end
-      registry
     end,
     DeclExtend(type_name, trait_name, methods) => do
       if trait_name.length() > 0 then
@@ -259,8 +263,7 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
       end
       let mut i = 0
       while i < methods.length() do
-        const m = methods[i]
-        match m {
+        match methods[i] {
           DeclAssocBind(assoc_name, type_expr, _) => do
             const key = type_name + '::' + trait_name
             const empty_bindings: Map<string, Shared<Type>> = Map.new()
@@ -271,39 +274,37 @@ fn register_decl(mut registry: TypeRegistry, decl: Shared<Decl>) -> TypeRegistry
             registry.assoc_type_bindings.set(key, bindings)
             ()
           end,
-          _ => do registry = register_decl(registry, m); () end
+          _ => do register_decl_into(registry, methods[i]); () end
         }
         i = i + 1
       end
-      registry
     end,
     DeclFn(name, type_parameters, trait_bounds, parameters, return_type, _, _) => do
       const param_types = parameters.map(parameter => type_from_annotation(param_typ(parameter)))
       const parameter_names = parameters.map(parameter => param_name(parameter))
       const parameter_mutability_flags =
-        parameters.map(parameter => if param_is_mut(parameter) then 1 else 0)
+        parameters.map(parameter => if param_is_mut(parameter) then 1 else 0 end)
       registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
       registry.function_type_parameter_names.set(name, type_parameters)
       registry.function_parameter_names.set(name, parameter_names)
       registry.function_parameter_mutability_flags.set(name, parameter_mutability_flags)
       registry.function_required_arity.set(name, required_arity_from_params(parameters))
       if trait_bounds.length() > 0 then registry.function_trait_bounds.set(name, trait_bounds) end
-      registry
     end,
     DeclType(type_name, type_parameters, variants, _) => do
       registry.algebraic_decl_type_parameter_names.set(type_name, type_parameters)
-      registry = variants.fold(
-        registry,
-        (registry_so_far, variant_definition) =>
-          register_variant(registry_so_far, type_name, variant_definition))
+      let mut vi = 0
+      while vi < variants.length() do
+        register_variant_into(registry, type_name, variants[vi])
+        vi = vi + 1
+      end
       const phantom = compute_phantom_type_params(type_parameters, variants)
       registry.algebraic_decl_phantom_type_params.set(type_name, phantom)
-      registry
     end,
-    DeclImport(_, _) => registry,
-    DeclExported(d) => register_decl(registry, d),
-    DeclAssocType(_, _) => registry,
-    DeclAssocBind(_, _, _) => registry
+    DeclImport(_, _) => (),
+    DeclExported(d) => register_decl_into(registry, d),
+    DeclAssocType(_, _) => (),
+    DeclAssocBind(_, _, _) => ()
   }
 end
 
@@ -336,14 +337,13 @@ fn compute_phantom_type_params(type_parameters: [string], variants: [Shared<Type
       !type_param_in_annotation_list(type_parameter, all_field_type_expressions))
 end
 
-fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shared<TypeVariant>) -> TypeRegistry = do
+fn register_variant_into(registry: ref mut TypeRegistry, type_name: string, variant: Shared<TypeVariant>) -> unit = do
   const result_type = Shared.new(TNamed(type_name))
   match variant {
     VarUnit(variant_name, is_private) => do
       registry.ctor_types.set(variant_name, result_type)
       registry.ctor_params.set(variant_name, [])
       if is_private then registry.private_ctors.push(variant_name) end
-      registry
     end,
     VarTuple(variant_name, field_types, is_private) => do
       const field_type_list =
@@ -351,7 +351,6 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
       registry.ctor_types.set(variant_name, result_type)
       registry.ctor_params.set(variant_name, field_type_list)
       if is_private then registry.private_ctors.push(variant_name) end
-      registry
     end,
     VarRecord(variant_name, field_defs, is_private) => do
       const field_map: Map<string, Shared<Type>> = Map.new()
@@ -375,7 +374,6 @@ fn register_variant(mut registry: TypeRegistry, type_name: string, variant: Shar
       registry.record_literal_field_defaults.set(variant_name, defaults_for_variant)
       registry.record_literal_field_defaults.set(type_name, defaults_for_variant)
       if is_private then registry.private_ctors.push(variant_name) end
-      registry
     end
   }
 end

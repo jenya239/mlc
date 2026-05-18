@@ -42,7 +42,7 @@ fn variant_to_ctor_info(variant: Shared<TypeVariant>) -> [Shared<CtorTypeInfo>] 
   match variant {
     VarTuple(variant_name, types, _) => [ctor_type_info_for(variant_name, types)],
     VarRecord(variant_name, field_defs, _) => [ctor_type_info_for(variant_name, field_defs.map(fd => field_def_type(fd)))],
-    VarUnit(_, _) => []
+    VarUnit(_, _) => do let empty: [Shared<CtorTypeInfo>] = []; empty end
   }
 
 fn add_ctor_infos_from_variants(variants: [Shared<TypeVariant>]) -> [Shared<CtorTypeInfo>] =
@@ -52,10 +52,10 @@ fn decl_to_ctor_infos(decl: Shared<Decl>) -> [Shared<CtorTypeInfo>] =
   match decl {
     DeclExported(inner) => match decl_inner(inner) {
       DeclType(_, _, variants, _) => add_ctor_infos_from_variants(variants),
-      _ => []
+      _ => do let empty: [Shared<CtorTypeInfo>] = []; empty end
     },
     DeclType(_, _, variants, _) => add_ctor_infos_from_variants(variants),
-    _ => []
+    _ => do let empty: [Shared<CtorTypeInfo>] = []; empty end
   }
 
 export fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] =

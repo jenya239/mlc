@@ -9,46 +9,23 @@
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "expression_support.hpp"
+#include "mut_actual_argument.hpp"
 #include "expr.hpp"
 
 namespace method_gen {
 
-using EvalExprFn = std::variant<>;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-mlc::String gen_arg_list(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
-mlc::String gen_object_code(std::shared_ptr<semantic_ir::SExpr> object, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
-mlc::String gen_method_file(mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
-mlc::String gen_method_shared_new(std::shared_ptr<semantic_ir::SExpr> argument, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
-mlc::String gen_method_owner_call(mlc::String object_code, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
-mlc::String gen_method_builtin(mlc::String object_code, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
-mlc::String gen_method_namespace_alias(mlc::String static_prefix, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
+mlc::String gen_method_file_using_trailing_argument_fragments(mlc::String method_name, mlc::String trailing_arguments_joined) noexcept;
+mlc::String gen_method_shared_new(std::shared_ptr<semantic_ir::SExpr> argument, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
+mlc::String gen_method_owner_call_using_fragments(mlc::String receiver_fragment, mlc::String method_name, mlc::String trailing_arguments_joined, context::CodegenContext context) noexcept;
+mlc::String gen_method_builtin_using_fragments(mlc::String receiver_fragment, mlc::String method_name, mlc::String trailing_arguments_joined) noexcept;
+mlc::String gen_method_namespace_alias_using_fragments(mlc::String static_prefix, mlc::String method_name, mlc::String trailing_arguments_joined) noexcept;
 mlc::String object_type_name_for_dispatch(std::shared_ptr<registry::Type> type_value) noexcept;
 bool is_user_defined_method_for_type(mlc::String method_name, mlc::String type_name, context::CodegenContext context) noexcept;
-mlc::String gen_method_expr_after_object(mlc::String object_code, mlc::String object_type_name, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
-mlc::String gen_result_option_combinator_call(bool is_option, mlc::String object_code, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
-mlc::String gen_method_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, EvalExprFn eval_expr_fn) noexcept;
+mlc::String trailing_argument_fragments_join(mlc::Array<mlc::String> fragments) noexcept;
+mlc::String gen_method_expr_after_object_using_fragments(mlc::String receiver_fragment, mlc::String object_type_name, mlc::String method_name, mlc::String trailing_arguments_joined, int argument_count, context::CodegenContext context, std::shared_ptr<semantic_ir::SExpr> original_object_expression, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> original_trailing_arguments, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
+mlc::String gen_result_option_combinator_call_using_fragments(bool is_option, mlc::String receiver_fragment, mlc::String method_name, mlc::String trailing_arguments_joined) noexcept;
+mlc::Array<std::shared_ptr<semantic_ir::SExpr>> build_positional_receiver_and_arguments(std::shared_ptr<semantic_ir::SExpr> object, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> trailing_arguments) noexcept;
+mlc::String gen_method_expr(std::shared_ptr<semantic_ir::SExpr> object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> receiver_and_method_parameter_mutability_flags, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
 
 } // namespace method_gen
 

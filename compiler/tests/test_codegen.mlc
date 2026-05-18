@@ -98,8 +98,8 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('ExprStr(\'hi\') - \'mlc::String("hi", 2)\'',
     gen_expr(ss('hi'), ctx), 'mlc::String("hi", 2)'))
 
-  results.push(assert_eq_str('ExprUnit - \'/* unit */\'',
-    gen_expr(su(), ctx), '/* unit */'))
+  results.push(assert_eq_str('ExprUnit - \'std::make_tuple()\'',
+    gen_expr(su(), ctx), 'std::make_tuple()'))
 
   results.push(assert_eq_str('ExprIdent(\'x\') - \'x\'',
     gen_expr(sid("x"), ctx), "x"))
@@ -122,17 +122,17 @@ export fn codegen_tests() -> [TestResult] = do
   const single_params: [string] = ["x"]
   results.push(assert_eq_str('ExprLambda single param - \'[=](auto x) mutable { return ... }\'',
     gen_expr(Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown())), ctx),
-    '[=](auto x) mutable { return (x + 1); }'))
+    '[&](auto x) mutable { return (x + 1); }'))
 
   const lambda_typed_with_single_i32_parameter = Shared.new(TFn([Shared.new(TI32)], Shared.new(TI32)))
   results.push(assert_eq_str('ExprLambda annotated TFn([i32], i32) uses explicit int parameter',
     gen_expr(Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), lambda_typed_with_single_i32_parameter, span_unknown())), ctx),
-    '[=](int x) mutable { return (x + 1); }'))
+    '[&](int x) mutable { return (x + 1); }'))
 
   const two_params: [string] = ["a", "b"]
   results.push(assert_eq_str('ExprLambda two params - \'[=](auto a, auto b) mutable { return ... }\'',
     gen_expr(Shared.new(SExprLambda(two_params, Shared.new(SExprBin("+", sid("a"), sid("b"), i32_t(), span_unknown())), unk_t(), span_unknown())), ctx),
-    '[=](auto a, auto b) mutable { return (a + b); }'))
+    '[&](auto a, auto b) mutable { return (a + b); }'))
 
   const zero_params: [string] = []
   results.push(assert_eq_str('ExprLambda zero params - \'[]() mutable { return ... }\'',
@@ -143,13 +143,13 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str(
     'cpp_lambda_header_prefix — three identifiers',
     cpp_lambda_header_prefix(three_lambda_parameters),
-    '[=](auto first_parameter, auto second_parameter, auto third_parameter) mutable'))
+    '[&](auto first_parameter, auto second_parameter, auto third_parameter) mutable'))
 
   const escaped_cpp_keyword_parameter: [string] = ['class']
   results.push(assert_eq_str(
     'cpp_lambda_header_prefix — cpp keyword parameter uses cpp_safe',
     cpp_lambda_header_prefix(escaped_cpp_keyword_parameter),
-    '[=](auto class_) mutable'))
+    '[&](auto class_) mutable'))
 
   results.push(assert_eq_str('map_method: length - length',
     map_method('length'), 'length'))
@@ -184,7 +184,7 @@ export fn codegen_tests() -> [TestResult] = do
   const call_lambda_args: [Shared<SExpr>] = [si(5), Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown()))]
   results.push(assert_eq_str('ExprCall with lambda arg',
     gen_expr(Shared.new(SExprCall(sid('apply'), call_lambda_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
-    'apply(5, [=](auto x) mutable { return (x + 1); })'))
+    'apply(5, [&](auto x) mutable { return (x + 1); })'))
 
   const ok_args: [Shared<SExpr>] = [si(42)]
   results.push(assert_eq_str('ExprCall ctor Ok(42) uses brace init',

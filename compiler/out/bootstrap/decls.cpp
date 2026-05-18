@@ -305,7 +305,7 @@ auto extern_span = preds::Parser_span_at_cursor(parser);
 auto fn_name = preds::TKind_ident(preds::Parser_kind(preds::Parser_advance(parser)));
 auto mangled_name = ((type_name + mlc::String("_", 1)) + fn_name);
 auto after_lparen = preds::Parser_advance_by(parser, 3);
-auto self_param = std::make_shared<ast::Param>(ast::Param{mlc::String("self", 4), false, std::make_shared<ast::TypeExpr>(ast::TyNamed{type_name}), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})});
+auto self_param = std::make_shared<ast::Param>(ast::Param{mlc::String("self", 4), false, std::make_shared<ast::TypeExpr>(ast::TyNamed{type_name}), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), std::make_shared<ast::Pat>(ast::PatUnit{ast::span_unknown()})});
 auto params = mlc::Array<std::shared_ptr<ast::Param>>{};
 auto leading_self = (preds::TKind_is_ident(preds::Parser_kind(after_lparen)) && (preds::TKind_ident(preds::Parser_kind(after_lparen)) == mlc::String("self", 4)));
 if (leading_self) {
@@ -335,7 +335,7 @@ preds::DeclResult parse_extend_method(preds::Parser parser, mlc::String type_nam
 auto fn_name = preds::TKind_ident(preds::Parser_kind(preds::Parser_advance(parser)));
 auto mangled_name = ((type_name + mlc::String("_", 1)) + fn_name);
 auto after_lparen = preds::Parser_advance_by(parser, 3);
-auto self_param = std::make_shared<ast::Param>(ast::Param{mlc::String("self", 4), false, std::make_shared<ast::TypeExpr>(ast::TyNamed{type_name}), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})});
+auto self_param = std::make_shared<ast::Param>(ast::Param{mlc::String("self", 4), false, std::make_shared<ast::TypeExpr>(ast::TyNamed{type_name}), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), std::make_shared<ast::Pat>(ast::PatUnit{ast::span_unknown()})});
 auto params = mlc::Array<std::shared_ptr<ast::Param>>{};
 params.push_back(self_param);
 auto rest_start = [&]() -> preds::Parser {
@@ -456,38 +456,123 @@ auto body_result = exprs::parse_expr(preds::Parser_advance(where_parse.parser));
 return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn{fn_name, type_params_res.params, merged_trait_bounds, params_result.params, ret_type_result.type_expr, body_result.expr, where_parse.where_bounds}), body_result.parser};
 }
 }
-preds::ParamsResult parse_params(preds::Parser parser) noexcept{
-auto params = mlc::Array<std::shared_ptr<ast::Param>>{};
-if (preds::TKind_is_rparen(preds::Parser_kind(parser))) {
-return preds::ParamsResult{params, preds::Parser_advance(parser)};
+preds::PatResult parse_tuple_parameter_binding_element(preds::Parser binding_parser) noexcept{
+auto binding_span = preds::Parser_span_at_cursor(binding_parser);
+auto binding_kind = preds::Parser_kind(binding_parser);
+if (preds::TKind_is_ident(binding_kind)) {
+auto binding_label = preds::TKind_ident(binding_kind);
+if ((binding_label == mlc::String("_", 1))) {
+return preds::PatResult{std::make_shared<ast::Pat>(ast::PatWild{binding_span}), preds::Parser_advance(binding_parser)};
 } else {
-auto first = parse_param(parser);
-params.push_back(first.param);
-auto state = first.parser;
-while (preds::TKind_is_comma(preds::Parser_kind(state))) {
-auto next = parse_param(preds::Parser_advance(state));
-params.push_back(next.param);
-state = next.parser;
+return preds::PatResult{std::make_shared<ast::Pat>(ast::PatIdent{binding_label, binding_span}), preds::Parser_advance(binding_parser)};
 }
-return preds::ParamsResult{params, preds::Parser_advance(state)};
-}
-}
-preds::ParamResult parse_param(preds::Parser parser) noexcept{
-auto is_mutable = preds::TKind_is_mut(preds::Parser_kind(parser));
-auto name_pos = [&]() -> preds::Parser {
-if (is_mutable) {
-return preds::Parser_advance(parser);
+} else if ((preds::TKind_is_op(binding_kind) && (preds::TKind_op_val(binding_kind) == mlc::String("_", 1)))) {
+return preds::PatResult{std::make_shared<ast::Pat>(ast::PatWild{binding_span}), preds::Parser_advance(binding_parser)};
 } else {
-return parser;
+return preds::PatResult{std::make_shared<ast::Pat>(ast::PatWild{binding_span}), preds::Parser_advance(binding_parser)};
+}
+
+}
+preds::PatResult parse_tuple_parameter_pattern(ast::Span tuple_span, preds::Parser parser_after_open_paren) noexcept{
+auto cursor = parser_after_open_paren;
+auto tuple_elements = mlc::Array<std::shared_ptr<ast::Pat>>{};
+if (preds::TKind_is_rparen(preds::Parser_kind(cursor))) {
+return preds::PatResult{std::make_shared<ast::Pat>(ast::PatTuple{tuple_elements, tuple_span}), preds::Parser_advance(cursor)};
+} else {
+auto tuple_parse_finished = false;
+while ((!tuple_parse_finished)) {
+auto bound_element = parse_tuple_parameter_binding_element(cursor);
+tuple_elements.push_back(bound_element.pat);
+cursor = bound_element.parser;
+if (preds::TKind_is_comma(preds::Parser_kind(cursor))) {
+cursor = preds::Parser_advance(cursor);
+if (preds::TKind_is_rparen(preds::Parser_kind(cursor))) {
+tuple_parse_finished = true;
+}
+} else if (preds::TKind_is_rparen(preds::Parser_kind(cursor))) {
+tuple_parse_finished = true;
+} else {
+tuple_parse_finished = true;
+}
+
+}
+return preds::PatResult{std::make_shared<ast::Pat>(ast::PatTuple{tuple_elements, tuple_span}), preds::Parser_advance(cursor)};
+}
+}
+std::shared_ptr<ast::Pat> plain_identifier_parameter_pattern_marker() noexcept{
+return std::make_shared<ast::Pat>(ast::PatUnit{ast::span_unknown()});
+}
+preds::ParamResult parse_param(preds::Parser parser_for_parameter, int parameter_slot_index) noexcept{
+auto mutable_binding_requested = preds::TKind_is_mut(preds::Parser_kind(parser_for_parameter));
+auto cursor_after_mutability_keyword = [&]() -> preds::Parser {
+if (mutable_binding_requested) {
+return preds::Parser_advance(parser_for_parameter);
+} else {
+return parser_for_parameter;
 }
 }();
-auto type_result = types::parse_type(preds::Parser_advance_by(name_pos, 2));
-auto s = type_result.parser;
-if (preds::TKind_is_equal(preds::Parser_kind(s))) {
-auto def_result = exprs::parse_expr(preds::Parser_advance(s));
-return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{preds::TKind_ident(preds::Parser_kind(name_pos)), is_mutable, type_result.type_expr, true, def_result.expr}), def_result.parser};
+if (preds::TKind_is_lbrace(preds::Parser_kind(cursor_after_mutability_keyword))) {
+auto record_pattern_span = preds::Parser_span_at_cursor(cursor_after_mutability_keyword);
+auto shorthand_record_fields = exprs::parse_record_pat_fields(preds::Parser_advance(cursor_after_mutability_keyword));
+auto cursor_after_record_fields = shorthand_record_fields.parser;
+auto record_field_type_parse = types::parse_type(preds::Parser_advance(cursor_after_record_fields));
+auto remainder_after_record_type = record_field_type_parse.parser;
+auto synthetic_aggregate_identifier = (mlc::String("__mlc_ds", 8) + mlc::to_string(parameter_slot_index));
+auto record_destructure_pattern = std::make_shared<ast::Pat>(ast::PatRecord{mlc::String("", 0), shorthand_record_fields.pats, record_pattern_span});
+if (preds::TKind_is_equal(preds::Parser_kind(remainder_after_record_type))) {
+auto parsed_default_expression = exprs::parse_expr(preds::Parser_advance(remainder_after_record_type));
+return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{synthetic_aggregate_identifier, mutable_binding_requested, record_field_type_parse.type_expr, true, parsed_default_expression.expr, record_destructure_pattern}), parsed_default_expression.parser};
 } else {
-return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{preds::TKind_ident(preds::Parser_kind(name_pos)), is_mutable, type_result.type_expr, false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})}), s};
+return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{synthetic_aggregate_identifier, mutable_binding_requested, record_field_type_parse.type_expr, false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), record_destructure_pattern}), remainder_after_record_type};
+}
+} else if (preds::TKind_is_lparen(preds::Parser_kind(cursor_after_mutability_keyword))) {
+auto tuple_pattern_span = preds::Parser_span_at_cursor(cursor_after_mutability_keyword);
+auto tuple_pattern_parse = parse_tuple_parameter_pattern(tuple_pattern_span, preds::Parser_advance(cursor_after_mutability_keyword));
+auto cursor_after_tuple_pattern = tuple_pattern_parse.parser;
+auto tuple_parameter_type_parse = types::parse_type(preds::Parser_advance(cursor_after_tuple_pattern));
+auto remainder_after_tuple_type = tuple_parameter_type_parse.parser;
+auto synthetic_tuple_aggregate_identifier = (mlc::String("__mlc_ds", 8) + mlc::to_string(parameter_slot_index));
+auto tuple_destructure_pattern = tuple_pattern_parse.pat;
+if (preds::TKind_is_equal(preds::Parser_kind(remainder_after_tuple_type))) {
+auto parsed_tuple_default_expression = exprs::parse_expr(preds::Parser_advance(remainder_after_tuple_type));
+return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{synthetic_tuple_aggregate_identifier, mutable_binding_requested, tuple_parameter_type_parse.type_expr, true, parsed_tuple_default_expression.expr, tuple_destructure_pattern}), parsed_tuple_default_expression.parser};
+} else {
+return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{synthetic_tuple_aggregate_identifier, mutable_binding_requested, tuple_parameter_type_parse.type_expr, false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), tuple_destructure_pattern}), remainder_after_tuple_type};
+}
+} else {
+auto binding_identifier_token_position = cursor_after_mutability_keyword;
+auto binding_name = preds::TKind_ident(preds::Parser_kind(binding_identifier_token_position));
+auto after_binding_name = preds::Parser_advance(binding_identifier_token_position);
+auto plain_binding_type_parse = types::parse_type(preds::Parser_advance(after_binding_name));
+auto remainder_after_plain_type = plain_binding_type_parse.parser;
+if (preds::TKind_is_equal(preds::Parser_kind(remainder_after_plain_type))) {
+auto parsed_plain_default_expression = exprs::parse_expr(preds::Parser_advance(remainder_after_plain_type));
+return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{binding_name, mutable_binding_requested, plain_binding_type_parse.type_expr, true, parsed_plain_default_expression.expr, plain_identifier_parameter_pattern_marker()}), parsed_plain_default_expression.parser};
+} else {
+return preds::ParamResult{std::make_shared<ast::Param>(ast::Param{binding_name, mutable_binding_requested, plain_binding_type_parse.type_expr, false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), plain_identifier_parameter_pattern_marker()}), remainder_after_plain_type};
+}
+}
+
+}
+preds::ParamsResult comma_separated_params_suffix_from_first(preds::ParamResult first) noexcept{
+auto params = mlc::Array<std::shared_ptr<ast::Param>>{};
+params.push_back(first.param);
+auto state = first.parser;
+auto parameter_slot_index = 1;
+while (preds::TKind_is_comma(preds::Parser_kind(state))) {
+auto next = parse_param(preds::Parser_advance(state), parameter_slot_index);
+params.push_back(next.param);
+state = next.parser;
+parameter_slot_index = (parameter_slot_index + 1);
+}
+return preds::ParamsResult{params, state};
+}
+preds::ParamsResult parse_params(preds::Parser parser) noexcept{
+if (preds::TKind_is_rparen(preds::Parser_kind(parser))) {
+return preds::ParamsResult{{}, preds::Parser_advance(parser)};
+} else {
+auto suffix = comma_separated_params_suffix_from_first(parse_param(parser, 0));
+return preds::ParamsResult{suffix.params, preds::Parser_advance(suffix.parser)};
 }
 }
 DeriveResult parse_derive_clause(preds::Parser parser) noexcept{
@@ -598,9 +683,8 @@ return preds::VariantResult{std::make_shared<ast::TypeVariant>(ast::VarUnit{vari
 }
 
 }
-preds::TypesResult parse_tuple_types(preds::Parser parser) noexcept{
+preds::TypesResult comma_separated_type_suffix_from_first(preds::TypeResult first) noexcept{
 auto types = mlc::Array<std::shared_ptr<ast::TypeExpr>>{};
-auto first = types::parse_type(parser);
 types.push_back(first.type_expr);
 auto state = first.parser;
 while (preds::TKind_is_comma(preds::Parser_kind(state))) {
@@ -608,7 +692,11 @@ auto next = types::parse_type(preds::Parser_advance(state));
 types.push_back(next.type_expr);
 state = next.parser;
 }
-return preds::TypesResult{types, preds::Parser_advance(state)};
+return preds::TypesResult{types, state};
+}
+preds::TypesResult parse_tuple_types(preds::Parser parser) noexcept{
+auto suffix = comma_separated_type_suffix_from_first(types::parse_type(parser));
+return preds::TypesResult{suffix.types, preds::Parser_advance(suffix.parser)};
 }
 preds::TraitBodyResult parse_trait_body(preds::Parser parser, mlc::String trait_name, mlc::Array<mlc::String> type_params) noexcept{
 auto methods = mlc::Array<std::shared_ptr<ast::Decl>>{};
@@ -618,7 +706,7 @@ if (preds::TKind_is_fn(preds::Parser_kind(state))) {
 auto after_fn = preds::Parser_advance(state);
 auto fn_name = preds::TKind_ident(preds::Parser_kind(after_fn));
 auto mangled = ((trait_name + mlc::String("_", 1)) + fn_name);
-auto params_result = parse_params(preds::Parser_advance(after_fn));
+auto params_result = parse_params(preds::Parser_advance(preds::Parser_advance(after_fn)));
 auto after_rparen = preds::Parser_advance(params_result.parser);
 auto type_parser = [&]() -> preds::Parser {
 if (preds::TKind_is_arrow(preds::Parser_kind(after_rparen))) {
@@ -648,11 +736,13 @@ state = where_parse.parser;
 return std::make_shared<ast::Expr>(ast::ExprExtern{extern_method_span});
 }()));
 methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn{mangled, type_params, merged_trait_bounds, params_result.params, ret_result.type_expr, body, where_parse.where_bounds}));
-} else if ((preds::TKind_is_extern(preds::Parser_kind(state)) && preds::TKind_is_fn(preds::Parser_kind(preds::Parser_advance(state))))) {
-auto after_extern = preds::Parser_advance(state);
-auto fn_name = preds::TKind_ident(preds::Parser_kind(after_extern));
+} else if (preds::TKind_is_extern(preds::Parser_kind(state))) {
+auto parser_after_extern = preds::Parser_advance(state);
+if (preds::TKind_is_fn(preds::Parser_kind(parser_after_extern))) {
+auto parser_after_fn_keyword = preds::Parser_advance(parser_after_extern);
+auto fn_name = preds::TKind_ident(preds::Parser_kind(parser_after_fn_keyword));
 auto mangled = ((trait_name + mlc::String("_", 1)) + fn_name);
-auto params_result = parse_params(preds::Parser_advance(after_extern));
+auto params_result = parse_params(preds::Parser_advance(preds::Parser_advance(parser_after_fn_keyword)));
 auto after_rparen = preds::Parser_advance(params_result.parser);
 auto type_parser = [&]() -> preds::Parser {
 if (preds::TKind_is_arrow(preds::Parser_kind(after_rparen))) {
@@ -674,6 +764,9 @@ auto where_parse_extern = parse_where_clause_opt(ret_result.parser);
 auto merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.where_bounds);
 methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn{mangled, type_params, merged_trait_bounds_extern, params_result.params, ret_result.type_expr, std::make_shared<ast::Expr>(ast::ExprExtern{ast::span_unknown()}), where_parse_extern.where_bounds}));
 state = where_parse_extern.parser;
+} else {
+state = parser_after_extern;
+}
 } else if (preds::TKind_is_type(preds::Parser_kind(state))) {
 auto after_type = preds::Parser_advance(state);
 auto assoc_span = preds::Parser_span_at_cursor(after_type);
@@ -694,8 +787,15 @@ auto state = parser;
 while (((!preds::TKind_is_rbrace(preds::Parser_kind(state))) && (!preds::Parser_at_eof(state)))) {
 auto field_name = preds::TKind_ident(preds::Parser_kind(state));
 auto type_result = types::parse_type(preds::Parser_advance_by(state, 2));
-field_defs.push_back(std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, type_result.type_expr}));
-state = type_result.parser;
+auto remainder_after_field_type = type_result.parser;
+if (preds::TKind_is_equal(preds::Parser_kind(remainder_after_field_type))) {
+auto default_parse_result = exprs::parse_expr(preds::Parser_advance(remainder_after_field_type));
+field_defs.push_back(std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, type_result.type_expr, true, default_parse_result.expr}));
+state = default_parse_result.parser;
+} else {
+field_defs.push_back(std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, type_result.type_expr, false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})}));
+state = remainder_after_field_type;
+}
 if (preds::TKind_is_comma(preds::Parser_kind(state))) {
 state = preds::Parser_advance(state);
 }

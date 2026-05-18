@@ -58,6 +58,8 @@ mlc::String block_immediate_function_return_fragment(mlc::String return_expressi
 mlc::String append_trailing_expression_statement(mlc::String statements_code, mlc::String expression_code) noexcept;
 mlc::String hash_map_empty_instantiation(mlc::String key_type_cpp, mlc::String value_type_cpp) noexcept;
 mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept;
+mlc::String typed_array_empty_or_untyped_empty(mlc::String element_type_cpp) noexcept;
+mlc::String typed_array_braced_initializer(mlc::String element_type_cpp, mlc::String comma_separated_elements) noexcept;
 mlc::String array_string_fallback_empty() noexcept;
 mlc::String match_lambda_const_reference_parameter(mlc::String resolved_type_name, mlc::String generic_angle_bracket_argument, mlc::String binding_name_cpp_safe) noexcept;
 mlc::String dot_member_access(mlc::String receiver_code, mlc::String member_code) noexcept;

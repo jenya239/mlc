@@ -280,7 +280,9 @@ fn transform_one_call_argument_using_optional_expected_type(
           transform_expr(argument_expression_shared, transform_context, stmts_fn)
       },
     _ =>
-      transform_expr(argument_expression_shared, transform_context, stmts_fn)
+      coerce_expr_to_type(
+        transform_expr(argument_expression_shared, transform_context, stmts_fn),
+        expected_formal_parameter_type)
   }
 end
 
@@ -299,6 +301,7 @@ fn transform_call_arguments_using_callee_semantic_type(
           if argument_index_under_call < expected_formal_parameter_types.length()
           then expected_formal_parameter_types[argument_index_under_call]
           else standalone_unknown_cell()
+          end
         transformed_arguments.push(
           transform_one_call_argument_using_optional_expected_type(
             argument_expressions_under_call[argument_index_under_call],
@@ -527,7 +530,7 @@ fn inferred_types_from_record_literal_part_for_merge(
   match literal_record_part {
     RecordLitSpread(spread_expression) =>
       [infer_expr(spread_expression, inference_context_for_spread).inferred_type],
-    RecordLitFields(_) => [],
+    RecordLitFields(_) => do const empty_types: [Shared<Type>] = []; empty_types end,
   }
 
 // --- Expression transform ---------------------------------------------------

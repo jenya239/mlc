@@ -4,8 +4,8 @@
 namespace expression_support {
 
 mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept{
-auto capture = ((parameters.length() == 0) ? mlc::String("[]", 2) : mlc::String("[=]", 3));
-auto parameter_list = ((parameters.length() == 0) ? mlc::String("", 0) : [&]() {
+auto capture = ((parameters.length() == 0) ? (mlc::String("[]", 2)) : (mlc::String("[=]", 3)));
+auto parameter_list = ((parameters.length() == 0) ? (mlc::String("", 0)) : ([&]() {
 auto parts = mlc::Array<mlc::String>{};
 auto index = 0;
 while ((index < parameters.length())) {
@@ -13,8 +13,8 @@ parts.push_back((mlc::String("auto ", 5) + cpp_naming::cpp_safe(parameters[index
 index = (index + 1);
 }
 return parts.join(mlc::String(", ", 2));
-}());
-return (((capture + mlc::String("(", 1)) + parameter_list) + mlc::String(")", 1));
+}()));
+return (((capture + mlc::String("(", 1)) + parameter_list) + mlc::String(") mutable", 9));
 }
 std::shared_ptr<semantic_ir::SExpr> find_field_value(mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, mlc::String field_name) noexcept{
 auto result = std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUnit{std::make_shared<registry::Type>(registry::TUnit{}), ast::span_unknown()});
@@ -38,7 +38,7 @@ auto is_known_field = (((((((object_name == mlc::String("errors", 6)) || (object
 if ((decl_index::list_contains(self_fields, object_name) || is_known_field)) {
 return (mlc::String("self.", 5) + cpp_naming::cpp_safe(object_name));
 } else {
-return context::context_resolve(context, cpp_naming::map_builtin(object_name));
+return CodegenContext_resolve(context, cpp_naming::map_builtin_identifier_reference(object_name));
 }
 }
 mlc::String infer_shared_new_type_name(std::shared_ptr<semantic_ir::SExpr> argument, context::CodegenContext context) noexcept{
@@ -49,7 +49,7 @@ auto type_name = std::visit(overloaded{[&](const registry::TNamed& tNamed) { aut
 [&](const auto& __v) { return mlc::String("", 0); }
 }, (*semantic_ir::sexpr_type(argument)));
 if ((type_name.length() > 0)) {
-return context::context_resolve(context, type_name);
+return CodegenContext_resolve(context, type_name);
 } else {
 return mlc::String("auto", 4);
 }
@@ -68,6 +68,15 @@ mlc::String field_access_operator(std::shared_ptr<semantic_ir::SExpr> object, co
 return std::visit(overloaded{[&](const registry::TShared& tShared) { auto [__0] = tShared; return mlc::String("->", 2); },
 [&](const auto& __v) { return mlc::String(".", 1); }
 }, (*semantic_ir::sexpr_type(object)));
+}
+mlc::String generate_conditional_else_with_empty_array_coercion(std::shared_ptr<semantic_ir::SExpr> then_expression, std::shared_ptr<semantic_ir::SExpr> else_expression, std::shared_ptr<registry::Type> preferred_array_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> evaluate_expression) noexcept{
+return std::visit(overloaded{[&](const semantic_ir::SExprArray& sExprArray) { auto [elements, __1, array_span] = sExprArray; return ((elements.length() > 0) ? (evaluate_expression(else_expression, context)) : (std::visit(overloaded{[&](const registry::TArray& tArray) { auto [inner_from_preferred] = tArray; return evaluate_expression(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray{elements, std::make_shared<registry::Type>(registry::TArray{inner_from_preferred}), array_span}), context); },
+[&](const auto& __v) { return std::visit(overloaded{[&](const registry::TArray& tArray) { auto [inner_then] = tArray; return evaluate_expression(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray{elements, std::make_shared<registry::Type>(registry::TArray{inner_then}), array_span}), context); },
+[&](const auto& __v) { return evaluate_expression(else_expression, context); }
+}, (*semantic_ir::sexpr_type(then_expression))); }
+}, (*preferred_array_semantic_type)))); },
+[&](const auto& __v) { return evaluate_expression(else_expression, context); }
+}, (*else_expression));
 }
 
 } // namespace expression_support

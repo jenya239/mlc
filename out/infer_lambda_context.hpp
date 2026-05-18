@@ -11,18 +11,7 @@
 
 namespace infer_lambda_context {
 
-using InferExprFn = std::variant<>;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-void __skip__() noexcept;
-infer_result::InferResult infer_lambda_with_param_types(mlc::Array<mlc::String> parameter_names, mlc::Array<std::shared_ptr<registry::Type>> parameter_types, std::shared_ptr<ast::Expr> body, check_context::CheckContext inference_context, InferExprFn infer_expr_fn) noexcept;
+infer_result::InferResult infer_lambda_with_param_types(mlc::Array<mlc::String> parameter_names, mlc::Array<std::shared_ptr<registry::Type>> parameter_types, std::shared_ptr<ast::Expr> body, check_context::CheckContext inference_context, std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)> infer_expr_fn) noexcept;
 
 } // namespace infer_lambda_context
 
