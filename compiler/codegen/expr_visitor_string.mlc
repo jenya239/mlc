@@ -4,7 +4,7 @@ import { Type } from '../checker/registry'
 import { SExpr } from '../semantic_ir'
 import { ExprVisitor } from '../expr_visitor'
 import { CodegenContext } from './context'
-import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal } from './literals'
+import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from './literals'
 import { gen_identifier } from './identifiers'
 
 type StringExprVisitor = StringExprVisitor { context: CodegenContext }
@@ -18,6 +18,16 @@ extend StringExprVisitor : ExprVisitor<string> {
     gen_boolean_literal(value)
   fn visit_unit(self: StringExprVisitor, _semantic_type: Shared<Type>) -> string =
     gen_unit_literal()
+  fn visit_float(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
+    gen_float_literal(value)
+  fn visit_i64(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
+    gen_i64_literal(value)
+  fn visit_u8(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
+    gen_u8_literal(value)
+  fn visit_usize(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
+    gen_usize_literal(value)
+  fn visit_char(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
+    gen_char_literal(value)
   fn visit_ident(self: StringExprVisitor, name: string, _semantic_type: Shared<Type>) -> string =
     gen_identifier(name, self.context)
   fn visit_unsupported(self: StringExprVisitor, _expression: Shared<SExpr>) -> string =
@@ -31,6 +41,11 @@ export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: Codege
     SExprStr(string_value, type_value, _) => expression_visitor.visit_str(string_value, type_value),
     SExprBool(boolean_value, type_value, _) => expression_visitor.visit_bool(boolean_value, type_value),
     SExprUnit(type_value, _) => expression_visitor.visit_unit(type_value),
+    SExprFloat(float_value, type_value, _) => expression_visitor.visit_float(float_value, type_value),
+    SExprI64(integer_value, type_value, _) => expression_visitor.visit_i64(integer_value, type_value),
+    SExprU8(byte_value, type_value, _) => expression_visitor.visit_u8(byte_value, type_value),
+    SExprUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
+    SExprChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
     SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
     _ => expression_visitor.visit_unsupported(expression)
   }

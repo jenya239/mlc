@@ -8,6 +8,11 @@ export trait ExprVisitor<VisitorResult> {
   fn visit_str(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_bool(self: ExprVisitor<VisitorResult>, value: bool, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_unit(self: ExprVisitor<VisitorResult>, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_float(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_i64(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_u8(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_usize(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_char(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_ident(self: ExprVisitor<VisitorResult>, name: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_unsupported(self: ExprVisitor<VisitorResult>, expression: Shared<SExpr>) -> VisitorResult
 }
@@ -22,6 +27,11 @@ where Visitor: ExprVisitor
   SExprStr(string_value, type_value, _) => expression_visitor.visit_str(string_value, type_value),
   SExprBool(boolean_value, type_value, _) => expression_visitor.visit_bool(boolean_value, type_value),
   SExprUnit(type_value, _) => expression_visitor.visit_unit(type_value),
+  SExprFloat(float_value, type_value, _) => expression_visitor.visit_float(float_value, type_value),
+  SExprI64(integer_value, type_value, _) => expression_visitor.visit_i64(integer_value, type_value),
+  SExprU8(byte_value, type_value, _) => expression_visitor.visit_u8(byte_value, type_value),
+  SExprUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
+  SExprChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
   SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
   _ => expression_visitor.visit_unsupported(expression)
 }

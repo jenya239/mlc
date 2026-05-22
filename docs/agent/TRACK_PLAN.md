@@ -20,13 +20,14 @@ Parent: [../PLAN.md](../PLAN.md)
 | 4 | `dispatch_expr` + test graph (466 tests) | done (2026-05-22) |
 | 5 | Wire `gen_expr_via_string_visitor` into `expr_eval` | done (2026-05-22) |
 | 6 | ExprVisitor: bool + unit arms | done (2026-05-22) |
-| 7 | Parser `ref mut` | deferred (separate branch) |
+| 7 | ExprVisitor: numeric literal arms (float/i64/u8/usize/char) | done (2026-05-22) |
+| 8 | ExprVisitor: ident arm | pending |
 
-## Step 6 detail
+## Step 7 detail
 
-- Trait: `visit_bool`, `visit_unit`; `dispatch_expr` + StringExprVisitor
-- `expr_eval`: bool/unit via visitor; 2 new tests (468 total)
+- Trait: `visit_float`, `visit_i64`, `visit_u8`, `visit_usize`, `visit_char`; `dispatch_expr` + StringExprVisitor
+- `expr_eval`: float/i64/u8/usize/char via visitor; 5 new tests (473 total)
 
 ## Next step
 
-Parser `ref mut` (separate branch) or numeric literal arms (float/i64/u8/…).
+ExprVisitor ident arm in `expr_eval` + tests; parser `ref mut` stays separate branch.
