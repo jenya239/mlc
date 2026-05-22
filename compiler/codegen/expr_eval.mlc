@@ -9,9 +9,8 @@ import { operator_method_for, array_element_type_from_array_type, type_is_unknow
 import { CodegenContext } from './context'
 import { cpp_safe, map_builtin } from './cpp_naming'
 import { sem_type_to_cpp } from './type_gen'
-import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from './literals'
+import { gen_boolean_literal, gen_unit_literal, gen_extern_placeholder } from './literals'
 import { gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from './literals'
-import { gen_identifier } from './identifiers'
 import { is_constructor_call, field_access_operator, cpp_lambda_header_prefix } from './expression_support'
 import { gen_match } from './match_gen'
 import { gen_record_expr, gen_record_update_expr } from './record_gen'
@@ -19,6 +18,7 @@ import { gen_method_expr } from './method_gen'
 import { stmts_final_ctx } from './statement_context'
 import * as expression_output from './expr'
 import * as mut_actual_argument from './mut_actual_argument'
+import { gen_expr_via_string_visitor } from './expr_visitor_string'
 
 // --- Argument list -----------------------------------------------------------
 
@@ -228,8 +228,8 @@ fn gen_lambda_expr(
 
 export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   match expr {
-    SExprInt(integer_value, _, _)                          => gen_integer_literal(integer_value),
-    SExprStr(string_value, _, _)                           => gen_string_literal(string_value),
+    SExprInt(_, _, _)                                      => gen_expr_via_string_visitor(expr, context),
+    SExprStr(_, _, _)                                      => gen_expr_via_string_visitor(expr, context),
     SExprBool(boolean_value, _, _)                         => gen_boolean_literal(boolean_value),
     SExprUnit(_, _)                                        => gen_unit_literal(),
     SExprExtern(_, _)                                      => gen_extern_placeholder(),
@@ -238,7 +238,7 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprU8(v, _, _)                                       => gen_u8_literal(v),
     SExprUsize(v, _, _)                                    => gen_usize_literal(v),
     SExprChar(v, _, _)                                     => gen_char_literal(v),
-    SExprIdent(name, _, _)                                 => gen_identifier(name, context),
+    SExprIdent(_, _, _)                                    => gen_expr_via_string_visitor(expr, context),
     SExprBin(operation, left_expr, right_expr, _, _)       => gen_binary_expr(operation, left_expr, right_expr, context, gen_stmts),
     SExprUn(operation, inner_expr, _, _)                   => gen_unary_expr(operation, inner_expr, context, gen_stmts),
     SExprCall(function_expression, arguments, call_parameter_mutability_flags, _, _) =>

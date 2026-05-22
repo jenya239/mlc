@@ -1,4 +1,4 @@
-// ExprVisitor<string> sketch for codegen (PLAN.md §3). Not wired into eval.mlc yet.
+// ExprVisitor<string> wired into expr_eval for literals and identifiers.
 
 import { Type } from '../checker/registry'
 import { SExpr } from '../semantic_ir'

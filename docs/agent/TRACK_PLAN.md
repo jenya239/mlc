@@ -17,39 +17,15 @@ Parent: [../PLAN.md](../PLAN.md)
 | 1 | `compiler/pass.mlc` — `trait CompilerPass<Input, Output>` | done (2026-05-20) |
 | 2 | `ExprVisitor` sketch + dispatch stub | done (2026-05-22) |
 | 3 | `ExprVisitor<string>` codegen sketch | done (2026-05-22) |
-| 4a | `dispatch_expr` wired in `expr_visitor_string` — **isolated compile** (not in tests_main) | **next** |
-| 4b | Parser/checker: generic trait bounds in `where` (`ExprVisitor<VisitorResult>`) | pending |
-| 4c | Trait C++ codegen pollution fix + add to test graph / `build_tests` green | pending |
-| 5 | Parser `ref mut` | deferred (separate branch) |
+| 4 | `dispatch_expr` + test graph (466 tests) | done (2026-05-22) |
+| 5 | Wire `gen_expr_via_string_visitor` into `expr_eval` | done (2026-05-22) |
+| 6 | Parser `ref mut` | deferred (separate branch) |
 
-## Step 3 detail (done)
+## Step 5 detail
 
-- `compiler/codegen/expr_visitor_string.mlc` — `StringExprVisitor` + `gen_expr_via_string_visitor`
-- Commit `df3826f`; standalone compile OK; not in `tests_main` (pollution — 4c)
+- `expr_eval.mlc`: int/str/ident → `gen_expr_via_string_visitor`
+- build_tests 466 pass; mlcc rebuild OK
 
-## Step 4 — split (do not merge sub-steps)
+## Next step
 
-### 4a — isolated compile (next)
-
-- `dispatch_expr` + `call_visit_*` in `expr_visitor.mlc`
-- `expr_visitor_string.mlc` uses `dispatch_expr` (no manual match)
-- Verify: compile module graph **without** `tests_main` (dedicated script or minimal entry)
-- Gate: one layer (`compiler/` only unless one-line Ruby fix blocks compile)
-- Uncommitted ≤ 15 files before enqueue 4b
-
-### 4b — semantic/parser
-
-- Parser accepts generic trait type in `where` clauses
-- Blocker ref: mlc-memory `known_limitations` — parser + `ExprVisitor<VisitorResult>`
-- Verify: Ruby semantic on minimal `expr_visitor.mlc` snippet
-- Gate: `lib/mlc/` only; `rake test_mlc` if checker/parser touched
-
-### 4c — test graph
-
-- Fix trait adapter C++ pollution in test modules
-- Add to `tests_main` or isolated test target
-- Verify: `build_tests.sh` 463+; self-host diff if needed
-
-## WIP
-
-Large uncommitted step-4 work on `main` → move to branch `feat/expr-visitor-dispatch` before continuing 4a.
+Parser `ref mut` (separate branch) or migrate more `eval_expr` arms to ExprVisitor.
