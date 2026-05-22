@@ -1,0 +1,24 @@
+// ExprVisitor sketch (PLAN.md §3). dispatch_expr stub — not used by codegen yet.
+
+import { Type } from './checker/registry'
+import { SExpr } from './semantic_ir'
+
+export trait ExprVisitor<VisitorResult> {
+  fn visit_int(self: ExprVisitor<VisitorResult>, value: i32, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_str(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_ident(self: ExprVisitor<VisitorResult>, name: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_unsupported(self: ExprVisitor<VisitorResult>, expression: Shared<SExpr>) -> VisitorResult
+}
+
+// Stub: routes SExpr variants only; trait dispatch wired in a later step.
+export fn dispatch_expr<Visitor>(
+  expression_visitor: Visitor,
+  expression: Shared<SExpr>
+) -> unit =
+  match expression {
+    SExprInt(_, _, _) => (),
+    SExprStr(_, _, _) => (),
+    SExprIdent(_, _, _) => (),
+    _ => ()
+  }
+where Visitor: ExprVisitor<unit>

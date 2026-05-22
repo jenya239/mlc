@@ -1,0 +1,6 @@
+import { TestResult } from './test_runner'
+
+export fn expr_visitor_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  results
+end

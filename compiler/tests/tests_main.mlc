@@ -9,6 +9,8 @@ import { pipe_and_record_update_tests } from './test_pipe_and_record_update'
 import { decl_gen_tests } from './test_decl_gen'
 import { partial_application_tests } from './test_partial_application'
 import { merge_import_tests } from './test_merge_imports'
+import { pass_type_tests } from './test_pass'
+import { expr_visitor_tests } from './test_expr_visitor'
 import { TestResult, run_all } from './test_runner'
 
 fn all_tests() -> [TestResult] = do
@@ -38,6 +40,12 @@ fn all_tests() -> [TestResult] = do
 
   const suite_merge = merge_import_tests()
   index = 0; while index < suite_merge.length() do all.push(suite_merge[index]); index = index + 1 end
+
+  const suite_pass = pass_type_tests()
+  index = 0; while index < suite_pass.length() do all.push(suite_pass[index]); index = index + 1 end
+
+  const suite_expr_visitor = expr_visitor_tests()
+  index = 0; while index < suite_expr_visitor.length() do all.push(suite_expr_visitor[index]); index = index + 1 end
 
   all
 end

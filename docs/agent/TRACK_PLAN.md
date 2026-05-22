@@ -1,17 +1,32 @@
-# Track: PLAN.md roadmap (post-optimization)
+# Track: mlcc optimization (plan 2026-05)
+
+## Status: **closed** (commit `419de62`)
+
+All phases done except parser `ref mut` (deferred, separate branch).
+
+Baseline: `benchmarks/profile/record_baseline.sh` (post-commit).
+
+---
+
+# Track: PLAN.md roadmap
 
 Parent: [../PLAN.md](../PLAN.md)
 
-## Status: not started
+## Status: in progress
 
-Optimization batch staged for commit ([TRACK_OPTIMIZATION.md](TRACK_OPTIMIZATION.md)).
+| Step | Item | Status |
+|------|------|--------|
+| 1 | `compiler/pass.mlc` — `trait CompilerPass<Input, Output>` | done (2026-05-20) |
+| 2 | `ExprVisitor` sketch + dispatch stub | done (2026-05-22) |
+| 3 | `ExprVisitor<string>` codegen sketch | **next** |
+| 4 | Parser `ref mut` | deferred (separate branch) |
 
-## Next verifiable steps (PLAN §3, порядок внедрения)
+## Step 2 detail
 
-1. [ ] `trait Pass<Input, Output>` — новый модуль `compiler/pass.mlc`, только тип + комментарий, без wiring.
-2. [ ] `ExprVisitor` sketch — отдельный файл, dispatch stub.
-3. [ ] Parser `ref mut` — **отдельная ветка** (bootstrap limit).
+- `compiler/expr_visitor.mlc` — trait + `dispatch_expr` stub (variant routing only; trait dispatch later)
+- `compiler/tests/test_expr_visitor.mlc` — compile hook
+- Trait renamed `Pass` → `CompilerPass` (avoid `TestResult::Pass` collision)
 
-## Current step
+## Next step
 
-Ждём commit optimization → `record_baseline.sh` → step 1.
+Sketch `ExprVisitor<string>` impl module for codegen (no eval.mlc migration yet).
