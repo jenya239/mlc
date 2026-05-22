@@ -22,8 +22,8 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрен�
 | 6 | ExprVisitor: bool + unit arms | done (2026-05-22) |
 | 7 | ExprVisitor: numeric literal arms | done (2026-05-22) |
 | 8 | ExprVisitor: ident arm | done (2026-05-22) |
-| 9 | ExprVisitor: bin/unary ops arm | pending |
-| 10 | ExprVisitor: call + method arms | pending |
+| 9 | ExprVisitor: bin/unary ops arm | done (2026-05-22) |
+| 10 | ExprVisitor: call + method arms | done (2026-05-22) |
 | 11 | ExprVisitor: if + block arms | pending |
 | 12 | ExprVisitor: match arm | pending |
 | 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | pending |
@@ -46,9 +46,17 @@ Source: PLAN.md «Visitor pattern», «Порядок внедрения» items
 
 - `SExprIdent` via `gen_expr_via_string_visitor`; string visitor tests for x/print/println; 475 tests
 
+## Step 9 detail (done)
+
+- `visit_bin`/`visit_un`; `gen_binary_via_visitor`/`gen_unary_via_visitor` with evaluate_expression callback; 477 tests
+
+## Step 10 detail (done)
+
+- `visit_call`/`visit_method`; `gen_call_via_visitor`/`gen_method_via_visitor`; string visitor tests for Ok{42} and push; 479 tests
+
 ## Next step (Driver)
 
-Step **9** — bin/unary ops arm in `expr_eval` + tests. Verify `build_tests.sh`.
+Step **11** — if + block arms in `expr_eval` + tests. Verify `build_tests.sh`.
 
 ## Planner checklist
 

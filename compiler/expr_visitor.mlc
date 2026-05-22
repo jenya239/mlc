@@ -16,6 +16,8 @@ export trait ExprVisitor<VisitorResult> {
   fn visit_ident(self: ExprVisitor<VisitorResult>, name: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_bin(self: ExprVisitor<VisitorResult>, operation: string, left_expression: Shared<SExpr>, right_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_un(self: ExprVisitor<VisitorResult>, operation: string, inner_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_call(self: ExprVisitor<VisitorResult>, function_expression: Shared<SExpr>, arguments: [Shared<SExpr>], mutability_flags: [i32], semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_method(self: ExprVisitor<VisitorResult>, object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], mutability_flags: [i32], semantic_type: Shared<Type>) -> VisitorResult
   fn visit_unsupported(self: ExprVisitor<VisitorResult>, expression: Shared<SExpr>) -> VisitorResult
 }
 
@@ -39,5 +41,9 @@ where Visitor: ExprVisitor
     expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),
   SExprUn(operation, inner_expression, type_value, _) =>
     expression_visitor.visit_un(operation, inner_expression, type_value),
+  SExprCall(function_expression, arguments, mutability_flags, type_value, _) =>
+    expression_visitor.visit_call(function_expression, arguments, mutability_flags, type_value),
+  SExprMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
+    expression_visitor.visit_method(object, method_name, arguments, mutability_flags, type_value),
   _ => expression_visitor.visit_unsupported(expression)
 }

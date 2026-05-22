@@ -8,6 +8,10 @@ import { ExprVisitor } from '../expr_visitor'
 import { CodegenContext } from './context'
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from './literals'
 import { gen_identifier } from './identifiers'
+import { cpp_safe, map_builtin } from './cpp_naming'
+import { is_constructor_call } from './expression_support'
+import * as mut_actual_argument from './mut_actual_argument'
+import { gen_method_expr } from './method_gen'
 import * as expression_output from './expr'
 
 type StringExprVisitor = StringExprVisitor { context: CodegenContext }
@@ -51,6 +55,61 @@ export fn gen_unary_via_visitor(
 ) -> string =
   expression_output.parenthesized_unary(operation, evaluate_expression(inner_expression, context, gen_stmts))
 
+fn gen_call_function_code(
+  function_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  match function_expression {
+    SExprIdent(name, _, _) => context.resolve(map_builtin(name)),
+    _ => evaluate_expression(function_expression, context, gen_stmts)
+  }
+
+export fn gen_call_via_visitor(
+  function_expression: Shared<SExpr>,
+  arguments: [Shared<SExpr>],
+  call_parameter_mutability_flags: [i32],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string = do
+  const function_code = gen_call_function_code(function_expression, context, gen_stmts, evaluate_expression)
+  const materialization_outcome =
+    mut_actual_argument.materialize_positional_actual_arguments_maybe_holding_mut_references(
+      arguments,
+      call_parameter_mutability_flags,
+      context,
+      gen_stmts,
+      evaluate_expression)
+  const argument_list = materialization_outcome.materialized_argument_fragments.join(', ')
+  const invoke_expression =
+    if is_constructor_call(function_expression) then expression_output.constructor_call_braces(function_code, argument_list)
+    else expression_output.function_call_parentheses(function_code, argument_list)
+    end
+  mut_actual_argument.wrap_invoke_with_mut_actual_argument_holder_prelude_if_any(
+    materialization_outcome.prelude_block,
+    invoke_expression)
+end
+
+export fn gen_method_via_visitor(
+  object: Shared<SExpr>,
+  method_name: string,
+  arguments: [Shared<SExpr>],
+  receiver_and_parameter_mutability_flags: [i32],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  gen_method_expr(
+    object,
+    method_name,
+    arguments,
+    receiver_and_parameter_mutability_flags,
+    context,
+    gen_stmts,
+    evaluate_expression)
+
 extend StringExprVisitor : ExprVisitor<string> {
   fn visit_int(self: StringExprVisitor, value: i32, _semantic_type: Shared<Type>) -> string =
     gen_integer_literal(value)
@@ -76,6 +135,10 @@ extend StringExprVisitor : ExprVisitor<string> {
     gen_binary_via_visitor(operation, left_expression, right_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_un(self: StringExprVisitor, operation: string, inner_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
     gen_unary_via_visitor(operation, inner_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_call(self: StringExprVisitor, function_expression: Shared<SExpr>, arguments: [Shared<SExpr>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> string =
+    gen_call_via_visitor(function_expression, arguments, mutability_flags, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_method(self: StringExprVisitor, object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> string =
+    gen_method_via_visitor(object, method_name, arguments, mutability_flags, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_unsupported(self: StringExprVisitor, _expression: Shared<SExpr>) -> string =
     '/* unsupported expr */'
 }
@@ -97,6 +160,10 @@ export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: Codege
       expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),
     SExprUn(operation, inner_expression, type_value, _) =>
       expression_visitor.visit_un(operation, inner_expression, type_value),
+    SExprCall(function_expression, arguments, mutability_flags, type_value, _) =>
+      expression_visitor.visit_call(function_expression, arguments, mutability_flags, type_value),
+    SExprMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
+      expression_visitor.visit_method(object, method_name, arguments, mutability_flags, type_value),
     _ => expression_visitor.visit_unsupported(expression)
   }
 end

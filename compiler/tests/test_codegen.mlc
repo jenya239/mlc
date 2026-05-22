@@ -149,6 +149,16 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('string visitor: ExprUn neg',
     gen_expr_via_string_visitor(Shared.new(SExprUn("-", si(42), i32_t(), span_unknown())), ctx), '(-42)'))
 
+  const visitor_ok_args: [Shared<SExpr>] = [si(42)]
+  results.push(assert_eq_str('string visitor: ExprCall ctor Ok(42)',
+    gen_expr_via_string_visitor(Shared.new(SExprCall(sid('Ok'), visitor_ok_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
+    'Ok{42}'))
+
+  const visitor_method_args: [Shared<SExpr>] = [si(1)]
+  results.push(assert_eq_str('string visitor: ExprMethod push',
+    gen_expr_via_string_visitor(Shared.new(SExprMethod(sid('arr'), 'push', visitor_method_args, empty_parameter_mutability_pattern(), unit_t(), span_unknown())), ctx),
+    'arr.push_back(1)'))
+
   results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
     gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
 
