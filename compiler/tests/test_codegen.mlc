@@ -118,6 +118,12 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('string visitor: ExprIdent',
     gen_expr_via_string_visitor(sid("x"), ctx), "x"))
 
+  results.push(assert_eq_str('string visitor: ExprBool(true)',
+    gen_expr_via_string_visitor(sb(true), ctx), 'true'))
+
+  results.push(assert_eq_str('string visitor: ExprUnit',
+    gen_expr_via_string_visitor(su(), ctx), 'std::make_tuple()'))
+
   results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
     gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
 

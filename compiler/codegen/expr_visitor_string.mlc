@@ -4,7 +4,7 @@ import { Type } from '../checker/registry'
 import { SExpr } from '../semantic_ir'
 import { ExprVisitor } from '../expr_visitor'
 import { CodegenContext } from './context'
-import { gen_integer_literal, gen_string_literal } from './literals'
+import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal } from './literals'
 import { gen_identifier } from './identifiers'
 
 type StringExprVisitor = StringExprVisitor { context: CodegenContext }
@@ -14,6 +14,10 @@ extend StringExprVisitor : ExprVisitor<string> {
     gen_integer_literal(value)
   fn visit_str(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
     gen_string_literal(value)
+  fn visit_bool(self: StringExprVisitor, value: bool, _semantic_type: Shared<Type>) -> string =
+    gen_boolean_literal(value)
+  fn visit_unit(self: StringExprVisitor, _semantic_type: Shared<Type>) -> string =
+    gen_unit_literal()
   fn visit_ident(self: StringExprVisitor, name: string, _semantic_type: Shared<Type>) -> string =
     gen_identifier(name, self.context)
   fn visit_unsupported(self: StringExprVisitor, _expression: Shared<SExpr>) -> string =
@@ -25,6 +29,8 @@ export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: Codege
   match expression {
     SExprInt(integer_value, type_value, _) => expression_visitor.visit_int(integer_value, type_value),
     SExprStr(string_value, type_value, _) => expression_visitor.visit_str(string_value, type_value),
+    SExprBool(boolean_value, type_value, _) => expression_visitor.visit_bool(boolean_value, type_value),
+    SExprUnit(type_value, _) => expression_visitor.visit_unit(type_value),
     SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
     _ => expression_visitor.visit_unsupported(expression)
   }

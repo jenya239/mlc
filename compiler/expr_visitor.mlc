@@ -6,6 +6,8 @@ import { SExpr } from './semantic_ir'
 export trait ExprVisitor<VisitorResult> {
   fn visit_int(self: ExprVisitor<VisitorResult>, value: i32, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_str(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_bool(self: ExprVisitor<VisitorResult>, value: bool, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_unit(self: ExprVisitor<VisitorResult>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_ident(self: ExprVisitor<VisitorResult>, name: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_unsupported(self: ExprVisitor<VisitorResult>, expression: Shared<SExpr>) -> VisitorResult
 }
@@ -18,6 +20,8 @@ where Visitor: ExprVisitor
 = match expression {
   SExprInt(integer_value, type_value, _) => expression_visitor.visit_int(integer_value, type_value),
   SExprStr(string_value, type_value, _) => expression_visitor.visit_str(string_value, type_value),
+  SExprBool(boolean_value, type_value, _) => expression_visitor.visit_bool(boolean_value, type_value),
+  SExprUnit(type_value, _) => expression_visitor.visit_unit(type_value),
   SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
   _ => expression_visitor.visit_unsupported(expression)
 }
