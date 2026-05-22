@@ -1,0 +1,31 @@
+// ExprVisitor<string> sketch for codegen (PLAN.md §3). Not wired into eval.mlc yet.
+
+import { Type } from '../checker/registry'
+import { SExpr } from '../semantic_ir'
+import { ExprVisitor } from '../expr_visitor'
+import { CodegenContext } from './context'
+import { gen_integer_literal, gen_string_literal } from './literals'
+import { gen_identifier } from './identifiers'
+
+type StringExprVisitor = StringExprVisitor { context: CodegenContext }
+
+extend StringExprVisitor : ExprVisitor<string> {
+  fn visit_int(self: StringExprVisitor, value: i32, _semantic_type: Shared<Type>) -> string =
+    gen_integer_literal(value)
+  fn visit_str(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
+    gen_string_literal(value)
+  fn visit_ident(self: StringExprVisitor, name: string, _semantic_type: Shared<Type>) -> string =
+    gen_identifier(name, self.context)
+  fn visit_unsupported(self: StringExprVisitor, _expression: Shared<SExpr>) -> string =
+    '/* unsupported expr */'
+}
+
+export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: CodegenContext) -> string = do
+  const expression_visitor = StringExprVisitor { context: context }
+  match expression {
+    SExprInt(value, semantic_type, _) => expression_visitor.visit_int(value, semantic_type),
+    SExprStr(value, semantic_type, _) => expression_visitor.visit_str(value, semantic_type),
+    SExprIdent(name, semantic_type, _) => expression_visitor.visit_ident(name, semantic_type),
+    _ => expression_visitor.visit_unsupported(expression)
+  }
+end

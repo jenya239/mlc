@@ -18,15 +18,15 @@ Parent: [../PLAN.md](../PLAN.md)
 |------|------|--------|
 | 1 | `compiler/pass.mlc` — `trait CompilerPass<Input, Output>` | done (2026-05-20) |
 | 2 | `ExprVisitor` sketch + dispatch stub | done (2026-05-22) |
-| 3 | `ExprVisitor<string>` codegen sketch | **next** |
-| 4 | Parser `ref mut` | deferred (separate branch) |
+| 3 | `ExprVisitor<string>` codegen sketch | done (2026-05-22) |
+| 4 | `dispatch_expr` trait dispatch + test graph fix | **next** |
+| 5 | Parser `ref mut` | deferred (separate branch) |
 
-## Step 2 detail
+## Step 3 detail
 
-- `compiler/expr_visitor.mlc` — trait + `dispatch_expr` stub (variant routing only; trait dispatch later)
-- `compiler/tests/test_expr_visitor.mlc` — compile hook
-- Trait renamed `Pass` → `CompilerPass` (avoid `TestResult::Pass` collision)
+- `compiler/codegen/expr_visitor_string.mlc` — `StringExprVisitor` + `gen_expr_via_string_visitor`
+- Standalone compile OK; not in `tests_main` graph (trait bridge C++ pollution — step 4)
 
 ## Next step
 
-Sketch `ExprVisitor<string>` impl module for codegen (no eval.mlc migration yet).
+Wire `dispatch_expr` trait method calls; fix trait codegen in test modules or add isolated test target.
