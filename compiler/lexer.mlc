@@ -206,6 +206,29 @@ fn map_escape(character: string) -> string =
   else ''
   end
 
+fn lex_advance_past_unescaped_string_run(state: LexState) -> LexState = do
+  let mut current = state
+  while !current.eof() && current.current() != "\"" && current.current() != "\\" do
+    current = current.lex_advance()
+  end
+  current
+end
+
+fn lex_advance_past_template_literal_run(state: LexState) -> LexState = do
+  let mut current = state
+  let mut run_active = true
+  while run_active && !current.eof() && current.current() != "`" do
+    if current.current() == "\\" then
+      run_active = false
+    else if current.current() == "$" && current.peek(1) == "{" then
+      run_active = false
+    else
+      current = current.lex_advance()
+    end
+  end
+  current
+end
+
 fn scan_string(state: LexState) -> ScanStrResult = do
   const token_line = state.line
   const token_col  = state.col
@@ -224,8 +247,9 @@ fn scan_string(state: LexState) -> ScanStrResult = do
       end
       current = current.lex_advance()
     else
-      parts.push(current.current())
-      current = current.lex_advance()
+      const run_start = current.pos
+      current = lex_advance_past_unescaped_string_run(current)
+      if current.pos > run_start then parts.push(current.src.byte_substring(run_start, current.pos - run_start)) end
     end
   end
   if current.eof() then
@@ -312,8 +336,9 @@ fn scan_template(state: LexState) -> ScanStrResult = do
       end
       parts.push(expr_chars.join(''))
     else
-      current_lit.push(current.current())
-      current = current.lex_advance()
+      const run_start = current.pos
+      current = lex_advance_past_template_literal_run(current)
+      if current.pos > run_start then current_lit.push(current.src.byte_substring(run_start, current.pos - run_start)) end
     end
   end
   if current.eof() then

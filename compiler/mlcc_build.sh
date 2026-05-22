@@ -7,7 +7,7 @@ ROOT_DIR="$(cd "$COMPILER_DIR/.." && pwd)"
 MLCC="${MLCC:-$COMPILER_DIR/out/mlcc}"
 RUNTIME_DIR="${RUNTIME_DIR:-$ROOT_DIR/runtime}"
 RUNTIME_INCLUDE="$RUNTIME_DIR/include"
-RUNTIME_CPP="$RUNTIME_DIR/src/core/string.cpp $RUNTIME_DIR/src/io/io.cpp"
+RUNTIME_CPP="$RUNTIME_DIR/src/core/string.cpp $RUNTIME_DIR/src/core/profile.cpp $RUNTIME_DIR/src/io/io.cpp"
 
 SOURCE="${1:?Usage: mlcc_build.sh <source.mlc> [out_dir] [binary_name]}"
 OUT_DIR="${2:-${OUT_DIR:-out}}"

@@ -4,8 +4,8 @@
 
 import { Pat } from '../ast'
 import { SExpr, SStmt, SMatchArm } from '../semantic_ir'
-import { CodegenContext, CtorTypeInfo,
-         list_contains, lookup_ctor_type_info } from './context'
+import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from './context'
+import { list_contains } from './decl_index'
 import { cpp_safe, lower_first } from './cpp_naming'
 import { first_arm_needs_deref, pat_bind_names } from './match_analysis'
 import * as expression_output from './expr'
@@ -50,7 +50,7 @@ fn codegen_context_with_ctor_field_bindings(
   sub_patterns: [Shared<Pat>],
   base_context: CodegenContext
 ) -> CodegenContext = do
-  const ctor_type_information: Shared<CtorTypeInfo> = lookup_ctor_type_info(base_context.ctor_type_infos, constructor_name)
+  const ctor_type_information: Shared<CtorTypeInfo> = lookup_ctor_type_info_for_context(base_context, constructor_name)
   let mut arm_context = base_context
   let mut pattern_index = 0
   while pattern_index < sub_patterns.length() do

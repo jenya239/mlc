@@ -3,8 +3,8 @@
 import { Pat, PatIdent } from '../ast'
 import { SExpr } from '../semantic_ir'
 import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../checker/registry'
-import { CodegenContext, list_contains } from './context'
-import { lookup_fields } from './decl_index'
+import { CodegenContext, lookup_fields_for_context } from './context'
+import { list_contains } from './decl_index'
 import { sem_type_to_cpp } from './type_gen'
 import { cpp_safe } from './cpp_naming'
 import { pat_bind_names } from './match_analysis'
@@ -38,7 +38,7 @@ export fn gen_let_pattern_statement(
             _ => ''
           }
           if record_codegen_name != '' then
-            const ordered_member_labels = lookup_fields(context.field_orders, record_codegen_name)
+            const ordered_member_labels = lookup_fields_for_context(context, record_codegen_name)
             if ordered_member_labels.length() == subs.length() && subs.length() > 0 then
               let mut record_ordered_tuple_fragment = '{\nauto __lt = ' + rhs + ';\n'
               let mut member_slot_index = 0

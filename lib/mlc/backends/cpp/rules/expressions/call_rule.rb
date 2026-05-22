@@ -76,6 +76,11 @@ module MLC
                 return lower_file_method(node)
               end
 
+              # Check for Profile methods
+              if context.checker.var_expr?(node.callee) && node.callee.name.start_with?("Profile_")
+                return lower_profile_method(node)
+              end
+
               # Check for stdlib overrides
               if context.checker.var_expr?(node.callee)
                 override = lower_stdlib_override(node)
@@ -869,6 +874,26 @@ module MLC
 
             def lower_file_method(node)
               cpp_name = FILE_CPP_NAMES[node.callee.name]
+              args = node.args.map { |arg| lower_expression(arg) }
+              seps = Array.new([args.size - 1, 0].max, ", ")
+              context.factory.function_call(
+                callee: context.factory.identifier(name: cpp_name),
+                arguments: args,
+                argument_separators: seps
+              )
+            end
+
+            PROFILE_CPP_NAMES = {
+              "Profile_reset"           => "mlc::profile::reset",
+              "Profile_scope_begin"     => "mlc::profile::scope_begin",
+              "Profile_scope_end"       => "mlc::profile::scope_end",
+              "Profile_print_report"    => "mlc::profile::print_report",
+              "Profile_monotonic_nanos" => "mlc::profile::monotonic_nanos",
+              "Profile_peak_rss_kib"    => "mlc::profile::peak_rss_kib"
+            }.freeze
+
+            def lower_profile_method(node)
+              cpp_name = PROFILE_CPP_NAMES[node.callee.name]
               args = node.args.map { |arg| lower_expression(arg) }
               seps = Array.new([args.size - 1, 0].max, ", ")
               context.factory.function_call(

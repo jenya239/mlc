@@ -228,6 +228,9 @@ module MLC
               # Built-in File methods
               return true if type_name == "File" && %w[read write exists append read_lines].include?(method_name)
 
+              # Built-in Profile methods
+              return true if type_name == "Profile" && %w[reset scope_begin scope_end print_report monotonic_nanos peak_rss_kib].include?(method_name)
+
               @services.trait_registry.resolve_static_method(type_name, method_name) ||
                 @services.function_registry.fetch("#{type_name}_#{method_name}")
             end

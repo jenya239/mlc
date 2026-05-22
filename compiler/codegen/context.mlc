@@ -4,13 +4,15 @@ import { Program, Pat } from '../ast'
 import { SStmt } from '../semantic_ir'
 import { Type } from '../checker/registry'
 import { cpp_safe } from './cpp_naming'
-import { LoadItem, FieldOrder, list_contains, lookup_fields, build_qualified, build_item_index } from './decl_index'
+import * as decl_index from './decl_index'
+import { FieldOrder, LoadItem, NamespaceImportAlias } from './decl_index'
 import { build_field_orders, build_method_owners_from_decls, build_variant_types_from_decls, build_generic_variants_from_decls, add_method_owners_from_decls } from './type_index'
-import { CtorTypeInfo, build_ctor_type_infos_from_decls, lookup_ctor_type_info } from './ctor_info'
+import { CtorTypeInfo, build_ctor_type_infos_from_decls, build_ctor_type_info_index, lookup_ctor_type_info, lookup_ctor_type_info_indexed } from './ctor_info'
 import { is_shared_type, is_shared_array_type, is_shared_map_type, array_elem_name, collect_shared_params, collect_shared_array_params, collect_array_elem_types, collect_shared_map_params, collect_value_params } from './param_analysis'
 
 export type CodegenContext = CodegenContext {
   field_orders: [Shared<FieldOrder>],
+  field_order_index: Map<string, [string]>,
   namespace_prefix: string,
   qualified: Map<string, string>,
   namespace_alias_prefixes: Map<string, string>,
@@ -21,18 +23,25 @@ export type CodegenContext = CodegenContext {
   array_elem_types: Map<string, string>,
   shared_map_params: [string],
   ctor_type_infos: [Shared<CtorTypeInfo>],
+  ctor_type_info_index: Map<string, Shared<CtorTypeInfo> >,
   variant_types: Map<string, string>,
   value_params: [string],
   match_deref_params: [string],
   generic_variants: [string],
   struct_using_lines: Map<string, [string]>
 }
-export type GenStmtsResult = GenStmtsResult { code: string, next_try: i32 }
+export type GenStmtsResult = GenStmtsResult { parts: [string], next_try: i32 }
+export type GenStmtsWithContext = GenStmtsWithContext { partial_result: GenStmtsResult, codegen_context: CodegenContext }
 export type GenStmtResult  = GenStmtResult  { output: string, next_try: i32 }
 
 extend GenStmtsResult {
-  fn append_stmt(self, statement_result: GenStmtResult) -> GenStmtsResult =
-    GenStmtsResult { code: self.code + statement_result.output, next_try: statement_result.next_try }
+  fn append_stmt(self, statement_result: GenStmtResult) -> GenStmtsResult = do
+    let parts = self.parts
+    parts.push(statement_result.output)
+    GenStmtsResult { parts: parts, next_try: statement_result.next_try }
+  end
+
+  fn joined_code(self) -> string = self.parts.join('')
 }
 
 export type GenModuleOut   = GenModuleOut   { h: string, c: string }
@@ -41,7 +50,10 @@ export type PrecomputedCtx = PrecomputedCtx {
   variant_types: Map<string, string>,
   item_index: Map<string, Shared<LoadItem>>,
   ctor_type_infos: [Shared<CtorTypeInfo>],
-  generic_variants: [string]
+  generic_variants: [string],
+  method_owners: Map<string, string>,
+  field_order_index: Map<string, [string]>,
+  ctor_type_info_index: Map<string, Shared<CtorTypeInfo> >
 }
 
 export fn context_resolve(context: CodegenContext, name: string) -> string =
@@ -152,9 +164,19 @@ export fn context_add_match_deref(context: CodegenContext, name: string) -> Code
 export fn update_context_from_statement(statement: Shared<SStmt>, context: CodegenContext) -> CodegenContext =
   context.update_from_statement(statement)
 
-export fn create_codegen_context(prog: Program) -> CodegenContext =
+export fn lookup_fields_for_context(context: CodegenContext, name: string) -> [string] =
+  if context.field_order_index.has(name) then context.field_order_index.get(name)
+  else decl_index.lookup_fields(context.field_orders, name) end
+
+export fn lookup_ctor_type_info_for_context(context: CodegenContext, constructor_name: string) -> Shared<CtorTypeInfo> =
+  lookup_ctor_type_info_indexed(context.ctor_type_info_index, context.ctor_type_infos, constructor_name)
+
+export fn create_codegen_context(prog: Program) -> CodegenContext = do
+  const field_orders = build_field_orders(prog)
+  const ctor_type_infos = build_ctor_type_infos_from_decls(prog.decls)
   CodegenContext {
-    field_orders: build_field_orders(prog),
+    field_orders: field_orders,
+    field_order_index: decl_index.build_field_order_index(field_orders),
     namespace_prefix: '',
     qualified: Map.new(),
     namespace_alias_prefixes: Map.new(),
@@ -164,13 +186,15 @@ export fn create_codegen_context(prog: Program) -> CodegenContext =
     shared_array_params: [],
     array_elem_types: Map.new(),
     shared_map_params: [],
-    ctor_type_infos: [],
+    ctor_type_infos: ctor_type_infos,
+    ctor_type_info_index: build_ctor_type_info_index(ctor_type_infos),
     variant_types: build_variant_types_from_decls(prog.decls),
     value_params: [],
     match_deref_params: [],
     generic_variants: build_generic_variants_from_decls(prog.decls),
     struct_using_lines: Map.new()
   }
+end
 
 export fn context_with_struct_using_lines(
   base: CodegenContext,

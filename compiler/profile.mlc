@@ -1,0 +1,14 @@
+// Phase profiler for mlcc. Backed by runtime/mlc/core/profile.hpp.
+
+export fn profile_reset_if_enabled(enabled: bool) -> unit =
+  if enabled then Profile.reset() else () end
+
+export fn profile_maybe_begin(enabled: bool, label: string) -> unit =
+  if enabled then Profile.scope_begin(label) else () end
+
+export fn profile_maybe_end(enabled: bool, label: string) -> unit =
+  if enabled then Profile.scope_end(label) else () end
+
+export fn profile_finish(enabled: bool) -> unit = do
+  if enabled then Profile.print_report() else () end
+end

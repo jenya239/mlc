@@ -4,13 +4,39 @@ import { tokenize } from './lexer'
 import { parse_program_with_source_path } from './parser/decls'
 import { check_with_context } from './checker/check'
 import { transform_load_items } from './checker/transform_decl'
-import { build_registry } from './checker/registry'
+import { TypeRegistry } from './checker/registry'
+import { build_trait_nominal_maps } from './checker/trait_param_expand'
 import { gen_module, precompute } from './codegen/module'
-import { LoadItem } from './codegen/context'
+import { LoadItem } from './codegen/decl_index'
 import { NamespaceImportAlias } from './codegen/decl_index'
 import { path_to_module_base } from './codegen/cpp_naming'
 import { expand_parameter_destructuring_in_program } from './checker/param_destructure_expand'
 import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from './ast'
+import { profile_reset_if_enabled, profile_maybe_begin, profile_maybe_end, profile_finish } from './profile'
+
+type CompileOptions = CompileOptions {
+  entry_path: string,
+  out_directory: string,
+  profile_enabled: bool
+}
+
+fn parse_compile_options(arguments: [string]) -> CompileOptions = do
+  let mut profile_enabled = false
+  let mut out_directory = 'out'
+  let mut entry_path = ''
+  let mut index = 0
+  while index < arguments.length() do
+    const argument = arguments[index]
+    if argument == '--profile' then profile_enabled = true
+    else if argument == '-o' && index + 1 < arguments.length() then
+      out_directory = arguments[index + 1]
+      index = index + 1
+    else if entry_path.length() == 0 then entry_path = argument
+    end
+    index = index + 1
+  end
+  CompileOptions { entry_path: entry_path, out_directory: out_directory, profile_enabled: profile_enabled }
+end
 
 fn dirname(path: string) -> string = do
   let mut last_slash_index = -1
@@ -59,30 +85,32 @@ fn resolve_import_path(base_path: string, import_path: string) -> string = do
   resolve_dotdot(combined_before_normalization)
 end
 
-fn path_in_loaded(path: string, loaded: [string]) -> bool =
-  loaded.any(existing_path => existing_path == path)
-
 type LoadResult = LoadResult { items: [LoadItem], errors: [string] }
 
-fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, LoadResult>) -> LoadResult = do
+fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref mut Map<string, LoadResult>, profile_enabled: bool) -> LoadResult = do
   const norm_path = resolve_dotdot(path)
   if cache.has(norm_path) then cache.get(norm_path)
-  else if path_in_loaded(norm_path, loaded) then
+  else if loaded.has(norm_path) then
     LoadResult { items: [], errors: [`circular: ${norm_path}`] }
   else
-  let cur_loaded = loaded
-  cur_loaded.push(norm_path)
+  loaded.set(norm_path, true)
+  profile_maybe_begin(profile_enabled, "load_io")
   const source = File.read(path)
+  profile_maybe_end(profile_enabled, "load_io")
   if source.length() == 0 && !File.exists(path) then
     LoadResult { items: [], errors: [`file not found: ${path}`] }
   else
+  profile_maybe_begin(profile_enabled, "lex")
   const lex = tokenize(source)
+  profile_maybe_end(profile_enabled, "lex")
   if lex.has_errors() then
     LoadResult { items: [], errors: [`lex ${path}: ${lex.errors[0]}`] }
   else
+    profile_maybe_begin(profile_enabled, "parse")
     const prog = parse_program_with_source_path(lex.tokens, norm_path)
+    profile_maybe_end(profile_enabled, "parse")
     let items: [LoadItem] = []
-    let seen: [string] = []
+    let seen: Map<string, bool> = Map.new()
     let my_decls: [Shared<Decl>] = []
     let my_imports: [string] = []
     let my_namespace_import_aliases: [NamespaceImportAlias] = []
@@ -96,13 +124,13 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
           if symbols.length() >= 2 && symbols[0] == "*" then
             my_namespace_import_aliases.push(NamespaceImportAlias { alias: symbols[1], module_path: resolved })
           end
-          const dep_result = load_module_impl(resolved, cur_loaded, cache)
+          const dep_result = load_module_impl(resolved, loaded, cache, profile_enabled)
           all_errors = errs_append(all_errors, dep_result.errors)
           let mut dep_item_index = 0
           while dep_item_index < dep_result.items.length() do
             const dependency_item = dep_result.items[dep_item_index]
-            if !path_in_loaded(dependency_item.path, seen) then
-              seen.push(dependency_item.path)
+            if !seen.has(dependency_item.path) then
+              seen.set(dependency_item.path, true)
               items.push(dependency_item)
             end
             dep_item_index = dep_item_index + 1
@@ -127,16 +155,17 @@ fn load_module_impl(path: string, loaded: [string], cache: ref mut Map<string, L
   end
 end
 
-fn load_module(path: string, cache: ref mut Map<string, LoadResult>) -> LoadResult =
-  load_module_impl(path, [], cache)
+fn load_module(path: string, cache: ref mut Map<string, LoadResult>, profile_enabled: bool) -> LoadResult = do
+  let mut loaded: Map<string, bool> = Map.new()
+  load_module_impl(path, loaded, cache, profile_enabled)
+end
 
 type MergeResult = MergeResult { prog: Program, errors: [string], items: [LoadItem] }
 
-
-fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
+fn merge_program(entry_path: string, prog: Program, profile_enabled: bool) -> MergeResult = do
   let all_decls: [Shared<Decl>] = []
   let mut all_errors: [string] = []
-  let seen_paths: [string] = []
+  let seen_paths: Map<string, bool> = Map.new()
   let items_ordered: [LoadItem] = []
   let entry_decls: [Shared<Decl>] = []
   let entry_imports: [string] = []
@@ -151,13 +180,13 @@ fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
         if symbols.length() >= 2 && symbols[0] == "*" then
           entry_namespace_import_aliases.push(NamespaceImportAlias { alias: symbols[1], module_path: resolved })
         end
-        const dep_result = load_module(resolved, cache)
+        const dep_result = load_module(resolved, cache, profile_enabled)
         all_errors = errs_append(all_errors, dep_result.errors)
         let mut dep_item_index = 0
         while dep_item_index < dep_result.items.length() do
           const dependency_item = dep_result.items[dep_item_index]
-          if !path_in_loaded(dependency_item.path, seen_paths) then
-            seen_paths.push(dependency_item.path)
+          if !seen_paths.has(dependency_item.path) then
+            seen_paths.set(dependency_item.path, true)
             items_ordered.push(dependency_item)
             let mut decl_inner_index = 0
             while decl_inner_index < dependency_item.decls.length() do
@@ -183,30 +212,18 @@ fn merge_program(entry_path: string, prog: Program) -> MergeResult = do
   MergeResult { prog: Program { decls: all_decls }, errors: all_errors, items: items_ordered }
 end
 
-fn compile_modular(entry_path: string, out_dir: string) -> Result<string, [string]> = do
-  const lex = tokenize(File.read(entry_path))
-  if lex.has_errors() then Err([`lex: ${lex.errors[0]}`])
-  else
-    const source_path = resolve_dotdot(entry_path)
-    const parsed_program = parse_program_with_source_path(lex.tokens, source_path)
-    const merged = merge_program(entry_path, parsed_program)
-    if merged.errors.length() > 0 then Err(merged.errors)
-    else do
-      const merged_item_count = merged.items.length()
-      const entry_load_item = merged.items[merged_item_count - 1]
-      const entry_only_program = Program { decls: entry_load_item.decls }
-      const _checked = check_with_context(entry_only_program, merged.prog)?
-      Ok(compile_modular_loop(merged.items, merged.prog, out_dir))
-    end
-    end
-  end
-end
-
-fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) -> string = do
+fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string, profile_enabled: bool, registry: TypeRegistry) -> string = do
+  profile_maybe_begin(profile_enabled, "expand_destructure")
   const expanded_merge_program = expand_parameter_destructuring_in_program(full_prog)
-  const registry = build_registry(expanded_merge_program)
-  const transformed_items = transform_load_items(items, registry, expanded_merge_program)
+  profile_maybe_end(profile_enabled, "expand_destructure")
+  const trait_maps = build_trait_nominal_maps(expanded_merge_program)
+  profile_maybe_begin(profile_enabled, "transform")
+  const transformed_items = transform_load_items(items, registry, trait_maps)
+  profile_maybe_end(profile_enabled, "transform")
+  profile_maybe_begin(profile_enabled, "precompute")
   const precomputed = precompute(expanded_merge_program, items)
+  profile_maybe_end(profile_enabled, "precompute")
+  profile_maybe_begin(profile_enabled, "codegen")
   let mut unit_placeholder = ()
   unit_placeholder = transformed_items.fold(unit_placeholder, (_, transformed_load_item) => do
     const generated_output = gen_module(transformed_load_item, items, expanded_merge_program, precomputed)
@@ -219,7 +236,49 @@ fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string) 
     File.write(implementation_path, generated_output.c)
     ()
   end)
+  profile_maybe_end(profile_enabled, "codegen")
   ''
+end
+
+fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool) -> Result<string, [string]> = do
+  profile_reset_if_enabled(profile_enabled)
+  profile_maybe_begin(profile_enabled, "total")
+  profile_maybe_begin(profile_enabled, "load_io")
+  const entry_source = File.read(entry_path)
+  profile_maybe_end(profile_enabled, "load_io")
+  profile_maybe_begin(profile_enabled, "lex")
+  const lex = tokenize(entry_source)
+  profile_maybe_end(profile_enabled, "lex")
+  if lex.has_errors() then
+    profile_maybe_end(profile_enabled, "total")
+    profile_finish(profile_enabled)
+    Err([`lex: ${lex.errors[0]}`])
+  else
+    const source_path = resolve_dotdot(entry_path)
+    profile_maybe_begin(profile_enabled, "parse")
+    const parsed_program = parse_program_with_source_path(lex.tokens, source_path)
+    profile_maybe_end(profile_enabled, "parse")
+    profile_maybe_begin(profile_enabled, "merge")
+    const merged = merge_program(entry_path, parsed_program, profile_enabled)
+    profile_maybe_end(profile_enabled, "merge")
+    if merged.errors.length() > 0 then
+      profile_maybe_end(profile_enabled, "total")
+      profile_finish(profile_enabled)
+      Err(merged.errors)
+    else do
+      const merged_item_count = merged.items.length()
+      const entry_load_item = merged.items[merged_item_count - 1]
+      const entry_only_program = Program { decls: entry_load_item.decls }
+      profile_maybe_begin(profile_enabled, "check")
+      const checked = check_with_context(entry_only_program, merged.prog)?
+      profile_maybe_end(profile_enabled, "check")
+      compile_modular_loop(merged.items, merged.prog, out_dir, profile_enabled, checked.registry)
+      profile_maybe_end(profile_enabled, "total")
+      profile_finish(profile_enabled)
+      Ok('')
+    end
+    end
+  end
 end
 
 fn format_errs(label: string, errors: [string]) -> string =
@@ -228,18 +287,15 @@ fn format_errs(label: string, errors: [string]) -> string =
 fn main() -> i32 = do
   const command_line_arguments = args()
   if command_line_arguments.length() == 0 then
-    println('Usage: mlcc <source.mlc> [-o out_dir]')
+    println('Usage: mlcc [--profile] <source.mlc> [-o out_dir]')
     exit(1)
   end
-  const entry_path =
-    if command_line_arguments.length() >= 3 && command_line_arguments[0] == '-o' then command_line_arguments[2]
-    else command_line_arguments[0]
-    end
-  const out_dir =
-    if command_line_arguments.length() >= 3 && command_line_arguments[0] == '-o' then command_line_arguments[1]
-    else if command_line_arguments.length() >= 3 && command_line_arguments[1] == '-o' then command_line_arguments[2]
-    else 'out' end
-  match compile_modular(entry_path, out_dir) {
+  const options = parse_compile_options(command_line_arguments)
+  if options.entry_path.length() == 0 then
+    println('Usage: mlcc [--profile] <source.mlc> [-o out_dir]')
+    exit(1)
+  end
+  match compile_modular(options.entry_path, options.out_directory, options.profile_enabled) {
     Ok(_) => 0,
     Err(errors) =>
       do print(format_errs('error', errors)); exit(1); 0 end

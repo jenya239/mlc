@@ -28,3 +28,10 @@ jobs:
 
       - name: Build mlcc (modular compiler via Ruby)
         run: compiler/build.sh
+
+      - name: Profile regression (optional)
+        continue-on-error: true
+        run: |
+          compiler/build.sh
+          benchmarks/profile/record_baseline.sh || true
+          benchmarks/profile/compare_baseline.sh || true

@@ -136,6 +136,16 @@ export fn lookup_fields(orders: [Shared<FieldOrder>], name: string) -> [string] 
   result
 end
 
+export fn build_field_order_index(orders: [Shared<FieldOrder>]) -> Map<string, [string]> = do
+  let index: Map<string, [string]> = Map.new()
+  let mut order_index = 0
+  while order_index < orders.length() do
+    index.set(orders[order_index].type_name, orders[order_index].fields)
+    order_index = order_index + 1
+  end
+  index
+end
+
 export fn build_item_index(all_items: [LoadItem]) -> Map<string, Shared<LoadItem>> = do
   let item_index: Map<string, Shared<LoadItem>> = Map.new()
   let mut i = 0

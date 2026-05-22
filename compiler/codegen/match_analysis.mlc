@@ -1,7 +1,8 @@
 import { Pat } from '../ast'
 import { SExpr, SMatchArm, sexpr_type } from '../semantic_ir'
 import { Type } from '../checker/registry'
-import { CodegenContext, list_contains } from './context'
+import { CodegenContext } from './context'
+import { list_contains } from './decl_index'
 import { cpp_safe } from './cpp_naming'
 
 // Determine if the match subject expression should be dereferenced (*subject).

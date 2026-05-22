@@ -43,7 +43,7 @@ if [ "${MLCC_BOOTSTRAP:-0}" = "1" ]; then
     if [ -d "$BS_DIR" ] && ls "$BS_DIR"/*.cpp 1>/dev/null 2>&1; then
       echo "Bootstrap: mlcc produced C++ output"
       RT_INC="$ROOT_DIR/runtime/include"
-      RT_CPP="$ROOT_DIR/runtime/src/core/string.cpp $ROOT_DIR/runtime/src/io/io.cpp"
+      RT_CPP="$ROOT_DIR/runtime/src/core/string.cpp $ROOT_DIR/runtime/src/core/profile.cpp $ROOT_DIR/runtime/src/io/io.cpp"
       OBJ_DIR="$BS_DIR/obj"
       mkdir -p "$OBJ_DIR"
       if (for cpp in "$BS_DIR"/*.cpp; do [ -f "$cpp" ] || continue; g++ -std=c++20 -O2 -I "$BS_DIR" -I "$RT_INC" -c "$cpp" -o "$OBJ_DIR/$(basename "$cpp" .cpp).o"; done && \

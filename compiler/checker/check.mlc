@@ -293,7 +293,7 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
   let names: Map<string, bool> = Map.new()
   names.set('true', true); names.set('false', true); names.set('exit', true)
   names.set('print', true); names.set('println', true); names.set('args', true)
-  names.set('File', true); names.set('Shared', true); names.set('Map', true)
+  names.set('File', true); names.set('Profile', true); names.set('Shared', true); names.set('Map', true)
   names.set('Ok', true); names.set('Err', true); names.set('Result', true)
   program.decls.fold(
     names,

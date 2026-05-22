@@ -5,13 +5,12 @@
 import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from '../semantic_ir'
 import { gen_let_pattern_statement } from './let_pat'
 import { Type, TArray, TGeneric, TNamed } from '../checker/registry'
-import { CodegenContext, GenStmtsResult, GenStmtResult,
+import { CodegenContext, GenStmtsResult, GenStmtsWithContext, GenStmtResult,
          update_context_from_statement } from './context'
 import { cpp_safe } from './cpp_naming'
 import { generate_conditional_else_with_empty_array_coercion } from './expression_support'
 import { sem_type_to_cpp } from './type_gen'
 import { gen_unit_literal } from './literals'
-import { stmts_final_ctx } from './statement_context'
 import * as expression_output from './expr'
 
 type StmtsFoldState = StmtsFoldState {
@@ -95,8 +94,9 @@ fn eval_stmt_if_nested(if_expression: Shared<SExpr>, context: CodegenContext, ge
 fn eval_block_body(expr: Shared<SExpr>, context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string =
   match expr {
     SExprBlock(statements, result_expr, _, _) => do
-      const statements_code = eval_stmts_str(statements, context, gen_expr_fn)
-      const final_context   = stmts_final_ctx(statements, context)
+      const statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
+      const statements_code = statements_with_context.partial_result.joined_code()
+      const final_context   = statements_with_context.codegen_context
       match result_expr {
         SExprIf(_, _, _, _, _) => statements_code + eval_stmt_if_nested(result_expr, final_context, gen_expr_fn),
         SExprUnit(_, _)        => statements_code,
@@ -140,8 +140,9 @@ fn eval_stmt_expr(expression: Shared<SExpr>, context: CodegenContext, gen_expr_f
         cpp_safe(binder),
         eval_stmts_str(stmts, context, gen_expr_fn)),
     SExprBlock(statements, result_expr, _, _) => do
-      const statements_code = eval_stmts_str(statements, context, gen_expr_fn)
-      const result_code = gen_expr_fn(result_expr, stmts_final_ctx(statements, context))
+      const statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
+      const statements_code = statements_with_context.partial_result.joined_code()
+      const result_code = gen_expr_fn(result_expr, statements_with_context.codegen_context)
       if result_code == gen_unit_literal() then statements_code
       else expression_output.append_trailing_expression_statement(statements_code, result_code)
       end
@@ -284,13 +285,16 @@ fn stmts_fold_step(
   }
 end
 
-export fn eval_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> GenStmtsResult =
+export fn eval_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> GenStmtsWithContext =
   statements.fold(
-    StmtsFoldState { partial_result: GenStmtsResult { code: '', next_try: try_counter }, codegen_context: context },
+    StmtsFoldState { partial_result: GenStmtsResult { parts: [], next_try: try_counter }, codegen_context: context },
     (fold_state, statement) => stmts_fold_step(fold_state, statement, gen_expr_fn)
-  ).partial_result
+  ).to_gen_stmts_with_context()
 
-export fn eval_stmts_str(statements: [Shared<SStmt>], context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string = do
-  const result = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
-  result.code
-end
+extend StmtsFoldState {
+  fn to_gen_stmts_with_context(self: StmtsFoldState) -> GenStmtsWithContext =
+    GenStmtsWithContext { partial_result: self.partial_result, codegen_context: self.codegen_context }
+}
+
+export fn eval_stmts_str(statements: [Shared<SStmt>], context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string =
+  eval_stmts_str_with_try(statements, context, 0, gen_expr_fn).partial_result.joined_code()

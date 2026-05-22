@@ -3,7 +3,7 @@
 
 import { SExpr, SStmt, SFieldVal } from '../semantic_ir'
 import { Type, TUnknown } from '../checker/registry'
-import { CodegenContext, lookup_fields } from './context'
+import { CodegenContext, lookup_fields_for_context } from './context'
 import { sem_type_to_cpp } from './type_gen'
 import { find_field_value } from './expression_support'
 import { cpp_safe } from './cpp_naming'
@@ -62,7 +62,7 @@ export fn gen_record_expr(type_name: string, field_values: [Shared<SFieldVal>], 
     TGeneric(_, _) => sem_type_to_cpp(context, expr_type),
     _ => context.resolve(type_name)
   }
-  const field_order = lookup_fields(context.field_orders, type_name)
+  const field_order = lookup_fields_for_context(context, type_name)
   const values_code = if field_order.length() > 0
                       then gen_record_ordered(field_values, field_order, context, gen_stmts, eval_expr_fn)
                       else gen_record_unordered(field_values, context, gen_stmts, eval_expr_fn)
@@ -71,7 +71,7 @@ export fn gen_record_expr(type_name: string, field_values: [Shared<SFieldVal>], 
 end
 
 export fn gen_record_update_expr(type_name: string, base_expr: Shared<SExpr>, overrides: [Shared<SFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string, eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string) -> string = do
-  const field_order = lookup_fields(context.field_orders, type_name)
+  const field_order = lookup_fields_for_context(context, type_name)
   if field_order.length() > 0 then
     expression_output.record_initializer(
       context.resolve(type_name),

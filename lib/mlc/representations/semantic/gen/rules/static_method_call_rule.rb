@@ -20,6 +20,15 @@ module MLC
               "read_lines" => :string_array
             }.freeze
 
+            PROFILE_METHODS = {
+              "reset"            => :unit,
+              "scope_begin"      => :unit,
+              "scope_end"        => :unit,
+              "print_report"     => :unit,
+              "monotonic_nanos"  => :i64,
+              "peak_rss_kib"     => :i64
+            }.freeze
+
             def matches?(node, context)
               svc = services(context)
 
@@ -48,6 +57,9 @@ module MLC
               # Built-in File methods
               return true if type_name == "File" && FILE_METHODS.key?(method_name)
 
+              # Built-in Profile methods
+              return true if type_name == "Profile" && PROFILE_METHODS.key?(method_name)
+
               # Check if this is a known type with static methods
               static_method_exists?(svc, type_name, method_name)
             end
@@ -67,6 +79,11 @@ module MLC
               # Handle built-in File methods
               if type_name == "File" && FILE_METHODS.key?(method_name)
                 return produce_builtin_file_method(node, context, svc, method_name)
+              end
+
+              # Handle built-in Profile methods
+              if type_name == "Profile" && PROFILE_METHODS.key?(method_name)
+                return produce_builtin_profile_method(node, context, svc, method_name)
               end
 
               # Build mangled function name: Type_method
@@ -176,6 +193,27 @@ module MLC
                          end
 
               mangled = "File_#{method_name}"
+              args_ir = context[:args_ir] || []
+
+              svc.ir_builder.call(
+                func: svc.ir_builder.var(
+                  name: mangled,
+                  type: SemanticIR::Builder.function_type([], ret_type),
+                  origin: node
+                ),
+                args: args_ir,
+                type: ret_type,
+                origin: node
+              )
+            end
+
+            def produce_builtin_profile_method(node, context, svc, method_name)
+              ret_type = case PROFILE_METHODS[method_name]
+                         when :unit then SemanticIR::UnitType.new
+                         when :i64  then SemanticIR::Builder.primitive_type("i64")
+                         end
+
+              mangled = "Profile_#{method_name}"
               args_ir = context[:args_ir] || []
 
               svc.ir_builder.call(

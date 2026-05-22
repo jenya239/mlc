@@ -2,7 +2,7 @@
 // Not called back by transform_expr/transform_stmts; imports from transform.mlc.
 
 import { Decl, TypeVariant, Param, Program, Stmt, Span } from '../ast'
-import { expand_declarations_with_trait_context } from './trait_param_expand'
+import { expand_declarations_with_trait_nominal_maps, build_trait_nominal_maps, TraitNominalMaps } from './trait_param_expand'
 import { expand_parameter_destructuring_in_program } from './param_destructure_expand'
 import { Type, TypeRegistry, type_from_annotation } from './registry'
 import { SDecl, SProgram, SLoadItem, SNamespaceImportAlias } from '../semantic_ir'
@@ -65,13 +65,13 @@ fn to_semantic_namespace_aliases(items: [NamespaceImportAlias]) -> [SNamespaceIm
   result
 end
 
-export fn transform_load_items(items: [LoadItem], registry: TypeRegistry, program_for_trait_maps: Program) -> [SLoadItem] = do
+export fn transform_load_items(items: [LoadItem], registry: TypeRegistry, trait_maps: TraitNominalMaps) -> [SLoadItem] = do
   let mut result: [SLoadItem] = []
   let mut index = 0
   while index < items.length() do
     const item = items[index]
     const destructured_entry_declarations = expand_parameter_destructuring_in_program(Program { decls: item.decls }).decls
-    const expanded_declarations = expand_declarations_with_trait_context(destructured_entry_declarations, program_for_trait_maps)
+    const expanded_declarations = expand_declarations_with_trait_nominal_maps(destructured_entry_declarations, trait_maps)
     const typed_decls = transform_decls(expanded_declarations, registry)
     result.push(SLoadItem {
       path: item.path,

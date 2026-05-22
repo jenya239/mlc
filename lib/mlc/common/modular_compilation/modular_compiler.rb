@@ -71,6 +71,7 @@ module MLC
           runtime_include = File.join(runtime_dir, "include")
           runtime_cpp = [
             File.join(runtime_dir, "src/core/string.cpp"),
+            File.join(runtime_dir, "src/core/profile.cpp"),
             File.join(runtime_dir, "src/io/io.cpp")
           ].select { |p| File.exist?(p) }
 

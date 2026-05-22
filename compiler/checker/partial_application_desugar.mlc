@@ -53,16 +53,17 @@ fn partial_placeholder_delta_for_argument(argument: Shared<Expr>) -> i32 =
     _ => 0
   }
 
-fn partial_allocate_parameter_names(hole_count: i32, serial_start: i32) -> PartialNamesAllocation =
-  if hole_count <= 0 then
-    PartialNamesAllocation { names: [], next_serial: serial_start }
-  else
-    const tail_allocation = partial_allocate_parameter_names(hole_count - 1, serial_start + 1)
-    PartialNamesAllocation {
-      names: ['partial_application_parameter_' + serial_start.to_string()].concat(tail_allocation.names),
-      next_serial: tail_allocation.next_serial
-    }
+fn partial_allocate_parameter_names(hole_count: i32, serial_start: i32) -> PartialNamesAllocation = do
+  const names: [string] = []
+  let mut serial = serial_start
+  let mut remaining = hole_count
+  while remaining > 0 do
+    names.push('partial_application_parameter_' + serial.to_string())
+    serial = serial + 1
+    remaining = remaining - 1
   end
+  PartialNamesAllocation { names: names, next_serial: serial }
+end
 
 fn partial_count_placeholder_arguments(arguments: [Shared<Expr>]) -> i32 =
   arguments.fold(0, (accumulated_total, argument_under_scan) =>
@@ -77,8 +78,9 @@ fn partial_application_desugar_expression_element_sequence(
     ExpressionListAccumulator { mapped_expressions: [], next_serial: initial_serial },
     (accumulated, element_under_sequence) => do
       const element_partial = partial_application_desugar_inner(element_under_sequence, accumulated.next_serial)
+      accumulated.mapped_expressions.push(element_partial.expression)
       ExpressionListAccumulator {
-        mapped_expressions: accumulated.mapped_expressions.concat([element_partial.expression]),
+        mapped_expressions: accumulated.mapped_expressions,
         next_serial: element_partial.next_serial
       }
     end
@@ -92,10 +94,10 @@ fn partial_application_desugar_field_values_sequence(
     FieldValuesAccumulator { mapped_field_values: [], next_serial: initial_serial },
     (accumulated, field_value_under_sequence) => do
       const value_partial = partial_application_desugar_inner(field_value_under_sequence.val, accumulated.next_serial)
+      accumulated.mapped_field_values.push(
+        Shared.new(FieldVal { name: field_value_under_sequence.name, val: value_partial.expression }))
       FieldValuesAccumulator {
-        mapped_field_values: accumulated.mapped_field_values.concat([
-          Shared.new(FieldVal { name: field_value_under_sequence.name, val: value_partial.expression })
-        ]),
+        mapped_field_values: accumulated.mapped_field_values,
         next_serial: value_partial.next_serial
       }
     end
@@ -271,8 +273,9 @@ fn partial_application_desugar_statements_block(statements: [Shared<Stmt>], seri
     StatementsBlockAccumulator { accumulated_statements: [], next_serial: serial },
     (accumulated, statement_under_block) => do
       const statement_partial = partial_application_desugar_statement(statement_under_block, accumulated.next_serial)
+      accumulated.accumulated_statements.push(statement_partial.statement)
       StatementsBlockAccumulator {
-        accumulated_statements: accumulated.accumulated_statements.concat([statement_partial.statement]),
+        accumulated_statements: accumulated.accumulated_statements,
         next_serial: statement_partial.next_serial
       }
     end
@@ -332,13 +335,14 @@ fn partial_application_desugar_match_arms_list(arms: [Shared<MatchArm>], serial:
     (accumulated, arm_shared_under_match) => do
       const guard_pair = partial_application_desugar_inner(arm_shared_under_match.when_condition, accumulated.next_serial)
       const body_pair = partial_application_desugar_inner(arm_shared_under_match.body, guard_pair.next_serial)
+      accumulated.arms.push(Shared.new(MatchArm {
+        pat: arm_shared_under_match.pat,
+        has_guard: arm_shared_under_match.has_guard,
+        when_condition: guard_pair.expression,
+        body: body_pair.expression
+      }))
       MatchArmsPartialPair {
-        arms: accumulated.arms.concat([Shared.new(MatchArm {
-          pat: arm_shared_under_match.pat,
-          has_guard: arm_shared_under_match.has_guard,
-          when_condition: guard_pair.expression,
-          body: body_pair.expression
-        })]),
+        arms: accumulated.arms,
         next_serial: body_pair.next_serial
       }
     end

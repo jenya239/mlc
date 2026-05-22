@@ -1,0 +1,54 @@
+// Merge / import / trait-map regression tests (in-memory full+entry programs).
+
+import { TestResult, assert_eq_int, assert_true } from './test_runner'
+import { tokenize } from '../lexer'
+import { parse_program } from '../parser/decls'
+import { check, check_with_context } from '../checker/check'
+import { build_trait_nominal_maps } from '../checker/trait_param_expand'
+
+fn check_error_count(source: string) -> i32 =
+  match check(parse_program(tokenize(source).tokens)) {
+    Ok(_) => 0,
+    Err(errors) => errors.length()
+  }
+
+fn check_with_context_error_count(entry_source: string, full_source: string) -> i32 =
+  match check_with_context(
+    parse_program(tokenize(entry_source).tokens),
+    parse_program(tokenize(full_source).tokens)) {
+    Ok(_) => 0,
+    Err(errors) => errors.length()
+  }
+
+export fn merge_import_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const shared_library =
+    'trait Display { fn show(self: Point) -> string }\ntype Point = { x: i32, y: i32 }\n'
+
+  results.push(assert_eq_int('merge: entry uses trait from full program',
+    check_with_context_error_count(
+      'fn main() -> i32 = do\n  let point = Point { x: 1, y: 2 }\n  0\nend',
+      shared_library + 'extend Point : Display { fn show(self: Point) -> string = "ok" }'
+    ), 0))
+
+  results.push(assert_eq_int('merge: diamond-shaped shared types in full program',
+    check_with_context_error_count(
+      'fn main() -> i32 = use_both()',
+      'type Node = { value: i32 }\nfn use_left(node: Node) -> i32 = node.value\nfn use_right(node: Node) -> i32 = node.value + 1\nfn use_both() -> i32 = use_left(Node { value: 1 }) + use_right(Node { value: 2 })'
+    ), 0))
+
+  results.push(assert_true('merge: trait/type name conflict reported',
+    check_error_count('type Display = { x: i32 }\ntrait Display { fn show(self: Display) -> string }') > 0))
+
+  const full_program = parse_program(tokenize(
+    'type Writable { fn write(self: Buffer) -> unit }\ntype Buffer = { bytes: i32 }\n'
+  ).tokens)
+  const maps = build_trait_nominal_maps(full_program)
+  results.push(assert_true('merge: trait nominal maps contain trait name',
+    maps.trait_declaration_names.has('Writable')))
+  results.push(assert_true('merge: trait nominal maps contain type name',
+    maps.nominal_type_declaration_names.has('Buffer')))
+
+  results
+end

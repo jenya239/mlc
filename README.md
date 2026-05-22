@@ -37,7 +37,7 @@ compiler/out/mlcc path/to/main.mlc
 # Скомпилировать и запустить
 g++ -std=c++20 -I runtime/include \
     path/to/out/main.cpp \
-    runtime/src/io/io.cpp runtime/src/core/string.cpp \
+    runtime/src/io/io.cpp runtime/src/core/string.cpp runtime/src/core/profile.cpp \
     -o my_program && ./my_program
 ```
 
@@ -158,7 +158,7 @@ export TMPDIR=/path/in/repo/tmp   # при нехватке /tmp
 
 compiler/out/mlcc -o "$TMPDIR/mlc_p1" compiler/main.mlc
 g++ -std=c++20 -I "$TMPDIR/mlc_p1" -I runtime/include \
-  "$TMPDIR/mlc_p1"/*.cpp runtime/src/io/io.cpp runtime/src/core/string.cpp -O2 -o "$TMPDIR/mlcc2"
+  "$TMPDIR/mlc_p1"/*.cpp runtime/src/io/io.cpp runtime/src/core/string.cpp runtime/src/core/profile.cpp -O2 -o "$TMPDIR/mlcc2"
 "$TMPDIR/mlcc2" -o "$TMPDIR/mlc_p2" compiler/main.mlc
 diff -rq "$TMPDIR/mlc_p1" "$TMPDIR/mlc_p2"   # должно быть пусто
 ```

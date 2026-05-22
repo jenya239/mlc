@@ -370,12 +370,14 @@ export fn codegen_tests() -> [TestResult] = do
   const d3_trait_parameter_output = gen_program(parse_program(tokenize(d3_trait_parameter_source).tokens))
   results.push(assert_code_contains('D3 gen_program: concept Display', d3_trait_parameter_output, 'concept Display'))
   results.push(assert_code_contains('D3 gen_program: requires in trait concept', d3_trait_parameter_output, 'requires'))
-  results.push(assert_code_contains('D3 gen_program: parameter uses Display constraint', d3_trait_parameter_output, 'f(Display'))
+  results.push(assert_code_contains('D3 gen_program: parameter uses Display constraint', d3_trait_parameter_output, 'requires Display<'))
+  results.push(assert_code_contains('D3 gen_program: expanded trait param type', d3_trait_parameter_output, '__trait_param_0'))
 
   const d3_two_trait_parameter_source =
     'type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()'
   const d3_two_trait_parameter_output = gen_program(parse_program(tokenize(d3_two_trait_parameter_source).tokens))
-  results.push(assert_code_contains('D3 gen_program: first Display parameter', d3_two_trait_parameter_output, 'Display first'))
+  results.push(assert_code_contains('D3 gen_program: first Display parameter', d3_two_trait_parameter_output, 'Display<__trait_param_0>'))
+  results.push(assert_code_contains('D3 gen_program: second Display parameter', d3_two_trait_parameter_output, 'Display<__trait_param_1>'))
   const d4_where_trait_bounds_source =
     'type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()'
   const d4_where_trait_bounds_output = gen_program(parse_program(tokenize(d4_where_trait_bounds_source).tokens))
@@ -573,6 +575,20 @@ export fn codegen_tests() -> [TestResult] = do
   const node_info = lookup_ctor_type_info(multi_infos, 'Node')
   results.push(assert_eq_int('ctor_info: Node shared_pos — 1', node_info.shared_pos.length(), 1))
   results.push(assert_eq_int('ctor_info: Node shared_arr_pos — 1', node_info.shared_arr_pos.length(), 1))
+
+  const codegen_large_function_body =
+    'export fn large_body(seed: i32) -> i32 = do\n  let mut accumulator = seed\n  accumulator = accumulator + 1\n  accumulator = accumulator + 2\n  accumulator = accumulator + 3\n  if accumulator > 10 then\n    accumulator = accumulator - 1\n  end\n  if accumulator > 20 then\n    accumulator = accumulator - 2\n  else\n    accumulator = accumulator + 4\n  end\n  let mut counter = 0\n  while counter < 5 do\n    accumulator = accumulator + counter\n    counter = counter + 1\n  end\n  match accumulator {\n    0 => 0,\n    _ => accumulator\n  }\nend\n\nexport fn main() -> i32 = large_body(0)'
+  const codegen_large_body_cpp = gen_program(parse_program(tokenize(codegen_large_function_body).tokens))
+  results.push(assert_code_contains('gen_program: large fn body keeps accumulator updates',
+    codegen_large_body_cpp, 'accumulator'))
+  results.push(assert_code_contains('gen_program: large fn body emits while loop',
+    codegen_large_body_cpp, 'while'))
+
+  const codegen_extend_method =
+    'type Widget = { value: i32 }\nextend Widget { fn doubled(self: Widget) -> i32 = self.value * 2 }\nexport fn main() -> i32 = do\n  let widget = Widget { value: 3 }\n  widget.doubled()\nend'
+  const codegen_extend_method_cpp = gen_program(parse_program(tokenize(codegen_extend_method).tokens))
+  results.push(assert_code_contains('gen_program: extend method call mangles owner',
+    codegen_extend_method_cpp, 'Widget_doubled'))
 
   results
 end

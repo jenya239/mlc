@@ -6,7 +6,8 @@ import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../checke
 import { CodegenContext } from './context'
 import { map_method } from './cpp_naming'
 import { infer_shared_new_type_name,
-         cpp_function_name_for_file_method } from './expression_support'
+         cpp_function_name_for_file_method,
+         cpp_function_name_for_profile_method } from './expression_support'
 import * as mut_actual_argument from './mut_actual_argument'
 import * as expression_output from './expr'
 
@@ -21,6 +22,20 @@ fn gen_method_file_using_trailing_argument_fragments(
   else
     expression_output.function_call_parentheses(
       cpp_function_name_for_file_method(method_name),
+      trailing_arguments_joined)
+  end
+
+fn gen_method_profile_using_trailing_argument_fragments(
+  method_name: string,
+  trailing_arguments_joined: string
+) -> string =
+  if trailing_arguments_joined.length() == 0 then
+    expression_output.function_call_parentheses(
+      cpp_function_name_for_profile_method(method_name),
+      '')
+  else
+    expression_output.function_call_parentheses(
+      cpp_function_name_for_profile_method(method_name),
       trailing_arguments_joined)
   end
 
@@ -109,6 +124,8 @@ fn gen_method_expr_after_object_using_fragments(
   }
   if static_receiver_name == 'File' then
     gen_method_file_using_trailing_argument_fragments(method_name, trailing_arguments_joined)
+  else if static_receiver_name == 'Profile' then
+    gen_method_profile_using_trailing_argument_fragments(method_name, trailing_arguments_joined)
   else if static_receiver_name == 'Map' && method_name == 'new' then
     expression_output.empty_map_initializer()
   else if static_receiver_name == 'Shared' && method_name == 'new' && argument_count == 1 then

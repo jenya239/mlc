@@ -3,9 +3,8 @@
 
 import { SExpr, SStmt, SExprUnit } from '../semantic_ir'
 import { CodegenContext } from './context'
-import { stmts_final_ctx } from './statement_context'
 import * as expression_output from './expr'
-import { gen_expr, gen_stmts_str, gen_try_unwrap } from './eval'
+import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from './eval'
 
 fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
   match expr {
@@ -26,8 +25,9 @@ fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
 export fn gen_return_body(expr: Shared<SExpr>, context: CodegenContext) -> string =
   match expr {
     SExprBlock(statements, result_expr, _, _) => do
-      const final_context   = stmts_final_ctx(statements, context)
-      const statements_code = gen_stmts_str(statements, context)
+      const statements_with_context = gen_stmts_str_with_try(statements, context, 0)
+      const final_context   = statements_with_context.codegen_context
+      const statements_code = statements_with_context.partial_result.joined_code()
       match result_expr {
         SExprQuestion(inner_expr, _, _) => do
           const try_identifier = '__try_ret'

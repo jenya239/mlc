@@ -66,3 +66,21 @@ export fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], constructor_looku
     Shared.new(CtorTypeInfo { name: '', shared_pos: [], shared_arr_pos: [] }),
     (chosen, candidate_info) =>
       if candidate_info.name == constructor_lookup_name then candidate_info else chosen end)
+
+export fn build_ctor_type_info_index(infos: [Shared<CtorTypeInfo>]) -> Map<string, Shared<CtorTypeInfo> > = do
+  let index: Map<string, Shared<CtorTypeInfo> > = Map.new()
+  let mut info_index = 0
+  while info_index < infos.length() do
+    index.set(infos[info_index].name, infos[info_index])
+    info_index = info_index + 1
+  end
+  index
+end
+
+export fn lookup_ctor_type_info_indexed(
+  index: Map<string, Shared<CtorTypeInfo> >,
+  infos: [Shared<CtorTypeInfo>],
+  constructor_lookup_name: string
+) -> Shared<CtorTypeInfo> =
+  if index.has(constructor_lookup_name) then index.get(constructor_lookup_name)
+  else lookup_ctor_type_info(infos, constructor_lookup_name) end

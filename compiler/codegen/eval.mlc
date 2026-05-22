@@ -2,7 +2,7 @@
 // Public API has no extra parameters; the cross-module dependency is injected here.
 
 import { SExpr, SStmt } from '../semantic_ir'
-import { CodegenContext, GenStmtsResult, GenStmtResult } from './context'
+import { CodegenContext, GenStmtsResult, GenStmtsWithContext, GenStmtResult } from './context'
 import * as expr_eval from './expr_eval'
 import * as stmt_eval from './stmt_eval'
 
@@ -21,5 +21,5 @@ export fn gen_try_unwrap(inner_expr: Shared<SExpr>, context: CodegenContext, try
 export fn gen_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_counter: i32) -> GenStmtResult =
   stmt_eval.eval_stmt_with_try(stmt, context, try_counter, (expression: Shared<SExpr>, ctx: CodegenContext) => gen_expr(expression, ctx))
 
-export fn gen_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32) -> GenStmtsResult =
+export fn gen_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32) -> GenStmtsWithContext =
   stmt_eval.eval_stmts_str_with_try(statements, context, try_counter, (expression: Shared<SExpr>, ctx: CodegenContext) => gen_expr(expression, ctx))

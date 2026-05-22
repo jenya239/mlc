@@ -18,6 +18,10 @@ misc/examples/out_minimal/obj/
 misc/examples/out_minimal/minimal
 perf.data
 
+# Scaling probe output (benchmarks/scaling/run_quadratic_probe.rb)
+.tmp_scaling_probe/
+.tmp_profile/
+
 # Случайные фрагменты сборки в корневом out/ (не путать с compiler/out/)
 /out/test_*.cpp
 /out/test_*.hpp

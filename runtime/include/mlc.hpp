@@ -24,6 +24,7 @@
 #include "mlc/core/option.hpp"
 #include "mlc/core/result.hpp"
 #include "mlc/core/task.hpp"
+#include "mlc/core/profile.hpp"
 
 // I/O
 #include "mlc/io/io.hpp"

@@ -25,8 +25,8 @@ fn each_program_declaration_depth_first(program: Program, handle_declaration: (S
 end
 
 export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnostic] = do
-  let trait_declaration_names: Map<string, bool> = Map.new()
-  let nominal_type_declaration_names: Map<string, bool> = Map.new()
+  let mut trait_declaration_names: Map<string, bool> = Map.new()
+  let mut nominal_type_declaration_names: Map<string, bool> = Map.new()
   let conflicts: [Diagnostic] = []
   each_program_declaration_depth_first(program, (current_declaration) => do
     match current_declaration {
@@ -51,15 +51,6 @@ export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnos
   end)
   conflicts
 end
-
-fn fill_trait_and_nominal_maps(program: Program, trait_names: Map<string, bool>, nominal_type_names: Map<string, bool>) -> unit =
-  each_program_declaration_depth_first(program, (current_declaration) => do
-    match current_declaration {
-      DeclType(type_name, _, _, _) => do nominal_type_names.set(type_name, true); () end,
-      DeclTrait(trait_name, _, _) => do trait_names.set(trait_name, true); () end,
-      _ => ()
-    }
-  end)
 
 fn align_trait_bounds_matrix(type_parameter_names: [string], trait_bounds_rows: [[string]]) -> [[string]] = do
   const copied_trait_bound_rows = trait_bounds_rows.concat([])
@@ -368,13 +359,38 @@ fn expand_declarations_with_trait_and_nominal_maps(
   declarations.map(declaration_under_expansion_candidate =>
     expand_decl_shared(declaration_under_expansion_candidate, trait_declaration_names, nominal_type_declaration_names))
 
-// Expands declarations using trait/type names from `program_for_maps` (full merged program).
-export fn expand_declarations_with_trait_context(declarations: [Shared<Decl>], program_for_maps: Program) -> [Shared<Decl>] = do
-  let trait_declaration_names: Map<string, bool> = Map.new()
-  let nominal_type_declaration_names: Map<string, bool> = Map.new()
-  fill_trait_and_nominal_maps(program_for_maps, trait_declaration_names, nominal_type_declaration_names)
-  expand_declarations_with_trait_and_nominal_maps(declarations, trait_declaration_names, nominal_type_declaration_names)
+export type TraitNominalMaps = TraitNominalMaps {
+  trait_declaration_names: Map<string, bool>,
+  nominal_type_declaration_names: Map<string, bool>
+}
+
+export fn build_trait_nominal_maps(program: Program) -> TraitNominalMaps = do
+  let mut trait_declaration_names: Map<string, bool> = Map.new()
+  let mut nominal_type_declaration_names: Map<string, bool> = Map.new()
+  each_program_declaration_depth_first(program, (current_declaration) => do
+    match current_declaration {
+      DeclType(type_name, _, _, _) => do nominal_type_declaration_names.set(type_name, true); () end,
+      DeclTrait(trait_name, _, _) => do trait_declaration_names.set(trait_name, true); () end,
+      _ => ()
+    }
+  end)
+  TraitNominalMaps {
+    trait_declaration_names: trait_declaration_names,
+    nominal_type_declaration_names: nominal_type_declaration_names
+  }
 end
+
+export fn expand_declarations_with_trait_nominal_maps(
+  declarations: [Shared<Decl>],
+  maps: TraitNominalMaps
+) -> [Shared<Decl>] =
+  expand_declarations_with_trait_and_nominal_maps(
+    declarations,
+    maps.trait_declaration_names,
+    maps.nominal_type_declaration_names)
+// Expands declarations using trait/type names from `program_for_maps` (full merged program).
+export fn expand_declarations_with_trait_context(declarations: [Shared<Decl>], program_for_maps: Program) -> [Shared<Decl>] =
+  expand_declarations_with_trait_nominal_maps(declarations, build_trait_nominal_maps(program_for_maps))
 
 export fn expand_trait_as_param_entry_using_full(entry: Program, full_program: Program) -> Program =
   Program { decls: expand_declarations_with_trait_context(entry.decls, full_program) }

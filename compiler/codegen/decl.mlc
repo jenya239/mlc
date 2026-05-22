@@ -182,6 +182,36 @@ fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, pha
       end
   }
 
+export type DeclPartsBundle = DeclPartsBundle {
+  type_fwds: [string],
+  type_defs: [string],
+  fn_protos: [string],
+  fn_defs: [string]
+}
+
+export fn collect_all_decl_parts(decls: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundle = do
+  let type_fwds: [string] = []
+  let type_defs: [string] = []
+  let fn_protos: [string] = []
+  let fn_defs: [string] = []
+  let mut declaration_index = 0
+  while declaration_index < decls.length() do
+    const declaration = decls[declaration_index]
+    const wrapper_segment = extend_wrapper_segment(declaration, context)
+    if wrapper_segment.length() > 0 then type_fwds.push(wrapper_segment) end
+    const forward_segment = decl_segment(declaration, context, 0)
+    if forward_segment.length() > 0 then type_fwds.push(forward_segment) end
+    const definition_segment = decl_segment(declaration, context, 1)
+    if definition_segment.length() > 0 then type_defs.push(definition_segment) end
+    const prototype_segment = decl_segment(declaration, context, 2)
+    if prototype_segment.length() > 0 then fn_protos.push(prototype_segment) end
+    const definition_body_segment = decl_segment(declaration, context, 3)
+    if definition_body_segment.length() > 0 then fn_defs.push(definition_body_segment) end
+    declaration_index = declaration_index + 1
+  end
+  DeclPartsBundle { type_fwds: type_fwds, type_defs: type_defs, fn_protos: fn_protos, fn_defs: fn_defs }
+end
+
 export fn collect_decl_parts(decls: [Shared<SDecl>], context: CodegenContext, phase: i32) -> [string] = do
   const wrapper_segments =
     if phase == 0 then
