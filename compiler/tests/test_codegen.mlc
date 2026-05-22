@@ -143,6 +143,12 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('string visitor: ExprChar',
     gen_expr_via_string_visitor(Shared.new(SExprChar("a", Shared.new(TChar), span_unknown())), ctx), 'static_cast<char32_t>(a)'))
 
+  results.push(assert_eq_str('string visitor: ExprBin add',
+    gen_expr_via_string_visitor(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
+
+  results.push(assert_eq_str('string visitor: ExprUn neg',
+    gen_expr_via_string_visitor(Shared.new(SExprUn("-", si(42), i32_t(), span_unknown())), ctx), '(-42)'))
+
   results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
     gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
 

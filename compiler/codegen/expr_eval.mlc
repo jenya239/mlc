@@ -5,7 +5,7 @@
 import { SExpr, SStmt, sexpr_type, SExprArray } from '../semantic_ir'
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../semantic_ir'
 import { Type, TArray, TNamed, TFn } from '../checker/registry'
-import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from '../checker/semantic_type_structure'
+import { array_element_type_from_array_type, type_is_unknown } from '../checker/semantic_type_structure'
 import { CodegenContext } from './context'
 import { cpp_safe, map_builtin } from './cpp_naming'
 import { sem_type_to_cpp } from './type_gen'
@@ -18,7 +18,7 @@ import { gen_method_expr } from './method_gen'
 import { stmts_final_ctx } from './statement_context'
 import * as expression_output from './expr'
 import * as mut_actual_argument from './mut_actual_argument'
-import { gen_expr_via_string_visitor } from './expr_visitor_string'
+import { gen_expr_via_string_visitor, gen_binary_via_visitor, gen_unary_via_visitor } from './expr_visitor_string'
 
 // --- Argument list -----------------------------------------------------------
 
@@ -26,20 +26,6 @@ export fn eval_argument_list(expressions: [Shared<SExpr>], context: CodegenConte
   expressions.map(expression => eval_expr(expression, context, gen_stmts)).join(', ')
 
 // --- Expression rules --------------------------------------------------------
-
-fn gen_binary_expr(operation: string, left_expr: Shared<SExpr>, right_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
-  const method    = operator_method_for(operation)
-  const left_type = sexpr_type(left_expr)
-  const type_name = match left_type { TNamed(n) => n, _ => '' }
-  if method != '' && type_name != '' then
-    `${type_name}_${method}(${eval_expr(left_expr, context, gen_stmts)}, ${eval_expr(right_expr, context, gen_stmts)})`
-  else
-    expression_output.parenthesized_binary(eval_expr(left_expr, context, gen_stmts), operation, eval_expr(right_expr, context, gen_stmts))
-  end
-end
-
-fn gen_unary_expr(operation: string, inner_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
-  expression_output.parenthesized_unary(operation, eval_expr(inner_expr, context, gen_stmts))
 
 fn gen_call_function_code(function_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   match function_expr {
@@ -239,8 +225,8 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprChar(_, _, _)                                     => gen_expr_via_string_visitor(expr, context),
     SExprExtern(_, _)                                      => gen_extern_placeholder(),
     SExprIdent(_, _, _)                                    => gen_expr_via_string_visitor(expr, context),
-    SExprBin(operation, left_expr, right_expr, _, _)       => gen_binary_expr(operation, left_expr, right_expr, context, gen_stmts),
-    SExprUn(operation, inner_expr, _, _)                   => gen_unary_expr(operation, inner_expr, context, gen_stmts),
+    SExprBin(operation, left_expr, right_expr, _, _)       => gen_binary_via_visitor(operation, left_expr, right_expr, context, gen_stmts, eval_expr),
+    SExprUn(operation, inner_expr, _, _)                   => gen_unary_via_visitor(operation, inner_expr, context, gen_stmts, eval_expr),
     SExprCall(function_expression, arguments, call_parameter_mutability_flags, _, _) =>
       gen_call_expr(function_expression, arguments, call_parameter_mutability_flags, context, gen_stmts, eval_expr),
     SExprMethod(method_object, method_name, arguments, receiver_and_parameter_mut_flags, _, _) =>

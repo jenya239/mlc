@@ -14,6 +14,8 @@ export trait ExprVisitor<VisitorResult> {
   fn visit_usize(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_char(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_ident(self: ExprVisitor<VisitorResult>, name: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_bin(self: ExprVisitor<VisitorResult>, operation: string, left_expression: Shared<SExpr>, right_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_un(self: ExprVisitor<VisitorResult>, operation: string, inner_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_unsupported(self: ExprVisitor<VisitorResult>, expression: Shared<SExpr>) -> VisitorResult
 }
 
@@ -33,5 +35,9 @@ where Visitor: ExprVisitor
   SExprUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
   SExprChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
   SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
+  SExprBin(operation, left_expression, right_expression, type_value, _) =>
+    expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),
+  SExprUn(operation, inner_expression, type_value, _) =>
+    expression_visitor.visit_un(operation, inner_expression, type_value),
   _ => expression_visitor.visit_unsupported(expression)
 }

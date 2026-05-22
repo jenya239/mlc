@@ -1,13 +1,55 @@
-// ExprVisitor<string> wired into expr_eval for literals and identifiers.
+// ExprVisitor<string> wired into expr_eval for literals, identifiers, bin/unary ops.
 
 import { Type } from '../checker/registry'
-import { SExpr } from '../semantic_ir'
+import { SExpr, SStmt, sexpr_type } from '../semantic_ir'
+import { TNamed } from '../checker/registry'
+import { operator_method_for } from '../checker/semantic_type_structure'
 import { ExprVisitor } from '../expr_visitor'
 import { CodegenContext } from './context'
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from './literals'
 import { gen_identifier } from './identifiers'
+import * as expression_output from './expr'
 
 type StringExprVisitor = StringExprVisitor { context: CodegenContext }
+
+fn evaluate_via_string_visitor(
+  expression: Shared<SExpr>,
+  context: CodegenContext,
+  _gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> string =
+  gen_expr_via_string_visitor(expression, context)
+
+fn ignored_gen_stmts(_statements: [Shared<SStmt>], _context: CodegenContext) -> string = ''
+
+export fn gen_binary_via_visitor(
+  operation: string,
+  left_expression: Shared<SExpr>,
+  right_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string = do
+  const method = operator_method_for(operation)
+  const left_type = sexpr_type(left_expression)
+  const type_name = match left_type { TNamed(name) => name, _ => '' }
+  if method != '' && type_name != '' then
+    `${type_name}_${method}(${evaluate_expression(left_expression, context, gen_stmts)}, ${evaluate_expression(right_expression, context, gen_stmts)})`
+  else
+    expression_output.parenthesized_binary(
+      evaluate_expression(left_expression, context, gen_stmts),
+      operation,
+      evaluate_expression(right_expression, context, gen_stmts))
+  end
+end
+
+export fn gen_unary_via_visitor(
+  operation: string,
+  inner_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  expression_output.parenthesized_unary(operation, evaluate_expression(inner_expression, context, gen_stmts))
 
 extend StringExprVisitor : ExprVisitor<string> {
   fn visit_int(self: StringExprVisitor, value: i32, _semantic_type: Shared<Type>) -> string =
@@ -30,6 +72,10 @@ extend StringExprVisitor : ExprVisitor<string> {
     gen_char_literal(value)
   fn visit_ident(self: StringExprVisitor, name: string, _semantic_type: Shared<Type>) -> string =
     gen_identifier(name, self.context)
+  fn visit_bin(self: StringExprVisitor, operation: string, left_expression: Shared<SExpr>, right_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
+    gen_binary_via_visitor(operation, left_expression, right_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_un(self: StringExprVisitor, operation: string, inner_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
+    gen_unary_via_visitor(operation, inner_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_unsupported(self: StringExprVisitor, _expression: Shared<SExpr>) -> string =
     '/* unsupported expr */'
 }
@@ -47,6 +93,10 @@ export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: Codege
     SExprUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
     SExprChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
     SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
+    SExprBin(operation, left_expression, right_expression, type_value, _) =>
+      expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),
+    SExprUn(operation, inner_expression, type_value, _) =>
+      expression_visitor.visit_un(operation, inner_expression, type_value),
     _ => expression_visitor.visit_unsupported(expression)
   }
 end
