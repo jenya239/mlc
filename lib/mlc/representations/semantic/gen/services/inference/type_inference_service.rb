@@ -29,7 +29,7 @@ module MLC
 
             def initialize(var_type_registry:, type_registry:, function_registry:,
                            type_decl_table:, generic_call_resolver:, type_checker:, scope_context:,
-                           trait_registry: nil, _transformer: nil)
+                           trait_registry: nil, type_builder: nil, _transformer: nil)
               @var_type_registry = var_type_registry
               @type_registry = type_registry
               @function_registry = function_registry
@@ -38,6 +38,7 @@ module MLC
               @type_checker = type_checker
               @scope_context = scope_context
               @trait_registry = trait_registry
+              @type_builder = type_builder
             end
 
             attr_writer :trait_registry
@@ -309,6 +310,9 @@ module MLC
               if object_type.is_a?(SemanticIR::RefType) || object_type.is_a?(SemanticIR::MutRefType)
                 return infer_member_type(object_type.inner_type, member, node: node)
               end
+
+              trait_bound_member = infer_type_param_trait_bound_member_type(object_type, member)
+              return trait_bound_member if trait_bound_member
 
               if object_type.is_a?(SemanticIR::GenericType)
                 base_name = type_name(object_type.base_type)
@@ -615,8 +619,13 @@ module MLC
 
             # Type predicates
             def numeric_type?(type)
-              # TypeVariable is assumed to be numeric-compatible (no constraints yet)
-              return true if type.is_a?(SemanticIR::TypeVariable)
+              if type.is_a?(SemanticIR::TypeVariable)
+                type_str = type.name.to_s
+                type_param = current_type_params.find { |tp| tp.name == type_str }
+                return false if type_param && Array(type_param.trait_bounds).compact.any?
+
+                return true
+              end
 
               type_str = normalized_type_name(type_name(type))
               return true if MLC::Representations::Semantic::Gen::Services::TypeChecker::NUMERIC_PRIMITIVES.include?(type_str)
@@ -688,6 +697,10 @@ module MLC
                 return resolve_array_member(object_type, member, args) if object_type.is_a?(SemanticIR::ArrayType)
                 return resolve_map_member(object_type, member, args) if object_type.is_a?(SemanticIR::MapType)
                 return resolve_string_member(member, args) if string?(object_type)
+
+                trait_bound_ret = @context.send(:resolve_type_param_trait_bound_call_type, object_type, member, args)
+                return trait_bound_ret if trait_bound_ret
+
                 return resolve_numeric_member(object_type, member, args) if numeric?(object_type)
                 return resolve_symbol_member(member, args) if symbol?(object_type)
 
@@ -1260,6 +1273,78 @@ module MLC
                 "Map"
               else
                 type.respond_to?(:name) ? type.name : nil
+              end
+            end
+
+            def infer_type_param_trait_bound_member_type(object_type, member)
+              param_name = type_param_name_from_object_type(object_type)
+              return nil unless param_name
+
+              type_param = current_type_params.find { |tp| tp.name == param_name }
+              return nil unless type_param
+
+              bounds = Array(type_param.trait_bounds).compact
+              return nil if bounds.empty?
+
+              bounds.each do |bound_string|
+                trait_name, = parse_trait_bound_string(bound_string)
+                next unless trait_name
+
+                trait_info = @trait_registry&.get_trait(trait_name)
+                next unless trait_info
+
+                trait_method = trait_info.trait_methods.find { |m| m[:name] == member }
+                next unless trait_method
+
+                return build_trait_method_member_type(trait_method)
+              end
+              nil
+            end
+
+            def resolve_type_param_trait_bound_call_type(object_type, member, args)
+              fn_type = infer_type_param_trait_bound_member_type(object_type, member)
+              return nil unless fn_type
+
+              expected = fn_type.params.length
+              actual = args.length
+              type_error("#{member}() expects #{expected} argument(s), got #{actual}") if expected != actual
+
+              fn_type.ret_type
+            end
+
+            def type_param_name_from_object_type(object_type)
+              if object_type.is_a?(SemanticIR::TypeVariable)
+                object_type.name.to_s
+              elsif object_type.respond_to?(:name)
+                object_type.name.to_s
+              end
+            end
+
+            def parse_trait_bound_string(bound)
+              text = bound.to_s.strip
+              return [text, []] unless text.include?("<")
+
+              base, rest = text.split("<", 2)
+              args = rest.sub(/>\z/, "").split(",").map(&:strip).reject(&:empty?)
+              [base.strip, args]
+            end
+
+            def build_trait_method_member_type(trait_method)
+              raw_params = Array(trait_method[:params]).reject do |parameter|
+                name = parameter.respond_to?(:name) ? parameter.name : parameter[:name]
+                name == "self"
+              end
+              @type_builder.with_type_params(current_type_params) do
+                params = raw_params.map do |parameter|
+                  type_ast = parameter.respond_to?(:type) ? parameter.type : parameter[:type]
+                  {
+                    name: (parameter.respond_to?(:name) ? parameter.name : parameter[:name]),
+                    type: type_ast ? @type_builder.transform(type_ast) : SemanticIR::Builder.primitive_type("auto")
+                  }
+                end
+                ret_ast = trait_method[:ret_type]
+                ret_type = ret_ast ? @type_builder.transform(ret_ast) : SemanticIR::Builder.unit_type
+                SemanticIR::Builder.function_type(params, ret_type)
               end
             end
 

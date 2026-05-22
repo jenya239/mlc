@@ -23,9 +23,9 @@ extend StringExprVisitor : ExprVisitor<string> {
 export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: CodegenContext) -> string = do
   const expression_visitor = StringExprVisitor { context: context }
   match expression {
-    SExprInt(value, semantic_type, _) => expression_visitor.visit_int(value, semantic_type),
-    SExprStr(value, semantic_type, _) => expression_visitor.visit_str(value, semantic_type),
-    SExprIdent(name, semantic_type, _) => expression_visitor.visit_ident(name, semantic_type),
+    SExprInt(integer_value, type_value, _) => expression_visitor.visit_int(integer_value, type_value),
+    SExprStr(string_value, type_value, _) => expression_visitor.visit_str(string_value, type_value),
+    SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
     _ => expression_visitor.visit_unsupported(expression)
   }
 end

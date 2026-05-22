@@ -25,7 +25,11 @@ module MLC
               # Track move semantics - mark Owned<T> arguments as moved
               mark_moved_arguments(svc, node.args, args_ir)
 
-              result_type = svc.type_inference_service.infer_call_type(callee_ir, args_ir)
+              result_type = svc.type_inference_service.infer_call_type(
+                callee_ir,
+                args_ir,
+                expected_type: svc.scope_context.current_function_return
+              )
 
               svc.ir_builder.call(
                 func: callee_ir,

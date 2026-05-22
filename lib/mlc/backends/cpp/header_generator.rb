@@ -5,6 +5,8 @@ module MLC
     module Cpp
       # Generates C++ header (.hpp) and implementation (.cpp) files from SemanticIR modules
       class HeaderGenerator
+        GENERIC_TRAIT_REQUIRES_SKIP = %w[ExprVisitor CompilerPass].freeze
+
         def initialize(lowering)
           @lowering = lowering
         end
@@ -32,6 +34,14 @@ module MLC
               header_items << item if item.exported
               next if item.external
               impl_items << item
+            end
+          end
+
+          if module_has_exported_generic_function?(module_node)
+            module_node.items.each do |item|
+              next unless item.is_a?(SemanticIR::Func)
+              next unless generic_function_in_header?(item, module_node)
+              header_items << item unless header_items.include?(item)
             end
           end
 
@@ -111,7 +121,7 @@ module MLC
           end
 
           # Generate type definitions and functions
-          items.each do |item|
+          header_generation_items(items).each do |item|
             case item
             when SemanticIR::TypeDecl
               # Full type definition goes in header
@@ -119,7 +129,11 @@ module MLC
               lines << cpp_ast.to_source
               lines << ""
             when SemanticIR::Func
-              lines << generate_function_declaration(item)
+              if generic_function_in_header?(item, module_node)
+                lines << generate_function_implementation(item)
+              else
+                lines << generate_function_declaration(item)
+              end
               lines << ""
             end
           end
@@ -227,6 +241,7 @@ module MLC
           items.each do |item|
             case item
             when SemanticIR::Func
+              next if generic_function_in_header?(item, module_node)
               func_impl = generate_function_implementation(item)
               lines << func_impl
               lines << ""
@@ -334,8 +349,8 @@ module MLC
           end
         end
 
-        def ast_type_to_cpp(ast_type, trait_self: nil, associated_type_names: nil)
-          TraitCppTypes.ast_type_to_cpp(ast_type, trait_self: trait_self, associated_type_names: associated_type_names)
+        def ast_type_to_cpp(ast_type, trait_self: nil, associated_type_names: nil, trait_type_param_names: nil)
+          TraitCppTypes.ast_type_to_cpp(ast_type, trait_self: trait_self, associated_type_names: associated_type_names, trait_type_param_names: trait_type_param_names)
         end
 
         def generate_trait_structs_for_module(module_node)
@@ -346,6 +361,9 @@ module MLC
           return [] if trait_names_in_module.empty?
           tr.all_traits.select { |trait_definition| trait_names_in_module.include?(trait_definition.name) }.map do |trait_info|
             uses_associated_types = trait_info.associated_types&.any?
+            type_param_names = Array(trait_info.type_params).map(&:to_s)
+            uses_type_params = type_param_names.any?
+            trait_type_param_names = type_param_names.to_set
             trait_self_name = "TraitSelf"
             trait_self_keyword = uses_associated_types ? trait_self_name : nil
             associated_type_names = trait_info.associated_types&.map { |entry| entry[:name].to_s }&.to_set
@@ -353,14 +371,16 @@ module MLC
               params = Array(method_entry[:params]).reject { |parameter| parameter.respond_to?(:name) ? parameter.name == "self" : parameter[:name] == "self" }
               param_types = params.map do |parameter|
                 type_syntax = parameter.respond_to?(:type) ? parameter.type : parameter[:type]
-                ast_type_to_cpp(type_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names)
+                ast_type_to_cpp(type_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names, trait_type_param_names: trait_type_param_names)
               end.join(", ")
               ret_syntax = method_entry[:ret_type]
-              ret_type = ret_syntax ? ast_type_to_cpp(ret_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names) : "void"
+              ret_type = ret_syntax ? ast_type_to_cpp(ret_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names, trait_type_param_names: trait_type_param_names) : "void"
               "  std::function<#{ret_type}(#{param_types})> #{method_entry[:name]};"
             end.join("\n")
             if uses_associated_types
               "template<typename #{trait_self_name}>\nstruct #{trait_info.name} {\n#{fields}\n};"
+            elsif uses_type_params
+              "template<typename #{type_param_names.join(', ')}>\nstruct #{trait_info.name} {\n#{fields}\n};"
             else
               "struct #{trait_info.name} {\n#{fields}\n};"
             end
@@ -376,7 +396,10 @@ module MLC
           tr.all_traits.each do |trait_info|
             trait_name = trait_info.name
             uses_associated_types = trait_info.associated_types&.any?
+            type_param_names = Array(trait_info.type_params).map(&:to_s)
+            next if type_param_names.any?
             tr.implementations_for_trait(trait_name).each do |impl|
+              next unless impl.implementing_module == module_node.name
               type_name = impl.type_name
               cpp_type = type_registry&.cpp_name(type_name) || type_name
               trait_cpp_name = uses_associated_types ? "#{trait_name}<#{cpp_type}>" : trait_name
@@ -416,11 +439,13 @@ module MLC
         end
 
         def collect_trait_names_in_module(module_node)
-          # We consider all traits registered in the trait_registry as "in module"
-          # (since traits are registered globally from source files)
           tr = @lowering.container.trait_registry
           return Set.new unless tr
-          Set.new(tr.all_traits.map(&:name))
+          Set.new(
+            tr.all_traits
+              .select { |trait_definition| trait_definition.defining_module == module_node.name }
+              .map(&:name)
+          )
         end
 
         RESERVED_NAMESPACES = %w[main stdin stdout stderr errno].freeze
@@ -428,6 +453,25 @@ module MLC
         def module_name_to_namespace(name)
           base = name.gsub("/", "::").split("::").map(&:downcase).join("::")
           RESERVED_NAMESPACES.include?(base) ? "mlc_#{base}" : base
+        end
+
+        def module_has_exported_generic_function?(module_node)
+          module_node.items.any? do |item|
+            item.is_a?(SemanticIR::Func) && item.exported && item.type_params&.any? && item.body
+          end
+        end
+
+        def generic_function_in_header?(func, module_node)
+          return false unless func.type_params&.any? && func.body
+
+          func.exported || module_has_exported_generic_function?(module_node)
+        end
+
+        def header_generation_items(items)
+          type_items = items.select { |item| item.is_a?(SemanticIR::TypeDecl) }
+          function_items = items.select { |item| item.is_a?(SemanticIR::Func) }
+          sorted_functions = function_items.sort_by { |function| function.name == "dispatch_expr" ? 1 : 0 }
+          type_items + sorted_functions
         end
 
         def build_template_lines(type_params)
@@ -444,6 +488,10 @@ module MLC
             traits = tp.respond_to?(:trait_bounds) ? tp.trait_bounds : []
             traits = [tp.constraint].compact if traits.empty? && tp.constraint && !tp.constraint.empty?
             traits.each do |trait_name|
+              base_trait_name = trait_name.to_s.split("<", 2).first
+              next if GENERIC_TRAIT_REQUIRES_SKIP.include?(base_trait_name)
+              next if trait_name.to_s.include?("<")
+
               clauses << "#{trait_name}<#{tp.name}>"
             end
           end

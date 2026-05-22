@@ -1,4 +1,4 @@
-// ExprVisitor sketch (PLAN.md §3). dispatch_expr stub — not used by codegen yet.
+// ExprVisitor sketch (PLAN.md §3). dispatch_expr — not used by eval.mlc yet.
 
 import { Type } from './checker/registry'
 import { SExpr } from './semantic_ir'
@@ -10,15 +10,14 @@ export trait ExprVisitor<VisitorResult> {
   fn visit_unsupported(self: ExprVisitor<VisitorResult>, expression: Shared<SExpr>) -> VisitorResult
 }
 
-// Stub: routes SExpr variants only; trait dispatch wired in a later step.
-export fn dispatch_expr<Visitor>(
+export fn dispatch_expr<VisitorResult, Visitor>(
   expression_visitor: Visitor,
   expression: Shared<SExpr>
-) -> unit =
-  match expression {
-    SExprInt(_, _, _) => (),
-    SExprStr(_, _, _) => (),
-    SExprIdent(_, _, _) => (),
-    _ => ()
-  }
-where Visitor: ExprVisitor<unit>
+) -> VisitorResult
+where Visitor: ExprVisitor
+= match expression {
+  SExprInt(integer_value, type_value, _) => expression_visitor.visit_int(integer_value, type_value),
+  SExprStr(string_value, type_value, _) => expression_visitor.visit_str(string_value, type_value),
+  SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
+  _ => expression_visitor.visit_unsupported(expression)
+}

@@ -136,6 +136,7 @@ module MLC
               # Regular function call.
               callee = lower_expression(node.callee)
               callee = maybe_add_variant_template_args(callee, node)
+              callee = maybe_add_function_template_args(callee, node)
               callee_param_types = node.callee.respond_to?(:type) && node.callee.type.is_a?(MLC::SemanticIR::FunctionType) ? node.callee.type.params : []
               args = node.args.each_with_index.map do |arg, i|
                 lowered = lower_argument_with_move(arg)
@@ -535,6 +536,7 @@ module MLC
                 end
               end
               callee = context.factory.identifier(name: qualified_name)
+              callee = maybe_add_function_template_args(callee, call)
               args = call.args.map { |arg| lower_expression(arg) }
 
               context.factory.function_call(
@@ -1067,10 +1069,79 @@ module MLC
               end
             end
 
-            # Wrap argument with trait coercion adapter if expected type is a trait
-            # Add template args to variant constructor calls for generic ADTs.
-            # Handles both fully-resolved types and TypeVariable-containing types by substituting
-            # from the enclosing function's expected_return_type.
+            def maybe_add_function_template_args(callee_expr, call_node)
+              return callee_expr unless function_registry
+              return callee_expr unless context.checker.var_expr?(call_node.callee)
+              return callee_expr if call_node.callee.name.match?(/\A[A-Z]/)
+              return callee_expr if callee_expr.to_source.include?("<")
+
+              entry = function_registry.fetch_entry(call_node.callee.name)
+              return callee_expr unless entry
+
+              type_params = Array(entry.info&.type_params)
+              return callee_expr if type_params.empty?
+
+              result_type = call_node.type
+              return callee_expr unless result_type
+              return callee_expr if result_type.is_a?(MLC::SemanticIR::TypeVariable)
+
+              arg_types = call_node.args.map(&:type)
+              type_map = {}
+              Array(entry.info.param_types).each_with_index do |param_type, index|
+                arg_type = arg_types[index]
+                next unless arg_type
+
+                unify_type_variables(param_type, arg_type, type_map)
+              end
+              unify_type_variables(entry.info.ret_type, result_type, type_map)
+
+              explicit_params = type_params.select do |type_param|
+                mapped = type_map[type_param.name]
+                mapped && !mapped.is_a?(MLC::SemanticIR::TypeVariable)
+              end
+              return callee_expr if explicit_params.empty?
+
+              cpp_args = explicit_params.filter_map do |type_param|
+                mapped = type_map[type_param.name]
+                next if mapped.nil? || mapped.is_a?(MLC::SemanticIR::TypeVariable)
+
+                context.map_type(mapped)
+              end
+              return callee_expr if cpp_args.empty?
+
+              context.factory.raw_expression(code: "#{callee_expr.to_source}<#{cpp_args.join(', ')}>")
+            end
+
+            def unify_type_variables(pattern_type, concrete_type, type_map)
+              case pattern_type
+              when MLC::SemanticIR::TypeVariable
+                existing = type_map[pattern_type.name]
+                if existing.nil?
+                  type_map[pattern_type.name] = concrete_type
+                elsif existing.is_a?(MLC::SemanticIR::TypeVariable) && !concrete_type.is_a?(MLC::SemanticIR::TypeVariable)
+                  type_map[pattern_type.name] = concrete_type
+                end
+              when MLC::SemanticIR::GenericType
+                return unless concrete_type.is_a?(MLC::SemanticIR::GenericType)
+
+                pattern_type.type_args&.each_with_index do |pattern_arg, index|
+                  concrete_arg = concrete_type.type_args&.[](index)
+                  unify_type_variables(pattern_arg, concrete_arg, type_map) if concrete_arg
+                end
+              when MLC::SemanticIR::ArrayType
+                if concrete_type.is_a?(MLC::SemanticIR::ArrayType)
+                  unify_type_variables(pattern_type.element_type, concrete_type.element_type, type_map)
+                end
+              when MLC::SemanticIR::RecordType
+                return unless concrete_type.is_a?(MLC::SemanticIR::RecordType)
+
+                pattern_type.fields.each do |pattern_field|
+                  concrete_field = concrete_type.fields.find { |field| field[:name] == pattern_field[:name] }
+                  unify_type_variables(pattern_field[:type], concrete_field[:type], type_map) if concrete_field
+                end
+              end
+            end
+
             def maybe_add_variant_template_args(callee_expr, call_node)
               return callee_expr unless call_node.respond_to?(:callee)
 

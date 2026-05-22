@@ -3,6 +3,7 @@
 import { TestResult, assert_eq_str, assert_eq_int } from './test_runner'
 import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
 import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
+import { gen_expr_via_string_visitor } from '../codegen/expr_visitor_string'
 import { cpp_lambda_header_prefix } from '../codegen/expression_support'
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/type_gen'
@@ -109,6 +110,13 @@ export fn codegen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('ExprIdent(\'println\') - \'mlc::io::println\'',
     gen_expr(sid('println'), ctx), 'mlc::io::println'))
+
+  results.push(assert_eq_str('string visitor: ExprInt(42)',
+    gen_expr_via_string_visitor(si(42), ctx), '42'))
+  results.push(assert_eq_str('string visitor: ExprStr',
+    gen_expr_via_string_visitor(ss('hi'), ctx), 'mlc::String("hi", 2)'))
+  results.push(assert_eq_str('string visitor: ExprIdent',
+    gen_expr_via_string_visitor(sid("x"), ctx), "x"))
 
   results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
     gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))

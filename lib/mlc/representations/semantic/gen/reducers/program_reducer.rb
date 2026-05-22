@@ -128,7 +128,8 @@ module MLC
                     name: decl.name,
                     type_params: decl.type_params.map(&:name),
                     methods: methods,
-                    associated_types: associated_types
+                    associated_types: associated_types,
+                    defining_module: context[:module_name]
                   )
 
                 when MLC::Source::AST::ExtendDecl
@@ -179,7 +180,8 @@ module MLC
                     type_name: type_name,
                     trait_name: decl.trait_name,
                     methods: methods,
-                    associated_type_bindings: associated_type_bindings
+                    associated_type_bindings: associated_type_bindings,
+                    implementing_module: context[:module_name]
                   )
 
                   # Validate completeness if implementing a trait

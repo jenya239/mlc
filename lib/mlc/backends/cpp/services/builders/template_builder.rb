@@ -7,6 +7,8 @@ module MLC
         module Builders
           # Template/generic type handling for C++20
           module TemplateBuilder
+            GENERIC_TRAIT_REQUIRES_SKIP = %w[ExprVisitor CompilerPass].freeze
+
             module_function
 
             # Build template signature for generics
@@ -27,6 +29,10 @@ module MLC
                 traits = tp.respond_to?(:trait_bounds) ? tp.trait_bounds : []
                 traits = [tp.constraint].compact if traits.empty? && tp.constraint && !tp.constraint.empty?
                 traits.each do |trait_name|
+                  base_trait_name = trait_name.to_s.split("<", 2).first
+                  next if GENERIC_TRAIT_REQUIRES_SKIP.include?(base_trait_name)
+                  next if trait_name.to_s.include?("<")
+
                   clauses << "#{trait_name}<#{tp.name}>"
                 end
               end

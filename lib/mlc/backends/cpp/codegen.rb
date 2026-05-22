@@ -299,6 +299,7 @@ module MLC
           @trait_registry.all_traits.each do |trait_info|
             trait_name = trait_info.name
             uses_associated_types = trait_info.associated_types&.any?
+            next if Array(trait_info.type_params).map(&:to_s).any?
             @trait_registry.implementations_for_trait(trait_name).each do |impl|
               type_name = impl.type_name
               cpp_type = @context.type_registry&.cpp_name(type_name) || type_name
