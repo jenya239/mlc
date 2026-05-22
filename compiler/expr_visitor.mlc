@@ -1,7 +1,7 @@
 // ExprVisitor sketch (PLAN.md §3). dispatch_expr — not used by eval.mlc yet.
 
 import { Type } from './checker/registry'
-import { SExpr } from './semantic_ir'
+import { SExpr, SStmt } from './semantic_ir'
 
 export trait ExprVisitor<VisitorResult> {
   fn visit_int(self: ExprVisitor<VisitorResult>, value: i32, semantic_type: Shared<Type>) -> VisitorResult
@@ -18,6 +18,8 @@ export trait ExprVisitor<VisitorResult> {
   fn visit_un(self: ExprVisitor<VisitorResult>, operation: string, inner_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_call(self: ExprVisitor<VisitorResult>, function_expression: Shared<SExpr>, arguments: [Shared<SExpr>], mutability_flags: [i32], semantic_type: Shared<Type>) -> VisitorResult
   fn visit_method(self: ExprVisitor<VisitorResult>, object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], mutability_flags: [i32], semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_if(self: ExprVisitor<VisitorResult>, condition: Shared<SExpr>, then_expression: Shared<SExpr>, else_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_block(self: ExprVisitor<VisitorResult>, statements: [Shared<SStmt>], result_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_unsupported(self: ExprVisitor<VisitorResult>, expression: Shared<SExpr>) -> VisitorResult
 }
 
@@ -45,5 +47,9 @@ where Visitor: ExprVisitor
     expression_visitor.visit_call(function_expression, arguments, mutability_flags, type_value),
   SExprMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
     expression_visitor.visit_method(object, method_name, arguments, mutability_flags, type_value),
+  SExprIf(condition, then_expression, else_expression, type_value, _) =>
+    expression_visitor.visit_if(condition, then_expression, else_expression, type_value),
+  SExprBlock(statements, result_expression, type_value, _) =>
+    expression_visitor.visit_block(statements, result_expression, type_value),
   _ => expression_visitor.visit_unsupported(expression)
 }

@@ -1,17 +1,18 @@
 // ExprVisitor<string> wired into expr_eval for literals, identifiers, bin/unary ops.
 
 import { Type } from '../checker/registry'
-import { SExpr, SStmt, sexpr_type } from '../semantic_ir'
-import { TNamed } from '../checker/registry'
-import { operator_method_for } from '../checker/semantic_type_structure'
+import { SExpr, SStmt, sexpr_type, SExprArray } from '../semantic_ir'
+import { TNamed, TArray } from '../checker/registry'
+import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from '../checker/semantic_type_structure'
 import { ExprVisitor } from '../expr_visitor'
 import { CodegenContext } from './context'
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from './literals'
 import { gen_identifier } from './identifiers'
-import { cpp_safe, map_builtin } from './cpp_naming'
+import { map_builtin } from './cpp_naming'
 import { is_constructor_call } from './expression_support'
 import * as mut_actual_argument from './mut_actual_argument'
 import { gen_method_expr } from './method_gen'
+import { stmts_final_ctx } from './statement_context'
 import * as expression_output from './expr'
 
 type StringExprVisitor = StringExprVisitor { context: CodegenContext }
@@ -110,6 +111,76 @@ export fn gen_method_via_visitor(
     gen_stmts,
     evaluate_expression)
 
+fn gen_if_else_code(
+  else_expression: Shared<SExpr>,
+  if_semantic_type: Shared<Type>,
+  then_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  match else_expression {
+    SExprArray(elements, _, array_span) =>
+      if elements.length() > 0 then evaluate_expression(else_expression, context, gen_stmts)
+      else do
+        const inner_preferred = array_element_type_from_array_type(if_semantic_type)
+        const inner_from_then_branch = array_element_type_from_array_type(sexpr_type(then_expression))
+        const inner_for_empty_array =
+          if !type_is_unknown(inner_preferred) then inner_preferred
+          else inner_from_then_branch
+          end
+        if type_is_unknown(inner_for_empty_array) then evaluate_expression(else_expression, context, gen_stmts)
+        else
+          evaluate_expression(
+            Shared.new(SExprArray(elements, Shared.new(TArray(inner_for_empty_array)), array_span)),
+            context,
+            gen_stmts)
+        end
+      end,
+    _ => evaluate_expression(else_expression, context, gen_stmts)
+  }
+
+export fn gen_if_via_visitor(
+  condition: Shared<SExpr>,
+  then_expression: Shared<SExpr>,
+  else_expression: Shared<SExpr>,
+  if_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string = do
+  const condition_code = evaluate_expression(condition, context, gen_stmts)
+  const then_code = evaluate_expression(then_expression, context, gen_stmts)
+  const else_code = gen_if_else_code(else_expression, if_semantic_type, then_expression, context, gen_stmts, evaluate_expression)
+  match if_semantic_type {
+    TNamed(type_name) => do
+      const type_cpp = context.resolve(type_name)
+      if type_cpp == 'auto' then
+        expression_output.ternary_conditional(condition_code, then_code, else_code)
+      else
+        `[&]() -> ${type_cpp} {\nif (${condition_code}) {\nreturn ${then_code};\n} else {\nreturn ${else_code};\n}\n}()`
+      end
+    end,
+    _ => expression_output.ternary_conditional(condition_code, then_code, else_code)
+  }
+end
+
+export fn gen_block_via_visitor(
+  statements: [Shared<SStmt>],
+  result_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  if statements.length() == 0 then
+    evaluate_expression(result_expression, context, gen_stmts)
+  else
+    const body =
+      `${gen_stmts(statements, context)}${expression_output.block_immediate_function_return_fragment(
+        evaluate_expression(result_expression, stmts_final_ctx(statements, context), gen_stmts))}`
+    expression_output.block_as_immediate_invoked_function_expression(body)
+  end
+
 extend StringExprVisitor : ExprVisitor<string> {
   fn visit_int(self: StringExprVisitor, value: i32, _semantic_type: Shared<Type>) -> string =
     gen_integer_literal(value)
@@ -139,6 +210,10 @@ extend StringExprVisitor : ExprVisitor<string> {
     gen_call_via_visitor(function_expression, arguments, mutability_flags, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_method(self: StringExprVisitor, object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> string =
     gen_method_via_visitor(object, method_name, arguments, mutability_flags, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_if(self: StringExprVisitor, condition: Shared<SExpr>, then_expression: Shared<SExpr>, else_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> string =
+    gen_if_via_visitor(condition, then_expression, else_expression, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_block(self: StringExprVisitor, statements: [Shared<SStmt>], result_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
+    gen_block_via_visitor(statements, result_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_unsupported(self: StringExprVisitor, _expression: Shared<SExpr>) -> string =
     '/* unsupported expr */'
 }
@@ -164,6 +239,10 @@ export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: Codege
       expression_visitor.visit_call(function_expression, arguments, mutability_flags, type_value),
     SExprMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
       expression_visitor.visit_method(object, method_name, arguments, mutability_flags, type_value),
+    SExprIf(condition, then_expression, else_expression, type_value, _) =>
+      expression_visitor.visit_if(condition, then_expression, else_expression, type_value),
+    SExprBlock(statements, result_expression, type_value, _) =>
+      expression_visitor.visit_block(statements, result_expression, type_value),
     _ => expression_visitor.visit_unsupported(expression)
   }
 end

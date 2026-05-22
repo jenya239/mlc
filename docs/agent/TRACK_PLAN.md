@@ -24,7 +24,7 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрен�
 | 8 | ExprVisitor: ident arm | done (2026-05-22) |
 | 9 | ExprVisitor: bin/unary ops arm | done (2026-05-22) |
 | 10 | ExprVisitor: call + method arms | done (2026-05-22) |
-| 11 | ExprVisitor: if + block arms | pending |
+| 11 | ExprVisitor: if + block arms | done (2026-05-22) |
 | 12 | ExprVisitor: match arm | pending |
 | 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | pending |
 | 14 | Self-host diff after visitor migration batch | pending |

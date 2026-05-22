@@ -6,15 +6,26 @@
 |-------|-------|
 | instructions_rev | `2026-05-22-roles-v3` |
 | role_last | Driver |
-| driver_turns_since_plan | 10 |
-| step_last | 10 |
-| agent_token_last | cr-agent-cf5ed7ca-5995-4586-92b7-658a1e2b9608 |
-| uncommitted_files | ~52 (step 10 commit: 5 source + TRACK) |
-| run_tests | **479 passed** (build_tests.sh) |
+| driver_turns_since_plan | 0 |
+| step_last | 11 |
+| agent_token_last | cr-agent-335e0225-2059-44f8-8bc2-f3531f6a7e23 |
+| uncommitted_files | ~52 (step 11 commit: 5 source + TRACK) |
+| run_tests | **481 passed** (build_tests.sh) |
 | self_host_diff | not re-run this turn |
-| TRACK_PLAN | steps 1–10 done; next step 11 if + block |
+| TRACK_PLAN | steps 1–11 done; next step 12 match |
 
-**Role cadence:** Planner at turn 10 (driver_turns_since_plan); Backlog at turn 20.
+**Role cadence:** Planner at turn 11 (driver_turns_since_plan reset); Backlog at turn 20.
+
+### Turn 2026-05-22 (step 11)
+
+| turn | 2026-05-22 |
+| instructions_rev | 2026-05-22-roles-v3 |
+| step | 11 |
+| done | visit_if/visit_block + gen_if/block_via_visitor; +2 string visitor tests |
+| verify | pass — build_tests 481 |
+| uncommitted_files | ~52 after step 11 commit |
+| agent_token_last | cr-agent-335e0225-2059-44f8-8bc2-f3531f6a7e23 |
+| next | STEP=12 — ExprVisitor match arm |
 
 ### Turn 2026-05-22 (step 10)
 

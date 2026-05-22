@@ -159,6 +159,15 @@ export fn codegen_tests() -> [TestResult] = do
     gen_expr_via_string_visitor(Shared.new(SExprMethod(sid('arr'), 'push', visitor_method_args, empty_parameter_mutability_pattern(), unit_t(), span_unknown())), ctx),
     'arr.push_back(1)'))
 
+  results.push(assert_eq_str('string visitor: ExprIf',
+    gen_expr_via_string_visitor(Shared.new(SExprIf(sb(true), si(1), si(2), i32_t(), span_unknown())), ctx),
+    '(true ? (1) : (2))'))
+
+  const visitor_empty_block: [Shared<SStmt>] = []
+  results.push(assert_eq_str('string visitor: ExprBlock empty',
+    gen_expr_via_string_visitor(Shared.new(SExprBlock(visitor_empty_block, sid("x"), i32_t(), span_unknown())), ctx),
+    "x"))
+
   results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
     gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
 
