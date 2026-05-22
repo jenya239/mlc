@@ -4,13 +4,28 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-22-workflow-v2` |
-| step_last | 7 |
-| agent_token_last | pending register |
-| uncommitted_files | ~57 (step 7 committed subset only) |
-| run_tests | **473 passed** (build_tests.sh) |
+| instructions_rev | `2026-05-22-roles-v3` |
+| role_last | Driver |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
+| agent_token_last | cr-agent-fa38a118-0a8a-4b1c-a89e-e088e3a10cf6 |
+| uncommitted_files | ~57 (step 8 commit: test_codegen + agent docs only) |
+| run_tests | **475 passed** (build_tests.sh) |
 | self_host_diff | not re-run this turn |
-| TRACK_PLAN | steps 1–7 done; next step 8 ident arm |
+| TRACK_PLAN | steps 1–8 done; next step 9 bin/unary ops |
+
+**Role cadence:** Planner at turn 9 (driver_turns_since_plan); Backlog at turn 20.
+
+### Turn 2026-05-22 (step 8)
+
+| turn | 2026-05-22 |
+| instructions_rev | 2026-05-22-roles-v3 |
+| step | 8 |
+| done | ident via visitor (wired step 5); +2 string visitor tests print/println |
+| verify | pass — build_tests 475 |
+| uncommitted_files | ~55 after step 8 commit |
+| agent_token_last | cr-agent-fa38a118-0a8a-4b1c-a89e-e088e3a10cf6 |
+| next | STEP=9 — ExprVisitor bin/unary ops arm |
 
 ### Turn 2026-05-22 (step 7)
 
@@ -29,13 +44,15 @@
 
 ```
 | turn | <ISO date> |
+| role | Driver / Planner / Backlog |
 | instructions_rev | <from CONTINUITY> |
-| step | <e.g. 4a> |
+| driver_turns_since_plan | <n; +1 after Driver, 0 after Planner> |
+| step | <e.g. 8 or plan-refresh> |
 | done | <one line> |
 | verify | <pass/fail/pending + command> |
 | uncommitted_files | <count> |
 | agent_token_last | <cr-agent-…> |
-| next | <STEP=… one line> |
+| next | ROLE=… STEP=… |
 ```
 
-Orchestration: agent picks sub-step from TRACK; enqueue after each turn (no wait for user).
+Orchestration: rotate roles per CONTINUITY; Driver executes TRACK.

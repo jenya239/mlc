@@ -117,6 +117,10 @@ export fn codegen_tests() -> [TestResult] = do
     gen_expr_via_string_visitor(ss('hi'), ctx), 'mlc::String("hi", 2)'))
   results.push(assert_eq_str('string visitor: ExprIdent',
     gen_expr_via_string_visitor(sid("x"), ctx), "x"))
+  results.push(assert_eq_str('string visitor: ExprIdent print',
+    gen_expr_via_string_visitor(sid('print'), ctx), 'mlc::io::print'))
+  results.push(assert_eq_str('string visitor: ExprIdent println',
+    gen_expr_via_string_visitor(sid('println'), ctx), 'mlc::io::println'))
 
   results.push(assert_eq_str('string visitor: ExprBool(true)',
     gen_expr_via_string_visitor(sb(true), ctx), 'true'))
