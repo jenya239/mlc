@@ -168,6 +168,17 @@ export fn codegen_tests() -> [TestResult] = do
     gen_expr_via_string_visitor(Shared.new(SExprBlock(visitor_empty_block, sid("x"), i32_t(), span_unknown())), ctx),
     "x"))
 
+  const visitor_match_arms: [Shared<SMatchArm>] = [
+    smatch_arm(Shared.new(PatInt(1, span_unknown())), ss("one")),
+    smatch_arm(Shared.new(PatWild(span_unknown())), ss("other"))
+  ]
+  const visitor_match_out =
+    gen_expr_via_string_visitor(Shared.new(SExprMatch(sid("n"), visitor_match_arms, str_t(), span_unknown())), ctx)
+  results.push(assert_eq_str('string visitor: ExprMatch contains std::visit',
+    if visitor_match_out.contains('std::visit') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_eq_str('string visitor: ExprMatch contains one',
+    if visitor_match_out.contains('"one"') then 'yes' else 'no' end, 'yes'))
+
   results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
     gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
 

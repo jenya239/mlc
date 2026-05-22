@@ -11,10 +11,9 @@ import { sem_type_to_cpp } from './type_gen'
 import { gen_extern_placeholder } from './literals'
 import { gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from './literals'
 import { field_access_operator, cpp_lambda_header_prefix } from './expression_support'
-import { gen_match } from './match_gen'
 import { gen_record_expr, gen_record_update_expr } from './record_gen'
 import * as expression_output from './expr'
-import { gen_expr_via_string_visitor, gen_binary_via_visitor, gen_unary_via_visitor, gen_call_via_visitor, gen_method_via_visitor, gen_if_via_visitor, gen_block_via_visitor } from './expr_visitor_string'
+import { gen_expr_via_string_visitor, gen_binary_via_visitor, gen_unary_via_visitor, gen_call_via_visitor, gen_method_via_visitor, gen_if_via_visitor, gen_block_via_visitor, gen_match_via_visitor } from './expr_visitor_string'
 
 // --- Argument list -----------------------------------------------------------
 
@@ -142,7 +141,7 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprWhile(condition, statements, _, _)                => gen_while_expr(condition, statements, context, gen_stmts),
     SExprFor(variable, iterator, statements, _, _)         => gen_for_expr(variable, iterator, statements, context, gen_stmts),
     SExprMatch(subject, arms, match_semantic_type, _) =>
-      gen_match(subject, arms, match_semantic_type, context, gen_stmts, eval_expr),
+      gen_match_via_visitor(subject, arms, match_semantic_type, context, gen_stmts, eval_expr),
     SExprRecord(type_name, field_values, expr_type, _)      => gen_record_expr(type_name, field_values, expr_type, context, gen_stmts, eval_expr),
     SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr),
     SExprArray(elements, container_semantic_type, _) =>
