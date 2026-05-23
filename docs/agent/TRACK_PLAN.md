@@ -27,7 +27,7 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрен�
 | 11 | ExprVisitor: if + block arms | done (2026-05-22) |
 | 12 | ExprVisitor: match arm | done (2026-05-22) |
 | 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | done (2026-05-23) |
-| 14 | Self-host diff after visitor migration batch | pending |
+| 14 | Self-host diff after visitor migration batch | **blocked** — mlcc trait codegen |
 | 15 | Parser `ref mut` | deferred (separate branch) |
 
 ## Backlog (Planner maintains)
@@ -62,9 +62,19 @@ Source: PLAN.md «Visitor pattern», «Порядок внедрения» items
 
 - `visit_match`; `gen_match_via_visitor`; string visitor tests for std::visit and match arm body; 483 tests
 
+## Step 13 detail (done)
+
+- Remaining arms: field/index/while/for/record/array/tuple/question/lambda/with/extern via visitor; string visitor tests for array and record; 485 tests; `dispatch_expr` still partial (record+ → unsupported)
+
+## Step 14 detail (blocked)
+
+- `compiler/build.sh` OK; mlcc→p1 OK (~0.8s); **g++ mlcc2 FAIL** — `expr_visitor.hpp` invalid (generic `export trait` garbled by mlcc codegen; Ruby output OK)
+- mlcc two-run diff: **identical** (deterministic)
+- Blocker logged: mlc-memory `known_limitations`
+
 ## Next step (Driver)
 
-Step **13** — remaining `expr_eval` arms → visitor (record, array, lambda, …) + tests. Verify `build_tests.sh`.
+Step **14-fix** — mlcc codegen for `export trait` (ExprVisitor) or self-host workaround. Re-run mlcc→mlcc2 diff.
 
 ## Planner checklist
 

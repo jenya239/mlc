@@ -7,12 +7,20 @@
 | instructions_rev | `2026-05-22-roles-v3` |
 | role_last | Driver |
 | driver_turns_since_plan | 2 |
-| step_last | 13 |
-| agent_token_last | cr-agent-65df20c0-1bb8-4013-abae-6e043c339b8d |
-| uncommitted_files | ~52 (step 13 commit) |
+| step_last | 14 |
+| agent_token_last | cr-agent-d57eb7c2-cf97-48e8-a111-6f90c38c23eb |
 | run_tests | **485 passed** (build_tests.sh) |
-| self_host_diff | not re-run this turn |
-| TRACK_PLAN | steps 1–13 done; next step 14 self-host diff |
+| self_host_diff | **FAIL** — g++ mlcc2; trait codegen |
+| TRACK_PLAN | step 14 blocked; next 14-fix trait codegen |
+
+### Turn 2026-05-23 (step 14)
+
+| turn | 2026-05-23 |
+| instructions_rev | 2026-05-22-roles-v3 |
+| step | 14 |
+| done | build.sh OK; mlcc p1 OK; g++ mlcc2 FAIL (expr_visitor trait); mlcc×2 diff OK |
+| verify | fail — self-host blocked |
+| next | STEP=14-fix — mlcc export trait codegen |
 
 ### Turn 2026-05-23 (step 13)
 
