@@ -1,18 +1,20 @@
 // ExprVisitor<string> wired into expr_eval for literals, identifiers, bin/unary ops.
 
 import { Type } from '../checker/registry'
-import { SExpr, SStmt, sexpr_type, SExprArray, SMatchArm } from '../semantic_ir'
-import { TNamed, TArray } from '../checker/registry'
+import { SExpr, SStmt, sexpr_type, SExprArray, SMatchArm, SFieldVal } from '../semantic_ir'
+import { TNamed, TArray, TFn } from '../checker/registry'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from '../checker/semantic_type_structure'
 import { ExprVisitor } from '../expr_visitor'
 import { CodegenContext } from './context'
-import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from './literals'
+import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal, gen_extern_placeholder } from './literals'
 import { gen_identifier } from './identifiers'
-import { map_builtin } from './cpp_naming'
-import { is_constructor_call } from './expression_support'
+import { cpp_safe, map_builtin } from './cpp_naming'
+import { is_constructor_call, field_access_operator, cpp_lambda_header_prefix } from './expression_support'
 import * as mut_actual_argument from './mut_actual_argument'
 import { gen_method_expr } from './method_gen'
 import { gen_match } from './match_gen'
+import { gen_record_expr, gen_record_update_expr } from './record_gen'
+import { sem_type_to_cpp } from './type_gen'
 import { stmts_final_ctx } from './statement_context'
 import * as expression_output from './expr'
 
@@ -192,6 +194,179 @@ export fn gen_match_via_visitor(
 ) -> string =
   gen_match(subject, arms, match_semantic_type, context, gen_stmts, evaluate_expression)
 
+export fn gen_extern_via_visitor(_semantic_type: Shared<Type>) -> string =
+  gen_extern_placeholder()
+
+fn argument_list_via_visitor(
+  expressions: [Shared<SExpr>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  expressions.map(expression => evaluate_expression(expression, context, gen_stmts)).join(', ')
+
+export fn gen_field_via_visitor(
+  object: Shared<SExpr>,
+  field_name: string,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string = do
+  const object_code = evaluate_expression(object, context, gen_stmts)
+  const operator = field_access_operator(object, context)
+  expression_output.field_access(object_code, operator, cpp_safe(field_name))
+end
+
+export fn gen_index_via_visitor(
+  object: Shared<SExpr>,
+  index_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  expression_output.index_subscript(
+    evaluate_expression(object, context, gen_stmts),
+    evaluate_expression(index_expression, context, gen_stmts))
+
+export fn gen_while_via_visitor(
+  condition: Shared<SExpr>,
+  statements: [Shared<SStmt>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  expression_output.while_loop_immediate_invoked_function_expression(
+    evaluate_expression(condition, context, gen_stmts),
+    gen_stmts(statements, context))
+
+export fn gen_for_via_visitor(
+  variable: string,
+  iterator: Shared<SExpr>,
+  statements: [Shared<SStmt>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  expression_output.for_loop_immediate_invoked_function_expression(
+    cpp_safe(variable),
+    evaluate_expression(iterator, context, gen_stmts),
+    gen_stmts(statements, context))
+
+export fn gen_record_via_visitor(
+  type_name: string,
+  field_values: [Shared<SFieldVal>],
+  expression_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  gen_record_expr(type_name, field_values, expression_type, context, gen_stmts, evaluate_expression)
+
+export fn gen_record_update_via_visitor(
+  type_name: string,
+  base_expression: Shared<SExpr>,
+  overrides: [Shared<SFieldVal>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  gen_record_update_expr(type_name, base_expression, overrides, context, gen_stmts, evaluate_expression)
+
+export fn gen_array_via_visitor(
+  elements: [Shared<SExpr>],
+  element_container_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  match element_container_semantic_type {
+    TArray(inner_type) => do
+      const element_cpp = sem_type_to_cpp(context, inner_type)
+      if elements.length() == 0 then expression_output.typed_array_empty_or_untyped_empty(element_cpp)
+      else if element_cpp == 'auto' then expression_output.array_literal(argument_list_via_visitor(elements, context, gen_stmts, evaluate_expression))
+      else
+        expression_output.typed_array_braced_initializer(
+          element_cpp,
+          argument_list_via_visitor(elements, context, gen_stmts, evaluate_expression))
+      end
+    end,
+    _ => expression_output.array_literal(argument_list_via_visitor(elements, context, gen_stmts, evaluate_expression))
+  }
+
+export fn gen_tuple_via_visitor(
+  elements: [Shared<SExpr>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  `std::make_tuple(${elements.map(element => evaluate_expression(element, context, gen_stmts)).join(', ')})`
+
+export fn gen_question_via_visitor(
+  inner_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  expression_output.question_try_result(evaluate_expression(inner_expression, context, gen_stmts))
+
+fn cpp_lambda_header_from_semantic_function_type(
+  parameter_binding_names: [string],
+  semantic_function_type_for_lambda: Shared<Type>,
+  context: CodegenContext
+) -> string = do
+  const capture_clause =
+    if parameter_binding_names.length() == 0 then '[]' else '[&]' end
+  match semantic_function_type_for_lambda {
+    TFn(lambda_parameter_semantic_types, _) =>
+      if lambda_parameter_semantic_types.length() != parameter_binding_names.length() then
+        cpp_lambda_header_prefix(parameter_binding_names)
+      else do
+        let formatted_parameter_declarations: [string] = []
+        let mut lambda_parameter_index = 0
+        while lambda_parameter_index < parameter_binding_names.length() do
+          const raw_param_type = sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index])
+          const param_type_cpp = if raw_param_type == 'void' then 'std::tuple<>' else raw_param_type end
+          formatted_parameter_declarations.push(
+            expression_output.parameter_declaration_item(
+              param_type_cpp,
+              cpp_safe(parameter_binding_names[lambda_parameter_index])))
+          lambda_parameter_index = lambda_parameter_index + 1
+        end
+        `${capture_clause}(${formatted_parameter_declarations.join(', ')}) mutable`
+      end,
+    _ =>
+      cpp_lambda_header_prefix(parameter_binding_names)
+  }
+end
+
+export fn gen_lambda_via_visitor(
+  parameter_binding_names: [string],
+  body_expression_under_lambda: Shared<SExpr>,
+  semantic_function_type_for_lambda_expression: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string =
+  expression_output.lambda_with_return(
+    cpp_lambda_header_from_semantic_function_type(
+      parameter_binding_names,
+      semantic_function_type_for_lambda_expression,
+      context),
+    evaluate_expression(body_expression_under_lambda, context, gen_stmts))
+
+export fn gen_with_via_visitor(
+  resource: Shared<SExpr>,
+  binder: string,
+  statements: [Shared<SStmt>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string = do
+  const resource_code = evaluate_expression(resource, context, gen_stmts)
+  const body_code = gen_stmts(statements, context)
+  expression_output.with_block_statement(resource_code, binder, body_code)
+end
+
 extend StringExprVisitor : ExprVisitor<string> {
   fn visit_int(self: StringExprVisitor, value: i32, _semantic_type: Shared<Type>) -> string =
     gen_integer_literal(value)
@@ -211,6 +386,8 @@ extend StringExprVisitor : ExprVisitor<string> {
     gen_usize_literal(value)
   fn visit_char(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
     gen_char_literal(value)
+  fn visit_extern(self: StringExprVisitor, _semantic_type: Shared<Type>) -> string =
+    gen_extern_via_visitor(_semantic_type)
   fn visit_ident(self: StringExprVisitor, name: string, _semantic_type: Shared<Type>) -> string =
     gen_identifier(name, self.context)
   fn visit_bin(self: StringExprVisitor, operation: string, left_expression: Shared<SExpr>, right_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
@@ -221,12 +398,34 @@ extend StringExprVisitor : ExprVisitor<string> {
     gen_call_via_visitor(function_expression, arguments, mutability_flags, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_method(self: StringExprVisitor, object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> string =
     gen_method_via_visitor(object, method_name, arguments, mutability_flags, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_field(self: StringExprVisitor, object: Shared<SExpr>, field_name: string, _semantic_type: Shared<Type>) -> string =
+    gen_field_via_visitor(object, field_name, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_index(self: StringExprVisitor, object: Shared<SExpr>, index_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
+    gen_index_via_visitor(object, index_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_if(self: StringExprVisitor, condition: Shared<SExpr>, then_expression: Shared<SExpr>, else_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> string =
     gen_if_via_visitor(condition, then_expression, else_expression, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_block(self: StringExprVisitor, statements: [Shared<SStmt>], result_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
     gen_block_via_visitor(statements, result_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_while(self: StringExprVisitor, condition: Shared<SExpr>, statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> string =
+    gen_while_via_visitor(condition, statements, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_for(self: StringExprVisitor, variable: string, iterator: Shared<SExpr>, statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> string =
+    gen_for_via_visitor(variable, iterator, statements, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_match(self: StringExprVisitor, subject: Shared<SExpr>, arms: [Shared<SMatchArm>], semantic_type: Shared<Type>) -> string =
     gen_match_via_visitor(subject, arms, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_record(self: StringExprVisitor, type_name: string, field_values: [Shared<SFieldVal>], semantic_type: Shared<Type>) -> string =
+    gen_record_via_visitor(type_name, field_values, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_record_update(self: StringExprVisitor, type_name: string, base_expression: Shared<SExpr>, overrides: [Shared<SFieldVal>], _semantic_type: Shared<Type>) -> string =
+    gen_record_update_via_visitor(type_name, base_expression, overrides, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_array(self: StringExprVisitor, elements: [Shared<SExpr>], semantic_type: Shared<Type>) -> string =
+    gen_array_via_visitor(elements, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_tuple(self: StringExprVisitor, elements: [Shared<SExpr>], _semantic_type: Shared<Type>) -> string =
+    gen_tuple_via_visitor(elements, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_question(self: StringExprVisitor, inner_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
+    gen_question_via_visitor(inner_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_lambda(self: StringExprVisitor, parameter_names: [string], body_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> string =
+    gen_lambda_via_visitor(parameter_names, body_expression, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
+  fn visit_with(self: StringExprVisitor, resource: Shared<SExpr>, binder: string, statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> string =
+    gen_with_via_visitor(resource, binder, statements, self.context, ignored_gen_stmts, evaluate_via_string_visitor)
   fn visit_unsupported(self: StringExprVisitor, _expression: Shared<SExpr>) -> string =
     '/* unsupported expr */'
 }
@@ -243,6 +442,7 @@ export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: Codege
     SExprU8(byte_value, type_value, _) => expression_visitor.visit_u8(byte_value, type_value),
     SExprUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
     SExprChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
+    SExprExtern(type_value, _) => expression_visitor.visit_extern(type_value),
     SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
     SExprBin(operation, left_expression, right_expression, type_value, _) =>
       expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),
@@ -252,12 +452,33 @@ export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: Codege
       expression_visitor.visit_call(function_expression, arguments, mutability_flags, type_value),
     SExprMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
       expression_visitor.visit_method(object, method_name, arguments, mutability_flags, type_value),
+    SExprField(object, field_name, type_value, _) =>
+      expression_visitor.visit_field(object, field_name, type_value),
+    SExprIndex(object, index_expression, type_value, _) =>
+      expression_visitor.visit_index(object, index_expression, type_value),
     SExprIf(condition, then_expression, else_expression, type_value, _) =>
       expression_visitor.visit_if(condition, then_expression, else_expression, type_value),
     SExprBlock(statements, result_expression, type_value, _) =>
       expression_visitor.visit_block(statements, result_expression, type_value),
+    SExprWhile(condition, statements, type_value, _) =>
+      expression_visitor.visit_while(condition, statements, type_value),
+    SExprFor(variable, iterator, statements, type_value, _) =>
+      expression_visitor.visit_for(variable, iterator, statements, type_value),
     SExprMatch(subject, arms, type_value, _) =>
       expression_visitor.visit_match(subject, arms, type_value),
-    _ => expression_visitor.visit_unsupported(expression)
+    SExprRecord(type_name, field_values, type_value, _) =>
+      expression_visitor.visit_record(type_name, field_values, type_value),
+    SExprRecordUpdate(type_name, base_expression, overrides, type_value, _) =>
+      expression_visitor.visit_record_update(type_name, base_expression, overrides, type_value),
+    SExprArray(elements, type_value, _) =>
+      expression_visitor.visit_array(elements, type_value),
+    SExprTuple(elements, type_value, _) =>
+      expression_visitor.visit_tuple(elements, type_value),
+    SExprQuestion(inner_expression, type_value, _) =>
+      expression_visitor.visit_question(inner_expression, type_value),
+    SExprLambda(parameter_names, body_expression, type_value, _) =>
+      expression_visitor.visit_lambda(parameter_names, body_expression, type_value),
+    SExprWith(resource, binder, statements, type_value, _) =>
+      expression_visitor.visit_with(resource, binder, statements, type_value),
   }
 end

@@ -1,117 +1,12 @@
 // Expression code generation. gen_stmts injected as a function parameter to
-// break the import cycle with stmt_eval.mlc. Private helpers thread gen_stmts
-// through; recursive eval_expr calls go directly (same module).
+// break the import cycle with stmt_eval.mlc.
 
-import { SExpr, SStmt, SExprArray } from '../semantic_ir'
-import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../semantic_ir'
-import { Type, TArray, TFn } from '../checker/registry'
+import { SExpr, SStmt } from '../semantic_ir'
 import { CodegenContext } from './context'
-import { cpp_safe } from './cpp_naming'
-import { sem_type_to_cpp } from './type_gen'
-import { gen_extern_placeholder } from './literals'
-import { gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal } from './literals'
-import { field_access_operator, cpp_lambda_header_prefix } from './expression_support'
-import { gen_record_expr, gen_record_update_expr } from './record_gen'
-import * as expression_output from './expr'
-import { gen_expr_via_string_visitor, gen_binary_via_visitor, gen_unary_via_visitor, gen_call_via_visitor, gen_method_via_visitor, gen_if_via_visitor, gen_block_via_visitor, gen_match_via_visitor } from './expr_visitor_string'
-
-// --- Argument list -----------------------------------------------------------
+import { gen_expr_via_string_visitor, gen_binary_via_visitor, gen_unary_via_visitor, gen_call_via_visitor, gen_method_via_visitor, gen_field_via_visitor, gen_index_via_visitor, gen_if_via_visitor, gen_block_via_visitor, gen_while_via_visitor, gen_for_via_visitor, gen_match_via_visitor, gen_record_via_visitor, gen_record_update_via_visitor, gen_array_via_visitor, gen_tuple_via_visitor, gen_question_via_visitor, gen_lambda_via_visitor, gen_with_via_visitor, gen_extern_via_visitor } from './expr_visitor_string'
 
 export fn eval_argument_list(expressions: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   expressions.map(expression => eval_expr(expression, context, gen_stmts)).join(', ')
-
-// --- Expression rules --------------------------------------------------------
-
-fn gen_field_expr(object: Shared<SExpr>, field_name: string, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
-  const object_code = eval_expr(object, context, gen_stmts)
-  const operator = field_access_operator(object, context)
-  expression_output.field_access(object_code, operator, cpp_safe(field_name))
-end
-
-fn gen_index_expr(object: Shared<SExpr>, index_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
-  expression_output.index_subscript(eval_expr(object, context, gen_stmts), eval_expr(index_expr, context, gen_stmts))
-
-fn gen_while_expr(condition: Shared<SExpr>, statements: [Shared<SStmt>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
-  expression_output.while_loop_immediate_invoked_function_expression(
-    eval_expr(condition, context, gen_stmts),
-    gen_stmts(statements, context))
-
-fn gen_for_expr(variable: string, iterator: Shared<SExpr>, statements: [Shared<SStmt>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
-  expression_output.for_loop_immediate_invoked_function_expression(
-    cpp_safe(variable),
-    eval_expr(iterator, context, gen_stmts),
-    gen_stmts(statements, context))
-
-fn gen_array_expr(
-  elements: [Shared<SExpr>],
-  element_container_semantic_type: Shared<Type>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
-) -> string =
-  match element_container_semantic_type {
-    TArray(inner_type) => do
-      const element_cpp = sem_type_to_cpp(context, inner_type)
-      if elements.length() == 0 then expression_output.typed_array_empty_or_untyped_empty(element_cpp)
-      else if element_cpp == 'auto' then expression_output.array_literal(eval_argument_list(elements, context, gen_stmts))
-      else
-        expression_output.typed_array_braced_initializer(
-          element_cpp,
-          eval_argument_list(elements, context, gen_stmts))
-      end
-    end,
-    _ => expression_output.array_literal(eval_argument_list(elements, context, gen_stmts))
-  }
-
-fn gen_question_expr(inner_expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string = do
-  const inner_code = eval_expr(inner_expr, context, gen_stmts)
-  expression_output.question_try_result(inner_code)
-end
-
-fn cpp_lambda_header_from_semantic_function_type(
-  parameter_binding_names: [string],
-  semantic_function_type_for_lambda: Shared<Type>,
-  context: CodegenContext
-) -> string = do
-  const capture_clause =
-    if parameter_binding_names.length() == 0 then '[]' else '[&]' end
-  match semantic_function_type_for_lambda {
-    TFn(lambda_parameter_semantic_types, _) =>
-      if lambda_parameter_semantic_types.length() != parameter_binding_names.length() then
-        cpp_lambda_header_prefix(parameter_binding_names)
-      else do
-        let formatted_parameter_declarations: [string] = []
-        let mut lambda_parameter_index = 0
-        while lambda_parameter_index < parameter_binding_names.length() do
-          const raw_param_type = sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index])
-          const param_type_cpp = if raw_param_type == 'void' then 'std::tuple<>' else raw_param_type end
-          formatted_parameter_declarations.push(
-            expression_output.parameter_declaration_item(
-              param_type_cpp,
-              cpp_safe(parameter_binding_names[lambda_parameter_index])))
-          lambda_parameter_index = lambda_parameter_index + 1
-        end
-        `${capture_clause}(${formatted_parameter_declarations.join(', ')}) mutable`
-      end,
-    _ =>
-      cpp_lambda_header_prefix(parameter_binding_names)
-  }
-end
-
-fn gen_lambda_expr(
-  parameter_binding_names: [string],
-  body_expression_under_lambda: Shared<SExpr>,
-  semantic_function_type_for_lambda_expression: Shared<Type>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
-) -> string =
-  expression_output.lambda_with_return(
-    cpp_lambda_header_from_semantic_function_type(
-      parameter_binding_names,
-      semantic_function_type_for_lambda_expression,
-      context),
-    eval_expr(body_expression_under_lambda, context, gen_stmts))
-
-// --- Dispatcher --------------------------------------------------------------
 
 export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   match expr {
@@ -124,7 +19,7 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
     SExprU8(_, _, _)                                       => gen_expr_via_string_visitor(expr, context),
     SExprUsize(_, _, _)                                    => gen_expr_via_string_visitor(expr, context),
     SExprChar(_, _, _)                                     => gen_expr_via_string_visitor(expr, context),
-    SExprExtern(_, _)                                      => gen_extern_placeholder(),
+    SExprExtern(semantic_type, _)                          => gen_extern_via_visitor(semantic_type),
     SExprIdent(_, _, _)                                    => gen_expr_via_string_visitor(expr, context),
     SExprBin(operation, left_expr, right_expr, _, _)       => gen_binary_via_visitor(operation, left_expr, right_expr, context, gen_stmts, eval_expr),
     SExprUn(operation, inner_expr, _, _)                   => gen_unary_via_visitor(operation, inner_expr, context, gen_stmts, eval_expr),
@@ -132,28 +27,25 @@ export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([S
       gen_call_via_visitor(function_expression, arguments, call_parameter_mutability_flags, context, gen_stmts, eval_expr),
     SExprMethod(method_object, method_name, arguments, receiver_and_parameter_mut_flags, _, _) =>
       gen_method_via_visitor(method_object, method_name, arguments, receiver_and_parameter_mut_flags, context, gen_stmts, eval_expr),
-    SExprField(object, field_name, _, _)                   => gen_field_expr(object, field_name, context, gen_stmts),
-    SExprIndex(object, index_expr, _, _)                   => gen_index_expr(object, index_expr, context, gen_stmts),
+    SExprField(object, field_name, _, _)                   => gen_field_via_visitor(object, field_name, context, gen_stmts, eval_expr),
+    SExprIndex(object, index_expr, _, _)                   => gen_index_via_visitor(object, index_expr, context, gen_stmts, eval_expr),
     SExprIf(condition, then_expr, else_expr, if_semantic_type, _) =>
       gen_if_via_visitor(condition, then_expr, else_expr, if_semantic_type, context, gen_stmts, eval_expr),
     SExprBlock(statements, result_expr, _, _) =>
       gen_block_via_visitor(statements, result_expr, context, gen_stmts, eval_expr),
-    SExprWhile(condition, statements, _, _)                => gen_while_expr(condition, statements, context, gen_stmts),
-    SExprFor(variable, iterator, statements, _, _)         => gen_for_expr(variable, iterator, statements, context, gen_stmts),
+    SExprWhile(condition, statements, _, _)                => gen_while_via_visitor(condition, statements, context, gen_stmts, eval_expr),
+    SExprFor(variable, iterator, statements, _, _)         => gen_for_via_visitor(variable, iterator, statements, context, gen_stmts, eval_expr),
     SExprMatch(subject, arms, match_semantic_type, _) =>
       gen_match_via_visitor(subject, arms, match_semantic_type, context, gen_stmts, eval_expr),
-    SExprRecord(type_name, field_values, expr_type, _)      => gen_record_expr(type_name, field_values, expr_type, context, gen_stmts, eval_expr),
-    SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_expr(type_name, base_expr, overrides, context, gen_stmts, eval_expr),
+    SExprRecord(type_name, field_values, expr_type, _)      => gen_record_via_visitor(type_name, field_values, expr_type, context, gen_stmts, eval_expr),
+    SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_via_visitor(type_name, base_expr, overrides, context, gen_stmts, eval_expr),
     SExprArray(elements, container_semantic_type, _) =>
-      gen_array_expr(elements, container_semantic_type, context, gen_stmts),
+      gen_array_via_visitor(elements, container_semantic_type, context, gen_stmts, eval_expr),
     SExprTuple(elements, _, _) =>
-      `std::make_tuple(${elements.map(element => eval_expr(element, context, gen_stmts)).join(', ')})`,
-    SExprQuestion(inner_expr, _, _)                        => gen_question_expr(inner_expr, context, gen_stmts),
+      gen_tuple_via_visitor(elements, context, gen_stmts, eval_expr),
+    SExprQuestion(inner_expr, _, _)                        => gen_question_via_visitor(inner_expr, context, gen_stmts, eval_expr),
     SExprLambda(parameters, body_expr, lambda_annotation_type, _) =>
-      gen_lambda_expr(parameters, body_expr, lambda_annotation_type, context, gen_stmts),
-    SExprWith(resource, binder, stmts, _, _) => do
-      const resource_code = eval_expr(resource, context, gen_stmts)
-      const body_code = gen_stmts(stmts, context)
-      expression_output.with_block_statement(resource_code, binder, body_code)
-    end
+      gen_lambda_via_visitor(parameters, body_expr, lambda_annotation_type, context, gen_stmts, eval_expr),
+    SExprWith(resource, binder, stmts, _, _) =>
+      gen_with_via_visitor(resource, binder, stmts, context, gen_stmts, eval_expr),
   }

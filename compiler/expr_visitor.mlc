@@ -1,7 +1,7 @@
 // ExprVisitor sketch (PLAN.md §3). dispatch_expr — not used by eval.mlc yet.
 
 import { Type } from './checker/registry'
-import { SExpr, SStmt, SMatchArm } from './semantic_ir'
+import { SExpr, SStmt, SMatchArm, SFieldVal } from './semantic_ir'
 
 export trait ExprVisitor<VisitorResult> {
   fn visit_int(self: ExprVisitor<VisitorResult>, value: i32, semantic_type: Shared<Type>) -> VisitorResult
@@ -13,14 +13,26 @@ export trait ExprVisitor<VisitorResult> {
   fn visit_u8(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_usize(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_char(self: ExprVisitor<VisitorResult>, value: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_extern(self: ExprVisitor<VisitorResult>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_ident(self: ExprVisitor<VisitorResult>, name: string, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_bin(self: ExprVisitor<VisitorResult>, operation: string, left_expression: Shared<SExpr>, right_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_un(self: ExprVisitor<VisitorResult>, operation: string, inner_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_call(self: ExprVisitor<VisitorResult>, function_expression: Shared<SExpr>, arguments: [Shared<SExpr>], mutability_flags: [i32], semantic_type: Shared<Type>) -> VisitorResult
   fn visit_method(self: ExprVisitor<VisitorResult>, object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], mutability_flags: [i32], semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_field(self: ExprVisitor<VisitorResult>, object: Shared<SExpr>, field_name: string, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_index(self: ExprVisitor<VisitorResult>, object: Shared<SExpr>, index_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_if(self: ExprVisitor<VisitorResult>, condition: Shared<SExpr>, then_expression: Shared<SExpr>, else_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
   fn visit_block(self: ExprVisitor<VisitorResult>, statements: [Shared<SStmt>], result_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_while(self: ExprVisitor<VisitorResult>, condition: Shared<SExpr>, statements: [Shared<SStmt>], semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_for(self: ExprVisitor<VisitorResult>, variable: string, iterator: Shared<SExpr>, statements: [Shared<SStmt>], semantic_type: Shared<Type>) -> VisitorResult
   fn visit_match(self: ExprVisitor<VisitorResult>, subject: Shared<SExpr>, arms: [Shared<SMatchArm>], semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_record(self: ExprVisitor<VisitorResult>, type_name: string, field_values: [Shared<SFieldVal>], semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_record_update(self: ExprVisitor<VisitorResult>, type_name: string, base_expression: Shared<SExpr>, overrides: [Shared<SFieldVal>], semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_array(self: ExprVisitor<VisitorResult>, elements: [Shared<SExpr>], semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_tuple(self: ExprVisitor<VisitorResult>, elements: [Shared<SExpr>], semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_question(self: ExprVisitor<VisitorResult>, inner_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_lambda(self: ExprVisitor<VisitorResult>, parameter_names: [string], body_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> VisitorResult
+  fn visit_with(self: ExprVisitor<VisitorResult>, resource: Shared<SExpr>, binder: string, statements: [Shared<SStmt>], semantic_type: Shared<Type>) -> VisitorResult
   fn visit_unsupported(self: ExprVisitor<VisitorResult>, expression: Shared<SExpr>) -> VisitorResult
 }
 
@@ -39,6 +51,7 @@ where Visitor: ExprVisitor
   SExprU8(byte_value, type_value, _) => expression_visitor.visit_u8(byte_value, type_value),
   SExprUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
   SExprChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
+  SExprExtern(type_value, _) => expression_visitor.visit_extern(type_value),
   SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
   SExprBin(operation, left_expression, right_expression, type_value, _) =>
     expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),
@@ -48,10 +61,18 @@ where Visitor: ExprVisitor
     expression_visitor.visit_call(function_expression, arguments, mutability_flags, type_value),
   SExprMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
     expression_visitor.visit_method(object, method_name, arguments, mutability_flags, type_value),
+  SExprField(object, field_name, type_value, _) =>
+    expression_visitor.visit_field(object, field_name, type_value),
+  SExprIndex(object, index_expression, type_value, _) =>
+    expression_visitor.visit_index(object, index_expression, type_value),
   SExprIf(condition, then_expression, else_expression, type_value, _) =>
     expression_visitor.visit_if(condition, then_expression, else_expression, type_value),
   SExprBlock(statements, result_expression, type_value, _) =>
     expression_visitor.visit_block(statements, result_expression, type_value),
+  SExprWhile(condition, statements, type_value, _) =>
+    expression_visitor.visit_while(condition, statements, type_value),
+  SExprFor(variable, iterator, statements, type_value, _) =>
+    expression_visitor.visit_for(variable, iterator, statements, type_value),
   SExprMatch(subject, arms, type_value, _) =>
     expression_visitor.visit_match(subject, arms, type_value),
   _ => expression_visitor.visit_unsupported(expression)

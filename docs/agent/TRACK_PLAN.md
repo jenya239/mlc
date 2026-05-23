@@ -26,7 +26,7 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрен�
 | 10 | ExprVisitor: call + method arms | done (2026-05-22) |
 | 11 | ExprVisitor: if + block arms | done (2026-05-22) |
 | 12 | ExprVisitor: match arm | done (2026-05-22) |
-| 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | pending |
+| 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | done (2026-05-23) |
 | 14 | Self-host diff after visitor migration batch | pending |
 | 15 | Parser `ref mut` | deferred (separate branch) |
 
@@ -58,9 +58,13 @@ Source: PLAN.md «Visitor pattern», «Порядок внедрения» items
 
 - `visit_if`/`visit_block`; `gen_if_via_visitor`/`gen_block_via_visitor`; string visitor tests for if ternary and empty block; 481 tests
 
+## Step 12 detail (done)
+
+- `visit_match`; `gen_match_via_visitor`; string visitor tests for std::visit and match arm body; 483 tests
+
 ## Next step (Driver)
 
-Step **12** — match arm in `expr_eval` + tests. Verify `build_tests.sh`.
+Step **13** — remaining `expr_eval` arms → visitor (record, array, lambda, …) + tests. Verify `build_tests.sh`.
 
 ## Planner checklist
 

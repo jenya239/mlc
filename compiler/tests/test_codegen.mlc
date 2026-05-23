@@ -179,6 +179,16 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('string visitor: ExprMatch contains one',
     if visitor_match_out.contains('"one"') then 'yes' else 'no' end, 'yes'))
 
+  const visitor_array_elements: [Shared<SExpr>] = [si(1), si(2), si(3)]
+  results.push(assert_eq_str('string visitor: ExprArray',
+    gen_expr_via_string_visitor(Shared.new(SExprArray(visitor_array_elements, Shared.new(TArray(i32_t())), span_unknown())), ctx),
+    'mlc::Array<int>{1, 2, 3}'))
+
+  const visitor_record_fields: [Shared<SFieldVal>] = [Shared.new(SFieldVal { name: "a", val: si(1) }), Shared.new(SFieldVal { name: "b", val: si(2) })]
+  results.push(assert_eq_str('string visitor: ExprRecord positional',
+    gen_expr_via_string_visitor(Shared.new(SExprRecord('Point', visitor_record_fields, Shared.new(TNamed('Point')), span_unknown())), ctx),
+    'Point{1, 2}'))
+
   results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
     gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
 
