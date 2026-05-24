@@ -6,12 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-05-22-roles-v3` |
 | role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 14-commit |
-| agent_token_last | cr-agent-d5a8665a-2bd0-41db-bf88-a87897b04193 |
+| driver_turns_since_plan | 0 |
+| step_last | 14-commit-exec |
+| agent_token_last | cr-agent-9b5046f4-86d3-4f1b-a914-93a133a20ff7 |
 | run_tests | 490 passed |
 | self_host_diff | green — mlcc2 diff p1/p2 identical |
-| TRACK_PLAN | step 14 done; commit message ready |
+| TRACK_PLAN | step 14 done `6df3799`; next plan-refresh |
+
+### Turn 2026-05-24 (step 14-commit-exec)
+
+| turn | 2026-05-24 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 0 |
+| step | 14-commit-exec |
+| done | commit `6df3799` — mlcc step 14 batch (92 files) |
+| verify | pass — commit ok; excluded .cursor/, test_t*.mlc |
+| uncommitted_files | ~15 (.cursor + debug mlc) |
+| agent_token_last | cr-agent-9b5046f4-86d3-4f1b-a914-93a133a20ff7 |
+| next | ROLE=Planner STEP=plan-refresh |
 
 ### Turn 2026-05-24 (step 14-commit)
 

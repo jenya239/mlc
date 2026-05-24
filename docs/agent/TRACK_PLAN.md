@@ -27,7 +27,7 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрен�
 | 11 | ExprVisitor: if + block arms | done (2026-05-22) |
 | 12 | ExprVisitor: match arm | done (2026-05-22) |
 | 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | done (2026-05-23) |
-| 14 | Self-host diff after visitor migration batch | done (2026-05-24) — gen_trait_decl requires + static_assert; mlcc2 diff p1/p2 identical |
+| 14 | Self-host diff after visitor migration batch | done (`6df3799`) |
 | 15 | Parser `ref mut` | deferred (separate branch) |
 
 ## Backlog (Planner maintains)
@@ -74,9 +74,9 @@ Source: PLAN.md «Visitor pattern», «Порядок внедрения» items
 - **14-fix-d:** `gen_trait_decl` requires use prefixed `ExprVisitor_visit_*` + real return types; `trait_concept_adapters`; `static_assert(ExprVisitor<mlc::String, StringExprVisitor>)` in `expr_visitor_string.cpp`
 - **verify:** g++ mlcc2 (+ `runtime/src/core/profile.cpp`); `diff -rq mlc_p1 mlc_p2` empty
 
-## Next step (Driver)
+## Next step (Planner)
 
-Step **14-commit** — commit visitor migration batch (uncommitted >15 files); user command required
+`STEP=plan-refresh` — step 15 deferred; backlog: shrink expr_eval match, Pass wiring in main.mlc
 
 ## Planner checklist
 
