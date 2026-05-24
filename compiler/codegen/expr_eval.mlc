@@ -3,49 +3,10 @@
 
 import { SExpr, SStmt } from '../semantic_ir'
 import { CodegenContext } from './context'
-import { gen_expr_via_string_visitor, gen_binary_via_visitor, gen_unary_via_visitor, gen_call_via_visitor, gen_method_via_visitor, gen_field_via_visitor, gen_index_via_visitor, gen_if_via_visitor, gen_block_via_visitor, gen_while_via_visitor, gen_for_via_visitor, gen_match_via_visitor, gen_record_via_visitor, gen_record_update_via_visitor, gen_array_via_visitor, gen_tuple_via_visitor, gen_question_via_visitor, gen_lambda_via_visitor, gen_with_via_visitor, gen_extern_via_visitor } from './expr_visitor_string'
+import { eval_expr_with_visitor } from './expr_visitor_string'
 
 export fn eval_argument_list(expressions: [Shared<SExpr>], context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
   expressions.map(expression => eval_expr(expression, context, gen_stmts)).join(', ')
 
 export fn eval_expr(expr: Shared<SExpr>, context: CodegenContext, gen_stmts: ([Shared<SStmt>], CodegenContext) -> string) -> string =
-  match expr {
-    SExprInt(_, _, _)                                      => gen_expr_via_string_visitor(expr, context),
-    SExprStr(_, _, _)                                      => gen_expr_via_string_visitor(expr, context),
-    SExprBool(_, _, _)                                     => gen_expr_via_string_visitor(expr, context),
-    SExprUnit(_, _)                                        => gen_expr_via_string_visitor(expr, context),
-    SExprFloat(_, _, _)                                    => gen_expr_via_string_visitor(expr, context),
-    SExprI64(_, _, _)                                      => gen_expr_via_string_visitor(expr, context),
-    SExprU8(_, _, _)                                       => gen_expr_via_string_visitor(expr, context),
-    SExprUsize(_, _, _)                                    => gen_expr_via_string_visitor(expr, context),
-    SExprChar(_, _, _)                                     => gen_expr_via_string_visitor(expr, context),
-    SExprExtern(semantic_type, _)                          => gen_extern_via_visitor(semantic_type),
-    SExprIdent(_, _, _)                                    => gen_expr_via_string_visitor(expr, context),
-    SExprBin(operation, left_expr, right_expr, _, _)       => gen_binary_via_visitor(operation, left_expr, right_expr, context, gen_stmts, eval_expr),
-    SExprUn(operation, inner_expr, _, _)                   => gen_unary_via_visitor(operation, inner_expr, context, gen_stmts, eval_expr),
-    SExprCall(function_expression, arguments, call_parameter_mutability_flags, _, _) =>
-      gen_call_via_visitor(function_expression, arguments, call_parameter_mutability_flags, context, gen_stmts, eval_expr),
-    SExprMethod(method_object, method_name, arguments, receiver_and_parameter_mut_flags, _, _) =>
-      gen_method_via_visitor(method_object, method_name, arguments, receiver_and_parameter_mut_flags, context, gen_stmts, eval_expr),
-    SExprField(object, field_name, _, _)                   => gen_field_via_visitor(object, field_name, context, gen_stmts, eval_expr),
-    SExprIndex(object, index_expr, _, _)                   => gen_index_via_visitor(object, index_expr, context, gen_stmts, eval_expr),
-    SExprIf(condition, then_expr, else_expr, if_semantic_type, _) =>
-      gen_if_via_visitor(condition, then_expr, else_expr, if_semantic_type, context, gen_stmts, eval_expr),
-    SExprBlock(statements, result_expr, _, _) =>
-      gen_block_via_visitor(statements, result_expr, context, gen_stmts, eval_expr),
-    SExprWhile(condition, statements, _, _)                => gen_while_via_visitor(condition, statements, context, gen_stmts, eval_expr),
-    SExprFor(variable, iterator, statements, _, _)         => gen_for_via_visitor(variable, iterator, statements, context, gen_stmts, eval_expr),
-    SExprMatch(subject, arms, match_semantic_type, _) =>
-      gen_match_via_visitor(subject, arms, match_semantic_type, context, gen_stmts, eval_expr),
-    SExprRecord(type_name, field_values, expr_type, _)      => gen_record_via_visitor(type_name, field_values, expr_type, context, gen_stmts, eval_expr),
-    SExprRecordUpdate(type_name, base_expr, overrides, _, _) => gen_record_update_via_visitor(type_name, base_expr, overrides, context, gen_stmts, eval_expr),
-    SExprArray(elements, container_semantic_type, _) =>
-      gen_array_via_visitor(elements, container_semantic_type, context, gen_stmts, eval_expr),
-    SExprTuple(elements, _, _) =>
-      gen_tuple_via_visitor(elements, context, gen_stmts, eval_expr),
-    SExprQuestion(inner_expr, _, _)                        => gen_question_via_visitor(inner_expr, context, gen_stmts, eval_expr),
-    SExprLambda(parameters, body_expr, lambda_annotation_type, _) =>
-      gen_lambda_via_visitor(parameters, body_expr, lambda_annotation_type, context, gen_stmts, eval_expr),
-    SExprWith(resource, binder, stmts, _, _) =>
-      gen_with_via_visitor(resource, binder, stmts, context, gen_stmts, eval_expr),
-  }
+  eval_expr_with_visitor(expr, context, gen_stmts, eval_expr)

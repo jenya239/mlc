@@ -38,7 +38,7 @@ using namespace type_gen;
 using namespace statement_context;
 using namespace expr;
 
-struct StringExprVisitor {context::CodegenContext context;};
+struct StringExprVisitor {context::CodegenContext context;std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts;std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression;};
 
 mlc::String evaluate_via_string_visitor(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> _gen_stmts) noexcept;
 
@@ -149,6 +149,8 @@ mlc::String StringExprVisitor_visit_lambda(expr_visitor_string::StringExprVisito
 mlc::String StringExprVisitor_visit_with(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> resource, mlc::String binder, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept;
 
 mlc::String StringExprVisitor_visit_unsupported(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> _expression) noexcept;
+
+mlc::String eval_expr_with_visitor(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
 
 mlc::String gen_expr_via_string_visitor(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept;
 
@@ -277,46 +279,46 @@ mlc::String StringExprVisitor_visit_extern(expr_visitor_string::StringExprVisito
 
 mlc::String StringExprVisitor_visit_ident(expr_visitor_string::StringExprVisitor self, mlc::String name, std::shared_ptr<registry::Type> _semantic_type) noexcept{return identifiers::gen_identifier(name, self.context);}
 
-mlc::String StringExprVisitor_visit_bin(expr_visitor_string::StringExprVisitor self, mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expression, std::shared_ptr<semantic_ir::SExpr> right_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_binary_via_visitor(operation, left_expression, right_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_bin(expr_visitor_string::StringExprVisitor self, mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expression, std::shared_ptr<semantic_ir::SExpr> right_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_binary_via_visitor(operation, left_expression, right_expression, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_un(expr_visitor_string::StringExprVisitor self, mlc::String operation, std::shared_ptr<semantic_ir::SExpr> inner_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_unary_via_visitor(operation, inner_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_un(expr_visitor_string::StringExprVisitor self, mlc::String operation, std::shared_ptr<semantic_ir::SExpr> inner_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_unary_via_visitor(operation, inner_expression, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_call(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> function_expression, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> mutability_flags, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_call_via_visitor(function_expression, arguments, mutability_flags, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_call(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> function_expression, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> mutability_flags, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_call_via_visitor(function_expression, arguments, mutability_flags, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_method(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> mutability_flags, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_method_via_visitor(object, method_name, arguments, mutability_flags, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_method(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> mutability_flags, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_method_via_visitor(object, method_name, arguments, mutability_flags, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_field(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_field_via_visitor(object, field_name, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_field(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_field_via_visitor(object, field_name, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_index(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> object, std::shared_ptr<semantic_ir::SExpr> index_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_index_via_visitor(object, index_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_index(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> object, std::shared_ptr<semantic_ir::SExpr> index_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_index_via_visitor(object, index_expression, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_if(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> condition, std::shared_ptr<semantic_ir::SExpr> then_expression, std::shared_ptr<semantic_ir::SExpr> else_expression, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_if_via_visitor(condition, then_expression, else_expression, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_if(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> condition, std::shared_ptr<semantic_ir::SExpr> then_expression, std::shared_ptr<semantic_ir::SExpr> else_expression, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_if_via_visitor(condition, then_expression, else_expression, semantic_type, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_block(expr_visitor_string::StringExprVisitor self, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<semantic_ir::SExpr> result_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_block_via_visitor(statements, result_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_block(expr_visitor_string::StringExprVisitor self, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<semantic_ir::SExpr> result_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_block_via_visitor(statements, result_expression, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_while(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> condition, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_while_via_visitor(condition, statements, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_while(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> condition, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_while_via_visitor(condition, statements, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_for(expr_visitor_string::StringExprVisitor self, mlc::String variable, std::shared_ptr<semantic_ir::SExpr> iterator, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_for_via_visitor(variable, iterator, statements, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_for(expr_visitor_string::StringExprVisitor self, mlc::String variable, std::shared_ptr<semantic_ir::SExpr> iterator, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_for_via_visitor(variable, iterator, statements, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_match(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> subject, mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> arms, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_match_via_visitor(subject, arms, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_match(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> subject, mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> arms, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_match_via_visitor(subject, arms, semantic_type, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_record(expr_visitor_string::StringExprVisitor self, mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_record_via_visitor(type_name, field_values, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_record(expr_visitor_string::StringExprVisitor self, mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_record_via_visitor(type_name, field_values, semantic_type, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_record_update(expr_visitor_string::StringExprVisitor self, mlc::String type_name, std::shared_ptr<semantic_ir::SExpr> base_expression, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> overrides, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_record_update_via_visitor(type_name, base_expression, overrides, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_record_update(expr_visitor_string::StringExprVisitor self, mlc::String type_name, std::shared_ptr<semantic_ir::SExpr> base_expression, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> overrides, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_record_update_via_visitor(type_name, base_expression, overrides, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_array(expr_visitor_string::StringExprVisitor self, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_array_via_visitor(elements, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_array(expr_visitor_string::StringExprVisitor self, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_array_via_visitor(elements, semantic_type, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_tuple(expr_visitor_string::StringExprVisitor self, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_tuple_via_visitor(elements, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_tuple(expr_visitor_string::StringExprVisitor self, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_tuple_via_visitor(elements, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_question(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> inner_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_question_via_visitor(inner_expression, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_question(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> inner_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_question_via_visitor(inner_expression, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_lambda(expr_visitor_string::StringExprVisitor self, mlc::Array<mlc::String> parameter_names, std::shared_ptr<semantic_ir::SExpr> body_expression, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_lambda_via_visitor(parameter_names, body_expression, semantic_type, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_lambda(expr_visitor_string::StringExprVisitor self, mlc::Array<mlc::String> parameter_names, std::shared_ptr<semantic_ir::SExpr> body_expression, std::shared_ptr<registry::Type> semantic_type) noexcept{return gen_lambda_via_visitor(parameter_names, body_expression, semantic_type, self.context, self.gen_stmts, self.evaluate_expression);}
 
-mlc::String StringExprVisitor_visit_with(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> resource, mlc::String binder, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_with_via_visitor(resource, binder, statements, self.context, ignored_gen_stmts, evaluate_via_string_visitor);}
+mlc::String StringExprVisitor_visit_with(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> resource, mlc::String binder, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept{return gen_with_via_visitor(resource, binder, statements, self.context, self.gen_stmts, self.evaluate_expression);}
 
 mlc::String StringExprVisitor_visit_unsupported(expr_visitor_string::StringExprVisitor self, std::shared_ptr<semantic_ir::SExpr> _expression) noexcept{return mlc::String("/* unsupported expr */");}
 
-mlc::String gen_expr_via_string_visitor(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept{
-expr_visitor_string::StringExprVisitor expression_visitor = expr_visitor_string::StringExprVisitor{context};
+mlc::String eval_expr_with_visitor(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{
+expr_visitor_string::StringExprVisitor expression_visitor = expr_visitor_string::StringExprVisitor{context, gen_stmts, evaluate_expression};
 return std::visit(overloaded{
   [&](const SExprInt& sexprint) -> mlc::String { auto [integer_value, type_value, _w0] = sexprint; return StringExprVisitor_visit_int(expression_visitor, integer_value, type_value); },
   [&](const SExprStr& sexprstr) -> mlc::String { auto [string_value, type_value, _w0] = sexprstr; return StringExprVisitor_visit_str(expression_visitor, string_value, type_value); },
@@ -349,5 +351,7 @@ return std::visit(overloaded{
   [&](const SExprWith& sexprwith) -> mlc::String { auto [resource, binder, statements, type_value, _w0] = sexprwith; return StringExprVisitor_visit_with(expression_visitor, resource, binder, statements, type_value); }
 }, (*expression)._);
 }
+
+mlc::String gen_expr_via_string_visitor(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept{return eval_expr_with_visitor(expression, context, ignored_gen_stmts, evaluate_via_string_visitor);}
 
 } // namespace expr_visitor_string

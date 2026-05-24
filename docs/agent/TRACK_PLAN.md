@@ -10,79 +10,57 @@ Baseline: `benchmarks/profile/record_baseline.sh` (post-commit).
 
 Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрения
 
-## Status: in progress
+## Status: visitor batch **done** (steps 1–14); pipeline + cleanup in progress
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `compiler/pass.mlc` — `trait CompilerPass<Input, Output>` | done (2026-05-20) |
-| 2 | `ExprVisitor` sketch + dispatch stub | done (2026-05-22) |
-| 3 | `ExprVisitor<string>` codegen sketch | done (2026-05-22) |
-| 4 | `dispatch_expr` + test graph (466 tests) | done (2026-05-22) |
-| 5 | Wire `gen_expr_via_string_visitor` into `expr_eval` | done (2026-05-22) |
-| 6 | ExprVisitor: bool + unit arms | done (2026-05-22) |
-| 7 | ExprVisitor: numeric literal arms | done (2026-05-22) |
-| 8 | ExprVisitor: ident arm | done (2026-05-22) |
-| 9 | ExprVisitor: bin/unary ops arm | done (2026-05-22) |
-| 10 | ExprVisitor: call + method arms | done (2026-05-22) |
-| 11 | ExprVisitor: if + block arms | done (2026-05-22) |
-| 12 | ExprVisitor: match arm | done (2026-05-22) |
-| 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | done (2026-05-23) |
-| 14 | Self-host diff after visitor migration batch | done (`6df3799`) |
-| 15 | Parser `ref mut` | deferred (separate branch) |
+| 1 | `compiler/pass.mlc` — `trait CompilerPass<Input, Output>` | done (`f199e92`) |
+| 2 | `ExprVisitor` sketch + dispatch stub | done (`f199e92`) |
+| 3 | `ExprVisitor<string>` codegen sketch | done (`df3826f`) |
+| 4 | `dispatch_expr` + test graph | done (`161c3b4`) |
+| 5 | Wire `gen_expr_via_string_visitor` into `expr_eval` | done (`0afcfd8`) |
+| 6 | ExprVisitor: bool + unit arms | done (`a9a2ca6`) |
+| 7 | ExprVisitor: numeric literal arms | done (`4e293c2`) |
+| 8 | ExprVisitor: ident arm | done (`274dd68`) |
+| 9 | ExprVisitor: bin/unary ops arm | done (`678e5d0`) |
+| 10 | ExprVisitor: call + method arms | done (`b6c857a`) |
+| 11 | ExprVisitor: if + block arms | done (`008abce`) |
+| 12 | ExprVisitor: match arm | done (`14d9b0d`) |
+| 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | done (`9bc1001`) |
+| 14 | Self-host diff after visitor migration batch | done (`6df3799`, docs `0a0d321`) |
+| 15 | Parser `ref mut` | **deferred** (separate branch) |
+| 16 | Shrink `expr_eval.mlc` — `dispatch_expr` only, drop duplicate `match` | done (pending commit) |
+| 17 | Explicit `Pass` pipeline in `main.mlc` | pending |
+| 18 | Folder restructure (PLAN §4) | **deferred** — after 16–17 + self-host green |
 
 ## Backlog (Planner maintains)
 
-Source: PLAN.md «Visitor pattern», «Порядок внедрения» items 2–4.
+Source: PLAN.md §3 «Порядок внедрения» items 3–4.
 
-- After step 13: shrink manual `match` in `expr_eval.mlc` to `dispatch_expr` only
-- Then: explicit pipeline in `main.mlc` (Pass wiring) — **new TRACK section or TRACK_PIPELINE.md**
-- Folder restructure (PLAN §4) — only after visitor batch + self-host green
+- **Step 16:** `extend CodegenContext` methods — optional follow-up inside expr_eval shrink if needed
+- **Step 17:** `CompilerPipeline` wiring replaces direct checker→codegen calls in `main.mlc`
+- **Step 18:** `frontend/`, `ir/`, checker split — separate track; not until pipeline stable
+- **CppExpr backend:** PLAN Phase 2 — not in this track (new TRACK when pipeline done)
 
-## Step 7 detail (done)
+## Step 14 detail (done — `6df3799`)
 
-- Trait: `visit_float`, … `visit_char`; `expr_eval` via visitor; 473 tests
+- parser `export trait`; trait codegen (requires, vtable, static_assert)
+- verify: g++ mlcc2 + `diff -rq p1 p2` empty; 490 tests
 
-## Step 8 detail (done)
+## Step 16 detail (done)
 
-- `SExprIdent` via `gen_expr_via_string_visitor`; string visitor tests for x/print/println; 475 tests
+- `expr_eval.mlc` → `eval_expr_with_visitor` (3 lines); match removed from expr_eval
+- Single dispatch in `expr_visitor_string.mlc`; `StringExprVisitor` carries `gen_stmts` + `evaluate_expression`
+- `dispatch_expr` in `expr_visitor.mlc` — full SExpr coverage + wildcard (if-chain codegen)
+- verify: 490 tests pass
 
-## Step 9 detail (done)
+## Next step (Driver)
 
-- `visit_bin`/`visit_un`; `gen_binary_via_visitor`/`gen_unary_via_visitor` with evaluate_expression callback; 477 tests
+**STEP=17** — explicit `Pass` pipeline in `main.mlc`
 
-## Step 10 detail (done)
+## Planner checklist (2026-05-24 plan-refresh)
 
-- `visit_call`/`visit_method`; `gen_call_via_visitor`/`gen_method_via_visitor`; string visitor tests for Ok{42} and push; 479 tests
-
-## Step 11 detail (done)
-
-- `visit_if`/`visit_block`; `gen_if_via_visitor`/`gen_block_via_visitor`; string visitor tests for if ternary and empty block; 481 tests
-
-## Step 12 detail (done)
-
-- `visit_match`; `gen_match_via_visitor`; string visitor tests for std::visit and match arm body; 483 tests
-
-## Step 13 detail (done)
-
-- Remaining arms: field/index/while/for/record/array/tuple/question/lambda/with/extern via visitor; string visitor tests for array and record; 485 tests; `dispatch_expr` still partial (record+ → unsupported)
-
-## Step 14 detail (done — 14-fix-d)
-
-- **14-fix:** self-hosted parser `export trait` in `parser/decls.mlc`
-- **14-fix-b:** impl `#include` + `using namespace`; extend helper protos + cpp forwards
-- **14-fix-c:** vtable `{Trait}_vtable` in cpp phase 4 — no concept clash in hpp
-- **14-fix-d:** `gen_trait_decl` requires use prefixed `ExprVisitor_visit_*` + real return types; `trait_concept_adapters`; `static_assert(ExprVisitor<mlc::String, StringExprVisitor>)` in `expr_visitor_string.cpp`
-- **verify:** g++ mlcc2 (+ `runtime/src/core/profile.cpp`); `diff -rq mlc_p1 mlc_p2` empty
-
-## Next step (Planner)
-
-`STEP=plan-refresh` — step 15 deferred; backlog: shrink expr_eval match, Pass wiring in main.mlc
-
-## Planner checklist
-
-When `STEP=plan-refresh`:
-
-- [ ] All PLAN §3 visitor arms have a TRACK row or explicit defer
-- [ ] No step bundles `compiler/` + `lib/mlc/`
-- [ ] Each pending step has verify gate (tests count or self-host)
-- [ ] Done rows cite commit hash
+- [x] All PLAN §3 visitor arms have a TRACK row or explicit defer
+- [x] No step bundles `compiler/` + `lib/mlc/`
+- [x] Each pending step has verify gate (tests count or self-host)
+- [x] Done rows cite commit hash

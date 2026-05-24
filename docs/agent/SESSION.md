@@ -6,12 +6,62 @@
 |-------|-------|
 | instructions_rev | `2026-05-22-roles-v3` |
 | role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 16-commit |
+| agent_token_last | cr-agent-513ac3bc-3f00-4f92-9127-a27ff5153002 |
+| TRACK_PLAN | step 16 done; commit message ready |
+
+### Turn 2026-05-24 (step 16-commit)
+
+| turn | 2026-05-24 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 2 |
+| step | 16-commit |
+| done | commit-prep: 3 mlc + 4 out + docs; exclude .cursor/ |
+| verify | pass — 490 tests (prior run) |
+| uncommitted_files | 9 tracked + junk |
+| agent_token_last | cr-agent-513ac3bc-3f00-4f92-9127-a27ff5153002 |
+| next | user `git commit`; then STEP=17 |
+
+### Turn 2026-05-24 (step 16)
+
+| turn | 2026-05-24 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 1 |
+| step | 16 |
+| done | expr_eval → eval_expr_with_visitor; dispatch_expr full coverage; StringExprVisitor callbacks |
+| verify | pass — test_compiler_mlc 490 |
+| uncommitted_files | ~20 (3 mlc + out + docs) |
+| agent_token_last | cr-agent-eed04bed-0d7d-4f31-920f-d3f4eb0ce4df |
+| next | STEP=16-commit or STEP=17 |
+
+### Turn 2026-05-24 (plan-refresh, repeat)
+
+| turn | 2026-05-24 |
+| role | Planner |
+| instructions_rev | 2026-05-22-roles-v3 |
 | driver_turns_since_plan | 0 |
-| step_last | 14-commit-exec |
-| agent_token_last | cr-agent-9b5046f4-86d3-4f1b-a914-93a133a20ff7 |
-| run_tests | 490 passed |
-| self_host_diff | green — mlcc2 diff p1/p2 identical |
-| TRACK_PLAN | step 14 done `6df3799`; next plan-refresh |
+| step | plan-refresh |
+| done | idempotent — TRACK already refreshed; step 14 docs hash `0a0d321` |
+| verify | n/a |
+| uncommitted_files | 2 docs + ~14 junk |
+| agent_token_last | cr-agent-b9701f79-35c1-4aad-8af1-8a7e511239eb |
+| next | ROLE=Driver STEP=16 |
+
+### Turn 2026-05-24 (plan-refresh)
+
+| turn | 2026-05-24 |
+| role | Planner |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK hashes steps 1–14; added steps 16–18; visitor batch closed |
+| verify | n/a — docs only |
+| uncommitted_files | ~14 (.cursor + test_t*.mlc) |
+| agent_token_last | cr-agent-940e7d3f-6c7c-4b8f-b33b-8e0e6a21b43b |
+| next | ROLE=Driver STEP=16 |
 
 ### Turn 2026-05-24 (step 14-commit-exec)
 

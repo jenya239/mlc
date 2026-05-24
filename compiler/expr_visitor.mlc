@@ -1,4 +1,4 @@
-// ExprVisitor sketch (PLAN.md §3). dispatch_expr — not used by eval.mlc yet.
+// ExprVisitor (PLAN.md §3). dispatch_expr — single SExpr match for all ExprVisitor impls.
 
 import { Type } from './checker/registry'
 import { SExpr, SStmt, SMatchArm, SFieldVal } from './semantic_ir'
@@ -75,5 +75,19 @@ where Visitor: ExprVisitor
     expression_visitor.visit_for(variable, iterator, statements, type_value),
   SExprMatch(subject, arms, type_value, _) =>
     expression_visitor.visit_match(subject, arms, type_value),
-  _ => expression_visitor.visit_unsupported(expression)
+  SExprRecord(type_name, field_values, type_value, _) =>
+    expression_visitor.visit_record(type_name, field_values, type_value),
+  SExprRecordUpdate(type_name, base_expression, overrides, type_value, _) =>
+    expression_visitor.visit_record_update(type_name, base_expression, overrides, type_value),
+  SExprArray(elements, type_value, _) =>
+    expression_visitor.visit_array(elements, type_value),
+  SExprTuple(elements, type_value, _) =>
+    expression_visitor.visit_tuple(elements, type_value),
+  SExprQuestion(inner_expression, type_value, _) =>
+    expression_visitor.visit_question(inner_expression, type_value),
+  SExprLambda(parameter_names, body_expression, type_value, _) =>
+    expression_visitor.visit_lambda(parameter_names, body_expression, type_value),
+  SExprWith(resource, binder, statements, type_value, _) =>
+    expression_visitor.visit_with(resource, binder, statements, type_value),
+  _ => expression_visitor.visit_unsupported(expression),
 }
