@@ -7,6 +7,7 @@
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "cpp_naming.hpp"
 #include "match_analysis.hpp"
 #include "expr.hpp"

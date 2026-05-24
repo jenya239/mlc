@@ -6,21 +6,60 @@
 |-------|-------|
 | instructions_rev | `2026-05-22-roles-v3` |
 | role_last | Driver |
-| driver_turns_since_plan | 2 |
-| step_last | 14 |
-| agent_token_last | cr-agent-d57eb7c2-cf97-48e8-a111-6f90c38c23eb |
-| run_tests | **485 passed** (build_tests.sh) |
-| self_host_diff | **FAIL** — g++ mlcc2; trait codegen |
-| TRACK_PLAN | step 14 blocked; next 14-fix trait codegen |
+| driver_turns_since_plan | 5 |
+| step_last | 14-commit |
+| agent_token_last | cr-agent-d5a8665a-2bd0-41db-bf88-a87897b04193 |
+| run_tests | 490 passed |
+| self_host_diff | green — mlcc2 diff p1/p2 identical |
+| TRACK_PLAN | step 14 done; commit message ready |
 
-### Turn 2026-05-23 (step 14)
+### Turn 2026-05-24 (step 14-commit)
+
+| turn | 2026-05-24 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 5 |
+| step | 14-commit |
+| done | commit-prep: staging list + draft message (1 commit, exclude .cursor/) |
+| verify | pending — commit on user command |
+| uncommitted_files | 107 |
+| agent_token_last | cr-agent-d5a8665a-2bd0-41db-bf88-a87897b04193 |
+| next | user `git commit`; then STEP=15 or plan-refresh |
+
+### Turn 2026-05-24 (step 14-fix-d)
+
+| turn | 2026-05-24 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 4 |
+| step | 14-fix-d |
+| done | gen_trait_decl requires prefixed visit_* + real return types; static_assert expr_visitor_string |
+| verify | pass — g++ mlcc2 (+ profile.cpp); diff -rq p1 p2 empty |
+| uncommitted_files | ~107 |
+| agent_token_last | cr-agent-ec562374-2739-402e-bec6-4c43853208ad |
+| next | STEP=14-commit — commit-prep (await user) |
+
+### Turn 2026-05-23 (step 14-fix-c)
 
 | turn | 2026-05-23 |
+| role | Driver |
 | instructions_rev | 2026-05-22-roles-v3 |
-| step | 14 |
-| done | build.sh OK; mlcc p1 OK; g++ mlcc2 FAIL (expr_visitor trait); mlcc×2 diff OK |
-| verify | fail — self-host blocked |
-| next | STEP=14-fix — mlcc export trait codegen |
+| driver_turns_since_plan | 4 |
+| step | 14-fix-c |
+| done | gen_trait_struct → struct `{Trait}_vtable` in cpp (phase 4); trait_vtable_struct_cpp_name helper |
+| verify | pass build_tests 490; expr_visitor.cpp compiles; mlcc2 link still fail |
+| next | STEP=14-fix-d gen_trait_decl requires (visit_* names, return types) |
+
+### Turn 2026-05-23 (step 14-fix)
+
+| turn | 2026-05-23 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 3 |
+| step | 14-fix |
+| done | module impl includes/using; qualify_function_callee; extend helper protos + cpp forwards |
+| verify | fail — g++ mlcc2 (expr_visitor struct/concept clash) |
+| next | STEP=14-fix-c trait struct placement |
 
 ### Turn 2026-05-23 (step 13)
 

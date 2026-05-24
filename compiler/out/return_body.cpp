@@ -2,7 +2,6 @@
 
 #include "semantic_ir.hpp"
 #include "context.hpp"
-#include "statement_context.hpp"
 #include "expr.hpp"
 #include "eval.hpp"
 
@@ -10,7 +9,6 @@ namespace return_body {
 
 using namespace semantic_ir;
 using namespace context;
-using namespace statement_context;
 using namespace expr;
 using namespace eval;
 
@@ -27,8 +25,9 @@ mlc::String gen_return_if_stmt(std::shared_ptr<semantic_ir::SExpr> expr, context
  }(); } return expr::if_always_true_block(gen_return_body(expr, context)); }();}
 
 mlc::String gen_return_body(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprBlock>((*expr)._)) { auto _v_sexprblock = std::get<semantic_ir::SExprBlock>((*expr)._); auto [statements, result_expr, _w0, _w1] = _v_sexprblock; return [&]() -> mlc::String { 
-  context::CodegenContext final_context = statement_context::stmts_final_ctx(statements, context);
-  mlc::String statements_code = eval::gen_stmts_str(statements, context);
+  context::GenStmtsWithContext statements_with_context = eval::gen_stmts_str_with_try(statements, context, 0);
+  context::CodegenContext final_context = statements_with_context.codegen_context;
+  mlc::String statements_code = context::GenStmtsResult_joined_code(statements_with_context.partial_result);
   return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprQuestion>((*result_expr)._)) { auto _v_sexprquestion = std::get<semantic_ir::SExprQuestion>((*result_expr)._); auto [inner_expr, _w0, _w1] = _v_sexprquestion; return [&]() -> mlc::String { 
   mlc::String try_identifier = mlc::String("__try_ret");
   return statements_code + eval::gen_try_unwrap(inner_expr, final_context, try_identifier, expr::return_try_ok_field0_statement(try_identifier));

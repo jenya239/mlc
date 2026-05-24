@@ -61,6 +61,8 @@ std::shared_ptr<ast::Decl> first_decl(mlc::String source) noexcept;
 
 std::shared_ptr<ast::Decl> second_decl(mlc::String source) noexcept;
 
+bool trait_display_decl(ast::Program program) noexcept;
+
 mlc::Array<test_runner::TestResult> parser_tests() noexcept;
 
 ast::Program parse_source(mlc::String source) noexcept{return decls::parse_program(lexer::tokenize(source).tokens);}
@@ -123,6 +125,8 @@ std::shared_ptr<ast::Decl> first_decl(mlc::String source) noexcept{return parse_
 
 std::shared_ptr<ast::Decl> second_decl(mlc::String source) noexcept{return parse_source(source).decls[1];}
 
+bool trait_display_decl(ast::Program program) noexcept{return [&]() { if (std::holds_alternative<ast::DeclTrait>((*program.decls[0]))) { auto _v_decltrait = std::get<ast::DeclTrait>((*program.decls[0])); auto [name, _w0, methods] = _v_decltrait; return name == mlc::String("Display") && methods.size() == 1; } return false; }();}
+
 mlc::Array<test_runner::TestResult> parser_tests() noexcept{
 mlc::Array<test_runner::TestResult> results = {};
 results.push_back(test_runner::assert_eq_int(mlc::String("empty source - 0 decls"), decl_count(mlc::String("")), 0));
@@ -167,6 +171,8 @@ results.push_back(test_runner::assert_true(mlc::String("pipe precedence: logical
 results.push_back(test_runner::assert_true(mlc::String("pipe precedence: logical and binds looser than pipeline"), pipe_case_logical_and_over_pipeline(parse_expr_source(mlc::String("a && b |> c")))));
 results.push_back(test_runner::assert_true(mlc::String("pipe precedence: equality binds tighter than pipeline on right"), pipe_case_equality_right_operand_contains_pipeline(parse_expr_source(mlc::String("a == b |> c")))));
 results.push_back(test_runner::assert_true(mlc::String("pipe precedence: pipeline binds tighter than equality on left"), pipe_case_pipeline_binds_tighter_than_equality_on_left(parse_expr_source(mlc::String("a |> b == c")))));
+results.push_back(test_runner::assert_true(mlc::String("parse trait: DeclTrait with one method"), trait_display_decl(parse_source(mlc::String("trait Display { fn to_string(self: Display) -> string }")))));
+results.push_back(test_runner::assert_eq_int(mlc::String("parse export trait: single top-level decl"), parse_source(mlc::String("export trait Display { fn to_string(self: Display) -> string }")).decls.size(), 1));
 return results;
 }
 

@@ -317,8 +317,19 @@ export fn bootstrap_host_main_calling_namespaced_user_main(qualified_namespace: 
 export fn cpp_template_typename_header_line(template_parameter_list: string) -> string =
   `template<typename ${template_parameter_list}>\n`
 
-export fn concept_requires_expression_method_returns_convertible(method_name: string, destination_type_cpp: string) -> string =
-  `{ ${method_name}(self) } -> std::convertible_to<${destination_type_cpp}>`
+export fn std_declval_expression(type_cpp: string) -> string =
+  `std::declval<${type_cpp}>()`
+
+export fn concept_requires_expression_method_returns_convertible(
+  callee_name: string,
+  declval_arguments_csv: string,
+  destination_type_cpp: string
+) -> string =
+  if declval_arguments_csv.length() > 0 then
+    `{ ${callee_name}(self, ${declval_arguments_csv}) } -> std::convertible_to<${destination_type_cpp}>`
+  else
+    `{ ${callee_name}(self) } -> std::convertible_to<${destination_type_cpp}>`
+  end
 
 export fn trait_concept_requires_definition_line(
   template_header: string,
@@ -327,6 +338,26 @@ export fn trait_concept_requires_definition_line(
   requires_expressions_semicolon_separated: string
 ) -> string =
   `${template_header}concept ${trait_cpp_safe} = requires(const ${self_parameter_name}& self) { ${requires_expressions_semicolon_separated}; };\n`
+
+export fn concept_trait_constraint_with_result_and_implementor(
+  trait_name_cpp_safe: string,
+  result_type_parameter_name: string,
+  implementor_type_parameter_name: string
+) -> string =
+  `${trait_name_cpp_safe}<${result_type_parameter_name}, ${implementor_type_parameter_name}>`
+
+export fn std_function_field_line(return_type_cpp: string, parameter_types_csv: string, method_name_cpp_safe: string) -> string =
+  `  std::function<${return_type_cpp}(${parameter_types_csv})> ${method_name_cpp_safe};\n`
+
+export fn trait_vtable_struct_cpp_name(trait_cpp_safe: string) -> string =
+  `${trait_cpp_safe}_vtable`
+
+export fn trait_struct_definition_lines(
+  template_header: string,
+  vtable_struct_cpp_name: string,
+  field_lines: string
+) -> string =
+  `${template_header}struct ${vtable_struct_cpp_name} {\n${field_lines}};\n`
 
 export fn user_main_arguments_copy_into_runtime_statement() -> string =
   'mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n'
@@ -337,6 +368,14 @@ export fn static_assert_concept_for_type_line(
   diagnostic_message_inside_cpp_string_literal: string
 ) -> string =
   `static_assert(${concept_cpp_safe}<${type_cpp}>, "${diagnostic_message_inside_cpp_string_literal}");\n`
+
+export fn static_assert_concept_for_result_and_implementor_line(
+  concept_cpp_safe: string,
+  result_type_cpp: string,
+  implementor_type_cpp: string,
+  diagnostic_message_inside_cpp_string_literal: string
+) -> string =
+  `static_assert(${concept_cpp_safe}<${result_type_cpp}, ${implementor_type_cpp}>, "${diagnostic_message_inside_cpp_string_literal}");\n`
 
 export fn with_block_statement(resource_code: string, binder: string, body_statements: string) -> string =
   `{\nauto ${binder} = (${resource_code});\n${body_statements}${binder}.drop();\n}\n`

@@ -22,7 +22,7 @@ mlc::String gen_try_unwrap(std::shared_ptr<semantic_ir::SExpr> inner_expr, conte
 
 context::GenStmtResult gen_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context, int try_counter) noexcept;
 
-context::GenStmtsResult gen_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter) noexcept;
+context::GenStmtsWithContext gen_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter) noexcept;
 
 mlc::String gen_expr(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context) noexcept{return expr_eval::eval_expr(expr, context, [](mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext ctx) mutable { return gen_stmts_str(statements, ctx); });}
 
@@ -34,6 +34,6 @@ mlc::String gen_try_unwrap(std::shared_ptr<semantic_ir::SExpr> inner_expr, conte
 
 context::GenStmtResult gen_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> stmt, context::CodegenContext context, int try_counter) noexcept{return stmt_eval::eval_stmt_with_try(stmt, context, try_counter, [](std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext ctx) mutable { return gen_expr(expression, ctx); });}
 
-context::GenStmtsResult gen_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter) noexcept{return stmt_eval::eval_stmts_str_with_try(statements, context, try_counter, [](std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext ctx) mutable { return gen_expr(expression, ctx); });}
+context::GenStmtsWithContext gen_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter) noexcept{return stmt_eval::eval_stmts_str_with_try(statements, context, try_counter, [](std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext ctx) mutable { return gen_expr(expression, ctx); });}
 
 } // namespace eval

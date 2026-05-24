@@ -1,44 +1,46 @@
 # Development (after CONTINUITY block in queued prompt)
 
+Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restart.
+
 ## Principles
 
-- **Small verifiable steps** — one concern per commit/prompt; bisect-friendly.
-- **Verify before next queue:** Ruby/compiler tests, then self-host if `compiler/**` changed.
-- **Re-check is normal** — return to tests after fixes; do not skip because “already ran once”.
-- **Plans:** [PLAN.md](../PLAN.md) is north star; [TRACK_*.md](.) hold active work; adjust tasks when facts change — update TRACK, not silent drift.
+- **One sub-step per prompt** — one concern; bisect-friendly.
+- **One layer per sub-step** — `compiler/` XOR `lib/mlc/`, not both (except tiny import fix).
+- **Verify before next queue:** tests green, then self-host if `compiler/**` changed.
+- **Plans:** [PLAN.md](../PLAN.md) north star; [TRACK_*.md](.) active work; **Planner** extends TRACK, **Driver** executes.
+
+## Roles (see CONTINUITY)
+
+- **Driver** — code + verify (most turns).
+- **Planner** — TRACK rows from PLAN; no `compiler/`.
+- **Backlog** — TRACK vs git hygiene; no `compiler/`.
 
 ## Verification ladder (compiler changes)
 
-1. `compiler/tests/build_tests.sh` → `run_tests` (expect 463+).
-2. `compiler/build.sh` → fresh `compiler/out/mlcc`.
-3. Self-host: `mlcc → mlcc2`, `diff -rq` output dirs (see `.cursor/rules/mlcc-self-host-verification.mdc`).
-4. Optional: `benchmarks/profile/run_profile.sh`, `compare_baseline.sh` (soft gate).
+1. `compiler/tests/build_tests.sh` → `run_tests` (expect 473+). Abort if > 10 min silent.
+2. If **`lib/mlc/**` touched:** `bundle exec rake test_mlc`.
+3. If **`compiler/**` touched:** `compiler/build.sh` → self-host `diff -rq`.
+4. Step **14** in TRACK: mandatory self-host before closing visitor batch.
 
 ## Current priority
 
-1. **Finish [TRACK_OPTIMIZATION.md](TRACK_OPTIMIZATION.md)** — uncommitted optimization batch: commit-worthy after full verify.
-2. **Then** next items from [PLAN.md](../PLAN.md) § phases (parser `ref mut` = separate branch; MLC IR / C++ AST later).
+[TRACK_PLAN.md](TRACK_PLAN.md) steps 8–14 (ExprVisitor migration). Parser `ref mut` = step 15, separate branch.
 
 ## Step sizing (good vs bad)
 
 | Good | Bad |
 |------|-----|
-| Fix trait maps + run tests | “Optimize everything” |
-| One TRACK checkbox + verify | Multi-file refactor without tests |
-| Update TRACK + queue next | Stop without `cursor_enqueue_send` |
+| Step 9: one arm + tests | «Migrate all expr_eval» |
+| Planner adds steps 10–12 | Driver invents scope without TRACK |
+| Backlog flags uncommitted > 15 | Silent TRACK drift |
 
 ## Code rules
 
-- No abbreviations in identifiers (`.cursor/rules/no-abbreviations.mdc`).
+- No abbreviations (`.cursor/rules/no-abbreviations.mdc`).
 - Minimal diff; match surrounding style.
-- Do not edit `docs/agent/CONTINUITY.md` workflow without user ask.
 
 ## MCP (`user-cr-cursor`)
 
-Только через **token** — см. [CONTINUITY.md](CONTINUITY.md):
+Token-only — [CONTINUITY.md](CONTINUITY.md).
 
-`register` → `resolve` → `cursor_enqueue_send({ token, text })` с `AGENT_TOKEN=…` в text.
-
-Self-методов нет.
-
-**mlc-memory:** decisions / notes между сессиями.
+**mlc-memory:** blockers (`known_limitations`), Planner/Backlog notes (`notes`).

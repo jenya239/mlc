@@ -62,6 +62,24 @@ export fn context_resolve(context: CodegenContext, name: string) -> string =
   else cpp_safe(name)
   end
 
+fn type_method_namespace_prefix(mangled_name: string, context: CodegenContext) -> string = do
+  let mut underscore = -1
+  let mut index = 0
+  while index < mangled_name.length() && underscore < 0 do
+    if mangled_name.char_at(index) == "_" then underscore = index end
+    index = index + 1
+  end
+  if underscore <= 0 then ''
+  else if context.qualified.has(mangled_name.substring(0, underscore)) then context.qualified.get(mangled_name.substring(0, underscore))
+  else ''
+  end
+end
+
+export fn qualify_function_callee(name: string, context: CodegenContext) -> string =
+  if context.qualified.has(name) then context.qualified.get(name) + cpp_safe(name)
+  else type_method_namespace_prefix(name, context) + cpp_safe(name)
+  end
+
 fn collect_pat_bind_names_for_context(pat: Shared<Pat>, mut accumulator: [string]) -> [string] = do
   match pat {
     PatIdent(n, _) => do accumulator.push(n); accumulator end,

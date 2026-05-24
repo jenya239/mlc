@@ -8,6 +8,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "cpp_naming.hpp"
 
 namespace expression_support {
@@ -29,6 +30,8 @@ mlc::String resolve_object_code_in_self_context(mlc::String object_name, context
 mlc::String infer_shared_new_type_name(std::shared_ptr<semantic_ir::SExpr> argument, context::CodegenContext context) noexcept;
 
 mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept;
+
+mlc::String cpp_function_name_for_profile_method(mlc::String method_name) noexcept;
 
 mlc::String field_access_operator(std::shared_ptr<semantic_ir::SExpr> object, context::CodegenContext context) noexcept;
 

@@ -48,6 +48,10 @@ lexer::ScanStrResult scan_single_string(lexer::LexState state) noexcept;
 
 mlc::String map_escape(mlc::String character) noexcept;
 
+lexer::LexState lex_advance_past_unescaped_string_run(lexer::LexState state) noexcept;
+
+lexer::LexState lex_advance_past_template_literal_run(lexer::LexState state) noexcept;
+
 lexer::ScanStrResult scan_string(lexer::LexState state) noexcept;
 
 lexer::LexState scan_template_nested_string(lexer::LexState initial, mlc::Array<mlc::String> expr_chars) noexcept;
@@ -225,6 +229,39 @@ return lexer::ScanStrResult{current, ast_tokens::Token{token_kind, token_line, t
 
 mlc::String map_escape(mlc::String character) noexcept{return character == mlc::String("n") ? mlc::String("\n") : character == mlc::String("t") ? mlc::String("\t") : character == mlc::String("r") ? mlc::String("\r") : character == mlc::String("\"") ? mlc::String("\"") : character == mlc::String("\\") ? mlc::String("\\") : character == mlc::String("0") ? mlc::String("\0", 1) : character == mlc::String("{") ? mlc::String("{") : character == mlc::String("}") ? mlc::String("}") : mlc::String("");}
 
+lexer::LexState lex_advance_past_unescaped_string_run(lexer::LexState state) noexcept{
+lexer::LexState current = std::move(state);
+while (!LexState_eof(current) && LexState_current(current) != mlc::String("\"") && LexState_current(current) != mlc::String("\\")){
+{
+current = LexState_lex_advance(current);
+}
+}
+return current;
+}
+
+lexer::LexState lex_advance_past_template_literal_run(lexer::LexState state) noexcept{
+lexer::LexState current = std::move(state);
+bool run_active = true;
+while (run_active && !LexState_eof(current) && LexState_current(current) != mlc::String("`")){
+{
+if (LexState_current(current) == mlc::String("\\")){
+{
+run_active = false;
+}
+} else {
+{
+if (LexState_current(current) == mlc::String("$") && LexState_peek(current, 1) == mlc::String("{")){
+run_active = false;
+} else {
+current = LexState_lex_advance(current);
+}
+}
+}
+}
+}
+return current;
+}
+
 lexer::ScanStrResult scan_string(lexer::LexState state) noexcept{
 int token_line = state.line;
 int token_col = state.col;
@@ -251,8 +288,11 @@ current = LexState_lex_advance(current);
 }
 } else {
 {
-parts.push_back(LexState_current(current));
-current = LexState_lex_advance(current);
+int run_start = current.pos;
+current = lex_advance_past_unescaped_string_run(current);
+if (current.pos > run_start){
+parts.push_back(current.src.byte_substring(run_start, current.pos - run_start));
+}
 }
 }
 }
@@ -392,8 +432,11 @@ error = mlc::String("unterminated interpolation in template literal");
 }
 parts.push_back(expr_chars.join(mlc::String("")));
 } else {
-current_lit.push_back(LexState_current(current));
-current = LexState_lex_advance(current);
+int run_start = current.pos;
+current = lex_advance_past_template_literal_run(current);
+if (current.pos > run_start){
+current_lit.push_back(current.src.byte_substring(run_start, current.pos - run_start));
+}
 }
 }
 }

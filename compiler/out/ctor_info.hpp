@@ -21,6 +21,10 @@ mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_infos_from_
 
 std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept;
 
+mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_info_index(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos) noexcept;
+
+std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info_indexed(mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> index, mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept;
+
 } // namespace ctor_info
 
 #endif // CTOR_INFO_HPP

@@ -4,6 +4,7 @@
 #include "registry.hpp"
 #include "record_field_default_initializer.hpp"
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "cpp_naming.hpp"
 #include "expr.hpp"
 
@@ -13,6 +14,7 @@ using namespace ast;
 using namespace registry;
 using namespace record_field_default_initializer;
 using namespace context;
+using namespace decl_index;
 using namespace cpp_naming;
 using namespace expr;
 using namespace ast_tokens;
@@ -405,7 +407,16 @@ int k = 0;
 [&]() { 
   while (k < type_bounds[i].size()){
 {
-parts.push_back(expr::concept_trait_constraint_on_type_parameter(cpp_naming::cpp_safe(type_bounds[i][k]), type_params[i]));
+mlc::String bound_trait_name = type_bounds[i][k];
+if (bound_trait_name == mlc::String("ExprVisitor") && type_params.size() >= 2){
+{
+parts.push_back(expr::concept_trait_constraint_with_result_and_implementor(cpp_naming::cpp_safe(bound_trait_name), type_params[0], type_params[i]));
+}
+} else {
+{
+parts.push_back(expr::concept_trait_constraint_on_type_parameter(cpp_naming::cpp_safe(bound_trait_name), type_params[i]));
+}
+}
 k = k + 1;
 }
 }

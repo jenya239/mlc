@@ -21,6 +21,21 @@ perf.data
 # Scaling probe output (benchmarks/scaling/run_quadratic_probe.rb)
 .tmp_scaling_probe/
 .tmp_profile/
+.tmp_*/
+.out_selfcheck*/
+.tmp_bench*/
+
+# Agent/bootstrap debug fragments (do not commit)
+compiler/lexer_*.mlc
+compiler/test_[0-9]*.mlc
+compiler/test_min*.mlc
+compiler/test_stub*.mlc
+compiler/test_half.mlc
+compiler/test_real_lexer.mlc
+compiler/test_import_tokenize.mlc
+compiler/test_tok_simple.mlc
+!compiler/test_lexer.mlc
+!compiler/test_trait_e2e.mlc
 
 # Случайные фрагменты сборки в корневом out/ (не путать с compiler/out/)
 /out/test_*.cpp

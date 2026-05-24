@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_str, assert_true } from './test_runner'
 import { Program, TypeVariant, Param, FieldDef, TyI32, TyString, TyUnit, TyNamed, span_unknown, ExprUnit, ExprInt, PatUnit } from '../ast'
 import { create_codegen_context } from '../codegen/context'
-import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_decl, gen_proto, decls_have_main } from '../codegen/decl'
+import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main } from '../codegen/decl'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
 import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SDeclFn, SDeclType, SDeclExported, SDeclExtend } from '../semantic_ir'
@@ -168,6 +168,13 @@ export fn decl_gen_tests() -> [TestResult] = do
     gen_trait_decl(context, 'Display', [], [display_method]), 'concept'))
   results.push(assert_code_contains('gen_trait_decl: trait identifier',
     gen_trait_decl(context, 'Display', [], [display_method]), 'Display'))
+
+  results.push(assert_code_contains('gen_trait_struct: std::function field',
+    gen_trait_struct(context, 'Display', [], [display_method]), 'std::function'))
+  results.push(assert_code_contains('gen_trait_struct: vtable struct name',
+    gen_trait_struct(context, 'Display', [], [display_method]), 'struct Display_vtable'))
+  results.push(assert_code_contains('gen_trait_struct: method name',
+    gen_trait_struct(context, 'Display', [], [display_method]), 'to_string'))
 
   const color_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Color')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
   const color_to_string = fn_decl('Color_to_string', [color_self], tstr(), make_str_expr('red'))

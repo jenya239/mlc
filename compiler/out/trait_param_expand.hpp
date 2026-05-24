@@ -14,7 +14,13 @@ struct Stmt;
 struct SExpr;
 struct SStmt;
 
+struct TraitNominalMaps {mlc::HashMap<mlc::String, bool> trait_declaration_names;mlc::HashMap<mlc::String, bool> nominal_type_declaration_names;};
+
 mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept;
+
+trait_param_expand::TraitNominalMaps build_trait_nominal_maps(ast::Program program) noexcept;
+
+mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_nominal_maps(mlc::Array<std::shared_ptr<ast::Decl>> declarations, trait_param_expand::TraitNominalMaps maps) noexcept;
 
 mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_context(mlc::Array<std::shared_ptr<ast::Decl>> declarations, ast::Program program_for_maps) noexcept;
 

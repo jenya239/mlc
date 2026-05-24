@@ -12,7 +12,49 @@ fn extract_method_name(fn_name: string, type_name: string) -> string = do
   end
 end
 
+fn extract_owner_prefix_from_mangled(fn_name: string) -> string = do
+  let mut index = 0
+  let mut result = fn_name
+  while index < fn_name.length() do
+    if fn_name.substring(index, 1) == "_" then
+      result = fn_name.substring(0, index)
+      index = fn_name.length()
+    else
+      index = index + 1
+    end
+  end
+  result
+end
+
+fn build_trait_names_from_decls(decls: [Shared<Decl>]) -> Map<string, bool> = do
+  let trait_names: Map<string, bool> = Map.new()
+  let mut index = 0
+  while index < decls.length() do
+    match decl_inner(decls[index]) {
+      DeclTrait(trait_name, _, _) => trait_names.set(trait_name, true),
+      _ => do end
+    }
+    index = index + 1
+  end
+  trait_names
+end
+
+fn extend_may_register_method_owner(
+  owners: Map<string, string>,
+  unmangled: string,
+  type_name: string,
+  trait_names: Map<string, bool>
+) -> bool = do
+  if !owners.has(unmangled) then true
+  else do
+    const existing_prefix = extract_owner_prefix_from_mangled(owners.get(unmangled))
+    existing_prefix == type_name || trait_names.has(existing_prefix)
+  end
+  end
+end
+
 export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string, string>) -> Map<string, string> = do
+  const trait_names = build_trait_names_from_decls(decls)
   let mut i = 0
   while i < decls.length() do
     match decl_inner(decls[i]) {
@@ -35,7 +77,9 @@ export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string
           match methods[mi] {
             DeclFn(fn_name, _, _, _, _, _, _) => do
               const unmangled = extract_method_name(fn_name, type_name)
-              if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
+              if extend_may_register_method_owner(owners, unmangled, type_name, trait_names) then
+                owners.set(unmangled, fn_name)
+              end
             end,
             _ => do end
           }

@@ -10,6 +10,10 @@
 #include "test_codegen.hpp"
 #include "test_pipe_and_record_update.hpp"
 #include "test_decl_gen.hpp"
+#include "test_partial_application.hpp"
+#include "test_merge_imports.hpp"
+#include "test_pass.hpp"
+#include "test_expr_visitor.hpp"
 #include "test_runner.hpp"
 
 namespace tests_main {

@@ -12,7 +12,8 @@ import { type_to_cpp, sem_type_to_cpp, type_name_to_cpp, gen_type_decl, gen_type
          template_prefix, requires_clause, gen_derive_methods } from './type_gen'
 import { gen_fn_body } from './return_body'
 import * as expression_output from './expr'
-import { gen_params_proto, gen_params_def, gen_trait_decl, gen_extend_wrapper_protos, gen_decl_extend } from './decl_extend'
+import { gen_params_proto, gen_params_def, gen_trait_decl, gen_trait_struct, gen_extend_wrapper_protos, gen_decl_extend } from './decl_extend'
+import { list_contains } from './decl_index'
 
 // --- Function prototype and declaration --------------------------------------
 
@@ -125,11 +126,19 @@ fn inner_declaration_is_main(declaration: Shared<SDecl>) -> bool =
 export fn decls_have_main(decls: [Shared<SDecl>]) -> bool =
   decls.any(declaration => inner_declaration_is_main(declaration))
 
-fn extend_wrapper_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext) -> string =
+fn extend_cpp_forward_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext) -> string =
   match declaration {
-    SDeclExtend(type_name, trait_name, methods) => gen_extend_wrapper_protos(type_name, trait_name, methods, codegen_context),
+    SDeclExtend(type_name, trait_name, methods) => do
+      const extend_context = codegen_context.for_type_body(type_name)
+      gen_extend_wrapper_protos(type_name, trait_name, methods, codegen_context) +
+      methods.map(method => gen_proto(method, extend_context)).join('')
+    end,
     SDeclExported(inner_declaration) => match sdecl_inner(inner_declaration) {
-      SDeclExtend(type_name, trait_name, methods) => gen_extend_wrapper_protos(type_name, trait_name, methods, codegen_context),
+      SDeclExtend(type_name, trait_name, methods) => do
+        const extend_context = codegen_context.for_type_body(type_name)
+        gen_extend_wrapper_protos(type_name, trait_name, methods, codegen_context) +
+        methods.map(method => gen_proto(method, extend_context)).join('')
+      end,
       _ => ''
     },
     _ => ''
@@ -146,6 +155,7 @@ fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, pha
       end,
     SDeclTrait(name, type_params, methods) =>
       if phase == 0 then gen_trait_decl(codegen_context, name, type_params, methods)
+      else if phase == 4 then gen_trait_struct(codegen_context, name, type_params, methods)
       else ''
       end,
     SDeclFn(_, _, _, _, _, _, _) =>
@@ -154,8 +164,7 @@ fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, pha
       else ''
       end,
     SDeclExtend(_, _, _) =>
-      if phase == 2 then gen_proto(declaration, codegen_context)
-      else if phase == 3 then gen_decl(declaration, codegen_context)
+      if phase == 3 then gen_decl(declaration, codegen_context)
       else ''
       end,
     SDeclImport(_, _) => '',
@@ -172,11 +181,32 @@ fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, pha
           gen_derive_methods(codegen_context, type_name, variants, derive_traits),
         _ => ''
       }
-      else if phase == 2 then gen_proto(inner_declaration, codegen_context)
+      else if phase == 2 then match sdecl_inner(inner_declaration) {
+        SDeclFn(_, type_parameters, _, _, _, body, _) =>
+          if type_parameters.length() > 0 then match body {
+            SExprExtern(_, _) => gen_proto(inner_declaration, codegen_context),
+            _ => gen_decl(inner_declaration, codegen_context)
+          }
+          else gen_proto(inner_declaration, codegen_context)
+          end,
+        _ => gen_proto(inner_declaration, codegen_context)
+      }
       else if phase == 3 then match sdecl_inner(inner_declaration) {
         SDeclType(_, _, _, _) => '',
         SDeclTrait(_, _, _) => '',
+        SDeclFn(_, type_parameters, _, _, _, body, _) =>
+          if type_parameters.length() > 0 then match body {
+            SExprExtern(_, _) => gen_decl(inner_declaration, codegen_context),
+            _ => ''
+          }
+          else gen_decl(inner_declaration, codegen_context)
+          end,
+        SDeclExtend(_, _, _) => gen_decl(inner_declaration, codegen_context),
         _ => gen_decl(inner_declaration, codegen_context)
+      }
+      else if phase == 4 then match sdecl_inner(inner_declaration) {
+        SDeclTrait(name, type_params, methods) => gen_trait_struct(codegen_context, name, type_params, methods),
+        _ => ''
       }
       else ''
       end
@@ -189,16 +219,86 @@ export type DeclPartsBundle = DeclPartsBundle {
   fn_defs: [string]
 }
 
+fn exported_type_names_from_decls(decls: [Shared<SDecl>]) -> [string] = do
+  let names: [string] = []
+  let mut index = 0
+  while index < decls.length() do
+    match decls[index] {
+      SDeclExported(inner) => do
+        match sdecl_inner(inner) {
+          SDeclType(type_name, _, _, _) => do names.push(type_name); () end,
+          _ => do () end
+        }
+        ()
+      end,
+      _ => do () end
+    }
+    index = index + 1
+  end
+  names
+end
+
+fn extend_helper_protos_for_exported_types(decls: [Shared<SDecl>], context: CodegenContext) -> [string] = do
+  const exported_types = exported_type_names_from_decls(decls)
+  let mut result: [string] = []
+  let mut index = 0
+  while index < decls.length() do
+    match decls[index] {
+      SDeclExtend(type_name, _, methods) => do
+        if list_contains(exported_types, type_name) then
+          let mut method_index = 0
+          while method_index < methods.length() do
+            const prototype = gen_proto(methods[method_index], context)
+            if prototype.length() > 0 then result.push(prototype) end
+            method_index = method_index + 1
+          end
+        end
+        ()
+      end,
+      _ => do () end
+    }
+    index = index + 1
+  end
+  result
+end
+
+fn extend_method_forward_segments(decls: [Shared<SDecl>], context: CodegenContext) -> [string] = do
+  let mut result: [string] = []
+  let mut index = 0
+  while index < decls.length() do
+    match decls[index] {
+      SDeclExtend(_, _, methods) => do
+        let mut method_index = 0
+        while method_index < methods.length() do
+          const prototype = gen_proto(methods[method_index], context)
+          if prototype.length() > 0 then result.push(prototype) end
+          method_index = method_index + 1
+        end
+        ()
+      end,
+      _ => do () end
+    }
+    index = index + 1
+  end
+  result
+end
+
 export fn collect_all_decl_parts(decls: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundle = do
   let type_fwds: [string] = []
   let type_defs: [string] = []
   let fn_protos: [string] = []
   let fn_defs: [string] = []
+  const extend_forward_segments = extend_method_forward_segments(decls, context)
+  let mut forward_index = 0
+  while forward_index < extend_forward_segments.length() do
+    fn_defs.push(extend_forward_segments[forward_index])
+    forward_index = forward_index + 1
+  end
   let mut declaration_index = 0
   while declaration_index < decls.length() do
     const declaration = decls[declaration_index]
-    const wrapper_segment = extend_wrapper_segment(declaration, context)
-    if wrapper_segment.length() > 0 then type_fwds.push(wrapper_segment) end
+    const extend_forward_segment = extend_cpp_forward_segment(declaration, context)
+    if extend_forward_segment.length() > 0 then fn_defs.push(extend_forward_segment) end
     const forward_segment = decl_segment(declaration, context, 0)
     if forward_segment.length() > 0 then type_fwds.push(forward_segment) end
     const definition_segment = decl_segment(declaration, context, 1)
@@ -207,17 +307,25 @@ export fn collect_all_decl_parts(decls: [Shared<SDecl>], context: CodegenContext
     if prototype_segment.length() > 0 then fn_protos.push(prototype_segment) end
     const definition_body_segment = decl_segment(declaration, context, 3)
     if definition_body_segment.length() > 0 then fn_defs.push(definition_body_segment) end
+    const trait_struct_segment = decl_segment(declaration, context, 4)
+    if trait_struct_segment.length() > 0 then fn_defs.push(trait_struct_segment) end
     declaration_index = declaration_index + 1
+  end
+  const extend_helper_prototypes = extend_helper_protos_for_exported_types(decls, context)
+  let mut helper_index = 0
+  while helper_index < extend_helper_prototypes.length() do
+    fn_protos.push(extend_helper_prototypes[helper_index])
+    helper_index = helper_index + 1
   end
   DeclPartsBundle { type_fwds: type_fwds, type_defs: type_defs, fn_protos: fn_protos, fn_defs: fn_defs }
 end
 
 export fn collect_decl_parts(decls: [Shared<SDecl>], context: CodegenContext, phase: i32) -> [string] = do
-  const wrapper_segments =
-    if phase == 0 then
-      decls.map(declaration => extend_wrapper_segment(declaration, context)).filter(segment => segment.length() > 0)
+  const extend_forward_segments =
+    if phase == 3 then
+      decls.map(declaration => extend_cpp_forward_segment(declaration, context)).filter(segment => segment.length() > 0)
     else []
     end
-  wrapper_segments.concat(
+  extend_forward_segments.concat(
     decls.map(declaration => decl_segment(declaration, context, phase)).filter(segment => segment.length() > 0))
 end

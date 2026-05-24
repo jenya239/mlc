@@ -93,3 +93,30 @@ export fn template_prefix(type_params: [string]) -> string =
 
 export fn include_lines(import_paths: [string]) -> string =
   import_paths.map(path => `#include "${path_to_module_base(path)}.hpp"\n`).join('')
+
+fn is_stdlib_import_path(path: string) -> bool = do
+  if path.length() >= 4 && path.substring(0, 4) == 'std/' then true
+  else do
+    const base = path_to_module_base(path)
+    base == 'Option' || base == 'Result' || base == 'Array' || base == 'String'
+    || base == 'Conv' || base == 'IO' || base == 'File' || base == 'Json'
+    || base == 'Math' || base == 'Graphics'
+  end end
+end
+
+export fn using_namespace_lines(import_paths: [string]) -> string = do
+  let mut lines = ''
+  let mut has_ast = false
+  let mut index = 0
+  while index < import_paths.length() do
+    const path = import_paths[index]
+    const base = path_to_module_base(path)
+    if !is_stdlib_import_path(path) && base.length() > 0 then
+      lines = lines + 'using namespace ' + base + ';\n'
+      if base == 'ast' then has_ast = true end
+    end
+    index = index + 1
+  end
+  if has_ast then lines = lines + 'using namespace ast_tokens;\n' end
+  lines
+end

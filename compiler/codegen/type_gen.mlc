@@ -501,7 +501,15 @@ export fn requires_clause(type_params: [string], type_bounds: [[string]]) -> str
     if i < type_bounds.length() then
       let mut k = 0
       while k < type_bounds[i].length() do
-        parts.push(expression_output.concept_trait_constraint_on_type_parameter(cpp_safe(type_bounds[i][k]), type_params[i]))
+        const bound_trait_name = type_bounds[i][k]
+        if bound_trait_name == 'ExprVisitor' && type_params.length() >= 2 then
+          parts.push(expression_output.concept_trait_constraint_with_result_and_implementor(
+            cpp_safe(bound_trait_name),
+            type_params[0],
+            type_params[i]))
+        else
+          parts.push(expression_output.concept_trait_constraint_on_type_parameter(cpp_safe(bound_trait_name), type_params[i]))
+        end
         k = k + 1
       end
     end

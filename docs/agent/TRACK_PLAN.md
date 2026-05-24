@@ -27,7 +27,7 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрен�
 | 11 | ExprVisitor: if + block arms | done (2026-05-22) |
 | 12 | ExprVisitor: match arm | done (2026-05-22) |
 | 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | done (2026-05-23) |
-| 14 | Self-host diff after visitor migration batch | **blocked** — mlcc trait codegen |
+| 14 | Self-host diff after visitor migration batch | done (2026-05-24) — gen_trait_decl requires + static_assert; mlcc2 diff p1/p2 identical |
 | 15 | Parser `ref mut` | deferred (separate branch) |
 
 ## Backlog (Planner maintains)
@@ -66,15 +66,17 @@ Source: PLAN.md «Visitor pattern», «Порядок внедрения» items
 
 - Remaining arms: field/index/while/for/record/array/tuple/question/lambda/with/extern via visitor; string visitor tests for array and record; 485 tests; `dispatch_expr` still partial (record+ → unsupported)
 
-## Step 14 detail (blocked)
+## Step 14 detail (done — 14-fix-d)
 
-- `compiler/build.sh` OK; mlcc→p1 OK (~0.8s); **g++ mlcc2 FAIL** — `expr_visitor.hpp` invalid (generic `export trait` garbled by mlcc codegen; Ruby output OK)
-- mlcc two-run diff: **identical** (deterministic)
-- Blocker logged: mlc-memory `known_limitations`
+- **14-fix:** self-hosted parser `export trait` in `parser/decls.mlc`
+- **14-fix-b:** impl `#include` + `using namespace`; extend helper protos + cpp forwards
+- **14-fix-c:** vtable `{Trait}_vtable` in cpp phase 4 — no concept clash in hpp
+- **14-fix-d:** `gen_trait_decl` requires use prefixed `ExprVisitor_visit_*` + real return types; `trait_concept_adapters`; `static_assert(ExprVisitor<mlc::String, StringExprVisitor>)` in `expr_visitor_string.cpp`
+- **verify:** g++ mlcc2 (+ `runtime/src/core/profile.cpp`); `diff -rq mlc_p1 mlc_p2` empty
 
 ## Next step (Driver)
 
-Step **14-fix** — mlcc codegen for `export trait` (ExprVisitor) or self-host workaround. Re-run mlcc→mlcc2 diff.
+Step **14-commit** — commit visitor migration batch (uncommitted >15 files); user command required
 
 ## Planner checklist
 

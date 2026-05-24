@@ -186,13 +186,25 @@ mlc::String bootstrap_host_main_calling_namespaced_user_main(mlc::String qualifi
 
 mlc::String cpp_template_typename_header_line(mlc::String template_parameter_list) noexcept;
 
-mlc::String concept_requires_expression_method_returns_convertible(mlc::String method_name, mlc::String destination_type_cpp) noexcept;
+mlc::String std_declval_expression(mlc::String type_cpp) noexcept;
+
+mlc::String concept_requires_expression_method_returns_convertible(mlc::String callee_name, mlc::String declval_arguments_csv, mlc::String destination_type_cpp) noexcept;
 
 mlc::String trait_concept_requires_definition_line(mlc::String template_header, mlc::String trait_cpp_safe, mlc::String self_parameter_name, mlc::String requires_expressions_semicolon_separated) noexcept;
+
+mlc::String concept_trait_constraint_with_result_and_implementor(mlc::String trait_name_cpp_safe, mlc::String result_type_parameter_name, mlc::String implementor_type_parameter_name) noexcept;
+
+mlc::String std_function_field_line(mlc::String return_type_cpp, mlc::String parameter_types_csv, mlc::String method_name_cpp_safe) noexcept;
+
+mlc::String trait_vtable_struct_cpp_name(mlc::String trait_cpp_safe) noexcept;
+
+mlc::String trait_struct_definition_lines(mlc::String template_header, mlc::String vtable_struct_cpp_name, mlc::String field_lines) noexcept;
 
 mlc::String user_main_arguments_copy_into_runtime_statement() noexcept;
 
 mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept;
+
+mlc::String static_assert_concept_for_result_and_implementor_line(mlc::String concept_cpp_safe, mlc::String result_type_cpp, mlc::String implementor_type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept;
 
 mlc::String with_block_statement(mlc::String resource_code, mlc::String binder, mlc::String body_statements) noexcept;
 
@@ -380,13 +392,25 @@ mlc::String bootstrap_host_main_calling_namespaced_user_main(mlc::String qualifi
 
 mlc::String cpp_template_typename_header_line(mlc::String template_parameter_list) noexcept{return mlc::String("template<typename ") + template_parameter_list + mlc::String(">\n");}
 
-mlc::String concept_requires_expression_method_returns_convertible(mlc::String method_name, mlc::String destination_type_cpp) noexcept{return mlc::String("{ ") + method_name + mlc::String("(self) } -> std::convertible_to<") + destination_type_cpp + mlc::String(">");}
+mlc::String std_declval_expression(mlc::String type_cpp) noexcept{return mlc::String("std::declval<") + type_cpp + mlc::String(">()");}
+
+mlc::String concept_requires_expression_method_returns_convertible(mlc::String callee_name, mlc::String declval_arguments_csv, mlc::String destination_type_cpp) noexcept{return declval_arguments_csv.length() > 0 ? mlc::String("{ ") + callee_name + mlc::String("(self, ") + declval_arguments_csv + mlc::String(") } -> std::convertible_to<") + destination_type_cpp + mlc::String(">") : mlc::String("{ ") + callee_name + mlc::String("(self) } -> std::convertible_to<") + destination_type_cpp + mlc::String(">");}
 
 mlc::String trait_concept_requires_definition_line(mlc::String template_header, mlc::String trait_cpp_safe, mlc::String self_parameter_name, mlc::String requires_expressions_semicolon_separated) noexcept{return template_header + mlc::String("concept ") + trait_cpp_safe + mlc::String(" = requires(const ") + self_parameter_name + mlc::String("& self) { ") + requires_expressions_semicolon_separated + mlc::String("; };\n");}
+
+mlc::String concept_trait_constraint_with_result_and_implementor(mlc::String trait_name_cpp_safe, mlc::String result_type_parameter_name, mlc::String implementor_type_parameter_name) noexcept{return trait_name_cpp_safe + mlc::String("<") + result_type_parameter_name + mlc::String(", ") + implementor_type_parameter_name + mlc::String(">");}
+
+mlc::String std_function_field_line(mlc::String return_type_cpp, mlc::String parameter_types_csv, mlc::String method_name_cpp_safe) noexcept{return mlc::String("  std::function<") + return_type_cpp + mlc::String("(") + parameter_types_csv + mlc::String(")> ") + method_name_cpp_safe + mlc::String(";\n");}
+
+mlc::String trait_vtable_struct_cpp_name(mlc::String trait_cpp_safe) noexcept{return trait_cpp_safe + mlc::String("_vtable");}
+
+mlc::String trait_struct_definition_lines(mlc::String template_header, mlc::String vtable_struct_cpp_name, mlc::String field_lines) noexcept{return template_header + mlc::String("struct ") + vtable_struct_cpp_name + mlc::String(" {\n") + field_lines + mlc::String("};\n");}
 
 mlc::String user_main_arguments_copy_into_runtime_statement() noexcept{return mlc::String("mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n");}
 
 mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept{return mlc::String("static_assert(") + concept_cpp_safe + mlc::String("<") + type_cpp + mlc::String(">, \"") + diagnostic_message_inside_cpp_string_literal + mlc::String("\");\n");}
+
+mlc::String static_assert_concept_for_result_and_implementor_line(mlc::String concept_cpp_safe, mlc::String result_type_cpp, mlc::String implementor_type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept{return mlc::String("static_assert(") + concept_cpp_safe + mlc::String("<") + result_type_cpp + mlc::String(", ") + implementor_type_cpp + mlc::String(">, \"") + diagnostic_message_inside_cpp_string_literal + mlc::String("\");\n");}
 
 mlc::String with_block_statement(mlc::String resource_code, mlc::String binder, mlc::String body_statements) noexcept{return mlc::String("{\nauto ") + binder + mlc::String(" = (") + resource_code + mlc::String(");\n") + body_statements + binder + mlc::String(".drop();\n}\n");}
 

@@ -23,7 +23,7 @@ if ! (cd "$ROOT/compiler" && "$BIN" main.mlc -o "$BS" >>"$LOG" 2>&1); then
   exit 125
 fi
 RT_INC="$ROOT/runtime/include"
-RT_CPP="$ROOT/runtime/src/core/string.cpp $ROOT/runtime/src/io/io.cpp"
+RT_CPP="$ROOT/runtime/src/core/string.cpp $ROOT/runtime/src/core/profile.cpp $ROOT/runtime/src/io/io.cpp"
 OBJ_DIR="$BS/obj"
 mkdir -p "$OBJ_DIR"
 if (

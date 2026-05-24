@@ -8,7 +8,6 @@
 #include "expression_support.hpp"
 #include "type_gen.hpp"
 #include "literals.hpp"
-#include "statement_context.hpp"
 #include "expr.hpp"
 
 namespace stmt_eval {
@@ -21,7 +20,6 @@ using namespace cpp_naming;
 using namespace expression_support;
 using namespace type_gen;
 using namespace literals;
-using namespace statement_context;
 using namespace expr;
 
 struct StmtsFoldState {context::GenStmtsResult partial_result;context::CodegenContext codegen_context;};
@@ -44,7 +42,9 @@ context::GenStmtResult eval_stmt_with_try(std::shared_ptr<semantic_ir::SStmt> st
 
 stmt_eval::StmtsFoldState stmts_fold_step(stmt_eval::StmtsFoldState fold_state, std::shared_ptr<semantic_ir::SStmt> statement, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
 
-context::GenStmtsResult eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
+context::GenStmtsWithContext eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+context::GenStmtsWithContext StmtsFoldState_to_gen_stmts_with_context(stmt_eval::StmtsFoldState self) noexcept;
 
 mlc::String eval_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept;
 
@@ -72,8 +72,9 @@ mlc::String eval_stmt_if_nested(std::shared_ptr<semantic_ir::SExpr> if_expressio
  }(); } return expr::if_always_true_block(eval_block_body(if_expression, context, gen_expr_fn)); }();}
 
 mlc::String eval_block_body(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprBlock>((*expr)._)) { auto _v_sexprblock = std::get<semantic_ir::SExprBlock>((*expr)._); auto [statements, result_expr, _w0, _w1] = _v_sexprblock; return [&]() -> mlc::String { 
-  mlc::String statements_code = eval_stmts_str(statements, context, gen_expr_fn);
-  context::CodegenContext final_context = statement_context::stmts_final_ctx(statements, context);
+  context::GenStmtsWithContext statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn);
+  mlc::String statements_code = context::GenStmtsResult_joined_code(statements_with_context.partial_result);
+  context::CodegenContext final_context = statements_with_context.codegen_context;
   return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIf>((*result_expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*result_expr)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return statements_code + eval_stmt_if_nested(result_expr, final_context, gen_expr_fn); } if (std::holds_alternative<semantic_ir::SExprUnit>((*result_expr)._)) { auto _v_sexprunit = std::get<semantic_ir::SExprUnit>((*result_expr)._); auto [_w0, _w1] = _v_sexprunit; return statements_code; } return [&]() -> mlc::String { 
   mlc::String result_code = gen_expr_fn(result_expr, final_context);
   return result_code == literals::gen_unit_literal() ? statements_code : expr::append_trailing_expression_statement(statements_code, result_code);
@@ -81,8 +82,9 @@ mlc::String eval_block_body(std::shared_ptr<semantic_ir::SExpr> expr, context::C
  }(); } if (std::holds_alternative<semantic_ir::SExprIf>((*expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expr)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return eval_stmt_if_nested(expr, context, gen_expr_fn); } return expr::suffix_semicolon_newline(gen_expr_fn(expr, context)); }();}
 
 mlc::String eval_stmt_expr(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprBin>((*expression)._)) { auto _v_sexprbin = std::get<semantic_ir::SExprBin>((*expression)._); auto [operation, left_expr, right_expr, _w0, _w1] = _v_sexprbin; return operation == mlc::String("=") ? expr::assignment_statement(gen_expr_fn(left_expr, context), gen_expr_fn(right_expr, context)) : expr::expression_operation_statement(operation, gen_expr_fn(left_expr, context), gen_expr_fn(right_expr, context)); } if (std::holds_alternative<semantic_ir::SExprIf>((*expression)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expression)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return eval_stmt_if_nested(expression, context, gen_expr_fn); } if (std::holds_alternative<semantic_ir::SExprWhile>((*expression)._)) { auto _v_sexprwhile = std::get<semantic_ir::SExprWhile>((*expression)._); auto [condition, statements, _w0, _w1] = _v_sexprwhile; return expr::while_loop_statement(gen_expr_fn(condition, context), eval_stmts_str(statements, context, gen_expr_fn)); } if (std::holds_alternative<semantic_ir::SExprFor>((*expression)._)) { auto _v_sexprfor = std::get<semantic_ir::SExprFor>((*expression)._); auto [variable, iterator, statements, _w0, _w1] = _v_sexprfor; return expr::for_loop_statement(cpp_naming::cpp_safe(variable), gen_expr_fn(iterator, context), eval_stmts_str(statements, context, gen_expr_fn)); } if (std::holds_alternative<semantic_ir::SExprWith>((*expression)._)) { auto _v_sexprwith = std::get<semantic_ir::SExprWith>((*expression)._); auto [resource, binder, stmts, _w0, _w1] = _v_sexprwith; return expr::with_block_statement(gen_expr_fn(resource, context), cpp_naming::cpp_safe(binder), eval_stmts_str(stmts, context, gen_expr_fn)); } if (std::holds_alternative<semantic_ir::SExprBlock>((*expression)._)) { auto _v_sexprblock = std::get<semantic_ir::SExprBlock>((*expression)._); auto [statements, result_expr, _w0, _w1] = _v_sexprblock; return [&]() -> mlc::String { 
-  mlc::String statements_code = eval_stmts_str(statements, context, gen_expr_fn);
-  mlc::String result_code = gen_expr_fn(result_expr, statement_context::stmts_final_ctx(statements, context));
+  context::GenStmtsWithContext statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn);
+  mlc::String statements_code = context::GenStmtsResult_joined_code(statements_with_context.partial_result);
+  mlc::String result_code = gen_expr_fn(result_expr, statements_with_context.codegen_context);
   return result_code == literals::gen_unit_literal() ? statements_code : expr::append_trailing_expression_statement(statements_code, result_code);
  }(); } return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); }();}
 
@@ -123,11 +125,10 @@ context::GenStmtResult statement_result = eval_stmt_with_try(statement, fold_sta
 return stmt_eval::StmtsFoldState{context::GenStmtsResult_append_stmt(fold_state.partial_result, statement_result), context::update_context_from_statement(statement, fold_state.codegen_context)};
 }
 
-context::GenStmtsResult eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return statements.fold(stmt_eval::StmtsFoldState{context::GenStmtsResult{mlc::String(""), try_counter}, context}, [gen_expr_fn](stmt_eval::StmtsFoldState fold_state, std::shared_ptr<semantic_ir::SStmt> statement) mutable { return stmts_fold_step(fold_state, statement, gen_expr_fn); }).partial_result;}
+context::GenStmtsWithContext eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return StmtsFoldState_to_gen_stmts_with_context(statements.fold(stmt_eval::StmtsFoldState{context::GenStmtsResult{{}, try_counter}, context}, [gen_expr_fn](stmt_eval::StmtsFoldState fold_state, std::shared_ptr<semantic_ir::SStmt> statement) mutable { return stmts_fold_step(fold_state, statement, gen_expr_fn); }));}
 
-mlc::String eval_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{
-context::GenStmtsResult result = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn);
-return result.code;
-}
+context::GenStmtsWithContext StmtsFoldState_to_gen_stmts_with_context(stmt_eval::StmtsFoldState self) noexcept{return context::GenStmtsWithContext{self.partial_result, self.codegen_context};}
+
+mlc::String eval_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext)> gen_expr_fn) noexcept{return context::GenStmtsResult_joined_code(eval_stmts_str_with_try(statements, context, 0, gen_expr_fn).partial_result);}
 
 } // namespace stmt_eval

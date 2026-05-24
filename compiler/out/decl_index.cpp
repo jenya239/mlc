@@ -21,6 +21,8 @@ bool list_contains(mlc::Array<mlc::String> list, mlc::String item) noexcept;
 
 mlc::Array<mlc::String> lookup_fields(mlc::Array<std::shared_ptr<decl_index::FieldOrder>> orders, mlc::String name) noexcept;
 
+mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_field_order_index(mlc::Array<std::shared_ptr<decl_index::FieldOrder>> orders) noexcept;
+
 mlc::HashMap<mlc::String, std::shared_ptr<decl_index::LoadItem>> build_item_index(mlc::Array<decl_index::LoadItem> all_items) noexcept;
 
 mlc::Array<mlc::String> decl_export_names(std::shared_ptr<ast::Decl> decl) noexcept{
@@ -197,6 +199,18 @@ i = i + 1;
 }
 }
 return result;
+}
+
+mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_field_order_index(mlc::Array<std::shared_ptr<decl_index::FieldOrder>> orders) noexcept{
+mlc::HashMap<mlc::String, mlc::Array<mlc::String>> index = mlc::HashMap<mlc::String, mlc::Array<mlc::String>>();
+int order_index = 0;
+while (order_index < orders.size()){
+{
+index.set(orders[order_index]->type_name, orders[order_index]->fields);
+order_index = order_index + 1;
+}
+}
+return index;
 }
 
 mlc::HashMap<mlc::String, std::shared_ptr<decl_index::LoadItem>> build_item_index(mlc::Array<decl_index::LoadItem> all_items) noexcept{

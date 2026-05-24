@@ -6,7 +6,6 @@
 
 #include "semantic_ir.hpp"
 #include "context.hpp"
-#include "statement_context.hpp"
 #include "expr.hpp"
 #include "eval.hpp"
 

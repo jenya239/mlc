@@ -55,13 +55,13 @@ mlc::String gen_record_update_lazy(std::shared_ptr<semantic_ir::SExpr> base_expr
 
 mlc::String gen_record_expr(mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, std::shared_ptr<registry::Type> expr_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> eval_expr_fn) noexcept{
 mlc::String cpp_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TGeneric>((*expr_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*expr_type)); auto [_w0, _w1] = _v_tgeneric; return type_gen::sem_type_to_cpp(context, expr_type); } return context::CodegenContext_resolve(context, type_name); }();
-mlc::Array<mlc::String> field_order = decl_index::lookup_fields(context.field_orders, type_name);
+mlc::Array<mlc::String> field_order = context::lookup_fields_for_context(context, type_name);
 mlc::String values_code = field_order.size() > 0 ? gen_record_ordered(field_values, field_order, context, gen_stmts, eval_expr_fn) : gen_record_unordered(field_values, context, gen_stmts, eval_expr_fn);
 return expr::record_initializer(cpp_name, values_code);
 }
 
 mlc::String gen_record_update_expr(mlc::String type_name, std::shared_ptr<semantic_ir::SExpr> base_expr, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> overrides, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> eval_expr_fn) noexcept{
-mlc::Array<mlc::String> field_order = decl_index::lookup_fields(context.field_orders, type_name);
+mlc::Array<mlc::String> field_order = context::lookup_fields_for_context(context, type_name);
 return field_order.size() > 0 ? expr::record_initializer(context::CodegenContext_resolve(context, type_name), gen_record_update_ordered(base_expr, overrides, field_order, context, gen_stmts, eval_expr_fn)) : gen_record_update_lazy(base_expr, overrides, context, gen_stmts, eval_expr_fn);
 }
 

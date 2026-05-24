@@ -51,6 +51,8 @@ preds::DeclResult parse_extend_extern_method(preds::Parser parser, mlc::String t
 
 preds::DeclResult parse_extend_method(preds::Parser parser, mlc::String type_name) noexcept;
 
+preds::DeclResult parse_trait_decl(preds::Parser parser) noexcept;
+
 preds::DeclResult parse_decl(preds::Parser parser) noexcept;
 
 preds::DeclResult parse_fn_decl(preds::Parser parser) noexcept;
@@ -483,12 +485,20 @@ preds::ExprResult body_result = preds::TKind_is_extern(preds::Parser_kind(after_
 return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mangled_name, {}, {}, params, ret_type_result.type_expr, body_result.expr, {})), body_result.parser};
 }
 
+preds::DeclResult parse_trait_decl(preds::Parser parser) noexcept{
+preds::Parser after_trait = preds::Parser_advance(parser);
+mlc::String trait_name = preds::TKind_ident(preds::Parser_kind(after_trait));
+preds::TypeParamsResult type_params_res = parse_type_params_opt(preds::Parser_advance(after_trait));
+preds::TraitBodyResult trait_result = parse_trait_body(preds::Parser_advance(type_params_res.parser), trait_name, type_params_res.params);
+return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclTrait(trait_name, type_params_res.params, trait_result.methods)), trait_result.parser};
+}
+
 preds::DeclResult parse_decl(preds::Parser parser) noexcept{
 ast_tokens::TKind kind = preds::Parser_kind(parser);
 return preds::TKind_is_ident(kind) && preds::TKind_ident(kind) == mlc::String("export") ? [&]() -> preds::DeclResult { 
   preds::DeclResult inner = parse_decl(preds::Parser_advance(parser));
   return preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclExported(inner.decl)), inner.parser};
- }() : preds::TKind_is_fn(kind) || preds::TKind_is_extern(kind) && preds::TKind_is_fn(preds::Parser_kind(preds::Parser_advance(parser))) ? parse_fn_decl(parser) : preds::TKind_is_type(kind) ? parse_type_decl(preds::Parser_advance(parser)) : preds::TKind_is_extend(kind) ? parse_extend_decl(preds::Parser_advance(parser)) : preds::TKind_is_import(kind) ? parse_import_decl(preds::Parser_advance(parser)) : preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mlc::String("__skip__"), {}, {}, {}, std::make_shared<ast::TypeExpr>((ast::TyUnit{})), std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())), {})), preds::Parser_advance(parser)};
+ }() : preds::TKind_is_ident(kind) && preds::TKind_ident(kind) == mlc::String("trait") ? parse_trait_decl(parser) : preds::TKind_is_fn(kind) || preds::TKind_is_extern(kind) && preds::TKind_is_fn(preds::Parser_kind(preds::Parser_advance(parser))) ? parse_fn_decl(parser) : preds::TKind_is_type(kind) ? parse_type_decl(preds::Parser_advance(parser)) : preds::TKind_is_extend(kind) ? parse_extend_decl(preds::Parser_advance(parser)) : preds::TKind_is_import(kind) ? parse_import_decl(preds::Parser_advance(parser)) : preds::DeclResult{std::make_shared<ast::Decl>(ast::DeclFn(mlc::String("__skip__"), {}, {}, {}, std::make_shared<ast::TypeExpr>((ast::TyUnit{})), std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())), {})), preds::Parser_advance(parser)};
 }
 
 preds::DeclResult parse_fn_decl(preds::Parser parser) noexcept{
@@ -671,7 +681,7 @@ return preds::TKind_is_lbrace(preds::Parser_kind(state)) ? [&]() -> preds::DeclR
  }();
 }
 
-bool is_decl_start(ast_tokens::TKind kind) noexcept{return preds::TKind_is_type(kind) || preds::TKind_is_fn(kind) || preds::TKind_is_extend(kind) || preds::TKind_is_import(kind) || preds::TKind_is_ident(kind) && preds::TKind_ident(kind) == mlc::String("export") || preds::TKind_ident(kind) == mlc::String("type") || preds::TKind_ident(kind) == mlc::String("fn") || preds::TKind_ident(kind) == mlc::String("extend") || preds::TKind_ident(kind) == mlc::String("import");}
+bool is_decl_start(ast_tokens::TKind kind) noexcept{return preds::TKind_is_type(kind) || preds::TKind_is_fn(kind) || preds::TKind_is_extend(kind) || preds::TKind_is_import(kind) || preds::TKind_is_ident(kind) && preds::TKind_ident(kind) == mlc::String("export") || preds::TKind_ident(kind) == mlc::String("trait") || preds::TKind_ident(kind) == mlc::String("type") || preds::TKind_ident(kind) == mlc::String("fn") || preds::TKind_ident(kind) == mlc::String("extend") || preds::TKind_ident(kind) == mlc::String("import");}
 
 bool parse_variants_continue(preds::Parser state) noexcept{return preds::Parser_at_eof(state) ? false : is_decl_start(preds::Parser_kind(state)) ? false : preds::TKind_is_ident(preds::Parser_kind(state)) && preds::TKind_ident(preds::Parser_kind(state)) == mlc::String("derive") ? false : preds::TKind_is_bar(preds::Parser_kind(state)) || preds::TKind_is_ident(preds::Parser_kind(state));}
 

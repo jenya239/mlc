@@ -2,9 +2,9 @@
 
 | File | Purpose |
 |------|---------|
-| [CONTINUITY.md](CONTINUITY.md) | **Required** — `AGENT_TOKEN`, token-only MCP queue (`cursor_enqueue_send`) |
+| [CONTINUITY.md](CONTINUITY.md) | **Required** — roles (Driver/Planner/Backlog), `INSTRUCTIONS_REV`, limits |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | How to work on mlc/mlcc after continuity block |
-| [TRACK_OPTIMIZATION.md](TRACK_OPTIMIZATION.md) | Current optimization track — status and next steps |
+| [TRACK_PLAN.md](TRACK_PLAN.md) | Active roadmap track (PLAN.md) |
 | [SESSION.md](SESSION.md) | Running session metrics (messages, timings, queue events) |
 
 Main product plan: [../PLAN.md](../PLAN.md)

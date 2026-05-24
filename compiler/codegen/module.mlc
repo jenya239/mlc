@@ -13,7 +13,7 @@ import { CodegenContext, PrecomputedCtx, GenModuleOut,
          build_method_owners_from_decls } from './context'
 import { SDecl } from '../semantic_ir'
 import { sem_type_to_cpp } from './type_gen'
-import { cpp_safe, include_lines, path_to_module_base } from './cpp_naming'
+import { cpp_safe, include_lines, using_namespace_lines, path_to_module_base } from './cpp_naming'
 import { collect_all_decl_parts, decls_have_main } from './decl'
 import * as expression_output from './expr'
 
@@ -152,12 +152,18 @@ export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Progra
   const cli_wrapper = if is_entry then
     expression_output.bootstrap_host_main_calling_namespaced_user_main(module_namespace)
     else '' end
+  const implementation_import_includes = include_lines(s_item.imports)
+  const implementation_using_namespaces = using_namespace_lines(s_item.imports)
   const impl = [
     expression_output.implementation_define_main_as_user_main_line(),
     expression_output.implementation_include_quotefile_line(base + '.hpp'),
     "\n",
+    implementation_import_includes,
+    if implementation_import_includes.length() > 0 then "\n" else '' end,
     expression_output.namespace_open_line(module_namespace),
     "\n",
+    implementation_using_namespaces,
+    if implementation_using_namespaces.length() > 0 then "\n" else '' end,
     fn_defs.join(''),
     "\n",
     expression_output.namespace_close_comment_line(module_namespace),

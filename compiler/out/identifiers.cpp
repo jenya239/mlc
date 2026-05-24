@@ -1,11 +1,13 @@
 #include "identifiers.hpp"
 
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "cpp_naming.hpp"
 
 namespace identifiers {
 
 using namespace context;
+using namespace decl_index;
 using namespace cpp_naming;
 
 mlc::String resolve_identifier_in_self_context(mlc::String name, context::CodegenContext context) noexcept;
@@ -13,7 +15,7 @@ mlc::String resolve_identifier_in_self_context(mlc::String name, context::Codege
 mlc::String gen_identifier(mlc::String name, context::CodegenContext context) noexcept;
 
 mlc::String resolve_identifier_in_self_context(mlc::String name, context::CodegenContext context) noexcept{
-mlc::Array<mlc::String> self_fields = decl_index::lookup_fields(context.field_orders, context.self_type);
+mlc::Array<mlc::String> self_fields = context::lookup_fields_for_context(context, context.self_type);
 bool is_known_field = name == mlc::String("errors") || name == mlc::String("kind") || name == mlc::String("tokens") || name == mlc::String("line") || name == mlc::String("col") || name == mlc::String("inferred_type") || name == mlc::String("type_env");
 return decl_index::list_contains(self_fields, name) || is_known_field ? mlc::String("self.") + cpp_naming::cpp_safe(name) : [&]() -> mlc::String { 
   mlc::String mapped = cpp_naming::map_builtin_identifier_reference(name);

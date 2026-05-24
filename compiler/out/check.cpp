@@ -249,6 +249,7 @@ names.set(mlc::String("print"), true);
 names.set(mlc::String("println"), true);
 names.set(mlc::String("args"), true);
 names.set(mlc::String("File"), true);
+names.set(mlc::String("Profile"), true);
 names.set(mlc::String("Shared"), true);
 names.set(mlc::String("Map"), true);
 names.set(mlc::String("Ok"), true);

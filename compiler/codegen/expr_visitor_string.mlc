@@ -5,7 +5,7 @@ import { SExpr, SStmt, sexpr_type, SExprArray, SMatchArm, SFieldVal } from '../s
 import { TNamed, TArray, TFn } from '../checker/registry'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from '../checker/semantic_type_structure'
 import { ExprVisitor } from '../expr_visitor'
-import { CodegenContext } from './context'
+import { CodegenContext, qualify_function_callee } from './context'
 import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal, gen_extern_placeholder } from './literals'
 import { gen_identifier } from './identifiers'
 import { cpp_safe, map_builtin } from './cpp_naming'
@@ -66,7 +66,7 @@ fn gen_call_function_code(
   evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string =
   match function_expression {
-    SExprIdent(name, _, _) => context.resolve(map_builtin(name)),
+    SExprIdent(name, _, _) => qualify_function_callee(map_builtin(name), context),
     _ => evaluate_expression(function_expression, context, gen_stmts)
   }
 

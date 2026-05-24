@@ -4,6 +4,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "cpp_naming.hpp"
 
 namespace match_analysis {
@@ -12,6 +13,7 @@ using namespace ast;
 using namespace semantic_ir;
 using namespace registry;
 using namespace context;
+using namespace decl_index;
 using namespace cpp_naming;
 using namespace ast_tokens;
 

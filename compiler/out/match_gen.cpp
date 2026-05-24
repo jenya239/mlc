@@ -3,6 +3,7 @@
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "cpp_naming.hpp"
 #include "match_analysis.hpp"
 #include "expr.hpp"
@@ -15,6 +16,7 @@ namespace match_gen {
 using namespace ast;
 using namespace semantic_ir;
 using namespace context;
+using namespace decl_index;
 using namespace cpp_naming;
 using namespace match_analysis;
 using namespace expr;
@@ -72,7 +74,7 @@ match_gen::RecordFieldBindAccum record_field_bind_step(match_gen::RecordFieldBin
 match_gen::RecordFieldBindAccum record_pattern_field_bindings_and_context(mlc::Array<std::shared_ptr<ast::Pat>> field_patterns, mlc::String lower_name, context::CodegenContext start_context) noexcept{return field_patterns.fold(match_gen::RecordFieldBindAccum{mlc::String(""), start_context}, [lower_name](match_gen::RecordFieldBindAccum accumulated, std::shared_ptr<ast::Pat> field_pattern) mutable { return record_field_bind_step(accumulated, field_pattern, lower_name); });}
 
 context::CodegenContext codegen_context_with_ctor_field_bindings(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::Pat>> sub_patterns, context::CodegenContext base_context) noexcept{
-std::shared_ptr<ctor_info::CtorTypeInfo> ctor_type_information = ctor_info::lookup_ctor_type_info(base_context.ctor_type_infos, constructor_name);
+std::shared_ptr<ctor_info::CtorTypeInfo> ctor_type_information = context::lookup_ctor_type_info_for_context(base_context, constructor_name);
 context::CodegenContext arm_context = std::move(base_context);
 int pattern_index = 0;
 while (pattern_index < sub_patterns.size()){

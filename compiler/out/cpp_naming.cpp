@@ -22,6 +22,10 @@ mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept;
 
 mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept;
 
+bool is_stdlib_import_path(mlc::String path) noexcept;
+
+mlc::String using_namespace_lines(mlc::Array<mlc::String> import_paths) noexcept;
+
 mlc::String path_to_module_base(mlc::String path) noexcept{
 int last_slash = -1;
 int last_dot = path.length();
@@ -101,5 +105,39 @@ return parts.join(mlc::String(""));
 mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept{return type_params.size() > 0 ? mlc::String("template<typename ") + type_params.join(mlc::String(", typename ")) + mlc::String(">\n") : mlc::String("");}
 
 mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept{return import_paths.map([](mlc::String path) mutable { return mlc::String("#include \"") + path_to_module_base(path) + mlc::String(".hpp\"\n"); }).join(mlc::String(""));}
+
+bool is_stdlib_import_path(mlc::String path) noexcept{
+return path.length() >= 4 && path.substring(0, 4) == mlc::String("std/") ? true : [&]() -> bool { 
+  mlc::String base = path_to_module_base(path);
+  return base == mlc::String("Option") || base == mlc::String("Result") || base == mlc::String("Array") || base == mlc::String("String") || base == mlc::String("Conv") || base == mlc::String("IO") || base == mlc::String("File") || base == mlc::String("Json") || base == mlc::String("Math") || base == mlc::String("Graphics");
+ }();
+}
+
+mlc::String using_namespace_lines(mlc::Array<mlc::String> import_paths) noexcept{
+mlc::String lines = mlc::String("");
+bool has_ast = false;
+int index = 0;
+while (index < import_paths.size()){
+{
+mlc::String path = import_paths[index];
+mlc::String base = path_to_module_base(path);
+if (!is_stdlib_import_path(path) && base.length() > 0){
+{
+lines = lines + mlc::String("using namespace ") + base + mlc::String(";\n");
+if (base == mlc::String("ast")){
+has_ast = true;
+}
+}
+}
+index = index + 1;
+}
+}
+if (has_ast){
+{
+lines = lines + mlc::String("using namespace ast_tokens;\n");
+}
+}
+return lines;
+}
 
 } // namespace cpp_naming

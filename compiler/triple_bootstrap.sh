@@ -16,7 +16,7 @@ ROOT_DIR="$(cd "$COMPILER_DIR/.." && pwd)"
 MLCC="${1:-$COMPILER_DIR/out/mlcc}"
 WORK_DIR="${2:-/tmp/mlc_triple_$$}"
 RT_INC="$ROOT_DIR/runtime/include"
-RT_SRC="$ROOT_DIR/runtime/src/io/io.cpp $ROOT_DIR/runtime/src/core/string.cpp"
+RT_SRC="$ROOT_DIR/runtime/src/io/io.cpp $ROOT_DIR/runtime/src/core/string.cpp $ROOT_DIR/runtime/src/core/profile.cpp"
 ENTRY="$COMPILER_DIR/main.mlc"
 CXX_FLAGS="-std=c++20 -I $RT_INC"
 

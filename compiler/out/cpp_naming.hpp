@@ -32,6 +32,8 @@ mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept;
 
 mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept;
 
+mlc::String using_namespace_lines(mlc::Array<mlc::String> import_paths) noexcept;
+
 } // namespace cpp_naming
 
 #endif // CPP_NAMING_HPP

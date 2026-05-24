@@ -21,8 +21,6 @@ void each_program_declaration_depth_first(ast::Program program, std::function<vo
 
 mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept;
 
-void fill_trait_and_nominal_maps(ast::Program program, mlc::HashMap<mlc::String, bool> trait_names, mlc::HashMap<mlc::String, bool> nominal_type_names) noexcept;
-
 mlc::Array<mlc::Array<mlc::String>> align_trait_bounds_matrix(mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows) noexcept;
 
 trait_param_expand::TraitExpandChunk expand_type_expression_under_array_or_shared_wrapper(std::shared_ptr<ast::TypeExpr> inner_type_expression_under_wrapper, mlc::HashMap<mlc::String, bool> explicit_type_parameter_environment, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names, int synthetic_counter, bool output_outer_is_shared_pointer_type) noexcept;
@@ -36,6 +34,10 @@ mlc::Array<std::shared_ptr<ast::Decl>> expand_extend_methods(mlc::Array<std::sha
 std::shared_ptr<ast::Decl> expand_decl_shared(std::shared_ptr<ast::Decl> declaration, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept;
 
 mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_and_nominal_maps(mlc::Array<std::shared_ptr<ast::Decl>> declarations, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept;
+
+trait_param_expand::TraitNominalMaps build_trait_nominal_maps(ast::Program program) noexcept;
+
+mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_nominal_maps(mlc::Array<std::shared_ptr<ast::Decl>> declarations, trait_param_expand::TraitNominalMaps maps) noexcept;
 
 mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_context(mlc::Array<std::shared_ptr<ast::Decl>> declarations, ast::Program program_for_maps) noexcept;
 
@@ -75,14 +77,6 @@ conflicts.push_back(ast::diagnostic_error(mlc::String("the name \"") + trait_nam
  }(); } return std::make_tuple(); }(); });
 return conflicts;
 }
-
-void fill_trait_and_nominal_maps(ast::Program program, mlc::HashMap<mlc::String, bool> trait_names, mlc::HashMap<mlc::String, bool> nominal_type_names) noexcept{return each_program_declaration_depth_first(program, [&nominal_type_names, &trait_names](std::shared_ptr<ast::Decl> current_declaration) mutable { return [&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltype; return [&]() -> std::tuple<> { 
-  nominal_type_names.set(type_name, true);
-  return std::make_tuple();
- }(); } if (std::holds_alternative<ast::DeclTrait>((*current_declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*current_declaration)); auto [trait_name, _w0, _w1] = _v_decltrait; return [&]() -> std::tuple<> { 
-  trait_names.set(trait_name, true);
-  return std::make_tuple();
- }(); } return std::make_tuple(); }(); });}
 
 mlc::Array<mlc::Array<mlc::String>> align_trait_bounds_matrix(mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows) noexcept{
 mlc::Array<mlc::Array<mlc::String>> copied_trait_bound_rows = trait_bounds_rows.concat({});
@@ -147,12 +141,22 @@ std::shared_ptr<ast::Decl> expand_decl_shared(std::shared_ptr<ast::Decl> declara
 
 mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_and_nominal_maps(mlc::Array<std::shared_ptr<ast::Decl>> declarations, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept{return declarations.map([trait_declaration_names, nominal_type_declaration_names](std::shared_ptr<ast::Decl> declaration_under_expansion_candidate) mutable { return expand_decl_shared(declaration_under_expansion_candidate, trait_declaration_names, nominal_type_declaration_names); });}
 
-mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_context(mlc::Array<std::shared_ptr<ast::Decl>> declarations, ast::Program program_for_maps) noexcept{
+trait_param_expand::TraitNominalMaps build_trait_nominal_maps(ast::Program program) noexcept{
 mlc::HashMap<mlc::String, bool> trait_declaration_names = mlc::HashMap<mlc::String, bool>();
 mlc::HashMap<mlc::String, bool> nominal_type_declaration_names = mlc::HashMap<mlc::String, bool>();
-fill_trait_and_nominal_maps(program_for_maps, trait_declaration_names, nominal_type_declaration_names);
-return expand_declarations_with_trait_and_nominal_maps(declarations, trait_declaration_names, nominal_type_declaration_names);
+each_program_declaration_depth_first(program, [&nominal_type_declaration_names, &trait_declaration_names](std::shared_ptr<ast::Decl> current_declaration) mutable { return [&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltype; return [&]() -> std::tuple<> { 
+  nominal_type_declaration_names.set(type_name, true);
+  return std::make_tuple();
+ }(); } if (std::holds_alternative<ast::DeclTrait>((*current_declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*current_declaration)); auto [trait_name, _w0, _w1] = _v_decltrait; return [&]() -> std::tuple<> { 
+  trait_declaration_names.set(trait_name, true);
+  return std::make_tuple();
+ }(); } return std::make_tuple(); }(); });
+return trait_param_expand::TraitNominalMaps{trait_declaration_names, nominal_type_declaration_names};
 }
+
+mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_nominal_maps(mlc::Array<std::shared_ptr<ast::Decl>> declarations, trait_param_expand::TraitNominalMaps maps) noexcept{return expand_declarations_with_trait_and_nominal_maps(declarations, maps.trait_declaration_names, maps.nominal_type_declaration_names);}
+
+mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_context(mlc::Array<std::shared_ptr<ast::Decl>> declarations, ast::Program program_for_maps) noexcept{return expand_declarations_with_trait_nominal_maps(declarations, build_trait_nominal_maps(program_for_maps));}
 
 ast::Program expand_trait_as_param_entry_using_full(ast::Program entry, ast::Program full_program) noexcept{return ast::Program{expand_declarations_with_trait_context(entry.decls, full_program)};}
 

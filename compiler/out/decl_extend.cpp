@@ -35,6 +35,16 @@ mlc::String gen_params_def(context::CodegenContext context, mlc::Array<std::shar
 
 mlc::String gen_params_proto(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
 
+mlc::String concept_declval_arguments_for_params(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
+
+mlc::String extend_method_return_type_cpp(context::CodegenContext extend_context, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept;
+
+mlc::String generic_trait_static_assert_line(mlc::String trait_name, mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext extend_context, mlc::String implementor_type_cpp) noexcept;
+
+mlc::String trait_method_field_line(context::CodegenContext context, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type) noexcept;
+
+mlc::String gen_trait_struct(context::CodegenContext context, mlc::String trait_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept;
+
 mlc::String gen_trait_decl(context::CodegenContext context, mlc::String trait_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept;
 
 mlc::String gen_extend_wrapper_protos(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context) noexcept;
@@ -46,6 +56,10 @@ mlc::String gen_extend_trait_wrappers(mlc::String type_name, mlc::Array<std::sha
 mlc::String gen_extend_extern_method(mlc::String mangled, mlc::String type_name, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> ret_type, mlc::String trait_name, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept;
 
 mlc::Array<mlc::String> gen_extend_method_parts(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext extend_context, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn, std::function<mlc::String(std::shared_ptr<semantic_ir::SDecl>, context::CodegenContext)> gen_decl_fn) noexcept;
+
+mlc::String gen_extend_trait_concept_adapter(mlc::String type_name, mlc::String trait_name, mlc::String mangled, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> ret_type, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept;
+
+mlc::String gen_extend_trait_concept_adapters(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept;
 
 mlc::String gen_decl_extend(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn, std::function<mlc::String(std::shared_ptr<semantic_ir::SDecl>, context::CodegenContext)> gen_decl_fn) noexcept;
 
@@ -87,24 +101,115 @@ index = index + 1;
 return parts.join(mlc::String(", "));
 }
 
+mlc::String concept_declval_arguments_for_params(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept{
+mlc::Array<mlc::String> parts = {};
+int parameter_index = 0;
+while (parameter_index < params.size()){
+{
+if (params[parameter_index]->name != mlc::String("self")){
+{
+parts.push_back(expr::std_declval_expression(type_gen::type_to_cpp(context, params[parameter_index]->typ)));
+}
+}
+parameter_index = parameter_index + 1;
+}
+}
+return parts.join(mlc::String(", "));
+}
+
+mlc::String extend_method_return_type_cpp(context::CodegenContext extend_context, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept{
+mlc::String result = mlc::String("void");
+int method_index = 0;
+while (method_index < methods.size()){
+{
+std::visit(overloaded{
+  [&](const SDeclFn& sdeclfn) {
+auto [_w0, _w1, _w2, _w3, return_type, _w4, _w5] = sdeclfn;
+{
+result = type_gen::sem_type_to_cpp(extend_context, return_type);
+}
+},
+  [&](const auto& _unused) {
+{
+}
+}
+}, (*methods[method_index]));
+if (result != mlc::String("void")){
+{
+method_index = methods.size();
+}
+} else {
+{
+method_index = method_index + 1;
+}
+}
+}
+}
+return result;
+}
+
+mlc::String generic_trait_static_assert_line(mlc::String trait_name, mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext extend_context, mlc::String implementor_type_cpp) noexcept{
+mlc::String trait_safe = cpp_naming::cpp_safe(trait_name);
+mlc::String message = type_name + mlc::String(" does not implement ") + trait_name;
+return trait_name == mlc::String("ExprVisitor") ? [&]() -> mlc::String { 
+  mlc::String result_type_cpp = extend_method_return_type_cpp(extend_context, methods);
+  return expr::static_assert_concept_for_result_and_implementor_line(trait_safe, result_type_cpp, implementor_type_cpp, message);
+ }() : expr::static_assert_concept_for_type_line(trait_safe, implementor_type_cpp, message);
+}
+
+mlc::String trait_method_field_line(context::CodegenContext context, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type) noexcept{
+mlc::Array<mlc::String> parameter_types = {};
+int parameter_index = 0;
+while (parameter_index < params.size()){
+{
+if (params[parameter_index]->name != mlc::String("self")){
+{
+parameter_types.push_back(type_gen::type_to_cpp(context, params[parameter_index]->typ));
+}
+}
+parameter_index = parameter_index + 1;
+}
+}
+mlc::String return_cpp = type_gen::sem_type_to_cpp(context, return_type);
+return expr::std_function_field_line(return_cpp, parameter_types.join(mlc::String(", ")), cpp_naming::cpp_safe(method_name));
+}
+
+mlc::String gen_trait_struct(context::CodegenContext context, mlc::String trait_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept{
+context::CodegenContext trait_context = context::CodegenContext_for_type_body(context, trait_name);
+mlc::String template_header = type_params.size() > 0 ? expr::cpp_template_typename_header_line(type_params.join(mlc::String(", "))) : mlc::String("");
+mlc::Array<mlc::String> field_lines = {};
+int method_index = 0;
+while (method_index < methods.size()){
+{
+[&]() -> void { if (std::holds_alternative<semantic_ir::SDeclFn>((*methods[method_index]))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*methods[method_index])); auto [mangled, _w0, _w1, params, return_type, _w2, _w3] = _v_sdeclfn; return [&]() { 
+  mlc::String method_name = extract_method_name(mangled, trait_name);
+  return field_lines.push_back(trait_method_field_line(trait_context, method_name, params, return_type));
+ }(); } return; }();
+method_index = method_index + 1;
+}
+}
+return expr::trait_struct_definition_lines(template_header, expr::trait_vtable_struct_cpp_name(cpp_naming::cpp_safe(trait_name)), field_lines.join(mlc::String("")));
+}
+
 mlc::String gen_trait_decl(context::CodegenContext context, mlc::String trait_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods) noexcept{
-mlc::String self_param = type_params.size() > 0 ? type_params[0] : mlc::String("T");
-mlc::String tparam = type_params.size() > 0 ? type_params.join(mlc::String(", ")) : mlc::String("T");
-mlc::String template_header = expr::cpp_template_typename_header_line(tparam);
+context::CodegenContext trait_context = context::CodegenContext_for_type_body(context, trait_name);
+mlc::String template_header = type_params.size() > 0 ? mlc::String("template<typename ") + type_params[0] + mlc::String(", typename Self>\n") : mlc::String("template<typename Self>\n");
 mlc::Array<mlc::String> req_parts = {};
 int method_index = 0;
 while (method_index < methods.size()){
 {
 [&]() -> void { if (std::holds_alternative<semantic_ir::SDeclFn>((*methods[method_index]))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*methods[method_index])); auto [mangled, _w0, _w1, params, ret_type, _w2, _w3] = _v_sdeclfn; return [&]() { 
   mlc::String method_name = extract_method_name(mangled, trait_name);
-  mlc::String ret_cpp = type_gen::type_to_cpp(context, std::make_shared<ast::TypeExpr>((ast::TyUnit{})));
-  return req_parts.push_back(expr::concept_requires_expression_method_returns_convertible(method_name, ret_cpp));
+  mlc::String prefixed_callee = cpp_naming::cpp_safe(mangled);
+  mlc::String ret_cpp = type_gen::sem_type_to_cpp(trait_context, ret_type);
+  mlc::String declval_arguments = concept_declval_arguments_for_params(trait_context, params);
+  return req_parts.push_back(expr::concept_requires_expression_method_returns_convertible(prefixed_callee, declval_arguments, ret_cpp));
  }(); } return; }();
 method_index = method_index + 1;
 }
 }
 mlc::String req_body = req_parts.join(mlc::String("; "));
-return expr::trait_concept_requires_definition_line(template_header, cpp_naming::cpp_safe(trait_name), self_param, req_body);
+return expr::trait_concept_requires_definition_line(template_header, cpp_naming::cpp_safe(trait_name), mlc::String("Self"), req_body);
 }
 
 mlc::String gen_extend_wrapper_protos(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context) noexcept{return trait_name.length() == 0 ? mlc::String("") : [&]() -> mlc::String { 
@@ -200,15 +305,56 @@ method_index = method_index + 1;
 return parts;
 }
 
+mlc::String gen_extend_trait_concept_adapter(mlc::String type_name, mlc::String trait_name, mlc::String mangled, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> ret_type, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept{
+context::CodegenContext extend_context = context::CodegenContext_for_type_body(context, type_name);
+mlc::String method_name = extract_method_name(mangled, type_name);
+mlc::String trait_callee = cpp_naming::cpp_safe(trait_name + mlc::String("_") + method_name);
+mlc::String ret_cpp = type_gen::sem_type_to_cpp(extend_context, ret_type);
+mlc::String params_str = gen_params_proto(extend_context, params);
+mlc::String fn_resolved = context_resolve_fn(context, mangled);
+mlc::Array<mlc::String> call_args = {};
+int param_index = 0;
+while (param_index < params.size()){
+{
+call_args.push_back(cpp_naming::cpp_safe(params[param_index]->name));
+param_index = param_index + 1;
+}
+}
+return expr::inline_noexcept_forwarding_call(ret_cpp, trait_callee, params_str, fn_resolved, call_args.join(mlc::String(", ")));
+}
+
+mlc::String gen_extend_trait_concept_adapters(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept{
+mlc::String adapters = mlc::String("");
+int method_index = 0;
+while (method_index < methods.size()){
+{
+std::visit(overloaded{
+  [&](const SDeclFn& sdeclfn) {
+auto [mangled, _w0, _w1, params, ret_type, _w2, _w3] = sdeclfn;
+{
+adapters = adapters + gen_extend_trait_concept_adapter(type_name, trait_name, mangled, params, ret_type, context, context_resolve_fn);
+}
+},
+  [&](const auto& _unused) {
+{
+}
+}
+}, (*methods[method_index]));
+method_index = method_index + 1;
+}
+}
+return adapters;
+}
+
 mlc::String gen_decl_extend(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SDecl>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn, std::function<mlc::String(std::shared_ptr<semantic_ir::SDecl>, context::CodegenContext)> gen_decl_fn) noexcept{
 context::CodegenContext extend_context = context::CodegenContext_for_type_body(context, type_name);
 mlc::Array<mlc::String> method_parts = gen_extend_method_parts(type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn);
 mlc::String methods_str = method_parts.join(mlc::String(""));
 return trait_name.length() > 0 ? [&]() -> mlc::String { 
   mlc::String trait_wrappers = gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn);
+  mlc::String trait_concept_adapters = gen_extend_trait_concept_adapters(type_name, trait_name, methods, context, context_resolve_fn);
   mlc::String cpp_type = type_gen::type_name_to_cpp(context, type_name);
-  mlc::String trait_safe = cpp_naming::cpp_safe(trait_name);
-  return methods_str + trait_wrappers + expr::static_assert_concept_for_type_line(trait_safe, cpp_type, type_name + mlc::String(" does not implement ") + trait_name);
+  return methods_str + trait_wrappers + trait_concept_adapters + generic_trait_static_assert_line(trait_name, type_name, methods, extend_context, cpp_type);
  }() : methods_str;
 }
 

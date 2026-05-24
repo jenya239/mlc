@@ -25,6 +25,10 @@ mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_infos_from_
 
 std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept;
 
+mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_info_index(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos) noexcept;
+
+std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info_indexed(mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> index, mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept;
+
 std::shared_ptr<ast::TypeExpr> field_def_type(std::shared_ptr<ast::FieldDef> field_definition) noexcept{return field_definition->typ;}
 
 std::shared_ptr<ctor_info::CtorTypeInfo> ctor_type_info_for(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> argument_type_expressions) noexcept{
@@ -54,5 +58,19 @@ mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> decl_to_ctor_infos(std::sha
 mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_infos_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept{return mlc::collections::flat_map(decls, [](std::shared_ptr<ast::Decl> decl) mutable { return decl_to_ctor_infos(decl); });}
 
 std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept{return infos.fold(std::make_shared<ctor_info::CtorTypeInfo>(ctor_info::CtorTypeInfo{mlc::String(""), {}, {}}), [constructor_lookup_name](std::shared_ptr<ctor_info::CtorTypeInfo> chosen, std::shared_ptr<ctor_info::CtorTypeInfo> candidate_info) mutable { return candidate_info->name == constructor_lookup_name ? candidate_info : chosen; });}
+
+mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_info_index(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos) noexcept{
+mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> index = mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>>();
+int info_index = 0;
+while (info_index < infos.size()){
+{
+index.set(infos[info_index]->name, infos[info_index]);
+info_index = info_index + 1;
+}
+}
+return index;
+}
+
+std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info_indexed(mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> index, mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept{return index.has(constructor_lookup_name) ? index.get(constructor_lookup_name) : lookup_ctor_type_info(infos, constructor_lookup_name);}
 
 } // namespace ctor_info

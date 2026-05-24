@@ -3,6 +3,7 @@
 #include "test_runner.hpp"
 #include "codegen_test_helpers.hpp"
 #include "eval.hpp"
+#include "expr_visitor_string.hpp"
 #include "expression_support.hpp"
 #include "context.hpp"
 #include "type_gen.hpp"
@@ -22,6 +23,7 @@ namespace test_codegen {
 using namespace test_runner;
 using namespace codegen_test_helpers;
 using namespace eval;
+using namespace expr_visitor_string;
 using namespace expression_support;
 using namespace context;
 using namespace type_gen;
@@ -116,6 +118,35 @@ results.push_back(test_runner::assert_eq_str(mlc::String("ExprUnit - 'std::make_
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprIdent('x') - 'x'"), eval::gen_expr(sid(mlc::String("x")), ctx), mlc::String("x")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprIdent('print') - 'mlc::io::print'"), eval::gen_expr(sid(mlc::String("print")), ctx), mlc::String("mlc::io::print")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprIdent('println') - 'mlc::io::println'"), eval::gen_expr(sid(mlc::String("println")), ctx), mlc::String("mlc::io::println")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprInt(42)"), expr_visitor_string::gen_expr_via_string_visitor(si(42), ctx), mlc::String("42")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprStr"), expr_visitor_string::gen_expr_via_string_visitor(ss(mlc::String("hi")), ctx), mlc::String("mlc::String(\"hi\", 2)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprIdent"), expr_visitor_string::gen_expr_via_string_visitor(sid(mlc::String("x")), ctx), mlc::String("x")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprIdent print"), expr_visitor_string::gen_expr_via_string_visitor(sid(mlc::String("print")), ctx), mlc::String("mlc::io::print")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprIdent println"), expr_visitor_string::gen_expr_via_string_visitor(sid(mlc::String("println")), ctx), mlc::String("mlc::io::println")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprBool(true)"), expr_visitor_string::gen_expr_via_string_visitor(sb(true), ctx), mlc::String("true")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprUnit"), expr_visitor_string::gen_expr_via_string_visitor(su(), ctx), mlc::String("std::make_tuple()")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprFloat"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprFloat(mlc::String("3.14"), std::make_shared<registry::Type>((registry::TF64{})), ast::span_unknown())), ctx), mlc::String("3.14")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprI64"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprI64(mlc::String("42"), std::make_shared<registry::Type>((registry::TI64{})), ast::span_unknown())), ctx), mlc::String("42")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprU8"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprU8(mlc::String("255"), std::make_shared<registry::Type>((registry::TU8{})), ast::span_unknown())), ctx), mlc::String("static_cast<uint8_t>(255)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprUsize"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUsize(mlc::String("100"), std::make_shared<registry::Type>((registry::TUsize{})), ast::span_unknown())), ctx), mlc::String("static_cast<size_t>(100)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprChar"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprChar(mlc::String("a"), std::make_shared<registry::Type>((registry::TChar{})), ast::span_unknown())), ctx), mlc::String("static_cast<char32_t>(a)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprBin add"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprBin(mlc::String("+"), si(1), si(2), i32_t(), ast::span_unknown())), ctx), mlc::String("(1 + 2)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprUn neg"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUn(mlc::String("-"), si(42), i32_t(), ast::span_unknown())), ctx), mlc::String("(-42)")));
+mlc::Array<std::shared_ptr<semantic_ir::SExpr>> visitor_ok_args = mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{si(42)};
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprCall ctor Ok(42)"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprCall(sid(mlc::String("Ok")), visitor_ok_args, empty_parameter_mutability_pattern(), unk_t(), ast::span_unknown())), ctx), mlc::String("Ok{42}")));
+mlc::Array<std::shared_ptr<semantic_ir::SExpr>> visitor_method_args = mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{si(1)};
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprMethod push"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMethod(sid(mlc::String("arr")), mlc::String("push"), visitor_method_args, empty_parameter_mutability_pattern(), unit_t(), ast::span_unknown())), ctx), mlc::String("arr.push_back(1)")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprIf"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprIf(sb(true), si(1), si(2), i32_t(), ast::span_unknown())), ctx), mlc::String("(true ? (1) : (2))")));
+mlc::Array<std::shared_ptr<semantic_ir::SStmt>> visitor_empty_block = {};
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprBlock empty"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprBlock(visitor_empty_block, sid(mlc::String("x")), i32_t(), ast::span_unknown())), ctx), mlc::String("x")));
+mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> visitor_match_arms = mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>>{smatch_arm(std::make_shared<ast::Pat>(ast::PatInt(1, ast::span_unknown())), ss(mlc::String("one"))), smatch_arm(std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown())), ss(mlc::String("other")))};
+mlc::String visitor_match_out = expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprMatch(sid(mlc::String("n")), visitor_match_arms, str_t(), ast::span_unknown())), ctx);
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprMatch contains std::visit"), visitor_match_out.contains(mlc::String("std::visit")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprMatch contains one"), visitor_match_out.contains(mlc::String("\"one\"")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+mlc::Array<std::shared_ptr<semantic_ir::SExpr>> visitor_array_elements = mlc::Array<std::shared_ptr<semantic_ir::SExpr>>{si(1), si(2), si(3)};
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprArray"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprArray(visitor_array_elements, std::make_shared<registry::Type>(registry::TArray(i32_t())), ast::span_unknown())), ctx), mlc::String("mlc::Array<int>{1, 2, 3}")));
+mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> visitor_record_fields = mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>>{std::make_shared<semantic_ir::SFieldVal>(semantic_ir::SFieldVal{mlc::String("a"), si(1)}), std::make_shared<semantic_ir::SFieldVal>(semantic_ir::SFieldVal{mlc::String("b"), si(2)})};
+results.push_back(test_runner::assert_eq_str(mlc::String("string visitor: ExprRecord positional"), expr_visitor_string::gen_expr_via_string_visitor(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprRecord(mlc::String("Point"), visitor_record_fields, std::make_shared<registry::Type>(registry::TNamed(mlc::String("Point"))), ast::span_unknown())), ctx), mlc::String("Point{1, 2}")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprBin add - '(1 + 2)'"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprBin(mlc::String("+"), si(1), si(2), i32_t(), ast::span_unknown())), ctx), mlc::String("(1 + 2)")));
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprUn neg - '(-42)'"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprUn(mlc::String("-"), si(42), i32_t(), ast::span_unknown())), ctx), mlc::String("(-42)")));
 results.push_back(test_runner::assert_eq_str(mlc::String("map_builtin passthrough - 'foo'"), cpp_naming::map_builtin(mlc::String("foo")), mlc::String("foo")));
@@ -213,10 +244,12 @@ mlc::String d3_trait_parameter_source = mlc::String("type Display { fn to_string
 mlc::String d3_trait_parameter_output = module::gen_program(decls::parse_program(lexer::tokenize(d3_trait_parameter_source).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: concept Display"), d3_trait_parameter_output, mlc::String("concept Display")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: requires in trait concept"), d3_trait_parameter_output, mlc::String("requires")));
-results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: parameter uses Display constraint"), d3_trait_parameter_output, mlc::String("f(Display")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: parameter uses Display constraint"), d3_trait_parameter_output, mlc::String("requires Display<")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: expanded trait param type"), d3_trait_parameter_output, mlc::String("__trait_param_0")));
 mlc::String d3_two_trait_parameter_source = mlc::String("type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()");
 mlc::String d3_two_trait_parameter_output = module::gen_program(decls::parse_program(lexer::tokenize(d3_two_trait_parameter_source).tokens));
-results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: first Display parameter"), d3_two_trait_parameter_output, mlc::String("Display first")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: first Display parameter"), d3_two_trait_parameter_output, mlc::String("Display<__trait_param_0>")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: second Display parameter"), d3_two_trait_parameter_output, mlc::String("Display<__trait_param_1>")));
 mlc::String d4_where_trait_bounds_source = mlc::String("type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()");
 mlc::String d4_where_trait_bounds_output = module::gen_program(decls::parse_program(lexer::tokenize(d4_where_trait_bounds_source).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D4 gen_program: requires Display"), d4_where_trait_bounds_output, mlc::String("Display")));
@@ -309,6 +342,13 @@ results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: multi-varia
 std::shared_ptr<ctor_info::CtorTypeInfo> node_info = ctor_info::lookup_ctor_type_info(multi_infos, mlc::String("Node"));
 results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: Node shared_pos — 1"), node_info->shared_pos.size(), 1));
 results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: Node shared_arr_pos — 1"), node_info->shared_arr_pos.size(), 1));
+mlc::String codegen_large_function_body = mlc::String("export fn large_body(seed: i32) -> i32 = do\n  let mut accumulator = seed\n  accumulator = accumulator + 1\n  accumulator = accumulator + 2\n  accumulator = accumulator + 3\n  if accumulator > 10 then\n    accumulator = accumulator - 1\n  end\n  if accumulator > 20 then\n    accumulator = accumulator - 2\n  else\n    accumulator = accumulator + 4\n  end\n  let mut counter = 0\n  while counter < 5 do\n    accumulator = accumulator + counter\n    counter = counter + 1\n  end\n  match accumulator {\n    0 => 0,\n    _ => accumulator\n  }\nend\n\nexport fn main() -> i32 = large_body(0)");
+mlc::String codegen_large_body_cpp = module::gen_program(decls::parse_program(lexer::tokenize(codegen_large_function_body).tokens));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: large fn body keeps accumulator updates"), codegen_large_body_cpp, mlc::String("accumulator")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: large fn body emits while loop"), codegen_large_body_cpp, mlc::String("while")));
+mlc::String codegen_extend_method = mlc::String("type Widget = { value: i32 }\nextend Widget { fn doubled(self: Widget) -> i32 = self.value * 2 }\nexport fn main() -> i32 = do\n  let widget = Widget { value: 3 }\n  widget.doubled()\nend");
+mlc::String codegen_extend_method_cpp = module::gen_program(decls::parse_program(lexer::tokenize(codegen_extend_method).tokens));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: extend method call mangles owner"), codegen_extend_method_cpp, mlc::String("Widget_doubled")));
 return results;
 }
 

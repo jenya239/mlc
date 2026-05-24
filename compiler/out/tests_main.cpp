@@ -9,6 +9,10 @@
 #include "test_codegen.hpp"
 #include "test_pipe_and_record_update.hpp"
 #include "test_decl_gen.hpp"
+#include "test_partial_application.hpp"
+#include "test_merge_imports.hpp"
+#include "test_pass.hpp"
+#include "test_expr_visitor.hpp"
 #include "test_runner.hpp"
 
 namespace tests_main {
@@ -19,6 +23,10 @@ using namespace test_checker;
 using namespace test_codegen;
 using namespace test_pipe_and_record_update;
 using namespace test_decl_gen;
+using namespace test_partial_application;
+using namespace test_merge_imports;
+using namespace test_pass;
+using namespace test_expr_visitor;
 using namespace test_runner;
 
 mlc::Array<test_runner::TestResult> all_tests() noexcept;
@@ -73,6 +81,38 @@ index = 0;
 while (index < suite_decl.size()){
 {
 all.push_back(suite_decl[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_partial = test_partial_application::partial_application_tests();
+index = 0;
+while (index < suite_partial.size()){
+{
+all.push_back(suite_partial[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_merge = test_merge_imports::merge_import_tests();
+index = 0;
+while (index < suite_merge.size()){
+{
+all.push_back(suite_merge[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_pass = test_pass::pass_type_tests();
+index = 0;
+while (index < suite_pass.size()){
+{
+all.push_back(suite_pass[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_expr_visitor = test_expr_visitor::expr_visitor_tests();
+index = 0;
+while (index < suite_expr_visitor.size()){
+{
+all.push_back(suite_expr_visitor[index]);
 index = index + 1;
 }
 }

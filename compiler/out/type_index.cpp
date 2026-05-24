@@ -11,6 +11,12 @@ using namespace ast_tokens;
 
 mlc::String extract_method_name(mlc::String fn_name, mlc::String type_name) noexcept;
 
+mlc::String extract_owner_prefix_from_mangled(mlc::String fn_name) noexcept;
+
+mlc::HashMap<mlc::String, bool> build_trait_names_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept;
+
+bool extend_may_register_method_owner(mlc::HashMap<mlc::String, mlc::String> owners, mlc::String unmangled, mlc::String type_name, mlc::HashMap<mlc::String, bool> trait_names) noexcept;
+
 mlc::HashMap<mlc::String, mlc::String> add_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls, mlc::HashMap<mlc::String, mlc::String> owners) noexcept;
 
 mlc::HashMap<mlc::String, mlc::String> build_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept;
@@ -26,7 +32,47 @@ mlc::String prefix = type_name + mlc::String("_");
 return fn_name.length() > prefix.length() && fn_name.substring(0, prefix.length()) == prefix ? fn_name.substring(prefix.length(), fn_name.length() - prefix.length()) : fn_name;
 }
 
+mlc::String extract_owner_prefix_from_mangled(mlc::String fn_name) noexcept{
+int index = 0;
+mlc::String result = fn_name;
+while (index < fn_name.length()){
+{
+if (fn_name.substring(index, 1) == mlc::String("_")){
+{
+result = fn_name.substring(0, index);
+index = fn_name.length();
+}
+} else {
+{
+index = index + 1;
+}
+}
+}
+}
+return result;
+}
+
+mlc::HashMap<mlc::String, bool> build_trait_names_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept{
+mlc::HashMap<mlc::String, bool> trait_names = mlc::HashMap<mlc::String, bool>();
+int index = 0;
+while (index < decls.size()){
+{
+[&]() -> void { if (std::holds_alternative<ast::DeclTrait>((*ast::decl_inner(decls[index])))) { auto _v_decltrait = std::get<ast::DeclTrait>((*ast::decl_inner(decls[index]))); auto [trait_name, _w0, _w1] = _v_decltrait; return trait_names.set(trait_name, true); } return; }();
+index = index + 1;
+}
+}
+return trait_names;
+}
+
+bool extend_may_register_method_owner(mlc::HashMap<mlc::String, mlc::String> owners, mlc::String unmangled, mlc::String type_name, mlc::HashMap<mlc::String, bool> trait_names) noexcept{
+return !owners.has(unmangled) ? true : [&]() -> bool { 
+  mlc::String existing_prefix = extract_owner_prefix_from_mangled(owners.get(unmangled));
+  return existing_prefix == type_name || trait_names.has(existing_prefix);
+ }();
+}
+
 mlc::HashMap<mlc::String, mlc::String> add_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls, mlc::HashMap<mlc::String, mlc::String> owners) noexcept{
+mlc::HashMap<mlc::String, bool> trait_names = build_trait_names_from_decls(decls);
 int i = 0;
 while (i < decls.size()){
 {
@@ -52,7 +98,7 @@ mi = mi + 1;
 {
 [&]() -> void { if (std::holds_alternative<ast::DeclFn>((*methods[mi]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[mi])); auto [fn_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() { 
   mlc::String unmangled = extract_method_name(fn_name, type_name);
-  if (!owners.has(unmangled)){
+  if (extend_may_register_method_owner(owners, unmangled, type_name, trait_names)){
 owners.set(unmangled, fn_name);
 }
  }(); } return; }();

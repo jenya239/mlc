@@ -40,7 +40,7 @@ return [&]() -> mlc::String { if (std::holds_alternative<ast::PatIdent>((*pat)))
  }(); } return [&]() -> mlc::String { 
   mlc::String record_codegen_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*value_type))) { auto _v_tnamed = std::get<registry::TNamed>((*value_type)); auto [record_nominal_name] = _v_tnamed; return record_nominal_name; } if (std::holds_alternative<registry::TGeneric>((*value_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*value_type)); auto [record_nominal_name, _w0] = _v_tgeneric; return record_nominal_name; } return mlc::String(""); }();
   return record_codegen_name != mlc::String("") ? [&]() -> mlc::String { 
-  mlc::Array<mlc::String> ordered_member_labels = decl_index::lookup_fields(context.field_orders, record_codegen_name);
+  mlc::Array<mlc::String> ordered_member_labels = context::lookup_fields_for_context(context, record_codegen_name);
   return ordered_member_labels.size() == subs.size() && subs.size() > 0 ? [&]() -> mlc::String { 
   mlc::String record_ordered_tuple_fragment = mlc::String("{\nauto __lt = ") + rhs + mlc::String(";\n");
   int member_slot_index = 0;

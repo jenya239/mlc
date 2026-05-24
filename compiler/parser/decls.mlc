@@ -332,11 +332,21 @@ fn parse_extend_method(parser: Parser, type_name: string) -> DeclResult = do
   }
 end
 
+fn parse_trait_decl(parser: Parser) -> DeclResult = do
+  const after_trait = parser.advance()
+  const trait_name = after_trait.kind().ident()
+  const type_params_res = parse_type_params_opt(after_trait.advance())
+  const trait_result = parse_trait_body(type_params_res.parser.advance(), trait_name, type_params_res.params)
+  DeclResult { decl: Shared.new(DeclTrait(trait_name, type_params_res.params, trait_result.methods)), parser: trait_result.parser }
+end
+
 export fn parse_decl(parser: Parser) -> DeclResult = do
   const kind = parser.kind()
   if kind.is_ident() && kind.ident() == 'export' then
     const inner = parse_decl(parser.advance())
     DeclResult { decl: Shared.new(DeclExported(inner.decl)), parser: inner.parser }
+  else if kind.is_ident() && kind.ident() == 'trait' then
+    parse_trait_decl(parser)
   else if kind.is_fn() || (kind.is_extern() && parser.advance().kind().is_fn()) then
     parse_fn_decl(parser)
   else if kind.is_type() then
@@ -605,7 +615,7 @@ end
 
 fn is_decl_start(kind: TKind) -> bool =
   kind.is_type() || kind.is_fn() || kind.is_extend() || kind.is_import()
-  || (kind.is_ident() && (kind.ident() == 'export' || kind.ident() == 'type' || kind.ident() == 'fn' || kind.ident() == 'extend' || kind.ident() == 'import'))
+  || (kind.is_ident() && (kind.ident() == 'export' || kind.ident() == 'trait' || kind.ident() == 'type' || kind.ident() == 'fn' || kind.ident() == 'extend' || kind.ident() == 'import'))
 
 fn parse_variants_continue(state: Parser) -> bool =
   if state.at_eof() then false

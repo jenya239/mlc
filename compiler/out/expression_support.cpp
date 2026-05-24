@@ -4,6 +4,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "context.hpp"
+#include "decl_index.hpp"
 #include "cpp_naming.hpp"
 
 namespace expression_support {
@@ -12,6 +13,7 @@ using namespace ast;
 using namespace semantic_ir;
 using namespace registry;
 using namespace context;
+using namespace decl_index;
 using namespace cpp_naming;
 using namespace ast_tokens;
 
@@ -26,6 +28,8 @@ mlc::String resolve_object_code_in_self_context(mlc::String object_name, context
 mlc::String infer_shared_new_type_name(std::shared_ptr<semantic_ir::SExpr> argument, context::CodegenContext context) noexcept;
 
 mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept;
+
+mlc::String cpp_function_name_for_profile_method(mlc::String method_name) noexcept;
 
 mlc::String field_access_operator(std::shared_ptr<semantic_ir::SExpr> object, context::CodegenContext context) noexcept;
 
@@ -66,7 +70,7 @@ return result;
 bool is_constructor_call(std::shared_ptr<semantic_ir::SExpr> function_expr) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SExprIdent>((*function_expr)._)) { auto _v_sexprident = std::get<semantic_ir::SExprIdent>((*function_expr)._); auto [name, _w0, _w1] = _v_sexprident; return name.length() > 0 && name.char_at(0) >= mlc::String("A") && name.char_at(0) <= mlc::String("Z"); } return false; }();}
 
 mlc::String resolve_object_code_in_self_context(mlc::String object_name, context::CodegenContext context) noexcept{
-mlc::Array<mlc::String> self_fields = decl_index::lookup_fields(context.field_orders, context.self_type);
+mlc::Array<mlc::String> self_fields = context::lookup_fields_for_context(context, context.self_type);
 bool is_known_field = object_name == mlc::String("errors") || object_name == mlc::String("kind") || object_name == mlc::String("tokens") || object_name == mlc::String("line") || object_name == mlc::String("col") || object_name == mlc::String("inferred_type") || object_name == mlc::String("type_env");
 return decl_index::list_contains(self_fields, object_name) || is_known_field ? mlc::String("self.") + cpp_naming::cpp_safe(object_name) : context::CodegenContext_resolve(context, cpp_naming::map_builtin_identifier_reference(object_name));
 }
@@ -77,6 +81,8 @@ return type_name.length() > 0 ? context::CodegenContext_resolve(context, type_na
 }
 
 mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept{return method_name == mlc::String("read") ? mlc::String("mlc::file::read_to_string") : method_name == mlc::String("write") ? mlc::String("mlc::file::write_string") : mlc::String("mlc::file::") + method_name;}
+
+mlc::String cpp_function_name_for_profile_method(mlc::String method_name) noexcept{return method_name == mlc::String("scope_begin") ? mlc::String("mlc::profile::scope_begin") : method_name == mlc::String("scope_end") ? mlc::String("mlc::profile::scope_end") : method_name == mlc::String("monotonic_nanos") ? mlc::String("mlc::profile::monotonic_nanos") : method_name == mlc::String("peak_rss_kib") ? mlc::String("mlc::profile::peak_rss_kib") : method_name == mlc::String("print_report") ? mlc::String("mlc::profile::print_report") : method_name == mlc::String("reset") ? mlc::String("mlc::profile::reset") : mlc::String("mlc::profile::") + method_name;}
 
 mlc::String field_access_operator(std::shared_ptr<semantic_ir::SExpr> object, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<registry::TShared>((*semantic_ir::sexpr_type(object)))) { auto _v_tshared = std::get<registry::TShared>((*semantic_ir::sexpr_type(object))); auto [_w0] = _v_tshared; return mlc::String("->"); } return mlc::String("."); }();}
 
