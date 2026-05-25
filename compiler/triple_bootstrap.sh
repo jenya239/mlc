@@ -35,7 +35,7 @@ build_gen() {
 build_bin() {
   local out_dir="$1"
   local binary="$2"
-  g++ $CXX_FLAGS -I "$out_dir" "$out_dir"/*.cpp $RT_SRC -o "$binary"
+  "$(dirname "$0")/build_bin.sh" "$out_dir" "$binary"
 }
 
 echo "[1/4] mlcc → bs1 (C++ gen) ..."

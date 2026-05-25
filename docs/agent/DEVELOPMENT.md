@@ -19,7 +19,14 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 1. `compiler/tests/build_tests.sh` → `run_tests` (expect 473+). Abort if > 10 min silent.
 2. If **`lib/mlc/**` touched:** `bundle exec rake test_mlc`.
-3. If **`compiler/**` touched:** `compiler/build.sh` → self-host `diff -rq`.
+3. If **`compiler/**` touched:** `compiler/build.sh` → self-host diff:
+   ```bash
+   compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
+   compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
+   .tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
+   diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
+   ```
+   Use `build_bin.sh`, not bare `g++` — parallel + ccache.
 4. Step **14** in TRACK: mandatory self-host before closing visitor batch.
 
 ## Current priority
