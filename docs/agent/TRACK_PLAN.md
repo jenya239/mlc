@@ -32,10 +32,11 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 | 16 | Shrink `expr_eval.mlc` — `dispatch_expr` only, drop duplicate `match` | done (`6c5697a`) |
 | 17 | Explicit `Pass` pipeline in `main.mlc` | done (`6f998e9`) |
 | 18 | Move `frontend/` — lexer, ast, ast_tokens, parser/ | done (`bef5143`) |
-| 19 | Move `ir/` — semantic_ir, record_defaults | done (commit-prep) |
-| 20 | Split `checker/` → infer/, transform/, check/ | pending |
+| 19 | Move `ir/` — semantic_ir, record_defaults | done (`597b76b`) |
+| 20 | Split `checker/` → infer/, transform/, check/ | done (`597b76b`) |
 | 21 | Split `codegen/` → expr/, stmt/, decl/ | pending |
 | 22 | Move root debug tests → `tests/`; delete junk | pending |
+| 23 | Delete stale artefacts: `compiler/out2/`, `out2_tests/`, `out_modular/`, root `out/`, `main_modular_test.mlc`, `test_lexer.mlc`, `test_trait_e2e.mlc`; update `.gitignore` | pending |
 
 ## Backlog (Planner maintains)
 
