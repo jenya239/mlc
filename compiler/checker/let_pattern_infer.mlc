@@ -1,6 +1,6 @@
 // let-pattern: extend type environment from pattern + RHS type (A3).
 
-import { Pat } from '../ast'
+import { Pat } from '../frontend/ast'
 import { Type, TypeRegistry, field_type_from_object, TNamed, TGeneric, TTuple, TPair } from './registry'
 import { env_for_pattern_substituted } from './pattern_env'
 

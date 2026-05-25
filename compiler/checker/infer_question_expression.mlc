@@ -1,6 +1,6 @@
 // Result unwrap (?): Ok type from Result-like generic in inferred inner type.
 
-import { Span, Diagnostic, diagnostic_error, diagnostics_append } from '../ast'
+import { Span, Diagnostic, diagnostic_error, diagnostics_append } from '../frontend/ast'
 import { InferResult } from './infer_result'
 import { Type, TUnknown } from './registry'
 import { type_description } from './semantic_type_structure'

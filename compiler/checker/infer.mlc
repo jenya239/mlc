@@ -13,7 +13,7 @@ import {
   RecordLitPart,
   RecordLitFields,
   RecordLitSpread
-} from '../ast'
+} from '../frontend/ast'
 import {
   Type,
   TypeRegistry,

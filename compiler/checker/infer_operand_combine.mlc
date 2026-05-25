@@ -1,6 +1,6 @@
 // Combine InferResult values after subexpressions are inferred (no infer_expr).
 
-import { Expr, ExprArray, Span, diagnostics_append } from '../ast'
+import { Expr, ExprArray, Span, diagnostics_append } from '../frontend/ast'
 import { InferResult } from './infer_result'
 import { Type, TypeRegistry, field_type_from_object, method_return_type_from_object } from './registry'
 import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from './semantic_type_structure'

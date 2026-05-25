@@ -2,7 +2,7 @@
 // eval_expr injected as a function parameter to break the import cycle
 // with expr_eval.mlc (same pattern as gen_stmts).
 
-import { Pat } from '../ast'
+import { Pat } from '../frontend/ast'
 import { SExpr, SStmt, SMatchArm } from '../semantic_ir'
 import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from './context'
 import { list_contains } from './decl_index'

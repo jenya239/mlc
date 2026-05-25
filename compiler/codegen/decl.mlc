@@ -1,6 +1,6 @@
 // Declaration code generation: functions, dispatchers, program-level collectors.
 
-import { TypeVariant, TypeExpr, Param, Decl } from '../ast'
+import { TypeVariant, TypeExpr, Param, Decl } from '../frontend/ast'
 import { SDecl, SExpr, SExprExtern, sdecl_inner } from '../semantic_ir'
 import { Type } from '../checker/registry'
 import { CodegenContext,

@@ -2,7 +2,7 @@
 // Imports transform_expr from transform.mlc and passes itself as stmts_fn,
 // mirroring the gen_stmts / eval_expr pattern in codegen.
 
-import { Stmt } from '../ast'
+import { Stmt } from '../frontend/ast'
 import { Type, type_from_annotation } from './registry'
 import { SStmt, SExpr, sexpr_type } from '../semantic_ir'
 import { TransformContext, TransformStmtsResult,

@@ -1,7 +1,7 @@
 // Match expression type inference.
 // infer_expr injected as a parameter to break the import cycle with infer.mlc.
 
-import { Expr, MatchArm, Diagnostic, diagnostics_append, diagnostic_error, expr_span, Pat, PatTuple, PatArray } from '../ast'
+import { Expr, MatchArm, Diagnostic, diagnostics_append, diagnostic_error, expr_span, Pat, PatTuple, PatArray } from '../frontend/ast'
 import { Type } from './registry'
 import { CheckContext, check_context_new } from './check_context'
 import { InferResult } from './infer_result'

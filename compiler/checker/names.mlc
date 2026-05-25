@@ -1,7 +1,7 @@
 // Checker: name resolution.
 
 import { Expr, Stmt, Pat, FieldVal, MatchArm, RecordLitPart, RecordLitFields, RecordLitSpread,
-         Diagnostic, Span, diagnostic_error, diagnostics_append, span_unknown } from '../ast'
+         Diagnostic, Span, diagnostic_error, diagnostics_append, span_unknown } from '../frontend/ast'
 
 fn scope_contains(scope: [string], name: string) -> bool =
   scope.any(scope_entry => scope_entry == name)

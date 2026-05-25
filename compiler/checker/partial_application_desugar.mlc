@@ -8,7 +8,7 @@ import {
   ExprArray, ExprTuple, ExprQuestion,   ExprExtern, ExprLambda, ExprNamedArg, ExprWith,
   StmtLet, StmtLetPat, StmtLetConst, StmtExpr, StmtReturn, StmtBreak, StmtContinue,
   Span
-} from '../ast'
+} from '../frontend/ast'
 
 type PartialPair = PartialPair { expression: Shared<Expr>, next_serial: i32 }
 

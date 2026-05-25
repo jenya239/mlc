@@ -2,7 +2,7 @@
 // Matches Ruby ExpressionVisitor#build_record_fields order: spreads fill gaps by target field order,
 // earlier spread wins over later spread for the same key; explicit literal keys override spreads.
 
-import { Expr, FieldVal, RecordLitPart, ExprField, expr_span, Diagnostic, diagnostic_error, Span } from '../ast'
+import { Expr, FieldVal, RecordLitPart, ExprField, expr_span, Diagnostic, diagnostic_error, Span } from '../frontend/ast'
 import { TypeRegistry, Type, TGeneric, TShared } from './registry'
 
 fn field_values_map_from_flat(field_values: [Shared<FieldVal>]) -> Map<string, Shared<FieldVal>> = do

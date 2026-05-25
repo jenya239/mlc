@@ -1,11 +1,11 @@
 // Unit tests for the parser (parse_program function).
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
-import { tokenize } from '../lexer'
-import { parse_program } from '../parser/decls'
-import { Decl, DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, PatWild, PatIdent, ExprBlock, Stmt, StmtLetPat } from '../ast'
-import { parse_expr } from '../parser/exprs'
-import { parser_new } from '../parser/preds'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { Decl, DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, PatWild, PatIdent, ExprBlock, Stmt, StmtLetPat } from '../frontend/ast'
+import { parse_expr } from '../frontend/parser/exprs'
+import { parser_new } from '../frontend/parser/predicates'
 
 fn parse_source(source: string) -> Program =
   parse_program(tokenize(source).tokens)

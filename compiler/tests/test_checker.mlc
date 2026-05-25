@@ -1,8 +1,8 @@
 // Unit tests for the checker (check function).
 
 import { TestResult, assert_eq_int, assert_eq_str, assert_true, assert_diagnostic_at } from './test_runner'
-import { tokenize } from '../lexer'
-import { parse_program, parse_program_with_source_path } from '../parser/decls'
+import { tokenize } from '../frontend/lexer'
+import { parse_program, parse_program_with_source_path } from '../frontend/parser/decls'
 import { check, check_with_context } from '../checker/check'
 
 fn check_error_count(source: string) -> i32 =

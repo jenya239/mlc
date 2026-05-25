@@ -8,9 +8,9 @@ Baseline: `benchmarks/profile/record_baseline.sh` (post-commit).
 
 # Track: PLAN.md roadmap
 
-Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрения
+Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 
-## Status: visitor batch **done** (steps 1–14); pipeline + cleanup in progress
+## Status: visitor + pipeline **done** (steps 1–17); folder restructure in progress
 
 | Step | Item | Status |
 |------|------|--------|
@@ -30,44 +30,41 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрен�
 | 14 | Self-host diff after visitor migration batch | done (`6df3799`, docs `0a0d321`) |
 | 15 | Parser `ref mut` | **deferred** (separate branch) |
 | 16 | Shrink `expr_eval.mlc` — `dispatch_expr` only, drop duplicate `match` | done (`6c5697a`) |
-| 17 | Explicit `Pass` pipeline in `main.mlc` | done (commit-prep) |
-| 18 | Folder restructure (PLAN §4) | **deferred** — after 16–17 + self-host green |
+| 17 | Explicit `Pass` pipeline in `main.mlc` | done (`6f998e9`) |
+| 18 | Move `frontend/` — lexer, ast, ast_tokens, parser/ | done (commit-prep) |
+| 19 | Move `ir/` — semantic_ir, record_defaults | pending |
+| 20 | Split `checker/` → infer/, transform/, check/ | pending |
+| 21 | Split `codegen/` → expr/, stmt/, decl/ | pending |
+| 22 | Move root debug tests → `tests/`; delete junk | pending |
 
 ## Backlog (Planner maintains)
 
-Source: PLAN.md §3 «Порядок внедрения» items 3–4.
+Source: PLAN.md §4 «Порядок миграции».
 
-- **Step 16:** `extend CodegenContext` methods — optional follow-up inside expr_eval shrink if needed
-- **Step 17:** `CompilerPipeline` wiring replaces direct checker→codegen calls in `main.mlc`
-- **Step 18:** `frontend/`, `ir/`, checker split — separate track; not until pipeline stable
-- **CppExpr backend:** PLAN Phase 2 — not in this track (new TRACK when pipeline done)
+- **Step 18:** one commit, imports only — no logic changes; verify 490 tests + self-host diff
+- **Steps 19–22:** same gate per sub-step; do not bundle layers in one commit
+- **Step 15:** parser `ref mut` — separate branch, not in this track
+- **CppExpr backend:** PLAN Phase 2 — new TRACK when step 22 done
 
-## Step 14 detail (done — `6df3799`)
+## Step 17 detail (done — `6f998e9`)
 
-- parser `export trait`; trait codegen (requires, vtable, static_assert)
-- verify: g++ mlcc2 + `diff -rq p1 p2` empty; 490 tests
+- `compiler/pipeline.mlc`: checker → transform → codegen passes
+- `main.mlc`: `compile_modular_loop` removed; calls `run_modular_compiler_pipeline`
+- verify: 490 tests; build.sh; self-host diff empty
 
-## Step 16 detail (done)
+## Step 18 detail (commit-prep)
 
-- `expr_eval.mlc` → `eval_expr_with_visitor` (3 lines); match removed from expr_eval
-- Single dispatch in `expr_visitor_string.mlc`; `StringExprVisitor` carries `gen_stmts` + `evaluate_expression`
-- `dispatch_expr` in `expr_visitor.mlc` — full SExpr coverage + wildcard (if-chain codegen)
-- verify: 490 tests pass
-
-## Step 17 detail (commit-prep)
-
-- `compiler/pipeline.mlc`: `run_checker_pass` → `run_transform_pass` → `run_codegen_pass` → `run_modular_compiler_pipeline`
-- `main.mlc`: merge/lex/parse unchanged; `compile_modular_loop` removed; calls pipeline
-- `pass.mlc`: trait sketch only (generic trait not wired — C++ codegen limits)
-- verify: 490 tests; build.sh; self-host diff p1/p2 empty
+- moved: lexer, ast, ast_tokens → `compiler/frontend/`; parser/ → `frontend/parser/`; preds → predicates.mlc
+- all import paths updated; no logic changes
+- verify: 490 tests; build.sh; self-host diff empty
 
 ## Next step (Driver)
 
-**STEP=17-commit** — user `git commit`; then STEP=18 deferred or plan-refresh
+**STEP=18-commit** — user `git commit`; then STEP=19 (ir/)
 
-## Planner checklist (2026-05-24 plan-refresh)
+## Planner checklist (2026-05-25 plan-refresh)
 
-- [x] All PLAN §3 visitor arms have a TRACK row or explicit defer
+- [x] Step 17 marked done with commit `6f998e9`
+- [x] PLAN §4 migration split into steps 18–22 (one layer per step)
+- [x] Each pending step has verify gate (490 tests + self-host)
 - [x] No step bundles `compiler/` + `lib/mlc/`
-- [x] Each pending step has verify gate (tests count or self-host)
-- [x] Done rows cite commit hash

@@ -1,2 +1,2 @@
-import { tokenize } from './lexer'
+import { tokenize } from './frontend/lexer'
 fn main() -> i32 = 42

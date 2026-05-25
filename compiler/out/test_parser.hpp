@@ -9,7 +9,7 @@
 #include "decls.hpp"
 #include "ast.hpp"
 #include "exprs.hpp"
-#include "preds.hpp"
+#include "predicates.hpp"
 
 namespace test_parser {
 

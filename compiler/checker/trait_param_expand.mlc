@@ -9,7 +9,7 @@ import {
   WhereClauseBound,
   param_name, param_typ,
   Diagnostic, diagnostic_error, span_unknown
-} from '../ast'
+} from '../frontend/ast'
 
 fn declaration_without_export_wrappers(declaration: Shared<Decl>) -> Shared<Decl> =
   match declaration {

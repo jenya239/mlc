@@ -4,7 +4,7 @@
 #include "mlc.hpp"
 #include <variant>
 
-#include "preds.hpp"
+#include "predicates.hpp"
 #include "types.hpp"
 #include "exprs.hpp"
 #include "ast.hpp"
@@ -17,7 +17,7 @@ struct Stmt;
 struct SExpr;
 struct SStmt;
 
-preds::DeclResult parse_decl(preds::Parser parser) noexcept;
+predicates::DeclResult parse_decl(predicates::Parser parser) noexcept;
 
 ast::Program parse_program_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
 

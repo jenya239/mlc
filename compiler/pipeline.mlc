@@ -1,6 +1,6 @@
 // Explicit modular compiler pipeline (PLAN.md §3). Checker → transform → codegen.
 
-import { Program, Result } from './ast'
+import { Program, Result } from './frontend/ast'
 import { check_with_context } from './checker/check'
 import { TypeRegistry } from './checker/registry'
 import { build_trait_nominal_maps } from './checker/trait_param_expand'

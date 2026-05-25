@@ -5,7 +5,7 @@
 #include "decls.hpp"
 #include "ast.hpp"
 #include "exprs.hpp"
-#include "preds.hpp"
+#include "predicates.hpp"
 
 namespace test_parser {
 
@@ -14,7 +14,7 @@ using namespace lexer;
 using namespace decls;
 using namespace ast;
 using namespace exprs;
-using namespace preds;
+using namespace predicates;
 using namespace ast_tokens;
 
 ast::Program parse_source(mlc::String source) noexcept;
@@ -67,7 +67,7 @@ mlc::Array<test_runner::TestResult> parser_tests() noexcept;
 
 ast::Program parse_source(mlc::String source) noexcept{return decls::parse_program(lexer::tokenize(source).tokens);}
 
-std::shared_ptr<ast::Expr> parse_expr_source(mlc::String source) noexcept{return exprs::parse_expr(preds::parser_new(lexer::tokenize(source).tokens)).expr;}
+std::shared_ptr<ast::Expr> parse_expr_source(mlc::String source) noexcept{return exprs::parse_expr(predicates::parser_new(lexer::tokenize(source).tokens)).expr;}
 
 bool expr_call_one_ident_argument(std::shared_ptr<ast::Expr> expression, mlc::String expected_function, mlc::String expected_argument) noexcept{return [&]() { if (std::holds_alternative<ast::ExprCall>((*expression)._)) { auto _v_exprcall = std::get<ast::ExprCall>((*expression)._); auto [callee, arguments, _w0] = _v_exprcall; return [&]() { if (std::holds_alternative<ast::ExprIdent>((*callee)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*callee)._); auto [function_name, _w0] = _v_exprident; return function_name != expected_function || arguments.size() != 1 ? false : [&]() { if (std::holds_alternative<ast::ExprIdent>((*arguments[0])._)) { auto _v_exprident = std::get<ast::ExprIdent>((*arguments[0])._); auto [argument_name, _w0] = _v_exprident; return argument_name == expected_argument; } return false; }(); } return false; }(); } return false; }();}
 

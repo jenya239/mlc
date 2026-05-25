@@ -3,8 +3,8 @@
 import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
          Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span,
          Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span,
-         span_unknown, TypeVariant } from '../ast'
-import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../ast'
+         span_unknown, TypeVariant } from '../frontend/ast'
+import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../frontend/ast'
 import { check_names_expr } from './names'
 import { check_fn_body_mutations } from './check_mutations'
 import { Type, TypeRegistry, build_registry, type_from_annotation } from './registry'

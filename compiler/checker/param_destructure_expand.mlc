@@ -10,7 +10,7 @@ import {
   TypeExpr,
   Diagnostic, diagnostic_error,
   span_unknown
-} from '../ast'
+} from '../frontend/ast'
 
 fn synthetic_destructure_parameter_name(parameter_position_index: i32) -> string =
   '__mlc_ds' + parameter_position_index.to_string()

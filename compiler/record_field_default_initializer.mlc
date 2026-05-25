@@ -14,7 +14,7 @@ import {
   ExprIdent,
   ExprBin,
   ExprUn
-} from './ast'
+} from './frontend/ast'
 import { CodegenContext } from './codegen/context'
 import * as lit from './codegen/literals'
 import * as expression_output from './codegen/expr'

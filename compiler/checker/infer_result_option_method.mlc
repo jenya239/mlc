@@ -1,6 +1,6 @@
 // Type inference for Result / Option TGeneric combinator methods (A2).
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_span } from '../ast'
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_span } from '../frontend/ast'
 import { Type, TUnknown, TGeneric } from './registry'
 import { CheckContext } from './check_context'
 import { InferResult } from './infer_result'

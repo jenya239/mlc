@@ -1,7 +1,7 @@
 // Function and constructor call type inference.
 // infer_expr_fn injected to break the import cycle with infer.mlc.
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_placeholder } from '../ast'
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_placeholder } from '../frontend/ast'
 import { Type, TNamed, TypeRegistry } from './registry'
 import { CheckContext } from './check_context'
 import { InferResult } from './infer_result'

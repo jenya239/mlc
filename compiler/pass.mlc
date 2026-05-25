@@ -1,6 +1,6 @@
 // Compiler pass abstraction (PLAN.md §3). Trait sketch; modular pipeline uses function slots in pipeline.mlc.
 
-import { Program, Result, Diagnostic } from './ast'
+import { Program, Result, Diagnostic } from './frontend/ast'
 
 export trait CompilerPass<Input, Output> {
   fn run(self: CompilerPass<Input, Output>, input: Input) -> Result<Output, [Diagnostic]>

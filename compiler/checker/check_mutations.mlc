@@ -1,7 +1,7 @@
 // Mutation check: verify that x = value only applies to let mut bindings.
 // Separate pass from names.mlc; builds its own mutable-names scope.
 
-import { Expr, Stmt, FieldVal, MatchArm, Param, Diagnostic, diagnostic_error, diagnostics_append, RecordLitPart, RecordLitFields, RecordLitSpread } from '../ast'
+import { Expr, Stmt, FieldVal, MatchArm, Param, Diagnostic, diagnostic_error, diagnostics_append, RecordLitPart, RecordLitFields, RecordLitSpread } from '../frontend/ast'
 import { pattern_bindings } from './names'
 
 fn scope_has(scope: [string], sought_name: string) -> bool =

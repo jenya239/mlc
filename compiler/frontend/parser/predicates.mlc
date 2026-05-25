@@ -1,0 +1,158 @@
+// Parser state, result types, and token kind predicates.
+
+import { TKind, Token, LexOut } from '../ast_tokens'
+import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound, RecordLitPart } from '../ast'
+
+// --- Parser state ---------------------------------------------------------
+
+export type Parser = Parser { tokens: [Token], pos: i32, source_path: string, suppress_lambda_shorthand: bool }
+
+export fn parser_new_with_source_path(tokens: [Token], source_path: string) -> Parser =
+  Parser { tokens: tokens, pos: 0, source_path: source_path, suppress_lambda_shorthand: false }
+
+export fn parser_new(tokens: [Token]) -> Parser =
+  parser_new_with_source_path(tokens, '')
+
+// --- Result types ---------------------------------------------------------
+
+export type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
+export type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
+export type PatResult       = PatResult       { pat:        Shared<Pat>,            parser: Parser }
+export type StmtResult      = StmtResult      { stmt:       Shared<Stmt>,           parser: Parser }
+export type StmtsResult     = StmtsResult     { stmts:      [Shared<Stmt>],         parser: Parser }
+export type ExprsResult     = ExprsResult     { exprs:      [Shared<Expr>],         parser: Parser }
+export type ArmsResult      = ArmsResult      { arms:       [Shared<MatchArm>],     parser: Parser }
+export type VariantResult   = VariantResult   { variant:    Shared<TypeVariant>,    parser: Parser }
+export type VariantsResult  = VariantsResult  { variants:   [Shared<TypeVariant>],  parser: Parser }
+export type ParamsResult    = ParamsResult    { params:     [Shared<Param>],        parser: Parser }
+export type DeclResult      = DeclResult      { decl:       Shared<Decl>,           parser: Parser }
+export type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
+export type RecordLitPartsResult = RecordLitPartsResult { lit_parts: [RecordLitPart], parser: Parser }
+export type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          parser: Parser }
+export type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
+export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
+export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
+export type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
+export type TypeParamsResult = TypeParamsResult { params: [string], bounds: [[string]], parser: Parser }
+export type BoundsResult = BoundsResult { bounds: [string], parser: Parser }
+export type WhereClauseParseResult = WhereClauseParseResult { where_bounds: [WhereClauseBound], parser: Parser }
+export type TraitBodyResult  = TraitBodyResult  { methods:  [Shared<Decl>],           parser: Parser }
+
+export fn is_ctor_name(name: string) -> bool =
+  name.char_at(0) >= "A" && name.char_at(0) <= "Z"
+
+// --- extend TKind ---------------------------------------------------------
+
+export extend TKind {
+  fn is_fn(self)       -> bool = match self { KFn       => true, _ => false }
+  fn is_type(self)     -> bool = match self { KType     => true, _ => false }
+  fn is_let(self)      -> bool = match self { KLet      => true, _ => false }
+  fn is_mut(self)      -> bool = match self { KMut      => true, _ => false }
+  fn is_const(self)    -> bool = match self { KConst    => true, _ => false }
+  fn is_if(self)       -> bool = match self { KIf       => true, _ => false }
+  fn is_unless(self)   -> bool = match self { KUnless   => true, _ => false }
+  fn is_else(self)     -> bool = match self { KElse     => true, _ => false }
+  fn is_end(self)      -> bool = match self { KEnd      => true, _ => false }
+  fn is_do(self)       -> bool = match self { KDo       => true, _ => false }
+  fn is_while(self)    -> bool = match self { KWhile    => true, _ => false }
+  fn is_for(self)      -> bool = match self { KFor      => true, _ => false }
+  fn is_with(self)     -> bool = match self { KWith     => true, _ => false }
+  fn is_match(self)    -> bool = match self { KMatch    => true, _ => false }
+  fn is_return(self)   -> bool = match self { KReturn   => true, _ => false }
+  fn is_break(self)    -> bool = match self { KBreak    => true, _ => false }
+  fn is_continue(self) -> bool = match self { KContinue => true, _ => false }
+  fn is_true(self)     -> bool = match self { KTrue     => true, _ => false }
+  fn is_false(self)    -> bool = match self { KFalse    => true, _ => false }
+  fn is_extern(self)   -> bool = match self { KExtern   => true, _ => false }
+  fn is_extend(self)   -> bool = match self { KExtend   => true, _ => false }
+  fn is_where(self)    -> bool = match self { KWhere    => true, _ => false }
+  fn is_import(self)   -> bool = match self { KImport   => true, _ => false }
+  fn is_as(self)       -> bool = match self { KAs       => true, _ => false }
+  fn is_from(self)     -> bool = match self { KFrom     => true, _ => false }
+  fn is_eof(self)      -> bool = match self { Eof       => true, _ => false }
+  fn is_ident(self)    -> bool = match self { Ident(_)  => true, _ => false }
+  fn is_int(self)      -> bool = match self { LInt(_)   => true, _ => false }
+  fn is_str(self)      -> bool = match self { LStr(_)   => true, _ => false }
+  fn is_template(self)     -> bool = match self { LTemplate(_)  => true, _ => false }
+  fn template_parts(self)  -> [string] = match self {
+    LTemplate(parts) => parts,
+    _                => do let r: [string] = []; r end
+  }
+  fn is_equal(self)    -> bool = match self { Equal     => true, _ => false }
+  fn is_bar(self)      -> bool = match self { Bar       => true, _ => false }
+  fn is_pipe(self)     -> bool = match self { Pipe      => true, _ => false }
+  fn is_colon(self)    -> bool = match self { Colon     => true, _ => false }
+  fn is_comma(self)    -> bool = match self { Comma     => true, _ => false }
+  fn is_dot(self)      -> bool = match self { Dot       => true, _ => false }
+  fn is_spread(self)   -> bool = match self { Spread    => true, _ => false }
+  fn is_arrow(self)    -> bool = match self { Arrow     => true, _ => false }
+  fn is_fat_arrow(self) -> bool = match self { FatArrow => true, _ => false }
+  fn is_question(self) -> bool = match self { Question  => true, _ => false }
+  fn is_lparen(self)   -> bool = match self { LParen    => true, _ => false }
+  fn is_rparen(self)   -> bool = match self { RParen    => true, _ => false }
+  fn is_lbrace(self)   -> bool = match self { LBrace    => true, _ => false }
+  fn is_rbrace(self)   -> bool = match self { RBrace    => true, _ => false }
+  fn is_lbracket(self) -> bool = match self { LBracket  => true, _ => false }
+  fn is_rbracket(self) -> bool = match self { RBracket  => true, _ => false }
+  fn is_op(self)       -> bool = match self { Op(_)     => true, _ => false }
+  fn ident(self)       -> string = match self { Ident(name) => name, _ => '' }
+  fn int_val(self)     -> i32    = match self { LInt(n)     => n,    _ => 0 }
+  fn str_val(self)     -> string = match self { LStr(s)     => s,    _ => '' }
+  fn op_val(self)      -> string = match self { Op(s)       => s,    _ => '' }
+  fn is_float(self)    -> bool   = match self { LFloat(_)   => true, _ => false }
+  fn is_i64(self)      -> bool   = match self { LI64(_)     => true, _ => false }
+  fn is_u8(self)       -> bool   = match self { LU8(_)      => true, _ => false }
+  fn is_usize(self)    -> bool   = match self { LUsize(_)   => true, _ => false }
+  fn is_char_lit(self) -> bool   = match self { LChar(_)    => true, _ => false }
+  fn float_val(self)   -> string = match self { LFloat(s)   => s,    _ => '' }
+  fn i64_val(self)     -> string = match self { LI64(s)     => s,    _ => '' }
+  fn u8_val(self)      -> string = match self { LU8(s)      => s,    _ => '' }
+  fn usize_val(self)   -> string = match self { LUsize(s)   => s,    _ => '' }
+  fn char_val(self)    -> string = match self { LChar(s)    => s,    _ => '' }
+}
+
+// --- extend Parser --------------------------------------------------------
+
+export extend Parser {
+  fn kind(self) -> TKind = do const tok: Token = self.tokens[self.pos]; tok.kind end
+  fn lambda_shorthand_suppression_active(self) -> bool = self.suppress_lambda_shorthand
+  fn with_lambda_shorthand_suppressed(self, value: bool) -> Parser =
+    Parser {
+      tokens: self.tokens,
+      pos: self.pos,
+      source_path: self.source_path,
+      suppress_lambda_shorthand: value,
+    }
+  fn advance(self)   -> Parser =
+    Parser {
+      tokens: self.tokens,
+      pos: self.pos + 1,
+      source_path: self.source_path,
+      suppress_lambda_shorthand: self.suppress_lambda_shorthand,
+    }
+  fn advance_by(self, count: i32) -> Parser =
+    Parser {
+      tokens: self.tokens,
+      pos: self.pos + count,
+      source_path: self.source_path,
+      suppress_lambda_shorthand: self.suppress_lambda_shorthand,
+    }
+  fn at_eof(self) -> bool =
+    if self.pos >= self.tokens.length() then true
+    else
+      const tok: Token = self.tokens[self.pos]; tok.kind.is_eof()
+    end
+  fn skip_semi(self) -> Parser = do
+    const tok: Token = self.tokens[self.pos]
+    match tok.kind { Semicolon => self.advance(), _ => self }
+  end
+  fn span_at_cursor(self) -> Span = do
+    const tok: Token = self.tokens[self.pos]
+    Span { file: self.source_path, line: tok.line, column: tok.col }
+  end
+  fn prev_line(self) -> i32 = do
+    if self.pos > 0 then
+      const tok: Token = self.tokens[self.pos - 1]; tok.line
+    else 0 end
+  end
+}

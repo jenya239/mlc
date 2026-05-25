@@ -3,7 +3,7 @@
 import {
   TypeVariant, VarUnit, VarTuple, VarRecord, TypeExpr,
   TyI32, TyBool, TyString, Diagnostic, diagnostic_error, Span
-} from '../ast'
+} from '../frontend/ast'
 
 fn derive_trait_name_allowed(trait_name: string) -> bool =
   trait_name == 'Display' || trait_name == 'Eq' || trait_name == 'Ord' || trait_name == 'Hash'

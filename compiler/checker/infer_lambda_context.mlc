@@ -1,6 +1,6 @@
 // Lambda inference with known parameter types (call-site context).
 
-import { Expr } from '../ast'
+import { Expr } from '../frontend/ast'
 import { Type } from './registry'
 import { CheckContext, check_context_new } from './check_context'
 import { InferResult } from './infer_result'

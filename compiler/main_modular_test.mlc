@@ -1,9 +1,9 @@
-import { tokenize } from './lexer'
-import { parse_program } from './parser/decls'
+import { tokenize } from './frontend/lexer'
+import { parse_program } from './frontend/parser/decls'
 import { check } from './checker/check'
 import { gen_module } from './codegen/module'
 import { LoadItem, PrecomputedCtx } from './codegen/context'
-import { Program, Decl, DeclImport, DeclExported, errs_append } from './ast'
+import { Program, Decl, DeclImport, DeclExported, errs_append } from './frontend/ast'
 
 fn format_errs(label: string, errors: [string]) -> string = ''
 

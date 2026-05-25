@@ -1,6 +1,6 @@
 // Call / non-constructor inference helpers (no infer_expr dependency).
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append } from '../ast'
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append } from '../frontend/ast'
 import { Type } from './registry'
 import { CheckContext } from './check_context'
 import { TypeRegistry } from './registry'

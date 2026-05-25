@@ -1,6 +1,6 @@
 // Call-site argument checking with type-parameter substitution (unification).
 
-import { Expr, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span, span_unknown } from '../ast'
+import { Expr, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span, span_unknown } from '../frontend/ast'
 import { Type } from './registry'
 import * as semantic_type_structure from './semantic_type_structure'
 

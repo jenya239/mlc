@@ -1,6 +1,6 @@
 // For-loop iterator: range diagnostic merge and element type from iterator type.
 
-import { Expr, diagnostics_append } from '../ast'
+import { Expr, diagnostics_append } from '../frontend/ast'
 import { InferResult } from './infer_result'
 import { Type } from './registry'
 import { for_loop_range_diagnostic } from './type_diagnostics'

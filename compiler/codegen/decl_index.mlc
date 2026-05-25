@@ -1,6 +1,6 @@
 // Module item loading, field order registry, method owner index, and variant builders.
 
-import { Program, Decl, TypeVariant, FieldDef, decl_inner } from '../ast'
+import { Program, Decl, TypeVariant, FieldDef, decl_inner } from '../frontend/ast'
 import { path_to_module_base } from './cpp_naming'
 
 export type NamespaceImportAlias = NamespaceImportAlias { alias: string, module_path: string }

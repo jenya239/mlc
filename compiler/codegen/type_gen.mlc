@@ -1,6 +1,6 @@
 // Type expression → C++ string generation.
 
-import { TypeVariant, TypeExpr, FieldDef, Decl, Param, TyI32, TyBool, TyString, VarUnit, VarTuple, VarRecord } from '../ast'
+import { TypeVariant, TypeExpr, FieldDef, Decl, Param, TyI32, TyBool, TyString, VarUnit, VarTuple, VarRecord } from '../frontend/ast'
 import { Type } from '../checker/registry'
 import {
   record_field_default_expression_acceptable_for_codegen,

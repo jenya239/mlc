@@ -3,7 +3,7 @@
 // Produced by checker/transform.mlc; consumed by codegen/.
 
 import { Type } from './checker/registry'
-import { Pat, Span, TypeVariant, Param, Decl, WhereClauseBound } from './ast'
+import { Pat, Span, TypeVariant, Param, Decl, WhereClauseBound } from './frontend/ast'
 
 // Forward-declare SExpr so records referencing it can be defined first.
 export type SMatchArm = SMatchArm {

@@ -6,11 +6,76 @@
 |-------|-------|
 | instructions_rev | `2026-05-22-roles-v3` |
 | role_last | Driver |
-| driver_turns_since_plan | 0 |
-| step_last | 17-commit-prep |
-| agent_token_last | cr-agent-855464c5-1ce9-4dba-a4d3-decf5ca4b7dc |
+| driver_turns_since_plan | 1 |
+| step_last | 18-commit-prep |
+| agent_token_last | cr-agent-776c0c78-2dd8-4a48-9d60-f4b88cd11a7d |
 | run_tests | 490 passed |
-| TRACK_PLAN | step 17 commit-prep; next STEP=17-commit |
+| TRACK_PLAN | step 18 commit-prep; next STEP=18-commit |
+
+### Turn 2026-05-25 (step 18-commit-prep)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 1 |
+| step | 18-commit-prep |
+| done | frontend/ move + preds→predicates; import paths updated |
+| verify | pass — 490 tests; build.sh; self-host diff empty |
+| uncommitted_files | ~81 tracked + junk |
+| agent_token_last | cr-agent-776c0c78-2dd8-4a48-9d60-f4b88cd11a7d |
+| next | user `git commit`; STEP=19 |
+
+### Turn 2026-05-25 (plan-refresh #3)
+
+| turn | 2026-05-25 |
+| role | Planner |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | idempotent — TRACK unchanged; step 18 = frontend/ (PLAN §4.1) |
+| verify | n/a |
+| uncommitted_files | 3 docs + junk |
+| agent_token_last | cr-agent-267e4172-3e93-44af-a36f-8a035bc4632d |
+| next | ROLE=Driver STEP=18 |
+
+### Turn 2026-05-25 (plan-refresh, repeat)
+
+| turn | 2026-05-25 |
+| role | Planner |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | idempotent — TRACK step 18 = frontend/ (PLAN §4 item 1); steps 19–22 queued |
+| verify | n/a |
+| uncommitted_files | 3 docs + junk |
+| agent_token_last | cr-agent-e6cf842e-e850-4931-bc31-6bd48f45ad17 |
+| next | ROLE=Driver STEP=18 |
+
+### Turn 2026-05-25 (plan-refresh)
+
+| turn | 2026-05-25 |
+| role | Planner |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | idempotent — step 17 `6f998e9`; step 18 = frontend/ (TRACK unchanged) |
+| verify | n/a — docs only |
+| uncommitted_files | 3 docs + ~14 junk |
+| agent_token_last | cr-agent-d45f7942-586b-4fc4-998d-352529b65d80 |
+| next | ROLE=Driver STEP=18 |
+
+### Turn 2026-05-24 (plan-refresh)
+
+| turn | 2026-05-24 |
+| role | Planner |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | step 17 → `6f998e9`; split §4 restructure into steps 18–22; step 18 = frontend/ |
+| verify | n/a — docs only |
+| uncommitted_files | ~14 junk (.cursor/, test_t*.mlc) |
+| agent_token_last | cr-agent-d6af1440-4ab6-48ef-af55-fcc3a383fad3 |
+| next | ROLE=Driver STEP=18 |
 
 ### Turn 2026-05-24 (step 17-commit-prep)
 

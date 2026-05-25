@@ -1,6 +1,6 @@
 // Type inference for array higher-order methods (map, filter, fold, ...).
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_span } from '../ast'
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_span } from '../frontend/ast'
 import { Type } from './registry'
 import { CheckContext } from './check_context'
 import { InferResult } from './infer_result'

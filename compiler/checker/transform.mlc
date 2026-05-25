@@ -2,7 +2,7 @@
 // Mirrors infer_expr but produces typed Shared<SExpr> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from '../ast'
+import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from '../frontend/ast'
 import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from './registry'
 import {
   binary_operation_result_type,

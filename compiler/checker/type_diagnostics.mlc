@@ -1,6 +1,6 @@
 // Diagnostic builders: unary, arity, index, if, match, for, field access.
 
-import { Expr, Diagnostic, Span, diagnostic_error, expr_span } from '../ast'
+import { Expr, Diagnostic, Span, diagnostic_error, expr_span } from '../frontend/ast'
 import { Type, TypeRegistry } from './registry'
 import * as semantic_type_structure from './semantic_type_structure'
 import { array_hof_expected_argument_count, is_array_hof_method } from './array_method_types'

@@ -1,6 +1,6 @@
 // Builtin method receiver type diagnostic builders.
 
-import { Diagnostic, Span, diagnostic_error } from '../ast'
+import { Diagnostic, Span, diagnostic_error } from '../frontend/ast'
 import { Type } from './registry'
 import * as semantic_type_structure from './semantic_type_structure'
 import { is_array_hof_method } from './array_method_types'

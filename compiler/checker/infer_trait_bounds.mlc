@@ -1,7 +1,7 @@
 // Trait bound checking at call sites.
 // No dependency on infer_expr — operates on already-inferred argument types.
 
-import { Diagnostic, Span, diagnostic_error, diagnostics_append } from '../ast'
+import { Diagnostic, Span, diagnostic_error, diagnostics_append } from '../frontend/ast'
 import { Type } from './registry'
 import { CheckContext } from './check_context'
 import { build_call_type_substitution } from './call_argument_unify'

@@ -4,7 +4,7 @@
 #include "mlc.hpp"
 #include <variant>
 
-#include "preds.hpp"
+#include "predicates.hpp"
 
 namespace types {
 
@@ -14,7 +14,7 @@ struct Stmt;
 struct SExpr;
 struct SStmt;
 
-preds::TypeResult parse_type(preds::Parser parser) noexcept;
+predicates::TypeResult parse_type(predicates::Parser parser) noexcept;
 
 } // namespace types
 

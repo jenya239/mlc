@@ -1,4 +1,4 @@
-import { Pat } from '../ast'
+import { Pat } from '../frontend/ast'
 import { Type, TypeRegistry } from './registry'
 import { substitute_type } from './semantic_type_structure'
 

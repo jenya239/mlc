@@ -1,7 +1,7 @@
 // Inference result types, extend helpers, and infer_ok (no infer_expr dependency).
 
 import { Type } from './registry'
-import { Diagnostic, diagnostics_append } from '../ast'
+import { Diagnostic, diagnostics_append } from '../frontend/ast'
 
 export type InferResult     = InferResult     { inferred_type: Shared<Type>,             errors: [Diagnostic] }
 export type StmtInferResult = StmtInferResult { type_env:      Map<string, Shared<Type>>, errors: [Diagnostic] }

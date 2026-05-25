@@ -1,6 +1,6 @@
 // Module and program level code generation entry points.
 
-import { Program, errs_append } from '../ast'
+import { Program, errs_append } from '../frontend/ast'
 import { SLoadItem, SNamespaceImportAlias } from '../semantic_ir'
 import { build_registry } from '../checker/registry'
 import { transform_load_items } from '../checker/transform_decl'

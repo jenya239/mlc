@@ -1,7 +1,7 @@
 // Declaration, program, and load-item AST → SemanticIR transforms.
 // Not called back by transform_expr/transform_stmts; imports from transform.mlc.
 
-import { Decl, TypeVariant, Param, Program, Stmt, Span } from '../ast'
+import { Decl, TypeVariant, Param, Program, Stmt, Span } from '../frontend/ast'
 import { expand_declarations_with_trait_nominal_maps, build_trait_nominal_maps, TraitNominalMaps } from './trait_param_expand'
 import { expand_parameter_destructuring_in_program } from './param_destructure_expand'
 import { Type, TypeRegistry, type_from_annotation } from './registry'
