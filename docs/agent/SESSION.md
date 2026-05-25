@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
-| role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 23 |
-| agent_token_last | cr-agent-76ae0500-e6d2-46aa-8579-9d779b0922c3 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
+| agent_token_last | cr-agent-8a1090dc-afd4-4108-9fc0-d07ebaeb806c |
 | run_tests | 490 |
-| TRACK_PLAN | steps 1-23 done |
+| TRACK_PLAN | closed; active TRACK_CPPEXPR step 1 pending |
+
+### Turn 2026-05-25 (plan-refresh Phase 2)
+
+| turn | 2026-05-25 |
+| role | Planner |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_CPPEXPR.md (21 steps); TRACK_PLAN closed |
+| verify | n/a (docs only) |
+| uncommitted_files | 3 docs |
+| next | Driver STEP=1 |
 
 ### Turn 2026-05-25 (step 22+23)
 

@@ -45,7 +45,11 @@ Source: PLAN.md §4 «Порядок миграции».
 - **Step 19:** `semantic_ir.mlc` → `ir/semantic_ir.mlc`; `record_field_default_initializer.mlc` → `ir/record_defaults.mlc`; imports only
 - **Steps 20–22:** same gate per sub-step; do not bundle layers in one commit
 - **Step 15:** parser `ref mut` — separate branch, not in this track
-- **CppExpr backend:** PLAN Phase 2 — new TRACK when step 22 done
+- **CppExpr backend:** [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) — Phase 2 (active)
+
+## Next step (Driver)
+
+See [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) — **STEP=1** (CppType in `compiler/cpp/ast.mlc`).
 
 ## Step 17 detail (done — `6f998e9`)
 
@@ -71,12 +75,10 @@ Source: PLAN.md §4 «Порядок миграции».
 - filenames kept (unique C++ basenames; short renames blocked by `path_to_module_base`)
 - verify: 490 tests; build.sh; self-host diff empty
 
-## Next step (Driver)
-
-Folder restructure track complete. New TRACK for PLAN Phase 2 (CppExpr backend) when planned.
-
-## Planner checklist (2026-05-25 plan-refresh #2)
+## Planner checklist (2026-05-25 plan-refresh #3 — Phase 2)
 
 - [x] Step 18 marked done with commit `bef5143`
 - [x] Step 19 scoped with file list + verify gate
 - [x] No step bundles `compiler/` + `lib/mlc/`
+- [x] TRACK_CPPEXPR.md created (21 steps, verify gate)
+- [x] Folder restructure track closed; Phase 2 active
