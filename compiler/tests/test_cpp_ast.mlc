@@ -1,7 +1,8 @@
 // Unit tests for C++ AST types.
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
-import { CppProgram, CppInclude, CppStruct, CppField, CppType, CppTypeName, CppTypeTemplate, CppTypeRef } from '../cpp/ast'
+import { CppProgram, CppInclude, CppStruct, CppField, CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
+         CppExpr, CppBool, CppTernary, CppInitList, CppCast, CppCastStatic, CppInt, CppIdent } from '../cpp/ast'
 
 export fn cpp_ast_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -27,6 +28,40 @@ export fn cpp_ast_tests() -> [TestResult] = do
     match vector_int { CppTypeTemplate(name, args) => name == 'std::vector' && args.length() == 1, _ => false }))
   results.push(assert_true('CppTypeRef',
     match int_ref { CppTypeRef(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
+
+  const flag = Shared.new(CppBool(true))
+  results.push(assert_true('CppBool',
+    match flag { CppBool(value) => value, _ => false }))
+
+  const condition = Shared.new(CppIdent('ready'))
+  const then_branch = Shared.new(CppInt(1))
+  const else_branch = Shared.new(CppInt(0))
+  const ternary = Shared.new(CppTernary(condition, then_branch, else_branch))
+  results.push(assert_true('CppTernary',
+    match ternary {
+      CppTernary(condition_expression, then_expression, else_expression) =>
+        match condition_expression { CppIdent(name) => name == 'ready', _ => false }
+        && match then_expression { CppInt(value) => value == 1, _ => false }
+        && match else_expression { CppInt(value) => value == 0, _ => false },
+      _ => false
+    }))
+
+  const element = Shared.new(CppInt(42))
+  const init_list = Shared.new(CppInitList([element]))
+  results.push(assert_true('CppInitList',
+    match init_list { CppInitList(elements) => elements.length() == 1, _ => false }))
+
+  const cast_target = Shared.new(CppTypeName('int'))
+  const cast_operand = Shared.new(CppIdent('value'))
+  const cast_expression = Shared.new(CppCast(CppCastStatic, cast_target, cast_operand))
+  results.push(assert_true('CppCast',
+    match cast_expression {
+      CppCast(kind, target_type, operand) =>
+        match kind { CppCastStatic => true, _ => false }
+        && match target_type { CppTypeName(name) => name == 'int', _ => false }
+        && match operand { CppIdent(name) => name == 'value', _ => false },
+      _ => false
+    }))
 
   results
 end

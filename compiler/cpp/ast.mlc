@@ -5,15 +5,25 @@ type CppType =
   | CppTypeTemplate(string, [Shared<CppType>])
   | CppTypeRef(Shared<CppType>)
 
+type CppCastKind =
+  | CppCastStatic
+  | CppCastDynamic
+  | CppCastReinterpret
+  | CppCastConst
+
 type CppExpr =
   | CppInt(i32)
   | CppStr(string)
+  | CppBool(bool)
   | CppIdent(string)
   | CppCall(Shared<CppExpr>, [Shared<CppExpr>])
   | CppMember(Shared<CppExpr>, string)
   | CppIndex(Shared<CppExpr>, Shared<CppExpr>)
   | CppBinary(string, Shared<CppExpr>, Shared<CppExpr>)
   | CppUnary(string, Shared<CppExpr>)
+  | CppTernary(Shared<CppExpr>, Shared<CppExpr>, Shared<CppExpr>)
+  | CppInitList([Shared<CppExpr>])
+  | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpr>)
 
 type CppStmt =
   | CppAutoDecl(string, Shared<CppExpr>)
