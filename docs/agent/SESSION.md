@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 21 |
-| agent_token_last | cr-agent-8bb482a9-ce35-49f0-bc20-5dad3b0accc3 |
-| run_tests | 490 (ef3fedf) |
-| TRACK_PLAN | step 21 done; next STEP=22 |
+| driver_turns_since_plan | 4 |
+| step_last | 23 |
+| agent_token_last | cr-agent-76ae0500-e6d2-46aa-8579-9d779b0922c3 |
+| run_tests | 490 |
+| TRACK_PLAN | steps 1-23 done |
+
+### Turn 2026-05-25 (step 22+23)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 4 |
+| step | 22+23 |
+| done | step 22+23 committed |
+| verify | 490 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | 0 |
+| next | Planner — new TRACK for Phase 2 |
 
 ### Turn 2026-05-25 (step 21)
 
@@ -21,7 +33,7 @@
 | step | 21 |
 | done | step 21 committed ef3fedf |
 | verify | 490 pass; build.sh; self-host diff empty (g++) |
-| uncommitted_files | docs only (TRACK update) |
+| uncommitted_files | 0 (compiler/out unstaged) |
 | next | STEP=22 |
 
 ### Turn 2026-05-25 (step 20-commit-prep)

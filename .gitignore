@@ -34,12 +34,13 @@ compiler/test_half.mlc
 compiler/test_real_lexer.mlc
 compiler/test_import_tokenize.mlc
 compiler/test_tok_simple.mlc
-!compiler/test_lexer.mlc
-!compiler/test_trait_e2e.mlc
-
-# Случайные фрагменты сборки в корневом out/ (не путать с compiler/out/)
-/out/test_*.cpp
-/out/test_*.hpp
-.cursor/
 compiler/test_t*.mlc
+
+# Stale bootstrap build output (do not commit)
+compiler/out2/
+compiler/out2_tests/
+compiler/out_modular/
+/out/
+
+.cursor/
 .tmp_checker_split*.py

@@ -1,2 +1,0 @@
-import { tokenize } from './frontend/lexer'
-fn main() -> i32 = 42

@@ -10,7 +10,7 @@ Baseline: `benchmarks/profile/record_baseline.sh` (post-commit).
 
 Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 
-## Status: folder restructure in progress (step 18 done; step 19 next)
+## Status: folder restructure **done** (steps 1–23)
 
 | Step | Item | Status |
 |------|------|--------|
@@ -35,8 +35,8 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 | 19 | Move `ir/` — semantic_ir, record_defaults | done (`597b76b`) |
 | 20 | Split `checker/` → infer/, transform/, check/ | done (`597b76b`) |
 | 21 | Split `codegen/` → expr/, stmt/, decl/ | done (`ef3fedf`; split dirs `6b355c3`) |
-| 22 | Move root debug tests → `tests/`; delete junk | pending |
-| 23 | Delete stale artefacts: `compiler/out2/`, `out2_tests/`, `out_modular/`, root `out/`, `main_modular_test.mlc`, `test_lexer.mlc`, `test_trait_e2e.mlc`; update `.gitignore` | pending |
+| 22 | Move root debug tests → `tests/`; delete junk | done |
+| 23 | Delete stale artefacts; update `.gitignore` | done |
 
 ## Backlog (Planner maintains)
 
@@ -73,7 +73,7 @@ Source: PLAN.md §4 «Порядок миграции».
 
 ## Next step (Driver)
 
-**STEP=20-commit** — user `git commit`; then STEP=21
+Folder restructure track complete. New TRACK for PLAN Phase 2 (CppExpr backend) when planned.
 
 ## Planner checklist (2026-05-25 plan-refresh #2)
 
