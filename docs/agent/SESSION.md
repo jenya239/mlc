@@ -9,8 +9,8 @@
 | driver_turns_since_plan | 3 |
 | step_last | 21 |
 | agent_token_last | cr-agent-8bb482a9-ce35-49f0-bc20-5dad3b0accc3 |
-| run_tests | 490 (597b76b) |
-| TRACK_PLAN | step 21 pending → codegen split |
+| run_tests | 490 (ef3fedf) |
+| TRACK_PLAN | step 21 done; next STEP=22 |
 
 ### Turn 2026-05-25 (step 21)
 
@@ -19,11 +19,10 @@
 | instructions_rev | 2026-05-25-autocommit |
 | driver_turns_since_plan | 3 |
 | step | 21 |
-| done | codegen split import paths fixed; verify green |
+| done | step 21 committed ef3fedf |
 | verify | 490 pass; build.sh; self-host diff empty (g++) |
-| uncommitted_files | 33 staged |
-| agent_token_last | cr-agent-8bb482a9-ce35-49f0-bc20-5dad3b0accc3 |
-| next | commit step 21 |
+| uncommitted_files | docs only (TRACK update) |
+| next | STEP=22 |
 
 ### Turn 2026-05-25 (step 20-commit-prep)
 
