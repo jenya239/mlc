@@ -2,15 +2,15 @@
 // eval_expr injected as a function parameter to break the import cycle
 // with expr_eval.mlc (same pattern as gen_stmts).
 
-import { Pat } from '../frontend/ast'
-import { SExpr, SStmt, SMatchArm } from '../ir/semantic_ir'
-import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from './context'
-import { list_contains } from './decl_index'
-import { cpp_safe, lower_first } from './cpp_naming'
+import { Pat } from '../../frontend/ast'
+import { SExpr, SStmt, SMatchArm } from '../../ir/semantic_ir'
+import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from '../context'
+import { list_contains } from '../decl/decl_index'
+import { cpp_safe, lower_first } from '../cpp_naming'
 import { first_arm_needs_deref, pat_bind_names } from './match_analysis'
 import * as expression_output from './expr'
-import { Type, TUnit } from '../checker/registry'
-import { sem_type_to_cpp } from './type_gen'
+import { Type, TUnit } from '../../checker/registry'
+import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_boolean_literal, gen_integer_literal, gen_string_literal } from './literals'
 
 type RecordFieldBindAccum = RecordFieldBindAccum {
@@ -87,12 +87,17 @@ fn gen_arm_ctor(
     else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), lower_name)
     end
   const is_generic = list_contains(context.generic_variants, ctor_name)
-  const type_argument = if is_generic then '<auto>' else '' end
   const arm_context = codegen_context_with_ctor_field_bindings(ctor_name, sub_patterns, context)
-  const param = expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name)
   const body_code = eval_expr_fn(arm_body, arm_context, gen_stmts)
-  if visit_void then expression_output.match_arm_constructed_value_void(param, binding, body_code)
-  else expression_output.match_arm_constructed_value(param, binding, body_code)
+  if is_generic then
+    if visit_void then expression_output.match_arm_constructed_value_generic_void(qualified_name, lower_name, binding, body_code)
+    else expression_output.match_arm_constructed_value_generic(qualified_name, lower_name, binding, body_code)
+    end
+  else
+    const param = expression_output.match_lambda_const_reference_parameter(qualified_name, '', lower_name)
+    if visit_void then expression_output.match_arm_constructed_value_void(param, binding, body_code)
+    else expression_output.match_arm_constructed_value(param, binding, body_code)
+    end
   end
 end
 
@@ -106,13 +111,19 @@ fn gen_arm_record_pattern(
   const qualified_name = context.resolve(record_name)
   const lower_name = cpp_safe(lower_first(record_name))
   const is_generic = list_contains(context.generic_variants, record_name)
-  const type_argument = if is_generic then '<auto>' else '' end
   const accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context)
-  const param = expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name)
   const body_code = eval_expr_fn(arm_body, accumulated.arm_context, gen_stmts)
-  if visit_void then
-    expression_output.match_arm_constructed_value_void(param, accumulated.field_bindings, body_code)
-  else expression_output.match_arm_constructed_value(param, accumulated.field_bindings, body_code)
+  if is_generic then
+    if visit_void then
+      expression_output.match_arm_constructed_value_generic_void(qualified_name, lower_name, accumulated.field_bindings, body_code)
+    else expression_output.match_arm_constructed_value_generic(qualified_name, lower_name, accumulated.field_bindings, body_code)
+    end
+  else
+    const param = expression_output.match_lambda_const_reference_parameter(qualified_name, '', lower_name)
+    if visit_void then
+      expression_output.match_arm_constructed_value_void(param, accumulated.field_bindings, body_code)
+    else expression_output.match_arm_constructed_value(param, accumulated.field_bindings, body_code)
+    end
   end
 end
 

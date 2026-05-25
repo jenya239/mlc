@@ -192,6 +192,22 @@ export fn match_lambda_const_reference_parameter(
 ) -> string =
   `const ${resolved_type_name}${generic_angle_bracket_argument}& ${binding_name_cpp_safe}`
 
+export fn match_arm_constructed_value_generic(
+  resolved_type_name: string,
+  binding_name_cpp_safe: string,
+  binding_prefix: string,
+  return_expression_code: string
+) -> string =
+  `[&]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) { ${binding_prefix}return ${return_expression_code}; }`
+
+export fn match_arm_constructed_value_generic_void(
+  resolved_type_name: string,
+  binding_name_cpp_safe: string,
+  binding_prefix: string,
+  body_expression_code: string
+) -> string =
+  `[&]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) -> void { ${binding_prefix}${body_expression_code}; }`
+
 export fn dot_member_access(receiver_code: string, member_code: string) -> string =
   `${receiver_code}.${member_code}`
 
