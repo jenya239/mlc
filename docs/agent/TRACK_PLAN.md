@@ -35,8 +35,8 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 | 19 | Move `ir/` — semantic_ir, record_defaults | done (`597b76b`) |
 | 20 | Split `checker/` → infer/, transform/, check/ | done (`597b76b`) |
 | 21 | Split `codegen/` → expr/, stmt/, decl/ | done (`ef3fedf`; split dirs `6b355c3`) |
-| 22 | Move root debug tests → `tests/`; delete junk | done |
-| 23 | Delete stale artefacts; update `.gitignore` | done |
+| 22 | Move root debug tests → `tests/`; delete junk | done (`318a727`) |
+| 23 | Delete stale artefacts; update `.gitignore` | done (`318a727`) |
 
 ## Backlog (Planner maintains)
 

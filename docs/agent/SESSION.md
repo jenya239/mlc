@@ -19,7 +19,7 @@
 | instructions_rev | 2026-05-25-autocommit |
 | driver_turns_since_plan | 4 |
 | step | 22+23 |
-| done | step 22+23 committed |
+| done | step 22+23 committed 318a727 |
 | verify | 490 pass; build.sh; self-host diff empty (g++) |
 | uncommitted_files | 0 |
 | next | Planner — new TRACK for Phase 2 |
