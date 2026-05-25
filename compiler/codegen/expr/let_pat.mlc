@@ -1,12 +1,12 @@
 // SStmtLetPat: structured let — tuple/record/array/ctor (A3).
 
-import { Pat, PatIdent } from '../frontend/ast'
-import { SExpr } from '../ir/semantic_ir'
-import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../checker/registry'
-import { CodegenContext, lookup_fields_for_context } from './context'
-import { list_contains } from './decl_index'
-import { sem_type_to_cpp } from './type_gen'
-import { cpp_safe } from './cpp_naming'
+import { Pat, PatIdent } from '../../frontend/ast'
+import { SExpr } from '../../ir/semantic_ir'
+import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../../checker/registry'
+import { CodegenContext, lookup_fields_for_context } from '../context'
+import { list_contains } from '../decl/decl_index'
+import { sem_type_to_cpp } from '../decl/type_gen'
+import { cpp_safe } from '../cpp_naming'
 import { pat_bind_names } from './match_analysis'
 import * as expression_output from './expr'
 

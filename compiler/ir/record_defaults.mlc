@@ -16,8 +16,8 @@ import {
   ExprUn
 } from '../frontend/ast'
 import { CodegenContext } from '../codegen/context'
-import * as lit from '../codegen/literals'
-import * as expression_output from '../codegen/expr'
+import * as lit from '../codegen/expr/literals'
+import * as expression_output from '../codegen/expr/expr'
 import { map_builtin_identifier_reference } from '../codegen/cpp_naming'
 
 fn binary_operator_permitted_for_record_field_default_initializer(operation: string) -> bool =

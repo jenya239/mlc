@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_str, assert_true } from './test_runner'
 import { Program, TypeVariant, Param, FieldDef, TyI32, TyString, TyUnit, TyNamed, span_unknown, ExprUnit, ExprInt, PatUnit } from '../frontend/ast'
 import { create_codegen_context } from '../codegen/context'
-import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main } from '../codegen/decl'
+import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main } from '../codegen/decl/decl/decl'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
 import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SDeclFn, SDeclType, SDeclExported, SDeclExtend } from '../ir/semantic_ir'

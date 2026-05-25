@@ -1,11 +1,11 @@
 // Leaf helpers for eval (no gen_expr dependency).
 
-import { span_unknown } from '../frontend/ast'
-import { SExpr, SFieldVal, SExprUnit, sexpr_type, SExprArray } from '../ir/semantic_ir'
-import { Type, TArray, TUnit, TShared } from '../checker/registry'
-import { CodegenContext, lookup_fields_for_context } from './context'
-import { list_contains } from './decl_index'
-import { cpp_safe, map_builtin_identifier_reference } from './cpp_naming'
+import { span_unknown } from '../../frontend/ast'
+import { SExpr, SFieldVal, SExprUnit, sexpr_type, SExprArray } from '../../ir/semantic_ir'
+import { Type, TArray, TUnit, TShared } from '../../checker/registry'
+import { CodegenContext, lookup_fields_for_context } from '../context'
+import { list_contains } from '../decl/decl_index'
+import { cpp_safe, map_builtin_identifier_reference } from '../cpp_naming'
 
 export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
   const capture = if parameters.length() == 0 then '[]' else '[&]' end

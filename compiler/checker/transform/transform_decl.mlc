@@ -6,7 +6,7 @@ import { expand_declarations_with_trait_nominal_maps, build_trait_nominal_maps, 
 import { expand_parameter_destructuring_in_program } from './param_destructure_expand'
 import { Type, TypeRegistry, type_from_annotation } from '../registry'
 import { SDecl, SProgram, SLoadItem, SNamespaceImportAlias } from '../../ir/semantic_ir'
-import { LoadItem, NamespaceImportAlias } from '../../codegen/decl_index'
+import { LoadItem, NamespaceImportAlias } from '../../codegen/decl/decl_index'
 import { TransformContext, TransformStmtsResult, transform_expr, coerce_expr_to_type } from './transform'
 import { transform_stmts } from './transform_stmts'
 

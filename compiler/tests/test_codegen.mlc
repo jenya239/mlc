@@ -3,10 +3,10 @@
 import { TestResult, assert_eq_str, assert_eq_int } from './test_runner'
 import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
 import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
-import { gen_expr_via_string_visitor } from '../codegen/expr_visitor_string'
-import { cpp_lambda_header_prefix } from '../codegen/expression_support'
+import { gen_expr_via_string_visitor } from '../codegen/expr/expr_visitor_string'
+import { cpp_lambda_header_prefix } from '../codegen/expr/expression_support'
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
-import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/type_gen'
+import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/decl/type_gen'
 import { gen_program } from '../codegen/module'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
@@ -16,7 +16,7 @@ import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../ir/sema
 import { SExprWith } from '../ir/semantic_ir'
 import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple, TFn } from '../checker/registry'
 import { TF64, TI64, TU8, TUsize, TChar, TAssoc } from '../checker/registry'
-import { build_ctor_type_infos_from_decls, lookup_ctor_type_info } from '../codegen/ctor_info'
+import { build_ctor_type_infos_from_decls, lookup_ctor_type_info } from '../codegen/decl/ctor_info'
 
 fn i32_t() -> Shared<Type> = Shared.new(TI32)
 fn str_t() -> Shared<Type> = Shared.new(TString)

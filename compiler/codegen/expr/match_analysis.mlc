@@ -1,9 +1,9 @@
-import { Pat } from '../frontend/ast'
-import { SExpr, SMatchArm, sexpr_type } from '../ir/semantic_ir'
-import { Type } from '../checker/registry'
-import { CodegenContext } from './context'
-import { list_contains } from './decl_index'
-import { cpp_safe } from './cpp_naming'
+import { Pat } from '../../frontend/ast'
+import { SExpr, SMatchArm, sexpr_type } from '../../ir/semantic_ir'
+import { Type } from '../../checker/registry'
+import { CodegenContext } from '../context'
+import { list_contains } from '../decl/decl_index'
+import { cpp_safe } from '../cpp_naming'
 
 // Determine if the match subject expression should be dereferenced (*subject).
 // A subject needs deref if it holds a shared pointer to a sum type.

@@ -1,14 +1,14 @@
 // Trait and extend block code generation (helpers shared with decl.mlc).
 
-import { TypeVariant, TypeExpr, Param, Expr, ExprInt, ExprStr, ExprBool, ExprUnit } from '../frontend/ast'
-import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../frontend/ast'
-import * as lit from './literals'
-import { SDecl, SExpr, SExprExtern } from '../ir/semantic_ir'
-import { Type } from '../checker/registry'
-import { CodegenContext } from './context'
-import { cpp_safe } from './cpp_naming'
+import { TypeVariant, TypeExpr, Param, Expr, ExprInt, ExprStr, ExprBool, ExprUnit } from '../../frontend/ast'
+import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/ast'
+import * as lit from '../expr/literals'
+import { SDecl, SExpr, SExprExtern } from '../../ir/semantic_ir'
+import { Type } from '../../checker/registry'
+import { CodegenContext } from '../context'
+import { cpp_safe } from '../cpp_naming'
 import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp } from './type_gen'
-import * as expression_output from './expr'
+import * as expression_output from '../expr/expr'
 
 export fn extract_method_name(fn_name: string, type_name: string) -> string = do
   const prefix = type_name + "_"

@@ -34,7 +34,7 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 | 18 | Move `frontend/` — lexer, ast, ast_tokens, parser/ | done (`bef5143`) |
 | 19 | Move `ir/` — semantic_ir, record_defaults | done (`597b76b`) |
 | 20 | Split `checker/` → infer/, transform/, check/ | done (`597b76b`) |
-| 21 | Split `codegen/` → expr/, stmt/, decl/ | pending |
+| 21 | Split `codegen/` → expr/, stmt/, decl/ | commit-prep |
 | 22 | Move root debug tests → `tests/`; delete junk | pending |
 | 23 | Delete stale artefacts: `compiler/out2/`, `out2_tests/`, `out_modular/`, root `out/`, `main_modular_test.mlc`, `test_lexer.mlc`, `test_trait_e2e.mlc`; update `.gitignore` | pending |
 
@@ -65,9 +65,15 @@ Source: PLAN.md §4 «Порядок миграции».
 - import paths updated (~30 modules); no logic changes
 - verify: 490 tests; build.sh; self-host diff empty
 
+## Step 20 detail (commit-prep)
+
+- checker split: `infer/`, `transform/`, `check/` (+ diagnostics/, method_types/)
+- filenames kept (unique C++ basenames; short renames blocked by `path_to_module_base`)
+- verify: 490 tests; build.sh; self-host diff empty
+
 ## Next step (Driver)
 
-**STEP=19-commit** — user `git commit`; then STEP=20
+**STEP=20-commit** — user `git commit`; then STEP=21
 
 ## Planner checklist (2026-05-25 plan-refresh #2)
 

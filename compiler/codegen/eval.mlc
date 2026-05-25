@@ -3,8 +3,8 @@
 
 import { SExpr, SStmt } from '../ir/semantic_ir'
 import { CodegenContext, GenStmtsResult, GenStmtsWithContext, GenStmtResult } from './context'
-import * as expr_eval from './expr_eval'
-import * as stmt_eval from './stmt_eval'
+import * as expr_eval from './expr/expr_eval'
+import * as stmt_eval from './stmt/stmt_eval'
 
 export fn gen_expr(expr: Shared<SExpr>, context: CodegenContext) -> string =
   expr_eval.eval_expr(expr, context, (statements: [Shared<SStmt>], ctx: CodegenContext) => gen_stmts_str(statements, ctx))

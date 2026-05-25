@@ -2,8 +2,8 @@
 
 import { tokenize } from './frontend/lexer'
 import { parse_program_with_source_path } from './frontend/parser/decls'
-import { LoadItem } from './codegen/decl_index'
-import { NamespaceImportAlias } from './codegen/decl_index'
+import { LoadItem } from './codegen/decl/decl_index'
+import { NamespaceImportAlias } from './codegen/decl/decl_index'
 import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from './frontend/ast'
 import { run_modular_compiler_pipeline, ModularCompileInput } from './pipeline'
 import { profile_reset_if_enabled, profile_maybe_begin, profile_maybe_end, profile_finish } from './profile'

@@ -5,7 +5,7 @@ import { Program, TypeExpr } from '../frontend/ast'
 import { SExpr } from '../ir/semantic_ir'
 import { CodegenContext, create_codegen_context } from '../codegen/context'
 import { gen_expr } from '../codegen/eval'
-import { type_to_cpp } from '../codegen/type_gen'
+import { type_to_cpp } from '../codegen/decl/type_gen'
 import { empty_program } from './ast_builders'
 
 export fn empty_codegen_context() -> CodegenContext =

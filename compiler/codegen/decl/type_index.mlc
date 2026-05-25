@@ -1,7 +1,7 @@
 // Type metadata index builders: method owners, variant types, field orders.
 // Operates on the AST declaration list without any codegen dependencies.
 
-import { Program, Decl, decl_inner } from '../frontend/ast'
+import { Program, Decl, decl_inner } from '../../frontend/ast'
 import { FieldOrder } from './decl_index'
 
 fn extract_method_name(fn_name: string, type_name: string) -> string = do

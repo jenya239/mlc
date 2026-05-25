@@ -1,13 +1,13 @@
 // Record and record-update code generation.
 // eval_expr_fn injected to break the import cycle with expr_eval.mlc.
 
-import { SExpr, SStmt, SFieldVal } from '../ir/semantic_ir'
-import { Type, TUnknown } from '../checker/registry'
-import { CodegenContext, lookup_fields_for_context } from './context'
-import { sem_type_to_cpp } from './type_gen'
+import { SExpr, SStmt, SFieldVal } from '../../ir/semantic_ir'
+import { Type, TUnknown } from '../../checker/registry'
+import { CodegenContext, lookup_fields_for_context } from '../context'
+import { sem_type_to_cpp } from '../decl/type_gen'
 import { find_field_value } from './expression_support'
-import { cpp_safe } from './cpp_naming'
-import { span_unknown } from '../frontend/ast'
+import { cpp_safe } from '../cpp_naming'
+import { span_unknown } from '../../frontend/ast'
 import * as expression_output from './expr'
 
 fn eval_field_update_value(

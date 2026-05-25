@@ -1,6 +1,6 @@
 // Constructor type info: shared/array position tracking for variant constructors.
 
-import { TypeExpr, TypeVariant, Decl, FieldDef, decl_inner } from '../frontend/ast'
+import { TypeExpr, TypeVariant, Decl, FieldDef, decl_inner } from '../../frontend/ast'
 import { is_shared_type, is_shared_array_type } from './param_analysis'
 
 export type CtorTypeInfo = CtorTypeInfo { name: string, shared_pos: [i32], shared_arr_pos: [i32] }

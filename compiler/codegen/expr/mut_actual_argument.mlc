@@ -1,9 +1,9 @@
 // C++ non-const reference parameters: materialize prvalue actual arguments into locals
 // before the call (same idea as Ruby lower_call_with_cpp_mutable_actual_argument_holders).
 
-import { SExpr, SStmt, sexpr_type, SExprIdent, SExprField, SExprIndex } from '../ir/semantic_ir'
-import { CodegenContext } from './context'
-import { sem_type_to_cpp } from './type_gen'
+import { SExpr, SStmt, sexpr_type, SExprIdent, SExprField, SExprIndex } from '../../ir/semantic_ir'
+import { CodegenContext } from '../context'
+import { sem_type_to_cpp } from '../decl/type_gen'
 
 export type MutActualArgumentMaterializationOutcome = MutActualArgumentMaterializationOutcome {
   prelude_block: string,

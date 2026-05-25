@@ -1,15 +1,15 @@
 // Type expression → C++ string generation.
 
-import { TypeVariant, TypeExpr, FieldDef, Decl, Param, TyI32, TyBool, TyString, VarUnit, VarTuple, VarRecord } from '../frontend/ast'
-import { Type } from '../checker/registry'
+import { TypeVariant, TypeExpr, FieldDef, Decl, Param, TyI32, TyBool, TyString, VarUnit, VarTuple, VarRecord } from '../../frontend/ast'
+import { Type } from '../../checker/registry'
 import {
   record_field_default_expression_acceptable_for_codegen,
   record_field_default_expression_cpp_initializer
-} from '../ir/record_defaults'
-import { CodegenContext, CtorTypeInfo } from './context'
+} from '../../ir/record_defaults'
+import { CodegenContext, CtorTypeInfo } from '../context'
 import { list_contains } from './decl_index'
-import { cpp_safe, lower_first, template_prefix } from './cpp_naming'
-import * as expression_output from './expr'
+import { cpp_safe, lower_first, template_prefix } from '../cpp_naming'
+import * as expression_output from '../expr/expr'
 
 fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   if type_name == 'Map' then 'mlc::HashMap'

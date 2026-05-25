@@ -2,16 +2,16 @@
 // break the import cycle with expr_eval.mlc. Private helpers thread gen_expr_fn
 // through; recursive eval_stmts_str calls go directly (same module).
 
-import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from '../ir/semantic_ir'
-import { gen_let_pattern_statement } from './let_pat'
-import { Type, TArray, TGeneric, TNamed } from '../checker/registry'
+import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from '../../ir/semantic_ir'
+import { gen_let_pattern_statement } from '../expr/let_pat'
+import { Type, TArray, TGeneric, TNamed } from '../../checker/registry'
 import { CodegenContext, GenStmtsResult, GenStmtsWithContext, GenStmtResult,
-         update_context_from_statement } from './context'
-import { cpp_safe } from './cpp_naming'
-import { generate_conditional_else_with_empty_array_coercion } from './expression_support'
-import { sem_type_to_cpp } from './type_gen'
-import { gen_unit_literal } from './literals'
-import * as expression_output from './expr'
+         update_context_from_statement } from '../context'
+import { cpp_safe } from '../cpp_naming'
+import { generate_conditional_else_with_empty_array_coercion } from '../expr/expression_support'
+import { sem_type_to_cpp } from '../decl/type_gen'
+import { gen_unit_literal } from '../expr/literals'
+import * as expression_output from '../expr/expr'
 
 type StmtsFoldState = StmtsFoldState {
   partial_result: GenStmtsResult,

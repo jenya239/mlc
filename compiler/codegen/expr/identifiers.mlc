@@ -1,6 +1,6 @@
-import { CodegenContext, lookup_fields_for_context } from './context'
-import { list_contains } from './decl_index'
-import { cpp_safe, map_builtin_identifier_reference } from './cpp_naming'
+import { CodegenContext, lookup_fields_for_context } from '../context'
+import { list_contains } from '../decl/decl_index'
+import { cpp_safe, map_builtin_identifier_reference } from '../cpp_naming'
 
 fn resolve_identifier_in_self_context(name: string, context: CodegenContext) -> string = do
   const self_fields = lookup_fields_for_context(context, context.self_type)

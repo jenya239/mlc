@@ -4,13 +4,39 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-22-roles-v3` |
+| instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 1 |
-| step_last | 19-commit-prep |
-| agent_token_last | cr-agent-a2d66a89-dbf8-4daa-ba02-a09e06229f0d |
-| run_tests | 490 passed |
-| TRACK_PLAN | step 19 commit-prep; next STEP=19-commit |
+| driver_turns_since_plan | 3 |
+| step_last | 21 |
+| agent_token_last | cr-agent-8bb482a9-ce35-49f0-bc20-5dad3b0accc3 |
+| run_tests | 490 (597b76b) |
+| TRACK_PLAN | step 21 pending → codegen split |
+
+### Turn 2026-05-25 (step 21)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 3 |
+| step | 21 |
+| done | codegen split import paths fixed; verify green |
+| verify | 490 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | 33 staged |
+| agent_token_last | cr-agent-8bb482a9-ce35-49f0-bc20-5dad3b0accc3 |
+| next | commit step 21 |
+
+### Turn 2026-05-25 (step 20-commit-prep)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 2 |
+| step | 20-commit-prep |
+| done | checker/ → infer/, transform/, check/; filenames kept (basename collision) |
+| verify | pass — 490 tests; build.sh; self-host diff empty |
+| uncommitted_files | ~100 tracked + junk |
+| agent_token_last | cr-agent-43449642-df97-46c1-ba52-69ef84525d3d |
+| next | user `git commit`; STEP=21 |
 
 ### Turn 2026-05-25 (step 19-commit-prep)
 

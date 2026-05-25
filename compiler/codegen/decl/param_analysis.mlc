@@ -1,6 +1,6 @@
 // TypeExpr predicates and param collectors (no CodegenContext dependency).
 
-import { TypeExpr, Param } from '../frontend/ast'
+import { TypeExpr, Param } from '../../frontend/ast'
 
 export fn is_shared_type(t: Shared<TypeExpr>) -> bool =
   match t {
