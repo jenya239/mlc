@@ -24,7 +24,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_PLAN.md](TRACK_PLAN.md) steps 8–14 (ExprVisitor migration). Parser `ref mut` = step 15, separate branch.
+[TRACK_PLAN.md](TRACK_PLAN.md) — see **Next step** section at bottom of that file. Parser `ref mut` = step 15, separate branch.
 
 ## Step sizing (good vs bad)
 

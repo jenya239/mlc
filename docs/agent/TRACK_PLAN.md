@@ -10,7 +10,7 @@ Baseline: `benchmarks/profile/record_baseline.sh` (post-commit).
 
 Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 
-## Status: visitor + pipeline **done** (steps 1–17); folder restructure in progress
+## Status: folder restructure in progress (step 18 done; step 19 next)
 
 | Step | Item | Status |
 |------|------|--------|
@@ -31,8 +31,8 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 | 15 | Parser `ref mut` | **deferred** (separate branch) |
 | 16 | Shrink `expr_eval.mlc` — `dispatch_expr` only, drop duplicate `match` | done (`6c5697a`) |
 | 17 | Explicit `Pass` pipeline in `main.mlc` | done (`6f998e9`) |
-| 18 | Move `frontend/` — lexer, ast, ast_tokens, parser/ | done (commit-prep) |
-| 19 | Move `ir/` — semantic_ir, record_defaults | pending |
+| 18 | Move `frontend/` — lexer, ast, ast_tokens, parser/ | done (`bef5143`) |
+| 19 | Move `ir/` — semantic_ir, record_defaults | done (commit-prep) |
 | 20 | Split `checker/` → infer/, transform/, check/ | pending |
 | 21 | Split `codegen/` → expr/, stmt/, decl/ | pending |
 | 22 | Move root debug tests → `tests/`; delete junk | pending |
@@ -41,8 +41,8 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 
 Source: PLAN.md §4 «Порядок миграции».
 
-- **Step 18:** one commit, imports only — no logic changes; verify 490 tests + self-host diff
-- **Steps 19–22:** same gate per sub-step; do not bundle layers in one commit
+- **Step 19:** `semantic_ir.mlc` → `ir/semantic_ir.mlc`; `record_field_default_initializer.mlc` → `ir/record_defaults.mlc`; imports only
+- **Steps 20–22:** same gate per sub-step; do not bundle layers in one commit
 - **Step 15:** parser `ref mut` — separate branch, not in this track
 - **CppExpr backend:** PLAN Phase 2 — new TRACK when step 22 done
 
@@ -52,19 +52,24 @@ Source: PLAN.md §4 «Порядок миграции».
 - `main.mlc`: `compile_modular_loop` removed; calls `run_modular_compiler_pipeline`
 - verify: 490 tests; build.sh; self-host diff empty
 
-## Step 18 detail (commit-prep)
+## Step 18 detail (done — `bef5143`)
 
 - moved: lexer, ast, ast_tokens → `compiler/frontend/`; parser/ → `frontend/parser/`; preds → predicates.mlc
 - all import paths updated; no logic changes
 - verify: 490 tests; build.sh; self-host diff empty
 
+## Step 19 detail (commit-prep)
+
+- `semantic_ir.mlc` → `ir/semantic_ir.mlc`; `record_field_default_initializer.mlc` → `ir/record_defaults.mlc`
+- import paths updated (~30 modules); no logic changes
+- verify: 490 tests; build.sh; self-host diff empty
+
 ## Next step (Driver)
 
-**STEP=18-commit** — user `git commit`; then STEP=19 (ir/)
+**STEP=19-commit** — user `git commit`; then STEP=20
 
-## Planner checklist (2026-05-25 plan-refresh)
+## Planner checklist (2026-05-25 plan-refresh #2)
 
-- [x] Step 17 marked done with commit `6f998e9`
-- [x] PLAN §4 migration split into steps 18–22 (one layer per step)
-- [x] Each pending step has verify gate (490 tests + self-host)
+- [x] Step 18 marked done with commit `bef5143`
+- [x] Step 19 scoped with file list + verify gate
 - [x] No step bundles `compiler/` + `lib/mlc/`

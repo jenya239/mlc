@@ -7,10 +7,49 @@
 | instructions_rev | `2026-05-22-roles-v3` |
 | role_last | Driver |
 | driver_turns_since_plan | 1 |
-| step_last | 18-commit-prep |
-| agent_token_last | cr-agent-776c0c78-2dd8-4a48-9d60-f4b88cd11a7d |
+| step_last | 19-commit-prep |
+| agent_token_last | cr-agent-a2d66a89-dbf8-4daa-ba02-a09e06229f0d |
 | run_tests | 490 passed |
-| TRACK_PLAN | step 18 commit-prep; next STEP=18-commit |
+| TRACK_PLAN | step 19 commit-prep; next STEP=19-commit |
+
+### Turn 2026-05-25 (step 19-commit-prep)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 1 |
+| step | 19-commit-prep |
+| done | ir/ move: semantic_ir + record_defaults; imports updated |
+| verify | pass — 490 tests; build.sh; self-host diff empty |
+| uncommitted_files | ~40 tracked + junk |
+| agent_token_last | cr-agent-a2d66a89-dbf8-4daa-ba02-a09e06229f0d |
+| next | user `git commit`; STEP=20 |
+
+### Turn 2026-05-25 (plan-refresh post-18)
+
+| turn | 2026-05-25 |
+| role | Planner |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | step 18 → `bef5143`; step 19 detail (ir/) added |
+| verify | n/a — docs only |
+| uncommitted_files | 4 docs + junk |
+| agent_token_last | cr-agent-94adcd3a-6f8b-4e1b-becc-d59bfba94311 |
+| next | ROLE=Driver STEP=19 |
+
+### Turn 2026-05-25 (step 18-commit-exec)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 2 |
+| step | 18-commit-exec |
+| done | commit `bef5143` — frontend/ move (82 files) |
+| verify | pass — 490 tests; build.sh; self-host diff empty |
+| uncommitted_files | ~15 junk + 3 docs + lib/mlc |
+| agent_token_last | cr-agent-150fe91f-2f4b-4d13-a67e-f7c2746de798 |
+| next | ROLE=Planner STEP=plan-refresh |
 
 ### Turn 2026-05-25 (step 18-commit-prep)
 
