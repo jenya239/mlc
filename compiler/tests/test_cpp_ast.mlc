@@ -1,7 +1,7 @@
 // Unit tests for C++ AST types.
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
-import { CppProgram, CppInclude, CppStruct, CppField } from '../cpp/ast'
+import { CppProgram, CppInclude, CppStruct, CppField, CppType, CppTypeName, CppTypeTemplate, CppTypeRef } from '../cpp/ast'
 
 export fn cpp_ast_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -16,6 +16,17 @@ export fn cpp_ast_tests() -> [TestResult] = do
   const prog2 = CppProgram { decls: [st] }
   results.push(assert_true('CppStruct in program',
     match prog2.decls[0] { CppStruct(_, _) => true, _ => false }))
+
+  const vector_type = Shared.new(CppTypeName('std::vector'))
+  const int_type = Shared.new(CppTypeName('int'))
+  const vector_int = Shared.new(CppTypeTemplate('std::vector', [int_type]))
+  const int_ref = Shared.new(CppTypeRef(int_type))
+  results.push(assert_true('CppTypeName',
+    match vector_type { CppTypeName(name) => name == 'std::vector', _ => false }))
+  results.push(assert_true('CppTypeTemplate',
+    match vector_int { CppTypeTemplate(name, args) => name == 'std::vector' && args.length() == 1, _ => false }))
+  results.push(assert_true('CppTypeRef',
+    match int_ref { CppTypeRef(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
 
   results
 end

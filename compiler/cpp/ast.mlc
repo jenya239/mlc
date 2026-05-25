@@ -1,4 +1,9 @@
-// C++ AST for the subset we parse.
+// C++ AST: parse subset + emission types (Phase 2).
+
+type CppType =
+  | CppTypeName(string)
+  | CppTypeTemplate(string, [Shared<CppType>])
+  | CppTypeRef(Shared<CppType>)
 
 type CppExpr =
   | CppInt(i32)
