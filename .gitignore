@@ -40,3 +40,6 @@ compiler/test_tok_simple.mlc
 # Случайные фрагменты сборки в корневом out/ (не путать с compiler/out/)
 /out/test_*.cpp
 /out/test_*.hpp
+.cursor/
+compiler/test_t*.mlc
+.tmp_checker_split*.py

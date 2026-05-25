@@ -2,11 +2,18 @@
 
 require "fileutils"
 
+require "etc"
+
 module MLC
   module Common
     module ModularCompilation
       # Compiles a project in modular mode: per-module .hpp and .cpp, optional g++ build.
       # Steps 19-21 of modular compilation plan.
+      PARALLEL_JOBS = begin
+        n = ENV["MLC_JOBS"].to_i
+        n > 0 ? n : [Etc.nprocessors, 1].max
+      end
+
       class ModularCompiler
         def initialize(entry_path:, out_dir:, root_dir: nil, binary_name: "app")
           @entry_path = File.expand_path(entry_path)
@@ -84,30 +91,44 @@ module MLC
 
           obj_dir = File.join(@out_dir, "obj")
           FileUtils.mkdir_p(obj_dir)
-          objs = []
 
           extra_flags = (ENV["MLC_CXX_FLAGS"] || "").split
+          cxx = ENV["MLC_CXX"] || begin
+            has_ccache = system("which ccache > /dev/null 2>&1")
+            has_clang  = system("which clang++ > /dev/null 2>&1")
+            if has_ccache && has_clang then "ccache clang++"
+            elsif has_clang            then "clang++"
+            elsif has_ccache           then "ccache g++"
+            else                            "g++"
+            end
+          end
+          cxx_cmd = cxx.split
 
-          compile_units_total = result[:cpp_files].size + runtime_cpp.size
-          compile_unit_index = 0
-          build_progress("compile: #{compile_units_total} translation unit(s)")
-          result[:cpp_files].each do |cpp|
-            compile_unit_index += 1
-            build_progress("  [#{compile_unit_index}/#{compile_units_total}] #{File.basename(cpp)}")
-            obj = File.join(obj_dir, "#{File.basename(cpp, ".cpp")}.o")
-            cmd = ["g++", "-std=c++20", "-O2", *extra_flags, "-I", @out_dir, "-I", runtime_include, "-c", cpp, "-o", obj]
-            system(*cmd) || raise("g++ failed: #{cmd.join(' ')}")
-            objs << obj
+          all_units = result[:cpp_files].map { |cpp|
+            { cpp: cpp, obj: File.join(obj_dir, "#{File.basename(cpp, ".cpp")}.o"),
+              cmd: [*cxx_cmd, "-std=c++20", "-O2", *extra_flags, "-I", @out_dir, "-I", runtime_include, "-c", cpp, "-o", File.join(obj_dir, "#{File.basename(cpp, ".cpp")}.o")] }
+          } + runtime_cpp.map { |rcpp|
+            { cpp: rcpp, obj: File.join(obj_dir, "runtime_#{File.basename(rcpp, ".cpp")}.o"),
+              cmd: [*cxx_cmd, "-std=c++20", "-O2", *extra_flags, "-I", runtime_include, "-c", rcpp, "-o", File.join(obj_dir, "runtime_#{File.basename(rcpp, ".cpp")}.o")] }
+          }
+
+          build_progress("compile: #{all_units.size} translation unit(s) (#{PARALLEL_JOBS} jobs)")
+          errors = Mutex.new
+          compile_errors = []
+
+          all_units.each_slice(PARALLEL_JOBS) do |slice|
+            threads = slice.map do |unit|
+              Thread.new do
+                unless system(*unit[:cmd])
+                  errors.synchronize { compile_errors << "g++ failed: #{unit[:cmd].join(' ')}" }
+                end
+              end
+            end
+            threads.each(&:join)
+            raise compile_errors.first if compile_errors.any?
           end
 
-          runtime_cpp.each do |rcpp|
-            compile_unit_index += 1
-            build_progress("  [#{compile_unit_index}/#{compile_units_total}] runtime #{File.basename(rcpp)}")
-            obj = File.join(obj_dir, "runtime_#{File.basename(rcpp, ".cpp")}.o")
-            cmd = ["g++", "-std=c++20", "-O2", *extra_flags, "-I", runtime_include, "-c", rcpp, "-o", obj]
-            system(*cmd) || raise("g++ failed: #{cmd.join(' ')}")
-            objs << obj
-          end
+          objs = all_units.map { |u| u[:obj] }
 
           bin_path = File.join(@out_dir, @binary_name)
           build_progress("link: #{File.basename(bin_path)}")
