@@ -8,7 +8,7 @@
 | role_last | Driver |
 | driver_turns_since_plan | 2 |
 | step_last | 2 |
-| agent_token_last | cr-agent-a42a3067-ab77-4592-9c98-08cd9c21faa9 |
+| agent_token_last | cr-agent-cf99fe19-b961-42b0-9d91-2b5425670b16 |
 | run_tests | 490 |
 | TRACK_PLAN | TRACK_CPPEXPR step 3 pending |
 
@@ -21,8 +21,8 @@
 | step | 2 |
 | done | CppBool, CppTernary, CppCast, CppInitList + CppCastKind; commit 734d6b6 |
 | verify | 490 pass; build.sh; self-host diff empty (g++) |
-| uncommitted_files | docs |
-| next | STEP=3 |
+| uncommitted_files | 0 |
+| next | STEP=3 (enqueued) |
 
 ### Turn 2026-05-25 (CPPEXPR step 1)
 
