@@ -6,16 +6,10 @@
 
 #include "lexer.hpp"
 #include "decls.hpp"
-#include "check.hpp"
-#include "transform_decl.hpp"
-#include "registry.hpp"
-#include "trait_param_expand.hpp"
-#include "module.hpp"
 #include "decl_index.hpp"
 #include "decl_index.hpp"
-#include "cpp_naming.hpp"
-#include "param_destructure_expand.hpp"
 #include "ast.hpp"
+#include "pipeline.hpp"
 #include "profile.hpp"
 
 namespace mlc_main {

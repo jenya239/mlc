@@ -1,9 +1,7 @@
-// Compiler pass abstraction (PLAN.md §3). Not wired into main.mlc yet.
+// Compiler pass abstraction (PLAN.md §3). Trait sketch; modular pipeline uses function slots in pipeline.mlc.
 
 import { Program, Result, Diagnostic } from './ast'
 
 export trait CompilerPass<Input, Output> {
   fn run(self: CompilerPass<Input, Output>, input: Input) -> Result<Output, [Diagnostic]>
 }
-
-export type CheckerPass = CompilerPass<Program, Program>

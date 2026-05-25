@@ -6,10 +6,37 @@
 |-------|-------|
 | instructions_rev | `2026-05-22-roles-v3` |
 | role_last | Driver |
+| driver_turns_since_plan | 0 |
+| step_last | 17-commit-prep |
+| agent_token_last | cr-agent-855464c5-1ce9-4dba-a4d3-decf5ca4b7dc |
+| run_tests | 490 passed |
+| TRACK_PLAN | step 17 commit-prep; next STEP=17-commit |
+
+### Turn 2026-05-24 (step 17-commit-prep)
+
+| turn | 2026-05-24 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
 | driver_turns_since_plan | 1 |
-| step_last | 16-commit |
-| agent_token_last | cr-agent-513ac3bc-3f00-4f92-9127-a27ff5153002 |
-| TRACK_PLAN | step 16 done; commit message ready |
+| step | 17-commit-prep |
+| done | pipeline.mlc + main.mlc wired; compile_modular_loop removed; bare `?` → const binding |
+| verify | pass — 490 tests; build.sh; self-host diff empty |
+| uncommitted_files | ~12 tracked + junk (.cursor/, test_t*.mlc) |
+| agent_token_last | cr-agent-855464c5-1ce9-4dba-a4d3-decf5ca4b7dc |
+| next | user `git commit`; STEP=18 deferred |
+
+### Turn 2026-05-24 (step 16-commit-exec)
+
+| turn | 2026-05-24 |
+| role | Driver |
+| instructions_rev | 2026-05-22-roles-v3 |
+| driver_turns_since_plan | 0 |
+| step | 16-commit-exec |
+| done | commit `6c5697a` — step 16 batch (9 files) |
+| verify | pass — 490 tests (prior) |
+| uncommitted_files | ~14 junk + TRACK hash delta |
+| agent_token_last | cr-agent-869cd0c8-83a8-4f62-8947-27896efac464 |
+| next | ROLE=Driver STEP=17 |
 
 ### Turn 2026-05-24 (step 16-commit)
 

@@ -1,0 +1,104 @@
+// Explicit modular compiler pipeline (PLAN.md §3). Checker → transform → codegen.
+
+import { Program, Result } from './ast'
+import { check_with_context } from './checker/check'
+import { TypeRegistry } from './checker/registry'
+import { build_trait_nominal_maps } from './checker/trait_param_expand'
+import { expand_parameter_destructuring_in_program } from './checker/param_destructure_expand'
+import { transform_load_items } from './checker/transform_decl'
+import { SLoadItem } from './semantic_ir'
+import { LoadItem } from './codegen/decl_index'
+import { PrecomputedCtx, precompute, gen_module } from './codegen/module'
+import { path_to_module_base } from './codegen/cpp_naming'
+import { profile_maybe_begin, profile_maybe_end } from './profile'
+
+export type ModularCompileInput = ModularCompileInput {
+  load_items: [LoadItem],
+  full_program: Program,
+  entry_program: Program,
+  output_directory: string,
+  profile_enabled: bool
+}
+
+export type CheckedCompileState = CheckedCompileState {
+  load_items: [LoadItem],
+  full_program: Program,
+  registry: TypeRegistry,
+  output_directory: string,
+  profile_enabled: bool
+}
+
+export type TransformedCompileState = TransformedCompileState {
+  load_items: [LoadItem],
+  transformed_items: [SLoadItem],
+  expanded_program: Program,
+  precomputed: PrecomputedCtx,
+  output_directory: string,
+  profile_enabled: bool
+}
+
+export fn run_checker_pass(input: ModularCompileInput) -> Result<CheckedCompileState, [string]> = do
+  profile_maybe_begin(input.profile_enabled, 'check')
+  const check_output = check_with_context(input.entry_program, input.full_program)?
+  profile_maybe_end(input.profile_enabled, 'check')
+  Ok(CheckedCompileState {
+    load_items: input.load_items,
+    full_program: input.full_program,
+    registry: check_output.registry,
+    output_directory: input.output_directory,
+    profile_enabled: input.profile_enabled
+  })
+end
+
+export fn run_transform_pass(state: CheckedCompileState) -> Result<TransformedCompileState, [string]> = do
+  profile_maybe_begin(state.profile_enabled, 'expand_destructure')
+  const expanded_program = expand_parameter_destructuring_in_program(state.full_program)
+  profile_maybe_end(state.profile_enabled, 'expand_destructure')
+  const trait_maps = build_trait_nominal_maps(expanded_program)
+  profile_maybe_begin(state.profile_enabled, 'transform')
+  const transformed_items = transform_load_items(state.load_items, state.registry, trait_maps)
+  profile_maybe_end(state.profile_enabled, 'transform')
+  profile_maybe_begin(state.profile_enabled, 'precompute')
+  const precomputed = precompute(expanded_program, state.load_items)
+  profile_maybe_end(state.profile_enabled, 'precompute')
+  Ok(TransformedCompileState {
+    load_items: state.load_items,
+    transformed_items: transformed_items,
+    expanded_program: expanded_program,
+    precomputed: precomputed,
+    output_directory: state.output_directory,
+    profile_enabled: state.profile_enabled
+  })
+end
+
+export fn run_codegen_pass(state: TransformedCompileState) -> Result<string, [string]> = do
+  profile_maybe_begin(state.profile_enabled, 'codegen')
+  let mut index = 0
+  while index < state.transformed_items.length() do
+    const transformed_load_item = state.transformed_items[index]
+    const generated_output =
+      gen_module(transformed_load_item, state.load_items, state.expanded_program, state.precomputed)
+    const module_base = path_to_module_base(transformed_load_item.path)
+    const header_path =
+      if state.output_directory.length() > 0
+        then `${state.output_directory}/${module_base}.hpp`
+        else `${module_base}.hpp`
+      end
+    const implementation_path =
+      if state.output_directory.length() > 0
+        then `${state.output_directory}/${module_base}.cpp`
+        else `${module_base}.cpp`
+      end
+    File.write(header_path, generated_output.h)
+    File.write(implementation_path, generated_output.c)
+    index = index + 1
+  end
+  profile_maybe_end(state.profile_enabled, 'codegen')
+  Ok('')
+end
+
+export fn run_modular_compiler_pipeline(input: ModularCompileInput) -> Result<string, [string]> = do
+  const checked = run_checker_pass(input)?
+  const transformed = run_transform_pass(checked)?
+  run_codegen_pass(transformed)
+end

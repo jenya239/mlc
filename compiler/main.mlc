@@ -1,17 +1,11 @@
-// Entry point. Pipeline: source - tokenize - parse - load imports - check - transform - gen_module
+// Entry point. Pipeline: source → lex → parse → merge → Pass pipeline (check → transform → codegen)
 
 import { tokenize } from './lexer'
 import { parse_program_with_source_path } from './parser/decls'
-import { check_with_context } from './checker/check'
-import { transform_load_items } from './checker/transform_decl'
-import { TypeRegistry } from './checker/registry'
-import { build_trait_nominal_maps } from './checker/trait_param_expand'
-import { gen_module, precompute } from './codegen/module'
 import { LoadItem } from './codegen/decl_index'
 import { NamespaceImportAlias } from './codegen/decl_index'
-import { path_to_module_base } from './codegen/cpp_naming'
-import { expand_parameter_destructuring_in_program } from './checker/param_destructure_expand'
 import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from './ast'
+import { run_modular_compiler_pipeline, ModularCompileInput } from './pipeline'
 import { profile_reset_if_enabled, profile_maybe_begin, profile_maybe_end, profile_finish } from './profile'
 
 type CompileOptions = CompileOptions {
@@ -212,34 +206,6 @@ fn merge_program(entry_path: string, prog: Program, profile_enabled: bool) -> Me
   MergeResult { prog: Program { decls: all_decls }, errors: all_errors, items: items_ordered }
 end
 
-fn compile_modular_loop(items: [LoadItem], full_prog: Program, out_dir: string, profile_enabled: bool, registry: TypeRegistry) -> string = do
-  profile_maybe_begin(profile_enabled, "expand_destructure")
-  const expanded_merge_program = expand_parameter_destructuring_in_program(full_prog)
-  profile_maybe_end(profile_enabled, "expand_destructure")
-  const trait_maps = build_trait_nominal_maps(expanded_merge_program)
-  profile_maybe_begin(profile_enabled, "transform")
-  const transformed_items = transform_load_items(items, registry, trait_maps)
-  profile_maybe_end(profile_enabled, "transform")
-  profile_maybe_begin(profile_enabled, "precompute")
-  const precomputed = precompute(expanded_merge_program, items)
-  profile_maybe_end(profile_enabled, "precompute")
-  profile_maybe_begin(profile_enabled, "codegen")
-  let mut unit_placeholder = ()
-  unit_placeholder = transformed_items.fold(unit_placeholder, (_, transformed_load_item) => do
-    const generated_output = gen_module(transformed_load_item, items, expanded_merge_program, precomputed)
-    const module_base = path_to_module_base(transformed_load_item.path)
-    const header_path =
-      if out_dir.length() > 0 then `${out_dir}/${module_base}.hpp` else `${module_base}.hpp` end
-    const implementation_path =
-      if out_dir.length() > 0 then `${out_dir}/${module_base}.cpp` else `${module_base}.cpp` end
-    File.write(header_path, generated_output.h)
-    File.write(implementation_path, generated_output.c)
-    ()
-  end)
-  profile_maybe_end(profile_enabled, "codegen")
-  ''
-end
-
 fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool) -> Result<string, [string]> = do
   profile_reset_if_enabled(profile_enabled)
   profile_maybe_begin(profile_enabled, "total")
@@ -269,10 +235,14 @@ fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool) -
       const merged_item_count = merged.items.length()
       const entry_load_item = merged.items[merged_item_count - 1]
       const entry_only_program = Program { decls: entry_load_item.decls }
-      profile_maybe_begin(profile_enabled, "check")
-      const checked = check_with_context(entry_only_program, merged.prog)?
-      profile_maybe_end(profile_enabled, "check")
-      compile_modular_loop(merged.items, merged.prog, out_dir, profile_enabled, checked.registry)
+      const pipeline_input = ModularCompileInput {
+        load_items: merged.items,
+        full_program: merged.prog,
+        entry_program: entry_only_program,
+        output_directory: out_dir,
+        profile_enabled: profile_enabled
+      }
+      const pipeline_result = run_modular_compiler_pipeline(pipeline_input)?
       profile_maybe_end(profile_enabled, "total")
       profile_finish(profile_enabled)
       Ok('')

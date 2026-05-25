@@ -5,32 +5,20 @@
 
 #include "lexer.hpp"
 #include "decls.hpp"
-#include "check.hpp"
-#include "transform_decl.hpp"
-#include "registry.hpp"
-#include "trait_param_expand.hpp"
-#include "module.hpp"
 #include "decl_index.hpp"
 #include "decl_index.hpp"
-#include "cpp_naming.hpp"
-#include "param_destructure_expand.hpp"
 #include "ast.hpp"
+#include "pipeline.hpp"
 #include "profile.hpp"
 
 namespace mlc_main {
 
 using namespace lexer;
 using namespace decls;
-using namespace check;
-using namespace transform_decl;
-using namespace registry;
-using namespace trait_param_expand;
-using namespace module;
 using namespace decl_index;
 using namespace decl_index;
-using namespace cpp_naming;
-using namespace param_destructure_expand;
 using namespace ast;
+using namespace pipeline;
 using namespace profile;
 using namespace ast_tokens;
 
@@ -53,8 +41,6 @@ LoadResult load_module_impl(mlc::String path, mlc::HashMap<mlc::String, bool>& l
 LoadResult load_module(mlc::String path, mlc::HashMap<mlc::String, LoadResult>& cache, bool profile_enabled) noexcept;
 
 MergeResult merge_program(mlc::String entry_path, ast::Program prog, bool profile_enabled) noexcept;
-
-mlc::String compile_modular_loop(mlc::Array<decl_index::LoadItem> items, ast::Program full_prog, mlc::String out_dir, bool profile_enabled, registry::TypeRegistry registry) noexcept;
 
 ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled) noexcept;
 
@@ -274,32 +260,6 @@ items_ordered.push_back(decl_index::LoadItem{norm_entry, entry_decls, entry_impo
 return MergeResult{ast::Program{all_decls}, all_errors, items_ordered};
 }
 
-mlc::String compile_modular_loop(mlc::Array<decl_index::LoadItem> items, ast::Program full_prog, mlc::String out_dir, bool profile_enabled, registry::TypeRegistry registry) noexcept{
-profile::profile_maybe_begin(profile_enabled, mlc::String("expand_destructure"));
-ast::Program expanded_merge_program = param_destructure_expand::expand_parameter_destructuring_in_program(full_prog);
-profile::profile_maybe_end(profile_enabled, mlc::String("expand_destructure"));
-trait_param_expand::TraitNominalMaps trait_maps = trait_param_expand::build_trait_nominal_maps(expanded_merge_program);
-profile::profile_maybe_begin(profile_enabled, mlc::String("transform"));
-mlc::Array<semantic_ir::SLoadItem> transformed_items = transform_decl::transform_load_items(items, registry, trait_maps);
-profile::profile_maybe_end(profile_enabled, mlc::String("transform"));
-profile::profile_maybe_begin(profile_enabled, mlc::String("precompute"));
-context::PrecomputedCtx precomputed = module::precompute(expanded_merge_program, items);
-profile::profile_maybe_end(profile_enabled, mlc::String("precompute"));
-profile::profile_maybe_begin(profile_enabled, mlc::String("codegen"));
-std::tuple<> unit_placeholder = std::make_tuple();
-unit_placeholder = transformed_items.fold(unit_placeholder, [items, expanded_merge_program, precomputed, out_dir](std::tuple<> _, semantic_ir::SLoadItem transformed_load_item) mutable { return [&]() -> std::tuple<> { 
-  context::GenModuleOut generated_output = module::gen_module(transformed_load_item, items, expanded_merge_program, precomputed);
-  mlc::String module_base = cpp_naming::path_to_module_base(transformed_load_item.path);
-  mlc::String header_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + module_base + mlc::String(".hpp") : module_base + mlc::String(".hpp");
-  mlc::String implementation_path = out_dir.length() > 0 ? out_dir + mlc::String("/") + module_base + mlc::String(".cpp") : module_base + mlc::String(".cpp");
-  mlc::file::write_string(header_path, generated_output.h);
-  mlc::file::write_string(implementation_path, generated_output.c);
-  return std::make_tuple();
- }(); });
-profile::profile_maybe_end(profile_enabled, mlc::String("codegen"));
-return mlc::String("");
-}
-
 ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled) noexcept{
 profile::profile_reset_if_enabled(profile_enabled);
 profile::profile_maybe_begin(profile_enabled, mlc::String("total"));
@@ -329,12 +289,10 @@ return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<
   int merged_item_count = merged.items.size();
   decl_index::LoadItem entry_load_item = merged.items[merged_item_count - 1];
   ast::Program entry_only_program = ast::Program{entry_load_item.decls};
-  profile::profile_maybe_begin(profile_enabled, mlc::String("check"));
-  auto __try_checked = check::check_with_context(entry_only_program, merged.prog);
-  if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_checked)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_checked));
-  check::CheckOut checked = std::get<ast::Ok<check::CheckOut>>(__try_checked).field0;
-  profile::profile_maybe_end(profile_enabled, mlc::String("check"));
-  compile_modular_loop(merged.items, merged.prog, out_dir, profile_enabled, checked.registry);
+  pipeline::ModularCompileInput pipeline_input = pipeline::ModularCompileInput{merged.items, merged.prog, entry_only_program, out_dir, profile_enabled};
+  auto __try_pipeline_result = pipeline::run_modular_compiler_pipeline(pipeline_input);
+  if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_result)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_result));
+  mlc::String pipeline_result = std::get<ast::Ok<mlc::String>>(__try_pipeline_result).field0;
   profile::profile_maybe_end(profile_enabled, mlc::String("total"));
   profile::profile_finish(profile_enabled);
   return ast::Ok<mlc::String>(mlc::String(""));

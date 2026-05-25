@@ -29,8 +29,8 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + § порядок внедрен�
 | 13 | Remaining `expr_eval` → visitor (record, array, lambda, …) | done (`9bc1001`) |
 | 14 | Self-host diff after visitor migration batch | done (`6df3799`, docs `0a0d321`) |
 | 15 | Parser `ref mut` | **deferred** (separate branch) |
-| 16 | Shrink `expr_eval.mlc` — `dispatch_expr` only, drop duplicate `match` | done (pending commit) |
-| 17 | Explicit `Pass` pipeline in `main.mlc` | pending |
+| 16 | Shrink `expr_eval.mlc` — `dispatch_expr` only, drop duplicate `match` | done (`6c5697a`) |
+| 17 | Explicit `Pass` pipeline in `main.mlc` | done (commit-prep) |
 | 18 | Folder restructure (PLAN §4) | **deferred** — after 16–17 + self-host green |
 
 ## Backlog (Planner maintains)
@@ -54,9 +54,16 @@ Source: PLAN.md §3 «Порядок внедрения» items 3–4.
 - `dispatch_expr` in `expr_visitor.mlc` — full SExpr coverage + wildcard (if-chain codegen)
 - verify: 490 tests pass
 
+## Step 17 detail (commit-prep)
+
+- `compiler/pipeline.mlc`: `run_checker_pass` → `run_transform_pass` → `run_codegen_pass` → `run_modular_compiler_pipeline`
+- `main.mlc`: merge/lex/parse unchanged; `compile_modular_loop` removed; calls pipeline
+- `pass.mlc`: trait sketch only (generic trait not wired — C++ codegen limits)
+- verify: 490 tests; build.sh; self-host diff p1/p2 empty
+
 ## Next step (Driver)
 
-**STEP=17** — explicit `Pass` pipeline in `main.mlc`
+**STEP=17-commit** — user `git commit`; then STEP=18 deferred or plan-refresh
 
 ## Planner checklist (2026-05-24 plan-refresh)
 
