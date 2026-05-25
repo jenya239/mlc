@@ -1,0 +1,70 @@
+// Shared checks and C++ fragments for record field default expressions used as struct member initializers.
+
+import {
+  Expr,
+  ExprInt,
+  ExprStr,
+  ExprBool,
+  ExprUnit,
+  ExprFloat,
+  ExprI64,
+  ExprU8,
+  ExprUsize,
+  ExprChar,
+  ExprIdent,
+  ExprBin,
+  ExprUn
+} from '../frontend/ast'
+import { CodegenContext } from '../codegen/context'
+import * as lit from '../codegen/literals'
+import * as expression_output from '../codegen/expr'
+import { map_builtin_identifier_reference } from '../codegen/cpp_naming'
+
+fn binary_operator_permitted_for_record_field_default_initializer(operation: string) -> bool =
+  operation == "+" ||
+    operation == "-" ||
+    operation == "*" ||
+    operation == "/" ||
+    operation == "%"
+
+export fn record_field_default_expression_acceptable_for_codegen(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprInt(_, _) | ExprStr(_, _) | ExprBool(_, _) | ExprUnit(_) => true,
+    ExprFloat(_, _) | ExprI64(_, _) | ExprU8(_, _) | ExprUsize(_, _) | ExprChar(_, _) => true,
+    ExprIdent(_, _) => true,
+    ExprBin(operation, left, right, _) =>
+      binary_operator_permitted_for_record_field_default_initializer(operation) &&
+      record_field_default_expression_acceptable_for_codegen(left) &&
+      record_field_default_expression_acceptable_for_codegen(right),
+    ExprUn(operation, inner, _) =>
+      (operation == "-" || operation == "+") &&
+      record_field_default_expression_acceptable_for_codegen(inner),
+    _ => false
+  }
+
+fn record_field_default_identifier_cpp(name: string, context: CodegenContext) -> string =
+  context.resolve(map_builtin_identifier_reference(name))
+
+export fn record_field_default_expression_cpp_initializer(expression: Shared<Expr>, context: CodegenContext) -> string =
+  match expression {
+    ExprInt(integer_value, _) => lit.gen_integer_literal(integer_value),
+    ExprStr(text_value, _) => lit.gen_string_literal(text_value),
+    ExprBool(boolean_value, _) => lit.gen_boolean_literal(boolean_value),
+    ExprUnit(_) => lit.gen_unit_literal(),
+    ExprFloat(raw, _) => lit.gen_float_literal(raw),
+    ExprI64(raw, _) => lit.gen_i64_literal(raw),
+    ExprU8(raw, _) => lit.gen_u8_literal(raw),
+    ExprUsize(raw, _) => lit.gen_usize_literal(raw),
+    ExprChar(raw, _) => lit.gen_char_literal(raw),
+    ExprIdent(name, _) => record_field_default_identifier_cpp(name, context),
+    ExprBin(operation, left, right, _) =>
+      expression_output.parenthesized_binary(
+        record_field_default_expression_cpp_initializer(left, context),
+        operation,
+        record_field_default_expression_cpp_initializer(right, context)),
+    ExprUn(operation, inner, _) =>
+      expression_output.parenthesized_unary(
+        operation,
+        record_field_default_expression_cpp_initializer(inner, context)),
+    _ => "0"
+  }

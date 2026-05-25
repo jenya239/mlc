@@ -1,7 +1,7 @@
 // Leaf helpers for eval (no gen_expr dependency).
 
 import { span_unknown } from '../frontend/ast'
-import { SExpr, SFieldVal, SExprUnit, sexpr_type, SExprArray } from '../semantic_ir'
+import { SExpr, SFieldVal, SExprUnit, sexpr_type, SExprArray } from '../ir/semantic_ir'
 import { Type, TArray, TUnit, TShared } from '../checker/registry'
 import { CodegenContext, lookup_fields_for_context } from './context'
 import { list_contains } from './decl_index'

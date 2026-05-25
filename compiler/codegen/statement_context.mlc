@@ -1,4 +1,4 @@
-import { SStmt } from '../semantic_ir'
+import { SStmt } from '../ir/semantic_ir'
 import { CodegenContext, update_context_from_statement } from './context'
 
 export fn stmts_final_ctx(statements: [Shared<SStmt>], context: CodegenContext) -> CodegenContext = do

@@ -1,0 +1,201 @@
+// Function and constructor call type inference.
+// infer_expr_fn injected to break the import cycle with infer.mlc.
+
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_placeholder } from '../../frontend/ast'
+import { Type, TNamed, TypeRegistry } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { InferResult } from './infer_result'
+import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor, function_parameter_list } from './infer_call_support'
+import { call_argument_unification_diagnostics } from '../check/call_argument_unify'
+import { trait_bound_diagnostics } from './infer_trait_bounds'
+import { type_is_function } from '../semantic_type_structure'
+
+type ResolvedArgs = ResolvedArgs { exprs: [Shared<Expr>], errors: [Diagnostic] }
+
+type Call_arguments_inference_accumulator = Call_arguments_inference_accumulator {
+  accumulated_errors:           [Diagnostic],
+  inferred_argument_types_list: [Shared<Type>],
+}
+
+fn expression_is_named_argument(argument_expression: Shared<Expr>) -> bool =
+  match argument_expression {
+    ExprNamedArg(_, _, _) => true,
+    _ => false
+  }
+
+fn has_named_args(args: [Shared<Expr>]) -> bool =
+  args.any(expression_is_named_argument)
+
+fn find_param_slot(parameter_names: [string], sought_parameter_name: string) -> i32 =
+  parameter_names.find_index(parameter_name => parameter_name == sought_parameter_name)
+
+fn inner_expression_after_stripping_optional_named_label(argument_expression: Shared<Expr>) -> Shared<Expr> =
+  match argument_expression {
+    ExprNamedArg(_, inner_expression, _) => inner_expression,
+    _ => argument_expression
+  }
+
+fn strip_named_labels(args: [Shared<Expr>]) -> ResolvedArgs =
+  ResolvedArgs {
+    exprs: args.map(inner_expression_after_stripping_optional_named_label),
+    errors: [],
+  }
+
+fn accumulate_inference_for_one_call_argument(
+  accumulator: Call_arguments_inference_accumulator,
+  argument_expression: Shared<Expr>,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> Call_arguments_inference_accumulator = do
+  const inference_for_single_argument =
+    infer_expr_fn(argument_expression, inference_context)
+  accumulator.inferred_argument_types_list.push(inference_for_single_argument.inferred_type)
+  Call_arguments_inference_accumulator {
+    accumulated_errors:
+      diagnostics_append(accumulator.accumulated_errors, inference_for_single_argument.errors),
+    inferred_argument_types_list: accumulator.inferred_argument_types_list,
+  }
+end
+
+fn reorder_named_to_positional(args: [Shared<Expr>], param_names: [string]) -> ResolvedArgs = do
+  const n = param_names.length()
+  let mut result: [Shared<Expr>] = []; let mut filled: [i32] = []
+  let mut k = 0
+  while k < n do result.push(expr_placeholder()); filled.push(0); k = k + 1 end
+  const errors: [Diagnostic] = []
+  let mut pos_slot = 0; let mut i = 0
+  while i < args.length() do
+    match args[i] {
+      ExprNamedArg(name, inner, arg_span) => do
+        const slot = find_param_slot(param_names, name)
+        if slot == -1 then
+          errors.push(diagnostic_error('unknown parameter name: ' + name, arg_span))
+            else if filled[slot] == 1 then
+          errors.push(diagnostic_error('duplicate named arg: ' + name, arg_span))
+            else
+              result.set(slot, inner)
+              filled.set(slot, 1)
+            end; ()
+      end,
+      _ => do
+            while pos_slot < n && filled[pos_slot] == 1 do
+          pos_slot = pos_slot + 1
+        end
+        if pos_slot < n then
+              result.set(pos_slot, args[i])
+              filled.set(pos_slot, 1)
+              pos_slot = pos_slot + 1
+            end; ()
+      end
+    }
+    i = i + 1
+  end
+  const compact: [Shared<Expr>] = []; let mut j = 0
+  while j < n do if filled[j] == 1 then compact.push(result[j]) end; j = j + 1 end
+  ResolvedArgs { exprs: compact, errors: errors }
+end
+
+fn resolve_named_args(args: [Shared<Expr>], callee_name: string, registry: TypeRegistry) -> ResolvedArgs =
+  if !has_named_args(args) then ResolvedArgs { exprs: args, errors: [] }
+  else
+    const param_names = registry.parameter_names_for(callee_name)
+    if param_names.length() == 0 then
+      strip_named_labels(args)
+    else
+      reorder_named_to_positional(args, param_names)
+    end
+  end
+
+fn take_first_param_types(param_types: [Shared<Type>], positional_argument_count: i32) -> [Shared<Type>] =
+  param_types.take(positional_argument_count)
+
+export fn infer_expr_call(
+  function: Shared<Expr>,
+  call_arguments: [Shared<Expr>],
+  call_source_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const callee_name = match function { ExprIdent(name, _) => name, _ => '' }
+  const resolved = resolve_named_args(call_arguments, callee_name, inference_context.registry)
+  const effective_args = resolved.exprs
+  const function_result = infer_expr_fn(function, inference_context)
+  const fresh_argument_types_for_accumulator: [Shared<Type>] = []
+  const inference_accumulator_after_arguments =
+    effective_args.fold(
+      Call_arguments_inference_accumulator {
+        accumulated_errors:
+          diagnostics_append(function_result.errors, resolved.errors),
+        inferred_argument_types_list: fresh_argument_types_for_accumulator,
+      },
+      (accumulator_so_far, argument_expression_under_inference) =>
+        accumulate_inference_for_one_call_argument(
+          accumulator_so_far,
+          argument_expression_under_inference,
+          inference_context,
+          infer_expr_fn))
+  const collected_errors = inference_accumulator_after_arguments.accumulated_errors
+  const argument_inferred_types =
+    inference_accumulator_after_arguments.inferred_argument_types_list
+  const with_arguments = InferResult { inferred_type: function_result.inferred_type, errors: collected_errors }
+  if callee_name != '' && inference_context.registry.has_ctor(callee_name) then
+    const constructor_output = infer_expr_call_for_constructor_name(
+      callee_name, with_arguments, effective_args, call_source_span, inference_context)
+    const constructor_parameter_types = inference_context.registry.ctor_params_for(callee_name)
+    const algebraic_type_name = match inference_context.registry.ctor_type(callee_name) {
+      TNamed(parent_name) => parent_name,
+      _ => ''
+    }
+    const constructor_type_parameter_names =
+      inference_context.registry.algebraic_decl_type_parameter_names_for(algebraic_type_name)
+    if constructor_parameter_types.length() == effective_args.length() then
+      InferResult {
+        inferred_type: constructor_output.inferred_type,
+        errors: diagnostics_append(
+          constructor_output.errors,
+          call_argument_unification_diagnostics(
+            constructor_parameter_types,
+            argument_inferred_types,
+            constructor_type_parameter_names,
+            effective_args))
+      }
+    else
+      constructor_output
+    end
+  else
+    const non_constructor_output = infer_expr_call_non_constructor(
+      function_result, with_arguments, effective_args, call_source_span, inference_context.registry, callee_name)
+    const callee_parameter_types = function_parameter_list(function_result.inferred_type)
+    const max_arity = callee_parameter_types.length()
+    const min_arity =
+      if callee_name != '' && inference_context.registry.has_fn(callee_name) then
+        const r = inference_context.registry.required_arity_for_fn(callee_name)
+        if r >= 0 then r else max_arity end
+      else
+        max_arity
+      end
+    const got = effective_args.length()
+    const callee_type_parameter_names =
+      if callee_name != '' && inference_context.registry.has_fn(callee_name) then
+        inference_context.registry.registered_function_type_parameter_names(callee_name)
+      else
+        do const empty_callee_type_names: [string] = []; empty_callee_type_names end
+      end
+    if type_is_function(function_result.inferred_type) && got >= min_arity && got <= max_arity then
+      const params_for_unify = take_first_param_types(callee_parameter_types, got)
+      const unification_errors = call_argument_unification_diagnostics(
+        params_for_unify, argument_inferred_types, callee_type_parameter_names, effective_args)
+      const bound_errors = trait_bound_diagnostics(
+        callee_name, params_for_unify, argument_inferred_types,
+        callee_type_parameter_names, call_source_span, inference_context)
+      InferResult {
+        inferred_type: non_constructor_output.inferred_type,
+        errors: diagnostics_append(
+          diagnostics_append(non_constructor_output.errors, unification_errors),
+          bound_errors)
+      }
+    else
+      non_constructor_output
+    end
+  end
+end

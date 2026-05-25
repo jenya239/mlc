@@ -11,7 +11,7 @@
 #include "infer.hpp"
 #include "check_context.hpp"
 #include "semantic_type_structure.hpp"
-#include "record_field_default_initializer.hpp"
+#include "record_defaults.hpp"
 #include "partial_application_desugar.hpp"
 
 namespace check {
@@ -27,7 +27,7 @@ using namespace derive_validation;
 using namespace infer;
 using namespace check_context;
 using namespace semantic_type_structure;
-using namespace record_field_default_initializer;
+using namespace record_defaults;
 using namespace partial_application_desugar;
 using namespace ast_tokens;
 
@@ -110,7 +110,7 @@ mlc::Array<ast::Diagnostic> accumulate_diagnostics_after_literal_record_default_
   [&](const VarRecord& varrecord) -> mlc::Array<ast::Diagnostic> { auto [_w0, field_definitions_under_literal_scan, _w1] = varrecord; return field_definitions_under_literal_scan.fold(diagnostics_accumulator_so_far, [record_default_inference_context, registry](mlc::Array<ast::Diagnostic> diagnostic_list_so_far_under_fields, std::shared_ptr<ast::FieldDef> record_field_under_literal_definition) mutable { return !record_field_under_literal_definition->has_default_expression ? diagnostic_list_so_far_under_fields : [&]() -> mlc::Array<ast::Diagnostic> { 
   std::shared_ptr<ast::Expr> default_ast_expression = record_field_under_literal_definition->default_expression;
   mlc::Array<ast::Diagnostic> diagnostics_after_field = diagnostic_list_so_far_under_fields;
-  return !record_field_default_initializer::record_field_default_expression_acceptable_for_codegen(default_ast_expression) ? [&]() -> mlc::Array<ast::Diagnostic> { 
+  return !record_defaults::record_field_default_expression_acceptable_for_codegen(default_ast_expression) ? [&]() -> mlc::Array<ast::Diagnostic> { 
   diagnostics_after_field.push_back(ast::diagnostic_error(mlc::String("record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)"), ast::expr_span(default_ast_expression)));
   return diagnostics_after_field;
  }() : [&]() -> mlc::Array<ast::Diagnostic> { 

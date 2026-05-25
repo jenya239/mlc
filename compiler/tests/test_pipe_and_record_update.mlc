@@ -6,10 +6,10 @@ import { create_codegen_context } from '../codegen/context'
 import { pipe_desugar } from '../frontend/parser/exprs'
 import { tokenize } from '../frontend/lexer'
 import { Program, Expr, Stmt, DeclType, VarRecord, FieldDef, TyI32, ExprIdent, ExprCall, ExprInt, ExprUnit, span_unknown } from '../frontend/ast'
-import { SExpr, SFieldVal, SExprInt, SExprIdent, SExprRecordUpdate } from '../semantic_ir'
+import { SExpr, SFieldVal, SExprInt, SExprIdent, SExprRecordUpdate } from '../ir/semantic_ir'
 import { Type, TNamed, TI32, TUnknown } from '../checker/registry'
-import { transform_expr, empty_transform_context, TransformContext, TransformStmtsResult } from '../checker/transform'
-import { transform_stmts } from '../checker/transform_stmts'
+import { transform_expr, empty_transform_context, TransformContext, TransformStmtsResult } from '../checker/transform/transform'
+import { transform_stmts } from '../checker/transform/transform_stmts'
 
 fn sid(name: string) -> Shared<SExpr> = Shared.new(SExprIdent(name, Shared.new(TUnknown), span_unknown()))
 fn si(v: i32) -> Shared<SExpr> = Shared.new(SExprInt(v, Shared.new(TI32), span_unknown()))

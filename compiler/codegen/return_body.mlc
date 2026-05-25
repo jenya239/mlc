@@ -1,7 +1,7 @@
 // Return-site code generation: gen_return_body, gen_fn_body.
 // Imports gen_expr / gen_stmts_str / gen_try_unwrap from eval; not called back by eval.
 
-import { SExpr, SStmt, SExprUnit } from '../semantic_ir'
+import { SExpr, SStmt, SExprUnit } from '../ir/semantic_ir'
 import { CodegenContext } from './context'
 import * as expression_output from './expr'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from './eval'

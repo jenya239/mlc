@@ -5,7 +5,7 @@ import { Type } from '../checker/registry'
 import {
   record_field_default_expression_acceptable_for_codegen,
   record_field_default_expression_cpp_initializer
-} from '../record_field_default_initializer'
+} from '../ir/record_defaults'
 import { CodegenContext, CtorTypeInfo } from './context'
 import { list_contains } from './decl_index'
 import { cpp_safe, lower_first, template_prefix } from './cpp_naming'

@@ -1,7 +1,7 @@
 // SStmtLetPat: structured let — tuple/record/array/ctor (A3).
 
 import { Pat, PatIdent } from '../frontend/ast'
-import { SExpr } from '../semantic_ir'
+import { SExpr } from '../ir/semantic_ir'
 import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../checker/registry'
 import { CodegenContext, lookup_fields_for_context } from './context'
 import { list_contains } from './decl_index'

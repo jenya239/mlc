@@ -3,7 +3,7 @@
 import { TypeVariant, TypeExpr, Param, Expr, ExprInt, ExprStr, ExprBool, ExprUnit } from '../frontend/ast'
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../frontend/ast'
 import * as lit from './literals'
-import { SDecl, SExpr, SExprExtern } from '../semantic_ir'
+import { SDecl, SExpr, SExprExtern } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
 import { CodegenContext } from './context'
 import { cpp_safe } from './cpp_naming'

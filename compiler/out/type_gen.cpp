@@ -2,7 +2,7 @@
 
 #include "ast.hpp"
 #include "registry.hpp"
-#include "record_field_default_initializer.hpp"
+#include "record_defaults.hpp"
 #include "context.hpp"
 #include "decl_index.hpp"
 #include "cpp_naming.hpp"
@@ -12,7 +12,7 @@ namespace type_gen {
 
 using namespace ast;
 using namespace registry;
-using namespace record_field_default_initializer;
+using namespace record_defaults;
 using namespace context;
 using namespace decl_index;
 using namespace cpp_naming;
@@ -203,7 +203,7 @@ return type_params.filter([all_fields](mlc::String p) mutable { return !type_par
 
 mlc::String field_def_member_declaration(context::CodegenContext context, std::shared_ptr<ast::FieldDef> fd) noexcept{
 mlc::String base = expr::struct_named_field_declaration(type_to_cpp(context, fd->typ), cpp_naming::cpp_safe(fd->name));
-return fd->has_default_expression && record_field_default_initializer::record_field_default_expression_acceptable_for_codegen(fd->default_expression) ? base + mlc::String(" = ") + record_field_default_initializer::record_field_default_expression_cpp_initializer(fd->default_expression, context) : base;
+return fd->has_default_expression && record_defaults::record_field_default_expression_acceptable_for_codegen(fd->default_expression) ? base + mlc::String(" = ") + record_defaults::record_field_default_expression_cpp_initializer(fd->default_expression, context) : base;
 }
 
 mlc::String variant_record_struct_inline_member_declarations(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept{return field_definitions.map([context](std::shared_ptr<ast::FieldDef> fd) mutable { return field_def_member_declaration(context, fd); }).join(mlc::String(""));}

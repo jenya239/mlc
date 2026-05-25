@@ -1,0 +1,99 @@
+// Call / non-constructor inference helpers (no infer_expr dependency).
+
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append } from '../../frontend/ast'
+import { Type } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { TypeRegistry } from '../registry'
+import { InferResult } from './infer_result'
+import { constructor_arity_diagnostics, call_arity_diagnostics, call_arity_range_diagnostics } from '../check/diagnostics/type_diagnostics'
+import * as semantic_type_structure from '../semantic_type_structure'
+
+export fn infer_expr_call_for_constructor_name(
+  constructor_name: string,
+  with_arguments: InferResult,
+  call_arguments: [Shared<Expr>],
+  call_source_span: Span,
+  inference_context: CheckContext
+) -> InferResult = do
+  const constructor_parameter_types = inference_context.registry.ctor_params_for(constructor_name)
+  const call_errors = constructor_arity_diagnostics(
+    constructor_parameter_types.length(),
+    call_arguments.length(),
+    call_source_span)
+  const ctor_type = inference_context.registry.ctor_type(constructor_name)
+  const owner_name = match ctor_type { TNamed(n) => n, _ => '' }
+  const private_errors: [Diagnostic] =
+    if inference_context.registry.is_private_ctor(constructor_name) &&
+       inference_context.current_extend_type != owner_name then
+      [diagnostic_error('private constructor: cannot construct ' + constructor_name + ' outside its extend block', call_source_span)]
+    else [] end
+  InferResult {
+    inferred_type: ctor_type,
+    errors: diagnostics_append(diagnostics_append(with_arguments.errors, call_errors), private_errors)
+  }
+end
+
+export fn infer_expr_call_non_constructor_arity_only(
+  base: InferResult,
+  function_result: InferResult,
+  call_arguments: [Shared<Expr>],
+  call_source_span: Span,
+  return_type: Shared<Type>,
+  registry: TypeRegistry,
+  callee_name: string
+) -> InferResult = do
+  const parameter_types = semantic_type_structure.function_parameter_list(function_result.inferred_type)
+  const max_arity = parameter_types.length()
+  const min_arity =
+    if callee_name != '' && registry.has_fn(callee_name) then
+      const r = registry.required_arity_for_fn(callee_name)
+      if r >= 0 then r else max_arity end
+    else
+      max_arity
+    end
+  const arity_errors =
+    if min_arity == max_arity then
+      call_arity_diagnostics(max_arity, call_arguments.length(), call_source_span)
+    else
+      call_arity_range_diagnostics(min_arity, max_arity, call_arguments.length(), call_source_span)
+    end
+  InferResult {
+    inferred_type: return_type,
+    errors: diagnostics_append(base.errors, arity_errors)
+  }
+end
+
+export fn infer_expr_call_non_constructor_not_callable(
+  base: InferResult,
+  function_result: InferResult,
+  call_source_span: Span
+) -> InferResult =
+  if semantic_type_structure.type_is_unknown(function_result.inferred_type) then
+    base
+  else
+    InferResult {
+      inferred_type: Shared.new(TUnknown),
+      errors: diagnostics_append(base.errors, [
+        diagnostic_error(
+          'called value is not a function (got ' + semantic_type_structure.type_description(function_result.inferred_type) + ")",
+          call_source_span)])
+    }
+  end
+
+export fn infer_expr_call_non_constructor(
+  function_result: InferResult,
+  with_arguments: InferResult,
+  call_arguments: [Shared<Expr>],
+  call_source_span: Span,
+  registry: TypeRegistry,
+  callee_name: string
+) -> InferResult = do
+  const return_type = match function_result.inferred_type { TFn(_, return_ty) => return_ty, _ => Shared.new(TUnknown) }
+  const base = InferResult { inferred_type: return_type, errors: with_arguments.errors }
+  if semantic_type_structure.type_is_function(function_result.inferred_type) then
+    infer_expr_call_non_constructor_arity_only(
+      base, function_result, call_arguments, call_source_span, return_type, registry, callee_name)
+  else
+    infer_expr_call_non_constructor_not_callable(base, function_result, call_source_span)
+  end
+end

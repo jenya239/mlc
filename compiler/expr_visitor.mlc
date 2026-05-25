@@ -1,7 +1,7 @@
 // ExprVisitor (PLAN.md §3). dispatch_expr — single SExpr match for all ExprVisitor impls.
 
 import { Type } from './checker/registry'
-import { SExpr, SStmt, SMatchArm, SFieldVal } from './semantic_ir'
+import { SExpr, SStmt, SMatchArm, SFieldVal } from './ir/semantic_ir'
 
 export trait ExprVisitor<VisitorResult> {
   fn visit_int(self: ExprVisitor<VisitorResult>, value: i32, semantic_type: Shared<Type>) -> VisitorResult

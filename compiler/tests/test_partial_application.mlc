@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
-import { check } from '../checker/check'
+import { check } from '../checker/check/check'
 import { assert_code_contains } from './codegen_test_helpers'
 import { gen_program } from '../codegen/module'
 

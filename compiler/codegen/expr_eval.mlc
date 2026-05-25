@@ -1,7 +1,7 @@
 // Expression code generation. gen_stmts injected as a function parameter to
 // break the import cycle with stmt_eval.mlc.
 
-import { SExpr, SStmt } from '../semantic_ir'
+import { SExpr, SStmt } from '../ir/semantic_ir'
 import { CodegenContext } from './context'
 import { eval_expr_with_visitor } from './expr_visitor_string'
 

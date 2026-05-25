@@ -1,6 +1,6 @@
 import { tokenize } from './frontend/lexer'
 import { parse_program } from './frontend/parser/decls'
-import { check } from './checker/check'
+import { check } from './checker/check/check'
 import { gen_module } from './codegen/module'
 import { LoadItem, PrecomputedCtx } from './codegen/context'
 import { Program, Decl, DeclImport, DeclExported, errs_append } from './frontend/ast'

@@ -1,7 +1,7 @@
 // Method call code generation.
 // eval_expr_fn injected to break the import cycle with expr_eval.mlc.
 
-import { SExpr, SStmt, SExprIdent, sexpr_type } from '../semantic_ir'
+import { SExpr, SStmt, SExprIdent, sexpr_type } from '../ir/semantic_ir'
 import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../checker/registry'
 import { CodegenContext } from './context'
 import { map_method } from './cpp_naming'

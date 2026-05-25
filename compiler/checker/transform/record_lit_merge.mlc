@@ -1,0 +1,195 @@
+// Merge TypeName { ...parts } with explicit fields and ...spread into flat FieldVal list.
+// Matches Ruby ExpressionVisitor#build_record_fields order: spreads fill gaps by target field order,
+// earlier spread wins over later spread for the same key; explicit literal keys override spreads.
+
+import { Expr, FieldVal, RecordLitPart, ExprField, expr_span, Diagnostic, diagnostic_error, Span } from '../../frontend/ast'
+import { TypeRegistry, Type, TGeneric, TShared } from '../registry'
+
+fn field_values_map_from_flat(field_values: [Shared<FieldVal>]) -> Map<string, Shared<FieldVal>> = do
+  let accumulator: Map<string, Shared<FieldVal>> = Map.new()
+  let mut index = 0
+  while index < field_values.length() do
+    const row = field_values[index]
+    accumulator.set(row.name, row); index = index + 1
+  end
+  accumulator
+end
+
+fn merge_explicit_record_literal_with_type_defaults_nonempty(
+  nominal_record_name: string,
+  explicit_fields_flat: [Shared<FieldVal>],
+  registry: TypeRegistry
+) -> [Shared<FieldVal>] = do
+  const ordered_target_names = registry.record_field_names_ordered_for(nominal_record_name)
+  const explicit_by_field_name = field_values_map_from_flat(explicit_fields_flat)
+  let merged_ordered_fields: [Shared<FieldVal>] = []
+  let mut ordered_walk_index = 0
+  while ordered_walk_index < ordered_target_names.length() do
+    const slot_field_name = ordered_target_names[ordered_walk_index]
+    if explicit_by_field_name.has(slot_field_name) then
+      merged_ordered_fields.push(explicit_by_field_name.get(slot_field_name))
+    else if registry.record_field_has_default_expression(nominal_record_name, slot_field_name) then
+      merged_ordered_fields.push(Shared.new(FieldVal {
+        name: slot_field_name,
+        val: registry.record_field_default_expression_ast(nominal_record_name, slot_field_name)
+      }))
+    end
+    ordered_walk_index = ordered_walk_index + 1
+  end
+  merged_ordered_fields
+end
+
+export fn merge_explicit_record_literal_with_type_defaults(
+  nominal_record_name: string,
+  explicit_fields_flat: [Shared<FieldVal>],
+  registry: TypeRegistry
+) -> [Shared<FieldVal>] = do
+  if !registry.has_fields(nominal_record_name) then explicit_fields_flat
+  else merge_explicit_record_literal_with_type_defaults_nonempty(
+    nominal_record_name,
+    explicit_fields_flat,
+    registry)
+  end
+end
+
+fn record_type_base_name(value_type: Shared<Type>) -> string =
+  match value_type {
+    TNamed(name) => name,
+    TGeneric(name, _) => name,
+    TShared(inner) => record_type_base_name(inner),
+    _ => ''
+  }
+
+fn explicit_field_map_last_wins(parts: [RecordLitPart]) -> Map<string, Shared<FieldVal>> = do
+  let accumulator: Map<string, Shared<FieldVal>> = Map.new()
+  let mut part_index = 0
+  while part_index < parts.length() do
+    match parts[part_index] {
+      RecordLitFields(field_values) => do
+        let mut field_index = 0
+        while field_index < field_values.length() do
+          const field_value = field_values[field_index]
+          accumulator.set(field_value.name, field_value); field_index = field_index + 1
+        end
+      end,
+      RecordLitSpread(_) => (),
+    }
+    part_index = part_index + 1
+  end
+  accumulator
+end
+
+export fn collect_explicit_field_values_flat(parts: [RecordLitPart]) -> [Shared<FieldVal>] = do
+  let collected: [Shared<FieldVal>] = []
+  let mut part_index = 0
+  while part_index < parts.length() do
+    match parts[part_index] {
+      RecordLitFields(field_values) => do
+        let mut field_index = 0
+        while field_index < field_values.length() do
+          collected.push(field_values[field_index]); field_index = field_index + 1
+        end
+      end,
+      RecordLitSpread(_) => (),
+    }
+    part_index = part_index + 1
+  end
+  collected
+end
+
+export fn record_literal_contains_spread(parts: [RecordLitPart]) -> bool = do
+  let mut part_index = 0
+  let mut found_spread = false
+  while part_index < parts.length() && !found_spread do
+    match parts[part_index] {
+      RecordLitSpread(_) => do
+        found_spread = true
+      end,
+      RecordLitFields(_) => (),
+    }
+    part_index = part_index + 1
+  end
+  found_spread
+end
+
+export fn merge_record_literal_parts_to_field_values(
+  type_name: string,
+  parts: [RecordLitPart],
+  registry: TypeRegistry,
+  spread_types_in_order: [Shared<Type>]
+) -> [Shared<FieldVal>] = do
+  const explicit_map = explicit_field_map_last_wins(parts)
+  const ordered_target_field_names = registry.record_field_names_ordered_for(type_name)
+  let expanded_member_expressions: Map<string, Shared<Expr>> = Map.new()
+  let mut spread_type_index = 0
+  let mut part_walk_index = 0
+  while part_walk_index < parts.length() do
+    match parts[part_walk_index] {
+      RecordLitSpread(spread_expression) => do
+        const spread_value_type = spread_types_in_order[spread_type_index]
+        spread_type_index = spread_type_index + 1
+        const spread_base_name = record_type_base_name(spread_value_type)
+        if spread_base_name != '' && registry.has_fields(spread_base_name) then
+          const spread_field_types = registry.fields_for(spread_base_name)
+          let mut ordered_index = 0
+          while ordered_index < ordered_target_field_names.length() do
+            const candidate_field_name = ordered_target_field_names[ordered_index]
+            if !explicit_map.has(candidate_field_name) && !expanded_member_expressions.has(candidate_field_name) &&
+               spread_field_types.has(candidate_field_name) then
+              expanded_member_expressions.set(
+                candidate_field_name,
+                Shared.new(ExprField(spread_expression, candidate_field_name, expr_span(spread_expression))))
+            end
+            ordered_index = ordered_index + 1
+          end
+        end
+      end,
+      RecordLitFields(_) => (),
+    }
+    part_walk_index = part_walk_index + 1
+  end
+  let merged_field_values: [Shared<FieldVal>] = []
+  let mut ordered_merge_index = 0
+  while ordered_merge_index < ordered_target_field_names.length() do
+    const merge_field_name = ordered_target_field_names[ordered_merge_index]
+    if explicit_map.has(merge_field_name) then
+      merged_field_values.push(explicit_map.get(merge_field_name))
+    else if expanded_member_expressions.has(merge_field_name) then
+      merged_field_values.push(
+        Shared.new(FieldVal { name: merge_field_name, val: expanded_member_expressions.get(merge_field_name) }))
+    end
+    ordered_merge_index = ordered_merge_index + 1
+  end
+  merged_field_values
+end
+
+export fn diagnostics_missing_fields_for_ordered_record(
+  type_name: string,
+  registry: TypeRegistry,
+  merged_field_values: [Shared<FieldVal>],
+  span: Span
+) -> [Diagnostic] = do
+  const ordered_target_names = registry.record_field_names_ordered_for(type_name)
+  if ordered_target_names.length() == 0 then
+    do let empty_missing_field_diagnostics: [Diagnostic] = []; empty_missing_field_diagnostics end
+  else do
+    let missing_field_diagnostics: [Diagnostic] = []
+    let mut ordered_index = 0
+    while ordered_index < ordered_target_names.length() do
+      const expected_field_name = ordered_target_names[ordered_index]
+      let mut found_present = false
+      let mut merged_index = 0
+      while merged_index < merged_field_values.length() && !found_present do
+        if merged_field_values[merged_index].name == expected_field_name then found_present = true end
+        merged_index = merged_index + 1
+      end
+      if !found_present && !registry.record_field_has_default_expression(type_name, expected_field_name) then
+        missing_field_diagnostics.push(
+          diagnostic_error('missing field "' + expected_field_name + '" in record literal', span))
+      end
+      ordered_index = ordered_index + 1
+    end
+    missing_field_diagnostics
+  end
+  end
+end

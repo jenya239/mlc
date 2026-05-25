@@ -1,7 +1,7 @@
 // --- Semantic type --------------------------------------------------------
 
 import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name, param_is_mut, Expr } from '../frontend/ast'
-import { expand_trait_as_param_program } from './trait_param_expand'
+import { expand_trait_as_param_program } from './transform/trait_param_expand'
 
 export type Type =
   | TI32 | TString | TBool | TUnit

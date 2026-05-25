@@ -2,7 +2,7 @@
 // break the import cycle with expr_eval.mlc. Private helpers thread gen_expr_fn
 // through; recursive eval_stmts_str calls go directly (same module).
 
-import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from '../semantic_ir'
+import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from '../ir/semantic_ir'
 import { gen_let_pattern_statement } from './let_pat'
 import { Type, TArray, TGeneric, TNamed } from '../checker/registry'
 import { CodegenContext, GenStmtsResult, GenStmtsWithContext, GenStmtResult,

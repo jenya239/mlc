@@ -1,0 +1,106 @@
+import { Pat } from '../../frontend/ast'
+import { Type, TypeRegistry } from '../registry'
+import { substitute_type } from '../semantic_type_structure'
+
+type Constructor_pattern_environment_fold_state = Constructor_pattern_environment_fold_state {
+  environment:                             Map<string, Shared<Type>>,
+  next_constructor_subpattern_index: i32,
+}
+
+export fn env_for_pattern_with_type(type_environment: Map<string, Shared<Type>>, pattern: Shared<Pat>, type_value: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  match pattern {
+    PatIdent(binding_name, _) => do let environment = type_environment; environment.set(binding_name, type_value); environment end,
+    PatOr(alts, _) => if alts.length() > 0 then env_for_pattern_with_type(type_environment, alts[0], type_value, registry) else type_environment end,
+    _ => env_for_pattern(type_environment, pattern, registry)
+  }
+end
+
+fn constructor_subpattern_environment_fold_step(
+  accumulator: Constructor_pattern_environment_fold_state,
+  sub_pattern_value: Shared<Pat>,
+  parameter_types: [Shared<Type>],
+  parameter_type_substitution: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Constructor_pattern_environment_fold_state = do
+  const current_subpattern_index = accumulator.next_constructor_subpattern_index
+  const raw_constructor_parameter_type =
+    if current_subpattern_index < parameter_types.length()
+    then parameter_types[current_subpattern_index]
+    else Shared.new(TUnknown)
+    end
+  const resolved_constructor_subpattern_type =
+    substitute_type(raw_constructor_parameter_type, parameter_type_substitution)
+  const next_environment_after_subpattern =
+    env_for_pattern_with_type(
+      accumulator.environment,
+      sub_pattern_value,
+      resolved_constructor_subpattern_type,
+      registry)
+  Constructor_pattern_environment_fold_state {
+    environment:                       next_environment_after_subpattern,
+    next_constructor_subpattern_index: current_subpattern_index + 1,
+  }
+end
+
+fn environment_after_all_constructor_subpatterns(
+  initial_environment: Map<string, Shared<Type>>,
+  sub_patterns: [Shared<Pat>],
+  parameter_types: [Shared<Type>],
+  parameter_type_substitution: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> =
+  sub_patterns
+    .fold(
+      Constructor_pattern_environment_fold_state {
+        environment:                             initial_environment,
+        next_constructor_subpattern_index:       0,
+      },
+      (accumulator, sub_pattern_value) =>
+        constructor_subpattern_environment_fold_step(
+          accumulator,
+          sub_pattern_value,
+          parameter_types,
+          parameter_type_substitution,
+          registry))
+    .environment
+
+export fn env_for_pattern(type_environment: Map<string, Shared<Type>>, pattern: Shared<Pat>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  match pattern {
+    PatIdent(binding_name, _) => do let environment = type_environment; environment.set(binding_name, Shared.new(TUnknown)); environment end,
+    PatCtor(constructor_name, sub_patterns, _) => do
+      const parameter_types = registry.ctor_params_for(constructor_name)
+      const empty_type_parameter_substitution: Map<string, Shared<Type>> = Map.new()
+      environment_after_all_constructor_subpatterns(
+        type_environment, sub_patterns, parameter_types, empty_type_parameter_substitution, registry)
+    end,
+    PatOr(alts, _) => if alts.length() > 0 then env_for_pattern(type_environment, alts[0], registry) else type_environment end,
+    _ => type_environment
+  }
+end
+
+export fn env_for_pattern_substituted(
+  type_environment: Map<string, Shared<Type>>,
+  pattern: Shared<Pat>,
+  registry: TypeRegistry,
+  substitution: Map<string, Shared<Type>>,
+  scrutinee_type: Shared<Type>
+) -> Map<string, Shared<Type>> = do
+  match pattern {
+    PatIdent(binding_name, _) => do
+      let environment = type_environment
+      environment.set(binding_name, substitute_type(scrutinee_type, substitution))
+      environment
+    end,
+    PatCtor(constructor_name, sub_patterns, _) => do
+      const parameter_types = registry.ctor_params_for(constructor_name)
+      environment_after_all_constructor_subpatterns(
+        type_environment, sub_patterns, parameter_types, substitution, registry)
+    end,
+    PatOr(alts, _) =>
+      if alts.length() > 0
+      then env_for_pattern_substituted(type_environment, alts[0], registry, substitution, scrutinee_type)
+      else type_environment
+      end,
+    _ => type_environment
+  }
+end

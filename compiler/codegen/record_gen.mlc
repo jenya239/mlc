@@ -1,7 +1,7 @@
 // Record and record-update code generation.
 // eval_expr_fn injected to break the import cycle with expr_eval.mlc.
 
-import { SExpr, SStmt, SFieldVal } from '../semantic_ir'
+import { SExpr, SStmt, SFieldVal } from '../ir/semantic_ir'
 import { Type, TUnknown } from '../checker/registry'
 import { CodegenContext, lookup_fields_for_context } from './context'
 import { sem_type_to_cpp } from './type_gen'

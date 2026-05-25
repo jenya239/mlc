@@ -1,5 +1,5 @@
 import { Pat } from '../frontend/ast'
-import { SExpr, SMatchArm, sexpr_type } from '../semantic_ir'
+import { SExpr, SMatchArm, sexpr_type } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
 import { CodegenContext } from './context'
 import { list_contains } from './decl_index'

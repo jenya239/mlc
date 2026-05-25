@@ -15,7 +15,7 @@
 #include "infer.hpp"
 #include "check_context.hpp"
 #include "semantic_type_structure.hpp"
-#include "record_field_default_initializer.hpp"
+#include "record_defaults.hpp"
 #include "partial_application_desugar.hpp"
 
 namespace check {

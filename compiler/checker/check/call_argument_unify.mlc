@@ -1,0 +1,254 @@
+// Call-site argument checking with type-parameter substitution (unification).
+
+import { Expr, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span, span_unknown } from '../../frontend/ast'
+import { Type } from '../registry'
+import * as semantic_type_structure from '../semantic_type_structure'
+
+fn empty_diagnostic_list() -> [Diagnostic] = do
+  let empty_list: [Diagnostic] = []
+  empty_list
+end
+
+fn list_contains_string(haystack: [string], needle: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < haystack.length() && !found do
+    if haystack[index] == needle then found = true end
+    index = index + 1
+  end
+  found
+end
+
+fn unify_expected_and_actual_argument_types(
+  expected_type: Shared<Type>,
+  actual_type: Shared<Type>,
+  type_parameter_names: [string],
+  substitution: ref mut Map<string, Shared<Type>>,
+  diagnostic_span: Span
+) -> [Diagnostic] = do
+  if semantic_type_structure.type_is_unknown(actual_type) then empty_diagnostic_list()
+  else if semantic_type_structure.type_is_unknown(expected_type) then empty_diagnostic_list()
+  else match expected_type {
+    TArray(inner_expected) =>
+      if semantic_type_structure.type_is_array(actual_type) then
+        unify_expected_and_actual_argument_types(
+          inner_expected,
+          semantic_type_structure.array_element_type_from_array_type(actual_type),
+          type_parameter_names,
+          substitution,
+          diagnostic_span)
+      else
+        [diagnostic_error(
+          'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+          diagnostic_span)]
+      end,
+    TShared(inner_expected) =>
+      if semantic_type_structure.type_is_shared_pointer(actual_type) then
+        unify_expected_and_actual_argument_types(
+          inner_expected,
+          semantic_type_structure.shared_pointer_inner_type(actual_type),
+          type_parameter_names,
+          substitution,
+          diagnostic_span)
+      else
+        [diagnostic_error(
+          'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+          diagnostic_span)]
+      end,
+    TNamed(name) =>
+      if list_contains_string(type_parameter_names, name) then
+        if substitution.has(name) then
+          unify_expected_and_actual_argument_types(
+            substitution.get(name),
+            actual_type,
+            type_parameter_names,
+            substitution,
+            diagnostic_span)
+        else
+          do
+            substitution.set(name, actual_type);
+            empty_diagnostic_list()
+          end
+        end
+      else if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
+      else
+        [diagnostic_error(
+          'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+          diagnostic_span)]
+      end,
+    TGeneric(expected_name, expected_args) =>
+      match actual_type {
+        TGeneric(actual_name, actual_args) =>
+          if expected_name != actual_name || expected_args.length() != actual_args.length() then
+            [diagnostic_error(
+              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            let mut out: [Diagnostic] = empty_diagnostic_list()
+            let mut gi = 0
+            while gi < expected_args.length() do
+              out = diagnostics_append(
+                out,
+                unify_expected_and_actual_argument_types(
+                  expected_args[gi],
+                  actual_args[gi],
+                  type_parameter_names,
+                  substitution,
+                  diagnostic_span))
+              gi = gi + 1
+            end
+            out
+          end,
+        _ =>
+          [diagnostic_error(
+            'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+            diagnostic_span)]
+      },
+    TTuple(expected_elts) =>
+      match actual_type {
+        TTuple(actual_elts) =>
+          if expected_elts.length() != actual_elts.length() then
+            [diagnostic_error(
+              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            let mut out_t: [Diagnostic] = empty_diagnostic_list()
+            let mut ti = 0
+            while ti < expected_elts.length() do
+              out_t = diagnostics_append(
+                out_t,
+                unify_expected_and_actual_argument_types(
+                  expected_elts[ti],
+                  actual_elts[ti],
+                  type_parameter_names,
+                  substitution,
+                  diagnostic_span))
+              ti = ti + 1
+            end
+            out_t
+          end,
+        TPair(a2, b2) =>
+          if expected_elts.length() != 2 then
+            [diagnostic_error(
+              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            diagnostics_append(
+              unify_expected_and_actual_argument_types(
+                expected_elts[0], a2, type_parameter_names, substitution, diagnostic_span),
+              unify_expected_and_actual_argument_types(
+                expected_elts[1], b2, type_parameter_names, substitution, diagnostic_span))
+          end,
+        _ =>
+          [diagnostic_error(
+            'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+            diagnostic_span)]
+      },
+    TPair(expected_a, expected_b) =>
+      match actual_type {
+        TPair(actual_a, actual_b) =>
+          diagnostics_append(
+            unify_expected_and_actual_argument_types(
+              expected_a, actual_a, type_parameter_names, substitution, diagnostic_span),
+            unify_expected_and_actual_argument_types(
+              expected_b, actual_b, type_parameter_names, substitution, diagnostic_span)),
+        TTuple(ats) =>
+          if ats.length() != 2 then
+            [diagnostic_error(
+              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            diagnostics_append(
+              unify_expected_and_actual_argument_types(
+                expected_a, ats[0], type_parameter_names, substitution, diagnostic_span),
+              unify_expected_and_actual_argument_types(
+                expected_b, ats[1], type_parameter_names, substitution, diagnostic_span))
+          end,
+        _ =>
+          [diagnostic_error(
+            'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+            diagnostic_span)]
+      },
+    TFn(expected_params, expected_ret) =>
+      match actual_type {
+        TFn(actual_params, actual_ret) =>
+          if expected_params.length() != actual_params.length() then
+            [diagnostic_error(
+              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+              diagnostic_span)]
+          else
+            let mut out_fn: [Diagnostic] = empty_diagnostic_list()
+            let mut pi = 0
+            while pi < expected_params.length() do
+              out_fn = diagnostics_append(
+                out_fn,
+                unify_expected_and_actual_argument_types(
+                  expected_params[pi],
+                  actual_params[pi],
+                  type_parameter_names,
+                  substitution,
+                  diagnostic_span))
+              pi = pi + 1
+            end
+            diagnostics_append(
+              out_fn,
+              unify_expected_and_actual_argument_types(
+                expected_ret, actual_ret, type_parameter_names, substitution, diagnostic_span))
+          end,
+        _ =>
+          [diagnostic_error(
+            'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+            diagnostic_span)]
+      },
+    _ =>
+      if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
+      else
+        [diagnostic_error(
+          'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+          diagnostic_span)]
+      end
+  }
+  end
+end
+    
+export fn build_call_type_substitution(
+  expected_parameter_types: [Shared<Type>],
+  actual_argument_types: [Shared<Type>],
+  type_parameter_names: [string]
+) -> Map<string, Shared<Type>> = do
+  let substitution: Map<string, Shared<Type>> = Map.new()
+  let mut index = 0
+  while index < expected_parameter_types.length() && index < actual_argument_types.length() do
+    unify_expected_and_actual_argument_types(
+      expected_parameter_types[index],
+      actual_argument_types[index],
+      type_parameter_names,
+      substitution,
+      span_unknown())
+    index = index + 1
+  end
+  substitution
+end
+
+export fn call_argument_unification_diagnostics(
+  expected_parameter_types: [Shared<Type>],
+  actual_argument_types: [Shared<Type>],
+  type_parameter_names: [string],
+  argument_expressions: [Shared<Expr>]
+) -> [Diagnostic] = do
+  let substitution: Map<string, Shared<Type>> = Map.new()
+  let mut collected: [Diagnostic] = []
+  let mut index = 0
+  while index < expected_parameter_types.length() && index < actual_argument_types.length() do
+    collected = diagnostics_append(
+      collected,
+      unify_expected_and_actual_argument_types(
+        expected_parameter_types[index],
+        actual_argument_types[index],
+        type_parameter_names,
+        substitution,
+        expr_span(argument_expressions[index])))
+    index = index + 1
+  end
+  collected
+end

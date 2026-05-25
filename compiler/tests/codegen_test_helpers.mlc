@@ -2,7 +2,7 @@
 
 import { TestResult, assert_eq_str, assert_true } from './test_runner'
 import { Program, TypeExpr } from '../frontend/ast'
-import { SExpr } from '../semantic_ir'
+import { SExpr } from '../ir/semantic_ir'
 import { CodegenContext, create_codegen_context } from '../codegen/context'
 import { gen_expr } from '../codegen/eval'
 import { type_to_cpp } from '../codegen/type_gen'

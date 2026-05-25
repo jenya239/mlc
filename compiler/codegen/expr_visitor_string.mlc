@@ -1,7 +1,7 @@
 // ExprVisitor<string> wired into expr_eval for literals, identifiers, bin/unary ops.
 
 import { Type } from '../checker/registry'
-import { SExpr, SStmt, sexpr_type, SExprArray, SMatchArm, SFieldVal } from '../semantic_ir'
+import { SExpr, SStmt, sexpr_type, SExprArray, SMatchArm, SFieldVal } from '../ir/semantic_ir'
 import { TNamed, TArray, TFn } from '../checker/registry'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from '../checker/semantic_type_structure'
 import { ExprVisitor } from '../expr_visitor'

@@ -6,7 +6,7 @@ import { create_codegen_context } from '../codegen/context'
 import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main } from '../codegen/decl'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
-import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SDeclFn, SDeclType, SDeclExported, SDeclExtend } from '../semantic_ir'
+import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SDeclFn, SDeclType, SDeclExported, SDeclExtend } from '../ir/semantic_ir'
 import { Type, TI32, TString, TUnit, TUnknown } from '../checker/registry'
 
 fn ti32()  -> Shared<Type> = Shared.new(TI32)
