@@ -66,4 +66,7 @@ if [ ${#ERRORS[@]} -gt 0 ]; then
   exit 1
 fi
 
-"${CXX_CMD[@]}" -std=c++20 -o "$BIN_OUT" "${OBJS[@]}"
+LINK_FLAGS=()
+command -v ld.lld &>/dev/null && LINK_FLAGS+=(-fuse-ld=lld)
+
+"${CXX_CMD[@]}" -std=c++20 "${LINK_FLAGS[@]}" -o "$BIN_OUT" "${OBJS[@]}"
