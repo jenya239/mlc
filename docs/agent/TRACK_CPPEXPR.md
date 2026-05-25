@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2 (C++ AST backend)
 
 Previous track: [TRACK_PLAN.md](TRACK_PLAN.md) (folder restructure, steps 1–23 — **closed**)
 
-## Status: in progress (step 2 pending)
+## Status: in progress (step 3 pending)
 
 **Goal:** replace string concatenation in `codegen/` with `CppExpr` / `CppStmt` / `CppDecl` built in `compiler/cpp/`, emitted via `printer.mlc`. Incremental; no regressions.
 
@@ -45,7 +45,7 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 | Step | Item | Status |
 |------|------|--------|
 | 1 | `CppType` in `compiler/cpp/ast.mlc` — `CppTypeName`, `CppTypeTemplate`, `CppTypeRef` | done (`f9340f8`) |
-| 2 | Extend `CppExpr` — `CppBool`, `CppTernary`, `CppCast`, `CppInitList` | pending |
+| 2 | Extend `CppExpr` — `CppBool`, `CppTernary`, `CppCast`, `CppInitList` | done (`734d6b6`) |
 | 3 | Extend `CppExpr` — `CppLambda`, `CppStdVisit`; `CppMember` pointer flag | pending |
 | 4 | Extend `CppStmt`/`CppDecl` — `CppConstDecl`, `CppFor`, `CppNamespace`, `CppVariant`, `CppFile` | pending |
 | 5 | `compiler/cpp/printer.mlc` scaffold — print literals + ident | pending |
@@ -114,4 +114,4 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 
 ## Next step (Driver)
 
-**STEP=2** — extend `CppExpr`: `CppBool`, `CppTernary`, `CppCast`, `CppInitList`.
+**STEP=3** — extend `CppExpr`: `CppLambda`, `CppStdVisit`; add pointer flag to `CppMember`.

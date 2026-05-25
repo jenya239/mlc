@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| agent_token_last | cr-agent-8a1090dc-afd4-4108-9fc0-d07ebaeb806c |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| agent_token_last | cr-agent-a42a3067-ab77-4592-9c98-08cd9c21faa9 |
 | run_tests | 490 |
-| TRACK_PLAN | TRACK_CPPEXPR step 2 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 3 pending |
+
+### Turn 2026-05-25 (CPPEXPR step 2)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 2 |
+| step | 2 |
+| done | CppBool, CppTernary, CppCast, CppInitList + CppCastKind; commit 734d6b6 |
+| verify | 490 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | docs |
+| next | STEP=3 |
 
 ### Turn 2026-05-25 (CPPEXPR step 1)
 
