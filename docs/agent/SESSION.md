@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | agent_token_last | cr-agent-8a1090dc-afd4-4108-9fc0-d07ebaeb806c |
 | run_tests | 490 |
-| TRACK_PLAN | closed; active TRACK_CPPEXPR step 1 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 2 pending |
+
+### Turn 2026-05-25 (CPPEXPR step 1)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | CppType in ast.mlc; docs 8ee8aae; step f9340f8 |
+| verify | 490 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | TRACK update |
+| next | STEP=2 |
 
 ### Turn 2026-05-25 (plan-refresh Phase 2)
 
