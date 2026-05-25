@@ -34,7 +34,7 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 | 18 | Move `frontend/` — lexer, ast, ast_tokens, parser/ | done (`bef5143`) |
 | 19 | Move `ir/` — semantic_ir, record_defaults | done (`597b76b`) |
 | 20 | Split `checker/` → infer/, transform/, check/ | done (`597b76b`) |
-| 21 | Split `codegen/` → expr/, stmt/, decl/ | commit-prep |
+| 21 | Split `codegen/` → expr/, stmt/, decl/ | done (`ef3fedf`; split dirs `6b355c3`) |
 | 22 | Move root debug tests → `tests/`; delete junk | pending |
 | 23 | Delete stale artefacts: `compiler/out2/`, `out2_tests/`, `out_modular/`, root `out/`, `main_modular_test.mlc`, `test_lexer.mlc`, `test_trait_e2e.mlc`; update `.gitignore` | pending |
 
