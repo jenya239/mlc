@@ -1,0 +1,138 @@
+// Golden tests for compiler/cpp/cpp_printer.mlc.
+
+import { TestResult, assert_eq_str } from './test_runner'
+import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_printer'
+import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
+         CppTernary, CppInitList, CppCast, CppCastStatic, CppLambda,
+         CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppBlock, CppIf, CppWhile, CppFor,
+         CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
+         CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
+
+fn integer_type() -> Shared<CppType> =
+  Shared.new(CppTypeName('int'))
+
+export fn cpp_printer_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  const int_type = integer_type()
+
+  results.push(assert_eq_str('print_expr CppInt',
+    print_expr(Shared.new(CppInt(42))), '42'))
+
+  results.push(assert_eq_str('print_expr CppStr',
+    print_expr(Shared.new(CppStr('hello'))), '"hello"'))
+
+  results.push(assert_eq_str('print_expr CppBool',
+    print_expr(Shared.new(CppBool(false))), 'false'))
+
+  results.push(assert_eq_str('print_expr CppCall',
+    print_expr(Shared.new(CppCall(Shared.new(CppIdent('foo')), [Shared.new(CppInt(1)), Shared.new(CppInt(2))]))),
+    'foo(1, 2)'))
+
+  results.push(assert_eq_str('print_expr CppMember value',
+    print_expr(Shared.new(CppMember(Shared.new(CppIdent('object')), 'field', false))),
+    'object.field'))
+
+  results.push(assert_eq_str('print_expr CppMember pointer',
+    print_expr(Shared.new(CppMember(Shared.new(CppIdent('pointer')), 'field', true))),
+    'pointer->field'))
+
+  results.push(assert_eq_str('print_expr CppIndex',
+    print_expr(Shared.new(CppIndex(Shared.new(CppIdent('items')), Shared.new(CppInt(0))))),
+    'items[0]'))
+
+  results.push(assert_eq_str('print_expr CppBinary',
+    print_expr(Shared.new(CppBinary("+", Shared.new(CppInt(1)), Shared.new(CppInt(2))))),
+    '(1 + 2)'))
+
+  results.push(assert_eq_str('print_expr CppUnary',
+    print_expr(Shared.new(CppUnary("-", Shared.new(CppInt(5))))),
+    '(-5)'))
+
+  results.push(assert_eq_str('print_expr CppTernary',
+    print_expr(Shared.new(CppTernary(Shared.new(CppIdent('ready')), Shared.new(CppInt(1)), Shared.new(CppInt(0))))),
+    '(ready ? (1) : (0))'))
+
+  results.push(assert_eq_str('print_expr CppInitList empty',
+    print_expr(Shared.new(CppInitList([]))), '{}'))
+
+  results.push(assert_eq_str('print_expr CppInitList elements',
+    print_expr(Shared.new(CppInitList([Shared.new(CppInt(1)), Shared.new(CppInt(2))]))),
+    '{1, 2}'))
+
+  results.push(assert_eq_str('print_expr CppCast',
+    print_expr(Shared.new(CppCast(CppCastStatic, int_type, Shared.new(CppIdent('value'))))),
+    'static_cast<int>(value)'))
+
+  const capture = Shared.new(CppCapture { name: 'counter', by_reference: true })
+  const parameter = Shared.new(CppParam { name: 'input', parameter_type: int_type })
+  const lambda_body = [Shared.new(CppReturn(Shared.new(CppIdent('input'))))]
+  results.push(assert_eq_str('print_expr CppLambda',
+    print_expr(Shared.new(CppLambda([capture], [parameter], int_type, lambda_body))),
+    '[&counter](int input) -> int { return input; }'))
+
+  results.push(assert_eq_str('print_statement CppReturn',
+    print_statement(Shared.new(CppReturn(Shared.new(CppInt(0))))),
+    'return 0;'))
+
+  results.push(assert_eq_str('print_statement CppAutoDecl',
+    print_statement(Shared.new(CppAutoDecl('counter', Shared.new(CppInt(0))))),
+    'auto counter = 0;'))
+
+  results.push(assert_eq_str('print_statement CppConstDecl',
+    print_statement(Shared.new(CppConstDecl('limit', int_type, Shared.new(CppInt(10))))),
+    'const int limit = 10;'))
+
+  results.push(assert_eq_str('print_statement CppIf',
+    print_statement(Shared.new(CppIf(
+      Shared.new(CppIdent('flag')),
+      Shared.new(CppBlock([Shared.new(CppReturn(Shared.new(CppInt(1))))])),
+      Shared.new(CppBlock([Shared.new(CppReturn(Shared.new(CppInt(0))))]))
+    ))),
+    'if (flag) {return 1;} else {return 0;}'))
+
+  results.push(assert_eq_str('print_statement CppFor',
+    print_statement(Shared.new(CppFor(
+      'item',
+      Shared.new(CppIdent('items')),
+      [Shared.new(CppExprStmt(Shared.new(CppCall(Shared.new(CppIdent('process')), [Shared.new(CppIdent('item'))]))))]
+    ))),
+    'for (auto item : items) {process(item);}'))
+
+  results.push(assert_eq_str('print_decl CppInclude angle',
+    print_decl(Shared.new(CppInclude(true, 'vector'))),
+    '#include <vector>'))
+
+  results.push(assert_eq_str('print_decl CppInclude quoted',
+    print_decl(Shared.new(CppInclude(false, 'local.h'))),
+    '#include "local.h"'))
+
+  results.push(assert_eq_str('print_decl CppStruct',
+    print_decl(Shared.new(CppStruct('Point', [Shared.new(CppField { typ: "int", name: "x" })]))),
+    "struct Point {\nint x;\n};"))
+
+  results.push(assert_eq_str('print_decl CppFnProto',
+    print_decl(Shared.new(CppFnProto('int', 'add', ['int left', 'int right']))),
+    'int add(int left, int right);'))
+
+  results.push(assert_eq_str('print_decl CppFnDef',
+    print_decl(Shared.new(CppFnDef('int', 'answer', [], [Shared.new(CppReturn(Shared.new(CppInt(42))))]))),
+    'int answer() {return 42;}'))
+
+  results.push(assert_eq_str('print_decl CppNamespace',
+    print_decl(Shared.new(CppNamespace('detail', [Shared.new(CppUsing('Byte', 'unsigned char'))]))),
+    'namespace detail {\nusing Byte = unsigned char;\n}'))
+
+  const variant_arm = Shared.new(CppVariantArm { name: 'Integer', types: [int_type] })
+  results.push(assert_eq_str('print_decl CppVariant',
+    print_decl(Shared.new(CppVariant('Value', [variant_arm]))),
+    'using Value = std::variant<int>;'))
+
+  const header_include = Shared.new(CppInclude(true, 'vector'))
+  const source_function = Shared.new(CppFnDef('int', 'main', [], [Shared.new(CppReturn(Shared.new(CppInt(0))))]))
+  const file = Shared.new(CppFile { header: [header_include], source: [source_function] })
+  results.push(assert_eq_str('print_file header and source',
+    print_file(file),
+    "#include <vector>\n\nint main() {return 0;}"))
+
+  results
+end

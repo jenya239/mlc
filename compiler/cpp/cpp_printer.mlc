@@ -7,8 +7,8 @@ import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
-         CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppStdVisit, CppCast } from './ast'
-import * as cpp_ast from './ast'
+         CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppStdVisit, CppCast } from './cpp_ast'
+import * as cpp_ast from './cpp_ast'
 
 fn escape_cpp_string_content(input: string) -> string = do
   let parts: [string] = []
@@ -71,19 +71,19 @@ fn print_type(type_node: Shared<CppType>) -> string =
     CppTypeRef(inner) => type_reference(print_type(inner))
   }
 
-fn ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
+fn render_ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
   `(${condition_code} ? (${then_code}) : (${else_code}))`
 
-fn parenthesized_binary(left_code: string, operation: string, right_code: string) -> string =
+fn render_parenthesized_binary(left_code: string, operation: string, right_code: string) -> string =
   `(${left_code} ${operation} ${right_code})`
 
-fn parenthesized_unary(operation: string, inner_code: string) -> string =
+fn render_parenthesized_unary(operation: string, inner_code: string) -> string =
   `(${operation}${inner_code})`
 
-fn index_subscript(object_code: string, index_code: string) -> string =
+fn render_index_subscript(object_code: string, index_code: string) -> string =
   `${object_code}[${index_code}]`
 
-fn function_call_parentheses(callee_code: string, argument_list: string) -> string =
+fn render_function_call_parentheses(callee_code: string, argument_list: string) -> string =
   `${callee_code}(${argument_list})`
 
 fn pointer_field_access(object_code: string, field_name: string) -> string =
@@ -330,17 +330,17 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
     CppBool(boolean_value) => print_boolean_literal(boolean_value),
     CppIdent(name) => print_identifier(name),
     CppCall(callee, arguments) =>
-      function_call_parentheses(print_expr(callee), print_comma_separated_expressions(arguments)),
+      render_function_call_parentheses(print_expr(callee), print_comma_separated_expressions(arguments)),
     CppMember(object, member_name, is_pointer) =>
       print_member_expression(object, member_name, is_pointer),
     CppIndex(object, index) =>
-      index_subscript(print_expr(object), print_expr(index)),
+      render_index_subscript(print_expr(object), print_expr(index)),
     CppBinary(operation, left, right) =>
-      parenthesized_binary(print_expr(left), operation, print_expr(right)),
+      render_parenthesized_binary(print_expr(left), operation, print_expr(right)),
     CppUnary(operation, inner) =>
-      parenthesized_unary(operation, print_expr(inner)),
+      render_parenthesized_unary(operation, print_expr(inner)),
     CppTernary(condition, then_branch, else_branch) =>
-      ternary_conditional(print_expr(condition), print_expr(then_branch), print_expr(else_branch)),
+      render_ternary_conditional(print_expr(condition), print_expr(then_branch), print_expr(else_branch)),
     CppInitList(elements) =>
       init_list_braces(print_comma_separated_expressions(elements)),
     CppStdVisit(subject, handlers) =>

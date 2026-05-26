@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 7 |
-| agent_token_last | cr-agent-8fa3af59-17bf-4b4f-8206-40f3945d59a9 |
-| run_tests | 490 |
-| TRACK_PLAN | TRACK_CPPEXPR step 8 pending |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
+| agent_token_last | cr-agent-732b6738-8610-44ff-8b72-7ef7d4febadd |
+| run_tests | 517 |
+| TRACK_PLAN | TRACK_CPPEXPR step 9 pending |
+
+### Turn 2026-05-26 (CPPEXPR step 8)
+
+| turn | 2026-05-26 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 8 |
+| step | 8 |
+| done | test_cpp_printer 27 golden tests; rename cpp_ast/cpp_printer; render_ helpers |
+| verify | 517 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | 0 |
+| next | STEP=9 (enqueued) |
 
 ### Turn 2026-05-26 (CPPEXPR step 7)
 
