@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 13 |
-| step_last | 13 |
-| agent_token_last | cr-agent-eec98f26-03fd-4859-9f12-bcd566da048c |
+| driver_turns_since_plan | 14 |
+| step_last | 14 |
+| agent_token_last | cr-agent-4943e926-e74a-46d8-81c0-3a4d6def4a8f |
 | run_tests | 517 |
-| TRACK_PLAN | TRACK_CPPEXPR step 14 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 15 pending |
+
+### Turn 2026-05-26 (CPPEXPR step 14)
+
+| turn | 2026-05-26 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 14 |
+| step | 14 |
+| done | expr_visitor_cpp batch 2 — call/method/if/block via string bridge + eval_expr_cpp mutual recursion; inline match (not dispatch_expr) |
+| verify | 517 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | 0 |
+| next | STEP=15 (enqueued) |
 
 ### Turn 2026-05-26 (CPPEXPR step 13)
 

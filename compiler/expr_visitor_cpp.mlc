@@ -1,13 +1,15 @@
-// ExprVisitor<Shared<CppExpr>> — batch 1: literals, ident, bin/unary (Phase 2).
+// ExprVisitor<Shared<CppExpr>> — batch 1–2: literals/ident/bin/unary + call/method/if/block (Phase 2).
 
 import { Type, TNamed } from './checker/registry'
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from './ir/semantic_ir'
 import { CppExpr, CppBinary, CppUnary, CppCall } from './cpp/cpp_ast'
+import { print_expr } from './cpp/cpp_printer'
 import * as emit_helpers from './cpp/emit_helpers'
 import { operator_method_for } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
-import { ExprVisitor, dispatch_expr } from './expr_visitor'
+import { gen_call_via_visitor, gen_method_via_visitor, gen_if_via_visitor, gen_block_via_visitor } from './codegen/expr/expr_visitor_string'
+import { ExprVisitor } from './expr_visitor'
 import { CodegenContext } from './codegen/context'
 
 type CppExprVisitor = CppExprVisitor {
@@ -26,7 +28,90 @@ fn evaluate_via_cpp_visitor(
 ) -> Shared<CppExpr> =
   gen_expr_via_cpp_visitor(expression, context)
 
-fn ignored_gen_stmts(_statements: [Shared<SStmt>], _context: CodegenContext) -> string = ''
+fn ignored_gen_stmts(_statements: [Shared<SStmt>], _context: CodegenContext) -> string = ""
+
+fn cpp_expr_from_rendered_fragment(fragment: string) -> Shared<CppExpr> =
+  emit_helpers.make_identifier_cpp_expression(fragment)
+
+fn eval_expr_cpp_as_string(
+  expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> string =
+  print_expr(eval_expr_cpp(expression, context, gen_stmts))
+
+export fn eval_expr_cpp(
+  expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  eval_expr_with_cpp_visitor(expression, context, gen_stmts, eval_expr_cpp)
+
+export fn gen_call_via_cpp_visitor(
+  function_expression: Shared<SExpr>,
+  arguments: [Shared<SExpr>],
+  call_parameter_mutability_flags: [i32],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  cpp_expr_from_rendered_fragment(
+    gen_call_via_visitor(
+      function_expression,
+      arguments,
+      call_parameter_mutability_flags,
+      context,
+      gen_stmts,
+      eval_expr_cpp_as_string))
+
+export fn gen_method_via_cpp_visitor(
+  object: Shared<SExpr>,
+  method_name: string,
+  arguments: [Shared<SExpr>],
+  receiver_and_parameter_mutability_flags: [i32],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  cpp_expr_from_rendered_fragment(
+    gen_method_via_visitor(
+      object,
+      method_name,
+      arguments,
+      receiver_and_parameter_mutability_flags,
+      context,
+      gen_stmts,
+      eval_expr_cpp_as_string))
+
+export fn gen_if_via_cpp_visitor(
+  condition: Shared<SExpr>,
+  then_expression: Shared<SExpr>,
+  else_expression: Shared<SExpr>,
+  if_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  cpp_expr_from_rendered_fragment(
+    gen_if_via_visitor(
+      condition,
+      then_expression,
+      else_expression,
+      if_semantic_type,
+      context,
+      gen_stmts,
+      eval_expr_cpp_as_string))
+
+export fn gen_block_via_cpp_visitor(
+  statements: [Shared<SStmt>],
+  result_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  cpp_expr_from_rendered_fragment(
+    gen_block_via_visitor(
+      statements,
+      result_expression,
+      context,
+      gen_stmts,
+      eval_expr_cpp_as_string))
 
 export fn gen_binary_via_cpp_visitor(
   operation: string,
@@ -86,18 +171,18 @@ extend CppExprVisitor : ExprVisitor<Shared<CppExpr>> {
     gen_binary_via_cpp_visitor(operation, left_expression, right_expression, self.context, self.gen_stmts, self.evaluate_expression)
   fn visit_un(self: CppExprVisitor, operation: string, inner_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     gen_unary_via_cpp_visitor(operation, inner_expression, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_call(self: CppExprVisitor, _function_expression: Shared<SExpr>, _arguments: [Shared<SExpr>], _mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_method(self: CppExprVisitor, _object: Shared<SExpr>, _method_name: string, _arguments: [Shared<SExpr>], _mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
+  fn visit_call(self: CppExprVisitor, function_expression: Shared<SExpr>, arguments: [Shared<SExpr>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_call_via_cpp_visitor(function_expression, arguments, mutability_flags, self.context, self.gen_stmts)
+  fn visit_method(self: CppExprVisitor, object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_method_via_cpp_visitor(object, method_name, arguments, mutability_flags, self.context, self.gen_stmts)
   fn visit_field(self: CppExprVisitor, _object: Shared<SExpr>, _field_name: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     unsupported_cpp_expression()
   fn visit_index(self: CppExprVisitor, _object: Shared<SExpr>, _index_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     unsupported_cpp_expression()
-  fn visit_if(self: CppExprVisitor, _condition: Shared<SExpr>, _then_expression: Shared<SExpr>, _else_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_block(self: CppExprVisitor, _statements: [Shared<SStmt>], _result_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
+  fn visit_if(self: CppExprVisitor, condition: Shared<SExpr>, then_expression: Shared<SExpr>, else_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_if_via_cpp_visitor(condition, then_expression, else_expression, semantic_type, self.context, self.gen_stmts)
+  fn visit_block(self: CppExprVisitor, statements: [Shared<SStmt>], result_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_block_via_cpp_visitor(statements, result_expression, self.context, self.gen_stmts)
   fn visit_while(self: CppExprVisitor, _condition: Shared<SExpr>, _statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     unsupported_cpp_expression()
   fn visit_for(self: CppExprVisitor, _variable: string, _iterator: Shared<SExpr>, _statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
@@ -133,7 +218,55 @@ export fn eval_expr_with_cpp_visitor(
     gen_stmts: gen_stmts,
     evaluate_expression: evaluate_expression
   }
-  dispatch_expr(expression_visitor, expression)
+  match expression {
+    SExprInt(integer_value, type_value, _) => expression_visitor.visit_int(integer_value, type_value),
+    SExprStr(string_value, type_value, _) => expression_visitor.visit_str(string_value, type_value),
+    SExprBool(boolean_value, type_value, _) => expression_visitor.visit_bool(boolean_value, type_value),
+    SExprUnit(type_value, _) => expression_visitor.visit_unit(type_value),
+    SExprFloat(float_value, type_value, _) => expression_visitor.visit_float(float_value, type_value),
+    SExprI64(integer_value, type_value, _) => expression_visitor.visit_i64(integer_value, type_value),
+    SExprU8(byte_value, type_value, _) => expression_visitor.visit_u8(byte_value, type_value),
+    SExprUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
+    SExprChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
+    SExprExtern(type_value, _) => expression_visitor.visit_extern(type_value),
+    SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
+    SExprBin(operation, left_expression, right_expression, type_value, _) =>
+      expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),
+    SExprUn(operation, inner_expression, type_value, _) =>
+      expression_visitor.visit_un(operation, inner_expression, type_value),
+    SExprCall(function_expression, arguments, mutability_flags, type_value, _) =>
+      expression_visitor.visit_call(function_expression, arguments, mutability_flags, type_value),
+    SExprMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
+      expression_visitor.visit_method(object, method_name, arguments, mutability_flags, type_value),
+    SExprField(object, field_name, type_value, _) =>
+      expression_visitor.visit_field(object, field_name, type_value),
+    SExprIndex(object, index_expression, type_value, _) =>
+      expression_visitor.visit_index(object, index_expression, type_value),
+    SExprIf(condition, then_expression, else_expression, type_value, _) =>
+      expression_visitor.visit_if(condition, then_expression, else_expression, type_value),
+    SExprBlock(statements, result_expression, type_value, _) =>
+      expression_visitor.visit_block(statements, result_expression, type_value),
+    SExprWhile(condition, statements, type_value, _) =>
+      expression_visitor.visit_while(condition, statements, type_value),
+    SExprFor(variable, iterator, statements, type_value, _) =>
+      expression_visitor.visit_for(variable, iterator, statements, type_value),
+    SExprMatch(subject, arms, type_value, _) =>
+      expression_visitor.visit_match(subject, arms, type_value),
+    SExprRecord(type_name, field_values, type_value, _) =>
+      expression_visitor.visit_record(type_name, field_values, type_value),
+    SExprRecordUpdate(type_name, base_expression, overrides, type_value, _) =>
+      expression_visitor.visit_record_update(type_name, base_expression, overrides, type_value),
+    SExprArray(elements, type_value, _) =>
+      expression_visitor.visit_array(elements, type_value),
+    SExprTuple(elements, type_value, _) =>
+      expression_visitor.visit_tuple(elements, type_value),
+    SExprQuestion(inner_expression, type_value, _) =>
+      expression_visitor.visit_question(inner_expression, type_value),
+    SExprLambda(parameter_names, body_expression, type_value, _) =>
+      expression_visitor.visit_lambda(parameter_names, body_expression, type_value),
+    SExprWith(resource, binder, statements, type_value, _) =>
+      expression_visitor.visit_with(resource, binder, statements, type_value),
+  }
 end
 
 export fn gen_expr_via_cpp_visitor(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
