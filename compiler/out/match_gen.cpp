@@ -105,22 +105,24 @@ mlc::String qualified_name = context::CodegenContext_resolve(context, ctor_name)
 mlc::String lower_name = cpp_naming::cpp_safe(cpp_naming::lower_first(ctor_name));
 mlc::String binding = sub_patterns.size() == 0 ? mlc::String("") : expr::tuple_destructure_binding(match_analysis::pat_bind_names(sub_patterns), lower_name);
 bool is_generic = decl_index::list_contains(context.generic_variants, ctor_name);
-mlc::String type_argument = is_generic ? mlc::String("<auto>") : mlc::String("");
 context::CodegenContext arm_context = codegen_context_with_ctor_field_bindings(ctor_name, sub_patterns, context);
-mlc::String param = expr::match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name);
 mlc::String body_code = eval_expr_fn(arm_body, arm_context, gen_stmts);
-return visit_void ? expr::match_arm_constructed_value_void(param, binding, body_code) : expr::match_arm_constructed_value(param, binding, body_code);
+return is_generic ? visit_void ? expr::match_arm_constructed_value_generic_void(qualified_name, lower_name, binding, body_code) : expr::match_arm_constructed_value_generic(qualified_name, lower_name, binding, body_code) : [&]() -> mlc::String { 
+  mlc::String param = expr::match_lambda_const_reference_parameter(qualified_name, mlc::String(""), lower_name);
+  return visit_void ? expr::match_arm_constructed_value_void(param, binding, body_code) : expr::match_arm_constructed_value(param, binding, body_code);
+ }();
 }
 
 mlc::String gen_arm_record_pattern(mlc::String record_name, mlc::Array<std::shared_ptr<ast::Pat>> field_patterns, std::shared_ptr<semantic_ir::SExpr> arm_body, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> eval_expr_fn, bool visit_void) noexcept{
 mlc::String qualified_name = context::CodegenContext_resolve(context, record_name);
 mlc::String lower_name = cpp_naming::cpp_safe(cpp_naming::lower_first(record_name));
 bool is_generic = decl_index::list_contains(context.generic_variants, record_name);
-mlc::String type_argument = is_generic ? mlc::String("<auto>") : mlc::String("");
 match_gen::RecordFieldBindAccum accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context);
-mlc::String param = expr::match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name);
 mlc::String body_code = eval_expr_fn(arm_body, accumulated.arm_context, gen_stmts);
-return visit_void ? expr::match_arm_constructed_value_void(param, accumulated.field_bindings, body_code) : expr::match_arm_constructed_value(param, accumulated.field_bindings, body_code);
+return is_generic ? visit_void ? expr::match_arm_constructed_value_generic_void(qualified_name, lower_name, accumulated.field_bindings, body_code) : expr::match_arm_constructed_value_generic(qualified_name, lower_name, accumulated.field_bindings, body_code) : [&]() -> mlc::String { 
+  mlc::String param = expr::match_lambda_const_reference_parameter(qualified_name, mlc::String(""), lower_name);
+  return visit_void ? expr::match_arm_constructed_value_void(param, accumulated.field_bindings, body_code) : expr::match_arm_constructed_value(param, accumulated.field_bindings, body_code);
+ }();
 }
 
 std::shared_ptr<semantic_ir::SMatchArm> match_arm_with_pattern(std::shared_ptr<semantic_ir::SMatchArm> arm, std::shared_ptr<ast::Pat> pattern) noexcept{return std::make_shared<semantic_ir::SMatchArm>(semantic_ir::SMatchArm{pattern, arm->has_guard, arm->when_condition, arm->body});}

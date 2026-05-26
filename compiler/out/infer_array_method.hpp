@@ -21,6 +21,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 infer_result::InferResult infer_array_hof_method_call(infer_result::InferResult object_result, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context, std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)> infer_expr_fn) noexcept;
 

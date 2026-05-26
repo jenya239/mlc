@@ -20,6 +20,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 semantic_ir::SProgram transform_program(ast::Program program, registry::TypeRegistry registry) noexcept;
 

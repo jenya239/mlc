@@ -11,6 +11,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 void profile_reset_if_enabled(bool enabled) noexcept;
 

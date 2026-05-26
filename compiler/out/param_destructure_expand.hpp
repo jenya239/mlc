@@ -13,6 +13,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 bool parameter_binding_is_plain_identifier(std::shared_ptr<ast::Param> parameter) noexcept;
 

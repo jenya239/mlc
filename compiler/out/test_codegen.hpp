@@ -7,6 +7,7 @@
 #include "test_runner.hpp"
 #include "codegen_test_helpers.hpp"
 #include "eval.hpp"
+#include "stmt_cpp.hpp"
 #include "expr_visitor_string.hpp"
 #include "expression_support.hpp"
 #include "context.hpp"
@@ -29,6 +30,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 mlc::Array<test_runner::TestResult> codegen_tests() noexcept;
 

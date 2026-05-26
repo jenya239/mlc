@@ -13,6 +13,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct TraitNominalMaps {mlc::HashMap<mlc::String, bool> trait_declaration_names;mlc::HashMap<mlc::String, bool> nominal_type_declaration_names;};
 

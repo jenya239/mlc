@@ -22,6 +22,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 mlc::Array<test_runner::TestResult> pipe_and_record_update_tests() noexcept;
 

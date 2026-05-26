@@ -13,6 +13,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
 

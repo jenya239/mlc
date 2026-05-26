@@ -18,6 +18,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 bool subject_needs_deref(std::shared_ptr<semantic_ir::SExpr> subject, context::CodegenContext context) noexcept;
 

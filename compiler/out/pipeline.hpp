@@ -23,6 +23,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct ModularCompileInput {mlc::Array<decl_index::LoadItem> load_items;ast::Program full_program;ast::Program entry_program;mlc::String output_directory;bool profile_enabled;};
 

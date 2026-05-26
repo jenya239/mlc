@@ -15,6 +15,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct MutActualArgumentMaterializationOutcome {mlc::String prelude_block;mlc::Array<mlc::String> materialized_argument_fragments;};
 

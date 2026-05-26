@@ -16,6 +16,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 infer_result::InferResult infer_for_iterator_with_range_rules(infer_result::InferResult iterator_base, std::shared_ptr<ast::Expr> iterator_expression) noexcept;
 

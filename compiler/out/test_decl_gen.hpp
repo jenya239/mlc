@@ -8,6 +8,7 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "decl.hpp"
+#include "decl_cpp.hpp"
 #include "ast_builders.hpp"
 #include "codegen_test_helpers.hpp"
 #include "semantic_ir.hpp"
@@ -20,6 +21,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 mlc::Array<test_runner::TestResult> decl_gen_tests() noexcept;
 

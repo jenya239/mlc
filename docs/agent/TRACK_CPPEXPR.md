@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2 (C++ AST backend)
 
 Previous track: [TRACK_PLAN.md](TRACK_PLAN.md) (folder restructure, steps 1–23 — **closed**)
 
-## Status: in progress (step 17 pending)
+## Status: in progress (step 18 pending)
 
 **Goal:** replace string concatenation in `codegen/` with `CppExpr` / `CppStmt` / `CppDecl` built in `compiler/cpp/`, emitted via `printer.mlc`. Incremental; no regressions.
 
@@ -60,7 +60,7 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 | 14 | Visitor batch 2 — call, method, if, block | done |
 | 15 | Visitor batch 3 — match, record, array, lambda | done |
 | 16 | Migrate `codegen/stmt/` → `CppStmt` (dual path) | done |
-| 17 | Migrate `codegen/decl/` → `CppDecl` (dual path) | pending |
+| 17 | Migrate `codegen/decl/` → `CppDecl` (dual path) | done |
 | 18 | `codegen/module.mlc` — optional file emission via printer (behind flag) | pending |
 | 19 | Dual-backend diff harness — compare string vs printer on `test_codegen` cases | pending |
 | 20 | Default backend → CppExpr/printer in `eval`/`module` | pending |
@@ -114,4 +114,4 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 
 ## Next step (Driver)
 
-**STEP=17** — migrate `codegen/decl/` → `CppDecl` (dual path).
+**STEP=18** — `codegen/module.mlc` optional file emission via printer (flag default false).

@@ -14,6 +14,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct Parser {mlc::Array<ast_tokens::Token> tokens;int pos;mlc::String source_path;bool suppress_lambda_shorthand;};
 

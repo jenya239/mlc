@@ -14,6 +14,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 bool is_array_hof_method(mlc::String method_name) noexcept;
 

@@ -4,7 +4,7 @@ import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppCastKind, CppCastStatic, CppCastDynamic, CppCastReinterpret, CppCastConst,
          CppCapture, CppParam,
          CppStmt, CppAutoDecl, CppConstDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor,
-         CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant,
+         CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppDeclFragment,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
          CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppStdVisit, CppCast } from './cpp_ast'
@@ -270,7 +270,8 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
         block_braces(print_statements(body))
       ),
     CppNamespace(name, declarations) => namespace_block(name, print_decls(declarations)),
-    CppVariant(name, arms) => variant_type_alias(name, print_variant_types(arms))
+    CppVariant(name, arms) => variant_type_alias(name, print_variant_types(arms)),
+    CppDeclFragment(code) => code
   }
 
 fn print_decls(declarations: [Shared<CppDecl>]) -> string = do

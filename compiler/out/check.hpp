@@ -25,6 +25,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct CheckOut {mlc::Array<mlc::String> errors;registry::TypeRegistry registry;};
 

@@ -14,6 +14,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 bool is_result_generic(std::shared_ptr<registry::Type> t) noexcept;
 

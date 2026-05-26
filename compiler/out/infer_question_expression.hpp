@@ -16,6 +16,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_result, ast::Span question_span) noexcept;
 

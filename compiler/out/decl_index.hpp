@@ -14,6 +14,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct NamespaceImportAlias {mlc::String alias;mlc::String module_path;};
 

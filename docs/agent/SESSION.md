@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 16 |
-| step_last | 16 |
+| driver_turns_since_plan | 17 |
+| step_last | 17 |
 | agent_token_last | cr-agent-f7f97795-dbcb-4cc7-b3be-2db8f4076729 |
-| run_tests | 521 |
-| TRACK_PLAN | TRACK_CPPEXPR step 17 pending |
+| run_tests | 525 |
+| TRACK_PLAN | TRACK_CPPEXPR step 18 pending |
+
+### Turn 2026-05-26 (CPPEXPR step 17)
+
+| turn | 2026-05-26 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 17 |
+| step | 17 |
+| done | decl_cpp.mlc CppDecl dual path; CppDeclFragment bridge; emit_helpers; test_decl_gen cpp parity |
+| verify | 525 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=18 (enqueued) |
 
 ### Turn 2026-05-26 (CPPEXPR step 16)
 

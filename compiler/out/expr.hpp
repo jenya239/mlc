@@ -11,6 +11,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept;
 
@@ -127,6 +129,10 @@ mlc::String typed_array_braced_initializer(mlc::String element_type_cpp, mlc::St
 mlc::String array_string_fallback_empty() noexcept;
 
 mlc::String match_lambda_const_reference_parameter(mlc::String resolved_type_name, mlc::String generic_angle_bracket_argument, mlc::String binding_name_cpp_safe) noexcept;
+
+mlc::String match_arm_constructed_value_generic(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String return_expression_code) noexcept;
+
+mlc::String match_arm_constructed_value_generic_void(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String body_expression_code) noexcept;
 
 mlc::String dot_member_access(mlc::String receiver_code, mlc::String member_code) noexcept;
 

@@ -11,6 +11,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 mlc::String path_to_module_base(mlc::String path) noexcept;
 

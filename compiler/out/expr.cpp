@@ -118,6 +118,10 @@ mlc::String array_string_fallback_empty() noexcept;
 
 mlc::String match_lambda_const_reference_parameter(mlc::String resolved_type_name, mlc::String generic_angle_bracket_argument, mlc::String binding_name_cpp_safe) noexcept;
 
+mlc::String match_arm_constructed_value_generic(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String return_expression_code) noexcept;
+
+mlc::String match_arm_constructed_value_generic_void(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String body_expression_code) noexcept;
+
 mlc::String dot_member_access(mlc::String receiver_code, mlc::String member_code) noexcept;
 
 mlc::String comma_separated_pair(mlc::String first_code, mlc::String second_code) noexcept;
@@ -323,6 +327,10 @@ mlc::String typed_array_braced_initializer(mlc::String element_type_cpp, mlc::St
 mlc::String array_string_fallback_empty() noexcept{return mlc::String("mlc::Array<mlc::String>{}");}
 
 mlc::String match_lambda_const_reference_parameter(mlc::String resolved_type_name, mlc::String generic_angle_bracket_argument, mlc::String binding_name_cpp_safe) noexcept{return mlc::String("const ") + resolved_type_name + generic_angle_bracket_argument + mlc::String("& ") + binding_name_cpp_safe;}
+
+mlc::String match_arm_constructed_value_generic(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String return_expression_code) noexcept{return mlc::String("[&]<typename __mlcT>(const ") + resolved_type_name + mlc::String("<__mlcT>& ") + binding_name_cpp_safe + mlc::String(") { ") + binding_prefix + mlc::String("return ") + return_expression_code + mlc::String("; }");}
+
+mlc::String match_arm_constructed_value_generic_void(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String body_expression_code) noexcept{return mlc::String("[&]<typename __mlcT>(const ") + resolved_type_name + mlc::String("<__mlcT>& ") + binding_name_cpp_safe + mlc::String(") -> void { ") + binding_prefix + body_expression_code + mlc::String("; }");}
 
 mlc::String dot_member_access(mlc::String receiver_code, mlc::String member_code) noexcept{return receiver_code + mlc::String(".") + member_code;}
 

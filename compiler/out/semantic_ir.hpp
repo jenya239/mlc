@@ -14,6 +14,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct SMatchArm {std::shared_ptr<ast::Pat> pat;bool has_guard;std::shared_ptr<semantic_ir::SExpr> when_condition;std::shared_ptr<semantic_ir::SExpr> body;};
 

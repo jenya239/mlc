@@ -13,6 +13,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 predicates::TypeResult parse_type(predicates::Parser parser) noexcept;
 

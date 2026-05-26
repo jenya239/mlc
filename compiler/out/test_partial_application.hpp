@@ -18,6 +18,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 mlc::Array<test_runner::TestResult> partial_application_tests() noexcept;
 

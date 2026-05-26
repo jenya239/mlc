@@ -53,6 +53,7 @@ export type CppDecl =
   | CppFnDef(string, string, [string], [Shared<CppStmt>])
   | CppNamespace(string, [Shared<CppDecl>])
   | CppVariant(string, [Shared<CppVariantArm>])
+  | CppDeclFragment(string)
 
 export type CppFile = CppFile { header: [Shared<CppDecl>], source: [Shared<CppDecl>] }
 

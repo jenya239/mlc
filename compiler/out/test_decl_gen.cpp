@@ -4,6 +4,7 @@
 #include "ast.hpp"
 #include "context.hpp"
 #include "decl.hpp"
+#include "decl_cpp.hpp"
 #include "ast_builders.hpp"
 #include "codegen_test_helpers.hpp"
 #include "semantic_ir.hpp"
@@ -15,6 +16,7 @@ using namespace test_runner;
 using namespace ast;
 using namespace context;
 using namespace decl;
+using namespace decl_cpp;
 using namespace ast_builders;
 using namespace codegen_test_helpers;
 using namespace semantic_ir;
@@ -127,6 +129,10 @@ std::shared_ptr<semantic_ir::SDecl> other_decl = fn_decl(mlc::String("other"), {
 results.push_back(test_runner::assert_true(mlc::String("decls_have_main: finds main"), decl::decls_have_main(mlc::Array<std::shared_ptr<semantic_ir::SDecl>>{main_decl, other_decl})));
 results.push_back(test_runner::assert_true(mlc::String("decls_have_main: no main"), !decl::decls_have_main(mlc::Array<std::shared_ptr<semantic_ir::SDecl>>{other_decl})));
 results.push_back(test_runner::assert_true(mlc::String("decls_have_main: empty list"), !decl::decls_have_main({})));
+results.push_back(test_runner::assert_eq_str(mlc::String("gen_fn_proto_cpp_as_string matches string"), decl_cpp::gen_fn_proto_cpp_as_string(mlc::String("add"), {}, {}, mlc::Array<std::shared_ptr<ast::Param>>{iparam(mlc::String("left")), iparam(mlc::String("right"))}, ti32(), context), decl::gen_fn_proto(mlc::String("add"), {}, {}, mlc::Array<std::shared_ptr<ast::Param>>{iparam(mlc::String("left")), iparam(mlc::String("right"))}, ti32(), context)));
+results.push_back(test_runner::assert_eq_str(mlc::String("gen_fn_decl_cpp_as_string: identity matches string"), decl_cpp::gen_fn_decl_cpp_as_string(mlc::String("identity"), {}, {}, mlc::Array<std::shared_ptr<ast::Param>>{iparam(mlc::String("value"))}, ti32(), make_ident(mlc::String("value")), context), decl::gen_fn_decl(mlc::String("identity"), {}, {}, mlc::Array<std::shared_ptr<ast::Param>>{iparam(mlc::String("value"))}, ti32(), make_ident(mlc::String("value")), context)));
+results.push_back(test_runner::assert_eq_str(mlc::String("gen_decl_cpp_as_string DeclFn matches string"), decl_cpp::gen_decl_cpp_as_string(fn_decl(mlc::String("add"), mlc::Array<std::shared_ptr<ast::Param>>{iparam(mlc::String("left")), iparam(mlc::String("right"))}, ti32(), make_bin(mlc::String("+"), make_ident(mlc::String("left")), make_ident(mlc::String("right")))), context), decl::gen_decl(fn_decl(mlc::String("add"), mlc::Array<std::shared_ptr<ast::Param>>{iparam(mlc::String("left")), iparam(mlc::String("right"))}, ti32(), make_bin(mlc::String("+"), make_ident(mlc::String("left")), make_ident(mlc::String("right")))), context)));
+results.push_back(test_runner::assert_eq_str(mlc::String("gen_proto_cpp_as_string DeclFn matches string"), decl_cpp::gen_proto_cpp_as_string(fn_decl(mlc::String("add"), mlc::Array<std::shared_ptr<ast::Param>>{iparam(mlc::String("left")), iparam(mlc::String("right"))}, ti32(), make_bin(mlc::String("+"), make_ident(mlc::String("left")), make_ident(mlc::String("right")))), context), decl::gen_proto(fn_decl(mlc::String("add"), mlc::Array<std::shared_ptr<ast::Param>>{iparam(mlc::String("left")), iparam(mlc::String("right"))}, ti32(), make_bin(mlc::String("+"), make_ident(mlc::String("left")), make_ident(mlc::String("right")))), context)));
 return results;
 }
 

@@ -22,6 +22,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct DeclPartsBundle {mlc::Array<mlc::String> type_fwds;mlc::Array<mlc::String> type_defs;mlc::Array<mlc::String> fn_protos;mlc::Array<mlc::String> fn_defs;};
 

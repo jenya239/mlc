@@ -13,6 +13,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 ast::Program empty_program() noexcept;
 

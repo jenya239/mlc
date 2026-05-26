@@ -19,6 +19,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 context::CodegenContext empty_codegen_context() noexcept;
 

@@ -21,6 +21,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 mlc::String extract_method_name(mlc::String fn_name, mlc::String type_name) noexcept;
 

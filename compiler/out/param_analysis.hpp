@@ -13,6 +13,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 bool is_shared_type(std::shared_ptr<ast::TypeExpr> t) noexcept;
 

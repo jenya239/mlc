@@ -14,6 +14,7 @@
 #include "test_merge_imports.hpp"
 #include "test_pass.hpp"
 #include "test_expr_visitor.hpp"
+#include "test_cpp_printer.hpp"
 #include "test_runner.hpp"
 
 namespace tests_main {
@@ -23,6 +24,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 } // namespace tests_main
 

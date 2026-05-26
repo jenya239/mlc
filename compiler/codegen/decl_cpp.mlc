@@ -1,0 +1,96 @@
+// CppDecl dual path for declaration codegen (Phase 2 step 17).
+
+import { Param } from '../frontend/ast'
+import { SDecl, SExpr } from '../ir/semantic_ir'
+import { Type } from '../checker/registry'
+import { CppDecl } from '../cpp/cpp_ast'
+import { print_decl } from '../cpp/cpp_printer'
+import * as emit_helpers from '../cpp/emit_helpers'
+import { CodegenContext } from './context'
+import { gen_fn_proto, gen_fn_decl, gen_decl, gen_proto, collect_all_decl_parts, collect_decl_parts } from './decl/decl'
+
+export type DeclPartsBundleCpp = DeclPartsBundleCpp {
+  type_fwds: [Shared<CppDecl>],
+  type_defs: [Shared<CppDecl>],
+  fn_protos: [Shared<CppDecl>],
+  fn_defs: [Shared<CppDecl>]
+}
+
+export fn cpp_decl_from_string_output(output: string) -> Shared<CppDecl> =
+  emit_helpers.make_fragment_cpp_declaration(output)
+
+export fn cpp_decls_from_string_parts(parts: [string]) -> [Shared<CppDecl>] =
+  parts.map(part => cpp_decl_from_string_output(part))
+
+export fn print_cpp_declaration(declaration: Shared<CppDecl>) -> string =
+  print_decl(declaration)
+
+export fn print_cpp_declarations(declarations: [Shared<CppDecl>]) -> string =
+  declarations.map(declaration => print_cpp_declaration(declaration)).join('')
+
+export fn gen_fn_proto_cpp(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  context: CodegenContext
+) -> Shared<CppDecl> =
+  cpp_decl_from_string_output(gen_fn_proto(name, type_params, type_bounds, params, return_type, context))
+
+export fn gen_fn_proto_cpp_as_string(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  context: CodegenContext
+) -> string =
+  print_cpp_declaration(gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context))
+
+export fn gen_fn_decl_cpp(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  body: Shared<SExpr>,
+  context: CodegenContext
+) -> Shared<CppDecl> =
+  cpp_decl_from_string_output(gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context))
+
+export fn gen_fn_decl_cpp_as_string(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  body: Shared<SExpr>,
+  context: CodegenContext
+) -> string =
+  print_cpp_declaration(gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context))
+
+export fn gen_decl_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
+  cpp_decl_from_string_output(gen_decl(declaration, context))
+
+export fn gen_decl_cpp_as_string(declaration: Shared<SDecl>, context: CodegenContext) -> string =
+  print_cpp_declaration(gen_decl_cpp(declaration, context))
+
+export fn gen_proto_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
+  cpp_decl_from_string_output(gen_proto(declaration, context))
+
+export fn gen_proto_cpp_as_string(declaration: Shared<SDecl>, context: CodegenContext) -> string =
+  print_cpp_declaration(gen_proto_cpp(declaration, context))
+
+export fn collect_all_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundleCpp = do
+  const string_bundle = collect_all_decl_parts(declarations, context)
+  DeclPartsBundleCpp {
+    type_fwds: cpp_decls_from_string_parts(string_bundle.type_fwds),
+    type_defs: cpp_decls_from_string_parts(string_bundle.type_defs),
+    fn_protos: cpp_decls_from_string_parts(string_bundle.fn_protos),
+    fn_defs: cpp_decls_from_string_parts(string_bundle.fn_defs)
+  }
+end
+
+export fn collect_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext, phase: i32) -> [Shared<CppDecl>] =
+  cpp_decls_from_string_parts(collect_decl_parts(declarations, context, phase))

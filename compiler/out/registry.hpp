@@ -14,6 +14,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct TI32;struct TString;struct TBool;struct TUnit;struct TI64;struct TF64;struct TU8;struct TUsize;struct TChar;struct TArray;struct TShared;struct TNamed;struct TGeneric;struct TPair;struct TTuple;struct TFn;struct TAssoc;struct TUnknown;using Type = std::variant<TI32, TString, TBool, TUnit, TI64, TF64, TU8, TUsize, TChar, TArray, TShared, TNamed, TGeneric, TPair, TTuple, TFn, TAssoc, TUnknown>;struct TI32 {};struct TString {};struct TBool {};struct TUnit {};struct TI64 {};struct TF64 {};struct TU8 {};struct TUsize {};struct TChar {};struct TArray {std::shared_ptr<registry::Type> field0;};struct TShared {std::shared_ptr<registry::Type> field0;};struct TNamed {mlc::String field0;};struct TGeneric {mlc::String field0;mlc::Array<std::shared_ptr<registry::Type>> field1;};struct TPair {std::shared_ptr<registry::Type> field0;std::shared_ptr<registry::Type> field1;};struct TTuple {mlc::Array<std::shared_ptr<registry::Type>> field0;};struct TFn {mlc::Array<std::shared_ptr<registry::Type>> field0;std::shared_ptr<registry::Type> field1;};struct TAssoc {mlc::String field0;mlc::String field1;};struct TUnknown {};
 

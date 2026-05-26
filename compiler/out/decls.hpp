@@ -16,6 +16,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 predicates::DeclResult parse_decl(predicates::Parser parser) noexcept;
 

@@ -18,6 +18,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept;
 

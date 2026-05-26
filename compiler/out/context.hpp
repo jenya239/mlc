@@ -21,6 +21,8 @@ struct Expr;
 struct Stmt;
 struct SExpr;
 struct SStmt;
+struct CppStmt;
+struct CppExpr;
 
 struct CodegenContext {mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> field_order_index;mlc::String namespace_prefix;mlc::HashMap<mlc::String, mlc::String> qualified;mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes;mlc::String self_type;mlc::HashMap<mlc::String, mlc::String> method_owners;mlc::Array<mlc::String> shared_params;mlc::Array<mlc::String> shared_array_params;mlc::HashMap<mlc::String, mlc::String> array_elem_types;mlc::Array<mlc::String> shared_map_params;mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_infos;mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_info_index;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::Array<mlc::String> value_params;mlc::Array<mlc::String> match_deref_params;mlc::Array<mlc::String> generic_variants;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> struct_using_lines;};
 
