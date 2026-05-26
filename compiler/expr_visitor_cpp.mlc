@@ -1,4 +1,4 @@
-// ExprVisitor<Shared<CppExpr>> — batch 1–2: literals/ident/bin/unary + call/method/if/block (Phase 2).
+// ExprVisitor<Shared<CppExpr>> — batch 1–3: literals through lambda (Phase 2).
 
 import { Type, TNamed } from './checker/registry'
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from './ir/semantic_ir'
@@ -8,7 +8,7 @@ import * as emit_helpers from './cpp/emit_helpers'
 import { operator_method_for } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
-import { gen_call_via_visitor, gen_method_via_visitor, gen_if_via_visitor, gen_block_via_visitor } from './codegen/expr/expr_visitor_string'
+import * as expr_visitor_string from './codegen/expr/expr_visitor_string'
 import { ExprVisitor } from './expr_visitor'
 import { CodegenContext } from './codegen/context'
 
@@ -55,7 +55,7 @@ export fn gen_call_via_cpp_visitor(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
   cpp_expr_from_rendered_fragment(
-    gen_call_via_visitor(
+    expr_visitor_string.gen_call_via_visitor(
       function_expression,
       arguments,
       call_parameter_mutability_flags,
@@ -72,7 +72,7 @@ export fn gen_method_via_cpp_visitor(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
   cpp_expr_from_rendered_fragment(
-    gen_method_via_visitor(
+    expr_visitor_string.gen_method_via_visitor(
       object,
       method_name,
       arguments,
@@ -90,7 +90,7 @@ export fn gen_if_via_cpp_visitor(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
   cpp_expr_from_rendered_fragment(
-    gen_if_via_visitor(
+    expr_visitor_string.gen_if_via_visitor(
       condition,
       then_expression,
       else_expression,
@@ -106,9 +106,71 @@ export fn gen_block_via_cpp_visitor(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
   cpp_expr_from_rendered_fragment(
-    gen_block_via_visitor(
+    expr_visitor_string.gen_block_via_visitor(
       statements,
       result_expression,
+      context,
+      gen_stmts,
+      eval_expr_cpp_as_string))
+
+export fn gen_match_via_cpp_visitor(
+  subject: Shared<SExpr>,
+  arms: [Shared<SMatchArm>],
+  match_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  cpp_expr_from_rendered_fragment(
+    expr_visitor_string.gen_match_via_visitor(
+      subject,
+      arms,
+      match_semantic_type,
+      context,
+      gen_stmts,
+      eval_expr_cpp_as_string))
+
+export fn gen_record_via_cpp_visitor(
+  type_name: string,
+  field_values: [Shared<SFieldVal>],
+  expression_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  cpp_expr_from_rendered_fragment(
+    expr_visitor_string.gen_record_via_visitor(
+      type_name,
+      field_values,
+      expression_type,
+      context,
+      gen_stmts,
+      eval_expr_cpp_as_string))
+
+export fn gen_array_via_cpp_visitor(
+  elements: [Shared<SExpr>],
+  element_container_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  cpp_expr_from_rendered_fragment(
+    expr_visitor_string.gen_array_via_visitor(
+      elements,
+      element_container_semantic_type,
+      context,
+      gen_stmts,
+      eval_expr_cpp_as_string))
+
+export fn gen_lambda_via_cpp_visitor(
+  parameter_binding_names: [string],
+  body_expression_under_lambda: Shared<SExpr>,
+  semantic_function_type_for_lambda_expression: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  cpp_expr_from_rendered_fragment(
+    expr_visitor_string.gen_lambda_via_visitor(
+      parameter_binding_names,
+      body_expression_under_lambda,
+      semantic_function_type_for_lambda_expression,
       context,
       gen_stmts,
       eval_expr_cpp_as_string))
@@ -187,20 +249,20 @@ extend CppExprVisitor : ExprVisitor<Shared<CppExpr>> {
     unsupported_cpp_expression()
   fn visit_for(self: CppExprVisitor, _variable: string, _iterator: Shared<SExpr>, _statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     unsupported_cpp_expression()
-  fn visit_match(self: CppExprVisitor, _subject: Shared<SExpr>, _arms: [Shared<SMatchArm>], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_record(self: CppExprVisitor, _type_name: string, _field_values: [Shared<SFieldVal>], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
+  fn visit_match(self: CppExprVisitor, subject: Shared<SExpr>, arms: [Shared<SMatchArm>], semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_match_via_cpp_visitor(subject, arms, semantic_type, self.context, self.gen_stmts)
+  fn visit_record(self: CppExprVisitor, type_name: string, field_values: [Shared<SFieldVal>], semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_record_via_cpp_visitor(type_name, field_values, semantic_type, self.context, self.gen_stmts)
   fn visit_record_update(self: CppExprVisitor, _type_name: string, _base_expression: Shared<SExpr>, _overrides: [Shared<SFieldVal>], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     unsupported_cpp_expression()
-  fn visit_array(self: CppExprVisitor, _elements: [Shared<SExpr>], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
+  fn visit_array(self: CppExprVisitor, elements: [Shared<SExpr>], semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_array_via_cpp_visitor(elements, semantic_type, self.context, self.gen_stmts)
   fn visit_tuple(self: CppExprVisitor, _elements: [Shared<SExpr>], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     unsupported_cpp_expression()
   fn visit_question(self: CppExprVisitor, _inner_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     unsupported_cpp_expression()
-  fn visit_lambda(self: CppExprVisitor, _parameter_names: [string], _body_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
+  fn visit_lambda(self: CppExprVisitor, parameter_names: [string], body_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_lambda_via_cpp_visitor(parameter_names, body_expression, semantic_type, self.context, self.gen_stmts)
   fn visit_with(self: CppExprVisitor, _resource: Shared<SExpr>, _binder: string, _statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     unsupported_cpp_expression()
   fn visit_unsupported(self: CppExprVisitor, _expression: Shared<SExpr>) -> Shared<CppExpr> =
