@@ -1,31 +1,21 @@
 // C++ AST: parse subset + emission types (Phase 2).
 
-type CppType =
+export type CppType =
   | CppTypeName(string)
   | CppTypeTemplate(string, [Shared<CppType>])
   | CppTypeRef(Shared<CppType>)
 
-type CppCastKind =
+export type CppCastKind =
   | CppCastStatic
   | CppCastDynamic
   | CppCastReinterpret
   | CppCastConst
 
-type CppExpr =
-  | CppInt(i32)
-  | CppStr(string)
-  | CppBool(bool)
-  | CppIdent(string)
-  | CppCall(Shared<CppExpr>, [Shared<CppExpr>])
-  | CppMember(Shared<CppExpr>, string)
-  | CppIndex(Shared<CppExpr>, Shared<CppExpr>)
-  | CppBinary(string, Shared<CppExpr>, Shared<CppExpr>)
-  | CppUnary(string, Shared<CppExpr>)
-  | CppTernary(Shared<CppExpr>, Shared<CppExpr>, Shared<CppExpr>)
-  | CppInitList([Shared<CppExpr>])
-  | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpr>)
+export type CppCapture = CppCapture { name: string, by_reference: bool }
 
-type CppStmt =
+export type CppParam = CppParam { name: string, parameter_type: Shared<CppType> }
+
+export type CppStmt =
   | CppAutoDecl(string, Shared<CppExpr>)
   | CppReturn(Shared<CppExpr>)
   | CppExprStmt(Shared<CppExpr>)
@@ -33,13 +23,29 @@ type CppStmt =
   | CppIf(Shared<CppExpr>, Shared<CppStmt>, Shared<CppStmt>)
   | CppWhile(Shared<CppExpr>, Shared<CppStmt>)
 
-type CppField = CppField { typ: string, name: string }
+export type CppExpr =
+  | CppInt(i32)
+  | CppStr(string)
+  | CppBool(bool)
+  | CppIdent(string)
+  | CppCall(Shared<CppExpr>, [Shared<CppExpr>])
+  | CppMember(Shared<CppExpr>, string, bool)
+  | CppIndex(Shared<CppExpr>, Shared<CppExpr>)
+  | CppBinary(string, Shared<CppExpr>, Shared<CppExpr>)
+  | CppUnary(string, Shared<CppExpr>)
+  | CppTernary(Shared<CppExpr>, Shared<CppExpr>, Shared<CppExpr>)
+  | CppLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppType>, [Shared<CppStmt>])
+  | CppInitList([Shared<CppExpr>])
+  | CppStdVisit(Shared<CppExpr>, [Shared<CppExpr>])
+  | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpr>)
 
-type CppDecl =
+export type CppField = CppField { typ: string, name: string }
+
+export type CppDecl =
   | CppInclude(bool, string)
   | CppUsing(string, string)
   | CppStruct(string, [Shared<CppField>])
   | CppFnProto(string, string, [string])
   | CppFnDef(string, string, [string], [Shared<CppStmt>])
 
-type CppProgram = CppProgram { decls: [Shared<CppDecl>] }
+export type CppProgram = CppProgram { decls: [Shared<CppDecl>] }
