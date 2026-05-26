@@ -8,7 +8,7 @@ import { gen_expr_via_string_visitor } from '../codegen/expr/expr_visitor_string
 import { cpp_lambda_header_prefix } from '../codegen/expr/expression_support'
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/decl/type_gen'
-import { gen_program } from '../codegen/module'
+import { gen_program, gen_program_with_printer } from '../codegen/module'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown, PatUnit } from '../frontend/ast'
@@ -460,6 +460,10 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('DeclFn: body in output',
     if fn_prog_out.contains('return (n * 2)') then 'yes' else 'no' end,
     'yes'))
+
+  results.push(assert_eq_str('gen_program_with_printer matches string',
+    gen_program_with_printer(fn_prog, true),
+    gen_program(fn_prog)))
 
   const d3_trait_parameter_source =
     'type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()'

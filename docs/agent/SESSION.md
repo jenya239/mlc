@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 17 |
-| step_last | 17 |
+| driver_turns_since_plan | 18 |
+| step_last | 18 |
 | agent_token_last | cr-agent-f7f97795-dbcb-4cc7-b3be-2db8f4076729 |
-| run_tests | 525 |
-| TRACK_PLAN | TRACK_CPPEXPR step 18 pending |
+| run_tests | 526 |
+| TRACK_PLAN | TRACK_CPPEXPR step 19 pending |
+
+### Turn 2026-05-26 (CPPEXPR step 18)
+
+| turn | 2026-05-26 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 18 |
+| step | 18 |
+| done | module.mlc use_cpp_printer flag; gen_module_with_printer; CppFile emission via decl_cpp |
+| verify | 526 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=19 (enqueued) |
 
 ### Turn 2026-05-26 (CPPEXPR step 17)
 

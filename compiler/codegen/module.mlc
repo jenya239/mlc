@@ -14,8 +14,25 @@ import { CodegenContext, PrecomputedCtx, GenModuleOut,
 import { SDecl } from '../ir/semantic_ir'
 import { sem_type_to_cpp } from './decl/type_gen'
 import { cpp_safe, include_lines, using_namespace_lines, path_to_module_base } from './cpp_naming'
-import { collect_all_decl_parts, decls_have_main } from './decl/decl'
+import { collect_all_decl_parts, decls_have_main, DeclPartsBundle } from './decl/decl'
+import { cpp_decl_from_string_output, cpp_decls_from_string_parts, print_cpp_declarations } from './decl_cpp'
+import { CppDecl, CppFile } from '../cpp/cpp_ast'
+import * as cpp_ast from '../cpp/cpp_ast'
 import * as expression_output from './expr/expr'
+
+export fn use_cpp_printer_default() -> bool = false
+
+type ModuleGenerationContext = ModuleGenerationContext {
+  base: string,
+  guard: string,
+  std_includes: string,
+  module_namespace: string,
+  is_entry: bool,
+  decl_parts: DeclPartsBundle,
+  implementation_import_includes: string,
+  implementation_using_namespaces: string,
+  cli_wrapper: string
+}
 
 fn namespace_aliases_mapped(items: [SNamespaceImportAlias]) -> [NamespaceImportAlias] = do
   let mut result: [NamespaceImportAlias] = []
@@ -99,7 +116,11 @@ export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx = d
   }
 end
 
-export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
+fn prepare_module_generation(
+  s_item: SLoadItem,
+  all_items: [LoadItem],
+  precomp: PrecomputedCtx
+) -> ModuleGenerationContext = do
   const base = path_to_module_base(s_item.path)
   const namespace_aliases = s_item.namespace_import_aliases
   const qualified = build_qualified(s_item.imports, all_items)
@@ -129,58 +150,151 @@ export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Progra
   const is_entry = decls_have_main(s_item.decls)
   const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(s_item.imports) + "\n"
   const decl_parts = collect_all_decl_parts(s_item.decls, context)
-  const type_fwds = decl_parts.type_fwds
-  const type_defs = decl_parts.type_defs
-  const fn_protos = decl_parts.fn_protos
-  const fn_defs   = decl_parts.fn_defs
   const guard = base.upper() + '_HPP'
-  const header = [
-    expression_output.include_guard_ifndef_line(guard),
-    expression_output.include_guard_define_line(guard),
-    "\n",
-    std_includes,
-    expression_output.namespace_open_line(module_namespace),
-    "\n",
-    type_fwds.join(''),
-    type_defs.join(''),
-    fn_protos.join(''),
-    "\n",
-    expression_output.namespace_close_comment_line(module_namespace),
-    "\n",
-    expression_output.include_guard_endif_comment_line(guard)
-  ].join('')
   const cli_wrapper = if is_entry then
     expression_output.bootstrap_host_main_calling_namespaced_user_main(module_namespace)
     else '' end
-  const implementation_import_includes = include_lines(s_item.imports)
-  const implementation_using_namespaces = using_namespace_lines(s_item.imports)
-  const impl = [
-    expression_output.implementation_define_main_as_user_main_line(),
-    expression_output.implementation_include_quotefile_line(base + '.hpp'),
-    "\n",
-    implementation_import_includes,
-    if implementation_import_includes.length() > 0 then "\n" else '' end,
-    expression_output.namespace_open_line(module_namespace),
-    "\n",
-    implementation_using_namespaces,
-    if implementation_using_namespaces.length() > 0 then "\n" else '' end,
-    fn_defs.join(''),
-    "\n",
-    expression_output.namespace_close_comment_line(module_namespace),
-    cli_wrapper
-  ].join('')
-  GenModuleOut { h: header, c: impl }
+  ModuleGenerationContext {
+    base: base,
+    guard: guard,
+    std_includes: std_includes,
+    module_namespace: module_namespace,
+    is_entry: is_entry,
+    decl_parts: decl_parts,
+    implementation_import_includes: include_lines(s_item.imports),
+    implementation_using_namespaces: using_namespace_lines(s_item.imports),
+    cli_wrapper: cli_wrapper
+  }
 end
+
+fn assemble_header_string(parts: ModuleGenerationContext) -> string = [
+  expression_output.include_guard_ifndef_line(parts.guard),
+  expression_output.include_guard_define_line(parts.guard),
+  "\n",
+  parts.std_includes,
+  expression_output.namespace_open_line(parts.module_namespace),
+  "\n",
+  parts.decl_parts.type_fwds.join(''),
+  parts.decl_parts.type_defs.join(''),
+  parts.decl_parts.fn_protos.join(''),
+  "\n",
+  expression_output.namespace_close_comment_line(parts.module_namespace),
+  "\n",
+  expression_output.include_guard_endif_comment_line(parts.guard)
+].join('')
+
+fn assemble_source_string(parts: ModuleGenerationContext) -> string = [
+  expression_output.implementation_define_main_as_user_main_line(),
+  expression_output.implementation_include_quotefile_line(parts.base + '.hpp'),
+  "\n",
+  parts.implementation_import_includes,
+  if parts.implementation_import_includes.length() > 0 then "\n" else '' end,
+  expression_output.namespace_open_line(parts.module_namespace),
+  "\n",
+  parts.implementation_using_namespaces,
+  if parts.implementation_using_namespaces.length() > 0 then "\n" else '' end,
+  parts.decl_parts.fn_defs.join(''),
+  "\n",
+  expression_output.namespace_close_comment_line(parts.module_namespace),
+  parts.cli_wrapper
+].join('')
+
+fn cpp_declarations_from_text_parts(text_parts: [string]) -> [Shared<CppDecl>] = do
+  let declarations: [Shared<CppDecl>] = []
+  let mut index = 0
+  while index < text_parts.length() do
+    if text_parts[index].length() > 0 then
+      declarations.push(cpp_decl_from_string_output(text_parts[index]))
+    end
+    index = index + 1
+  end
+  declarations
+end
+
+fn assemble_header_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDecl>] = do
+  let declarations = cpp_declarations_from_text_parts([
+    expression_output.include_guard_ifndef_line(parts.guard),
+    expression_output.include_guard_define_line(parts.guard),
+    "\n",
+    parts.std_includes,
+    expression_output.namespace_open_line(parts.module_namespace),
+    "\n"
+  ])
+  declarations.concat(cpp_decls_from_string_parts(parts.decl_parts.type_fwds))
+    .concat(cpp_decls_from_string_parts(parts.decl_parts.type_defs))
+    .concat(cpp_decls_from_string_parts(parts.decl_parts.fn_protos))
+    .concat(cpp_declarations_from_text_parts([
+      "\n",
+      expression_output.namespace_close_comment_line(parts.module_namespace),
+      "\n",
+      expression_output.include_guard_endif_comment_line(parts.guard)
+    ]))
+end
+
+fn assemble_source_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDecl>] = do
+  let declarations = cpp_declarations_from_text_parts([
+    expression_output.implementation_define_main_as_user_main_line(),
+    expression_output.implementation_include_quotefile_line(parts.base + '.hpp'),
+    "\n",
+    parts.implementation_import_includes,
+    if parts.implementation_import_includes.length() > 0 then "\n" else '' end,
+    expression_output.namespace_open_line(parts.module_namespace),
+    "\n",
+    parts.implementation_using_namespaces,
+    if parts.implementation_using_namespaces.length() > 0 then "\n" else '' end
+  ])
+  declarations.concat(cpp_decls_from_string_parts(parts.decl_parts.fn_defs))
+    .concat(cpp_declarations_from_text_parts([
+      "\n",
+      expression_output.namespace_close_comment_line(parts.module_namespace),
+      parts.cli_wrapper
+    ]))
+end
+
+fn gen_module_cpp_file(parts: ModuleGenerationContext) -> Shared<CppFile> =
+  Shared.new(CppFile {
+    header: assemble_header_cpp_declarations(parts),
+    source: assemble_source_cpp_declarations(parts)
+  })
+
+fn gen_module_via_string(parts: ModuleGenerationContext) -> GenModuleOut =
+  GenModuleOut { h: assemble_header_string(parts), c: assemble_source_string(parts) }
+
+fn gen_module_via_cpp_printer(parts: ModuleGenerationContext) -> GenModuleOut = do
+  const file = gen_module_cpp_file(parts)
+  GenModuleOut {
+    h: print_cpp_declarations(cpp_ast.cpp_file_header(file)),
+    c: print_cpp_declarations(cpp_ast.cpp_file_source(file))
+  }
+end
+
+export fn gen_module_with_printer(
+  s_item: SLoadItem,
+  all_items: [LoadItem],
+  full_prog: Program,
+  precomp: PrecomputedCtx,
+  use_cpp_printer: bool
+) -> GenModuleOut = do
+  const parts = prepare_module_generation(s_item, all_items, precomp)
+  if use_cpp_printer then gen_module_via_cpp_printer(parts)
+  else gen_module_via_string(parts)
+  end
+end
+
+export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut =
+  gen_module_with_printer(s_item, all_items, full_prog, precomp, use_cpp_printer_default())
 
 // Convenience: compile a single in-memory Program to a C++ string.
 // Used by tests that build a Program directly.
-export fn gen_program(program: Program) -> string = do
+export fn gen_program_with_printer(program: Program, use_cpp_printer: bool) -> string = do
   const all_items: [LoadItem] = []
   const precomp   = precompute(program, all_items)
   const registry  = build_registry(program)
   const single    = LoadItem { path: 'test_main', decls: program.decls, imports: [], namespace_import_aliases: [] }
   const s_items   = transform_load_items([single], registry, build_trait_nominal_maps(program))
-  const result    = gen_module(s_items[0], all_items, program, precomp)
+  const result    = gen_module_with_printer(s_items[0], all_items, program, precomp, use_cpp_printer)
   result.h + result.c
 end
 
+export fn gen_program(program: Program) -> string =
+  gen_program_with_printer(program, use_cpp_printer_default())

@@ -246,6 +246,7 @@ mlc::String fn_prog_out = module::gen_program(fn_prog);
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: signature in output"), fn_prog_out.contains(mlc::String("double_it")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: param type in output"), fn_prog_out.contains(mlc::String("int n")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: body in output"), fn_prog_out.contains(mlc::String("return (n * 2)")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
+results.push_back(test_runner::assert_eq_str(mlc::String("gen_program_with_printer matches string"), module::gen_program_with_printer(fn_prog, true), module::gen_program(fn_prog)));
 mlc::String d3_trait_parameter_source = mlc::String("type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()");
 mlc::String d3_trait_parameter_output = module::gen_program(decls::parse_program(lexer::tokenize(d3_trait_parameter_source).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: concept Display"), d3_trait_parameter_output, mlc::String("concept Display")));
