@@ -1,0 +1,15 @@
+// Builders for leaf CppExpr nodes (Phase 2). No dependency on codegen/.
+
+import { CppExpr, CppInt, CppStr, CppBool, CppIdent } from './cpp_ast'
+
+export fn make_integer_cpp_expression(integer_value: i32) -> Shared<CppExpr> =
+  Shared.new(CppInt(integer_value))
+
+export fn make_string_cpp_expression(string_value: string) -> Shared<CppExpr> =
+  Shared.new(CppStr(string_value))
+
+export fn make_boolean_cpp_expression(boolean_value: bool) -> Shared<CppExpr> =
+  Shared.new(CppBool(boolean_value))
+
+export fn make_identifier_cpp_expression(name: string) -> Shared<CppExpr> =
+  Shared.new(CppIdent(name))
