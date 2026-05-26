@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 9 |
-| step_last | 9 |
-| agent_token_last | cr-agent-2977b54a-bed7-4880-99c8-28c6fd4ee394 |
+| driver_turns_since_plan | 10 |
+| step_last | 10 |
+| agent_token_last | cr-agent-006ee46b-7db1-4fa5-ade2-d02f8bec77a2 |
 | run_tests | 517 |
-| TRACK_PLAN | TRACK_CPPEXPR step 10 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 11 pending |
+
+### Turn 2026-05-26 (CPPEXPR step 10)
+
+| turn | 2026-05-26 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 10 |
+| step | 10 |
+| done | literals.mlc gen_*_literal_cpp via emit_helpers; string path unchanged |
+| verify | 517 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | 0 |
+| next | STEP=11 (enqueued) |
 
 ### Turn 2026-05-26 (CPPEXPR step 9)
 

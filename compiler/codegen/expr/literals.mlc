@@ -1,5 +1,7 @@
 // C++ fragments for literal expressions (no dependency on gen_expr).
 
+import { CppExpr } from '../../cpp/cpp_ast'
+import * as emit_helpers from '../../cpp/emit_helpers'
 import { escape_str } from '../cpp_naming'
 
 export fn gen_integer_literal(integer_value: i32) -> string =
@@ -20,3 +22,33 @@ export fn gen_i64_literal(v: string) -> string = v
 export fn gen_u8_literal(v: string) -> string = 'static_cast<uint8_t>(' + v + ")"
 export fn gen_usize_literal(v: string) -> string = 'static_cast<size_t>(' + v + ")"
 export fn gen_char_literal(v: string) -> string = 'static_cast<char32_t>(' + v + ")"
+
+export fn gen_integer_literal_cpp(integer_value: i32) -> Shared<CppExpr> =
+  emit_helpers.make_integer_cpp_expression(integer_value)
+
+export fn gen_string_literal_cpp(string_value: string) -> Shared<CppExpr> =
+  emit_helpers.make_string_cpp_expression(string_value)
+
+export fn gen_boolean_literal_cpp(boolean_value: bool) -> Shared<CppExpr> =
+  emit_helpers.make_boolean_cpp_expression(boolean_value)
+
+export fn gen_unit_literal_cpp() -> Shared<CppExpr> =
+  emit_helpers.make_identifier_cpp_expression(gen_unit_literal())
+
+export fn gen_extern_placeholder_cpp() -> Shared<CppExpr> =
+  emit_helpers.make_identifier_cpp_expression(gen_extern_placeholder())
+
+export fn gen_float_literal_cpp(v: string) -> Shared<CppExpr> =
+  emit_helpers.make_identifier_cpp_expression(gen_float_literal(v))
+
+export fn gen_i64_literal_cpp(v: string) -> Shared<CppExpr> =
+  emit_helpers.make_identifier_cpp_expression(gen_i64_literal(v))
+
+export fn gen_u8_literal_cpp(v: string) -> Shared<CppExpr> =
+  emit_helpers.make_identifier_cpp_expression(gen_u8_literal(v))
+
+export fn gen_usize_literal_cpp(v: string) -> Shared<CppExpr> =
+  emit_helpers.make_identifier_cpp_expression(gen_usize_literal(v))
+
+export fn gen_char_literal_cpp(v: string) -> Shared<CppExpr> =
+  emit_helpers.make_identifier_cpp_expression(gen_char_literal(v))
