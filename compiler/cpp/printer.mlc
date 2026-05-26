@@ -1,6 +1,12 @@
 // Pretty-printer: CppExpr / CppStmt / CppDecl → C++ source text (Phase 2).
 
-import { CppExpr, CppInt, CppStr, CppBool, CppIdent } from './ast'
+import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
+         CppCastKind, CppCastStatic, CppCastDynamic, CppCastReinterpret, CppCastConst,
+         CppCapture, CppParam,
+         CppStmt, CppReturn, CppExprStmt, CppBlock,
+         CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
+         CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppStdVisit, CppCast } from './ast'
+import * as cpp_ast from './ast'
 
 fn escape_cpp_string_content(input: string) -> string = do
   let parts: [string] = []
@@ -20,6 +26,148 @@ fn escape_cpp_string_content(input: string) -> string = do
   parts.join('')
 end
 
+fn print_comma_separated_expressions(expressions: [Shared<CppExpr>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < expressions.length() do
+    parts.push(print_expr(expressions[index]))
+    index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn print_comma_separated_types(types: [Shared<CppType>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < types.length() do
+    parts.push(print_type(types[index]))
+    index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn type_template(name: string, arguments_code: string) -> string =
+  `${name}<${arguments_code}>`
+
+fn type_reference(inner_code: string) -> string =
+  `${inner_code}&`
+
+fn print_type(type_node: Shared<CppType>) -> string =
+  match type_node {
+    CppTypeName(name) => name,
+    CppTypeTemplate(name, arguments) => type_template(name, print_comma_separated_types(arguments)),
+    CppTypeRef(inner) => type_reference(print_type(inner))
+  }
+
+fn ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
+  `(${condition_code} ? (${then_code}) : (${else_code}))`
+
+fn parenthesized_binary(left_code: string, operation: string, right_code: string) -> string =
+  `(${left_code} ${operation} ${right_code})`
+
+fn parenthesized_unary(operation: string, inner_code: string) -> string =
+  `(${operation}${inner_code})`
+
+fn index_subscript(object_code: string, index_code: string) -> string =
+  `${object_code}[${index_code}]`
+
+fn function_call_parentheses(callee_code: string, argument_list: string) -> string =
+  `${callee_code}(${argument_list})`
+
+fn pointer_field_access(object_code: string, field_name: string) -> string =
+  `${object_code}->${field_name}`
+
+fn value_field_access(object_code: string, field_name: string) -> string =
+  `${object_code}.${field_name}`
+
+fn init_list_braces(element_list: string) -> string =
+  if element_list.length() == 0 then "{}" else `{${element_list}}` end
+
+fn std_visit_expression(arm_lambdas: string, visit_subject: string) -> string =
+  `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
+
+fn cast_expression(kind_prefix: string, type_code: string, operand_code: string) -> string =
+  `${kind_prefix}<${type_code}>(${operand_code})`
+
+fn print_cast_kind_prefix(kind: CppCastKind) -> string =
+  match kind {
+    CppCastStatic => "static_cast",
+    CppCastDynamic => "dynamic_cast",
+    CppCastReinterpret => "reinterpret_cast",
+    CppCastConst => "const_cast"
+  }
+
+fn print_comma_separated_expressions_multiline(expressions: [Shared<CppExpr>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < expressions.length() do
+    parts.push(print_expr(expressions[index]))
+    index = index + 1
+  end
+  parts.join(",\n")
+end
+
+fn print_capture_list(captures: [Shared<CppCapture>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < captures.length() do
+    const capture_entry = captures[index]
+    if cpp_ast.cpp_capture_by_reference(capture_entry) then parts.push("&" + cpp_ast.cpp_capture_name(capture_entry))
+    else parts.push(cpp_ast.cpp_capture_name(capture_entry))
+    end
+    index = index + 1
+  end
+  "[" + parts.join(", ") + "]"
+end
+
+fn print_parameter_list(parameters: [Shared<CppParam>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < parameters.length() do
+    const parameter = parameters[index]
+    parts.push(print_type(cpp_ast.cpp_param_type(parameter)) + " " + cpp_ast.cpp_param_name(parameter))
+    index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn print_statements(statements: [Shared<CppStmt>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < statements.length() do
+    parts.push(print_statement(statements[index]))
+    index = index + 1
+  end
+  parts.join("\n")
+end
+
+fn print_statement(statement: Shared<CppStmt>) -> string =
+  match statement {
+    CppReturn(expression) => "return " + print_expr(expression) + ";",
+    CppExprStmt(expression) => print_expr(expression) + ";",
+    CppBlock(statements) => print_statements(statements),
+    _ => "/* unimplemented cpp stmt */"
+  }
+
+fn lambda_expression(capture_prefix: string, parameters_code: string, return_type_code: string, body_code: string) -> string =
+  `${capture_prefix}(${parameters_code}) -> ${return_type_code} { ${body_code} }`
+
+fn print_lambda_expression(
+  captures: [Shared<CppCapture>],
+  parameters: [Shared<CppParam>],
+  return_type: Shared<CppType>,
+  body: [Shared<CppStmt>]
+) -> string = do
+  const capture_prefix = print_capture_list(captures)
+  const parameters_code = print_parameter_list(parameters)
+  const return_type_code = print_type(return_type)
+  const body_code = print_statements(body)
+  lambda_expression(capture_prefix, parameters_code, return_type_code, body_code)
+end
+
+fn print_member_expression(object: Shared<CppExpr>, member_name: string, is_pointer: bool) -> string =
+  if is_pointer then pointer_field_access(print_expr(object), member_name) else value_field_access(print_expr(object), member_name) end
+
 export fn print_integer_literal(integer_value: i32) -> string =
   integer_value.to_string()
 
@@ -27,7 +175,7 @@ export fn print_string_literal(string_value: string) -> string =
   "\"" + escape_cpp_string_content(string_value) + "\""
 
 export fn print_boolean_literal(boolean_value: bool) -> string =
-  if boolean_value then 'true' else 'false' end
+  if boolean_value then "true" else "false" end
 
 export fn print_identifier(name: string) -> string =
   name
@@ -38,5 +186,24 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
     CppStr(string_value) => print_string_literal(string_value),
     CppBool(boolean_value) => print_boolean_literal(boolean_value),
     CppIdent(name) => print_identifier(name),
-    _ => '/* unimplemented cpp expr */'
+    CppCall(callee, arguments) =>
+      function_call_parentheses(print_expr(callee), print_comma_separated_expressions(arguments)),
+    CppMember(object, member_name, is_pointer) =>
+      print_member_expression(object, member_name, is_pointer),
+    CppIndex(object, index) =>
+      index_subscript(print_expr(object), print_expr(index)),
+    CppBinary(operation, left, right) =>
+      parenthesized_binary(print_expr(left), operation, print_expr(right)),
+    CppUnary(operation, inner) =>
+      parenthesized_unary(operation, print_expr(inner)),
+    CppTernary(condition, then_branch, else_branch) =>
+      ternary_conditional(print_expr(condition), print_expr(then_branch), print_expr(else_branch)),
+    CppInitList(elements) =>
+      init_list_braces(print_comma_separated_expressions(elements)),
+    CppStdVisit(subject, handlers) =>
+      std_visit_expression(print_comma_separated_expressions_multiline(handlers), print_expr(subject)),
+    CppCast(kind, target_type, operand) =>
+      cast_expression(print_cast_kind_prefix(kind), print_type(target_type), print_expr(operand)),
+    CppLambda(captures, parameters, return_type, body) =>
+      print_lambda_expression(captures, parameters, return_type, body)
   }

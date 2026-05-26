@@ -7,10 +7,22 @@
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
 | driver_turns_since_plan | 5 |
-| step_last | 5 |
+| step_last | 6 |
 | agent_token_last | cr-agent-d095f58a-dc23-4caf-9e85-776197584d5a |
 | run_tests | 490 |
-| TRACK_PLAN | TRACK_CPPEXPR step 6 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 7 pending |
+
+### Turn 2026-05-26 (CPPEXPR step 6)
+
+| turn | 2026-05-26 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 6 |
+| step | 6 |
+| done | printer all CppExpr variants; ast accessors; type_template backticks |
+| verify | 490 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | 0 |
+| next | STEP=7 (enqueued) |
 
 ### Turn 2026-05-25 (CPPEXPR step 5)
 
@@ -21,7 +33,7 @@
 | step | 5 |
 | done | cpp/printer.mlc scaffold; 3fdf646 |
 | verify | 490 pass; build.sh; self-host diff empty (g++) |
-| uncommitted_files | docs |
+| uncommitted_files | 0 |
 | next | STEP=6 (enqueued) |
 
 ### Turn 2026-05-25 (CPPEXPR step 4)

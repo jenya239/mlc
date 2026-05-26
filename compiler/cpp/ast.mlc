@@ -57,3 +57,8 @@ export type CppDecl =
 export type CppFile = CppFile { header: [Shared<CppDecl>], source: [Shared<CppDecl>] }
 
 export type CppProgram = CppProgram { decls: [Shared<CppDecl>] }
+
+export fn cpp_capture_name(capture: Shared<CppCapture>) -> string = capture.name
+export fn cpp_capture_by_reference(capture: Shared<CppCapture>) -> bool = capture.by_reference
+export fn cpp_param_name(parameter: Shared<CppParam>) -> string = parameter.name
+export fn cpp_param_type(parameter: Shared<CppParam>) -> Shared<CppType> = parameter.parameter_type
