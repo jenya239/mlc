@@ -1,9 +1,12 @@
-// ExprVisitor<Shared<CppExpr>> dispatch stub (Phase 2). Step 13+ fills visit arms.
+// ExprVisitor<Shared<CppExpr>> — batch 1: literals, ident, bin/unary (Phase 2).
 
-import { Type } from './checker/registry'
-import { SExpr, SStmt, SMatchArm, SFieldVal } from './ir/semantic_ir'
-import { CppExpr } from './cpp/cpp_ast'
+import { Type, TNamed } from './checker/registry'
+import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from './ir/semantic_ir'
+import { CppExpr, CppBinary, CppUnary, CppCall } from './cpp/cpp_ast'
 import * as emit_helpers from './cpp/emit_helpers'
+import { operator_method_for } from './checker/semantic_type_structure'
+import * as literals from './codegen/expr/literals'
+import * as identifiers from './codegen/expr/identifiers'
 import { ExprVisitor, dispatch_expr } from './expr_visitor'
 import { CodegenContext } from './codegen/context'
 
@@ -14,7 +17,7 @@ type CppExprVisitor = CppExprVisitor {
 }
 
 fn unsupported_cpp_expression() -> Shared<CppExpr> =
-  emit_helpers.make_identifier_cpp_expression('/* unsupported expr */')
+  emit_helpers.make_identifier_cpp_expression("/* unsupported expr */")
 
 fn evaluate_via_cpp_visitor(
   expression: Shared<SExpr>,
@@ -25,33 +28,64 @@ fn evaluate_via_cpp_visitor(
 
 fn ignored_gen_stmts(_statements: [Shared<SStmt>], _context: CodegenContext) -> string = ''
 
+export fn gen_binary_via_cpp_visitor(
+  operation: string,
+  left_expression: Shared<SExpr>,
+  right_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+) -> Shared<CppExpr> = do
+  const method = operator_method_for(operation)
+  const left_type = sexpr_type(left_expression)
+  const type_name = match left_type { TNamed(name) => name, _ => "" }
+  const left_cpp = evaluate_expression(left_expression, context, gen_stmts)
+  const right_cpp = evaluate_expression(right_expression, context, gen_stmts)
+  if method != "" && type_name != "" then
+    Shared.new(CppCall(
+      emit_helpers.make_identifier_cpp_expression(type_name + "_" + method),
+      [left_cpp, right_cpp]))
+  else
+    Shared.new(CppBinary(operation, left_cpp, right_cpp))
+  end
+end
+
+export fn gen_unary_via_cpp_visitor(
+  operation: string,
+  inner_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+) -> Shared<CppExpr> =
+  Shared.new(CppUnary(operation, evaluate_expression(inner_expression, context, gen_stmts)))
+
 extend CppExprVisitor : ExprVisitor<Shared<CppExpr>> {
-  fn visit_int(self: CppExprVisitor, _value: i32, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_str(self: CppExprVisitor, _value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_bool(self: CppExprVisitor, _value: bool, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
+  fn visit_int(self: CppExprVisitor, value: i32, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    literals.gen_integer_literal_cpp(value)
+  fn visit_str(self: CppExprVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    literals.gen_string_literal_cpp(value)
+  fn visit_bool(self: CppExprVisitor, value: bool, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    literals.gen_boolean_literal_cpp(value)
   fn visit_unit(self: CppExprVisitor, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_float(self: CppExprVisitor, _value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_i64(self: CppExprVisitor, _value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_u8(self: CppExprVisitor, _value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_usize(self: CppExprVisitor, _value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_char(self: CppExprVisitor, _value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
+    literals.gen_unit_literal_cpp()
+  fn visit_float(self: CppExprVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    literals.gen_float_literal_cpp(value)
+  fn visit_i64(self: CppExprVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    literals.gen_i64_literal_cpp(value)
+  fn visit_u8(self: CppExprVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    literals.gen_u8_literal_cpp(value)
+  fn visit_usize(self: CppExprVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    literals.gen_usize_literal_cpp(value)
+  fn visit_char(self: CppExprVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    literals.gen_char_literal_cpp(value)
   fn visit_extern(self: CppExprVisitor, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_ident(self: CppExprVisitor, _name: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_bin(self: CppExprVisitor, _operation: string, _left_expression: Shared<SExpr>, _right_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
-  fn visit_un(self: CppExprVisitor, _operation: string, _inner_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
-    unsupported_cpp_expression()
+    literals.gen_extern_placeholder_cpp()
+  fn visit_ident(self: CppExprVisitor, name: string, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    identifiers.gen_identifier_cpp(name, self.context)
+  fn visit_bin(self: CppExprVisitor, operation: string, left_expression: Shared<SExpr>, right_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_binary_via_cpp_visitor(operation, left_expression, right_expression, self.context, self.gen_stmts, self.evaluate_expression)
+  fn visit_un(self: CppExprVisitor, operation: string, inner_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> Shared<CppExpr> =
+    gen_unary_via_cpp_visitor(operation, inner_expression, self.context, self.gen_stmts, self.evaluate_expression)
   fn visit_call(self: CppExprVisitor, _function_expression: Shared<SExpr>, _arguments: [Shared<SExpr>], _mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpr> =
     unsupported_cpp_expression()
   fn visit_method(self: CppExprVisitor, _object: Shared<SExpr>, _method_name: string, _arguments: [Shared<SExpr>], _mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpr> =

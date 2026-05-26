@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 12 |
-| step_last | 12 |
-| agent_token_last | cr-agent-c27fbd27-1ffa-4574-813d-0c016991502b |
+| driver_turns_since_plan | 13 |
+| step_last | 13 |
+| agent_token_last | cr-agent-eec98f26-03fd-4859-9f12-bcd566da048c |
 | run_tests | 517 |
-| TRACK_PLAN | TRACK_CPPEXPR step 13 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 14 pending |
+
+### Turn 2026-05-26 (CPPEXPR step 13)
+
+| turn | 2026-05-26 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 13 |
+| step | 13 |
+| done | expr_visitor_cpp batch 1 — literals/ident/bin/unary via gen_*_cpp |
+| verify | 517 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | 0 |
+| next | STEP=14 (enqueued) |
 
 ### Turn 2026-05-26 (CPPEXPR step 12)
 
