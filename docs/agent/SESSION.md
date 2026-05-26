@@ -8,7 +8,7 @@
 | role_last | Driver |
 | driver_turns_since_plan | 4 |
 | step_last | 4 |
-| agent_token_last | cr-agent-68ca346a-2bb1-47b6-ad0d-1a438e101bcd |
+| agent_token_last | cr-agent-c59985ae-11d2-4e4f-a7fc-e729a424f2eb |
 | run_tests | 490 |
 | TRACK_PLAN | TRACK_CPPEXPR step 5 pending |
 
@@ -21,7 +21,7 @@
 | step | 4 |
 | done | CppConstDecl, CppFor, CppNamespace, CppVariant, CppFile; 547724b |
 | verify | 490 pass; build.sh; self-host diff empty (g++) |
-| uncommitted_files | docs |
+| uncommitted_files | 0 |
 | next | STEP=5 (enqueued) |
 
 ### Turn 2026-05-25 (CPPEXPR step 3)
