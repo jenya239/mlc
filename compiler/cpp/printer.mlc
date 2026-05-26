@@ -3,7 +3,9 @@
 import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppCastKind, CppCastStatic, CppCastDynamic, CppCastReinterpret, CppCastConst,
          CppCapture, CppParam,
-         CppStmt, CppReturn, CppExprStmt, CppBlock,
+         CppStmt, CppAutoDecl, CppConstDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor,
+         CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant,
+         CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
          CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppStdVisit, CppCast } from './ast'
 import * as cpp_ast from './ast'
@@ -41,6 +43,16 @@ fn print_comma_separated_types(types: [Shared<CppType>]) -> string = do
   let mut index = 0
   while index < types.length() do
     parts.push(print_type(types[index]))
+    index = index + 1
+  end
+  parts.join(", ")
+end
+
+fn print_comma_separated_strings(strings: [string]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < strings.length() do
+    parts.push(strings[index])
     index = index + 1
   end
   parts.join(", ")
@@ -131,23 +143,154 @@ fn print_parameter_list(parameters: [Shared<CppParam>]) -> string = do
   parts.join(", ")
 end
 
-fn print_statements(statements: [Shared<CppStmt>]) -> string = do
+fn block_braces(body_code: string) -> string =
+  `{${body_code}}`
+
+fn if_statement(condition_code: string, then_code: string, else_code: string) -> string =
+  `if (${condition_code}) ${then_code} else ${else_code}`
+
+fn while_statement(condition_code: string, body_code: string) -> string =
+  `while (${condition_code}) ${body_code}`
+
+fn range_for_statement(variable_name: string, range_code: string, body_code: string) -> string =
+  `for (auto ${variable_name} : ${range_code}) ${body_code}`
+
+fn auto_declaration(name: string, initializer_code: string) -> string =
+  `auto ${name} = ${initializer_code};`
+
+fn const_declaration(type_code: string, name: string, initializer_code: string) -> string =
+  `const ${type_code} ${name} = ${initializer_code};`
+
+fn include_angle(path: string) -> string =
+  `#include <${path}>`
+
+fn include_quoted(path: string) -> string =
+  `#include "${path}"`
+
+fn using_alias(alias: string, type_code: string) -> string =
+  `using ${alias} = ${type_code};`
+
+fn struct_definition(name: string, fields_code: string) -> string =
+  `struct ${name} {\n${fields_code}\n};`
+
+fn struct_field_line(type_code: string, field_name: string) -> string =
+  `${type_code} ${field_name};`
+
+fn function_prototype(return_type: string, name: string, parameters_code: string) -> string =
+  `${return_type} ${name}(${parameters_code});`
+
+fn function_definition(return_type: string, name: string, parameters_code: string, body_code: string) -> string =
+  `${return_type} ${name}(${parameters_code}) ${body_code}`
+
+fn namespace_block(name: string, contents_code: string) -> string =
+  `namespace ${name} {\n${contents_code}\n}`
+
+fn variant_type_alias(name: string, types_code: string) -> string =
+  `using ${name} = std::variant<${types_code}>;`
+
+fn print_struct_fields(fields: [Shared<CppField>]) -> string = do
   let parts: [string] = []
   let mut index = 0
-  while index < statements.length() do
-    parts.push(print_statement(statements[index]))
+  while index < fields.length() do
+    const field_entry = fields[index]
+    parts.push(struct_field_line(cpp_ast.cpp_field_type(field_entry), cpp_ast.cpp_field_name(field_entry)))
     index = index + 1
   end
   parts.join("\n")
 end
 
-fn print_statement(statement: Shared<CppStmt>) -> string =
+fn print_variant_types(arms: [Shared<CppVariantArm>]) -> string = do
+  let parts: [string] = []
+  let mut arm_index = 0
+  while arm_index < arms.length() do
+    const types = cpp_ast.cpp_variant_arm_types(arms[arm_index])
+    let mut type_index = 0
+    while type_index < types.length() do
+      parts.push(print_type(types[type_index]))
+      type_index = type_index + 1
+    end
+    arm_index = arm_index + 1
+  end
+  parts.join(", ")
+end
+
+fn print_statement_body(statement: Shared<CppStmt>) -> string =
   match statement {
+    CppBlock(statements) => block_braces(print_statements(statements)),
+    _ => print_statement_node(statement)
+  }
+
+fn print_statement_node(statement: Shared<CppStmt>) -> string =
+  match statement {
+    CppAutoDecl(name, initializer) => auto_declaration(name, print_expr(initializer)),
+    CppConstDecl(name, type_node, initializer) =>
+      const_declaration(print_type(type_node), name, print_expr(initializer)),
     CppReturn(expression) => "return " + print_expr(expression) + ";",
     CppExprStmt(expression) => print_expr(expression) + ";",
-    CppBlock(statements) => print_statements(statements),
-    _ => "/* unimplemented cpp stmt */"
+    CppBlock(statements) => block_braces(print_statements(statements)),
+    CppIf(condition, then_branch, else_branch) =>
+      if_statement(
+        print_expr(condition),
+        print_statement_body(then_branch),
+        print_statement_body(else_branch)
+      ),
+    CppWhile(condition, body) =>
+      while_statement(print_expr(condition), print_statement_body(body)),
+    CppFor(variable_name, range_expression, body) =>
+      range_for_statement(
+        variable_name,
+        print_expr(range_expression),
+        block_braces(print_statements(body))
+      )
   }
+
+fn print_statements(statements: [Shared<CppStmt>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < statements.length() do
+    parts.push(print_statement_node(statements[index]))
+    index = index + 1
+  end
+  parts.join("\n")
+end
+
+fn print_decl_node(declaration: Shared<CppDecl>) -> string =
+  match declaration {
+    CppInclude(is_angle, path) =>
+      if is_angle then include_angle(path) else include_quoted(path) end,
+    CppUsing(alias, type_code) => using_alias(alias, type_code),
+    CppStruct(name, fields) => struct_definition(name, print_struct_fields(fields)),
+    CppFnProto(return_type, name, parameters) =>
+      function_prototype(return_type, name, print_comma_separated_strings(parameters)),
+    CppFnDef(return_type, name, parameters, body) =>
+      function_definition(
+        return_type,
+        name,
+        print_comma_separated_strings(parameters),
+        block_braces(print_statements(body))
+      ),
+    CppNamespace(name, declarations) => namespace_block(name, print_decls(declarations)),
+    CppVariant(name, arms) => variant_type_alias(name, print_variant_types(arms))
+  }
+
+fn print_decls(declarations: [Shared<CppDecl>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < declarations.length() do
+    parts.push(print_decl_node(declarations[index]))
+    index = index + 1
+  end
+  parts.join("\n\n")
+end
+
+fn print_file_node(file: Shared<CppFile>) -> string = do
+  const header_code = print_decls(cpp_ast.cpp_file_header(file))
+  const source_code = print_decls(cpp_ast.cpp_file_source(file))
+  if header_code.length() == 0 then source_code
+  else if source_code.length() == 0 then header_code
+  else header_code + "\n\n" + source_code
+  end
+end
 
 fn lambda_expression(capture_prefix: string, parameters_code: string, return_type_code: string, body_code: string) -> string =
   `${capture_prefix}(${parameters_code}) -> ${return_type_code} { ${body_code} }`
@@ -207,3 +350,12 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
     CppLambda(captures, parameters, return_type, body) =>
       print_lambda_expression(captures, parameters, return_type, body)
   }
+
+export fn print_statement(statement: Shared<CppStmt>) -> string =
+  print_statement_node(statement)
+
+export fn print_decl(declaration: Shared<CppDecl>) -> string =
+  print_decl_node(declaration)
+
+export fn print_file(file: Shared<CppFile>) -> string =
+  print_file_node(file)

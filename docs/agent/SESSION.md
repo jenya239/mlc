@@ -7,10 +7,22 @@
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
 | driver_turns_since_plan | 5 |
-| step_last | 6 |
-| agent_token_last | cr-agent-d095f58a-dc23-4caf-9e85-776197584d5a |
+| step_last | 7 |
+| agent_token_last | cr-agent-8fa3af59-17bf-4b4f-8206-40f3945d59a9 |
 | run_tests | 490 |
-| TRACK_PLAN | TRACK_CPPEXPR step 7 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 8 pending |
+
+### Turn 2026-05-26 (CPPEXPR step 7)
+
+| turn | 2026-05-26 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 7 |
+| step | 7 |
+| done | printer CppStmt/CppDecl/CppFile; ast field accessors |
+| verify | 490 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | 0 |
+| next | STEP=8 (enqueued) |
 
 ### Turn 2026-05-26 (CPPEXPR step 6)
 
