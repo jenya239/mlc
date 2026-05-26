@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| agent_token_last | cr-agent-c59985ae-11d2-4e4f-a7fc-e729a424f2eb |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| agent_token_last | cr-agent-d095f58a-dc23-4caf-9e85-776197584d5a |
 | run_tests | 490 |
-| TRACK_PLAN | TRACK_CPPEXPR step 5 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 6 pending |
+
+### Turn 2026-05-25 (CPPEXPR step 5)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 5 |
+| step | 5 |
+| done | cpp/printer.mlc scaffold; 3fdf646 |
+| verify | 490 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | docs |
+| next | STEP=6 (enqueued) |
 
 ### Turn 2026-05-25 (CPPEXPR step 4)
 
