@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2 (C++ AST backend)
 
 Previous track: [TRACK_PLAN.md](TRACK_PLAN.md) (folder restructure, steps 1–23 — **closed**)
 
-## Status: in progress (step 11 pending)
+## Status: in progress (step 12 pending)
 
 **Goal:** replace string concatenation in `codegen/` with `CppExpr` / `CppStmt` / `CppDecl` built in `compiler/cpp/`, emitted via `printer.mlc`. Incremental; no regressions.
 
@@ -54,7 +54,7 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 | 8 | `compiler/tests/test_cpp_printer.mlc` — golden / roundtrip tests | done |
 | 9 | `compiler/cpp/emit_helpers.mlc` — builders for literal/ident nodes (no codegen wire yet) | done |
 | 10 | Dual emit in `codegen/expr/literals.mlc` — CppExpr path + printer (string path unchanged default) | done |
-| 11 | Dual emit in `codegen/expr/identifiers.mlc` | pending |
+| 11 | Dual emit in `codegen/expr/identifiers.mlc` | done |
 | 12 | `ExprVisitor<CppExpr>` trait + `compiler/expr_visitor_cpp.mlc` dispatch stub | pending |
 | 13 | Visitor batch 1 — literals, ident, bin/unary → CppExpr | pending |
 | 14 | Visitor batch 2 — call, method, if, block | pending |
@@ -114,4 +114,4 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 
 ## Next step (Driver)
 
-**STEP=11** — dual emit in `codegen/expr/identifiers.mlc`.
+**STEP=12** — `ExprVisitor<CppExpr>` trait + `compiler/expr_visitor_cpp.mlc` dispatch stub.
