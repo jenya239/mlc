@@ -1,0 +1,42 @@
+// Pretty-printer: CppExpr / CppStmt / CppDecl → C++ source text (Phase 2).
+
+import { CppExpr, CppInt, CppStr, CppBool, CppIdent } from './ast'
+
+fn escape_cpp_string_content(input: string) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < input.length() do
+    const character = input.char_at(index)
+    if character == "\\" then parts.push('\\\\')
+    else if character == "\"" then parts.push('\\"')
+    else if character == "\n" then parts.push('\\n')
+    else if character == "\r" then parts.push('\\r')
+    else if character == "\t" then parts.push('\\t')
+    else if character == "\0" then parts.push('\\0')
+    else parts.push(character)
+    end
+    index = index + 1
+  end
+  parts.join('')
+end
+
+export fn print_integer_literal(integer_value: i32) -> string =
+  integer_value.to_string()
+
+export fn print_string_literal(string_value: string) -> string =
+  "\"" + escape_cpp_string_content(string_value) + "\""
+
+export fn print_boolean_literal(boolean_value: bool) -> string =
+  if boolean_value then 'true' else 'false' end
+
+export fn print_identifier(name: string) -> string =
+  name
+
+export fn print_expr(expression: Shared<CppExpr>) -> string =
+  match expression {
+    CppInt(integer_value) => print_integer_literal(integer_value),
+    CppStr(string_value) => print_string_literal(string_value),
+    CppBool(boolean_value) => print_boolean_literal(boolean_value),
+    CppIdent(name) => print_identifier(name),
+    _ => '/* unimplemented cpp expr */'
+  }
