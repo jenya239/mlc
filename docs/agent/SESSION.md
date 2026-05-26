@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | agent_token_last | cr-agent-68ca346a-2bb1-47b6-ad0d-1a438e101bcd |
 | run_tests | 490 |
-| TRACK_PLAN | TRACK_CPPEXPR step 4 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 5 pending |
+
+### Turn 2026-05-25 (CPPEXPR step 4)
+
+| turn | 2026-05-25 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | CppConstDecl, CppFor, CppNamespace, CppVariant, CppFile; 547724b |
+| verify | 490 pass; build.sh; self-host diff empty (g++) |
+| uncommitted_files | docs |
+| next | STEP=5 (enqueued) |
 
 ### Turn 2026-05-25 (CPPEXPR step 3)
 
