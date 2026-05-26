@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2 (C++ AST backend)
 
 Previous track: [TRACK_PLAN.md](TRACK_PLAN.md) (folder restructure, steps 1–23 — **closed**)
 
-## Status: in progress (step 5 pending)
+## Status: in progress (step 6 pending)
 
 **Goal:** replace string concatenation in `codegen/` with `CppExpr` / `CppStmt` / `CppDecl` built in `compiler/cpp/`, emitted via `printer.mlc`. Incremental; no regressions.
 
@@ -48,7 +48,7 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 | 2 | Extend `CppExpr` — `CppBool`, `CppTernary`, `CppCast`, `CppInitList` | done (`734d6b6`) |
 | 3 | Extend `CppExpr` — `CppLambda`, `CppStdVisit`; `CppMember` pointer flag | done (`aeac4f9`) |
 | 4 | Extend `CppStmt`/`CppDecl` — `CppConstDecl`, `CppFor`, `CppNamespace`, `CppVariant`, `CppFile` | done (`547724b`) |
-| 5 | `compiler/cpp/printer.mlc` scaffold — print literals + ident | pending |
+| 5 | `compiler/cpp/printer.mlc` scaffold — print literals + ident | done (`3fdf646`) |
 | 6 | Printer — all `CppExpr` variants | pending |
 | 7 | Printer — `CppStmt`, `CppDecl`, `CppFile` | pending |
 | 8 | `compiler/tests/test_cpp_printer.mlc` — golden / roundtrip tests | pending |
@@ -114,4 +114,4 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 
 ## Next step (Driver)
 
-**STEP=5** — `compiler/cpp/printer.mlc` scaffold: print literals + ident.
+**STEP=6** — printer: all remaining `CppExpr` variants.
