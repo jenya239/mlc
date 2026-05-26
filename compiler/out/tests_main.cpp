@@ -13,6 +13,7 @@
 #include "test_merge_imports.hpp"
 #include "test_pass.hpp"
 #include "test_expr_visitor.hpp"
+#include "test_cpp_printer.hpp"
 #include "test_runner.hpp"
 
 namespace tests_main {
@@ -27,6 +28,7 @@ using namespace test_partial_application;
 using namespace test_merge_imports;
 using namespace test_pass;
 using namespace test_expr_visitor;
+using namespace test_cpp_printer;
 using namespace test_runner;
 
 mlc::Array<test_runner::TestResult> all_tests() noexcept;
@@ -113,6 +115,14 @@ index = 0;
 while (index < suite_expr_visitor.size()){
 {
 all.push_back(suite_expr_visitor[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_cpp_printer = test_cpp_printer::cpp_printer_tests();
+index = 0;
+while (index < suite_cpp_printer.size()){
+{
+all.push_back(suite_cpp_printer[index]);
 index = index + 1;
 }
 }

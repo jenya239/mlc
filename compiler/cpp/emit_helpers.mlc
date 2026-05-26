@@ -1,6 +1,6 @@
-// Builders for leaf CppExpr nodes (Phase 2). No dependency on codegen/.
+// Builders for leaf CppExpr / CppStmt nodes (Phase 2). No dependency on codegen/.
 
-import { CppExpr, CppInt, CppStr, CppBool, CppIdent } from './cpp_ast'
+import { CppExpr, CppInt, CppStr, CppBool, CppIdent, CppStmt, CppAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor } from './cpp_ast'
 
 export fn make_integer_cpp_expression(integer_value: i32) -> Shared<CppExpr> =
   Shared.new(CppInt(integer_value))
@@ -13,3 +13,38 @@ export fn make_boolean_cpp_expression(boolean_value: bool) -> Shared<CppExpr> =
 
 export fn make_identifier_cpp_expression(name: string) -> Shared<CppExpr> =
   Shared.new(CppIdent(name))
+
+export fn make_auto_cpp_statement(name: string, initializer: Shared<CppExpr>) -> Shared<CppStmt> =
+  Shared.new(CppAutoDecl(name, initializer))
+
+export fn make_return_cpp_statement(expression: Shared<CppExpr>) -> Shared<CppStmt> =
+  Shared.new(CppReturn(expression))
+
+export fn make_expression_cpp_statement(expression: Shared<CppExpr>) -> Shared<CppStmt> =
+  Shared.new(CppExprStmt(expression))
+
+export fn make_break_cpp_statement() -> Shared<CppStmt> =
+  Shared.new(CppExprStmt(make_identifier_cpp_expression("break")))
+
+export fn make_continue_cpp_statement() -> Shared<CppStmt> =
+  Shared.new(CppExprStmt(make_identifier_cpp_expression("continue")))
+
+export fn make_block_cpp_statement(statements: [Shared<CppStmt>]) -> Shared<CppStmt> =
+  Shared.new(CppBlock(statements))
+
+export fn make_if_cpp_statement(
+  condition: Shared<CppExpr>,
+  then_branch: Shared<CppStmt>,
+  else_branch: Shared<CppStmt>
+) -> Shared<CppStmt> =
+  Shared.new(CppIf(condition, then_branch, else_branch))
+
+export fn make_while_cpp_statement(condition: Shared<CppExpr>, body: Shared<CppStmt>) -> Shared<CppStmt> =
+  Shared.new(CppWhile(condition, body))
+
+export fn make_for_cpp_statement(
+  variable_name: string,
+  range_expression: Shared<CppExpr>,
+  body: [Shared<CppStmt>]
+) -> Shared<CppStmt> =
+  Shared.new(CppFor(variable_name, range_expression, body))

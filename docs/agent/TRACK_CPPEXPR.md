@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2 (C++ AST backend)
 
 Previous track: [TRACK_PLAN.md](TRACK_PLAN.md) (folder restructure, steps 1–23 — **closed**)
 
-## Status: in progress (step 16 pending)
+## Status: in progress (step 17 pending)
 
 **Goal:** replace string concatenation in `codegen/` with `CppExpr` / `CppStmt` / `CppDecl` built in `compiler/cpp/`, emitted via `printer.mlc`. Incremental; no regressions.
 
@@ -23,7 +23,7 @@ Previous track: [TRACK_PLAN.md](TRACK_PLAN.md) (folder restructure, steps 1–23
 ## Verify gate (every step)
 
 ```
-bundle exec rake test_compiler_mlc   # 490 pass
+bundle exec rake test_compiler_mlc   # 521 pass
 compiler/build.sh
 # self-host (fresh p1 → g++ mlcc2 → p2):
 compiler/out/mlcc -o $TMP/mlc_p1 compiler/main.mlc
@@ -59,7 +59,7 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 | 13 | Visitor batch 1 — literals, ident, bin/unary → CppExpr | done |
 | 14 | Visitor batch 2 — call, method, if, block | done |
 | 15 | Visitor batch 3 — match, record, array, lambda | done |
-| 16 | Migrate `codegen/stmt/` → `CppStmt` (dual path) | pending |
+| 16 | Migrate `codegen/stmt/` → `CppStmt` (dual path) | done |
 | 17 | Migrate `codegen/decl/` → `CppDecl` (dual path) | pending |
 | 18 | `codegen/module.mlc` — optional file emission via printer (behind flag) | pending |
 | 19 | Dual-backend diff harness — compare string vs printer on `test_codegen` cases | pending |
@@ -114,4 +114,4 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 
 ## Next step (Driver)
 
-**STEP=16** — migrate `codegen/stmt/` → `CppStmt` (dual path).
+**STEP=17** — migrate `codegen/decl/` → `CppDecl` (dual path).

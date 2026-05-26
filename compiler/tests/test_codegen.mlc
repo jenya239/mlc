@@ -3,6 +3,7 @@
 import { TestResult, assert_eq_str, assert_eq_int } from './test_runner'
 import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
 import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
+import { gen_stmts_cpp_as_string } from '../codegen/stmt_cpp'
 import { gen_expr_via_string_visitor } from '../codegen/expr/expr_visitor_string'
 import { cpp_lambda_header_prefix } from '../codegen/expr/expression_support'
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
@@ -11,7 +12,7 @@ import { gen_program } from '../codegen/module'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown, PatUnit } from '../frontend/ast'
-import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat } from '../ir/semantic_ir'
+import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat, SStmtBreak, SStmtReturn } from '../ir/semantic_ir'
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../ir/semantic_ir'
 import { SExprWith } from '../ir/semantic_ir'
 import { Type, TI32, TString, TBool, TUnit, TUnknown, TArray, TNamed, TGeneric, TPair, TTuple, TFn } from '../checker/registry'
@@ -419,6 +420,22 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('gen_stmts_str: let const emits constexpr',
     gen_stmts_str([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx),
     'constexpr auto limit = 42;\n'))
+
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: break',
+    gen_stmts_cpp_as_string([Shared.new(SStmtBreak(span_unknown()))], ctx),
+    'break;\n'))
+
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: let',
+    gen_stmts_cpp_as_string([Shared.new(SStmtLet('counter', false, si(1), i32_t(), span_unknown()))], ctx),
+    'auto counter = 1;\n'))
+
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: return',
+    gen_stmts_cpp_as_string([Shared.new(SStmtReturn(si(0), span_unknown()))], ctx),
+    'return 0;\n'))
+
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: let const matches string',
+    gen_stmts_cpp_as_string([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx),
+    gen_stmts_str([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx)))
 
   // --- ExprRecord ---------------------------------------------------------------
 

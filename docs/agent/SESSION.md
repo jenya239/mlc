@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 15 |
-| step_last | 15 |
-| agent_token_last | cr-agent-4943e926-e74a-46d8-81c0-3a4d6def4a8f |
-| run_tests | 517 |
-| TRACK_PLAN | TRACK_CPPEXPR step 16 pending |
+| driver_turns_since_plan | 16 |
+| step_last | 16 |
+| agent_token_last | cr-agent-f7f97795-dbcb-4cc7-b3be-2db8f4076729 |
+| run_tests | 521 |
+| TRACK_PLAN | TRACK_CPPEXPR step 17 pending |
+
+### Turn 2026-05-26 (CPPEXPR step 16)
+
+| turn | 2026-05-26 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 16 |
+| step | 16 |
+| done | stmt_cpp.mlc CppStmt dual path; emit_helpers CppStmt builders; return_body_cpp; eval_expr_cpp direct dispatch fix |
+| verify | 521 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=17 (enqueued) |
 
 ### Turn 2026-05-26 (CPPEXPR step 15)
 

@@ -33,7 +33,7 @@ fn ignored_gen_stmts(_statements: [Shared<SStmt>], _context: CodegenContext) -> 
 fn cpp_expr_from_rendered_fragment(fragment: string) -> Shared<CppExpr> =
   emit_helpers.make_identifier_cpp_expression(fragment)
 
-fn eval_expr_cpp_as_string(
+export fn eval_expr_cpp_as_string(
   expression: Shared<SExpr>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
@@ -274,62 +274,48 @@ export fn eval_expr_with_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
-) -> Shared<CppExpr> = do
-  const expression_visitor = CppExprVisitor {
-    context: context,
-    gen_stmts: gen_stmts,
-    evaluate_expression: evaluate_expression
-  }
+) -> Shared<CppExpr> =
   match expression {
-    SExprInt(integer_value, type_value, _) => expression_visitor.visit_int(integer_value, type_value),
-    SExprStr(string_value, type_value, _) => expression_visitor.visit_str(string_value, type_value),
-    SExprBool(boolean_value, type_value, _) => expression_visitor.visit_bool(boolean_value, type_value),
-    SExprUnit(type_value, _) => expression_visitor.visit_unit(type_value),
-    SExprFloat(float_value, type_value, _) => expression_visitor.visit_float(float_value, type_value),
-    SExprI64(integer_value, type_value, _) => expression_visitor.visit_i64(integer_value, type_value),
-    SExprU8(byte_value, type_value, _) => expression_visitor.visit_u8(byte_value, type_value),
-    SExprUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
-    SExprChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
-    SExprExtern(type_value, _) => expression_visitor.visit_extern(type_value),
-    SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
-    SExprBin(operation, left_expression, right_expression, type_value, _) =>
-      expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),
-    SExprUn(operation, inner_expression, type_value, _) =>
-      expression_visitor.visit_un(operation, inner_expression, type_value),
-    SExprCall(function_expression, arguments, mutability_flags, type_value, _) =>
-      expression_visitor.visit_call(function_expression, arguments, mutability_flags, type_value),
-    SExprMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
-      expression_visitor.visit_method(object, method_name, arguments, mutability_flags, type_value),
-    SExprField(object, field_name, type_value, _) =>
-      expression_visitor.visit_field(object, field_name, type_value),
-    SExprIndex(object, index_expression, type_value, _) =>
-      expression_visitor.visit_index(object, index_expression, type_value),
-    SExprIf(condition, then_expression, else_expression, type_value, _) =>
-      expression_visitor.visit_if(condition, then_expression, else_expression, type_value),
-    SExprBlock(statements, result_expression, type_value, _) =>
-      expression_visitor.visit_block(statements, result_expression, type_value),
-    SExprWhile(condition, statements, type_value, _) =>
-      expression_visitor.visit_while(condition, statements, type_value),
-    SExprFor(variable, iterator, statements, type_value, _) =>
-      expression_visitor.visit_for(variable, iterator, statements, type_value),
-    SExprMatch(subject, arms, type_value, _) =>
-      expression_visitor.visit_match(subject, arms, type_value),
-    SExprRecord(type_name, field_values, type_value, _) =>
-      expression_visitor.visit_record(type_name, field_values, type_value),
-    SExprRecordUpdate(type_name, base_expression, overrides, type_value, _) =>
-      expression_visitor.visit_record_update(type_name, base_expression, overrides, type_value),
-    SExprArray(elements, type_value, _) =>
-      expression_visitor.visit_array(elements, type_value),
-    SExprTuple(elements, type_value, _) =>
-      expression_visitor.visit_tuple(elements, type_value),
-    SExprQuestion(inner_expression, type_value, _) =>
-      expression_visitor.visit_question(inner_expression, type_value),
-    SExprLambda(parameter_names, body_expression, type_value, _) =>
-      expression_visitor.visit_lambda(parameter_names, body_expression, type_value),
-    SExprWith(resource, binder, statements, type_value, _) =>
-      expression_visitor.visit_with(resource, binder, statements, type_value),
+    SExprInt(integer_value, _, _) => literals.gen_integer_literal_cpp(integer_value),
+    SExprStr(string_value, _, _) => literals.gen_string_literal_cpp(string_value),
+    SExprBool(boolean_value, _, _) => literals.gen_boolean_literal_cpp(boolean_value),
+    SExprUnit(_, _) => literals.gen_unit_literal_cpp(),
+    SExprFloat(float_value, _, _) => literals.gen_float_literal_cpp(float_value),
+    SExprI64(integer_value, _, _) => literals.gen_i64_literal_cpp(integer_value),
+    SExprU8(byte_value, _, _) => literals.gen_u8_literal_cpp(byte_value),
+    SExprUsize(size_value, _, _) => literals.gen_usize_literal_cpp(size_value),
+    SExprChar(character_value, _, _) => literals.gen_char_literal_cpp(character_value),
+    SExprExtern(_, _) => literals.gen_extern_placeholder_cpp(),
+    SExprIdent(name_value, _, _) => identifiers.gen_identifier_cpp(name_value, context),
+    SExprBin(operation, left_expression, right_expression, _, _) =>
+      gen_binary_via_cpp_visitor(operation, left_expression, right_expression, context, gen_stmts, evaluate_expression),
+    SExprUn(operation, inner_expression, _, _) =>
+      gen_unary_via_cpp_visitor(operation, inner_expression, context, gen_stmts, evaluate_expression),
+    SExprCall(function_expression, arguments, mutability_flags, _, _) =>
+      gen_call_via_cpp_visitor(function_expression, arguments, mutability_flags, context, gen_stmts),
+    SExprMethod(object, method_name, arguments, mutability_flags, _, _) =>
+      gen_method_via_cpp_visitor(object, method_name, arguments, mutability_flags, context, gen_stmts),
+    SExprField(_object, _field_name, _, _) => unsupported_cpp_expression(),
+    SExprIndex(_object, _index_expression, _, _) => unsupported_cpp_expression(),
+    SExprIf(condition, then_expression, else_expression, if_semantic_type, _) =>
+      gen_if_via_cpp_visitor(condition, then_expression, else_expression, if_semantic_type, context, gen_stmts),
+    SExprBlock(statements, result_expression, _, _) =>
+      gen_block_via_cpp_visitor(statements, result_expression, context, gen_stmts),
+    SExprWhile(_condition, _statements, _, _) => unsupported_cpp_expression(),
+    SExprFor(_variable, _iterator, _statements, _, _) => unsupported_cpp_expression(),
+    SExprMatch(subject, arms, match_semantic_type, _) =>
+      gen_match_via_cpp_visitor(subject, arms, match_semantic_type, context, gen_stmts),
+    SExprRecord(type_name, field_values, semantic_type, _) =>
+      gen_record_via_cpp_visitor(type_name, field_values, semantic_type, context, gen_stmts),
+    SExprRecordUpdate(_type_name, _base_expression, _overrides, _, _) => unsupported_cpp_expression(),
+    SExprArray(elements, semantic_type, _) =>
+      gen_array_via_cpp_visitor(elements, semantic_type, context, gen_stmts),
+    SExprTuple(_elements, _, _) => unsupported_cpp_expression(),
+    SExprQuestion(_inner_expression, _, _) => unsupported_cpp_expression(),
+    SExprLambda(parameter_names, body_expression, semantic_type, _) =>
+      gen_lambda_via_cpp_visitor(parameter_names, body_expression, semantic_type, context, gen_stmts),
+    SExprWith(_resource, _binder, _statements, _, _) => unsupported_cpp_expression(),
   }
-end
 
 export fn gen_expr_via_cpp_visitor(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
   eval_expr_with_cpp_visitor(expression, context, ignored_gen_stmts, evaluate_via_cpp_visitor)

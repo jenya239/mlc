@@ -3,6 +3,7 @@
 #include "test_runner.hpp"
 #include "codegen_test_helpers.hpp"
 #include "eval.hpp"
+#include "stmt_cpp.hpp"
 #include "expr_visitor_string.hpp"
 #include "expression_support.hpp"
 #include "context.hpp"
@@ -23,6 +24,7 @@ namespace test_codegen {
 using namespace test_runner;
 using namespace codegen_test_helpers;
 using namespace eval;
+using namespace stmt_cpp;
 using namespace expr_visitor_string;
 using namespace expression_support;
 using namespace context;
@@ -230,6 +232,10 @@ results.push_back(test_runner::assert_eq_str(mlc::String("ExprWhile contains whi
 mlc::Array<std::shared_ptr<semantic_ir::SStmt>> block_stmts = mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLet(mlc::String("x"), false, si(1), i32_t(), ast::span_unknown()))};
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprBlock"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprBlock(block_stmts, sid(mlc::String("x")), i32_t(), ast::span_unknown())), ctx), mlc::String("[&]() {\nauto x = 1;\nreturn x;\n}()")));
 results.push_back(test_runner::assert_eq_str(mlc::String("gen_stmts_str: let const emits constexpr"), eval::gen_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetConst(mlc::String("limit"), si(42), i32_t(), ast::span_unknown()))}, ctx), mlc::String("constexpr auto limit = 42;\n")));
+results.push_back(test_runner::assert_eq_str(mlc::String("gen_stmts_cpp_as_string: break"), stmt_cpp::gen_stmts_cpp_as_string(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtBreak(ast::span_unknown()))}, ctx), mlc::String("break;\n")));
+results.push_back(test_runner::assert_eq_str(mlc::String("gen_stmts_cpp_as_string: let"), stmt_cpp::gen_stmts_cpp_as_string(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLet(mlc::String("counter"), false, si(1), i32_t(), ast::span_unknown()))}, ctx), mlc::String("auto counter = 1;\n")));
+results.push_back(test_runner::assert_eq_str(mlc::String("gen_stmts_cpp_as_string: return"), stmt_cpp::gen_stmts_cpp_as_string(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtReturn(si(0), ast::span_unknown()))}, ctx), mlc::String("return 0;\n")));
+results.push_back(test_runner::assert_eq_str(mlc::String("gen_stmts_cpp_as_string: let const matches string"), stmt_cpp::gen_stmts_cpp_as_string(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetConst(mlc::String("limit"), si(42), i32_t(), ast::span_unknown()))}, ctx), eval::gen_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>{std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetConst(mlc::String("limit"), si(42), i32_t(), ast::span_unknown()))}, ctx)));
 mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> fv_a = mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>>{std::make_shared<semantic_ir::SFieldVal>(semantic_ir::SFieldVal{mlc::String("a"), si(1)}), std::make_shared<semantic_ir::SFieldVal>(semantic_ir::SFieldVal{mlc::String("b"), si(2)})};
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprRecord positional"), eval::gen_expr(std::make_shared<semantic_ir::SExpr>(semantic_ir::SExprRecord(mlc::String("Point"), fv_a, std::make_shared<registry::Type>(registry::TNamed(mlc::String("Point"))), ast::span_unknown())), ctx), mlc::String("Point{1, 2}")));
 mlc::Array<std::shared_ptr<ast::Param>> fn_param = mlc::Array<std::shared_ptr<ast::Param>>{std::make_shared<ast::Param>(ast::Param{mlc::String("n"), false, std::make_shared<ast::TypeExpr>((ast::TyI32{})), false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())), std::make_shared<ast::Pat>(ast::PatUnit(ast::span_unknown()))})};
