@@ -17,11 +17,13 @@ export type CppParam = CppParam { name: string, parameter_type: Shared<CppType> 
 
 export type CppStmt =
   | CppAutoDecl(string, Shared<CppExpr>)
+  | CppConstDecl(string, Shared<CppType>, Shared<CppExpr>)
   | CppReturn(Shared<CppExpr>)
   | CppExprStmt(Shared<CppExpr>)
   | CppBlock([Shared<CppStmt>])
   | CppIf(Shared<CppExpr>, Shared<CppStmt>, Shared<CppStmt>)
   | CppWhile(Shared<CppExpr>, Shared<CppStmt>)
+  | CppFor(string, Shared<CppExpr>, [Shared<CppStmt>])
 
 export type CppExpr =
   | CppInt(i32)
@@ -41,11 +43,17 @@ export type CppExpr =
 
 export type CppField = CppField { typ: string, name: string }
 
+export type CppVariantArm = CppVariantArm { name: string, types: [Shared<CppType>] }
+
 export type CppDecl =
   | CppInclude(bool, string)
   | CppUsing(string, string)
   | CppStruct(string, [Shared<CppField>])
   | CppFnProto(string, string, [string])
   | CppFnDef(string, string, [string], [Shared<CppStmt>])
+  | CppNamespace(string, [Shared<CppDecl>])
+  | CppVariant(string, [Shared<CppVariantArm>])
+
+export type CppFile = CppFile { header: [Shared<CppDecl>], source: [Shared<CppDecl>] }
 
 export type CppProgram = CppProgram { decls: [Shared<CppDecl>] }
