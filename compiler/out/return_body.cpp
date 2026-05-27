@@ -24,10 +24,6 @@ mlc::String gen_fn_body(std::shared_ptr<semantic_ir::SExpr> body_expr, context::
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> gen_return_body_cpp(std::shared_ptr<semantic_ir::SExpr> body_expression, context::CodegenContext context) noexcept;
 
-mlc::String gen_return_body_cpp_as_string(std::shared_ptr<semantic_ir::SExpr> body_expression, context::CodegenContext context) noexcept;
-
-mlc::String gen_fn_body_cpp(std::shared_ptr<semantic_ir::SExpr> body_expression, context::CodegenContext context) noexcept;
-
 mlc::String gen_return_if_stmt(std::shared_ptr<semantic_ir::SExpr> expr, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIf>((*expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*expr)._); auto [condition, then_expr, else_expr, _w0, _w1] = _v_sexprif; return [&]() -> mlc::String { 
   mlc::String output = expr::if_brace_block(eval::gen_expr(condition, context), gen_return_body(then_expr, context));
   mlc::String else_string = [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprUnit>((*else_expr)._)) { auto _v_sexprunit = std::get<semantic_ir::SExprUnit>((*else_expr)._); auto [_w0, _w1] = _v_sexprunit; return mlc::String(""); } if (std::holds_alternative<semantic_ir::SExprIf>((*else_expr)._)) { auto _v_sexprif = std::get<semantic_ir::SExprIf>((*else_expr)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_sexprif; return expr::else_fragment_raw(gen_return_if_stmt(else_expr, context)); } return expr::else_brace_block(gen_return_body(else_expr, context)); }();
@@ -54,9 +50,5 @@ mlc::String gen_return_body(std::shared_ptr<semantic_ir::SExpr> expr, context::C
 mlc::String gen_fn_body(std::shared_ptr<semantic_ir::SExpr> body_expr, context::CodegenContext context) noexcept{return gen_return_body(body_expr, context);}
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> gen_return_body_cpp(std::shared_ptr<semantic_ir::SExpr> body_expression, context::CodegenContext context) noexcept{return stmt_cpp::cpp_stmts_from_string_output(gen_return_body(body_expression, context));}
-
-mlc::String gen_return_body_cpp_as_string(std::shared_ptr<semantic_ir::SExpr> body_expression, context::CodegenContext context) noexcept{return stmt_cpp::print_cpp_statements(gen_return_body_cpp(body_expression, context));}
-
-mlc::String gen_fn_body_cpp(std::shared_ptr<semantic_ir::SExpr> body_expression, context::CodegenContext context) noexcept{return gen_return_body_cpp_as_string(body_expression, context);}
 
 } // namespace return_body

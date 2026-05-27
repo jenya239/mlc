@@ -92,16 +92,6 @@ export fn gen_fn_proto_cpp(
     native_fn_proto_cpp(name, params, return_type, context)
   end
 
-export fn gen_fn_proto_cpp_as_string(
-  name: string,
-  type_params: [string],
-  type_bounds: [[string]],
-  params: [Shared<Param>],
-  return_type: Shared<Type>,
-  context: CodegenContext
-) -> string =
-  print_cpp_declaration(gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context))
-
 export fn gen_fn_decl_cpp(
   name: string,
   type_params: [string],
@@ -117,17 +107,6 @@ export fn gen_fn_decl_cpp(
     native_fn_decl_cpp(name, params, return_type, body, context)
   end
 
-export fn gen_fn_decl_cpp_as_string(
-  name: string,
-  type_params: [string],
-  type_bounds: [[string]],
-  params: [Shared<Param>],
-  return_type: Shared<Type>,
-  body: Shared<SExpr>,
-  context: CodegenContext
-) -> string =
-  print_cpp_declaration(gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context))
-
 export fn gen_decl_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
   match declaration {
     SDeclFn(name, type_params, type_bounds, params, return_type, body, _) =>
@@ -138,9 +117,6 @@ export fn gen_decl_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> S
     _ => cpp_decl_from_string_output(gen_decl(declaration, context))
   }
 
-export fn gen_decl_cpp_as_string(declaration: Shared<SDecl>, context: CodegenContext) -> string =
-  print_cpp_declaration(gen_decl_cpp(declaration, context))
-
 export fn gen_proto_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
   match declaration {
     SDeclFn(name, type_params, type_bounds, params, return_type, body, _) =>
@@ -150,9 +126,6 @@ export fn gen_proto_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> 
       },
     _ => cpp_decl_from_string_output(gen_proto(declaration, context))
   }
-
-export fn gen_proto_cpp_as_string(declaration: Shared<SDecl>, context: CodegenContext) -> string =
-  print_cpp_declaration(gen_proto_cpp(declaration, context))
 
 export fn collect_all_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundleCpp = do
   const string_bundle = collect_all_decl_parts(declarations, context)

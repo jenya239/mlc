@@ -47,19 +47,11 @@ std::shared_ptr<cpp_ast::CppDecl> native_fn_decl_cpp(mlc::String name, mlc::Arra
 
 std::shared_ptr<cpp_ast::CppDecl> gen_fn_proto_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, context::CodegenContext context) noexcept;
 
-mlc::String gen_fn_proto_cpp_as_string(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, context::CodegenContext context) noexcept;
-
 std::shared_ptr<cpp_ast::CppDecl> gen_fn_decl_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SExpr> body, context::CodegenContext context) noexcept;
-
-mlc::String gen_fn_decl_cpp_as_string(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SExpr> body, context::CodegenContext context) noexcept;
 
 std::shared_ptr<cpp_ast::CppDecl> gen_decl_cpp(std::shared_ptr<semantic_ir::SDecl> declaration, context::CodegenContext context) noexcept;
 
-mlc::String gen_decl_cpp_as_string(std::shared_ptr<semantic_ir::SDecl> declaration, context::CodegenContext context) noexcept;
-
 std::shared_ptr<cpp_ast::CppDecl> gen_proto_cpp(std::shared_ptr<semantic_ir::SDecl> declaration, context::CodegenContext context) noexcept;
-
-mlc::String gen_proto_cpp_as_string(std::shared_ptr<semantic_ir::SDecl> declaration, context::CodegenContext context) noexcept;
 
 decl_cpp::DeclPartsBundleCpp collect_all_decl_parts_cpp(mlc::Array<std::shared_ptr<semantic_ir::SDecl>> declarations, context::CodegenContext context) noexcept;
 
@@ -102,19 +94,11 @@ return std::make_shared<cpp_ast::CppDecl>(cpp_ast::CppFnDef(return_type_cpp, saf
 
 std::shared_ptr<cpp_ast::CppDecl> gen_fn_proto_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, context::CodegenContext context) noexcept{return function_needs_string_bridge(name, type_params, params) ? cpp_decl_from_string_output(decl::gen_fn_proto(name, type_params, type_bounds, params, return_type, context)) : native_fn_proto_cpp(name, params, return_type, context);}
 
-mlc::String gen_fn_proto_cpp_as_string(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, context::CodegenContext context) noexcept{return print_cpp_declaration(gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context));}
-
 std::shared_ptr<cpp_ast::CppDecl> gen_fn_decl_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SExpr> body, context::CodegenContext context) noexcept{return function_needs_string_bridge(name, type_params, params) ? cpp_decl_from_string_output(decl::gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context)) : native_fn_decl_cpp(name, params, return_type, body, context);}
-
-mlc::String gen_fn_decl_cpp_as_string(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SExpr> body, context::CodegenContext context) noexcept{return print_cpp_declaration(gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context));}
 
 std::shared_ptr<cpp_ast::CppDecl> gen_decl_cpp(std::shared_ptr<semantic_ir::SDecl> declaration, context::CodegenContext context) noexcept{return [&]() -> std::shared_ptr<cpp_ast::CppDecl> { if (std::holds_alternative<semantic_ir::SDeclFn>((*declaration))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*declaration)); auto [name, type_params, type_bounds, params, return_type, body, _w0] = _v_sdeclfn; return [&]() -> std::shared_ptr<cpp_ast::CppDecl> { if (std::holds_alternative<semantic_ir::SExprExtern>((*body)._)) { auto _v_sexprextern = std::get<semantic_ir::SExprExtern>((*body)._); auto [_w0, _w1] = _v_sexprextern; return cpp_decl_from_string_output(mlc::String("")); } return gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context); }(); } return cpp_decl_from_string_output(decl::gen_decl(declaration, context)); }();}
 
-mlc::String gen_decl_cpp_as_string(std::shared_ptr<semantic_ir::SDecl> declaration, context::CodegenContext context) noexcept{return print_cpp_declaration(gen_decl_cpp(declaration, context));}
-
 std::shared_ptr<cpp_ast::CppDecl> gen_proto_cpp(std::shared_ptr<semantic_ir::SDecl> declaration, context::CodegenContext context) noexcept{return [&]() -> std::shared_ptr<cpp_ast::CppDecl> { if (std::holds_alternative<semantic_ir::SDeclFn>((*declaration))) { auto _v_sdeclfn = std::get<semantic_ir::SDeclFn>((*declaration)); auto [name, type_params, type_bounds, params, return_type, body, _w0] = _v_sdeclfn; return [&]() -> std::shared_ptr<cpp_ast::CppDecl> { if (std::holds_alternative<semantic_ir::SExprExtern>((*body)._)) { auto _v_sexprextern = std::get<semantic_ir::SExprExtern>((*body)._); auto [_w0, _w1] = _v_sexprextern; return cpp_decl_from_string_output(mlc::String("")); } return gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context); }(); } return cpp_decl_from_string_output(decl::gen_proto(declaration, context)); }();}
-
-mlc::String gen_proto_cpp_as_string(std::shared_ptr<semantic_ir::SDecl> declaration, context::CodegenContext context) noexcept{return print_cpp_declaration(gen_proto_cpp(declaration, context));}
 
 decl_cpp::DeclPartsBundleCpp collect_all_decl_parts_cpp(mlc::Array<std::shared_ptr<semantic_ir::SDecl>> declarations, context::CodegenContext context) noexcept{
 decl::DeclPartsBundle string_bundle = decl::collect_all_decl_parts(declarations, context);

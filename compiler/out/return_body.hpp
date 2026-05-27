@@ -27,10 +27,6 @@ mlc::String gen_fn_body(std::shared_ptr<semantic_ir::SExpr> body_expr, context::
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> gen_return_body_cpp(std::shared_ptr<semantic_ir::SExpr> body_expression, context::CodegenContext context) noexcept;
 
-mlc::String gen_return_body_cpp_as_string(std::shared_ptr<semantic_ir::SExpr> body_expression, context::CodegenContext context) noexcept;
-
-mlc::String gen_fn_body_cpp(std::shared_ptr<semantic_ir::SExpr> body_expression, context::CodegenContext context) noexcept;
-
 } // namespace return_body
 
 #endif // RETURN_BODY_HPP

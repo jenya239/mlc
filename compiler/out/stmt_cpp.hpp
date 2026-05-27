@@ -25,8 +25,6 @@ struct CppExpr;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> gen_stmts_cpp(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept;
 
-mlc::String gen_stmts_cpp_as_string(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept;
-
 std::shared_ptr<cpp_ast::CppStmt> cpp_stmt_from_string_output(mlc::String output) noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> cpp_stmts_from_string_output(mlc::String output) noexcept;

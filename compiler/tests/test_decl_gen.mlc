@@ -4,7 +4,7 @@ import { TestResult, assert_eq_str, assert_true } from './test_runner'
 import { Program, TypeVariant, Param, FieldDef, TyI32, TyString, TyUnit, TyNamed, span_unknown, ExprUnit, ExprInt, PatUnit } from '../frontend/ast'
 import { create_codegen_context } from '../codegen/context'
 import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main } from '../codegen/decl/decl'
-import { gen_fn_proto_cpp_as_string, gen_fn_decl_cpp_as_string, gen_decl_cpp_as_string, gen_proto_cpp_as_string } from '../codegen/decl_cpp'
+import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration } from '../codegen/decl_cpp'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
 import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SDeclFn, SDeclType, SDeclExported, SDeclExtend } from '../ir/semantic_ir'
@@ -220,23 +220,23 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_true('decls_have_main: empty list',
     !decls_have_main([])))
 
-  results.push(assert_eq_str('gen_fn_proto_cpp_as_string matches string',
-    gen_fn_proto_cpp_as_string('add', [], [], [iparam('left'), iparam('right')], ti32(), context),
+  results.push(assert_eq_str('gen_fn_proto_cpp matches string',
+    print_cpp_declaration(gen_fn_proto_cpp('add', [], [], [iparam('left'), iparam('right')], ti32(), context)),
     gen_fn_proto('add', [], [], [iparam('left'), iparam('right')], ti32(), context)))
 
-  results.push(assert_eq_str('gen_fn_decl_cpp_as_string: identity matches string',
-    gen_fn_decl_cpp_as_string('identity', [], [], [iparam('value')], ti32(), make_ident('value'), context),
+  results.push(assert_eq_str('gen_fn_decl_cpp: identity matches string',
+    print_cpp_declaration(gen_fn_decl_cpp('identity', [], [], [iparam('value')], ti32(), make_ident('value'), context)),
     gen_fn_decl('identity', [], [], [iparam('value')], ti32(), make_ident('value'), context)))
 
-  results.push(assert_eq_str('gen_decl_cpp_as_string DeclFn matches string',
-    gen_decl_cpp_as_string(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
-      make_bin("+", make_ident('left'), make_ident('right'))), context),
+  results.push(assert_eq_str('gen_decl_cpp DeclFn matches string',
+    print_cpp_declaration(gen_decl_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
+      make_bin("+", make_ident('left'), make_ident('right'))), context)),
     gen_decl(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
       make_bin("+", make_ident('left'), make_ident('right'))), context)))
 
-  results.push(assert_eq_str('gen_proto_cpp_as_string DeclFn matches string',
-    gen_proto_cpp_as_string(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
-      make_bin("+", make_ident('left'), make_ident('right'))), context),
+  results.push(assert_eq_str('gen_proto_cpp DeclFn matches string',
+    print_cpp_declaration(gen_proto_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
+      make_bin("+", make_ident('left'), make_ident('right'))), context)),
     gen_proto(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
       make_bin("+", make_ident('left'), make_ident('right'))), context)))
 

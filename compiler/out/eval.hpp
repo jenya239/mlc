@@ -5,8 +5,8 @@
 #include <variant>
 
 #include "semantic_ir.hpp"
-#include "cpp_ast.hpp"
 #include "context.hpp"
+#include "cpp_printer.hpp"
 #include "stmt_eval.hpp"
 #include "expr_visitor_cpp.hpp"
 #include "stmt_cpp.hpp"
@@ -24,8 +24,6 @@ struct CppExpr;
 mlc::String gen_expr(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept;
 
 mlc::String gen_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept;
-
-std::shared_ptr<cpp_ast::CppExpr> gen_expr_cpp(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept;
 
 mlc::String gen_argument_list(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> expressions, context::CodegenContext context) noexcept;
 

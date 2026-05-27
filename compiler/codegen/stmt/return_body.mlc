@@ -6,7 +6,7 @@ import { CppStmt } from '../../cpp/cpp_ast'
 import { CodegenContext } from '../context'
 import * as expression_output from '../expr/expr'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'
-import { cpp_stmts_from_string_output, print_cpp_statements } from '../stmt_cpp'
+import { cpp_stmts_from_string_output } from '../stmt_cpp'
 
 fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
   match expr {
@@ -75,9 +75,3 @@ export fn gen_fn_body(body_expr: Shared<SExpr>, context: CodegenContext) -> stri
 
 export fn gen_return_body_cpp(body_expression: Shared<SExpr>, context: CodegenContext) -> [Shared<CppStmt>] =
   cpp_stmts_from_string_output(gen_return_body(body_expression, context))
-
-export fn gen_return_body_cpp_as_string(body_expression: Shared<SExpr>, context: CodegenContext) -> string =
-  print_cpp_statements(gen_return_body_cpp(body_expression, context))
-
-export fn gen_fn_body_cpp(body_expression: Shared<SExpr>, context: CodegenContext) -> string =
-  gen_return_body_cpp_as_string(body_expression, context)

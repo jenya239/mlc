@@ -2,20 +2,17 @@
 // Public API has no extra parameters; the cross-module dependency is injected here.
 
 import { SExpr, SStmt } from '../ir/semantic_ir'
-import { CppExpr } from '../cpp/cpp_ast'
 import { CodegenContext, GenStmtsWithContext, GenStmtResult } from './context'
+import { print_expr } from '../cpp/cpp_printer'
 import * as stmt_eval from './stmt/stmt_eval'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
-import { gen_stmts_cpp_as_string } from './stmt_cpp'
+import { gen_stmts_cpp, print_cpp_statements } from './stmt_cpp'
 
 export fn gen_expr(expression: Shared<SExpr>, context: CodegenContext) -> string =
-  expr_visitor_cpp.eval_expr_cpp_as_string(expression, context, gen_stmts_str)
+  print_expr(expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_str))
 
 export fn gen_stmts_str(statements: [Shared<SStmt>], context: CodegenContext) -> string =
-  gen_stmts_cpp_as_string(statements, context)
-
-export fn gen_expr_cpp(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
-  expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_str)
+  print_cpp_statements(gen_stmts_cpp(statements, context))
 
 export fn gen_argument_list(expressions: [Shared<SExpr>], context: CodegenContext) -> string =
   expressions.map(expression => gen_expr(expression, context)).join(', ')

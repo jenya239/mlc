@@ -2,7 +2,7 @@
 
 import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod, SExprBlock, SExprIf, SExprBin, SExprWhile, SExprFor, SExprWith } from '../ir/semantic_ir'
 import { CppExpr, CppStmt } from '../cpp/cpp_ast'
-import { print_statement } from '../cpp/cpp_printer'
+import { print_statement, print_expr } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext, GenStmtResult, update_context_from_statement } from './context'
 import { cpp_safe } from './cpp_naming'
@@ -10,7 +10,7 @@ import * as stmt_eval from './stmt/stmt_eval'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
 
 fn gen_stmts_for_cpp_codegen(statements: [Shared<SStmt>], context: CodegenContext) -> string =
-  gen_stmts_cpp_as_string(statements, context)
+  print_cpp_statements(gen_stmts_cpp(statements, context))
 
 fn gen_expr_cpp_for_stmt_codegen(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
   expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen)
@@ -28,9 +28,6 @@ type GenStmtCppResult = GenStmtCppResult {
 
 export fn gen_stmts_cpp(statements: [Shared<SStmt>], context: CodegenContext) -> [Shared<CppStmt>] =
   eval_stmts_cpp_with_try(statements, context, 0).statements
-
-export fn gen_stmts_cpp_as_string(statements: [Shared<SStmt>], context: CodegenContext) -> string =
-  print_cpp_statements(gen_stmts_cpp(statements, context))
 
 export fn cpp_stmt_from_string_output(output: string) -> Shared<CppStmt> =
   cpp_stmt_fragment_from_string_output(output)
@@ -91,7 +88,7 @@ fn strip_trailing_newline(text: string) -> string =
   end
 
 fn gen_expr_string_for_stmt_bridge(expression: Shared<SExpr>, context: CodegenContext) -> string =
-  expr_visitor_cpp.eval_expr_cpp_as_string(expression, context, gen_stmts_for_cpp_codegen)
+  print_expr(expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen))
 
 fn stmt_via_string_bridge(
   statement: Shared<SStmt>,

@@ -38,7 +38,7 @@ fn ignored_gen_stmts(_statements: [Shared<SStmt>], _context: CodegenContext) -> 
 fn cpp_expr_from_rendered_fragment(fragment: string) -> Shared<CppExpr> =
   emit_helpers.make_identifier_cpp_expression(fragment)
 
-export fn eval_expr_cpp_as_string(
+fn eval_expr_cpp_as_string(
   expression: Shared<SExpr>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string

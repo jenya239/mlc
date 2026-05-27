@@ -30,8 +30,6 @@ std::shared_ptr<cpp_ast::CppExpr> gen_expr_cpp_for_stmt_codegen(std::shared_ptr<
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> gen_stmts_cpp(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept;
 
-mlc::String gen_stmts_cpp_as_string(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept;
-
 std::shared_ptr<cpp_ast::CppStmt> cpp_stmt_from_string_output(mlc::String output) noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> cpp_stmts_from_string_output(mlc::String output) noexcept;
@@ -58,13 +56,11 @@ stmt_cpp::StmtsCppFoldState stmts_cpp_fold_step(stmt_cpp::StmtsCppFoldState fold
 
 stmt_cpp::StmtsCppFoldState eval_stmts_cpp_with_try(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, int try_counter) noexcept;
 
-mlc::String gen_stmts_for_cpp_codegen(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept{return gen_stmts_cpp_as_string(statements, context);}
+mlc::String gen_stmts_for_cpp_codegen(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept{return print_cpp_statements(gen_stmts_cpp(statements, context));}
 
 std::shared_ptr<cpp_ast::CppExpr> gen_expr_cpp_for_stmt_codegen(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept{return expr_visitor_cpp::eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen);}
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> gen_stmts_cpp(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept{return eval_stmts_cpp_with_try(statements, context, 0).statements;}
-
-mlc::String gen_stmts_cpp_as_string(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept{return print_cpp_statements(gen_stmts_cpp(statements, context));}
 
 std::shared_ptr<cpp_ast::CppStmt> cpp_stmt_from_string_output(mlc::String output) noexcept{return cpp_stmt_fragment_from_string_output(output);}
 
@@ -96,7 +92,7 @@ bool expression_statement_needs_string_bridge(std::shared_ptr<semantic_ir::SExpr
 
 mlc::String strip_trailing_newline(mlc::String text) noexcept{return text.length() >= 1 && text.char_at(text.length() - 1) == mlc::String("\n") ? text.substring(0, text.length() - 1) : text;}
 
-mlc::String gen_expr_string_for_stmt_bridge(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept{return expr_visitor_cpp::eval_expr_cpp_as_string(expression, context, gen_stmts_for_cpp_codegen);}
+mlc::String gen_expr_string_for_stmt_bridge(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept{return cpp_printer::print_expr(expr_visitor_cpp::eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen));}
 
 stmt_cpp::GenStmtCppResult stmt_via_string_bridge(std::shared_ptr<semantic_ir::SStmt> statement, context::CodegenContext context, int try_counter) noexcept{
 context::GenStmtResult string_result = stmt_eval::eval_stmt_with_try(statement, context, try_counter, [](std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext codegen_context) mutable { return gen_expr_string_for_stmt_bridge(expression, codegen_context); });
