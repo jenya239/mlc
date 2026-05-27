@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) (**closed**, step 21 `96df4e0`)
 
-## Status: in progress (step 6 pending)
+## Status: in progress (step 7 pending)
 
 **Goal:** eliminate remaining string concatenation in codegen hot path. Default emission is CppExpr/printer (step 20); survivors: `expr_fragment_codegen` string-bridge in `expr_visitor_cpp`, `codegen/expr/expr.mlc` templates in stmt/decl/match/module, dual `gen_module_via_string`.
 
@@ -33,7 +33,7 @@ diff -rq $TMP/mlc_p1 $TMP/mlc_p2   # must stay empty
 | 3 | `expr_visitor_cpp` — tuple/question/with + bin/unary fallback native CppExpr | done (`fc919bc`) |
 | 4 | `match_gen` / record — CppStdVisit + record init via CppExpr in visitor (not string templates) | done (`d9ba2fe`) |
 | 5 | `stmt_cpp` — internal CppStmt only; string `gen_stmts_str` thin print wrapper at eval boundary | done (`7164b5a`) |
-| 6 | `decl_cpp` — migrate remaining `decl.mlc` string emission | pending |
+| 6 | `decl_cpp` — migrate remaining `decl.mlc` string emission | done (`b0588da`) |
 | 7 | `module.mlc` — remove `gen_module_via_string`; drop `use_cpp_printer` flag | pending |
 | 8 | `expr.mlc` — delete unused templates; shrink or inline survivors | pending |
 | 9 | `cpp_printer.mlc` — formatting polish (indent, breaks) beyond deterministic baseline | pending |
@@ -71,4 +71,4 @@ diff -rq $TMP/mlc_p1 $TMP/mlc_p2   # must stay empty
 
 ## Next step (Driver)
 
-**STEP=6** — decl_cpp migrate remaining decl.mlc string emission.
+**STEP=7** — module.mlc remove gen_module_via_string; drop use_cpp_printer flag.
