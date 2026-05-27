@@ -8,7 +8,7 @@
 | role_last | Driver |
 | driver_turns_since_plan | 1 |
 | step_last | 1 |
-| agent_token_last | cr-agent-809865da-9f85-470b-a16d-068ca16d1e6d |
+| agent_token_last | cr-agent-58442afc-6c72-4531-84a5-94b367590c2a |
 | run_tests | 518 |
 | TRACK_PLAN | TRACK_CPPGEN step 2 pending |
 
