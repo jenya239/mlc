@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_PLAN.md](TRACK_PLAN.md) — see **Next step** section at bottom of that file. Parser `ref mut` = step 15, separate branch.
+[TRACK_CPPGEN.md](TRACK_CPPGEN.md) — CppAST codegen cleanup (Phase 2 follow-up). Parser `ref mut` = deferred separate branch.
 
 ## Step sizing (good vs bad)
 
@@ -49,5 +49,14 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 ## MCP (`user-cr-cursor`)
 
 Token-only — [CONTINUITY.md](CONTINUITY.md).
+
+После изменений в `cr`: `npm run build` в `~/workspaces/current/cr`, Reload MCP в Cursor.
+
+| Check | Command / tool |
+|-------|----------------|
+| CDP | `cursor_cdp_status` → `ok: true` |
+| Composer health | `cursor_session({ token })` |
+| Stuck queue / modal | `npm run watchdog:start` в `cr` (см. CONTINUITY) |
+| UI / ручная отладка | `npm run dev` в `cr` → http://127.0.0.1:3847 |
 
 **mlc-memory:** blockers (`known_limitations`), Planner/Backlog notes (`notes`).

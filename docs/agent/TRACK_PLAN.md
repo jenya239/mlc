@@ -45,11 +45,12 @@ Source: PLAN.md §4 «Порядок миграции».
 - **Step 19:** `semantic_ir.mlc` → `ir/semantic_ir.mlc`; `record_field_default_initializer.mlc` → `ir/record_defaults.mlc`; imports only
 - **Steps 20–22:** same gate per sub-step; do not bundle layers in one commit
 - **Step 15:** parser `ref mut` — separate branch, not in this track
-- **CppExpr backend:** [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) — Phase 2 (active)
+- **CppExpr backend:** [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) — closed (`96df4e0`)
+- **CppAST cleanup:** [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — active (Phase 2 follow-up)
 
 ## Next step (Driver)
 
-See [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) — **STEP=1** (CppType in `compiler/cpp/ast.mlc`).
+See [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — **STEP=1** (field + index CppExpr in `expr_visitor_cpp`).
 
 ## Step 17 detail (done — `6f998e9`)
 
