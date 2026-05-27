@@ -8,7 +8,7 @@
 | role_last | Planner |
 | driver_turns_since_plan | 0 |
 | step_last | plan-refresh |
-| agent_token_last | cr-agent-69d54701-3353-4c3c-9211-d77c356c14bd |
+| agent_token_last | cr-agent-809865da-9f85-470b-a16d-068ca16d1e6d |
 | run_tests | 518 |
 | TRACK_PLAN | TRACK_CPPGEN step 1 pending |
 
