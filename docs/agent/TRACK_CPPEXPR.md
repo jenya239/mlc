@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2 (C++ AST backend)
 
 Previous track: [TRACK_PLAN.md](TRACK_PLAN.md) (folder restructure, steps 1–23 — **closed**)
 
-## Status: in progress (step 19 pending)
+## Status: in progress (step 20 pending)
 
 **Goal:** replace string concatenation in `codegen/` with `CppExpr` / `CppStmt` / `CppDecl` built in `compiler/cpp/`, emitted via `printer.mlc`. Incremental; no regressions.
 
@@ -114,4 +114,4 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 
 ## Next step (Driver)
 
-**STEP=19** — dual-backend diff harness on `test_codegen` cases.
+**STEP=20** — flip default backend to CppExpr/printer in `eval`/`module`.

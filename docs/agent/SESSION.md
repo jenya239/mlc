@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 18 |
-| step_last | 18 |
+| driver_turns_since_plan | 19 |
+| step_last | 19 |
 | agent_token_last | cr-agent-f7f97795-dbcb-4cc7-b3be-2db8f4076729 |
-| run_tests | 526 |
-| TRACK_PLAN | TRACK_CPPEXPR step 19 pending |
+| run_tests | 540 |
+| TRACK_PLAN | TRACK_CPPEXPR step 20 pending |
+
+### Turn 2026-05-27 (CPPEXPR step 19)
+
+| turn | 2026-05-27 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 19 |
+| step | 19 |
+| done | assert_cpp_backends_equivalent harness; 15 gen_program parity tests in test_codegen |
+| verify | 540 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=20 (enqueued) |
 
 ### Turn 2026-05-26 (CPPEXPR step 18)
 
