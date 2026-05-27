@@ -1,5 +1,5 @@
 // Statement code generation. gen_expr_fn injected as a function parameter to
-// break the import cycle with expr_eval.mlc. Private helpers thread gen_expr_fn
+// break the import cycle with eval.mlc. Private helpers thread gen_expr_fn
 // through; recursive eval_stmts_str calls go directly (same module).
 
 import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from '../../ir/semantic_ir'

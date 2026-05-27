@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2 (C++ AST backend)
 
 Previous track: [TRACK_PLAN.md](TRACK_PLAN.md) (folder restructure, steps 1–23 — **closed**)
 
-## Status: in progress (step 21 pending)
+## Status: **closed** (step 21 done)
 
 **Goal:** replace string concatenation in `codegen/` with `CppExpr` / `CppStmt` / `CppDecl` built in `compiler/cpp/`, emitted via `printer.mlc`. Incremental; no regressions.
 
@@ -64,7 +64,7 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 | 18 | `codegen/module.mlc` — optional file emission via printer (behind flag) | done |
 | 19 | Dual-backend diff harness — compare string vs printer on `test_codegen` cases | done |
 | 20 | Default backend → CppExpr/printer in `eval`/`module` | done (`6ca8987`) |
-| 21 | Remove string `codegen/expr/expr.mlc` helpers + `expr_visitor_string.mlc` | pending |
+| 21 | Remove string `codegen/expr/expr.mlc` helpers + `expr_visitor_string.mlc` | done |
 
 ## Step details
 
@@ -112,6 +112,6 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 - Pretty-printer formatting polish beyond deterministic baseline — after step 21.
 - `lib/mlc/` Ruby backend parity — not in this track.
 
-## Next step (Driver)
+## Next step
 
-**STEP=21** — remove dead string visitor + unused `expr.mlc` string templates.
+Track closed. Planner: new TRACK from [PLAN.md](../PLAN.md) §Phase 2 follow-ups or next milestone.

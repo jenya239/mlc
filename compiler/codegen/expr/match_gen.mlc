@@ -1,6 +1,6 @@
 // Match / pattern arm code generation.
 // eval_expr injected as a function parameter to break the import cycle
-// with expr_eval.mlc (same pattern as gen_stmts).
+// with eval.mlc (same pattern as gen_stmts).
 
 import { Pat } from '../../frontend/ast'
 import { SExpr, SStmt, SMatchArm } from '../../ir/semantic_ir'

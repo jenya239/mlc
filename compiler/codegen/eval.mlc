@@ -4,24 +4,9 @@
 import { SExpr, SStmt } from '../ir/semantic_ir'
 import { CppExpr } from '../cpp/cpp_ast'
 import { CodegenContext, GenStmtsWithContext, GenStmtResult } from './context'
-import * as expr_eval from './expr/expr_eval'
 import * as stmt_eval from './stmt/stmt_eval'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
 import { gen_stmts_cpp_as_string } from './stmt_cpp'
-
-export fn gen_expr_via_string(expression: Shared<SExpr>, context: CodegenContext) -> string =
-  expr_eval.eval_expr(
-    expression,
-    context,
-    (statements: [Shared<SStmt>], codegen_context: CodegenContext) =>
-      gen_stmts_via_string(statements, codegen_context))
-
-export fn gen_stmts_via_string(statements: [Shared<SStmt>], context: CodegenContext) -> string =
-  stmt_eval.eval_stmts_str(
-    statements,
-    context,
-    (expression: Shared<SExpr>, codegen_context: CodegenContext) =>
-      gen_expr_via_string(expression, codegen_context))
 
 export fn gen_expr(expression: Shared<SExpr>, context: CodegenContext) -> string =
   expr_visitor_cpp.eval_expr_cpp_as_string(expression, context, gen_stmts_str)

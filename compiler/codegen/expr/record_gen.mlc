@@ -1,5 +1,5 @@
 // Record and record-update code generation.
-// eval_expr_fn injected to break the import cycle with expr_eval.mlc.
+// eval_expr_fn injected to break the import cycle with eval.mlc.
 
 import { SExpr, SStmt, SFieldVal } from '../../ir/semantic_ir'
 import { Type, TUnknown } from '../../checker/registry'

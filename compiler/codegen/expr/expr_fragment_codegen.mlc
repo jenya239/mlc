@@ -1,13 +1,11 @@
-// ExprVisitor<string> wired into expr_eval for literals, identifiers, bin/unary ops.
+// C++ expression fragment builders (CppExpr string-bridge helpers).
 
 import { Type } from '../../checker/registry'
 import { SExpr, SStmt, sexpr_type, SExprArray, SMatchArm, SFieldVal } from '../../ir/semantic_ir'
 import { TNamed, TArray, TFn } from '../../checker/registry'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from '../../checker/semantic_type_structure'
-import { ExprVisitor } from '../../expr_visitor'
 import { CodegenContext, qualify_function_callee } from '../context'
-import { gen_integer_literal, gen_string_literal, gen_boolean_literal, gen_unit_literal, gen_float_literal, gen_i64_literal, gen_u8_literal, gen_usize_literal, gen_char_literal, gen_extern_placeholder } from './literals'
-import { gen_identifier } from './identifiers'
+import { gen_extern_placeholder } from './literals'
 import { cpp_safe, map_builtin } from '../cpp_naming'
 import { is_constructor_call, field_access_operator, cpp_lambda_header_prefix } from './expression_support'
 import * as mut_actual_argument from './mut_actual_argument'
@@ -17,21 +15,6 @@ import { gen_record_expr, gen_record_update_expr } from './record_gen'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { stmts_final_ctx } from '../stmt/statement_context'
 import * as expression_output from './expr'
-
-type StringExprVisitor = StringExprVisitor {
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-}
-
-fn evaluate_via_string_visitor(
-  expression: Shared<SExpr>,
-  context: CodegenContext,
-  _gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
-) -> string =
-  gen_expr_via_string_visitor(expression, context)
-
-fn ignored_gen_stmts(_statements: [Shared<SStmt>], _context: CodegenContext) -> string = ''
 
 export fn gen_binary_via_visitor(
   operation: string,
@@ -370,127 +353,3 @@ export fn gen_with_via_visitor(
   const body_code = gen_stmts(statements, context)
   expression_output.with_block_statement(resource_code, binder, body_code)
 end
-
-extend StringExprVisitor : ExprVisitor<string> {
-  fn visit_int(self: StringExprVisitor, value: i32, _semantic_type: Shared<Type>) -> string =
-    gen_integer_literal(value)
-  fn visit_str(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
-    gen_string_literal(value)
-  fn visit_bool(self: StringExprVisitor, value: bool, _semantic_type: Shared<Type>) -> string =
-    gen_boolean_literal(value)
-  fn visit_unit(self: StringExprVisitor, _semantic_type: Shared<Type>) -> string =
-    gen_unit_literal()
-  fn visit_float(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
-    gen_float_literal(value)
-  fn visit_i64(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
-    gen_i64_literal(value)
-  fn visit_u8(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
-    gen_u8_literal(value)
-  fn visit_usize(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
-    gen_usize_literal(value)
-  fn visit_char(self: StringExprVisitor, value: string, _semantic_type: Shared<Type>) -> string =
-    gen_char_literal(value)
-  fn visit_extern(self: StringExprVisitor, _semantic_type: Shared<Type>) -> string =
-    gen_extern_via_visitor(_semantic_type)
-  fn visit_ident(self: StringExprVisitor, name: string, _semantic_type: Shared<Type>) -> string =
-    gen_identifier(name, self.context)
-  fn visit_bin(self: StringExprVisitor, operation: string, left_expression: Shared<SExpr>, right_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
-    gen_binary_via_visitor(operation, left_expression, right_expression, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_un(self: StringExprVisitor, operation: string, inner_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
-    gen_unary_via_visitor(operation, inner_expression, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_call(self: StringExprVisitor, function_expression: Shared<SExpr>, arguments: [Shared<SExpr>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> string =
-    gen_call_via_visitor(function_expression, arguments, mutability_flags, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_method(self: StringExprVisitor, object: Shared<SExpr>, method_name: string, arguments: [Shared<SExpr>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> string =
-    gen_method_via_visitor(object, method_name, arguments, mutability_flags, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_field(self: StringExprVisitor, object: Shared<SExpr>, field_name: string, _semantic_type: Shared<Type>) -> string =
-    gen_field_via_visitor(object, field_name, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_index(self: StringExprVisitor, object: Shared<SExpr>, index_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
-    gen_index_via_visitor(object, index_expression, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_if(self: StringExprVisitor, condition: Shared<SExpr>, then_expression: Shared<SExpr>, else_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> string =
-    gen_if_via_visitor(condition, then_expression, else_expression, semantic_type, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_block(self: StringExprVisitor, statements: [Shared<SStmt>], result_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
-    gen_block_via_visitor(statements, result_expression, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_while(self: StringExprVisitor, condition: Shared<SExpr>, statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> string =
-    gen_while_via_visitor(condition, statements, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_for(self: StringExprVisitor, variable: string, iterator: Shared<SExpr>, statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> string =
-    gen_for_via_visitor(variable, iterator, statements, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_match(self: StringExprVisitor, subject: Shared<SExpr>, arms: [Shared<SMatchArm>], semantic_type: Shared<Type>) -> string =
-    gen_match_via_visitor(subject, arms, semantic_type, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_record(self: StringExprVisitor, type_name: string, field_values: [Shared<SFieldVal>], semantic_type: Shared<Type>) -> string =
-    gen_record_via_visitor(type_name, field_values, semantic_type, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_record_update(self: StringExprVisitor, type_name: string, base_expression: Shared<SExpr>, overrides: [Shared<SFieldVal>], _semantic_type: Shared<Type>) -> string =
-    gen_record_update_via_visitor(type_name, base_expression, overrides, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_array(self: StringExprVisitor, elements: [Shared<SExpr>], semantic_type: Shared<Type>) -> string =
-    gen_array_via_visitor(elements, semantic_type, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_tuple(self: StringExprVisitor, elements: [Shared<SExpr>], _semantic_type: Shared<Type>) -> string =
-    gen_tuple_via_visitor(elements, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_question(self: StringExprVisitor, inner_expression: Shared<SExpr>, _semantic_type: Shared<Type>) -> string =
-    gen_question_via_visitor(inner_expression, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_lambda(self: StringExprVisitor, parameter_names: [string], body_expression: Shared<SExpr>, semantic_type: Shared<Type>) -> string =
-    gen_lambda_via_visitor(parameter_names, body_expression, semantic_type, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_with(self: StringExprVisitor, resource: Shared<SExpr>, binder: string, statements: [Shared<SStmt>], _semantic_type: Shared<Type>) -> string =
-    gen_with_via_visitor(resource, binder, statements, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_unsupported(self: StringExprVisitor, _expression: Shared<SExpr>) -> string =
-    '/* unsupported expr */'
-}
-
-export fn eval_expr_with_visitor(
-  expression: Shared<SExpr>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string = do
-  const expression_visitor = StringExprVisitor { context: context, gen_stmts: gen_stmts, evaluate_expression: evaluate_expression }
-  match expression {
-    SExprInt(integer_value, type_value, _) => expression_visitor.visit_int(integer_value, type_value),
-    SExprStr(string_value, type_value, _) => expression_visitor.visit_str(string_value, type_value),
-    SExprBool(boolean_value, type_value, _) => expression_visitor.visit_bool(boolean_value, type_value),
-    SExprUnit(type_value, _) => expression_visitor.visit_unit(type_value),
-    SExprFloat(float_value, type_value, _) => expression_visitor.visit_float(float_value, type_value),
-    SExprI64(integer_value, type_value, _) => expression_visitor.visit_i64(integer_value, type_value),
-    SExprU8(byte_value, type_value, _) => expression_visitor.visit_u8(byte_value, type_value),
-    SExprUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
-    SExprChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
-    SExprExtern(type_value, _) => expression_visitor.visit_extern(type_value),
-    SExprIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
-    SExprBin(operation, left_expression, right_expression, type_value, _) =>
-      expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),
-    SExprUn(operation, inner_expression, type_value, _) =>
-      expression_visitor.visit_un(operation, inner_expression, type_value),
-    SExprCall(function_expression, arguments, mutability_flags, type_value, _) =>
-      expression_visitor.visit_call(function_expression, arguments, mutability_flags, type_value),
-    SExprMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
-      expression_visitor.visit_method(object, method_name, arguments, mutability_flags, type_value),
-    SExprField(object, field_name, type_value, _) =>
-      expression_visitor.visit_field(object, field_name, type_value),
-    SExprIndex(object, index_expression, type_value, _) =>
-      expression_visitor.visit_index(object, index_expression, type_value),
-    SExprIf(condition, then_expression, else_expression, type_value, _) =>
-      expression_visitor.visit_if(condition, then_expression, else_expression, type_value),
-    SExprBlock(statements, result_expression, type_value, _) =>
-      expression_visitor.visit_block(statements, result_expression, type_value),
-    SExprWhile(condition, statements, type_value, _) =>
-      expression_visitor.visit_while(condition, statements, type_value),
-    SExprFor(variable, iterator, statements, type_value, _) =>
-      expression_visitor.visit_for(variable, iterator, statements, type_value),
-    SExprMatch(subject, arms, type_value, _) =>
-      expression_visitor.visit_match(subject, arms, type_value),
-    SExprRecord(type_name, field_values, type_value, _) =>
-      expression_visitor.visit_record(type_name, field_values, type_value),
-    SExprRecordUpdate(type_name, base_expression, overrides, type_value, _) =>
-      expression_visitor.visit_record_update(type_name, base_expression, overrides, type_value),
-    SExprArray(elements, type_value, _) =>
-      expression_visitor.visit_array(elements, type_value),
-    SExprTuple(elements, type_value, _) =>
-      expression_visitor.visit_tuple(elements, type_value),
-    SExprQuestion(inner_expression, type_value, _) =>
-      expression_visitor.visit_question(inner_expression, type_value),
-    SExprLambda(parameter_names, body_expression, type_value, _) =>
-      expression_visitor.visit_lambda(parameter_names, body_expression, type_value),
-    SExprWith(resource, binder, statements, type_value, _) =>
-      expression_visitor.visit_with(resource, binder, statements, type_value),
-  }
-end
-
-export fn gen_expr_via_string_visitor(expression: Shared<SExpr>, context: CodegenContext) -> string =
-  eval_expr_with_visitor(expression, context, ignored_gen_stmts, evaluate_via_string_visitor)

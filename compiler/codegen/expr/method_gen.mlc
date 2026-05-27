@@ -1,5 +1,5 @@
 // Method call code generation.
-// eval_expr_fn injected to break the import cycle with expr_eval.mlc.
+// eval_expr_fn injected to break the import cycle with eval.mlc.
 
 import { SExpr, SStmt, SExprIdent, sexpr_type } from '../../ir/semantic_ir'
 import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../../checker/registry'

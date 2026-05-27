@@ -12,7 +12,7 @@
 #include "semantic_type_structure.hpp"
 #include "literals.hpp"
 #include "identifiers.hpp"
-#include "expr_visitor_string.hpp"
+#include "expr_fragment_codegen.hpp"
 #include "expr_visitor.hpp"
 #include "context.hpp"
 

@@ -1,5 +1,5 @@
-#ifndef EXPR_VISITOR_STRING_HPP
-#define EXPR_VISITOR_STRING_HPP
+#ifndef EXPR_FRAGMENT_CODEGEN_HPP
+#define EXPR_FRAGMENT_CODEGEN_HPP
 
 #include "mlc.hpp"
 #include <variant>
@@ -8,10 +8,8 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
-#include "expr_visitor.hpp"
 #include "context.hpp"
 #include "literals.hpp"
-#include "identifiers.hpp"
 #include "cpp_naming.hpp"
 #include "expression_support.hpp"
 #include "mut_actual_argument.hpp"
@@ -22,7 +20,7 @@
 #include "statement_context.hpp"
 #include "expr.hpp"
 
-namespace expr_visitor_string {
+namespace expr_fragment_codegen {
 
 struct RecordLitPart;
 struct Expr;
@@ -70,10 +68,6 @@ mlc::String gen_lambda_via_visitor(mlc::Array<mlc::String> parameter_binding_nam
 
 mlc::String gen_with_via_visitor(std::shared_ptr<semantic_ir::SExpr> resource, mlc::String binder, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
 
-mlc::String eval_expr_with_visitor(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
+} // namespace expr_fragment_codegen
 
-mlc::String gen_expr_via_string_visitor(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept;
-
-} // namespace expr_visitor_string
-
-#endif // EXPR_VISITOR_STRING_HPP
+#endif // EXPR_FRAGMENT_CODEGEN_HPP

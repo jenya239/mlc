@@ -45,7 +45,7 @@ bool string_contains(mlc::String haystack, mlc::String needle) noexcept;
 
 context::CodegenContext empty_codegen_context() noexcept{return context::create_codegen_context(ast_builders::empty_program());}
 
-test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<semantic_ir::SExpr> expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, eval::gen_expr_via_string(expr, context), expected_code);}
+test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<semantic_ir::SExpr> expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, eval::gen_expr(expr, context), expected_code);}
 
 test_runner::TestResult assert_type_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<ast::TypeExpr> type_expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, type_gen::type_to_cpp(context, type_expr), expected_code);}
 

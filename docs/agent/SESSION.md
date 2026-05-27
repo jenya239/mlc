@@ -4,13 +4,25 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-25-autocommit` |
+| instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 20 |
-| step_last | 20 |
-| agent_token_last | cr-agent-f7f97795-dbcb-4cc7-b3be-2db8f4076729 |
-| run_tests | 540 |
-| TRACK_PLAN | TRACK_CPPEXPR step 21 pending |
+| driver_turns_since_plan | 21 |
+| step_last | 21 |
+| agent_token_last | cr-agent-c047f2c0-540a-4029-802a-b150322b2c4e |
+| run_tests | 518 |
+| TRACK_PLAN | TRACK_CPPEXPR **closed** |
+
+### Turn 2026-05-27 (CPPEXPR step 21)
+
+| turn | 2026-05-27 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 21 |
+| step | 21 |
+| done | remove expr_visitor_string + expr_eval; expr_fragment_codegen for cpp string-bridge; prune imports/tests |
+| verify | 518 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | ROLE=Planner STEP=plan-refresh |
 
 ### Turn 2026-05-27 (CPPEXPR step 20)
 

@@ -7,7 +7,6 @@
 #include "semantic_ir.hpp"
 #include "cpp_ast.hpp"
 #include "context.hpp"
-#include "expr_eval.hpp"
 #include "stmt_eval.hpp"
 #include "expr_visitor_cpp.hpp"
 #include "stmt_cpp.hpp"
@@ -21,10 +20,6 @@ struct SExpr;
 struct SStmt;
 struct CppStmt;
 struct CppExpr;
-
-mlc::String gen_expr_via_string(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept;
-
-mlc::String gen_stmts_via_string(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context) noexcept;
 
 mlc::String gen_expr(std::shared_ptr<semantic_ir::SExpr> expression, context::CodegenContext context) noexcept;
 
