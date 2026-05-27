@@ -62,7 +62,7 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 | 16 | Migrate `codegen/stmt/` → `CppStmt` (dual path) | done |
 | 17 | Migrate `codegen/decl/` → `CppDecl` (dual path) | done |
 | 18 | `codegen/module.mlc` — optional file emission via printer (behind flag) | done |
-| 19 | Dual-backend diff harness — compare string vs printer on `test_codegen` cases | pending |
+| 19 | Dual-backend diff harness — compare string vs printer on `test_codegen` cases | done |
 | 20 | Default backend → CppExpr/printer in `eval`/`module` | pending |
 | 21 | Remove string `codegen/expr/expr.mlc` helpers + `expr_visitor_string.mlc` | pending |
 

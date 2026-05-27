@@ -10,6 +10,9 @@
 #include "context.hpp"
 #include "eval.hpp"
 #include "type_gen.hpp"
+#include "module.hpp"
+#include "lexer.hpp"
+#include "decls.hpp"
 #include "ast_builders.hpp"
 
 namespace codegen_test_helpers {
@@ -31,6 +34,10 @@ test_runner::TestResult assert_type_generates(mlc::String test_name, context::Co
 test_runner::TestResult assert_code_contains(mlc::String test_name, mlc::String actual_code, mlc::String expected_substring) noexcept;
 
 test_runner::TestResult assert_code_not_contains(mlc::String test_name, mlc::String actual_code, mlc::String forbidden_substring) noexcept;
+
+test_runner::TestResult assert_cpp_backends_equivalent(mlc::String test_name, ast::Program program) noexcept;
+
+test_runner::TestResult assert_cpp_backends_equivalent_source(mlc::String test_name, mlc::String program_source) noexcept;
 
 } // namespace codegen_test_helpers
 

@@ -6,6 +6,9 @@ import { SExpr } from '../ir/semantic_ir'
 import { CodegenContext, create_codegen_context } from '../codegen/context'
 import { gen_expr } from '../codegen/eval'
 import { type_to_cpp } from '../codegen/decl/type_gen'
+import { gen_program, gen_program_with_printer } from '../codegen/module'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
 import { empty_program } from './ast_builders'
 
 export fn empty_codegen_context() -> CodegenContext =
@@ -24,6 +27,12 @@ export fn assert_code_not_contains(test_name: string, actual_code: string, forbi
   assert_true(
     `${test_name} must not contain '${forbidden_substring}'`,
     !string_contains(actual_code, forbidden_substring))
+
+export fn assert_cpp_backends_equivalent(test_name: string, program: Program) -> TestResult =
+  assert_eq_str(test_name, gen_program_with_printer(program, true), gen_program(program))
+
+export fn assert_cpp_backends_equivalent_source(test_name: string, program_source: string) -> TestResult =
+  assert_cpp_backends_equivalent(test_name, parse_program(tokenize(program_source).tokens))
 
 fn chars_match_at(haystack: string, start_position: i32, needle: string, needle_length: i32) -> bool = do
   let mut character_index = 0

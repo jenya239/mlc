@@ -1,14 +1,14 @@
 // Unit tests for the code generator.
 
 import { TestResult, assert_eq_str, assert_eq_int } from './test_runner'
-import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
+import { assert_code_contains, assert_code_not_contains, assert_cpp_backends_equivalent, assert_cpp_backends_equivalent_source } from './codegen_test_helpers'
 import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
 import { gen_stmts_cpp_as_string } from '../codegen/stmt_cpp'
 import { gen_expr_via_string_visitor } from '../codegen/expr/expr_visitor_string'
 import { cpp_lambda_header_prefix } from '../codegen/expr/expression_support'
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/decl/type_gen'
-import { gen_program, gen_program_with_printer } from '../codegen/module'
+import { gen_program } from '../codegen/module'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown, PatUnit } from '../frontend/ast'
@@ -384,24 +384,28 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('match guard on primitive avoids std::visit',
     if guarded_primitive_cpp.contains('std::visit') then 'has_visit' else 'no_visit' end, 'no_visit'))
   results.push(assert_code_contains('match guard emits typed IIFE', guarded_primitive_cpp, '[&]() -> int'))
+  results.push(assert_cpp_backends_equivalent_source('backends: guarded primitive', guarded_primitive_program))
 
   const plain_sum_program =
     'type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0 end\nfn main() -> i32 = f(A(1))\n'
   const plain_sum_cpp = gen_program(parse_program(tokenize(plain_sum_program).tokens))
   results.push(assert_eq_str('match sum without guard keeps std::visit',
     if plain_sum_cpp.contains('std::visit') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_cpp_backends_equivalent_source('backends: plain sum', plain_sum_program))
 
   const guarded_sum_program =
     'type U = A(i32) | B\nfn g(x: U) -> i32 = match x | A(n) if n > 0 => n | A(_) => 0 | B => -1 end\nfn main() -> i32 = g(A(3))\n'
   const guarded_sum_cpp = gen_program(parse_program(tokenize(guarded_sum_program).tokens))
   results.push(assert_eq_str('match sum with guard avoids std::visit',
     if guarded_sum_cpp.contains('std::visit') then 'has_visit' else 'no_visit' end, 'no_visit'))
+  results.push(assert_cpp_backends_equivalent_source('backends: guarded sum', guarded_sum_program))
 
   const mixed_guard_program =
     'type V = A(i32) | B\nfn h(x: V) -> i32 = match x | A(n) => n | B if true => 0 end\nfn main() -> i32 = h(B)\n'
   const mixed_guard_cpp = gen_program(parse_program(tokenize(mixed_guard_program).tokens))
   results.push(assert_eq_str('match mixed arms use guarded lowering when any guard present',
     if mixed_guard_cpp.contains('std::visit') then 'has_visit' else 'no_visit' end, 'no_visit'))
+  results.push(assert_cpp_backends_equivalent_source('backends: mixed guard', mixed_guard_program))
 
   // --- ExprWhile ----------------------------------------------------------------
 
@@ -460,10 +464,7 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('DeclFn: body in output',
     if fn_prog_out.contains('return (n * 2)') then 'yes' else 'no' end,
     'yes'))
-
-  results.push(assert_eq_str('gen_program_with_printer matches string',
-    gen_program_with_printer(fn_prog, true),
-    gen_program(fn_prog)))
+  results.push(assert_cpp_backends_equivalent('backends: fn_prog', fn_prog))
 
   const d3_trait_parameter_source =
     'type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()'
@@ -472,17 +473,20 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_code_contains('D3 gen_program: requires in trait concept', d3_trait_parameter_output, 'requires'))
   results.push(assert_code_contains('D3 gen_program: parameter uses Display constraint', d3_trait_parameter_output, 'requires Display<'))
   results.push(assert_code_contains('D3 gen_program: expanded trait param type', d3_trait_parameter_output, '__trait_param_0'))
+  results.push(assert_cpp_backends_equivalent_source('backends: d3 trait parameter', d3_trait_parameter_source))
 
   const d3_two_trait_parameter_source =
     'type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()'
   const d3_two_trait_parameter_output = gen_program(parse_program(tokenize(d3_two_trait_parameter_source).tokens))
   results.push(assert_code_contains('D3 gen_program: first Display parameter', d3_two_trait_parameter_output, 'Display<__trait_param_0>'))
   results.push(assert_code_contains('D3 gen_program: second Display parameter', d3_two_trait_parameter_output, 'Display<__trait_param_1>'))
+  results.push(assert_cpp_backends_equivalent_source('backends: d3 two trait parameters', d3_two_trait_parameter_source))
   const d4_where_trait_bounds_source =
     'type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()'
   const d4_where_trait_bounds_output = gen_program(parse_program(tokenize(d4_where_trait_bounds_source).tokens))
   results.push(assert_code_contains('D4 gen_program: requires Display', d4_where_trait_bounds_output, 'Display'))
   results.push(assert_code_contains('D4 gen_program: requires EqCompare', d4_where_trait_bounds_output, 'EqCompare'))
+  results.push(assert_cpp_backends_equivalent_source('backends: d4 where trait bounds', d4_where_trait_bounds_source))
 
   const result_type_params: [string] = ["T", "E"]
   const ok_fields:  [Shared<TypeExpr>] = [Shared.new(TyNamed("T"))]
@@ -612,11 +616,13 @@ export fn codegen_tests() -> [TestResult] = do
   const assoc_prog_out = gen_program(parse_program(tokenize(assoc_prog_src).tokens))
   results.push(assert_eq_str('d1: gen_program struct contains using Item =',
     if assoc_prog_out.contains('using Item =') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_cpp_backends_equivalent_source('backends: assoc type bind', assoc_prog_src))
 
   const op_prog_src = 'type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0'
   const op_prog_out = gen_program(parse_program(tokenize(op_prog_src).tokens))
   results.push(assert_eq_str('d2: gen_program Vec2 + Vec2 desugars to Vec2_add',
     if op_prog_out.contains('Vec2_add(') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_cpp_backends_equivalent_source('backends: operator desugar', op_prog_src))
 
   const codegen_invariant_tail_after_else_if_chain =
     'export fn tail_after_chain(kind: string, extra: i32) -> i32 = do\n  let mut accumulator = 0\n  if kind == "a" then\n    accumulator = 1\n  else if kind == "b" then\n    accumulator = 2\n  else\n    accumulator = 3\n  end\n  accumulator + extra\nend\n\nexport fn main() -> i32 = tail_after_chain("a", 100)'
@@ -627,6 +633,7 @@ export fn codegen_tests() -> [TestResult] = do
     codegen_tail_chain_cpp, 'return'))
   results.push(assert_code_not_contains('gen_program: else-if chain has no stray export marker',
     codegen_tail_chain_cpp, 'export_;'))
+  results.push(assert_cpp_backends_equivalent_source('backends: else-if chain tail', codegen_invariant_tail_after_else_if_chain))
 
   const codegen_invariant_twin_if_zip_join_style =
     'export fn twin_branch(kind: string, has_arg: bool) -> i32 = do\n  let mut diagnostics_weight = 0\n  if has_arg then\n    if kind == "zip" then\n      diagnostics_weight = 1\n    end\n    if kind == "join" then\n      diagnostics_weight = diagnostics_weight + 2\n    end\n  end\n  diagnostics_weight + 50\nend\n\nexport fn main() -> i32 = twin_branch("zip", true)'
@@ -635,6 +642,7 @@ export fn codegen_tests() -> [TestResult] = do
     codegen_twin_if_cpp, 'diagnostics_weight + 50'))
   results.push(assert_code_not_contains('gen_program: twin if has no stray export marker',
     codegen_twin_if_cpp, 'export_;'))
+  results.push(assert_cpp_backends_equivalent_source('backends: twin if zip join', codegen_invariant_twin_if_zip_join_style))
 
   const codegen_invariant_if_else_flattened =
     'fn merge_unknown_inner(then_inner: i32, else_errors: i32) -> i32 = do\n  if then_inner == 0 then else_errors + 10\n  else then_inner + else_errors\n  end\nend\n\nexport fn conditional_flat(use_merge: bool, then_inner: i32, else_errors: i32) -> i32 = do\n  if !use_merge then else_errors\n  else merge_unknown_inner(then_inner, else_errors)\n  end\nend\n\nexport fn main() -> i32 = conditional_flat(true, 0, 5)'
@@ -643,6 +651,7 @@ export fn codegen_tests() -> [TestResult] = do
     codegen_if_else_flat_cpp, 'merge_unknown_inner'))
   results.push(assert_code_not_contains('gen_program: flattened if/else has no stray export marker',
     codegen_if_else_flat_cpp, 'export_;'))
+  results.push(assert_cpp_backends_equivalent_source('backends: if else flattened', codegen_invariant_if_else_flattened))
 
   const point_type = parse_program(tokenize(
     'type Point = Point(i32, Shared<i32>)'
@@ -683,12 +692,14 @@ export fn codegen_tests() -> [TestResult] = do
     codegen_large_body_cpp, 'accumulator'))
   results.push(assert_code_contains('gen_program: large fn body emits while loop',
     codegen_large_body_cpp, 'while'))
+  results.push(assert_cpp_backends_equivalent_source('backends: large function body', codegen_large_function_body))
 
   const codegen_extend_method =
     'type Widget = { value: i32 }\nextend Widget { fn doubled(self: Widget) -> i32 = self.value * 2 }\nexport fn main() -> i32 = do\n  let widget = Widget { value: 3 }\n  widget.doubled()\nend'
   const codegen_extend_method_cpp = gen_program(parse_program(tokenize(codegen_extend_method).tokens))
   results.push(assert_code_contains('gen_program: extend method call mangles owner',
     codegen_extend_method_cpp, 'Widget_doubled'))
+  results.push(assert_cpp_backends_equivalent_source('backends: extend method call', codegen_extend_method))
 
   results
 end
