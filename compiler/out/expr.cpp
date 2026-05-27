@@ -8,17 +8,9 @@ mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) n
 
 mlc::String ternary_conditional(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept;
 
-mlc::String index_subscript(mlc::String object_code, mlc::String index_code) noexcept;
-
 mlc::String array_literal(mlc::String argument_list) noexcept;
 
-mlc::String question_try_result(mlc::String inner_code) noexcept;
-
 mlc::String block_as_immediate_invoked_function_expression(mlc::String body_statements_and_return) noexcept;
-
-mlc::String while_loop_immediate_invoked_function_expression(mlc::String condition_code, mlc::String body_statements) noexcept;
-
-mlc::String for_loop_immediate_invoked_function_expression(mlc::String variable_cpp_safe, mlc::String iterator_code, mlc::String body_statements) noexcept;
 
 mlc::String std_visit_match_expression(mlc::String arm_lambdas, mlc::String visit_subject) noexcept;
 
@@ -41,8 +33,6 @@ mlc::String record_update_lazy_closure(mlc::String initializer_and_assignments) 
 mlc::String function_call_parentheses(mlc::String callee_code, mlc::String argument_list) noexcept;
 
 mlc::String constructor_call_braces(mlc::String constructor_code, mlc::String argument_list) noexcept;
-
-mlc::String field_access(mlc::String object_code, mlc::String access_operator, mlc::String field_cpp_safe) noexcept;
 
 mlc::String lambda_with_return(mlc::String header_code, mlc::String return_expression_code) noexcept;
 
@@ -92,8 +82,6 @@ mlc::String record_update_base_prefix(mlc::String expression_code) noexcept;
 
 mlc::String mutable_member_assignment(mlc::String receiver, mlc::String member_cpp_safe, mlc::String value_code) noexcept;
 
-mlc::String pointer_dereference_parenthesized(mlc::String expression_code) noexcept;
-
 mlc::String visit_subject_for_match(mlc::String expression_code, bool needs_dereference) noexcept;
 
 mlc::String make_shared_call(mlc::String element_type, mlc::String argument_code) noexcept;
@@ -107,8 +95,6 @@ mlc::String block_immediate_function_return_fragment(mlc::String return_expressi
 mlc::String append_trailing_expression_statement(mlc::String statements_code, mlc::String expression_code) noexcept;
 
 mlc::String hash_map_empty_instantiation(mlc::String key_type_cpp, mlc::String value_type_cpp) noexcept;
-
-mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept;
 
 mlc::String typed_array_empty_or_untyped_empty(mlc::String element_type_cpp) noexcept;
 
@@ -218,17 +204,9 @@ mlc::String parenthesized_unary(mlc::String operation, mlc::String inner_code) n
 
 mlc::String ternary_conditional(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept{return mlc::String("(") + condition_code + mlc::String(" ? (") + then_code + mlc::String(") : (") + else_code + mlc::String("))");}
 
-mlc::String index_subscript(mlc::String object_code, mlc::String index_code) noexcept{return object_code + mlc::String("[") + index_code + mlc::String("]");}
-
 mlc::String array_literal(mlc::String argument_list) noexcept{return argument_list.length() == 0 ? mlc::String("{}") : mlc::String("mlc::Array{") + argument_list + mlc::String("}");}
 
-mlc::String question_try_result(mlc::String inner_code) noexcept{return mlc::String("({ auto __q = ") + inner_code + mlc::String("; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })");}
-
 mlc::String block_as_immediate_invoked_function_expression(mlc::String body_statements_and_return) noexcept{return mlc::String("[&]() {\n") + body_statements_and_return + mlc::String("}()");}
-
-mlc::String while_loop_immediate_invoked_function_expression(mlc::String condition_code, mlc::String body_statements) noexcept{return mlc::String("[&]() {\nwhile (") + condition_code + mlc::String(") {\n") + body_statements + mlc::String("}\n}()");}
-
-mlc::String for_loop_immediate_invoked_function_expression(mlc::String variable_cpp_safe, mlc::String iterator_code, mlc::String body_statements) noexcept{return mlc::String("[&]() {\nfor (auto ") + variable_cpp_safe + mlc::String(" : ") + iterator_code + mlc::String(") {\n") + body_statements + mlc::String("}\n}()");}
 
 mlc::String std_visit_match_expression(mlc::String arm_lambdas, mlc::String visit_subject) noexcept{return mlc::String("std::visit(overloaded{") + arm_lambdas + mlc::String("\n}, ") + visit_subject + mlc::String(")");}
 
@@ -251,8 +229,6 @@ mlc::String record_update_lazy_closure(mlc::String initializer_and_assignments) 
 mlc::String function_call_parentheses(mlc::String callee_code, mlc::String argument_list) noexcept{return callee_code + mlc::String("(") + argument_list + mlc::String(")");}
 
 mlc::String constructor_call_braces(mlc::String constructor_code, mlc::String argument_list) noexcept{return constructor_code + mlc::String("{") + argument_list + mlc::String("}");}
-
-mlc::String field_access(mlc::String object_code, mlc::String access_operator, mlc::String field_cpp_safe) noexcept{return object_code + access_operator + field_cpp_safe;}
 
 mlc::String lambda_with_return(mlc::String header_code, mlc::String return_expression_code) noexcept{return header_code + mlc::String(" { return ") + return_expression_code + mlc::String("; }");}
 
@@ -302,9 +278,7 @@ mlc::String record_update_base_prefix(mlc::String expression_code) noexcept{retu
 
 mlc::String mutable_member_assignment(mlc::String receiver, mlc::String member_cpp_safe, mlc::String value_code) noexcept{return receiver + mlc::String(".") + member_cpp_safe + mlc::String(" = ") + value_code + mlc::String("; ");}
 
-mlc::String pointer_dereference_parenthesized(mlc::String expression_code) noexcept{return mlc::String("(*") + expression_code + mlc::String(")");}
-
-mlc::String visit_subject_for_match(mlc::String expression_code, bool needs_dereference) noexcept{return needs_dereference ? pointer_dereference_parenthesized(expression_code) : expression_code;}
+mlc::String visit_subject_for_match(mlc::String expression_code, bool needs_dereference) noexcept{return needs_dereference ? mlc::String("(*") + expression_code + mlc::String(")") : expression_code;}
 
 mlc::String make_shared_call(mlc::String element_type, mlc::String argument_code) noexcept{return mlc::String("std::make_shared<") + element_type + mlc::String(">(") + argument_code + mlc::String(")");}
 
@@ -318,9 +292,7 @@ mlc::String append_trailing_expression_statement(mlc::String statements_code, ml
 
 mlc::String hash_map_empty_instantiation(mlc::String key_type_cpp, mlc::String value_type_cpp) noexcept{return mlc::String("mlc::HashMap<") + key_type_cpp + mlc::String(", ") + value_type_cpp + mlc::String(">()");}
 
-mlc::String typed_array_empty(mlc::String element_type_cpp) noexcept{return mlc::String("mlc::Array<") + element_type_cpp + mlc::String(">{}");}
-
-mlc::String typed_array_empty_or_untyped_empty(mlc::String element_type_cpp) noexcept{return element_type_cpp == mlc::String("auto") ? mlc::String("{}") : typed_array_empty(element_type_cpp);}
+mlc::String typed_array_empty_or_untyped_empty(mlc::String element_type_cpp) noexcept{return element_type_cpp == mlc::String("auto") ? mlc::String("{}") : mlc::String("mlc::Array<") + element_type_cpp + mlc::String(">{}");}
 
 mlc::String typed_array_braced_initializer(mlc::String element_type_cpp, mlc::String comma_separated_elements) noexcept{return mlc::String("mlc::Array<") + element_type_cpp + mlc::String(">{") + comma_separated_elements + mlc::String("}");}
 

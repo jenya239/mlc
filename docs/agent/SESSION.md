@@ -6,10 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 7 |
+| driver_turns_since_plan | 5 |
+| step_last | 8 |
 | run_tests | 511 |
-| TRACK_PLAN | TRACK_CPPGEN step 8 pending |
+| TRACK_PLAN | TRACK_CPPGEN step 9 pending |
+
+### Turn 2026-05-28 (CPPGEN step 8)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 5 |
+| step | 8 |
+| done | deleted unused expr.mlc templates (index/field/while/for IIFE/question try); inlined typed_array_empty and deref |
+| verify | 511 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=9 (enqueued) |
 
 ### Turn 2026-05-28 (CPPGEN step 7)
 
