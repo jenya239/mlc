@@ -12,6 +12,9 @@
 #include "emit_helpers.hpp"
 #include "context.hpp"
 #include "decl.hpp"
+#include "decl_extend.hpp"
+#include "type_gen.hpp"
+#include "return_body.hpp"
 
 namespace decl_cpp {
 

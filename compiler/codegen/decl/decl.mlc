@@ -42,7 +42,7 @@ export fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[strin
   end
 end
 
-fn compute_fn_body_context(name: string, params: [Shared<Param>], context: CodegenContext) -> CodegenContext = do
+export fn compute_fn_body_context(name: string, params: [Shared<Param>], context: CodegenContext) -> CodegenContext = do
   const fn_shared_params       = collect_shared_params(params)
   const fn_shared_array_params = collect_shared_array_params(params)
   const fn_array_elem_types    = collect_array_elem_types(params)

@@ -184,10 +184,10 @@ fn struct_field_line(type_code: string, field_name: string) -> string =
   `${type_code} ${field_name};`
 
 fn function_prototype(return_type: string, name: string, parameters_code: string) -> string =
-  `${return_type} ${name}(${parameters_code});`
+  `${return_type} ${name}(${parameters_code}) noexcept;\n`
 
 fn function_definition(return_type: string, name: string, parameters_code: string, body_code: string) -> string =
-  `${return_type} ${name}(${parameters_code}) ${body_code}`
+  `${return_type} ${name}(${parameters_code}) noexcept{\n${body_code}\n}\n`
 
 fn namespace_block(name: string, contents_code: string) -> string =
   `namespace ${name} {\n${contents_code}\n}`
@@ -277,7 +277,7 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
         return_type,
         name,
         print_comma_separated_strings(parameters),
-        block_braces(print_statements(body))
+        print_statements(body)
       ),
     CppNamespace(name, declarations) => namespace_block(name, print_decls(declarations)),
     CppVariant(name, arms) => variant_type_alias(name, print_variant_types(arms)),

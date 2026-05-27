@@ -6,10 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 2 |
-| step_last | 5 |
+| driver_turns_since_plan | 3 |
+| step_last | 6 |
 | run_tests | 526 |
-| TRACK_PLAN | TRACK_CPPGEN step 6 pending |
+| TRACK_PLAN | TRACK_CPPGEN step 7 pending |
+
+### Turn 2026-05-28 (CPPGEN step 6)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 3 |
+| step | 6 |
+| done | native CppFnProto/CppFnDef in decl_cpp; printer noexcept; SDeclFn dispatch; param list helpers |
+| verify | 526 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=7 (enqueued) |
 
 ### Turn 2026-05-28 (CPPGEN step 5)
 

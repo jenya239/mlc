@@ -316,9 +316,9 @@ mlc::String struct_definition(mlc::String name, mlc::String fields_code) noexcep
 
 mlc::String struct_field_line(mlc::String type_code, mlc::String field_name) noexcept{return type_code + mlc::String(" ") + field_name + mlc::String(";");}
 
-mlc::String function_prototype(mlc::String return_type, mlc::String name, mlc::String parameters_code) noexcept{return return_type + mlc::String(" ") + name + mlc::String("(") + parameters_code + mlc::String(");");}
+mlc::String function_prototype(mlc::String return_type, mlc::String name, mlc::String parameters_code) noexcept{return return_type + mlc::String(" ") + name + mlc::String("(") + parameters_code + mlc::String(") noexcept;\n");}
 
-mlc::String function_definition(mlc::String return_type, mlc::String name, mlc::String parameters_code, mlc::String body_code) noexcept{return return_type + mlc::String(" ") + name + mlc::String("(") + parameters_code + mlc::String(") ") + body_code;}
+mlc::String function_definition(mlc::String return_type, mlc::String name, mlc::String parameters_code, mlc::String body_code) noexcept{return return_type + mlc::String(" ") + name + mlc::String("(") + parameters_code + mlc::String(") noexcept{\n") + body_code + mlc::String("\n}\n");}
 
 mlc::String namespace_block(mlc::String name, mlc::String contents_code) noexcept{return mlc::String("namespace ") + name + mlc::String(" {\n") + contents_code + mlc::String("\n}");}
 
@@ -388,7 +388,7 @@ mlc::String print_decl_node(std::shared_ptr<cpp_ast::CppDecl> declaration) noexc
   [&](const CppUsing& cppusing) -> mlc::String { auto [alias, type_code] = cppusing; return using_alias(alias, type_code); },
   [&](const CppStruct& cppstruct) -> mlc::String { auto [name, fields] = cppstruct; return struct_definition(name, print_struct_fields(fields)); },
   [&](const CppFnProto& cppfnproto) -> mlc::String { auto [return_type, name, parameters] = cppfnproto; return function_prototype(return_type, name, print_comma_separated_strings(parameters)); },
-  [&](const CppFnDef& cppfndef) -> mlc::String { auto [return_type, name, parameters, body] = cppfndef; return function_definition(return_type, name, print_comma_separated_strings(parameters), block_braces(print_statements(body))); },
+  [&](const CppFnDef& cppfndef) -> mlc::String { auto [return_type, name, parameters, body] = cppfndef; return function_definition(return_type, name, print_comma_separated_strings(parameters), print_statements(body)); },
   [&](const CppNamespace& cppnamespace) -> mlc::String { auto [name, declarations] = cppnamespace; return namespace_block(name, print_decls(declarations)); },
   [&](const CppVariant& cppvariant) -> mlc::String { auto [name, arms] = cppvariant; return variant_type_alias(name, print_variant_types(arms)); },
   [&](const CppDeclFragment& cppdeclfragment) -> mlc::String { auto [code] = cppdeclfragment; return code; }

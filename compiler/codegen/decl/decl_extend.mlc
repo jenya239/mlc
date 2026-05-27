@@ -43,22 +43,32 @@ fn param_item_proto(context: CodegenContext, p: Shared<Param>) -> string = do
   end
 end
 
-export fn gen_params_def(context: CodegenContext, params: [Shared<Param>]) -> string = do
-  let parts: [string] = []; let mut index = 0
-  while index < params.length() do
-    parts.push(param_item_def(context, params[index]))
-    index = index + 1
-  end
-  parts.join(', ')
+export fn gen_params_proto(context: CodegenContext, params: [Shared<Param>]) -> string = do
+  gen_parameter_proto_items(context, params).join(', ')
 end
 
-export fn gen_params_proto(context: CodegenContext, params: [Shared<Param>]) -> string = do
-  let parts: [string] = []; let mut index = 0
+export fn gen_parameter_proto_items(context: CodegenContext, params: [Shared<Param>]) -> [string] = do
+  let parts: [string] = []
+  let mut index = 0
   while index < params.length() do
     parts.push(param_item_proto(context, params[index]))
     index = index + 1
   end
-  parts.join(', ')
+  parts
+end
+
+export fn gen_params_def(context: CodegenContext, params: [Shared<Param>]) -> string = do
+  gen_parameter_def_items(context, params).join(', ')
+end
+
+export fn gen_parameter_def_items(context: CodegenContext, params: [Shared<Param>]) -> [string] = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < params.length() do
+    parts.push(param_item_def(context, params[index]))
+    index = index + 1
+  end
+  parts
 end
 
 fn concept_declval_arguments_for_params(context: CodegenContext, params: [Shared<Param>]) -> string = do

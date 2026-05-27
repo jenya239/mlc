@@ -147,11 +147,11 @@ export fn cpp_printer_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('print_decl CppFnProto',
     print_decl(Shared.new(CppFnProto('int', 'add', ['int left', 'int right']))),
-    'int add(int left, int right);'))
+    'int add(int left, int right) noexcept;\n'))
 
   results.push(assert_eq_str('print_decl CppFnDef',
     print_decl(Shared.new(CppFnDef('int', 'answer', [], [Shared.new(CppReturn(Shared.new(CppInt(42))))]))),
-    'int answer() {return 42;}'))
+    'int answer() noexcept{\nreturn 42;\n}\n'))
 
   results.push(assert_eq_str('print_decl CppNamespace',
     print_decl(Shared.new(CppNamespace('detail', [Shared.new(CppUsing('Byte', 'unsigned char'))]))),
@@ -167,7 +167,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
   const file = Shared.new(CppFile { header: [header_include], source: [source_function] })
   results.push(assert_eq_str('print_file header and source',
     print_file(file),
-    "#include <vector>\n\nint main() {return 0;}"))
+    "#include <vector>\n\nint main() noexcept{\nreturn 0;\n}\n"))
 
   results
 end

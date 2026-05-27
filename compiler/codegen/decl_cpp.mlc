@@ -1,13 +1,16 @@
 // CppDecl dual path for declaration codegen (Phase 2 step 17).
 
 import { Param } from '../frontend/ast'
-import { SDecl, SExpr } from '../ir/semantic_ir'
+import { SDecl, SExpr, SDeclFn, SExprExtern } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
-import { CppDecl } from '../cpp/cpp_ast'
+import { CppDecl, CppFnProto, CppFnDef } from '../cpp/cpp_ast'
 import { print_decl } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext } from './context'
-import { gen_fn_proto, gen_fn_decl, gen_decl, gen_proto, collect_all_decl_parts, collect_decl_parts } from './decl/decl'
+import { gen_fn_proto, gen_fn_decl, gen_decl, gen_proto, collect_all_decl_parts, collect_decl_parts, compute_fn_body_context } from './decl/decl'
+import { gen_parameter_proto_items, gen_parameter_def_items } from './decl/decl_extend'
+import { sem_type_to_cpp } from './decl/type_gen'
+import { gen_return_body_cpp } from './stmt/return_body'
 
 export type DeclPartsBundleCpp = DeclPartsBundleCpp {
   type_fwds: [Shared<CppDecl>],
@@ -28,6 +31,53 @@ export fn print_cpp_declaration(declaration: Shared<CppDecl>) -> string =
 export fn print_cpp_declarations(declarations: [Shared<CppDecl>]) -> string =
   declarations.map(declaration => print_cpp_declaration(declaration)).join('')
 
+fn prototype_context_for_function(context: CodegenContext, params: [Shared<Param>]) -> CodegenContext =
+  if params.length() > 0 && params[0].name == 'self' then
+    match params[0].typ {
+      TyNamed(type_name) => do
+        const resolved_type = if type_name == 'Self' || type_name == 'self' then context.self_type else type_name end
+        context.for_type_body(resolved_type)
+      end,
+      _ => context
+    }
+  else context
+  end
+
+fn function_has_template_prefix(type_params: [string]) -> bool =
+  type_params.length() > 0
+
+fn function_needs_string_bridge(name: string, type_params: [string], params: [Shared<Param>]) -> bool =
+  function_has_template_prefix(type_params) || (name == 'main' && params.length() == 0)
+
+fn native_fn_proto_cpp(
+  name: string,
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  context: CodegenContext
+) -> Shared<CppDecl> = do
+  const prototype_context = prototype_context_for_function(context, params)
+  const safe_name = context.resolve(name)
+  const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
+  const parameters = gen_parameter_proto_items(prototype_context, params)
+  Shared.new(CppFnProto(return_type_cpp, safe_name, parameters))
+end
+
+fn native_fn_decl_cpp(
+  name: string,
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  body: Shared<SExpr>,
+  context: CodegenContext
+) -> Shared<CppDecl> = do
+  const body_context = compute_fn_body_context(name, params, context)
+  const prototype_context = if params.length() > 0 && params[0].name == 'self' then body_context else context end
+  const safe_name = context.resolve(name)
+  const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
+  const parameters = gen_parameter_def_items(prototype_context, params)
+  const body_statements = gen_return_body_cpp(body, body_context)
+  Shared.new(CppFnDef(return_type_cpp, safe_name, parameters, body_statements))
+end
+
 export fn gen_fn_proto_cpp(
   name: string,
   type_params: [string],
@@ -36,7 +86,11 @@ export fn gen_fn_proto_cpp(
   return_type: Shared<Type>,
   context: CodegenContext
 ) -> Shared<CppDecl> =
-  cpp_decl_from_string_output(gen_fn_proto(name, type_params, type_bounds, params, return_type, context))
+  if function_needs_string_bridge(name, type_params, params) then
+    cpp_decl_from_string_output(gen_fn_proto(name, type_params, type_bounds, params, return_type, context))
+  else
+    native_fn_proto_cpp(name, params, return_type, context)
+  end
 
 export fn gen_fn_proto_cpp_as_string(
   name: string,
@@ -57,7 +111,11 @@ export fn gen_fn_decl_cpp(
   body: Shared<SExpr>,
   context: CodegenContext
 ) -> Shared<CppDecl> =
-  cpp_decl_from_string_output(gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context))
+  if function_needs_string_bridge(name, type_params, params) then
+    cpp_decl_from_string_output(gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context))
+  else
+    native_fn_decl_cpp(name, params, return_type, body, context)
+  end
 
 export fn gen_fn_decl_cpp_as_string(
   name: string,
@@ -71,13 +129,27 @@ export fn gen_fn_decl_cpp_as_string(
   print_cpp_declaration(gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context))
 
 export fn gen_decl_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
-  cpp_decl_from_string_output(gen_decl(declaration, context))
+  match declaration {
+    SDeclFn(name, type_params, type_bounds, params, return_type, body, _) =>
+      match body {
+        SExprExtern(_, _) => cpp_decl_from_string_output(''),
+        _ => gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context)
+      },
+    _ => cpp_decl_from_string_output(gen_decl(declaration, context))
+  }
 
 export fn gen_decl_cpp_as_string(declaration: Shared<SDecl>, context: CodegenContext) -> string =
   print_cpp_declaration(gen_decl_cpp(declaration, context))
 
 export fn gen_proto_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
-  cpp_decl_from_string_output(gen_proto(declaration, context))
+  match declaration {
+    SDeclFn(name, type_params, type_bounds, params, return_type, body, _) =>
+      match body {
+        SExprExtern(_, _) => cpp_decl_from_string_output(''),
+        _ => gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)
+      },
+    _ => cpp_decl_from_string_output(gen_proto(declaration, context))
+  }
 
 export fn gen_proto_cpp_as_string(declaration: Shared<SDecl>, context: CodegenContext) -> string =
   print_cpp_declaration(gen_proto_cpp(declaration, context))

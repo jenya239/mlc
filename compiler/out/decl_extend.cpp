@@ -31,9 +31,13 @@ mlc::String param_item_def(context::CodegenContext context, std::shared_ptr<ast:
 
 mlc::String param_item_proto(context::CodegenContext context, std::shared_ptr<ast::Param> p) noexcept;
 
+mlc::String gen_params_proto(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
+
+mlc::Array<mlc::String> gen_parameter_proto_items(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
+
 mlc::String gen_params_def(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
 
-mlc::String gen_params_proto(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
+mlc::Array<mlc::String> gen_parameter_def_items(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
 
 mlc::String concept_declval_arguments_for_params(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
 
@@ -77,19 +81,11 @@ mlc::String base = param_item_def(context, p);
 return p->has_default ? base + mlc::String(" = ") + default_expr_to_cpp(p->default_) : base;
 }
 
-mlc::String gen_params_def(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept{
-mlc::Array<mlc::String> parts = {};
-int index = 0;
-while (index < params.size()){
-{
-parts.push_back(param_item_def(context, params[index]));
-index = index + 1;
-}
-}
-return parts.join(mlc::String(", "));
+mlc::String gen_params_proto(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept{
+return gen_parameter_proto_items(context, params).join(mlc::String(", "));
 }
 
-mlc::String gen_params_proto(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept{
+mlc::Array<mlc::String> gen_parameter_proto_items(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept{
 mlc::Array<mlc::String> parts = {};
 int index = 0;
 while (index < params.size()){
@@ -98,7 +94,23 @@ parts.push_back(param_item_proto(context, params[index]));
 index = index + 1;
 }
 }
-return parts.join(mlc::String(", "));
+return parts;
+}
+
+mlc::String gen_params_def(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept{
+return gen_parameter_def_items(context, params).join(mlc::String(", "));
+}
+
+mlc::Array<mlc::String> gen_parameter_def_items(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept{
+mlc::Array<mlc::String> parts = {};
+int index = 0;
+while (index < params.size()){
+{
+parts.push_back(param_item_def(context, params[index]));
+index = index + 1;
+}
+}
+return parts;
 }
 
 mlc::String concept_declval_arguments_for_params(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept{
