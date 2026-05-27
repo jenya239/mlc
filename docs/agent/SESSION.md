@@ -7,9 +7,21 @@
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
 | driver_turns_since_plan | 6 |
-| step_last | 9 |
+| step_last | 10 |
 | run_tests | 511 |
-| TRACK_PLAN | TRACK_CPPGEN step 10 pending |
+| TRACK_PLAN | TRACK_CPPGEN closed |
+
+### Turn 2026-05-28 (CPPGEN step 10)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 7 |
+| step | 10 |
+| done | removed dead dual-backend `*_as_string` exports; eval/stmt/decl print via CppAST only |
+| verify | 511 pass; build.sh; self-host diff empty (build_bin.sh + profile.cpp) |
+| uncommitted_files | 0 |
+| next | — (TRACK_CPPGEN closed) |
 
 ### Turn 2026-05-28 (CPPGEN step 9)
 

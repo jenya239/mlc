@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) (**closed**, step 21 `96df4e0`)
 
-## Status: in progress (step 10 pending)
+## Status: closed (step 10 `005c65b`)
 
 **Goal:** eliminate remaining string concatenation in codegen hot path. Default emission is CppExpr/printer (step 20); survivors: `expr_fragment_codegen` string-bridge in `expr_visitor_cpp`, `codegen/expr/expr.mlc` templates in stmt/decl/match/module, dual `gen_module_via_string`.
 
@@ -14,7 +14,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_CPPEXPR.md](TRACK_C
 ## Verify gate (every step)
 
 ```
-bundle exec rake test_compiler_mlc   # 518 pass (baseline post-CPPEXPR)
+bundle exec rake test_compiler_mlc   # 511 pass (baseline post step 7)
 compiler/build.sh
 compiler/out/mlcc -o $TMP/mlc_p1 compiler/main.mlc
 g++ -std=c++20 -O2 -I $TMP/mlc_p1 -I runtime/include $TMP/mlc_p1/*.cpp \
@@ -37,7 +37,7 @@ diff -rq $TMP/mlc_p1 $TMP/mlc_p2   # must stay empty
 | 7 | `module.mlc` — remove `gen_module_via_string`; drop `use_cpp_printer` flag | done (`06a456c`) |
 | 8 | `expr.mlc` — delete unused templates; shrink or inline survivors | done (`e6de96b`) |
 | 9 | `cpp_printer.mlc` — formatting polish (indent, breaks) beyond deterministic baseline | done (`270b917`) |
-| 10 | Remove dead dual-backend helpers (`eval_expr_cpp_as_string` exports if unused) | pending |
+| 10 | Remove dead dual-backend helpers (`eval_expr_cpp_as_string` exports if unused) | done (`TBD`) |
 
 ## Step details
 
@@ -68,7 +68,3 @@ diff -rq $TMP/mlc_p1 $TMP/mlc_p2   # must stay empty
 - Parser `ref mut` — separate branch (TRACK_PLAN step 15).
 - `lib/mlc/` Ruby backend parity — not in this track.
 - Phase 1 (diagnostics span, fuzzing, out-dir) — separate TRACK when CppGEN closed.
-
-## Next step (Driver)
-
-**STEP=10** — remove dead dual-backend helpers.
