@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
-| role_last | Driver |
-| driver_turns_since_plan | 21 |
-| step_last | 21 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | agent_token_last | cr-agent-69d54701-3353-4c3c-9211-d77c356c14bd |
 | run_tests | 518 |
-| TRACK_PLAN | TRACK_CPPEXPR **closed** |
+| TRACK_PLAN | TRACK_CPPGEN step 1 pending |
+
+### Turn 2026-05-28 (plan-refresh post-CPPEXPR)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_CPPGEN.md (10 steps); TRACK_CPPEXPR closed; TRACK_PLAN/DEVELOPMENT pointers |
+| verify | n/a (docs only) |
+| uncommitted_files | docs |
+| next | ROLE=Driver STEP=1 (TRACK_CPPGEN) |
 
 ### Turn 2026-05-27 (CPPEXPR step 21)
 
