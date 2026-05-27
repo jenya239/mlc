@@ -73,7 +73,7 @@ mlc::String gen_program_with_printer(ast::Program program, bool use_cpp_printer)
 
 mlc::String gen_program(ast::Program program) noexcept;
 
-bool use_cpp_printer_default() noexcept{return false;}
+bool use_cpp_printer_default() noexcept{return true;}
 
 mlc::Array<decl_index::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SNamespaceImportAlias> items) noexcept{
 mlc::Array<decl_index::NamespaceImportAlias> result = {};

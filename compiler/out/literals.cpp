@@ -72,7 +72,7 @@ mlc::String gen_char_literal(mlc::String v) noexcept{return mlc::String("static_
 
 std::shared_ptr<cpp_ast::CppExpr> gen_integer_literal_cpp(int integer_value) noexcept{return emit_helpers::make_integer_cpp_expression(integer_value);}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_string_literal_cpp(mlc::String string_value) noexcept{return emit_helpers::make_string_cpp_expression(string_value);}
+std::shared_ptr<cpp_ast::CppExpr> gen_string_literal_cpp(mlc::String string_value) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_string_literal(string_value));}
 
 std::shared_ptr<cpp_ast::CppExpr> gen_boolean_literal_cpp(bool boolean_value) noexcept{return emit_helpers::make_boolean_cpp_expression(boolean_value);}
 

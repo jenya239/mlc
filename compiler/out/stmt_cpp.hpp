@@ -11,7 +11,6 @@
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "stmt_eval.hpp"
-#include "eval.hpp"
 #include "expr_visitor_cpp.hpp"
 
 namespace stmt_cpp {

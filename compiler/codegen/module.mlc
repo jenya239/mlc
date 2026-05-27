@@ -20,7 +20,7 @@ import { CppDecl, CppFile } from '../cpp/cpp_ast'
 import * as cpp_ast from '../cpp/cpp_ast'
 import * as expression_output from './expr/expr'
 
-export fn use_cpp_printer_default() -> bool = false
+export fn use_cpp_printer_default() -> bool = true
 
 type ModuleGenerationContext = ModuleGenerationContext {
   base: string,

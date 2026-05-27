@@ -2,8 +2,7 @@
 
 import { TestResult, assert_eq_str, assert_eq_int } from './test_runner'
 import { assert_code_contains, assert_code_not_contains, assert_cpp_backends_equivalent, assert_cpp_backends_equivalent_source } from './codegen_test_helpers'
-import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
-import { gen_stmts_cpp_as_string } from '../codegen/stmt_cpp'
+import { gen_expr_via_string, gen_argument_list, gen_stmts_str, gen_stmts_via_string } from '../codegen/eval'
 import { gen_expr_via_string_visitor } from '../codegen/expr/expr_visitor_string'
 import { cpp_lambda_header_prefix } from '../codegen/expr/expression_support'
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
@@ -55,7 +54,7 @@ export fn codegen_tests() -> [TestResult] = do
   const empty_prog = Program { decls: [] }
   const ctx = create_codegen_context(empty_prog)
   results.push(assert_eq_str('create_codegen_context: gen_expr with ctx',
-    gen_expr(si(42), ctx), '42'))
+    gen_expr_via_string(si(42), ctx), '42'))
 
   results.push(assert_eq_str('TyI32 - \'int\'',
     type_to_cpp(ctx, Shared.new(TyI32)), 'int'))
@@ -88,29 +87,29 @@ export fn codegen_tests() -> [TestResult] = do
     'std::optional<int>'))
 
   results.push(assert_eq_str('ExprInt(42) - \'42\'',
-    gen_expr(si(42), ctx), '42'))
+    gen_expr_via_string(si(42), ctx), '42'))
 
   results.push(assert_eq_str('ExprQuestion: gen_expr index-based unwrap',
-    gen_expr(Shared.new(SExprQuestion(si(7), unk_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprQuestion(si(7), unk_t(), span_unknown())), ctx),
     '({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })'))
 
   results.push(assert_eq_str('ExprBool(true) - \'true\'',
-    gen_expr(sb(true), ctx), 'true'))
+    gen_expr_via_string(sb(true), ctx), 'true'))
 
   results.push(assert_eq_str('ExprStr(\'hi\') - \'mlc::String("hi", 2)\'',
-    gen_expr(ss('hi'), ctx), 'mlc::String("hi", 2)'))
+    gen_expr_via_string(ss('hi'), ctx), 'mlc::String("hi", 2)'))
 
   results.push(assert_eq_str('ExprUnit - \'std::make_tuple()\'',
-    gen_expr(su(), ctx), 'std::make_tuple()'))
+    gen_expr_via_string(su(), ctx), 'std::make_tuple()'))
 
   results.push(assert_eq_str('ExprIdent(\'x\') - \'x\'',
-    gen_expr(sid("x"), ctx), "x"))
+    gen_expr_via_string(sid("x"), ctx), "x"))
 
   results.push(assert_eq_str('ExprIdent(\'print\') - \'mlc::io::print\'',
-    gen_expr(sid('print'), ctx), 'mlc::io::print'))
+    gen_expr_via_string(sid('print'), ctx), 'mlc::io::print'))
 
   results.push(assert_eq_str('ExprIdent(\'println\') - \'mlc::io::println\'',
-    gen_expr(sid('println'), ctx), 'mlc::io::println'))
+    gen_expr_via_string(sid('println'), ctx), 'mlc::io::println'))
 
   results.push(assert_eq_str('string visitor: ExprInt(42)',
     gen_expr_via_string_visitor(si(42), ctx), '42'))
@@ -191,32 +190,32 @@ export fn codegen_tests() -> [TestResult] = do
     'Point{1, 2}'))
 
   results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
-    gen_expr(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
+    gen_expr_via_string(Shared.new(SExprBin("+", si(1), si(2), i32_t(), span_unknown())), ctx), '(1 + 2)'))
 
   results.push(assert_eq_str('ExprUn neg - \'(-42)\'',
-    gen_expr(Shared.new(SExprUn("-", si(42), i32_t(), span_unknown())), ctx), '(-42)'))
+    gen_expr_via_string(Shared.new(SExprUn("-", si(42), i32_t(), span_unknown())), ctx), '(-42)'))
 
   results.push(assert_eq_str('map_builtin passthrough - \'foo\'',
     map_builtin('foo'), 'foo'))
 
   const single_params: [string] = ["x"]
   results.push(assert_eq_str('ExprLambda single param - \'[=](auto x) mutable { return ... }\'',
-    gen_expr(Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown())), ctx),
     '[&](auto x) mutable { return (x + 1); }'))
 
   const lambda_typed_with_single_i32_parameter = Shared.new(TFn([Shared.new(TI32)], Shared.new(TI32)))
   results.push(assert_eq_str('ExprLambda annotated TFn([i32], i32) uses explicit int parameter',
-    gen_expr(Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), lambda_typed_with_single_i32_parameter, span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), lambda_typed_with_single_i32_parameter, span_unknown())), ctx),
     '[&](int x) mutable { return (x + 1); }'))
 
   const two_params: [string] = ["a", "b"]
   results.push(assert_eq_str('ExprLambda two params - \'[=](auto a, auto b) mutable { return ... }\'',
-    gen_expr(Shared.new(SExprLambda(two_params, Shared.new(SExprBin("+", sid("a"), sid("b"), i32_t(), span_unknown())), unk_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprLambda(two_params, Shared.new(SExprBin("+", sid("a"), sid("b"), i32_t(), span_unknown())), unk_t(), span_unknown())), ctx),
     '[&](auto a, auto b) mutable { return (a + b); }'))
 
   const zero_params: [string] = []
   results.push(assert_eq_str('ExprLambda zero params - \'[]() mutable { return ... }\'',
-    gen_expr(Shared.new(SExprLambda(zero_params, si(42), unk_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprLambda(zero_params, si(42), unk_t(), span_unknown())), ctx),
     '[]() mutable { return 42; }'))
 
   const three_lambda_parameters: [string] = ['first_parameter', 'second_parameter', 'third_parameter']
@@ -263,17 +262,17 @@ export fn codegen_tests() -> [TestResult] = do
 
   const call_lambda_args: [Shared<SExpr>] = [si(5), Shared.new(SExprLambda(single_params, Shared.new(SExprBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown()))]
   results.push(assert_eq_str('ExprCall with lambda arg',
-    gen_expr(Shared.new(SExprCall(sid('apply'), call_lambda_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprCall(sid('apply'), call_lambda_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
     'apply(5, [&](auto x) mutable { return (x + 1); })'))
 
   const ok_args: [Shared<SExpr>] = [si(42)]
   results.push(assert_eq_str('ExprCall ctor Ok(42) uses brace init',
-    gen_expr(Shared.new(SExprCall(sid('Ok'), ok_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprCall(sid('Ok'), ok_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
     'Ok{42}'))
 
   const err_args: [Shared<SExpr>] = [ss('oops')]
   results.push(assert_eq_str('ExprCall ctor Err(str) uses brace init',
-    gen_expr(Shared.new(SExprCall(sid('Err'), err_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprCall(sid('Err'), err_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
     'Err{mlc::String("oops", 4)}'))
 
   const empty_arr: [Shared<SExpr>] = []
@@ -291,65 +290,65 @@ export fn codegen_tests() -> [TestResult] = do
       span_unknown()))
   results.push(assert_code_contains(
     'mutable first positional actual argument lowers with holder IIFE',
-    gen_expr(outer_under_mut_actual_test_expression, ctx),
+    gen_expr_via_string(outer_under_mut_actual_test_expression, ctx),
     '__mut_actual_argument_holder_0'))
   results.push(assert_code_contains(
     'mutable first positional actual argument lowers with return prelude',
-    gen_expr(outer_under_mut_actual_test_expression, ctx),
+    gen_expr_via_string(outer_under_mut_actual_test_expression, ctx),
     '[&]()'))
 
   // --- ExprIf -------------------------------------------------------------------
 
   results.push(assert_eq_str('ExprIf',
-    gen_expr(Shared.new(SExprIf(sb(true), si(1), si(2), i32_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprIf(sb(true), si(1), si(2), i32_t(), span_unknown())), ctx),
     '(true ? (1) : (2))'))
 
   // --- ExprArray ----------------------------------------------------------------
 
   const arr_elems: [Shared<SExpr>] = [si(1), si(2), si(3)]
   results.push(assert_eq_str('ExprArray',
-    gen_expr(Shared.new(SExprArray(arr_elems, Shared.new(TArray(i32_t())), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprArray(arr_elems, Shared.new(TArray(i32_t())), span_unknown())), ctx),
     'mlc::Array<int>{1, 2, 3}'))
 
   results.push(assert_eq_str('ExprArray empty',
-    gen_expr(Shared.new(SExprArray(empty_arr, Shared.new(TArray(i32_t())), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprArray(empty_arr, Shared.new(TArray(i32_t())), span_unknown())), ctx),
     'mlc::Array<int>{}'))
 
   // --- ExprIndex ----------------------------------------------------------------
 
   results.push(assert_eq_str('ExprIndex',
-    gen_expr(Shared.new(SExprIndex(sid('arr'), si(0), i32_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprIndex(sid('arr'), si(0), i32_t(), span_unknown())), ctx),
     'arr[0]'))
 
   // --- ExprField ----------------------------------------------------------------
 
   results.push(assert_eq_str('ExprField on ident',
-    gen_expr(Shared.new(SExprField(sid('point'), "x", unk_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprField(sid('point'), "x", unk_t(), span_unknown())), ctx),
     'point.x'))
 
   // --- ExprMethod ---------------------------------------------------------------
 
   const method_args: [Shared<SExpr>] = [si(1)]
   results.push(assert_eq_str('ExprMethod push',
-    gen_expr(Shared.new(SExprMethod(sid('arr'), 'push', method_args, empty_parameter_mutability_pattern(), unit_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprMethod(sid('arr'), 'push', method_args, empty_parameter_mutability_pattern(), unit_t(), span_unknown())), ctx),
     'arr.push_back(1)'))
 
   results.push(assert_eq_str('ExprMethod length',
-    gen_expr(Shared.new(SExprMethod(sid('arr'), 'length', empty_arr, empty_parameter_mutability_pattern(), i32_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprMethod(sid('arr'), 'length', empty_arr, empty_parameter_mutability_pattern(), i32_t(), span_unknown())), ctx),
     'arr.length()'))
 
   const result_r_t = Shared.new(TGeneric('Result', [i32_t(), str_t()]))
   const s_result = Shared.new(SExprIdent("r", result_r_t, span_unknown()))
   const map_one: [Shared<SExpr>] = [Shared.new(SExprIdent("f", unk_t(), span_unknown()))]
   results.push(assert_eq_str('ExprMethod Result map',
-    gen_expr(Shared.new(SExprMethod(s_result, 'map', map_one, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprMethod(s_result, 'map', map_one, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), ctx),
     'mlc::result::map(r, f)'))
 
   let namespace_alias_prefixes: Map<string, string> = Map.new()
   namespace_alias_prefixes.set('helpers', 'infer_literals::')
   const context_with_aliases = ctx.with_namespace_alias_prefixes(namespace_alias_prefixes)
   results.push(assert_eq_str('ExprMethod on import-as alias emits namespace::fn()',
-    gen_expr(Shared.new(SExprMethod(sid('helpers'), 'infer_expr_integer_literal', empty_arr, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context_with_aliases),
+    gen_expr_via_string(Shared.new(SExprMethod(sid('helpers'), 'infer_expr_integer_literal', empty_arr, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context_with_aliases),
     'infer_literals::infer_expr_integer_literal()'))
 
   // --- ExprMatch ----------------------------------------------------------------
@@ -358,7 +357,7 @@ export fn codegen_tests() -> [TestResult] = do
     smatch_arm(Shared.new(PatInt(1, span_unknown())), ss('one')),
     smatch_arm(Shared.new(PatWild(span_unknown())), ss('other'))
   ]
-  const match_out = gen_expr(Shared.new(SExprMatch(sid("n"), pat_arms, str_t(), span_unknown())), ctx)
+  const match_out = gen_expr_via_string(Shared.new(SExprMatch(sid("n"), pat_arms, str_t(), span_unknown())), ctx)
   results.push(assert_eq_str('ExprMatch contains std::visit',
     if match_out.contains('std::visit') then 'yes' else 'no' end, 'yes'))
   results.push(assert_eq_str('ExprMatch contains one',
@@ -372,7 +371,7 @@ export fn codegen_tests() -> [TestResult] = do
       Shared.new(PatOr([Shared.new(PatCtor('Circle', [Shared.new(PatWild(span_unknown()))], span_unknown())), Shared.new(PatCtor('Square', [Shared.new(PatWild(span_unknown()))], span_unknown()))], span_unknown())),
       ss("r"))
   ]
-  const or_match_out = gen_expr(Shared.new(SExprMatch(sid("s"), or_arms, str_t(), span_unknown())), ctx)
+  const or_match_out = gen_expr_via_string(Shared.new(SExprMatch(sid("s"), or_arms, str_t(), span_unknown())), ctx)
   results.push(assert_eq_str('PatOr expanded: Circle lambda present',
     if or_match_out.contains('Circle') then 'yes' else 'no' end, 'yes'))
   results.push(assert_eq_str('PatOr expanded: Square lambda present',
@@ -410,7 +409,7 @@ export fn codegen_tests() -> [TestResult] = do
   // --- ExprWhile ----------------------------------------------------------------
 
   const while_body: [Shared<SStmt>] = [Shared.new(SStmtExpr(si(0), span_unknown()))]
-  const while_out = gen_expr(Shared.new(SExprWhile(sb(true), while_body, unit_t(), span_unknown())), ctx)
+  const while_out = gen_expr_via_string(Shared.new(SExprWhile(sb(true), while_body, unit_t(), span_unknown())), ctx)
   results.push(assert_eq_str('ExprWhile contains while (true)',
     if while_out.contains('while (true)') then 'yes' else 'no' end, 'yes'))
 
@@ -418,7 +417,7 @@ export fn codegen_tests() -> [TestResult] = do
 
   const block_stmts: [Shared<SStmt>] = [Shared.new(SStmtLet("x", false, si(1), i32_t(), span_unknown()))]
   results.push(assert_eq_str('ExprBlock',
-    gen_expr(Shared.new(SExprBlock(block_stmts, sid("x"), i32_t(), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprBlock(block_stmts, sid("x"), i32_t(), span_unknown())), ctx),
     '[&]() {\nauto x = 1;\nreturn x;\n}()'))
 
   results.push(assert_eq_str('gen_stmts_str: let const emits constexpr',
@@ -426,26 +425,26 @@ export fn codegen_tests() -> [TestResult] = do
     'constexpr auto limit = 42;\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: break',
-    gen_stmts_cpp_as_string([Shared.new(SStmtBreak(span_unknown()))], ctx),
+    gen_stmts_str([Shared.new(SStmtBreak(span_unknown()))], ctx),
     'break;\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let',
-    gen_stmts_cpp_as_string([Shared.new(SStmtLet('counter', false, si(1), i32_t(), span_unknown()))], ctx),
+    gen_stmts_str([Shared.new(SStmtLet('counter', false, si(1), i32_t(), span_unknown()))], ctx),
     'auto counter = 1;\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: return',
-    gen_stmts_cpp_as_string([Shared.new(SStmtReturn(si(0), span_unknown()))], ctx),
+    gen_stmts_str([Shared.new(SStmtReturn(si(0), span_unknown()))], ctx),
     'return 0;\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let const matches string',
-    gen_stmts_cpp_as_string([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx),
-    gen_stmts_str([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx)))
+    gen_stmts_str([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx),
+    gen_stmts_via_string([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx)))
 
   // --- ExprRecord ---------------------------------------------------------------
 
   const fv_a: [Shared<SFieldVal>] = [Shared.new(SFieldVal { name: "a", val: si(1) }), Shared.new(SFieldVal { name: "b", val: si(2) })]
   results.push(assert_eq_str('ExprRecord positional',
-    gen_expr(Shared.new(SExprRecord('Point', fv_a, Shared.new(TNamed('Point')), span_unknown())), ctx),
+    gen_expr_via_string(Shared.new(SExprRecord('Point', fv_a, Shared.new(TNamed('Point')), span_unknown())), ctx),
     'Point{1, 2}'))
 
   // --- DeclFn via gen_program ---------------------------------------------------
@@ -509,19 +508,19 @@ export fn codegen_tests() -> [TestResult] = do
   // -- Multiline string literal codegen ------------------------------------
 
   results.push(assert_eq_str('string literal with embedded newline - escapes to \\n in C++',
-    gen_expr(ss('hello\nworld'), ctx),
+    gen_expr_via_string(ss('hello\nworld'), ctx),
     'mlc::String("hello\\nworld", 11)'))
 
   results.push(assert_eq_str('string literal with tab - escapes to \\t',
-    gen_expr(ss('a\tb'), ctx),
+    gen_expr_via_string(ss('a\tb'), ctx),
     'mlc::String("a\\tb", 3)'))
 
   results.push(assert_eq_str('string literal with backslash - escapes to \\\\',
-    gen_expr(ss('a\\b'), ctx),
+    gen_expr_via_string(ss('a\\b'), ctx),
     'mlc::String("a\\\\b", 3)'))
 
   results.push(assert_eq_str('string literal with double quote - escapes to \\"',
-    gen_expr(ss('say "hi"'), ctx),
+    gen_expr_via_string(ss('say "hi"'), ctx),
     'mlc::String("say \\"hi\\"", 8)'))
 
   const letpat_ctor_pat = Shared.new(PatCtor('Some', [Shared.new(PatIdent("v", span_unknown()))], span_unknown()))
@@ -562,7 +561,7 @@ export fn codegen_tests() -> [TestResult] = do
   const phantom_rec_fvals: [Shared<SFieldVal>] = []
   const phantom_rec_expr = Shared.new(SExprRecord('Ast', phantom_rec_fvals, phantom_rec_type, span_unknown()))
   results.push(assert_eq_str('phantom record expr: Ast<Unvalidated>{}',
-    gen_expr(phantom_rec_expr, ctx), 'Ast<Unvalidated>{}'))
+    gen_expr_via_string(phantom_rec_expr, ctx), 'Ast<Unvalidated>{}'))
 
   // C4: numeric tower
   const f64_t = Shared.new(TF64)
@@ -572,19 +571,19 @@ export fn codegen_tests() -> [TestResult] = do
   const char_t = Shared.new(TChar)
 
   results.push(assert_eq_str('c4: f64 literal codegen',
-    gen_expr(Shared.new(SExprFloat('3.14', f64_t, span_unknown())), ctx), '3.14'))
+    gen_expr_via_string(Shared.new(SExprFloat('3.14', f64_t, span_unknown())), ctx), '3.14'))
 
   results.push(assert_eq_str('c4: i64 literal codegen',
-    gen_expr(Shared.new(SExprI64('42', i64_t, span_unknown())), ctx), '42'))
+    gen_expr_via_string(Shared.new(SExprI64('42', i64_t, span_unknown())), ctx), '42'))
 
   results.push(assert_eq_str('c4: u8 literal codegen',
-    gen_expr(Shared.new(SExprU8('255', u8_t, span_unknown())), ctx), 'static_cast<uint8_t>(255)'))
+    gen_expr_via_string(Shared.new(SExprU8('255', u8_t, span_unknown())), ctx), 'static_cast<uint8_t>(255)'))
 
   results.push(assert_eq_str('c4: usize literal codegen',
-    gen_expr(Shared.new(SExprUsize('100', usize_t, span_unknown())), ctx), 'static_cast<size_t>(100)'))
+    gen_expr_via_string(Shared.new(SExprUsize('100', usize_t, span_unknown())), ctx), 'static_cast<size_t>(100)'))
 
   results.push(assert_eq_str('c4: char literal codegen',
-    gen_expr(Shared.new(SExprChar("a", char_t, span_unknown())), ctx), 'static_cast<char32_t>(a)'))
+    gen_expr_via_string(Shared.new(SExprChar("a", char_t, span_unknown())), ctx), 'static_cast<char32_t>(a)'))
 
   results.push(assert_eq_str('c4: sem_type_to_cpp TI64',
     sem_type_to_cpp(ctx, i64_t), 'int64_t'))
@@ -602,7 +601,7 @@ export fn codegen_tests() -> [TestResult] = do
     sem_type_to_cpp(ctx, char_t), 'char32_t'))
 
   const with_body: [Shared<SStmt>] = [Shared.new(SStmtExpr(si(0), span_unknown()))]
-  const with_out = gen_expr(Shared.new(SExprWith(si(1), 'res', with_body, unit_t(), span_unknown())), ctx)
+  const with_out = gen_expr_via_string(Shared.new(SExprWith(si(1), 'res', with_body, unit_t(), span_unknown())), ctx)
   results.push(assert_eq_str('c5: SExprWith contains auto res =',
     if with_out.contains('auto res =') then 'yes' else 'no' end, 'yes'))
   results.push(assert_eq_str('c5: SExprWith contains res.drop()',

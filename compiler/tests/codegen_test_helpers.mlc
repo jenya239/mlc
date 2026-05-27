@@ -4,9 +4,9 @@ import { TestResult, assert_eq_str, assert_true } from './test_runner'
 import { Program, TypeExpr } from '../frontend/ast'
 import { SExpr } from '../ir/semantic_ir'
 import { CodegenContext, create_codegen_context } from '../codegen/context'
-import { gen_expr } from '../codegen/eval'
+import { gen_expr, gen_expr_via_string } from '../codegen/eval'
 import { type_to_cpp } from '../codegen/decl/type_gen'
-import { gen_program, gen_program_with_printer } from '../codegen/module'
+import { gen_program_with_printer } from '../codegen/module'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { empty_program } from './ast_builders'
@@ -15,7 +15,7 @@ export fn empty_codegen_context() -> CodegenContext =
   create_codegen_context(empty_program())
 
 export fn assert_expr_generates(test_name: string, context: CodegenContext, expr: Shared<SExpr>, expected_code: string) -> TestResult =
-  assert_eq_str(test_name, gen_expr(expr, context), expected_code)
+  assert_eq_str(test_name, gen_expr_via_string(expr, context), expected_code)
 
 export fn assert_type_generates(test_name: string, context: CodegenContext, type_expr: Shared<TypeExpr>, expected_code: string) -> TestResult =
   assert_eq_str(test_name, type_to_cpp(context, type_expr), expected_code)
@@ -29,7 +29,10 @@ export fn assert_code_not_contains(test_name: string, actual_code: string, forbi
     !string_contains(actual_code, forbidden_substring))
 
 export fn assert_cpp_backends_equivalent(test_name: string, program: Program) -> TestResult =
-  assert_eq_str(test_name, gen_program_with_printer(program, true), gen_program(program))
+  assert_eq_str(
+    test_name,
+    gen_program_with_printer(program, true),
+    gen_program_with_printer(program, false))
 
 export fn assert_cpp_backends_equivalent_source(test_name: string, program_source: string) -> TestResult =
   assert_cpp_backends_equivalent(test_name, parse_program(tokenize(program_source).tokens))

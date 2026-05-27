@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-25-autocommit` |
 | role_last | Driver |
-| driver_turns_since_plan | 19 |
-| step_last | 19 |
+| driver_turns_since_plan | 20 |
+| step_last | 20 |
 | agent_token_last | cr-agent-f7f97795-dbcb-4cc7-b3be-2db8f4076729 |
 | run_tests | 540 |
-| TRACK_PLAN | TRACK_CPPEXPR step 20 pending |
+| TRACK_PLAN | TRACK_CPPEXPR step 21 pending |
+
+### Turn 2026-05-27 (CPPEXPR step 20)
+
+| turn | 2026-05-27 |
+| role | Driver |
+| instructions_rev | 2026-05-25-autocommit |
+| driver_turns_since_plan | 20 |
+| step | 20 |
+| done | flip default backend: eval→cpp/printer, module use_cpp_printer_default true; string via *_via_string; expr_visitor_cpp string bridges |
+| verify | 540 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=21 (enqueued) |
 
 ### Turn 2026-05-27 (CPPEXPR step 19)
 

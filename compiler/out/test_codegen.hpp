@@ -7,7 +7,6 @@
 #include "test_runner.hpp"
 #include "codegen_test_helpers.hpp"
 #include "eval.hpp"
-#include "stmt_cpp.hpp"
 #include "expr_visitor_string.hpp"
 #include "expression_support.hpp"
 #include "context.hpp"

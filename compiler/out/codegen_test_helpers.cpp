@@ -45,7 +45,7 @@ bool string_contains(mlc::String haystack, mlc::String needle) noexcept;
 
 context::CodegenContext empty_codegen_context() noexcept{return context::create_codegen_context(ast_builders::empty_program());}
 
-test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<semantic_ir::SExpr> expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, eval::gen_expr(expr, context), expected_code);}
+test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<semantic_ir::SExpr> expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, eval::gen_expr_via_string(expr, context), expected_code);}
 
 test_runner::TestResult assert_type_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<ast::TypeExpr> type_expr, mlc::String expected_code) noexcept{return test_runner::assert_eq_str(test_name, type_gen::type_to_cpp(context, type_expr), expected_code);}
 
@@ -53,7 +53,7 @@ test_runner::TestResult assert_code_contains(mlc::String test_name, mlc::String 
 
 test_runner::TestResult assert_code_not_contains(mlc::String test_name, mlc::String actual_code, mlc::String forbidden_substring) noexcept{return test_runner::assert_true(test_name + mlc::String(" must not contain '") + forbidden_substring + mlc::String("'"), !string_contains(actual_code, forbidden_substring));}
 
-test_runner::TestResult assert_cpp_backends_equivalent(mlc::String test_name, ast::Program program) noexcept{return test_runner::assert_eq_str(test_name, module::gen_program_with_printer(program, true), module::gen_program(program));}
+test_runner::TestResult assert_cpp_backends_equivalent(mlc::String test_name, ast::Program program) noexcept{return test_runner::assert_eq_str(test_name, module::gen_program_with_printer(program, true), module::gen_program_with_printer(program, false));}
 
 test_runner::TestResult assert_cpp_backends_equivalent_source(mlc::String test_name, mlc::String program_source) noexcept{return assert_cpp_backends_equivalent(test_name, decls::parse_program(lexer::tokenize(program_source).tokens));}
 

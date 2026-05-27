@@ -7,8 +7,13 @@ import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext, GenStmtResult, update_context_from_statement } from './context'
 import { cpp_safe } from './cpp_naming'
 import * as stmt_eval from './stmt/stmt_eval'
-import { gen_expr_cpp, gen_stmts_str } from './eval'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
+
+fn gen_stmts_for_cpp_codegen(statements: [Shared<SStmt>], context: CodegenContext) -> string =
+  gen_stmts_cpp_as_string(statements, context)
+
+fn gen_expr_cpp_for_stmt_codegen(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
+  expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen)
 
 type StmtsCppFoldState = StmtsCppFoldState {
   statements: [Shared<CppStmt>],
@@ -65,7 +70,7 @@ fn strip_trailing_semicolon(text: string) -> string =
   end
 
 fn gen_expr_string_for_stmt_bridge(expression: Shared<SExpr>, context: CodegenContext) -> string =
-  expr_visitor_cpp.eval_expr_cpp_as_string(expression, context, gen_stmts_str)
+  expr_visitor_cpp.eval_expr_cpp_as_string(expression, context, gen_stmts_for_cpp_codegen)
 
 fn stmt_via_string_bridge(
   statement: Shared<SStmt>,
@@ -96,7 +101,7 @@ fn eval_stmt_cpp(
     SStmtReturn(expression, _) => match expression {
       SExprQuestion(_, _, _) => stmt_via_string_bridge(statement, context, try_counter),
       _ => GenStmtCppResult {
-        statement: emit_helpers.make_return_cpp_statement(gen_expr_cpp(expression, context)),
+        statement: emit_helpers.make_return_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)),
         next_try: try_counter
       }
     },
@@ -106,12 +111,12 @@ fn eval_stmt_cpp(
       SExprMethod(_, method_name, _, _, _, _) =>
         if method_name == "new" then stmt_via_string_bridge(statement, context, try_counter)
         else GenStmtCppResult {
-          statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp(value, context)),
+          statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
           next_try: try_counter
         }
         end,
       _ => GenStmtCppResult {
-        statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp(value, context)),
+        statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
         next_try: try_counter
       }
     },
