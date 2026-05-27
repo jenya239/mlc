@@ -14,9 +14,12 @@
 #include "identifiers.hpp"
 #include "expr_fragment_codegen.hpp"
 #include "expression_support.hpp"
+#include "match_analysis.hpp"
+#include "match_gen.hpp"
 #include "cpp_naming.hpp"
-#include "expr_visitor.hpp"
+#include "type_gen.hpp"
 #include "context.hpp"
+#include "expr_visitor.hpp"
 
 namespace expr_visitor_cpp {
 

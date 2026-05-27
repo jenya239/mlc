@@ -38,6 +38,8 @@ mlc::String value_field_access(mlc::String object_code, mlc::String field_name) 
 
 mlc::String init_list_braces(mlc::String element_list) noexcept;
 
+mlc::String aggregate_initializer_expression(mlc::String type_name, mlc::Array<std::shared_ptr<cpp_ast::CppExpr>> elements) noexcept;
+
 mlc::String std_visit_expression(mlc::String arm_lambdas, mlc::String visit_subject) noexcept;
 
 mlc::String cast_expression(mlc::String kind_prefix, mlc::String type_code, mlc::String operand_code) noexcept;
@@ -228,6 +230,8 @@ mlc::String pointer_field_access(mlc::String object_code, mlc::String field_name
 mlc::String value_field_access(mlc::String object_code, mlc::String field_name) noexcept{return object_code + mlc::String(".") + field_name;}
 
 mlc::String init_list_braces(mlc::String element_list) noexcept{return element_list.length() == 0 ? mlc::String("{}") : mlc::String("{") + element_list + mlc::String("}");}
+
+mlc::String aggregate_initializer_expression(mlc::String type_name, mlc::Array<std::shared_ptr<cpp_ast::CppExpr>> elements) noexcept{return type_name + mlc::String("{") + print_comma_separated_expressions(elements) + mlc::String("}");}
 
 mlc::String std_visit_expression(mlc::String arm_lambdas, mlc::String visit_subject) noexcept{return mlc::String("std::visit(overloaded{") + arm_lambdas + mlc::String("\n}, ") + visit_subject + mlc::String(")");}
 
@@ -442,6 +446,7 @@ mlc::String print_expr(std::shared_ptr<cpp_ast::CppExpr> expression) noexcept{re
   [&](const CppUnary& cppunary) -> mlc::String { auto [operation, inner] = cppunary; return render_parenthesized_unary(operation, print_expr(inner)); },
   [&](const CppTernary& cppternary) -> mlc::String { auto [condition, then_branch, else_branch] = cppternary; return render_ternary_conditional(print_expr(condition), print_expr(then_branch), print_expr(else_branch)); },
   [&](const CppInitList& cppinitlist) -> mlc::String { auto [elements] = cppinitlist; return init_list_braces(print_comma_separated_expressions(elements)); },
+  [&](const CppAggregateInit& cppaggregateinit) -> mlc::String { auto [type_name, elements] = cppaggregateinit; return aggregate_initializer_expression(type_name, elements); },
   [&](const CppStdVisit& cppstdvisit) -> mlc::String { auto [subject, handlers] = cppstdvisit; return std_visit_expression(print_comma_separated_expressions_multiline(handlers), print_expr(subject)); },
   [&](const CppCast& cppcast) -> mlc::String { auto [kind, target_type, operand] = cppcast; return cast_expression(print_cast_kind_prefix(kind), print_type(target_type), print_expr(operand)); },
   [&](const CppLambda& cpplambda) -> mlc::String { auto [captures, parameters, return_type, body] = cpplambda; return print_lambda_expression(captures, parameters, return_type, body); },

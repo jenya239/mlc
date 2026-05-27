@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_str } from './test_runner'
 import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_printer'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
-         CppTernary, CppInitList, CppCast, CppCastStatic, CppLambda,
+         CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppCast, CppCastStatic, CppLambda,
          CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock,
          CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
@@ -59,6 +59,15 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_expr CppInitList elements',
     print_expr(Shared.new(CppInitList([Shared.new(CppInt(1)), Shared.new(CppInt(2))]))),
     '{1, 2}'))
+
+  results.push(assert_eq_str('print_expr CppAggregateInit',
+    print_expr(Shared.new(CppAggregateInit('Point', [Shared.new(CppInt(1)), Shared.new(CppInt(2))]))),
+    'Point{1, 2}'))
+
+  const match_handler = Shared.new(CppIdent('[&](const auto& __v) { return 1; }'))
+  results.push(assert_eq_str('print_expr CppStdVisit',
+    print_expr(Shared.new(CppStdVisit(Shared.new(CppInt(0)), [match_handler]))),
+    'std::visit(overloaded{[&](const auto& __v) { return 1; }\n}, 0)'))
 
   results.push(assert_eq_str('print_expr CppCast',
     print_expr(Shared.new(CppCast(CppCastStatic, int_type, Shared.new(CppIdent('value'))))),

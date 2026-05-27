@@ -7,10 +7,22 @@
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
 | driver_turns_since_plan | 2 |
-| step_last | 3 |
+| step_last | 4 |
 | agent_token_last | cr-agent-924842bb-156b-49aa-964e-7f23cfe9bd68 |
-| run_tests | 522 |
-| TRACK_PLAN | TRACK_CPPGEN step 4 pending |
+| run_tests | 524 |
+| TRACK_PLAN | TRACK_CPPGEN step 5 pending |
+
+### Turn 2026-05-28 (CPPGEN step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | CppStdVisit/CppAggregateInit; match/record native in expr_visitor_cpp |
+| verify | 524 pass; build.sh; self-host diff empty (build_bin.sh + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (CPPGEN step 3)
 

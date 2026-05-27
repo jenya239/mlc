@@ -1,18 +1,21 @@
 // ExprVisitor<Shared<CppExpr>> — batch 1–3: literals through lambda (Phase 2).
 
-import { Type, TNamed } from './checker/registry'
+import { Type, TNamed, TGeneric } from './checker/registry'
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from './ir/semantic_ir'
-import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock } from './cpp/cpp_ast'
+import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit } from './cpp/cpp_ast'
 import { print_expr } from './cpp/cpp_printer'
 import * as emit_helpers from './cpp/emit_helpers'
 import { operator_method_for } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
 import * as expr_fragment_codegen from './codegen/expr/expr_fragment_codegen'
-import { field_access_operator } from './codegen/expr/expression_support'
+import { field_access_operator, find_field_value } from './codegen/expr/expression_support'
+import { first_arm_needs_deref } from './codegen/expr/match_analysis'
+import * as match_codegen from './codegen/expr/match_gen'
 import { cpp_safe } from './codegen/cpp_naming'
+import { sem_type_to_cpp } from './codegen/decl/type_gen'
+import { CodegenContext, lookup_fields_for_context } from './codegen/context'
 import { ExprVisitor } from './expr_visitor'
-import { CodegenContext } from './codegen/context'
 
 type CppExprVisitor = CppExprVisitor {
   context: CodegenContext,
@@ -121,15 +124,43 @@ export fn gen_match_via_cpp_visitor(
   match_semantic_type: Shared<Type>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
-) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_match_via_visitor(
-      subject,
-      arms,
-      match_semantic_type,
-      context,
-      gen_stmts,
-      eval_expr_cpp_as_string))
+) -> Shared<CppExpr> = do
+  const expanded_arms = match_codegen.expand_or_arms(arms)
+  if match_codegen.expanded_any_guard(expanded_arms) then
+    cpp_expr_from_rendered_fragment(
+      match_codegen.gen_match(subject, arms, match_semantic_type, context, gen_stmts, eval_expr_cpp_as_string))
+  else do
+    const visit_void = match_codegen.match_visit_uses_void_lambdas(match_semantic_type)
+    const handlers =
+      expanded_arms.map(arm =>
+        cpp_expr_from_rendered_fragment(
+          match_codegen.gen_arm(arm, context, gen_stmts, eval_expr_cpp_as_string, visit_void)))
+    const subject_expression = eval_expr_cpp(subject, context, gen_stmts)
+    const needs_dereference =
+      if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
+    const visit_subject =
+      if needs_dereference then Shared.new(CppUnary("*", subject_expression))
+      else subject_expression
+      end
+    Shared.new(CppStdVisit(visit_subject, handlers))
+  end
+  end
+end
+
+fn record_field_expressions(
+  field_values: [Shared<SFieldVal>],
+  type_name: string,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> [Shared<CppExpr>] = do
+  const field_order = lookup_fields_for_context(context, type_name)
+  if field_order.length() > 0 then
+    field_order.map(field_name =>
+      eval_expr_cpp(find_field_value(field_values, field_name), context, gen_stmts))
+  else
+    field_values.map(field_value => eval_expr_cpp(field_value.val, context, gen_stmts))
+  end
+end
 
 export fn gen_record_via_cpp_visitor(
   type_name: string,
@@ -137,15 +168,15 @@ export fn gen_record_via_cpp_visitor(
   expression_type: Shared<Type>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
-) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_record_via_visitor(
-      type_name,
-      field_values,
-      expression_type,
-      context,
-      gen_stmts,
-      eval_expr_cpp_as_string))
+) -> Shared<CppExpr> = do
+  const cpp_name = match expression_type {
+    TGeneric(_, _) => sem_type_to_cpp(context, expression_type),
+    _ => context.resolve(type_name)
+  }
+  Shared.new(CppAggregateInit(
+    cpp_name,
+    record_field_expressions(field_values, type_name, context, gen_stmts)))
+end
 
 export fn gen_array_via_cpp_visitor(
   elements: [Shared<SExpr>],

@@ -18,7 +18,7 @@ type RecordFieldBindAccum = RecordFieldBindAccum {
   arm_context: CodegenContext
 }
 
-fn match_visit_uses_void_lambdas(match_result_type: Shared<Type>) -> bool =
+export fn match_visit_uses_void_lambdas(match_result_type: Shared<Type>) -> bool =
   match match_result_type { TUnit => true, _ => false }
 
 fn record_field_bind_step(
@@ -141,10 +141,10 @@ fn singleton_or_split(arm: Shared<SMatchArm>) -> [Shared<SMatchArm>] =
     _ => [arm]
   }
 
-fn expand_or_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] =
+export fn expand_or_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] =
   arms.flat_map(arm => singleton_or_split(arm))
 
-fn expanded_any_guard(expanded_arms: [Shared<SMatchArm>]) -> bool =
+export fn expanded_any_guard(expanded_arms: [Shared<SMatchArm>]) -> bool =
   expanded_arms.any(arm => arm.has_guard)
 
 fn guarded_literal_condition(pattern: Shared<Pat>, variant_access_expression: string) -> string =

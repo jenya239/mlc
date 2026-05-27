@@ -38,6 +38,7 @@ export type CppExpr =
   | CppTernary(Shared<CppExpr>, Shared<CppExpr>, Shared<CppExpr>)
   | CppLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppType>, [Shared<CppStmt>])
   | CppInitList([Shared<CppExpr>])
+  | CppAggregateInit(string, [Shared<CppExpr>])
   | CppStdVisit(Shared<CppExpr>, [Shared<CppExpr>])
   | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpr>)
   | CppInvokedWhile(Shared<CppExpr>, string)

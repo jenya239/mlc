@@ -1,7 +1,7 @@
 // C++ expression fragment builders (CppExpr string-bridge helpers).
 
 import { Type } from '../../checker/registry'
-import { SExpr, SStmt, sexpr_type, SExprArray, SMatchArm, SFieldVal } from '../../ir/semantic_ir'
+import { SExpr, SStmt, sexpr_type, SExprArray, SFieldVal } from '../../ir/semantic_ir'
 import { TNamed, TArray, TFn } from '../../checker/registry'
 import { array_element_type_from_array_type, type_is_unknown } from '../../checker/semantic_type_structure'
 import { CodegenContext, qualify_function_callee } from '../context'
@@ -10,8 +10,7 @@ import { cpp_safe, map_builtin } from '../cpp_naming'
 import { is_constructor_call, cpp_lambda_header_prefix } from './expression_support'
 import * as mut_actual_argument from './mut_actual_argument'
 import { gen_method_expr } from './method_gen'
-import { gen_match } from './match_gen'
-import { gen_record_expr, gen_record_update_expr } from './record_gen'
+import { gen_record_update_expr } from './record_gen'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { stmts_final_ctx } from '../stmt/statement_context'
 import * as expression_output from './expr'
@@ -171,16 +170,6 @@ export fn gen_block_via_visitor(
     expression_output.block_as_immediate_invoked_function_expression(body)
   end
 
-export fn gen_match_via_visitor(
-  subject: Shared<SExpr>,
-  arms: [Shared<SMatchArm>],
-  match_semantic_type: Shared<Type>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  gen_match(subject, arms, match_semantic_type, context, gen_stmts, evaluate_expression)
-
 export fn gen_extern_via_visitor(_semantic_type: Shared<Type>) -> string =
   gen_extern_placeholder()
 
@@ -191,16 +180,6 @@ fn argument_list_via_visitor(
   evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string =
   expressions.map(expression => evaluate_expression(expression, context, gen_stmts)).join(', ')
-
-export fn gen_record_via_visitor(
-  type_name: string,
-  field_values: [Shared<SFieldVal>],
-  expression_type: Shared<Type>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  gen_record_expr(type_name, field_values, expression_type, context, gen_stmts, evaluate_expression)
 
 export fn gen_record_update_via_visitor(
   type_name: string,

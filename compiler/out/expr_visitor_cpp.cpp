@@ -10,9 +10,12 @@
 #include "identifiers.hpp"
 #include "expr_fragment_codegen.hpp"
 #include "expression_support.hpp"
+#include "match_analysis.hpp"
+#include "match_gen.hpp"
 #include "cpp_naming.hpp"
-#include "expr_visitor.hpp"
+#include "type_gen.hpp"
 #include "context.hpp"
+#include "expr_visitor.hpp"
 
 namespace expr_visitor_cpp {
 
@@ -26,9 +29,12 @@ using namespace literals;
 using namespace identifiers;
 using namespace expr_fragment_codegen;
 using namespace expression_support;
+using namespace match_analysis;
+using namespace match_gen;
 using namespace cpp_naming;
-using namespace expr_visitor;
+using namespace type_gen;
 using namespace context;
+using namespace expr_visitor;
 
 struct CppExprVisitor {context::CodegenContext context;std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts;std::function<std::shared_ptr<cpp_ast::CppExpr>(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression;};
 
@@ -53,6 +59,8 @@ std::shared_ptr<cpp_ast::CppExpr> gen_if_via_cpp_visitor(std::shared_ptr<semanti
 std::shared_ptr<cpp_ast::CppExpr> gen_block_via_cpp_visitor(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<semantic_ir::SExpr> result_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
 std::shared_ptr<cpp_ast::CppExpr> gen_match_via_cpp_visitor(std::shared_ptr<semantic_ir::SExpr> subject, mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> arms, std::shared_ptr<registry::Type> match_semantic_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppExpr>> record_field_expressions(mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, mlc::String type_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
 std::shared_ptr<cpp_ast::CppExpr> gen_record_via_cpp_visitor(mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, std::shared_ptr<registry::Type> expression_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept;
 
@@ -164,9 +172,27 @@ std::shared_ptr<cpp_ast::CppExpr> gen_if_via_cpp_visitor(std::shared_ptr<semanti
 
 std::shared_ptr<cpp_ast::CppExpr> gen_block_via_cpp_visitor(mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, std::shared_ptr<semantic_ir::SExpr> result_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return cpp_expr_from_rendered_fragment(expr_fragment_codegen::gen_block_via_visitor(statements, result_expression, context, gen_stmts, eval_expr_cpp_as_string));}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_match_via_cpp_visitor(std::shared_ptr<semantic_ir::SExpr> subject, mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> arms, std::shared_ptr<registry::Type> match_semantic_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return cpp_expr_from_rendered_fragment(expr_fragment_codegen::gen_match_via_visitor(subject, arms, match_semantic_type, context, gen_stmts, eval_expr_cpp_as_string));}
+std::shared_ptr<cpp_ast::CppExpr> gen_match_via_cpp_visitor(std::shared_ptr<semantic_ir::SExpr> subject, mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> arms, std::shared_ptr<registry::Type> match_semantic_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
+mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> expanded_arms = match_gen::expand_or_arms(arms);
+return match_gen::expanded_any_guard(expanded_arms) ? cpp_expr_from_rendered_fragment(match_gen::gen_match(subject, arms, match_semantic_type, context, gen_stmts, eval_expr_cpp_as_string)) : [&]() -> std::shared_ptr<cpp_ast::CppExpr> { 
+  bool visit_void = match_gen::match_visit_uses_void_lambdas(match_semantic_type);
+  mlc::Array<std::shared_ptr<cpp_ast::CppExpr>> handlers = expanded_arms.map([context, gen_stmts, visit_void](std::shared_ptr<semantic_ir::SMatchArm> arm) mutable { return cpp_expr_from_rendered_fragment(match_gen::gen_arm(arm, context, gen_stmts, eval_expr_cpp_as_string, visit_void)); });
+  std::shared_ptr<cpp_ast::CppExpr> subject_expression = eval_expr_cpp(subject, context, gen_stmts);
+  bool needs_dereference = expanded_arms.size() > 0 ? match_analysis::first_arm_needs_deref(expanded_arms[0], subject, context) : true;
+  std::shared_ptr<cpp_ast::CppExpr> visit_subject = needs_dereference ? std::make_shared<cpp_ast::CppExpr>(cpp_ast::CppUnary(mlc::String("*"), subject_expression)) : subject_expression;
+  return std::make_shared<cpp_ast::CppExpr>(cpp_ast::CppStdVisit(visit_subject, handlers));
+ }();
+}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_record_via_cpp_visitor(mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, std::shared_ptr<registry::Type> expression_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return cpp_expr_from_rendered_fragment(expr_fragment_codegen::gen_record_via_visitor(type_name, field_values, expression_type, context, gen_stmts, eval_expr_cpp_as_string));}
+mlc::Array<std::shared_ptr<cpp_ast::CppExpr>> record_field_expressions(mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, mlc::String type_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
+mlc::Array<mlc::String> field_order = context::lookup_fields_for_context(context, type_name);
+return field_order.size() > 0 ? field_order.map([field_values, context, gen_stmts](mlc::String field_name) mutable { return eval_expr_cpp(expression_support::find_field_value(field_values, field_name), context, gen_stmts); }) : field_values.map([context, gen_stmts](std::shared_ptr<semantic_ir::SFieldVal> field_value) mutable { return eval_expr_cpp(field_value->val, context, gen_stmts); });
+}
+
+std::shared_ptr<cpp_ast::CppExpr> gen_record_via_cpp_visitor(mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field_values, std::shared_ptr<registry::Type> expression_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
+mlc::String cpp_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TGeneric>((*expression_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*expression_type)); auto [_w0, _w1] = _v_tgeneric; return type_gen::sem_type_to_cpp(context, expression_type); } return context::CodegenContext_resolve(context, type_name); }();
+return std::make_shared<cpp_ast::CppExpr>(cpp_ast::CppAggregateInit(cpp_name, record_field_expressions(field_values, type_name, context, gen_stmts)));
+}
 
 std::shared_ptr<cpp_ast::CppExpr> gen_array_via_cpp_visitor(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, std::shared_ptr<registry::Type> element_container_semantic_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return cpp_expr_from_rendered_fragment(expr_fragment_codegen::gen_array_via_visitor(elements, element_container_semantic_type, context, gen_stmts, eval_expr_cpp_as_string));}
 

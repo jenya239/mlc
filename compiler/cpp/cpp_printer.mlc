@@ -7,7 +7,7 @@ import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppDeclFragment,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
-         CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppStdVisit, CppCast,
+         CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppAggregateInit, CppStdVisit, CppCast,
          CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock } from './cpp_ast'
 import * as cpp_ast from './cpp_ast'
 
@@ -95,6 +95,9 @@ fn value_field_access(object_code: string, field_name: string) -> string =
 
 fn init_list_braces(element_list: string) -> string =
   if element_list.length() == 0 then "{}" else `{${element_list}}` end
+
+fn aggregate_initializer_expression(type_name: string, elements: [Shared<CppExpr>]) -> string =
+  `${type_name}{${print_comma_separated_expressions(elements)}}`
 
 fn std_visit_expression(arm_lambdas: string, visit_subject: string) -> string =
   `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
@@ -357,6 +360,8 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
       render_ternary_conditional(print_expr(condition), print_expr(then_branch), print_expr(else_branch)),
     CppInitList(elements) =>
       init_list_braces(print_comma_separated_expressions(elements)),
+    CppAggregateInit(type_name, elements) =>
+      aggregate_initializer_expression(type_name, elements),
     CppStdVisit(subject, handlers) =>
       std_visit_expression(print_comma_separated_expressions_multiline(handlers), print_expr(subject)),
     CppCast(kind, target_type, operand) =>
