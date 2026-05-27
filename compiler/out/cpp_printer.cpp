@@ -8,6 +8,12 @@ namespace cpp_printer {
 using namespace cpp_ast;
 using namespace cpp_ast;
 
+mlc::String printer_indent_unit() noexcept;
+
+mlc::String indent_text(int depth) noexcept;
+
+mlc::String formatted_block(mlc::String statements_code, int depth) noexcept;
+
 mlc::String escape_cpp_string_content(mlc::String input) noexcept;
 
 mlc::String print_comma_separated_expressions(mlc::Array<std::shared_ptr<cpp_ast::CppExpr>> expressions) noexcept;
@@ -54,6 +60,12 @@ mlc::String print_parameter_list(mlc::Array<std::shared_ptr<cpp_ast::CppParam>> 
 
 mlc::String block_braces(mlc::String body_code) noexcept;
 
+mlc::String print_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> statements, int depth) noexcept;
+
+mlc::String print_statement_at_depth(std::shared_ptr<cpp_ast::CppStmt> statement, int depth) noexcept;
+
+mlc::String print_statement_body(std::shared_ptr<cpp_ast::CppStmt> statement, int depth) noexcept;
+
 mlc::String if_statement(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept;
 
 mlc::String while_statement(mlc::String condition_code, mlc::String body_code) noexcept;
@@ -88,11 +100,7 @@ mlc::String print_struct_fields(mlc::Array<std::shared_ptr<cpp_ast::CppField>> f
 
 mlc::String print_variant_types(mlc::Array<std::shared_ptr<cpp_ast::CppVariantArm>> arms) noexcept;
 
-mlc::String print_statement_body(std::shared_ptr<cpp_ast::CppStmt> statement) noexcept;
-
-mlc::String print_statement_node(std::shared_ptr<cpp_ast::CppStmt> statement) noexcept;
-
-mlc::String print_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> statements) noexcept;
+mlc::String print_statement_node(std::shared_ptr<cpp_ast::CppStmt> statement, int depth) noexcept;
 
 mlc::String print_decl_node(std::shared_ptr<cpp_ast::CppDecl> declaration) noexcept;
 
@@ -129,6 +137,22 @@ mlc::String print_statement(std::shared_ptr<cpp_ast::CppStmt> statement) noexcep
 mlc::String print_decl(std::shared_ptr<cpp_ast::CppDecl> declaration) noexcept;
 
 mlc::String print_file(std::shared_ptr<cpp_ast::CppFile> file) noexcept;
+
+mlc::String printer_indent_unit() noexcept{return mlc::String("  ");}
+
+mlc::String indent_text(int depth) noexcept{
+mlc::String result = mlc::String("");
+int index = 0;
+while (index < depth){
+{
+result = result + printer_indent_unit();
+index = index + 1;
+}
+}
+return result;
+}
+
+mlc::String formatted_block(mlc::String statements_code, int depth) noexcept{return indent_text(depth) + mlc::String("{\n") + statements_code + mlc::String("\n") + indent_text(depth) + mlc::String("}");}
 
 mlc::String escape_cpp_string_content(mlc::String input) noexcept{
 mlc::Array<mlc::String> parts = {};
@@ -294,6 +318,22 @@ return parts.join(mlc::String(", "));
 
 mlc::String block_braces(mlc::String body_code) noexcept{return mlc::String("{") + body_code + mlc::String("}");}
 
+mlc::String print_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> statements, int depth) noexcept{
+mlc::Array<mlc::String> parts = {};
+int index = 0;
+while (index < statements.size()){
+{
+parts.push_back(print_statement_at_depth(statements[index], depth));
+index = index + 1;
+}
+}
+return parts.join(mlc::String("\n"));
+}
+
+mlc::String print_statement_at_depth(std::shared_ptr<cpp_ast::CppStmt> statement, int depth) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<cpp_ast::CppStmtFragment>((*statement)._)) { auto _v_cppstmtfragment = std::get<cpp_ast::CppStmtFragment>((*statement)._); auto [fragment] = _v_cppstmtfragment; return fragment; } return indent_text(depth) + print_statement_node(statement, depth); }();}
+
+mlc::String print_statement_body(std::shared_ptr<cpp_ast::CppStmt> statement, int depth) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<cpp_ast::CppBlock>((*statement)._)) { auto _v_cppblock = std::get<cpp_ast::CppBlock>((*statement)._); auto [statements] = _v_cppblock; return formatted_block(print_statements(statements, depth + 1), depth); } return formatted_block(indent_text(depth + 1) + print_statement_node(statement, depth + 1), depth); }();}
+
 mlc::String if_statement(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept{return mlc::String("if (") + condition_code + mlc::String(") ") + then_code + mlc::String(" else ") + else_code;}
 
 mlc::String while_statement(mlc::String condition_code, mlc::String body_code) noexcept{return mlc::String("while (") + condition_code + mlc::String(") ") + body_code;}
@@ -330,7 +370,7 @@ int index = 0;
 while (index < fields.size()){
 {
 std::shared_ptr<cpp_ast::CppField> field_entry = fields[index];
-parts.push_back(struct_field_line(cpp_ast::cpp_field_type(field_entry), cpp_ast::cpp_field_name(field_entry)));
+parts.push_back(indent_text(1) + struct_field_line(cpp_ast::cpp_field_type(field_entry), cpp_ast::cpp_field_name(field_entry)));
 index = index + 1;
 }
 }
@@ -356,39 +396,25 @@ arm_index = arm_index + 1;
 return parts.join(mlc::String(", "));
 }
 
-mlc::String print_statement_body(std::shared_ptr<cpp_ast::CppStmt> statement) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<cpp_ast::CppBlock>((*statement)._)) { auto _v_cppblock = std::get<cpp_ast::CppBlock>((*statement)._); auto [statements] = _v_cppblock; return block_braces(print_statements(statements)); } return print_statement_node(statement); }();}
-
-mlc::String print_statement_node(std::shared_ptr<cpp_ast::CppStmt> statement) noexcept{return std::visit(overloaded{
+mlc::String print_statement_node(std::shared_ptr<cpp_ast::CppStmt> statement, int depth) noexcept{return std::visit(overloaded{
   [&](const CppAutoDecl& cppautodecl) -> mlc::String { auto [name, initializer] = cppautodecl; return auto_declaration(name, print_expr(initializer)); },
   [&](const CppConstDecl& cppconstdecl) -> mlc::String { auto [name, type_node, initializer] = cppconstdecl; return const_declaration(print_type(type_node), name, print_expr(initializer)); },
   [&](const CppConstexprAutoDecl& cppconstexprautodecl) -> mlc::String { auto [name, initializer] = cppconstexprautodecl; return constexpr_auto_declaration(name, print_expr(initializer)); },
   [&](const CppReturn& cppreturn) -> mlc::String { auto [expression] = cppreturn; return mlc::String("return ") + print_expr(expression) + mlc::String(";"); },
   [&](const CppExprStmt& cppexprstmt) -> mlc::String { auto [expression] = cppexprstmt; return print_expr(expression) + mlc::String(";"); },
-  [&](const CppBlock& cppblock) -> mlc::String { auto [statements] = cppblock; return block_braces(print_statements(statements)); },
-  [&](const CppIf& cppif) -> mlc::String { auto [condition, then_branch, else_branch] = cppif; return if_statement(print_expr(condition), print_statement_body(then_branch), print_statement_body(else_branch)); },
-  [&](const CppWhile& cppwhile) -> mlc::String { auto [condition, body] = cppwhile; return while_statement(print_expr(condition), print_statement_body(body)); },
-  [&](const CppFor& cppfor) -> mlc::String { auto [variable_name, range_expression, body] = cppfor; return range_for_statement(variable_name, print_expr(range_expression), block_braces(print_statements(body))); },
+  [&](const CppBlock& cppblock) -> mlc::String { auto [statements] = cppblock; return formatted_block(print_statements(statements, depth + 1), depth); },
+  [&](const CppIf& cppif) -> mlc::String { auto [condition, then_branch, else_branch] = cppif; return if_statement(print_expr(condition), print_statement_body(then_branch, depth), print_statement_body(else_branch, depth)); },
+  [&](const CppWhile& cppwhile) -> mlc::String { auto [condition, body] = cppwhile; return while_statement(print_expr(condition), print_statement_body(body, depth)); },
+  [&](const CppFor& cppfor) -> mlc::String { auto [variable_name, range_expression, body] = cppfor; return range_for_statement(variable_name, print_expr(range_expression), formatted_block(print_statements(body, depth + 1), depth)); },
   [&](const CppStmtFragment& cppstmtfragment) -> mlc::String { auto [fragment] = cppstmtfragment; return fragment; }
 }, (*statement)._);}
-
-mlc::String print_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> statements) noexcept{
-mlc::Array<mlc::String> parts = {};
-int index = 0;
-while (index < statements.size()){
-{
-parts.push_back(print_statement_node(statements[index]));
-index = index + 1;
-}
-}
-return parts.join(mlc::String("\n"));
-}
 
 mlc::String print_decl_node(std::shared_ptr<cpp_ast::CppDecl> declaration) noexcept{return std::visit(overloaded{
   [&](const CppInclude& cppinclude) -> mlc::String { auto [is_angle, path] = cppinclude; return is_angle ? include_angle(path) : include_quoted(path); },
   [&](const CppUsing& cppusing) -> mlc::String { auto [alias, type_code] = cppusing; return using_alias(alias, type_code); },
   [&](const CppStruct& cppstruct) -> mlc::String { auto [name, fields] = cppstruct; return struct_definition(name, print_struct_fields(fields)); },
   [&](const CppFnProto& cppfnproto) -> mlc::String { auto [return_type, name, parameters] = cppfnproto; return function_prototype(return_type, name, print_comma_separated_strings(parameters)); },
-  [&](const CppFnDef& cppfndef) -> mlc::String { auto [return_type, name, parameters, body] = cppfndef; return function_definition(return_type, name, print_comma_separated_strings(parameters), print_statements(body)); },
+  [&](const CppFnDef& cppfndef) -> mlc::String { auto [return_type, name, parameters, body] = cppfndef; return function_definition(return_type, name, print_comma_separated_strings(parameters), print_statements(body, 1)); },
   [&](const CppNamespace& cppnamespace) -> mlc::String { auto [name, declarations] = cppnamespace; return namespace_block(name, print_decls(declarations)); },
   [&](const CppVariant& cppvariant) -> mlc::String { auto [name, arms] = cppvariant; return variant_type_alias(name, print_variant_types(arms)); },
   [&](const CppDeclFragment& cppdeclfragment) -> mlc::String { auto [code] = cppdeclfragment; return code; }
@@ -420,13 +446,13 @@ mlc::String question_try_expression(std::shared_ptr<cpp_ast::CppExpr> inner) noe
 
 mlc::String with_block_expression(std::shared_ptr<cpp_ast::CppExpr> resource, mlc::String binder, mlc::String body_statements) noexcept{return mlc::String("{\nauto ") + binder + mlc::String(" = (") + print_expr(resource) + mlc::String(");\n") + body_statements + binder + mlc::String(".drop();\n}\n");}
 
-mlc::String lambda_expression(mlc::String capture_prefix, mlc::String parameters_code, mlc::String return_type_code, mlc::String body_code) noexcept{return capture_prefix + mlc::String("(") + parameters_code + mlc::String(") -> ") + return_type_code + mlc::String(" { ") + body_code + mlc::String(" }");}
+mlc::String lambda_expression(mlc::String capture_prefix, mlc::String parameters_code, mlc::String return_type_code, mlc::String body_code) noexcept{return capture_prefix + mlc::String("(") + parameters_code + mlc::String(") -> ") + return_type_code + mlc::String(" {\n") + body_code + mlc::String("\n}");}
 
 mlc::String print_lambda_expression(mlc::Array<std::shared_ptr<cpp_ast::CppCapture>> captures, mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters, std::shared_ptr<cpp_ast::CppType> return_type, mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> body) noexcept{
 mlc::String capture_prefix = print_capture_list(captures);
 mlc::String parameters_code = print_parameter_list(parameters);
 mlc::String return_type_code = print_type(return_type);
-mlc::String body_code = print_statements(body);
+mlc::String body_code = print_statements(body, 1);
 return lambda_expression(capture_prefix, parameters_code, return_type_code, body_code);
 }
 
@@ -462,7 +488,7 @@ mlc::String print_expr(std::shared_ptr<cpp_ast::CppExpr> expression) noexcept{re
   [&](const CppWithBlock& cppwithblock) -> mlc::String { auto [resource, binder, body_statements] = cppwithblock; return with_block_expression(resource, binder, body_statements); }
 }, (*expression)._);}
 
-mlc::String print_statement(std::shared_ptr<cpp_ast::CppStmt> statement) noexcept{return print_statement_node(statement);}
+mlc::String print_statement(std::shared_ptr<cpp_ast::CppStmt> statement) noexcept{return print_statement_at_depth(statement, 0);}
 
 mlc::String print_decl(std::shared_ptr<cpp_ast::CppDecl> declaration) noexcept{return print_decl_node(declaration);}
 

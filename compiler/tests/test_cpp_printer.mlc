@@ -78,7 +78,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
   const lambda_body = [Shared.new(CppReturn(Shared.new(CppIdent('input'))))]
   results.push(assert_eq_str('print_expr CppLambda',
     print_expr(Shared.new(CppLambda([capture], [parameter], int_type, lambda_body))),
-    '[&counter](int input) -> int { return input; }'))
+    '[&counter](int input) -> int {\n  return input;\n}'))
 
   const loop_body = 'step();\n'
   results.push(assert_eq_str('print_expr CppInvokedWhile',
@@ -123,7 +123,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
       Shared.new(CppBlock([Shared.new(CppReturn(Shared.new(CppInt(1))))])),
       Shared.new(CppBlock([Shared.new(CppReturn(Shared.new(CppInt(0))))]))
     ))),
-    'if (flag) {return 1;} else {return 0;}'))
+    'if (flag) {\n  return 1;\n} else {\n  return 0;\n}'))
 
   results.push(assert_eq_str('print_statement CppFor',
     print_statement(Shared.new(CppFor(
@@ -131,7 +131,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
       Shared.new(CppIdent('items')),
       [Shared.new(CppExprStmt(Shared.new(CppCall(Shared.new(CppIdent('process')), [Shared.new(CppIdent('item'))]))))]
     ))),
-    'for (auto item : items) {process(item);}'))
+    'for (auto item : items) {\n  process(item);\n}'))
 
   results.push(assert_eq_str('print_decl CppInclude angle',
     print_decl(Shared.new(CppInclude(true, 'vector'))),
@@ -143,7 +143,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('print_decl CppStruct',
     print_decl(Shared.new(CppStruct('Point', [Shared.new(CppField { typ: "int", name: "x" })]))),
-    "struct Point {\nint x;\n};"))
+    "struct Point {\n  int x;\n};"))
 
   results.push(assert_eq_str('print_decl CppFnProto',
     print_decl(Shared.new(CppFnProto('int', 'add', ['int left', 'int right']))),
@@ -151,7 +151,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('print_decl CppFnDef',
     print_decl(Shared.new(CppFnDef('int', 'answer', [], [Shared.new(CppReturn(Shared.new(CppInt(42))))]))),
-    'int answer() noexcept{\nreturn 42;\n}\n'))
+    'int answer() noexcept{\n  return 42;\n}\n'))
 
   results.push(assert_eq_str('print_decl CppNamespace',
     print_decl(Shared.new(CppNamespace('detail', [Shared.new(CppUsing('Byte', 'unsigned char'))]))),
@@ -167,7 +167,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
   const file = Shared.new(CppFile { header: [header_include], source: [source_function] })
   results.push(assert_eq_str('print_file header and source',
     print_file(file),
-    "#include <vector>\n\nint main() noexcept{\nreturn 0;\n}\n"))
+    "#include <vector>\n\nint main() noexcept{\n  return 0;\n}\n"))
 
   results
 end
