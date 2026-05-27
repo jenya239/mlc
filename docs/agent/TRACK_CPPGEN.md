@@ -30,7 +30,7 @@ diff -rq $TMP/mlc_p1 $TMP/mlc_p2   # must stay empty
 |------|------|--------|
 | 1 | `expr_visitor_cpp` — field + index as `CppMember`/`CppIndex` (drop fragment bridge) | done (`4b81869`) |
 | 2 | `expr_visitor_cpp` — while/for as CppExpr (no `expr_fragment_codegen`) | done (`a2830b9`) |
-| 3 | `expr_visitor_cpp` — tuple/question/with + bin/unary fallback native CppExpr | done (`COMMIT_HASH`) |
+| 3 | `expr_visitor_cpp` — tuple/question/with + bin/unary fallback native CppExpr | done (`fc919bc`) |
 | 4 | `match_gen` / record — CppStdVisit + record init via CppExpr in visitor (not string templates) | pending |
 | 5 | `stmt_cpp` — internal CppStmt only; string `gen_stmts_str` thin print wrapper at eval boundary | pending |
 | 6 | `decl_cpp` — migrate remaining `decl.mlc` string emission | pending |
