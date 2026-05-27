@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) (**closed**, step 21 `96df4e0`)
 
-## Status: in progress (step 1 pending)
+## Status: in progress (step 2 pending)
 
 **Goal:** eliminate remaining string concatenation in codegen hot path. Default emission is CppExpr/printer (step 20); survivors: `expr_fragment_codegen` string-bridge in `expr_visitor_cpp`, `codegen/expr/expr.mlc` templates in stmt/decl/match/module, dual `gen_module_via_string`.
 
@@ -28,7 +28,7 @@ diff -rq $TMP/mlc_p1 $TMP/mlc_p2   # must stay empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `expr_visitor_cpp` — field + index as `CppMember`/`CppIndex` (drop fragment bridge) | pending |
+| 1 | `expr_visitor_cpp` — field + index as `CppMember`/`CppIndex` (drop fragment bridge) | done |
 | 2 | `expr_visitor_cpp` — while/for as CppExpr (no `expr_fragment_codegen`) | pending |
 | 3 | `expr_visitor_cpp` — tuple/question/with + bin/unary fallback native CppExpr | pending |
 | 4 | `match_gen` / record — CppStdVisit + record init via CppExpr in visitor (not string templates) | pending |
@@ -71,4 +71,4 @@ diff -rq $TMP/mlc_p1 $TMP/mlc_p2   # must stay empty
 
 ## Next step (Driver)
 
-**STEP=1** — field + index in `expr_visitor_cpp` without string fragment bridge.
+**STEP=2** — while/for in `expr_visitor_cpp` without `expr_fragment_codegen`.

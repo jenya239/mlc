@@ -9,6 +9,8 @@
 #include "literals.hpp"
 #include "identifiers.hpp"
 #include "expr_fragment_codegen.hpp"
+#include "expression_support.hpp"
+#include "cpp_naming.hpp"
 #include "expr_visitor.hpp"
 #include "context.hpp"
 
@@ -23,6 +25,8 @@ using namespace semantic_type_structure;
 using namespace literals;
 using namespace identifiers;
 using namespace expr_fragment_codegen;
+using namespace expression_support;
+using namespace cpp_naming;
 using namespace expr_visitor;
 using namespace context;
 
@@ -168,9 +172,13 @@ std::shared_ptr<cpp_ast::CppExpr> gen_array_via_cpp_visitor(mlc::Array<std::shar
 
 std::shared_ptr<cpp_ast::CppExpr> gen_lambda_via_cpp_visitor(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<semantic_ir::SExpr> body_expression_under_lambda, std::shared_ptr<registry::Type> semantic_function_type_for_lambda_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return cpp_expr_from_rendered_fragment(expr_fragment_codegen::gen_lambda_via_visitor(parameter_binding_names, body_expression_under_lambda, semantic_function_type_for_lambda_expression, context, gen_stmts, eval_expr_cpp_as_string));}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_field_via_cpp_visitor(std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return cpp_expr_from_rendered_fragment(expr_fragment_codegen::gen_field_via_visitor(object, field_name, context, gen_stmts, eval_expr_cpp_as_string));}
+std::shared_ptr<cpp_ast::CppExpr> gen_field_via_cpp_visitor(std::shared_ptr<semantic_ir::SExpr> object, mlc::String field_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{
+std::shared_ptr<cpp_ast::CppExpr> object_expression = eval_expr_cpp(object, context, gen_stmts);
+bool is_pointer = expression_support::field_access_operator(object, context) == mlc::String("->");
+return std::make_shared<cpp_ast::CppExpr>(cpp_ast::CppMember(object_expression, cpp_naming::cpp_safe(field_name), is_pointer));
+}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_index_via_cpp_visitor(std::shared_ptr<semantic_ir::SExpr> object, std::shared_ptr<semantic_ir::SExpr> index_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return cpp_expr_from_rendered_fragment(expr_fragment_codegen::gen_index_via_visitor(object, index_expression, context, gen_stmts, eval_expr_cpp_as_string));}
+std::shared_ptr<cpp_ast::CppExpr> gen_index_via_cpp_visitor(std::shared_ptr<semantic_ir::SExpr> object, std::shared_ptr<semantic_ir::SExpr> index_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return std::make_shared<cpp_ast::CppExpr>(cpp_ast::CppIndex(eval_expr_cpp(object, context, gen_stmts), eval_expr_cpp(index_expression, context, gen_stmts)));}
 
 std::shared_ptr<cpp_ast::CppExpr> gen_while_via_cpp_visitor(std::shared_ptr<semantic_ir::SExpr> condition, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts) noexcept{return cpp_expr_from_rendered_fragment(expr_fragment_codegen::gen_while_via_visitor(condition, statements, context, gen_stmts, eval_expr_cpp_as_string));}
 

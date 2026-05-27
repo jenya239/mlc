@@ -13,6 +13,8 @@
 #include "literals.hpp"
 #include "identifiers.hpp"
 #include "expr_fragment_codegen.hpp"
+#include "expression_support.hpp"
+#include "cpp_naming.hpp"
 #include "expr_visitor.hpp"
 #include "context.hpp"
 

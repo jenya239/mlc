@@ -2,13 +2,15 @@
 
 import { Type, TNamed } from './checker/registry'
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from './ir/semantic_ir'
-import { CppExpr, CppBinary, CppUnary, CppCall } from './cpp/cpp_ast'
+import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex } from './cpp/cpp_ast'
 import { print_expr } from './cpp/cpp_printer'
 import * as emit_helpers from './cpp/emit_helpers'
 import { operator_method_for } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
 import * as expr_fragment_codegen from './codegen/expr/expr_fragment_codegen'
+import { field_access_operator } from './codegen/expr/expression_support'
+import { cpp_safe } from './codegen/cpp_naming'
 import { ExprVisitor } from './expr_visitor'
 import { CodegenContext } from './codegen/context'
 
@@ -180,10 +182,11 @@ export fn gen_field_via_cpp_visitor(
   field_name: string,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
-) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_field_via_visitor(
-      object, field_name, context, gen_stmts, eval_expr_cpp_as_string))
+) -> Shared<CppExpr> = do
+  const object_expression = eval_expr_cpp(object, context, gen_stmts)
+  const is_pointer = field_access_operator(object, context) == '->'
+  Shared.new(CppMember(object_expression, cpp_safe(field_name), is_pointer))
+end
 
 export fn gen_index_via_cpp_visitor(
   object: Shared<SExpr>,
@@ -191,9 +194,9 @@ export fn gen_index_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_index_via_visitor(
-      object, index_expression, context, gen_stmts, eval_expr_cpp_as_string))
+  Shared.new(CppIndex(
+    eval_expr_cpp(object, context, gen_stmts),
+    eval_expr_cpp(index_expression, context, gen_stmts)))
 
 export fn gen_while_via_cpp_visitor(
   condition: Shared<SExpr>,

@@ -7,7 +7,7 @@ import { operator_method_for, array_element_type_from_array_type, type_is_unknow
 import { CodegenContext, qualify_function_callee } from '../context'
 import { gen_extern_placeholder } from './literals'
 import { cpp_safe, map_builtin } from '../cpp_naming'
-import { is_constructor_call, field_access_operator, cpp_lambda_header_prefix } from './expression_support'
+import { is_constructor_call, cpp_lambda_header_prefix } from './expression_support'
 import * as mut_actual_argument from './mut_actual_argument'
 import { gen_method_expr } from './method_gen'
 import { gen_match } from './match_gen'
@@ -191,29 +191,6 @@ fn argument_list_via_visitor(
   evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string =
   expressions.map(expression => evaluate_expression(expression, context, gen_stmts)).join(', ')
-
-export fn gen_field_via_visitor(
-  object: Shared<SExpr>,
-  field_name: string,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string = do
-  const object_code = evaluate_expression(object, context, gen_stmts)
-  const operator = field_access_operator(object, context)
-  expression_output.field_access(object_code, operator, cpp_safe(field_name))
-end
-
-export fn gen_index_via_visitor(
-  object: Shared<SExpr>,
-  index_expression: Shared<SExpr>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  expression_output.index_subscript(
-    evaluate_expression(object, context, gen_stmts),
-    evaluate_expression(index_expression, context, gen_stmts))
 
 export fn gen_while_via_visitor(
   condition: Shared<SExpr>,

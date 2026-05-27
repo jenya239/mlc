@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | agent_token_last | cr-agent-809865da-9f85-470b-a16d-068ca16d1e6d |
 | run_tests | 518 |
-| TRACK_PLAN | TRACK_CPPGEN step 1 pending |
+| TRACK_PLAN | TRACK_CPPGEN step 2 pending |
+
+### Turn 2026-05-28 (CPPGEN step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | field/index as CppMember/CppIndex; removed gen_field/index_via_visitor |
+| verify | 518 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (plan-refresh post-CPPEXPR)
 
