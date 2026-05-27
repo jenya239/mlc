@@ -192,30 +192,6 @@ fn argument_list_via_visitor(
 ) -> string =
   expressions.map(expression => evaluate_expression(expression, context, gen_stmts)).join(', ')
 
-export fn gen_while_via_visitor(
-  condition: Shared<SExpr>,
-  statements: [Shared<SStmt>],
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  expression_output.while_loop_immediate_invoked_function_expression(
-    evaluate_expression(condition, context, gen_stmts),
-    gen_stmts(statements, context))
-
-export fn gen_for_via_visitor(
-  variable: string,
-  iterator: Shared<SExpr>,
-  statements: [Shared<SStmt>],
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  expression_output.for_loop_immediate_invoked_function_expression(
-    cpp_safe(variable),
-    evaluate_expression(iterator, context, gen_stmts),
-    gen_stmts(statements, context))
-
 export fn gen_record_via_visitor(
   type_name: string,
   field_values: [Shared<SFieldVal>],

@@ -47,7 +47,9 @@ struct CppLambda {mlc::Array<std::shared_ptr<cpp_ast::CppCapture>> field0;mlc::A
 struct CppInitList {mlc::Array<std::shared_ptr<cpp_ast::CppExpr>> field0;};
 struct CppStdVisit {std::shared_ptr<cpp_ast::CppExpr> field0;mlc::Array<std::shared_ptr<cpp_ast::CppExpr>> field1;};
 struct CppCast {cpp_ast::CppCastKind field0;std::shared_ptr<cpp_ast::CppType> field1;std::shared_ptr<cpp_ast::CppExpr> field2;};
-struct CppExpr {std::variant<CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppStdVisit, CppCast> _;};
+struct CppInvokedWhile {std::shared_ptr<cpp_ast::CppExpr> field0;mlc::String field1;};
+struct CppInvokedFor {mlc::String field0;std::shared_ptr<cpp_ast::CppExpr> field1;mlc::String field2;};
+struct CppExpr {std::variant<CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppStdVisit, CppCast, CppInvokedWhile, CppInvokedFor> _;};
 
 
 struct CppField {mlc::String typ;mlc::String name;};

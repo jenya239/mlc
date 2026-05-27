@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | agent_token_last | cr-agent-58442afc-6c72-4531-84a5-94b367590c2a |
-| run_tests | 518 |
-| TRACK_PLAN | TRACK_CPPGEN step 2 pending |
+| run_tests | 520 |
+| TRACK_PLAN | TRACK_CPPGEN step 3 pending |
+
+### Turn 2026-05-28 (CPPGEN step 2)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 2 |
+| step | 2 |
+| done | CppInvokedWhile/CppInvokedFor; removed gen_while/for_via_visitor |
+| verify | 520 pass; build.sh; self-host diff empty (g++ + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=3 (enqueued) |
 
 ### Turn 2026-05-28 (CPPGEN step 1)
 

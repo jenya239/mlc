@@ -40,6 +40,8 @@ export type CppExpr =
   | CppInitList([Shared<CppExpr>])
   | CppStdVisit(Shared<CppExpr>, [Shared<CppExpr>])
   | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpr>)
+  | CppInvokedWhile(Shared<CppExpr>, string)
+  | CppInvokedFor(string, Shared<CppExpr>, string)
 
 export type CppField = CppField { typ: string, name: string }
 

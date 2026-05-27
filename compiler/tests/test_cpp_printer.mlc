@@ -5,6 +5,7 @@ import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppCast, CppCastStatic, CppLambda,
          CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppBlock, CppIf, CppWhile, CppFor,
+         CppInvokedWhile, CppInvokedFor,
          CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
          CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
 
@@ -69,6 +70,15 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_expr CppLambda',
     print_expr(Shared.new(CppLambda([capture], [parameter], int_type, lambda_body))),
     '[&counter](int input) -> int { return input; }'))
+
+  const loop_body = 'step();\n'
+  results.push(assert_eq_str('print_expr CppInvokedWhile',
+    print_expr(Shared.new(CppInvokedWhile(Shared.new(CppBool(true)), loop_body))),
+    '[&]() {\nwhile (true) {\nstep();\n}\n}()'))
+
+  results.push(assert_eq_str('print_expr CppInvokedFor',
+    print_expr(Shared.new(CppInvokedFor('item', Shared.new(CppIdent('items')), loop_body))),
+    '[&]() {\nfor (auto item : items) {\nstep();\n}\n}()'))
 
   results.push(assert_eq_str('print_statement CppReturn',
     print_statement(Shared.new(CppReturn(Shared.new(CppInt(0))))),
