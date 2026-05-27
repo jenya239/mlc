@@ -8,7 +8,7 @@
 | role_last | Driver |
 | driver_turns_since_plan | 21 |
 | step_last | 21 |
-| agent_token_last | cr-agent-c047f2c0-540a-4029-802a-b150322b2c4e |
+| agent_token_last | cr-agent-69d54701-3353-4c3c-9211-d77c356c14bd |
 | run_tests | 518 |
 | TRACK_PLAN | TRACK_CPPEXPR **closed** |
 
