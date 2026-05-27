@@ -100,6 +100,10 @@ mlc::String invoked_while_expression(std::shared_ptr<cpp_ast::CppExpr> condition
 
 mlc::String invoked_for_expression(mlc::String variable_name, std::shared_ptr<cpp_ast::CppExpr> iterator, mlc::String body_statements) noexcept;
 
+mlc::String question_try_expression(std::shared_ptr<cpp_ast::CppExpr> inner) noexcept;
+
+mlc::String with_block_expression(std::shared_ptr<cpp_ast::CppExpr> resource, mlc::String binder, mlc::String body_statements) noexcept;
+
 mlc::String lambda_expression(mlc::String capture_prefix, mlc::String parameters_code, mlc::String return_type_code, mlc::String body_code) noexcept;
 
 mlc::String print_lambda_expression(mlc::Array<std::shared_ptr<cpp_ast::CppCapture>> captures, mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters, std::shared_ptr<cpp_ast::CppType> return_type, mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> body) noexcept;
@@ -402,6 +406,10 @@ mlc::String invoked_while_expression(std::shared_ptr<cpp_ast::CppExpr> condition
 
 mlc::String invoked_for_expression(mlc::String variable_name, std::shared_ptr<cpp_ast::CppExpr> iterator, mlc::String body_statements) noexcept{return mlc::String("[&]() {\nfor (auto ") + variable_name + mlc::String(" : ") + print_expr(iterator) + mlc::String(") {\n") + body_statements + mlc::String("}\n}()");}
 
+mlc::String question_try_expression(std::shared_ptr<cpp_ast::CppExpr> inner) noexcept{return mlc::String("({ auto __q = ") + print_expr(inner) + mlc::String("; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })");}
+
+mlc::String with_block_expression(std::shared_ptr<cpp_ast::CppExpr> resource, mlc::String binder, mlc::String body_statements) noexcept{return mlc::String("{\nauto ") + binder + mlc::String(" = (") + print_expr(resource) + mlc::String(");\n") + body_statements + binder + mlc::String(".drop();\n}\n");}
+
 mlc::String lambda_expression(mlc::String capture_prefix, mlc::String parameters_code, mlc::String return_type_code, mlc::String body_code) noexcept{return capture_prefix + mlc::String("(") + parameters_code + mlc::String(") -> ") + return_type_code + mlc::String(" { ") + body_code + mlc::String(" }");}
 
 mlc::String print_lambda_expression(mlc::Array<std::shared_ptr<cpp_ast::CppCapture>> captures, mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters, std::shared_ptr<cpp_ast::CppType> return_type, mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> body) noexcept{
@@ -438,7 +446,9 @@ mlc::String print_expr(std::shared_ptr<cpp_ast::CppExpr> expression) noexcept{re
   [&](const CppCast& cppcast) -> mlc::String { auto [kind, target_type, operand] = cppcast; return cast_expression(print_cast_kind_prefix(kind), print_type(target_type), print_expr(operand)); },
   [&](const CppLambda& cpplambda) -> mlc::String { auto [captures, parameters, return_type, body] = cpplambda; return print_lambda_expression(captures, parameters, return_type, body); },
   [&](const CppInvokedWhile& cppinvokedwhile) -> mlc::String { auto [condition, body_statements] = cppinvokedwhile; return invoked_while_expression(condition, body_statements); },
-  [&](const CppInvokedFor& cppinvokedfor) -> mlc::String { auto [variable_name, iterator, body_statements] = cppinvokedfor; return invoked_for_expression(variable_name, iterator, body_statements); }
+  [&](const CppInvokedFor& cppinvokedfor) -> mlc::String { auto [variable_name, iterator, body_statements] = cppinvokedfor; return invoked_for_expression(variable_name, iterator, body_statements); },
+  [&](const CppQuestionTry& cppquestiontry) -> mlc::String { auto [inner] = cppquestiontry; return question_try_expression(inner); },
+  [&](const CppWithBlock& cppwithblock) -> mlc::String { auto [resource, binder, body_statements] = cppwithblock; return with_block_expression(resource, binder, body_statements); }
 }, (*expression)._);}
 
 mlc::String print_statement(std::shared_ptr<cpp_ast::CppStmt> statement) noexcept{return print_statement_node(statement);}

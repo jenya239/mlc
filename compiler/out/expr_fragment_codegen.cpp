@@ -34,11 +34,9 @@ using namespace type_gen;
 using namespace statement_context;
 using namespace expr;
 
-mlc::String gen_binary_via_visitor(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expression, std::shared_ptr<semantic_ir::SExpr> right_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
-
-mlc::String gen_unary_via_visitor(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> inner_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
-
 mlc::String gen_call_function_code(std::shared_ptr<semantic_ir::SExpr> function_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
+
+mlc::String cpp_lambda_header_from_semantic_function_type(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<registry::Type> semantic_function_type_for_lambda, context::CodegenContext context) noexcept;
 
 mlc::String gen_call_via_visitor(std::shared_ptr<semantic_ir::SExpr> function_expression, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> call_parameter_mutability_flags, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
 
@@ -62,26 +60,26 @@ mlc::String gen_record_update_via_visitor(mlc::String type_name, std::shared_ptr
 
 mlc::String gen_array_via_visitor(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, std::shared_ptr<registry::Type> element_container_semantic_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
 
-mlc::String gen_tuple_via_visitor(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
-
-mlc::String gen_question_via_visitor(std::shared_ptr<semantic_ir::SExpr> inner_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
-
-mlc::String cpp_lambda_header_from_semantic_function_type(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<registry::Type> semantic_function_type_for_lambda, context::CodegenContext context) noexcept;
-
 mlc::String gen_lambda_via_visitor(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<semantic_ir::SExpr> body_expression_under_lambda, std::shared_ptr<registry::Type> semantic_function_type_for_lambda_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
 
-mlc::String gen_with_via_visitor(std::shared_ptr<semantic_ir::SExpr> resource, mlc::String binder, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept;
-
-mlc::String gen_binary_via_visitor(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> left_expression, std::shared_ptr<semantic_ir::SExpr> right_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{
-mlc::String method = semantic_type_structure::operator_method_for(operation);
-std::shared_ptr<registry::Type> left_type = semantic_ir::sexpr_type(left_expression);
-mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*left_type))) { auto _v_tnamed = std::get<registry::TNamed>((*left_type)); auto [name] = _v_tnamed; return name; } return mlc::String(""); }();
-return method != mlc::String("") && type_name != mlc::String("") ? type_name + mlc::String("_") + method + mlc::String("(") + evaluate_expression(left_expression, context, gen_stmts) + mlc::String(", ") + evaluate_expression(right_expression, context, gen_stmts) + mlc::String(")") : expr::parenthesized_binary(evaluate_expression(left_expression, context, gen_stmts), operation, evaluate_expression(right_expression, context, gen_stmts));
-}
-
-mlc::String gen_unary_via_visitor(mlc::String operation, std::shared_ptr<semantic_ir::SExpr> inner_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{return expr::parenthesized_unary(operation, evaluate_expression(inner_expression, context, gen_stmts));}
-
 mlc::String gen_call_function_code(std::shared_ptr<semantic_ir::SExpr> function_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SExprIdent>((*function_expression)._)) { auto _v_sexprident = std::get<semantic_ir::SExprIdent>((*function_expression)._); auto [name, _w0, _w1] = _v_sexprident; return context::qualify_function_callee(cpp_naming::map_builtin(name), context); } return evaluate_expression(function_expression, context, gen_stmts); }();}
+
+mlc::String cpp_lambda_header_from_semantic_function_type(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<registry::Type> semantic_function_type_for_lambda, context::CodegenContext context) noexcept{
+mlc::String capture_clause = parameter_binding_names.size() == 0 ? mlc::String("[]") : mlc::String("[&]");
+return [&]() -> mlc::String { if (std::holds_alternative<registry::TFn>((*semantic_function_type_for_lambda))) { auto _v_tfn = std::get<registry::TFn>((*semantic_function_type_for_lambda)); auto [lambda_parameter_semantic_types, _w0] = _v_tfn; return lambda_parameter_semantic_types.size() != parameter_binding_names.size() ? expression_support::cpp_lambda_header_prefix(parameter_binding_names) : [&]() -> mlc::String { 
+  mlc::Array<mlc::String> formatted_parameter_declarations = {};
+  int lambda_parameter_index = 0;
+  while (lambda_parameter_index < parameter_binding_names.size()){
+{
+mlc::String raw_param_type = type_gen::sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index]);
+mlc::String param_type_cpp = raw_param_type == mlc::String("void") ? mlc::String("std::tuple<>") : raw_param_type;
+formatted_parameter_declarations.push_back(expr::parameter_declaration_item(param_type_cpp, cpp_naming::cpp_safe(parameter_binding_names[lambda_parameter_index])));
+lambda_parameter_index = lambda_parameter_index + 1;
+}
+}
+  return capture_clause + mlc::String("(") + formatted_parameter_declarations.join(mlc::String(", ")) + mlc::String(") mutable");
+ }(); } return expression_support::cpp_lambda_header_prefix(parameter_binding_names); }();
+}
 
 mlc::String gen_call_via_visitor(std::shared_ptr<semantic_ir::SExpr> function_expression, mlc::Array<std::shared_ptr<semantic_ir::SExpr>> arguments, mlc::Array<int> call_parameter_mutability_flags, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{
 mlc::String function_code = gen_call_function_code(function_expression, context, gen_stmts, evaluate_expression);
@@ -130,33 +128,6 @@ mlc::String gen_array_via_visitor(mlc::Array<std::shared_ptr<semantic_ir::SExpr>
   return elements.size() == 0 ? expr::typed_array_empty_or_untyped_empty(element_cpp) : element_cpp == mlc::String("auto") ? expr::array_literal(argument_list_via_visitor(elements, context, gen_stmts, evaluate_expression)) : expr::typed_array_braced_initializer(element_cpp, argument_list_via_visitor(elements, context, gen_stmts, evaluate_expression));
  }(); } return expr::array_literal(argument_list_via_visitor(elements, context, gen_stmts, evaluate_expression)); }();}
 
-mlc::String gen_tuple_via_visitor(mlc::Array<std::shared_ptr<semantic_ir::SExpr>> elements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{return mlc::String("std::make_tuple(") + elements.map([evaluate_expression, context, gen_stmts](std::shared_ptr<semantic_ir::SExpr> element) mutable { return evaluate_expression(element, context, gen_stmts); }).join(mlc::String(", ")) + mlc::String(")");}
-
-mlc::String gen_question_via_visitor(std::shared_ptr<semantic_ir::SExpr> inner_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{return expr::question_try_result(evaluate_expression(inner_expression, context, gen_stmts));}
-
-mlc::String cpp_lambda_header_from_semantic_function_type(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<registry::Type> semantic_function_type_for_lambda, context::CodegenContext context) noexcept{
-mlc::String capture_clause = parameter_binding_names.size() == 0 ? mlc::String("[]") : mlc::String("[&]");
-return [&]() -> mlc::String { if (std::holds_alternative<registry::TFn>((*semantic_function_type_for_lambda))) { auto _v_tfn = std::get<registry::TFn>((*semantic_function_type_for_lambda)); auto [lambda_parameter_semantic_types, _w0] = _v_tfn; return lambda_parameter_semantic_types.size() != parameter_binding_names.size() ? expression_support::cpp_lambda_header_prefix(parameter_binding_names) : [&]() -> mlc::String { 
-  mlc::Array<mlc::String> formatted_parameter_declarations = {};
-  int lambda_parameter_index = 0;
-  while (lambda_parameter_index < parameter_binding_names.size()){
-{
-mlc::String raw_param_type = type_gen::sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index]);
-mlc::String param_type_cpp = raw_param_type == mlc::String("void") ? mlc::String("std::tuple<>") : raw_param_type;
-formatted_parameter_declarations.push_back(expr::parameter_declaration_item(param_type_cpp, cpp_naming::cpp_safe(parameter_binding_names[lambda_parameter_index])));
-lambda_parameter_index = lambda_parameter_index + 1;
-}
-}
-  return capture_clause + mlc::String("(") + formatted_parameter_declarations.join(mlc::String(", ")) + mlc::String(") mutable");
- }(); } return expression_support::cpp_lambda_header_prefix(parameter_binding_names); }();
-}
-
 mlc::String gen_lambda_via_visitor(mlc::Array<mlc::String> parameter_binding_names, std::shared_ptr<semantic_ir::SExpr> body_expression_under_lambda, std::shared_ptr<registry::Type> semantic_function_type_for_lambda_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{return expr::lambda_with_return(cpp_lambda_header_from_semantic_function_type(parameter_binding_names, semantic_function_type_for_lambda_expression, context), evaluate_expression(body_expression_under_lambda, context, gen_stmts));}
-
-mlc::String gen_with_via_visitor(std::shared_ptr<semantic_ir::SExpr> resource, mlc::String binder, mlc::Array<std::shared_ptr<semantic_ir::SStmt>> statements, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SExpr>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SStmt>>, context::CodegenContext)>)> evaluate_expression) noexcept{
-mlc::String resource_code = evaluate_expression(resource, context, gen_stmts);
-mlc::String body_code = gen_stmts(statements, context);
-return expr::with_block_statement(resource_code, binder, body_code);
-}
 
 } // namespace expr_fragment_codegen

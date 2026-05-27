@@ -3,7 +3,7 @@
 import { Type } from '../../checker/registry'
 import { SExpr, SStmt, sexpr_type, SExprArray, SMatchArm, SFieldVal } from '../../ir/semantic_ir'
 import { TNamed, TArray, TFn } from '../../checker/registry'
-import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from '../../checker/semantic_type_structure'
+import { array_element_type_from_array_type, type_is_unknown } from '../../checker/semantic_type_structure'
 import { CodegenContext, qualify_function_callee } from '../context'
 import { gen_extern_placeholder } from './literals'
 import { cpp_safe, map_builtin } from '../cpp_naming'
@@ -16,36 +16,6 @@ import { sem_type_to_cpp } from '../decl/type_gen'
 import { stmts_final_ctx } from '../stmt/statement_context'
 import * as expression_output from './expr'
 
-export fn gen_binary_via_visitor(
-  operation: string,
-  left_expression: Shared<SExpr>,
-  right_expression: Shared<SExpr>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string = do
-  const method = operator_method_for(operation)
-  const left_type = sexpr_type(left_expression)
-  const type_name = match left_type { TNamed(name) => name, _ => '' }
-  if method != '' && type_name != '' then
-    `${type_name}_${method}(${evaluate_expression(left_expression, context, gen_stmts)}, ${evaluate_expression(right_expression, context, gen_stmts)})`
-  else
-    expression_output.parenthesized_binary(
-      evaluate_expression(left_expression, context, gen_stmts),
-      operation,
-      evaluate_expression(right_expression, context, gen_stmts))
-  end
-end
-
-export fn gen_unary_via_visitor(
-  operation: string,
-  inner_expression: Shared<SExpr>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  expression_output.parenthesized_unary(operation, evaluate_expression(inner_expression, context, gen_stmts))
-
 fn gen_call_function_code(
   function_expression: Shared<SExpr>,
   context: CodegenContext,
@@ -56,6 +26,36 @@ fn gen_call_function_code(
     SExprIdent(name, _, _) => qualify_function_callee(map_builtin(name), context),
     _ => evaluate_expression(function_expression, context, gen_stmts)
   }
+
+fn cpp_lambda_header_from_semantic_function_type(
+  parameter_binding_names: [string],
+  semantic_function_type_for_lambda: Shared<Type>,
+  context: CodegenContext
+) -> string = do
+  const capture_clause =
+    if parameter_binding_names.length() == 0 then '[]' else '[&]' end
+  match semantic_function_type_for_lambda {
+    TFn(lambda_parameter_semantic_types, _) =>
+      if lambda_parameter_semantic_types.length() != parameter_binding_names.length() then
+        cpp_lambda_header_prefix(parameter_binding_names)
+      else do
+        let formatted_parameter_declarations: [string] = []
+        let mut lambda_parameter_index = 0
+        while lambda_parameter_index < parameter_binding_names.length() do
+          const raw_param_type = sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index])
+          const param_type_cpp = if raw_param_type == 'void' then 'std::tuple<>' else raw_param_type end
+          formatted_parameter_declarations.push(
+            expression_output.parameter_declaration_item(
+              param_type_cpp,
+              cpp_safe(parameter_binding_names[lambda_parameter_index])))
+          lambda_parameter_index = lambda_parameter_index + 1
+        end
+        `${capture_clause}(${formatted_parameter_declarations.join(', ')}) mutable`
+      end,
+    _ =>
+      cpp_lambda_header_prefix(parameter_binding_names)
+  }
+end
 
 export fn gen_call_via_visitor(
   function_expression: Shared<SExpr>,
@@ -233,51 +233,7 @@ export fn gen_array_via_visitor(
     _ => expression_output.array_literal(argument_list_via_visitor(elements, context, gen_stmts, evaluate_expression))
   }
 
-export fn gen_tuple_via_visitor(
-  elements: [Shared<SExpr>],
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  `std::make_tuple(${elements.map(element => evaluate_expression(element, context, gen_stmts)).join(', ')})`
 
-export fn gen_question_via_visitor(
-  inner_expression: Shared<SExpr>,
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string =
-  expression_output.question_try_result(evaluate_expression(inner_expression, context, gen_stmts))
-
-fn cpp_lambda_header_from_semantic_function_type(
-  parameter_binding_names: [string],
-  semantic_function_type_for_lambda: Shared<Type>,
-  context: CodegenContext
-) -> string = do
-  const capture_clause =
-    if parameter_binding_names.length() == 0 then '[]' else '[&]' end
-  match semantic_function_type_for_lambda {
-    TFn(lambda_parameter_semantic_types, _) =>
-      if lambda_parameter_semantic_types.length() != parameter_binding_names.length() then
-        cpp_lambda_header_prefix(parameter_binding_names)
-      else do
-        let formatted_parameter_declarations: [string] = []
-        let mut lambda_parameter_index = 0
-        while lambda_parameter_index < parameter_binding_names.length() do
-          const raw_param_type = sem_type_to_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index])
-          const param_type_cpp = if raw_param_type == 'void' then 'std::tuple<>' else raw_param_type end
-          formatted_parameter_declarations.push(
-            expression_output.parameter_declaration_item(
-              param_type_cpp,
-              cpp_safe(parameter_binding_names[lambda_parameter_index])))
-          lambda_parameter_index = lambda_parameter_index + 1
-        end
-        `${capture_clause}(${formatted_parameter_declarations.join(', ')}) mutable`
-      end,
-    _ =>
-      cpp_lambda_header_prefix(parameter_binding_names)
-  }
-end
 
 export fn gen_lambda_via_visitor(
   parameter_binding_names: [string],
@@ -294,15 +250,3 @@ export fn gen_lambda_via_visitor(
       context),
     evaluate_expression(body_expression_under_lambda, context, gen_stmts))
 
-export fn gen_with_via_visitor(
-  resource: Shared<SExpr>,
-  binder: string,
-  statements: [Shared<SStmt>],
-  context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
-) -> string = do
-  const resource_code = evaluate_expression(resource, context, gen_stmts)
-  const body_code = gen_stmts(statements, context)
-  expression_output.with_block_statement(resource_code, binder, body_code)
-end

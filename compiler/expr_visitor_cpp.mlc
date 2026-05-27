@@ -2,7 +2,7 @@
 
 import { Type, TNamed } from './checker/registry'
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from './ir/semantic_ir'
-import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor } from './cpp/cpp_ast'
+import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock } from './cpp/cpp_ast'
 import { print_expr } from './cpp/cpp_printer'
 import * as emit_helpers from './cpp/emit_helpers'
 import { operator_method_for } from './checker/semantic_type_structure'
@@ -236,18 +236,16 @@ export fn gen_tuple_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_tuple_via_visitor(
-      elements, context, gen_stmts, eval_expr_cpp_as_string))
+  Shared.new(CppCall(
+    emit_helpers.make_identifier_cpp_expression('std::make_tuple'),
+    elements.map(element => eval_expr_cpp(element, context, gen_stmts))))
 
 export fn gen_question_via_cpp_visitor(
   inner_expression: Shared<SExpr>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_question_via_visitor(
-      inner_expression, context, gen_stmts, eval_expr_cpp_as_string))
+  Shared.new(CppQuestionTry(eval_expr_cpp(inner_expression, context, gen_stmts)))
 
 export fn gen_with_via_cpp_visitor(
   resource: Shared<SExpr>,
@@ -256,9 +254,10 @@ export fn gen_with_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_with_via_visitor(
-      resource, binder, statements, context, gen_stmts, eval_expr_cpp_as_string))
+  Shared.new(CppWithBlock(
+    eval_expr_cpp(resource, context, gen_stmts),
+    binder,
+    gen_stmts(statements, context)))
 
 export fn gen_binary_via_cpp_visitor(
   operation: string,
@@ -277,9 +276,10 @@ export fn gen_binary_via_cpp_visitor(
       [evaluate_expression(left_expression, context, gen_stmts),
        evaluate_expression(right_expression, context, gen_stmts)]))
   else
-    cpp_expr_from_rendered_fragment(
-      expr_fragment_codegen.gen_binary_via_visitor(
-        operation, left_expression, right_expression, context, gen_stmts, eval_expr_cpp_as_string))
+    Shared.new(CppBinary(
+      operation,
+      evaluate_expression(left_expression, context, gen_stmts),
+      evaluate_expression(right_expression, context, gen_stmts)))
   end
 end
 
@@ -290,9 +290,7 @@ export fn gen_unary_via_cpp_visitor(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
 ) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_unary_via_visitor(
-      operation, inner_expression, context, gen_stmts, eval_expr_cpp_as_string))
+  Shared.new(CppUnary(operation, evaluate_expression(inner_expression, context, gen_stmts)))
 
 extend CppExprVisitor : ExprVisitor<Shared<CppExpr>> {
   fn visit_int(self: CppExprVisitor, value: i32, _semantic_type: Shared<Type>) -> Shared<CppExpr> =

@@ -8,7 +8,7 @@ import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
          CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppStdVisit, CppCast,
-         CppInvokedWhile, CppInvokedFor } from './cpp_ast'
+         CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock } from './cpp_ast'
 import * as cpp_ast from './cpp_ast'
 
 fn escape_cpp_string_content(input: string) -> string = do
@@ -300,6 +300,12 @@ fn invoked_while_expression(condition: Shared<CppExpr>, body_statements: string)
 fn invoked_for_expression(variable_name: string, iterator: Shared<CppExpr>, body_statements: string) -> string =
   `[&]() {\nfor (auto ${variable_name} : ${print_expr(iterator)}) {\n${body_statements}}\n}()`
 
+fn question_try_expression(inner: Shared<CppExpr>) -> string =
+  `({ auto __q = ${print_expr(inner)}; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })`
+
+fn with_block_expression(resource: Shared<CppExpr>, binder: string, body_statements: string) -> string =
+  `{\nauto ${binder} = (${print_expr(resource)});\n${body_statements}${binder}.drop();\n}\n`
+
 fn lambda_expression(capture_prefix: string, parameters_code: string, return_type_code: string, body_code: string) -> string =
   `${capture_prefix}(${parameters_code}) -> ${return_type_code} { ${body_code} }`
 
@@ -359,7 +365,10 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
       print_lambda_expression(captures, parameters, return_type, body),
     CppInvokedWhile(condition, body_statements) => invoked_while_expression(condition, body_statements),
     CppInvokedFor(variable_name, iterator, body_statements) =>
-      invoked_for_expression(variable_name, iterator, body_statements)
+      invoked_for_expression(variable_name, iterator, body_statements),
+    CppQuestionTry(inner) => question_try_expression(inner),
+    CppWithBlock(resource, binder, body_statements) =>
+      with_block_expression(resource, binder, body_statements)
   }
 
 export fn print_statement(statement: Shared<CppStmt>) -> string =

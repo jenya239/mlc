@@ -5,7 +5,7 @@ import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppCast, CppCastStatic, CppLambda,
          CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppBlock, CppIf, CppWhile, CppFor,
-         CppInvokedWhile, CppInvokedFor,
+         CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock,
          CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
          CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
 
@@ -79,6 +79,14 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_expr CppInvokedFor',
     print_expr(Shared.new(CppInvokedFor('item', Shared.new(CppIdent('items')), loop_body))),
     '[&]() {\nfor (auto item : items) {\nstep();\n}\n}()'))
+
+  results.push(assert_eq_str('print_expr CppQuestionTry',
+    print_expr(Shared.new(CppQuestionTry(Shared.new(CppInt(7))))),
+    '({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })'))
+
+  results.push(assert_eq_str('print_expr CppWithBlock',
+    print_expr(Shared.new(CppWithBlock(Shared.new(CppIdent('resource')), 'handle', 'handle.use();\n'))),
+    '{\nauto handle = (resource);\nhandle.use();\nhandle.drop();\n}\n'))
 
   results.push(assert_eq_str('print_statement CppReturn',
     print_statement(Shared.new(CppReturn(Shared.new(CppInt(0))))),
