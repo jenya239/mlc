@@ -7,10 +7,21 @@
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
 | driver_turns_since_plan | 2 |
-| step_last | 4 |
-| agent_token_last | cr-agent-924842bb-156b-49aa-964e-7f23cfe9bd68 |
-| run_tests | 524 |
-| TRACK_PLAN | TRACK_CPPGEN step 5 pending |
+| step_last | 5 |
+| run_tests | 526 |
+| TRACK_PLAN | TRACK_CPPGEN step 6 pending |
+
+### Turn 2026-05-28 (CPPGEN step 5)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 5 |
+| step | 5 |
+| done | CppStmtFragment/CppConstexprAutoDecl; native let/let const/expr stmt; fragment bridge for complex |
+| verify | 526 pass; build.sh; self-host diff empty (build_bin.sh + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=6 (enqueued) |
 
 ### Turn 2026-05-28 (CPPGEN step 4)
 

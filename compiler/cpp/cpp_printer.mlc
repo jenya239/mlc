@@ -3,7 +3,7 @@
 import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppCastKind, CppCastStatic, CppCastDynamic, CppCastReinterpret, CppCastConst,
          CppCapture, CppParam,
-         CppStmt, CppAutoDecl, CppConstDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor,
+         CppStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppStmtFragment,
          CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppDeclFragment,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
@@ -162,6 +162,9 @@ fn range_for_statement(variable_name: string, range_code: string, body_code: str
 fn auto_declaration(name: string, initializer_code: string) -> string =
   `auto ${name} = ${initializer_code};`
 
+fn constexpr_auto_declaration(name: string, initializer_code: string) -> string =
+  `constexpr auto ${name} = ${initializer_code};`
+
 fn const_declaration(type_code: string, name: string, initializer_code: string) -> string =
   `const ${type_code} ${name} = ${initializer_code};`
 
@@ -229,6 +232,8 @@ fn print_statement_node(statement: Shared<CppStmt>) -> string =
     CppAutoDecl(name, initializer) => auto_declaration(name, print_expr(initializer)),
     CppConstDecl(name, type_node, initializer) =>
       const_declaration(print_type(type_node), name, print_expr(initializer)),
+    CppConstexprAutoDecl(name, initializer) =>
+      constexpr_auto_declaration(name, print_expr(initializer)),
     CppReturn(expression) => "return " + print_expr(expression) + ";",
     CppExprStmt(expression) => print_expr(expression) + ";",
     CppBlock(statements) => block_braces(print_statements(statements)),
@@ -245,7 +250,8 @@ fn print_statement_node(statement: Shared<CppStmt>) -> string =
         variable_name,
         print_expr(range_expression),
         block_braces(print_statements(body))
-      )
+      ),
+    CppStmtFragment(fragment) => fragment
   }
 
 fn print_statements(statements: [Shared<CppStmt>]) -> string = do

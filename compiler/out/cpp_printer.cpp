@@ -62,6 +62,8 @@ mlc::String range_for_statement(mlc::String variable_name, mlc::String range_cod
 
 mlc::String auto_declaration(mlc::String name, mlc::String initializer_code) noexcept;
 
+mlc::String constexpr_auto_declaration(mlc::String name, mlc::String initializer_code) noexcept;
+
 mlc::String const_declaration(mlc::String type_code, mlc::String name, mlc::String initializer_code) noexcept;
 
 mlc::String include_angle(mlc::String path) noexcept;
@@ -300,6 +302,8 @@ mlc::String range_for_statement(mlc::String variable_name, mlc::String range_cod
 
 mlc::String auto_declaration(mlc::String name, mlc::String initializer_code) noexcept{return mlc::String("auto ") + name + mlc::String(" = ") + initializer_code + mlc::String(";");}
 
+mlc::String constexpr_auto_declaration(mlc::String name, mlc::String initializer_code) noexcept{return mlc::String("constexpr auto ") + name + mlc::String(" = ") + initializer_code + mlc::String(";");}
+
 mlc::String const_declaration(mlc::String type_code, mlc::String name, mlc::String initializer_code) noexcept{return mlc::String("const ") + type_code + mlc::String(" ") + name + mlc::String(" = ") + initializer_code + mlc::String(";");}
 
 mlc::String include_angle(mlc::String path) noexcept{return mlc::String("#include <") + path + mlc::String(">");}
@@ -357,12 +361,14 @@ mlc::String print_statement_body(std::shared_ptr<cpp_ast::CppStmt> statement) no
 mlc::String print_statement_node(std::shared_ptr<cpp_ast::CppStmt> statement) noexcept{return std::visit(overloaded{
   [&](const CppAutoDecl& cppautodecl) -> mlc::String { auto [name, initializer] = cppautodecl; return auto_declaration(name, print_expr(initializer)); },
   [&](const CppConstDecl& cppconstdecl) -> mlc::String { auto [name, type_node, initializer] = cppconstdecl; return const_declaration(print_type(type_node), name, print_expr(initializer)); },
+  [&](const CppConstexprAutoDecl& cppconstexprautodecl) -> mlc::String { auto [name, initializer] = cppconstexprautodecl; return constexpr_auto_declaration(name, print_expr(initializer)); },
   [&](const CppReturn& cppreturn) -> mlc::String { auto [expression] = cppreturn; return mlc::String("return ") + print_expr(expression) + mlc::String(";"); },
   [&](const CppExprStmt& cppexprstmt) -> mlc::String { auto [expression] = cppexprstmt; return print_expr(expression) + mlc::String(";"); },
   [&](const CppBlock& cppblock) -> mlc::String { auto [statements] = cppblock; return block_braces(print_statements(statements)); },
   [&](const CppIf& cppif) -> mlc::String { auto [condition, then_branch, else_branch] = cppif; return if_statement(print_expr(condition), print_statement_body(then_branch), print_statement_body(else_branch)); },
   [&](const CppWhile& cppwhile) -> mlc::String { auto [condition, body] = cppwhile; return while_statement(print_expr(condition), print_statement_body(body)); },
-  [&](const CppFor& cppfor) -> mlc::String { auto [variable_name, range_expression, body] = cppfor; return range_for_statement(variable_name, print_expr(range_expression), block_braces(print_statements(body))); }
+  [&](const CppFor& cppfor) -> mlc::String { auto [variable_name, range_expression, body] = cppfor; return range_for_statement(variable_name, print_expr(range_expression), block_braces(print_statements(body))); },
+  [&](const CppStmtFragment& cppstmtfragment) -> mlc::String { auto [fragment] = cppstmtfragment; return fragment; }
 }, (*statement)._);}
 
 mlc::String print_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> statements) noexcept{

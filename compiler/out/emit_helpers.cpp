@@ -14,6 +14,10 @@ std::shared_ptr<cpp_ast::CppExpr> make_boolean_cpp_expression(bool boolean_value
 
 std::shared_ptr<cpp_ast::CppExpr> make_identifier_cpp_expression(mlc::String name) noexcept;
 
+std::shared_ptr<cpp_ast::CppStmt> make_constexpr_auto_cpp_statement(mlc::String name, std::shared_ptr<cpp_ast::CppExpr> initializer) noexcept;
+
+std::shared_ptr<cpp_ast::CppStmt> make_fragment_cpp_statement(mlc::String code) noexcept;
+
 std::shared_ptr<cpp_ast::CppStmt> make_auto_cpp_statement(mlc::String name, std::shared_ptr<cpp_ast::CppExpr> initializer) noexcept;
 
 std::shared_ptr<cpp_ast::CppStmt> make_return_cpp_statement(std::shared_ptr<cpp_ast::CppExpr> expression) noexcept;
@@ -41,6 +45,10 @@ std::shared_ptr<cpp_ast::CppExpr> make_string_cpp_expression(mlc::String string_
 std::shared_ptr<cpp_ast::CppExpr> make_boolean_cpp_expression(bool boolean_value) noexcept{return std::make_shared<cpp_ast::CppExpr>(cpp_ast::CppBool(boolean_value));}
 
 std::shared_ptr<cpp_ast::CppExpr> make_identifier_cpp_expression(mlc::String name) noexcept{return std::make_shared<cpp_ast::CppExpr>(cpp_ast::CppIdent(name));}
+
+std::shared_ptr<cpp_ast::CppStmt> make_constexpr_auto_cpp_statement(mlc::String name, std::shared_ptr<cpp_ast::CppExpr> initializer) noexcept{return std::make_shared<cpp_ast::CppStmt>(cpp_ast::CppConstexprAutoDecl(name, initializer));}
+
+std::shared_ptr<cpp_ast::CppStmt> make_fragment_cpp_statement(mlc::String code) noexcept{return std::make_shared<cpp_ast::CppStmt>(cpp_ast::CppStmtFragment(code));}
 
 std::shared_ptr<cpp_ast::CppStmt> make_auto_cpp_statement(mlc::String name, std::shared_ptr<cpp_ast::CppExpr> initializer) noexcept{return std::make_shared<cpp_ast::CppStmt>(cpp_ast::CppAutoDecl(name, initializer));}
 

@@ -24,6 +24,10 @@ std::shared_ptr<cpp_ast::CppExpr> make_boolean_cpp_expression(bool boolean_value
 
 std::shared_ptr<cpp_ast::CppExpr> make_identifier_cpp_expression(mlc::String name) noexcept;
 
+std::shared_ptr<cpp_ast::CppStmt> make_constexpr_auto_cpp_statement(mlc::String name, std::shared_ptr<cpp_ast::CppExpr> initializer) noexcept;
+
+std::shared_ptr<cpp_ast::CppStmt> make_fragment_cpp_statement(mlc::String code) noexcept;
+
 std::shared_ptr<cpp_ast::CppStmt> make_auto_cpp_statement(mlc::String name, std::shared_ptr<cpp_ast::CppExpr> initializer) noexcept;
 
 std::shared_ptr<cpp_ast::CppStmt> make_return_cpp_statement(std::shared_ptr<cpp_ast::CppExpr> expression) noexcept;

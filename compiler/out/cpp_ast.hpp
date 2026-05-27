@@ -24,13 +24,15 @@ struct CppParam {mlc::String name;std::shared_ptr<cpp_ast::CppType> parameter_ty
 
 struct CppAutoDecl {mlc::String field0;std::shared_ptr<cpp_ast::CppExpr> field1;};
 struct CppConstDecl {mlc::String field0;std::shared_ptr<cpp_ast::CppType> field1;std::shared_ptr<cpp_ast::CppExpr> field2;};
+struct CppConstexprAutoDecl {mlc::String field0;std::shared_ptr<cpp_ast::CppExpr> field1;};
 struct CppReturn {std::shared_ptr<cpp_ast::CppExpr> field0;};
 struct CppExprStmt {std::shared_ptr<cpp_ast::CppExpr> field0;};
 struct CppBlock {mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> field0;};
 struct CppIf {std::shared_ptr<cpp_ast::CppExpr> field0;std::shared_ptr<cpp_ast::CppStmt> field1;std::shared_ptr<cpp_ast::CppStmt> field2;};
 struct CppWhile {std::shared_ptr<cpp_ast::CppExpr> field0;std::shared_ptr<cpp_ast::CppStmt> field1;};
 struct CppFor {mlc::String field0;std::shared_ptr<cpp_ast::CppExpr> field1;mlc::Array<std::shared_ptr<cpp_ast::CppStmt>> field2;};
-struct CppStmt {std::variant<CppAutoDecl, CppConstDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor> _;};
+struct CppStmtFragment {mlc::String field0;};
+struct CppStmt {std::variant<CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppStmtFragment> _;};
 
 
 struct CppInt {int field0;};

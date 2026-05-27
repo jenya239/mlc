@@ -1,6 +1,6 @@
 // CppStmt dual path for statement codegen (Phase 2 step 16).
 
-import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod } from '../ir/semantic_ir'
+import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod, SExprBlock, SExprIf, SExprBin, SExprWhile, SExprFor, SExprWith } from '../ir/semantic_ir'
 import { CppExpr, CppStmt } from '../cpp/cpp_ast'
 import { print_statement } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
@@ -32,12 +32,8 @@ export fn gen_stmts_cpp(statements: [Shared<SStmt>], context: CodegenContext) ->
 export fn gen_stmts_cpp_as_string(statements: [Shared<SStmt>], context: CodegenContext) -> string =
   print_cpp_statements(gen_stmts_cpp(statements, context))
 
-export fn cpp_stmt_from_string_output(output: string) -> Shared<CppStmt> = do
-  const without_newline = strip_trailing_newline(output)
-  const without_semicolon = strip_trailing_semicolon(without_newline)
-  emit_helpers.make_expression_cpp_statement(
-    emit_helpers.make_identifier_cpp_expression(without_semicolon))
-end
+export fn cpp_stmt_from_string_output(output: string) -> Shared<CppStmt> =
+  cpp_stmt_fragment_from_string_output(output)
 
 export fn cpp_stmts_from_string_output(output: string) -> [Shared<CppStmt>] =
   if output.length() == 0 then []
@@ -51,20 +47,45 @@ export fn print_cpp_statements(statements: [Shared<CppStmt>]) -> string = do
   let parts: [string] = []
   let mut index = 0
   while index < statements.length() do
-    parts.push(print_statement(statements[index]) + "\n")
+    parts.push(print_cpp_statement_line(statements[index]))
     index = index + 1
   end
   parts.join("")
 end
 
+fn print_cpp_statement_line(statement: Shared<CppStmt>) -> string =
+  match statement {
+    CppStmtFragment(fragment) =>
+      if fragment.length() >= 1 && fragment.char_at(fragment.length() - 1) == "\n" then fragment
+      else fragment + "\n"
+    end,
+    _ => print_statement(statement) + "\n"
+  }
+
+fn cpp_stmt_fragment_from_string_output(output: string) -> Shared<CppStmt> =
+  emit_helpers.make_fragment_cpp_statement(strip_trailing_newline(output))
+
+fn constexpr_value_needs_string_bridge(value: Shared<SExpr>) -> bool =
+  match value {
+    SExprBlock(_, _, _, _) => true,
+    SExprIf(_, _, _, _, _) => true,
+    _ => false
+  }
+
+fn expression_statement_needs_string_bridge(expression: Shared<SExpr>) -> bool =
+  match expression {
+    SExprQuestion(_, _, _) => true,
+    SExprBin(operation, _, _, _, _) => operation == "=",
+    SExprIf(_, _, _, _, _) => true,
+    SExprWhile(_, _, _, _) => true,
+    SExprFor(_, _, _, _, _) => true,
+    SExprWith(_, _, _, _, _) => true,
+    SExprBlock(_, _, _, _) => true,
+    _ => false
+  }
+
 fn strip_trailing_newline(text: string) -> string =
   if text.length() >= 1 && text.char_at(text.length() - 1) == "\n" then
-    text.substring(0, text.length() - 1)
-  else text
-  end
-
-fn strip_trailing_semicolon(text: string) -> string =
-  if text.length() >= 1 && text.char_at(text.length() - 1) == ";" then
     text.substring(0, text.length() - 1)
   else text
   end
@@ -107,7 +128,10 @@ fn eval_stmt_cpp(
     },
     SStmtLet(name, _, value, _, _) => match value {
       SExprQuestion(_, _, _) => stmt_via_string_bridge(statement, context, try_counter),
-      SExprArray(_, _, _) => stmt_via_string_bridge(statement, context, try_counter),
+      SExprArray(_, _, _) => GenStmtCppResult {
+        statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
+        next_try: try_counter
+      },
       SExprMethod(_, method_name, _, _, _, _) =>
         if method_name == "new" then stmt_via_string_bridge(statement, context, try_counter)
         else GenStmtCppResult {
@@ -121,8 +145,22 @@ fn eval_stmt_cpp(
       }
     },
     SStmtLetPat(_, _, _, _, _, _, _) => stmt_via_string_bridge(statement, context, try_counter),
-    SStmtLetConst(_, _, _, _) => stmt_via_string_bridge(statement, context, try_counter),
-    SStmtExpr(_, _) => stmt_via_string_bridge(statement, context, try_counter)
+    SStmtLetConst(name, value, _, _) =>
+      if constexpr_value_needs_string_bridge(value) then stmt_via_string_bridge(statement, context, try_counter)
+      else GenStmtCppResult {
+        statement: emit_helpers.make_constexpr_auto_cpp_statement(
+          cpp_safe(name),
+          gen_expr_cpp_for_stmt_codegen(value, context)),
+        next_try: try_counter
+      }
+    end,
+    SStmtExpr(expression, _) =>
+      if expression_statement_needs_string_bridge(expression) then stmt_via_string_bridge(statement, context, try_counter)
+      else GenStmtCppResult {
+        statement: emit_helpers.make_expression_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)),
+        next_try: try_counter
+      }
+    end
   }
 
 fn stmts_cpp_fold_step(fold_state: StmtsCppFoldState, statement: Shared<SStmt>) -> StmtsCppFoldState = do

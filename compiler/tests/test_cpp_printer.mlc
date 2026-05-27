@@ -4,7 +4,7 @@ import { TestResult, assert_eq_str } from './test_runner'
 import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_printer'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppCast, CppCastStatic, CppLambda,
-         CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppBlock, CppIf, CppWhile, CppFor,
+         CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock,
          CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
          CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
@@ -108,6 +108,14 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_statement CppConstDecl',
     print_statement(Shared.new(CppConstDecl('limit', int_type, Shared.new(CppInt(10))))),
     'const int limit = 10;'))
+
+  results.push(assert_eq_str('print_statement CppConstexprAutoDecl',
+    print_statement(Shared.new(CppConstexprAutoDecl('limit', Shared.new(CppInt(42))))),
+    'constexpr auto limit = 42;'))
+
+  results.push(assert_eq_str('print_statement CppStmtFragment',
+    print_statement(Shared.new(CppStmtFragment('if (ready) { step(); }'))),
+    'if (ready) { step(); }'))
 
   results.push(assert_eq_str('print_statement CppIf',
     print_statement(Shared.new(CppIf(
