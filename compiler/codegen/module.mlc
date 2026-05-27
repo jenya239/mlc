@@ -20,8 +20,6 @@ import { CppDecl, CppFile } from '../cpp/cpp_ast'
 import * as cpp_ast from '../cpp/cpp_ast'
 import * as expression_output from './expr/expr'
 
-export fn use_cpp_printer_default() -> bool = true
-
 type ModuleGenerationContext = ModuleGenerationContext {
   base: string,
   guard: string,
@@ -167,38 +165,6 @@ fn prepare_module_generation(
   }
 end
 
-fn assemble_header_string(parts: ModuleGenerationContext) -> string = [
-  expression_output.include_guard_ifndef_line(parts.guard),
-  expression_output.include_guard_define_line(parts.guard),
-  "\n",
-  parts.std_includes,
-  expression_output.namespace_open_line(parts.module_namespace),
-  "\n",
-  parts.decl_parts.type_fwds.join(''),
-  parts.decl_parts.type_defs.join(''),
-  parts.decl_parts.fn_protos.join(''),
-  "\n",
-  expression_output.namespace_close_comment_line(parts.module_namespace),
-  "\n",
-  expression_output.include_guard_endif_comment_line(parts.guard)
-].join('')
-
-fn assemble_source_string(parts: ModuleGenerationContext) -> string = [
-  expression_output.implementation_define_main_as_user_main_line(),
-  expression_output.implementation_include_quotefile_line(parts.base + '.hpp'),
-  "\n",
-  parts.implementation_import_includes,
-  if parts.implementation_import_includes.length() > 0 then "\n" else '' end,
-  expression_output.namespace_open_line(parts.module_namespace),
-  "\n",
-  parts.implementation_using_namespaces,
-  if parts.implementation_using_namespaces.length() > 0 then "\n" else '' end,
-  parts.decl_parts.fn_defs.join(''),
-  "\n",
-  expression_output.namespace_close_comment_line(parts.module_namespace),
-  parts.cli_wrapper
-].join('')
-
 fn cpp_declarations_from_text_parts(text_parts: [string]) -> [Shared<CppDecl>] = do
   let declarations: [Shared<CppDecl>] = []
   let mut index = 0
@@ -257,10 +223,7 @@ fn gen_module_cpp_file(parts: ModuleGenerationContext) -> Shared<CppFile> =
     source: assemble_source_cpp_declarations(parts)
   })
 
-fn gen_module_via_string(parts: ModuleGenerationContext) -> GenModuleOut =
-  GenModuleOut { h: assemble_header_string(parts), c: assemble_source_string(parts) }
-
-fn gen_module_via_cpp_printer(parts: ModuleGenerationContext) -> GenModuleOut = do
+fn gen_module_output(parts: ModuleGenerationContext) -> GenModuleOut = do
   const file = gen_module_cpp_file(parts)
   GenModuleOut {
     h: print_cpp_declarations(cpp_ast.cpp_file_header(file)),
@@ -268,33 +231,17 @@ fn gen_module_via_cpp_printer(parts: ModuleGenerationContext) -> GenModuleOut = 
   }
 end
 
-export fn gen_module_with_printer(
-  s_item: SLoadItem,
-  all_items: [LoadItem],
-  full_prog: Program,
-  precomp: PrecomputedCtx,
-  use_cpp_printer: bool
-) -> GenModuleOut = do
+export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
   const parts = prepare_module_generation(s_item, all_items, precomp)
-  if use_cpp_printer then gen_module_via_cpp_printer(parts)
-  else gen_module_via_string(parts)
-  end
+  gen_module_output(parts)
 end
 
-export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut =
-  gen_module_with_printer(s_item, all_items, full_prog, precomp, use_cpp_printer_default())
-
-// Convenience: compile a single in-memory Program to a C++ string.
-// Used by tests that build a Program directly.
-export fn gen_program_with_printer(program: Program, use_cpp_printer: bool) -> string = do
+export fn gen_program(program: Program) -> string = do
   const all_items: [LoadItem] = []
   const precomp   = precompute(program, all_items)
   const registry  = build_registry(program)
   const single    = LoadItem { path: 'test_main', decls: program.decls, imports: [], namespace_import_aliases: [] }
   const s_items   = transform_load_items([single], registry, build_trait_nominal_maps(program))
-  const result    = gen_module_with_printer(s_items[0], all_items, program, precomp, use_cpp_printer)
+  const result    = gen_module(s_items[0], all_items, program, precomp)
   result.h + result.c
 end
-
-export fn gen_program(program: Program) -> string =
-  gen_program_with_printer(program, use_cpp_printer_default())

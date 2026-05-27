@@ -6,9 +6,6 @@
 #include "context.hpp"
 #include "eval.hpp"
 #include "type_gen.hpp"
-#include "module.hpp"
-#include "lexer.hpp"
-#include "decls.hpp"
 #include "ast_builders.hpp"
 
 namespace codegen_test_helpers {
@@ -19,9 +16,6 @@ using namespace semantic_ir;
 using namespace context;
 using namespace eval;
 using namespace type_gen;
-using namespace module;
-using namespace lexer;
-using namespace decls;
 using namespace ast_builders;
 using namespace ast_tokens;
 
@@ -34,10 +28,6 @@ test_runner::TestResult assert_type_generates(mlc::String test_name, context::Co
 test_runner::TestResult assert_code_contains(mlc::String test_name, mlc::String actual_code, mlc::String expected_substring) noexcept;
 
 test_runner::TestResult assert_code_not_contains(mlc::String test_name, mlc::String actual_code, mlc::String forbidden_substring) noexcept;
-
-test_runner::TestResult assert_cpp_backends_equivalent(mlc::String test_name, ast::Program program) noexcept;
-
-test_runner::TestResult assert_cpp_backends_equivalent_source(mlc::String test_name, mlc::String program_source) noexcept;
 
 bool chars_match_at(mlc::String haystack, int start_position, mlc::String needle, int needle_length) noexcept;
 
@@ -52,10 +42,6 @@ test_runner::TestResult assert_type_generates(mlc::String test_name, context::Co
 test_runner::TestResult assert_code_contains(mlc::String test_name, mlc::String actual_code, mlc::String expected_substring) noexcept{return test_runner::assert_true(test_name + mlc::String(" contains '") + expected_substring + mlc::String("'"), string_contains(actual_code, expected_substring));}
 
 test_runner::TestResult assert_code_not_contains(mlc::String test_name, mlc::String actual_code, mlc::String forbidden_substring) noexcept{return test_runner::assert_true(test_name + mlc::String(" must not contain '") + forbidden_substring + mlc::String("'"), !string_contains(actual_code, forbidden_substring));}
-
-test_runner::TestResult assert_cpp_backends_equivalent(mlc::String test_name, ast::Program program) noexcept{return test_runner::assert_eq_str(test_name, module::gen_program_with_printer(program, true), module::gen_program_with_printer(program, false));}
-
-test_runner::TestResult assert_cpp_backends_equivalent_source(mlc::String test_name, mlc::String program_source) noexcept{return assert_cpp_backends_equivalent(test_name, decls::parse_program(lexer::tokenize(program_source).tokens));}
 
 bool chars_match_at(mlc::String haystack, int start_position, mlc::String needle, int needle_length) noexcept{
 int character_index = 0;

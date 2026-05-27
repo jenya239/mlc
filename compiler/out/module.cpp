@@ -39,8 +39,6 @@ using namespace ast_tokens;
 
 struct ModuleGenerationContext {mlc::String base;mlc::String guard;mlc::String std_includes;mlc::String module_namespace;bool is_entry;decl::DeclPartsBundle decl_parts;mlc::String implementation_import_includes;mlc::String implementation_using_namespaces;mlc::String cli_wrapper;};
 
-bool use_cpp_printer_default() noexcept;
-
 mlc::Array<decl_index::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SNamespaceImportAlias> items) noexcept;
 
 mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_struct_using_lines(mlc::Array<std::shared_ptr<semantic_ir::SDecl>> decls, context::CodegenContext context) noexcept;
@@ -48,10 +46,6 @@ mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_struct_using_lines(mlc:
 context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept;
 
 module::ModuleGenerationContext prepare_module_generation(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, context::PrecomputedCtx precomp) noexcept;
-
-mlc::String assemble_header_string(module::ModuleGenerationContext parts) noexcept;
-
-mlc::String assemble_source_string(module::ModuleGenerationContext parts) noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDecl>> cpp_declarations_from_text_parts(mlc::Array<mlc::String> text_parts) noexcept;
 
@@ -61,19 +55,11 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDecl>> assemble_source_cpp_declarations(m
 
 std::shared_ptr<cpp_ast::CppFile> gen_module_cpp_file(module::ModuleGenerationContext parts) noexcept;
 
-context::GenModuleOut gen_module_via_string(module::ModuleGenerationContext parts) noexcept;
-
-context::GenModuleOut gen_module_via_cpp_printer(module::ModuleGenerationContext parts) noexcept;
-
-context::GenModuleOut gen_module_with_printer(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp, bool use_cpp_printer) noexcept;
+context::GenModuleOut gen_module_output(module::ModuleGenerationContext parts) noexcept;
 
 context::GenModuleOut gen_module(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept;
 
-mlc::String gen_program_with_printer(ast::Program program, bool use_cpp_printer) noexcept;
-
 mlc::String gen_program(ast::Program program) noexcept;
-
-bool use_cpp_printer_default() noexcept{return true;}
 
 mlc::Array<decl_index::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SNamespaceImportAlias> items) noexcept{
 mlc::Array<decl_index::NamespaceImportAlias> result = {};
@@ -161,10 +147,6 @@ mlc::String cli_wrapper = is_entry ? expr::bootstrap_host_main_calling_namespace
 return module::ModuleGenerationContext{base, guard, std_includes, module_namespace, is_entry, decl_parts, cpp_naming::include_lines(s_item.imports), cpp_naming::using_namespace_lines(s_item.imports), cli_wrapper};
 }
 
-mlc::String assemble_header_string(module::ModuleGenerationContext parts) noexcept{return mlc::Array<mlc::String>{expr::include_guard_ifndef_line(parts.guard), expr::include_guard_define_line(parts.guard), mlc::String("\n"), parts.std_includes, expr::namespace_open_line(parts.module_namespace), mlc::String("\n"), parts.decl_parts.type_fwds.join(mlc::String("")), parts.decl_parts.type_defs.join(mlc::String("")), parts.decl_parts.fn_protos.join(mlc::String("")), mlc::String("\n"), expr::namespace_close_comment_line(parts.module_namespace), mlc::String("\n"), expr::include_guard_endif_comment_line(parts.guard)}.join(mlc::String(""));}
-
-mlc::String assemble_source_string(module::ModuleGenerationContext parts) noexcept{return mlc::Array<mlc::String>{expr::implementation_define_main_as_user_main_line(), expr::implementation_include_quotefile_line(parts.base + mlc::String(".hpp")), mlc::String("\n"), parts.implementation_import_includes, parts.implementation_import_includes.length() > 0 ? mlc::String("\n") : mlc::String(""), expr::namespace_open_line(parts.module_namespace), mlc::String("\n"), parts.implementation_using_namespaces, parts.implementation_using_namespaces.length() > 0 ? mlc::String("\n") : mlc::String(""), parts.decl_parts.fn_defs.join(mlc::String("")), mlc::String("\n"), expr::namespace_close_comment_line(parts.module_namespace), parts.cli_wrapper}.join(mlc::String(""));}
-
 mlc::Array<std::shared_ptr<cpp_ast::CppDecl>> cpp_declarations_from_text_parts(mlc::Array<mlc::String> text_parts) noexcept{
 mlc::Array<std::shared_ptr<cpp_ast::CppDecl>> declarations = {};
 int index = 0;
@@ -193,30 +175,24 @@ return declarations.concat(decl_cpp::cpp_decls_from_string_parts(parts.decl_part
 
 std::shared_ptr<cpp_ast::CppFile> gen_module_cpp_file(module::ModuleGenerationContext parts) noexcept{return std::make_shared<cpp_ast::CppFile>(cpp_ast::CppFile{assemble_header_cpp_declarations(parts), assemble_source_cpp_declarations(parts)});}
 
-context::GenModuleOut gen_module_via_string(module::ModuleGenerationContext parts) noexcept{return context::GenModuleOut{assemble_header_string(parts), assemble_source_string(parts)};}
-
-context::GenModuleOut gen_module_via_cpp_printer(module::ModuleGenerationContext parts) noexcept{
+context::GenModuleOut gen_module_output(module::ModuleGenerationContext parts) noexcept{
 std::shared_ptr<cpp_ast::CppFile> file = gen_module_cpp_file(parts);
 return context::GenModuleOut{decl_cpp::print_cpp_declarations(cpp_ast::cpp_file_header(file)), decl_cpp::print_cpp_declarations(cpp_ast::cpp_file_source(file))};
 }
 
-context::GenModuleOut gen_module_with_printer(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp, bool use_cpp_printer) noexcept{
+context::GenModuleOut gen_module(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept{
 module::ModuleGenerationContext parts = prepare_module_generation(s_item, all_items, precomp);
-return use_cpp_printer ? gen_module_via_cpp_printer(parts) : gen_module_via_string(parts);
+return gen_module_output(parts);
 }
 
-context::GenModuleOut gen_module(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept{return gen_module_with_printer(s_item, all_items, full_prog, precomp, use_cpp_printer_default());}
-
-mlc::String gen_program_with_printer(ast::Program program, bool use_cpp_printer) noexcept{
+mlc::String gen_program(ast::Program program) noexcept{
 mlc::Array<decl_index::LoadItem> all_items = {};
 context::PrecomputedCtx precomp = precompute(program, all_items);
 registry::TypeRegistry registry = registry::build_registry(program);
 decl_index::LoadItem single = decl_index::LoadItem{mlc::String("test_main"), program.decls, {}, {}};
 mlc::Array<semantic_ir::SLoadItem> s_items = transform_decl::transform_load_items(mlc::Array<decl_index::LoadItem>{single}, registry, trait_param_expand::build_trait_nominal_maps(program));
-context::GenModuleOut result = gen_module_with_printer(s_items[0], all_items, program, precomp, use_cpp_printer);
+context::GenModuleOut result = gen_module(s_items[0], all_items, program, precomp);
 return result.h + result.c;
 }
-
-mlc::String gen_program(ast::Program program) noexcept{return gen_program_with_printer(program, use_cpp_printer_default());}
 
 } // namespace module

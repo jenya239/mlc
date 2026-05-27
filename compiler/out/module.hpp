@@ -31,15 +31,9 @@ struct SStmt;
 struct CppStmt;
 struct CppExpr;
 
-bool use_cpp_printer_default() noexcept;
-
 context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept;
 
-context::GenModuleOut gen_module_with_printer(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp, bool use_cpp_printer) noexcept;
-
 context::GenModuleOut gen_module(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept;
-
-mlc::String gen_program_with_printer(ast::Program program, bool use_cpp_printer) noexcept;
 
 mlc::String gen_program(ast::Program program) noexcept;
 
