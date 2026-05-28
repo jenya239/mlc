@@ -5,12 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | run_tests | 706 |
-| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 1) |
-| agent_token_last | cr-agent-0b75d382-ec1e-44da-a87a-eb6066752a95 |
+| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 2) |
+| agent_token_last | cr-agent-7abe4e69-c776-45b1-8d62-b8bd8ef44ede |
+
+### Turn 2026-05-28 (Driver FUZZ_DIFF step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | run_fuzz_differential.sh; fuzz_ruby_checker_exit.rb; 10 parity + 6 known divergences |
+| verify | 706 pass; differential ok (16 files); no compiler/** change — self-host skipped |
+| next | ROLE=Driver STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh idempotent skip)
 

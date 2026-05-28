@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) (**closed**, `d055c49`), [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) (deferred differential)
 
-## Status: **active** (step 1 pending)
+## Status: **active** (step 2 pending)
 
 **Goal:** same `.mlc` input through mlcc `--check-only` and Ruby ModularCompiler checker path; no crash; exit-code parity on corpus + random seeds.
 
@@ -32,17 +32,17 @@ compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Negative corpus exit-code parity — mlcc `--check-only` vs Ruby checker on 16 files | pending |
+| 1 | Negative corpus exit-code parity — mlcc `--check-only` vs Ruby checker on 16 files | done (`e73b81f`) |
 | 2 | Random program seeds — both backends no-crash; exit 0/1 match (8 seeds) | pending |
 | 3 | Error-count parity on checker-negative subset (mlcc vs Ruby) | pending |
 | 4 | `run_fuzz_differential.sh` + hook in `build_tests.sh` | pending |
 | 5 | In-process differential smoke in `test_fuzz.mlc`; close track | pending |
 
-## Step 1 detail
+## Step 1 detail (done)
 
-- Script: `compiler/tests/fuzz/run_fuzz_differential.sh` (skeleton) or Ruby helper under `scripts/`.
-- For each file in `negative_corpus/`: mlcc `--check-only` exit ∈ {0,1}; Ruby checker exit ∈ {0,1}; record mismatches.
-- No codegen diff yet — exit code only.
+- `compiler/tests/fuzz/run_fuzz_differential.sh` + `scripts/fuzz_ruby_checker_exit.rb` (parse + transform, no codegen).
+- 16 files: 10 strict parity, 6 known parser/lexer divergences in `negative_corpus_known_divergences.txt`.
+- No codegen diff — exit code only.
 
 ## Deferred (not in this track)
 
@@ -53,4 +53,4 @@ compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
 
 ## Next step (Driver)
 
-**STEP=1** — negative corpus exit-code parity mlcc vs Ruby.
+**STEP=2** — random program seeds: both backends no-crash; exit 0/1 match (8 seeds).
