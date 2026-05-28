@@ -26,7 +26,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `build_bin.sh` — deterministic sorted cpp compile order | done (`COMMIT_HASH`) |
+| 1 | `build_bin.sh` — deterministic sorted cpp compile order | done (`ed8ac00`) |
 | 2 | `compile_options.mlc` — `--emit-compile-commands` flag parsing | pending |
 | 3 | Modular pipeline — emit `compile_commands.json` to out dir | pending |
 | 4 | Test/smoke — flag + json output | pending |
