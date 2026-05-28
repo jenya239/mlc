@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | run_tests | 702 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS2 active (step 1) |
-| agent_token_last | cr-agent-6e3ba686-652e-466d-bf63-90d43b3e6483 |
+| TRACK_PLAN | TRACK_DIAGNOSTICS2 active (step 2) |
+| agent_token_last | cr-agent-16771981-2866-44e8-ba9d-054bc2a0b5ce |
+
+### Turn 2026-05-28 (DIAGNOSTICS2 step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | check.mlc E036-E044; catalog 44 (`f74e0fa`) |
+| verify | 702 pass; self-host diff empty |
+| uncommitted_files | compiler/out/* artifacts |
+| next | ROLE=Driver STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh idempotent #2)
 

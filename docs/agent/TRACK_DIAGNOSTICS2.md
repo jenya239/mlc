@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_COVERAGE.md](TRACK_COVERAGE.md) (**closed**, `9bddbb3`), [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) (**closed**, `f6863fe`)
 
-## Status: **active** (step 1 pending)
+## Status: **active** (step 2 pending)
 
 **Goal:** replace remaining bare `diagnostic_error(` in checker with `diagnostic_error_with_code`; extend catalog from E035; negative tests assert exact `error[Exxx]:` format where touched.
 
@@ -26,7 +26,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `check.mlc` — default-param + record-field defaults → E036+; catalog smoke | pending |
+| 1 | `check.mlc` — default-param + record-field defaults → E036+; catalog smoke | done (`f74e0fa`) |
 | 2 | `infer_array_method.mlc` — array HOF diagnostics → codes | pending |
 | 3 | `infer_result_option_method.mlc` — Result/Option method diagnostics → codes | pending |
 | 4 | `infer.mlc` + `infer_question_expression.mlc` — spread, let-else, private ctor | pending |
@@ -47,4 +47,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=1** — check.mlc default-param diagnostics.
+**STEP=2** — infer_array_method.mlc array HOF diagnostics.
