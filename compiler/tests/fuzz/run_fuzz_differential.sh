@@ -7,7 +7,9 @@ ROOT_DIR="$(cd "$COMPILER_DIR/.." && pwd)"
 MLCC="${1:-$COMPILER_DIR/out/mlcc}"
 CORPUS_DIR="$(cd "$(dirname "$0")/negative_corpus" && pwd)"
 DIVERGENCES="$(cd "$(dirname "$0")" && pwd)/negative_corpus_known_divergences.txt"
+CHECKER_NEGATIVE="$(cd "$(dirname "$0")" && pwd)/checker_negative_subset.txt"
 RUBY_CHECKER="$ROOT_DIR/scripts/fuzz_ruby_checker_exit.rb"
+RUBY_ERROR_COUNT="$ROOT_DIR/scripts/fuzz_ruby_checker_error_count.rb"
 SEED_COUNT=8
 TMPDIR="${TMPDIR:-/tmp}"
 WORK=$(mktemp -d "$TMPDIR/mlcc_fuzz_diff_XXXXXX")
@@ -93,6 +95,38 @@ run_ruby_checker() {
   echo "$code"
 }
 
+run_mlcc_error_count() {
+  local path=$1
+  set +e
+  local output
+  output=$("$MLCC" --check-only "$path" 2>&1)
+  local code=$?
+  set -e
+  if [ "$code" -gt 1 ]; then
+    echo "crash"
+    return
+  fi
+  echo "$output" | grep -c '^error:' || true
+}
+
+run_ruby_error_count() {
+  local path=$1
+  set +e
+  local output
+  output=$(bundle exec ruby -I"$ROOT_DIR/lib" "$RUBY_ERROR_COUNT" "$path" 2>/dev/null)
+  local code=$?
+  set -e
+  if [ "$code" -eq 2 ]; then
+    echo "parse"
+    return
+  fi
+  if [ "$code" -eq 3 ]; then
+    echo "crash"
+    return
+  fi
+  echo "$output"
+}
+
 assert_exit_parity() {
   local label=$1
   local path=$2
@@ -176,4 +210,44 @@ while [ "$seed" -lt "$SEED_COUNT" ]; do
   seed=$((seed + 1))
 done
 
-echo "[fuzz differential] ok ($corpus_count corpus: $parity_count parity, $known_count known divergences; $SEED_COUNT seeds)" >&2
+checker_negative_count=0
+while IFS= read -r filename || [ -n "$filename" ]; do
+  case "$filename" in
+    ''|'#'*) continue ;;
+  esac
+  path="$CORPUS_DIR/$filename"
+  if [ ! -f "$path" ]; then
+    echo "[fuzz differential] FAIL: missing checker-negative file $filename" >&2
+    exit 1
+  fi
+  mlcc_errors=$(run_mlcc_error_count "$path")
+  ruby_errors=$(run_ruby_error_count "$path")
+  if [ "$mlcc_errors" = "crash" ] || [ "$ruby_errors" = "crash" ]; then
+    echo "[fuzz differential] FAIL $filename: crash during error count" >&2
+    exit 1
+  fi
+  if [ "$ruby_errors" = "parse" ]; then
+    echo "[fuzz differential] FAIL $filename: Ruby parse error (expected checker errors)" >&2
+    exit 1
+  fi
+  if [ "$mlcc_errors" -lt 1 ]; then
+    echo "[fuzz differential] FAIL $filename: mlcc error count $mlcc_errors (expected >= 1)" >&2
+    exit 1
+  fi
+  if [ "$ruby_errors" -lt 1 ]; then
+    echo "[fuzz differential] FAIL $filename: Ruby error count $ruby_errors (expected >= 1)" >&2
+    exit 1
+  fi
+  if [ "$mlcc_errors" != "$ruby_errors" ]; then
+    echo "[fuzz differential] FAIL $filename: error count mlcc=$mlcc_errors ruby=$ruby_errors" >&2
+    exit 1
+  fi
+  checker_negative_count=$((checker_negative_count + 1))
+done <"$CHECKER_NEGATIVE"
+
+if [ "$checker_negative_count" -eq 0 ]; then
+  echo "[fuzz differential] FAIL: empty checker_negative_subset.txt" >&2
+  exit 1
+fi
+
+echo "[fuzz differential] ok ($corpus_count corpus: $parity_count parity, $known_count known divergences; $SEED_COUNT seeds; $checker_negative_count checker-negative error-count parity)" >&2

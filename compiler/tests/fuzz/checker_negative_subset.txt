@@ -1,0 +1,5 @@
+check_immutable_assign.mlc
+check_not_callable.mlc
+check_return_type.mlc
+check_undefined_ident.mlc
+check_wrong_call_arity.mlc

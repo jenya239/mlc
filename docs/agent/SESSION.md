@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | run_tests | 706 |
-| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 3) |
-| agent_token_last | cr-agent-4f5a92cf-bd78-4547-81ba-b05da1076ad7 |
+| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 4) |
+| agent_token_last | cr-agent-b797a2b4-00cc-4cbc-a9c6-46470812a7d5 |
+
+### Turn 2026-05-28 (Driver FUZZ_DIFF step 3)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 3 |
+| step | 3 |
+| done | checker_negative_subset (5 files); error-count parity mlcc vs Ruby |
+| verify | 706 pass; differential ok; no compiler/** — self-host skipped |
+| next | ROLE=Driver STEP=4 (enqueued) |
 
 ### Turn 2026-05-28 (Driver FUZZ_DIFF step 2 idempotent skip)
 
