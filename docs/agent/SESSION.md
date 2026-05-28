@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| run_tests | 683 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS active (step 2) |
-| agent_token_last | cr-agent-PLACEHOLDER |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| run_tests | 686 |
+| TRACK_PLAN | TRACK_DIAGNOSTICS active (step 3) |
+| agent_token_last | (pending) |
+
+### Turn 2026-05-28 (DIAGNOSTICS step 2)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 2 |
+| step | 2 |
+| done | binary/type diagnostics E005–E020; negative tests |
+| verify | 686 pass; self-host diff empty |
+| uncommitted_files | 0 |
+| next | ROLE=Driver STEP=3 (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 1 idempotent #4)
 
