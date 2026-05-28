@@ -46,11 +46,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **CppExpr backend:** [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) — closed (`96df4e0`)
 - **CppAST cleanup:** [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — closed (`005c65b`)
 - **Phase 1 stabilization:** [TRACK_PHASE1.md](TRACK_PHASE1.md) — **closed** (`fd42eab`)
-- **Safety / fuzz hardening:** [TRACK_SAFETY.md](TRACK_SAFETY.md) — **active**
+- **Safety / fuzz hardening:** [TRACK_SAFETY.md](TRACK_SAFETY.md) — **closed** (`32f8335`)
 
-## Next step (Driver)
+## Next step (Planner)
 
-See [TRACK_SAFETY.md](TRACK_SAFETY.md) — **STEP=1** (negative corpus).
+TRACK_SAFETY closed — `plan-refresh` for performance track (PLAN §1).
 
 ## Planner checklist (2026-05-28 plan-refresh — overnight guard)
 

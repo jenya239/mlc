@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §4; previous: [TRACK_PHASE1.md](TRACK_PHASE1.md) (**closed**, step 8 `fd42eab`)
 
-## Status: in progress (step 4 pending)
+## Status: closed (step 4 `32f8335`)
 
 **Goal:** mlcc never core-dumps on bad input; fuzz coverage beyond smoke skeleton.
 
@@ -27,8 +27,8 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | Negative corpus — static invalid `.mlc` files + shell gate (exit 0/1 only) | done (`65fe570`) |
 | 2 | Random-byte smoke — binary garbage inputs via `run_fuzz_smoke.sh` | done (`44da689`) |
-| 3 | Expand `fuzz/random_program.mlc` (if/let/match variants; sync shell generator) | done (`HASH`) |
-| 4 | Repro + fix in-process pipeline heap crash (`free(): invalid size` in run_tests loop) | pending |
+| 3 | Expand `fuzz/random_program.mlc` (if/let/match variants; sync shell generator) | done (`9c1f1c0`) |
+| 4 | Repro + fix in-process pipeline heap crash (`free(): invalid size` in run_tests loop) | done (`32f8335`) |
 
 ## Step 1 detail
 
@@ -38,15 +38,11 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Step 4 detail (from PHASE1 step 8)
 
-- `test_fuzz.mlc` in-process loop calling `run_modular_compiler_pipeline` ~32× aborted run_tests.
-- Shell `run_fuzz_smoke.sh` on same programs is fine — isolate heap bug to embedded pipeline path.
+- Root cause: `Parser.kind()` indexed past token array on malformed input (`fn @@@`); OOB read corrupted heap on teardown.
+- Fix: bounds-check `kind`, `skip_semi`, `span_at_cursor`; restore 32× in-process pipeline + lex/parse loops in `test_fuzz.mlc`.
 
 ## Deferred (not in this track)
 
 - Differential fuzz mlcc vs Ruby — RESEARCH.md; needs harness.
 - `treereduce` ICE minimizer — later.
 - Performance track — after SAFETY closed ([CONTINUITY.md](CONTINUITY.md)).
-
-## Next step (Driver)
-
-**STEP=4** — repro + fix in-process pipeline heap crash.

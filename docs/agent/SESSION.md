@@ -6,10 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| run_tests | 542 |
-| TRACK_PLAN | TRACK_SAFETY active (step 4 pending) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| run_tests | 607 |
+| TRACK_PLAN | TRACK_SAFETY closed (step 4 `32f8335`) |
+
+### Turn 2026-05-28 (SAFETY step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | Parser OOB fix (predicates.mlc); 32× in-process pipeline+lex/parse in test_fuzz.mlc |
+| verify | 607 pass; fuzz smoke + negative corpus ok; self-host diff empty |
+| uncommitted_files | 0 |
+| next | plan-refresh (TRACK_SAFETY closed) |
 
 ### Turn 2026-05-28 (SAFETY step 3)
 
