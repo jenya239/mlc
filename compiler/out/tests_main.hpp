@@ -15,6 +15,7 @@
 #include "test_pass.hpp"
 #include "test_expr_visitor.hpp"
 #include "test_cpp_printer.hpp"
+#include "test_fuzz.hpp"
 #include "test_runner.hpp"
 
 namespace tests_main {

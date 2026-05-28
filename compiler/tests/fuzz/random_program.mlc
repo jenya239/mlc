@@ -1,0 +1,25 @@
+// Deterministic random MLC program generator (fuzz skeleton).
+
+export fn fuzz_mix(seed: i32) -> i32 = do
+  let mut value = seed * 1664525 + 1013904223
+  if value < 0 then value = -value end
+  value
+end
+
+export fn fuzz_pick(seed: i32, choice_count: i32) -> i32 =
+  if choice_count <= 0 then 0 else fuzz_mix(seed) % choice_count end
+
+export fn fuzz_random_program(seed: i32) -> string = do
+  const kind = fuzz_pick(seed, 6)
+  if kind == 0 then 'fn fuzz_entry() -> i32 = 0'
+  else if kind == 1 then 'fn fuzz_entry() -> i32 = 1 + 2'
+  else if kind == 2 then 'fn fuzz_entry() -> string = "s"'
+  else if kind == 3 then 'fn fuzz_entry() -> bool = true'
+  else if kind == 4 then
+    'fn fuzz_entry() -> i32 = ' + (fuzz_mix(seed + 1) % 100).to_string()
+  else do
+    const callee = 'helper_' + (fuzz_mix(seed + 2) % 1000).to_string()
+    'fn ' + callee + '() -> i32 = 42\nfn fuzz_entry() -> i32 = ' + callee + '()'
+  end
+  end
+end

@@ -12,6 +12,7 @@ import { merge_import_tests } from './test_merge_imports'
 import { pass_type_tests } from './test_pass'
 import { expr_visitor_tests } from './test_expr_visitor'
 import { cpp_printer_tests } from './test_cpp_printer'
+import { fuzz_tests } from './test_fuzz'
 import { TestResult, run_all } from './test_runner'
 
 fn all_tests() -> [TestResult] = do
@@ -50,6 +51,9 @@ fn all_tests() -> [TestResult] = do
 
   const suite_cpp_printer = cpp_printer_tests()
   index = 0; while index < suite_cpp_printer.length() do all.push(suite_cpp_printer[index]); index = index + 1 end
+
+  const suite_fuzz = fuzz_tests()
+  index = 0; while index < suite_fuzz.length() do all.push(suite_fuzz[index]); index = index + 1 end
 
   all
 end

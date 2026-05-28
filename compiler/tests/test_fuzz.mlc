@@ -1,0 +1,24 @@
+import { TestResult, assert_eq_str, assert_true } from './test_runner'
+import { fuzz_random_program, fuzz_mix } from './fuzz/random_program'
+
+export fn fuzz_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_true('fuzz generator non-empty',
+    fuzz_random_program(0).length() > 0))
+
+  results.push(assert_eq_str('fuzz generator deterministic',
+    fuzz_random_program(42), fuzz_random_program(42)))
+
+  results.push(assert_true('fuzz mix varies with seed',
+    fuzz_mix(0) != fuzz_mix(1)))
+
+  let mut seed = 0
+  while seed < 6 do
+    results.push(assert_true('fuzz program variants seed ' + seed.to_string(),
+      fuzz_random_program(seed).contains('fn ')))
+    seed = seed + 1
+  end
+
+  results
+end

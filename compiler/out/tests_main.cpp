@@ -14,6 +14,7 @@
 #include "test_pass.hpp"
 #include "test_expr_visitor.hpp"
 #include "test_cpp_printer.hpp"
+#include "test_fuzz.hpp"
 #include "test_runner.hpp"
 
 namespace tests_main {
@@ -29,6 +30,7 @@ using namespace test_merge_imports;
 using namespace test_pass;
 using namespace test_expr_visitor;
 using namespace test_cpp_printer;
+using namespace test_fuzz;
 using namespace test_runner;
 
 mlc::Array<test_runner::TestResult> all_tests() noexcept;
@@ -123,6 +125,14 @@ index = 0;
 while (index < suite_cpp_printer.size()){
 {
 all.push_back(suite_cpp_printer[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_fuzz = test_fuzz::fuzz_tests();
+index = 0;
+while (index < suite_fuzz.size()){
+{
+all.push_back(suite_fuzz[index]);
 index = index + 1;
 }
 }
