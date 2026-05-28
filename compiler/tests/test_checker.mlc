@@ -252,6 +252,11 @@ export fn checker_tests() -> [TestResult] = do
     'type Bad = { x: i32 = "wrong" }\nfn main() -> i32 = 0',
     'error[E044]: record field default type mismatch for field "x"\n  --> 1:23'))
 
+  results.push(assert_checker_diagnostic(
+    'negative E042: generic record field default exact',
+    'type Box<T> = { value: i32 = 0 }\nfn main() -> i32 = 0',
+    'error[E042]: record field default values are not supported when the type has generic parameters\n  --> 1:30'))
+
   results.push(assert_eq_int('multiline string literal in source — 0 checker errors',
     check_error_count('fn f() -> string = "hello\nworld"'), 0))
 

@@ -67,7 +67,9 @@ export fn trait_bound_diagnostics(
       callee_parameter_types,
       argument_inferred_types,
       callee_type_parameter_names,
-      type_parameter_source_argument_index)
+      type_parameter_source_argument_index,
+      argument_expressions,
+      call_source_span)
     let mut bound_errors: [Diagnostic] = []
     let mut param_index = 0
     while param_index < callee_type_parameter_names.length() && param_index < bounds_per_param.length() do

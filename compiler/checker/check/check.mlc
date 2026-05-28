@@ -3,7 +3,7 @@
 import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
          Diagnostic, diagnostic_error, diagnostic_error_with_code, diagnostics_append, diagnostics_to_strings, expr_span,
          Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span,
-         span_unknown, TypeVariant } from '../../frontend/ast'
+         span_unknown, TypeVariant, FieldDef } from '../../frontend/ast'
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/ast'
 import { check_names_expr } from '../names'
 import { check_fn_body_mutations } from './check_mutations'
@@ -55,7 +55,7 @@ fn accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_pa
           if record_field_definition_under_scan.has_default_expression then
             diagnostic_list_so_far_under_record.push(diagnostic_error_with_code(
               'record field default values are not supported when the type has generic parameters',
-              span_unknown(),
+              expr_span(record_field_definition_under_scan.default_expression),
               diagnostic_code_e042()))
           end
           diagnostic_list_so_far_under_record
@@ -108,6 +108,32 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
     VarTuple(_, _, _) => diagnostics_accumulator_so_far,
     VarUnit(_, _)     => diagnostics_accumulator_so_far,
   }
+
+fn record_field_definitions_diagnostic_span(field_definitions: [Shared<FieldDef>]) -> Span = do
+  let mut field_index = 0
+  while field_index < field_definitions.length() do
+    const field_definition = field_definitions[field_index]
+    if field_definition.has_default_expression then
+      return expr_span(field_definition.default_expression)
+    end
+    field_index = field_index + 1
+  end
+  span_unknown()
+end
+
+fn type_variants_diagnostic_span(variants: [Shared<TypeVariant>]) -> Span = do
+  let mut variant_index = 0
+  while variant_index < variants.length() do
+    const candidate_span = match variants[variant_index] {
+      VarRecord(_, field_definitions, _) =>
+        record_field_definitions_diagnostic_span(field_definitions),
+      _ => span_unknown()
+    }
+    if candidate_span.line > 0 then return candidate_span end
+    variant_index = variant_index + 1
+  end
+  span_unknown()
+end
 
 fn record_field_default_value_diagnostics(
   type_parameters: [string],
@@ -441,7 +467,8 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
       DeclType(_, type_parameters, variants, derive_trait_names) => do
         all_diagnostics = diagnostics_append(
           all_diagnostics,
-          derive_clause_diagnostics(type_parameters, variants, derive_trait_names, span_unknown()))
+          derive_clause_diagnostics(
+            type_parameters, variants, derive_trait_names, type_variants_diagnostic_span(variants)))
         all_diagnostics = diagnostics_append(
           all_diagnostics,
           record_field_default_value_diagnostics(type_parameters, variants, registry))
