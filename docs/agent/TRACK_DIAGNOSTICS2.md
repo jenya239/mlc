@@ -2,25 +2,11 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_COVERAGE.md](TRACK_COVERAGE.md) (**closed**, `9bddbb3`), [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) (**closed**, `f6863fe`)
 
-## Status: **active** (step 5 pending)
+## Status: **closed** (`d055c49`)
 
 **Goal:** replace remaining bare `diagnostic_error(` in checker with `diagnostic_error_with_code`; extend catalog from E035; negative tests assert exact `error[Exxx]:` format where touched.
 
-**Constraints:**
-- One concern per sub-step; no `compiler/` + `lib/mlc/` in one commit.
-- Self-host gate when `compiler/**` touched: `build_bin.sh` + diff empty.
-- Do not rename existing diagnostic messages without updating asserts.
-
-## Verify gate (every step)
-
-```
-bundle exec rake test_compiler_mlc   # 702 pass (baseline post-COVERAGE)
-compiler/build.sh                    # when compiler/** touched
-compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
-.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
-```
+**Result:** catalog E001–E076 (76 codes); no bare `diagnostic_error(` in `compiler/checker/**`.
 
 ---
 
@@ -30,21 +16,12 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `infer_array_method.mlc` — array HOF diagnostics → codes | done (`7eb356e`) |
 | 3 | `infer_result_option_method.mlc` — Result/Option method diagnostics → codes | done (`2fd25e9`) |
 | 4 | `infer.mlc` + `infer_question_expression.mlc` — spread, let-else, private ctor | done (`678895a`) |
-| 5 | `derive_validation.mlc` + transform expand modules + audit; catalog count test | pending |
+| 5 | `derive_validation.mlc` + transform expand modules + audit; catalog count test | done (`d055c49`) |
 
-## Step 1 detail
+## Verify gate (final)
 
-- File: `compiler/checker/check/check.mlc` (+ `diagnostic_codes.mlc` as needed).
-- Targets: trailing defaults, generic/extern defaults, destructuring defaults, non-literal defaults, record field default shape errors.
-- Each new code: export in catalog; at least one negative test with exact `error[Exxx]:` line if message stable.
-
-## Deferred (not in this track)
-
-- Parser `ref mut` — separate branch.
-- E2E program expansion — separate.
-- Bootstrap (`MLCC_BOOTSTRAP=1`) — Phase 4 track.
-- `lib/mlc/` parity — separate.
-
-## Next step (Driver)
-
-**STEP=5** — derive_validation.mlc + transform expand modules + audit; close track.
+```
+bundle exec rake test_compiler_mlc   # 706 pass
+compiler/build.sh
+diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
+```

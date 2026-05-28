@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 8 |
-| step_last | 4 (skip) |
+| driver_turns_since_plan | 9 |
+| step_last | 5 |
 | run_tests | 706 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS2 active (step 5) |
-| agent_token_last | cr-agent-fd23897b-4271-4b46-8be6-745497531cce |
+| TRACK_PLAN | TRACK_DIAGNOSTICS2 **closed** (`d055c49`) |
+| agent_token_last | cr-agent-9074a1ce-7fe6-4e61-9f40-f1f4889f772e |
+
+### Turn 2026-05-28 (DIAGNOSTICS2 step 5 — track close)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 9 |
+| step | 5 |
+| done | E069-E076; audit clean; catalog 76 (`d055c49`) |
+| verify | 706 pass; self-host diff empty |
+| next | Planner plan-refresh |
 
 ### Turn 2026-05-28 (DIAGNOSTICS2 step 4 idempotent skip)
 
