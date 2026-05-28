@@ -10,7 +10,7 @@
 | step_last | plan-refresh |
 | run_tests | 702 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS2 active (step 1) |
-| agent_token_last | cr-agent-18658876-3f9f-4a38-b976-92c5d508b8df |
+| agent_token_last | cr-agent-16771981-2866-44e8-ba9d-054bc2a0b5ce |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_DIAGNOSTICS2)
 
