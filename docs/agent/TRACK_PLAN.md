@@ -63,7 +63,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - [x] TRACK_DIAGNOSTICS2 closed (`d055c49`)
 - [x] TRACK_FUZZ_DIFF opened (5 steps: corpus exit, random seeds, error count, shell gate, in-process close)
 - [x] No step bundles `compiler/` + `lib/mlc/`
-- [ ] Driver enqueued STEP=1
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-28 plan-refresh — diagnostics2)
 
