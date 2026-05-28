@@ -45,6 +45,14 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 - Keep backward-compatible fields; only format change + tests.
 - No error codes yet (step 2).
 
+## Step 2 detail
+
+- File: `compiler/frontend/ast.mlc` — add `code: string` to `Diagnostic`; extend `diagnostic_new` / `diagnostic_error` (default `''`).
+- `diagnostic_format`: when `code.length() > 0`, prefix `severity + '[' + code + ']: '` instead of `severity + ': '`.
+- Example with span: `error[E001]: message\n  --> file:line:col`.
+- Assign at least one real code in one checker path (e.g. undefined ident) + update `test_checker.mlc` / `assert_diagnostic_at` if needed.
+- Do not migrate all call sites — bulk assignment is step 3–4 scope.
+
 ## Deferred (not in this track)
 
 - Parser `ref mut` — [TRACK_PLAN.md](TRACK_PLAN.md) step 15, separate branch.

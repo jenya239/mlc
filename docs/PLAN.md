@@ -8,7 +8,7 @@
 Source → Lexer → Tokens → Parser → AST → Checker → SemanticIR → Codegen → C++ source
 ```
 
-Codegen строит **CppAST** (`compiler/cpp/cpp_ast.mlc`) и печатает через `cpp_printer.mlc`. String-шаблоны в `codegen/expr/expr.mlc` и `expr_fragment_codegen` остаются только для bootstrap edge cases (stmt/decl bridges).
+Codegen строит **CppAST** (`compiler/cpp/cpp_ast.mlc`) и печатает через `cpp_printer.mlc`. String-шаблоны в `codegen/expr/expr.mlc` и `expr_fragment_codegen` остаются только для bootstrap edge cases (stmt/decl bridges). Tracks [TRACK_CPPEXPR.md](agent/TRACK_CPPEXPR.md) + [TRACK_CPPGEN.md](agent/TRACK_CPPGEN.md) **closed** (2026-05).
 
 ### Производительность
 
@@ -23,7 +23,7 @@ Codegen строит **CppAST** (`compiler/cpp/cpp_ast.mlc`) и печатает
 - Диагностика ошибок слабая: нет span в части сообщений.
 - `out/` содержит ~150 файлов .cpp/.hpp — артефакты, не версионируются, засоряют workspace.
 - Отсутствует fuzzing / property-based тесты.
-- E2E через `compiler/tests/e2e/`; unit+integration self-hosted стека: **`rake test_compiler_mlc`** (~447 прогонов после сборки `run_tests`).
+- E2E через `compiler/tests/e2e/`; unit+integration self-hosted стека: **`rake test_compiler_mlc`** (511 pass, baseline post-CPPGEN).
 - После изменений **checker/codegen/main.mlc**: обязательно **`compiler/build.sh`**, трансляция `compiler/main.mlc` и при необходимости проверка **идентичности** выхода mlcc и mlcc2 (`diff -rq`), см. `README.md`.
 
 ---
@@ -371,6 +371,8 @@ compiler/
 **Цель**: надёжный mlcc без регрессий, полное покрытие тестами.
 
 1. **Диагностика**: все ошибки должны иметь точный `span` (файл:строка:колонка).
+   - Формат rustc-style message + location — **step 1 done** ([TRACK_PHASE1](agent/TRACK_PHASE1.md) `a74d480`).
+   - Коды ошибок `error[E001]:` — step 2 in progress.
    - Добавить span к типам в `SemanticIR` где отсутствует.
    - Унифицировать формат: `error[E001]: message\n  --> file:line:col`.
 
@@ -395,6 +397,8 @@ compiler/
    - Добавить `--emit-compile-commands` для clangd.
 
 ### Phase 2: C++ AST backend (архитектурное улучшение)
+
+**Статус:** основной переход выполнен (TRACK_CPPEXPR + TRACK_CPPGEN closed). Остатки string-bridge — bootstrap edge cases.
 
 **Цель**: заменить строковую конкатенацию в codegen на построение CppAST.
 

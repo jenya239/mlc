@@ -49,9 +49,16 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-See [TRACK_PHASE1.md](TRACK_PHASE1.md) — **STEP=1** (rustc-style `diagnostic_format`).
+See [TRACK_PHASE1.md](TRACK_PHASE1.md) — **STEP=2** (`Diagnostic.code` + `error[E001]:` prefix).
 
-## Step 17 detail (done — `6f998e9`)
+## Planner checklist (2026-05-28 plan-refresh — overnight guard)
+
+- [x] TRACK_CPPGEN closed (`005c65b`); TRACK_PHASE1 step 1 done (`a74d480`)
+- [x] Active track: TRACK_PHASE1 step 2 pending
+- [x] No step bundles `compiler/` + `lib/mlc/`
+- [x] Driver enqueued STEP=2
+
+## Planner checklist (2026-05-25 plan-refresh #3 — Phase 2)
 
 - `compiler/pipeline.mlc`: checker → transform → codegen passes
 - `main.mlc`: `compile_modular_loop` removed; calls `run_modular_compiler_pipeline`
