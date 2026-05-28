@@ -6,10 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | run_tests | 511 |
-| TRACK_PLAN | TRACK_PHASE1 active (step 3 pending) |
+| TRACK_PLAN | TRACK_PHASE1 active (step 4 pending) |
+
+### Turn 2026-05-28 (PHASE1 step 3)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 3 |
+| step | 3 |
+| done | removed `infer_messages_as_diagnostics`; infer E002 not-callable with span |
+| verify | 511 pass; build.sh; self-host diff empty (build_bin.sh + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=4 TRACK_PHASE1 (enqueued) |
 
 ### Turn 2026-05-28 (PHASE1 step 2)
 
