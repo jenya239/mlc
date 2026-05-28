@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| run_tests | 614 |
-| TRACK_PLAN | TRACK_SECURITY active (step 3 pending) |
-| agent_token_last | cr-agent-2d02d5e4-d7b3-43a8-a3d7-8ed6daf50ac2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| run_tests | 680 |
+| TRACK_PLAN | TRACK_SECURITY active (step 4 pending) |
+| agent_token_last | pending enqueue |
+
+### Turn 2026-05-28 (SECURITY step 3)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 3 |
+| step | 3 |
+| done | test_fuzz pipeline 0..63; unclosed string + deep nesting garbage lex |
+| verify | 680 pass |
+| uncommitted_files | 0 |
+| next | ROLE=Driver STEP=4 TRACK_SECURITY (enqueued) |
 
 ### Turn 2026-05-28 (SECURITY step 2)
 
