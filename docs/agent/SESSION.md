@@ -10,7 +10,17 @@
 | step_last | plan-refresh |
 | run_tests | 607 |
 | TRACK_PLAN | TRACK_SECURITY active (step 1 pending) |
-| agent_token_last | cr-agent-dd13f2a5-f8f1-4ac8-a272-cf7b13a66bd3 |
+| agent_token_last | cr-agent-8b6637e3-30d4-4f68-9f37-ccfb3aaeefbb |
+
+### Turn 2026-05-28 (PERF step 5 confirm + enqueue SECURITY)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| step | 5 (confirm closed) |
+| done | STEP=5 already committed 0671422+b89d7ca; re-enqueued STEP=1 TRACK_SECURITY |
+| verify | 607 pass (prior); compare_baseline variance 2564–2904ms (single-run >1.15× median) |
+| next | ROLE=Driver STEP=1 TRACK_SECURITY (enqueued, token 8b6637e3) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_SECURITY)
 
