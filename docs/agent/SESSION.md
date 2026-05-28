@@ -10,7 +10,7 @@
 | step_last | 4 |
 | run_tests | 680 |
 | TRACK_PLAN | TRACK_SECURITY closed (`a035c3d`) |
-| agent_token_last | pending enqueue |
+| agent_token_last | cr-agent-82502bc8-151e-43f9-a188-a1bbbcf53823 |
 
 ### Turn 2026-05-28 (SECURITY step 4)
 
