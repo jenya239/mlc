@@ -2,13 +2,13 @@
 # Compare current profile against recorded baseline.
 #
 # Usage: ./benchmarks/profile/compare_baseline.sh [baseline_file] [regression_factor]
-# Default baseline: .tmp_profile/baseline.txt, factor: 1.15
+# Default baseline: benchmarks/profile/baseline_reference.txt, factor: 1.15
 
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MLCC="$ROOT/compiler/out/mlcc"
 MAIN="$ROOT/compiler/main.mlc"
-BASELINE="${1:-$ROOT/.tmp_profile/baseline.txt}"
+BASELINE="${1:-$ROOT/benchmarks/profile/baseline_reference.txt}"
 FACTOR="${2:-1.15}"
 OUT="$ROOT/.tmp_profile"
 SCALING_SOFT="${SCALING_SOFT_EXP:-1.35}"
