@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| run_tests | 687 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS active (step 4) |
-| agent_token_last | cr-agent-4d806893-fac9-44ce-9e5e-2b54cada1110 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| run_tests | 690 |
+| TRACK_PLAN | TRACK_DIAGNOSTICS active (step 5) |
+| agent_token_last | (pending) |
+
+### Turn 2026-05-28 (DIAGNOSTICS step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | E030–E033 infer/transform hot paths; catalog 33 |
+| verify | 690 pass; self-host diff empty |
+| uncommitted_files | 0 |
+| next | ROLE=Driver STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 3 idempotent #3)
 
