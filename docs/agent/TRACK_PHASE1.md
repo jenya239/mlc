@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1; previous: [TRACK_CPPGEN.md](TRACK_CPPGEN.md) (**closed**, step 10 `005c65b`)
 
-## Status: in progress (step 5 pending)
+## Status: in progress (step 6 pending)
 
 **Goal:** reliable mlcc — full diagnostic spans, test coverage, crash-safety, clean default output dir.
 
@@ -29,7 +29,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `Diagnostic.code` field + `error[E001]:` prefix in format | done (`01a15c5`) |
 | 3 | Replace `infer_messages_as_diagnostics` — infer emits `Diagnostic` with span at source | done (`46e2280`) |
 | 4 | Audit checker paths with `span_unknown`; fix high-traffic infer_call / type mismatch | done (`6d5150a`) |
-| 5 | Negative tests in `test_checker.mlc` (invalid input → specific diagnostic) | pending |
+| 5 | Negative tests in `test_checker.mlc` (invalid input → specific diagnostic) | done (`8b3fe71`) |
 | 6 | `--check-only` CLI flag (checker + transform, no codegen) | pending |
 | 7 | Default output dir — temp under `$TMPDIR` instead of workspace `out/` | pending |
 | 8 | Fuzz smoke: random program generator skeleton + mlcc no-crash test | pending |
@@ -62,4 +62,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=5** — negative tests in `test_checker.mlc`.
+**STEP=6** — `--check-only` CLI flag (checker + transform, no codegen).
