@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §4; previous: [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) (**closed**, `5463361`), [TRACK_SECURITY.md](TRACK_SECURITY.md) (**closed**, `a035c3d`, deferred parser audit)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** parser modules emit structured parse/lex errors instead of silent failure or internal panic paths; no crash on garbage input.
 
@@ -34,7 +34,7 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 | Step | Item | Status |
 |------|------|--------|
 | 1 | `parser/decls.mlc` — audit silent/`span_unknown` paths; structured parse errors on decl edge cases | done (`b880aed`) |
-| 2 | `parser/exprs.mlc` — same for expression parsing edge cases | pending |
+| 2 | `parser/exprs.mlc` — same for expression parsing edge cases | done (`COMMIT_HASH`) |
 | 3 | `test_parser.mlc` — negative tests for new parse error paths | pending |
 | 4 | In-process parser garbage smoke (unclosed/noise) in `test_parser.mlc` | pending |
 | 5 | Parser `span_unknown` grep audit; close track | pending |
