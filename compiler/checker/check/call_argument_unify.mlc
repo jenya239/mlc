@@ -3,6 +3,7 @@
 import { Expr, Diagnostic, Span, diagnostic_error_with_code, diagnostics_append, expr_span, span_unknown } from '../../frontend/ast'
 import { Type } from '../registry'
 import * as semantic_type_structure from '../semantic_type_structure'
+import { diagnostic_code_e003 } from '../diagnostic_codes'
 
 fn empty_diagnostic_list() -> [Diagnostic] = do
   let empty_list: [Diagnostic] = []
@@ -17,7 +18,7 @@ fn argument_type_mismatch_diagnostic(
   diagnostic_error_with_code(
     'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
     diagnostic_span,
-    'E003')
+    diagnostic_code_e003())
 
 fn record_type_parameter_source_for_argument(
   type_parameter_source_argument_index: ref mut Map<string, i32>,

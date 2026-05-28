@@ -14,6 +14,7 @@ import { derive_clause_diagnostics } from './derive_validation'
 import { infer_expr } from '../infer/infer'
 import { check_context_new, CheckContext } from './check_context'
 import { types_structurally_equal, type_is_unknown, type_description } from '../semantic_type_structure'
+import { diagnostic_code_e004 } from '../diagnostic_codes'
 import { record_field_default_expression_acceptable_for_codegen } from '../../ir/record_defaults'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
 
@@ -422,7 +423,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
             [diagnostic_error_with_code(
               'return type: expected ' + type_description(expected_type) + ', got ' + type_description(actual_type),
               expr_span(body),
-              'E004')]
+              diagnostic_code_e004())]
           else [] end
         all_diagnostics = diagnostics_append(
           diagnostics_append(all_diagnostics, inference_result.errors),
