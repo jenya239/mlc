@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) (**closed**, `d055c49`), [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) (deferred differential)
 
-## Status: **active** (step 5 pending)
+## Status: **closed** (`COMMIT_HASH`)
 
 **Goal:** same `.mlc` input through mlcc `--check-only` and Ruby ModularCompiler checker path; no crash; exit-code parity on corpus + random seeds.
 
@@ -14,7 +14,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_DIAGNOSTICS2.md
 ## Verify gate (every step)
 
 ```
-bundle exec rake test_compiler_mlc   # 706 pass (baseline post-DIAGNOSTICS2)
+bundle exec rake test_compiler_mlc   # 719 pass (post-close)
 compiler/build.sh                    # when compiler/** touched
 compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
 compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
@@ -35,8 +35,13 @@ compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
 | 1 | Negative corpus exit-code parity — mlcc `--check-only` vs Ruby checker on 16 files | done (`0654dda`) |
 | 2 | Random program seeds — both backends no-crash; exit 0/1 match (8 seeds) | done (`a23ba55`) |
 | 3 | Error-count parity on checker-negative subset (mlcc vs Ruby) | done (`66cba88`) |
-| 4 | `run_fuzz_differential.sh` + hook in `build_tests.sh` | done (`COMMIT_HASH`) |
-| 5 | In-process differential smoke in `test_fuzz.mlc`; close track | pending |
+| 4 | `run_fuzz_differential.sh` + hook in `build_tests.sh` | done (`690ee57`) |
+| 5 | In-process differential smoke in `test_fuzz.mlc`; close track | done (`COMMIT_HASH`) |
+
+## Step 5 detail (done)
+
+- `test_fuzz.mlc`: 8 differential seeds check_only ok + 5 checker-negative error counts (in-process mlcc smoke).
+- Track closed; shell gate in `build_tests.sh` phase 5/5.
 
 ## Step 4 detail (done)
 
@@ -66,6 +71,6 @@ compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
 - `--emit=mir` artifact — RESEARCH backlog.
 - Bootstrap (`MLCC_BOOTSTRAP=1`) — Phase 4 track.
 
-## Next step (Driver)
+## Next step (Planner)
 
-**STEP=5** — in-process differential smoke in `test_fuzz.mlc`; close track.
+**plan-refresh** — pick next track from PLAN.

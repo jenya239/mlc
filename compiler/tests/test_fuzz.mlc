@@ -1,18 +1,11 @@
-import { TestResult, assert_eq_str, assert_true } from './test_runner'
+import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_runner'
 import { fuzz_random_program, fuzz_mix, fuzz_variant_count, fuzz_program_kind } from './fuzz/random_program'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { LoadItem } from '../codegen/decl/decl_index'
 import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
 
-fn fuzz_pipeline_completes(seed: i32) -> bool =
-  match run_modular_compiler_pipeline(fuzz_pipeline_input(seed)) {
-    Ok(_) => true,
-    Err(_) => true
-  }
-
-fn fuzz_pipeline_input(seed: i32) -> ModularCompileInput = do
-  const source = fuzz_random_program(seed)
+fn fuzz_pipeline_input_for_source(source: string) -> ModularCompileInput = do
   const program = parse_program(tokenize(source).tokens)
   const load_item = LoadItem {
     path: 'fuzz_probe.mlc',
@@ -29,6 +22,27 @@ fn fuzz_pipeline_input(seed: i32) -> ModularCompileInput = do
     check_only: true
   }
 end
+
+fn fuzz_pipeline_input(seed: i32) -> ModularCompileInput =
+  fuzz_pipeline_input_for_source(fuzz_random_program(seed))
+
+fn fuzz_differential_check_only_ok(source: string) -> bool =
+  match run_modular_compiler_pipeline(fuzz_pipeline_input_for_source(source)) {
+    Ok(_) => true,
+    Err(_) => false
+  }
+
+fn fuzz_differential_check_only_error_count(source: string) -> i32 =
+  match run_modular_compiler_pipeline(fuzz_pipeline_input_for_source(source)) {
+    Ok(_) => 0,
+    Err(errors) => errors.length()
+  }
+
+fn fuzz_pipeline_completes(seed: i32) -> bool =
+  match run_modular_compiler_pipeline(fuzz_pipeline_input(seed)) {
+    Ok(_) => true,
+    Err(_) => true
+  }
 
 fn fuzz_lex_parse_completes(source: string) -> bool = do
   const lex = tokenize(source)
@@ -108,6 +122,30 @@ export fn fuzz_tests() -> [TestResult] = do
       fuzz_lex_parse_completes(source)))
     pipeline_seed = pipeline_seed + 1
   end
+
+  let mut differential_seed = 0
+  while differential_seed < 8 do
+    results.push(assert_true('fuzz differential seed ' + differential_seed.to_string() + ' check_only ok',
+      fuzz_differential_check_only_ok(fuzz_random_program(differential_seed))))
+    differential_seed = differential_seed + 1
+  end
+
+  const immutable_assign = 'fn f() -> i32 = do\n  let x = 1\n  x = 2\n  x\nend'
+  const not_callable = 'fn f() -> i32 = 42()'
+  const return_type_mismatch = 'fn f() -> i32 = "not an integer"'
+  const undefined_ident = 'fn f() -> i32 = no_such_binding'
+  const wrong_call_arity = 'fn pair_sum(first: i32, second: i32) -> i32 = first + second\nfn main() -> i32 = pair_sum(1)'
+
+  results.push(assert_eq_int('fuzz differential checker-negative immutable assign',
+    fuzz_differential_check_only_error_count(immutable_assign), 1))
+  results.push(assert_eq_int('fuzz differential checker-negative not callable',
+    fuzz_differential_check_only_error_count(not_callable), 1))
+  results.push(assert_eq_int('fuzz differential checker-negative return type',
+    fuzz_differential_check_only_error_count(return_type_mismatch), 1))
+  results.push(assert_eq_int('fuzz differential checker-negative undefined ident',
+    fuzz_differential_check_only_error_count(undefined_ident), 1))
+  results.push(assert_eq_int('fuzz differential checker-negative wrong call arity',
+    fuzz_differential_check_only_error_count(wrong_call_arity), 1))
 
   results
 end
