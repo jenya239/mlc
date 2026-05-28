@@ -19,7 +19,7 @@
 | instructions_rev | 2026-05-28-cleaner |
 | driver_turns_since_plan | 2 |
 | step | 2 |
-| done | SDeclType span from DeclType.name_span; commit `TBD` |
+| done | SDeclType span from DeclType.name_span; commit `3e214fc` |
 | verify | 753 pass; self-host diff empty |
 | next | ROLE=Driver STEP=3 (enqueued) |
 

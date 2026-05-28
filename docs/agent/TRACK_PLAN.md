@@ -64,7 +64,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=2** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — `SDeclType` span from `DeclType.name_span`. **done** (`TBD`)
+**STEP=2** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — `SDeclType` span from `DeclType.name_span`. **done** (`3e214fc`)
 
 ## Next step (Driver)
 
