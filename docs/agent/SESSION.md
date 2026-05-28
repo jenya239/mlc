@@ -5,11 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| role_last | Driver |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | run_tests | 511 |
-| TRACK_PLAN | TRACK_PHASE1 active (step 2 pending) |
+| TRACK_PLAN | TRACK_PHASE1 active (step 3 pending) |
+
+### Turn 2026-05-28 (PHASE1 step 2)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 2 |
+| step | 2 |
+| done | `Diagnostic.code`; `error[E001]:` format; undefined ident in names.mlc |
+| verify | 511 pass; build.sh; self-host diff empty (build_bin.sh + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=3 TRACK_PHASE1 (enqueued) |
 
 ### Turn 2026-05-28 (plan-refresh #2 — overnight guard)
 
