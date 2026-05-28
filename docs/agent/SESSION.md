@@ -12,6 +12,17 @@
 | TRACK_PLAN | TRACK_BUILD **closed** → Planner plan-refresh |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
 
+### Turn 2026-05-28 (Driver BUILD step 5 — track close)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 5 |
+| step | 5 |
+| done | build audit; TRACK closed; docs only |
+| verify | 751 pass (prior); no compiler/** change — self-host skipped |
+| next | ROLE=Planner plan-refresh (enqueued) |
+
 ### Turn 2026-05-28 (Driver BUILD step 4)
 
 | turn | 2026-05-28 |

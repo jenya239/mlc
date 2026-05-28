@@ -32,7 +32,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `compile_options.mlc` — `--emit-compile-commands` flag parsing | done (`6077707`) |
 | 3 | Modular pipeline — emit `compile_commands.json` to out dir | done (`a60052a`) |
 | 4 | Test/smoke — flag + json output | done (`ab0f34d`) |
-| 5 | Build audit; close track | done (`33c039e`) |
+| 5 | Build audit; close track | done (docs) |
 
 ## Step 5 audit
 
