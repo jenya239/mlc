@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §4; previous: [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) (**closed**, `5463361`), [TRACK_SECURITY.md](TRACK_SECURITY.md) (**closed**, `a035c3d`, deferred parser audit)
 
-## Status: **active** (step 5 pending)
+## Status: **closed** (`CLOSE_HASH`)
+
+**Closed:** step 5 span_unknown audit — 26 sites in `decls.mlc` + `exprs.mlc`, all intentional synthetics (no silent-failure paths).
 
 **Goal:** parser modules emit structured parse/lex errors instead of silent failure or internal panic paths; no crash on garbage input.
 
@@ -37,7 +39,23 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 | 2 | `parser/exprs.mlc` — same for expression parsing edge cases | done (`baf2c8f`) |
 | 3 | `test_parser.mlc` — negative tests for new parse error paths | done (`e2954e1`) |
 | 4 | In-process parser garbage smoke (unclosed/noise) in `test_parser.mlc` | done (`558069f`) |
-| 5 | Parser `span_unknown` grep audit; close track | pending |
+| 5 | Parser `span_unknown` grep audit; close track | done (`CLOSE_HASH`) |
+
+## Step 5 audit (`span_unknown` in `compiler/frontend/parser/`)
+
+26 occurrences — reviewed, **no silent-failure paths**; no code changes.
+
+| Category | Count | Location | Rationale |
+|----------|------:|----------|-----------|
+| Synth Param/Pat/Expr defaults | 11 | decls, exprs | Placeholder AST nodes (self param, optional defaults, field defaults) |
+| Pipe / template desugar | 5 | exprs | Synthetic `ExprCall`/`ExprBin`; real span propagation deferred |
+| Block / if tail fallbacks | 5 | exprs | Empty block or missing else — structural `ExprUnit` |
+| `__skip__` error-recovery decl | 1 | decls | Dummy body after `record_parse_error` (decl filtered from program) |
+| Non-extern `extern_keyword_span` | 1 | decls | Dead branch when `is_extern` is false |
+| Match guard placeholder | 1 | exprs | Default `true` before optional `if` guard |
+| Param destructure marker | 1 | decls | Internal `plain_identifier_parameter_pattern_marker` |
+
+Checker/codegen `span_unknown` — out of scope (see Deferred).
 
 ## Step 1 detail
 
@@ -53,6 +71,6 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 - Full `span_unknown` sweep in checker/codegen — separate track if needed after parser.
 - Differential fuzz mlcc vs Ruby — closed [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md).
 
-## Next step (Driver)
+## Next step
 
-**STEP=5** — parser `span_unknown` grep audit; close track.
+Track **closed**. Planner: plan-refresh if new work from PLAN §Phase 1 §4.
