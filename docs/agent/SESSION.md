@@ -4,13 +4,25 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| run_tests | 755 |
-| TRACK_PLAN | TRACK_PARSER_PARITY **active** (step 1) |
-| agent_token_last | cr-agent-4d52765c-07a2-4044-80f7-5e9cd96156dd |
+| instructions_rev | `2026-05-28-cleaner`|
+| role_last | Driver|
+| driver_turns_since_plan | 2|
+| step_last | 2|
+| run_tests | 756 |
+| TRACK_PLAN | TRACK_PARSER_PARITY **active** (step 3) |
+| agent_token_last | cr-agent-4d18c96e-547a-446e-8148-4e9b440f684a |
+
+### Turn 2026-05-28 (Driver PARSER_PARITY step 2 — audit)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 2 |
+| step | 2 |
+| done | audit empty type + invalid trait corpus; commit `221fae6`; parity mlcc=1 ruby=1 via step 1 |
+| verify | 756 pass; fuzz differential ok; no compiler/** change (no self-host) |
+| security | reject invalid decl input on --check-only; corpus-shaped parser tests |
+| next | ROLE=Driver STEP=3 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — idempotent skip)
 

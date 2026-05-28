@@ -34,7 +34,7 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 | Step | Item | Status |
 |------|------|--------|
 | 1 | `parse_unclosed_block.mlc` + `parse_unclosed_record_type.mlc` — structured parse error, exit 1 | done |
-| 2 | `parse_empty_type_body.mlc` + `parse_invalid_trait_syntax.mlc` | done (`4a5183f` propagation + audit `TBD`) |
+| 2 | `parse_empty_type_body.mlc` + `parse_invalid_trait_syntax.mlc` | done (`221fae6`) |
 | 3 | `parse_noise.mlc` — reject trailing garbage | pending |
 | 4 | `lex_unclosed_string.mlc` — parity decision + differential list update | pending |
 | 5 | Audit `negative_corpus_known_divergences.txt`; close track | pending |
