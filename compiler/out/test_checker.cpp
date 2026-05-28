@@ -22,6 +22,8 @@ mlc::String first_checker_error_line_with_path(mlc::String source, mlc::String s
 
 bool checker_first_error_contains_nonfunction_i32(mlc::String program_source) noexcept;
 
+test_runner::TestResult assert_checker_diagnostic(mlc::String test_name, mlc::String source, mlc::String expected) noexcept;
+
 mlc::Array<test_runner::TestResult> checker_tests() noexcept;
 
 int check_error_count(mlc::String source) noexcept{return std::visit(overloaded{
@@ -49,6 +51,8 @@ mlc::String line = first_checker_error_line(program_source);
 return line.contains(mlc::String("called value is not a function")) && line.contains(mlc::String("(got i32)"));
 }
 
+test_runner::TestResult assert_checker_diagnostic(mlc::String test_name, mlc::String source, mlc::String expected) noexcept{return test_runner::assert_eq_str(test_name, first_checker_error_line(source), expected);}
+
 mlc::Array<test_runner::TestResult> checker_tests() noexcept{
 mlc::Array<test_runner::TestResult> results = {};
 results.push_back(test_runner::assert_eq_int(mlc::String("empty program - 0 errors"), check_error_count(mlc::String("")), 0));
@@ -56,6 +60,14 @@ results.push_back(test_runner::assert_eq_int(mlc::String("fn returning literal -
 results.push_back(test_runner::assert_diagnostic_at_with_code(mlc::String("fn return type mismatch — span on body expression"), first_checker_error_line(mlc::String("fn f() -> i32 = \"hello\"")), 1, 17, mlc::String("return type: expected i32, got string"), mlc::String("E004")));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn return type matches — 0 errors"), check_error_count(mlc::String("fn f() -> string = \"hello\"")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn generic return T — 0 errors"), check_error_count(mlc::String("fn id<T>(x: T) -> T = x")), 0));
+results.push_back(assert_checker_diagnostic(mlc::String("negative E001: undefined ident exact"), mlc::String("fn f() -> i32 = badident"), mlc::String("error[E001]: undefined: badident\n  --> 1:17")));
+results.push_back(assert_checker_diagnostic(mlc::String("negative E002: not callable exact"), mlc::String("fn f() -> i32 = 42()"), mlc::String("error[E002]: called value is not a function (got i32)\n  --> 1:19")));
+results.push_back(assert_checker_diagnostic(mlc::String("negative E003: call argument type exact"), mlc::String("fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(\"str\")"), mlc::String("error[E003]: argument expects i32, got string\n  --> 2:19")));
+results.push_back(assert_checker_diagnostic(mlc::String("negative E004: return type exact"), mlc::String("fn f() -> i32 = \"hello\""), mlc::String("error[E004]: return type: expected i32, got string\n  --> 1:17")));
+results.push_back(assert_checker_diagnostic(mlc::String("negative: mutation assign immutable exact"), mlc::String("fn f() -> i32 = do let x = 1; x = 2; x end"), mlc::String("error: cannot assign to immutable binding: x\n  --> 1:31")));
+results.push_back(assert_checker_diagnostic(mlc::String("negative: question on non-Result exact"), mlc::String("fn f() -> i32 = do let x: i32 = 42; x? end"), mlc::String("error: ? operator requires a Result type, got i32\n  --> 1:38")));
+results.push_back(assert_checker_diagnostic(mlc::String("negative: binary + incompatible operands exact"), mlc::String("fn f() -> i32 = 1 + true"), mlc::String("error: incompatible operand types for +: i32 and bool\n  --> 1:19")));
+results.push_back(assert_checker_diagnostic(mlc::String("negative: monomorphic call wrong arg exact"), mlc::String("fn g(x: i32) -> i32 = x\nfn f() -> i32 = g(\"a\")"), mlc::String("error[E003]: argument expects i32, got string\n  --> 2:19")));
 results.push_back(test_runner::assert_true(mlc::String("integer literal called like function - diagnostic names type"), checker_first_error_contains_nonfunction_i32(mlc::String("fn f() -> i32 = 42()"))));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn using its own param - 0 errors"), check_error_count(mlc::String("fn f(x: i32) -> i32 = x")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn calling another fn - 0 errors"), check_error_count(mlc::String("fn add(x: i32, y: i32) -> i32 = x + y\nfn main() -> i32 = add(1, 2)")), 0));
@@ -73,7 +85,6 @@ results.push_back(test_runner::assert_eq_int(mlc::String("record update expressi
 results.push_back(test_runner::assert_eq_int(mlc::String("trait bound: param method call - 0 errors"), check_error_count(mlc::String("type Display { fn to_string(self: Self) -> string }\nfn show<T: Display>(x: T) -> string = x.to_string()")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("trait bound: call with implementing type — 0 errors"), check_error_count(mlc::String("type Display { fn show(self: Self) -> string }\nextend i32 : Display { fn show(self: i32) -> string = self.to_string() }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)")), 0));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("trait bound: non-implementing type — span on argument"), first_checker_error_line(mlc::String("type Display { fn show(self: Self) -> string }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)")), 3, 32, mlc::String("does not implement Display")));
-results.push_back(test_runner::assert_true(mlc::String("trait bound: call with non-implementing type — error"), first_checker_error_line(mlc::String("type Display { fn show(self: Self) -> string }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)")).contains(mlc::String("does not implement Display"))));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("record update: unknown field — position on field value"), first_checker_error_line(mlc::String("type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, z: 1 }")), 2, 44, mlc::String("undefined field: z on Point")));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("record constructor: unknown field — position on field value"), first_checker_error_line(mlc::String("type Point = { x: i32, y: i32 }\nfn f() -> Point = Point { x: 1, z: 1 }")), 2, 36, mlc::String("undefined field: z on Point")));
 results.push_back(test_runner::assert_diagnostic_at(mlc::String("record constructor: field type mismatch — position on field value"), first_checker_error_line(mlc::String("type Point = { x: i32, y: i32 }\nfn f() -> Point = Point { x: \"wrong\", y: 0 }")), 2, 30, mlc::String("field x: expected i32, got string")));
@@ -87,7 +98,6 @@ results.push_back(test_runner::assert_true(mlc::String("two undefined names - at
 results.push_back(test_runner::assert_eq_int(mlc::String("builtin print - 0 errors"), check_error_count(mlc::String("fn f() -> i32 = do\n  print(\"hi\")\n  0\nend")), 0));
 results.push_back(test_runner::assert_true(mlc::String("builtin print wrong arity - error"), check_error_count(mlc::String("fn f() -> i32 = do\n  print()\n  0\nend")) > 0));
 results.push_back(test_runner::assert_true(mlc::String("builtin print wrong argument type - error"), check_error_count(mlc::String("fn f() -> i32 = do\n  print(42)\n  0\nend")) > 0));
-results.push_back(test_runner::assert_true(mlc::String("monomorphic call wrong argument type - error"), check_error_count(mlc::String("fn g(x: i32) -> i32 = x\nfn f() -> i32 = g(\"a\")")) > 0));
 results.push_back(test_runner::assert_true(mlc::String("tuple variant constructor wrong payload type - error"), check_error_count(mlc::String("type Msg = Num(i32) | Empty\nfn f() -> Msg = Num(\"x\")")) > 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with type param - 0 errors"), check_error_count(mlc::String("fn id<T>(x: T) -> T = x")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn with type param and bound - 0 errors"), check_error_count(mlc::String("type Display { fn to_string(self: Self) -> string }\nfn id<T: Display>(x: T) -> T = x")), 0));

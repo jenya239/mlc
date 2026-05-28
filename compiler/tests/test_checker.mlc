@@ -34,6 +34,9 @@ fn checker_first_error_contains_nonfunction_i32(program_source: string) -> bool 
   line.contains('called value is not a function') && line.contains('(got i32)')
 end
 
+fn assert_checker_diagnostic(test_name: string, source: string, expected: string) -> TestResult =
+  assert_eq_str(test_name, first_checker_error_line(source), expected)
+
 export fn checker_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
@@ -56,6 +59,48 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int('fn generic return T — 0 errors',
     check_error_count('fn id<T>(x: T) -> T = x'), 0))
+
+  // --- negative diagnostics: exact formatted output --------------------------------
+
+  results.push(assert_checker_diagnostic(
+    'negative E001: undefined ident exact',
+    'fn f() -> i32 = badident',
+    'error[E001]: undefined: badident\n  --> 1:17'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E002: not callable exact',
+    'fn f() -> i32 = 42()',
+    'error[E002]: called value is not a function (got i32)\n  --> 1:19'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E003: call argument type exact',
+    'fn f(x: i32) -> i32 = x\nfn g() -> i32 = f("str")',
+    'error[E003]: argument expects i32, got string\n  --> 2:19'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E004: return type exact',
+    'fn f() -> i32 = "hello"',
+    'error[E004]: return type: expected i32, got string\n  --> 1:17'))
+
+  results.push(assert_checker_diagnostic(
+    'negative: mutation assign immutable exact',
+    'fn f() -> i32 = do let x = 1; x = 2; x end',
+    'error: cannot assign to immutable binding: x\n  --> 1:31'))
+
+  results.push(assert_checker_diagnostic(
+    'negative: question on non-Result exact',
+    'fn f() -> i32 = do let x: i32 = 42; x? end',
+    'error: ? operator requires a Result type, got i32\n  --> 1:38'))
+
+  results.push(assert_checker_diagnostic(
+    'negative: binary + incompatible operands exact',
+    'fn f() -> i32 = 1 + true',
+    'error: incompatible operand types for +: i32 and bool\n  --> 1:19'))
+
+  results.push(assert_checker_diagnostic(
+    'negative: monomorphic call wrong arg exact',
+    'fn g(x: i32) -> i32 = x\nfn f() -> i32 = g("a")',
+    'error[E003]: argument expects i32, got string\n  --> 2:19'))
 
   results.push(assert_true('integer literal called like function - diagnostic names type',
     checker_first_error_contains_nonfunction_i32('fn f() -> i32 = 42()')))
@@ -126,9 +171,6 @@ export fn checker_tests() -> [TestResult] = do
     32,
     'does not implement Display'))
 
-  results.push(assert_true('trait bound: call with non-implementing type — error',
-    first_checker_error_line('type Display { fn show(self: Self) -> string }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)').contains('does not implement Display')))
-
   results.push(assert_diagnostic_at(
     'record update: unknown field — position on field value',
     first_checker_error_line('type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, z: 1 }'),
@@ -180,9 +222,6 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_true('builtin print wrong argument type - error',
     check_error_count('fn f() -> i32 = do\n  print(42)\n  0\nend') > 0))
-
-  results.push(assert_true('monomorphic call wrong argument type - error',
-    check_error_count('fn g(x: i32) -> i32 = x\nfn f() -> i32 = g("a")') > 0))
 
   results.push(assert_true('tuple variant constructor wrong payload type - error',
     check_error_count('type Msg = Num(i32) | Empty\nfn f() -> Msg = Num("x")') > 0))
