@@ -6,6 +6,10 @@
 
 #include "test_runner.hpp"
 #include "random_program.hpp"
+#include "lexer.hpp"
+#include "decls.hpp"
+#include "decl_index.hpp"
+#include "pipeline.hpp"
 
 namespace test_fuzz {
 

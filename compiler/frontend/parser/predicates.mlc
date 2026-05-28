@@ -114,7 +114,9 @@ export extend TKind {
 // --- extend Parser --------------------------------------------------------
 
 export extend Parser {
-  fn kind(self) -> TKind = do const tok: Token = self.tokens[self.pos]; tok.kind end
+  fn kind(self) -> TKind =
+    if self.pos >= self.tokens.length() then Eof
+    else do const tok: Token = self.tokens[self.pos]; tok.kind end
   fn lambda_shorthand_suppression_active(self) -> bool = self.suppress_lambda_shorthand
   fn with_lambda_shorthand_suppressed(self, value: bool) -> Parser =
     Parser {
@@ -142,14 +144,18 @@ export extend Parser {
     else
       const tok: Token = self.tokens[self.pos]; tok.kind.is_eof()
     end
-  fn skip_semi(self) -> Parser = do
-    const tok: Token = self.tokens[self.pos]
-    match tok.kind { Semicolon => self.advance(), _ => self }
-  end
-  fn span_at_cursor(self) -> Span = do
-    const tok: Token = self.tokens[self.pos]
-    Span { file: self.source_path, line: tok.line, column: tok.col }
-  end
+  fn skip_semi(self) -> Parser =
+    if self.pos >= self.tokens.length() then self
+    else do
+      const tok: Token = self.tokens[self.pos]
+      match tok.kind { Semicolon => self.advance(), _ => self }
+    end
+  fn span_at_cursor(self) -> Span =
+    if self.pos >= self.tokens.length() then Span { file: self.source_path, line: 0, column: 0 }
+    else do
+      const tok: Token = self.tokens[self.pos]
+      Span { file: self.source_path, line: tok.line, column: tok.col }
+    end
   fn prev_line(self) -> i32 = do
     if self.pos > 0 then
       const tok: Token = self.tokens[self.pos - 1]; tok.line

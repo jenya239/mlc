@@ -1,5 +1,44 @@
 import { TestResult, assert_eq_str, assert_true } from './test_runner'
 import { fuzz_random_program, fuzz_mix } from './fuzz/random_program'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { LoadItem } from '../codegen/decl/decl_index'
+import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
+
+fn fuzz_pipeline_completes(seed: i32) -> bool =
+  match run_modular_compiler_pipeline(fuzz_pipeline_input(seed)) {
+    Ok(_) => true,
+    Err(_) => true
+  }
+
+fn fuzz_pipeline_input(seed: i32) -> ModularCompileInput = do
+  const source = fuzz_random_program(seed)
+  const program = parse_program(tokenize(source).tokens)
+  const load_item = LoadItem {
+    path: 'fuzz_probe.mlc',
+    decls: program.decls,
+    imports: [],
+    namespace_import_aliases: []
+  }
+  ModularCompileInput {
+    load_items: [load_item],
+    full_program: program,
+    entry_program: program,
+    output_directory: '',
+    profile_enabled: false,
+    check_only: true
+  }
+end
+
+fn fuzz_lex_parse_completes(source: string) -> bool = do
+  const lex = tokenize(source)
+  if lex.has_errors() then true
+  else do
+    parse_program(lex.tokens)
+    true
+  end
+  end
+end
 
 export fn fuzz_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -28,6 +67,19 @@ export fn fuzz_tests() -> [TestResult] = do
 
   results.push(assert_true('fuzz match variant',
     fuzz_random_program(5).contains('match ')))
+
+  results.push(assert_true('fuzz garbage lex parse completes',
+    fuzz_lex_parse_completes('fn @@@')))
+
+  let mut pipeline_seed = 0
+  while pipeline_seed < 32 do
+    const source = fuzz_random_program(pipeline_seed)
+    results.push(assert_true('fuzz check_only pipeline seed ' + pipeline_seed.to_string(),
+      fuzz_pipeline_completes(pipeline_seed)))
+    results.push(assert_true('fuzz lex parse seed ' + pipeline_seed.to_string(),
+      fuzz_lex_parse_completes(source)))
+    pipeline_seed = pipeline_seed + 1
+  end
 
   results
 end

@@ -290,10 +290,10 @@ mlc::String TKind_usize_val(ast_tokens::TKind self) noexcept{return [&]() -> mlc
 
 mlc::String TKind_char_val(ast_tokens::TKind self) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LChar>(self)) { auto _v_lchar = std::get<ast_tokens::LChar>(self); auto [s] = _v_lchar; return s; } return mlc::String(""); }();}
 
-ast_tokens::TKind Parser_kind(predicates::Parser self) noexcept{
-ast_tokens::Token tok = self.tokens[self.pos];
-return tok.kind;
-}
+ast_tokens::TKind Parser_kind(predicates::Parser self) noexcept{return self.pos >= self.tokens.size() ? (ast_tokens::Eof{}) : [&]() -> ast_tokens::TKind { 
+  ast_tokens::Token tok = self.tokens[self.pos];
+  return tok.kind;
+ }();}
 
 bool Parser_lambda_shorthand_suppression_active(predicates::Parser self) noexcept{return self.suppress_lambda_shorthand;}
 
@@ -308,15 +308,15 @@ bool Parser_at_eof(predicates::Parser self) noexcept{return self.pos >= self.tok
   return TKind_is_eof(tok.kind);
  }();}
 
-predicates::Parser Parser_skip_semi(predicates::Parser self) noexcept{
-ast_tokens::Token tok = self.tokens[self.pos];
-return [&]() -> predicates::Parser { if (std::holds_alternative<ast_tokens::Semicolon>(tok.kind)) {  return Parser_advance(self); } return self; }();
-}
+predicates::Parser Parser_skip_semi(predicates::Parser self) noexcept{return self.pos >= self.tokens.size() ? self : [&]() -> predicates::Parser { 
+  ast_tokens::Token tok = self.tokens[self.pos];
+  return [&]() -> predicates::Parser { if (std::holds_alternative<ast_tokens::Semicolon>(tok.kind)) {  return Parser_advance(self); } return self; }();
+ }();}
 
-ast::Span Parser_span_at_cursor(predicates::Parser self) noexcept{
-ast_tokens::Token tok = self.tokens[self.pos];
-return ast::Span{self.source_path, tok.line, tok.col};
-}
+ast::Span Parser_span_at_cursor(predicates::Parser self) noexcept{return self.pos >= self.tokens.size() ? ast::Span{self.source_path, 0, 0} : [&]() -> ast::Span { 
+  ast_tokens::Token tok = self.tokens[self.pos];
+  return ast::Span{self.source_path, tok.line, tok.col};
+ }();}
 
 int Parser_prev_line(predicates::Parser self) noexcept{
 return self.pos > 0 ? [&]() -> int { 
