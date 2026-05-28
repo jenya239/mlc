@@ -29,7 +29,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 1 | `SDeclFn` + `Span`; propagate in `transform_decl.mlc`; test | done (`7a0a3cc`) |
 | 2 | `SDeclType` span from `DeclType.name_span` | done (`3e214fc`) |
 | 3 | `SDeclTrait` / `SDeclExtend` spans | done (`326b173`) |
-| 4 | Checker diagnostics on decl paths use `SDecl` span helpers | done (pending hash) |
+| 4 | Checker diagnostics on decl paths use `SDecl` span helpers | done (`860bafc`) |
 | 5 | Audit remaining span-less IR; close track | pending |
 
 ## Context

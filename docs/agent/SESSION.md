@@ -5,12 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
-| role_last | Meta |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| role_last | Driver |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | run_tests | 755 |
-| TRACK_PLAN | TRACK_SPAN_IR **active** (step 4) |
-| agent_token_last | cr-agent-11f87952-1385-4ba2-a78f-7d1af8d8d07e |
+| TRACK_PLAN | TRACK_SPAN_IR **active** (step 5) |
+| agent_token_last | cr-agent-14a24717-d2c6-4a26-8795-d0fcfdbeaecf |
+
+### Turn 2026-05-28 (Driver SPAN_IR step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | decl_span + derive diagnostics; commit `860bafc` |
+| verify | 755 pass; self-host diff empty |
+| next | ROLE=Driver STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (Meta meta-review — SPAN_IR step 3 close)
 
