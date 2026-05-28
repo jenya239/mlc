@@ -34,7 +34,7 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 | Step | Item | Status |
 |------|------|--------|
 | 1 | `parser/decls.mlc` — audit silent/`span_unknown` paths; structured parse errors on decl edge cases | done (`b880aed`) |
-| 2 | `parser/exprs.mlc` — same for expression parsing edge cases | done (`COMMIT_HASH`) |
+| 2 | `parser/exprs.mlc` — same for expression parsing edge cases | done (`baf2c8f`) |
 | 3 | `test_parser.mlc` — negative tests for new parse error paths | pending |
 | 4 | In-process parser garbage smoke (unclosed/noise) in `test_parser.mlc` | pending |
 | 5 | Parser `span_unknown` grep audit; close track | pending |
@@ -55,4 +55,4 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 
 ## Next step (Driver)
 
-**STEP=2** — `parser/exprs.mlc` expression parsing edge-case audit.
+**STEP=3** — `test_parser.mlc` negative tests for new parse error paths.
