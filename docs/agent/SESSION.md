@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| run_tests | 680 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS active (step 1) |
-| agent_token_last | cr-agent-91327058-cf56-46a9-9d18-bc9f57cd2991 |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| run_tests | 683 |
+| TRACK_PLAN | TRACK_DIAGNOSTICS active (step 2) |
+| agent_token_last | (pending) |
+
+### Turn 2026-05-28 (DIAGNOSTICS step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | diagnostic_codes.mlc E001–E020; wired E001–E004; test_checker smoke |
+| verify | 683 pass; self-host diff empty |
+| uncommitted_files | 0 |
+| next | ROLE=Driver STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh idempotent #4)
 
