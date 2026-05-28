@@ -55,7 +55,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Fuzz differential:** [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) — **closed** (`5463361`)
 - **Parser panic audit:** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **closed** (`5525d03`)
 - **Checker/codegen spans:** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **closed** (`a8bf7a1`)
-- **Build determinism:** [TRACK_BUILD.md](TRACK_BUILD.md) — **closed** (`33c039e`)
+- **Build determinism:** [TRACK_BUILD.md](TRACK_BUILD.md) — **closed** (`1d6f4c5`)
 
 ## Next step (Planner)
 

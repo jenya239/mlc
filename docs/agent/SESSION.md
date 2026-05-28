@@ -19,7 +19,7 @@
 | instructions_rev | 2026-05-28-cleaner |
 | driver_turns_since_plan | 5 |
 | step | 5 |
-| done | build audit; TRACK closed; docs only |
+| done | build audit; TRACK closed; commit `1d6f4c5` |
 | verify | 751 pass (prior); no compiler/** change — self-host skipped |
 | next | ROLE=Planner plan-refresh (enqueued) |
 

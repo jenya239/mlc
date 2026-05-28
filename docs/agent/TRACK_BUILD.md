@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §6; previous: [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) (**closed**, `a8bf7a1`)
 
-## Status: **closed** (docs pending)
+## Status: **closed** (`1d6f4c5`)
 
 **Closed:** step 5 build audit — all deliverables wired; 751 tests; deferred items documented; no code changes.
 
@@ -32,7 +32,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `compile_options.mlc` — `--emit-compile-commands` flag parsing | done (`6077707`) |
 | 3 | Modular pipeline — emit `compile_commands.json` to out dir | done (`a60052a`) |
 | 4 | Test/smoke — flag + json output | done (`ab0f34d`) |
-| 5 | Build audit; close track | done (docs) |
+| 5 | Build audit; close track | done (`1d6f4c5`) |
 
 ## Step 5 audit
 
