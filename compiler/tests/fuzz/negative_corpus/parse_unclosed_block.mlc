@@ -1,0 +1,3 @@
+fn f() -> i32 = do
+  let x = 1
+  x

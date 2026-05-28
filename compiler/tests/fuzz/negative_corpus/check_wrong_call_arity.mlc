@@ -1,0 +1,2 @@
+fn pair_sum(first: i32, second: i32) -> i32 = first + second
+fn main() -> i32 = pair_sum(1)

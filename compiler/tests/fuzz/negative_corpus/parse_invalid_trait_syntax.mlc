@@ -1,0 +1,2 @@
+trait BrokenTrait {
+  fn missing_body(self: i32) -> i32
