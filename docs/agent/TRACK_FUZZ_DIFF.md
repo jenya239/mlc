@@ -34,9 +34,15 @@ compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
 |------|------|--------|
 | 1 | Negative corpus exit-code parity — mlcc `--check-only` vs Ruby checker on 16 files | done (`0654dda`) |
 | 2 | Random program seeds — both backends no-crash; exit 0/1 match (8 seeds) | done (`a23ba55`) |
-| 3 | Error-count parity on checker-negative subset (mlcc vs Ruby) | pending |
+| 3 | Error-count parity on checker-negative subset (mlcc vs Ruby) | done (`COMMIT_HASH`) |
 | 4 | `run_fuzz_differential.sh` + hook in `build_tests.sh` | pending |
 | 5 | In-process differential smoke in `test_fuzz.mlc`; close track | pending |
+
+## Step 3 detail (done)
+
+- `checker_negative_subset.txt` (5 files: both backends checker errors, not parse/lex).
+- `scripts/fuzz_ruby_checker_error_count.rb`; mlcc counts `^error:` lines.
+- All 5 files: error count 1 on both backends.
 
 ## Step 2 detail (done)
 
@@ -58,4 +64,4 @@ compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
 
 ## Next step (Driver)
 
-**STEP=3** — error-count parity on checker-negative subset (mlcc vs Ruby).
+**STEP=4** — hook `run_fuzz_differential.sh` in `build_tests.sh`.
