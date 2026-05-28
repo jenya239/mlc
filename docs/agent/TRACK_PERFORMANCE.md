@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §1 «Производительность»; previous: optimization batch (`419de62`), [TRACK_SAFETY.md](TRACK_SAFETY.md) (**closed**, `32f8335`)
 
-## Status: in progress (step 1 pending)
+## Status: in progress (step 2 pending)
 
 **Goal:** keep full `compiler/main.mlc` translation within baseline (wall ms + scaling exponent); remove remaining super-linear / copy-heavy paths.
 
@@ -33,18 +33,16 @@ benchmarks/profile/compare_baseline.sh benchmarks/profile/baseline_reference.txt
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Post-SAFETY baseline — record profile + scaling; commit `benchmarks/profile/baseline_reference.txt` | pending |
+| 1 | Post-SAFETY baseline — record profile + scaling; commit `benchmarks/profile/baseline_reference.txt` | done (`11ca867`) |
 | 2 | CI perf gate — `compare_baseline.sh` fails on regression (not `continue-on-error`) | pending |
 | 3 | `build_registry` COW audit — eliminate Map-copy fold on large accumulators (PLAN §1) | pending |
 | 4 | CodegenContext hot path — reduce full struct copies in stmt/expr visitor entry | pending |
 | 5 | Re-baseline + document wall ms / top phases in this file | pending |
 
-## Step 1 detail
+## Step 1 detail (done — `11ca867`)
 
-- Fresh mlcc after SAFETY (`32f8335`); `compiler/build.sh` first.
-- Run `benchmarks/profile/record_baseline.sh 5`; copy output to `benchmarks/profile/baseline_reference.txt` (committed).
-- Note median `total_ms` and top 3 phases in commit message or TRACK step 5.
-- No compiler logic changes in step 1.
+- `total_ms=1772.19` (median wall, 5 runs); top phases: merge 597ms, codegen 411ms, lex 317ms.
+- Scaling exponent b=1.111 (100..800 functions); `compare_baseline.sh` PASS.
 
 ## Step 2 detail
 
@@ -72,4 +70,4 @@ benchmarks/profile/compare_baseline.sh benchmarks/profile/baseline_reference.txt
 
 ## Next step (Driver)
 
-**STEP=1** — post-SAFETY baseline file + verify compare passes.
+**STEP=2** — CI perf gate (`compare_baseline` fails on regression).

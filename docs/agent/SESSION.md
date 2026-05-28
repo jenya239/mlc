@@ -5,11 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | run_tests | 607 |
-| TRACK_PLAN | TRACK_PERFORMANCE active (step 1 pending) |
+| TRACK_PLAN | TRACK_PERFORMANCE active (step 2 pending) |
+
+### Turn 2026-05-28 (PERF step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | baseline_reference.txt (1772ms wall, merge/codegen/lex top; b=1.11) |
+| verify | 607 pass; compare_baseline PASS; self-host diff empty |
+| uncommitted_files | 0 |
+| next | STEP=2 TRACK_PERFORMANCE (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — performance track)
 
