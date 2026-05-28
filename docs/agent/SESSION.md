@@ -6,11 +6,30 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | run_tests | 751 |
-| TRACK_PLAN | TRACK_BUILD **closed** → Planner plan-refresh |
+| TRACK_PLAN | TRACK_SPAN_IR **active** (step 1) |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
+
+### Turn 2026-05-28 (Planner plan-refresh — SPAN_IR)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_BUILD closed; opened TRACK_SPAN_IR (5 steps) |
+| verify | docs only |
+| next | ROLE=Driver STEP=1 (enqueued) |
+
+### Turn 2026-05-28 (Driver BUILD step 5 — idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 5 (skip) |
+| done | already closed (`1d6f4c5`); hash fix uncommitted |
+| next | ROLE=Planner plan-refresh (re-enqueued) |
 
 ### Turn 2026-05-28 (Driver BUILD step 5 — track close)
 

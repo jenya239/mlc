@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_BUILD.md](TRACK_BUILD.md) — **closed** (`1d6f4c5`): build determinism + compile_commands (PLAN §Phase 1 §6). Next: Planner plan-refresh.
+[TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **active** (step 1): SemanticIR `SDecl` spans (PLAN §Phase 1 §1). [TRACK_BUILD.md](TRACK_BUILD.md) **closed** (`1d6f4c5`).
 
 ## Step sizing (good vs bad)
 
