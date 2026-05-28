@@ -10,7 +10,19 @@
 | step_last | plan-refresh |
 | run_tests | 680 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS active (step 1) |
-| agent_token_last | cr-agent-91f2bbcf-74be-45ee-892d-df9ce4430240 |
+| agent_token_last | cr-agent-11558f6f-e3f5-4197-98b4-457dcc00ec40 |
+
+### Turn 2026-05-28 (Planner plan-refresh idempotent — stale prompt)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh (skip) |
+| done | TRACK_DIAGNOSTICS already open (`24da4b0`); STEP=1 pending |
+| verify | — |
+| uncommitted_files | 0 |
+| next | ROLE=Driver STEP=1 TRACK_DIAGNOSTICS (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_DIAGNOSTICS)
 
