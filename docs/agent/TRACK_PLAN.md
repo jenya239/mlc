@@ -51,10 +51,18 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Security / fuzz depth:** [TRACK_SECURITY.md](TRACK_SECURITY.md) — **closed** (`a035c3d`)
 - **Diagnostics / error codes:** [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) — **closed** (`f6863fe`)
 - **Test coverage:** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — **closed** (`9bddbb3`)
+- **Diagnostics (remaining codes):** [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) — **active** (step 1)
 
-## Next step (Planner)
+## Next step (Driver)
 
-**STEP=plan-refresh** — pick next track from [PLAN.md](../PLAN.md).
+**STEP=1** [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) — check.mlc default-param codes.
+
+## Planner checklist (2026-05-28 plan-refresh — diagnostics2)
+
+- [x] TRACK_COVERAGE closed (`9bddbb3`)
+- [x] TRACK_DIAGNOSTICS2 opened (5 steps: check defaults, array HOF, Result/Option, infer paths, audit)
+- [x] No step bundles `compiler/` + `lib/mlc/`
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-28 plan-refresh — coverage track)
 
