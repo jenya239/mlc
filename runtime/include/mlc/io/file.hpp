@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <cstdlib>
 #include "mlc/core/string.hpp"
 #include "mlc/core/array.hpp"
 
@@ -257,6 +258,26 @@ inline bool remove_file(const mlc::String& path) {
 inline bool rename_file(const mlc::String& old_path, const mlc::String& new_path) {
     return std::rename(old_path.as_std_string().c_str(),
                       new_path.as_std_string().c_str()) == 0;
+}
+
+inline mlc::String temp_directory_base() {
+    const char* temporary_directory = std::getenv("TMPDIR");
+    if (temporary_directory != nullptr && temporary_directory[0] != '\0') {
+        return mlc::String(temporary_directory);
+    }
+    return mlc::String("/tmp");
+}
+
+inline mlc::String make_temp_directory(const mlc::String& prefix) {
+    std::string base = temp_directory_base().as_std_string();
+    std::string pattern = base + "/" + prefix.as_std_string() + "XXXXXX";
+    std::vector<char> buffer(pattern.begin(), pattern.end());
+    buffer.push_back('\0');
+    char* created = mkdtemp(buffer.data());
+    if (created == nullptr) {
+        return mlc::String("");
+    }
+    return mlc::String(created);
 }
 
 } // namespace mlc::file

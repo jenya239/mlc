@@ -226,7 +226,7 @@ module MLC
               return true if %w[Map HashMap Shared].include?(type_name) && method_name == "new"
 
               # Built-in File methods
-              return true if type_name == "File" && %w[read write exists append read_lines].include?(method_name)
+              return true if type_name == "File" && %w[read write exists append read_lines make_temp_directory temp_directory_base].include?(method_name)
 
               # Built-in Profile methods
               return true if type_name == "Profile" && %w[reset scope_begin scope_end print_report monotonic_nanos peak_rss_kib].include?(method_name)

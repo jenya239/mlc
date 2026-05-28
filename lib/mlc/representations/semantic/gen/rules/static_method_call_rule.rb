@@ -17,7 +17,9 @@ module MLC
               "write"      => :unit,
               "exists"     => :bool,
               "append"     => :unit,
-              "read_lines" => :string_array
+              "read_lines" => :string_array,
+              "make_temp_directory" => :string,
+              "temp_directory_base" => :string
             }.freeze
 
             PROFILE_METHODS = {

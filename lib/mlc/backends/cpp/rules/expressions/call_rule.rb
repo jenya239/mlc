@@ -871,7 +871,9 @@ module MLC
               "File_write"      => "mlc::file::write_string",
               "File_exists"     => "mlc::file::exists",
               "File_append"     => "mlc::file::append_string",
-              "File_read_lines" => "mlc::file::read_lines"
+              "File_read_lines" => "mlc::file::read_lines",
+              "File_make_temp_directory" => "mlc::file::make_temp_directory",
+              "File_temp_directory_base" => "mlc::file::temp_directory_base"
             }.freeze
 
             def lower_file_method(node)
