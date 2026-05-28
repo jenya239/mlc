@@ -86,7 +86,7 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_str(
     'undefined ident: diagnostic includes source path',
     first_checker_error_line_with_path('fn f() -> i32 = badident', 'unit.mlc'),
-    'unit.mlc:1:17: error: undefined: badident'))
+    'error: undefined: badident\n  --> unit.mlc:1:17'))
 
   results.push(assert_eq_int('type decl with variants - 0 errors',
     check_error_count('type Color = Red | Green | Blue'), 0))
@@ -294,7 +294,7 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_str(
     'undefined record field: message text',
     first_checker_error_line('type R = { a: i32 }\nfn f(x: R) -> i32 = x.missing'),
-    '2:22: error: undefined field: missing on R'))
+    'error: undefined field: missing on R\n  --> 2:22'))
 
   results.push(assert_true('infer: string + i32 is an error',
     check_error_count('fn f() -> i32 = "a" + 1') > 0))

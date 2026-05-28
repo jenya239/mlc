@@ -26,7 +26,7 @@ export fn assert_eq_str(test_name: string, actual: string, expected: string) -> 
   if actual == expected then pass_variant else fail_variant end
 end
 
-// `formatted_diagnostic` is like `diagnostic_format` from the checker: "message at line:column".
+// `formatted_diagnostic` matches rustc-style `diagnostic_format`: "severity: message" + optional "  --> file:line:col".
 export fn assert_diagnostic_at(
   test_name: string,
   formatted_diagnostic: string,
@@ -34,13 +34,15 @@ export fn assert_diagnostic_at(
   expected_column: i32,
   message_needle: string
 ) -> TestResult = do
-  const position_part = expected_line.to_string() + ":" + expected_column.to_string() + ': '
+  const line_column = expected_line.to_string() + ":" + expected_column.to_string()
   const has_message = formatted_diagnostic.contains(message_needle)
-  const has_position = formatted_diagnostic.contains(position_part)
+  const has_position =
+    formatted_diagnostic.contains("  --> " + line_column)
+    || (formatted_diagnostic.contains("  --> ") && formatted_diagnostic.contains(":" + line_column))
   if has_message && has_position then Pass { name: test_name }
   else Fail {
     name: test_name,
-    message: `expected needle '${message_needle}' and position '${position_part}', got '${formatted_diagnostic}'`
+    message: `expected needle '${message_needle}' and location '  --> …${line_column}', got '${formatted_diagnostic}'`
   }
   end
 end
