@@ -49,11 +49,17 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Safety / fuzz hardening:** [TRACK_SAFETY.md](TRACK_SAFETY.md) — **closed** (`32f8335`)
 - **Performance:** [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **closed** (`0671422`)
 - **Security / fuzz depth:** [TRACK_SECURITY.md](TRACK_SECURITY.md) — **closed** (`a035c3d`)
-- **Diagnostics / error codes:** [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) — **active** (step 1)
+- **Diagnostics / error codes:** [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) — **closed** (`f6863fe`)
 
-## Next step (Driver)
+## Next step (Planner)
 
-**STEP=1** [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) — code catalog module.
+**STEP=plan-refresh** — pick next track from PLAN.
+
+## Planner checklist (2026-05-28 plan-refresh — diagnostics closed)
+
+- [x] TRACK_DIAGNOSTICS closed (`f6863fe`)
+- [ ] Open next track from PLAN
+- [ ] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-28 plan-refresh — diagnostics track)
 

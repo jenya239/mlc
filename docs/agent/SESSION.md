@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| run_tests | 690 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS active (step 5) |
-| agent_token_last | cr-agent-54468ad4-c272-4ae4-a382-97457df2e874 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| run_tests | 692 |
+| TRACK_PLAN | TRACK_DIAGNOSTICS closed (`f6863fe`) |
+| agent_token_last | (pending) |
+
+### Turn 2026-05-28 (DIAGNOSTICS step 5 — track closed)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 5 |
+| step | 5 |
+| done | infer_call E034–E035; track closed |
+| verify | 692 pass; self-host diff empty |
+| uncommitted_files | 0 |
+| next | ROLE=Planner STEP=plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 4 idempotent)
 
