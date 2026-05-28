@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| run_tests | 692 |
-| TRACK_PLAN | TRACK_COVERAGE active (step 1) |
-| agent_token_last | cr-agent-53fcf8b8-3137-4ba0-ae85-e98da3d203db |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| run_tests | 694 |
+| TRACK_PLAN | TRACK_COVERAGE active (step 2) |
+| agent_token_last | cr-agent-1453fff0-0014-4ab3-a478-488b2384e6ef |
+
+### Turn 2026-05-28 (COVERAGE step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | lambda closure + array literal positive tests (`9bf51aa`) |
+| verify | 694 pass; tests only (no self-host) |
+| uncommitted_files | compiler/out/* artifacts |
+| next | ROLE=Driver STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh idempotent)
 
