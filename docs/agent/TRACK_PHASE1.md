@@ -27,7 +27,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | `diagnostic_format` — rustc-style (`error: msg` + `  --> file:line:col`); update test_runner helpers | done (`a74d480`) |
 | 2 | `Diagnostic.code` field + `error[E001]:` prefix in format | done (`01a15c5`) |
-| 3 | Replace `infer_messages_as_diagnostics` — infer emits `Diagnostic` with span at source | done |
+| 3 | Replace `infer_messages_as_diagnostics` — infer emits `Diagnostic` with span at source | done (`46e2280`) |
 | 4 | Audit checker paths with `span_unknown`; fix high-traffic infer_call / type mismatch | pending |
 | 5 | Negative tests in `test_checker.mlc` (invalid input → specific diagnostic) | pending |
 | 6 | `--check-only` CLI flag (checker + transform, no codegen) | pending |
