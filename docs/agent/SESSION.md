@@ -10,7 +10,7 @@
 | step_last | 1 |
 | run_tests | 683 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS active (step 2) |
-| agent_token_last | (pending) |
+| agent_token_last | cr-agent-2de0688c-203c-43cd-b582-be807c4c8208 |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 1)
 
