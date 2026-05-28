@@ -4,13 +4,33 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner`|
-| role_last | Cleaner|
-| driver_turns_since_plan | 10|
-| step_last | cleanup-sweep|
+| instructions_rev | `2026-05-28-cleaner` |
+| role_last | Cleaner |
+| driver_turns_since_plan | 0 |
+| step_last | cleanup-sweep (skip) |
 | run_tests | 706 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS2 **closed** (`d055c49`) |
-| agent_token_last | cr-agent-8bc57991-28e8-4ae2-9d6c-9d4dfff93767 |
+| TRACK_PLAN | TRACK_DIAGNOSTICS2 **closed** (`d055c49`); Planner plan-refresh pending |
+| agent_token_last | cr-agent-6ba84380-c5f1-4960-81f9-79582df3feb4 |
+
+### Turn 2026-05-28 (Cleaner cleanup-sweep idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Cleaner |
+| step | cleanup-sweep (skip) |
+| done | already committed (`e33e2df`); rm orphan boot/bootstrap on disk |
+| next | Planner plan-refresh (enqueued) |
+
+### Turn 2026-05-28 (Cleaner cleanup-sweep)
+
+| turn | 2026-05-28 |
+| role | Cleaner |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 0 |
+| step | cleanup-sweep |
+| deleted | compiler/out/boot* + bootstrap* (1832 tracked); .out_selfcheck*; .tmp_bench*; .tmp_selfcheck*; .tmp_selfhost/mlcc_* orphans |
+| kept | docs/agent/{CONTINUITY,ROLES,RESEARCH,TRACK*,SESSION,PLAN}; .cursor/rules |
+| gitignore | +compiler/out/boot*/, +compiler/out/bootstrap*/ |
+| next | Planner plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS2 step 5 idempotent skip)
 
