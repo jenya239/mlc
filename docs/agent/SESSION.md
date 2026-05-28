@@ -6,10 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| run_tests | 511 |
-| TRACK_PLAN | TRACK_PHASE1 active (step 4 pending) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| run_tests | 512 |
+| TRACK_PLAN | TRACK_PHASE1 active (step 5 pending) |
+
+### Turn 2026-05-28 (PHASE1 step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | E003 call arg mismatch; E004 return type; trait bound span on argument |
+| verify | 512 pass; build.sh; self-host diff empty (build_bin.sh + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=5 TRACK_PHASE1 (enqueued) |
 
 ### Turn 2026-05-28 (PHASE1 step 3)
 
