@@ -89,7 +89,7 @@ export fn gen_decl(decl: Shared<SDecl>, context: CodegenContext) -> string =
     SDeclType(type_name, type_params, variants, derive_traits) =>
       gen_type_decl(context, type_name, type_params, variants) + gen_derive_methods(context, type_name, variants, derive_traits),
     SDeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
-    SDeclFn(name, type_params, type_bounds, params, return_type, body, _) =>
+    SDeclFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
       match body { SExprExtern(_, _) => '', _ => gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context) },
     SDeclExtend(type_name, trait_name, methods) =>
       gen_decl_extend(type_name, trait_name, methods, context,
@@ -104,7 +104,7 @@ export fn gen_proto(decl: Shared<SDecl>, context: CodegenContext) -> string =
   match decl {
     SDeclType(_, _, _, _) => '',
     SDeclTrait(_, _, _) => '',
-    SDeclFn(name, type_params, type_bounds, params, ret, body, _) =>
+    SDeclFn(name, type_params, type_bounds, params, ret, body, _, _) =>
       match body { SExprExtern(_, _) => '', _ => gen_fn_proto(name, type_params, type_bounds, params, ret, context) },
     SDeclExtend(type_name, _, methods) => do
       const extend_context = context.for_type_body(type_name)
@@ -119,7 +119,7 @@ export fn gen_proto(decl: Shared<SDecl>, context: CodegenContext) -> string =
 
 fn inner_declaration_is_main(declaration: Shared<SDecl>) -> bool =
   match sdecl_inner(declaration) {
-    SDeclFn(name, _, _, _, _, _, _) => name == 'main',
+    SDeclFn(name, _, _, _, _, _, _, _) => name == 'main',
     _ => false
   }
 
@@ -158,7 +158,7 @@ fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, pha
       else if phase == 4 then gen_trait_struct(codegen_context, name, type_params, methods)
       else ''
       end,
-    SDeclFn(_, _, _, _, _, _, _) =>
+    SDeclFn(_, _, _, _, _, _, _, _) =>
       if phase == 2 then gen_proto(declaration, codegen_context)
       else if phase == 3 then gen_decl(declaration, codegen_context)
       else ''
@@ -182,7 +182,7 @@ fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, pha
         _ => ''
       }
       else if phase == 2 then match sdecl_inner(inner_declaration) {
-        SDeclFn(_, type_parameters, _, _, _, body, _) =>
+        SDeclFn(_, type_parameters, _, _, _, body, _, _) =>
           if type_parameters.length() > 0 then match body {
             SExprExtern(_, _) => gen_proto(inner_declaration, codegen_context),
             _ => gen_decl(inner_declaration, codegen_context)
@@ -194,7 +194,7 @@ fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, pha
       else if phase == 3 then match sdecl_inner(inner_declaration) {
         SDeclType(_, _, _, _) => '',
         SDeclTrait(_, _, _) => '',
-        SDeclFn(_, type_parameters, _, _, _, body, _) =>
+        SDeclFn(_, type_parameters, _, _, _, body, _, _) =>
           if type_parameters.length() > 0 then match body {
             SExprExtern(_, _) => gen_decl(inner_declaration, codegen_context),
             _ => ''

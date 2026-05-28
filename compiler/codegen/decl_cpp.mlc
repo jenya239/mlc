@@ -109,7 +109,7 @@ export fn gen_fn_decl_cpp(
 
 export fn gen_decl_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
   match declaration {
-    SDeclFn(name, type_params, type_bounds, params, return_type, body, _) =>
+    SDeclFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
       match body {
         SExprExtern(_, _) => cpp_decl_from_string_output(''),
         _ => gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context)
@@ -119,7 +119,7 @@ export fn gen_decl_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> S
 
 export fn gen_proto_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
   match declaration {
-    SDeclFn(name, type_params, type_bounds, params, return_type, body, _) =>
+    SDeclFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
       match body {
         SExprExtern(_, _) => cpp_decl_from_string_output(''),
         _ => gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)

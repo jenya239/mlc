@@ -1,7 +1,7 @@
 // Declaration, program, and load-item AST → SemanticIR transforms.
 // Not called back by transform_expr/transform_stmts; imports from transform.mlc.
 
-import { Decl, TypeVariant, Param, Program, Stmt, Span } from '../../frontend/ast'
+import { Decl, TypeVariant, Param, Program, Stmt, Span, expr_span } from '../../frontend/ast'
 import { expand_declarations_with_trait_nominal_maps, build_trait_nominal_maps, TraitNominalMaps } from './trait_param_expand'
 import { expand_parameter_destructuring_in_program } from './param_destructure_expand'
 import { Type, TypeRegistry, type_from_annotation } from '../registry'
@@ -23,7 +23,7 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       const initial_context  = TransformContext { type_env: param_env, registry }
       const typed_body       = transform_expr(body, initial_context, (stmts: [Shared<Stmt>], ctx: TransformContext) => transform_stmts(stmts, ctx))
       const coerced_body     = coerce_expr_to_type(typed_body, return_type)
-      Shared.new(SDeclFn(name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries))
+      Shared.new(SDeclFn(name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries, expr_span(body)))
     end,
     DeclType(type_name, type_params, variants, derive_traits, _) =>
       Shared.new(SDeclType(type_name, type_params, variants, derive_traits)),

@@ -3,7 +3,7 @@
 // Produced by checker/transform.mlc; consumed by codegen/.
 
 import { Type } from '../checker/registry'
-import { Pat, Span, TypeVariant, Param, Decl, WhereClauseBound } from '../frontend/ast'
+import { Pat, Span, TypeVariant, Param, Decl, WhereClauseBound, span_unknown } from '../frontend/ast'
 
 // Forward-declare SExpr so records referencing it can be defined first.
 export type SMatchArm = SMatchArm {
@@ -63,7 +63,7 @@ export type SStmt =
 // Type and trait declarations stay structurally identical to AST;
 // only function bodies switch to SExpr.
 export type SDecl =
-  | SDeclFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SExpr>, [WhereClauseBound])
+  | SDeclFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SExpr>, [WhereClauseBound], Span)
   | SDeclType(string, [string], [Shared<TypeVariant>], [string])
   | SDeclTrait(string, [string], [Shared<SDecl>])
   | SDeclExtend(string, string, [Shared<SDecl>])
@@ -155,4 +155,11 @@ export fn sdecl_inner(declaration: Shared<SDecl>) -> Shared<SDecl> =
   match declaration {
     SDeclExported(inner) => inner,
     _ => declaration
+  }
+
+export fn sdecl_span(declaration: Shared<SDecl>) -> Span =
+  match declaration {
+    SDeclFn(_, _, _, _, _, _, _, span) => span,
+    SDeclAssocBind(_, _, span) => span,
+    _ => span_unknown()
   }

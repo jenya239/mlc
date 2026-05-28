@@ -88,7 +88,7 @@ fn extend_method_return_type_cpp(extend_context: CodegenContext, methods: [Share
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(_, _, _, _, return_type, _, _) =>
+      SDeclFn(_, _, _, _, return_type, _, _, _) =>
         do result = sem_type_to_cpp(extend_context, return_type) end,
       _ => do end
     }
@@ -146,7 +146,7 @@ export fn gen_trait_struct(context: CodegenContext, trait_name: string, type_par
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, return_type, _, _) => do
+      SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
         const method_name = extract_method_name(mangled, trait_name)
         field_lines.push(trait_method_field_line(trait_context, method_name, params, return_type))
       end,
@@ -171,7 +171,7 @@ export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_param
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, ret_type, _, _) => do
+      SDeclFn(mangled, _, _, params, ret_type, _, _, _) => do
         const method_name = extract_method_name(mangled, trait_name)
         const prefixed_callee = cpp_safe(mangled)
         const ret_cpp = sem_type_to_cpp(trait_context, ret_type)
@@ -199,7 +199,7 @@ export fn gen_extend_wrapper_protos(type_name: string, trait_name: string, metho
     let mut wrappers = ''; let mut method_index = 0
     while method_index < methods.length() do
       match methods[method_index] {
-        SDeclFn(mangled, _, _, params, ret_type, _, _) => do
+        SDeclFn(mangled, _, _, params, ret_type, _, _, _) => do
           const wrapper_context = context.for_type_body(type_name)
           const method_name = extract_method_name(mangled, type_name)
           const ret_cpp = sem_type_to_cpp(wrapper_context, ret_type)
@@ -239,7 +239,7 @@ fn gen_extend_trait_wrappers(type_name: string, methods: [Shared<SDecl>], contex
   let mut wrappers = ''; let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, ret_type, _, _) =>
+      SDeclFn(mangled, _, _, params, ret_type, _, _, _) =>
         do wrappers = wrappers + gen_extend_trait_wrapper(type_name, mangled, params, ret_type, context, context_resolve_fn) end,
       _ => do end
     }
@@ -268,7 +268,7 @@ fn gen_extend_method_parts(type_name: string, trait_name: string, methods: [Shar
   let parts: [string] = []; let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, ret_type, body, _) => do
+      SDeclFn(mangled, _, _, params, ret_type, body, _, _) => do
         match body {
           SExprExtern(_, _) => do
             const generated = gen_extend_extern_method(mangled, type_name, params, ret_type, trait_name, context, context_resolve_fn)
@@ -324,7 +324,7 @@ fn gen_extend_trait_concept_adapters(
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, ret_type, _, _) =>
+      SDeclFn(mangled, _, _, params, ret_type, _, _, _) =>
         do adapters = adapters + gen_extend_trait_concept_adapter(
           type_name, trait_name, mangled, params, ret_type, context, context_resolve_fn) end,
       _ => do end
