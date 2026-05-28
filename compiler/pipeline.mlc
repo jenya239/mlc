@@ -11,6 +11,7 @@ import { LoadItem } from './codegen/decl/decl_index'
 import { PrecomputedCtx, precompute, gen_module } from './codegen/module'
 import { path_to_module_base } from './codegen/cpp_naming'
 import { profile_maybe_begin, profile_maybe_end } from './profile'
+import { write_compile_commands_file } from './compile_commands'
 
 export type ModularCompileInput = ModularCompileInput {
   load_items: [LoadItem],
@@ -18,7 +19,8 @@ export type ModularCompileInput = ModularCompileInput {
   entry_program: Program,
   output_directory: string,
   profile_enabled: bool,
-  check_only: bool
+  check_only: bool,
+  emit_compile_commands: bool
 }
 
 export type CheckedCompileState = CheckedCompileState {
@@ -72,8 +74,9 @@ export fn run_transform_pass(state: CheckedCompileState) -> Result<TransformedCo
   })
 end
 
-export fn run_codegen_pass(state: TransformedCompileState) -> Result<string, [string]> = do
+export fn run_codegen_pass(state: TransformedCompileState, emit_compile_commands: bool) -> Result<string, [string]> = do
   profile_maybe_begin(state.profile_enabled, 'codegen')
+  let implementation_paths: [string] = []
   let mut index = 0
   while index < state.transformed_items.length() do
     const transformed_load_item = state.transformed_items[index]
@@ -92,7 +95,11 @@ export fn run_codegen_pass(state: TransformedCompileState) -> Result<string, [st
       end
     File.write(header_path, generated_output.h)
     File.write(implementation_path, generated_output.c)
+    implementation_paths.push(implementation_path)
     index = index + 1
+  end
+  if emit_compile_commands then
+    write_compile_commands_file(state.output_directory, implementation_paths)
   end
   profile_maybe_end(state.profile_enabled, 'codegen')
   Ok('')
@@ -101,5 +108,5 @@ end
 export fn run_modular_compiler_pipeline(input: ModularCompileInput) -> Result<string, [string]> = do
   const checked = run_checker_pass(input)?
   const transformed = run_transform_pass(checked)?
-  if input.check_only then Ok('') else run_codegen_pass(transformed) end
+  if input.check_only then Ok('') else run_codegen_pass(transformed, input.emit_compile_commands) end
 end

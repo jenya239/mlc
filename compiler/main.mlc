@@ -183,7 +183,7 @@ fn merge_program(entry_path: string, prog: Program, profile_enabled: bool) -> Me
   MergeResult { prog: Program { decls: all_decls }, errors: all_errors, items: items_ordered }
 end
 
-fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool, check_only: bool) -> Result<string, [string]> = do
+fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool, check_only: bool, emit_compile_commands: bool) -> Result<string, [string]> = do
   profile_reset_if_enabled(profile_enabled)
   profile_maybe_begin(profile_enabled, "total")
   profile_maybe_begin(profile_enabled, "load_io")
@@ -218,7 +218,8 @@ fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool, c
         entry_program: entry_only_program,
         output_directory: out_dir,
         profile_enabled: profile_enabled,
-        check_only: check_only
+        check_only: check_only,
+        emit_compile_commands: emit_compile_commands
       }
       const pipeline_result = run_modular_compiler_pipeline(pipeline_input)?
       profile_maybe_end(profile_enabled, "total")
@@ -243,7 +244,7 @@ fn main() -> i32 = do
     println(compile_usage_message())
     exit(1)
   end
-  match compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only) {
+  match compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only, options.emit_compile_commands) {
     Ok(_) => 0,
     Err(errors) =>
       do print(format_errs('error', errors)); exit(1); 0 end

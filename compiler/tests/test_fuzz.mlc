@@ -19,7 +19,8 @@ fn fuzz_pipeline_input_for_source(source: string) -> ModularCompileInput = do
     entry_program: program,
     output_directory: '',
     profile_enabled: false,
-    check_only: true
+    check_only: true,
+    emit_compile_commands: false
   }
 end
 

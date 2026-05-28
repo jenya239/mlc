@@ -1,0 +1,46 @@
+import { escape_str } from './codegen/cpp_naming'
+
+fn json_string_value(input: string) -> string =
+  "\"" + escape_str(input) + "\""
+
+fn json_string_array(values: [string]) -> string =
+  "[" + values.map(value => json_string_value(value)).join(", ") + "]"
+
+export fn runtime_include_directory() -> string =
+  'runtime/include'
+
+export fn compile_command_arguments(output_directory: string, implementation_path: string) -> [string] = do
+  let arguments: [string] = ['clang++', '-std=c++20', '-O2']
+  arguments.push('-I')
+  arguments.push(output_directory)
+  arguments.push('-I')
+  arguments.push(runtime_include_directory())
+  arguments.push('-c')
+  arguments.push(implementation_path)
+  arguments
+end
+
+export fn compile_commands_entry_json(output_directory: string, implementation_path: string) -> string = do
+  const arguments = compile_command_arguments(output_directory, implementation_path)
+  "  {\"directory\": " + json_string_value(output_directory) + ", \"file\": " + json_string_value(implementation_path) + ", \"arguments\": " + json_string_array(arguments) + "}"
+end
+
+export fn build_compile_commands_json(output_directory: string, implementation_paths: [string]) -> string = do
+  let entries: [string] = []
+  let mut index = 0
+  while index < implementation_paths.length() do
+    entries.push(compile_commands_entry_json(output_directory, implementation_paths[index]))
+    index = index + 1
+  end
+  "[\n" + entries.join(",\n") + "\n]\n"
+end
+
+export fn write_compile_commands_file(output_directory: string, implementation_paths: [string]) -> () = do
+  const json_path =
+    if output_directory.length() > 0
+      then `${output_directory}/compile_commands.json`
+      else 'compile_commands.json'
+    end
+  File.write(json_path, build_compile_commands_json(output_directory, implementation_paths))
+  ()
+end

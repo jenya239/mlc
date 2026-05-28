@@ -31,7 +31,8 @@ fn pipeline_input_for_source(source: string, check_only: bool) -> ModularCompile
     entry_program: program,
     output_directory: '',
     profile_enabled: false,
-    check_only: check_only
+    check_only: check_only,
+    emit_compile_commands: false
   }
 end
 
