@@ -1,5 +1,5 @@
 import { TestResult, assert_eq_str, assert_true } from './test_runner'
-import { fuzz_random_program, fuzz_mix } from './fuzz/random_program'
+import { fuzz_random_program, fuzz_mix, fuzz_variant_count, fuzz_program_kind } from './fuzz/random_program'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { LoadItem } from '../codegen/decl/decl_index'
@@ -52,21 +52,33 @@ export fn fuzz_tests() -> [TestResult] = do
   results.push(assert_true('fuzz mix varies with seed',
     fuzz_mix(0) != fuzz_mix(1)))
 
+  results.push(assert_eq_str('fuzz variant count',
+    fuzz_variant_count().to_string(), '12'))
+
   let mut seed = 0
-  while seed < 9 do
+  while seed < fuzz_variant_count() do
     results.push(assert_true('fuzz program variants seed ' + seed.to_string(),
       fuzz_random_program(seed).contains('fn ')))
     seed = seed + 1
   end
 
   results.push(assert_true('fuzz if variant',
-    fuzz_random_program(4).contains('if true then')))
+    fuzz_random_program(7).contains('if true then')))
 
   results.push(assert_true('fuzz let variant',
     fuzz_random_program(0).contains('let x =')))
 
   results.push(assert_true('fuzz match variant',
     fuzz_random_program(5).contains('match ')))
+
+  results.push(assert_true('fuzz type stub variant',
+    fuzz_program_kind(10) == 9 && fuzz_random_program(10).contains('type FuzzStub_')))
+
+  results.push(assert_true('fuzz record variant',
+    fuzz_program_kind(3) == 10 && fuzz_random_program(3).contains('FuzzRecord_')))
+
+  results.push(assert_true('fuzz nested block variant',
+    fuzz_program_kind(8) == 11 && fuzz_random_program(8).contains('let outer = do')))
 
   results.push(assert_true('fuzz garbage lex parse completes',
     fuzz_lex_parse_completes('fn @@@')))

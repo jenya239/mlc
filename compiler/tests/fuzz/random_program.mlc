@@ -1,5 +1,7 @@
 // Deterministic random MLC program generator (fuzz skeleton).
 
+export fn fuzz_variant_count() -> i32 = 12
+
 export fn fuzz_mix(seed: i32) -> i32 = do
   let mut value = seed * 1664525 + 1013904223
   if value < 0 then value = -value end
@@ -9,8 +11,10 @@ end
 export fn fuzz_pick(seed: i32, choice_count: i32) -> i32 =
   if choice_count <= 0 then 0 else fuzz_mix(seed) % choice_count end
 
+export fn fuzz_program_kind(seed: i32) -> i32 = fuzz_pick(seed, fuzz_variant_count())
+
 export fn fuzz_random_program(seed: i32) -> string = do
-  const kind = fuzz_pick(seed, 9)
+  const kind = fuzz_program_kind(seed)
   if kind == 0 then 'fn fuzz_entry() -> i32 = 0'
   else if kind == 1 then 'fn fuzz_entry() -> i32 = 1 + 2'
   else if kind == 2 then 'fn fuzz_entry() -> string = "s"'
@@ -23,8 +27,21 @@ export fn fuzz_random_program(seed: i32) -> string = do
   end
   else if kind == 6 then 'fn fuzz_entry() -> i32 = if true then 1 else 2'
   else if kind == 7 then 'fn fuzz_entry() -> i32 = do let x = 1; x end'
-  else
+  else if kind == 8 then
     'fn fuzz_entry() -> i32 = match ' + (fuzz_mix(seed + 3) % 10).to_string() +
       ' { 1 => 0, _ => 1 }'
+  else if kind == 9 then do
+    const type_name = 'FuzzStub_' + (fuzz_mix(seed + 4) % 1000).to_string()
+    'type ' + type_name + ' = { tag: i32 }\nfn fuzz_entry() -> i32 = 0'
+  end
+  else if kind == 10 then do
+    const type_name = 'FuzzRecord_' + (fuzz_mix(seed + 5) % 1000).to_string()
+    const field_value = (fuzz_mix(seed + 6) % 100).to_string()
+    'type ' + type_name + ' = { value: i32 }\nfn fuzz_entry() -> i32 = ' +
+      type_name + ' { value: ' + field_value + ' }.value'
+  end
+  else
+    'fn fuzz_entry() -> i32 = do\n  let outer = do\n    let inner = ' +
+      (fuzz_mix(seed + 7) % 50).to_string() + '\n    inner\n  end\n  outer\nend'
   end
 end

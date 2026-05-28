@@ -15,7 +15,7 @@ fuzz_mix() {
 
 generate_program() {
   local seed=$1
-  local kind=$(($(fuzz_mix "$seed") % 9))
+  local kind=$(($(fuzz_mix "$seed") % 12))
   case "$kind" in
     0) printf '%s\n' 'fn fuzz_entry() -> i32 = 0' ;;
     1) printf '%s\n' 'fn fuzz_entry() -> i32 = 1 + 2' ;;
@@ -29,6 +29,19 @@ generate_program() {
     6) printf '%s\n' 'fn fuzz_entry() -> i32 = if true then 1 else 2' ;;
     7) printf '%s\n' 'fn fuzz_entry() -> i32 = do let x = 1; x end' ;;
     8) printf '%s\n' "fn fuzz_entry() -> i32 = match $(($(fuzz_mix $((seed + 3)) % 10))) { 1 => 0, _ => 1 }" ;;
+    9)
+      local type_name="FuzzStub_$(($(fuzz_mix $((seed + 4)) % 1000)))"
+      printf '%s\n' "type ${type_name} = { tag: i32 }" "fn fuzz_entry() -> i32 = 0"
+      ;;
+    10)
+      local type_name="FuzzRecord_$(($(fuzz_mix $((seed + 5)) % 1000)))"
+      local field_value=$(($(fuzz_mix $((seed + 6)) % 100)))
+      printf '%s\n' "type ${type_name} = { value: i32 }" "fn fuzz_entry() -> i32 = ${type_name} { value: ${field_value} }.value"
+      ;;
+    11)
+      local inner_value=$(($(fuzz_mix $((seed + 7)) % 50)))
+      printf '%s\n' "fn fuzz_entry() -> i32 = do" "  let outer = do" "    let inner = ${inner_value}" "    inner" "  end" "  outer" "end"
+      ;;
   esac
 }
 
