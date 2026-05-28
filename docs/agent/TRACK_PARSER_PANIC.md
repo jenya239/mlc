@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §4; previous: [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) (**closed**, `5463361`), [TRACK_SECURITY.md](TRACK_SECURITY.md) (**closed**, `a035c3d`, deferred parser audit)
 
-## Status: **active** (step 3 pending)
+## Status: **active** (step 4 pending)
 
 **Goal:** parser modules emit structured parse/lex errors instead of silent failure or internal panic paths; no crash on garbage input.
 
@@ -14,7 +14,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 1 §4; previous: [TRACK_FUZZ_DIFF.md](T
 ## Verify gate (every step)
 
 ```
-bundle exec rake test_compiler_mlc   # 725 pass (baseline post-step 1)
+bundle exec rake test_compiler_mlc   # 730 pass (baseline post-step 3)
 compiler/build.sh                    # when compiler/** touched
 compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
 compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
