@@ -55,11 +55,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Fuzz differential:** [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) — **closed** (`5463361`)
 - **Parser panic audit:** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **closed** (`5525d03`)
 - **Checker/codegen spans:** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **closed** (`a8bf7a1`)
-- **Build determinism:** [TRACK_BUILD.md](TRACK_BUILD.md) — **active** (step 1)
+- **Build determinism:** [TRACK_BUILD.md](TRACK_BUILD.md) — **closed** (`33c039e`)
 
-## Next step (Driver)
+## Next step (Planner)
 
-**STEP=1** [TRACK_BUILD.md](TRACK_BUILD.md) — `build_bin.sh` deterministic cpp order.
+**plan-refresh** — pick next Phase 1 item from PLAN.md.
 
 ## Planner checklist (2026-05-28 plan-refresh — BUILD)
 

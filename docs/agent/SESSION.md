@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | run_tests | 751 |
-| TRACK_PLAN | TRACK_BUILD **active** (step 5) |
+| TRACK_PLAN | TRACK_BUILD **closed** → Planner plan-refresh |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
+
+### Turn 2026-05-28 (Driver BUILD step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | test_compile_commands + smoke script; commit `ab0f34d` |
+| verify | 751 pass; self-host diff empty |
+| next | ROLE=Driver STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (Driver BUILD step 3)
 

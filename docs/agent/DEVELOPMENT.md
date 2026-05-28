@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_BUILD.md](TRACK_BUILD.md) — **active** (step 1): build determinism + compile_commands (PLAN §Phase 1 §6). [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) **closed** (`a8bf7a1`).
+[TRACK_BUILD.md](TRACK_BUILD.md) — **closed** (`33c039e`): build determinism + compile_commands (PLAN §Phase 1 §6). Next: Planner plan-refresh.
 
 ## Step sizing (good vs bad)
 
