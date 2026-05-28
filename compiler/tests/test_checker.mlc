@@ -45,7 +45,7 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
-    diagnostic_code_catalog_count(), 29))
+    diagnostic_code_catalog_count(), 33))
 
   results.push(assert_eq_str('diagnostic code E001 catalog',
     diagnostic_code_e001(), 'E001'))
@@ -93,9 +93,9 @@ export fn checker_tests() -> [TestResult] = do
     'error[E004]: return type: expected i32, got string\n  --> 1:17'))
 
   results.push(assert_checker_diagnostic(
-    'negative: mutation assign immutable exact',
+    'negative E031: immut assign exact',
     'fn f() -> i32 = do let x = 1; x = 2; x end',
-    'error: cannot assign to immutable binding: x\n  --> 1:31'))
+    'error[E031]: cannot assign to immutable binding: x\n  --> 1:31'))
 
   results.push(assert_checker_diagnostic(
     'negative: question on non-Result exact',
@@ -189,12 +189,28 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('trait bound: call with implementing type — 0 errors',
     check_error_count('type Display { fn show(self: Self) -> string }\nextend i32 : Display { fn show(self: i32) -> string = self.to_string() }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)'), 0))
 
-  results.push(assert_diagnostic_at(
+  results.push(assert_diagnostic_at_with_code(
     'trait bound: non-implementing type — span on argument',
     first_checker_error_line('type Display { fn show(self: Self) -> string }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)'),
     3,
     32,
-    'does not implement Display'))
+    'does not implement Display',
+    'E033'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E030: record literal missing field exact',
+    'type Point = { x: i32, y: i32 }\nfn f() -> Point = Point { x: 1 }',
+    'error[E030]: missing field "y" in record literal\n  --> 2:25'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E032: match guard not bool exact',
+    'fn f() -> i32 = match 1 { x if x => 0 }',
+    'error[E032]: match guard must have type bool\n  --> 1:32'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E033: trait bound exact',
+    'type Display { fn show(self: Self) -> string }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)',
+    'error[E033]: type i32 does not implement Display\n  --> 3:32'))
 
   results.push(assert_diagnostic_at(
     'record update: unknown field — position on field value',

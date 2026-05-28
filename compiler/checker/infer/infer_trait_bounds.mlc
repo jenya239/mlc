@@ -1,10 +1,11 @@
 // Trait bound checking at call sites.
 // No dependency on infer_expr — operates on already-inferred argument types.
 
-import { Expr, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span } from '../../frontend/ast'
+import { Expr, Diagnostic, Span, diagnostic_error_with_code, diagnostics_append, expr_span } from '../../frontend/ast'
 import { Type } from '../registry'
 import { CheckContext } from '../check/check_context'
 import { build_call_type_substitution, type_parameter_source_argument_span } from '../check/call_argument_unify'
+import { diagnostic_code_e033 } from '../diagnostic_codes'
 
 fn type_name_for_bound_check(type_value: Shared<Type>) -> string =
   match type_value {
@@ -36,9 +37,10 @@ fn check_one_type_param_bounds(
       while trait_index < bounds.length() do
         const required_trait = bounds[trait_index]
         if !inference_context.registry.type_implements_trait(actual_name, required_trait) then
-          param_errors = diagnostics_append(param_errors, [diagnostic_error(
+          param_errors = diagnostics_append(param_errors, [diagnostic_error_with_code(
             'type ' + actual_name + ' does not implement ' + required_trait,
-            bound_diagnostic_span)])
+            bound_diagnostic_span,
+            diagnostic_code_e033())])
         end
         trait_index = trait_index + 1
       end

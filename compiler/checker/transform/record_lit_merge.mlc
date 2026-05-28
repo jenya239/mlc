@@ -2,8 +2,9 @@
 // Matches Ruby ExpressionVisitor#build_record_fields order: spreads fill gaps by target field order,
 // earlier spread wins over later spread for the same key; explicit literal keys override spreads.
 
-import { Expr, FieldVal, RecordLitPart, ExprField, expr_span, Diagnostic, diagnostic_error, Span } from '../../frontend/ast'
+import { Expr, FieldVal, RecordLitPart, ExprField, expr_span, Diagnostic, diagnostic_error_with_code, Span } from '../../frontend/ast'
 import { TypeRegistry, Type, TGeneric, TShared } from '../registry'
+import { diagnostic_code_e030 } from '../diagnostic_codes'
 
 fn field_values_map_from_flat(field_values: [Shared<FieldVal>]) -> Map<string, Shared<FieldVal>> = do
   let accumulator: Map<string, Shared<FieldVal>> = Map.new()
@@ -185,7 +186,7 @@ export fn diagnostics_missing_fields_for_ordered_record(
       end
       if !found_present && !registry.record_field_has_default_expression(type_name, expected_field_name) then
         missing_field_diagnostics.push(
-          diagnostic_error('missing field "' + expected_field_name + '" in record literal', span))
+          diagnostic_error_with_code('missing field "' + expected_field_name + '" in record literal', span, diagnostic_code_e030()))
       end
       ordered_index = ordered_index + 1
     end

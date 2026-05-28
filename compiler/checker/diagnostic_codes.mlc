@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 29
+export fn diagnostic_code_catalog_count() -> i32 = 33
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -60,3 +60,11 @@ export fn diagnostic_code_e027() -> string = 'E027'
 export fn diagnostic_code_e028() -> string = 'E028'
 // E029: array higher-order method wrong receiver
 export fn diagnostic_code_e029() -> string = 'E029'
+// E030: record literal missing field
+export fn diagnostic_code_e030() -> string = 'E030'
+// E031: assign to immutable binding
+export fn diagnostic_code_e031() -> string = 'E031'
+// E032: match guard error
+export fn diagnostic_code_e032() -> string = 'E032'
+// E033: trait bound not satisfied
+export fn diagnostic_code_e033() -> string = 'E033'
