@@ -10,7 +10,15 @@
 | step_last | 5 |
 | run_tests | 702 |
 | TRACK_PLAN | TRACK_COVERAGE closed (`9bddbb3`) |
-| agent_token_last | cr-agent-18658876-3f9f-4a38-b976-92c5d508b8df |
+| agent_token_last | cr-agent-4f485b4c-3d84-46a0-ba88-767231de3d17 |
+
+### Turn 2026-05-28 (COVERAGE step 5 idempotent)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 5 (skip) |
+| done | track closed `9bddbb3`; plan-refresh pending |
+| next | ROLE=Planner plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (COVERAGE step 5 — track closed)
 
