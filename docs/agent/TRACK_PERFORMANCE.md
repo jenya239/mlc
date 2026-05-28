@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §1 «Производительность»; previous: optimization batch (`419de62`), [TRACK_SAFETY.md](TRACK_SAFETY.md) (**closed**, `32f8335`)
 
-## Status: in progress (step 2 pending)
+## Status: in progress (step 3 pending)
 
 **Goal:** keep full `compiler/main.mlc` translation within baseline (wall ms + scaling exponent); remove remaining super-linear / copy-heavy paths.
 
@@ -25,8 +25,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 Perf (when `compiler/**` or baseline touched):
 
 ```
-benchmarks/profile/record_baseline.sh
-benchmarks/profile/compare_baseline.sh benchmarks/profile/baseline_reference.txt
+benchmarks/profile/compare_baseline.sh
 ```
 
 ---
@@ -34,7 +33,7 @@ benchmarks/profile/compare_baseline.sh benchmarks/profile/baseline_reference.txt
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Post-SAFETY baseline — record profile + scaling; commit `benchmarks/profile/baseline_reference.txt` | done (`11ca867`) |
-| 2 | CI perf gate — `compare_baseline.sh` fails on regression (not `continue-on-error`) | pending |
+| 2 | CI perf gate — `compare_baseline.sh` fails on regression (not `continue-on-error`) | done (`4cd2c99`) |
 | 3 | `build_registry` COW audit — eliminate Map-copy fold on large accumulators (PLAN §1) | pending |
 | 4 | CodegenContext hot path — reduce full struct copies in stmt/expr visitor entry | pending |
 | 5 | Re-baseline + document wall ms / top phases in this file | pending |
@@ -44,11 +43,10 @@ benchmarks/profile/compare_baseline.sh benchmarks/profile/baseline_reference.txt
 - `total_ms=1772.19` (median wall, 5 runs); top phases: merge 597ms, codegen 411ms, lex 317ms.
 - Scaling exponent b=1.111 (100..800 functions); `compare_baseline.sh` PASS.
 
-## Step 2 detail
+## Step 2 detail (done — `4cd2c99`)
 
-- File: `.github/workflows/ci.yml` — profile step must fail build on `compare_baseline.sh` failure.
-- Default baseline path: `benchmarks/profile/baseline_reference.txt` (update `compare_baseline.sh` if needed).
-- Factor: keep default `1.15`; scaling soft exponent `1.35`.
+- `compare_baseline.sh` defaults to `benchmarks/profile/baseline_reference.txt`.
+- CI step mandatory (no `continue-on-error`); runs after `compiler/build.sh`.
 
 ## Step 3 detail
 
@@ -70,4 +68,4 @@ benchmarks/profile/compare_baseline.sh benchmarks/profile/baseline_reference.txt
 
 ## Next step (Driver)
 
-**STEP=2** — CI perf gate (`compare_baseline` fails on regression).
+**STEP=3** — `build_registry` COW audit.
