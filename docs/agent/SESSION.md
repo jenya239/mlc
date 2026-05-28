@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | run_tests | 739 |
-| TRACK_PLAN | TRACK_SPAN_CHECKER **active** (step 5) |
+| TRACK_PLAN | TRACK_SPAN_CHECKER **closed** |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
+
+### Turn 2026-05-28 (Driver SPAN_CHECKER step 5 — track close)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 5 |
+| step | 5 |
+| done | span_unknown audit (4 sites OK); TRACK closed; commit `a8bf7a1` |
+| verify | 739 pass (no compiler/** change) |
+| next | ROLE=Planner plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (Driver SPAN_CHECKER step 4)
 

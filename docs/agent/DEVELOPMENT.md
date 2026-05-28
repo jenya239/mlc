@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **closed** (`CLOSE_HASH`). [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) **closed** (`5525d03`). Parser `ref mut` = deferred separate branch.
+[TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **closed** (`a8bf7a1`). [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) **closed** (`5525d03`). Parser `ref mut` = deferred separate branch.
 
 ## Step sizing (good vs bad)
 

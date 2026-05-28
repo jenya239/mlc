@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) (**closed**, `5525d03`)
 
-## Status: **closed** (`CLOSE_HASH`)
+## Status: **closed** (`a8bf7a1`)
 
 **Closed:** step 5 span_unknown audit — 4 call sites in checker/codegen (all intentional fallbacks); no code changes.
 
@@ -32,7 +32,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `checker/transform/trait_param_expand.mlc` — E073 on decl name span | done (`6d22fe4`) |
 | 3 | `checker/transform/` — `transform.mlc`, `param_destructure_expand.mlc` audit + fix where span available | done (`7a94caa`) |
 | 4 | `codegen/expr/` — `record_gen.mlc`, `expression_support.mlc` span propagation | done (`7132801`) |
-| 5 | Grep audit checker+codegen `span_unknown`; close track | done (`CLOSE_HASH`) |
+| 5 | Grep audit checker+codegen `span_unknown`; close track | done (`a8bf7a1`) |
 
 ## Step 5 audit (`span_unknown` in `compiler/checker/` + `compiler/codegen/`)
 
