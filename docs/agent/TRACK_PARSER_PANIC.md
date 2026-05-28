@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §4; previous: [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) (**closed**, `5463361`), [TRACK_SECURITY.md](TRACK_SECURITY.md) (**closed**, `a035c3d`, deferred parser audit)
 
-## Status: **closed** (`CLOSE_HASH`)
+## Status: **closed** (`5525d03`)
 
 **Closed:** step 5 span_unknown audit — 26 sites in `decls.mlc` + `exprs.mlc`, all intentional synthetics (no silent-failure paths).
 
@@ -39,7 +39,7 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 | 2 | `parser/exprs.mlc` — same for expression parsing edge cases | done (`baf2c8f`) |
 | 3 | `test_parser.mlc` — negative tests for new parse error paths | done (`e2954e1`) |
 | 4 | In-process parser garbage smoke (unclosed/noise) in `test_parser.mlc` | done (`558069f`) |
-| 5 | Parser `span_unknown` grep audit; close track | done (`CLOSE_HASH`) |
+| 5 | Parser `span_unknown` grep audit; close track | done (`5525d03`) |
 
 ## Step 5 audit (`span_unknown` in `compiler/frontend/parser/`)
 
