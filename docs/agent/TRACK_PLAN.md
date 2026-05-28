@@ -53,11 +53,20 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Test coverage:** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — **closed** (`9bddbb3`)
 - **Diagnostics (remaining codes):** [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) — **closed** (`d055c49`)
 - **Fuzz differential:** [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) — **closed** (`5463361`)
-- **Parser panic audit:** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **active** (step 1)
+- **Parser panic audit:** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **closed** (`5525d03`)
+- **Checker/codegen spans:** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **active** (step 1)
 
 ## Next step (Driver)
 
-**STEP=1** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — `parser/decls.mlc` silent-failure audit.
+**STEP=1** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — `checker/check/` span fixes.
+
+## Planner checklist (2026-05-28 plan-refresh — SPAN_CHECKER)
+
+- [x] TRACK_PARSER_PANIC closed (`5525d03`; 5/5 steps)
+- [x] TRACK_SPAN_CHECKER opened (5 steps: check/, trait_param, transform/, codegen/, audit close)
+- [x] Deferred from PARSER_PANIC; PLAN §Phase 1 §1 diagnostics
+- [x] No step bundles `compiler/` + `lib/mlc/`
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-28 plan-refresh — PARSER_PANIC)
 

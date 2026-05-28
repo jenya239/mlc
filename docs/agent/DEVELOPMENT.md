@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **active** (step 1): parser silent-failure audit (PLAN §Phase 1 §4; deferred from TRACK_SECURITY). [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) **closed** (`5463361`). Parser `ref mut` = deferred separate branch.
+[TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **active** (step 1): checker/codegen `span_unknown` audit (PLAN §Phase 1 §1; deferred from TRACK_PARSER_PANIC). [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) **closed** (`5525d03`). Parser `ref mut` = deferred separate branch.
 
 ## Step sizing (good vs bad)
 
