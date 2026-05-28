@@ -1,7 +1,7 @@
 // Function and constructor call type inference.
 // infer_expr_fn injected to break the import cycle with infer.mlc.
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_placeholder } from '../../frontend/ast'
+import { Expr, Span, Diagnostic, diagnostic_error_with_code, diagnostics_append, expr_placeholder } from '../../frontend/ast'
 import { Type, TNamed, TypeRegistry } from '../registry'
 import { CheckContext } from '../check/check_context'
 import { InferResult } from './infer_result'
@@ -9,6 +9,7 @@ import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor, 
 import { call_argument_unification_diagnostics } from '../check/call_argument_unify'
 import { trait_bound_diagnostics } from './infer_trait_bounds'
 import { type_is_function } from '../semantic_type_structure'
+import { diagnostic_code_e034, diagnostic_code_e035 } from '../diagnostic_codes'
 
 type ResolvedArgs = ResolvedArgs { exprs: [Shared<Expr>], errors: [Diagnostic] }
 
@@ -69,9 +70,9 @@ fn reorder_named_to_positional(args: [Shared<Expr>], param_names: [string]) -> R
       ExprNamedArg(name, inner, arg_span) => do
         const slot = find_param_slot(param_names, name)
         if slot == -1 then
-          errors.push(diagnostic_error('unknown parameter name: ' + name, arg_span))
+          errors.push(diagnostic_error_with_code('unknown parameter name: ' + name, arg_span, diagnostic_code_e034()))
             else if filled[slot] == 1 then
-          errors.push(diagnostic_error('duplicate named arg: ' + name, arg_span))
+          errors.push(diagnostic_error_with_code('duplicate named arg: ' + name, arg_span, diagnostic_code_e035()))
             else
               result.set(slot, inner)
               filled.set(slot, 1)

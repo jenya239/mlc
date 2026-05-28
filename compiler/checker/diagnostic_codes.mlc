@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 33
+export fn diagnostic_code_catalog_count() -> i32 = 35
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -68,3 +68,7 @@ export fn diagnostic_code_e031() -> string = 'E031'
 export fn diagnostic_code_e032() -> string = 'E032'
 // E033: trait bound not satisfied
 export fn diagnostic_code_e033() -> string = 'E033'
+// E034: unknown named call parameter
+export fn diagnostic_code_e034() -> string = 'E034'
+// E035: duplicate named call argument
+export fn diagnostic_code_e035() -> string = 'E035'

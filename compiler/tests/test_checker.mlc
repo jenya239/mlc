@@ -45,7 +45,7 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
-    diagnostic_code_catalog_count(), 33))
+    diagnostic_code_catalog_count(), 35))
 
   results.push(assert_eq_str('diagnostic code E001 catalog',
     diagnostic_code_e001(), 'E001'))
@@ -806,6 +806,16 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int('named args: mixed positional + named — 0 errors',
     check_error_count('fn f(x: i32, y: i32, z: i32) -> i32 = x\nfn g() -> i32 = f(1, y: 2, z: 3)'), 0))
+
+  results.push(assert_checker_diagnostic(
+    'negative E034: unknown named parameter exact',
+    'fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(bad: 1)',
+    'error[E034]: unknown parameter name: bad\n  --> 2:19'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E035: duplicate named arg exact',
+    'fn f(x: i32, y: i32) -> i32 = x\nfn g() -> i32 = f(x: 1, x: 2)',
+    'error[E035]: duplicate named arg: x\n  --> 2:25'))
 
   results.push(assert_true('named args: unknown param name — at least 1 error',
     check_error_count('fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(bad: 1)') > 0))
