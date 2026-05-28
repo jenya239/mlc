@@ -56,6 +56,10 @@ results.push_back(test_runner::assert_eq_str(mlc::String("parse_compile_options 
 results.push_back(test_runner::assert_eq_str(mlc::String("parse_compile_options --check-only out dir"), parsed.out_directory, mlc::String("build")));
 results.push_back(test_runner::assert_true(mlc::String("parse_compile_options --check-only profile flag"), parsed.profile_enabled));
 results.push_back(test_runner::assert_true(mlc::String("parse_compile_options --check-only flag"), parsed.check_only));
+compile_options::CompileOptions default_parsed = compile_options::parse_compile_options(mlc::Array<mlc::String>{mlc::String("entry.mlc")});
+results.push_back(test_runner::assert_true(mlc::String("parse_compile_options default temp out dir"), default_parsed.out_directory.contains(mlc::String("mlcc_"))));
+compile_options::CompileOptions check_only_parsed = compile_options::parse_compile_options(mlc::Array<mlc::String>{mlc::String("--check-only"), mlc::String("entry.mlc")});
+results.push_back(test_runner::assert_eq_str(mlc::String("parse_compile_options check_only empty out dir"), check_only_parsed.out_directory, mlc::String("")));
 results.push_back(test_runner::assert_true(mlc::String("check_only pipeline valid program"), pipeline_check_only_ok(mlc::String("fn f() -> i32 = 42"))));
 results.push_back(test_runner::assert_true(mlc::String("check_only pipeline rejects type error"), pipeline_check_only_error_count(mlc::String("fn f() -> i32 = \"x\"")) > 0));
 results.push_back(test_runner::assert_true(mlc::String("check_only pipeline writes no header file"), check_only_writes_no_header(mlc::String("fn f() -> i32 = 42"))));

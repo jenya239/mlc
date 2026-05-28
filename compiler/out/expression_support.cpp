@@ -80,7 +80,7 @@ mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<regist
 return type_name.length() > 0 ? context::CodegenContext_resolve(context, type_name) : mlc::String("auto");
 }
 
-mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept{return method_name == mlc::String("read") ? mlc::String("mlc::file::read_to_string") : method_name == mlc::String("write") ? mlc::String("mlc::file::write_string") : mlc::String("mlc::file::") + method_name;}
+mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept{return method_name == mlc::String("read") ? mlc::String("mlc::file::read_to_string") : method_name == mlc::String("write") ? mlc::String("mlc::file::write_string") : method_name == mlc::String("make_temp_directory") ? mlc::String("mlc::file::make_temp_directory") : method_name == mlc::String("temp_directory_base") ? mlc::String("mlc::file::temp_directory_base") : mlc::String("mlc::file::") + method_name;}
 
 mlc::String cpp_function_name_for_profile_method(mlc::String method_name) noexcept{return method_name == mlc::String("scope_begin") ? mlc::String("mlc::profile::scope_begin") : method_name == mlc::String("scope_end") ? mlc::String("mlc::profile::scope_end") : method_name == mlc::String("monotonic_nanos") ? mlc::String("mlc::profile::monotonic_nanos") : method_name == mlc::String("peak_rss_kib") ? mlc::String("mlc::profile::peak_rss_kib") : method_name == mlc::String("print_report") ? mlc::String("mlc::profile::print_report") : method_name == mlc::String("reset") ? mlc::String("mlc::profile::reset") : mlc::String("mlc::profile::") + method_name;}
 

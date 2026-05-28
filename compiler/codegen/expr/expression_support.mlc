@@ -58,6 +58,8 @@ end
 export fn cpp_function_name_for_file_method(method_name: string) -> string =
   if method_name == 'read' then 'mlc::file::read_to_string'
   else if method_name == 'write' then 'mlc::file::write_string'
+  else if method_name == 'make_temp_directory' then 'mlc::file::make_temp_directory'
+  else if method_name == 'temp_directory_base' then 'mlc::file::temp_directory_base'
   else 'mlc::file::' + method_name
   end
 
