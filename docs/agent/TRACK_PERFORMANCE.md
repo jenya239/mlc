@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §1 «Производительность»; previous: optimization batch (`419de62`), [TRACK_SAFETY.md](TRACK_SAFETY.md) (**closed**, `32f8335`)
 
-## Status: in progress (step 3 pending)
+## Status: in progress (step 4 pending)
 
 **Goal:** keep full `compiler/main.mlc` translation within baseline (wall ms + scaling exponent); remove remaining super-linear / copy-heavy paths.
 
@@ -34,7 +34,7 @@ benchmarks/profile/compare_baseline.sh
 |------|------|--------|
 | 1 | Post-SAFETY baseline — record profile + scaling; commit `benchmarks/profile/baseline_reference.txt` | done (`11ca867`) |
 | 2 | CI perf gate — `compare_baseline.sh` fails on regression (not `continue-on-error`) | done (`4cd2c99`) |
-| 3 | `build_registry` COW audit — eliminate Map-copy fold on large accumulators (PLAN §1) | pending |
+| 3 | `build_registry` COW audit — eliminate Map-copy fold on large accumulators (PLAN §1) | done (`7afef13`) |
 | 4 | CodegenContext hot path — reduce full struct copies in stmt/expr visitor entry | pending |
 | 5 | Re-baseline + document wall ms / top phases in this file | pending |
 
@@ -48,11 +48,9 @@ benchmarks/profile/compare_baseline.sh
 - `compare_baseline.sh` defaults to `benchmarks/profile/baseline_reference.txt`.
 - CI step mandatory (no `continue-on-error`); runs after `compiler/build.sh`.
 
-## Step 3 detail
+## Step 3 detail (done — `7afef13`)
 
-- Start: `compiler/checker/registry.mlc` and grep for `fold` + `Map` copy patterns in checker/codegen.
-- Pattern: single `ref mut` accumulator (see PLAN §1 `build_registry` note).
-- One module or one call-site cluster per commit if split needed.
+- `register_decl_into`: one local accumulator for trait assoc names, trait impls, extend assoc bindings; single set per decl (no per-method Map/Array copy).
 
 ## Step 4 detail
 
@@ -68,4 +66,4 @@ benchmarks/profile/compare_baseline.sh
 
 ## Next step (Driver)
 
-**STEP=3** — `build_registry` COW audit.
+**STEP=4** — CodegenContext hot path copy reduction.

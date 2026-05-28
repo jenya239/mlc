@@ -6,10 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | run_tests | 607 |
-| TRACK_PLAN | TRACK_PERFORMANCE active (step 3 pending) |
+| TRACK_PLAN | TRACK_PERFORMANCE active (step 4 pending) |
+
+### Turn 2026-05-28 (PERF step 3)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 3 |
+| step | 3 |
+| done | registry.mlc: local accumulators for trait/extend assoc maps and arrays |
+| verify | 607 pass; compare_baseline PASS; self-host diff empty |
+| uncommitted_files | 0 |
+| next | STEP=4 TRACK_PERFORMANCE (enqueued) |
 
 ### Turn 2026-05-28 (PERF step 2)
 
