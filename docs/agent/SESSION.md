@@ -5,11 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
-| role_last | Driver |
-| driver_turns_since_plan | 8 |
-| step_last | 8 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | run_tests | 536 |
-| TRACK_PLAN | TRACK_PHASE1 closed |
+| TRACK_PLAN | TRACK_SAFETY active (step 1 pending) |
+
+### Turn 2026-05-28 (Planner plan-refresh — TRACK_SAFETY)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_PHASE1 closed; opened TRACK_SAFETY (4 steps: negative corpus, random-byte, generator expand, pipeline heap fix) |
+| verify | docs only |
+| uncommitted_files | — |
+| next | STEP=1 TRACK_SAFETY (enqueued) |
 
 ### Turn 2026-05-28 (PHASE1 step 8)
 

@@ -45,11 +45,12 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Step 15:** parser `ref mut` — separate branch, not in this track
 - **CppExpr backend:** [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) — closed (`96df4e0`)
 - **CppAST cleanup:** [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — closed (`005c65b`)
-- **Phase 1 stabilization:** [TRACK_PHASE1.md](TRACK_PHASE1.md) — **active**
+- **Phase 1 stabilization:** [TRACK_PHASE1.md](TRACK_PHASE1.md) — **closed** (`fd42eab`)
+- **Safety / fuzz hardening:** [TRACK_SAFETY.md](TRACK_SAFETY.md) — **active**
 
 ## Next step (Driver)
 
-See [TRACK_PHASE1.md](TRACK_PHASE1.md) — **STEP=2** (`Diagnostic.code` + `error[E001]:` prefix).
+See [TRACK_SAFETY.md](TRACK_SAFETY.md) — **STEP=1** (negative corpus).
 
 ## Planner checklist (2026-05-28 plan-refresh — overnight guard)
 

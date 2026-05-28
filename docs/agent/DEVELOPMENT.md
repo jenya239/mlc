@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_PHASE1.md](TRACK_PHASE1.md) — Phase 1 stabilization (diagnostics, tests, `--check-only`, out-dir). Parser `ref mut` = deferred separate branch.
+[TRACK_SAFETY.md](TRACK_SAFETY.md) — crash-safety, negative corpus, fuzz hardening (post-PHASE1). [TRACK_PHASE1.md](TRACK_PHASE1.md) **closed** (`fd42eab`). Parser `ref mut` = deferred separate branch.
 
 ## Step sizing (good vs bad)
 
