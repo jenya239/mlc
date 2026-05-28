@@ -42,7 +42,9 @@ run_mlcc_expect_no_crash() {
   fi
 }
 
-echo "[fuzz smoke] mlcc=$MLCC (32 generated + 2 garbage)" >&2
+random_byte_sizes="0 1 8 64 256 1024"
+
+echo "[fuzz smoke] mlcc=$MLCC (32 generated + 2 garbage + random-byte)" >&2
 
 seed=0
 while [ "$seed" -lt 32 ]; do
@@ -57,5 +59,24 @@ run_mlcc_expect_no_crash "$WORK/garbage_parse.mlc" 'garbage_parse'
 
 printf '%s\n' 'fn f() -> i32 = "x"' >"$WORK/garbage_types.mlc"
 run_mlcc_expect_no_crash "$WORK/garbage_types.mlc" 'garbage_types'
+
+byte_index=0
+for byte_size in $random_byte_sizes; do
+  path="$WORK/random_bytes_${byte_size}.mlc"
+  if [ "$byte_size" -eq 0 ]; then
+    : >"$path"
+  else
+    head -c "$byte_size" /dev/urandom >"$path"
+  fi
+  run_mlcc_expect_no_crash "$path" "random_bytes_${byte_size}"
+  byte_index=$((byte_index + 1))
+done
+
+for random_seed in $(seq 0 7); do
+  byte_size=$(($(fuzz_mix "$random_seed") % 512 + 1))
+  path="$WORK/random_seed_${random_seed}.mlc"
+  head -c "$byte_size" /dev/urandom >"$path"
+  run_mlcc_expect_no_crash "$path" "random_seed_${random_seed}_size_${byte_size}"
+done
 
 echo "[fuzz smoke] ok" >&2
