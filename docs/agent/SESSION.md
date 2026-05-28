@@ -10,7 +10,7 @@
 | step_last | 4 |
 | run_tests | 701 |
 | TRACK_PLAN | TRACK_COVERAGE active (step 5) |
-| agent_token_last | cr-agent-8e15f2c7-ac66-47e3-9837-1d51c83a4748 |
+| agent_token_last | cr-agent-f19f0c96-c100-4184-b3f7-db8d5e6d0953 |
 
 ### Turn 2026-05-28 (COVERAGE step 4)
 
