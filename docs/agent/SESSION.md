@@ -10,7 +10,15 @@
 | step_last | 3 |
 | run_tests | 687 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS active (step 4) |
-| agent_token_last | cr-agent-3d5a3d41-9cd4-4fe1-ac33-093c53e3197c |
+| agent_token_last | cr-agent-TOKEN |
+
+### Turn 2026-05-28 (DIAGNOSTICS step 3 idempotent #2)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 3 (skip) |
+| done | `2ae66ae`; STEP=4 pending |
+| next | ROLE=Driver STEP=4 (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 3 idempotent)
 
