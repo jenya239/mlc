@@ -237,47 +237,44 @@ end
 fn register_decl_into(registry: ref mut TypeRegistry, decl: Shared<Decl>) -> unit = do
   match decl {
     DeclTrait(trait_name, _, methods) => do
+      let mut trait_associated_type_names: [string] =
+        if registry.trait_assoc_types.has(trait_name) then registry.trait_assoc_types.get(trait_name)
+        else do const empty: [string] = []; empty end end
       let mut i = 0
       while i < methods.length() do
         match methods[i] {
-          DeclAssocType(assoc_name, _) => do
-            const existing: [string] =
-              if registry.trait_assoc_types.has(trait_name) then registry.trait_assoc_types.get(trait_name)
-              else do const empty: [string] = []; empty end end
-            existing.push(assoc_name)
-            registry.trait_assoc_types.set(trait_name, existing)
-            ()
-          end,
-          _ => do register_decl_into(registry, methods[i]); () end
+          DeclAssocType(assoc_name, _) => trait_associated_type_names.push(assoc_name),
+          _ => register_decl_into(registry, methods[i])
         }
         i = i + 1
       end
+      registry.trait_assoc_types.set(trait_name, trait_associated_type_names)
     end,
     DeclExtend(type_name, trait_name, methods) => do
       if trait_name.length() > 0 then
-        const existing: [string] =
+        let mut trait_implementations: [string] =
           if registry.trait_impls.has(type_name) then registry.trait_impls.get(type_name)
           else do const empty: [string] = []; empty end end
-        existing.push(trait_name)
-        registry.trait_impls.set(type_name, existing)
+        trait_implementations.push(trait_name)
+        registry.trait_impls.set(type_name, trait_implementations)
       end
+      const assoc_binding_key = type_name + '::' + trait_name
+      let mut assoc_type_bindings: Map<string, Shared<Type>> =
+        if registry.assoc_type_bindings.has(assoc_binding_key) then registry.assoc_type_bindings.get(assoc_binding_key)
+        else do const empty_bindings: Map<string, Shared<Type>> = Map.new(); empty_bindings end end
+      let mut assoc_bindings_dirty = false
       let mut i = 0
       while i < methods.length() do
         match methods[i] {
           DeclAssocBind(assoc_name, type_expr, _) => do
-            const key = type_name + '::' + trait_name
-            const empty_bindings: Map<string, Shared<Type>> = Map.new()
-            const bindings: Map<string, Shared<Type>> =
-              if registry.assoc_type_bindings.has(key) then registry.assoc_type_bindings.get(key)
-              else empty_bindings end
-            bindings.set(assoc_name, type_from_annotation(type_expr))
-            registry.assoc_type_bindings.set(key, bindings)
-            ()
+            assoc_type_bindings.set(assoc_name, type_from_annotation(type_expr))
+            assoc_bindings_dirty = true
           end,
-          _ => do register_decl_into(registry, methods[i]); () end
+          _ => register_decl_into(registry, methods[i])
         }
         i = i + 1
       end
+      if assoc_bindings_dirty then registry.assoc_type_bindings.set(assoc_binding_key, assoc_type_bindings) end
     end,
     DeclFn(name, type_parameters, trait_bounds, parameters, return_type, _, _) => do
       const param_types = parameters.map(parameter => type_from_annotation(param_typ(parameter)))

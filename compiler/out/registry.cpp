@@ -205,57 +205,49 @@ return registry;
 void register_decl_into(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> decl) noexcept{
 return std::visit(overloaded{
   [&](const DeclTrait& decltrait) -> void { auto [trait_name, _w0, methods] = decltrait; [&]() { 
-  int i = 0;
-  return [&]() { 
-  while (i < methods.size()){
-{
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclAssocType>((*methods[i]))) { auto _v_declassoctype = std::get<ast::DeclAssocType>((*methods[i])); auto [assoc_name, _w0] = _v_declassoctype; return [&]() -> std::tuple<> { 
-  mlc::Array<mlc::String> existing = registry.trait_assoc_types.has(trait_name) ? registry.trait_assoc_types.get(trait_name) : [&]() -> mlc::Array<mlc::String> { 
+  mlc::Array<mlc::String> trait_associated_type_names = registry.trait_assoc_types.has(trait_name) ? registry.trait_assoc_types.get(trait_name) : [&]() -> mlc::Array<mlc::String> { 
   mlc::Array<mlc::String> empty = {};
   return empty;
  }();
-  existing.push_back(assoc_name);
-  registry.trait_assoc_types.set(trait_name, existing);
-  return std::make_tuple();
- }(); } return [&]() -> std::tuple<> { 
-  register_decl_into(registry, methods[i]);
-  return std::make_tuple();
- }(); }();
+  int i = 0;
+  while (i < methods.size()){
+{
+[&]() -> void { if (std::holds_alternative<ast::DeclAssocType>((*methods[i]))) { auto _v_declassoctype = std::get<ast::DeclAssocType>((*methods[i])); auto [assoc_name, _w0] = _v_declassoctype; return trait_associated_type_names.push_back(assoc_name); } return register_decl_into(registry, methods[i]); }();
 i = i + 1;
 }
 }
- }();
+  return registry.trait_assoc_types.set(trait_name, trait_associated_type_names);
  }(); },
   [&](const DeclExtend& declextend) -> void { auto [type_name, trait_name, methods] = declextend; [&]() { 
   if (trait_name.length() > 0){
 {
-mlc::Array<mlc::String> existing = registry.trait_impls.has(type_name) ? registry.trait_impls.get(type_name) : [&]() -> mlc::Array<mlc::String> { 
+mlc::Array<mlc::String> trait_implementations = registry.trait_impls.has(type_name) ? registry.trait_impls.get(type_name) : [&]() -> mlc::Array<mlc::String> { 
   mlc::Array<mlc::String> empty = {};
   return empty;
  }();
-existing.push_back(trait_name);
-registry.trait_impls.set(type_name, existing);
+trait_implementations.push_back(trait_name);
+registry.trait_impls.set(type_name, trait_implementations);
 }
 }
+  mlc::String assoc_binding_key = type_name + mlc::String("::") + trait_name;
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> assoc_type_bindings = registry.assoc_type_bindings.has(assoc_binding_key) ? registry.assoc_type_bindings.get(assoc_binding_key) : [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { 
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> empty_bindings = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
+  return empty_bindings;
+ }();
+  bool assoc_bindings_dirty = false;
   int i = 0;
-  return [&]() { 
   while (i < methods.size()){
 {
-[&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclAssocBind>((*methods[i]))) { auto _v_declassocbind = std::get<ast::DeclAssocBind>((*methods[i])); auto [assoc_name, type_expr, _w0] = _v_declassocbind; return [&]() -> std::tuple<> { 
-  mlc::String key = type_name + mlc::String("::") + trait_name;
-  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> empty_bindings = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
-  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> bindings = registry.assoc_type_bindings.has(key) ? registry.assoc_type_bindings.get(key) : empty_bindings;
-  bindings.set(assoc_name, type_from_annotation(type_expr));
-  registry.assoc_type_bindings.set(key, bindings);
-  return std::make_tuple();
- }(); } return [&]() -> std::tuple<> { 
-  register_decl_into(registry, methods[i]);
-  return std::make_tuple();
- }(); }();
+[&]() -> void { if (std::holds_alternative<ast::DeclAssocBind>((*methods[i]))) { auto _v_declassocbind = std::get<ast::DeclAssocBind>((*methods[i])); auto [assoc_name, type_expr, _w0] = _v_declassocbind; return [&]() { 
+  assoc_type_bindings.set(assoc_name, type_from_annotation(type_expr));
+  assoc_bindings_dirty = true;
+ }(); } return register_decl_into(registry, methods[i]); }();
 i = i + 1;
 }
 }
- }();
+  if (assoc_bindings_dirty){
+registry.assoc_type_bindings.set(assoc_binding_key, assoc_type_bindings);
+}
  }(); },
   [&](const DeclFn& declfn) -> void { auto [name, type_parameters, trait_bounds, parameters, return_type, _w0, _w1] = declfn; [&]() { 
   mlc::Array<std::shared_ptr<registry::Type>> param_types = parameters.map([](std::shared_ptr<ast::Param> parameter) mutable { return type_from_annotation(ast::param_typ(parameter)); });
