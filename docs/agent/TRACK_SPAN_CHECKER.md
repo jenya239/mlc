@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) (**closed**, `5525d03`)
 
-## Status: **active** (step 5 pending)
+## Status: **closed** (`CLOSE_HASH`)
+
+**Closed:** step 5 span_unknown audit — 4 call sites in checker/codegen (all intentional fallbacks); no code changes.
 
 **Goal:** replace fixable `span_unknown()` in checker/codegen diagnostics and IR with source spans; document remaining synthetics.
 
@@ -30,7 +32,19 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `checker/transform/trait_param_expand.mlc` — E073 on decl name span | done (`6d22fe4`) |
 | 3 | `checker/transform/` — `transform.mlc`, `param_destructure_expand.mlc` audit + fix where span available | done (`7a94caa`) |
 | 4 | `codegen/expr/` — `record_gen.mlc`, `expression_support.mlc` span propagation | done (`7132801`) |
-| 5 | Grep audit checker+codegen `span_unknown`; close track | pending |
+| 5 | Grep audit checker+codegen `span_unknown`; close track | done (`CLOSE_HASH`) |
+
+## Step 5 audit (`span_unknown` in `compiler/checker/` + `compiler/codegen/`)
+
+4 call sites — reviewed, **no fixable paths**; no code changes.
+
+| Category | Count | Location | Rationale |
+|----------|------:|----------|-----------|
+| Derive span fallback (no field defaults) | 3 | `check.mlc` | `type_variants_diagnostic_span` / `record_field_definitions_diagnostic_span` — TypeVariant has no name span; fallback when derive on sum type without defaults |
+| Empty field_values fallback | 1 | `expression_support.mlc` | `find_field_value` when list empty — unreachable in normal record codegen |
+| Dead import | 1 | `names.mlc` | `span_unknown` imported, unused — cleanup deferred |
+
+Parser `span_unknown` — closed in TRACK_PARSER_PANIC. Test-only usages — out of scope.
 
 ## Step 1 detail
 
@@ -46,6 +60,6 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 - `lib/mlc/` Ruby parity — not in scope.
 - Test-only `span_unknown` in `compiler/tests/**` — out of scope.
 
-## Next step (Driver)
+## Next step
 
-**STEP=5** — grep audit checker+codegen `span_unknown`; close track.
+Track **closed**. Planner: plan-refresh.
