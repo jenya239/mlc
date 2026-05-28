@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_SECURITY.md](TRACK_SECURITY.md) — **active** (step 1): fuzz depth, negative corpus, panic audit (PLAN §Phase 1 §3–§4). [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) **closed** (`0671422`). [TRACK_SAFETY.md](TRACK_SAFETY.md) **closed** (`32f8335`). [TRACK_PHASE1.md](TRACK_PHASE1.md) **closed** (`fd42eab`). Parser `ref mut` = deferred separate branch.
+[TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) — **active** (step 1): bulk `error[Exxx]:` codes (PLAN §Phase 1 §1). [TRACK_SECURITY.md](TRACK_SECURITY.md) **closed** (`a035c3d`). [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) **closed** (`0671422`). [TRACK_SAFETY.md](TRACK_SAFETY.md) **closed** (`32f8335`). [TRACK_PHASE1.md](TRACK_PHASE1.md) **closed** (`fd42eab`). Parser `ref mut` = deferred separate branch.
 
 ## Step sizing (good vs bad)
 
