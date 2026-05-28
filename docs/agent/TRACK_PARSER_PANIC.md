@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §4; previous: [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) (**closed**, `5463361`), [TRACK_SECURITY.md](TRACK_SECURITY.md) (**closed**, `a035c3d`, deferred parser audit)
 
-## Status: **active** (step 1 pending)
+## Status: **active** (step 2 pending)
 
 **Goal:** parser modules emit structured parse/lex errors instead of silent failure or internal panic paths; no crash on garbage input.
 
@@ -14,7 +14,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 1 §4; previous: [TRACK_FUZZ_DIFF.md](T
 ## Verify gate (every step)
 
 ```
-bundle exec rake test_compiler_mlc   # 719 pass (baseline post-FUZZ_DIFF)
+bundle exec rake test_compiler_mlc   # 725 pass (baseline post-step 1)
 compiler/build.sh                    # when compiler/** touched
 compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
 compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
@@ -33,7 +33,7 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `parser/decls.mlc` — audit silent/`span_unknown` paths; structured parse errors on decl edge cases | pending |
+| 1 | `parser/decls.mlc` — audit silent/`span_unknown` paths; structured parse errors on decl edge cases | done (`b880aed`) |
 | 2 | `parser/exprs.mlc` — same for expression parsing edge cases | pending |
 | 3 | `test_parser.mlc` — negative tests for new parse error paths | pending |
 | 4 | In-process parser garbage smoke (unclosed/noise) in `test_parser.mlc` | pending |
@@ -55,4 +55,4 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 
 ## Next step (Driver)
 
-**STEP=1** — `parser/decls.mlc` panic/silent-failure audit.
+**STEP=2** — `parser/exprs.mlc` expression parsing edge-case audit.

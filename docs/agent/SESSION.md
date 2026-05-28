@@ -5,12 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| run_tests | 719 |
-| TRACK_PLAN | TRACK_PARSER_PANIC active (step 1) |
-| agent_token_last | cr-agent-df66ca12-740c-4c54-9004-ce3dcc92eaec |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| run_tests | 725 |
+| TRACK_PLAN | TRACK_PARSER_PANIC active (step 2) |
+| agent_token_last | cr-agent-c92a1a81-924c-4a9d-a7d7-baa9a485e4c0 |
+
+### Turn 2026-05-28 (Driver PARSER_PANIC step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | decls.mlc structured parse errors; predicates errors[]; test_parser (+3); commit `b880aed` |
+| verify | 725 pass; self-host diff empty |
+| next | ROLE=Driver STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_PARSER_PANIC)
 
