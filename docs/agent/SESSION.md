@@ -12,6 +12,15 @@
 | TRACK_PLAN | TRACK_SPAN_CHECKER **active** (step 1) |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
 
+### Turn 2026-05-28 (Planner plan-refresh — idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-28-cleaner |
+| step | plan-refresh (skip) |
+| done | TRACK_SPAN_CHECKER already open (`ecfb439`); step 1 pending |
+| next | ROLE=Driver STEP=1 (re-enqueued) |
+
 ### Turn 2026-05-28 (Planner plan-refresh — SPAN_CHECKER)
 
 | turn | 2026-05-28 |
