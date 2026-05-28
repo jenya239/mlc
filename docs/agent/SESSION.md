@@ -6,10 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
-| run_tests | 527 |
-| TRACK_PLAN | TRACK_PHASE1 active (step 8 pending) |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
+| run_tests | 536 |
+| TRACK_PLAN | TRACK_PHASE1 closed |
+
+### Turn 2026-05-28 (PHASE1 step 8)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 8 |
+| step | 8 |
+| done | fuzz/random_program.mlc skeleton; run_fuzz_smoke.sh (32+2 mlcc --check-only); 9 unit tests |
+| verify | 536 pass + fuzz smoke ok; build.sh; self-host diff empty |
+| uncommitted_files | 0 |
+| next | TRACK_PHASE1 closed → Planner |
 
 ### Turn 2026-05-28 (PHASE1 step 7)
 
