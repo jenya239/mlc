@@ -19,7 +19,7 @@
 | instructions_rev | 2026-05-28-cleaner |
 | driver_turns_since_plan | 5 |
 | step | 5 |
-| done | span_unknown audit (26 sites, all OK); TRACK closed |
+| done | span_unknown audit (26 sites, all OK); TRACK closed; commit `5525d03` |
 | verify | 738 pass (no compiler/** change) |
 | next | ROLE=Planner plan-refresh (enqueued) |
 
