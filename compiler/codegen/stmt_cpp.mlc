@@ -4,7 +4,7 @@ import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod, SExprBlock, SExpr
 import { CppExpr, CppStmt } from '../cpp/cpp_ast'
 import { print_statement, print_expr } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
-import { CodegenContext, GenStmtResult, update_context_from_statement } from './context'
+import { CodegenContext, GenStmtResult, mutate_context_from_statement } from './context'
 import { cpp_safe } from './cpp_naming'
 import * as stmt_eval from './stmt/stmt_eval'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
@@ -12,12 +12,14 @@ import * as expr_visitor_cpp from '../expr_visitor_cpp'
 fn gen_stmts_for_cpp_codegen(statements: [Shared<SStmt>], context: CodegenContext) -> string =
   print_cpp_statements(gen_stmts_cpp(statements, context))
 
+fn gen_stmts_cpp_mut(statements: [Shared<SStmt>], context: ref mut CodegenContext) -> [Shared<CppStmt>] =
+  eval_stmts_cpp_with_try(statements, context, 0).statements
+
 fn gen_expr_cpp_for_stmt_codegen(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
   expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen)
 
-type StmtsCppFoldState = StmtsCppFoldState {
+type StmtsCppAccumState = StmtsCppAccumState {
   statements: [Shared<CppStmt>],
-  codegen_context: CodegenContext,
   next_try: i32
 }
 
@@ -26,8 +28,10 @@ type GenStmtCppResult = GenStmtCppResult {
   next_try: i32
 }
 
-export fn gen_stmts_cpp(statements: [Shared<SStmt>], context: CodegenContext) -> [Shared<CppStmt>] =
-  eval_stmts_cpp_with_try(statements, context, 0).statements
+export fn gen_stmts_cpp(statements: [Shared<SStmt>], context: CodegenContext) -> [Shared<CppStmt>] = do
+  let mut codegen_context = context
+  gen_stmts_cpp_mut(statements, codegen_context)
+end
 
 export fn cpp_stmt_from_string_output(output: string) -> Shared<CppStmt> =
   cpp_stmt_fragment_from_string_output(output)
@@ -160,18 +164,17 @@ fn eval_stmt_cpp(
     end
   }
 
-fn stmts_cpp_fold_step(fold_state: StmtsCppFoldState, statement: Shared<SStmt>) -> StmtsCppFoldState = do
-  const statement_result = eval_stmt_cpp(statement, fold_state.codegen_context, fold_state.next_try)
-  let statements = fold_state.statements
-  statements.push(statement_result.statement)
-  StmtsCppFoldState {
-    statements: statements,
-    codegen_context: update_context_from_statement(statement, fold_state.codegen_context),
-    next_try: statement_result.next_try
-  }
+fn eval_stmts_cpp_with_try(statements: [Shared<SStmt>], context: ref mut CodegenContext, try_counter: i32) -> StmtsCppAccumState = do
+  let mut output_statements: [Shared<CppStmt>] = []
+  let mut next_try = try_counter
+  let mut index = 0
+  while index < statements.length() do
+    const statement = statements[index]
+    const statement_result = eval_stmt_cpp(statement, context, next_try)
+    output_statements.push(statement_result.statement)
+    mutate_context_from_statement(statement, context)
+    next_try = statement_result.next_try
+    index = index + 1
+  end
+  StmtsCppAccumState { statements: output_statements, next_try: next_try }
 end
-
-fn eval_stmts_cpp_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32) -> StmtsCppFoldState =
-  statements.fold(
-    StmtsCppFoldState { statements: [], codegen_context: context, next_try: try_counter },
-    (fold_state, statement) => stmts_cpp_fold_step(fold_state, statement))

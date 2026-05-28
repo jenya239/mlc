@@ -6,17 +6,12 @@ import { SExpr, SStmt, SExprUnit, SExprIf, SExprBlock } from '../../ir/semantic_
 import { gen_let_pattern_statement } from '../expr/let_pat'
 import { Type, TArray, TGeneric, TNamed } from '../../checker/registry'
 import { CodegenContext, GenStmtsResult, GenStmtsWithContext, GenStmtResult,
-         update_context_from_statement } from '../context'
+         mutate_context_from_statement } from '../context'
 import { cpp_safe } from '../cpp_naming'
 import { generate_conditional_else_with_empty_array_coercion } from '../expr/expression_support'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_unit_literal } from '../expr/literals'
 import * as expression_output from '../expr/expr'
-
-type StmtsFoldState = StmtsFoldState {
-  partial_result: GenStmtsResult,
-  codegen_context: CodegenContext
-}
 
 // --- Try unwrap helper -------------------------------------------------------
 
@@ -272,29 +267,19 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
     }
   }
 
-fn stmts_fold_step(
-  fold_state: StmtsFoldState,
-  statement: Shared<SStmt>,
-  gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string
-) -> StmtsFoldState = do
-  const statement_result =
-    eval_stmt_with_try(statement, fold_state.codegen_context, fold_state.partial_result.next_try, gen_expr_fn)
-  StmtsFoldState {
-    partial_result: fold_state.partial_result.append_stmt(statement_result),
-    codegen_context: update_context_from_statement(statement, fold_state.codegen_context)
-  }
+export fn eval_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> GenStmtsWithContext = do
+  let mut partial_result = GenStmtsResult { parts: [], next_try: try_counter }
+  let mut codegen_context = context
+  let mut index = 0
+  while index < statements.length() do
+    const statement = statements[index]
+    const statement_result = eval_stmt_with_try(statement, codegen_context, partial_result.next_try, gen_expr_fn)
+    partial_result = partial_result.append_stmt(statement_result)
+    mutate_context_from_statement(statement, codegen_context)
+    index = index + 1
+  end
+  GenStmtsWithContext { partial_result: partial_result, codegen_context: codegen_context }
 end
-
-export fn eval_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> GenStmtsWithContext =
-  statements.fold(
-    StmtsFoldState { partial_result: GenStmtsResult { parts: [], next_try: try_counter }, codegen_context: context },
-    (fold_state, statement) => stmts_fold_step(fold_state, statement, gen_expr_fn)
-  ).to_gen_stmts_with_context()
-
-extend StmtsFoldState {
-  fn to_gen_stmts_with_context(self: StmtsFoldState) -> GenStmtsWithContext =
-    GenStmtsWithContext { partial_result: self.partial_result, codegen_context: self.codegen_context }
-}
 
 export fn eval_stmts_str(statements: [Shared<SStmt>], context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string =
   eval_stmts_str_with_try(statements, context, 0, gen_expr_fn).partial_result.joined_code()
