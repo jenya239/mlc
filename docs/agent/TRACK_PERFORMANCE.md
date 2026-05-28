@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §1 «Производительность»; previous: optimization batch (`419de62`), [TRACK_SAFETY.md](TRACK_SAFETY.md) (**closed**, `32f8335`)
 
-## Status: in progress (step 4 pending)
+## Status: in progress (step 5 pending)
 
 **Goal:** keep full `compiler/main.mlc` translation within baseline (wall ms + scaling exponent); remove remaining super-linear / copy-heavy paths.
 
@@ -35,7 +35,7 @@ benchmarks/profile/compare_baseline.sh
 | 1 | Post-SAFETY baseline — record profile + scaling; commit `benchmarks/profile/baseline_reference.txt` | done (`11ca867`) |
 | 2 | CI perf gate — `compare_baseline.sh` fails on regression (not `continue-on-error`) | done (`4cd2c99`) |
 | 3 | `build_registry` COW audit — eliminate Map-copy fold on large accumulators (PLAN §1) | done (`7afef13`) |
-| 4 | CodegenContext hot path — reduce full struct copies in stmt/expr visitor entry | pending |
+| 4 | CodegenContext hot path — reduce full struct copies in stmt/expr visitor entry | done (`335f014`) |
 | 5 | Re-baseline + document wall ms / top phases in this file | pending |
 
 ## Step 1 detail (done — `11ca867`)
@@ -52,10 +52,13 @@ benchmarks/profile/compare_baseline.sh
 
 - `register_decl_into`: one local accumulator for trait assoc names, trait impls, extend assoc bindings; single set per decl (no per-method Map/Array copy).
 
-## Step 4 detail
+## Step 4 detail (done — `335f014`)
 
-- Profile after step 3; target dominant `codegen` sub-phase if still >35% wall.
-- Scope: one entry path (`stmt_eval`, `expr_visitor_cpp`, or `context.mlc` update helpers) — no API churn across all codegen modules in one step.
+- `mutate_context_from_statement`: in-place push to `value_params` / `shared_params` / `shared_array_params`.
+- `stmt_eval.mlc`, `stmt_cpp.mlc`: fold removed; while-loop + mutate (one mutable `CodegenContext` per stmt list).
+- `statement_context.mlc`: `stmts_final_ctx` uses mutate path.
+- Expr visitor entry unchanged (value `CodegenContext`; nested blocks re-enter via public API).
+- Gate: 607 pass; compare_baseline PASS (2026ms); self-host diff empty.
 
 ## Deferred (not in this track)
 
@@ -66,4 +69,4 @@ benchmarks/profile/compare_baseline.sh
 
 ## Next step (Driver)
 
-**STEP=4** — CodegenContext hot path copy reduction.
+**STEP=5** — Re-baseline + document wall ms / top phases.

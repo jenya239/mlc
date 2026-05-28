@@ -7,9 +7,21 @@
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
 | driver_turns_since_plan | 3 |
-| step_last | 3 |
+| step_last | 4 |
 | run_tests | 607 |
-| TRACK_PLAN | TRACK_PERFORMANCE active (step 4 pending) |
+| TRACK_PLAN | TRACK_PERFORMANCE active (step 5 pending) |
+
+### Turn 2026-05-28 (PERF step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | stmt_eval/stmt_cpp: fold→while+mutate_context_from_statement; context.mlc mutate helper |
+| verify | 607 pass; compare_baseline PASS (2026ms); self-host diff empty |
+| uncommitted_files | 0 |
+| next | STEP=5 TRACK_PERFORMANCE (enqueued) |
 
 ### Turn 2026-05-28 (PERF step 3)
 
