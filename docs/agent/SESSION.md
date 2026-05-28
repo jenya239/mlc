@@ -10,7 +10,7 @@
 | step_last | 3 |
 | run_tests | 680 |
 | TRACK_PLAN | TRACK_SECURITY active (step 4 pending) |
-| agent_token_last | pending enqueue |
+| agent_token_last | cr-agent-a555687e-5eb6-46eb-b553-bb7f337454bc |
 
 ### Turn 2026-05-28 (SECURITY step 3)
 
