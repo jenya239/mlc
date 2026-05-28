@@ -6,11 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 2 |
-| step_last | 1 (skip) |
+| driver_turns_since_plan | 3 |
+| step_last | 1 (skip #2) |
 | run_tests | 702 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS2 active (step 2) |
-| agent_token_last | cr-agent-8de4c283-17b9-44df-a08e-f64640174def |
+| agent_token_last | cr-agent-6e3ba686-652e-466d-bf63-90d43b3e6483 |
+
+### Turn 2026-05-28 (DIAGNOSTICS2 step 1 idempotent skip #2)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 3 |
+| step | 1 (skip) |
+| done | already done (`f74e0fa`, docs `df73432`); stale enqueue |
+| next | ROLE=Driver STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS2 step 1 idempotent skip)
 
