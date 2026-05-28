@@ -183,6 +183,9 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('record update expression - 0 errors',
     check_error_count('type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, x: 10 }'), 0))
 
+  results.push(assert_eq_int('record update two fields — 0 errors',
+    check_error_count('type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, x: 10, y: 20 }'), 0))
+
   results.push(assert_eq_int('trait bound: param method call - 0 errors',
     check_error_count('type Display { fn to_string(self: Self) -> string }\nfn show<T: Display>(x: T) -> string = x.to_string()'), 0))
 
@@ -335,6 +338,15 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int('A3: let (a, b, c) = (1, 2, 3) - 0 errors',
     check_error_count('fn f() -> i32 = do\n  let (a, b, c) = (1, 2, 3)\n  a + b + c\nend'), 0))
+
+  results.push(assert_eq_int('tuple swap destructure — 0 errors',
+    check_error_count('fn f() -> i32 = do\n  let pair = (1, 2)\n  let (second, first) = pair\n  first + second\nend'), 0))
+
+  results.push(assert_eq_int('tuple destructure from binding — 0 errors',
+    check_error_count('fn f() -> i32 = do\n  let pair = (1, 2)\n  let (left, right) = pair\n  left + right\nend'), 0))
+
+  results.push(assert_eq_int('record update in block — 0 errors',
+    check_error_count('type Point = { x: i32, y: i32 }\nfn f() -> Point = do\n  let base = Point { x: 1, y: 2 }\n  Point { ...base, x: 10 }\nend'), 0))
 
   results.push(assert_eq_int('A3: let {x, y} = record - 0 errors',
     check_error_count('type Point = { x: i32, y: i32 }\nfn f() -> i32 = do\n  let p = Point { x: 1, y: 2 }\n  let { x, y } = p\n  x + y\nend'), 0))
