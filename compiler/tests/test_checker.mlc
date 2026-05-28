@@ -45,7 +45,7 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
-    diagnostic_code_catalog_count(), 35))
+    diagnostic_code_catalog_count(), 44))
 
   results.push(assert_eq_str('diagnostic code E001 catalog',
     diagnostic_code_e001(), 'E001'))
@@ -242,12 +242,15 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('E4: record field default binary arithmetic — 0 errors',
     check_error_count('type Line = { offset: i32 = 10 + 5 * 2 }\nfn main() -> i32 = Line {} .offset'), 0))
 
-  results.push(assert_true('E4: record field default call expression rejected for codegen',
-    first_checker_error_line(
-      'fn zero() -> i32 = 0\ntype R = { x: i32 = zero() }\nfn main() -> i32 = R {} .x').contains('cannot be lowered')))
+  results.push(assert_checker_diagnostic(
+    'negative E043: record field default call not lowerable exact',
+    'fn zero() -> i32 = 0\ntype R = { x: i32 = zero() }\nfn main() -> i32 = R {} .x',
+    'error[E043]: record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)\n  --> 2:25'))
 
-  results.push(assert_true('E4: record field default still type-checked when shape ok',
-    first_checker_error_line('type Bad = { x: i32 = "wrong" }\nfn main() -> i32 = 0').contains('type mismatch')))
+  results.push(assert_checker_diagnostic(
+    'negative E044: record field default type mismatch exact',
+    'type Bad = { x: i32 = "wrong" }\nfn main() -> i32 = 0',
+    'error[E044]: record field default type mismatch for field "x"\n  --> 1:23'))
 
   results.push(assert_eq_int('multiline string literal in source — 0 checker errors',
     check_error_count('fn f() -> string = "hello\nworld"'), 0))
@@ -366,20 +369,24 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('A4: two defaults call with one arg - 0 errors',
     check_error_count('fn f(a: i32, b: i32 = 2, c: i32 = 3) -> i32 = a + b + c\nfn g() -> i32 = f(0)'), 0))
 
-  results.push(assert_true('A4: default not before required',
-    first_checker_error_line('fn f(a: i32 = 1, b: i32) -> i32 = b').contains('parameter defaults must be trailing')))
+  results.push(assert_checker_diagnostic(
+    'negative E036: parameter defaults must be trailing exact',
+    'fn f(a: i32 = 1, b: i32) -> i32 = b',
+    'error[E036]: parameter defaults must be trailing\n  --> 1:35'))
 
   results.push(assert_true('A4: generic function default rejected',
-    first_checker_error_line('fn f<T>(a: T = 1) -> T = a').contains('default parameters are not allowed on generic')))
+    first_checker_error_line('fn f<T>(a: T = 1) -> T = a').contains('E037')))
 
-  results.push(assert_true('A4: non-literal default rejected',
-    first_checker_error_line('fn f(a: i32 = 1 + 1) -> i32 = a').contains('literal')))
+  results.push(assert_checker_diagnostic(
+    'negative E040: parameter default not literal exact',
+    'fn f(a: i32 = 1 + 1) -> i32 = a',
+    'error[E040]: parameter default must be a literal in this version\n  --> 1:17'))
 
   results.push(assert_true('A4: too many call arguments with defaults',
     first_checker_error_line('fn f(a: i32 = 1) -> i32 = a\nfn g() -> i32 = f(1, 2)').contains('expected between')))
 
   results.push(assert_true('A4: extern with default rejected',
-    first_checker_error_line('extern fn f(a: i32 = 1) -> i32').contains('extern')))
+    first_checker_error_line('extern fn f(a: i32 = 1) -> i32').contains('E038')))
 
   results.push(assert_true('for-in: iterator must be an array',
     first_checker_error_line('fn g() -> i32 = do\n  for x in 42 do\n    0\n  end\n  0\nend').contains('for loop range must be an array')))

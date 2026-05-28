@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 35
+export fn diagnostic_code_catalog_count() -> i32 = 44
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -72,3 +72,21 @@ export fn diagnostic_code_e033() -> string = 'E033'
 export fn diagnostic_code_e034() -> string = 'E034'
 // E035: duplicate named call argument
 export fn diagnostic_code_e035() -> string = 'E035'
+// E036: parameter defaults must be trailing
+export fn diagnostic_code_e036() -> string = 'E036'
+// E037: default parameters on generic function
+export fn diagnostic_code_e037() -> string = 'E037'
+// E038: default parameters on extern function
+export fn diagnostic_code_e038() -> string = 'E038'
+// E039: default on destructuring parameter
+export fn diagnostic_code_e039() -> string = 'E039'
+// E040: parameter default not literal
+export fn diagnostic_code_e040() -> string = 'E040'
+// E041: parameter default type mismatch
+export fn diagnostic_code_e041() -> string = 'E041'
+// E042: record field default on generic type
+export fn diagnostic_code_e042() -> string = 'E042'
+// E043: record field default not lowerable
+export fn diagnostic_code_e043() -> string = 'E043'
+// E044: record field default type mismatch
+export fn diagnostic_code_e044() -> string = 'E044'

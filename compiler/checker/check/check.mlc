@@ -14,7 +14,7 @@ import { derive_clause_diagnostics } from './derive_validation'
 import { infer_expr } from '../infer/infer'
 import { check_context_new, CheckContext } from './check_context'
 import { types_structurally_equal, type_is_unknown, type_description } from '../semantic_type_structure'
-import { diagnostic_code_e004 } from '../diagnostic_codes'
+import { diagnostic_code_e004, diagnostic_code_e036, diagnostic_code_e037, diagnostic_code_e038, diagnostic_code_e039, diagnostic_code_e040, diagnostic_code_e041, diagnostic_code_e042, diagnostic_code_e043, diagnostic_code_e044 } from '../diagnostic_codes'
 import { record_field_default_expression_acceptable_for_codegen } from '../../ir/record_defaults'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
 
@@ -53,9 +53,10 @@ fn accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_pa
         diagnostics_accumulator_so_far,
         (diagnostic_list_so_far_under_record, record_field_definition_under_scan) => do
           if record_field_definition_under_scan.has_default_expression then
-            diagnostic_list_so_far_under_record.push(diagnostic_error(
+            diagnostic_list_so_far_under_record.push(diagnostic_error_with_code(
               'record field default values are not supported when the type has generic parameters',
-              span_unknown()))
+              span_unknown(),
+              diagnostic_code_e042()))
           end
           diagnostic_list_so_far_under_record
         end),
@@ -80,9 +81,10 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
             const default_ast_expression = record_field_under_literal_definition.default_expression
             let mut diagnostics_after_field: [Diagnostic] = diagnostic_list_so_far_under_fields
             if !record_field_default_expression_acceptable_for_codegen(default_ast_expression) then
-              diagnostics_after_field.push(diagnostic_error(
+              diagnostics_after_field.push(diagnostic_error_with_code(
                 'record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)',
-                expr_span(default_ast_expression)))
+                expr_span(default_ast_expression),
+                diagnostic_code_e043()))
               diagnostics_after_field
             else
               const inferred_default_result =
@@ -94,9 +96,10 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
               if type_is_checkable(annotated_field_type, registry) &&
                  type_is_checkable(inferred_default_result.inferred_type, registry) &&
                  !types_structurally_equal(annotated_field_type, inferred_default_result.inferred_type) then
-                diagnostics_after_field.push(diagnostic_error(
+                diagnostics_after_field.push(diagnostic_error_with_code(
                   `record field default type mismatch for field "${record_field_under_literal_definition.name}"`,
-                  expr_span(default_ast_expression)))
+                  expr_span(default_ast_expression),
+                  diagnostic_code_e044()))
               end
               diagnostics_after_field
             end
@@ -154,14 +157,14 @@ fn param_default_diagnostics(
 ) -> [Diagnostic] = do
   let mut out: [Diagnostic] = []
   if !param_defaults_in_tail(parameters) then
-    out.push(diagnostic_error('parameter defaults must be trailing', expr_span(body)))
+    out.push(diagnostic_error_with_code('parameter defaults must be trailing', expr_span(body), diagnostic_code_e036()))
   end
   const has_any_default = parameters.any(parameter_under_signature => parameter_under_signature.has_default)
   if type_parameters.length() > 0 && has_any_default then
-    out.push(diagnostic_error('default parameters are not allowed on generic functions yet', expr_span(body)))
+    out.push(diagnostic_error_with_code('default parameters are not allowed on generic functions yet', expr_span(body), diagnostic_code_e037()))
   end
   if is_extern_body(body) && has_any_default then
-    out.push(diagnostic_error('default parameters are not allowed on extern functions', expr_span(body)))
+    out.push(diagnostic_error_with_code('default parameters are not allowed on extern functions', expr_span(body), diagnostic_code_e038()))
   end
   const empty_type_environment: Map<string, Shared<Type>> = Map.new()
   const default_infer_context = check_context_new(empty_type_environment, registry)
@@ -172,15 +175,19 @@ fn param_default_diagnostics(
       if parameter_under_scan_for_defaults.has_default &&
          !parameter_binding_is_plain_identifier(parameter_under_scan_for_defaults) then
         diagnostics_after_parameter.push(
-          diagnostic_error('default values are not supported for destructuring parameters', expr_span(body)))
+          diagnostic_error_with_code(
+            'default values are not supported for destructuring parameters',
+            expr_span(body),
+            diagnostic_code_e039()))
       end
       if parameter_under_scan_for_defaults.has_default then
         const param_default_expression = parameter_under_scan_for_defaults.default
         if !default_expr_mvp_ok(param_default_expression) then
           diagnostics_after_parameter.push(
-            diagnostic_error(
+            diagnostic_error_with_code(
               'parameter default must be a literal in this version',
-              expr_span(param_default_expression)))
+              expr_span(param_default_expression),
+              diagnostic_code_e040()))
         else
           const default_infer = infer_expr(param_default_expression, default_infer_context)
           diagnostics_after_parameter =
@@ -190,10 +197,11 @@ fn param_default_diagnostics(
           if type_is_checkable(parameter_expected_type, registry) &&
              type_is_checkable(default_infer.inferred_type, registry) &&
              !types_structurally_equal(parameter_expected_type, default_infer.inferred_type) then
-            diagnostics_after_parameter.push(diagnostic_error(
+            diagnostics_after_parameter.push(diagnostic_error_with_code(
               'parameter default: expected ' + type_description(parameter_expected_type) +
                 ', got ' + type_description(default_infer.inferred_type),
-              expr_span(param_default_expression)))
+              expr_span(param_default_expression),
+              diagnostic_code_e041()))
           end
         end
       end
