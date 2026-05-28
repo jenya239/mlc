@@ -31,7 +31,7 @@ fn build_trait_names_from_decls(decls: [Shared<Decl>]) -> Map<string, bool> = do
   let mut index = 0
   while index < decls.length() do
     match decl_inner(decls[index]) {
-      DeclTrait(trait_name, _, _) => trait_names.set(trait_name, true),
+      DeclTrait(trait_name, _, _, _) => trait_names.set(trait_name, true),
       _ => do end
     }
     index = index + 1
@@ -58,7 +58,7 @@ export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string
   let mut i = 0
   while i < decls.length() do
     match decl_inner(decls[i]) {
-      DeclTrait(trait_name, _, methods) => do
+      DeclTrait(trait_name, _, methods, _) => do
         let mut mi = 0
         while mi < methods.length() do
           match methods[mi] {
@@ -101,7 +101,7 @@ export fn build_generic_variants_from_decls(decls: [Shared<Decl>]) -> [string] =
   while i < decls.length() do
     const inner_decl = decl_inner(decls[i])
     match inner_decl {
-      DeclType(_, type_params, variants, _) => do
+      DeclType(_, type_params, variants, _, _) => do
         let mut vi = 0
         while vi < variants.length() do
           let should_add = type_params.length() > 0
@@ -127,7 +127,7 @@ export fn build_variant_types_from_decls(decls: [Shared<Decl>]) -> Map<string, s
   while i < decls.length() do
     const inner_decl = decl_inner(decls[i])
     match inner_decl {
-      DeclType(type_name, _, variants, _) => do
+      DeclType(type_name, _, variants, _, _) => do
         let mut vi = 0
         while vi < variants.length() do
           match variants[vi] {
@@ -151,7 +151,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
   while i < prog.decls.length() do
     match prog.decls[i] {
       DeclExported(inner) => match decl_inner(inner) {
-        DeclType(type_name, _, variants, _) => do
+        DeclType(type_name, _, variants, _, _) => do
           let mut vi = 0
           while vi < variants.length() do
             match variants[vi] {
@@ -171,14 +171,14 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
           end
         end,
         DeclFn(_, _, _, _, _, _, _) => do end,
-        DeclTrait(_, _, _)       => do end,
+        DeclTrait(_, _, _, _)       => do end,
         DeclExtend(_, _, _)      => do end,
         DeclImport(_, _)         => do end,
         DeclExported(_)          => do end,
         DeclAssocType(_, _)      => do end,
         DeclAssocBind(_, _, _)   => do end
       },
-      DeclType(type_name, _, variants, _) => do
+      DeclType(type_name, _, variants, _, _) => do
         let mut vi = 0
         while vi < variants.length() do
           match variants[vi] {
@@ -198,7 +198,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
         end
       end,
       DeclFn(_, _, _, _, _, _, _) => do end,
-      DeclTrait(_, _, _)       => do end,
+      DeclTrait(_, _, _, _)       => do end,
       DeclExtend(_, _, _)      => do end,
       DeclImport(_, _)         => do end,
       DeclAssocType(_, _)      => do end,

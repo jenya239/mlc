@@ -359,6 +359,7 @@ fn parse_trait_decl(parser: Parser) -> DeclResult = do
   const after_trait = parser.advance()
   const name_parser = parser_expect_ident(after_trait, 'trait name')
   const trait_name = name_parser.kind().ident()
+  const trait_name_span = name_parser.span_at_cursor()
   const type_params_res = parse_type_params_opt(name_parser.advance())
   let mut body_parser = type_params_res.parser
   body_parser = if !body_parser.kind().is_lbrace()
@@ -367,7 +368,7 @@ fn parse_trait_decl(parser: Parser) -> DeclResult = do
   end
   const body_start_parser = if body_parser.kind().is_lbrace() then body_parser.advance() else body_parser end
   const trait_result = parse_trait_body(body_start_parser, trait_name, type_params_res.params)
-  DeclResult { decl: Shared.new(DeclTrait(trait_name, type_params_res.params, trait_result.methods)), parser: trait_result.parser }
+  DeclResult { decl: Shared.new(DeclTrait(trait_name, type_params_res.params, trait_result.methods, trait_name_span)), parser: trait_result.parser }
 end
 
 export fn parse_decl(parser: Parser) -> DeclResult = do
@@ -621,12 +622,13 @@ end
 fn parse_type_decl(parser: Parser) -> DeclResult = do
   const name_parser = parser_expect_ident(parser, 'type name')
   const type_name = name_parser.kind().ident()
+  const type_name_span = name_parser.span_at_cursor()
   let mut state = name_parser.advance()
   const type_params_res = parse_type_params_opt(state)
   state = type_params_res.parser
   if state.kind().is_lbrace() then
     const trait_result = parse_trait_body(state.advance(), type_name, type_params_res.params)
-    DeclResult { decl: Shared.new(DeclTrait(type_name, type_params_res.params, trait_result.methods)), parser: trait_result.parser }
+    DeclResult { decl: Shared.new(DeclTrait(type_name, type_params_res.params, trait_result.methods, type_name_span)), parser: trait_result.parser }
   else if state.kind().is_equal() then
     state = state.advance()
     state = if state.at_eof()
@@ -639,11 +641,11 @@ fn parse_type_decl(parser: Parser) -> DeclResult = do
       const variants: [Shared<TypeVariant>] = []
       variants.push(Shared.new(VarRecord(type_name, field_defs_result.field_defs, false)))
       const derive_res = parse_derive_clause(field_defs_result.parser)
-      DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants, derive_res.traits)), parser: derive_res.parser }
+      DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants, derive_res.traits, type_name_span)), parser: derive_res.parser }
     else
       const variants_result = parse_variants(state)
       const derive_res = parse_derive_clause(variants_result.parser)
-      DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_result.variants, derive_res.traits)), parser: derive_res.parser }
+      DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_result.variants, derive_res.traits, type_name_span)), parser: derive_res.parser }
     end
   else
     const state_after_eof_check = if state.at_eof()
@@ -652,7 +654,7 @@ fn parse_type_decl(parser: Parser) -> DeclResult = do
     end
     const variants_result = parse_variants(state_after_eof_check)
     const derive_res = parse_derive_clause(variants_result.parser)
-    DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_result.variants, derive_res.traits)), parser: derive_res.parser }
+    DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_result.variants, derive_res.traits, type_name_span)), parser: derive_res.parser }
   end
 end
 

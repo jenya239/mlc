@@ -300,7 +300,7 @@ fn global_names_merge_single_declaration_into_map(
       global_names_so_far.set(name, true)
       global_names_so_far
     end,
-    DeclType(name, _, variants, _) => do
+    DeclType(name, _, variants, _, _) => do
       global_names_so_far.set(name, true)
       variants.fold(
         global_names_so_far,
@@ -309,7 +309,7 @@ fn global_names_merge_single_declaration_into_map(
             names_after_type_definition,
             variant_shared_under_scan))
     end,
-    DeclTrait(name, _, methods) => do
+    DeclTrait(name, _, methods, _) => do
       global_names_so_far.set(name, true)
       methods.fold(
         global_names_so_far,
@@ -464,7 +464,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
           diagnostics_append(all_diagnostics, inference_result.errors),
           return_type_errors); ()
       end,
-      DeclType(_, type_parameters, variants, derive_trait_names) => do
+      DeclType(_, type_parameters, variants, derive_trait_names, _) => do
         all_diagnostics = diagnostics_append(
           all_diagnostics,
           derive_clause_diagnostics(
@@ -474,7 +474,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
           record_field_default_value_diagnostics(type_parameters, variants, registry))
         ()
       end,
-      DeclTrait(_, _, _)   => do () end,
+      DeclTrait(_, _, _, _)   => do () end,
       DeclExtend(extend_type_name, _, methods) => do
         all_diagnostics =
           methods.fold(

@@ -8,7 +8,7 @@ import {
   DeclExported,
   WhereClauseBound,
   param_name, param_typ,
-  Diagnostic, diagnostic_error_with_code, span_unknown
+  Diagnostic, diagnostic_error_with_code, decl_name_span
 } from '../../frontend/ast'
 import { diagnostic_code_e073 } from '../diagnostic_codes'
 
@@ -31,20 +31,20 @@ export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnos
   let conflicts: [Diagnostic] = []
   each_program_declaration_depth_first(program, (current_declaration) => do
     match current_declaration {
-      DeclType(type_name, _, _, _) => do
+      DeclType(type_name, _, _, _, _) => do
         if trait_declaration_names.has(type_name) then
           conflicts.push(diagnostic_error_with_code(
             `the name "${type_name}" is declared as both a type and a trait`,
-            span_unknown(),
+            decl_name_span(current_declaration),
             diagnostic_code_e073()))
         end
         nominal_type_declaration_names.set(type_name, true); ()
       end,
-      DeclTrait(trait_name, _, _) => do
+      DeclTrait(trait_name, _, _, _) => do
         if nominal_type_declaration_names.has(trait_name) then
           conflicts.push(diagnostic_error_with_code(
             `the name "${trait_name}" is declared as both a type and a trait`,
-            span_unknown(),
+            decl_name_span(current_declaration),
             diagnostic_code_e073()))
         end
         trait_declaration_names.set(trait_name, true); ()
@@ -372,8 +372,8 @@ export fn build_trait_nominal_maps(program: Program) -> TraitNominalMaps = do
   let mut nominal_type_declaration_names: Map<string, bool> = Map.new()
   each_program_declaration_depth_first(program, (current_declaration) => do
     match current_declaration {
-      DeclType(type_name, _, _, _) => do nominal_type_declaration_names.set(type_name, true); () end,
-      DeclTrait(trait_name, _, _) => do trait_declaration_names.set(trait_name, true); () end,
+      DeclType(type_name, _, _, _, _) => do nominal_type_declaration_names.set(type_name, true); () end,
+      DeclTrait(trait_name, _, _, _) => do trait_declaration_names.set(trait_name, true); () end,
       _ => ()
     }
   end)

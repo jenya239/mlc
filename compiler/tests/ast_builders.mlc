@@ -144,7 +144,7 @@ export fn function_decl(function_name: string, parameters: [Shared<Param>], retu
   Shared.new(DeclFn(function_name, [], [], parameters, return_type, body_expr, []))
 
 export fn type_decl(type_name: string, variants: [Shared<TypeVariant>]) -> Shared<Decl> =
-  Shared.new(DeclType(type_name, [], variants, []))
+  Shared.new(DeclType(type_name, [], variants, [], span_unknown()))
 
 export fn exported_decl(inner_decl: Shared<Decl>) -> Shared<Decl> =
   Shared.new(DeclExported(inner_decl))

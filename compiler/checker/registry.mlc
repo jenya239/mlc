@@ -236,7 +236,7 @@ end
 
 fn register_decl_into(registry: ref mut TypeRegistry, decl: Shared<Decl>) -> unit = do
   match decl {
-    DeclTrait(trait_name, _, methods) => do
+    DeclTrait(trait_name, _, methods, _) => do
       let mut trait_associated_type_names: [string] =
         if registry.trait_assoc_types.has(trait_name) then registry.trait_assoc_types.get(trait_name)
         else do const empty: [string] = []; empty end end
@@ -288,7 +288,7 @@ fn register_decl_into(registry: ref mut TypeRegistry, decl: Shared<Decl>) -> uni
       registry.function_required_arity.set(name, required_arity_from_params(parameters))
       if trait_bounds.length() > 0 then registry.function_trait_bounds.set(name, trait_bounds) end
     end,
-    DeclType(type_name, type_parameters, variants, _) => do
+    DeclType(type_name, type_parameters, variants, _, _) => do
       registry.algebraic_decl_type_parameter_names.set(type_name, type_parameters)
       let mut vi = 0
       while vi < variants.length() do

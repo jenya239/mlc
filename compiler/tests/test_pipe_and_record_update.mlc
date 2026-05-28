@@ -58,7 +58,7 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
       has_default_expression: false,
       default_expression: Shared.new(ExprUnit(span_unknown()))
     })
-  ], false))], []))
+  ], false))], [], span_unknown()))
   const point_prog  = Program { decls: [point_decl] }
   const ctx_point   = create_codegen_context(point_prog)
 

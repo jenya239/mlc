@@ -212,8 +212,8 @@ export type TypeVariant =
 
 export type Decl =
   | DeclFn(string, [string], [[string]], [Shared<Param>], Shared<TypeExpr>, Shared<Expr>, [WhereClauseBound])
-  | DeclType(string, [string], [Shared<TypeVariant>], [string])
-  | DeclTrait(string, [string], [Shared<Decl>])
+  | DeclType(string, [string], [Shared<TypeVariant>], [string], Span)
+  | DeclTrait(string, [string], [Shared<Decl>], Span)
   | DeclExtend(string, string, [Shared<Decl>])
   | DeclImport(string, [string])
   | DeclExported(Shared<Decl>)
@@ -231,8 +231,8 @@ export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
   match unwrapped {
     DeclExported(inner) => inner,
     DeclFn(_, _, _, _, _, _, _) => decl,
-    DeclType(_, _, _, _) => decl,
-    DeclTrait(_, _, _) => decl,
+    DeclType(_, _, _, _, _) => decl,
+    DeclTrait(_, _, _, _) => decl,
     DeclExtend(_, _, _) => decl,
     DeclImport(_, _) => decl,
     DeclAssocType(_, _) => decl,
@@ -244,13 +244,23 @@ export fn decl_name(decl: Shared<Decl>) -> string = do
   const unwrapped: Shared<Decl> = decl
   match unwrapped {
     DeclFn(name, _, _, _, _, _, _) => name,
-    DeclType(name, _, _, _) => name,
-    DeclTrait(name, _, _) => name,
+    DeclType(name, _, _, _, _) => name,
+    DeclTrait(name, _, _, _) => name,
     DeclExtend(type_name, _, _) => type_name,
     DeclImport(_, _) => '',
     DeclExported(inner) => decl_name(inner),
     DeclAssocType(name, _) => name,
     DeclAssocBind(name, _, _) => name
+  }
+end
+
+export fn decl_name_span(decl: Shared<Decl>) -> Span = do
+  const unwrapped: Shared<Decl> = decl
+  match unwrapped {
+    DeclType(_, _, _, _, name_span) => name_span,
+    DeclTrait(_, _, _, name_span) => name_span,
+    DeclExported(inner) => decl_name_span(inner),
+    _ => span_unknown()
   }
 end
 

@@ -51,10 +51,10 @@ fn add_ctor_infos_from_variants(variants: [Shared<TypeVariant>]) -> [Shared<Ctor
 fn decl_to_ctor_infos(decl: Shared<Decl>) -> [Shared<CtorTypeInfo>] =
   match decl {
     DeclExported(inner) => match decl_inner(inner) {
-      DeclType(_, _, variants, _) => add_ctor_infos_from_variants(variants),
+      DeclType(_, _, variants, _, _) => add_ctor_infos_from_variants(variants),
       _ => do let empty: [Shared<CtorTypeInfo>] = []; empty end
     },
-    DeclType(_, _, variants, _) => add_ctor_infos_from_variants(variants),
+    DeclType(_, _, variants, _, _) => add_ctor_infos_from_variants(variants),
     _ => do let empty: [Shared<CtorTypeInfo>] = []; empty end
   }
 
