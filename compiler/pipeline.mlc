@@ -17,7 +17,8 @@ export type ModularCompileInput = ModularCompileInput {
   full_program: Program,
   entry_program: Program,
   output_directory: string,
-  profile_enabled: bool
+  profile_enabled: bool,
+  check_only: bool
 }
 
 export type CheckedCompileState = CheckedCompileState {
@@ -100,5 +101,5 @@ end
 export fn run_modular_compiler_pipeline(input: ModularCompileInput) -> Result<string, [string]> = do
   const checked = run_checker_pass(input)?
   const transformed = run_transform_pass(checked)?
-  run_codegen_pass(transformed)
+  if input.check_only then Ok('') else run_codegen_pass(transformed) end
 end

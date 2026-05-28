@@ -1,6 +1,68 @@
-import { TestResult } from './test_runner'
+import { TestResult, assert_eq_str, assert_true } from './test_runner'
+import { parse_compile_options } from '../compile_options'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { LoadItem } from '../codegen/decl/decl_index'
+import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
+
+fn pipeline_check_only_ok(source: string) -> bool =
+  match run_modular_compiler_pipeline(pipeline_input_for_source(source, true)) {
+    Ok(_) => true,
+    Err(_) => false
+  }
+
+fn pipeline_check_only_error_count(source: string) -> i32 =
+  match run_modular_compiler_pipeline(pipeline_input_for_source(source, true)) {
+    Ok(_) => 0,
+    Err(errors) => errors.length()
+  }
+
+fn pipeline_input_for_source(source: string, check_only: bool) -> ModularCompileInput = do
+  const program = parse_program(tokenize(source).tokens)
+  const load_item = LoadItem {
+    path: 'check_only_probe.mlc',
+    decls: program.decls,
+    imports: [],
+    namespace_import_aliases: []
+  }
+  ModularCompileInput {
+    load_items: [load_item],
+    full_program: program,
+    entry_program: program,
+    output_directory: '',
+    profile_enabled: false,
+    check_only: check_only
+  }
+end
+
+fn check_only_writes_no_header(source: string) -> bool = do
+  const header_path = 'check_only_probe.hpp'
+  const before = File.exists(header_path)
+  const ok = pipeline_check_only_ok(source)
+  if before then ok else ok && !File.exists(header_path) end
+end
 
 export fn pass_type_tests() -> [TestResult] = do
   let results: [TestResult] = []
+
+  const parsed = parse_compile_options(['--check-only', '--profile', 'entry.mlc', '-o', 'build'])
+  results.push(assert_eq_str('parse_compile_options --check-only entry and -o',
+    parsed.entry_path, 'entry.mlc'))
+  results.push(assert_eq_str('parse_compile_options --check-only out dir',
+    parsed.out_directory, 'build'))
+  results.push(assert_true('parse_compile_options --check-only profile flag',
+    parsed.profile_enabled))
+  results.push(assert_true('parse_compile_options --check-only flag',
+    parsed.check_only))
+
+  results.push(assert_true('check_only pipeline valid program',
+    pipeline_check_only_ok('fn f() -> i32 = 42')))
+
+  results.push(assert_true('check_only pipeline rejects type error',
+    pipeline_check_only_error_count('fn f() -> i32 = "x"') > 0))
+
+  results.push(assert_true('check_only pipeline writes no header file',
+    check_only_writes_no_header('fn f() -> i32 = 42')))
+
   results
 end

@@ -5,6 +5,11 @@
 #include <variant>
 
 #include "test_runner.hpp"
+#include "compile_options.hpp"
+#include "lexer.hpp"
+#include "decls.hpp"
+#include "decl_index.hpp"
+#include "pipeline.hpp"
 
 namespace test_pass {
 

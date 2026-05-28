@@ -9,6 +9,7 @@
 #include "decl_index.hpp"
 #include "ast.hpp"
 #include "pipeline.hpp"
+#include "compile_options.hpp"
 #include "profile.hpp"
 
 namespace mlc_main {
@@ -19,16 +20,13 @@ using namespace decl_index;
 using namespace decl_index;
 using namespace ast;
 using namespace pipeline;
+using namespace compile_options;
 using namespace profile;
 using namespace ast_tokens;
-
-struct CompileOptions {mlc::String entry_path;mlc::String out_directory;bool profile_enabled;};
 
 struct LoadResult {mlc::Array<decl_index::LoadItem> items;mlc::Array<mlc::String> errors;};
 
 struct MergeResult {ast::Program prog;mlc::Array<mlc::String> errors;mlc::Array<decl_index::LoadItem> items;};
-
-CompileOptions parse_compile_options(mlc::Array<mlc::String> arguments) noexcept;
 
 mlc::String dirname(mlc::String path) noexcept;
 
@@ -42,41 +40,11 @@ LoadResult load_module(mlc::String path, mlc::HashMap<mlc::String, LoadResult>& 
 
 MergeResult merge_program(mlc::String entry_path, ast::Program prog, bool profile_enabled) noexcept;
 
-ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled) noexcept;
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only) noexcept;
 
 mlc::String format_errs(mlc::String label, mlc::Array<mlc::String> errors) noexcept;
 
 int main(int argc, char** argv) noexcept;
-
-CompileOptions parse_compile_options(mlc::Array<mlc::String> arguments) noexcept{
-bool profile_enabled = false;
-mlc::String out_directory = mlc::String("out");
-mlc::String entry_path = mlc::String("");
-int index = 0;
-while (index < arguments.size()){
-{
-mlc::String argument = arguments[index];
-if (argument == mlc::String("--profile")){
-{
-profile_enabled = true;
-}
-} else {
-{
-if (argument == mlc::String("-o") && index + 1 < arguments.size()){
-out_directory = arguments[index + 1];
-index = index + 1;
-} else {
-if (entry_path.length() == 0){
-entry_path = argument;
-}
-}
-}
-}
-index = index + 1;
-}
-}
-return CompileOptions{entry_path, out_directory, profile_enabled};
-}
 
 mlc::String dirname(mlc::String path) noexcept{
 int last_slash_index = -1;
@@ -260,7 +228,7 @@ items_ordered.push_back(decl_index::LoadItem{norm_entry, entry_decls, entry_impo
 return MergeResult{ast::Program{all_decls}, all_errors, items_ordered};
 }
 
-ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled) noexcept{
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only) noexcept{
 profile::profile_reset_if_enabled(profile_enabled);
 profile::profile_maybe_begin(profile_enabled, mlc::String("total"));
 profile::profile_maybe_begin(profile_enabled, mlc::String("load_io"));
@@ -289,7 +257,7 @@ return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<
   int merged_item_count = merged.items.size();
   decl_index::LoadItem entry_load_item = merged.items[merged_item_count - 1];
   ast::Program entry_only_program = ast::Program{entry_load_item.decls};
-  pipeline::ModularCompileInput pipeline_input = pipeline::ModularCompileInput{merged.items, merged.prog, entry_only_program, out_dir, profile_enabled};
+  pipeline::ModularCompileInput pipeline_input = pipeline::ModularCompileInput{merged.items, merged.prog, entry_only_program, out_dir, profile_enabled, check_only};
   auto __try_pipeline_result = pipeline::run_modular_compiler_pipeline(pipeline_input);
   if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_result)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_result));
   mlc::String pipeline_result = std::get<ast::Ok<mlc::String>>(__try_pipeline_result).field0;
@@ -307,14 +275,14 @@ mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));
 mlc::Array<mlc::String> command_line_arguments = mlc::io::args();
 if (command_line_arguments.size() == 0){
 {
-mlc::io::println(mlc::String("Usage: mlcc [--profile] <source.mlc> [-o out_dir]"));
+mlc::io::println(compile_options::compile_usage_message());
 mlc::io::exit(1);
 }
 }
-CompileOptions options = parse_compile_options(command_line_arguments);
+compile_options::CompileOptions options = compile_options::parse_compile_options(command_line_arguments);
 if (options.entry_path.length() == 0){
 {
-mlc::io::println(mlc::String("Usage: mlcc [--profile] <source.mlc> [-o out_dir]"));
+mlc::io::println(compile_options::compile_usage_message());
 mlc::io::exit(1);
 }
 }
@@ -325,7 +293,7 @@ return std::visit(overloaded{
   mlc::io::exit(1);
   return 0;
  }(); }
-}, compile_modular(options.entry_path, options.out_directory, options.profile_enabled));
+}, compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only));
 }
 
 } // namespace mlc_main

@@ -10,6 +10,7 @@
 #include "decl_index.hpp"
 #include "ast.hpp"
 #include "pipeline.hpp"
+#include "compile_options.hpp"
 #include "profile.hpp"
 
 namespace mlc_main {

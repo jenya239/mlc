@@ -26,7 +26,7 @@ struct SStmt;
 struct CppStmt;
 struct CppExpr;
 
-struct ModularCompileInput {mlc::Array<decl_index::LoadItem> load_items;ast::Program full_program;ast::Program entry_program;mlc::String output_directory;bool profile_enabled;};
+struct ModularCompileInput {mlc::Array<decl_index::LoadItem> load_items;ast::Program full_program;ast::Program entry_program;mlc::String output_directory;bool profile_enabled;bool check_only;};
 
 struct CheckedCompileState {mlc::Array<decl_index::LoadItem> load_items;ast::Program full_program;registry::TypeRegistry registry;mlc::String output_directory;bool profile_enabled;};
 

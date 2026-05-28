@@ -87,7 +87,7 @@ auto __try_transformed = run_transform_pass(checked);
 if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_transformed)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_transformed));
 pipeline::TransformedCompileState transformed = std::get<ast::Ok<pipeline::TransformedCompileState>>(__try_transformed).field0;
 
-return run_codegen_pass(transformed);
+return input.check_only ? ast::Result<mlc::String, mlc::Array<mlc::String>>(ast::Ok<mlc::String>(mlc::String(""))) : ast::Result<mlc::String, mlc::Array<mlc::String>>(run_codegen_pass(transformed));
 }
 
 } // namespace pipeline
