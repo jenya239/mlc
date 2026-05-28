@@ -44,7 +44,7 @@ import { infer_result_option_hof_method_call, should_infer_as_result_option_hof 
 import * as record_lit_merge from '../transform/record_lit_merge'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
 import {
-  diagnostic_code_e065, diagnostic_code_e066, diagnostic_code_e067
+  diagnostic_code_e065, diagnostic_code_e066, diagnostic_code_e067, diagnostic_code_e075
 } from '../diagnostic_codes'
 
 // --- Argument / field-value error accumulators ------------------------------
@@ -94,14 +94,15 @@ fn infer_record_field_binding_value_inference_step(
       && !types_structurally_equal(expected_field_type, inferred_value_type)
     const field_type_mismatch_diagnostics: [Diagnostic] =
       if field_types_conflict then
-        [diagnostic_error(
+        [diagnostic_error_with_code(
           'field '
             + field_value.name
             + ': expected '
             + type_description(expected_field_type)
             + ', got '
             + type_description(inferred_value_type),
-          expr_span(field_value.val))]
+          expr_span(field_value.val),
+          diagnostic_code_e075())]
       else
         []
       end

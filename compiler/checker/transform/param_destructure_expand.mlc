@@ -8,9 +8,10 @@ import {
   Span,
   WhereClauseBound,
   TypeExpr,
-  Diagnostic, diagnostic_error,
+  Diagnostic, diagnostic_error_with_code,
   span_unknown
 } from '../../frontend/ast'
+import { diagnostic_code_e074 } from '../diagnostic_codes'
 
 fn synthetic_destructure_parameter_name(parameter_position_index: i32) -> string =
   '__mlc_ds' + parameter_position_index.to_string()
@@ -159,9 +160,10 @@ fn extern_parameter_destructure_errors_for_decl_shared(declaration: Shared<Decl>
           let mut parameter_scan_index = 0
           while parameter_scan_index < parameters.length() do
             if !parameter_pattern_is_plain(parameters[parameter_scan_index]) then
-              scan_errors.push(diagnostic_error(
+              scan_errors.push(diagnostic_error_with_code(
                 'destructuring parameters are not supported on extern functions',
-                error_span))
+                error_span,
+                diagnostic_code_e074()))
             end
             parameter_scan_index = parameter_scan_index + 1
           end

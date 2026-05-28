@@ -7,7 +7,7 @@ import { TypeRegistry } from '../registry'
 import { InferResult } from './infer_result'
 import { constructor_arity_diagnostics, call_arity_diagnostics, call_arity_range_diagnostics } from '../check/diagnostics/type_diagnostics'
 import * as semantic_type_structure from '../semantic_type_structure'
-import { diagnostic_code_e002 } from '../diagnostic_codes'
+import { diagnostic_code_e002, diagnostic_code_e065 } from '../diagnostic_codes'
 
 export fn infer_expr_call_for_constructor_name(
   constructor_name: string,
@@ -26,7 +26,10 @@ export fn infer_expr_call_for_constructor_name(
   const private_errors: [Diagnostic] =
     if inference_context.registry.is_private_ctor(constructor_name) &&
        inference_context.current_extend_type != owner_name then
-      [diagnostic_error('private constructor: cannot construct ' + constructor_name + ' outside its extend block', call_source_span)]
+      [diagnostic_error_with_code(
+        'private constructor: cannot construct ' + constructor_name + ' outside its extend block',
+        call_source_span,
+        diagnostic_code_e065())]
     else [] end
   InferResult {
     inferred_type: ctor_type,

@@ -14,7 +14,7 @@ import { derive_clause_diagnostics } from './derive_validation'
 import { infer_expr } from '../infer/infer'
 import { check_context_new, CheckContext } from './check_context'
 import { types_structurally_equal, type_is_unknown, type_description } from '../semantic_type_structure'
-import { diagnostic_code_e004, diagnostic_code_e036, diagnostic_code_e037, diagnostic_code_e038, diagnostic_code_e039, diagnostic_code_e040, diagnostic_code_e041, diagnostic_code_e042, diagnostic_code_e043, diagnostic_code_e044 } from '../diagnostic_codes'
+import { diagnostic_code_e004, diagnostic_code_e036, diagnostic_code_e037, diagnostic_code_e038, diagnostic_code_e039, diagnostic_code_e040, diagnostic_code_e041, diagnostic_code_e042, diagnostic_code_e043, diagnostic_code_e044, diagnostic_code_e076 } from '../diagnostic_codes'
 import { record_field_default_expression_acceptable_for_codegen } from '../../ir/record_defaults'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
 
@@ -225,9 +225,10 @@ fn where_clause_unknown_parameter_diagnostics(
       if type_parameter_name_known(type_parameter_names, where_entry_under_scan.parameter_name) then
         diagnostics_accumulated_so_far
       else
-        diagnostics_accumulated_so_far.push(diagnostic_error(
+        diagnostics_accumulated_so_far.push(diagnostic_error_with_code(
           `where clause names unknown type parameter "${where_entry_under_scan.parameter_name}"`,
-          source_span))
+          source_span,
+          diagnostic_code_e076()))
         diagnostics_accumulated_so_far
       end
     end)

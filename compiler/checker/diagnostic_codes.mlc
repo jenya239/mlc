@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 68
+export fn diagnostic_code_catalog_count() -> i32 = 76
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -138,3 +138,19 @@ export fn diagnostic_code_e066() -> string = 'E066'
 export fn diagnostic_code_e067() -> string = 'E067'
 // E068: question operator requires Result type
 export fn diagnostic_code_e068() -> string = 'E068'
+// E069: derive Hash unsupported field type
+export fn diagnostic_code_e069() -> string = 'E069'
+// E070: duplicate derive trait
+export fn diagnostic_code_e070() -> string = 'E070'
+// E071: unknown derive trait
+export fn diagnostic_code_e071() -> string = 'E071'
+// E072: derive Hash on generic type
+export fn diagnostic_code_e072() -> string = 'E072'
+// E073: type and trait name conflict
+export fn diagnostic_code_e073() -> string = 'E073'
+// E074: destructuring parameter on extern function
+export fn diagnostic_code_e074() -> string = 'E074'
+// E075: record literal field type mismatch
+export fn diagnostic_code_e075() -> string = 'E075'
+// E076: where clause unknown type parameter
+export fn diagnostic_code_e076() -> string = 'E076'

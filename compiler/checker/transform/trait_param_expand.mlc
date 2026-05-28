@@ -8,8 +8,9 @@ import {
   DeclExported,
   WhereClauseBound,
   param_name, param_typ,
-  Diagnostic, diagnostic_error, span_unknown
+  Diagnostic, diagnostic_error_with_code, span_unknown
 } from '../../frontend/ast'
+import { diagnostic_code_e073 } from '../diagnostic_codes'
 
 fn declaration_without_export_wrappers(declaration: Shared<Decl>) -> Shared<Decl> =
   match declaration {
@@ -32,17 +33,19 @@ export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnos
     match current_declaration {
       DeclType(type_name, _, _, _) => do
         if trait_declaration_names.has(type_name) then
-          conflicts.push(diagnostic_error(
+          conflicts.push(diagnostic_error_with_code(
             `the name "${type_name}" is declared as both a type and a trait`,
-            span_unknown()))
+            span_unknown(),
+            diagnostic_code_e073()))
         end
         nominal_type_declaration_names.set(type_name, true); ()
       end,
       DeclTrait(trait_name, _, _) => do
         if nominal_type_declaration_names.has(trait_name) then
-          conflicts.push(diagnostic_error(
+          conflicts.push(diagnostic_error_with_code(
             `the name "${trait_name}" is declared as both a type and a trait`,
-            span_unknown()))
+            span_unknown(),
+            diagnostic_code_e073()))
         end
         trait_declaration_names.set(trait_name, true); ()
       end,

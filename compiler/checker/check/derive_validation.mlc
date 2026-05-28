@@ -2,8 +2,11 @@
 
 import {
   TypeVariant, VarUnit, VarTuple, VarRecord, TypeExpr,
-  TyI32, TyBool, TyString, Diagnostic, diagnostic_error, Span
+  TyI32, TyBool, TyString, Diagnostic, diagnostic_error_with_code, Span
 } from '../../frontend/ast'
+import {
+  diagnostic_code_e069, diagnostic_code_e070, diagnostic_code_e071, diagnostic_code_e072
+} from '../diagnostic_codes'
 
 fn derive_trait_name_allowed(trait_name: string) -> bool =
   trait_name == 'Display' || trait_name == 'Eq' || trait_name == 'Ord' || trait_name == 'Hash'
@@ -33,10 +36,11 @@ fn derive_hash_field_error(
 ) -> [Diagnostic] = do
   if type_expr_allowed_for_derive_hash_field(type_expression) then []
   else
-    [ diagnostic_error(
+    [ diagnostic_error_with_code(
       'derive Hash: unsupported field type for "' + field_label + '" in ' + variant_label
         + ' (allowed: i32, bool, string)',
-      diagnostic_span) ]
+      diagnostic_span,
+      diagnostic_code_e069()) ]
   end
 end
 
@@ -106,21 +110,24 @@ export fn derive_clause_diagnostics(
   while trait_index < derive_trait_names.length() do
     const trait_name = derive_trait_names[trait_index]
     if seen.has(trait_name) then
-      collected.push(diagnostic_error(`duplicate derive trait "${trait_name}"`, diagnostic_span))
+      collected.push(diagnostic_error_with_code(
+        `duplicate derive trait "${trait_name}"`, diagnostic_span, diagnostic_code_e070()))
     else
       seen.set(trait_name, true)
     end
     if !derive_trait_name_allowed(trait_name) then
-      collected.push(diagnostic_error(`unknown derive trait "${trait_name}"`, diagnostic_span))
+      collected.push(diagnostic_error_with_code(
+        `unknown derive trait "${trait_name}"`, diagnostic_span, diagnostic_code_e071()))
     end
     trait_index = trait_index + 1
   end
 
   if string_list_contains_derive_trait(derive_trait_names, 'Hash') then
     if type_parameter_names.length() > 0 then
-      collected.push(diagnostic_error(
+      collected.push(diagnostic_error_with_code(
         'derive Hash is not supported for generic types in this version',
-        diagnostic_span))
+        diagnostic_span,
+        diagnostic_code_e072()))
     else
       const hash_field_errors = derive_hash_errors_for_variants(variants, diagnostic_span)
       let mut merge_index = 0
