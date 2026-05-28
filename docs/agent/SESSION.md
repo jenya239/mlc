@@ -10,7 +10,7 @@
 | step_last | plan-refresh |
 | run_tests | 692 |
 | TRACK_PLAN | TRACK_COVERAGE active (step 1) |
-| agent_token_last | (pending) |
+| agent_token_last | cr-agent-1453fff0-0014-4ab3-a478-488b2384e6ef |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_COVERAGE)
 
