@@ -10,7 +10,15 @@
 | step_last | plan-refresh |
 | run_tests | 755 |
 | TRACK_PLAN | TRACK_PARSER_PARITY **active** (step 1) |
-| agent_token_last | cr-agent-3d37ceae-c6e9-44c9-a1ae-60e732352799 |
+| agent_token_last | cr-agent-4d52765c-07a2-4044-80f7-5e9cd96156dd |
+
+### Turn 2026-05-28 (Planner plan-refresh — idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| step | plan-refresh (skip) |
+| done | already `8134c06`; TRACK_PARSER_PARITY active; STEP=1 pending |
+| next | ROLE=Driver STEP=1 (re-enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — PARSER_PARITY)
 
