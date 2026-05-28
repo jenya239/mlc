@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 64
+export fn diagnostic_code_catalog_count() -> i32 = 68
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -130,3 +130,11 @@ export fn diagnostic_code_e062() -> string = 'E062'
 export fn diagnostic_code_e063() -> string = 'E063'
 // E064: Option filter predicate must return bool
 export fn diagnostic_code_e064() -> string = 'E064'
+// E065: private constructor outside extend block
+export fn diagnostic_code_e065() -> string = 'E065'
+// E066: record literal spread requires named record type
+export fn diagnostic_code_e066() -> string = 'E066'
+// E067: refutable let pattern requires else branch
+export fn diagnostic_code_e067() -> string = 'E067'
+// E068: question operator requires Result type
+export fn diagnostic_code_e068() -> string = 'E068'

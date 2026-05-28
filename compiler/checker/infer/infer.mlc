@@ -8,6 +8,7 @@ import {
   Diagnostic,
   Span,
   diagnostic_error,
+  diagnostic_error_with_code,
   diagnostics_append,
   expr_span,
   RecordLitPart,
@@ -42,6 +43,9 @@ import { infer_array_hof_method_call, should_infer_as_array_hof } from './infer_
 import { infer_result_option_hof_method_call, should_infer_as_result_option_hof } from './infer_result_option_method'
 import * as record_lit_merge from '../transform/record_lit_merge'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
+import {
+  diagnostic_code_e065, diagnostic_code_e066, diagnostic_code_e067
+} from '../diagnostic_codes'
 
 // --- Argument / field-value error accumulators ------------------------------
 
@@ -419,7 +423,10 @@ export fn infer_expr_record(type_name: string, lit_parts: [RecordLitPart], infer
   const private_errors: [Diagnostic] =
     if inference_context.registry.is_private_ctor(type_name) &&
        inference_context.current_extend_type != type_name then
-      [diagnostic_error('private constructor: cannot construct ' + type_name + ' outside its extend block', span)]
+      [diagnostic_error_with_code(
+        'private constructor: cannot construct ' + type_name + ' outside its extend block',
+        span,
+        diagnostic_code_e065())]
     else [] end
   let mut result = InferResult { inferred_type: Shared.new(TNamed(type_name)), errors: private_errors }
   const explicit_field_values_flat = record_lit_merge.collect_explicit_field_values_flat(lit_parts)
@@ -444,7 +451,10 @@ export fn infer_expr_record(type_name: string, lit_parts: [RecordLitPart], infer
     InferResult {
       inferred_type: result.inferred_type,
       errors: diagnostics_append(result.errors,
-        [diagnostic_error('record literal spread requires a named record type with fields', span)])
+        [diagnostic_error_with_code(
+          'record literal spread requires a named record type with fields',
+          span,
+          diagnostic_code_e066())])
     }
   else
     result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, type_name)
@@ -508,7 +518,10 @@ fn infer_single_statement_augment_fold_state(
       if pattern_is_refutable && !has_else then
         next_diagnostics = diagnostics_append(
           next_diagnostics,
-          [diagnostic_error('refutable pattern in let requires `else` branch', source_span)])
+          [diagnostic_error_with_code(
+            'refutable pattern in let requires `else` branch',
+            source_span,
+            diagnostic_code_e067())])
       end
       if has_else then
         const else_branch_inference =
