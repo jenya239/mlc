@@ -111,8 +111,6 @@ mlc::String diagnostic_format(ast::Diagnostic diagnostic) noexcept;
 
 mlc::Array<ast::Diagnostic> diagnostics_append(mlc::Array<ast::Diagnostic> destination, mlc::Array<ast::Diagnostic> source) noexcept;
 
-mlc::Array<ast::Diagnostic> infer_messages_as_diagnostics(mlc::Array<mlc::String> messages) noexcept;
-
 mlc::Array<mlc::String> diagnostics_to_strings(mlc::Array<ast::Diagnostic> diagnostics) noexcept;
 
 ast::Span expr_span(std::shared_ptr<ast::Expr> expression) noexcept;

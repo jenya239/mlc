@@ -53,14 +53,6 @@ export fn diagnostics_append(destination: [Diagnostic], source: [Diagnostic]) ->
   accumulator
 end
 
-export fn infer_messages_as_diagnostics(messages: [string]) -> [Diagnostic] = do
-  let collected: [Diagnostic] = []; let mut index = 0
-  while index < messages.length() do
-    collected.push(diagnostic_error(messages[index], span_unknown())); index = index + 1
-  end
-  collected
-end
-
 export fn diagnostics_to_strings(diagnostics: [Diagnostic]) -> [string] = do
   let lines: [string] = []; let mut index = 0
   while index < diagnostics.length() do

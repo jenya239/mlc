@@ -421,12 +421,13 @@ export fn checker_tests() -> [TestResult] = do
     19,
     'argument expects i32, got string'))
 
-  results.push(assert_diagnostic_at(
+  results.push(assert_diagnostic_at_with_code(
     'infer: called value is not a function — position on ( of call',
     first_checker_error_line('fn f() -> i32 = 42()'),
     1,
     19,
-    'called value is not a function (got i32)'))
+    'called value is not a function (got i32)',
+    'E002'))
 
   results.push(assert_diagnostic_at(
     'infer: field access on i32 — position on dot',

@@ -1,6 +1,6 @@
 // Call / non-constructor inference helpers (no infer_expr dependency).
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append } from '../../frontend/ast'
+import { Expr, Span, Diagnostic, diagnostic_error, diagnostic_error_with_code, diagnostics_append } from '../../frontend/ast'
 import { Type } from '../registry'
 import { CheckContext } from '../check/check_context'
 import { TypeRegistry } from '../registry'
@@ -74,9 +74,10 @@ export fn infer_expr_call_non_constructor_not_callable(
     InferResult {
       inferred_type: Shared.new(TUnknown),
       errors: diagnostics_append(base.errors, [
-        diagnostic_error(
+        diagnostic_error_with_code(
           'called value is not a function (got ' + semantic_type_structure.type_description(function_result.inferred_type) + ")",
-          call_source_span)])
+          call_source_span,
+          'E002')])
     }
   end
 
