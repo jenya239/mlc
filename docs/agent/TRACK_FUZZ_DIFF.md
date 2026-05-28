@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) (**closed**, `d055c49`), [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) (deferred differential)
 
-## Status: **closed** (`COMMIT_HASH`)
+## Status: **closed** (`5463361`)
 
 **Goal:** same `.mlc` input through mlcc `--check-only` and Ruby ModularCompiler checker path; no crash; exit-code parity on corpus + random seeds.
 
@@ -36,7 +36,7 @@ compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
 | 2 | Random program seeds — both backends no-crash; exit 0/1 match (8 seeds) | done (`a23ba55`) |
 | 3 | Error-count parity on checker-negative subset (mlcc vs Ruby) | done (`66cba88`) |
 | 4 | `run_fuzz_differential.sh` + hook in `build_tests.sh` | done (`690ee57`) |
-| 5 | In-process differential smoke in `test_fuzz.mlc`; close track | done (`COMMIT_HASH`) |
+| 5 | In-process differential smoke in `test_fuzz.mlc`; close track | done (`5463361`) |
 
 ## Step 5 detail (done)
 
