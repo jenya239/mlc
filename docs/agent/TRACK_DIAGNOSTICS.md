@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_SECURITY.md](TRACK_SECURITY.md) (**closed**, `a035c3d`)
 
-## Status: **active** (step 1 pending)
+## Status: **active** (step 2 pending)
 
 **Goal:** assign stable `error[Exxx]:` codes to high-traffic checker paths; negative tests assert exact format. E001 (undefined), E002 (not callable), E003 (arg mismatch) already exist — bulk migration deferred from [TRACK_PHASE1.md](TRACK_PHASE1.md) step 2.
 
@@ -26,13 +26,19 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Code catalog — `diagnostic_codes.mlc` (E001–E020 constants + doc); wire imports; smoke test in `test_checker.mlc` | pending |
+| 1 | Code catalog — `diagnostic_codes.mlc` (E001–E020 constants + doc); wire imports; smoke test in `test_checker.mlc` | done (`b44411c`) |
 | 2 | Binary / type mismatch — `binary_diagnostics.mlc`, `type_diagnostics.mlc` → `diagnostic_error_with_code`; negative tests | pending |
 | 3 | Method receiver — `method_receiver_diagnostics.mlc` → E005–E009; negative tests | pending |
 | 4 | Infer/transform hot paths — record missing field, immut assign, match guard, trait bounds → codes + tests | pending |
 | 5 | Audit sweep — grep remaining bare `diagnostic_error(` in checker; fix one module batch + tests | pending |
 
-## Step 1 detail
+## Step 1 detail (done)
+
+- `compiler/checker/diagnostic_codes.mlc`: E001–E020 + `diagnostic_code_catalog_count`.
+- Wired E001–E004 at names, infer_call_support, call_argument_unify, check.mlc.
+- `test_checker.mlc`: catalog smoke (+3 tests); 683 pass; self-host diff empty.
+
+## Step 1 detail (spec)
 
 - File: `compiler/checker/diagnostic_codes.mlc` (or `compiler/frontend/diagnostic_codes.mlc` if zero checker deps).
 - Export string constants `E001`…`E020` with comment mapping (message category).
@@ -48,4 +54,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=1** — code catalog module + smoke test.
+**STEP=2** — binary/type mismatch diagnostics → codes.
