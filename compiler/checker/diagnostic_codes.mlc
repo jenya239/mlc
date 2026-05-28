@@ -10,27 +10,35 @@ export fn diagnostic_code_e002() -> string = 'E002'
 export fn diagnostic_code_e003() -> string = 'E003'
 // E004: return type mismatch
 export fn diagnostic_code_e004() -> string = 'E004'
-// E005: method receiver — array (step 3)
+// E005: binary + incompatible operands
 export fn diagnostic_code_e005() -> string = 'E005'
-// E006: method receiver — option/result (step 3)
+// E006: binary numeric operands (-, *, /, %)
 export fn diagnostic_code_e006() -> string = 'E006'
-// E007: method receiver — map (step 3)
+// E007: binary equality mismatch
 export fn diagnostic_code_e007() -> string = 'E007'
-// E008: immutable binding assignment (step 4)
+// E008: binary ordering
 export fn diagnostic_code_e008() -> string = 'E008'
-// E009: record missing field (step 4)
+// E009: binary logical
 export fn diagnostic_code_e009() -> string = 'E009'
-// E010: match guard type (step 4)
+// E010: binary bitwise
 export fn diagnostic_code_e010() -> string = 'E010'
-// E011: trait bound (step 4)
+// E011: binary shift
 export fn diagnostic_code_e011() -> string = 'E011'
-// E012–E020: reserved for audit sweep (step 5)
+// E012: unary minus
 export fn diagnostic_code_e012() -> string = 'E012'
+// E013: unary bang
 export fn diagnostic_code_e013() -> string = 'E013'
+// E014: call arity mismatch
 export fn diagnostic_code_e014() -> string = 'E014'
+// E015: if branch type mismatch
 export fn diagnostic_code_e015() -> string = 'E015'
+// E016: field access on non-record
 export fn diagnostic_code_e016() -> string = 'E016'
+// E017: index not array
 export fn diagnostic_code_e017() -> string = 'E017'
+// E018: index not i32
 export fn diagnostic_code_e018() -> string = 'E018'
+// E019: for loop range not array
 export fn diagnostic_code_e019() -> string = 'E019'
+// E020: match arm type mismatch
 export fn diagnostic_code_e020() -> string = 'E020'

@@ -105,7 +105,22 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_checker_diagnostic(
     'negative: binary + incompatible operands exact',
     'fn f() -> i32 = 1 + true',
-    'error: incompatible operand types for +: i32 and bool\n  --> 1:19'))
+    'error[E005]: incompatible operand types for +: i32 and bool\n  --> 1:19'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E014: call arity exact',
+    'fn f(x: i32) -> i32 = x\nfn g() -> i32 = f()',
+    'error[E014]: expected 1 arguments, got 0\n  --> 2:18'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E015: if branch mismatch exact',
+    'fn f() -> i32 = if true then 1 else "x" end',
+    'error[E015]: if branch types differ: then i32, else string\n  --> 1:37'))
+
+  results.push(assert_checker_diagnostic(
+    'negative E016: field access on i32 exact',
+    'type P = { x: i32 }\nfn f(p: i32) -> i32 = p.x',
+    'error[E016]: field access on value without record fields: i32\n  --> 2:24'))
 
   results.push(assert_checker_diagnostic(
     'negative: monomorphic call wrong arg exact',
@@ -357,7 +372,7 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_str(
     'undefined record field: message text',
     first_checker_error_line('type R = { a: i32 }\nfn f(x: R) -> i32 = x.missing'),
-    'error: undefined field: missing on R\n  --> 2:22'))
+    'error[E016]: undefined field: missing on R\n  --> 2:22'))
 
   results.push(assert_true('infer: string + i32 is an error',
     check_error_count('fn f() -> i32 = "a" + 1') > 0))

@@ -1,15 +1,20 @@
 // Binary operator diagnostic builders.
 
-import { Diagnostic, Span, diagnostic_error } from '../../../frontend/ast'
+import { Diagnostic, Span, diagnostic_error_with_code } from '../../../frontend/ast'
 import { Type } from '../../registry'
 import * as semantic_type_structure from '../../semantic_type_structure'
+import {
+  diagnostic_code_e005, diagnostic_code_e006, diagnostic_code_e007, diagnostic_code_e008,
+  diagnostic_code_e009, diagnostic_code_e010, diagnostic_code_e011
+} from '../../diagnostic_codes'
 
 fn infer_binary_diagnostic_for_addition(operation: string, left_type: Shared<Type>, right_type: Shared<Type>, source_span: Span) -> [Diagnostic] =
   if operation == "+" && !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
      !semantic_type_structure.types_allowed_for_binary_plus(left_type, right_type) then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'incompatible operand types for +: ' + semantic_type_structure.type_description(left_type) + ' and ' + semantic_type_structure.type_description(right_type),
-      source_span)]
+      source_span,
+      diagnostic_code_e005())]
   else
     []
   end
@@ -18,9 +23,10 @@ fn infer_binary_diagnostic_for_int_arithmetic(operation: string, left_type: Shar
   if operation == "-" || operation == "*" || operation == "/" || operation == "%" then
     if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
        !semantic_type_structure.types_allowed_for_binary_int_only(left_type, right_type) then
-      [diagnostic_error(
+      [diagnostic_error_with_code(
         'numeric operands required for ' + operation + ', got ' + semantic_type_structure.type_description(left_type) + ' and ' + semantic_type_structure.type_description(right_type),
-        source_span)]
+        source_span,
+        diagnostic_code_e006())]
     else
       []
     end
@@ -33,9 +39,10 @@ fn infer_binary_diagnostic_for_equality(operation: string, left_type: Shared<Typ
   if operation == '==' || operation == '!=' then
     if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
        !semantic_type_structure.types_structurally_equal(left_type, right_type) then
-      [diagnostic_error(
+      [diagnostic_error_with_code(
         'incompatible types for ' + operation + ': ' + semantic_type_structure.type_description(left_type) + ' and ' + semantic_type_structure.type_description(right_type),
-        source_span)]
+        source_span,
+        diagnostic_code_e007())]
     else
       []
     end
@@ -48,9 +55,10 @@ fn infer_binary_diagnostic_for_ordering(operation: string, left_type: Shared<Typ
   if operation == "<" || operation == ">" || operation == '<=' || operation == '>=' then
     if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
        !semantic_type_structure.types_allowed_for_ordering(left_type, right_type) then
-      [diagnostic_error(
+      [diagnostic_error_with_code(
         'ordering requires i32 or string operands of the same kind, got ' + semantic_type_structure.type_description(left_type) + ' and ' + semantic_type_structure.type_description(right_type),
-        source_span)]
+        source_span,
+        diagnostic_code_e008())]
     else
       []
     end
@@ -63,9 +71,10 @@ fn infer_binary_diagnostic_for_logical(operation: string, left_type: Shared<Type
   if operation == '&&' || operation == '||' then
     if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
        !semantic_type_structure.types_allowed_for_logical_and_or(left_type, right_type) then
-      [diagnostic_error(
+      [diagnostic_error_with_code(
         'logical operators require bool operands, got ' + semantic_type_structure.type_description(left_type) + ' and ' + semantic_type_structure.type_description(right_type),
-        source_span)]
+        source_span,
+        diagnostic_code_e009())]
     else
       []
     end
@@ -78,9 +87,10 @@ fn infer_binary_diagnostic_for_bitwise(operation: string, left_type: Shared<Type
   if operation == "&" || operation == "|" || operation == "^" then
     if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
        !semantic_type_structure.types_allowed_for_binary_int_only(left_type, right_type) then
-      [diagnostic_error(
+      [diagnostic_error_with_code(
         'bitwise ' + operation + ' requires i32 operands, got ' + semantic_type_structure.type_description(left_type) + ' and ' + semantic_type_structure.type_description(right_type),
-        source_span)]
+        source_span,
+        diagnostic_code_e010())]
     else
       []
     end
@@ -93,9 +103,10 @@ fn infer_binary_diagnostic_for_shift(operation: string, left_type: Shared<Type>,
   if operation == '<<' || operation == '>>' then
     if !semantic_type_structure.type_is_unknown(left_type) && !semantic_type_structure.type_is_unknown(right_type) &&
        !semantic_type_structure.types_allowed_for_binary_int_only(left_type, right_type) then
-      [diagnostic_error(
+      [diagnostic_error_with_code(
         'shift requires i32 operands, got ' + semantic_type_structure.type_description(left_type) + ' and ' + semantic_type_structure.type_description(right_type),
-        source_span)]
+        source_span,
+        diagnostic_code_e011())]
     else
       []
     end

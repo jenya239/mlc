@@ -1,16 +1,23 @@
 // Diagnostic builders: unary, arity, index, if, match, for, field access.
 
-import { Expr, Diagnostic, Span, diagnostic_error, expr_span } from '../../../frontend/ast'
+import { Expr, Diagnostic, Span, diagnostic_error_with_code, expr_span } from '../../../frontend/ast'
 import { Type, TypeRegistry } from '../../registry'
 import * as semantic_type_structure from '../../semantic_type_structure'
 import { array_hof_expected_argument_count, is_array_hof_method } from '../../check/method_types/array_method_types'
+import {
+  diagnostic_code_e012, diagnostic_code_e013, diagnostic_code_e014, diagnostic_code_e015,
+  diagnostic_code_e016, diagnostic_code_e017, diagnostic_code_e018, diagnostic_code_e019,
+  diagnostic_code_e020
+} from '../../diagnostic_codes'
+
 // --- Unary diagnostics -------------------------------------------------------
 
 export fn unary_minus_diagnostic(operation: string, inner_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
   if operation == "-" && !semantic_type_structure.type_is_unknown(inner_type) && !semantic_type_structure.type_is_i32(inner_type) then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'unary - expects i32, got ' + semantic_type_structure.type_description(inner_type),
-      source_span)]
+      source_span,
+      diagnostic_code_e012())]
   else
     []
   end
@@ -18,9 +25,10 @@ end
 
 export fn unary_bang_diagnostic(operation: string, inner_type: Shared<Type>, source_span: Span) -> [Diagnostic] = do
   if operation == "!" && !semantic_type_structure.type_is_unknown(inner_type) && !semantic_type_structure.type_is_bool(inner_type) then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'operator ! expects bool, got ' + semantic_type_structure.type_description(inner_type),
-      source_span)]
+      source_span,
+      diagnostic_code_e013())]
   else
     []
   end
@@ -30,9 +38,10 @@ end
 
 export fn constructor_arity_diagnostics(expected_length: i32, actual_length: i32, call_source_span: Span) -> [Diagnostic] = do
   if expected_length != actual_length then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'expected ' + expected_length.to_string() + ' arguments, got ' + actual_length.to_string(),
-      call_source_span)]
+      call_source_span,
+      diagnostic_code_e014())]
   else
     []
   end
@@ -46,9 +55,10 @@ fn infer_builtin_method_arity_diagnostics(method_name: string, argument_count: i
   if expected < 0 then
     []
   else if argument_count != expected then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'expected ' + expected.to_string() + ' arguments, got ' + argument_count.to_string(),
-      method_span)]
+      method_span,
+      diagnostic_code_e014())]
   else
     []
   end
@@ -56,9 +66,10 @@ end
 
 export fn call_arity_diagnostics(expected_count: i32, actual_count: i32, call_source_span: Span) -> [Diagnostic] = do
   if expected_count != actual_count then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'expected ' + expected_count.to_string() + ' arguments, got ' + actual_count.to_string(),
-      call_source_span)]
+      call_source_span,
+      diagnostic_code_e014())]
   else
     []
   end
@@ -67,9 +78,10 @@ end
 export fn call_arity_range_diagnostics(
   min_count: i32, max_count: i32, actual_count: i32, call_source_span: Span) -> [Diagnostic] = do
   if actual_count < min_count || actual_count > max_count then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'expected between ' + min_count.to_string() + ' and ' + max_count.to_string() + ' arguments, got ' + actual_count.to_string(),
-      call_source_span)]
+      call_source_span,
+      diagnostic_code_e014())]
   else
     []
   end
@@ -85,9 +97,10 @@ end
 
 export fn index_not_array_diagnostic(receiver_type: Shared<Type>, bracket_source_span: Span) -> [Diagnostic] = do
   if !semantic_type_structure.type_is_unknown(receiver_type) && !semantic_type_structure.type_is_array(receiver_type) then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'indexing requires an array, got ' + semantic_type_structure.type_description(receiver_type),
-      bracket_source_span)]
+      bracket_source_span,
+      diagnostic_code_e017())]
   else
     []
   end
@@ -95,9 +108,10 @@ end
 
 export fn index_not_i32_diagnostic(index_type: Shared<Type>, bracket_source_span: Span) -> [Diagnostic] = do
   if !semantic_type_structure.type_is_unknown(index_type) && !semantic_type_structure.type_is_i32(index_type) then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'array index must be i32, got ' + semantic_type_structure.type_description(index_type),
-      bracket_source_span)]
+      bracket_source_span,
+      diagnostic_code_e018())]
   else
     []
   end
@@ -107,9 +121,10 @@ end
 
 export fn if_branch_mismatch_diagnostic(branches_mismatch: bool, then_type: Shared<Type>, else_type: Shared<Type>, else_expression: Shared<Expr>) -> [Diagnostic] = do
   if branches_mismatch then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'if branch types differ: then ' + semantic_type_structure.type_description(then_type) + ', else ' + semantic_type_structure.type_description(else_type),
-      expr_span(else_expression))]
+      expr_span(else_expression),
+      diagnostic_code_e015())]
   else
     []
   end
@@ -117,9 +132,10 @@ end
 
 export fn for_loop_range_diagnostic(iterator_type: Shared<Type>, iterator: Shared<Expr>) -> [Diagnostic] = do
   if !semantic_type_structure.type_is_unknown(iterator_type) && !semantic_type_structure.type_is_array(iterator_type) then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'for loop range must be an array, got ' + semantic_type_structure.type_description(iterator_type),
-      expr_span(iterator))]
+      expr_span(iterator),
+      diagnostic_code_e019())]
   else
     []
   end
@@ -128,9 +144,10 @@ end
 export fn match_arm_type_mismatch_diagnostic(arm_index: i32, first_arm_type: Shared<Type>, arm_result_type: Shared<Type>, arm_body: Shared<Expr>) -> [Diagnostic] = do
   if arm_index > 0 && !semantic_type_structure.type_is_unknown(first_arm_type) && !semantic_type_structure.type_is_unknown(arm_result_type) &&
      !semantic_type_structure.types_structurally_equal(first_arm_type, arm_result_type) then
-    [diagnostic_error(
+    [diagnostic_error_with_code(
       'match arm result type ' + semantic_type_structure.type_description(arm_result_type) + ' does not match first arm type ' + semantic_type_structure.type_description(first_arm_type),
-      expr_span(arm_body))]
+      expr_span(arm_body),
+      diagnostic_code_e020())]
   else
     []
   end
@@ -147,19 +164,20 @@ export fn infer_expr_field_diagnostics(object_type: Shared<Type>, field_name: st
   }
   if type_name != '' && registry.has_fields(type_name) then
     if !registry.fields_for(type_name).has(field_name) then
-      [diagnostic_error('undefined field: ' + field_name + ' on ' + type_name, field_source_span)]
+      [diagnostic_error_with_code('undefined field: ' + field_name + ' on ' + type_name, field_source_span, diagnostic_code_e016())]
     else
       []
     end
   else if !semantic_type_structure.type_is_unknown(object_type) then
     if type_name != '' && !registry.has_fields(type_name) then
-      [diagnostic_error('field access needs a record type; ' + type_name + ' is not one', field_source_span)]
+      [diagnostic_error_with_code('field access needs a record type; ' + type_name + ' is not one', field_source_span, diagnostic_code_e016())]
     else if semantic_type_structure.type_is_array(object_type) then
-      [diagnostic_error('array value has no record fields for .' + field_name, field_source_span)]
+      [diagnostic_error_with_code('array value has no record fields for .' + field_name, field_source_span, diagnostic_code_e016())]
     else if !semantic_type_structure.type_is_function(object_type) then
-      [diagnostic_error(
+      [diagnostic_error_with_code(
         'field access on value without record fields: ' + semantic_type_structure.type_description(object_type),
-        field_source_span)]
+        field_source_span,
+        diagnostic_code_e016())]
     else
       []
     end
