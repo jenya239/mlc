@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1; previous: [TRACK_CPPGEN.md](TRACK_CPPGEN.md) (**closed**, step 10 `005c65b`)
 
-## Status: in progress (step 1 pending)
+## Status: in progress (step 2 pending)
 
 **Goal:** reliable mlcc — full diagnostic spans, test coverage, crash-safety, clean default output dir.
 
@@ -25,7 +25,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `diagnostic_format` — rustc-style (`error: msg` + `  --> file:line:col`); update test_runner helpers | pending |
+| 1 | `diagnostic_format` — rustc-style (`error: msg` + `  --> file:line:col`); update test_runner helpers | done (`a74d480`) |
 | 2 | `Diagnostic.code` field + `error[E001]:` prefix in format | pending |
 | 3 | Replace `infer_messages_as_diagnostics` — infer emits `Diagnostic` with span at source | pending |
 | 4 | Audit checker paths with `span_unknown`; fix high-traffic infer_call / type mismatch | pending |
@@ -54,4 +54,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=1** — rustc-style `diagnostic_format` + test_runner updates.
+**STEP=2** — `Diagnostic.code` field + `error[E001]:` prefix in format.

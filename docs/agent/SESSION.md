@@ -5,11 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | run_tests | 511 |
-| TRACK_PLAN | TRACK_PHASE1 active (step 1 pending) |
+| TRACK_PLAN | TRACK_PHASE1 active (step 2 pending) |
+
+### Turn 2026-05-28 (PHASE1 step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | rustc-style `diagnostic_format`; `assert_diagnostic_at` updated |
+| verify | 511 pass; build.sh; self-host diff empty (build_bin.sh + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=2 TRACK_PHASE1 (enqueued) |
 
 ### Turn 2026-05-28 (plan-refresh)
 
