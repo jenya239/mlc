@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | run_tests | 706 |
-| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 2) |
-| agent_token_last | cr-agent-aa09f90b-66ba-41cf-85ad-19d639c05610 |
+| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 3) |
+| agent_token_last | cr-agent-b6d74428-b75c-4904-b855-fce35d37da7d |
+
+### Turn 2026-05-28 (Driver FUZZ_DIFF step 2)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 2 |
+| step | 2 |
+| done | run_fuzz_differential.sh seeds 0–7; 8/8 exit parity |
+| verify | 706 pass; differential ok; no compiler/** — self-host skipped |
+| next | ROLE=Driver STEP=3 (enqueued) |
 
 ### Turn 2026-05-28 (Driver FUZZ_DIFF step 1 idempotent skip)
 

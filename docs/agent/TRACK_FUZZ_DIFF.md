@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) (**closed**, `d055c49`), [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) (deferred differential)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** same `.mlc` input through mlcc `--check-only` and Ruby ModularCompiler checker path; no crash; exit-code parity on corpus + random seeds.
 
@@ -33,10 +33,15 @@ compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Negative corpus exit-code parity — mlcc `--check-only` vs Ruby checker on 16 files | done (`0654dda`) |
-| 2 | Random program seeds — both backends no-crash; exit 0/1 match (8 seeds) | pending |
+| 2 | Random program seeds — both backends no-crash; exit 0/1 match (8 seeds) | done (`COMMIT_HASH`) |
 | 3 | Error-count parity on checker-negative subset (mlcc vs Ruby) | pending |
 | 4 | `run_fuzz_differential.sh` + hook in `build_tests.sh` | pending |
 | 5 | In-process differential smoke in `test_fuzz.mlc`; close track | pending |
+
+## Step 2 detail (done)
+
+- `run_fuzz_differential.sh`: seeds 0–7 via same generator as `run_fuzz_smoke.sh`; strict exit parity, no crash.
+- All 8 seeds exit 0 on both backends.
 
 ## Step 1 detail (done)
 
@@ -53,4 +58,4 @@ compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
 
 ## Next step (Driver)
 
-**STEP=2** — random program seeds: both backends no-crash; exit 0/1 match (8 seeds).
+**STEP=3** — error-count parity on checker-negative subset (mlcc vs Ruby).
