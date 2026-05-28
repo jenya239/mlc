@@ -4,10 +4,10 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner` |
-| role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 3 |
+| instructions_rev | `2026-05-28-cleaner`|
+| role_last | Driver|
+| driver_turns_since_plan | 6|
+| step_last | 4|
 | run_tests | 704 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS2 active (step 4) |
 | agent_token_last | cr-agent-0c2c1aa9-15bd-4b7d-9c18-b3b8f2d4ecea |
