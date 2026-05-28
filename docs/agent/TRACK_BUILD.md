@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §6; previous: [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) (**closed**, `a8bf7a1`)
 
-## Status: **active** (step 3 pending)
+## Status: **active** (step 4 pending)
 
 **Goal:** deterministic C++ link/compile order; `--emit-compile-commands` for clangd.
 
@@ -28,7 +28,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | `build_bin.sh` — deterministic sorted cpp compile order | done (`ed8ac00`) |
 | 2 | `compile_options.mlc` — `--emit-compile-commands` flag parsing | done (`6077707`) |
-| 3 | Modular pipeline — emit `compile_commands.json` to out dir | pending |
+| 3 | Modular pipeline — emit `compile_commands.json` to out dir | done (`a60052a`) |
 | 4 | Test/smoke — flag + json output | pending |
 | 5 | Build audit; close track | pending |
 
@@ -50,6 +50,12 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 - Usage string updated; 3 tests in `test_pass.mlc`.
 - Pipeline wiring deferred to step 3.
 
+## Step 3 detail
+
+- `compile_commands.mlc`: JSON builder + `write_compile_commands_file`.
+- `ModularCompileInput.emit_compile_commands`; wired in `main.mlc`.
+- `run_codegen_pass` writes `compile_commands.json` after cpp emission.
+
 ## Next step (Driver)
 
-**STEP=3** — modular pipeline emit `compile_commands.json` to out dir.
+**STEP=4** — test/smoke for flag + json output.

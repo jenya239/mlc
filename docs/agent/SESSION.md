@@ -6,11 +6,19 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 1 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | run_tests | 742 |
-| TRACK_PLAN | TRACK_BUILD **active** (step 3) |
+| TRACK_PLAN | TRACK_BUILD **active** (step 4) |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
+
+### Turn 2026-05-28 (Driver BUILD step 2 — idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 2 (skip) |
+| done | already `6077707`; STEP=3 pending |
+| next | ROLE=Driver STEP=3 (re-enqueued) |
 
 ### Turn 2026-05-28 (Driver BUILD step 2)
 
