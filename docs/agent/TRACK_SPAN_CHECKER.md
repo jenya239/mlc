@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) (**closed**, `5525d03`)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** replace fixable `span_unknown()` in checker/codegen diagnostics and IR with source spans; document remaining synthetics.
 
@@ -26,8 +26,8 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `checker/check/` — `check.mlc`, `call_argument_unify.mlc` real spans on diagnostics | done (`COMMIT_HASH`) |
-| 2 | `checker/transform/trait_param_expand.mlc` — E073 on decl name span | pending |
+| 1 | `checker/check/` — `check.mlc`, `call_argument_unify.mlc` real spans on diagnostics | done (`4002943`) |
+| 2 | `checker/transform/trait_param_expand.mlc` — E073 on decl name span | done (`6d22fe4`) |
 | 3 | `checker/transform/` — `transform.mlc`, `param_destructure_expand.mlc` audit + fix where span available | pending |
 | 4 | `codegen/expr/` — `record_gen.mlc`, `expression_support.mlc` span propagation | pending |
 | 5 | Grep audit checker+codegen `span_unknown`; close track | pending |
@@ -48,4 +48,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=2** — `trait_param_expand.mlc` E073 decl name span.
+**STEP=3** — `transform.mlc`, `param_destructure_expand.mlc` span audit.
