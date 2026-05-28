@@ -10,7 +10,15 @@
 | step_last | 2 |
 | run_tests | 698 |
 | TRACK_PLAN | TRACK_COVERAGE active (step 3) |
-| agent_token_last | cr-agent-1cf20b88-9f5a-40eb-810d-89b46c1a4a2d |
+| agent_token_last | cr-agent-3018946d-aaf6-4ef2-9795-91d17bd7aa7b |
+
+### Turn 2026-05-28 (COVERAGE step 2 idempotent)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 2 (skip) |
+| done | already `c414120`; STEP=3 pending |
+| next | ROLE=Driver STEP=3 (enqueued) |
 
 ### Turn 2026-05-28 (COVERAGE step 2)
 
