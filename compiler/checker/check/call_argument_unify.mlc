@@ -1,6 +1,6 @@
 // Call-site argument checking with type-parameter substitution (unification).
 
-import { Expr, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span, span_unknown } from '../../frontend/ast'
+import { Expr, Diagnostic, Span, diagnostic_error_with_code, diagnostics_append, expr_span, span_unknown } from '../../frontend/ast'
 import { Type } from '../registry'
 import * as semantic_type_structure from '../semantic_type_structure'
 
@@ -8,6 +8,26 @@ fn empty_diagnostic_list() -> [Diagnostic] = do
   let empty_list: [Diagnostic] = []
   empty_list
 end
+
+fn argument_type_mismatch_diagnostic(
+  expected_type: Shared<Type>,
+  actual_type: Shared<Type>,
+  diagnostic_span: Span
+) -> Diagnostic =
+  diagnostic_error_with_code(
+    'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
+    diagnostic_span,
+    'E003')
+
+fn record_type_parameter_source_for_argument(
+  type_parameter_source_argument_index: ref mut Map<string, i32>,
+  type_parameter_names: [string],
+  type_name: string,
+  argument_index: i32
+) -> unit =
+  if list_contains_string(type_parameter_names, type_name) then
+    type_parameter_source_argument_index.set(type_name, argument_index)
+  end
 
 fn list_contains_string(haystack: [string], needle: string) -> bool = do
   let mut index = 0
@@ -24,7 +44,9 @@ fn unify_expected_and_actual_argument_types(
   actual_type: Shared<Type>,
   type_parameter_names: [string],
   substitution: ref mut Map<string, Shared<Type>>,
-  diagnostic_span: Span
+  diagnostic_span: Span,
+  type_parameter_source_argument_index: ref mut Map<string, i32>,
+  argument_index: i32
 ) -> [Diagnostic] = do
   if semantic_type_structure.type_is_unknown(actual_type) then empty_diagnostic_list()
   else if semantic_type_structure.type_is_unknown(expected_type) then empty_diagnostic_list()
@@ -36,11 +58,11 @@ fn unify_expected_and_actual_argument_types(
           semantic_type_structure.array_element_type_from_array_type(actual_type),
           type_parameter_names,
           substitution,
-          diagnostic_span)
+          diagnostic_span,
+          type_parameter_source_argument_index,
+          argument_index)
       else
-        [diagnostic_error(
-          'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-          diagnostic_span)]
+        [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       end,
     TShared(inner_expected) =>
       if semantic_type_structure.type_is_shared_pointer(actual_type) then
@@ -49,11 +71,11 @@ fn unify_expected_and_actual_argument_types(
           semantic_type_structure.shared_pointer_inner_type(actual_type),
           type_parameter_names,
           substitution,
-          diagnostic_span)
+          diagnostic_span,
+          type_parameter_source_argument_index,
+          argument_index)
       else
-        [diagnostic_error(
-          'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-          diagnostic_span)]
+        [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       end,
     TNamed(name) =>
       if list_contains_string(type_parameter_names, name) then
@@ -63,158 +85,154 @@ fn unify_expected_and_actual_argument_types(
             actual_type,
             type_parameter_names,
             substitution,
-            diagnostic_span)
+            diagnostic_span,
+            type_parameter_source_argument_index,
+            argument_index)
         else
           do
-            substitution.set(name, actual_type);
+            substitution.set(name, actual_type)
+            record_type_parameter_source_for_argument(
+              type_parameter_source_argument_index, type_parameter_names, name, argument_index)
             empty_diagnostic_list()
           end
         end
       else if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
       else
-        [diagnostic_error(
-          'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-          diagnostic_span)]
+        [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       end,
     TGeneric(expected_name, expected_args) =>
       match actual_type {
         TGeneric(actual_name, actual_args) =>
           if expected_name != actual_name || expected_args.length() != actual_args.length() then
-            [diagnostic_error(
-              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-              diagnostic_span)]
+            [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           else
             let mut out: [Diagnostic] = empty_diagnostic_list()
-            let mut gi = 0
-            while gi < expected_args.length() do
+            let mut generic_index = 0
+            while generic_index < expected_args.length() do
               out = diagnostics_append(
                 out,
                 unify_expected_and_actual_argument_types(
-                  expected_args[gi],
-                  actual_args[gi],
+                  expected_args[generic_index],
+                  actual_args[generic_index],
                   type_parameter_names,
                   substitution,
-                  diagnostic_span))
-              gi = gi + 1
+                  diagnostic_span,
+                  type_parameter_source_argument_index,
+                  argument_index))
+              generic_index = generic_index + 1
             end
             out
           end,
         _ =>
-          [diagnostic_error(
-            'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-            diagnostic_span)]
+          [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       },
     TTuple(expected_elts) =>
       match actual_type {
         TTuple(actual_elts) =>
           if expected_elts.length() != actual_elts.length() then
-            [diagnostic_error(
-              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-              diagnostic_span)]
+            [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           else
-            let mut out_t: [Diagnostic] = empty_diagnostic_list()
-            let mut ti = 0
-            while ti < expected_elts.length() do
-              out_t = diagnostics_append(
-                out_t,
+            let mut tuple_output: [Diagnostic] = empty_diagnostic_list()
+            let mut tuple_index = 0
+            while tuple_index < expected_elts.length() do
+              tuple_output = diagnostics_append(
+                tuple_output,
                 unify_expected_and_actual_argument_types(
-                  expected_elts[ti],
-                  actual_elts[ti],
+                  expected_elts[tuple_index],
+                  actual_elts[tuple_index],
                   type_parameter_names,
                   substitution,
-                  diagnostic_span))
-              ti = ti + 1
+                  diagnostic_span,
+                  type_parameter_source_argument_index,
+                  argument_index))
+              tuple_index = tuple_index + 1
             end
-            out_t
+            tuple_output
           end,
         TPair(a2, b2) =>
           if expected_elts.length() != 2 then
-            [diagnostic_error(
-              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-              diagnostic_span)]
+            [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           else
             diagnostics_append(
               unify_expected_and_actual_argument_types(
-                expected_elts[0], a2, type_parameter_names, substitution, diagnostic_span),
+                expected_elts[0], a2, type_parameter_names, substitution, diagnostic_span,
+                type_parameter_source_argument_index, argument_index),
               unify_expected_and_actual_argument_types(
-                expected_elts[1], b2, type_parameter_names, substitution, diagnostic_span))
+                expected_elts[1], b2, type_parameter_names, substitution, diagnostic_span,
+                type_parameter_source_argument_index, argument_index))
           end,
         _ =>
-          [diagnostic_error(
-            'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-            diagnostic_span)]
+          [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       },
     TPair(expected_a, expected_b) =>
       match actual_type {
         TPair(actual_a, actual_b) =>
           diagnostics_append(
             unify_expected_and_actual_argument_types(
-              expected_a, actual_a, type_parameter_names, substitution, diagnostic_span),
+              expected_a, actual_a, type_parameter_names, substitution, diagnostic_span,
+              type_parameter_source_argument_index, argument_index),
             unify_expected_and_actual_argument_types(
-              expected_b, actual_b, type_parameter_names, substitution, diagnostic_span)),
-        TTuple(ats) =>
-          if ats.length() != 2 then
-            [diagnostic_error(
-              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-              diagnostic_span)]
+              expected_b, actual_b, type_parameter_names, substitution, diagnostic_span,
+              type_parameter_source_argument_index, argument_index)),
+        TTuple(actual_elts) =>
+          if actual_elts.length() != 2 then
+            [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           else
             diagnostics_append(
               unify_expected_and_actual_argument_types(
-                expected_a, ats[0], type_parameter_names, substitution, diagnostic_span),
+                expected_a, actual_elts[0], type_parameter_names, substitution, diagnostic_span,
+                type_parameter_source_argument_index, argument_index),
               unify_expected_and_actual_argument_types(
-                expected_b, ats[1], type_parameter_names, substitution, diagnostic_span))
+                expected_b, actual_elts[1], type_parameter_names, substitution, diagnostic_span,
+                type_parameter_source_argument_index, argument_index))
           end,
         _ =>
-          [diagnostic_error(
-            'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-            diagnostic_span)]
+          [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       },
     TFn(expected_params, expected_ret) =>
       match actual_type {
         TFn(actual_params, actual_ret) =>
           if expected_params.length() != actual_params.length() then
-            [diagnostic_error(
-              'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-              diagnostic_span)]
+            [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           else
-            let mut out_fn: [Diagnostic] = empty_diagnostic_list()
-            let mut pi = 0
-            while pi < expected_params.length() do
-              out_fn = diagnostics_append(
-                out_fn,
+            let mut function_output: [Diagnostic] = empty_diagnostic_list()
+            let mut parameter_index = 0
+            while parameter_index < expected_params.length() do
+              function_output = diagnostics_append(
+                function_output,
                 unify_expected_and_actual_argument_types(
-                  expected_params[pi],
-                  actual_params[pi],
+                  expected_params[parameter_index],
+                  actual_params[parameter_index],
                   type_parameter_names,
                   substitution,
-                  diagnostic_span))
-              pi = pi + 1
+                  diagnostic_span,
+                  type_parameter_source_argument_index,
+                  argument_index))
+              parameter_index = parameter_index + 1
             end
             diagnostics_append(
-              out_fn,
+              function_output,
               unify_expected_and_actual_argument_types(
-                expected_ret, actual_ret, type_parameter_names, substitution, diagnostic_span))
+                expected_ret, actual_ret, type_parameter_names, substitution, diagnostic_span,
+                type_parameter_source_argument_index, argument_index))
           end,
         _ =>
-          [diagnostic_error(
-            'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-            diagnostic_span)]
+          [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       },
     _ =>
       if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
       else
-        [diagnostic_error(
-          'argument expects ' + semantic_type_structure.type_description(expected_type) + ', got ' + semantic_type_structure.type_description(actual_type),
-          diagnostic_span)]
+        [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       end
   }
   end
 end
-    
+
 export fn build_call_type_substitution(
   expected_parameter_types: [Shared<Type>],
   actual_argument_types: [Shared<Type>],
-  type_parameter_names: [string]
+  type_parameter_names: [string],
+  type_parameter_source_argument_index: ref mut Map<string, i32>
 ) -> Map<string, Shared<Type>> = do
   let substitution: Map<string, Shared<Type>> = Map.new()
   let mut index = 0
@@ -224,7 +242,9 @@ export fn build_call_type_substitution(
       actual_argument_types[index],
       type_parameter_names,
       substitution,
-      span_unknown())
+      span_unknown(),
+      type_parameter_source_argument_index,
+      index)
     index = index + 1
   end
   substitution
@@ -237,6 +257,7 @@ export fn call_argument_unification_diagnostics(
   argument_expressions: [Shared<Expr>]
 ) -> [Diagnostic] = do
   let substitution: Map<string, Shared<Type>> = Map.new()
+  let type_parameter_source_argument_index: Map<string, i32> = Map.new()
   let mut collected: [Diagnostic] = []
   let mut index = 0
   while index < expected_parameter_types.length() && index < actual_argument_types.length() do
@@ -247,8 +268,27 @@ export fn call_argument_unification_diagnostics(
         actual_argument_types[index],
         type_parameter_names,
         substitution,
-        expr_span(argument_expressions[index])))
+        expr_span(argument_expressions[index]),
+        type_parameter_source_argument_index,
+        index))
     index = index + 1
   end
   collected
 end
+
+export fn type_parameter_source_argument_span(
+  type_parameter_name: string,
+  type_parameter_source_argument_index: Map<string, i32>,
+  argument_expressions: [Shared<Expr>],
+  fallback_span: Span
+) -> Span =
+  if type_parameter_source_argument_index.has(type_parameter_name) then
+    const argument_index = type_parameter_source_argument_index.get(type_parameter_name)
+    if argument_index >= 0 && argument_index < argument_expressions.length() then
+      expr_span(argument_expressions[argument_index])
+    else
+      fallback_span
+    end
+  else
+    fallback_span
+  end

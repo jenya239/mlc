@@ -339,7 +339,7 @@ parameter_index = parameter_index + 1;
   infer_result::InferResult inference_result = infer::infer_expr(body_partial_application, inference_context);
   std::shared_ptr<registry::Type> expected_type = registry::type_from_annotation(return_type_annotation);
   std::shared_ptr<registry::Type> actual_type = inference_result.inferred_type;
-  mlc::Array<ast::Diagnostic> return_type_errors = type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !semantic_type_structure::types_structurally_equal(expected_type, actual_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("return type: expected ") + semantic_type_structure::type_description(expected_type) + mlc::String(", got ") + semantic_type_structure::type_description(actual_type), ast::expr_span(body))} : mlc::Array<ast::Diagnostic>{};
+  mlc::Array<ast::Diagnostic> return_type_errors = type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !semantic_type_structure::types_structurally_equal(expected_type, actual_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("return type: expected ") + semantic_type_structure::type_description(expected_type) + mlc::String(", got ") + semantic_type_structure::type_description(actual_type), ast::expr_span(body), mlc::String("E004"))} : mlc::Array<ast::Diagnostic>{};
   all_diagnostics = ast::diagnostics_append(ast::diagnostics_append(all_diagnostics, inference_result.errors), return_type_errors);
   return std::make_tuple();
  }(); },

@@ -187,7 +187,7 @@ export fn infer_expr_call(
         params_for_unify, argument_inferred_types, callee_type_parameter_names, effective_args)
       const bound_errors = trait_bound_diagnostics(
         callee_name, params_for_unify, argument_inferred_types,
-        callee_type_parameter_names, call_source_span, inference_context)
+        callee_type_parameter_names, call_source_span, effective_args, inference_context)
       InferResult {
         inferred_type: non_constructor_output.inferred_type,
         errors: diagnostics_append(

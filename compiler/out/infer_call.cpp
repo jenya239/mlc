@@ -167,7 +167,7 @@ return callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(inferen
   return semantic_type_structure::type_is_function(function_result.inferred_type) && got >= min_arity && got <= max_arity ? [&]() -> infer_result::InferResult { 
   mlc::Array<std::shared_ptr<registry::Type>> params_for_unify = take_first_param_types(callee_parameter_types, got);
   mlc::Array<ast::Diagnostic> unification_errors = call_argument_unify::call_argument_unification_diagnostics(params_for_unify, argument_inferred_types, callee_type_parameter_names, effective_args);
-  mlc::Array<ast::Diagnostic> bound_errors = infer_trait_bounds::trait_bound_diagnostics(callee_name, params_for_unify, argument_inferred_types, callee_type_parameter_names, call_source_span, inference_context);
+  mlc::Array<ast::Diagnostic> bound_errors = infer_trait_bounds::trait_bound_diagnostics(callee_name, params_for_unify, argument_inferred_types, callee_type_parameter_names, call_source_span, effective_args, inference_context);
   return infer_result::InferResult{non_constructor_output.inferred_type, ast::diagnostics_append(ast::diagnostics_append(non_constructor_output.errors, unification_errors), bound_errors)};
  }() : non_constructor_output;
  }();

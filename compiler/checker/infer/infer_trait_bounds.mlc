@@ -1,10 +1,10 @@
 // Trait bound checking at call sites.
 // No dependency on infer_expr — operates on already-inferred argument types.
 
-import { Diagnostic, Span, diagnostic_error, diagnostics_append } from '../../frontend/ast'
+import { Expr, Diagnostic, Span, diagnostic_error, diagnostics_append, expr_span } from '../../frontend/ast'
 import { Type } from '../registry'
 import { CheckContext } from '../check/check_context'
-import { build_call_type_substitution } from '../check/call_argument_unify'
+import { build_call_type_substitution, type_parameter_source_argument_span } from '../check/call_argument_unify'
 
 fn type_name_for_bound_check(type_value: Shared<Type>) -> string =
   match type_value {
@@ -19,6 +19,8 @@ fn check_one_type_param_bounds(
   type_param: string,
   bounds: [string],
   substitution: Map<string, Shared<Type>>,
+  type_parameter_source_argument_index: Map<string, i32>,
+  argument_expressions: [Shared<Expr>],
   call_source_span: Span,
   inference_context: CheckContext
 ) -> [Diagnostic] = do
@@ -27,13 +29,16 @@ fn check_one_type_param_bounds(
     const actual_type = substitution.get(type_param)
     const actual_name = type_name_for_bound_check(actual_type)
     if actual_name != '' then
+      const bound_diagnostic_span =
+        type_parameter_source_argument_span(
+          type_param, type_parameter_source_argument_index, argument_expressions, call_source_span)
       let mut trait_index = 0
       while trait_index < bounds.length() do
         const required_trait = bounds[trait_index]
         if !inference_context.registry.type_implements_trait(actual_name, required_trait) then
           param_errors = diagnostics_append(param_errors, [diagnostic_error(
             'type ' + actual_name + ' does not implement ' + required_trait,
-            call_source_span)])
+            bound_diagnostic_span)])
         end
         trait_index = trait_index + 1
       end
@@ -48,14 +53,19 @@ export fn trait_bound_diagnostics(
   argument_inferred_types: [Shared<Type>],
   callee_type_parameter_names: [string],
   call_source_span: Span,
+  argument_expressions: [Shared<Expr>],
   inference_context: CheckContext
 ) -> [Diagnostic] = do
   const bounds_per_param = inference_context.registry.fn_trait_bounds(callee_name)
   if bounds_per_param.length() == 0 then
     do const empty_bound_errors: [Diagnostic] = []; empty_bound_errors end
   else
+    let type_parameter_source_argument_index: Map<string, i32> = Map.new()
     const substitution = build_call_type_substitution(
-      callee_parameter_types, argument_inferred_types, callee_type_parameter_names)
+      callee_parameter_types,
+      argument_inferred_types,
+      callee_type_parameter_names,
+      type_parameter_source_argument_index)
     let mut bound_errors: [Diagnostic] = []
     let mut param_index = 0
     while param_index < callee_type_parameter_names.length() && param_index < bounds_per_param.length() do
@@ -63,7 +73,14 @@ export fn trait_bound_diagnostics(
       const bounds = bounds_per_param[param_index]
       bound_errors = diagnostics_append(
         bound_errors,
-        check_one_type_param_bounds(type_param, bounds, substitution, call_source_span, inference_context))
+        check_one_type_param_bounds(
+          type_param,
+          bounds,
+          substitution,
+          type_parameter_source_argument_index,
+          argument_expressions,
+          call_source_span,
+          inference_context))
       param_index = param_index + 1
     end
     bound_errors

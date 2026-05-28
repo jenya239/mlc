@@ -1,7 +1,7 @@
 // Checker entry: name resolution + type inference over a program (or entry slice).
 
 import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
-         Diagnostic, diagnostic_error, diagnostics_append, diagnostics_to_strings, expr_span,
+         Diagnostic, diagnostic_error, diagnostic_error_with_code, diagnostics_append, diagnostics_to_strings, expr_span,
          Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span,
          span_unknown, TypeVariant } from '../../frontend/ast'
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/ast'
@@ -419,9 +419,10 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         const actual_type = inference_result.inferred_type
         const return_type_errors: [Diagnostic] =
           if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_structurally_equal(expected_type, actual_type) then
-            [diagnostic_error(
+            [diagnostic_error_with_code(
               'return type: expected ' + type_description(expected_type) + ', got ' + type_description(actual_type),
-              expr_span(body))]
+              expr_span(body),
+              'E004')]
           else [] end
         all_diagnostics = diagnostics_append(
           diagnostics_append(all_diagnostics, inference_result.errors),

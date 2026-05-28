@@ -43,8 +43,13 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('fn returning literal - 0 errors',
     check_error_count('fn f() -> i32 = 42'), 0))
 
-  results.push(assert_true('fn return type mismatch — error',
-    first_checker_error_line('fn f() -> i32 = "hello"').contains('return type: expected i32, got string')))
+  results.push(assert_diagnostic_at_with_code(
+    'fn return type mismatch — span on body expression',
+    first_checker_error_line('fn f() -> i32 = "hello"'),
+    1,
+    17,
+    'return type: expected i32, got string',
+    'E004'))
 
   results.push(assert_eq_int('fn return type matches — 0 errors',
     check_error_count('fn f() -> string = "hello"'), 0))
@@ -113,6 +118,13 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int('trait bound: call with implementing type — 0 errors',
     check_error_count('type Display { fn show(self: Self) -> string }\nextend i32 : Display { fn show(self: i32) -> string = self.to_string() }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)'), 0))
+
+  results.push(assert_diagnostic_at(
+    'trait bound: non-implementing type — span on argument',
+    first_checker_error_line('type Display { fn show(self: Self) -> string }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)'),
+    3,
+    32,
+    'does not implement Display'))
 
   results.push(assert_true('trait bound: call with non-implementing type — error',
     first_checker_error_line('type Display { fn show(self: Self) -> string }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)').contains('does not implement Display')))
@@ -414,12 +426,13 @@ export fn checker_tests() -> [TestResult] = do
     18,
     'expected 1 arguments, got 2'))
 
-  results.push(assert_diagnostic_at(
+  results.push(assert_diagnostic_at_with_code(
     'infer: user function call argument type mismatch — position on argument',
     first_checker_error_line('fn f(x: i32) -> i32 = x\nfn g() -> i32 = f("str")'),
     2,
     19,
-    'argument expects i32, got string'))
+    'argument expects i32, got string',
+    'E003'))
 
   results.push(assert_diagnostic_at_with_code(
     'infer: called value is not a function — position on ( of call',
