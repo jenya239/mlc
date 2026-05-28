@@ -50,7 +50,7 @@ end
 // --- Name check rule functions (per expression form) -----------------------
 
 fn check_names_identifier(name: string, locals: [string], globals: Map<string, bool>, source_span: Span) -> [Diagnostic] =
-  if !scope_contains(locals, name) && !globals.has(name) then [diagnostic_error(`undefined: ${name}`, source_span)]
+  if !scope_contains(locals, name) && !globals.has(name) then [diagnostic_error_with_code(`undefined: ${name}`, source_span, 'E001')]
   else do let empty_ident_diagnostics: [Diagnostic] = []; empty_ident_diagnostics end
   end
 

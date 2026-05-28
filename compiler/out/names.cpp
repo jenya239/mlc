@@ -114,7 +114,7 @@ index = index + 1;
  }(); } if (std::holds_alternative<ast::PatOr>((*pattern))) { auto _v_pator = std::get<ast::PatOr>((*pattern)); auto [alts, _w0] = _v_pator; return alts.size() > 0 ? collect_pattern_bindings(alts[0], accumulator) : accumulator; } return accumulator; }();
 }
 
-mlc::Array<ast::Diagnostic> check_names_identifier(mlc::String name, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals, ast::Span source_span) noexcept{return !scope_contains(locals, name) && !globals.has(name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("undefined: ") + name, source_span)} : [&]() -> mlc::Array<ast::Diagnostic> { 
+mlc::Array<ast::Diagnostic> check_names_identifier(mlc::String name, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals, ast::Span source_span) noexcept{return !scope_contains(locals, name) && !globals.has(name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("undefined: ") + name, source_span, mlc::String("E001"))} : [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::Array<ast::Diagnostic> empty_ident_diagnostics = {};
   return empty_ident_diagnostics;
  }();}

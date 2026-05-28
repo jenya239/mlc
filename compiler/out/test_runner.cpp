@@ -10,6 +10,8 @@ test_runner::TestResult assert_eq_str(mlc::String test_name, mlc::String actual,
 
 test_runner::TestResult assert_diagnostic_at(mlc::String test_name, mlc::String formatted_diagnostic, int expected_line, int expected_column, mlc::String message_needle) noexcept;
 
+test_runner::TestResult assert_diagnostic_at_with_code(mlc::String test_name, mlc::String formatted_diagnostic, int expected_line, int expected_column, mlc::String message_needle, mlc::String expected_code) noexcept;
+
 mlc::String run_all(mlc::Array<test_runner::TestResult> results) noexcept;
 
 test_runner::TestResult assert_true(mlc::String test_name, bool condition) noexcept{
@@ -30,11 +32,17 @@ test_runner::TestResult fail_variant = Fail{test_name, mlc::String("expected '")
 return actual == expected ? pass_variant : fail_variant;
 }
 
-test_runner::TestResult assert_diagnostic_at(mlc::String test_name, mlc::String formatted_diagnostic, int expected_line, int expected_column, mlc::String message_needle) noexcept{
+test_runner::TestResult assert_diagnostic_at(mlc::String test_name, mlc::String formatted_diagnostic, int expected_line, int expected_column, mlc::String message_needle) noexcept{return assert_diagnostic_at_with_code(test_name, formatted_diagnostic, expected_line, expected_column, message_needle, mlc::String(""));}
+
+test_runner::TestResult assert_diagnostic_at_with_code(mlc::String test_name, mlc::String formatted_diagnostic, int expected_line, int expected_column, mlc::String message_needle, mlc::String expected_code) noexcept{
 mlc::String line_column = mlc::to_string(expected_line) + mlc::String(":") + mlc::to_string(expected_column);
 bool has_message = formatted_diagnostic.contains(message_needle);
+bool has_code = expected_code.length() > 0 ? formatted_diagnostic.contains(mlc::String("[") + expected_code + mlc::String("]:")) : true;
 bool has_position = formatted_diagnostic.contains(mlc::String("  --> ") + line_column) || formatted_diagnostic.contains(mlc::String("  --> ")) && formatted_diagnostic.contains(mlc::String(":") + line_column);
-return has_message && has_position ? test_runner::TestResult(Pass{test_name}) : test_runner::TestResult(Fail{test_name, mlc::String("expected needle '") + message_needle + mlc::String("' and location '  --> …") + line_column + mlc::String("', got '") + formatted_diagnostic + mlc::String("'")});
+return has_message && has_code && has_position ? test_runner::TestResult(Pass{test_name}) : test_runner::TestResult([&]() -> Fail { 
+  mlc::String code_suffix = expected_code.length() > 0 ? mlc::String(" and code [") + expected_code + mlc::String("]") : mlc::String("");
+  return Fail{test_name, mlc::String("expected needle '") + message_needle + mlc::String("'") + code_suffix + mlc::String(" and location '  --> …") + line_column + mlc::String("', got '") + formatted_diagnostic + mlc::String("'")};
+ }());
 }
 
 mlc::String run_all(mlc::Array<test_runner::TestResult> results) noexcept{

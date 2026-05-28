@@ -18,7 +18,7 @@ struct CppExpr;
 
 struct Span {mlc::String file;int line;int column;};
 
-struct Diagnostic {mlc::String message;ast::Span span;mlc::String severity;};
+struct Diagnostic {mlc::String message;ast::Span span;mlc::String severity;mlc::String code;};
 
 struct TyI32;struct TyString;struct TyBool;struct TyUnit;struct TyNamed;struct TyArray;struct TyShared;struct TyGeneric;struct TyFn;struct TyAssoc;using TypeExpr = std::variant<TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc>;struct TyI32 {};struct TyString {};struct TyBool {};struct TyUnit {};struct TyNamed {mlc::String field0;};struct TyArray {std::shared_ptr<ast::TypeExpr> field0;};struct TyShared {std::shared_ptr<ast::TypeExpr> field0;};struct TyGeneric {mlc::String field0;mlc::Array<std::shared_ptr<ast::TypeExpr>> field1;};struct TyFn {mlc::Array<std::shared_ptr<ast::TypeExpr>> field0;std::shared_ptr<ast::TypeExpr> field1;};struct TyAssoc {mlc::String field0;mlc::String field1;};
 
@@ -101,7 +101,11 @@ std::shared_ptr<ast::Expr> expr_placeholder() noexcept;
 
 ast::Diagnostic diagnostic_new(mlc::String severity, mlc::String message, ast::Span span) noexcept;
 
+ast::Diagnostic diagnostic_new_with_code(mlc::String severity, mlc::String message, ast::Span span, mlc::String code) noexcept;
+
 ast::Diagnostic diagnostic_error(mlc::String message, ast::Span span) noexcept;
+
+ast::Diagnostic diagnostic_error_with_code(mlc::String message, ast::Span span, mlc::String code) noexcept;
 
 mlc::String diagnostic_format(ast::Diagnostic diagnostic) noexcept;
 

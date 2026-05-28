@@ -1,6 +1,6 @@
 // Unit tests for the checker (check function).
 
-import { TestResult, assert_eq_int, assert_eq_str, assert_true, assert_diagnostic_at } from './test_runner'
+import { TestResult, assert_eq_int, assert_eq_str, assert_true, assert_diagnostic_at, assert_diagnostic_at_with_code } from './test_runner'
 import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_source_path } from '../frontend/parser/decls'
 import { check, check_with_context } from '../checker/check/check'
@@ -69,24 +69,26 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true('undefined name - at least 1 error',
     check_error_count('fn f() -> i32 = undefined_name') > 0))
 
-  results.push(assert_diagnostic_at(
+  results.push(assert_diagnostic_at_with_code(
     'undefined ident: line and column (single line body)',
     first_checker_error_line('fn f() -> i32 = badident'),
     1,
     17,
-    'undefined: badident'))
+    'undefined: badident',
+    'E001'))
 
-  results.push(assert_diagnostic_at(
+  results.push(assert_diagnostic_at_with_code(
     'undefined ident: line and column (next line, indented)',
     first_checker_error_line('fn f() -> i32 =\n  badident'),
     2,
     3,
-    'undefined: badident'))
+    'undefined: badident',
+    'E001'))
 
   results.push(assert_eq_str(
     'undefined ident: diagnostic includes source path',
     first_checker_error_line_with_path('fn f() -> i32 = badident', 'unit.mlc'),
-    'error: undefined: badident\n  --> unit.mlc:1:17'))
+    'error[E001]: undefined: badident\n  --> unit.mlc:1:17'))
 
   results.push(assert_eq_int('type decl with variants - 0 errors',
     check_error_count('type Color = Red | Green | Blue'), 0))

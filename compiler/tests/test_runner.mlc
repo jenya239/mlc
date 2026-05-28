@@ -26,24 +26,42 @@ export fn assert_eq_str(test_name: string, actual: string, expected: string) -> 
   if actual == expected then pass_variant else fail_variant end
 end
 
-// `formatted_diagnostic` matches rustc-style `diagnostic_format`: "severity: message" + optional "  --> file:line:col".
+// `formatted_diagnostic` matches rustc-style `diagnostic_format`: "severity[code]: message" or "severity: message" + optional "  --> file:line:col".
 export fn assert_diagnostic_at(
   test_name: string,
   formatted_diagnostic: string,
   expected_line: i32,
   expected_column: i32,
   message_needle: string
+) -> TestResult =
+  assert_diagnostic_at_with_code(test_name, formatted_diagnostic, expected_line, expected_column, message_needle, '')
+
+export fn assert_diagnostic_at_with_code(
+  test_name: string,
+  formatted_diagnostic: string,
+  expected_line: i32,
+  expected_column: i32,
+  message_needle: string,
+  expected_code: string
 ) -> TestResult = do
   const line_column = expected_line.to_string() + ":" + expected_column.to_string()
   const has_message = formatted_diagnostic.contains(message_needle)
+  const has_code =
+    if expected_code.length() > 0 then formatted_diagnostic.contains("[" + expected_code + "]:")
+    else true
+    end
   const has_position =
     formatted_diagnostic.contains("  --> " + line_column)
     || (formatted_diagnostic.contains("  --> ") && formatted_diagnostic.contains(":" + line_column))
-  if has_message && has_position then Pass { name: test_name }
-  else Fail {
-    name: test_name,
-    message: `expected needle '${message_needle}' and location '  --> …${line_column}', got '${formatted_diagnostic}'`
-  }
+  if has_message && has_code && has_position then Pass { name: test_name }
+  else do
+    const code_suffix =
+      if expected_code.length() > 0 then ` and code [${expected_code}]` else '' end
+    Fail {
+      name: test_name,
+      message: `expected needle '${message_needle}'${code_suffix} and location '  --> …${line_column}', got '${formatted_diagnostic}'`
+    }
+  end
   end
 end
 

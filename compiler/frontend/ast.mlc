@@ -10,16 +10,27 @@ export fn span_unknown() -> Span = Span { file: '', line: 0, column: 0 }
 
 export fn expr_placeholder() -> Shared<Expr> = Shared.new(ExprUnit(span_unknown()))
 
-export type Diagnostic = Diagnostic { message: string, span: Span, severity: string }
+export type Diagnostic = Diagnostic { message: string, span: Span, severity: string, code: string }
 
 export fn diagnostic_new(severity: string, message: string, span: Span) -> Diagnostic =
-  Diagnostic { message: message, span: span, severity: severity }
+  diagnostic_new_with_code(severity, message, span, '')
+
+export fn diagnostic_new_with_code(severity: string, message: string, span: Span, code: string) -> Diagnostic =
+  Diagnostic { message: message, span: span, severity: severity, code: code }
 
 export fn diagnostic_error(message: string, span: Span) -> Diagnostic =
   diagnostic_new('error', message, span)
 
+export fn diagnostic_error_with_code(message: string, span: Span, code: string) -> Diagnostic =
+  diagnostic_new_with_code('error', message, span, code)
+
 export fn diagnostic_format(diagnostic: Diagnostic) -> string = do
-  const message_part = diagnostic.severity + ': ' + diagnostic.message
+  const message_part =
+    if diagnostic.code.length() > 0 then
+      diagnostic.severity + "[" + diagnostic.code + "]: " + diagnostic.message
+    else
+      diagnostic.severity + ': ' + diagnostic.message
+    end
   if diagnostic.span.line > 0 then
     const location_part =
       if diagnostic.span.file.length() > 0 then

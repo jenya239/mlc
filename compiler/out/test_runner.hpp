@@ -24,6 +24,8 @@ test_runner::TestResult assert_eq_str(mlc::String test_name, mlc::String actual,
 
 test_runner::TestResult assert_diagnostic_at(mlc::String test_name, mlc::String formatted_diagnostic, int expected_line, int expected_column, mlc::String message_needle) noexcept;
 
+test_runner::TestResult assert_diagnostic_at_with_code(mlc::String test_name, mlc::String formatted_diagnostic, int expected_line, int expected_column, mlc::String message_needle, mlc::String expected_code) noexcept;
+
 mlc::String run_all(mlc::Array<test_runner::TestResult> results) noexcept;
 
 } // namespace test_runner

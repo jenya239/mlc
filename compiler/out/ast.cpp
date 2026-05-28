@@ -12,7 +12,11 @@ std::shared_ptr<ast::Expr> expr_placeholder() noexcept;
 
 ast::Diagnostic diagnostic_new(mlc::String severity, mlc::String message, ast::Span span) noexcept;
 
+ast::Diagnostic diagnostic_new_with_code(mlc::String severity, mlc::String message, ast::Span span, mlc::String code) noexcept;
+
 ast::Diagnostic diagnostic_error(mlc::String message, ast::Span span) noexcept;
+
+ast::Diagnostic diagnostic_error_with_code(mlc::String message, ast::Span span, mlc::String code) noexcept;
 
 mlc::String diagnostic_format(ast::Diagnostic diagnostic) noexcept;
 
@@ -44,12 +48,16 @@ ast::Span span_unknown() noexcept{return ast::Span{mlc::String(""), 0, 0};}
 
 std::shared_ptr<ast::Expr> expr_placeholder() noexcept{return std::make_shared<ast::Expr>(ast::ExprUnit(span_unknown()));}
 
-ast::Diagnostic diagnostic_new(mlc::String severity, mlc::String message, ast::Span span) noexcept{return ast::Diagnostic{message, span, severity};}
+ast::Diagnostic diagnostic_new(mlc::String severity, mlc::String message, ast::Span span) noexcept{return diagnostic_new_with_code(severity, message, span, mlc::String(""));}
+
+ast::Diagnostic diagnostic_new_with_code(mlc::String severity, mlc::String message, ast::Span span, mlc::String code) noexcept{return ast::Diagnostic{message, span, severity, code};}
 
 ast::Diagnostic diagnostic_error(mlc::String message, ast::Span span) noexcept{return diagnostic_new(mlc::String("error"), message, span);}
 
+ast::Diagnostic diagnostic_error_with_code(mlc::String message, ast::Span span, mlc::String code) noexcept{return diagnostic_new_with_code(mlc::String("error"), message, span, code);}
+
 mlc::String diagnostic_format(ast::Diagnostic diagnostic) noexcept{
-mlc::String message_part = diagnostic.severity + mlc::String(": ") + diagnostic.message;
+mlc::String message_part = diagnostic.code.length() > 0 ? diagnostic.severity + mlc::String("[") + diagnostic.code + mlc::String("]: ") + diagnostic.message : diagnostic.severity + mlc::String(": ") + diagnostic.message;
 return diagnostic.span.line > 0 ? [&]() -> mlc::String { 
   mlc::String location_part = diagnostic.span.file.length() > 0 ? diagnostic.span.file + mlc::String(":") + mlc::to_string(diagnostic.span.line) + mlc::String(":") + mlc::to_string(diagnostic.span.column) : mlc::to_string(diagnostic.span.line) + mlc::String(":") + mlc::to_string(diagnostic.span.column);
   return message_part + mlc::String("\n  --> ") + location_part;
