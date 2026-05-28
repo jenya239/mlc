@@ -10,7 +10,7 @@
 | step_last | 5 |
 | run_tests | 692 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS closed (`f6863fe`) |
-| agent_token_last | (pending) |
+| agent_token_last | cr-agent-a5b686bc-303e-4ffb-8cf8-d39ae5fb4ff4 |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 5 — track closed)
 
