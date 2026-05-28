@@ -10,7 +10,7 @@
 | step_last | plan-refresh |
 | run_tests | 680 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS active (step 1) |
-| agent_token_last | (this turn) |
+| agent_token_last | cr-agent-91f2bbcf-74be-45ee-892d-df9ce4430240 |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_DIAGNOSTICS)
 
@@ -19,7 +19,7 @@
 | instructions_rev | 2026-05-28-self-loop |
 | driver_turns_since_plan | 0 |
 | step | plan-refresh |
-| done | TRACK_SECURITY closed; opened TRACK_DIAGNOSTICS (5 steps: catalog, binary/type, method receiver, infer/transform, audit) |
+| done | TRACK_SECURITY closed; opened TRACK_DIAGNOSTICS (5 steps); docs `24da4b0` |
 | verify | docs only |
 | uncommitted_files | 0 |
 | next | ROLE=Driver STEP=1 TRACK_DIAGNOSTICS (enqueued) |
