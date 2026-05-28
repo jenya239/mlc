@@ -55,7 +55,15 @@ export fn pass_type_tests() -> [TestResult] = do
   results.push(assert_true('parse_compile_options --check-only flag',
     parsed.check_only))
 
+  const compile_commands_parsed = parse_compile_options(['--emit-compile-commands', 'entry.mlc', '-o', 'build'])
+  results.push(assert_true('parse_compile_options --emit-compile-commands flag',
+    compile_commands_parsed.emit_compile_commands))
+  results.push(assert_eq_str('parse_compile_options --emit-compile-commands entry',
+    compile_commands_parsed.entry_path, 'entry.mlc'))
+
   const default_parsed = parse_compile_options(['entry.mlc'])
+  results.push(assert_true('parse_compile_options default emit_compile_commands false',
+    !default_parsed.emit_compile_commands))
   results.push(assert_true('parse_compile_options default temp out dir',
     default_parsed.out_directory.contains('mlcc_')))
 

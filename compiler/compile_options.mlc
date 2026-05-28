@@ -2,11 +2,12 @@ export type CompileOptions = CompileOptions {
   entry_path: string,
   out_directory: string,
   profile_enabled: bool,
-  check_only: bool
+  check_only: bool,
+  emit_compile_commands: bool
 }
 
 export fn compile_usage_message() -> string =
-  'Usage: mlcc [--check-only] [--profile] <source.mlc> [-o out_dir]'
+  'Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] <source.mlc> [-o out_dir]'
 
 fn resolve_default_out_directory(check_only: bool, out_directory_explicit: bool, out_directory: string) -> string =
   if check_only && !out_directory_explicit then ''
@@ -17,6 +18,7 @@ fn resolve_default_out_directory(check_only: bool, out_directory_explicit: bool,
 export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
   let mut profile_enabled = false
   let mut check_only = false
+  let mut emit_compile_commands = false
   let mut out_directory = ''
   let mut out_directory_explicit = false
   let mut entry_path = ''
@@ -25,6 +27,7 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
     const argument = arguments[index]
     if argument == '--profile' then profile_enabled = true
     else if argument == '--check-only' then check_only = true
+    else if argument == '--emit-compile-commands' then emit_compile_commands = true
     else if argument == '-o' && index + 1 < arguments.length() then
       out_directory = arguments[index + 1]
       out_directory_explicit = true
@@ -37,6 +40,7 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
     entry_path: entry_path,
     out_directory: resolve_default_out_directory(check_only, out_directory_explicit, out_directory),
     profile_enabled: profile_enabled,
-    check_only: check_only
+    check_only: check_only,
+    emit_compile_commands: emit_compile_commands
   }
 end
