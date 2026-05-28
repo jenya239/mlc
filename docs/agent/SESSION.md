@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
-| role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | run_tests | 607 |
-| TRACK_PLAN | TRACK_PERFORMANCE closed (`0671422`) |
-| agent_token_last | cr-agent-1c979466-8fe6-46aa-b81c-2333f626a9c7 |
+| TRACK_PLAN | TRACK_SECURITY active (step 1 pending) |
+| agent_token_last | pending register |
+
+### Turn 2026-05-28 (Planner plan-refresh — TRACK_SECURITY)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_PERFORMANCE closed; opened TRACK_SECURITY (4 steps: corpus, generator, in-process sweep, panic audit) |
+| verify | n/a (docs only) |
+| uncommitted_files | 3 docs |
+| next | ROLE=Driver STEP=1 TRACK_SECURITY (enqueued) |
 
 ### Turn 2026-05-28 (PERF step 5)
 
@@ -22,7 +34,7 @@
 | done | re-baseline baseline_reference.txt post steps 3–4; TRACK_PERFORMANCE closed |
 | verify | 607 pass; compare_baseline PASS (2127ms); baseline commit 0671422 |
 | uncommitted_files | 0 |
-| next | ROLE=Planner STEP=plan-refresh (security focus) |
+| next | ROLE=Planner STEP=plan-refresh (enqueued, token 1c979466) |
 
 ### Turn 2026-05-28 (PERF step 4)
 

@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — compile-time baseline, CI regression gate, hotspot fixes (PLAN §1). [TRACK_SAFETY.md](TRACK_SAFETY.md) **closed** (`32f8335`). [TRACK_PHASE1.md](TRACK_PHASE1.md) **closed** (`fd42eab`). Parser `ref mut` = deferred separate branch.
+[TRACK_SECURITY.md](TRACK_SECURITY.md) — **active** (step 1): fuzz depth, negative corpus, panic audit (PLAN §Phase 1 §3–§4). [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) **closed** (`0671422`). [TRACK_SAFETY.md](TRACK_SAFETY.md) **closed** (`32f8335`). [TRACK_PHASE1.md](TRACK_PHASE1.md) **closed** (`fd42eab`). Parser `ref mut` = deferred separate branch.
 
 ## Step sizing (good vs bad)
 
