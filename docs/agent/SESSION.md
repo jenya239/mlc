@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | run_tests | 706 |
-| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 4) |
-| agent_token_last | cr-agent-b797a2b4-00cc-4cbc-a9c6-46470812a7d5 |
+| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 5) |
+| agent_token_last | cr-agent-04356f87-26b2-44a3-8aad-32765ff96e48 |
+
+### Turn 2026-05-28 (Driver FUZZ_DIFF step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | build_tests.sh phase 5/5 fuzz differential hook |
+| verify | 706 pass; full gate ~45s; no compiler/** — self-host skipped |
+| next | ROLE=Driver STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (Driver FUZZ_DIFF step 3)
 
