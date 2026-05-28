@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) (**closed**, `e826f1a`)
 
-## Status: **active** (step 3 pending)
+## Status: **active** (step 4 pending)
 
 **Goal:** mlcc `--check-only` exit codes match Ruby checker on `negative_corpus/`; shrink `negative_corpus_known_divergences.txt` to zero (or document intentional mlcc-stricter cases).
 
@@ -35,7 +35,7 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 |------|------|--------|
 | 1 | `parse_unclosed_block.mlc` + `parse_unclosed_record_type.mlc` — structured parse error, exit 1 | done |
 | 2 | `parse_empty_type_body.mlc` + `parse_invalid_trait_syntax.mlc` | done (`221fae6`) |
-| 3 | `parse_noise.mlc` — reject trailing garbage | pending |
+| 3 | `parse_noise.mlc` — reject trailing garbage | done |
 | 4 | `lex_unclosed_string.mlc` — parity decision + differential list update | pending |
 | 5 | Audit `negative_corpus_known_divergences.txt`; close track | pending |
 
@@ -70,6 +70,12 @@ Steps 2–3 side-effect parity (parse errors under `--check-only`): `parse_empty
 - Parser errors: `expected type body after =`; `expected } in trait body` (decls.mlc).
 - Tests: corpus-shaped `test_parser.mlc` assertions; drop misleading `parser_garbage_smoke` for invalid trait.
 
+## Step 3 detail
+
+- Audit only: parity via step 1 `--check-only` (mlcc=1 ruby=1); corpus `fn @@@`.
+- Parser errors: `expected identifier in function name`, `unexpected token in expression`.
+- Test: corpus-shaped `test_parser.mlc`; drop misleading `parser_garbage_smoke` for parse_noise.
+
 ## Next step (Driver)
 
-**STEP=3** — `parse_noise.mlc` reject trailing garbage (audit: may already be parity via step 1).
+**STEP=4** — `lex_unclosed_string.mlc` parity decision + differential list update.
