@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| run_tests | 742 |
-| TRACK_PLAN | TRACK_BUILD **active** (step 4) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| run_tests | 751 |
+| TRACK_PLAN | TRACK_BUILD **active** (step 5) |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
+
+### Turn 2026-05-28 (Driver BUILD step 3)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 3 |
+| step | 3 |
+| done | compile_commands.mlc + pipeline wiring; commit `a60052a` |
+| verify | 742 pass; self-host diff empty |
+| next | ROLE=Driver STEP=4 (enqueued) |
 
 ### Turn 2026-05-28 (Driver BUILD step 2 — idempotent skip)
 
