@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_COVERAGE.md](TRACK_COVERAGE.md) (**closed**, `9bddbb3`), [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) (**closed**, `f6863fe`)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** replace remaining bare `diagnostic_error(` in checker with `diagnostic_error_with_code`; extend catalog from E035; negative tests assert exact `error[Exxx]:` format where touched.
 
