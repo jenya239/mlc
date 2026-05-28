@@ -10,7 +10,15 @@
 | step_last | plan-refresh |
 | run_tests | 706 |
 | TRACK_PLAN | TRACK_FUZZ_DIFF active (step 1) |
-| agent_token_last | cr-agent-b0518134-e401-4810-8c8b-7121519de85b |
+| agent_token_last | cr-agent-0b75d382-ec1e-44da-a87a-eb6066752a95 |
+
+### Turn 2026-05-28 (Planner plan-refresh idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| step | plan-refresh (skip) |
+| done | already done (`f13239c`); TRACK_FUZZ_DIFF active |
+| next | ROLE=Driver STEP=1 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_FUZZ_DIFF)
 
