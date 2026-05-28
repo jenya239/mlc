@@ -54,11 +54,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Diagnostics (remaining codes):** [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) — **closed** (`d055c49`)
 - **Fuzz differential:** [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) — **closed** (`5463361`)
 - **Parser panic audit:** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **closed** (`5525d03`)
-- **Checker/codegen spans:** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **active** (step 1)
+- **Checker/codegen spans:** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **closed** (`a8bf7a1`)
 
-## Next step (Driver)
+## Next step (Planner)
 
-**STEP=1** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — `checker/check/` span fixes.
+TRACK_SPAN_CHECKER closed. **plan-refresh** for next track.
 
 ## Planner checklist (2026-05-28 plan-refresh — SPAN_CHECKER)
 
