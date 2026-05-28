@@ -47,4 +47,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=4** — infer.mlc + infer_question_expression.mlc spread, let-else, private ctor.
+**STEP=5** — derive_validation.mlc + transform expand modules + audit; close track.

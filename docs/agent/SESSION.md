@@ -6,11 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 7 |
-| step_last | 4 |
+| driver_turns_since_plan | 8 |
+| step_last | 4 (skip) |
 | run_tests | 706 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS2 active (step 5) |
 | agent_token_last | cr-agent-fd23897b-4271-4b46-8be6-745497531cce |
+
+### Turn 2026-05-28 (DIAGNOSTICS2 step 4 idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 8 |
+| step | 4 (skip) |
+| done | already done (`678895a`, docs `63bb766`); stale enqueue |
+| next | ROLE=Driver STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS2 step 4)
 
