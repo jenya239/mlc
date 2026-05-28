@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| run_tests | 752 |
-| TRACK_PLAN | TRACK_SPAN_IR **active** (step 2) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| run_tests | 753 |
+| TRACK_PLAN | TRACK_SPAN_IR **active** (step 3) |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
+
+### Turn 2026-05-28 (Driver SPAN_IR step 2)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 2 |
+| step | 2 |
+| done | SDeclType span from DeclType.name_span; commit `TBD` |
+| verify | 753 pass; self-host diff empty |
+| next | ROLE=Driver STEP=3 (enqueued) |
 
 ### Turn 2026-05-28 (Driver SPAN_IR step 1)
 

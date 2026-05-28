@@ -56,11 +56,19 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Parser panic audit:** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **closed** (`5525d03`)
 - **Checker/codegen spans:** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **closed** (`a8bf7a1`)
 - **Build determinism:** [TRACK_BUILD.md](TRACK_BUILD.md) — **closed** (`1d6f4c5`)
-- **SemanticIR decl spans:** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **active** (step 1)
+- **SemanticIR decl spans:** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **active** (step 3)
 
 ## Next step (Driver)
 
-**STEP=1** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — `SDeclFn` span + transform propagation.
+**STEP=1** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — `SDeclFn` span + transform propagation. **done** (`7a0a3cc`)
+
+## Next step (Driver)
+
+**STEP=2** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — `SDeclType` span from `DeclType.name_span`. **done** (`TBD`)
+
+## Next step (Driver)
+
+**STEP=3** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — `SDeclTrait` / `SDeclExtend` spans.
 
 ## Planner checklist (2026-05-28 plan-refresh — SPAN_IR)
 

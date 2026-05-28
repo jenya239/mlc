@@ -86,7 +86,7 @@ end
 
 export fn gen_decl(decl: Shared<SDecl>, context: CodegenContext) -> string =
   match decl {
-    SDeclType(type_name, type_params, variants, derive_traits) =>
+    SDeclType(type_name, type_params, variants, derive_traits, _) =>
       gen_type_decl(context, type_name, type_params, variants) + gen_derive_methods(context, type_name, variants, derive_traits),
     SDeclTrait(name, type_params, methods) => gen_trait_decl(context, name, type_params, methods),
     SDeclFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
@@ -102,7 +102,7 @@ export fn gen_decl(decl: Shared<SDecl>, context: CodegenContext) -> string =
 
 export fn gen_proto(decl: Shared<SDecl>, context: CodegenContext) -> string =
   match decl {
-    SDeclType(_, _, _, _) => '',
+    SDeclType(_, _, _, _, _) => '',
     SDeclTrait(_, _, _) => '',
     SDeclFn(name, type_params, type_bounds, params, ret, body, _, _) =>
       match body { SExprExtern(_, _) => '', _ => gen_fn_proto(name, type_params, type_bounds, params, ret, context) },
@@ -146,7 +146,7 @@ fn extend_cpp_forward_segment(declaration: Shared<SDecl>, codegen_context: Codeg
 
 fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, phase: i32) -> string =
   match declaration {
-    SDeclType(type_name, type_params, variants, derive_traits) =>
+    SDeclType(type_name, type_params, variants, derive_traits, _) =>
       if phase == 0 then gen_type_decl_fwd_only(codegen_context, type_name, type_params, variants)
       else if phase == 1 then
         gen_type_decl_body_only(codegen_context, type_name, type_params, variants) +
@@ -171,12 +171,12 @@ fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, pha
     SDeclAssocBind(_, _, _) => '',
     SDeclExported(inner_declaration) =>
       if phase == 0 then match sdecl_inner(inner_declaration) {
-        SDeclType(type_name, type_params, variants, _) => gen_type_decl_fwd_only(codegen_context, type_name, type_params, variants),
+        SDeclType(type_name, type_params, variants, _, _) => gen_type_decl_fwd_only(codegen_context, type_name, type_params, variants),
         SDeclTrait(name, type_params, methods) => gen_trait_decl(codegen_context, name, type_params, methods),
         _ => ''
       }
       else if phase == 1 then match sdecl_inner(inner_declaration) {
-        SDeclType(type_name, type_params, variants, derive_traits) =>
+        SDeclType(type_name, type_params, variants, derive_traits, _) =>
           gen_type_decl_body_only(codegen_context, type_name, type_params, variants) +
           gen_derive_methods(codegen_context, type_name, variants, derive_traits),
         _ => ''
@@ -192,7 +192,7 @@ fn decl_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext, pha
         _ => gen_proto(inner_declaration, codegen_context)
       }
       else if phase == 3 then match sdecl_inner(inner_declaration) {
-        SDeclType(_, _, _, _) => '',
+        SDeclType(_, _, _, _, _) => '',
         SDeclTrait(_, _, _) => '',
         SDeclFn(_, type_parameters, _, _, _, body, _, _) =>
           if type_parameters.length() > 0 then match body {
@@ -226,7 +226,7 @@ fn exported_type_names_from_decls(decls: [Shared<SDecl>]) -> [string] = do
     match decls[index] {
       SDeclExported(inner) => do
         match sdecl_inner(inner) {
-          SDeclType(type_name, _, _, _) => do names.push(type_name); () end,
+          SDeclType(type_name, _, _, _, _) => do names.push(type_name); () end,
           _ => do () end
         }
         ()

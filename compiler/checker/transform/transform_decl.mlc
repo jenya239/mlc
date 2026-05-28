@@ -25,8 +25,8 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       const coerced_body     = coerce_expr_to_type(typed_body, return_type)
       Shared.new(SDeclFn(name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries, expr_span(body)))
     end,
-    DeclType(type_name, type_params, variants, derive_traits, _) =>
-      Shared.new(SDeclType(type_name, type_params, variants, derive_traits)),
+    DeclType(type_name, type_params, variants, derive_traits, name_span) =>
+      Shared.new(SDeclType(type_name, type_params, variants, derive_traits, name_span)),
     DeclTrait(trait_name, type_params, methods, _) => do
       const typed_methods = transform_decls(methods, registry)
       Shared.new(SDeclTrait(trait_name, type_params, typed_methods))

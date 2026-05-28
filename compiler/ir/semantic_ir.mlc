@@ -64,7 +64,7 @@ export type SStmt =
 // only function bodies switch to SExpr.
 export type SDecl =
   | SDeclFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SExpr>, [WhereClauseBound], Span)
-  | SDeclType(string, [string], [Shared<TypeVariant>], [string])
+  | SDeclType(string, [string], [Shared<TypeVariant>], [string], Span)
   | SDeclTrait(string, [string], [Shared<SDecl>])
   | SDeclExtend(string, string, [Shared<SDecl>])
   | SDeclImport(string, [string])
@@ -160,6 +160,7 @@ export fn sdecl_inner(declaration: Shared<SDecl>) -> Shared<SDecl> =
 export fn sdecl_span(declaration: Shared<SDecl>) -> Span =
   match declaration {
     SDeclFn(_, _, _, _, _, _, _, span) => span,
+    SDeclType(_, _, _, _, span) => span,
     SDeclAssocBind(_, _, span) => span,
     _ => span_unknown()
   }

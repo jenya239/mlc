@@ -29,18 +29,24 @@ fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, bod
   Shared.new(SDeclFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
 end
 
+fn type_decl(name: string, type_params: [string], variants: [Shared<TypeVariant>], derive_traits: [string]) -> Shared<SDecl> =
+  Shared.new(SDeclType(name, type_params, variants, derive_traits, span_unknown()))
+
 fn first_transformed_decl_span(program: Program, registry: TypeRegistry) -> Span = do
   const transformed = transform_program(program, registry)
   if transformed.decls.length() == 0 then span_unknown() else sdecl_span(transformed.decls[0]) end
 end
 
-fn transformed_fn_decl_span(source: string) -> Span = do
+fn transformed_decl_span(source: string) -> Span = do
   const program = parse_program(tokenize(source).tokens)
   match check(program) {
     Ok(checked) => first_transformed_decl_span(program, checked.registry),
     Err(_) => span_unknown()
   }
 end
+
+fn transformed_fn_decl_span(source: string) -> Span = transformed_decl_span(source)
+fn transformed_type_decl_span(source: string) -> Span = transformed_decl_span(source)
 
 fn make_str_expr(text: string) -> Shared<SExpr> = Shared.new(SExprStr(text, tstr(), span_unknown()))
 
@@ -102,22 +108,22 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   // --- gen_decl with SDeclType -------------------------------------------------
 
-  const point_type = Shared.new(SDeclType('Point', [],
-    [record_variant('Point', [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])], []))
+  const point_type = type_decl('Point', [],
+    [record_variant('Point', [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])], [])
 
   results.push(assert_code_contains('gen_decl DeclType: record struct',
     gen_decl(point_type, context), 'Point'))
 
-  const color_type = Shared.new(SDeclType('Color', [],
-    [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], []))
+  const color_type = type_decl('Color', [],
+    [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], [])
 
   results.push(assert_code_contains('gen_decl DeclType: unit variants',
     gen_decl(color_type, context), 'Red'))
 
   // --- derive method generation ------------------------------------------------
 
-  const point_display = Shared.new(SDeclType('Point', [],
-    [record_variant('Point', [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])], ['Display']))
+  const point_display = type_decl('Point', [],
+    [record_variant('Point', [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])], ['Display'])
 
   results.push(assert_code_contains('derive Display record: generates to_string function',
     gen_decl(point_display, context), 'Point_to_string'))
@@ -125,8 +131,8 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains('derive Display record: uses mlc::to_string for i32 field',
     gen_decl(point_display, context), 'mlc::to_string(self.x)'))
 
-  const point_eq = Shared.new(SDeclType('Point', [],
-    [record_variant('Point', [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])], ['Eq']))
+  const point_eq = type_decl('Point', [],
+    [record_variant('Point', [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])], ['Eq'])
 
   results.push(assert_code_contains('derive Eq record: generates operator==',
     gen_decl(point_eq, context), 'operator=='))
@@ -134,8 +140,8 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains('derive Eq record: compares fields',
     gen_decl(point_eq, context), 'a.x == b.x'))
 
-  const color_display = Shared.new(SDeclType('Color', [],
-    [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], ['Display']))
+  const color_display = type_decl('Color', [],
+    [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], ['Display'])
 
   results.push(assert_code_contains('derive Display sum type: generates to_string',
     gen_decl(color_display, context), 'Color_to_string'))
@@ -143,12 +149,12 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains('derive Display sum type: handles Red variant',
     gen_decl(color_display, context), '"Red"'))
 
-  const point_hash = Shared.new(SDeclType('Point', [],
+  const point_hash = type_decl('Point', [],
     [record_variant('Point', [
       field_definition('tag', Shared.new(TyI32)),
       field_definition('flag', Shared.new(TyBool)),
       field_definition('label', Shared.new(TyString))
-    ])], ['Hash']))
+    ])], ['Hash'])
 
   results.push(assert_code_contains('derive Hash record: namespace std and struct hash',
     gen_decl(point_hash, context), 'namespace std'))
@@ -163,20 +169,20 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains('derive Hash record: boost-style combine constant',
     gen_decl(point_hash, context), '0x9e3779b97f4a7c15ULL'))
 
-  const empty_hash = Shared.new(SDeclType('Empty', [],
-    [record_variant('Empty', [])], ['Hash']))
+  const empty_hash = type_decl('Empty', [],
+    [record_variant('Empty', [])], ['Hash'])
   results.push(assert_code_contains('derive Hash empty record: fnv offset basis seed',
     gen_decl(empty_hash, context), '1469598103934665603ULL'))
 
-  const hue_hash = Shared.new(SDeclType('Hue', [],
-    [unit_variant('North'), unit_variant('South')], ['Hash']))
+  const hue_hash = type_decl('Hue', [],
+    [unit_variant('North'), unit_variant('South')], ['Hash'])
   results.push(assert_code_contains('derive Hash sum: holds_alternative first variant',
     gen_decl(hue_hash, context), 'std::holds_alternative<North>'))
   results.push(assert_code_contains('derive Hash sum: holds_alternative second variant',
     gen_decl(hue_hash, context), 'std::holds_alternative<South>'))
 
-  const shape_hash = Shared.new(SDeclType('Shape', [],
-    [tuple_variant('Circle', [Shared.new(TyI32)]), unit_variant('Empty')], ['Hash']))
+  const shape_hash = type_decl('Shape', [],
+    [tuple_variant('Circle', [Shared.new(TyI32)]), unit_variant('Empty')], ['Hash'])
   results.push(assert_code_contains('derive Hash sum tuple variant: std get and field0',
     gen_decl(shape_hash, context), 'std::get<Circle>(self._).field0'))
 
@@ -224,6 +230,9 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   results.push(assert_true('transform_decl SDeclFn span from body',
     transformed_fn_decl_span('fn probe() -> i32 = 42').line > 0))
+
+  results.push(assert_true('transform_decl SDeclType span from name',
+    transformed_type_decl_span('type Box = { value: i32 }').line > 0))
 
   results.push(assert_eq_str('gen_proto SDeclType: empty string',
     gen_proto(point_type, context), ''))
