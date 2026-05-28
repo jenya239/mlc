@@ -6,10 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| run_tests | 518 |
-| TRACK_PLAN | TRACK_PHASE1 active (step 6 pending) |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
+| run_tests | 525 |
+| TRACK_PLAN | TRACK_PHASE1 active (step 7 pending) |
+
+### Turn 2026-05-28 (PHASE1 step 6)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 6 |
+| step | 6 |
+| done | --check-only CLI (compile_options.mlc, pipeline skips codegen); 7 tests in test_pass.mlc |
+| verify | 525 pass; build.sh; self-host diff empty (build_bin.sh + profile.cpp) |
+| uncommitted_files | 0 |
+| next | STEP=7 TRACK_PHASE1 (enqueued) |
 
 ### Turn 2026-05-28 (PHASE1 step 5)
 
