@@ -10,7 +10,7 @@
 | step_last | 2 |
 | run_tests | 686 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS active (step 3) |
-| agent_token_last | cr-agent-TOKEN |
+| agent_token_last | cr-agent-06f686bb-38e0-4e50-8bde-52fb846408e6 |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 2 idempotent #3)
 
