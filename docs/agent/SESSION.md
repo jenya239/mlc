@@ -10,7 +10,7 @@
 | step_last | 3 |
 | run_tests | 730 |
 | TRACK_PLAN | TRACK_PARSER_PANIC active (step 4) |
-| agent_token_last | cr-agent-f16e371d-43ea-4d03-9bdc-c8d675405c23 |
+| agent_token_last | cr-agent-77b588ec-7b5f-477b-aec4-6938df80f9fe |
 
 ### Turn 2026-05-28 (Driver PARSER_PANIC step 3)
 
