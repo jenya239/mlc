@@ -36,7 +36,14 @@ trap "rm -rf $OBJ_DIR" EXIT
 INC_FLAGS=(-I "$CPP_DIR" -I "$RT_INC")
 [ -n "$EXTRA_INC" ] && INC_FLAGS+=(-I "$EXTRA_INC")
 
-ALL_CPP=("$CPP_DIR"/*.cpp "${RT_SRC[@]}")
+shopt -s nullglob
+GENERATED_CPP=("$CPP_DIR"/*.cpp)
+shopt -u nullglob
+if [ ${#GENERATED_CPP[@]} -gt 0 ]; then
+  IFS=$'\n' GENERATED_CPP=($(printf '%s\n' "${GENERATED_CPP[@]}" | LC_ALL=C sort))
+  unset IFS
+fi
+ALL_CPP=("${GENERATED_CPP[@]}" "${RT_SRC[@]}")
 OBJS=()
 PIDS=()
 ERRORS=()
