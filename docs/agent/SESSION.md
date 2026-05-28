@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
-| role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | run_tests | 692 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS closed (`f6863fe`) |
-| agent_token_last | cr-agent-02178e1e-f936-44bd-b138-0c97bd1eecdb |
+| TRACK_PLAN | TRACK_COVERAGE active (step 1) |
+| agent_token_last | (pending) |
+
+### Turn 2026-05-28 (Planner plan-refresh — TRACK_COVERAGE)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_DIAGNOSTICS closed; opened TRACK_COVERAGE (5 steps) |
+| verify | docs only |
+| uncommitted_files | 0 |
+| next | ROLE=Driver STEP=1 TRACK_COVERAGE (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 5 idempotent)
 

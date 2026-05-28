@@ -50,10 +50,18 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Performance:** [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **closed** (`0671422`)
 - **Security / fuzz depth:** [TRACK_SECURITY.md](TRACK_SECURITY.md) — **closed** (`a035c3d`)
 - **Diagnostics / error codes:** [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) — **closed** (`f6863fe`)
+- **Test coverage:** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — **active** (step 1)
 
-## Next step (Planner)
+## Next step (Driver)
 
-**STEP=plan-refresh** — pick next track from PLAN.
+**STEP=1** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — lambda + array literal tests.
+
+## Planner checklist (2026-05-28 plan-refresh — coverage track)
+
+- [x] TRACK_DIAGNOSTICS closed (`f6863fe`)
+- [x] TRACK_COVERAGE opened (5 steps: checker lambda/array, tuple/record, match/for, codegen expr, codegen stmt)
+- [x] No step bundles `compiler/` + `lib/mlc/`
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-28 plan-refresh — diagnostics closed)
 

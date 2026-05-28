@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) **closed** (`f6863fe`). [TRACK_SECURITY.md](TRACK_SECURITY.md) **closed** (`a035c3d`). [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) **closed** (`0671422`). [TRACK_SAFETY.md](TRACK_SAFETY.md) **closed** (`32f8335`). [TRACK_PHASE1.md](TRACK_PHASE1.md) **closed** (`fd42eab`). Parser `ref mut` = deferred separate branch. **Planner:** `STEP=plan-refresh`.
+[TRACK_COVERAGE.md](TRACK_COVERAGE.md) — **active** (step 1): test_checker/codegen gaps (PLAN §Phase 1 §2). [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) **closed** (`f6863fe`). Parser `ref mut` = deferred separate branch.
 
 ## Step sizing (good vs bad)
 
