@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_BUILD.md](TRACK_BUILD.md) (**closed**, `1d6f4c5`)
 
-## Status: **active** (step 4 pending)
+## Status: **active** (step 5 pending)
 
 **Goal:** `SDecl` variants in `semantic_ir.mlc` carry source spans; transform propagates; diagnostics use decl spans where available.
 
@@ -29,7 +29,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 1 | `SDeclFn` + `Span`; propagate in `transform_decl.mlc`; test | done (`7a0a3cc`) |
 | 2 | `SDeclType` span from `DeclType.name_span` | done (`3e214fc`) |
 | 3 | `SDeclTrait` / `SDeclExtend` spans | done (`326b173`) |
-| 4 | Checker diagnostics on decl paths use `SDecl` span helpers | pending |
+| 4 | Checker diagnostics on decl paths use `SDecl` span helpers | done (pending hash) |
 | 5 | Audit remaining span-less IR; close track | pending |
 
 ## Context
@@ -62,6 +62,12 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 - `transform_decl`: `DeclTrait.name_span`, `DeclExtend.name_span` (type name span from parser).
 - Tests `transform_decl SDeclTrait span from name`, `SDeclExtend span from name` in `test_decl_gen.mlc`.
 
+## Step 4 detail
+
+- `decl_span` in `ast.mlc` (mirrors `sdecl_span` on AST `Decl`).
+- `derive_clause_diagnostics` uses `decl_span` instead of variant field heuristics.
+- Golden E070 at type name span in `test_checker.mlc`.
+
 ## Next step (Driver)
 
-**STEP=4** — checker diagnostics on decl paths use `SDecl` span helpers.
+**STEP=5** — audit remaining span-less IR; close track.
