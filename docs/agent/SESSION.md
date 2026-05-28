@@ -10,7 +10,15 @@
 | step_last | plan-refresh |
 | run_tests | 692 |
 | TRACK_PLAN | TRACK_COVERAGE active (step 1) |
-| agent_token_last | cr-agent-1453fff0-0014-4ab3-a478-488b2384e6ef |
+| agent_token_last | cr-agent-53fcf8b8-3137-4ba0-ae85-e98da3d203db |
+
+### Turn 2026-05-28 (Planner plan-refresh idempotent)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| step | plan-refresh (skip) |
+| done | TRACK_COVERAGE open (`429f62b`); STEP=1 pending |
+| next | ROLE=Driver STEP=1 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_COVERAGE)
 
