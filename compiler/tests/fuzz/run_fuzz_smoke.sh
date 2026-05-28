@@ -15,7 +15,7 @@ fuzz_mix() {
 
 generate_program() {
   local seed=$1
-  local kind=$(($(fuzz_mix "$seed") % 6))
+  local kind=$(($(fuzz_mix "$seed") % 9))
   case "$kind" in
     0) printf '%s\n' 'fn fuzz_entry() -> i32 = 0' ;;
     1) printf '%s\n' 'fn fuzz_entry() -> i32 = 1 + 2' ;;
@@ -26,6 +26,9 @@ generate_program() {
       local helper="helper_$(($(fuzz_mix $((seed + 2)) % 1000)))"
       printf '%s\n' "fn ${helper}() -> i32 = 42" "fn fuzz_entry() -> i32 = ${helper}()"
       ;;
+    6) printf '%s\n' 'fn fuzz_entry() -> i32 = if true then 1 else 2' ;;
+    7) printf '%s\n' 'fn fuzz_entry() -> i32 = do let x = 1; x end' ;;
+    8) printf '%s\n' "fn fuzz_entry() -> i32 = match $(($(fuzz_mix $((seed + 3)) % 10))) { 1 => 0, _ => 1 }" ;;
   esac
 }
 

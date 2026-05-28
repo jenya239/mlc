@@ -10,16 +10,21 @@ export fn fuzz_pick(seed: i32, choice_count: i32) -> i32 =
   if choice_count <= 0 then 0 else fuzz_mix(seed) % choice_count end
 
 export fn fuzz_random_program(seed: i32) -> string = do
-  const kind = fuzz_pick(seed, 6)
+  const kind = fuzz_pick(seed, 9)
   if kind == 0 then 'fn fuzz_entry() -> i32 = 0'
   else if kind == 1 then 'fn fuzz_entry() -> i32 = 1 + 2'
   else if kind == 2 then 'fn fuzz_entry() -> string = "s"'
   else if kind == 3 then 'fn fuzz_entry() -> bool = true'
   else if kind == 4 then
     'fn fuzz_entry() -> i32 = ' + (fuzz_mix(seed + 1) % 100).to_string()
-  else do
+  else if kind == 5 then do
     const callee = 'helper_' + (fuzz_mix(seed + 2) % 1000).to_string()
     'fn ' + callee + '() -> i32 = 42\nfn fuzz_entry() -> i32 = ' + callee + '()'
   end
+  else if kind == 6 then 'fn fuzz_entry() -> i32 = if true then 1 else 2'
+  else if kind == 7 then 'fn fuzz_entry() -> i32 = do let x = 1; x end'
+  else
+    'fn fuzz_entry() -> i32 = match ' + (fuzz_mix(seed + 3) % 10).to_string() +
+      ' { 1 => 0, _ => 1 }'
   end
 end

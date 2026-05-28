@@ -14,11 +14,20 @@ export fn fuzz_tests() -> [TestResult] = do
     fuzz_mix(0) != fuzz_mix(1)))
 
   let mut seed = 0
-  while seed < 6 do
+  while seed < 9 do
     results.push(assert_true('fuzz program variants seed ' + seed.to_string(),
       fuzz_random_program(seed).contains('fn ')))
     seed = seed + 1
   end
+
+  results.push(assert_true('fuzz if variant',
+    fuzz_random_program(4).contains('if true then')))
+
+  results.push(assert_true('fuzz let variant',
+    fuzz_random_program(0).contains('let x =')))
+
+  results.push(assert_true('fuzz match variant',
+    fuzz_random_program(5).contains('match ')))
 
   results
 end

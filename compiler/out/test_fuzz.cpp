@@ -16,12 +16,15 @@ results.push_back(test_runner::assert_true(mlc::String("fuzz generator non-empty
 results.push_back(test_runner::assert_eq_str(mlc::String("fuzz generator deterministic"), random_program::fuzz_random_program(42), random_program::fuzz_random_program(42)));
 results.push_back(test_runner::assert_true(mlc::String("fuzz mix varies with seed"), random_program::fuzz_mix(0) != random_program::fuzz_mix(1)));
 int seed = 0;
-while (seed < 6){
+while (seed < 9){
 {
 results.push_back(test_runner::assert_true(mlc::String("fuzz program variants seed ") + mlc::to_string(seed), random_program::fuzz_random_program(seed).contains(mlc::String("fn "))));
 seed = seed + 1;
 }
 }
+results.push_back(test_runner::assert_true(mlc::String("fuzz if variant"), random_program::fuzz_random_program(4).contains(mlc::String("if true then"))));
+results.push_back(test_runner::assert_true(mlc::String("fuzz let variant"), random_program::fuzz_random_program(0).contains(mlc::String("let x ="))));
+results.push_back(test_runner::assert_true(mlc::String("fuzz match variant"), random_program::fuzz_random_program(5).contains(mlc::String("match "))));
 return results;
 }
 
