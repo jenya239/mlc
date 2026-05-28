@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3–§4; previous: [TRACK_SAFETY.md](TRACK_SAFETY.md) (**closed**, `32f8335`), [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) (**closed**, `0671422`)
 
-## Status: in progress (step 2 pending)
+## Status: in progress (step 3 pending)
 
 **Goal:** broaden invalid-input coverage; no core dump on garbage; structured negative tests beyond SAFETY baseline.
 
@@ -34,7 +34,7 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Negative corpus expansion — parser/checker edge `.mlc` files (8→16+) | done (`d9aa33b`) |
-| 2 | Fuzz generator — record/type/trait variants; sync `run_fuzz_smoke.sh` | pending |
+| 2 | Fuzz generator — record/type/trait variants; sync `run_fuzz_smoke.sh` | done (`e54e0c0`) |
 | 3 | In-process fuzz sweep — widen `test_fuzz.mlc` seed range + garbage lex patterns | pending |
 | 4 | Frontend panic audit — replace silent failure paths in one module (lexer or parser) | pending |
 
@@ -43,10 +43,11 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 - Added 8 files in `negative_corpus/` (8→16): unclosed block, orphan `end`, bad generic arity, invalid trait syntax, empty type body, duplicate `fn`, unclosed record type, wrong call arity.
 - Gate: 607 pass; `run_negative_corpus.sh` ok (16 files); no compiler source changes.
 
-## Step 2 detail
+## Step 2 detail (done — pending hash)
 
-- Extend `fuzz/random_program.mlc` kinds (record literal, `type` decl stub, nested `do`/`end`).
-- Mirror logic in `run_fuzz_smoke.sh`; add unit asserts in `test_fuzz.mlc`.
+- `random_program.mlc`: 9→12 kinds — type stub, record literal, nested `do`/`end`; exports `fuzz_variant_count`, `fuzz_program_kind`.
+- `run_fuzz_smoke.sh` synced (% 12, cases 9–11).
+- `test_fuzz.mlc`: variant count assert + kind-specific seeds; 614 pass.
 
 ## Step 3 detail
 
@@ -67,4 +68,4 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 
 ## Next step (Driver)
 
-**STEP=2** — Fuzz generator record/type/trait variants.
+**STEP=3** — In-process fuzz sweep (seeds 0..63, garbage lex patterns).
