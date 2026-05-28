@@ -1,21 +1,21 @@
-# mlcc profile baseline 2026-05-28T07:11:17Z
+# mlcc profile baseline 2026-05-28T08:17:25Z
 # repeats=5 main=/home/jenya/workspaces/current/mlc/compiler/main.mlc
 
 === phases (median ms from last run table) ===
-total                               1362.29        1    1362.29    40728
-merge                                596.93        1     596.93    20028
-codegen                              411.35        1     411.35    40728
-lex                                  317.32       81       3.92    20028
-parse                                250.25       81       3.09    20028
-transform                            166.69        1     166.69    39020
-check                                149.96        1     149.96    24856
-load_io                                3.98       81       0.05    20028
-precompute                             1.84        1       1.84    39164
-expand_destructure                     1.76        1       1.76    24856
+total                               2381.74        1    2381.74    40728
+codegen                              843.82        1     843.82    40728
+merge                                838.61        1     838.61    20048
+lex                                  438.29       81       5.41    20048
+parse                                344.44       81       4.25    20048
+transform                            343.25        1     343.25    38996
+check                                297.15        1     297.15    24876
+load_io                                5.57       81       0.07    20048
+precompute                             4.44        1       4.44    39204
+expand_destructure                     2.18        1       2.18    24876
 
 === wall ms (median of 5 runs) ===
-total_ms=1772.19
+total_ms=2157.34
 
 === scaling (functions 100..800) ===
-fitted exponent b = 1.111 (log-time ~ b * log-N + const), R² = 0.9957
+fitted exponent b = 1.165 (log-time ~ b * log-N + const), R² = 0.9066
 OK: exponent below 1.35 (roughly sub-quadratic in this band).
