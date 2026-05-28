@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 44
+export fn diagnostic_code_catalog_count() -> i32 = 54
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -90,3 +90,23 @@ export fn diagnostic_code_e042() -> string = 'E042'
 export fn diagnostic_code_e043() -> string = 'E043'
 // E044: record field default type mismatch
 export fn diagnostic_code_e044() -> string = 'E044'
+// E045: array HOF lambda arity mismatch
+export fn diagnostic_code_e045() -> string = 'E045'
+// E046: array HOF predicate must return bool
+export fn diagnostic_code_e046() -> string = 'E046'
+// E047: fold step return type mismatch
+export fn diagnostic_code_e047() -> string = 'E047'
+// E048: zip expects array argument
+export fn diagnostic_code_e048() -> string = 'E048'
+// E049: join expects array of string elements
+export fn diagnostic_code_e049() -> string = 'E049'
+// E050: join expects string separator
+export fn diagnostic_code_e050() -> string = 'E050'
+// E051: take/drop expects i32 count
+export fn diagnostic_code_e051() -> string = 'E051'
+// E052: sum expects i32 array elements
+export fn diagnostic_code_e052() -> string = 'E052'
+// E053: flat expects array of arrays
+export fn diagnostic_code_e053() -> string = 'E053'
+// E054: flat_map callback must return array
+export fn diagnostic_code_e054() -> string = 'E054'
