@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| run_tests | 700 |
-| TRACK_PLAN | TRACK_COVERAGE active (step 4) |
-| agent_token_last | cr-agent-894e8f40-a6eb-4e9d-9f1d-c3f76d44a256 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| run_tests | 701 |
+| TRACK_PLAN | TRACK_COVERAGE active (step 5) |
+| agent_token_last | cr-agent-8e15f2c7-ac66-47e3-9837-1d51c83a4748 |
+
+### Turn 2026-05-28 (COVERAGE step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | SExprTuple codegen smoke (`d15c1a2`) |
+| verify | 701 pass; tests only (no self-host) |
+| uncommitted_files | compiler/out/* artifacts |
+| next | ROLE=Driver STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (COVERAGE step 3 idempotent)
 

@@ -50,11 +50,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Performance:** [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **closed** (`0671422`)
 - **Security / fuzz depth:** [TRACK_SECURITY.md](TRACK_SECURITY.md) — **closed** (`a035c3d`)
 - **Diagnostics / error codes:** [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) — **closed** (`f6863fe`)
-- **Test coverage:** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — **active** (step 4)
+- **Test coverage:** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — **active** (step 5)
 
 ## Next step (Driver)
 
-**STEP=4** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — codegen expr smoke.
+**STEP=5** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — codegen stmt + baseline count.
 
 ## Planner checklist (2026-05-28 plan-refresh — coverage track)
 
