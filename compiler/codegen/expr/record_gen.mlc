@@ -1,13 +1,12 @@
 // Record and record-update code generation.
 // eval_expr_fn injected to break the import cycle with eval.mlc.
 
-import { SExpr, SStmt, SFieldVal } from '../../ir/semantic_ir'
+import { SExpr, SStmt, SFieldVal, sexpr_span } from '../../ir/semantic_ir'
 import { Type, TUnknown } from '../../checker/registry'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { find_field_value } from './expression_support'
 import { cpp_safe } from '../cpp_naming'
-import { span_unknown } from '../../frontend/ast'
 import * as expression_output from './expr'
 
 fn eval_field_update_value(
@@ -25,7 +24,7 @@ fn eval_field_update_value(
   if override_index < overrides.length() then
     eval_expr_fn(overrides[override_index].val, context, gen_stmts)
   else
-    eval_expr_fn(Shared.new(SExprField(base_expression, field_name, Shared.new(TUnknown), span_unknown())), context, gen_stmts)
+    eval_expr_fn(Shared.new(SExprField(base_expression, field_name, Shared.new(TUnknown), sexpr_span(base_expression))), context, gen_stmts)
   end
 end
 

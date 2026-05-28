@@ -1,7 +1,7 @@
 // Leaf helpers for eval (no gen_expr dependency).
 
 import { span_unknown } from '../../frontend/ast'
-import { SExpr, SFieldVal, SExprUnit, sexpr_type, SExprArray } from '../../ir/semantic_ir'
+import { SExpr, SFieldVal, SExprUnit, sexpr_type, sexpr_span, SExprArray } from '../../ir/semantic_ir'
 import { Type, TArray, TUnit, TShared } from '../../checker/registry'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
@@ -22,7 +22,11 @@ export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
 end
 
 export fn find_field_value(field_values: [Shared<SFieldVal>], field_name: string) -> Shared<SExpr> = do
-  let mut result: Shared<SExpr> = Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
+  const fallback_span =
+    if field_values.length() > 0 then sexpr_span(field_values[0].val)
+    else span_unknown()
+    end
+  let mut result: Shared<SExpr> = Shared.new(SExprUnit(Shared.new(TUnit), fallback_span))
   let mut index = 0
   while index < field_values.length() do
     if field_values[index].name == field_name then result = field_values[index].val end
