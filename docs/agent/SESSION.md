@@ -4,13 +4,24 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner`|
-| role_last | Driver|
-| driver_turns_since_plan | 6|
-| step_last | 4|
-| run_tests | 704 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS2 active (step 4) |
-| agent_token_last | cr-agent-0c2c1aa9-15bd-4b7d-9c18-b3b8f2d4ecea |
+| instructions_rev | `2026-05-28-cleaner` |
+| role_last | Driver |
+| driver_turns_since_plan | 7 |
+| step_last | 4 |
+| run_tests | 706 |
+| TRACK_PLAN | TRACK_DIAGNOSTICS2 active (step 5) |
+| agent_token_last | cr-agent-fd23897b-4271-4b46-8be6-745497531cce |
+
+### Turn 2026-05-28 (DIAGNOSTICS2 step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 7 |
+| step | 4 |
+| done | infer E065-E068; catalog 68 (`678895a`) |
+| verify | 706 pass; self-host diff empty |
+| next | ROLE=Driver STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS2 step 3)
 
