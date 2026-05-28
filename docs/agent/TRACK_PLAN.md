@@ -53,16 +53,25 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Test coverage:** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — **closed** (`9bddbb3`)
 - **Diagnostics (remaining codes):** [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) — **closed** (`d055c49`)
 - **Fuzz differential:** [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) — **closed** (`5463361`)
+- **Parser panic audit:** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **active** (step 1)
 
-## Next step (Planner)
+## Next step (Driver)
 
-**plan-refresh** — pick next track from PLAN.md §Phase 1.
+**STEP=1** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — `parser/decls.mlc` silent-failure audit.
+
+## Planner checklist (2026-05-28 plan-refresh — PARSER_PANIC)
+
+- [x] TRACK_FUZZ_DIFF closed (`5463361`; 5/5 steps)
+- [x] TRACK_PARSER_PANIC opened (5 steps: decls, exprs, parser tests, in-process smoke, audit close)
+- [x] Deferred from TRACK_SECURITY step 4; Phase 1 §4 crash-safety
+- [x] No step bundles `compiler/` + `lib/mlc/`
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-28 plan-refresh — FUZZ_DIFF close)
 
 - [x] TRACK_FUZZ_DIFF closed (`5463361`; 5/5 steps)
 - [x] 719 tests; self-host diff empty
-- [ ] Next active track from PLAN
+- [x] Next active track from PLAN
 
 ## Planner checklist (2026-05-28 plan-refresh — fuzz differential)
 

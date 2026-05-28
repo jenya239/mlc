@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) — **active** (step 1): remaining bare `diagnostic_error(` → E036+ (PLAN §Phase 1 §1). [TRACK_COVERAGE.md](TRACK_COVERAGE.md) **closed** (`9bddbb3`). Parser `ref mut` = deferred separate branch.
+[TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **active** (step 1): parser silent-failure audit (PLAN §Phase 1 §4; deferred from TRACK_SECURITY). [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) **closed** (`5463361`). Parser `ref mut` = deferred separate branch.
 
 ## Step sizing (good vs bad)
 

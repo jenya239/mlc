@@ -5,12 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
-| role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | run_tests | 719 |
-| TRACK_PLAN | TRACK_FUZZ_DIFF closed (`5463361`) |
-| agent_token_last | cr-agent-b76c8aa9-2a54-446f-979c-a3541b23b18a |
+| TRACK_PLAN | TRACK_PARSER_PANIC active (step 1) |
+| agent_token_last | cr-agent-df66ca12-740c-4c54-9004-ce3dcc92eaec |
+
+### Turn 2026-05-28 (Planner plan-refresh — TRACK_PARSER_PANIC)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_FUZZ_DIFF closed; opened TRACK_PARSER_PANIC (5 steps) |
+| next | ROLE=Driver STEP=1 (enqueued) |
 
 ### Turn 2026-05-28 (Driver FUZZ_DIFF step 5 — track close)
 
