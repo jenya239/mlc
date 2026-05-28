@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| run_tests | 686 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS active (step 3) |
-| agent_token_last | cr-agent-06f686bb-38e0-4e50-8bde-52fb846408e6 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| run_tests | 687 |
+| TRACK_PLAN | TRACK_DIAGNOSTICS active (step 4) |
+| agent_token_last | cr-agent-3d5a3d41-9cd4-4fe1-ac33-093c53e3197c |
+
+### Turn 2026-05-28 (DIAGNOSTICS step 3 idempotent)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 3 (skip) |
+| done | already `2ae66ae` + docs `ea2dacd`; STEP=4 pending |
+| verify | 687 pass; self-host diff empty |
+| next | ROLE=Driver STEP=4 (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 2 idempotent #3)
 
