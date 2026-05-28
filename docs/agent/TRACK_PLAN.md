@@ -52,10 +52,18 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Diagnostics / error codes:** [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) — **closed** (`f6863fe`)
 - **Test coverage:** [TRACK_COVERAGE.md](TRACK_COVERAGE.md) — **closed** (`9bddbb3`)
 - **Diagnostics (remaining codes):** [TRACK_DIAGNOSTICS2.md](TRACK_DIAGNOSTICS2.md) — **closed** (`d055c49`)
+- **Fuzz differential:** [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) — **active** (step 1)
 
-## Next step (Planner)
+## Next step (Driver)
 
-Plan-refresh: pick next track from PLAN.md §Phase 1 backlog.
+**STEP=1** [TRACK_FUZZ_DIFF.md](TRACK_FUZZ_DIFF.md) — negative corpus exit-code parity mlcc vs Ruby.
+
+## Planner checklist (2026-05-28 plan-refresh — fuzz differential)
+
+- [x] TRACK_DIAGNOSTICS2 closed (`d055c49`)
+- [x] TRACK_FUZZ_DIFF opened (5 steps: corpus exit, random seeds, error count, shell gate, in-process close)
+- [x] No step bundles `compiler/` + `lib/mlc/`
+- [ ] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-28 plan-refresh — diagnostics2)
 

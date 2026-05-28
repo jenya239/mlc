@@ -5,12 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
-| role_last | Cleaner |
+| role_last | Planner |
 | driver_turns_since_plan | 0 |
-| step_last | cleanup-sweep (skip) |
+| step_last | plan-refresh |
 | run_tests | 706 |
-| TRACK_PLAN | TRACK_DIAGNOSTICS2 **closed** (`d055c49`); Planner plan-refresh pending |
-| agent_token_last | cr-agent-6ba84380-c5f1-4960-81f9-79582df3feb4 |
+| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 1) |
+| agent_token_last | cr-agent-b0518134-e401-4810-8c8b-7121519de85b |
+
+### Turn 2026-05-28 (Planner plan-refresh — TRACK_FUZZ_DIFF)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | opened TRACK_FUZZ_DIFF (5 steps); deferred item from PERFORMANCE/RESEARCH |
+| next | ROLE=Driver STEP=1 (enqueued) |
 
 ### Turn 2026-05-28 (Cleaner cleanup-sweep idempotent skip)
 
