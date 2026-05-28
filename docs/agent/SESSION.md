@@ -9,7 +9,8 @@
 | driver_turns_since_plan | 5 |
 | step_last | 5 |
 | run_tests | 607 |
-| TRACK_PLAN | TRACK_PERFORMANCE closed (step 5) |
+| TRACK_PLAN | TRACK_PERFORMANCE closed (`0671422`) |
+| agent_token_last | cr-agent-1c979466-8fe6-46aa-b81c-2333f626a9c7 |
 
 ### Turn 2026-05-28 (PERF step 5)
 
