@@ -47,11 +47,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **CppAST cleanup:** [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — closed (`005c65b`)
 - **Phase 1 stabilization:** [TRACK_PHASE1.md](TRACK_PHASE1.md) — **closed** (`fd42eab`)
 - **Safety / fuzz hardening:** [TRACK_SAFETY.md](TRACK_SAFETY.md) — **closed** (`32f8335`)
-- **Performance:** [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **active** (step 4 pending)
+- **Performance:** [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **closed** (`0671422`)
 
-## Next step (Driver)
+## Next step (Planner)
 
-See [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **STEP=4** (CodegenContext hot path).
+**STEP=plan-refresh** — pick next track from PLAN (security / fuzz backlog).
 
 ## Planner checklist (2026-05-28 plan-refresh — performance track)
 

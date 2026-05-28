@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §1 «Производительность»; previous: optimization batch (`419de62`), [TRACK_SAFETY.md](TRACK_SAFETY.md) (**closed**, `32f8335`)
 
-## Status: in progress (step 5 pending)
+## Status: **closed** (step 5 `0671422`)
 
 **Goal:** keep full `compiler/main.mlc` translation within baseline (wall ms + scaling exponent); remove remaining super-linear / copy-heavy paths.
 
@@ -36,7 +36,7 @@ benchmarks/profile/compare_baseline.sh
 | 2 | CI perf gate — `compare_baseline.sh` fails on regression (not `continue-on-error`) | done (`4cd2c99`) |
 | 3 | `build_registry` COW audit — eliminate Map-copy fold on large accumulators (PLAN §1) | done (`7afef13`) |
 | 4 | CodegenContext hot path — reduce full struct copies in stmt/expr visitor entry | done (`335f014`) |
-| 5 | Re-baseline + document wall ms / top phases in this file | pending |
+| 5 | Re-baseline + document wall ms / top phases in this file | done (`0671422`) |
 
 ## Step 1 detail (done — `11ca867`)
 
@@ -60,6 +60,13 @@ benchmarks/profile/compare_baseline.sh
 - Expr visitor entry unchanged (value `CodegenContext`; nested blocks re-enter via public API).
 - Gate: 607 pass; compare_baseline PASS (2026ms); self-host diff empty.
 
+## Step 5 detail (done — `0671422`)
+
+- Post-steps 3–4 re-baseline (`record_baseline.sh`, 5 runs, 2026-05-28): `total_ms=2157.34`.
+- Top phases (last-run table): codegen 844ms, merge 839ms, lex 438ms, parse 344ms, transform 343ms, check 297ms.
+- Scaling exponent b=1.165 (100..800 functions); `compare_baseline.sh` PASS vs new baseline.
+- Prior baseline (step 1): `total_ms=1772.19`; single-run variance ~1400–2600ms on same binary.
+
 ## Deferred (not in this track)
 
 - Parser `ref mut` — [TRACK_PLAN.md](TRACK_PLAN.md) step 15, separate branch.
@@ -67,6 +74,6 @@ benchmarks/profile/compare_baseline.sh
 - Differential fuzz mlcc vs Ruby — [RESEARCH.md](RESEARCH.md).
 - `--emit=mir`-style artifact for fuzz — RESEARCH backlog.
 
-## Next step (Driver)
+## Track closed
 
-**STEP=5** — Re-baseline + document wall ms / top phases.
+All 5 steps done. Next: **Planner** `STEP=plan-refresh` (security / PLAN §Phase 1 backlog).

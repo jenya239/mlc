@@ -4,12 +4,24 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-26-cr-session-watchdog` |
+| instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | run_tests | 607 |
-| TRACK_PLAN | TRACK_PERFORMANCE active (step 5 pending) |
+| TRACK_PLAN | TRACK_PERFORMANCE closed (step 5) |
+
+### Turn 2026-05-28 (PERF step 5)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 5 |
+| step | 5 |
+| done | re-baseline baseline_reference.txt post steps 3–4; TRACK_PERFORMANCE closed |
+| verify | 607 pass; compare_baseline PASS (2127ms); baseline commit 0671422 |
+| uncommitted_files | 0 |
+| next | ROLE=Planner STEP=plan-refresh (security focus) |
 
 ### Turn 2026-05-28 (PERF step 4)
 
