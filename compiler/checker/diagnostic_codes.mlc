@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 20
+export fn diagnostic_code_catalog_count() -> i32 = 29
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -42,3 +42,21 @@ export fn diagnostic_code_e018() -> string = 'E018'
 export fn diagnostic_code_e019() -> string = 'E019'
 // E020: match arm type mismatch
 export fn diagnostic_code_e020() -> string = 'E020'
+// E021: method push wrong receiver
+export fn diagnostic_code_e021() -> string = 'E021'
+// E022: method set wrong receiver
+export fn diagnostic_code_e022() -> string = 'E022'
+// E023: method length/size wrong receiver
+export fn diagnostic_code_e023() -> string = 'E023'
+// E024: method to_i wrong receiver
+export fn diagnostic_code_e024() -> string = 'E024'
+// E025: string-only method wrong receiver
+export fn diagnostic_code_e025() -> string = 'E025'
+// E026: method join wrong receiver
+export fn diagnostic_code_e026() -> string = 'E026'
+// E027: method has wrong receiver
+export fn diagnostic_code_e027() -> string = 'E027'
+// E028: map accessor method wrong receiver
+export fn diagnostic_code_e028() -> string = 'E028'
+// E029: array higher-order method wrong receiver
+export fn diagnostic_code_e029() -> string = 'E029'

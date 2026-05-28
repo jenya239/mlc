@@ -45,7 +45,7 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
-    diagnostic_code_catalog_count(), 20))
+    diagnostic_code_catalog_count(), 29))
 
   results.push(assert_eq_str('diagnostic code E001 catalog',
     diagnostic_code_e001(), 'E001'))
@@ -513,19 +513,23 @@ export fn checker_tests() -> [TestResult] = do
     24,
     'field access on value without record fields: i32'))
 
-  results.push(assert_diagnostic_at(
-    'infer: has on non-Map receiver (i32)',
-    first_checker_error_line('fn f() -> bool = 1.has("k")'),
-    1,
-    19,
-    'method has expects a Map receiver'))
+  results.push(assert_checker_diagnostic(
+    'negative E027: has on i32 exact',
+    'fn f() -> bool = 1.has("k")',
+    'error[E027]: method has expects a Map receiver, got i32\n  --> 1:19'))
 
-  results.push(assert_diagnostic_at(
+  results.push(assert_checker_diagnostic(
+    'negative E021: push on i32 exact',
+    'fn f() -> unit = do let mut xs: i32 = 1; xs.push(2) end',
+    'error[E021]: method push expects an array receiver, got i32\n  --> 1:44'))
+
+  results.push(assert_diagnostic_at_with_code(
     'infer: has on sum type is an error',
     first_checker_error_line('type Hue = Red | Green\nfn f(x: Hue) -> bool = x.has("k")'),
     2,
     25,
-    'method has expects a Map receiver'))
+    'method has expects a Map receiver',
+    'E027'))
 
   results.push(assert_eq_int('infer: has on Map ok',
     check_error_count('fn f(m: Map<string, i32>) -> bool = m.has("k")'), 0))
