@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 2|
-| step_last | 2|
+| driver_turns_since_plan | 3|
+| step_last | 3|
 | run_tests | 756 |
-| TRACK_PLAN | TRACK_PARSER_PARITY **active** (step 3) |
-| agent_token_last | cr-agent-4d18c96e-547a-446e-8148-4e9b440f684a |
+| TRACK_PLAN | TRACK_PARSER_PARITY **active** (step 4) |
+| agent_token_last | cr-agent-ae99eabe-01fb-4fb3-9f14-8df64fca1d02 |
+
+### Turn 2026-05-28 (Driver PARSER_PARITY step 3 — audit)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 3 |
+| done | audit parse_noise; commit `acadaa0`; mlcc=1 ruby=1 |
+| verify | 756 pass; fuzz differential ok |
+| next | ROLE=Driver STEP=4 (enqueued) |
 
 ### Turn 2026-05-28 (Driver PARSER_PARITY step 2 — audit)
 
