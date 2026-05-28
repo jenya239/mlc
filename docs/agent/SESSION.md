@@ -12,6 +12,14 @@
 | TRACK_PLAN | TRACK_SPAN_CHECKER **closed** |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
 
+### Turn 2026-05-28 (Driver SPAN_CHECKER step 5 — idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 5 (skip) |
+| done | already closed (`a8bf7a1`); re-enqueued Planner |
+| next | ROLE=Planner plan-refresh |
+
 ### Turn 2026-05-28 (Driver SPAN_CHECKER step 5 — track close)
 
 | turn | 2026-05-28 |
