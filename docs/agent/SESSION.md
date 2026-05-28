@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| run_tests | 730 |
-| TRACK_PLAN | TRACK_PARSER_PANIC active (step 4) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| run_tests | 738 |
+| TRACK_PLAN | TRACK_PARSER_PANIC active (step 5) |
 | agent_token_last | cr-agent-77b588ec-7b5f-477b-aec4-6938df80f9fe |
+
+### Turn 2026-05-28 (Driver PARSER_PANIC step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | test_parser.mlc garbage smoke (+8); commit `558069f` |
+| verify | 738 pass; self-host diff empty |
+| next | ROLE=Driver STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (Driver PARSER_PANIC step 3)
 
