@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_BUILD.md](TRACK_BUILD.md) (**closed**, `1d6f4c5`)
 
-## Status: **closed** (pending hash)
+## Status: **closed** (`e826f1a`)
 
 **Closed:** step 5 audit — remaining span-less SemanticIR nodes documented; no code changes.
 
@@ -32,7 +32,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `SDeclType` span from `DeclType.name_span` | done (`3e214fc`) |
 | 3 | `SDeclTrait` / `SDeclExtend` spans | done (`326b173`) |
 | 4 | Checker diagnostics on decl paths use `SDecl` span helpers | done (`860bafc`) |
-| 5 | Audit remaining span-less IR; close track | done (pending hash) |
+| 5 | Audit remaining span-less IR; close track | done (`e826f1a`) |
 
 ## Step 5 audit (remaining span-less SemanticIR)
 
