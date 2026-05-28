@@ -10,7 +10,7 @@
 | step_last | plan-refresh |
 | run_tests | 607 |
 | TRACK_PLAN | TRACK_SECURITY active (step 1 pending) |
-| agent_token_last | pending register |
+| agent_token_last | cr-agent-dd13f2a5-f8f1-4ac8-a272-cf7b13a66bd3 |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_SECURITY)
 
@@ -21,8 +21,8 @@
 | step | plan-refresh |
 | done | TRACK_PERFORMANCE closed; opened TRACK_SECURITY (4 steps: corpus, generator, in-process sweep, panic audit) |
 | verify | n/a (docs only) |
-| uncommitted_files | 3 docs |
-| next | ROLE=Driver STEP=1 TRACK_SECURITY (enqueued) |
+| uncommitted_files | 0 |
+| next | ROLE=Driver STEP=1 TRACK_SECURITY (enqueued, token dd13f2a5) |
 
 ### Turn 2026-05-28 (PERF step 5)
 
