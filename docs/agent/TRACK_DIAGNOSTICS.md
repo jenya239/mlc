@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_SECURITY.md](TRACK_SECURITY.md) (**closed**, `a035c3d`)
 
-## Status: **active** (step 4 pending)
+## Status: **active** (step 5 pending)
 
 **Goal:** assign stable `error[Exxx]:` codes to high-traffic checker paths; negative tests assert exact format. E001 (undefined), E002 (not callable), E003 (arg mismatch) already exist — bulk migration deferred from [TRACK_PHASE1.md](TRACK_PHASE1.md) step 2.
 
