@@ -1,0 +1,71 @@
+# Track: Parser parity — negative corpus vs Ruby (Phase 1 §3 cont.)
+
+Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) (**closed**, `e826f1a`)
+
+## Status: **active** (step 1 pending)
+
+**Goal:** mlcc `--check-only` exit codes match Ruby checker on `negative_corpus/`; shrink `negative_corpus_known_divergences.txt` to zero (or document intentional mlcc-stricter cases).
+
+**Constraints:**
+- One concern per sub-step; no `compiler/` + `lib/mlc/` in one commit.
+- Self-host gate when `compiler/**` touched: `build_bin.sh` + diff empty.
+- Keep differential gate fast (<60s in `build_tests.sh`).
+
+## Verify gate (every step)
+
+```
+bundle exec rake test_compiler_mlc   # 755 pass (baseline post SPAN_IR)
+compiler/build.sh                    # when compiler/** touched
+compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
+compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
+.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
+diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
+```
+
+Differential (when parser/lexer or fuzz lists touched):
+
+```
+compiler/tests/fuzz/run_fuzz_differential.sh compiler/out/mlcc
+compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
+```
+
+---
+
+| Step | Item | Status |
+|------|------|--------|
+| 1 | `parse_unclosed_block.mlc` + `parse_unclosed_record_type.mlc` — structured parse error, exit 1 | pending |
+| 2 | `parse_empty_type_body.mlc` + `parse_invalid_trait_syntax.mlc` | pending |
+| 3 | `parse_noise.mlc` — reject trailing garbage | pending |
+| 4 | `lex_unclosed_string.mlc` — parity decision + differential list update | pending |
+| 5 | Audit `negative_corpus_known_divergences.txt`; close track | pending |
+
+## Known divergences (baseline)
+
+From `compiler/tests/fuzz/negative_corpus_known_divergences.txt` (6 files):
+
+| File | mlcc | Ruby | Issue |
+|------|------|------|-------|
+| `lex_unclosed_string.mlc` | 1 | 0 | mlcc lexer rejects; Ruby accepts |
+| `parse_empty_type_body.mlc` | 0 | 1 | mlcc tolerant |
+| `parse_invalid_trait_syntax.mlc` | 0 | 1 | mlcc tolerant |
+| `parse_noise.mlc` | 0 | 1 | mlcc tolerant |
+| `parse_unclosed_block.mlc` | 0 | 1 | mlcc tolerant |
+| `parse_unclosed_record_type.mlc` | 0 | 1 | mlcc tolerant |
+
+## Step 1 detail
+
+- Files: `compiler/frontend/parser/decls.mlc` and/or `exprs.mlc` only.
+- Targets: unclosed `do`/`end` block body; unclosed record type `{`.
+- Tests: extend `compiler/tests/test_parser.mlc` + remove entries from known_divergences when fixed.
+- Run `run_negative_corpus.sh` + `run_fuzz_differential.sh`.
+
+## Deferred (not in this track)
+
+- Parser `ref mut` — [TRACK_PLAN.md](TRACK_PLAN.md) step 15, separate branch.
+- Full AST/codegen diff mlcc vs Ruby — out of scope.
+- `lib/mlc/` parity — not in scope.
+- Record default expression parity (E4) — separate track if needed.
+
+## Next step (Driver)
+
+**STEP=1** — unclosed block + unclosed record type parse errors.

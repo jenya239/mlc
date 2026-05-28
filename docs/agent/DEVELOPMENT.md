@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **active** (step 1): SemanticIR `SDecl` spans (PLAN §Phase 1 §1). [TRACK_BUILD.md](TRACK_BUILD.md) **closed** (`1d6f4c5`).
+[TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — **active** (step 1): negative corpus exit parity with Ruby (PLAN §Phase 1 §3). [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) **closed** (`e826f1a`).
 
 ## Step sizing (good vs bad)
 

@@ -5,12 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
-| role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | run_tests | 755 |
-| TRACK_PLAN | TRACK_SPAN_IR **closed** (`e826f1a`) |
-| agent_token_last | cr-agent-13c45e18-a074-4c60-8505-3d130be3a408 |
+| TRACK_PLAN | TRACK_PARSER_PARITY **active** (step 1) |
+| agent_token_last | cr-agent-3d37ceae-c6e9-44c9-a1ae-60e732352799 |
+
+### Turn 2026-05-28 (Planner plan-refresh — PARSER_PARITY)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_SPAN_IR closed; opened TRACK_PARSER_PARITY (5 steps) |
+| verify | docs only |
+| next | ROLE=Driver STEP=1 (enqueued) |
 
 ### Turn 2026-05-28 (Driver SPAN_IR step 5 — track close)
 
