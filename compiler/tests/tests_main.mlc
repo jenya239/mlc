@@ -10,6 +10,7 @@ import { decl_gen_tests } from './test_decl_gen'
 import { partial_application_tests } from './test_partial_application'
 import { merge_import_tests } from './test_merge_imports'
 import { pass_type_tests } from './test_pass'
+import { compile_commands_tests } from './test_compile_commands'
 import { expr_visitor_tests } from './test_expr_visitor'
 import { cpp_printer_tests } from './test_cpp_printer'
 import { fuzz_tests } from './test_fuzz'
@@ -45,6 +46,9 @@ fn all_tests() -> [TestResult] = do
 
   const suite_pass = pass_type_tests()
   index = 0; while index < suite_pass.length() do all.push(suite_pass[index]); index = index + 1 end
+
+  const suite_compile_commands = compile_commands_tests()
+  index = 0; while index < suite_compile_commands.length() do all.push(suite_compile_commands[index]); index = index + 1 end
 
   const suite_expr_visitor = expr_visitor_tests()
   index = 0; while index < suite_expr_visitor.length() do all.push(suite_expr_visitor[index]); index = index + 1 end

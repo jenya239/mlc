@@ -8,7 +8,7 @@ mkdir -p "$OUT_DIR"
 
 TESTS_MAIN="$COMPILER_DIR/tests/tests_main.mlc"
 
-echo "[compiler tests] phase 1/5: compile tests_main.mlc → ${OUT_DIR}/run_tests" >&2
+echo "[compiler tests] phase 1/6: compile tests_main.mlc → ${OUT_DIR}/run_tests" >&2
 
 bundle exec ruby -I"$ROOT_DIR/lib" -e '
 require "mlc/common/index"
@@ -24,14 +24,17 @@ result = compiler.build
 puts "Built: #{result[:binary]}"
 ' "$TESTS_MAIN" "$OUT_DIR"
 
-echo "[compiler tests] phase 2/5: execute run_tests" >&2
+echo "[compiler tests] phase 2/6: execute run_tests" >&2
 "$OUT_DIR/run_tests"
 
-echo "[compiler tests] phase 3/5: fuzz smoke (mlcc --check-only)" >&2
+echo "[compiler tests] phase 3/6: fuzz smoke (mlcc --check-only)" >&2
 bash "$COMPILER_DIR/tests/fuzz/run_fuzz_smoke.sh" "$COMPILER_DIR/out/mlcc"
 
-echo "[compiler tests] phase 4/5: negative corpus (mlcc --check-only)" >&2
+echo "[compiler tests] phase 4/6: negative corpus (mlcc --check-only)" >&2
 bash "$COMPILER_DIR/tests/fuzz/run_negative_corpus.sh" "$COMPILER_DIR/out/mlcc"
 
-echo "[compiler tests] phase 5/5: fuzz differential (mlcc vs Ruby checker)" >&2
+echo "[compiler tests] phase 5/6: fuzz differential (mlcc vs Ruby checker)" >&2
 bash "$COMPILER_DIR/tests/fuzz/run_fuzz_differential.sh" "$COMPILER_DIR/out/mlcc"
+
+echo "[compiler tests] phase 6/6: compile_commands smoke (mlcc --emit-compile-commands)" >&2
+bash "$COMPILER_DIR/tests/run_compile_commands_smoke.sh" "$COMPILER_DIR/out/mlcc"

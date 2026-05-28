@@ -1,0 +1,77 @@
+import { TestResult, assert_eq_str, assert_true } from './test_runner'
+import { build_compile_commands_json, compile_command_arguments, runtime_include_directory } from '../compile_commands'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { LoadItem } from '../codegen/decl/decl_index'
+import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
+
+fn compile_commands_pipeline_input(source: string, output_directory: string) -> ModularCompileInput = do
+  const program = parse_program(tokenize(source).tokens)
+  const load_item = LoadItem {
+    path: 'compile_commands_probe.mlc',
+    decls: program.decls,
+    imports: [],
+    namespace_import_aliases: []
+  }
+  ModularCompileInput {
+    load_items: [load_item],
+    full_program: program,
+    entry_program: program,
+    output_directory: output_directory,
+    profile_enabled: false,
+    check_only: false,
+    emit_compile_commands: true
+  }
+end
+
+fn compile_commands_json_contents_ok(json: string) -> bool =
+  json.contains('"directory"')
+    && json.contains('"file"')
+    && json.contains('"arguments"')
+    && json.contains('clang++')
+    && json.contains(runtime_include_directory())
+    && json.contains('compile_commands_probe.cpp')
+
+fn compile_commands_json_has_expected_fields(json_path: string) -> bool =
+  if File.exists(json_path)
+    then compile_commands_json_contents_ok(File.read(json_path))
+    else false
+  end
+
+fn pipeline_compile_commands_json_ok(source: string) -> bool = do
+  const output_directory = File.make_temp_directory('mlcc_test_')
+  const json_path = output_directory + '/compile_commands.json'
+  match run_modular_compiler_pipeline(compile_commands_pipeline_input(source, output_directory)) {
+    Ok(_) => compile_commands_json_has_expected_fields(json_path),
+    Err(_) => false
+  }
+end
+
+export fn compile_commands_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const arguments = compile_command_arguments('/tmp/out', '/tmp/out/module.cpp')
+  results.push(assert_eq_str('compile_command_arguments compiler',
+    arguments[0], 'clang++'))
+  results.push(assert_true('compile_command_arguments includes output include path',
+    arguments.length() >= 6 && arguments[4] == '/tmp/out'))
+  results.push(assert_true('compile_command_arguments includes runtime include path',
+    arguments.length() >= 8 && arguments[6] == runtime_include_directory()))
+  results.push(assert_true('compile_command_arguments includes source file',
+    arguments.length() >= 9 && arguments[8] == '/tmp/out/module.cpp'))
+
+  const json = build_compile_commands_json('/tmp/out', ['/tmp/out/module.cpp'])
+  results.push(assert_true('build_compile_commands_json array open',
+    json.contains('[\n')))
+  results.push(assert_true('build_compile_commands_json contains directory field',
+    json.contains('"directory": "/tmp/out"')))
+  results.push(assert_true('build_compile_commands_json contains file field',
+    json.contains('"file": "/tmp/out/module.cpp"')))
+  results.push(assert_true('build_compile_commands_json contains clang++ argument',
+    json.contains('"clang++"')))
+
+  results.push(assert_true('pipeline emit_compile_commands writes json',
+    pipeline_compile_commands_json_ok('fn probe() -> i32 = 42')))
+
+  results
+end
