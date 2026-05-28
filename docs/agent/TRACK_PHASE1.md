@@ -30,7 +30,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 3 | Replace `infer_messages_as_diagnostics` — infer emits `Diagnostic` with span at source | done (`46e2280`) |
 | 4 | Audit checker paths with `span_unknown`; fix high-traffic infer_call / type mismatch | done (`6d5150a`) |
 | 5 | Negative tests in `test_checker.mlc` (invalid input → specific diagnostic) | done (`8b3fe71`) |
-| 6 | `--check-only` CLI flag (checker + transform, no codegen) | pending |
+| 6 | `--check-only` CLI flag (checker + transform, no codegen) | done (`177659a`) |
 | 7 | Default output dir — temp under `$TMPDIR` instead of workspace `out/` | pending |
 | 8 | Fuzz smoke: random program generator skeleton + mlcc no-crash test | pending |
 
@@ -62,4 +62,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=6** — `--check-only` CLI flag (checker + transform, no codegen).
+**STEP=7** — default output dir temp under `$TMPDIR` instead of workspace `out/`.
