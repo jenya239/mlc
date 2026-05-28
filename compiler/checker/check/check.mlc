@@ -1,6 +1,6 @@
 // Checker entry: name resolution + type inference over a program (or entry slice).
 
-import { Program, Decl, Result, decl_inner, param_name, param_typ, Param,
+import { Program, Decl, Result, decl_inner, decl_span, param_name, param_typ, Param,
          Diagnostic, diagnostic_error, diagnostic_error_with_code, diagnostics_append, diagnostics_to_strings, expr_span,
          Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span,
          span_unknown, TypeVariant, FieldDef } from '../../frontend/ast'
@@ -108,32 +108,6 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
     VarTuple(_, _, _) => diagnostics_accumulator_so_far,
     VarUnit(_, _)     => diagnostics_accumulator_so_far,
   }
-
-fn record_field_definitions_diagnostic_span(field_definitions: [Shared<FieldDef>]) -> Span = do
-  let mut field_index = 0
-  while field_index < field_definitions.length() do
-    const field_definition = field_definitions[field_index]
-    if field_definition.has_default_expression then
-      return expr_span(field_definition.default_expression)
-    end
-    field_index = field_index + 1
-  end
-  span_unknown()
-end
-
-fn type_variants_diagnostic_span(variants: [Shared<TypeVariant>]) -> Span = do
-  let mut variant_index = 0
-  while variant_index < variants.length() do
-    const candidate_span = match variants[variant_index] {
-      VarRecord(_, field_definitions, _) =>
-        record_field_definitions_diagnostic_span(field_definitions),
-      _ => span_unknown()
-    }
-    if candidate_span.line > 0 then return candidate_span end
-    variant_index = variant_index + 1
-  end
-  span_unknown()
-end
 
 fn record_field_default_value_diagnostics(
   type_parameters: [string],
@@ -465,10 +439,11 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
           return_type_errors); ()
       end,
       DeclType(_, type_parameters, variants, derive_trait_names, _) => do
+        const declaration_span = decl_span(expanded_entry_program.decls[declaration_index])
         all_diagnostics = diagnostics_append(
           all_diagnostics,
           derive_clause_diagnostics(
-            type_parameters, variants, derive_trait_names, type_variants_diagnostic_span(variants)))
+            type_parameters, variants, derive_trait_names, declaration_span))
         all_diagnostics = diagnostics_append(
           all_diagnostics,
           record_field_default_value_diagnostics(type_parameters, variants, registry))

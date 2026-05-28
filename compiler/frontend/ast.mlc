@@ -265,6 +265,19 @@ export fn decl_name_span(decl: Shared<Decl>) -> Span = do
   }
 end
 
+export fn decl_span(declaration: Shared<Decl>) -> Span = do
+  match decl_inner(declaration) {
+    DeclFn(_, _, _, _, _, body, _) => expr_span(body),
+    DeclType(_, _, _, _, name_span) => name_span,
+    DeclTrait(_, _, _, name_span) => name_span,
+    DeclExtend(_, _, _, name_span) => name_span,
+    DeclAssocBind(_, _, span) => span,
+    DeclAssocType(_, span) => span,
+    DeclExported(inner) => decl_span(inner),
+    _ => span_unknown()
+  }
+end
+
 // --- Result type ----------------------------------------------------------
 
 export type Result<T, E> = Ok(T) | Err(E)

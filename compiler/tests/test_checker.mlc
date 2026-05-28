@@ -797,8 +797,10 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true('derive: unknown trait name',
     first_checker_error_line('type P = { x: i32 } derive { FooTrait }\nfn main() -> i32 = 0').contains('E071')))
 
-  results.push(assert_true('derive: duplicate trait in list',
-    first_checker_error_line('type P = { x: i32 } derive { Eq, Eq }\nfn main() -> i32 = 0').contains('E070')))
+  results.push(assert_checker_diagnostic(
+    'negative E070: duplicate derive at type name span',
+    'type P = { x: i32 } derive { Eq, Eq }\nfn main() -> i32 = 0',
+    'error[E070]: duplicate derive trait "Eq"\n  --> 1:6'))
 
   results.push(assert_true('derive Hash: generic type rejected',
     first_checker_error_line('type Box<T> = { value: T } derive { Hash }\nfn main() -> i32 = 0').contains('E072')))
