@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | run_tests | 739 |
-| TRACK_PLAN | TRACK_SPAN_CHECKER **active** (step 4) |
+| TRACK_PLAN | TRACK_SPAN_CHECKER **active** (step 5) |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
+
+### Turn 2026-05-28 (Driver SPAN_CHECKER step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | record_gen + expression_support sexpr_span; commit `7132801` |
+| verify | 739 pass; self-host diff empty |
+| next | ROLE=Driver STEP=5 (enqueued) |
 
 ### Turn 2026-05-28 (Driver SPAN_CHECKER step 3)
 
