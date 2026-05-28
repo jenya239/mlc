@@ -10,7 +10,15 @@
 | step_last | 1 |
 | run_tests | 706 |
 | TRACK_PLAN | TRACK_FUZZ_DIFF active (step 2) |
-| agent_token_last | cr-agent-7abe4e69-c776-45b1-8d62-b8bd8ef44ede |
+| agent_token_last | cr-agent-aa09f90b-66ba-41cf-85ad-19d639c05610 |
+
+### Turn 2026-05-28 (Driver FUZZ_DIFF step 1 idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 1 (skip) |
+| done | already committed (`0654dda`); differential ok (16 files) |
+| next | ROLE=Driver STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (Driver FUZZ_DIFF step 1)
 
