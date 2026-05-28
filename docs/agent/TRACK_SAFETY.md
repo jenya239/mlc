@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §4; previous: [TRACK_PHASE1.md](TRACK_PHASE1.md) (**closed**, step 8 `fd42eab`)
 
-## Status: in progress (step 2 pending)
+## Status: in progress (step 3 pending)
 
 **Goal:** mlcc never core-dumps on bad input; fuzz coverage beyond smoke skeleton.
 
@@ -26,7 +26,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Negative corpus — static invalid `.mlc` files + shell gate (exit 0/1 only) | done (`65fe570`) |
-| 2 | Random-byte smoke — binary garbage inputs via `run_fuzz_smoke.sh` | pending |
+| 2 | Random-byte smoke — binary garbage inputs via `run_fuzz_smoke.sh` | done (`44da689`) |
 | 3 | Expand `fuzz/random_program.mlc` (if/let/match variants; sync shell generator) | pending |
 | 4 | Repro + fix in-process pipeline heap crash (`free(): invalid size` in run_tests loop) | pending |
 
@@ -49,4 +49,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=1** — negative corpus static invalid `.mlc` + shell gate in `build_tests.sh`.
+**STEP=3** — expand `fuzz/random_program.mlc` (if/let/match; sync shell generator).
