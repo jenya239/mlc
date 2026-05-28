@@ -5,12 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | run_tests | 607 |
-| TRACK_PLAN | TRACK_SECURITY active (step 1 pending) |
-| agent_token_last | cr-agent-8b6637e3-30d4-4f68-9f37-ccfb3aaeefbb |
+| TRACK_PLAN | TRACK_SECURITY active (step 2 pending) |
+| agent_token_last | pending enqueue |
+
+### Turn 2026-05-28 (SECURITY step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | negative_corpus 8→16; parse/check edge .mlc files |
+| verify | 607 pass; run_negative_corpus ok (16 files) |
+| uncommitted_files | 0 |
+| next | ROLE=Driver STEP=2 TRACK_SECURITY (enqueued) |
 
 ### Turn 2026-05-28 (PERF step 5 confirm + enqueue SECURITY)
 
