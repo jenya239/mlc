@@ -69,10 +69,6 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - [x] PLAN §Phase 1 §1 residual — spans on SemanticIR decls
 - [x] Driver enqueued STEP=1
 
-## Next step (Planner)
-
-**plan-refresh** — pick next Phase 1 item from PLAN.md.
-
 ## Planner checklist (2026-05-28 plan-refresh — BUILD)
 
 - [x] TRACK_SPAN_CHECKER closed (`a8bf7a1`; 5/5 steps)

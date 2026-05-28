@@ -12,6 +12,14 @@
 | TRACK_PLAN | TRACK_SPAN_IR **active** (step 1) |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
 
+### Turn 2026-05-28 (Planner plan-refresh — idempotent skip)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| step | plan-refresh (skip) |
+| done | TRACK_SPAN_IR already open (`4a6c31d`); STEP=1 pending |
+| next | ROLE=Driver STEP=1 (re-enqueued) |
+
 ### Turn 2026-05-28 (Planner plan-refresh — SPAN_IR)
 
 | turn | 2026-05-28 |
