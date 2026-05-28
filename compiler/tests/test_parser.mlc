@@ -19,6 +19,36 @@ fn parse_expr_source(source: string) -> Shared<Expr> =
 fn parse_expr_errors(source: string) -> [string] =
   parse_expr(parser_new(tokenize(source).tokens)).parser.errors
 
+fn parser_garbage_smoke(source: string) -> bool = do
+  const lex = tokenize(source)
+  if lex.has_errors() then true
+  else do
+    parse_program_with_errors(lex.tokens, 'smoke.mlc')
+    true
+  end
+  end
+end
+
+fn parser_expr_garbage_smoke(source: string) -> bool = do
+  const lex = tokenize(source)
+  if lex.has_errors() then true
+  else do
+    parse_expr(parser_new(lex.tokens))
+    true
+  end
+  end
+end
+
+fn parser_deep_nesting_source(depth: i32) -> string = do
+  let mut body = "0"
+  let mut level = 0
+  while level < depth do
+    body = "do\n" + body + "\nend"
+    level = level + 1
+  end
+  "fn smoke_entry() -> i32 = " + body
+end
+
 fn expr_call_one_ident_argument(expression: Shared<Expr>, expected_function: string, expected_argument: string) -> bool =
   match expression {
     ExprCall(callee, arguments, _) =>
@@ -481,6 +511,30 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true('parse program: invalid let pattern yields parse error',
     parse_source_errors('fn f() -> i32 = do let @@@ = 1 end').length() >= 1))
+
+  results.push(assert_true('parser smoke: parse_noise completes',
+    parser_garbage_smoke('fn @@@')))
+
+  results.push(assert_true('parser smoke: unclosed block completes',
+    parser_garbage_smoke('fn f() -> i32 = do\n  let x = 1\n  x')))
+
+  results.push(assert_true('parser smoke: orphan end completes',
+    parser_garbage_smoke('end')))
+
+  results.push(assert_true('parser smoke: unclosed record type completes',
+    parser_garbage_smoke('type OpenRecord = { field_name: string')))
+
+  results.push(assert_true('parser smoke: invalid trait syntax completes',
+    parser_garbage_smoke('trait BrokenTrait {\n  fn missing_body(self: i32) -> i32')))
+
+  results.push(assert_true('parser smoke: lex unclosed string completes',
+    parser_garbage_smoke('fn f() -> string = "unclosed')))
+
+  results.push(assert_true('parser smoke: deep nesting completes',
+    parser_garbage_smoke(parser_deep_nesting_source(16))))
+
+  results.push(assert_true('parser smoke: expr garbage completes',
+    parser_expr_garbage_smoke('@@@ + ([')))
 
   results
 end
