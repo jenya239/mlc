@@ -8,8 +8,7 @@ import {
   Span,
   WhereClauseBound,
   TypeExpr,
-  Diagnostic, diagnostic_error_with_code,
-  span_unknown
+  Diagnostic, diagnostic_error_with_code
 } from '../../frontend/ast'
 import { diagnostic_code_e074 } from '../diagnostic_codes'
 
@@ -32,7 +31,7 @@ fn strip_parameter_to_synthetic_plain(parameter: Shared<Param>, synthetic_name: 
     typ: parameter.typ,
     has_default: parameter.has_default,
     default: parameter.default,
-    param_pattern: Shared.new(PatUnit(span_unknown()))
+    param_pattern: Shared.new(PatUnit(pat_span(parameter.param_pattern)))
   })
 
 fn prelude_statement_destructure(parameter: Shared<Param>, synthetic_name: string, binding_span: Span) -> Shared<Stmt> =

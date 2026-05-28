@@ -2,7 +2,7 @@
 // Mirrors infer_expr but produces typed Shared<SExpr> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, span_unknown, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from '../../frontend/ast'
+import { Expr, Stmt, FieldVal, MatchArm, Pat, Span, expr_span, pat_span, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from '../../frontend/ast'
 import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from '../registry'
 import {
   binary_operation_result_type,
@@ -379,7 +379,7 @@ fn transform_single_match_arm(
     if arm.has_guard then
       transform_expr(arm.when_condition, arm_transform_context, stmts_fn)
     else
-      Shared.new(SExprBool(true, Shared.new(TBool), span_unknown()))
+      Shared.new(SExprBool(true, Shared.new(TBool), pat_span(arm.pat)))
     end
   Shared.new(SMatchArm {
     pat: arm.pat,
@@ -776,7 +776,7 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     ExprTuple(elements, source_span) => do
       if elements.length() < 2 then
-        Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
+        Shared.new(SExprUnit(Shared.new(TUnit), source_span))
       else
         const typed = transform_exprs(elements, transform_context, stmts_fn)
         const tuple_types =
@@ -822,7 +822,7 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
       Shared.new(SExprWith(typed_resource, binder, stmts_result.statements, Shared.new(TUnit), source_span))
     end,
 
-    _ => Shared.new(SExprUnit(Shared.new(TUnit), span_unknown()))
+    _ => Shared.new(SExprUnit(Shared.new(TUnit), expr_span(expression_partial_application)))
   }
 end
 
