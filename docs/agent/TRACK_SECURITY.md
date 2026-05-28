@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3–§4; previous: [TRACK_SAFETY.md](TRACK_SAFETY.md) (**closed**, `32f8335`), [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) (**closed**, `0671422`)
 
-## Status: in progress (step 4 pending)
+## Status: **closed** (step 4 `a035c3d`)
 
 **Goal:** broaden invalid-input coverage; no core dump on garbage; structured negative tests beyond SAFETY baseline.
 
@@ -14,7 +14,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3–§4; previous: [TRACK_SAFETY.md
 ## Verify gate (every step)
 
 ```
-bundle exec rake test_compiler_mlc   # 607 pass (baseline post-PERF)
+bundle exec rake test_compiler_mlc   # 680 pass (baseline post-step 3)
 compiler/build.sh                    # when compiler/** touched
 compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
 compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
@@ -36,7 +36,7 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 | 1 | Negative corpus expansion — parser/checker edge `.mlc` files (8→16+) | done (`d9aa33b`) |
 | 2 | Fuzz generator — record/type/trait variants; sync `run_fuzz_smoke.sh` | done (`e54e0c0`) |
 | 3 | In-process fuzz sweep — widen `test_fuzz.mlc` seed range + garbage lex patterns | done (`c94797d`) |
-| 4 | Frontend panic audit — replace silent failure paths in one module (lexer or parser) | pending |
+| 4 | Frontend panic audit — replace silent failure paths in one module (lexer or parser) | done (`a035c3d`) |
 
 ## Step 1 detail (done — `d9aa33b`)
 
@@ -55,10 +55,10 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 - Garbage lex: unclosed string, deep `do`/`end` nesting; no new shell scripts.
 - Gate: 680 pass (was 614).
 
-## Step 4 detail
+## Step 4 detail (done — `a035c3d`)
 
-- Grep `unreachable` / empty match arms in `compiler/frontend/` (lexer, parser, predicates).
-- One module per commit; `panic` with message on paths reachable from fuzz inputs.
+- `compiler/frontend/lexer.mlc` only: `lexer_internal_panic`, negative `peek` guard, unterminated block comment → lex error, dangling string escape → lex error, tokenize no-progress panic.
+- Gate: 680 pass; self-host diff empty.
 
 ## Deferred (not in this track)
 
@@ -66,7 +66,8 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 - treereduce ICE minimizer.
 - `--emit=mir` artifact for structured fuzz.
 - Property-based / QuickCheck-style generator.
+- Parser module panic audit — separate track if needed.
 
-## Next step (Driver)
+## Track closed
 
-**STEP=4** — Frontend panic audit (one module).
+All 4 steps done. Next: **Planner** `STEP=plan-refresh`.

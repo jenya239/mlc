@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | run_tests | 680 |
-| TRACK_PLAN | TRACK_SECURITY active (step 4 pending) |
-| agent_token_last | cr-agent-a555687e-5eb6-46eb-b553-bb7f337454bc |
+| TRACK_PLAN | TRACK_SECURITY closed (`a035c3d`) |
+| agent_token_last | pending enqueue |
+
+### Turn 2026-05-28 (SECURITY step 4)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 4 |
+| step | 4 |
+| done | lexer.mlc panic audit: internal panic, block comment/escape errors, no-progress guard |
+| verify | 680 pass; self-host diff empty |
+| uncommitted_files | 0 |
+| next | ROLE=Planner STEP=plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (SECURITY step 3)
 

@@ -48,11 +48,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Phase 1 stabilization:** [TRACK_PHASE1.md](TRACK_PHASE1.md) — **closed** (`fd42eab`)
 - **Safety / fuzz hardening:** [TRACK_SAFETY.md](TRACK_SAFETY.md) — **closed** (`32f8335`)
 - **Performance:** [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **closed** (`0671422`)
-- **Security / fuzz depth:** [TRACK_SECURITY.md](TRACK_SECURITY.md) — **active** (step 4 pending)
+- **Security / fuzz depth:** [TRACK_SECURITY.md](TRACK_SECURITY.md) — **closed** (`a035c3d`)
 
-## Next step (Driver)
+## Next step (Planner)
 
-See [TRACK_SECURITY.md](TRACK_SECURITY.md) — **STEP=4** (frontend panic audit).
+**STEP=plan-refresh** — pick next track from PLAN.
 
 ## Planner checklist (2026-05-28 plan-refresh — security track)
 
