@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| run_tests | 706 |
-| TRACK_PLAN | TRACK_FUZZ_DIFF active (step 5) |
-| agent_token_last | cr-agent-04356f87-26b2-44a3-8aad-32765ff96e48 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| run_tests | 719 |
+| TRACK_PLAN | TRACK_FUZZ_DIFF closed (`5463361`) |
+| agent_token_last | cr-agent-b76c8aa9-2a54-446f-979c-a3541b23b18a |
+
+### Turn 2026-05-28 (Driver FUZZ_DIFF step 5 — track close)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 5 |
+| step | 5 |
+| done | test_fuzz.mlc differential smoke (+13); TRACK closed (`5463361`) |
+| verify | 719 pass; self-host diff empty |
+| next | ROLE=Planner plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (Driver FUZZ_DIFF step 4)
 
