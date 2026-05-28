@@ -10,7 +10,15 @@
 | step_last | plan-refresh |
 | run_tests | 680 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS active (step 1) |
-| agent_token_last | cr-agent-93a78e69-e46a-4b87-9a7f-cc0d846a3a8a |
+| agent_token_last | cr-agent-91327058-cf56-46a9-9d18-bc9f57cd2991 |
+
+### Turn 2026-05-28 (Planner plan-refresh idempotent #4)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| step | plan-refresh (skip) |
+| done | TRACK_DIAGNOSTICS open; STEP=1 pending |
+| next | ROLE=Driver STEP=1 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh idempotent #3)
 
