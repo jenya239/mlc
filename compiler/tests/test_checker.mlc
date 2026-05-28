@@ -309,6 +309,12 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('typed lambda two params — 0 errors',
     check_error_count('fn f() -> i32 = do\n  const g = (x: i32, y: i32) => x + y\n  g(1, 2)\nend'), 0))
 
+  results.push(assert_eq_int('untyped lambda closure — 0 errors',
+    check_error_count('fn f() -> i32 = do\n  const base = 10\n  const g = x => x + base\n  g(5)\nend'), 0))
+
+  results.push(assert_eq_int('array literal return — 0 errors',
+    check_error_count('fn f() -> [i32] = [1, 2]'), 0))
+
   results.push(assert_eq_int('Ok/Err/Result as known globals - 0 errors',
     check_error_count('fn f() -> i32 = do\n  const r = Ok(42)\n  0\nend'), 0))
 
