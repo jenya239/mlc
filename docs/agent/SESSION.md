@@ -5,12 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| run_tests | 738 |
-| TRACK_PLAN | TRACK_SPAN_CHECKER **active** (step 1) |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| run_tests | 739 |
+| TRACK_PLAN | TRACK_SPAN_CHECKER **active** (step 2) |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
+
+### Turn 2026-05-28 (Driver SPAN_CHECKER step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | check.mlc + call_argument_unify spans; +E042 test; commit `4002943` |
+| verify | 739 pass; self-host diff empty |
+| next | ROLE=Driver STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — idempotent skip)
 
