@@ -5,11 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
-| role_last | Planner |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| role_last | Driver |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | run_tests | 536 |
-| TRACK_PLAN | TRACK_SAFETY active (step 1 pending) |
+| TRACK_PLAN | TRACK_SAFETY active (step 2 pending) |
+
+### Turn 2026-05-28 (SAFETY step 1)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 1 |
+| step | 1 |
+| done | negative_corpus/ (8 invalid .mlc) + run_negative_corpus.sh; build_tests phase 4/4 |
+| verify | 536 pass + negative corpus ok; build.sh; self-host diff empty |
+| uncommitted_files | 0 |
+| next | STEP=2 TRACK_SAFETY (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — TRACK_SAFETY)
 
