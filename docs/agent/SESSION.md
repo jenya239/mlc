@@ -10,7 +10,15 @@
 | step_last | 5 |
 | run_tests | 692 |
 | TRACK_PLAN | TRACK_DIAGNOSTICS closed (`f6863fe`) |
-| agent_token_last | cr-agent-a5b686bc-303e-4ffb-8cf8-d39ae5fb4ff4 |
+| agent_token_last | cr-agent-02178e1e-f936-44bd-b138-0c97bd1eecdb |
+
+### Turn 2026-05-28 (DIAGNOSTICS step 5 idempotent)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 5 (skip) |
+| done | track closed `f6863fe`; plan-refresh pending |
+| next | ROLE=Planner plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (DIAGNOSTICS step 5 — track closed)
 
