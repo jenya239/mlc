@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §2; previous: [TRACK_DIAGNOSTICS.md](TRACK_DIAGNOSTICS.md) (**closed**, `f6863fe`)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** extend `test_checker.mlc` and `test_codegen.mlc` so major `SExpr`/`SStmt` variants have at least one positive test; add targeted negative tests where gaps exist.
 
@@ -27,7 +27,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Lambda + array literal — positive tests in `test_checker.mlc` (typed/untyped lambda, array lit) | done (`9bf51aa`) |
-| 2 | Tuple + record update — positive tests in `test_checker.mlc` | pending |
+| 2 | Tuple + record update — positive tests in `test_checker.mlc` | done (`c414120`) |
 | 3 | Match + for-in edge — positive tests (guard ok path, nested for) | pending |
 | 4 | Codegen smoke — extend `test_codegen.mlc` for one uncovered expr arm | pending |
 | 5 | Codegen stmt — extend `test_codegen.mlc` for one stmt category; document test count | pending |
@@ -48,4 +48,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=2** — tuple + record update tests.
+**STEP=3** — match + for-in edge tests.

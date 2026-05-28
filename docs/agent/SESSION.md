@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| run_tests | 694 |
-| TRACK_PLAN | TRACK_COVERAGE active (step 2) |
-| agent_token_last | cr-agent-83f51105-5a8c-465f-ab14-844f62d723c2 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| run_tests | 698 |
+| TRACK_PLAN | TRACK_COVERAGE active (step 3) |
+| agent_token_last | cr-agent-4b7f1c91-7759-4b4e-99e0-f634cb3d0afa |
+
+### Turn 2026-05-28 (COVERAGE step 2)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 2 |
+| step | 2 |
+| done | tuple destructure + record update positive tests (`c414120`) |
+| verify | 698 pass; tests only (no self-host) |
+| uncommitted_files | compiler/out/* artifacts |
+| next | ROLE=Driver STEP=3 (enqueued) |
 
 ### Turn 2026-05-28 (COVERAGE step 1 idempotent)
 
