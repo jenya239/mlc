@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) (**closed**, `e826f1a`)
 
-## Status: **active** (step 1 pending)
+## Status: **active** (step 2 pending)
 
 **Goal:** mlcc `--check-only` exit codes match Ruby checker on `negative_corpus/`; shrink `negative_corpus_known_divergences.txt` to zero (or document intentional mlcc-stricter cases).
 

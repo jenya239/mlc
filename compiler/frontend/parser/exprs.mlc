@@ -38,6 +38,18 @@ export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
   StmtsResult { stmts, parser: closing_parser }
 end
 
+fn parse_stmts_until_end_or_eof(parser: Parser) -> StmtsResult = do
+  const stmts: [Shared<Stmt>] = []
+  let mut state = parser
+  while !state.kind().is_end() && !state.at_eof() do
+    const result = parse_stmt(state)
+    stmts.push(result.stmt)
+    state = result.parser.skip_semi()
+  end
+  const closing_parser = if state.kind().is_end() then state.advance() else state end
+  StmtsResult { stmts, parser: closing_parser }
+end
+
 export fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
   let mut state = parser
@@ -857,7 +869,7 @@ export fn parse_if_expr(parser: Parser) -> ExprResult = do
       ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_block.expr, header_span)), parser: after_block }
     else
       const else_span = after_else.span_at_cursor()
-      const else_stmts = parse_stmts_until_end(after_else)
+      const else_stmts = parse_stmts_until_end_or_eof(after_else)
       ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_stmts.to_block_expr(else_span), header_span)), parser: else_stmts.parser }
     end
   else

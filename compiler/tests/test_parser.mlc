@@ -506,8 +506,17 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_true('parse program: unclosed do block yields parse error',
     parse_source_errors('fn f() -> i32 = do 1').length() >= 1))
 
+  results.push(assert_true('parse program: multiline unclosed do block yields parse error',
+    parse_source_errors("fn f() -> i32 = do\n  let x = 1\n  x").length() >= 1))
+
+  results.push(assert_true('parse program: unclosed record type yields parse error',
+    parse_source_errors('type OpenRecord = { field_name: string').length() >= 1))
+
   results.push(assert_true('parse program: unclosed match brace yields parse error',
     parse_source_errors('fn f() -> i32 = match x { A => 1').length() >= 1))
+
+  results.push(assert_true('parse program: inline if-then-else without end parses',
+    parse_source_errors('fn f() -> i32 = if true then 1 else 2').length() == 0))
 
   results.push(assert_true('parse program: invalid let pattern yields parse error',
     parse_source_errors('fn f() -> i32 = do let @@@ = 1 end').length() >= 1))
@@ -515,14 +524,8 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_true('parser smoke: parse_noise completes',
     parser_garbage_smoke('fn @@@')))
 
-  results.push(assert_true('parser smoke: unclosed block completes',
-    parser_garbage_smoke('fn f() -> i32 = do\n  let x = 1\n  x')))
-
   results.push(assert_true('parser smoke: orphan end completes',
     parser_garbage_smoke('end')))
-
-  results.push(assert_true('parser smoke: unclosed record type completes',
-    parser_garbage_smoke('type OpenRecord = { field_name: string')))
 
   results.push(assert_true('parser smoke: invalid trait syntax completes',
     parser_garbage_smoke('trait BrokenTrait {\n  fn missing_body(self: i32) -> i32')))

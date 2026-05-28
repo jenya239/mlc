@@ -1,7 +1,7 @@
 // Entry point. Pipeline: source → lex → parse → merge → Pass pipeline (check → transform → codegen)
 
 import { tokenize } from './frontend/lexer'
-import { parse_program_with_source_path } from './frontend/parser/decls'
+import { parse_program_with_errors } from './frontend/parser/decls'
 import { LoadItem } from './codegen/decl/decl_index'
 import { NamespaceImportAlias } from './codegen/decl/decl_index'
 import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from './frontend/ast'
@@ -58,6 +58,16 @@ end
 
 type LoadResult = LoadResult { items: [LoadItem], errors: [string] }
 
+fn prefix_parse_errors(source_path: string, messages: [string]) -> [string] = do
+  let mut prefixed: [string] = []
+  let mut index = 0
+  while index < messages.length() do
+    prefixed.push(`parse ${source_path}: ${messages[index]}`)
+    index = index + 1
+  end
+  prefixed
+end
+
 fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref mut Map<string, LoadResult>, profile_enabled: bool) -> LoadResult = do
   const norm_path = resolve_dotdot(path)
   if cache.has(norm_path) then cache.get(norm_path)
@@ -78,8 +88,9 @@ fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref 
     LoadResult { items: [], errors: [`lex ${path}: ${lex.errors[0]}`] }
   else
     profile_maybe_begin(profile_enabled, "parse")
-    const prog = parse_program_with_source_path(lex.tokens, norm_path)
+    const parse_result = parse_program_with_errors(lex.tokens, norm_path)
     profile_maybe_end(profile_enabled, "parse")
+    const prog = parse_result.program
     let items: [LoadItem] = []
     let seen: Map<string, bool> = Map.new()
     let my_decls: [Shared<Decl>] = []
@@ -199,33 +210,39 @@ fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool, c
   else
     const source_path = resolve_dotdot(entry_path)
     profile_maybe_begin(profile_enabled, "parse")
-    const parsed_program = parse_program_with_source_path(lex.tokens, source_path)
+    const parse_result = parse_program_with_errors(lex.tokens, source_path)
     profile_maybe_end(profile_enabled, "parse")
-    profile_maybe_begin(profile_enabled, "merge")
-    const merged = merge_program(entry_path, parsed_program, profile_enabled)
-    profile_maybe_end(profile_enabled, "merge")
-    if merged.errors.length() > 0 then
+    if check_only && parse_result.errors.length() > 0 then
       profile_maybe_end(profile_enabled, "total")
       profile_finish(profile_enabled)
-      Err(merged.errors)
-    else do
-      const merged_item_count = merged.items.length()
-      const entry_load_item = merged.items[merged_item_count - 1]
-      const entry_only_program = Program { decls: entry_load_item.decls }
-      const pipeline_input = ModularCompileInput {
-        load_items: merged.items,
-        full_program: merged.prog,
-        entry_program: entry_only_program,
-        output_directory: out_dir,
-        profile_enabled: profile_enabled,
-        check_only: check_only,
-        emit_compile_commands: emit_compile_commands
-      }
-      const pipeline_result = run_modular_compiler_pipeline(pipeline_input)?
-      profile_maybe_end(profile_enabled, "total")
-      profile_finish(profile_enabled)
-      Ok('')
-    end
+      Err(prefix_parse_errors(source_path, parse_result.errors))
+    else
+      profile_maybe_begin(profile_enabled, "merge")
+      const merged = merge_program(entry_path, parse_result.program, profile_enabled)
+      profile_maybe_end(profile_enabled, "merge")
+      if merged.errors.length() > 0 then
+        profile_maybe_end(profile_enabled, "total")
+        profile_finish(profile_enabled)
+        Err(merged.errors)
+      else do
+        const merged_item_count = merged.items.length()
+        const entry_load_item = merged.items[merged_item_count - 1]
+        const entry_only_program = Program { decls: entry_load_item.decls }
+        const pipeline_input = ModularCompileInput {
+          load_items: merged.items,
+          full_program: merged.prog,
+          entry_program: entry_only_program,
+          output_directory: out_dir,
+          profile_enabled: profile_enabled,
+          check_only: check_only,
+          emit_compile_commands: emit_compile_commands
+        }
+        const pipeline_result = run_modular_compiler_pipeline(pipeline_input)?
+        profile_maybe_end(profile_enabled, "total")
+        profile_finish(profile_enabled)
+        Ok('')
+      end
+      end
     end
   end
 end

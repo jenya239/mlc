@@ -1,7 +1,3 @@
 # mlcc_exit ruby_exit filename # reason (parser/lexer parity gaps; checker-negative files must not appear here)
 1 0 lex_unclosed_string.mlc # mlcc lexer rejects unterminated string; Ruby parser accepts
-0 1 parse_empty_type_body.mlc # mlcc parser tolerant; Ruby rejects
-0 1 parse_invalid_trait_syntax.mlc # mlcc parser tolerant; Ruby rejects
-0 1 parse_noise.mlc # mlcc parser tolerant; Ruby rejects
-0 1 parse_unclosed_block.mlc # mlcc parser tolerant; Ruby rejects
-0 1 parse_unclosed_record_type.mlc # mlcc parser tolerant; Ruby rejects
+1 0 parse_orphan_end.mlc # mlcc rejects orphan end; Ruby parser accepts
