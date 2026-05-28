@@ -1,6 +1,6 @@
 // Type inference for Result / Option TGeneric combinator methods (A2).
 
-import { Expr, Span, Diagnostic, diagnostic_error, diagnostics_append, expr_span } from '../../frontend/ast'
+import { Expr, Span, Diagnostic, diagnostic_error_with_code, diagnostics_append, expr_span } from '../../frontend/ast'
 import { Type, TUnknown, TGeneric } from '../registry'
 import { CheckContext } from '../check/check_context'
 import { InferResult } from './infer_result'
@@ -23,6 +23,11 @@ import {
 } from '../check/method_types/result_option_method_types'
 import { infer_lambda_with_param_types } from './infer_lambda_context'
 import { infer_builtin_method_receiver_diagnostics } from '../check/diagnostics/method_receiver_diagnostics'
+import {
+  diagnostic_code_e014, diagnostic_code_e055, diagnostic_code_e056, diagnostic_code_e057,
+  diagnostic_code_e058, diagnostic_code_e059, diagnostic_code_e060, diagnostic_code_e061,
+  diagnostic_code_e062, diagnostic_code_e063, diagnostic_code_e064
+} from '../diagnostic_codes'
 
 fn append_lambda_arity(
   errors: [Diagnostic], expression: Shared<Expr>, expected: i32, method_name: string
@@ -31,9 +36,10 @@ fn append_lambda_arity(
     ExprLambda(parameter_names, _, _) =>
       if parameter_names.length() != expected then
         diagnostics_append(errors, [
-          diagnostic_error(
+          diagnostic_error_with_code(
             `method ${method_name} expects a lambda with ${expected.to_string()} parameter(s)`,
-            expr_span(expression))])
+            expr_span(expression),
+            diagnostic_code_e055())])
       else
         errors
       end,
@@ -70,9 +76,10 @@ export fn infer_result_option_hof_method_call(
   const arity_errors: [Diagnostic] =
     if expected_arity >= 0 then
       if method_arguments.length() != expected_arity then
-        [diagnostic_error(
+        [diagnostic_error_with_code(
           `expected ${expected_arity.to_string()} arguments, got ${method_arguments.length().to_string()}`,
-          method_span)]
+          method_span,
+          diagnostic_code_e014())]
       else [] end
     else [] end
   let mut merged = object_result
@@ -87,9 +94,10 @@ export fn infer_result_option_hof_method_call(
       arg_types.push(a.inferred_type)
       if !type_is_unknown(t_t) && !type_is_unknown(a.inferred_type) && !types_structurally_equal(t_t, a.inferred_type) then
         merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, [
-          diagnostic_error(
+          diagnostic_error_with_code(
             `method unwrap_or value must match Ok type (expected ${type_description(t_t)})`,
-            expr_span(method_arguments[0]))]) }
+            expr_span(method_arguments[0]),
+            diagnostic_code_e056())]) }
       end
     else if method_name == 'unwrap_or_else' && method_arguments.length() > 0 then
       const arg0 = method_arguments[0]
@@ -105,9 +113,10 @@ export fn infer_result_option_hof_method_call(
       const lam_ret = function_return_type(lam_r.inferred_type)
       if !type_is_unknown(t_t) && !type_is_unknown(lam_ret) && !types_structurally_equal(t_t, lam_ret) then
         merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, [
-          diagnostic_error(
+          diagnostic_error_with_code(
             `method unwrap_or_else must return the Ok type (expected ${type_description(t_t)})`,
-            expr_span(arg0))]) }
+            expr_span(arg0),
+            diagnostic_code_e057())]) }
       end
       arg_types.push(lam_r.inferred_type)
     else if method_name == 'map' && method_arguments.length() > 0 then
@@ -150,12 +159,17 @@ export fn infer_result_option_hof_method_call(
         const inner_e = result_inner_err_from_ret(lam_ret)
         if !type_is_unknown(e_t) && !type_is_unknown(inner_e) && !types_structurally_equal(e_t, inner_e) then
           extra = diagnostics_append(extra, [
-            diagnostic_error(
+            diagnostic_error_with_code(
               `method and_then callback must return Result with the same error type (expected ${type_description(e_t)})`,
-              expr_span(arg0))])
+              expr_span(arg0),
+              diagnostic_code_e058())])
         end
       else
-        extra = diagnostics_append(extra, [ diagnostic_error(`method and_then must return a Result type`, expr_span(arg0)) ])
+        extra = diagnostics_append(extra, [
+          diagnostic_error_with_code(
+            `method and_then must return a Result type`,
+            expr_span(arg0),
+            diagnostic_code_e059())])
       end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
       arg_types.push(lam_r.inferred_type)
@@ -182,9 +196,10 @@ export fn infer_result_option_hof_method_call(
       arg_types.push(a.inferred_type)
       if !type_is_unknown(o_t) && !type_is_unknown(a.inferred_type) && !types_structurally_equal(o_t, a.inferred_type) then
         merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, [
-          diagnostic_error(
+          diagnostic_error_with_code(
             `method unwrap_or value must match Some type (expected ${type_description(o_t)})`,
-            expr_span(method_arguments[0]))]) }
+            expr_span(method_arguments[0]),
+            diagnostic_code_e060())]) }
       end
     else if method_name == 'or_else' && method_arguments.length() > 0 then
       const arg0 = method_arguments[0]
@@ -202,12 +217,17 @@ export fn infer_result_option_hof_method_call(
         const io = option_inner_type(inner_ret)
         if !type_is_unknown(o_t) && !type_is_unknown(io) && !types_structurally_equal(o_t, io) then
           extra = diagnostics_append(extra, [
-            diagnostic_error(
+            diagnostic_error_with_code(
               `method or_else must return Option with the same inner type (expected ${type_description(o_t)})`,
-              expr_span(arg0))])
+              expr_span(arg0),
+              diagnostic_code_e061())])
         end
       else
-        extra = diagnostics_append(extra, [ diagnostic_error(`method or_else must return Option`, expr_span(arg0)) ])
+        extra = diagnostics_append(extra, [
+          diagnostic_error_with_code(
+            `method or_else must return Option`,
+            expr_span(arg0),
+            diagnostic_code_e062())])
       end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
       arg_types.push(lam_r.inferred_type)
@@ -240,7 +260,11 @@ export fn infer_result_option_hof_method_call(
       let mut extra: [Diagnostic] = ar
       const ret = function_return_type(lam_r.inferred_type)
       if !is_option_generic(ret) then
-        extra = diagnostics_append(extra, [ diagnostic_error(`method and_then must return Option`, expr_span(arg0)) ])
+        extra = diagnostics_append(extra, [
+          diagnostic_error_with_code(
+            `method and_then must return Option`,
+            expr_span(arg0),
+            diagnostic_code_e063())])
       end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
       arg_types.push(lam_r.inferred_type)
@@ -257,7 +281,11 @@ export fn infer_result_option_hof_method_call(
       let mut extra: [Diagnostic] = ar
       const lam_ret = function_return_type(lam_r.inferred_type)
       if !type_is_unknown(lam_ret) && !type_is_bool(lam_ret) then
-        extra = diagnostics_append(extra, [ diagnostic_error(`method filter expects a predicate returning bool`, expr_span(arg0)) ])
+        extra = diagnostics_append(extra, [
+          diagnostic_error_with_code(
+            `method filter expects a predicate returning bool`,
+            expr_span(arg0),
+            diagnostic_code_e064())])
       end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
       arg_types.push(lam_r.inferred_type)

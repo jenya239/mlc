@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 54
+export fn diagnostic_code_catalog_count() -> i32 = 64
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -110,3 +110,23 @@ export fn diagnostic_code_e052() -> string = 'E052'
 export fn diagnostic_code_e053() -> string = 'E053'
 // E054: flat_map callback must return array
 export fn diagnostic_code_e054() -> string = 'E054'
+// E055: Result/Option HOF lambda arity mismatch
+export fn diagnostic_code_e055() -> string = 'E055'
+// E056: unwrap_or value must match Ok type
+export fn diagnostic_code_e056() -> string = 'E056'
+// E057: unwrap_or_else must return Ok type
+export fn diagnostic_code_e057() -> string = 'E057'
+// E058: and_then callback Result error type mismatch
+export fn diagnostic_code_e058() -> string = 'E058'
+// E059: and_then must return Result type
+export fn diagnostic_code_e059() -> string = 'E059'
+// E060: unwrap_or value must match Some type
+export fn diagnostic_code_e060() -> string = 'E060'
+// E061: or_else Option inner type mismatch
+export fn diagnostic_code_e061() -> string = 'E061'
+// E062: or_else must return Option
+export fn diagnostic_code_e062() -> string = 'E062'
+// E063: Option and_then must return Option
+export fn diagnostic_code_e063() -> string = 'E063'
+// E064: Option filter predicate must return bool
+export fn diagnostic_code_e064() -> string = 'E064'
