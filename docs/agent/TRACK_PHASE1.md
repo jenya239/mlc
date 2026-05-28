@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1; previous: [TRACK_CPPGEN.md](TRACK_CPPGEN.md) (**closed**, step 10 `005c65b`)
 
-## Status: in progress (step 7 pending)
+## Status: in progress (step 8 pending)
 
 **Goal:** reliable mlcc — full diagnostic spans, test coverage, crash-safety, clean default output dir.
 
@@ -31,7 +31,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 4 | Audit checker paths with `span_unknown`; fix high-traffic infer_call / type mismatch | done (`6d5150a`) |
 | 5 | Negative tests in `test_checker.mlc` (invalid input → specific diagnostic) | done (`8b3fe71`) |
 | 6 | `--check-only` CLI flag (checker + transform, no codegen) | done (`177659a`) |
-| 7 | Default output dir — temp under `$TMPDIR` instead of workspace `out/` | pending |
+| 7 | Default output dir — temp under `$TMPDIR` instead of workspace `out/` | done (`9c56ca9`) |
 | 8 | Fuzz smoke: random program generator skeleton + mlcc no-crash test | pending |
 
 ## Step 1 detail
@@ -62,4 +62,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=7** — default output dir temp under `$TMPDIR` instead of workspace `out/`.
+**STEP=8** — fuzz smoke: random program generator skeleton + mlcc no-crash test.
