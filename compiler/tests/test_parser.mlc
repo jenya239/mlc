@@ -16,6 +16,9 @@ fn parse_source_errors(source: string) -> [string] =
 fn parse_expr_source(source: string) -> Shared<Expr> =
   parse_expr(parser_new(tokenize(source).tokens)).expr
 
+fn parse_expr_errors(source: string) -> [string] =
+  parse_expr(parser_new(tokenize(source).tokens)).parser.errors
+
 fn expr_call_one_ident_argument(expression: Shared<Expr>, expected_function: string, expected_argument: string) -> bool =
   match expression {
     ExprCall(callee, arguments, _) =>
@@ -454,6 +457,30 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true('parse decl: trait without { yields parse error',
     parse_source_errors('trait Broken').length() >= 1))
+
+  results.push(assert_true('parse decl: unexpected token at top level yields parse error',
+    parse_source_errors('123').length() >= 1))
+
+  results.push(assert_true('parse expr: unexpected token yields parse error',
+    parse_expr_errors('@@@').length() >= 1))
+
+  results.push(assert_true('parse expr: unclosed ( yields parse error',
+    parse_expr_errors('(1').length() >= 1))
+
+  results.push(assert_true('parse expr: unclosed [ yields parse error',
+    parse_expr_errors('[1').length() >= 1))
+
+  results.push(assert_true('parse expr: unclosed argument list yields parse error',
+    parse_expr_errors('f(1').length() >= 1))
+
+  results.push(assert_true('parse program: unclosed do block yields parse error',
+    parse_source_errors('fn f() -> i32 = do 1').length() >= 1))
+
+  results.push(assert_true('parse program: unclosed match brace yields parse error',
+    parse_source_errors('fn f() -> i32 = match x { A => 1').length() >= 1))
+
+  results.push(assert_true('parse program: invalid let pattern yields parse error',
+    parse_source_errors('fn f() -> i32 = do let @@@ = 1 end').length() >= 1))
 
   results
 end
