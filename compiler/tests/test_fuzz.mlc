@@ -40,6 +40,16 @@ fn fuzz_lex_parse_completes(source: string) -> bool = do
   end
 end
 
+fn fuzz_deep_nesting_source(depth: i32) -> string = do
+  let mut body = "0"
+  let mut level = 0
+  while level < depth do
+    body = "do\n" + body + "\nend"
+    level = level + 1
+  end
+  "fn fuzz_entry() -> i32 = " + body
+end
+
 export fn fuzz_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
@@ -83,8 +93,14 @@ export fn fuzz_tests() -> [TestResult] = do
   results.push(assert_true('fuzz garbage lex parse completes',
     fuzz_lex_parse_completes('fn @@@')))
 
+  results.push(assert_true('fuzz garbage unclosed string lex',
+    fuzz_lex_parse_completes('fn f() -> string = "unclosed')))
+
+  results.push(assert_true('fuzz garbage deep nesting lex parse',
+    fuzz_lex_parse_completes(fuzz_deep_nesting_source(24))))
+
   let mut pipeline_seed = 0
-  while pipeline_seed < 32 do
+  while pipeline_seed < 64 do
     const source = fuzz_random_program(pipeline_seed)
     results.push(assert_true('fuzz check_only pipeline seed ' + pipeline_seed.to_string(),
       fuzz_pipeline_completes(pipeline_seed)))
