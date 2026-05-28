@@ -2,13 +2,16 @@
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
-import { parse_program } from '../frontend/parser/decls'
+import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
 import { Decl, DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, PatWild, PatIdent, ExprBlock, Stmt, StmtLetPat } from '../frontend/ast'
 import { parse_expr } from '../frontend/parser/exprs'
 import { parser_new } from '../frontend/parser/predicates'
 
 fn parse_source(source: string) -> Program =
   parse_program(tokenize(source).tokens)
+
+fn parse_source_errors(source: string) -> [string] =
+  parse_program_with_errors(tokenize(source).tokens, '').errors
 
 fn parse_expr_source(source: string) -> Shared<Expr> =
   parse_expr(parser_new(tokenize(source).tokens)).expr
@@ -442,6 +445,15 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_eq_int('parse export trait: single top-level decl',
     parse_source('export trait Display { fn to_string(self: Display) -> string }').decls.length(), 1))
+
+  results.push(assert_true('parse decl: invalid function name yields parse error',
+    parse_source_errors('fn @@@() -> i32 = 0').length() >= 1))
+
+  results.push(assert_true('parse decl: empty type body after = yields parse error',
+    parse_source_errors('type EmptyType =').length() >= 1))
+
+  results.push(assert_true('parse decl: trait without { yields parse error',
+    parse_source_errors('trait Broken').length() >= 1))
 
   results
 end

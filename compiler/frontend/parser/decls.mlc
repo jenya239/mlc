@@ -1,9 +1,32 @@
 // --- Declaration parsers --------------------------------------------------
 
-import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamResult, PatResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult, WhereClauseParseResult } from './predicates'
+import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamResult, PatResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult, WhereClauseParseResult, ParseProgramResult } from './predicates'
+import { Token } from '../ast_tokens'
 import { parse_type } from './types'
 import { parse_expr, parse_record_pat_fields } from './exprs'
-import { ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pat, PatTuple, PatRecord, PatWild, PatIdent, PatUnit, Span } from '../ast'
+import { Decl, DeclFn, DeclTrait, DeclType, DeclAssocType, ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pat, PatTuple, PatRecord, PatWild, PatIdent, PatUnit, Span, Program, TyUnit, FieldDef, TypeVariant, VarRecord } from '../ast'
+
+fn parser_expect_rbrace(state: Parser, context: string) -> Parser =
+  if state.kind().is_rbrace() then state.advance()
+  else state.record_parse_error('parse: expected } in ' + context)
+  end
+
+fn parser_expect_generic_close(state: Parser, opened: bool) -> Parser =
+  if !opened then state
+  else if state.kind().is_op() && state.kind().op_val() == ">" then state.advance()
+  else state.record_parse_error('parse: unclosed generic parameter list')
+  end
+
+fn parser_expect_ident(state: Parser, context: string) -> Parser =
+  if state.kind().is_ident() then state
+  else state.record_parse_error('parse: expected identifier in ' + context)
+  end
+
+fn decl_is_parse_skip(declaration: Shared<Decl>) -> bool =
+  match declaration {
+    DeclFn(name, _, _, _, _, _, _) => name == '__skip__',
+    _ => false
+  }
 
 fn parse_trait_bound_ident_list(parser_state: Parser) -> BoundsResult = do
   let mut state = parser_state
@@ -154,7 +177,7 @@ fn parse_type_params_opt(parser: Parser) -> TypeParamsResult = do
         end
       end
     end
-    state = if state.kind().is_op() && state.kind().op_val() == ">" then state.advance() else state end
+    state = parser_expect_generic_close(state, true)
     TypeParamsResult { params, bounds: bounds_list, parser: state }
   else
     TypeParamsResult { params: [], bounds: [], parser: parser }
@@ -334,9 +357,16 @@ end
 
 fn parse_trait_decl(parser: Parser) -> DeclResult = do
   const after_trait = parser.advance()
-  const trait_name = after_trait.kind().ident()
-  const type_params_res = parse_type_params_opt(after_trait.advance())
-  const trait_result = parse_trait_body(type_params_res.parser.advance(), trait_name, type_params_res.params)
+  const name_parser = parser_expect_ident(after_trait, 'trait name')
+  const trait_name = name_parser.kind().ident()
+  const type_params_res = parse_type_params_opt(name_parser.advance())
+  let mut body_parser = type_params_res.parser
+  body_parser = if !body_parser.kind().is_lbrace()
+    then body_parser.record_parse_error('parse: expected { after trait header')
+    else body_parser
+  end
+  const body_start_parser = if body_parser.kind().is_lbrace() then body_parser.advance() else body_parser end
+  const trait_result = parse_trait_body(body_start_parser, trait_name, type_params_res.params)
   DeclResult { decl: Shared.new(DeclTrait(trait_name, type_params_res.params, trait_result.methods)), parser: trait_result.parser }
 end
 
@@ -356,7 +386,11 @@ export fn parse_decl(parser: Parser) -> DeclResult = do
   else if kind.is_import() then
     parse_import_decl(parser.advance())
   else
-    DeclResult { decl: Shared.new(DeclFn('__skip__', [], [], [], Shared.new(TyUnit), Shared.new(ExprUnit(span_unknown())), [])), parser: parser.advance() }
+    const error_parser = parser.record_parse_error('parse: unexpected token at declaration')
+    DeclResult {
+      decl:   Shared.new(DeclFn('__skip__', [], [], [], Shared.new(TyUnit), Shared.new(ExprUnit(span_unknown())), [])),
+      parser: error_parser.advance()
+    }
   end
 end
 
@@ -364,9 +398,9 @@ fn parse_fn_decl(parser: Parser) -> DeclResult = do
   const is_extern       = parser.kind().is_extern()
   const extern_keyword_span = if is_extern then parser.span_at_cursor() else span_unknown() end
   const fn_start        = if is_extern then parser.advance() else parser end
-  let after_name        = fn_start.advance()
-  const fn_name         = after_name.kind().ident()
-  const type_params_res = parse_type_params_opt(after_name.advance())
+  const name_parser     = parser_expect_ident(fn_start.advance(), 'function name')
+  const fn_name         = name_parser.kind().ident()
+  const type_params_res = parse_type_params_opt(name_parser.advance())
   const params_result   = parse_params(type_params_res.parser.advance())
   const after_rparen = params_result.parser.advance()
   const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
@@ -585,8 +619,9 @@ fn parse_derive_clause(parser: Parser) -> DeriveResult = do
 end
 
 fn parse_type_decl(parser: Parser) -> DeclResult = do
-  const type_name = parser.kind().ident()
-  let mut state = parser.advance()
+  const name_parser = parser_expect_ident(parser, 'type name')
+  const type_name = name_parser.kind().ident()
+  let mut state = name_parser.advance()
   const type_params_res = parse_type_params_opt(state)
   state = type_params_res.parser
   if state.kind().is_lbrace() then
@@ -594,6 +629,10 @@ fn parse_type_decl(parser: Parser) -> DeclResult = do
     DeclResult { decl: Shared.new(DeclTrait(type_name, type_params_res.params, trait_result.methods)), parser: trait_result.parser }
   else if state.kind().is_equal() then
     state = state.advance()
+    state = if state.at_eof()
+      then state.record_parse_error('parse: expected type body after =')
+      else state
+    end
     const first_kind = state.kind()
     if first_kind.is_lbrace() then
       const field_defs_result = parse_field_defs(state.advance())
@@ -607,7 +646,11 @@ fn parse_type_decl(parser: Parser) -> DeclResult = do
       DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_result.variants, derive_res.traits)), parser: derive_res.parser }
     end
   else
-    const variants_result = parse_variants(state)
+    const state_after_eof_check = if state.at_eof()
+      then state.record_parse_error('parse: expected = after type name')
+      else state
+    end
+    const variants_result = parse_variants(state_after_eof_check)
     const derive_res = parse_derive_clause(variants_result.parser)
     DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_result.variants, derive_res.traits)), parser: derive_res.parser }
   end
@@ -707,10 +750,11 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
         const initial_trait_bounds_extern: [[string]] = []; let mut be = 0; while be < type_params.length() do initial_trait_bounds_extern.push([]); be = be + 1 end
         const where_parse_extern = parse_where_clause_opt(ret_result.parser)
         const merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.where_bounds)
-        methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_result.params, ret_result.type_expr, Shared.new(ExprExtern(span_unknown())), where_parse_extern.where_bounds)))
+        const extern_method_span = where_parse_extern.parser.span_at_cursor()
+        methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_result.params, ret_result.type_expr, Shared.new(ExprExtern(extern_method_span)), where_parse_extern.where_bounds)))
         state = where_parse_extern.parser
       else
-        state = parser_after_extern
+        state = parser_after_extern.record_parse_error('parse: expected fn after extern in trait body')
       end
     else if state.kind().is_type() then
       const after_type = state.advance()
@@ -719,10 +763,11 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
       methods.push(Shared.new(DeclAssocType(assoc_name, assoc_span)))
       state = after_type.advance()
     else
-      state = state.advance()
+      state = state.record_parse_error('parse: expected fn or type in trait body').advance()
     end
   end
-  TraitBodyResult { methods, parser: state.advance() }
+  state = parser_expect_rbrace(state, 'trait body')
+  TraitBodyResult { methods, parser: state }
 end
 
 fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
@@ -752,7 +797,8 @@ fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
     end
     if state.kind().is_comma() then state = state.advance() end
   end
-  FieldDefsResult { field_defs, parser: state.advance() }
+  state = parser_expect_rbrace(state, 'record type fields')
+  FieldDefsResult { field_defs, parser: state }
 end
 
 // --- Entry point ----------------------------------------------------------
@@ -762,10 +808,25 @@ export fn parse_program_with_source_path(tokens: [Token], source_path: string) -
   let mut state = parser_new_with_source_path(tokens, source_path)
   while !state.at_eof() do
     const result = parse_decl(state)
-    decls.push(result.decl)
+    if !decl_is_parse_skip(result.decl) then
+      decls.push(result.decl)
+    end
     state = result.parser
   end
   Program { decls }
+end
+
+export fn parse_program_with_errors(tokens: [Token], source_path: string) -> ParseProgramResult = do
+  const decls: [Shared<Decl>] = []
+  let mut state = parser_new_with_source_path(tokens, source_path)
+  while !state.at_eof() do
+    const result = parse_decl(state)
+    if !decl_is_parse_skip(result.decl) then
+      decls.push(result.decl)
+    end
+    state = result.parser
+  end
+  ParseProgramResult { program: Program { decls }, errors: state.errors }
 end
 
 export fn parse_program(tokens: [Token]) -> Program =

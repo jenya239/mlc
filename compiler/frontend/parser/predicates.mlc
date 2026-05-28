@@ -5,10 +5,10 @@ import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVar
 
 // --- Parser state ---------------------------------------------------------
 
-export type Parser = Parser { tokens: [Token], pos: i32, source_path: string, suppress_lambda_shorthand: bool }
+export type Parser = Parser { tokens: [Token], pos: i32, source_path: string, suppress_lambda_shorthand: bool, errors: [string] }
 
 export fn parser_new_with_source_path(tokens: [Token], source_path: string) -> Parser =
-  Parser { tokens: tokens, pos: 0, source_path: source_path, suppress_lambda_shorthand: false }
+  Parser { tokens: tokens, pos: 0, source_path: source_path, suppress_lambda_shorthand: false, errors: [] }
 
 export fn parser_new(tokens: [Token]) -> Parser =
   parser_new_with_source_path(tokens, '')
@@ -37,6 +37,7 @@ export type TypeParamsResult = TypeParamsResult { params: [string], bounds: [[st
 export type BoundsResult = BoundsResult { bounds: [string], parser: Parser }
 export type WhereClauseParseResult = WhereClauseParseResult { where_bounds: [WhereClauseBound], parser: Parser }
 export type TraitBodyResult  = TraitBodyResult  { methods:  [Shared<Decl>],           parser: Parser }
+export type ParseProgramResult = ParseProgramResult { program: Program, errors: [string] }
 
 export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"
@@ -124,13 +125,27 @@ export extend Parser {
       pos: self.pos,
       source_path: self.source_path,
       suppress_lambda_shorthand: value,
+      errors: self.errors,
     }
+  fn record_parse_error(self, message: string) -> Parser = do
+    let updated_errors = self.errors
+    updated_errors.push(message)
+    Parser {
+      tokens: self.tokens,
+      pos: self.pos,
+      source_path: self.source_path,
+      suppress_lambda_shorthand: self.suppress_lambda_shorthand,
+      errors: updated_errors,
+    }
+  end
+  fn has_parse_errors(self) -> bool = self.errors.length() > 0
   fn advance(self)   -> Parser =
     Parser {
       tokens: self.tokens,
       pos: self.pos + 1,
       source_path: self.source_path,
       suppress_lambda_shorthand: self.suppress_lambda_shorthand,
+      errors: self.errors,
     }
   fn advance_by(self, count: i32) -> Parser =
     Parser {
@@ -138,6 +153,7 @@ export extend Parser {
       pos: self.pos + count,
       source_path: self.source_path,
       suppress_lambda_shorthand: self.suppress_lambda_shorthand,
+      errors: self.errors,
     }
   fn at_eof(self) -> bool =
     if self.pos >= self.tokens.length() then true
