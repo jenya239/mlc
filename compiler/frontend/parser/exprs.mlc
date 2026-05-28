@@ -6,6 +6,21 @@ import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, P
 import { TKind, Eof } from '../ast_tokens'
 import { tokenize } from '../lexer'
 
+fn parser_expect_rbrace(state: Parser, context: string) -> Parser =
+  if state.kind().is_rbrace() then state.advance()
+  else state.record_parse_error('parse: expected } in ' + context)
+  end
+
+fn parser_expect_rparen(state: Parser, context: string) -> Parser =
+  if state.kind().is_rparen() then state.advance()
+  else state.record_parse_error('parse: expected ) in ' + context)
+  end
+
+fn parser_expect_rbracket(state: Parser, context: string) -> Parser =
+  if state.kind().is_rbracket() then state.advance()
+  else state.record_parse_error('parse: expected ] in ' + context)
+  end
+
 // --- Statement parsers (merged to break exprs<->stmts cycle) --------------
 
 export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
@@ -16,7 +31,11 @@ export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
     stmts.push(result.stmt)
     state = result.parser.skip_semi()
   end
-  StmtsResult { stmts, parser: state.advance() }
+  const closing_parser = if state.kind().is_end() then state.advance()
+    else if state.at_eof() then state.record_parse_error('parse: expected end in block')
+    else state
+  end
+  StmtsResult { stmts, parser: closing_parser }
 end
 
 export fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
@@ -96,7 +115,8 @@ fn parse_array_pattern(parser: Parser, bracket_span: Span) -> PatResult = do
     if st.kind().is_rbracket() then
       PatResult { pat: Shared.new(PatArray(pats, rest, bracket_span)), parser: st.advance() }
     else
-      PatResult { pat: Shared.new(PatArray(pats, rest, bracket_span)), parser: st }
+      const error_parser = st.record_parse_error('parse: expected ] in array pattern')
+      PatResult { pat: Shared.new(PatArray(pats, rest, bracket_span)), parser: error_parser }
     end
   end
 end
@@ -173,7 +193,8 @@ fn parse_statement_let(parser: Parser) -> StmtResult = do
         parser: value_result.parser
       }
     else
-      StmtResult { stmt: Shared.new(StmtExpr(Shared.new(ExprUnit(name_pos.span_at_cursor())), statement_span)), parser: name_pos }
+      const error_parser = name_pos.record_parse_error('parse: expected pattern or identifier after let')
+      StmtResult { stmt: Shared.new(StmtExpr(Shared.new(ExprUnit(name_pos.span_at_cursor())), statement_span)), parser: error_parser }
     end
   end
 end
@@ -274,8 +295,10 @@ fn parse_pattern_string(parser: Parser, value: string) -> PatResult =
 fn parse_pattern_boolean(parser: Parser, value: bool) -> PatResult =
   PatResult { pat: Shared.new(PatBool(value, parser.span_at_cursor())), parser: parser.advance() }
 
-fn parse_pattern_fallback_wildcard(parser: Parser) -> PatResult =
-  PatResult { pat: Shared.new(PatWild(parser.span_at_cursor())), parser: parser.advance() }
+fn parse_pattern_fallback_wildcard(parser: Parser) -> PatResult = do
+  const error_parser = parser.record_parse_error('parse: unexpected token in pattern')
+  PatResult { pat: Shared.new(PatWild(parser.span_at_cursor())), parser: error_parser.advance() }
+end
 
 fn parse_or_pat(parser: Parser) -> PatResult = do
   const first = parse_pat(parser)
@@ -322,7 +345,7 @@ fn parse_pat_args(parser: Parser) -> PatsResult =
     PatsResult { pats: [], parser: parser.advance() }
   else
     const suffix = comma_separated_pat_suffix_from_first(parse_pat(parser))
-    PatsResult { pats: suffix.pats, parser: suffix.parser.advance() }
+    PatsResult { pats: suffix.pats, parser: parser_expect_rparen(suffix.parser, 'pattern list') }
   end
 
 export fn parse_record_pat_fields(parser: Parser) -> PatsResult = do
@@ -333,9 +356,11 @@ export fn parse_record_pat_fields(parser: Parser) -> PatsResult = do
       pats.push(Shared.new(PatIdent(state.kind().ident(), state.span_at_cursor())))
     end
     state = state.advance()
-    if state.kind().is_comma() then state = state.advance() end
+    if state.kind().is_comma() then
+      state = state.advance()
+    end
   end
-  PatsResult { pats: pats, parser: state.advance() }
+  PatsResult { pats: pats, parser: parser_expect_rbrace(state, 'record pattern fields') }
 end
 
 // --- Expression parser (precedence climbing) -----------------------------
@@ -521,7 +546,7 @@ fn parse_postfix(parser: Parser) -> ExprResult = do
       const bracket_span = state.span_at_cursor()
       const index = parse_expr(state.advance())
       expr = Shared.new(ExprIndex(expr, index.expr, bracket_span))
-      state = index.parser.advance()
+      state = parser_expect_rbracket(index.parser, 'index expression')
     else if kind.is_question() then
       const question_span = state.span_at_cursor()
       expr = Shared.new(ExprQuestion(expr, question_span))
@@ -553,9 +578,12 @@ fn parse_arg_list(parser: Parser) -> ExprsResult = do
           r.expr
         end
       exprs.push(arg)
-      if state.kind().is_comma() then state = state.advance() end
+      if state.kind().is_comma() then
+        state = state.advance()
+      end
     end
-    ExprsResult { exprs, parser: state.advance() }
+    state = parser_expect_rparen(state, 'argument list')
+    ExprsResult { exprs, parser: state }
   end
 end
 
@@ -632,10 +660,12 @@ fn parse_primary_parenthesized(parser: Parser) -> ExprResult = do
           parser: suffix.parser.advance()
         }
       else
-        ExprResult { expr: e0.expr, parser: e0.parser }
+        const error_parser = suffix.parser.record_parse_error('parse: expected ) in tuple literal')
+        ExprResult { expr: e0.expr, parser: error_parser }
       end
     else
-      ExprResult { expr: e0.expr, parser: e0.parser.advance() }
+      const closed_parser = parser_expect_rparen(e0.parser, 'parenthesized expression')
+      ExprResult { expr: e0.expr, parser: closed_parser }
     end
   end
 end
@@ -688,7 +718,8 @@ end
 
 fn parse_primary_unit_fallback(parser: Parser) -> ExprResult = do
   const source_span = parser.span_at_cursor()
-  ExprResult { expr: Shared.new(ExprUnit(source_span)), parser: parser.advance() }
+  const error_parser = parser.record_parse_error('parse: unexpected token in expression')
+  ExprResult { expr: Shared.new(ExprUnit(source_span)), parser: error_parser.advance() }
 end
 
 fn parse_primary(parser: Parser) -> ExprResult = do
@@ -801,7 +832,8 @@ fn parse_array_lit(parser: Parser, header_span: Span) -> ExprResult =
     ExprResult { expr: Shared.new(ExprArray([], header_span)), parser: parser.advance() }
   else
     const suffix = comma_separated_expr_suffix_from_first(parse_expr(parser))
-    ExprResult { expr: Shared.new(ExprArray(suffix.exprs, header_span)), parser: suffix.parser.advance() }
+    const closed_parser = parser_expect_rbracket(suffix.parser, 'array literal')
+    ExprResult { expr: Shared.new(ExprArray(suffix.exprs, header_span)), parser: closed_parser }
   end
 
 export fn parse_if_expr(parser: Parser) -> ExprResult = do
@@ -948,9 +980,12 @@ fn parse_arms_brace(parser: Parser) -> ArmsResult = do
     const finished_match_arm = parse_match_arm(pat_result)
     arms.push(finished_match_arm.arm)
     state = finished_match_arm.parser
-    if state.kind().is_comma() then state = state.advance() end
+    if state.kind().is_comma() then
+      state = state.advance()
+    end
   end
-  ArmsResult { arms, parser: state.advance() }
+  state = parser_expect_rbrace(state, 'match arms')
+  ArmsResult { arms, parser: state }
 end
 
 fn parse_arms_do_delimited(parser: Parser) -> ArmsResult = do
@@ -1012,7 +1047,8 @@ fn parse_record_lit_parts(parser: Parser) -> RecordLitPartsResult = do
     end
   end
   if current_field_vals.length() > 0 then lit_parts.push(RecordLitFields(current_field_vals)) end
-  RecordLitPartsResult { lit_parts: lit_parts, parser: state.advance() }
+  const closed_parser = parser_expect_rbrace(state, 'record literal')
+  RecordLitPartsResult { lit_parts: lit_parts, parser: closed_parser }
 end
 
 fn parse_record_expr(parser: Parser, record_name: string, record_span: Span) -> ExprResult = do
