@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §6; previous: [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) (**closed**, `a8bf7a1`)
 
-## Status: **active** (step 1 pending)
+## Status: **active** (step 2 pending)
 
 **Goal:** deterministic C++ link/compile order; `--emit-compile-commands` for clangd.
 
@@ -26,7 +26,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `build_bin.sh` — deterministic sorted cpp compile order | pending |
+| 1 | `build_bin.sh` — deterministic sorted cpp compile order | done (`COMMIT_HASH`) |
 | 2 | `compile_options.mlc` — `--emit-compile-commands` flag parsing | pending |
 | 3 | Modular pipeline — emit `compile_commands.json` to out dir | pending |
 | 4 | Test/smoke — flag + json output | pending |
@@ -46,4 +46,4 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 ## Next step (Driver)
 
-**STEP=1** — `build_bin.sh` deterministic cpp order.
+**STEP=2** — `compile_options.mlc` `--emit-compile-commands` flag.
