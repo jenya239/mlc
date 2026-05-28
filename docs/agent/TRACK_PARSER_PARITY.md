@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) (**closed**, `e826f1a`)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** mlcc `--check-only` exit codes match Ruby checker on `negative_corpus/`; shrink `negative_corpus_known_divergences.txt` to zero (or document intentional mlcc-stricter cases).
 
@@ -33,24 +33,22 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `parse_unclosed_block.mlc` + `parse_unclosed_record_type.mlc` — structured parse error, exit 1 | pending |
-| 2 | `parse_empty_type_body.mlc` + `parse_invalid_trait_syntax.mlc` | pending |
+| 1 | `parse_unclosed_block.mlc` + `parse_unclosed_record_type.mlc` — structured parse error, exit 1 | done |
+| 2 | `parse_empty_type_body.mlc` + `parse_invalid_trait_syntax.mlc` | done (`4a5183f` propagation + audit `TBD`) |
 | 3 | `parse_noise.mlc` — reject trailing garbage | pending |
 | 4 | `lex_unclosed_string.mlc` — parity decision + differential list update | pending |
 | 5 | Audit `negative_corpus_known_divergences.txt`; close track | pending |
 
-## Known divergences (baseline)
+## Known divergences (post step 1)
 
-From `compiler/tests/fuzz/negative_corpus_known_divergences.txt` (6 files):
+From `compiler/tests/fuzz/negative_corpus_known_divergences.txt` (2 files):
 
 | File | mlcc | Ruby | Issue |
 |------|------|------|-------|
 | `lex_unclosed_string.mlc` | 1 | 0 | mlcc lexer rejects; Ruby accepts |
-| `parse_empty_type_body.mlc` | 0 | 1 | mlcc tolerant |
-| `parse_invalid_trait_syntax.mlc` | 0 | 1 | mlcc tolerant |
-| `parse_noise.mlc` | 0 | 1 | mlcc tolerant |
-| `parse_unclosed_block.mlc` | 0 | 1 | mlcc tolerant |
-| `parse_unclosed_record_type.mlc` | 0 | 1 | mlcc tolerant |
+| `parse_orphan_end.mlc` | 1 | 0 | mlcc rejects orphan end; Ruby accepts |
+
+Steps 2–3 side-effect parity (parse errors under `--check-only`): `parse_empty_type_body`, `parse_invalid_trait_syntax`, `parse_noise` now mlcc=1 ruby=1.
 
 ## Step 1 detail
 
@@ -66,6 +64,12 @@ From `compiler/tests/fuzz/negative_corpus_known_divergences.txt` (6 files):
 - `lib/mlc/` parity — not in scope.
 - Record default expression parity (E4) — separate track if needed.
 
+## Step 2 detail
+
+- Audit only: parity via step 1 `--check-only` parse propagation (mlcc=1 ruby=1 both files).
+- Parser errors: `expected type body after =`; `expected } in trait body` (decls.mlc).
+- Tests: corpus-shaped `test_parser.mlc` assertions; drop misleading `parser_garbage_smoke` for invalid trait.
+
 ## Next step (Driver)
 
-**STEP=1** — unclosed block + unclosed record type parse errors.
+**STEP=3** — `parse_noise.mlc` reject trailing garbage (audit: may already be parity via step 1).

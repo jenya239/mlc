@@ -485,6 +485,9 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_true('parse decl: empty type body after = yields parse error',
     parse_source_errors('type EmptyType =').length() >= 1))
 
+  results.push(assert_true('parse program: unclosed trait body yields parse error',
+    parse_source_errors("trait BrokenTrait {\n  fn missing_body(self: i32) -> i32").length() >= 1))
+
   results.push(assert_true('parse decl: trait without { yields parse error',
     parse_source_errors('trait Broken').length() >= 1))
 
@@ -526,9 +529,6 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true('parser smoke: orphan end completes',
     parser_garbage_smoke('end')))
-
-  results.push(assert_true('parser smoke: invalid trait syntax completes',
-    parser_garbage_smoke('trait BrokenTrait {\n  fn missing_body(self: i32) -> i32')))
 
   results.push(assert_true('parser smoke: lex unclosed string completes',
     parser_garbage_smoke('fn f() -> string = "unclosed')))
