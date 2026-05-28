@@ -5,6 +5,13 @@ import { TKind, Token, LexOut } from './ast_tokens'
 type LexState     = LexState     { src: string, pos: i32, line: i32, col: i32 }
 type ScanResult   = ScanResult   { state: LexState, token: Token }
 type ScanStrResult = ScanStrResult { state: LexState, token: Token, error: string }
+type SkipResult   = SkipResult   { state: LexState, error: string }
+
+fn lexer_internal_panic(message: string) -> unit = do
+  println('lexer panic: ' + message)
+  exit(1)
+  do end
+end
 
 extend LexState {
   fn eof(self) -> bool =
@@ -15,7 +22,13 @@ extend LexState {
 
   fn peek(self, offset: i32) -> string = do
     const position = self.pos + offset
-    if position >= self.src.byte_size() then "\0" else self.src.byte_at(position) end
+    if position < 0 then do
+      lexer_internal_panic('lexer peek before start of source')
+      "\0"
+    end
+    else if position >= self.src.byte_size() then "\0"
+    else self.src.byte_at(position)
+    end
   end
 
   fn lex_advance(self) -> LexState =
@@ -238,14 +251,18 @@ fn scan_string(state: LexState) -> ScanStrResult = do
   while !current.eof() && current.current() != "\"" do
     if current.current() == "\\" then
       current = current.lex_advance()
-      const mapped = map_escape(current.current())
-      if mapped != '' then
-        parts.push(mapped)
+      if current.eof() then
+        error = 'dangling escape at end of string'
       else
-        parts.push("\\")
-        parts.push(current.current())
+        const mapped = map_escape(current.current())
+        if mapped != '' then
+          parts.push(mapped)
+        else
+          parts.push("\\")
+          parts.push(current.current())
+        end
+        current = current.lex_advance()
       end
-      current = current.lex_advance()
     else
       const run_start = current.pos
       current = lex_advance_past_unescaped_string_run(current)
@@ -354,8 +371,9 @@ fn scan_template(state: LexState) -> ScanStrResult = do
   }
 end
 
-fn skip_whitespace(state: LexState) -> LexState = do
+fn skip_whitespace(state: LexState) -> SkipResult = do
   let mut current = state
+  let mut error = ''
   while !current.eof() do
     const character = current.current()
     if is_ws(character) then
@@ -365,17 +383,21 @@ fn skip_whitespace(state: LexState) -> LexState = do
       while !current.eof() && current.current() != "\n" do current = current.lex_advance() end
     else if character == "/" && current.peek(1) == "*" then
       current = current.lex_advance_by(2)
+      let mut comment_closed = false
       while !current.eof() do
         if current.current() == "*" && current.peek(1) == "/" then
-          current = current.lex_advance_by(2); break
+          current = current.lex_advance_by(2)
+          comment_closed = true
+          break
         end
         current = current.lex_advance()
       end
+      if !comment_closed then error = 'unterminated block comment' end
     else
       break
     end
   end
-  current
+  SkipResult { state: current, error: error }
 end
 
 fn scan_op(state: LexState) -> ScanResult = do
@@ -421,7 +443,10 @@ export fn tokenize(source: string) -> LexOut = do
   const tokens: [Token] = []
   let mut errors: [string] = []
   while !state.eof() do
-    state = skip_whitespace(state)
+    const position_before_token = state.pos
+    const skip_result = skip_whitespace(state)
+    state = skip_result.state
+    accumulate_nonempty_scan_message_into_errors(errors, skip_result.error)
     if state.eof() then break end
     const character = state.current()
     if is_alpha(character) then
@@ -445,6 +470,9 @@ export fn tokenize(source: string) -> LexOut = do
     else
       const result = scan_op(state); tokens.push(result.token); state = result.state
       ()
+    end
+    if state.pos == position_before_token then
+      lexer_internal_panic('tokenize made no progress at byte ' + state.pos.to_string())
     end
   end
   tokens.push(state.token(Eof))
