@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
 | role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | run_tests | 755 |
-| TRACK_PLAN | TRACK_SPAN_IR **active** (step 5) |
-| agent_token_last | cr-agent-14a24717-d2c6-4a26-8795-d0fcfdbeaecf |
+| TRACK_PLAN | TRACK_SPAN_IR **closed** (pending hash) |
+| agent_token_last | cr-agent-13c45e18-a074-4c60-8505-3d130be3a408 |
+
+### Turn 2026-05-28 (Driver SPAN_IR step 5 — track close)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 5 |
+| step | 5 |
+| done | span-less IR audit; TRACK closed (pending hash) |
+| verify | 755 pass; docs only |
+| next | ROLE=Planner plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (Driver SPAN_IR step 4)
 

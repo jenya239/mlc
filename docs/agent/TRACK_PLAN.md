@@ -56,7 +56,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Parser panic audit:** [TRACK_PARSER_PANIC.md](TRACK_PARSER_PANIC.md) — **closed** (`5525d03`)
 - **Checker/codegen spans:** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **closed** (`a8bf7a1`)
 - **Build determinism:** [TRACK_BUILD.md](TRACK_BUILD.md) — **closed** (`1d6f4c5`)
-- **SemanticIR decl spans:** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **active** (step 5)
+- **SemanticIR decl spans:** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **closed** (pending hash)
 
 ## Next step (Driver)
 
@@ -76,7 +76,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=5** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — audit remaining span-less IR; close track.
+**STEP=5** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — audit + close. **done** (pending hash)
+
+## Next step (Planner)
+
+**plan-refresh** — pick next track from PLAN backlog.
 
 ## Planner checklist (2026-05-28 plan-refresh — SPAN_IR)
 

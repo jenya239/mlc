@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_BUILD.md](TRACK_BUILD.md) (**closed**, `1d6f4c5`)
 
-## Status: **active** (step 5 pending)
+## Status: **closed** (pending hash)
+
+**Closed:** step 5 audit — remaining span-less SemanticIR nodes documented; no code changes.
 
 **Goal:** `SDecl` variants in `semantic_ir.mlc` carry source spans; transform propagates; diagnostics use decl spans where available.
 
@@ -14,7 +16,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 1 §1; previous: [TRACK_BUILD.md](TRACK
 ## Verify gate (every step)
 
 ```
-bundle exec rake test_compiler_mlc   # 755 pass (baseline post step 3)
+bundle exec rake test_compiler_mlc   # 755 pass (baseline post step 4)
 compiler/build.sh                    # when compiler/** touched
 compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
 compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
@@ -30,44 +32,38 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `SDeclType` span from `DeclType.name_span` | done (`3e214fc`) |
 | 3 | `SDeclTrait` / `SDeclExtend` spans | done (`326b173`) |
 | 4 | Checker diagnostics on decl paths use `SDecl` span helpers | done (`860bafc`) |
-| 5 | Audit remaining span-less IR; close track | pending |
+| 5 | Audit remaining span-less IR; close track | done (pending hash) |
+
+## Step 5 audit (remaining span-less SemanticIR)
+
+Reviewed `semantic_ir.mlc` and `sdecl_span` — **no fixable paths**; no code changes.
+
+| Node | Span? | Rationale |
+|------|-------|-----------|
+| `SExpr` / `SStmt` (all variants) | yes | pre-track; `sexpr_span` / stmt span on each variant |
+| `SDeclFn` / `SDeclType` / `SDeclTrait` / `SDeclExtend` / `SDeclAssocBind` | yes | steps 1–3; `sdecl_span` |
+| `SDeclImport` | no | module path + symbol list; no single decl name token; rarely diagnostic site |
+| `SDeclExported` | wrapper | span on inner via `sdecl_span(sdecl_inner(d))` |
+| `SMatchArm` | no | parent `SExprMatch` carries match span; pat/body have own spans from transform |
+| `SProgram` / `SLoadItem` / `SNamespaceImportAlias` | N/A | containers, not diagnostic nodes |
+
+AST mirror: `decl_span` covers all user-facing `Decl` variants (step 4). `DeclImport` / `DeclFn` without name span use body or `span_unknown` — same as pre-track.
+
+Test-only `span_unknown` in `compiler/tests/**` — out of scope.
 
 ## Context
 
 - `SExpr` / `SStmt` already carry `Span` (`semantic_ir.mlc`).
 - `SDeclFn`, `SDeclType`, `SDeclTrait`, `SDeclExtend` carry spans; `SDeclAssocBind` has span.
-- `DeclType` / `DeclTrait` already have `name_span` in AST (TRACK_SPAN_CHECKER step 2).
+- `DeclType` / `DeclTrait` / `DeclExtend` have `name_span` in AST.
 
 ## Deferred (not in this track)
 
 - Parser `ref mut` — [TRACK_PLAN.md](TRACK_PLAN.md) step 15.
 - `lib/mlc/` parity — not in scope.
 - Record default expression parity (E4) — separate track if needed.
+- `SDeclImport` span — deferred (low diagnostic value).
 
-## Step 1 detail
+## Next step
 
-- `SDeclFn` +8th field `Span`; `sdecl_span` helper.
-- `transform_decl`: `expr_span(body)`.
-- Test in `test_decl_gen.mlc`.
-
-## Step 2 detail
-
-- `SDeclType` +5th field `Span`; `sdecl_span` extended.
-- `transform_decl`: `DeclType.name_span`.
-- Test `transform_decl SDeclType span from name` in `test_decl_gen.mlc`.
-
-## Step 3 detail
-
-- `SDeclTrait` +4th field `Span`; `SDeclExtend` +4th field `Span`; `DeclExtend` +4th field `Span` in AST.
-- `transform_decl`: `DeclTrait.name_span`, `DeclExtend.name_span` (type name span from parser).
-- Tests `transform_decl SDeclTrait span from name`, `SDeclExtend span from name` in `test_decl_gen.mlc`.
-
-## Step 4 detail
-
-- `decl_span` in `ast.mlc` (mirrors `sdecl_span` on AST `Decl`).
-- `derive_clause_diagnostics` uses `decl_span` instead of variant field heuristics.
-- Golden E070 at type name span in `test_checker.mlc`.
-
-## Next step (Driver)
-
-**STEP=5** — audit remaining span-less IR; close track.
+Track **closed**. Planner: plan-refresh.
