@@ -5,11 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
-| role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | run_tests | 607 |
-| TRACK_PLAN | TRACK_SAFETY closed (step 4 `32f8335`) |
+| TRACK_PLAN | TRACK_PERFORMANCE active (step 1 pending) |
+
+### Turn 2026-05-28 (Planner plan-refresh — performance track)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_SAFETY closed; opened TRACK_PERFORMANCE (5 steps: baseline, CI gate, registry COW, codegen ctx, re-baseline) |
+| verify | n/a (docs only) |
+| uncommitted_files | docs pending commit |
+| next | STEP=1 TRACK_PERFORMANCE (enqueued) |
 
 ### Turn 2026-05-28 (SAFETY step 4)
 

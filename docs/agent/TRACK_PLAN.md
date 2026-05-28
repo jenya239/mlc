@@ -47,17 +47,18 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **CppAST cleanup:** [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — closed (`005c65b`)
 - **Phase 1 stabilization:** [TRACK_PHASE1.md](TRACK_PHASE1.md) — **closed** (`fd42eab`)
 - **Safety / fuzz hardening:** [TRACK_SAFETY.md](TRACK_SAFETY.md) — **closed** (`32f8335`)
+- **Performance:** [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **active** (step 1 pending)
 
-## Next step (Planner)
+## Next step (Driver)
 
-TRACK_SAFETY closed — `plan-refresh` for performance track (PLAN §1).
+See [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **STEP=1** (post-SAFETY baseline).
 
-## Planner checklist (2026-05-28 plan-refresh — overnight guard)
+## Planner checklist (2026-05-28 plan-refresh — performance track)
 
-- [x] TRACK_CPPGEN closed (`005c65b`); TRACK_PHASE1 step 1 done (`a74d480`)
-- [x] Active track: TRACK_PHASE1 step 2 pending
+- [x] TRACK_SAFETY closed (`32f8335`)
+- [x] TRACK_PERFORMANCE opened (5 steps, verify + perf gate)
 - [x] No step bundles `compiler/` + `lib/mlc/`
-- [x] Driver enqueued STEP=2
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-25 plan-refresh #3 — Phase 2)
 
