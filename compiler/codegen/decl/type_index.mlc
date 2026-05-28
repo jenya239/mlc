@@ -71,7 +71,7 @@ export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string
           mi = mi + 1
         end
       end,
-      DeclExtend(type_name, _, methods) => do
+      DeclExtend(type_name, _, methods, _) => do
         let mut mi = 0
         while mi < methods.length() do
           match methods[mi] {
@@ -172,7 +172,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
         end,
         DeclFn(_, _, _, _, _, _, _) => do end,
         DeclTrait(_, _, _, _)       => do end,
-        DeclExtend(_, _, _)      => do end,
+        DeclExtend(_, _, _, _)      => do end,
         DeclImport(_, _)         => do end,
         DeclExported(_)          => do end,
         DeclAssocType(_, _)      => do end,
@@ -199,7 +199,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
       end,
       DeclFn(_, _, _, _, _, _, _) => do end,
       DeclTrait(_, _, _, _)       => do end,
-      DeclExtend(_, _, _)      => do end,
+      DeclExtend(_, _, _, _)      => do end,
       DeclImport(_, _)         => do end,
       DeclAssocType(_, _)      => do end,
       DeclAssocBind(_, _, _)   => do end

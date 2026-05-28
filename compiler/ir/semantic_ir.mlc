@@ -65,8 +65,8 @@ export type SStmt =
 export type SDecl =
   | SDeclFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SExpr>, [WhereClauseBound], Span)
   | SDeclType(string, [string], [Shared<TypeVariant>], [string], Span)
-  | SDeclTrait(string, [string], [Shared<SDecl>])
-  | SDeclExtend(string, string, [Shared<SDecl>])
+  | SDeclTrait(string, [string], [Shared<SDecl>], Span)
+  | SDeclExtend(string, string, [Shared<SDecl>], Span)
   | SDeclImport(string, [string])
   | SDeclExported(Shared<SDecl>)
   | SDeclAssocBind(string, Shared<Type>, Span)
@@ -161,6 +161,8 @@ export fn sdecl_span(declaration: Shared<SDecl>) -> Span =
   match declaration {
     SDeclFn(_, _, _, _, _, _, _, span) => span,
     SDeclType(_, _, _, _, span) => span,
+    SDeclTrait(_, _, _, span) => span,
+    SDeclExtend(_, _, _, span) => span,
     SDeclAssocBind(_, _, span) => span,
     _ => span_unknown()
   }

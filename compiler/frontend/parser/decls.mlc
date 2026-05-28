@@ -217,6 +217,7 @@ fn parse_import_decl(parser: Parser) -> DeclResult = do
 end
 
 fn parse_extend_decl(parser: Parser) -> DeclResult = do
+  const type_name_span = parser.span_at_cursor()
   const type_name = parser.kind().ident()
   let mut state = parser.advance()
   let mut trait_name = ''
@@ -260,7 +261,7 @@ fn parse_extend_decl(parser: Parser) -> DeclResult = do
       methods_state = methods_state.advance()
     end
   end
-  DeclResult { decl: Shared.new(DeclExtend(type_name, trait_name, methods)), parser: methods_state.advance() }
+  DeclResult { decl: Shared.new(DeclExtend(type_name, trait_name, methods, type_name_span)), parser: methods_state.advance() }
 end
 
 // Split helpers: nested if/else in one fn confused self-hosted parse/codegen (extra `}`).

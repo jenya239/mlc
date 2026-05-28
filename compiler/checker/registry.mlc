@@ -250,7 +250,7 @@ fn register_decl_into(registry: ref mut TypeRegistry, decl: Shared<Decl>) -> uni
       end
       registry.trait_assoc_types.set(trait_name, trait_associated_type_names)
     end,
-    DeclExtend(type_name, trait_name, methods) => do
+    DeclExtend(type_name, trait_name, methods, _) => do
       if trait_name.length() > 0 then
         let mut trait_implementations: [string] =
           if registry.trait_impls.has(type_name) then registry.trait_impls.get(type_name)

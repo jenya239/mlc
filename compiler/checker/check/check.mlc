@@ -318,7 +318,7 @@ fn global_names_merge_single_declaration_into_map(
             names_after_trait_definition,
             method_declaration_shared_under_scan))
     end,
-    DeclExtend(_, _, _)    => global_names_so_far,
+    DeclExtend(_, _, _, _)    => global_names_so_far,
     DeclImport(_, _)       => global_names_so_far,
     DeclExported(_)        => global_names_so_far,
     DeclAssocType(_, _)    => global_names_so_far,
@@ -475,7 +475,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         ()
       end,
       DeclTrait(_, _, _, _)   => do () end,
-      DeclExtend(extend_type_name, _, methods) => do
+      DeclExtend(extend_type_name, _, methods, _) => do
         all_diagnostics =
           methods.fold(
             all_diagnostics,

@@ -346,11 +346,12 @@ fn expand_decl_shared(declaration: Shared<Decl>, trait_declaration_names: Map<st
         trait_declaration_names,
         nominal_type_declaration_names),
     DeclExported(inner) => Shared.new(DeclExported(expand_decl_shared(inner, trait_declaration_names, nominal_type_declaration_names))),
-    DeclExtend(extended_type_name, implemented_trait_name, methods) =>
+    DeclExtend(extended_type_name, implemented_trait_name, methods, name_span) =>
       Shared.new(DeclExtend(
         extended_type_name,
         implemented_trait_name,
-        expand_extend_methods(methods, trait_declaration_names, nominal_type_declaration_names))),
+        expand_extend_methods(methods, trait_declaration_names, nominal_type_declaration_names),
+        name_span)),
     _ => declaration
   }
 

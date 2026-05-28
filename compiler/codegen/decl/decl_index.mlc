@@ -41,7 +41,7 @@ fn decl_export_names(decl: Shared<Decl>) -> [string] = do
           end
           ()
         end,
-        DeclExtend(_, _, methods) => do
+        DeclExtend(_, _, methods, _) => do
           let mut mi = 0
           while mi < methods.length() do
             match methods[mi] {

@@ -32,6 +32,9 @@ end
 fn type_decl(name: string, type_params: [string], variants: [Shared<TypeVariant>], derive_traits: [string]) -> Shared<SDecl> =
   Shared.new(SDeclType(name, type_params, variants, derive_traits, span_unknown()))
 
+fn extend_decl(type_name: string, trait_name: string, methods: [Shared<SDecl>]) -> Shared<SDecl> =
+  Shared.new(SDeclExtend(type_name, trait_name, methods, span_unknown()))
+
 fn first_transformed_decl_span(program: Program, registry: TypeRegistry) -> Span = do
   const transformed = transform_program(program, registry)
   if transformed.decls.length() == 0 then span_unknown() else sdecl_span(transformed.decls[0]) end
@@ -47,6 +50,8 @@ end
 
 fn transformed_fn_decl_span(source: string) -> Span = transformed_decl_span(source)
 fn transformed_type_decl_span(source: string) -> Span = transformed_decl_span(source)
+fn transformed_trait_decl_span(source: string) -> Span = transformed_decl_span(source)
+fn transformed_extend_decl_span(source: string) -> Span = transformed_decl_span(source)
 
 fn make_str_expr(text: string) -> Shared<SExpr> = Shared.new(SExprStr(text, tstr(), span_unknown()))
 
@@ -204,7 +209,7 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   const color_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Color')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
   const color_to_string = fn_decl('Color_to_string', [color_self], tstr(), make_str_expr('red'))
-  const extend_display_for_color = Shared.new(SDeclExtend('Color', 'Display', [color_to_string]))
+  const extend_display_for_color = extend_decl('Color', 'Display', [color_to_string])
   results.push(assert_code_contains('gen_decl SDeclExtend: static_assert implements trait',
     gen_decl(extend_display_for_color, context), 'static_assert'))
   results.push(assert_code_contains('gen_decl SDeclExtend: trait name in assert',
@@ -233,6 +238,12 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   results.push(assert_true('transform_decl SDeclType span from name',
     transformed_type_decl_span('type Box = { value: i32 }').line > 0))
+
+  results.push(assert_true('transform_decl SDeclTrait span from name',
+    transformed_trait_decl_span('trait Display { fn to_string(self: Display) -> string = "" }').line > 0))
+
+  results.push(assert_true('transform_decl SDeclExtend span from name',
+    transformed_extend_decl_span('extend Color : Display { fn to_string(self: Color) -> string = "red" }').line > 0))
 
   results.push(assert_eq_str('gen_proto SDeclType: empty string',
     gen_proto(point_type, context), ''))

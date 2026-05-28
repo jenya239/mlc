@@ -116,8 +116,8 @@ fn expand_parameter_destructuring_decl_shared(declaration: Shared<Decl>) -> Shar
         where_clause_bounds_entries),
     DeclExported(inner_declaration) =>
       Shared.new(DeclExported(expand_parameter_destructuring_decl_shared(inner_declaration))),
-    DeclExtend(extended_type_name, implemented_trait_name, methods) =>
-      Shared.new(DeclExtend(extended_type_name, implemented_trait_name, expand_extend_methods_parameter_destructuring(methods))),
+    DeclExtend(extended_type_name, implemented_trait_name, methods, name_span) =>
+      Shared.new(DeclExtend(extended_type_name, implemented_trait_name, expand_extend_methods_parameter_destructuring(methods), name_span)),
     _ => declaration
   }
 
@@ -172,7 +172,7 @@ fn extern_parameter_destructure_errors_for_decl_shared(declaration: Shared<Decl>
       },
     DeclExported(inner_declaration) =>
       extern_parameter_destructure_errors_for_decl_shared(inner_declaration),
-    DeclExtend(_, _, methods) => do
+    DeclExtend(_, _, methods, _) => do
       let mut concatenated_errors: [Diagnostic] = []
       let mut method_scan_index = 0
       while method_scan_index < methods.length() do

@@ -289,7 +289,7 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true('extend method: self with type and extra param',
     match second_decl('type R = { a: i32 }\nextend R {\n  fn m(self: R, x: i32) -> i32 = x\n}') {
-      DeclExtend(_, _, methods) =>
+      DeclExtend(_, _, methods, _) =>
         match methods[0] {
           DeclFn(_, _, _, parameters, _, _, _) => parameters.length() == 2,
           _ => false
