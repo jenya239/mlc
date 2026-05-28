@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_CPPGEN.md](TRACK_CPPGEN.md) — CppAST codegen cleanup (Phase 2 follow-up). Parser `ref mut` = deferred separate branch.
+[TRACK_PHASE1.md](TRACK_PHASE1.md) — Phase 1 stabilization (diagnostics, tests, `--check-only`, out-dir). Parser `ref mut` = deferred separate branch.
 
 ## Step sizing (good vs bad)
 

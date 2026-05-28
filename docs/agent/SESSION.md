@@ -5,11 +5,23 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
-| role_last | Driver |
-| driver_turns_since_plan | 6 |
-| step_last | 10 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | run_tests | 511 |
-| TRACK_PLAN | TRACK_CPPGEN closed |
+| TRACK_PLAN | TRACK_PHASE1 active (step 1 pending) |
+
+### Turn 2026-05-28 (plan-refresh)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_CPPGEN/CPPEXPR closed; created TRACK_PHASE1 (8 steps); updated PLAN/DEVELOPMENT/TRACK_PLAN |
+| verify | n/a (docs only) |
+| uncommitted_files | docs/agent/* |
+| next | STEP=1 TRACK_PHASE1 (enqueued) |
 
 ### Turn 2026-05-28 (CPPGEN step 10)
 

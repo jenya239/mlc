@@ -8,8 +8,7 @@
 Source → Lexer → Tokens → Parser → AST → Checker → SemanticIR → Codegen → C++ source
 ```
 
-Codegen генерирует C++ **строками напрямую** из SemanticIR. Нет промежуточного C++ AST как цели.
-`compiler/cpp/ast.mlc` существует, но используется только для парсинга C++ (для теста), не для эмиссии.
+Codegen строит **CppAST** (`compiler/cpp/cpp_ast.mlc`) и печатает через `cpp_printer.mlc`. String-шаблоны в `codegen/expr/expr.mlc` и `expr_fragment_codegen` остаются только для bootstrap edge cases (stmt/decl bridges).
 
 ### Производительность
 
@@ -496,7 +495,7 @@ fn area(shape: Shape) -> f64 = match shape {
 | Crashes на валидном вводе | ? | 0 |
 | Crashes на невалидном вводе | ? | 0 (panic с сообщением) |
 | Диагностики со span | частично | 100% |
-| Codegen: строки vs CppAST | 100% строки | 0% строки |
+| Codegen: строки vs CppAST | CppAST default; string bridges for edge cases | 0% string bridges |
 | mlcc компилирует себя | да | да + детерминировано |
 | Время компиляции mlcc собой | ? измерить | < 1 с |
 

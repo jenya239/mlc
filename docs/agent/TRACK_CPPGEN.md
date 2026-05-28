@@ -37,7 +37,7 @@ diff -rq $TMP/mlc_p1 $TMP/mlc_p2   # must stay empty
 | 7 | `module.mlc` — remove `gen_module_via_string`; drop `use_cpp_printer` flag | done (`06a456c`) |
 | 8 | `expr.mlc` — delete unused templates; shrink or inline survivors | done (`e6de96b`) |
 | 9 | `cpp_printer.mlc` — formatting polish (indent, breaks) beyond deterministic baseline | done (`270b917`) |
-| 10 | Remove dead dual-backend helpers (`eval_expr_cpp_as_string` exports if unused) | done (`TBD`) |
+| 10 | Remove dead dual-backend helpers (`eval_expr_cpp_as_string` exports if unused) | done (`005c65b`) |
 
 ## Step details
 
@@ -67,4 +67,4 @@ diff -rq $TMP/mlc_p1 $TMP/mlc_p2   # must stay empty
 
 - Parser `ref mut` — separate branch (TRACK_PLAN step 15).
 - `lib/mlc/` Ruby backend parity — not in this track.
-- Phase 1 (diagnostics span, fuzzing, out-dir) — separate TRACK when CppGEN closed.
+- Phase 1 (diagnostics span, fuzzing, out-dir) — [TRACK_PHASE1.md](TRACK_PHASE1.md).

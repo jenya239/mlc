@@ -40,17 +40,16 @@ Parent: [../PLAN.md](../PLAN.md) §3 visitor + §4 folder restructure
 
 ## Backlog (Planner maintains)
 
-Source: PLAN.md §4 «Порядок миграции».
+Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
-- **Step 19:** `semantic_ir.mlc` → `ir/semantic_ir.mlc`; `record_field_default_initializer.mlc` → `ir/record_defaults.mlc`; imports only
-- **Steps 20–22:** same gate per sub-step; do not bundle layers in one commit
 - **Step 15:** parser `ref mut` — separate branch, not in this track
 - **CppExpr backend:** [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) — closed (`96df4e0`)
-- **CppAST cleanup:** [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — active (Phase 2 follow-up)
+- **CppAST cleanup:** [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — closed (`005c65b`)
+- **Phase 1 stabilization:** [TRACK_PHASE1.md](TRACK_PHASE1.md) — **active**
 
 ## Next step (Driver)
 
-See [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — **STEP=1** (field + index CppExpr in `expr_visitor_cpp`).
+See [TRACK_PHASE1.md](TRACK_PHASE1.md) — **STEP=1** (rustc-style `diagnostic_format`).
 
 ## Step 17 detail (done — `6f998e9`)
 
