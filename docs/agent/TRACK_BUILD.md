@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §6; previous: [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) (**closed**, `a8bf7a1`)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** deterministic C++ link/compile order; `--emit-compile-commands` for clangd.
 
@@ -14,7 +14,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 1 §6; previous: [TRACK_SPAN_CHECKER.md
 ## Verify gate (every step)
 
 ```
-bundle exec rake test_compiler_mlc   # 739 pass (baseline post SPAN_CHECKER)
+bundle exec rake test_compiler_mlc   # 742 pass (baseline post step 2)
 compiler/build.sh                    # when compiler/** touched
 compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
 compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
@@ -27,7 +27,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | Step | Item | Status |
 |------|------|--------|
 | 1 | `build_bin.sh` — deterministic sorted cpp compile order | done (`ed8ac00`) |
-| 2 | `compile_options.mlc` — `--emit-compile-commands` flag parsing | pending |
+| 2 | `compile_options.mlc` — `--emit-compile-commands` flag parsing | done (`6077707`) |
 | 3 | Modular pipeline — emit `compile_commands.json` to out dir | pending |
 | 4 | Test/smoke — flag + json output | pending |
 | 5 | Build audit; close track | pending |
@@ -44,6 +44,12 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 - Ruby `ModularCompiler` compile_commands — mlcc-only first.
 - `lib/mlc/` parity — not in scope.
 
+## Step 2 detail
+
+- `CompileOptions.emit_compile_commands: bool`; parse `--emit-compile-commands`.
+- Usage string updated; 3 tests in `test_pass.mlc`.
+- Pipeline wiring deferred to step 3.
+
 ## Next step (Driver)
 
-**STEP=2** — `compile_options.mlc` `--emit-compile-commands` flag.
+**STEP=3** — modular pipeline emit `compile_commands.json` to out dir.
