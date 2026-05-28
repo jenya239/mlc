@@ -6,10 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-26-cr-session-watchdog` |
 | role_last | Driver |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | run_tests | 536 |
-| TRACK_PLAN | TRACK_SAFETY active (step 2 pending) |
+| TRACK_PLAN | TRACK_SAFETY active (step 3 pending) |
+
+### Turn 2026-05-28 (SAFETY step 2)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-26-cr-session-watchdog |
+| driver_turns_since_plan | 2 |
+| step | 2 |
+| done | random-byte smoke in run_fuzz_smoke.sh (fixed sizes + 8 seeded urandom) |
+| verify | 536 pass; fuzz smoke + negative corpus ok; self-host diff empty |
+| uncommitted_files | 0 |
+| next | STEP=3 TRACK_SAFETY (enqueued) |
 
 ### Turn 2026-05-28 (SAFETY step 1)
 
