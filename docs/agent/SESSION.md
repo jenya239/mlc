@@ -6,11 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-self-loop` |
 | role_last | Driver |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| run_tests | 701 |
-| TRACK_PLAN | TRACK_COVERAGE active (step 5) |
-| agent_token_last | cr-agent-c8da78ee-9d94-4030-b39d-e4a3ccb2ef4b |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| run_tests | 702 |
+| TRACK_PLAN | TRACK_COVERAGE closed (`9bddbb3`) |
+| agent_token_last | cr-agent-18658876-3f9f-4a38-b976-92c5d508b8df |
+
+### Turn 2026-05-28 (COVERAGE step 5 — track closed)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| instructions_rev | 2026-05-28-self-loop |
+| driver_turns_since_plan | 5 |
+| step | 5 |
+| done | SStmtContinue codegen smoke; track closed (`9bddbb3`) |
+| verify | 702 pass; tests only (no self-host) |
+| uncommitted_files | compiler/out/* artifacts |
+| next | ROLE=Planner plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (COVERAGE step 4 idempotent #2)
 
