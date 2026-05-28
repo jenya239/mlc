@@ -5,12 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner` |
-| role_last | Driver |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| role_last | Planner |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
 | run_tests | 739 |
-| TRACK_PLAN | TRACK_SPAN_CHECKER **closed** |
+| TRACK_PLAN | TRACK_BUILD **active** (step 1) |
 | agent_token_last | cr-agent-a42530c0-a3d7-467d-9f58-27a88f2005e2 |
+
+### Turn 2026-05-28 (Planner plan-refresh — BUILD)
+
+| turn | 2026-05-28 |
+| role | Planner |
+| instructions_rev | 2026-05-28-cleaner |
+| driver_turns_since_plan | 0 |
+| step | plan-refresh |
+| done | TRACK_SPAN_CHECKER closed; opened TRACK_BUILD (5 steps) |
+| next | ROLE=Driver STEP=1 (enqueued) |
 
 ### Turn 2026-05-28 (Driver SPAN_CHECKER step 5 — idempotent skip)
 
