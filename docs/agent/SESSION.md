@@ -10,7 +10,7 @@
 | step_last | 1 |
 | run_tests | 607 |
 | TRACK_PLAN | TRACK_SECURITY active (step 2 pending) |
-| agent_token_last | pending enqueue |
+| agent_token_last | cr-agent-fea71aff-0143-4f18-a1f2-8c380d3d85be |
 
 ### Turn 2026-05-28 (SECURITY step 1)
 
