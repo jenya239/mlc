@@ -10,7 +10,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_EXPR_BRIDGE.md](TRA
 |------|------|--------|
 | 1 | `gen_match_via_cpp_visitor` — arm handlers as native CppExpr (no-guard StdVisit path) | done (`953b659`) |
 | 2 | `gen_match_via_cpp_visitor` — guarded match as native CppExpr | done (`6d7772c`) |
-| 3 | Remove `cpp_expr_from_rendered_fragment` / `eval_expr_cpp_as_string` from expr_visitor; audit; close track | done |
+| 3 | Remove `cpp_expr_from_rendered_fragment` / `eval_expr_cpp_as_string` from expr_visitor; audit; close track | done (`3e47ca4`) |
 
 ## Audit (step 3)
 

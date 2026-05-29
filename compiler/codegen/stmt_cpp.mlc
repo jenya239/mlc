@@ -121,7 +121,11 @@ fn eval_stmt_cpp(
     SStmtContinue(_) =>
       GenStmtCppResult { statement: emit_helpers.make_continue_cpp_statement(), next_try: try_counter },
     SStmtReturn(expression, _) => match expression {
-      SExprQuestion(_, _, _) => stmt_via_string_bridge(statement, context, try_counter),
+      SExprQuestion(_, _, _) => GenStmtCppResult {
+        statement: emit_helpers.make_return_cpp_statement(
+          gen_expr_cpp_for_stmt_codegen(expression, context)),
+        next_try: try_counter + 1
+      },
       _ => GenStmtCppResult {
         statement: emit_helpers.make_return_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)),
         next_try: try_counter

@@ -42,5 +42,6 @@
 | Date | Issue | Action |
 |------|-------|--------|
 | 2026-05-29 | Guard blocked `Driver:1` loop on TRACK_STMT_BRIDGE | Planner enqueued STEP=1; no Driver commit (`stmt_cpp.mlc` unchanged); Meta: supervisor ok, single recovery enqueue |
+| 2026-05-29 | Guard `Driver:1:STMT_BRIDGE` already ran | Meta finished STEP=1 commit (763 pass, self-host); enqueue STEP=2 once |
 
 Orchestration items marked done: duplicate-enqueue guard, Driver STEP loop recovery path in Meta role.

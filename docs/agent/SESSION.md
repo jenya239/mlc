@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Meta|
-| driver_turns_since_plan | 0|
+| driver_turns_since_plan | 1|
 | step_last | meta-review |
-| run_tests | 762 |
-| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 1 pending) |
-| agent_token_last | cr-agent-8b5cb764-b454-4ba6-910e-5c425d4d8c63 |
-| queue_recovery | Driver:1 loop blocked; recovery enqueue ok |
+| run_tests | 763 |
+| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 2) |
+| agent_token_last | cr-agent-9ed9c8de-9aad-4b6c-a36c-e80b36eac977 |
+| queue_recovery | STEP=1 committed; STEP=2 enqueued |
+
+### Turn 2026-05-29 (Meta meta-review — finish STEP=1 commit)
+
+| turn | 2026-05-29 |
+| role | Meta |
+| step | meta-review |
+| done | Guard Driver:1:STMT_BRIDGE ran; committed STEP=1 (return ? native CppReturn) |
+| verify | 763 pass; self-host DIFF_EXIT=0; supervisor ok |
+| next | ROLE=Driver STEP=2 TRACK_STMT_BRIDGE |
 
 ### Turn 2026-05-29 (Meta meta-review — STMT_BRIDGE step 1 loop)
 
@@ -20,7 +29,7 @@
 | step | meta-review |
 | done | Guard `Driver:1` loop; STEP=1 uncommitted (no stmt_cpp change); supervisor + RESEARCH log |
 | verify | git: only compiler/out dirty; stmt_cpp.mlc clean |
-| next | ROLE=Driver STEP=1 TRACK_STMT_BRIDGE (recovery enqueue once) |
+| next | ROLE=Driver STEP=1 (enqueued `cr-agent-8b5cb764`) |
 
 ### Turn 2026-05-29 (Planner plan-refresh — STMT_BRIDGE)
 

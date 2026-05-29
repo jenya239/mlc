@@ -361,6 +361,13 @@ export fn codegen_tests() -> [TestResult] = do
     gen_stmts_str([Shared.new(SStmtReturn(si(0), span_unknown()))], ctx),
     'return 0;\n'))
 
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: return question',
+    gen_stmts_str([
+      Shared.new(SStmtReturn(
+        Shared.new(SExprQuestion(si(7), unk_t(), span_unknown())),
+        span_unknown()))], ctx),
+    'return ({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; });\n'))
+
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let const matches string',
     gen_stmts_str([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx),
     gen_stmts_str([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx)))
