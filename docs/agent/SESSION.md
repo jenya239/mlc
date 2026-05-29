@@ -10,14 +10,14 @@
 | step_last | plan-refresh|
 | run_tests | 756 |
 | TRACK_PLAN | TRACK_EXPR_BRIDGE **active** (step 1) |
-| agent_token_last | cr-agent-1489da0c-7bf8-4390-877e-68ad23e3b980 |
+| agent_token_last | cr-agent-54d38723-42a9-4ed0-8aef-99e16ac025fc |
 
 ### Turn 2026-05-28 (Planner plan-refresh — EXPR_BRIDGE)
 
 | turn | 2026-05-28 |
 | role | Planner |
 | step | plan-refresh |
-| done | TRACK_PARSER_PARITY closed; opened TRACK_EXPR_BRIDGE (5 steps) |
+| done | TRACK_PARSER_PARITY closed; opened TRACK_EXPR_BRIDGE (5 steps); commit `a16010e` |
 | verify | — (docs only) |
 | next | ROLE=Driver STEP=1 TRACK_EXPR_BRIDGE (enqueued) |
 
