@@ -5,13 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Meta|
-| driver_turns_since_plan | 1|
-| step_last | meta-review |
-| run_tests | 763 |
-| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 2) |
-| agent_token_last | cr-agent-c9ba0984-229b-4e3f-93cd-dd60c4698122 |
-| queue_recovery | STEP=1 committed; STEP=2 enqueued |
+| role_last | Driver|
+| driver_turns_since_plan | 3|
+| step_last | 2 |
+| run_tests | 766 |
+| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 3) |
+| agent_token_last | cr-agent-d040cd2d-e84c-4867-94cf-aab6276c6e04 |
+
+### Turn 2026-05-29 (Driver STMT_BRIDGE step 2 — let/let-const)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 2 |
+| done | SStmtLet ? + SStmtLetConst block/if native CppAutoDecl/CppConstexprAutoDecl |
+| verify | 766 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_STMT_BRIDGE |
 
 ### Turn 2026-05-29 (Meta meta-review — finish STEP=1 commit)
 
