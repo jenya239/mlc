@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Planner|
-| driver_turns_since_plan | 5|
-| step_last | plan-refresh|
+| driver_turns_since_plan | 0|
+| step_last | plan-refresh |
 | run_tests | 762 |
-| TRACK_PLAN | TRACK_MATCH_BRIDGE **closed** |
-| agent_token_last | cr-agent-efe4a9de-6fe5-45d0-b71c-01207f4786ef |
+| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 1) |
+| agent_token_last | cr-agent-11157805-462d-4103-b4a8-77e1682d8c9e |
+
+### Turn 2026-05-29 (Planner plan-refresh — STMT_BRIDGE)
+
+| turn | 2026-05-29 |
+| role | Planner |
+| step | plan-refresh |
+| done | MATCH_BRIDGE closed; opened TRACK_STMT_BRIDGE (stability) |
+| verify | — (docs only) |
+| next | ROLE=Driver STEP=1 TRACK_STMT_BRIDGE |
 
 ### Turn 2026-05-29 (Driver MATCH_BRIDGE step 3 — audit + close)
 
