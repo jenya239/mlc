@@ -25,7 +25,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `expr_visitor_cpp` — if + block as native CppExpr | done (`0ba605c`) |
 | 3 | `expr_visitor_cpp` — array + lambda as native CppExpr | done (`e66e547`) |
 | 4 | `expr_visitor_cpp` — record_update as native CppExpr | done (`4274d91`) |
-| 5 | Delete `expr_fragment_codegen.mlc`; audit; close track | done |
+| 5 | Delete `expr_fragment_codegen.mlc`; audit; close track | done (`91ece96`) |
 
 ## Audit (post step 5)
 
