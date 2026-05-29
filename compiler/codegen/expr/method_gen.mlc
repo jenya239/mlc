@@ -3,6 +3,8 @@
 
 import { SExpr, SStmt, SExprIdent, sexpr_type } from '../../ir/semantic_ir'
 import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../../checker/registry'
+import { CppExpr, CppCall, CppMember, CppInitList } from '../../cpp/cpp_ast'
+import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
 import { map_method } from '../cpp_naming'
 import { infer_shared_new_type_name,
@@ -253,4 +255,210 @@ export fn gen_method_expr(
   mut_actual_argument.wrap_invoke_with_mut_actual_argument_holder_prelude_if_any(
     materialization_outcome.prelude_block,
     invoke_expression)
+end
+
+fn make_callee_call_cpp(callee_name: string, arguments: [Shared<CppExpr>]) -> Shared<CppExpr> =
+  Shared.new(CppCall(emit_helpers.make_identifier_cpp_expression(callee_name), arguments))
+
+fn prepend_expression_to_argument_list(
+  leading_expression: Shared<CppExpr>,
+  trailing_expressions: [Shared<CppExpr>]
+) -> [Shared<CppExpr>] = do
+  let arguments: [Shared<CppExpr>] = [leading_expression]
+  let mut index = 0
+  while index < trailing_expressions.length() do
+    arguments.push(trailing_expressions[index])
+    index = index + 1
+  end
+  arguments
+end
+
+fn gen_method_file_cpp(method_name: string, trailing_arguments: [Shared<CppExpr>]) -> Shared<CppExpr> =
+  make_callee_call_cpp(cpp_function_name_for_file_method(method_name), trailing_arguments)
+
+fn gen_method_profile_cpp(method_name: string, trailing_arguments: [Shared<CppExpr>]) -> Shared<CppExpr> =
+  make_callee_call_cpp(cpp_function_name_for_profile_method(method_name), trailing_arguments)
+
+fn gen_method_shared_new_cpp(
+  argument: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+) -> Shared<CppExpr> = do
+  const argument_expression = evaluate_expression(argument, context, gen_stmts)
+  const element_type = infer_shared_new_type_name(argument, context)
+  make_callee_call_cpp(`std::make_shared<${element_type}>`, [argument_expression])
+end
+
+fn gen_method_owner_call_cpp(
+  receiver_expression: Shared<CppExpr>,
+  method_name: string,
+  trailing_arguments: [Shared<CppExpr>],
+  context: CodegenContext
+) -> Shared<CppExpr> = do
+  const mangled_name = context.method_owners.get(method_name)
+  make_callee_call_cpp(
+    context.resolve(mangled_name),
+    prepend_expression_to_argument_list(receiver_expression, trailing_arguments))
+end
+
+fn gen_method_builtin_cpp(
+  receiver_expression: Shared<CppExpr>,
+  method_name: string,
+  trailing_arguments: [Shared<CppExpr>]
+) -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    Shared.new(CppMember(receiver_expression, map_method(method_name), false)),
+    trailing_arguments))
+
+fn gen_method_namespace_alias_cpp(
+  static_prefix: string,
+  method_name: string,
+  trailing_arguments: [Shared<CppExpr>]
+) -> Shared<CppExpr> =
+  make_callee_call_cpp(`${static_prefix}${map_method(method_name)}`, trailing_arguments)
+
+fn gen_method_expr_after_object_cpp(
+  receiver_expression: Shared<CppExpr>,
+  object_type_name: string,
+  method_name: string,
+  trailing_arguments: [Shared<CppExpr>],
+  argument_count: i32,
+  context: CodegenContext,
+  original_object_expression: Shared<SExpr>,
+  original_trailing_arguments: [Shared<SExpr>],
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+) -> Shared<CppExpr> = do
+  const static_receiver_name = match original_object_expression {
+    SExprIdent(name, _, _) => name,
+    _ => ''
+  }
+  if static_receiver_name == 'File' then gen_method_file_cpp(method_name, trailing_arguments)
+  else if static_receiver_name == 'Profile' then gen_method_profile_cpp(method_name, trailing_arguments)
+  else if static_receiver_name == 'Map' && method_name == 'new' then Shared.new(CppInitList([]))
+  else if static_receiver_name == 'Shared' && method_name == 'new' && argument_count == 1 then
+    gen_method_shared_new_cpp(original_trailing_arguments[0], context, gen_stmts, evaluate_expression)
+  else if is_user_defined_method_for_type(method_name, object_type_name, context) then
+    gen_method_owner_call_cpp(receiver_expression, method_name, trailing_arguments, context)
+  else if method_name == 'to_string' && argument_count == 0 then
+    make_callee_call_cpp('mlc::to_string', [receiver_expression])
+  else
+    gen_method_builtin_cpp(receiver_expression, method_name, trailing_arguments)
+  end
+end
+
+fn gen_result_option_combinator_call_cpp(
+  is_option: bool,
+  receiver_expression: Shared<CppExpr>,
+  method_name: string,
+  trailing_arguments: [Shared<CppExpr>]
+) -> Shared<CppExpr> = do
+  const namespace_prefix = if is_option then 'mlc::opt::' else 'mlc::result::' end
+  const combinator_name = if !is_option && method_name == 'ok' then 'ok_into_optional' else method_name end
+  make_callee_call_cpp(
+    `${namespace_prefix}${combinator_name}`,
+    prepend_expression_to_argument_list(receiver_expression, trailing_arguments))
+end
+
+fn gen_method_dispatch_cpp(
+  object: Shared<SExpr>,
+  object_type_name: string,
+  method_name: string,
+  receiver_expression: Shared<CppExpr>,
+  trailing_argument_expressions: [Shared<CppExpr>],
+  arguments: [Shared<SExpr>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+) -> Shared<CppExpr> =
+  match object {
+    SExprIdent(namespace_object_name, _, _) =>
+      if context.namespace_alias_prefixes.has(namespace_object_name) then
+        gen_method_namespace_alias_cpp(
+          context.namespace_alias_prefixes.get(namespace_object_name),
+          method_name,
+          trailing_argument_expressions)
+      else
+        gen_method_expr_after_object_cpp(
+          receiver_expression,
+          object_type_name,
+          method_name,
+          trailing_argument_expressions,
+          arguments.length(),
+          context,
+          object,
+          arguments,
+          gen_stmts,
+          evaluate_expression)
+      end,
+    _ =>
+      gen_method_expr_after_object_cpp(
+        receiver_expression,
+        object_type_name,
+        method_name,
+        trailing_argument_expressions,
+        arguments.length(),
+        context,
+        object,
+        arguments,
+        gen_stmts,
+        evaluate_expression),
+  }
+
+export fn gen_method_expr_cpp(
+  object: Shared<SExpr>,
+  method_name: string,
+  arguments: [Shared<SExpr>],
+  receiver_and_method_parameter_mutability_flags: [i32],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+) -> Shared<CppExpr> = do
+  const object_type = sexpr_type(object)
+  const object_type_name = object_type_name_for_dispatch(object_type)
+  const positional_argument_expressions = build_positional_receiver_and_arguments(object, arguments)
+  const materialization_outcome =
+    mut_actual_argument.materialize_positional_actual_arguments_cpp(
+      positional_argument_expressions,
+      receiver_and_method_parameter_mutability_flags,
+      context,
+      gen_stmts,
+      evaluate_expression)
+  const receiver_expression = materialization_outcome.materialized_argument_expressions[0]
+  let trailing_argument_expressions: [Shared<CppExpr>] = []
+  let mut tail_index = 1
+  while tail_index < materialization_outcome.materialized_argument_expressions.length() do
+    trailing_argument_expressions.push(materialization_outcome.materialized_argument_expressions[tail_index])
+    tail_index = tail_index + 1
+  end
+  const result_or_option_code = match object_type {
+    TGeneric(generic_name, _) =>
+      if generic_name == 'Result' then
+        gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
+      else if generic_name == 'Option' then
+        gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
+      else
+        gen_method_dispatch_cpp(
+          object, object_type_name, method_name, receiver_expression, trailing_argument_expressions,
+          arguments, context, gen_stmts, evaluate_expression)
+      end,
+    TNamed(receiver_named) =>
+      if receiver_named == 'Result' then
+        gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
+      else if receiver_named == 'Option' then
+        gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
+      else
+        gen_method_dispatch_cpp(
+          object, object_type_name, method_name, receiver_expression, trailing_argument_expressions,
+          arguments, context, gen_stmts, evaluate_expression)
+      end,
+    _ =>
+      gen_method_dispatch_cpp(
+        object, object_type_name, method_name, receiver_expression, trailing_argument_expressions,
+        arguments, context, gen_stmts, evaluate_expression),
+  }
+  mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+    materialization_outcome.prelude_statements,
+    result_or_option_code)
 end

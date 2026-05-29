@@ -1,7 +1,7 @@
 // ExprVisitor<Shared<CppExpr>> — batch 1–3: literals through lambda (Phase 2).
 
 import { Type, TNamed, TGeneric } from './checker/registry'
-import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type } from './ir/semantic_ir'
+import { SExpr, SStmt, SMatchArm, SFieldVal, SExprIdent, sexpr_type } from './ir/semantic_ir'
 import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit } from './cpp/cpp_ast'
 import { print_expr } from './cpp/cpp_printer'
 import * as emit_helpers from './cpp/emit_helpers'
@@ -9,12 +9,14 @@ import { operator_method_for } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
 import * as expr_fragment_codegen from './codegen/expr/expr_fragment_codegen'
-import { field_access_operator, find_field_value } from './codegen/expr/expression_support'
+import { field_access_operator, find_field_value, is_constructor_call } from './codegen/expr/expression_support'
 import { first_arm_needs_deref } from './codegen/expr/match_analysis'
 import * as match_codegen from './codegen/expr/match_gen'
-import { cpp_safe } from './codegen/cpp_naming'
+import * as mut_actual_argument from './codegen/expr/mut_actual_argument'
+import * as method_gen from './codegen/expr/method_gen'
+import { cpp_safe, map_builtin } from './codegen/cpp_naming'
 import { sem_type_to_cpp } from './codegen/decl/type_gen'
-import { CodegenContext, lookup_fields_for_context } from './codegen/context'
+import { CodegenContext, lookup_fields_for_context, qualify_function_callee } from './codegen/context'
 import { ExprVisitor } from './expr_visitor'
 
 type CppExprVisitor = CppExprVisitor {
@@ -52,21 +54,69 @@ export fn eval_expr_cpp(
 ) -> Shared<CppExpr> =
   eval_expr_with_cpp_visitor(expression, context, gen_stmts, eval_expr_cpp)
 
+fn gen_call_function_cpp_expression(
+  function_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  match function_expression {
+    SExprIdent(name, _, _) => do
+      emit_helpers.make_identifier_cpp_expression(qualify_function_callee(map_builtin(name), context))
+    end,
+    _ => do
+      eval_expr_cpp(function_expression, context, gen_stmts)
+    end
+  }
+
+fn gen_constructor_call_cpp_expression(
+  function_expression: Shared<SExpr>,
+  argument_expressions: [Shared<CppExpr>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  match function_expression {
+    SExprIdent(name, _, _) => do
+      Shared.new(CppAggregateInit(
+        qualify_function_callee(map_builtin(name), context),
+        argument_expressions))
+    end,
+    _ => do
+      Shared.new(CppCall(
+        gen_call_function_cpp_expression(function_expression, context, gen_stmts),
+        argument_expressions))
+    end
+  }
+
 export fn gen_call_via_cpp_visitor(
   function_expression: Shared<SExpr>,
   arguments: [Shared<SExpr>],
   call_parameter_mutability_flags: [i32],
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
-) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_call_via_visitor(
-      function_expression,
+) -> Shared<CppExpr> = do
+  const materialization_outcome =
+    mut_actual_argument.materialize_positional_actual_arguments_cpp(
       arguments,
       call_parameter_mutability_flags,
       context,
       gen_stmts,
-      eval_expr_cpp_as_string))
+      eval_expr_cpp)
+  const invoke_expression =
+    if is_constructor_call(function_expression) then
+      gen_constructor_call_cpp_expression(
+        function_expression,
+        materialization_outcome.materialized_argument_expressions,
+        context,
+        gen_stmts)
+    else
+      Shared.new(CppCall(
+        gen_call_function_cpp_expression(function_expression, context, gen_stmts),
+        materialization_outcome.materialized_argument_expressions))
+    end
+  mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+    materialization_outcome.prelude_statements,
+    invoke_expression)
+end
 
 export fn gen_method_via_cpp_visitor(
   object: Shared<SExpr>,
@@ -76,15 +126,14 @@ export fn gen_method_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_method_via_visitor(
-      object,
-      method_name,
-      arguments,
-      receiver_and_parameter_mutability_flags,
-      context,
-      gen_stmts,
-      eval_expr_cpp_as_string))
+  method_gen.gen_method_expr_cpp(
+    object,
+    method_name,
+    arguments,
+    receiver_and_parameter_mutability_flags,
+    context,
+    gen_stmts,
+    eval_expr_cpp)
 
 export fn gen_if_via_cpp_visitor(
   condition: Shared<SExpr>,
