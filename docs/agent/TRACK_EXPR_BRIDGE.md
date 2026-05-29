@@ -28,17 +28,23 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | `expr_visitor_cpp` — call + method as native CppExpr (no fragment bridge) | done (`d9505b9`) |
 | 2 | `expr_visitor_cpp` — if + block as native CppExpr | done (`0ba605c`) |
-| 3 | `expr_visitor_cpp` — array + lambda as native CppExpr | pending |
+| 3 | `expr_visitor_cpp` — array + lambda as native CppExpr | done (`e66e547`) |
 | 4 | `expr_visitor_cpp` — record_update as native CppExpr | pending |
 | 5 | Shrink/delete `expr_fragment_codegen.mlc`; audit; close track | pending |
 
-## Survivors (post step 2)
+## Survivors (post step 3)
 
-`expr_visitor_cpp.mlc` still routes 4 arms through `expr_fragment_codegen.*_via_visitor`: array, lambda, record_update (+ match guards).
+`expr_visitor_cpp.mlc` still routes 2 arms through `expr_fragment_codegen.*_via_visitor`: record_update (+ match guards).
 
 ## Next step (Driver)
 
-**STEP=3** — array + lambda native CppExpr in `expr_visitor_cpp.mlc`.
+**STEP=4** — record_update native CppExpr in `expr_visitor_cpp.mlc`.
+
+## Step 3 detail
+
+- `expr_visitor_cpp.mlc`: `gen_array_via_cpp_visitor` (CppInitList / CppAggregateInit), `gen_lambda_via_cpp_visitor` (CppMutableLambda).
+- `cpp_printer.mlc`: `print_mutable_lambda_expression`.
+- mlcc codegen workaround: `lambda_capture_list` uses push+do/end (not `else [Shared.new(...)]`).
 
 ## Step 2 detail
 

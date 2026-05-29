@@ -39,6 +39,7 @@ export type CppExpr =
   | CppUnary(string, Shared<CppExpr>)
   | CppTernary(Shared<CppExpr>, Shared<CppExpr>, Shared<CppExpr>)
   | CppLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppType>, [Shared<CppStmt>])
+  | CppMutableLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppExpr>)
   | CppInitList([Shared<CppExpr>])
   | CppAggregateInit(string, [Shared<CppExpr>])
   | CppStdVisit(Shared<CppExpr>, [Shared<CppExpr>])
