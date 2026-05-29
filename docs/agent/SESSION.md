@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 4|
-| step_last | 4|
+| driver_turns_since_plan | 5|
+| step_last | 5|
 | run_tests | 756 |
-| TRACK_PLAN | TRACK_PARSER_PARITY **active** (step 5) |
-| agent_token_last | cr-agent-dddb213c-16e8-4871-a06b-11eb2d115749 |
+| TRACK_PLAN | TRACK_PARSER_PARITY **closed** (TBD) |
+| agent_token_last | TBD |
+
+### Turn 2026-05-28 (Driver PARSER_PARITY step 5 — close track)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 5 |
+| done | audit 2 known divergences stable; orphan end corpus test; TRACK closed |
+| verify | 756 pass; fuzz differential ok (14 parity + 2 intentional) |
+| next | ROLE=Planner plan-refresh (enqueued) |
 
 ### Turn 2026-05-28 (Driver PARSER_PARITY step 4 — lex unclosed string)
 
