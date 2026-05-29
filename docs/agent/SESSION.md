@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 5|
-| step_last | 4|
+| driver_turns_since_plan | 0|
+| step_last | 5|
 | run_tests | 758 |
-| TRACK_PLAN | TRACK_EXPR_BRIDGE **active** (step 5) |
-| agent_token_last | cr-agent-e7336c9d-45bf-4f74-a4f0-2546f80b0183 |
+| TRACK_PLAN | TRACK_EXPR_BRIDGE **closed** |
+| agent_token_last | cr-agent-38b62e5a-f451-497a-babd-d2ad7d5f615c |
+
+### Turn 2026-05-29 (Driver EXPR_BRIDGE step 5 — close track)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 5 |
+| done | delete expr_fragment_codegen.mlc; track closed |
+| verify | 758 pass; self-host diff empty |
+| next | ROLE=Planner plan-refresh (enqueued) |
 
 ### Turn 2026-05-29 (Driver EXPR_BRIDGE step 4 — record_update CppExpr)
 
