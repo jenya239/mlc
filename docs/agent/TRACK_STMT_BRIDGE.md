@@ -25,7 +25,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `SStmtReturn` + `?` — native CppReturn (no stmt_via_string_bridge) | done (`<commit>`) |
+| 1 | `SStmtReturn` + `?` — native CppReturn (no stmt_via_string_bridge) | done (`2bde7d1`) |
 | 2 | `SStmtLet` / `SStmtLetConst` — question, block, if initializer paths native | pending |
 | 3 | `SStmtExpr` — assign, if/while/for/with/block native CppExprStmt | pending |
 | 4 | `SStmtLetPat` — native CppStmt decomposition | pending |
