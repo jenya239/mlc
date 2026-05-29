@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 3|
-| step_last | 2 |
+| driver_turns_since_plan | 5|
+| step_last | 3 |
 | run_tests | 762 |
-| TRACK_PLAN | TRACK_MATCH_BRIDGE **active** (step 3) |
-| agent_token_last | cr-agent-f6305402-3f5f-43b8-90fc-6140334d48b4 |
+| TRACK_PLAN | TRACK_MATCH_BRIDGE **closed** |
+| agent_token_last | cr-agent-efe4a9de-6fe5-45d0-b71c-01207f4786ef |
+
+### Turn 2026-05-29 (Driver MATCH_BRIDGE step 3 — audit + close)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 3 |
+| done | remove cpp_expr_from_rendered_fragment + eval_expr_cpp_as_string; track closed |
+| verify | 762 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Planner plan-refresh (pick next track) |
 
 ### Turn 2026-05-29 (Driver MATCH_BRIDGE step 2 — guarded match)
 

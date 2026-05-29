@@ -2,40 +2,20 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) (**closed**, `91ece96`)
 
-## Status: **active** (step 3 pending)
+## Status: **closed**
 
 **Goal:** eliminate match string bridges in `expr_visitor_cpp` — native `CppExpr` for `CppStdVisit` arm handlers and guarded `gen_match`.
 
-**Constraints:**
-- One concern per sub-step; no `compiler/` + `lib/mlc/` in one commit.
-- Self-host gate when `compiler/**` touched: `build_bin.sh` + diff empty.
-
-## Verify gate (every step)
-
-```
-bundle exec rake test_compiler_mlc   # 758 pass (baseline post EXPR_BRIDGE)
-compiler/build.sh
-compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
-.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
-```
-
----
-
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `gen_match_via_cpp_visitor` — arm handlers as native CppExpr (no-guard StdVisit path) | done |
-| 2 | `gen_match_via_cpp_visitor` — guarded match as native CppExpr | done |
-| 3 | Remove `cpp_expr_from_rendered_fragment` / `eval_expr_cpp_as_string` from expr_visitor; audit; close track | pending |
+| 1 | `gen_match_via_cpp_visitor` — arm handlers as native CppExpr (no-guard StdVisit path) | done (`953b659`) |
+| 2 | `gen_match_via_cpp_visitor` — guarded match as native CppExpr | done (`6d7772c`) |
+| 3 | Remove `cpp_expr_from_rendered_fragment` / `eval_expr_cpp_as_string` from expr_visitor; audit; close track | done |
 
-## Survivors (post step 2)
+## Audit (step 3)
 
-`expr_visitor_cpp.mlc`: `cpp_expr_from_rendered_fragment` unused; `eval_expr_cpp_as_string` still exported for `stmt_visitor_cpp` (step 3 audit).
-
-## Next step (Driver)
-
-**STEP=3** — remove dead bridges from expr_visitor; audit; close track.
+- `cpp_expr_from_rendered_fragment` — removed (unused after steps 1–2).
+- `eval_expr_cpp_as_string` — removed; callers use `print_expr(eval_expr_cpp(...))` directly (`stmt_cpp.mlc`, `eval.mlc`).
 
 ## Deferred (out of track)
 

@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **active** (step 3): audit/remove expr_visitor bridges; close track (PLAN §Phase 2). [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) **closed** (`91ece96`).
+[TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **closed**. [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) **closed** (`91ece96`).
 
 ## Step sizing (good vs bad)
 

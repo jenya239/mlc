@@ -59,15 +59,15 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **SemanticIR decl spans:** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **closed** (`e826f1a`)
 - **Parser parity (negative corpus):** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — **closed** (`d5442d6`)
 - **Expr fragment bridges:** [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) — **closed** (`91ece96`)
-- **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **active** (step 3)
-
-## Next step (Driver)
-
-**STEP=3** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — remove expr_visitor string bridges; audit; close track.
+- **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **closed**
 
 ## Next step (Planner)
 
-**plan-refresh** — pick next track from PLAN backlog. **done** (opened TRACK_MATCH_BRIDGE)
+**plan-refresh** — pick next track from PLAN backlog.
+
+## Next step (Driver)
+
+_(await Planner plan-refresh)_
 
 ## Planner checklist (2026-05-29 plan-refresh — MATCH_BRIDGE)
 
