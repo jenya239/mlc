@@ -58,10 +58,15 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Build determinism:** [TRACK_BUILD.md](TRACK_BUILD.md) — **closed** (`1d6f4c5`)
 - **SemanticIR decl spans:** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **closed** (`e826f1a`)
 - **Parser parity (negative corpus):** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — **closed** (`d5442d6`)
+- **Expr fragment bridges:** [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) — **active** (step 1)
+
+## Next step (Driver)
+
+**STEP=1** [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) — call + method native CppExpr in `expr_visitor_cpp.mlc`.
 
 ## Next step (Planner)
 
-**plan-refresh** — pick next track from PLAN backlog.
+**plan-refresh** — pick next track from PLAN backlog. **done** (opened TRACK_EXPR_BRIDGE)
 
 ## Next step (Driver)
 
@@ -86,6 +91,13 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 ## Next step (Planner)
 
 **plan-refresh** — pick next track from PLAN backlog.
+
+## Planner checklist (2026-05-28 plan-refresh — EXPR_BRIDGE)
+
+- [x] TRACK_PARSER_PARITY closed (`d5442d6`; 5/5 steps)
+- [x] TRACK_EXPR_BRIDGE opened (5 steps: call/method, if/block, array/lambda, record_update, audit close)
+- [x] PLAN §Phase 2 §3 — eliminate `expr_fragment_codegen` survivors in `expr_visitor_cpp`
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-28 plan-refresh — PARSER_PARITY)
 
