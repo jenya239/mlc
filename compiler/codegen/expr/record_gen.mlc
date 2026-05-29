@@ -1,8 +1,10 @@
 // Record and record-update code generation.
 // eval_expr_fn injected to break the import cycle with eval.mlc.
 
-import { SExpr, SStmt, SFieldVal, sexpr_span } from '../../ir/semantic_ir'
+import { SExpr, SStmt, SFieldVal, SExprField, sexpr_span } from '../../ir/semantic_ir'
 import { Type, TUnknown } from '../../checker/registry'
+import { CppExpr, CppAggregateInit, CppInvokedBlock } from '../../cpp/cpp_ast'
+import { print_expr } from '../../cpp/cpp_printer'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { find_field_value } from './expression_support'
@@ -78,4 +80,52 @@ export fn gen_record_update_expr(type_name: string, base_expr: Shared<SExpr>, ov
   else
     gen_record_update_lazy(base_expr, overrides, context, gen_stmts, eval_expr_fn)
   end
+end
+
+fn eval_field_update_value_cpp(
+  base_expression: Shared<SExpr>,
+  field_name: string,
+  overrides: [Shared<SFieldVal>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+) -> Shared<CppExpr> = do
+  let mut override_index = 0
+  while override_index < overrides.length() && overrides[override_index].name != field_name do
+    override_index = override_index + 1
+  end
+  if override_index < overrides.length() then
+    eval_expr_fn(overrides[override_index].val, context, gen_stmts)
+  else
+    eval_expr_fn(
+      Shared.new(SExprField(base_expression, field_name, Shared.new(TUnknown), sexpr_span(base_expression))),
+      context,
+      gen_stmts)
+  end
+end
+
+export fn gen_record_update_expr_cpp(
+  type_name: string,
+  base_expression: Shared<SExpr>,
+  overrides: [Shared<SFieldVal>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+) -> Shared<CppExpr> = do
+  const field_order = lookup_fields_for_context(context, type_name)
+  if field_order.length() > 0 then
+    Shared.new(CppAggregateInit(
+      context.resolve(type_name),
+      field_order.map(field_name =>
+        eval_field_update_value_cpp(base_expression, field_name, overrides, context, gen_stmts, eval_expr_fn))))
+  else do
+    const body_fragment =
+      'auto __upd = ' + print_expr(eval_expr_fn(base_expression, context, gen_stmts)) + ';\n' +
+      overrides.map(override_field =>
+        '__upd.' + cpp_safe(override_field.name) + ' = ' +
+        print_expr(eval_expr_fn(override_field.val, context, gen_stmts)) + ';\n').join('') +
+      'return __upd;\n'
+    Shared.new(CppInvokedBlock(body_fragment))
+  end
+end
 end

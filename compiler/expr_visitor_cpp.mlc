@@ -14,6 +14,7 @@ import { first_arm_needs_deref } from './codegen/expr/match_analysis'
 import * as match_codegen from './codegen/expr/match_gen'
 import * as mut_actual_argument from './codegen/expr/mut_actual_argument'
 import * as method_gen from './codegen/expr/method_gen'
+import * as record_gen from './codegen/expr/record_gen'
 import { cpp_safe, map_builtin } from './codegen/cpp_naming'
 import { sem_type_to_cpp } from './codegen/decl/type_gen'
 import { CodegenContext, lookup_fields_for_context, qualify_function_callee } from './codegen/context'
@@ -421,9 +422,8 @@ export fn gen_record_update_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_record_update_via_visitor(
-      type_name, base_expression, overrides, context, gen_stmts, eval_expr_cpp_as_string))
+  record_gen.gen_record_update_expr_cpp(
+    type_name, base_expression, overrides, context, gen_stmts, eval_expr_cpp)
 
 export fn gen_tuple_via_cpp_visitor(
   elements: [Shared<SExpr>],
