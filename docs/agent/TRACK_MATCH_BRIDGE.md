@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) (**closed**, `91ece96`)
 
-## Status: **closed**
+## Status: **closed** (`3e47ca4`)
 
 **Goal:** eliminate match string bridges in `expr_visitor_cpp` — native `CppExpr` for `CppStdVisit` arm handlers and guarded `gen_match`.
 
