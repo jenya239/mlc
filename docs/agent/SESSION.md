@@ -5,9 +5,9 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Driver|
+| role_last | Planner|
 | driver_turns_since_plan | 5|
-| step_last | 3 |
+| step_last | plan-refresh|
 | run_tests | 762 |
 | TRACK_PLAN | TRACK_MATCH_BRIDGE **closed** |
 | agent_token_last | cr-agent-efe4a9de-6fe5-45d0-b71c-01207f4786ef |
