@@ -5,12 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Critic|
+| role_last | Meta|
 | driver_turns_since_plan | 6|
-| step_last | critique-audit|
+| step_last | meta-review|
 | run_tests | 770 |
 | TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 5) |
-| agent_token_last | cr-agent-5c0b471e-24d3-41d2-ad12-6058fa33be9d |
+| agent_token_last | cr-agent-ae94a0b9-ce3c-4398-bcd1-17d02f4efa82 |
+
+### Turn 2026-05-29 (Meta meta-review — orchestration recovery)
+
+| turn | 2026-05-29 |
+| role | Meta |
+| step | meta-review |
+| done | log stale STEP=2/3/4 re-enqueue vs done commits; supervisor track_drift (pending 5 vs pickNext critique-audit) |
+| verify | Critic `ab13d2f` OK; TRACK steps 1–4 done; queue: stale Driver:4 + Driver:5 already queued |
+| notes | skip duplicate enqueue Driver:5; drain stale Driver:4 on next guard if repeats |
+| next | ROLE=Driver STEP=5 TRACK_STMT_BRIDGE (already in send queue) |
 
 ### Turn 2026-05-29 (Critic critique-audit — STMT_BRIDGE steps 1–4)
 

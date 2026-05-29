@@ -43,5 +43,6 @@
 |------|-------|--------|
 | 2026-05-29 | Guard blocked `Driver:1` loop on TRACK_STMT_BRIDGE | Planner enqueued STEP=1; no Driver commit (`stmt_cpp.mlc` unchanged); Meta: supervisor ok, single recovery enqueue |
 | 2026-05-29 | Guard `Driver:1:STMT_BRIDGE` already ran | Meta finished STEP=1 commit (763 pass, self-host); enqueue STEP=2 once |
+| 2026-05-29 | Stale Driver:2/3/4 re-enqueue after TRACK done | Idempotent skips (`7ce799f`); Critic audit `ab13d2f`; Meta: no re-enqueue Driver:5 (already queued); supervisor `track_drift` cleared intent |
 
-Orchestration items marked done: duplicate-enqueue guard, Driver STEP loop recovery path in Meta role.
+Orchestration items marked done: duplicate-enqueue guard, Driver STEP loop recovery path in Meta role, stale-step skip + single pending enqueue.
