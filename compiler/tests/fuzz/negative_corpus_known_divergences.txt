@@ -1,3 +1,4 @@
 # mlcc_exit ruby_exit filename # reason (parser/lexer parity gaps; checker-negative files must not appear here)
-1 0 lex_unclosed_string.mlc # mlcc lexer rejects unterminated string; Ruby parser accepts
-1 0 parse_orphan_end.mlc # mlcc rejects orphan end; Ruby parser accepts
+# Intentional mlcc-stricter: reject at lex/parse rather than accept invalid input (Ruby bootstrap tolerant).
+1 0 lex_unclosed_string.mlc # intentional: mlcc lexer rejects unterminated string; Ruby parser accepts
+1 0 parse_orphan_end.mlc # intentional: mlcc rejects orphan end at parse; Ruby parser accepts

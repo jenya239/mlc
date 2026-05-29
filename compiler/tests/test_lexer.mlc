@@ -74,6 +74,8 @@ export fn lexer_tests() -> [TestResult] = do
     lex_first_string('"a\nb"'), 'a\nb'))
   results.push(assert_true('unterminated double-quoted string yields lex error',
     lex_error_count('"no closing quote') > 0))
+  results.push(assert_true('lex: corpus unclosed string yields unterminated string error',
+    lex_error_count('fn f() -> string = "unclosed') > 0))
   results.push(assert_eq_int('identifier - 2 tokens',              lex_token_count('foo'),     2))
 
   results.push(assert_eq_int('no lex errors on valid source',       lex_error_count('fn f() -> i32 = 42'), 0))

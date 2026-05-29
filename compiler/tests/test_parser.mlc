@@ -530,9 +530,6 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_true('parser smoke: orphan end completes',
     parser_garbage_smoke('end')))
 
-  results.push(assert_true('parser smoke: lex unclosed string completes',
-    parser_garbage_smoke('fn f() -> string = "unclosed')))
-
   results.push(assert_true('parser smoke: deep nesting completes',
     parser_garbage_smoke(parser_deep_nesting_source(16))))
 
