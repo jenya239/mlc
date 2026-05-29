@@ -5,7 +5,7 @@ import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppCast, CppCastStatic, CppLambda,
          CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
-         CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock,
+         CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock,
          CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
          CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
 
@@ -88,6 +88,10 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_expr CppInvokedFor',
     print_expr(Shared.new(CppInvokedFor('item', Shared.new(CppIdent('items')), loop_body))),
     '[&]() {\nfor (auto item : items) {\nstep();\n}\n}()'))
+
+  results.push(assert_eq_str('print_expr CppInvokedBlock',
+    print_expr(Shared.new(CppInvokedBlock('auto x = 1;\nreturn x;\n'))),
+    '[&]() {\nauto x = 1;\nreturn x;\n}()'))
 
   results.push(assert_eq_str('print_expr CppQuestionTry',
     print_expr(Shared.new(CppQuestionTry(Shared.new(CppInt(7))))),

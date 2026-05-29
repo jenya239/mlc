@@ -8,7 +8,7 @@ import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
          CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppAggregateInit, CppStdVisit, CppCast,
-         CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock } from './cpp_ast'
+         CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock } from './cpp_ast'
 import * as cpp_ast from './cpp_ast'
 
 fn printer_indent_unit() -> string = "  "
@@ -332,6 +332,9 @@ fn invoked_while_expression(condition: Shared<CppExpr>, body_statements: string)
 fn invoked_for_expression(variable_name: string, iterator: Shared<CppExpr>, body_statements: string) -> string =
   `[&]() {\nfor (auto ${variable_name} : ${print_expr(iterator)}) {\n${body_statements}}\n}()`
 
+fn invoked_block_expression(body_statements: string) -> string =
+  `[&]() {\n${body_statements}}()`
+
 fn question_try_expression(inner: Shared<CppExpr>) -> string =
   `({ auto __q = ${print_expr(inner)}; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })`
 
@@ -400,6 +403,7 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
     CppInvokedWhile(condition, body_statements) => invoked_while_expression(condition, body_statements),
     CppInvokedFor(variable_name, iterator, body_statements) =>
       invoked_for_expression(variable_name, iterator, body_statements),
+    CppInvokedBlock(body_statements) => invoked_block_expression(body_statements),
     CppQuestionTry(inner) => question_try_expression(inner),
     CppWithBlock(resource, binder, body_statements) =>
       with_block_expression(resource, binder, body_statements)

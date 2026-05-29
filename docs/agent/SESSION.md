@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 1|
-| step_last | 1|
-| run_tests | 756 |
-| TRACK_PLAN | TRACK_EXPR_BRIDGE **active** (step 2) |
-| agent_token_last | cr-agent-1b04fd11-76af-43fc-b6b2-b6ffe40cacf2 |
+| driver_turns_since_plan | 2|
+| step_last | 2|
+| run_tests | 757 |
+| TRACK_PLAN | TRACK_EXPR_BRIDGE **active** (step 3) |
+| agent_token_last | cr-agent-f4f75858-b019-4ae8-9b68-1983cd8ab68c |
+
+### Turn 2026-05-29 (Driver EXPR_BRIDGE step 2 — if/block CppExpr)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 2 |
+| done | native CppExpr if/block + CppInvokedBlock |
+| verify | 757 pass; self-host diff empty |
+| next | ROLE=Driver STEP=3 (enqueued) |
 
 ### Turn 2026-05-28 (Driver EXPR_BRIDGE step 1 — call/method CppExpr)
 

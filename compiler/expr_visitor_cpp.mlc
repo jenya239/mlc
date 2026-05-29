@@ -1,11 +1,11 @@
 // ExprVisitor<Shared<CppExpr>> — batch 1–3: literals through lambda (Phase 2).
 
-import { Type, TNamed, TGeneric } from './checker/registry'
-import { SExpr, SStmt, SMatchArm, SFieldVal, SExprIdent, sexpr_type } from './ir/semantic_ir'
-import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit } from './cpp/cpp_ast'
+import { Type, TNamed, TGeneric, TArray } from './checker/registry'
+import { SExpr, SStmt, SMatchArm, SFieldVal, SExprIdent, SExprArray, sexpr_type } from './ir/semantic_ir'
+import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit, CppTernary, CppLambda, CppCapture, CppType, CppTypeName, CppStmt } from './cpp/cpp_ast'
 import { print_expr } from './cpp/cpp_printer'
 import * as emit_helpers from './cpp/emit_helpers'
-import { operator_method_for } from './checker/semantic_type_structure'
+import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
 import * as expr_fragment_codegen from './codegen/expr/expr_fragment_codegen'
@@ -17,6 +17,7 @@ import * as method_gen from './codegen/expr/method_gen'
 import { cpp_safe, map_builtin } from './codegen/cpp_naming'
 import { sem_type_to_cpp } from './codegen/decl/type_gen'
 import { CodegenContext, lookup_fields_for_context, qualify_function_callee } from './codegen/context'
+import { stmts_final_ctx } from './codegen/stmt/statement_context'
 import { ExprVisitor } from './expr_visitor'
 
 type CppExprVisitor = CppExprVisitor {
@@ -135,6 +136,48 @@ export fn gen_method_via_cpp_visitor(
     gen_stmts,
     eval_expr_cpp)
 
+fn reference_capture_for_immediate_lambda() -> Shared<CppCapture> =
+  Shared.new(CppCapture { name: '', by_reference: true })
+
+fn invoke_immediate_lambda_cpp(return_type: Shared<CppType>, body_statements: [Shared<CppStmt>]) -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    Shared.new(CppLambda(
+      [reference_capture_for_immediate_lambda()],
+      [],
+      return_type,
+      body_statements)),
+    []))
+
+fn gen_if_else_cpp_expression(
+  else_expression: Shared<SExpr>,
+  if_semantic_type: Shared<Type>,
+  then_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  match else_expression {
+    SExprArray(elements, _, array_span) =>
+      if elements.length() > 0 then eval_expr_cpp(else_expression, context, gen_stmts)
+      else do
+        const inner_preferred = array_element_type_from_array_type(if_semantic_type)
+        const inner_from_then_branch = array_element_type_from_array_type(sexpr_type(then_expression))
+        const inner_for_empty_array =
+          if !type_is_unknown(inner_preferred) then inner_preferred
+          else inner_from_then_branch
+          end
+        if type_is_unknown(inner_for_empty_array) then eval_expr_cpp(else_expression, context, gen_stmts)
+        else
+          eval_expr_cpp(
+            Shared.new(SExprArray(elements, Shared.new(TArray(inner_for_empty_array)), array_span)),
+            context,
+            gen_stmts)
+        end
+      end,
+    _ => do
+      eval_expr_cpp(else_expression, context, gen_stmts)
+    end
+  }
+
 export fn gen_if_via_cpp_visitor(
   condition: Shared<SExpr>,
   then_expression: Shared<SExpr>,
@@ -142,16 +185,30 @@ export fn gen_if_via_cpp_visitor(
   if_semantic_type: Shared<Type>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
-) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_if_via_visitor(
-      condition,
-      then_expression,
-      else_expression,
-      if_semantic_type,
-      context,
-      gen_stmts,
-      eval_expr_cpp_as_string))
+) -> Shared<CppExpr> = do
+  const condition_expression = eval_expr_cpp(condition, context, gen_stmts)
+  const then_expression_cpp = eval_expr_cpp(then_expression, context, gen_stmts)
+  const else_expression_cpp =
+    gen_if_else_cpp_expression(else_expression, if_semantic_type, then_expression, context, gen_stmts)
+  match if_semantic_type {
+    TNamed(type_name) => do
+      const type_cpp = context.resolve(type_name)
+      if type_cpp == 'auto' then
+        Shared.new(CppTernary(condition_expression, then_expression_cpp, else_expression_cpp))
+      else
+        invoke_immediate_lambda_cpp(
+          Shared.new(CppTypeName(type_cpp)),
+          [emit_helpers.make_if_cpp_statement(
+            condition_expression,
+            emit_helpers.make_block_cpp_statement([emit_helpers.make_return_cpp_statement(then_expression_cpp)]),
+            emit_helpers.make_block_cpp_statement([emit_helpers.make_return_cpp_statement(else_expression_cpp)]))])
+      end
+    end,
+    _ => do
+      Shared.new(CppTernary(condition_expression, then_expression_cpp, else_expression_cpp))
+    end
+  }
+end
 
 export fn gen_block_via_cpp_visitor(
   statements: [Shared<SStmt>],
@@ -159,13 +216,14 @@ export fn gen_block_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_block_via_visitor(
-      statements,
-      result_expression,
-      context,
-      gen_stmts,
-      eval_expr_cpp_as_string))
+  if statements.length() == 0 then eval_expr_cpp(result_expression, context, gen_stmts)
+  else do
+    const final_context = stmts_final_ctx(statements, context)
+    const body_fragment =
+      gen_stmts(statements, context) +
+      'return ' + print_expr(eval_expr_cpp(result_expression, final_context, gen_stmts)) + ';\n'
+    Shared.new(CppInvokedBlock(body_fragment))
+  end
 
 export fn gen_match_via_cpp_visitor(
   subject: Shared<SExpr>,

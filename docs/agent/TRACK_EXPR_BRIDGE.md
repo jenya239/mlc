@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) (**closed**, `d5442d6`), [TRACK_CPPGEN.md](TRACK_CPPGEN.md) (**closed**, `005c65b`)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** remove remaining `expr_fragment_codegen` string bridges in `expr_visitor_cpp`; emit native `CppExpr` for call/method/if/block/array/lambda/record_update arms.
 
@@ -27,18 +27,23 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | Step | Item | Status |
 |------|------|--------|
 | 1 | `expr_visitor_cpp` — call + method as native CppExpr (no fragment bridge) | done (`d9505b9`) |
-| 2 | `expr_visitor_cpp` — if + block as native CppExpr | pending |
+| 2 | `expr_visitor_cpp` — if + block as native CppExpr | done |
 | 3 | `expr_visitor_cpp` — array + lambda as native CppExpr | pending |
 | 4 | `expr_visitor_cpp` — record_update as native CppExpr | pending |
 | 5 | Shrink/delete `expr_fragment_codegen.mlc`; audit; close track | pending |
 
-## Survivors (post step 1)
+## Survivors (post step 2)
 
-`expr_visitor_cpp.mlc` still routes 6 arms through `expr_fragment_codegen.*_via_visitor`: if, block, array, lambda, record_update (+ match guards).
+`expr_visitor_cpp.mlc` still routes 4 arms through `expr_fragment_codegen.*_via_visitor`: array, lambda, record_update (+ match guards).
 
 ## Next step (Driver)
 
-**STEP=2** — if + block native CppExpr in `expr_visitor_cpp.mlc`.
+**STEP=3** — array + lambda native CppExpr in `expr_visitor_cpp.mlc`.
+
+## Step 2 detail
+
+- `expr_visitor_cpp.mlc`: `gen_if_via_cpp_visitor` (CppTernary / typed lambda-IIFE), `gen_block_via_cpp_visitor` (CppInvokedBlock).
+- `cpp_ast.mlc` / `cpp_printer.mlc`: `CppInvokedBlock` for block IIFE without `-> auto`.
 
 ## Step 1 detail (done `d9505b9`)
 

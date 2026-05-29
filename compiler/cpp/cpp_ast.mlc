@@ -45,6 +45,7 @@ export type CppExpr =
   | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpr>)
   | CppInvokedWhile(Shared<CppExpr>, string)
   | CppInvokedFor(string, Shared<CppExpr>, string)
+  | CppInvokedBlock(string)
   | CppQuestionTry(Shared<CppExpr>)
   | CppWithBlock(Shared<CppExpr>, string, string)
 
