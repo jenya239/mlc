@@ -1,9 +1,9 @@
 // ExprVisitor<Shared<CppExpr>> — batch 1–3: literals through lambda (Phase 2).
 
-import { Type, TNamed, TGeneric, TArray, TFn } from './checker/registry'
-import { SExpr, SStmt, SMatchArm, SFieldVal, SExprIdent, SExprArray, sexpr_type } from './ir/semantic_ir'
+import { Type, TNamed, TGeneric, TArray, TFn, TUnit } from './checker/registry'
+import { SExpr, SStmt, SMatchArm, SFieldVal, SExprIdent, SExprArray, SExprUnit, SExprIf, SExprBlock, sexpr_type } from './ir/semantic_ir'
 import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit, CppInitList, CppTernary, CppLambda, CppMutableLambda, CppCapture, CppParam, CppType, CppTypeName, CppStmt } from './cpp/cpp_ast'
-import { print_expr } from './cpp/cpp_printer'
+import { print_expr, print_statement } from './cpp/cpp_printer'
 import * as emit_helpers from './cpp/emit_helpers'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
@@ -168,6 +168,82 @@ fn gen_if_else_cpp_expression(
     end
   }
 
+fn unit_if_block_trailing(
+  result_expression: Shared<SExpr>,
+  final_context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> string =
+  match result_expression {
+    SExprUnit(_, _) => '',
+    SExprIf(condition, then_expression, else_expression, semantic_type, _) =>
+      print_statement(gen_if_cpp_statement(
+        condition, then_expression, else_expression, semantic_type, final_context, gen_stmts)),
+    _ =>
+      print_expr(eval_expr_cpp(result_expression, final_context, gen_stmts)) + ';\n'
+  }
+
+fn unit_if_branch_block(
+  branch_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppStmt> =
+  match branch_expression {
+    SExprBlock(statements, result_expression, _, _) => do
+      const body_fragment = gen_stmts(statements, context)
+      const final_context = stmts_final_ctx(statements, context)
+      const trailing = unit_if_block_trailing(result_expression, final_context, gen_stmts)
+      emit_helpers.make_block_cpp_statement([
+        emit_helpers.make_fragment_cpp_statement(body_fragment + trailing)])
+    end,
+    SExprIf(condition, then_expression, else_expression, semantic_type, _) =>
+      emit_helpers.make_block_cpp_statement([
+        emit_helpers.make_expression_cpp_statement(
+          gen_if_via_cpp_visitor(
+            condition, then_expression, else_expression, semantic_type, context, gen_stmts))]),
+    _ => emit_helpers.make_block_cpp_statement([
+      emit_helpers.make_expression_cpp_statement(
+        eval_expr_cpp(branch_expression, context, gen_stmts))])
+  }
+
+fn unit_if_else_branch(
+  else_expression: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppStmt> =
+  match else_expression {
+    SExprUnit(_, _) => emit_helpers.make_block_cpp_statement([]),
+    SExprIf(condition, then_expression, else_expression, semantic_type, _) =>
+      gen_if_cpp_statement(
+        condition, then_expression, else_expression, semantic_type, context, gen_stmts),
+    _ => unit_if_branch_block(else_expression, context, gen_stmts)
+  }
+
+fn gen_if_cpp_statement(
+  condition: Shared<SExpr>,
+  then_expression: Shared<SExpr>,
+  else_expression: Shared<SExpr>,
+  if_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppStmt> =
+  emit_helpers.make_if_cpp_statement(
+    eval_expr_cpp(condition, context, gen_stmts),
+    unit_if_branch_block(then_expression, context, gen_stmts),
+    unit_if_else_branch(else_expression, context, gen_stmts))
+
+fn gen_if_unit_via_cpp_visitor(
+  condition: Shared<SExpr>,
+  then_expression: Shared<SExpr>,
+  else_expression: Shared<SExpr>,
+  if_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
+) -> Shared<CppExpr> =
+  invoke_immediate_lambda_cpp(
+    Shared.new(CppTypeName('void')),
+    [gen_if_cpp_statement(
+      condition, then_expression, else_expression, if_semantic_type, context, gen_stmts)])
+
 export fn gen_if_via_cpp_visitor(
   condition: Shared<SExpr>,
   then_expression: Shared<SExpr>,
@@ -194,6 +270,8 @@ export fn gen_if_via_cpp_visitor(
             emit_helpers.make_block_cpp_statement([emit_helpers.make_return_cpp_statement(else_expression_cpp)]))])
       end
     end,
+    TUnit => gen_if_unit_via_cpp_visitor(
+      condition, then_expression, else_expression, if_semantic_type, context, gen_stmts),
     _ => do
       Shared.new(CppTernary(condition_expression, then_expression_cpp, else_expression_cpp))
     end

@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 3|
-| step_last | 2 |
-| run_tests | 766 |
-| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 3) |
-| agent_token_last | cr-agent-d040cd2d-e84c-4867-94cf-aab6276c6e04 |
+| driver_turns_since_plan | 5|
+| step_last | 3|
+| run_tests | 769 |
+| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 4) |
+| agent_token_last | cr-agent-9768aa48-2deb-4ac5-bca8-8b010fd53aea |
+
+### Turn 2026-05-29 (Driver STMT_BRIDGE step 3 — SStmtExpr)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 3 |
+| done | SStmtExpr native CppExprStmt; TUnit if void IIFE; +3 codegen tests |
+| verify | 769 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_STMT_BRIDGE |
 
 ### Turn 2026-05-29 (Driver STMT_BRIDGE step 2 — let/let-const)
 

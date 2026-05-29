@@ -60,11 +60,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Parser parity (negative corpus):** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — **closed** (`d5442d6`)
 - **Expr fragment bridges:** [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) — **closed** (`91ece96`)
 - **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **closed** (`3e47ca4`)
-- **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **active** (step 3)
+- **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **active** (step 4)
 
 ## Next step (Driver)
 
-**STEP=3** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — `SStmtExpr` native paths.
+**STEP=4** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — `SStmtLetPat` native paths.
 
 ## Next step (Planner)
 

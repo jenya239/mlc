@@ -1,6 +1,6 @@
 // CppStmt dual path for statement codegen (Phase 2 step 16).
 
-import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod, SExprBlock, SExprIf, SExprBin, SExprWhile, SExprFor, SExprWith } from '../ir/semantic_ir'
+import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod } from '../ir/semantic_ir'
 import { CppExpr, CppStmt } from '../cpp/cpp_ast'
 import { print_statement, print_expr } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
@@ -65,18 +65,6 @@ fn print_cpp_statement_line(statement: Shared<CppStmt>) -> string =
 
 fn cpp_stmt_fragment_from_string_output(output: string) -> Shared<CppStmt> =
   emit_helpers.make_fragment_cpp_statement(strip_trailing_newline(output))
-
-fn expression_statement_needs_string_bridge(expression: Shared<SExpr>) -> bool =
-  match expression {
-    SExprQuestion(_, _, _) => true,
-    SExprBin(operation, _, _, _, _) => operation == "=",
-    SExprIf(_, _, _, _, _) => true,
-    SExprWhile(_, _, _, _) => true,
-    SExprFor(_, _, _, _, _) => true,
-    SExprWith(_, _, _, _, _) => true,
-    SExprBlock(_, _, _, _) => true,
-    _ => false
-  }
 
 fn strip_trailing_newline(text: string) -> string =
   if text.length() >= 1 && text.char_at(text.length() - 1) == "\n" then
@@ -155,13 +143,18 @@ fn eval_stmt_cpp(
           gen_expr_cpp_for_stmt_codegen(value, context)),
         next_try: try_counter
       },
-    SStmtExpr(expression, _) =>
-      if expression_statement_needs_string_bridge(expression) then stmt_via_string_bridge(statement, context, try_counter)
-      else GenStmtCppResult {
-        statement: emit_helpers.make_expression_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)),
+    SStmtExpr(expression, _) => match expression {
+      SExprQuestion(_, _, _) => GenStmtCppResult {
+        statement: emit_helpers.make_expression_cpp_statement(
+          gen_expr_cpp_for_stmt_codegen(expression, context)),
+        next_try: try_counter + 1
+      },
+      _ => GenStmtCppResult {
+        statement: emit_helpers.make_expression_cpp_statement(
+          gen_expr_cpp_for_stmt_codegen(expression, context)),
         next_try: try_counter
       }
-    end
+    }
   }
 
 fn eval_stmts_cpp_with_try(statements: [Shared<SStmt>], context: ref mut CodegenContext, try_counter: i32) -> StmtsCppAccumState = do
