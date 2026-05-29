@@ -10,7 +10,7 @@
 | step_last | meta-review |
 | run_tests | 763 |
 | TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 2) |
-| agent_token_last | cr-agent-9ed9c8de-9aad-4b6c-a36c-e80b36eac977 |
+| agent_token_last | cr-agent-c9ba0984-229b-4e3f-93cd-dd60c4698122 |
 | queue_recovery | STEP=1 committed; STEP=2 enqueued |
 
 ### Turn 2026-05-29 (Meta meta-review — finish STEP=1 commit)
