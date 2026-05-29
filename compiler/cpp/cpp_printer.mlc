@@ -9,7 +9,7 @@ import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
          CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit,
          CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast,
-         CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock } from './cpp_ast'
+         CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock } from './cpp_ast'
 import * as cpp_ast from './cpp_ast'
 
 fn printer_indent_unit() -> string = "  "
@@ -375,6 +375,9 @@ fn invoked_for_expression(variable_name: string, iterator: Shared<CppExpr>, body
 fn invoked_block_expression(body_statements: string) -> string =
   `[&]() {\n${body_statements}}()`
 
+fn invoked_block_with_return_expression(return_type: string, body_statements: string) -> string =
+  `[&]() -> ${return_type} {\n${body_statements}}()`
+
 fn question_try_expression(inner: Shared<CppExpr>) -> string =
   `({ auto __q = ${print_expr(inner)}; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })`
 
@@ -467,6 +470,8 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
     CppInvokedFor(variable_name, iterator, body_statements) =>
       invoked_for_expression(variable_name, iterator, body_statements),
     CppInvokedBlock(body_statements) => invoked_block_expression(body_statements),
+    CppInvokedBlockWithReturn(return_type, body_statements) =>
+      invoked_block_with_return_expression(return_type, body_statements),
     CppQuestionTry(inner) => question_try_expression(inner),
     CppWithBlock(resource, binder, body_statements) =>
       with_block_expression(resource, binder, body_statements)

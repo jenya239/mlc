@@ -59,11 +59,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **SemanticIR decl spans:** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **closed** (`e826f1a`)
 - **Parser parity (negative corpus):** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — **closed** (`d5442d6`)
 - **Expr fragment bridges:** [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) — **closed** (`91ece96`)
-- **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **active** (step 2)
+- **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **active** (step 3)
 
 ## Next step (Driver)
 
-**STEP=1** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — match arm handlers native CppExpr (StdVisit path).
+**STEP=3** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — remove expr_visitor string bridges; audit; close track.
 
 ## Next step (Planner)
 

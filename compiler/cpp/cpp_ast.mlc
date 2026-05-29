@@ -51,6 +51,7 @@ export type CppExpr =
   | CppInvokedWhile(Shared<CppExpr>, string)
   | CppInvokedFor(string, Shared<CppExpr>, string)
   | CppInvokedBlock(string)
+  | CppInvokedBlockWithReturn(string, string)
   | CppQuestionTry(Shared<CppExpr>)
   | CppWithBlock(Shared<CppExpr>, string, string)
 

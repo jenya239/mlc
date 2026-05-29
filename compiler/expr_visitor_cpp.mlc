@@ -234,8 +234,8 @@ export fn gen_match_via_cpp_visitor(
 ) -> Shared<CppExpr> = do
   const expanded_arms = match_codegen.expand_or_arms(arms)
   if match_codegen.expanded_any_guard(expanded_arms) then
-    cpp_expr_from_rendered_fragment(
-      match_codegen.gen_match(subject, arms, match_semantic_type, context, gen_stmts, eval_expr_cpp_as_string))
+    match_codegen.gen_match_guarded_expression_cpp(
+      subject, expanded_arms, match_semantic_type, context, gen_stmts, eval_expr_cpp)
   else do
     const visit_void = match_codegen.match_visit_uses_void_lambdas(match_semantic_type)
     const handlers =

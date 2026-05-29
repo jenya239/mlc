@@ -12,7 +12,8 @@ import * as expression_output from './expr'
 import { Type, TUnit } from '../../checker/registry'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_boolean_literal, gen_integer_literal, gen_string_literal } from './literals'
-import { CppExpr, CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric } from '../../cpp/cpp_ast'
+import { CppExpr, CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppInvokedBlockWithReturn } from '../../cpp/cpp_ast'
+import { print_expr } from '../../cpp/cpp_printer'
 
 type RecordFieldBindAccum = RecordFieldBindAccum {
   field_bindings: string,
@@ -310,6 +311,23 @@ fn gen_guarded_arm_fragment(
       ''
   }
 
+fn gen_match_guarded_body(
+  subject: Shared<SExpr>,
+  expanded_arms: [Shared<SMatchArm>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+) -> string = do
+  const subject_code = eval_expr_fn(subject, context, gen_stmts)
+  const needs_dereference =
+    if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
+  const variant_access = expression_output.visit_subject_for_match('__match_subject', needs_dereference)
+  const fragment_lines =
+    expanded_arms.map(arm =>
+      gen_guarded_arm_fragment(arm, variant_access, '__match_subject', context, gen_stmts, eval_expr_fn))
+  `auto __match_subject = ${subject_code};\n` + fragment_lines.join('') + 'std::abort();\n'
+end
+
 fn gen_match_guarded_expression(
   subject: Shared<SExpr>,
   expanded_arms: [Shared<SMatchArm>],
@@ -318,17 +336,29 @@ fn gen_match_guarded_expression(
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
 ) -> string = do
-  const subject_code = eval_expr_fn(subject, context, gen_stmts)
-  const needs_dereference =
-    if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
   const return_cpp = sem_type_to_cpp(context, match_result_type)
-  const variant_access = expression_output.visit_subject_for_match('__match_subject', needs_dereference)
-  const fragment_lines =
-    expanded_arms.map(arm =>
-      gen_guarded_arm_fragment(arm, variant_access, '__match_subject', context, gen_stmts, eval_expr_fn))
   const inner_body =
-    `auto __match_subject = ${subject_code};\n` + fragment_lines.join('') + 'std::abort();\n'
+    gen_match_guarded_body(subject, expanded_arms, context, gen_stmts, eval_expr_fn)
   `[&]() -> ${return_cpp} {\n${inner_body}}()`
+end
+
+export fn gen_match_guarded_expression_cpp(
+  subject: Shared<SExpr>,
+  expanded_arms: [Shared<SMatchArm>],
+  match_result_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+) -> Shared<CppExpr> = do
+  const return_cpp = sem_type_to_cpp(context, match_result_type)
+  const inner_body = gen_match_guarded_body(
+    subject,
+    expanded_arms,
+    context,
+    gen_stmts,
+    (expression, eval_context, gen_stmts_fn) =>
+      print_expr(eval_expr_cpp_fn(expression, eval_context, gen_stmts_fn)))
+  Shared.new(CppInvokedBlockWithReturn(return_cpp, inner_body))
 end
 
 export fn gen_arm(

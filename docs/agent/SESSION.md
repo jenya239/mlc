@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 1|
-| step_last | 1 |
-| run_tests | 761 |
-| TRACK_PLAN | TRACK_MATCH_BRIDGE **active** (step 2) |
-| agent_token_last | cr-agent-ae7dbd4e-2649-44f2-8d4e-d9c4a60d3ff8 |
+| driver_turns_since_plan | 3|
+| step_last | 2 |
+| run_tests | 762 |
+| TRACK_PLAN | TRACK_MATCH_BRIDGE **active** (step 3) |
+| agent_token_last | cr-agent-f6305402-3f5f-43b8-90fc-6140334d48b4 |
+
+### Turn 2026-05-29 (Driver MATCH_BRIDGE step 2 — guarded match)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 2 |
+| done | CppInvokedBlockWithReturn + gen_match_guarded_expression_cpp |
+| verify | 762 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_MATCH_BRIDGE (audit + close) |
 
 ### Turn 2026-05-29 (Driver MATCH_BRIDGE step 1 — StdVisit arm handlers)
 

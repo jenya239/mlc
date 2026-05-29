@@ -6,7 +6,7 @@ import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBin
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
          CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
          CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
-         CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock,
+         CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
          CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
          CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
 
@@ -116,6 +116,10 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_expr CppInvokedBlock',
     print_expr(Shared.new(CppInvokedBlock('auto x = 1;\nreturn x;\n'))),
     '[&]() {\nauto x = 1;\nreturn x;\n}()'))
+
+  results.push(assert_eq_str('print_expr CppInvokedBlockWithReturn',
+    print_expr(Shared.new(CppInvokedBlockWithReturn('int', 'auto x = 1;\nreturn x;\n'))),
+    '[&]() -> int {\nauto x = 1;\nreturn x;\n}()'))
 
   results.push(assert_eq_str('print_expr CppQuestionTry',
     print_expr(Shared.new(CppQuestionTry(Shared.new(CppInt(7))))),
