@@ -5,12 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Planner|
-| driver_turns_since_plan | 0|
-| step_last | plan-refresh |
-| run_tests | 758 |
-| TRACK_PLAN | TRACK_MATCH_BRIDGE **active** (step 1) |
-| agent_token_last | cr-agent-ebc25227-487b-423a-a5ec-69249021c71b |
+| role_last | Driver|
+| driver_turns_since_plan | 1|
+| step_last | 1 |
+| run_tests | 761 |
+| TRACK_PLAN | TRACK_MATCH_BRIDGE **active** (step 2) |
+| agent_token_last | cr-agent-ae7dbd4e-2649-44f2-8d4e-d9c4a60d3ff8 |
+
+### Turn 2026-05-29 (Driver MATCH_BRIDGE step 1 — StdVisit arm handlers)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 1 |
+| done | CppVisitArm* AST + gen_arm_cpp; no-guard StdVisit path native CppExpr |
+| verify | 761 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_MATCH_BRIDGE (guarded match) |
 
 ### Turn 2026-05-29 (Planner plan-refresh — MATCH_BRIDGE)
 

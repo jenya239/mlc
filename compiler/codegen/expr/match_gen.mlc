@@ -12,6 +12,7 @@ import * as expression_output from './expr'
 import { Type, TUnit } from '../../checker/registry'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_boolean_literal, gen_integer_literal, gen_string_literal } from './literals'
+import { CppExpr, CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric } from '../../cpp/cpp_ast'
 
 type RecordFieldBindAccum = RecordFieldBindAccum {
   field_bindings: string,
@@ -382,6 +383,90 @@ export fn gen_arm(
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
       end
+  }
+
+fn gen_arm_ctor_cpp(
+  ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>,
+  visit_void: bool
+) -> Shared<CppExpr> = do
+  const qualified_name = context.resolve(ctor_name)
+  const lower_name = cpp_safe(lower_first(ctor_name))
+  const binding =
+    if sub_patterns.length() == 0 then ''
+    else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), lower_name)
+    end
+  const is_generic = list_contains(context.generic_variants, ctor_name)
+  const arm_context = codegen_context_with_ctor_field_bindings(ctor_name, sub_patterns, context)
+  const body_expression = eval_expr_cpp_fn(arm_body, arm_context, gen_stmts)
+  if is_generic then
+    Shared.new(CppVisitArmConstructedGeneric(qualified_name, lower_name, binding, visit_void, body_expression))
+  else do
+    const parameter =
+      expression_output.match_lambda_const_reference_parameter(qualified_name, '', lower_name)
+    Shared.new(CppVisitArmConstructed(parameter, binding, visit_void, body_expression))
+  end
+  end
+end
+
+fn gen_arm_record_pattern_cpp(
+  record_name: string, field_patterns: [Shared<Pat>], arm_body: Shared<SExpr>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>,
+  visit_void: bool
+) -> Shared<CppExpr> = do
+  const qualified_name = context.resolve(record_name)
+  const lower_name = cpp_safe(lower_first(record_name))
+  const is_generic = list_contains(context.generic_variants, record_name)
+  const accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context)
+  const body_expression = eval_expr_cpp_fn(arm_body, accumulated.arm_context, gen_stmts)
+  if is_generic then
+    Shared.new(CppVisitArmConstructedGeneric(
+      qualified_name, lower_name, accumulated.field_bindings, visit_void, body_expression))
+  else do
+    const parameter =
+      expression_output.match_lambda_const_reference_parameter(qualified_name, '', lower_name)
+    Shared.new(CppVisitArmConstructed(parameter, accumulated.field_bindings, visit_void, body_expression))
+  end
+  end
+end
+
+export fn gen_arm_cpp(
+  arm: Shared<SMatchArm>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>,
+  visit_void: bool
+) -> Shared<CppExpr> =
+  match arm.pat {
+    PatWild(_) =>
+      Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
+    PatUnit(_) =>
+      Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
+    PatBool(_, _) =>
+      Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
+    PatInt(_, _) =>
+      Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
+    PatStr(_, _) =>
+      Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
+    PatIdent(name, _) =>
+      Shared.new(CppVisitArmBinding(
+        cpp_safe(name),
+        visit_void,
+        eval_expr_cpp_fn(arm.body, context.add_value(name), gen_stmts))),
+    PatCtor(name, sub_patterns, _) =>
+      gen_arm_ctor_cpp(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_cpp_fn, visit_void),
+    PatRecord(name, field_patterns, _) =>
+      gen_arm_record_pattern_cpp(name, field_patterns, arm.body, context, gen_stmts, eval_expr_cpp_fn, visit_void),
+    PatTuple(_, _) =>
+      Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
+    PatArray(_, _, _) =>
+      Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
+    PatOr(_, _) =>
+      Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts)))
   }
 
 export fn gen_match(

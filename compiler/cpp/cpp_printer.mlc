@@ -7,7 +7,8 @@ import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppDeclFragment,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
-         CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit, CppCast,
+         CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit,
+         CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock } from './cpp_ast'
 import * as cpp_ast from './cpp_ast'
 
@@ -116,6 +117,45 @@ fn aggregate_initializer_expression(type_name: string, elements: [Shared<CppExpr
 
 fn std_visit_expression(arm_lambdas: string, visit_subject: string) -> string =
   `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
+
+fn print_visit_arm_wild(void_return: bool, body: Shared<CppExpr>) -> string =
+  if void_return then
+    `[&](const auto& __v) -> void { ${print_expr(body)}; }`
+  else
+    `[&](const auto& __v) { return ${print_expr(body)}; }`
+  end
+
+fn print_visit_arm_binding(parameter_name: string, void_return: bool, body: Shared<CppExpr>) -> string =
+  if void_return then
+    `[&](const auto& ${parameter_name}) -> void { ${print_expr(body)}; }`
+  else
+    `[&](const auto& ${parameter_name}) { return ${print_expr(body)}; }`
+  end
+
+fn print_visit_arm_constructed(
+  parameter_declaration: string,
+  binding_prefix: string,
+  void_return: bool,
+  body: Shared<CppExpr>
+) -> string =
+  if void_return then
+    `[&](${parameter_declaration}) -> void { ${binding_prefix}${print_expr(body)}; }`
+  else
+    `[&](${parameter_declaration}) { ${binding_prefix}return ${print_expr(body)}; }`
+  end
+
+fn print_visit_arm_constructed_generic(
+  type_name: string,
+  binding_name: string,
+  binding_prefix: string,
+  void_return: bool,
+  body: Shared<CppExpr>
+) -> string =
+  if void_return then
+    `[&]<typename __mlcT>(const ${type_name}<__mlcT>& ${binding_name}) -> void { ${binding_prefix}${print_expr(body)}; }`
+  else
+    `[&]<typename __mlcT>(const ${type_name}<__mlcT>& ${binding_name}) { ${binding_prefix}return ${print_expr(body)}; }`
+  end
 
 fn cast_expression(kind_prefix: string, type_code: string, operand_code: string) -> string =
   `${kind_prefix}<${type_code}>(${operand_code})`
@@ -409,6 +449,14 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
       aggregate_initializer_expression(type_name, elements),
     CppStdVisit(subject, handlers) =>
       std_visit_expression(print_comma_separated_expressions_multiline(handlers), print_expr(subject)),
+    CppVisitArmWild(void_return, body) =>
+      print_visit_arm_wild(void_return, body),
+    CppVisitArmBinding(parameter_name, void_return, body) =>
+      print_visit_arm_binding(parameter_name, void_return, body),
+    CppVisitArmConstructed(parameter_declaration, binding_prefix, void_return, body) =>
+      print_visit_arm_constructed(parameter_declaration, binding_prefix, void_return, body),
+    CppVisitArmConstructedGeneric(type_name, binding_name, binding_prefix, void_return, body) =>
+      print_visit_arm_constructed_generic(type_name, binding_name, binding_prefix, void_return, body),
     CppCast(kind, target_type, operand) =>
       cast_expression(print_cast_kind_prefix(kind), print_type(target_type), print_expr(operand)),
     CppLambda(captures, parameters, return_type, body) =>

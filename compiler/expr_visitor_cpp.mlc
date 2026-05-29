@@ -240,8 +240,7 @@ export fn gen_match_via_cpp_visitor(
     const visit_void = match_codegen.match_visit_uses_void_lambdas(match_semantic_type)
     const handlers =
       expanded_arms.map(arm =>
-        cpp_expr_from_rendered_fragment(
-          match_codegen.gen_arm(arm, context, gen_stmts, eval_expr_cpp_as_string, visit_void)))
+        match_codegen.gen_arm_cpp(arm, context, gen_stmts, eval_expr_cpp, visit_void))
     const subject_expression = eval_expr_cpp(subject, context, gen_stmts)
     const needs_dereference =
       if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end

@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) (**closed**, `91ece96`)
 
-## Status: **active** (step 1 pending)
+## Status: **active** (step 2 pending)
 
 **Goal:** eliminate match string bridges in `expr_visitor_cpp` — native `CppExpr` for `CppStdVisit` arm handlers and guarded `gen_match`.
 
@@ -25,17 +25,17 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `gen_match_via_cpp_visitor` — arm handlers as native CppExpr (no-guard StdVisit path) | pending |
+| 1 | `gen_match_via_cpp_visitor` — arm handlers as native CppExpr (no-guard StdVisit path) | done |
 | 2 | `gen_match_via_cpp_visitor` — guarded match as native CppExpr | pending |
 | 3 | Remove `cpp_expr_from_rendered_fragment` / `eval_expr_cpp_as_string` from expr_visitor; audit; close track | pending |
 
-## Survivors (pre step 1)
+## Survivors (post step 1)
 
-`expr_visitor_cpp.mlc`: `cpp_expr_from_rendered_fragment` + `eval_expr_cpp_as_string` only for `match_codegen.gen_arm` / `gen_match`.
+`expr_visitor_cpp.mlc`: `cpp_expr_from_rendered_fragment` + `eval_expr_cpp_as_string` only for guarded `match_codegen.gen_match` (step 2).
 
 ## Next step (Driver)
 
-**STEP=1** — match arm handlers native CppExpr in `expr_visitor_cpp.mlc` / `match_gen.mlc`.
+**STEP=2** — guarded match as native CppExpr in `expr_visitor_cpp.mlc` / `match_gen.mlc`.
 
 ## Deferred (out of track)
 

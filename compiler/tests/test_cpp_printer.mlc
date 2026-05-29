@@ -3,7 +3,8 @@
 import { TestResult, assert_eq_str } from './test_runner'
 import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_printer'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
-         CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
+         CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
+         CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
          CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock,
          CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
@@ -64,10 +65,24 @@ export fn cpp_printer_tests() -> [TestResult] = do
     print_expr(Shared.new(CppAggregateInit('Point', [Shared.new(CppInt(1)), Shared.new(CppInt(2))]))),
     'Point{1, 2}'))
 
-  const match_handler = Shared.new(CppIdent('[&](const auto& __v) { return 1; }'))
+  const match_handler = Shared.new(CppVisitArmWild(false, Shared.new(CppInt(1))))
   results.push(assert_eq_str('print_expr CppStdVisit',
     print_expr(Shared.new(CppStdVisit(Shared.new(CppInt(0)), [match_handler]))),
     'std::visit(overloaded{[&](const auto& __v) { return 1; }\n}, 0)'))
+
+  results.push(assert_eq_str('print_expr CppVisitArmBinding',
+    print_expr(Shared.new(CppVisitArmBinding('value', false, Shared.new(CppInt(2))))),
+    '[&](const auto& value) { return 2; }'))
+
+  results.push(assert_eq_str('print_expr CppVisitArmConstructed',
+    print_expr(Shared.new(CppVisitArmConstructed(
+      'const Point& point', 'const auto& x = point.x; ', false, Shared.new(CppIdent("x"))))),
+    '[&](const Point& point) { const auto& x = point.x; return x; }'))
+
+  results.push(assert_eq_str('print_expr CppVisitArmConstructedGeneric',
+    print_expr(Shared.new(CppVisitArmConstructedGeneric(
+      'Shape', 'shape', '', false, Shared.new(CppInt(3))))),
+    '[&]<typename __mlcT>(const Shape<__mlcT>& shape) { return 3; }'))
 
   results.push(assert_eq_str('print_expr CppCast',
     print_expr(Shared.new(CppCast(CppCastStatic, int_type, Shared.new(CppIdent('value'))))),
