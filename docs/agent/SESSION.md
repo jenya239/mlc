@@ -10,7 +10,7 @@
 | step_last | 5|
 | run_tests | 756 |
 | TRACK_PLAN | TRACK_PARSER_PARITY **closed** (`d5442d6`) |
-| agent_token_last | TBD |
+| agent_token_last | cr-agent-da4145ee-506d-41c9-bea5-b0e39513e93c |
 
 ### Turn 2026-05-28 (Driver PARSER_PARITY step 5 — close track)
 
