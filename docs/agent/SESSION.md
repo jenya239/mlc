@@ -5,12 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Planner|
-| driver_turns_since_plan | 0|
-| step_last | plan-refresh|
+| role_last | Driver|
+| driver_turns_since_plan | 1|
+| step_last | 1|
 | run_tests | 756 |
-| TRACK_PLAN | TRACK_EXPR_BRIDGE **active** (step 1) |
-| agent_token_last | cr-agent-54d38723-42a9-4ed0-8aef-99e16ac025fc |
+| TRACK_PLAN | TRACK_EXPR_BRIDGE **active** (step 2) |
+| agent_token_last | cr-agent-f4f75858-b019-4ae8-9b68-1983cd8ab68c |
+
+### Turn 2026-05-28 (Driver EXPR_BRIDGE step 1 — call/method CppExpr)
+
+| turn | 2026-05-28 |
+| role | Driver |
+| step | 1 |
+| done | native CppExpr call/method; commit `d9505b9` |
+| verify | 756 pass; self-host diff empty |
+| next | ROLE=Driver STEP=2 (enqueued) |
 
 ### Turn 2026-05-28 (Planner plan-refresh — EXPR_BRIDGE)
 
