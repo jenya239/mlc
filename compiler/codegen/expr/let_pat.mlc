@@ -10,7 +10,7 @@ import { cpp_safe } from '../cpp_naming'
 import { pat_bind_names } from './match_analysis'
 import * as expression_output from './expr'
 
-fn gen_let_array_rest_slice(temp: string, from_index: i32, element_cpp: string) -> string =
+export fn gen_let_array_rest_slice(temp: string, from_index: i32, element_cpp: string) -> string =
   'mlc::Array<' + element_cpp + '>(' + temp + '.cbegin() + ' + from_index.to_string() + ', ' + temp + '.cend())'
 
 export fn gen_let_pattern_statement(

@@ -6,8 +6,8 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 5|
-| step_last | 3|
+| driver_turns_since_plan | 6|
+| step_last | 4|
 | run_tests | 769 |
 | TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 4) |
 | agent_token_last | cr-agent-c9ba0984-229b-4e3f-93cd-dd60c4698122 |

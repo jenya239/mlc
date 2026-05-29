@@ -499,8 +499,13 @@ export fn codegen_tests() -> [TestResult] = do
     gen_expr(ss('say "hi"'), ctx),
     'mlc::String("say \\"hi\\"", 8)'))
 
-  const letpat_ctor_pat = Shared.new(PatCtor('Some', [Shared.new(PatIdent("v", span_unknown()))], span_unknown()))
   const letpat_else_body = Shared.new(SExprInt(0, i32_t(), span_unknown()))
+  const letpat_ident = Shared.new(SStmtLetPat(
+    Shared.new(PatIdent('value', span_unknown())), false, si(7), i32_t(), false, letpat_else_body, span_unknown()))
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: let pat ident',
+    gen_stmts_str([letpat_ident], ctx), 'auto value = 7;\n'))
+
+  const letpat_ctor_pat = Shared.new(PatCtor('Some', [Shared.new(PatIdent("v", span_unknown()))], span_unknown()))
   const letpat_with_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), true, letpat_else_body, span_unknown()))
   const letpat_no_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), false, letpat_else_body, span_unknown()))
   const letpat_with_else_out = gen_stmts_str([letpat_with_else], ctx)

@@ -7,6 +7,7 @@ import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext, GenStmtResult, mutate_context_from_statement } from './context'
 import { cpp_safe } from './cpp_naming'
 import * as stmt_eval from './stmt/stmt_eval'
+import * as let_pat_cpp from './stmt/let_pat_cpp'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
 
 fn gen_stmts_for_cpp_codegen(statements: [Shared<SStmt>], context: CodegenContext) -> string =
@@ -135,7 +136,11 @@ fn eval_stmt_cpp(
         next_try: try_counter
       }
     },
-    SStmtLetPat(_, _, _, _, _, _, _) => stmt_via_string_bridge(statement, context, try_counter),
+    SStmtLetPat(pat, _, value, value_type, has_else, else_body, _) => GenStmtCppResult {
+      statement: let_pat_cpp.gen_let_pattern_cpp_statement(
+        pat, value, value_type, has_else, else_body, context, gen_expr_cpp_for_stmt_codegen),
+      next_try: try_counter
+    },
     SStmtLetConst(name, value, _, _) =>
       GenStmtCppResult {
         statement: emit_helpers.make_constexpr_auto_cpp_statement(

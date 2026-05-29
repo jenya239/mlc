@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **active** (step 4): SStmtLetPat native paths (PLAN §Phase 2). [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) **closed** (`3e47ca4`).
+[TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **active** (step 5): remove stmt_via_string_bridge; close track (PLAN §Phase 2). [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) **closed** (`3e47ca4`).
 
 ## Step sizing (good vs bad)
 

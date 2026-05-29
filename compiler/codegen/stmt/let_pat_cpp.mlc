@@ -1,0 +1,161 @@
+// Native CppStmt lowering for SStmtLetPat (STMT_BRIDGE step 4).
+
+import { Pat, PatIdent, PatTuple, PatRecord, PatArray, PatCtor } from '../../frontend/ast'
+import { SExpr } from '../../ir/semantic_ir'
+import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../../checker/registry'
+import { CppExpr, CppStmt, CppMember, CppIndex } from '../../cpp/cpp_ast'
+import { print_expr } from '../../cpp/cpp_printer'
+import * as emit_helpers from '../../cpp/emit_helpers'
+import { CodegenContext, lookup_fields_for_context } from '../context'
+import { list_contains } from '../decl/decl_index'
+import { sem_type_to_cpp } from '../decl/type_gen'
+import { cpp_safe } from '../cpp_naming'
+import { pat_bind_names } from '../expr/match_analysis'
+import { gen_let_array_rest_slice } from '../expr/let_pat'
+
+fn member_access(object_name: string, field_name: string) -> Shared<CppExpr> =
+  Shared.new(CppMember(emit_helpers.make_identifier_cpp_expression(object_name), field_name, false))
+
+fn index_access(object_name: string, index: i32) -> Shared<CppExpr> =
+  Shared.new(CppIndex(
+    emit_helpers.make_identifier_cpp_expression(object_name),
+    emit_helpers.make_integer_cpp_expression(index)))
+
+fn structured_binding_statement(binding_names: string, source_name: string) -> Shared<CppStmt> =
+  emit_helpers.make_fragment_cpp_statement("auto [" + binding_names + "] = " + source_name + ";")
+
+fn let_pattern_block(statements: [Shared<CppStmt>], rhs: Shared<CppExpr>) -> Shared<CppStmt> = do
+  const block_statements: [Shared<CppStmt>] = []
+  block_statements.push(emit_helpers.make_auto_cpp_statement('__lt', rhs))
+  let mut index = 0
+  while index < statements.length() do
+    block_statements.push(statements[index])
+    index = index + 1
+  end
+  emit_helpers.make_block_cpp_statement(block_statements)
+end
+
+fn ctor_else_code(
+  has_else: bool,
+  else_body: Shared<SExpr>,
+  context: CodegenContext,
+  expression_codegen: (Shared<SExpr>, CodegenContext) -> Shared<CppExpr>
+) -> string =
+  if has_else then print_expr(expression_codegen(else_body, context)) + ";"
+  else 'std::abort();'
+  end
+
+export fn gen_let_pattern_cpp_statement(
+  pat: Shared<Pat>,
+  value: Shared<SExpr>,
+  value_type: Shared<Type>,
+  has_else: bool,
+  else_body: Shared<SExpr>,
+  context: CodegenContext,
+  expression_codegen: (Shared<SExpr>, CodegenContext) -> Shared<CppExpr>
+) -> Shared<CppStmt> = do
+  const rhs = expression_codegen(value, context)
+  match pat {
+    PatIdent(name, _) =>
+      emit_helpers.make_auto_cpp_statement(cpp_safe(name), rhs),
+    PatTuple(subpatterns, _) => match value_type {
+      TTuple(_) | TPair(_, _) =>
+        let_pattern_block(
+          [structured_binding_statement(pat_bind_names(subpatterns), '__lt')],
+          rhs),
+      _ => do
+        const record_codegen_name = match value_type {
+          TNamed(record_nominal_name) => record_nominal_name,
+          TGeneric(record_nominal_name, _) => record_nominal_name,
+          _ => ''
+        }
+        if record_codegen_name != '' then do
+          const ordered_member_labels = lookup_fields_for_context(context, record_codegen_name)
+          if ordered_member_labels.length() == subpatterns.length() && subpatterns.length() > 0 then do
+            const member_statements: [Shared<CppStmt>] = []
+            let mut member_slot_index = 0
+            while member_slot_index < subpatterns.length() do
+              match subpatterns[member_slot_index] {
+                PatIdent(binding_member_name, _) =>
+                  member_statements.push(emit_helpers.make_auto_cpp_statement(
+                    cpp_safe(binding_member_name),
+                    member_access('__lt', ordered_member_labels[member_slot_index]))),
+                _ => do end
+              }
+              member_slot_index = member_slot_index + 1
+            end
+            let_pattern_block(member_statements, rhs)
+          end else
+            let_pattern_block(
+              [structured_binding_statement(pat_bind_names(subpatterns), '__lt')],
+              rhs)
+          end
+        end else
+          let_pattern_block(
+            [structured_binding_statement(pat_bind_names(subpatterns), '__lt')],
+            rhs)
+        end
+      end
+    },
+    PatRecord(_, field_patterns, _) => do
+      const field_statements: [Shared<CppStmt>] = []
+      let mut index = 0
+      while index < field_patterns.length() do
+        match field_patterns[index] {
+          PatIdent(field_name, _) =>
+            field_statements.push(emit_helpers.make_auto_cpp_statement(
+              cpp_safe(field_name),
+              member_access('__lt', field_name))),
+          _ => do end
+        }
+        index = index + 1
+      end
+      let_pattern_block(field_statements, rhs)
+    end,
+    PatArray(subpatterns, rest_name, _) => do
+      const element_cpp = match value_type {
+        TArray(inner_type) => sem_type_to_cpp(context, inner_type),
+        _ => 'auto'
+      }
+      const array_statements: [Shared<CppStmt>] = []
+      let mut index = 0
+      while index < subpatterns.length() do
+        match subpatterns[index] {
+          PatIdent(name, _) =>
+            array_statements.push(emit_helpers.make_auto_cpp_statement(
+              cpp_safe(name),
+              index_access('__lt', index))),
+          _ => do end
+        }
+        index = index + 1
+      end
+      if rest_name != '' then
+        array_statements.push(emit_helpers.make_fragment_cpp_statement(
+          "auto " + cpp_safe(rest_name) + " = " +
+            gen_let_array_rest_slice('__lt', subpatterns.length(), element_cpp) + ";"))
+      end
+      let_pattern_block(array_statements, rhs)
+    end,
+    PatCtor(constructor_name, subpatterns, _) => do
+      const qualified_name = context.resolve(constructor_name)
+      const is_generic = list_contains(context.generic_variants, constructor_name)
+      const type_arguments = if is_generic then '<auto>' else '' end
+      const destructure = if subpatterns.length() == 0 then ""
+        else "auto [" + pat_bind_names(subpatterns) + "] = __b;"
+        end
+      const ctor_statements: [Shared<CppStmt>] = []
+      ctor_statements.push(emit_helpers.make_auto_cpp_statement('__lt', rhs))
+      ctor_statements.push(emit_helpers.make_fragment_cpp_statement(
+        'if (!std::holds_alternative<' + qualified_name + type_arguments + '>(__lt)) { ' +
+          ctor_else_code(has_else, else_body, context, expression_codegen) + " }\n"))
+      ctor_statements.push(emit_helpers.make_fragment_cpp_statement(
+        'const ' + qualified_name + type_arguments + '& __b = std::get<' +
+          qualified_name + type_arguments + ">(__lt);\n"))
+      if destructure.length() > 0 then
+        ctor_statements.push(emit_helpers.make_fragment_cpp_statement(destructure + "\n"))
+      end
+      emit_helpers.make_block_cpp_statement(ctor_statements)
+    end,
+    _ => emit_helpers.make_expression_cpp_statement(rhs)
+  }
+end
