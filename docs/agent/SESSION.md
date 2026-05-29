@@ -5,12 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Driver|
+| role_last | Critic|
 | driver_turns_since_plan | 6|
-| step_last | 4|
+| step_last | critique-audit|
 | run_tests | 770 |
 | TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 5) |
-| agent_token_last | cr-agent-855fedcd-947a-4e73-8a22-27c735d67288 |
+| agent_token_last | cr-agent-5c0b471e-24d3-41d2-ad12-6058fa33be9d |
+
+### Turn 2026-05-29 (Critic critique-audit — STMT_BRIDGE steps 1–4)
+
+| turn | 2026-05-29 |
+| role | Critic |
+| step | critique-audit |
+| done | re-audit 2bde7d1/b158885/59e6d5a/60315e8; 770 pass; no reopen |
+| verify | build.sh OK; stmt_via only Map.new; let_pat_cpp CppBlock+fragments OK for step 4 |
+| notes | STEP=5: remove bridge; audit internal CppStmtFragment in let_pat_cpp; optional golden for expr if/for |
+| next | ROLE=Driver STEP=5 TRACK_STMT_BRIDGE |
 
 ### Turn 2026-05-29 (Driver STMT_BRIDGE step 3 — idempotent skip)
 
