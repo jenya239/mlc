@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) — **active** (step 1): native CppExpr for remaining `expr_fragment_codegen` arms (PLAN §Phase 2). [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) **closed** (`d5442d6`).
+[TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **active** (step 1): native CppExpr for match arm handlers / guarded match (PLAN §Phase 2). [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) **closed** (`91ece96`).
 
 ## Step sizing (good vs bad)
 

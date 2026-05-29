@@ -5,12 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Driver|
+| role_last | Planner|
 | driver_turns_since_plan | 0|
-| step_last | 5|
+| step_last | plan-refresh |
 | run_tests | 758 |
-| TRACK_PLAN | TRACK_EXPR_BRIDGE **closed** |
-| agent_token_last | cr-agent-38b62e5a-f451-497a-babd-d2ad7d5f615c |
+| TRACK_PLAN | TRACK_MATCH_BRIDGE **active** (step 1) |
+| agent_token_last | cr-agent-ebc25227-487b-423a-a5ec-69249021c71b |
+
+### Turn 2026-05-29 (Planner plan-refresh — MATCH_BRIDGE)
+
+| turn | 2026-05-29 |
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_EXPR_BRIDGE closed; opened TRACK_MATCH_BRIDGE (3 steps) |
+| verify | — (docs only) |
+| next | ROLE=Driver STEP=1 TRACK_MATCH_BRIDGE (enqueued) |
 
 ### Turn 2026-05-29 (Driver EXPR_BRIDGE step 5 — close track)
 
