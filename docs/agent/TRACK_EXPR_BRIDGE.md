@@ -40,11 +40,11 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 **STEP=2** — if + block native CppExpr in `expr_visitor_cpp.mlc`.
 
-## Survivors (baseline)
+## Step 1 detail (done `d9505b9`)
 
-- File: `compiler/expr_visitor_cpp.mlc` (+ `test_codegen.mlc` if needed).
-- Replace fragment bridge for call + method with direct `CppCall` / `CppMember` construction (mirror CPPGEN step 1 field/index).
-- No `stmt_cpp` / `decl_cpp` changes yet.
+- `mut_actual_argument.mlc`: CppExpr materialization + mut-prelude lambda wrap.
+- `method_gen.mlc`: `gen_method_expr_cpp` native dispatch.
+- `expr_visitor_cpp.mlc`: `gen_call_via_cpp_visitor` / `gen_method_via_cpp_visitor` without fragment bridge.
 
 ## Deferred (not in this track)
 
@@ -52,7 +52,3 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 - `lib/mlc/` Ruby backend parity — not in scope.
 - Record default expression parity (E4) — separate track if needed.
 - Phase 4 `MLCC_BOOTSTRAP=1` — separate track after Phase 2 bridges.
-
-## Next step (Driver)
-
-**STEP=1** — call + method native CppExpr in `expr_visitor_cpp.mlc`.
