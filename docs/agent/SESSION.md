@@ -10,7 +10,7 @@
 | step_last | 1|
 | run_tests | 756 |
 | TRACK_PLAN | TRACK_EXPR_BRIDGE **active** (step 2) |
-| agent_token_last | cr-agent-f4f75858-b019-4ae8-9b68-1983cd8ab68c |
+| agent_token_last | cr-agent-1b04fd11-76af-43fc-b6b2-b6ffe40cacf2 |
 
 ### Turn 2026-05-28 (Driver EXPR_BRIDGE step 1 — call/method CppExpr)
 
