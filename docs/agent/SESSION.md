@@ -10,7 +10,16 @@
 | step_last | 3|
 | run_tests | 769 |
 | TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 4) |
-| agent_token_last | cr-agent-31dd0896-1f9c-4902-9775-8f793b49c691 |
+| agent_token_last | cr-agent-c9ba0984-229b-4e3f-93cd-dd60c4698122 |
+
+### Turn 2026-05-29 (Driver STMT_BRIDGE step 2 — idempotent skip)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 2 (skip) |
+| done | already `b158885`; STEP=4 pending |
+| verify | git: stmt_cpp let/let-const native; TRACK step 2 done |
+| next | ROLE=Driver STEP=4 TRACK_STMT_BRIDGE |
 
 ### Turn 2026-05-29 (Driver STMT_BRIDGE step 3 — SStmtExpr)
 
