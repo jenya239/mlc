@@ -39,6 +39,8 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 **STEP=1** — `SStmtReturn` + question operator as native CppReturn in `stmt_cpp.mlc`.
 
+_(Meta 2026-05-29: STEP=1 pending — guard blocked duplicate enqueue; recovery enqueue issued once.)_
+
 ## Deferred (out of track)
 
 - Parser `ref mut` — [TRACK_PLAN.md](TRACK_PLAN.md) step 15.

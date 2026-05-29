@@ -5,12 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Planner|
+| role_last | Meta|
 | driver_turns_since_plan | 0|
-| step_last | plan-refresh |
+| step_last | meta-review |
 | run_tests | 762 |
-| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 1) |
-| agent_token_last | cr-agent-11157805-462d-4103-b4a8-77e1682d8c9e |
+| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 1 pending) |
+| agent_token_last | cr-agent-869dd261-e7e8-451f-9008-9378a34f10b1 |
+| queue_recovery | Driver:1 loop blocked; single enqueue |
+
+### Turn 2026-05-29 (Meta meta-review — STMT_BRIDGE step 1 loop)
+
+| turn | 2026-05-29 |
+| role | Meta |
+| step | meta-review |
+| done | Guard `Driver:1` loop; STEP=1 uncommitted (no stmt_cpp change); supervisor + RESEARCH log |
+| verify | git: only compiler/out dirty; stmt_cpp.mlc clean |
+| next | ROLE=Driver STEP=1 TRACK_STMT_BRIDGE (recovery enqueue once) |
 
 ### Turn 2026-05-29 (Planner plan-refresh — STMT_BRIDGE)
 
