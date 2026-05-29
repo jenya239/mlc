@@ -10,8 +10,8 @@
 | step_last | meta-review |
 | run_tests | 762 |
 | TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 1 pending) |
-| agent_token_last | cr-agent-869dd261-e7e8-451f-9008-9378a34f10b1 |
-| queue_recovery | Driver:1 loop blocked; single enqueue |
+| agent_token_last | cr-agent-8b5cb764-b454-4ba6-910e-5c425d4d8c63 |
+| queue_recovery | Driver:1 loop blocked; recovery enqueue ok |
 
 ### Turn 2026-05-29 (Meta meta-review — STMT_BRIDGE step 1 loop)
 
