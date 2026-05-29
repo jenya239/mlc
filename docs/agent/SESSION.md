@@ -8,9 +8,27 @@
 | role_last | Driver|
 | driver_turns_since_plan | 6|
 | step_last | 4|
-| run_tests | 769 |
-| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 4) |
-| agent_token_last | cr-agent-c9ba0984-229b-4e3f-93cd-dd60c4698122 |
+| run_tests | 770 |
+| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 5) |
+| agent_token_last | cr-agent-23bc0606-f90b-4a49-ba47-2b7cb7bbbe10 |
+
+### Turn 2026-05-29 (Driver STMT_BRIDGE step 4 — idempotent skip)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 4 (skip) |
+| done | already `60315e8`; STEP=5 pending |
+| verify | 770 pass; self-host DIFF_EXIT=0 (prior) |
+| next | ROLE=Driver STEP=5 TRACK_STMT_BRIDGE |
+
+### Turn 2026-05-29 (Driver STMT_BRIDGE step 4 — SStmtLetPat)
+
+| turn | 2026-05-29 |
+| role | Driver |
+| step | 4 |
+| done | let_pat_cpp native CppBlock/CppAutoDecl; wire stmt_cpp; +1 test |
+| verify | 770 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=5 TRACK_STMT_BRIDGE |
 
 ### Turn 2026-05-29 (Driver STMT_BRIDGE step 2 — idempotent skip)
 
