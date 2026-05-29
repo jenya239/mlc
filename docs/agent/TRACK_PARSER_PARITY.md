@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 1 §3; previous: [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) (**closed**, `e826f1a`)
 
-## Status: **closed** (commit TBD)
+## Status: **closed** (`d5442d6`)
 
 **Closed:** step 5 audit — 14 corpus files at exit parity; 2 intentional mlcc-stricter divergences documented in `negative_corpus_known_divergences.txt`.
 
@@ -39,7 +39,7 @@ compiler/tests/fuzz/run_negative_corpus.sh compiler/out/mlcc
 | 2 | `parse_empty_type_body.mlc` + `parse_invalid_trait_syntax.mlc` | done (`221fae6`) |
 | 3 | `parse_noise.mlc` — reject trailing garbage | done (`acadaa0`) |
 | 4 | `lex_unclosed_string.mlc` — parity decision + differential list update | done (`17e4587`) |
-| 5 | Audit `negative_corpus_known_divergences.txt`; close track | done (TBD) |
+| 5 | Audit `negative_corpus_known_divergences.txt`; close track | done (`d5442d6`) |
 
 ## Known divergences (intentional mlcc-stricter)
 

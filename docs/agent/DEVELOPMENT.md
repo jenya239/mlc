@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-TRACK_PARSER_PARITY **closed** (TBD). Planner: plan-refresh. [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) **closed** (`e826f1a`).
+TRACK_PARSER_PARITY **closed** (`d5442d6`). Planner: plan-refresh. [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) **closed** (`e826f1a`).
 
 ## Step sizing (good vs bad)
 

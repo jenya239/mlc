@@ -9,7 +9,7 @@
 | driver_turns_since_plan | 5|
 | step_last | 5|
 | run_tests | 756 |
-| TRACK_PLAN | TRACK_PARSER_PARITY **closed** (TBD) |
+| TRACK_PLAN | TRACK_PARSER_PARITY **closed** (`d5442d6`) |
 | agent_token_last | TBD |
 
 ### Turn 2026-05-28 (Driver PARSER_PARITY step 5 — close track)
@@ -17,7 +17,7 @@
 | turn | 2026-05-28 |
 | role | Driver |
 | step | 5 |
-| done | audit 2 known divergences stable; orphan end corpus test; TRACK closed |
+| done | audit 2 known divergences stable; orphan end corpus test; TRACK closed `d5442d6` |
 | verify | 756 pass; fuzz differential ok (14 parity + 2 intentional) |
 | next | ROLE=Planner plan-refresh (enqueued) |
 

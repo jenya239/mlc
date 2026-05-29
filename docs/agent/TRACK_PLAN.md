@@ -57,7 +57,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Checker/codegen spans:** [TRACK_SPAN_CHECKER.md](TRACK_SPAN_CHECKER.md) — **closed** (`a8bf7a1`)
 - **Build determinism:** [TRACK_BUILD.md](TRACK_BUILD.md) — **closed** (`1d6f4c5`)
 - **SemanticIR decl spans:** [TRACK_SPAN_IR.md](TRACK_SPAN_IR.md) — **closed** (`e826f1a`)
-- **Parser parity (negative corpus):** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — **closed** (TBD)
+- **Parser parity (negative corpus):** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — **closed** (`d5442d6`)
 
 ## Next step (Planner)
 
@@ -65,7 +65,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=5** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — audit known divergences; close track. **pending**
+**STEP=5** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — audit known divergences; close track. **done** (`d5442d6`)
 
 ## Next step (Driver)
 
