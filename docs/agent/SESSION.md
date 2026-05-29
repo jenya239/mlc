@@ -10,7 +10,7 @@
 | step_last | 3|
 | run_tests | 769 |
 | TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 4) |
-| agent_token_last | cr-agent-9768aa48-2deb-4ac5-bca8-8b010fd53aea |
+| agent_token_last | cr-agent-31dd0896-1f9c-4902-9775-8f793b49c691 |
 
 ### Turn 2026-05-29 (Driver STMT_BRIDGE step 3 — SStmtExpr)
 
