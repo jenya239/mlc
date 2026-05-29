@@ -66,13 +66,6 @@ fn print_cpp_statement_line(statement: Shared<CppStmt>) -> string =
 fn cpp_stmt_fragment_from_string_output(output: string) -> Shared<CppStmt> =
   emit_helpers.make_fragment_cpp_statement(strip_trailing_newline(output))
 
-fn constexpr_value_needs_string_bridge(value: Shared<SExpr>) -> bool =
-  match value {
-    SExprBlock(_, _, _, _) => true,
-    SExprIf(_, _, _, _, _) => true,
-    _ => false
-  }
-
 fn expression_statement_needs_string_bridge(expression: Shared<SExpr>) -> bool =
   match expression {
     SExprQuestion(_, _, _) => true,
@@ -132,7 +125,12 @@ fn eval_stmt_cpp(
       }
     },
     SStmtLet(name, _, value, _, _) => match value {
-      SExprQuestion(_, _, _) => stmt_via_string_bridge(statement, context, try_counter),
+      SExprQuestion(_, _, _) => GenStmtCppResult {
+        statement: emit_helpers.make_auto_cpp_statement(
+          cpp_safe(name),
+          gen_expr_cpp_for_stmt_codegen(value, context)),
+        next_try: try_counter + 1
+      },
       SExprArray(_, _, _) => GenStmtCppResult {
         statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
         next_try: try_counter
@@ -151,14 +149,12 @@ fn eval_stmt_cpp(
     },
     SStmtLetPat(_, _, _, _, _, _, _) => stmt_via_string_bridge(statement, context, try_counter),
     SStmtLetConst(name, value, _, _) =>
-      if constexpr_value_needs_string_bridge(value) then stmt_via_string_bridge(statement, context, try_counter)
-      else GenStmtCppResult {
+      GenStmtCppResult {
         statement: emit_helpers.make_constexpr_auto_cpp_statement(
           cpp_safe(name),
           gen_expr_cpp_for_stmt_codegen(value, context)),
         next_try: try_counter
-      }
-    end,
+      },
     SStmtExpr(expression, _) =>
       if expression_statement_needs_string_bridge(expression) then stmt_via_string_bridge(statement, context, try_counter)
       else GenStmtCppResult {

@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) (**closed**, `3e47ca4`)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** eliminate `stmt_via_string_bridge` in `codegen/stmt_cpp.mlc` — native `CppStmt` for remaining statement arms that round-trip through `print_expr` → string → `CppStmtFragment`.
 
@@ -26,18 +26,18 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | Step | Item | Status |
 |------|------|--------|
 | 1 | `SStmtReturn` + `?` — native CppReturn (no stmt_via_string_bridge) | done (`2bde7d1`) |
-| 2 | `SStmtLet` / `SStmtLetConst` — question, block, if initializer paths native | pending |
+| 2 | `SStmtLet` / `SStmtLetConst` — question, block, if initializer paths native | done |
 | 3 | `SStmtExpr` — assign, if/while/for/with/block native CppExprStmt | pending |
 | 4 | `SStmtLetPat` — native CppStmt decomposition | pending |
 | 5 | Remove `stmt_via_string_bridge`; audit `CppStmtFragment`; close track | pending |
 
-## Survivors (post step 1)
+## Survivors (post step 2)
 
-`SStmtReturn` + `?` uses `CppReturn(CppQuestionTry(...))`. Remaining `stmt_via_string_bridge`: let/let-const `?`, let-pat, expr stmt bridges.
+`SStmtLet` + `?`, `SStmtLetConst` block/if use native `CppAutoDecl`/`CppConstexprAutoDecl`. Remaining bridges: `Map.new`, let-pat, expr stmt.
 
 ## Next step (Driver)
 
-**STEP=2** — `SStmtLet` / `SStmtLetConst` native paths in `stmt_cpp.mlc`.
+**STEP=3** — `SStmtExpr` native paths in `stmt_cpp.mlc`.
 
 ## Deferred (out of track)
 

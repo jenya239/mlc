@@ -357,6 +357,34 @@ export fn codegen_tests() -> [TestResult] = do
     gen_stmts_str([Shared.new(SStmtLet('counter', false, si(1), i32_t(), span_unknown()))], ctx),
     'auto counter = 1;\n'))
 
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: let question',
+    gen_stmts_str([
+      Shared.new(SStmtLet(
+        'value',
+        false,
+        Shared.new(SExprQuestion(si(7), unk_t(), span_unknown())),
+        unk_t(),
+        span_unknown()))], ctx),
+    'auto value = ({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; });\n'))
+
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: let const if',
+    gen_stmts_str([
+      Shared.new(SStmtLetConst(
+        'picked',
+        Shared.new(SExprIf(sb(true), si(1), si(2), i32_t(), span_unknown())),
+        i32_t(),
+        span_unknown()))], ctx),
+    'constexpr auto picked = (true ? (1) : (2));\n'))
+
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: let const block',
+    gen_stmts_str([
+      Shared.new(SStmtLetConst(
+        'limit',
+        Shared.new(SExprBlock([], si(42), i32_t(), span_unknown())),
+        i32_t(),
+        span_unknown()))], ctx),
+    'constexpr auto limit = 42;\n'))
+
   results.push(assert_eq_str('gen_stmts_cpp_as_string: return',
     gen_stmts_str([Shared.new(SStmtReturn(si(0), span_unknown()))], ctx),
     'return 0;\n'))
