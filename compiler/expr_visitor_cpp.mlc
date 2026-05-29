@@ -1,8 +1,8 @@
 // ExprVisitor<Shared<CppExpr>> — batch 1–3: literals through lambda (Phase 2).
 
-import { Type, TNamed, TGeneric, TArray } from './checker/registry'
+import { Type, TNamed, TGeneric, TArray, TFn } from './checker/registry'
 import { SExpr, SStmt, SMatchArm, SFieldVal, SExprIdent, SExprArray, sexpr_type } from './ir/semantic_ir'
-import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit, CppTernary, CppLambda, CppCapture, CppType, CppTypeName, CppStmt } from './cpp/cpp_ast'
+import { CppExpr, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit, CppInitList, CppTernary, CppLambda, CppMutableLambda, CppCapture, CppParam, CppType, CppTypeName, CppStmt } from './cpp/cpp_ast'
 import { print_expr } from './cpp/cpp_printer'
 import * as emit_helpers from './cpp/emit_helpers'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from './checker/semantic_type_structure'
@@ -290,14 +290,74 @@ export fn gen_array_via_cpp_visitor(
   element_container_semantic_type: Shared<Type>,
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
-) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_array_via_visitor(
-      elements,
-      element_container_semantic_type,
-      context,
-      gen_stmts,
-      eval_expr_cpp_as_string))
+) -> Shared<CppExpr> = do
+  const element_expressions = elements.map(element => eval_expr_cpp(element, context, gen_stmts))
+  match element_container_semantic_type {
+    TArray(inner_type) => do
+      const element_cpp = sem_type_to_cpp(context, inner_type)
+      if elements.length() == 0 then
+        if element_cpp == 'auto' then Shared.new(CppInitList([]))
+        else Shared.new(CppAggregateInit(`mlc::Array<${element_cpp}>`, []))
+        end
+      else if element_cpp == 'auto' then
+        Shared.new(CppAggregateInit('mlc::Array', element_expressions))
+      else
+        Shared.new(CppAggregateInit(`mlc::Array<${element_cpp}>`, element_expressions))
+      end
+    end,
+    _ => do
+      if elements.length() == 0 then Shared.new(CppInitList([]))
+      else Shared.new(CppAggregateInit('mlc::Array', element_expressions))
+      end
+    end
+  }
+end
+
+fn lambda_capture_list(parameter_binding_names: [string]) -> [Shared<CppCapture>] =
+  if parameter_binding_names.length() == 0 then []
+  else do
+    let captures: [Shared<CppCapture>] = []
+    captures.push(reference_capture_for_immediate_lambda())
+    captures
+  end
+
+fn lambda_parameter_type_cpp(context: CodegenContext, semantic_parameter_type: Shared<Type>) -> Shared<CppType> = do
+  const parameter_type_cpp = sem_type_to_cpp(context, semantic_parameter_type)
+  if parameter_type_cpp == 'void' then Shared.new(CppTypeName('std::tuple<>'))
+  else Shared.new(CppTypeName(parameter_type_cpp))
+  end
+end
+
+fn lambda_auto_parameters_cpp(parameter_binding_names: [string]) -> [Shared<CppParam>] =
+  parameter_binding_names.map(parameter_name =>
+    Shared.new(CppParam {
+      name: cpp_safe(parameter_name),
+      parameter_type: Shared.new(CppTypeName('auto'))
+    }))
+
+fn lambda_parameters_cpp(
+  parameter_binding_names: [string],
+  semantic_function_type_for_lambda_expression: Shared<Type>,
+  context: CodegenContext
+) -> [Shared<CppParam>] =
+  match semantic_function_type_for_lambda_expression {
+    TFn(lambda_parameter_semantic_types, _) =>
+      if lambda_parameter_semantic_types.length() != parameter_binding_names.length() then
+        lambda_auto_parameters_cpp(parameter_binding_names)
+      else
+        let parameters: [Shared<CppParam>] = []
+        let mut lambda_parameter_index = 0
+        while lambda_parameter_index < parameter_binding_names.length() do
+          parameters.push(Shared.new(CppParam {
+            name: cpp_safe(parameter_binding_names[lambda_parameter_index]),
+            parameter_type: lambda_parameter_type_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index])
+          }))
+          lambda_parameter_index = lambda_parameter_index + 1
+        end
+        parameters
+      end,
+    _ => lambda_auto_parameters_cpp(parameter_binding_names)
+  }
 
 export fn gen_lambda_via_cpp_visitor(
   parameter_binding_names: [string],
@@ -306,14 +366,10 @@ export fn gen_lambda_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SStmt>], CodegenContext) -> string
 ) -> Shared<CppExpr> =
-  cpp_expr_from_rendered_fragment(
-    expr_fragment_codegen.gen_lambda_via_visitor(
-      parameter_binding_names,
-      body_expression_under_lambda,
-      semantic_function_type_for_lambda_expression,
-      context,
-      gen_stmts,
-      eval_expr_cpp_as_string))
+  Shared.new(CppMutableLambda(
+    lambda_capture_list(parameter_binding_names),
+    lambda_parameters_cpp(parameter_binding_names, semantic_function_type_for_lambda_expression, context),
+    eval_expr_cpp(body_expression_under_lambda, context, gen_stmts)))
 
 export fn gen_field_via_cpp_visitor(
   object: Shared<SExpr>,

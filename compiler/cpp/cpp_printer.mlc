@@ -7,7 +7,7 @@ import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppDeclFragment,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
-         CppBinary, CppUnary, CppTernary, CppLambda, CppInitList, CppAggregateInit, CppStdVisit, CppCast,
+         CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit, CppCast,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock } from './cpp_ast'
 import * as cpp_ast from './cpp_ast'
 
@@ -357,6 +357,19 @@ fn print_lambda_expression(
   lambda_expression(capture_prefix, parameters_code, return_type_code, body_code)
 end
 
+fn mutable_lambda_expression(capture_prefix: string, parameters_code: string, body_expression_code: string) -> string =
+  `${capture_prefix}(${parameters_code}) mutable { return ${body_expression_code}; }`
+
+fn print_mutable_lambda_expression(
+  captures: [Shared<CppCapture>],
+  parameters: [Shared<CppParam>],
+  body: Shared<CppExpr>
+) -> string = do
+  const capture_prefix = print_capture_list(captures)
+  const parameters_code = print_parameter_list(parameters)
+  mutable_lambda_expression(capture_prefix, parameters_code, print_expr(body))
+end
+
 fn print_member_expression(object: Shared<CppExpr>, member_name: string, is_pointer: bool) -> string =
   if is_pointer then pointer_field_access(print_expr(object), member_name) else value_field_access(print_expr(object), member_name) end
 
@@ -400,6 +413,8 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
       cast_expression(print_cast_kind_prefix(kind), print_type(target_type), print_expr(operand)),
     CppLambda(captures, parameters, return_type, body) =>
       print_lambda_expression(captures, parameters, return_type, body),
+    CppMutableLambda(captures, parameters, body) =>
+      print_mutable_lambda_expression(captures, parameters, body),
     CppInvokedWhile(condition, body_statements) => invoked_while_expression(condition, body_statements),
     CppInvokedFor(variable_name, iterator, body_statements) =>
       invoked_for_expression(variable_name, iterator, body_statements),

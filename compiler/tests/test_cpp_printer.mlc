@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_str } from './test_runner'
 import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_printer'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
-         CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppCast, CppCastStatic, CppLambda,
+         CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
          CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock,
          CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
@@ -79,6 +79,15 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_expr CppLambda',
     print_expr(Shared.new(CppLambda([capture], [parameter], int_type, lambda_body))),
     '[&counter](int input) -> int {\n  return input;\n}'))
+
+  const mutable_lambda_body =
+    Shared.new(CppBinary("+", Shared.new(CppIdent('value')), Shared.new(CppInt(1))))
+  results.push(assert_eq_str('print_expr CppMutableLambda',
+    print_expr(Shared.new(CppMutableLambda(
+      [Shared.new(CppCapture { name: '', by_reference: true })],
+      [Shared.new(CppParam { name: 'value', parameter_type: int_type })],
+      mutable_lambda_body))),
+    '[&](int value) mutable { return (value + 1); }'))
 
   const loop_body = 'step();\n'
   results.push(assert_eq_str('print_expr CppInvokedWhile',
