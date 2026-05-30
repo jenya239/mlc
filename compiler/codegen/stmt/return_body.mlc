@@ -228,9 +228,3 @@ export fn gen_return_body_cpp(body_expression: Shared<SExpr>, context: CodegenCo
       gen_return_match_body_cpp(subject, arms, match_type, span, context),
     _ => gen_return_body_leaf_cpp(body_expression, context)
   }
-
-fn expression_needs_string_bridge(_body_expression: Shared<SExpr>) -> bool =
-  false
-
-export fn return_body_needs_string_bridge(body_expression: Shared<SExpr>) -> bool =
-  expression_needs_string_bridge(body_expression)

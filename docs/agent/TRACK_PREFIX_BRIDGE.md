@@ -2,40 +2,38 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) (**closed**, `91d6752`)
 
-## Status: **open**
+## Status: **closed** (`519d19b` step 4 + step 5 audit)
 
-**Goal:** remove conservative `return_body_needs_string_bridge` fallback in `gen_fn_decl_cpp` — native `[Shared<CppStmt>]` for fn bodies with prefix stmts (while/for/break) and nested if/match branch blocks. Template/main proto bridge stays (`function_proto_needs_string_bridge`).
-
-## Verify gate (every step)
-
-```
-bundle exec rake test_compiler_mlc
-compiler/build.sh
-compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
-.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
-```
+**Goal:** remove conservative `return_body_needs_string_bridge` fallback in `gen_fn_decl_cpp` — native `[Shared<CppStmt>]` for fn bodies with prefix stmts (while/for/break) and nested if/match branch blocks.
 
 ---
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Prefix-only return blocks — selective `prefix_statements_need_string_bridge` (while/for/break/return/unit-if prefix); not all prefix stmts | done |
-| 2 | While/for/break/continue in return-body prefix — native stmt codegen valid inside `CppFnDef` | done |
-| 3 | Nested if/match arms with inner prefix blocks — native branch bodies without string fallback | done |
-| 4 | Drop `return_body_needs_string_bridge` from `function_needs_string_bridge`; wire always-native fn defs (non-template) | done |
-| 5 | Audit survivors (`function_proto_needs_string_bridge`, extend forwards, `CppStmtFragment`); close track | pending |
+| 1 | Prefix-only return blocks — selective `prefix_statements_need_string_bridge` (while/for/break/return/unit-if prefix); not all prefix stmts | done (`b1d88c7`) |
+| 2 | While/for/break/continue in return-body prefix — native stmt codegen valid inside `CppFnDef` | done (`7969531`) |
+| 3 | Nested if/match arms with inner prefix blocks — native branch bodies without string fallback | done (`e8edb18`) |
+| 4 | Drop `return_body_needs_string_bridge` from `function_needs_string_bridge`; wire always-native fn defs (non-template) | done (`519d19b`) |
+| 5 | Audit survivors (`function_proto_needs_string_bridge`, extend forwards, `CppStmtFragment`); close track | done |
 
-## Context
+## Step 5 audit
 
-`gen_return_block_body_cpp` already emits prefix stmts via `gen_stmts_cpp_with_context`, but `expression_needs_string_bridge` still returns true when `block_statements.length() > 0`, forcing `gen_fn_decl` string path. Step 4 RETURN_BODY added this after native path broke on while/if-in-branch (e.g. `parse_array_pattern` — `break` not in loop).
+**Track goal met:** non-template fn defs always use `native_fn_decl_cpp` → `gen_return_body_cpp`; `return_body_needs_string_bridge` removed.
 
-## Survivors (intentional, out of scope unless step 5 notes)
+| Symbol | Callers in `compiler/**/*.mlc` | Notes |
+|--------|-------------------------------|-------|
+| `function_proto_needs_string_bridge` | `decl_cpp.mlc` (`gen_fn_proto_cpp`, `gen_fn_decl_cpp`) | template fns + `main()` proto/body still string path |
+| `cpp_decl_from_string_output` | `decl_cpp.mlc`, `module.mlc`, `collect_fn_defs_cpp` | extend forward segments; non-fn decls; template fn fallback |
+| `CppStmtFragment` | `let_pat_cpp.mlc`, `mut_actual_argument.mlc`, `return_body.mlc` (`?` unwrap), `stmt_cpp.mlc` | structured binding / mut-ref / try prelude; `gen_stmts_str` print path |
+| `gen_return_body` (string) | `return_body.mlc`, `decl.mlc` via `gen_fn_body` | parallel path for template fn bodies and non-fn decl string codegen |
+
+Production fn bodies (non-template): `collect_fn_defs_cpp` → `gen_fn_decl_cpp` → `native_fn_decl_cpp` → `gen_return_body_cpp`.
+
+## Survivors (intentional)
 
 | Site | Use |
 |------|-----|
-| `function_proto_needs_string_bridge` | template fns + `main()` proto |
+| `function_proto_needs_string_bridge` | template fns + `main()` proto/body |
 | `collect_fn_defs_cpp` | extend forward segments via `cpp_decl_from_string_output` |
 | `let_pat_cpp.mlc` | structured binding `CppStmtFragment` |
 | `mut_actual_argument.mlc` | mut-ref prelude fragments |

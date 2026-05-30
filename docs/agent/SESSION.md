@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 4|
-| step_last | 4 |
+| driver_turns_since_plan | 5|
+| step_last | 5 |
 | run_tests | 781 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_PREFIX_BRIDGE step 4 done |
+| TRACK_PLAN | TRACK_PREFIX_BRIDGE closed |
 | agent_token_last | cr-agent-093e0dd6-b7db-4553-80c2-72c14ad2e7f4 |
+
+### Turn 2026-05-30 (Driver PREFIX_BRIDGE step 5 — audit + close)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 5 |
+| done | audit survivors; remove return_body_needs_string_bridge; close track |
+| verify | 781 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Planner STEP=plan-refresh |
 
 ### Turn 2026-05-30 (Driver PREFIX_BRIDGE step 4 — always-native fn defs)
 

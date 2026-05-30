@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) **closed** (`91d6752`). Active: [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) STEP=5 — audit survivors and close track.
+[TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) **closed** (step 5 audit). Next: **Planner** `STEP=plan-refresh`.
 
 ## Step sizing (good vs bad)
 

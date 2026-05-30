@@ -62,18 +62,17 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **closed** (`3e47ca4`)
 - **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed** (`7084227`)
 - **Return-body bridges:** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **closed** (step 5 audit)
-- **Prefix return-body bridge:** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — **open**
+- **Prefix return-body bridge:** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — **closed** (step 5 audit)
 
 ## Next step (Driver)
 
-**STEP=5** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — audit survivors; close track.
+**Planner** `STEP=plan-refresh` — no open PREFIX_BRIDGE steps.
 
-## Planner checklist (2026-05-30 plan-refresh — PREFIX_BRIDGE)
+## Planner checklist (2026-05-30 plan-refresh — PREFIX_BRIDGE close)
 
 - [x] TRACK_RETURN_BODY closed (`91d6752`; 5/5 steps)
-- [x] TRACK_PREFIX_BRIDGE opened (5 steps: prefix-only, while/for prefix, nested arms, drop bridge, audit close)
+- [x] TRACK_PREFIX_BRIDGE closed (5/5 steps; step 5 audit)
 - [x] PLAN §Phase 2 §3 — `return_body_needs_string_bridge` conservative fallback
-- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-30 plan-refresh — RETURN_BODY)
 
