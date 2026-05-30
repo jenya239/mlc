@@ -9,7 +9,7 @@ import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
-import { pat_bind_names, pat_binding_name_list } from '../expr/match_analysis'
+import { pat_binding_name_list } from '../expr/match_analysis'
 
 fn member_access(object_name: string, field_name: string) -> Shared<CppExpr> =
   Shared.new(CppMember(emit_helpers.make_identifier_cpp_expression(object_name), field_name, false))
@@ -127,9 +127,6 @@ fn tuple_structured_binding_statement(
   emit_helpers.make_structured_binding_cpp_statement(
     pat_binding_name_list(subpatterns),
     emit_helpers.make_identifier_cpp_expression(source_name))
-
-fn structured_binding_statement(binding_names: string, source_name: string) -> Shared<CppStmt> =
-  emit_helpers.make_fragment_cpp_statement("auto [" + binding_names + "] = " + source_name + ";")
 
 fn let_pattern_block(statements: [Shared<CppStmt>], rhs: Shared<CppExpr>) -> Shared<CppStmt> = do
   const block_statements: [Shared<CppStmt>] = []

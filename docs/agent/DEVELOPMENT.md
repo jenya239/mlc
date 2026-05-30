@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) **open** STEP=5 — audit; close track.
+All binding bridge tracks closed. **Planner plan-refresh** — next track from PLAN backlog.
 
 ## Step sizing (good vs bad)
 

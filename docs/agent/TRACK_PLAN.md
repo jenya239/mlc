@@ -64,7 +64,18 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Return-body bridges:** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **closed** (step 5 audit)
 - **Prefix return-body bridge:** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — **closed** (step 5 audit)
 - **CppStmtFragment elimination:** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — **closed** (`49b7091`)
-- **Structured binding fragments:** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — **open** (stability)
+- **Structured binding fragments:** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — **closed** (step 5 audit)
+
+## Next step (Planner)
+
+**plan-refresh** — pick next track from PLAN backlog (stability > security > performance).
+
+## Planner checklist (2026-05-30 plan-refresh — BINDING_BRIDGE close)
+
+- [x] TRACK_BINDING_BRIDGE closed (5/5 steps; step 5 audit)
+- [x] let_pat_cpp: no CppStmtFragment; CppStructuredBinding for all fallbacks
+- [x] Survivors documented: string paths, template/decl bridges
+- [x] Planner enqueued plan-refresh
 
 ## Next step (Driver)
 

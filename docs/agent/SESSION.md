@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 4|
-| step_last | 4 |
+| driver_turns_since_plan | 5|
+| step_last | 5 |
 | run_tests | 795 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_BINDING_BRIDGE step 4 done |
+| TRACK_PLAN | TRACK_BINDING_BRIDGE closed |
 | agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
+
+### Turn 2026-05-30 (Driver BINDING_BRIDGE step 5 — audit close)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 5 |
+| done | removed structured_binding_statement; let_pat_cpp fragment-free; track closed |
+| verify | 795 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Planner plan-refresh |
 
 ### Turn 2026-05-30 (Driver BINDING_BRIDGE step 4 — PatCtor wild structured binding)
 
