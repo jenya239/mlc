@@ -11,7 +11,7 @@
 | run_tests | 778 |
 | self_host_diff | DIFF_EXIT=0 |
 | TRACK_PLAN | TRACK_RETURN_BODY **active** (step 5) |
-| agent_token_last | cr-agent-3f60bd9f-646e-4262-9fd8-1baf76fbca6d |
+| agent_token_last | cr-agent-6091c6e7-47d5-4d77-8805-cc70706e6dce |
 
 ### Turn 2026-05-30 (Driver RETURN_BODY step 4 — decl_cpp wire)
 
