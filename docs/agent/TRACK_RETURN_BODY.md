@@ -40,7 +40,7 @@ Production fn bodies: `module.mlc` → `collect_fn_defs_cpp` → `gen_fn_decl_cp
 
 ## Deferred (out of track)
 
-- Native prefix stmts for while/for/if-in-branch (remove `return_body_needs_string_bridge`).
+- Native prefix stmts for while/for/if-in-branch → [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md).
 - `let_pat_cpp.mlc` internal `CppStmtFragment`.
 - `mut_actual_argument.mlc` mut-ref prelude fragments.
 - Phase 4 `MLCC_BOOTSTRAP=1` — separate track.

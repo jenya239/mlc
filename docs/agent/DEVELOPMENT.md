@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) **closed** (`7084227`). [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) **closed** (step 5 audit). Next: Planner plan-refresh.
+[TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) **closed** (`91d6752`). Active: [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) STEP=1 — drop `return_body_needs_string_bridge` fallback for prefix-only return blocks.
 
 ## Step sizing (good vs bad)
 

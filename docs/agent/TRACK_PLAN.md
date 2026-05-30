@@ -62,10 +62,18 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **closed** (`3e47ca4`)
 - **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed** (`7084227`)
 - **Return-body bridges:** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **closed** (step 5 audit)
+- **Prefix return-body bridge:** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — **open**
 
 ## Next step (Driver)
 
-**STEP=4** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — decl_cpp wire; drop string round-trip.
+**STEP=1** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — narrow `expression_needs_string_bridge`; prefix-only blocks native.
+
+## Planner checklist (2026-05-30 plan-refresh — PREFIX_BRIDGE)
+
+- [x] TRACK_RETURN_BODY closed (`91d6752`; 5/5 steps)
+- [x] TRACK_PREFIX_BRIDGE opened (5 steps: prefix-only, while/for prefix, nested arms, drop bridge, audit close)
+- [x] PLAN §Phase 2 §3 — `return_body_needs_string_bridge` conservative fallback
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-30 plan-refresh — RETURN_BODY)
 

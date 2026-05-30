@@ -5,13 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Driver|
-| driver_turns_since_plan | 5|
-| step_last | 5 |
+| role_last | Planner|
+| driver_turns_since_plan | 0|
+| step_last | plan-refresh |
 | run_tests | 778 |
 | self_host_diff | DIFF_EXIT=0 (step 4 baseline) |
-| TRACK_PLAN | TRACK_RETURN_BODY **closed** |
+| TRACK_PLAN | TRACK_PREFIX_BRIDGE **open** STEP=1 |
 | agent_token_last | cr-agent-a1b4285d-5d90-4dae-b9d1-f8c8ad678cfa |
+
+### Turn 2026-05-30 (Planner plan-refresh — PREFIX_BRIDGE)
+
+| turn | 2026-05-30 |
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_PREFIX_BRIDGE opened (5 steps); RETURN_BODY closed in backlog |
+| verify | n/a (docs only) |
+| next | ROLE=Driver STEP=1 TRACK_PREFIX_BRIDGE |
 
 ### Turn 2026-05-30 (Driver RETURN_BODY step 5 — audit close)
 
