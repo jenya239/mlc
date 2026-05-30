@@ -574,6 +574,15 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_code_contains('gen_stmts_cpp: let ctor native std::get bind',
     letpat_no_else_out, 'std::get<0>(__b)'))
 
+  const letpat_ctor_wild_pat = Shared.new(PatCtor(
+    'Some',
+    [Shared.new(PatIdent('head', span_unknown())), Shared.new(PatWild(span_unknown()))],
+    span_unknown()))
+  const letpat_ctor_wild = Shared.new(SStmtLetPat(
+    letpat_ctor_wild_pat, false, sid('opt'), Shared.new(TNamed('Opt')), false, letpat_else_body, span_unknown()))
+  results.push(assert_code_contains('gen_stmts_cpp: let ctor wild native structured binding',
+    gen_stmts_str([letpat_ctor_wild], ctx), 'auto [head, __1] = __b'))
+
   const array_pat = Shared.new(PatArray(
     [Shared.new(PatIdent('head', span_unknown()))],
     'tail',

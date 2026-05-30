@@ -68,7 +68,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=4** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — PatCtor complex subpatterns native.
+**STEP=5** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — audit; close track.
 
 ## Planner checklist (2026-05-30 plan-refresh — BINDING_BRIDGE open)
 

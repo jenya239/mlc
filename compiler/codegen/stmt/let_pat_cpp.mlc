@@ -256,7 +256,7 @@ export fn gen_let_pattern_cpp_statement(
             ctor_statements,
             simple_tuple_ident_binding_statements(subpatterns, "__b"))
         else
-          ctor_statements.push(structured_binding_statement(pat_bind_names(subpatterns), "__b"))
+          ctor_statements.push(tuple_structured_binding_statement(subpatterns, "__b"))
         end
       end
       emit_helpers.make_block_cpp_statement(ctor_statements)
