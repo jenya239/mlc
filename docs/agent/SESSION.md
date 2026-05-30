@@ -10,7 +10,7 @@
 | step_last | 1 |
 | run_tests | 774 |
 | TRACK_PLAN | TRACK_RETURN_BODY **active** (step 2) |
-| agent_token_last | (register this turn) |
+| agent_token_last | cr-agent-6d22be4a-54a7-4ba7-b658-dad86de152e7 |
 
 ### Turn 2026-05-30 (Driver RETURN_BODY step 1 — leaf returns)
 
