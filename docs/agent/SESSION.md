@@ -11,7 +11,7 @@
 | run_tests | 778 |
 | self_host_diff | DIFF_EXIT=0 (step 4 baseline) |
 | TRACK_PLAN | TRACK_PREFIX_BRIDGE **open** STEP=1 |
-| agent_token_last | cr-agent-a1b4285d-5d90-4dae-b9d1-f8c8ad678cfa |
+| agent_token_last | cr-agent-729533ad-b637-44cc-8ea9-fea091f4cdb2 |
 
 ### Turn 2026-05-30 (Planner plan-refresh — PREFIX_BRIDGE)
 
