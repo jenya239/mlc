@@ -7,7 +7,7 @@ import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
 import * as expression_output from '../expr/expr'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'
-import { cpp_stmts_from_string_output, gen_stmts_cpp_with_context } from '../stmt_cpp'
+import { gen_stmts_cpp_with_context } from '../stmt_cpp'
 import * as expr_visitor_cpp from '../../expr_visitor_cpp'
 
 fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
@@ -200,6 +200,22 @@ fn gen_return_block_body_cpp(
     end
   }
 end
+
+fn expression_needs_string_bridge(expression: Shared<SExpr>) -> bool =
+  match expression {
+    SExprBlock(block_statements, result_expression, _, _) =>
+      if block_statements.length() > 0 then true
+      else expression_needs_string_bridge(result_expression)
+      end,
+    SExprIf(_, then_expression, else_expression, _, _) =>
+      expression_needs_string_bridge(then_expression) || expression_needs_string_bridge(else_expression),
+    SExprMatch(_, arms, _, _) =>
+      arms.any(arm => expression_needs_string_bridge(arm.body)),
+    _ => false
+  }
+
+export fn return_body_needs_string_bridge(body_expression: Shared<SExpr>) -> bool =
+  expression_needs_string_bridge(body_expression)
 
 export fn gen_return_body_cpp(body_expression: Shared<SExpr>, context: CodegenContext) -> [Shared<CppStmt>] =
   match body_expression {

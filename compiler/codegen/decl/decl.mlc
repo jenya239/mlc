@@ -126,7 +126,7 @@ fn inner_declaration_is_main(declaration: Shared<SDecl>) -> bool =
 export fn decls_have_main(decls: [Shared<SDecl>]) -> bool =
   decls.any(declaration => inner_declaration_is_main(declaration))
 
-fn extend_cpp_forward_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext) -> string =
+export fn extend_cpp_forward_segment(declaration: Shared<SDecl>, codegen_context: CodegenContext) -> string =
   match declaration {
     SDeclExtend(type_name, trait_name, methods, _) => do
       const extend_context = codegen_context.for_type_body(type_name)
@@ -262,7 +262,7 @@ fn extend_helper_protos_for_exported_types(decls: [Shared<SDecl>], context: Code
   result
 end
 
-fn extend_method_forward_segments(decls: [Shared<SDecl>], context: CodegenContext) -> [string] = do
+export fn extend_method_forward_segments(decls: [Shared<SDecl>], context: CodegenContext) -> [string] = do
   let mut result: [string] = []
   let mut index = 0
   while index < decls.length() do
