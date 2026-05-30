@@ -11,7 +11,7 @@ import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, 
 import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration } from '../codegen/decl_cpp'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
-import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SExprInt, SExprBool, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SMatchArm, SStmtLet, SDeclFn, SDeclType, SDeclExported, SDeclExtend, sdecl_span } from '../ir/semantic_ir'
+import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SExprInt, SExprBool, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SExprWhile, SMatchArm, SStmtLet, SStmtExpr, SDeclFn, SDeclType, SDeclExported, SDeclExtend, sdecl_span } from '../ir/semantic_ir'
 import { Type, TypeRegistry, TI32, TString, TBool, TUnit, TUnknown } from '../checker/registry'
 import { gen_return_body, gen_return_body_cpp } from '../codegen/stmt/return_body'
 import { print_cpp_statements } from '../codegen/stmt_cpp'
@@ -354,6 +354,15 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains('gen_return_body_cpp: match arm block prefix native',
     print_cpp_statements(gen_return_body_cpp(match_arm_block_body, context)),
     'auto temporary = 2'))
+
+  const while_return_body = Shared.new(SExprWhile(
+    make_bool(true),
+    [Shared.new(SStmtExpr(make_int(0), span_unknown()))],
+    tunit(),
+    span_unknown()))
+  results.push(assert_code_contains('gen_fn_decl_cpp: while return body native',
+    print_cpp_declaration(gen_fn_decl_cpp('spin', [], [], [], tunit(), while_return_body, context)),
+    'while (true)'))
 
   results.push(assert_eq_str('gen_fn_decl_cpp: identity native return',
     print_cpp_declaration(gen_fn_decl_cpp('identity', [], [], [iparam('value')], ti32(), make_ident('value'), context)),

@@ -10,7 +10,7 @@ import { CodegenContext } from './context'
 import { gen_fn_proto, gen_fn_decl, gen_decl, gen_proto, collect_all_decl_parts, collect_decl_parts, compute_fn_body_context, extend_method_forward_segments, extend_cpp_forward_segment } from './decl/decl'
 import { gen_parameter_proto_items, gen_parameter_def_items } from './decl/decl_extend'
 import { sem_type_to_cpp } from './decl/type_gen'
-import { gen_return_body_cpp, return_body_needs_string_bridge } from './stmt/return_body'
+import { gen_return_body_cpp } from './stmt/return_body'
 
 export type DeclPartsBundleCpp = DeclPartsBundleCpp {
   type_fwds: [Shared<CppDecl>],
@@ -48,9 +48,6 @@ fn function_has_template_prefix(type_params: [string]) -> bool =
 
 fn function_proto_needs_string_bridge(name: string, type_params: [string], params: [Shared<Param>]) -> bool =
   function_has_template_prefix(type_params) || (name == 'main' && params.length() == 0)
-
-fn function_needs_string_bridge(name: string, type_params: [string], params: [Shared<Param>], body: Shared<SExpr>) -> bool =
-  function_proto_needs_string_bridge(name, type_params, params) || return_body_needs_string_bridge(body)
 
 fn native_fn_proto_cpp(
   name: string,
@@ -104,7 +101,7 @@ export fn gen_fn_decl_cpp(
   body: Shared<SExpr>,
   context: CodegenContext
 ) -> Shared<CppDecl> =
-  if function_needs_string_bridge(name, type_params, params, body) then
+  if function_proto_needs_string_bridge(name, type_params, params) then
     cpp_decl_from_string_output(gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context))
   else
     native_fn_decl_cpp(name, params, return_type, body, context)

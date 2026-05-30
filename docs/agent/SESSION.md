@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 3|
-| step_last | 3 |
-| run_tests | 780 |
+| driver_turns_since_plan | 4|
+| step_last | 4 |
+| run_tests | 781 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_PREFIX_BRIDGE step 3 done |
+| TRACK_PLAN | TRACK_PREFIX_BRIDGE step 4 done |
 | agent_token_last | cr-agent-093e0dd6-b7db-4553-80c2-72c14ad2e7f4 |
+
+### Turn 2026-05-30 (Driver PREFIX_BRIDGE step 4 — always-native fn defs)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 4 |
+| done | gen_fn_decl_cpp uses function_proto_needs_string_bridge only; drop return_body bridge |
+| verify | 781 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=5 TRACK_PREFIX_BRIDGE |
 
 ### Turn 2026-05-30 (Driver PREFIX_BRIDGE step 3 — nested if/match prefix native)
 
