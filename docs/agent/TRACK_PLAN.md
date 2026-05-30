@@ -67,7 +67,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=4** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — return_body `?` prelude native.
+**STEP=5** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — audit survivors; close track.
 
 ## Planner checklist (2026-05-30 plan-refresh — FRAGMENT_BRIDGE open)
 

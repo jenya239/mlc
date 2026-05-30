@@ -281,9 +281,12 @@ export fn decl_gen_tests() -> [TestResult] = do
     gen_return_body(make_ident('value'), context)))
 
   const question_body = make_question(make_int(7))
-  results.push(assert_eq_str('gen_return_body_cpp: question matches string',
+  results.push(assert_code_contains('gen_return_body_cpp: question native get_if unwrap',
     print_cpp_statements(gen_return_body_cpp(question_body, context)),
-    gen_return_body(question_body, context)))
+    'std::get_if<1>'))
+  results.push(assert_code_contains('gen_return_body_cpp: question native ok return',
+    print_cpp_statements(gen_return_body_cpp(question_body, context)),
+    'std::get<0>(__try_ret).field0'))
 
   const block_return_body = Shared.new(SExprBlock(
     [Shared.new(SStmtLet('counter', false, make_int(1), ti32(), span_unknown()))],

@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 3|
-| step_last | 3 |
-| run_tests | 789 |
+| driver_turns_since_plan | 4|
+| step_last | 4 |
+| run_tests | 790 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_FRAGMENT_BRIDGE step 3 done |
+| TRACK_PLAN | TRACK_FRAGMENT_BRIDGE step 4 done |
 | agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
+
+### Turn 2026-05-30 (Driver FRAGMENT_BRIDGE step 4 — return_body ? native)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 4 |
+| done | gen_try_unwrap_return_statements_cpp uses CppIf/CppReturn/CppCall/CppUnary/CppMember (no CppStmtFragment) |
+| verify | 790 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=5 TRACK_FRAGMENT_BRIDGE |
 
 ### Turn 2026-05-30 (Driver FRAGMENT_BRIDGE step 3 — mut_actual_argument native)
 

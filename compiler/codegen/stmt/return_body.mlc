@@ -3,7 +3,7 @@
 
 import { Type } from '../../checker/registry'
 import { SExpr, SStmt, SExprUnit, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SMatchArm, Span } from '../../ir/semantic_ir'
-import { CppExpr, CppStmt } from '../../cpp/cpp_ast'
+import { CppExpr, CppStmt, CppCall, CppIdent, CppUnary, CppMember } from '../../cpp/cpp_ast'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
 import * as expression_output from '../expr/expr'
@@ -82,18 +82,42 @@ fn gen_stmts_for_return_body_cpp(statements: [Shared<SStmt>], context: CodegenCo
 fn gen_expr_for_return_body_cpp(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
   expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_return_body_cpp)
 
+fn try_result_identifier_expression(try_identifier: string) -> Shared<CppExpr> =
+  emit_helpers.make_identifier_cpp_expression(try_identifier)
+
+fn try_result_address_expression(try_identifier: string) -> Shared<CppExpr> =
+  Shared.new(CppUnary("&", try_result_identifier_expression(try_identifier)))
+
+fn try_result_err_pointer_expression(try_identifier: string) -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    Shared.new(CppIdent("std::get_if<1>")),
+    [try_result_address_expression(try_identifier)]))
+
+fn try_result_ok_field0_expression(try_identifier: string) -> Shared<CppExpr> =
+  Shared.new(CppMember(
+    Shared.new(CppCall(
+      Shared.new(CppIdent("std::get<0>")),
+      [try_result_identifier_expression(try_identifier)])),
+    "field0",
+    false))
+
 fn gen_try_unwrap_return_statements_cpp(
   inner_expression: Shared<SExpr>,
   context: CodegenContext
 ) -> [Shared<CppStmt>] = do
   const try_identifier = '__try_ret'
   const inner_cpp = gen_expr_for_return_body_cpp(inner_expression, context)
+  const err_pointer = try_result_err_pointer_expression(try_identifier)
   let statements: [Shared<CppStmt>] = []
   statements.push(emit_helpers.make_auto_cpp_statement(try_identifier, inner_cpp))
-  statements.push(emit_helpers.make_fragment_cpp_statement(
-    `if (std::get_if<1>(&${try_identifier})) return *std::get_if<1>(&${try_identifier});`))
-  statements.push(emit_helpers.make_fragment_cpp_statement(
-    `return std::get<0>(${try_identifier}).field0;`))
+  statements.push(emit_helpers.make_if_cpp_statement(
+    err_pointer,
+    emit_helpers.make_block_cpp_statement([
+      emit_helpers.make_return_cpp_statement(
+        Shared.new(CppUnary("*", err_pointer)))]),
+    emit_helpers.make_block_cpp_statement([])))
+  statements.push(emit_helpers.make_return_cpp_statement(
+    try_result_ok_field0_expression(try_identifier)))
   statements
 end
 
