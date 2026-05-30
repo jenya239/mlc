@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 4|
-| step_last | 4 |
+| driver_turns_since_plan | 5|
+| step_last | 5 |
 | run_tests | 778 |
-| self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 5) |
+| self_host_diff | DIFF_EXIT=0 (step 4 baseline) |
+| TRACK_PLAN | TRACK_RETURN_BODY **closed** |
 | agent_token_last | cr-agent-6091c6e7-47d5-4d77-8805-cc70706e6dce |
+
+### Turn 2026-05-30 (Driver RETURN_BODY step 5 — audit close)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 5 |
+| done | audit: 0 callers of cpp_stmts_from_string_output; track closed |
+| verify | n/a (docs only); baseline 778 / DIFF_EXIT=0 from step 4 |
+| next | ROLE=Planner STEP=plan-refresh |
 
 ### Turn 2026-05-30 (Driver RETURN_BODY step 4 — decl_cpp wire)
 

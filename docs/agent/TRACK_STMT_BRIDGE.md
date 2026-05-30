@@ -25,7 +25,7 @@ Remaining intentional `CppStmtFragment` (not stmt string bridge):
 | Site | Use |
 |------|-----|
 | `let_pat_cpp.mlc` | structured binding, array rest slice, ctor holds_alternative prelude |
-| `return_body.mlc` | `cpp_stmts_from_string_output` for multi-stmt return bodies (separate track) |
+| `return_body.mlc` | ~~`cpp_stmts_from_string_output` for multi-stmt return bodies~~ — migrated (TRACK_RETURN_BODY closed) |
 | `mut_actual_argument.mlc` | mut-ref prelude statements |
 | `expr_visitor_cpp.mlc` | unit-if IIFE body fragments |
 | `emit_helpers.mlc` | printer/decl fragment helpers |
