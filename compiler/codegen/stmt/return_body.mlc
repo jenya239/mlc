@@ -1,12 +1,14 @@
 // Return-site code generation: gen_return_body, gen_fn_body.
 // Imports gen_expr / gen_stmts_str / gen_try_unwrap from eval; not called back by eval.
 
-import { SExpr, SStmt, SExprUnit } from '../../ir/semantic_ir'
-import { CppStmt } from '../../cpp/cpp_ast'
+import { SExpr, SStmt, SExprUnit, SExprQuestion, SExprBlock, SExprIf } from '../../ir/semantic_ir'
+import { CppExpr, CppStmt } from '../../cpp/cpp_ast'
+import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
 import * as expression_output from '../expr/expr'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'
 import { cpp_stmts_from_string_output } from '../stmt_cpp'
+import * as expr_visitor_cpp from '../../expr_visitor_cpp'
 
 fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
   match expr {
@@ -73,5 +75,43 @@ export fn gen_return_body(expr: Shared<SExpr>, context: CodegenContext) -> strin
 export fn gen_fn_body(body_expr: Shared<SExpr>, context: CodegenContext) -> string =
   gen_return_body(body_expr, context)
 
+fn gen_expr_for_return_body_cpp(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
+  expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_str)
+
+fn gen_try_unwrap_return_statements_cpp(
+  inner_expression: Shared<SExpr>,
+  context: CodegenContext
+) -> [Shared<CppStmt>] = do
+  const try_identifier = '__try_ret'
+  const inner_cpp = gen_expr_for_return_body_cpp(inner_expression, context)
+  let statements: [Shared<CppStmt>] = []
+  statements.push(emit_helpers.make_auto_cpp_statement(try_identifier, inner_cpp))
+  statements.push(emit_helpers.make_fragment_cpp_statement(
+    `if (std::get_if<1>(&${try_identifier})) return *std::get_if<1>(&${try_identifier});`))
+  statements.push(emit_helpers.make_fragment_cpp_statement(
+    `return std::get<0>(${try_identifier}).field0;`))
+  statements
+end
+
+fn gen_return_body_leaf_cpp(body_expression: Shared<SExpr>, context: CodegenContext) -> [Shared<CppStmt>] =
+  match body_expression {
+    SExprUnit(_, _) => do
+      let statements: [Shared<CppStmt>] = []
+      statements
+    end,
+    SExprQuestion(inner_expression, _, _) =>
+      gen_try_unwrap_return_statements_cpp(inner_expression, context),
+    _ => do
+      let statements: [Shared<CppStmt>] = []
+      statements.push(emit_helpers.make_return_cpp_statement(
+        gen_expr_for_return_body_cpp(body_expression, context)))
+      statements
+    end
+  }
+
 export fn gen_return_body_cpp(body_expression: Shared<SExpr>, context: CodegenContext) -> [Shared<CppStmt>] =
-  cpp_stmts_from_string_output(gen_return_body(body_expression, context))
+  match body_expression {
+    SExprBlock(_, _, _, _) | SExprIf(_, _, _, _, _) =>
+      cpp_stmts_from_string_output(gen_return_body(body_expression, context)),
+    _ => gen_return_body_leaf_cpp(body_expression, context)
+  }

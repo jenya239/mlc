@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **active** (step 1): native return-body CppStmt in `return_body.mlc` (PLAN §Phase 2). [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) **closed** (`7084227`).
+[TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **active** (step 2): block return bodies. [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) **closed** (`7084227`).
 
 ## Step sizing (good vs bad)
 

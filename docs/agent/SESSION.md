@@ -5,12 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Planner|
-| driver_turns_since_plan | 0|
-| step_last | plan-refresh|
-| run_tests | 771 |
-| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 1) |
-| agent_token_last | cr-agent-85cc3274-fabd-418a-a8fd-aef4d014d9b6 |
+| role_last | Driver|
+| driver_turns_since_plan | 1|
+| step_last | 1 |
+| run_tests | 774 |
+| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 2) |
+| agent_token_last | (register this turn) |
+
+### Turn 2026-05-30 (Driver RETURN_BODY step 1 — leaf returns)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 1 |
+| done | native unit/expr/? in gen_return_body_cpp; fix empty-array visit codegen |
+| verify | 774 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_RETURN_BODY |
 
 ### Turn 2026-05-30 (Planner plan-refresh — RETURN_BODY)
 
