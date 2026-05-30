@@ -11,7 +11,7 @@
 | run_tests | 778 |
 | self_host_diff | DIFF_EXIT=0 (step 4 baseline) |
 | TRACK_PLAN | TRACK_RETURN_BODY **closed** |
-| agent_token_last | cr-agent-6091c6e7-47d5-4d77-8805-cc70706e6dce |
+| agent_token_last | cr-agent-a1b4285d-5d90-4dae-b9d1-f8c8ad678cfa |
 
 ### Turn 2026-05-30 (Driver RETURN_BODY step 5 — audit close)
 

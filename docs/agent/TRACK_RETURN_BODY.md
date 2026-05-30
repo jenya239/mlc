@@ -14,7 +14,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_STMT_BRIDGE.md](TRA
 | 2 | `SExprBlock` return body — stmts via `gen_stmts_cpp` + trailing return | done (`9f34e4d`) |
 | 3 | Return if/else-if chains — native CppIf (no string fragment) | done (`719edbb`) |
 | 4 | `gen_return_body_cpp` fully native; `decl_cpp` wired; drop string round-trip | done (`993a467`) |
-| 5 | Audit `cpp_stmts_from_string_output` callers; close track | done |
+| 5 | Audit `cpp_stmts_from_string_output` callers; close track | done (`91d6752`) |
 
 ## Step 5 audit (`cpp_stmts_from_string_output`)
 
