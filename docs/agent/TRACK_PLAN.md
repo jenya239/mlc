@@ -63,18 +63,30 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed** (`7084227`)
 - **Return-body bridges:** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **closed** (step 5 audit)
 - **Prefix return-body bridge:** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — **closed** (step 5 audit)
-- **CppStmtFragment elimination:** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — **closed** (step 5 audit)
+- **CppStmtFragment elimination:** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — **closed** (`49b7091`)
+- **Structured binding fragments:** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — **open** (stability)
 
-## Next step (Planner)
+## Next step (Driver)
 
-**plan-refresh** — pick next track from PLAN backlog (stability > security > performance).
+**STEP=1** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — `CppStructuredBinding` AST + printer.
+
+## Planner checklist (2026-05-30 plan-refresh — BINDING_BRIDGE open)
+
+- [x] TRACK_FRAGMENT_BRIDGE closed (`49b7091`; 5/5 steps)
+- [x] Priority: stability > security > performance → BINDING_BRIDGE (let_pat structured binding)
+- [x] Deferred: template native, string-path track, BOOTSTRAP, parser panic audit
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-30 plan-refresh — FRAGMENT_BRIDGE close)
 
 - [x] TRACK_FRAGMENT_BRIDGE closed (5/5 steps; step 5 audit)
 - [x] Native paths cleared: PatTuple PatIdent, PatRecord/Array/Ctor, mut prelude, return_body `?`
 - [x] Survivors documented: structured_binding fallback, string paths, template/decl bridges
-- [ ] Planner enqueued plan-refresh
+- [x] Planner enqueued plan-refresh
+
+## Next step (Planner)
+
+**plan-refresh** — pick next track from PLAN backlog (stability > security > performance).
 
 ## Planner checklist (2026-05-30 plan-refresh — FRAGMENT_BRIDGE open)
 

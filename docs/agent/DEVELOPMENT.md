@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-All bridge tracks closed. **Planner plan-refresh** — next track from PLAN backlog.
+[TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) **open** STEP=1 — `CppStructuredBinding` AST + printer.
 
 ## Step sizing (good vs bad)
 
