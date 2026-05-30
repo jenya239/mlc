@@ -9,7 +9,7 @@ import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/decl/typ
 import { gen_program } from '../codegen/module'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
-import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, PatTuple, span_unknown, PatUnit } from '../frontend/ast'
+import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, PatTuple, PatArray, PatRecord, span_unknown, PatUnit } from '../frontend/ast'
 import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SExprTuple, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat, SStmtBreak, SStmtContinue, SStmtReturn } from '../ir/semantic_ir'
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../ir/semantic_ir'
 import { SExprWith } from '../ir/semantic_ir'
@@ -538,6 +538,28 @@ export fn codegen_tests() -> [TestResult] = do
     if letpat_with_else_out.contains('abort') then 'abort' else 'no-abort' end, 'no-abort'))
   results.push(assert_eq_str('let-else: without else uses abort',
     if letpat_no_else_out.contains('abort') then 'abort' else 'no-abort' end, 'abort'))
+  results.push(assert_code_contains('gen_stmts_cpp: let ctor native holds_alternative',
+    letpat_no_else_out, 'std::holds_alternative'))
+  results.push(assert_code_contains('gen_stmts_cpp: let ctor native std::get bind',
+    letpat_no_else_out, 'std::get<0>(__b)'))
+
+  const array_pat = Shared.new(PatArray(
+    [Shared.new(PatIdent('head', span_unknown()))],
+    'tail',
+    span_unknown()))
+  const let_array_rest = Shared.new(SStmtLetPat(
+    array_pat, false, sid('items'), Shared.new(TArray(Shared.new(TI32))), false, letpat_else_body, span_unknown()))
+  const let_array_out = gen_stmts_str([let_array_rest], ctx)
+  results.push(assert_code_contains('gen_stmts_cpp: let array rest native slice',
+    let_array_out, 'mlc::Array<int>'))
+  results.push(assert_code_contains('gen_stmts_cpp: let array rest cbegin offset',
+    let_array_out, 'cbegin() + 1'))
+
+  const record_pat = Shared.new(PatRecord('', [Shared.new(PatIdent('value', span_unknown()))], span_unknown()))
+  const let_record = Shared.new(SStmtLetPat(
+    record_pat, false, sid('point'), Shared.new(TNamed('Point')), false, letpat_else_body, span_unknown()))
+  results.push(assert_code_contains('gen_stmts_cpp: let record field native',
+    gen_stmts_str([let_record], ctx), '__lt.value'))
 
   // --- Phantom type codegen ---------------------------------------------------
 

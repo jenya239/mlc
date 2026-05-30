@@ -67,7 +67,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=2** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — PatRecord/PatArray/PatCtor destructure fragments.
+**STEP=3** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — mut_actual_argument prelude native.
 
 ## Planner checklist (2026-05-30 plan-refresh — FRAGMENT_BRIDGE open)
 

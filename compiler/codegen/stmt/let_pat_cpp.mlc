@@ -3,15 +3,13 @@
 import { Pat, PatIdent, PatTuple, PatRecord, PatArray, PatCtor } from '../../frontend/ast'
 import { SExpr } from '../../ir/semantic_ir'
 import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../../checker/registry'
-import { CppExpr, CppStmt, CppMember, CppIndex, CppCall, CppIdent } from '../../cpp/cpp_ast'
-import { print_expr } from '../../cpp/cpp_printer'
+import { CppExpr, CppStmt, CppMember, CppIndex, CppCall, CppIdent, CppUnary, CppBinary, CppTypeName, CppTypeRef, CppConstDecl } from '../../cpp/cpp_ast'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
 import { pat_bind_names } from '../expr/match_analysis'
-import { gen_let_array_rest_slice } from '../expr/let_pat'
 
 fn member_access(object_name: string, field_name: string) -> Shared<CppExpr> =
   Shared.new(CppMember(emit_helpers.make_identifier_cpp_expression(object_name), field_name, false))
@@ -20,6 +18,67 @@ fn index_access(object_name: string, index: i32) -> Shared<CppExpr> =
   Shared.new(CppIndex(
     emit_helpers.make_identifier_cpp_expression(object_name),
     emit_helpers.make_integer_cpp_expression(index)))
+
+fn method_call(object_name: string, method_name: string) -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    Shared.new(CppMember(emit_helpers.make_identifier_cpp_expression(object_name), method_name, false)),
+    []))
+
+fn variant_holds_alternative_expression(
+  variant_type_name: string,
+  subject_name: string
+) -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    Shared.new(CppIdent("std::holds_alternative<" + variant_type_name + ">")),
+    [emit_helpers.make_identifier_cpp_expression(subject_name)]))
+
+fn variant_get_expression(variant_type_name: string, subject_name: string) -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    Shared.new(CppIdent("std::get<" + variant_type_name + ">")),
+    [emit_helpers.make_identifier_cpp_expression(subject_name)]))
+
+fn array_rest_slice_expression(
+  array_name: string,
+  from_index: i32,
+  element_cpp_type: string
+) -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    Shared.new(CppIdent("mlc::Array<" + element_cpp_type + ">")),
+    [
+      Shared.new(CppBinary(
+        "+",
+        method_call(array_name, "cbegin"),
+        emit_helpers.make_integer_cpp_expression(from_index))),
+      method_call(array_name, "cend")
+    ]))
+
+fn append_statements(output: [Shared<CppStmt>], extra: [Shared<CppStmt>]) -> [Shared<CppStmt>] = do
+  let mut index = 0
+  while index < extra.length() do
+    output.push(extra[index])
+    index = index + 1
+  end
+  output
+end
+
+fn ctor_mismatch_else_statements(
+  has_else: bool,
+  else_body: Shared<SExpr>,
+  context: CodegenContext,
+  expression_codegen: (Shared<SExpr>, CodegenContext) -> Shared<CppExpr>
+) -> [Shared<CppStmt>] =
+  if has_else then
+    [emit_helpers.make_expression_cpp_statement(expression_codegen(else_body, context))]
+  else
+    [emit_helpers.make_expression_cpp_statement(
+      Shared.new(CppCall(Shared.new(CppIdent("std::abort")), [])))]
+  end
+
+fn variant_get_binding_statement(variant_type_name: string, binding_name: string, subject_name: string) -> Shared<CppStmt> =
+  Shared.new(CppConstDecl(
+    binding_name,
+    Shared.new(CppTypeRef(Shared.new(CppTypeName(variant_type_name)))),
+    variant_get_expression(variant_type_name, subject_name)))
 
 fn tuple_element_access(source_name: string, element_index: i32) -> Shared<CppExpr> =
   Shared.new(CppCall(
@@ -74,16 +133,6 @@ fn let_pattern_block(statements: [Shared<CppStmt>], rhs: Shared<CppExpr>) -> Sha
   end
   emit_helpers.make_block_cpp_statement(block_statements)
 end
-
-fn ctor_else_code(
-  has_else: bool,
-  else_body: Shared<SExpr>,
-  context: CodegenContext,
-  expression_codegen: (Shared<SExpr>, CodegenContext) -> Shared<CppExpr>
-) -> string =
-  if has_else then print_expr(expression_codegen(else_body, context)) + ";"
-  else 'std::abort();'
-  end
 
 export fn gen_let_pattern_cpp_statement(
   pat: Shared<Pat>,
@@ -174,29 +223,33 @@ export fn gen_let_pattern_cpp_statement(
         index = index + 1
       end
       if rest_name != '' then
-        array_statements.push(emit_helpers.make_fragment_cpp_statement(
-          "auto " + cpp_safe(rest_name) + " = " +
-            gen_let_array_rest_slice('__lt', subpatterns.length(), element_cpp) + ";"))
+        array_statements.push(emit_helpers.make_auto_cpp_statement(
+          cpp_safe(rest_name),
+          array_rest_slice_expression('__lt', subpatterns.length(), element_cpp)))
       end
       let_pattern_block(array_statements, rhs)
     end,
     PatCtor(constructor_name, subpatterns, _) => do
       const qualified_name = context.resolve(constructor_name)
       const is_generic = list_contains(context.generic_variants, constructor_name)
-      const type_arguments = if is_generic then '<auto>' else '' end
-      const destructure = if subpatterns.length() == 0 then ""
-        else "auto [" + pat_bind_names(subpatterns) + "] = __b;"
-        end
-      const ctor_statements: [Shared<CppStmt>] = []
+      const type_arguments = if is_generic then "<auto>" else "" end
+      const variant_type_name = qualified_name + type_arguments
+      let mut ctor_statements: [Shared<CppStmt>] = []
       ctor_statements.push(emit_helpers.make_auto_cpp_statement('__lt', rhs))
-      ctor_statements.push(emit_helpers.make_fragment_cpp_statement(
-        'if (!std::holds_alternative<' + qualified_name + type_arguments + '>(__lt)) { ' +
-          ctor_else_code(has_else, else_body, context, expression_codegen) + " }\n"))
-      ctor_statements.push(emit_helpers.make_fragment_cpp_statement(
-        'const ' + qualified_name + type_arguments + '& __b = std::get<' +
-          qualified_name + type_arguments + ">(__lt);\n"))
-      if destructure.length() > 0 then
-        ctor_statements.push(emit_helpers.make_fragment_cpp_statement(destructure + "\n"))
+      ctor_statements.push(emit_helpers.make_if_cpp_statement(
+        Shared.new(CppUnary("!", variant_holds_alternative_expression(variant_type_name, "__lt"))),
+        emit_helpers.make_block_cpp_statement(
+          ctor_mismatch_else_statements(has_else, else_body, context, expression_codegen)),
+        emit_helpers.make_block_cpp_statement([])))
+      ctor_statements.push(variant_get_binding_statement(variant_type_name, "__b", "__lt"))
+      if subpatterns.length() > 0 then
+        if tuple_subpatterns_are_simple_identifiers(subpatterns) then
+          ctor_statements = append_statements(
+            ctor_statements,
+            simple_tuple_ident_binding_statements(subpatterns, "__b"))
+        else
+          ctor_statements.push(structured_binding_statement(pat_bind_names(subpatterns), "__b"))
+        end
       end
       emit_helpers.make_block_cpp_statement(ctor_statements)
     end,
