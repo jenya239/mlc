@@ -5,13 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Planner|
-| driver_turns_since_plan | 0|
-| step_last | plan-refresh |
+| role_last | Driver|
+| driver_turns_since_plan | 1|
+| step_last | 1 |
 | run_tests | 778 |
-| self_host_diff | DIFF_EXIT=0 (step 4 baseline) |
-| TRACK_PLAN | TRACK_PREFIX_BRIDGE **open** STEP=1 |
+| self_host_diff | DIFF_EXIT=0 |
+| TRACK_PLAN | TRACK_PREFIX_BRIDGE step 1 done |
 | agent_token_last | cr-agent-729533ad-b637-44cc-8ea9-fea091f4cdb2 |
+
+### Turn 2026-05-30 (Driver PREFIX_BRIDGE step 1 — selective prefix bridge)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 1 |
+| done | prefix_statements_need_string_bridge; unit-if do/end prefix; simple let prefix native |
+| verify | 778 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_PREFIX_BRIDGE |
 
 ### Turn 2026-05-30 (Planner plan-refresh — PREFIX_BRIDGE)
 

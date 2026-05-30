@@ -66,7 +66,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=1** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — narrow `expression_needs_string_bridge`; prefix-only blocks native.
+**STEP=2** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — native while/for/break in return-body prefix.
 
 ## Planner checklist (2026-05-30 plan-refresh — PREFIX_BRIDGE)
 

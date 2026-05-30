@@ -1,7 +1,7 @@
 // Return-site code generation: gen_return_body, gen_fn_body.
 // Imports gen_expr / gen_stmts_str / gen_try_unwrap from eval; not called back by eval.
 
-import { SExpr, SStmt, SExprUnit, SExprQuestion, SExprBlock, SExprIf, SExprMatch } from '../../ir/semantic_ir'
+import { SExpr, SStmt, SExprUnit, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SExprWhile, SExprFor, SStmtBreak, SStmtContinue, SStmtReturn, SStmtExpr } from '../../ir/semantic_ir'
 import { CppExpr, CppStmt } from '../../cpp/cpp_ast'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
@@ -201,12 +201,42 @@ fn gen_return_block_body_cpp(
   }
 end
 
+fn prefix_control_flow_expression_needs_string_bridge(expression: Shared<SExpr>) -> bool =
+  match expression {
+    SExprWhile(_, _, _, _) => true,
+    SExprFor(_, _, _, _, _) => true,
+    SExprIf(_, then_expression, else_expression, _, _) =>
+      prefix_control_flow_expression_needs_string_bridge(then_expression)
+        || prefix_control_flow_expression_needs_string_bridge(else_expression),
+    SExprBlock(block_statements, result_expression, _, _) =>
+      prefix_statements_need_string_bridge(block_statements)
+        || prefix_control_flow_expression_needs_string_bridge(result_expression),
+    SExprMatch(_, arms, _, _) =>
+      arms.any(arm => prefix_control_flow_expression_needs_string_bridge(arm.body)),
+    _ => false
+  }
+
+fn prefix_statement_needs_string_bridge(statement: Shared<SStmt>) -> bool =
+  match statement {
+    SStmtBreak(_) => true,
+    SStmtContinue(_) => true,
+    SStmtReturn(_, _) => true,
+    SStmtExpr(expression, _) =>
+      match expression {
+        SExprIf(_, _, _, _, _) => true,
+        _ => prefix_control_flow_expression_needs_string_bridge(expression)
+      },
+    _ => false
+  }
+
+fn prefix_statements_need_string_bridge(statements: [Shared<SStmt>]) -> bool =
+  statements.any(statement => prefix_statement_needs_string_bridge(statement))
+
 fn expression_needs_string_bridge(expression: Shared<SExpr>) -> bool =
   match expression {
     SExprBlock(block_statements, result_expression, _, _) =>
-      if block_statements.length() > 0 then true
-      else expression_needs_string_bridge(result_expression)
-      end,
+      prefix_statements_need_string_bridge(block_statements)
+        || expression_needs_string_bridge(result_expression),
     SExprIf(_, then_expression, else_expression, _, _) =>
       expression_needs_string_bridge(then_expression) || expression_needs_string_bridge(else_expression),
     SExprMatch(_, arms, _, _) =>

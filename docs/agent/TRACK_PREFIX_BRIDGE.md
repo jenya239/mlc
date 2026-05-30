@@ -21,7 +21,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Prefix-only return blocks — narrow `expression_needs_string_bridge` (no bridge for prefix stmts alone); fix first self-host gap | pending |
+| 1 | Prefix-only return blocks — selective `prefix_statements_need_string_bridge` (while/for/break/return/unit-if prefix); not all prefix stmts | done |
 | 2 | While/for/break/continue in return-body prefix — native stmt codegen valid inside `CppFnDef` | pending |
 | 3 | Nested if/match arms with inner prefix blocks — native branch bodies without string fallback | pending |
 | 4 | Drop `return_body_needs_string_bridge` from `function_needs_string_bridge`; wire always-native fn defs (non-template) | pending |
