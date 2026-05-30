@@ -10,7 +10,7 @@
 | step_last | 5 |
 | run_tests | 771 |
 | TRACK_PLAN | TRACK_STMT_BRIDGE **closed** |
-| agent_token_last | (register this turn) |
+| agent_token_last | cr-agent-b46a4883-fe40-4984-8d3c-fe752a8f94d7 |
 
 ### Turn 2026-05-30 (Driver STMT_BRIDGE step 5 — close track)
 
