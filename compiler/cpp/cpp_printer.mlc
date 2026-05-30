@@ -3,7 +3,7 @@
 import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppCastKind, CppCastStatic, CppCastDynamic, CppCastReinterpret, CppCastConst,
          CppCapture, CppParam,
-         CppStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppStmtFragment,
+         CppStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppStructuredBinding, CppStmtFragment,
          CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppDeclFragment,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
@@ -243,6 +243,9 @@ fn range_for_statement(variable_name: string, range_code: string, body_code: str
 fn auto_declaration(name: string, initializer_code: string) -> string =
   `auto ${name} = ${initializer_code};`
 
+fn structured_binding_declaration(binding_names: [string], initializer_code: string) -> string =
+  `auto [${print_comma_separated_strings(binding_names)}] = ${initializer_code};`
+
 fn constexpr_auto_declaration(name: string, initializer_code: string) -> string =
   `constexpr auto ${name} = ${initializer_code};`
 
@@ -344,6 +347,8 @@ fn print_statement_node(statement: Shared<CppStmt>, depth: i32) -> string =
         print_expr(range_expression),
         formatted_block(print_statements(body, depth + 1), depth)
       ),
+    CppStructuredBinding(binding_names, initializer) =>
+      structured_binding_declaration(binding_names, print_expr(initializer)),
     CppStmtFragment(fragment) => fragment
   }
 

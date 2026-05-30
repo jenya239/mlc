@@ -5,7 +5,7 @@ import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
          CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
-         CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
+         CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
          CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
          CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
@@ -144,6 +144,12 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_statement CppConstexprAutoDecl',
     print_statement(Shared.new(CppConstexprAutoDecl('limit', Shared.new(CppInt(42))))),
     'constexpr auto limit = 42;'))
+
+  results.push(assert_eq_str('print_statement CppStructuredBinding',
+    print_statement(Shared.new(CppStructuredBinding(
+      ['first', 'second'],
+      Shared.new(CppIdent('__lt'))))),
+    'auto [first, second] = __lt;'))
 
   results.push(assert_eq_str('print_statement CppStmtFragment',
     print_statement(Shared.new(CppStmtFragment('if (ready) { step(); }'))),

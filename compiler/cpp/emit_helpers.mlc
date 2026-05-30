@@ -1,6 +1,6 @@
 // Builders for leaf CppExpr / CppStmt nodes (Phase 2). No dependency on codegen/.
 
-import { CppExpr, CppInt, CppStr, CppBool, CppIdent, CppStmt, CppAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppConstexprAutoDecl, CppStmtFragment, CppDecl, CppDeclFragment } from './cpp_ast'
+import { CppExpr, CppInt, CppStr, CppBool, CppIdent, CppStmt, CppAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppConstexprAutoDecl, CppStructuredBinding, CppStmtFragment, CppDecl, CppDeclFragment } from './cpp_ast'
 
 export fn make_integer_cpp_expression(integer_value: i32) -> Shared<CppExpr> =
   Shared.new(CppInt(integer_value))
@@ -54,6 +54,12 @@ export fn make_for_cpp_statement(
   body: [Shared<CppStmt>]
 ) -> Shared<CppStmt> =
   Shared.new(CppFor(variable_name, range_expression, body))
+
+export fn make_structured_binding_cpp_statement(
+  binding_names: [string],
+  initializer: Shared<CppExpr>
+) -> Shared<CppStmt> =
+  Shared.new(CppStructuredBinding(binding_names, initializer))
 
 export fn make_fragment_cpp_declaration(code: string) -> Shared<CppDecl> =
   Shared.new(CppDeclFragment(code))

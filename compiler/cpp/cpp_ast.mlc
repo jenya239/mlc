@@ -25,6 +25,7 @@ export type CppStmt =
   | CppIf(Shared<CppExpr>, Shared<CppStmt>, Shared<CppStmt>)
   | CppWhile(Shared<CppExpr>, Shared<CppStmt>)
   | CppFor(string, Shared<CppExpr>, [Shared<CppStmt>])
+  | CppStructuredBinding([string], Shared<CppExpr>)
   | CppStmtFragment(string)
 
 export type CppExpr =
