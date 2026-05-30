@@ -74,7 +74,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - [x] All prior bridge tracks closed (PREFIX_BRIDGE `174b82a`)
 - [x] Priority: stability > security > performance → FRAGMENT_BRIDGE (Phase 2 codegen)
 - [x] Deferred: template native, BOOTSTRAP, parser panic audit (security backlog)
-- [ ] Driver enqueued STEP=1
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-30 plan-refresh — PREFIX_BRIDGE close)
 

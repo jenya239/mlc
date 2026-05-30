@@ -11,7 +11,7 @@
 | run_tests | 781 |
 | self_host_diff | DIFF_EXIT=0 |
 | TRACK_PLAN | TRACK_FRAGMENT_BRIDGE opened |
-| agent_token_last | cr-agent-20713688-3684-4cf4-ab40-a0d7e90872d7 |
+| agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
 
 ### Turn 2026-05-30 (Planner plan-refresh — FRAGMENT_BRIDGE)
 
