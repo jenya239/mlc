@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-All binding bridge tracks closed. **Planner plan-refresh** — next track from PLAN backlog.
+[TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) **open** STEP=1 — CppFnProto/CppFnDef template_prefix + printer.
 
 ## Step sizing (good vs bad)
 
