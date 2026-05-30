@@ -2,24 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) (**closed**, `3e47ca4`)
 
-## Status: **active** (step 5 pending)
+## Status: **closed**
 
 **Goal:** eliminate `stmt_via_string_bridge` in `codegen/stmt_cpp.mlc` — native `CppStmt` for remaining statement arms that round-trip through `print_expr` → string → `CppStmtFragment`.
-
-**Constraints:**
-- One concern per sub-step; no `compiler/` + `lib/mlc/` in one commit.
-- Self-host gate when `compiler/**` touched: `build_bin.sh` + diff empty.
-
-## Verify gate (every step)
-
-```
-bundle exec rake test_compiler_mlc   # 770 pass (baseline post step 4)
-compiler/build.sh
-compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
-.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
-```
 
 ---
 
@@ -29,18 +14,25 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `SStmtLet` / `SStmtLetConst` — question, block, if initializer paths native | done (`b158885`) |
 | 3 | `SStmtExpr` — assign, if/while/for/with/block native CppExprStmt | done (`59e6d5a`) |
 | 4 | `SStmtLetPat` — native CppStmt decomposition | done (`60315e8`) |
-| 5 | Remove `stmt_via_string_bridge`; audit `CppStmtFragment`; close track | pending |
+| 5 | Remove `stmt_via_string_bridge`; audit `CppStmtFragment`; close track | done |
 
-## Survivors (post step 4)
+## Step 5 audit (`CppStmtFragment` survivors)
 
-`SStmtLetPat` native via `let_pat_cpp` (CppBlock/CppAutoDecl + fragments). Remaining bridge: `SStmtLet` + `Map.new`.
+`stmt_via_string_bridge` **removed** from `stmt_cpp.mlc`. `SStmtLet` + `Map.new` native via `CppCall` on typed `mlc::HashMap<K,V>()`.
 
-## Next step (Driver)
+Remaining intentional `CppStmtFragment` (not stmt string bridge):
 
-**STEP=5** — remove `stmt_via_string_bridge`; audit `CppStmtFragment`; close track.
+| Site | Use |
+|------|-----|
+| `let_pat_cpp.mlc` | structured binding, array rest slice, ctor holds_alternative prelude |
+| `return_body.mlc` | `cpp_stmts_from_string_output` for multi-stmt return bodies (separate track) |
+| `mut_actual_argument.mlc` | mut-ref prelude statements |
+| `expr_visitor_cpp.mlc` | unit-if IIFE body fragments |
+| `emit_helpers.mlc` | printer/decl fragment helpers |
 
 ## Deferred (out of track)
 
 - Parser `ref mut` — [TRACK_PLAN.md](TRACK_PLAN.md) step 15.
 - Phase 4 `MLCC_BOOTSTRAP=1` — separate track (after stmt bridges stable).
-- `codegen/expr/expr.mlc` templates still used inside guarded match body strings.
+- `return_body` string → CppStmt migration.
+- `codegen/expr/expr.mlc` templates inside guarded match body strings.

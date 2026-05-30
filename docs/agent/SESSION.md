@@ -5,12 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Meta|
-| driver_turns_since_plan | 6|
-| step_last | meta-review|
-| run_tests | 770 |
-| TRACK_PLAN | TRACK_STMT_BRIDGE **active** (step 5) |
-| agent_token_last | cr-agent-ae94a0b9-ce3c-4398-bcd1-17d02f4efa82 |
+| role_last | Driver|
+| driver_turns_since_plan | 8|
+| step_last | 5 |
+| run_tests | 771 |
+| TRACK_PLAN | TRACK_STMT_BRIDGE **closed** |
+| agent_token_last | (register this turn) |
+
+### Turn 2026-05-30 (Driver STMT_BRIDGE step 5 — close track)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 5 |
+| done | remove stmt_via_string_bridge; Map.new native HashMap CppCall; +1 test; close track |
+| verify | 771 pass; self-host DIFF_EXIT=0 |
+| notes | CppStmtFragment survivors documented (let_pat, return_body, mut prelude) |
+| next | ROLE=Planner STEP=plan-refresh |
 
 ### Turn 2026-05-29 (Meta meta-review — orchestration recovery)
 

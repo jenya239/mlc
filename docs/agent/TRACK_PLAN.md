@@ -60,15 +60,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Parser parity (negative corpus):** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — **closed** (`d5442d6`)
 - **Expr fragment bridges:** [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) — **closed** (`91ece96`)
 - **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **closed** (`3e47ca4`)
-- **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **active** (step 5)
-
-## Next step (Driver)
-
-**STEP=5** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — remove `stmt_via_string_bridge`; close track.
+- **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed**
 
 ## Next step (Planner)
 
-_(await 8 driver turns or TRACK empty)_
+**plan-refresh** — pick next track from PLAN backlog (STMT_BRIDGE closed).
 
 ## Planner checklist (2026-05-29 plan-refresh — STMT_BRIDGE)
 

@@ -357,6 +357,18 @@ export fn codegen_tests() -> [TestResult] = do
     gen_stmts_str([Shared.new(SStmtLet('counter', false, si(1), i32_t(), span_unknown()))], ctx),
     'auto counter = 1;\n'))
 
+  const map_new_value = Shared.new(SExprMethod(
+    Shared.new(SExprIdent('Map', unk_t(), span_unknown())),
+    'new',
+    [],
+    empty_parameter_mutability_pattern(),
+    unk_t(),
+    span_unknown()))
+  const map_new_type = Shared.new(TGeneric('Map', [Shared.new(TString), Shared.new(TString)]))
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: let Map.new typed',
+    gen_stmts_str([Shared.new(SStmtLet('table', false, map_new_value, map_new_type, span_unknown()))], ctx),
+    'auto table = mlc::HashMap<mlc::String, mlc::String>();\n'))
+
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let question',
     gen_stmts_str([
       Shared.new(SStmtLet(

@@ -1,12 +1,13 @@
 // CppStmt dual path for statement codegen (Phase 2 step 16).
 
-import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod } from '../ir/semantic_ir'
-import { CppExpr, CppStmt } from '../cpp/cpp_ast'
-import { print_statement, print_expr } from '../cpp/cpp_printer'
+import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod, SExprIdent } from '../ir/semantic_ir'
+import { Type, TGeneric } from '../checker/registry'
+import { CppExpr, CppStmt, CppCall } from '../cpp/cpp_ast'
+import { print_statement } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext, GenStmtResult, mutate_context_from_statement } from './context'
 import { cpp_safe } from './cpp_naming'
-import * as stmt_eval from './stmt/stmt_eval'
+import { sem_type_to_cpp } from './decl/type_gen'
 import * as let_pat_cpp from './stmt/let_pat_cpp'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
 
@@ -73,24 +74,26 @@ fn strip_trailing_newline(text: string) -> string =
   else text
   end
 
-fn gen_expr_string_for_stmt_bridge(expression: Shared<SExpr>, context: CodegenContext) -> string =
-  print_expr(expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen))
+fn gen_typed_hash_map_empty_cpp(key_type_cpp: string, value_type_cpp: string) -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    emit_helpers.make_identifier_cpp_expression(`mlc::HashMap<${key_type_cpp}, ${value_type_cpp}>`),
+    []))
 
-fn stmt_via_string_bridge(
-  statement: Shared<SStmt>,
+fn gen_map_new_let_value_cpp(
+  value_type: Shared<Type>,
   context: CodegenContext,
-  try_counter: i32
-) -> GenStmtCppResult = do
-  const string_result = stmt_eval.eval_stmt_with_try(
-    statement,
-    context,
-    try_counter,
-    (expression, codegen_context) => gen_expr_string_for_stmt_bridge(expression, codegen_context))
-  GenStmtCppResult {
-    statement: cpp_stmt_from_string_output(string_result.output),
-    next_try: string_result.next_try
+  fallback: Shared<CppExpr>
+) -> Shared<CppExpr> =
+  match value_type {
+    TGeneric(type_name, type_args) =>
+      if type_name == 'Map' && type_args.length() == 2 then
+        gen_typed_hash_map_empty_cpp(
+          sem_type_to_cpp(context, type_args[0]),
+          sem_type_to_cpp(context, type_args[1]))
+      else fallback
+      end,
+    _ => fallback
   }
-end
 
 fn eval_stmt_cpp(
   statement: Shared<SStmt>,
@@ -113,7 +116,7 @@ fn eval_stmt_cpp(
         next_try: try_counter
       }
     },
-    SStmtLet(name, _, value, _, _) => match value {
+    SStmtLet(name, _, value, value_type, _) => match value {
       SExprQuestion(_, _, _) => GenStmtCppResult {
         statement: emit_helpers.make_auto_cpp_statement(
           cpp_safe(name),
@@ -124,8 +127,30 @@ fn eval_stmt_cpp(
         statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
         next_try: try_counter
       },
-      SExprMethod(_, method_name, _, _, _, _) =>
-        if method_name == "new" then stmt_via_string_bridge(statement, context, try_counter)
+      SExprMethod(map_object, method_name, _, _, _, _) =>
+        if method_name == "new" then match map_object {
+          SExprIdent(object_name, _, _) =>
+            if object_name == "Map" then GenStmtCppResult {
+              statement: emit_helpers.make_auto_cpp_statement(
+                cpp_safe(name),
+                gen_map_new_let_value_cpp(
+                  value_type,
+                  context,
+                  gen_expr_cpp_for_stmt_codegen(value, context))),
+              next_try: try_counter
+            }
+            else GenStmtCppResult {
+              statement: emit_helpers.make_auto_cpp_statement(
+                cpp_safe(name),
+                gen_expr_cpp_for_stmt_codegen(value, context)),
+              next_try: try_counter
+            }
+            end,
+          _ => GenStmtCppResult {
+            statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
+            next_try: try_counter
+          }
+        }
         else GenStmtCppResult {
           statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
           next_try: try_counter
