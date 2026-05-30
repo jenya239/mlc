@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) (**closed**, `7084227`)
 
-## Status: **active** (step 4 pending)
+## Status: **active** (step 5 pending)
 
 **Goal:** eliminate `cpp_stmts_from_string_output(gen_return_body(...))` in `codegen/stmt/return_body.mlc` — native `[Shared<CppStmt>]` for function/return bodies used by `decl_cpp.mlc`.
 
@@ -28,17 +28,18 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 1 | Leaf returns — unit, direct expr, `?` as native CppReturn/CppBlock | done |
 | 2 | `SExprBlock` return body — stmts via `gen_stmts_cpp` + trailing return | done |
 | 3 | Return if/else-if chains — native CppIf (no string fragment) | done |
-| 4 | `gen_return_body_cpp` fully native; `decl_cpp` wired; drop string round-trip | pending |
+| 4 | `gen_return_body_cpp` fully native; `decl_cpp` wired; drop string round-trip | done (`993a467`) |
 | 5 | Audit `cpp_stmts_from_string_output` callers; close track | pending |
 
-## Survivors (post step 3)
+## Survivors (post step 4)
 
-- `SExprMatch` trailing in block still via string bridge (recursive gen_return_body_cpp).
-- `decl.mlc`: string `gen_fn_body` (parallel path; step 4).
+- Complex return bodies (prefix stmts, nested if/while) — string bridge via `return_body_needs_string_bridge`.
+- `decl.mlc`: string `gen_fn_body` parallel path (tests / bridge fallback).
+- Extend forward segments still string fragments in `collect_fn_defs_cpp`.
 
 ## Next step (Driver)
 
-**STEP=4** — wire `decl_cpp`; drop string round-trip where fully native.
+**STEP=5** — audit `cpp_stmts_from_string_output` callers; close track.
 
 ## Deferred (out of track)
 

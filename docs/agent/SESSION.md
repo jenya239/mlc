@@ -6,11 +6,22 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 3|
-| step_last | 3 |
+| driver_turns_since_plan | 4|
+| step_last | 4 |
 | run_tests | 778 |
-| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 4) |
+| self_host_diff | DIFF_EXIT=0 |
+| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 5) |
 | agent_token_last | cr-agent-3f60bd9f-646e-4262-9fd8-1baf76fbca6d |
+
+### Turn 2026-05-30 (Driver RETURN_BODY step 4 — decl_cpp wire)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 4 |
+| done | collect_fn_defs_cpp + module fn_defs_cpp; recursive string bridge; fix append_string_segments |
+| verify | 778 pass; self-host DIFF_EXIT=0 |
+| commit | 993a467 |
+| next | ROLE=Driver STEP=5 TRACK_RETURN_BODY |
 
 ### Turn 2026-05-30 (Driver RETURN_BODY step 3 — if/else-if)
 
