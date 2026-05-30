@@ -10,7 +10,7 @@
 | step_last | 3 |
 | run_tests | 778 |
 | TRACK_PLAN | TRACK_RETURN_BODY **active** (step 4) |
-| agent_token_last | (register this turn) |
+| agent_token_last | cr-agent-3f60bd9f-646e-4262-9fd8-1baf76fbca6d |
 
 ### Turn 2026-05-30 (Driver RETURN_BODY step 3 — if/else-if)
 
