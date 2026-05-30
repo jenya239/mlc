@@ -1,7 +1,7 @@
 // CppStmt dual path for statement codegen (Phase 2 step 16).
 
-import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod, SExprIdent } from '../ir/semantic_ir'
-import { Type, TGeneric } from '../checker/registry'
+import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod, SExprIdent, SExprWhile, SExprFor, SExprIf, SExprBlock, SExprUnit } from '../ir/semantic_ir'
+import { Type, TGeneric, TUnit } from '../checker/registry'
 import { CppExpr, CppStmt, CppCall } from '../cpp/cpp_ast'
 import { print_statement } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
@@ -9,6 +9,7 @@ import { CodegenContext, GenStmtResult, mutate_context_from_statement } from './
 import { cpp_safe } from './cpp_naming'
 import { sem_type_to_cpp } from './decl/type_gen'
 import * as let_pat_cpp from './stmt/let_pat_cpp'
+import { stmts_final_ctx } from './stmt/statement_context'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
 
 fn gen_stmts_for_cpp_codegen(statements: [Shared<SStmt>], context: CodegenContext) -> string =
@@ -113,6 +114,127 @@ fn gen_map_new_let_value_cpp(
     _ => fallback
   }
 
+fn gen_for_statement_cpp(
+  variable_name: string,
+  iterator: Shared<SExpr>,
+  body_statements: [Shared<SStmt>],
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult = do
+  const iterator_cpp = gen_expr_cpp_for_stmt_codegen(iterator, context)
+  let mut body_context = context
+  const body_accumulated = eval_stmts_cpp_with_try(body_statements, body_context, try_counter)
+  GenStmtCppResult {
+    statement: emit_helpers.make_for_cpp_statement(
+      cpp_safe(variable_name),
+      iterator_cpp,
+      body_accumulated.statements),
+    next_try: body_accumulated.next_try
+  }
+end
+
+fn gen_while_statement_cpp(
+  condition: Shared<SExpr>,
+  body_statements: [Shared<SStmt>],
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult = do
+  const condition_cpp = gen_expr_cpp_for_stmt_codegen(condition, context)
+  let mut body_context = context
+  const body_accumulated = eval_stmts_cpp_with_try(body_statements, body_context, try_counter)
+  GenStmtCppResult {
+    statement: emit_helpers.make_while_cpp_statement(
+      condition_cpp,
+      emit_helpers.make_block_cpp_statement(body_accumulated.statements)),
+    next_try: body_accumulated.next_try
+  }
+end
+
+fn if_statement_has_unit_else(else_expression: Shared<SExpr>) -> bool =
+  match else_expression {
+    SExprUnit(_, _) => true,
+    SExprBlock(_, result_expression, _, _) =>
+      match result_expression {
+        SExprUnit(_, _) => true,
+        _ => false
+      },
+    _ => false
+  }
+
+fn append_block_trailing_cpp(
+  block_statements: [Shared<CppStmt>],
+  result_expression: Shared<SExpr>,
+  final_context: CodegenContext,
+  try_counter: i32
+) -> [Shared<CppStmt>] = do
+  let mut output = block_statements
+  match result_expression {
+    SExprUnit(_, _) => output,
+    SExprIf(condition, then_expression, else_expression, semantic_type, _) => do
+      output.push(gen_unit_if_statement_cpp(
+        condition, then_expression, else_expression, semantic_type, final_context, try_counter).statement)
+      output
+    end,
+    _ => do
+      output.push(emit_helpers.make_expression_cpp_statement(
+        gen_expr_cpp_for_stmt_codegen(result_expression, final_context)))
+      output
+    end
+  }
+end
+
+fn unit_if_branch_block_cpp(
+  branch_expression: Shared<SExpr>,
+  context: CodegenContext,
+  try_counter: i32
+) -> Shared<CppStmt> =
+  match branch_expression {
+    SExprBlock(statements, result_expression, _, _) => do
+      const final_context = stmts_final_ctx(statements, context)
+      let mut branch_context = context
+      const accumulated = eval_stmts_cpp_with_try(statements, branch_context, try_counter)
+      emit_helpers.make_block_cpp_statement(append_block_trailing_cpp(
+        accumulated.statements, result_expression, final_context, accumulated.next_try))
+    end,
+    SExprIf(condition, then_expression, else_expression, semantic_type, _) =>
+      gen_unit_if_statement_cpp(
+        condition, then_expression, else_expression, semantic_type, context, try_counter).statement,
+    _ => emit_helpers.make_block_cpp_statement([
+      emit_helpers.make_expression_cpp_statement(
+        gen_expr_cpp_for_stmt_codegen(branch_expression, context))])
+  }
+
+fn unit_if_else_branch_cpp(
+  else_expression: Shared<SExpr>,
+  context: CodegenContext,
+  try_counter: i32
+) -> Shared<CppStmt> =
+  match else_expression {
+    SExprUnit(_, _) => emit_helpers.make_block_cpp_statement([]),
+    SExprIf(condition, then_expression, nested_else_expression, semantic_type, _) =>
+      gen_unit_if_statement_cpp(
+        condition, then_expression, nested_else_expression, semantic_type, context, try_counter).statement,
+    _ => unit_if_branch_block_cpp(else_expression, context, try_counter)
+  }
+
+fn gen_unit_if_statement_cpp(
+  condition: Shared<SExpr>,
+  then_expression: Shared<SExpr>,
+  else_expression: Shared<SExpr>,
+  _if_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult = do
+  const condition_cpp = gen_expr_cpp_for_stmt_codegen(condition, context)
+  GenStmtCppResult {
+    statement: emit_helpers.make_if_cpp_statement(
+      condition_cpp,
+      unit_if_branch_block_cpp(then_expression, context, try_counter),
+      unit_if_else_branch_cpp(else_expression, context, try_counter)),
+    next_try: try_counter
+  }
+end
+
 fn eval_stmt_cpp(
   statement: Shared<SStmt>,
   context: CodegenContext,
@@ -197,6 +319,25 @@ fn eval_stmt_cpp(
           gen_expr_cpp_for_stmt_codegen(expression, context)),
         next_try: try_counter + 1
       },
+      SExprWhile(condition, body_statements, _, _) =>
+        gen_while_statement_cpp(condition, body_statements, context, try_counter),
+      SExprFor(variable_name, iterator, body_statements, _, _) =>
+        gen_for_statement_cpp(variable_name, iterator, body_statements, context, try_counter),
+      SExprIf(condition, then_expression, else_expression, semantic_type, _) =>
+        if if_statement_has_unit_else(else_expression) then
+          gen_unit_if_statement_cpp(
+            condition, then_expression, else_expression, semantic_type, context, try_counter)
+        else
+          match semantic_type {
+            TUnit => gen_unit_if_statement_cpp(
+              condition, then_expression, else_expression, semantic_type, context, try_counter),
+            _ => GenStmtCppResult {
+              statement: emit_helpers.make_expression_cpp_statement(
+                gen_expr_cpp_for_stmt_codegen(expression, context)),
+              next_try: try_counter
+            }
+          }
+        end,
       _ => GenStmtCppResult {
         statement: emit_helpers.make_expression_cpp_statement(
           gen_expr_cpp_for_stmt_codegen(expression, context)),

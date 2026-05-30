@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) **closed** (`91d6752`). Active: [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) STEP=2 — native while/for/break in return-body prefix.
+[TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) **closed** (`91d6752`). Active: [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) STEP=3 — nested if/match arms with prefix blocks.
 
 ## Step sizing (good vs bad)
 

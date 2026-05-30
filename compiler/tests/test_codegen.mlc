@@ -429,7 +429,7 @@ export fn codegen_tests() -> [TestResult] = do
       Shared.new(SStmtExpr(
         Shared.new(SExprWhile(sb(true), if_stmt_body, unit_t(), span_unknown())),
         span_unknown()))], ctx),
-    '[&]() {\nwhile (true) {\n0;\n}\n}();\n'))
+    'while (true) {\n0;\n}\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let const matches string',
     gen_stmts_str([Shared.new(SStmtLetConst('limit', si(42), i32_t(), span_unknown()))], ctx),

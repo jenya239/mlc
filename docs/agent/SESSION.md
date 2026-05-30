@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 1|
-| step_last | 1 |
+| driver_turns_since_plan | 2|
+| step_last | 2 |
 | run_tests | 778 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_PREFIX_BRIDGE step 1 done |
+| TRACK_PLAN | TRACK_PREFIX_BRIDGE step 2 done |
 | agent_token_last | cr-agent-27933e96-698a-4d6f-8939-d688d225210c |
+
+### Turn 2026-05-30 (Driver PREFIX_BRIDGE step 2 — native while/for/if prefix)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 2 |
+| done | stmt_cpp native CppWhile/CppFor/unit-if; drop prefix bridge for control flow |
+| verify | 778 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_PREFIX_BRIDGE |
 
 ### Turn 2026-05-30 (Driver PREFIX_BRIDGE step 1 — selective prefix bridge)
 
