@@ -11,7 +11,7 @@
 | run_tests | 778 |
 | self_host_diff | DIFF_EXIT=0 |
 | TRACK_PLAN | TRACK_PREFIX_BRIDGE step 2 done |
-| agent_token_last | cr-agent-27933e96-698a-4d6f-8939-d688d225210c |
+| agent_token_last | cr-agent-093e0dd6-b7db-4553-80c2-72c14ad2e7f4 |
 
 ### Turn 2026-05-30 (Driver PREFIX_BRIDGE step 2 — native while/for/if prefix)
 
