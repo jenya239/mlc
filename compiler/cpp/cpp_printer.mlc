@@ -225,6 +225,8 @@ fn print_statement_body(statement: Shared<CppStmt>, depth: i32) -> string =
   match statement {
     CppBlock(statements) =>
       formatted_block(print_statements(statements, depth + 1), depth),
+    CppIf(_, _, _) =>
+      print_statement_node(statement, depth),
     _ =>
       formatted_block(indent_text(depth + 1) + print_statement_node(statement, depth + 1), depth)
   }
@@ -300,6 +302,24 @@ fn print_variant_types(arms: [Shared<CppVariantArm>]) -> string = do
   parts.join(", ")
 end
 
+fn is_empty_cpp_block(statement: Shared<CppStmt>) -> bool =
+  match statement {
+    CppBlock(statements) => statements.length() == 0,
+    _ => false
+  }
+
+fn conditional_if_statement(
+  condition_code: string,
+  then_code: string,
+  else_branch: Shared<CppStmt>,
+  depth: i32
+) -> string =
+  if is_empty_cpp_block(else_branch) then
+    `if (${condition_code}) ${then_code}`
+  else
+    if_statement(condition_code, then_code, print_statement_body(else_branch, depth))
+  end
+
 fn print_statement_node(statement: Shared<CppStmt>, depth: i32) -> string =
   match statement {
     CppAutoDecl(name, initializer) => auto_declaration(name, print_expr(initializer)),
@@ -311,11 +331,11 @@ fn print_statement_node(statement: Shared<CppStmt>, depth: i32) -> string =
     CppExprStmt(expression) => print_expr(expression) + ";",
     CppBlock(statements) => formatted_block(print_statements(statements, depth + 1), depth),
     CppIf(condition, then_branch, else_branch) =>
-      if_statement(
+      conditional_if_statement(
         print_expr(condition),
         print_statement_body(then_branch, depth),
-        print_statement_body(else_branch, depth)
-      ),
+        else_branch,
+        depth),
     CppWhile(condition, body) =>
       while_statement(print_expr(condition), print_statement_body(body, depth)),
     CppFor(variable_name, range_expression, body) =>

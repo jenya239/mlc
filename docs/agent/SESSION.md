@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 2|
-| step_last | 2 |
-| run_tests | 776 |
-| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 3) |
-| agent_token_last | cr-agent-607a1a08-2b43-4178-96bd-465fb151ba5c |
+| driver_turns_since_plan | 3|
+| step_last | 3 |
+| run_tests | 778 |
+| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 4) |
+| agent_token_last | (register this turn) |
+
+### Turn 2026-05-30 (Driver RETURN_BODY step 3 — if/else-if)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 3 |
+| done | gen_return_if_cpp_statement native CppIf; printer else-if + empty else; +2 tests |
+| verify | 778 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_RETURN_BODY |
 
 ### Turn 2026-05-30 (Driver RETURN_BODY step 2 — block bodies)
 

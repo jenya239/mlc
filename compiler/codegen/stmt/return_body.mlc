@@ -109,6 +109,39 @@ fn gen_return_body_leaf_cpp(body_expression: Shared<SExpr>, context: CodegenCont
     end
   }
 
+fn gen_return_body_branch_block(branch_expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppStmt> =
+  emit_helpers.make_block_cpp_statement(gen_return_body_cpp(branch_expression, context))
+
+fn gen_return_body_else_branch(else_expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppStmt> =
+  match else_expression {
+    SExprUnit(_, _) => emit_helpers.make_block_cpp_statement([]),
+    SExprIf(condition, then_expression, nested_else_expression, _, _) =>
+      gen_return_if_cpp_statement(condition, then_expression, nested_else_expression, context),
+    _ => gen_return_body_branch_block(else_expression, context)
+  }
+
+fn gen_return_if_cpp_statement(
+  condition: Shared<SExpr>,
+  then_expression: Shared<SExpr>,
+  else_expression: Shared<SExpr>,
+  context: CodegenContext
+) -> Shared<CppStmt> =
+  emit_helpers.make_if_cpp_statement(
+    gen_expr_for_return_body_cpp(condition, context),
+    gen_return_body_branch_block(then_expression, context),
+    gen_return_body_else_branch(else_expression, context))
+
+fn gen_return_if_body_cpp(
+  condition: Shared<SExpr>,
+  then_expression: Shared<SExpr>,
+  else_expression: Shared<SExpr>,
+  context: CodegenContext
+) -> [Shared<CppStmt>] = do
+  let statements: [Shared<CppStmt>] = []
+  statements.push(gen_return_if_cpp_statement(condition, then_expression, else_expression, context))
+  statements
+end
+
 fn gen_return_block_body_cpp(
   block_statements: [Shared<SStmt>],
   result_expression: Shared<SExpr>,
@@ -172,7 +205,7 @@ export fn gen_return_body_cpp(body_expression: Shared<SExpr>, context: CodegenCo
   match body_expression {
     SExprBlock(block_statements, result_expression, _, _) =>
       gen_return_block_body_cpp(block_statements, result_expression, context),
-    SExprIf(_, _, _, _, _) =>
-      cpp_stmts_from_string_output(gen_return_body(body_expression, context)),
+    SExprIf(condition, then_expression, else_expression, _, _) =>
+      gen_return_if_body_cpp(condition, then_expression, else_expression, context),
     _ => gen_return_body_leaf_cpp(body_expression, context)
   }

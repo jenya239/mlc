@@ -61,11 +61,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Expr fragment bridges:** [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) — **closed** (`91ece96`)
 - **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **closed** (`3e47ca4`)
 - **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed** (`7084227`)
-- **Return-body bridges:** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **active** (step 3)
+- **Return-body bridges:** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **active** (step 4)
 
 ## Next step (Driver)
 
-**STEP=3** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — return if/else-if chains native CppIf.
+**STEP=4** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — decl_cpp wire; drop string round-trip.
 
 ## Planner checklist (2026-05-30 plan-refresh — RETURN_BODY)
 

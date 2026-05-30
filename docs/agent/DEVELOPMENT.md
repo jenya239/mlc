@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **active** (step 3): if/else return bodies. [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) **closed** (`7084227`).
+[TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **active** (step 4): decl_cpp wire, drop string bridge. [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) **closed** (`7084227`).
 
 ## Step sizing (good vs bad)
 

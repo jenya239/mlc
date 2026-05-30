@@ -11,20 +11,22 @@ import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, 
 import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration } from '../codegen/decl_cpp'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
-import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SExprInt, SExprQuestion, SExprBlock, SStmtLet, SDeclFn, SDeclType, SDeclExported, SDeclExtend, sdecl_span } from '../ir/semantic_ir'
-import { Type, TypeRegistry, TI32, TString, TUnit, TUnknown } from '../checker/registry'
+import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SExprInt, SExprBool, SExprQuestion, SExprBlock, SExprIf, SStmtLet, SDeclFn, SDeclType, SDeclExported, SDeclExtend, sdecl_span } from '../ir/semantic_ir'
+import { Type, TypeRegistry, TI32, TString, TBool, TUnit, TUnknown } from '../checker/registry'
 import { gen_return_body, gen_return_body_cpp } from '../codegen/stmt/return_body'
 import { print_cpp_statements } from '../codegen/stmt_cpp'
 
 fn ti32()  -> Shared<Type> = Shared.new(TI32)
 fn tstr()  -> Shared<Type> = Shared.new(TString)
 fn tunit() -> Shared<Type> = Shared.new(TUnit)
+fn tbool() -> Shared<Type> = Shared.new(TBool)
 fn unk()   -> Shared<Type> = Shared.new(TUnknown)
 
 fn make_ident(name: string) -> Shared<SExpr> = Shared.new(SExprIdent(name, unk(), span_unknown()))
 fn make_bin(op: string, left: Shared<SExpr>, right: Shared<SExpr>) -> Shared<SExpr> = Shared.new(SExprBin(op, left, right, unk(), span_unknown()))
 fn make_unit_expr() -> Shared<SExpr> = Shared.new(SExprUnit(tunit(), span_unknown()))
 fn make_int(value: i32) -> Shared<SExpr> = Shared.new(SExprInt(value, ti32(), span_unknown()))
+fn make_bool(value: bool) -> Shared<SExpr> = Shared.new(SExprBool(value, tbool(), span_unknown()))
 fn make_question(inner: Shared<SExpr>) -> Shared<SExpr> =
   Shared.new(SExprQuestion(inner, unk(), span_unknown()))
 
@@ -300,6 +302,26 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('gen_return_body_cpp: block unit tail matches string',
     print_cpp_statements(gen_return_body_cpp(block_unit_body, context)),
     gen_return_body(block_unit_body, context)))
+
+  const if_return_body = Shared.new(SExprIf(
+    make_bool(true),
+    make_int(1),
+    make_int(0),
+    ti32(),
+    span_unknown()))
+  results.push(assert_eq_str('gen_return_body_cpp: if else return native',
+    print_cpp_statements(gen_return_body_cpp(if_return_body, context)),
+    'if (true) {\n  return 1;\n} else {\n  return 0;\n}\n'))
+
+  const else_if_return_body = Shared.new(SExprIf(
+    make_bool(true),
+    make_int(1),
+    Shared.new(SExprIf(make_bool(false), make_int(2), make_int(3), ti32(), span_unknown())),
+    ti32(),
+    span_unknown()))
+  results.push(assert_eq_str('gen_return_body_cpp: else-if return native',
+    print_cpp_statements(gen_return_body_cpp(else_if_return_body, context)),
+    'if (true) {\n  return 1;\n} else if (false) {\n  return 2;\n} else {\n  return 3;\n}\n'))
 
   results.push(assert_eq_str('gen_fn_decl_cpp: identity native return',
     print_cpp_declaration(gen_fn_decl_cpp('identity', [], [], [iparam('value')], ti32(), make_ident('value'), context)),
