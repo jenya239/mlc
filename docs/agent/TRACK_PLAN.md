@@ -68,7 +68,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=3** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — record-as-tuple fallback native.
+**STEP=4** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — PatCtor complex subpatterns native.
 
 ## Planner checklist (2026-05-30 plan-refresh — BINDING_BRIDGE open)
 

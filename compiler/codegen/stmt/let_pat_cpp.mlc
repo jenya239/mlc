@@ -188,12 +188,12 @@ export fn gen_let_pattern_cpp_statement(
             let_pattern_block(member_statements, rhs)
           end else
             let_pattern_block(
-              [structured_binding_statement(pat_bind_names(subpatterns), '__lt')],
+              [tuple_structured_binding_statement(subpatterns, '__lt')],
               rhs)
           end
         end else
           let_pattern_block(
-            [structured_binding_statement(pat_bind_names(subpatterns), '__lt')],
+            [tuple_structured_binding_statement(subpatterns, '__lt')],
             rhs)
         end
       end

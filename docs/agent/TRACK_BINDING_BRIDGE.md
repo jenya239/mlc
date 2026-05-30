@@ -23,7 +23,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | `CppStructuredBinding` in `cpp_ast` + `cpp_printer` + emit_helpers | done |
 | 2 | PatTuple / TPair non–PatIdent fallback — native structured binding | done |
-| 3 | Record-as-tuple fallback paths — native structured binding | pending |
+| 3 | Record-as-tuple fallback paths — native structured binding | done |
 | 4 | PatCtor complex subpatterns — native structured binding | pending |
 | 5 | Remove `structured_binding_statement` fragment helper; audit; close track | pending |
 
