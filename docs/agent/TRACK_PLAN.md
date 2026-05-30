@@ -63,11 +63,18 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed** (`7084227`)
 - **Return-body bridges:** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **closed** (step 5 audit)
 - **Prefix return-body bridge:** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — **closed** (step 5 audit)
-- **CppStmtFragment elimination:** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — **open** (stability)
+- **CppStmtFragment elimination:** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — **closed** (step 5 audit)
 
-## Next step (Driver)
+## Next step (Planner)
 
-**STEP=5** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — audit survivors; close track.
+**plan-refresh** — pick next track from PLAN backlog (stability > security > performance).
+
+## Planner checklist (2026-05-30 plan-refresh — FRAGMENT_BRIDGE close)
+
+- [x] TRACK_FRAGMENT_BRIDGE closed (5/5 steps; step 5 audit)
+- [x] Native paths cleared: PatTuple PatIdent, PatRecord/Array/Ctor, mut prelude, return_body `?`
+- [x] Survivors documented: structured_binding fallback, string paths, template/decl bridges
+- [ ] Planner enqueued plan-refresh
 
 ## Planner checklist (2026-05-30 plan-refresh — FRAGMENT_BRIDGE open)
 
