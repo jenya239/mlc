@@ -10,7 +10,7 @@
 | step_last | plan-refresh|
 | run_tests | 771 |
 | TRACK_PLAN | TRACK_RETURN_BODY **active** (step 1) |
-| agent_token_last | (register this turn) |
+| agent_token_last | cr-agent-85cc3274-fabd-418a-a8fd-aef4d014d9b6 |
 
 ### Turn 2026-05-30 (Planner plan-refresh — RETURN_BODY)
 
