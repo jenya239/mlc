@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed** (stmt_via_string_bridge removed; CppStmtFragment audit in track). [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) **closed** (`3e47ca4`). Next: Planner plan-refresh.
+[TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **active** (step 1): native return-body CppStmt in `return_body.mlc` (PLAN §Phase 2). [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) **closed** (`7084227`).
 
 ## Step sizing (good vs bad)
 

@@ -60,11 +60,19 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Parser parity (negative corpus):** [TRACK_PARSER_PARITY.md](TRACK_PARSER_PARITY.md) — **closed** (`d5442d6`)
 - **Expr fragment bridges:** [TRACK_EXPR_BRIDGE.md](TRACK_EXPR_BRIDGE.md) — **closed** (`91ece96`)
 - **Match expr bridges:** [TRACK_MATCH_BRIDGE.md](TRACK_MATCH_BRIDGE.md) — **closed** (`3e47ca4`)
-- **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed**
+- **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed** (`7084227`)
+- **Return-body bridges:** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **active** (step 1)
 
-## Next step (Planner)
+## Next step (Driver)
 
-**plan-refresh** — pick next track from PLAN backlog (STMT_BRIDGE closed).
+**STEP=1** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — leaf return paths native in `return_body.mlc`.
+
+## Planner checklist (2026-05-30 plan-refresh — RETURN_BODY)
+
+- [x] TRACK_STMT_BRIDGE closed (`7084227`; 5/5 steps)
+- [x] TRACK_RETURN_BODY opened (5 steps: leaf, block, if/else, decl_cpp wire, audit close)
+- [x] PLAN §Phase 2 §3 — return_body string bridge (`cpp_stmts_from_string_output`)
+- [x] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-29 plan-refresh — STMT_BRIDGE)
 

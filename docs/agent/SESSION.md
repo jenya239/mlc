@@ -5,12 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Driver|
-| driver_turns_since_plan | 8|
-| step_last | 5 |
+| role_last | Planner|
+| driver_turns_since_plan | 0|
+| step_last | plan-refresh|
 | run_tests | 771 |
-| TRACK_PLAN | TRACK_STMT_BRIDGE **closed** |
-| agent_token_last | cr-agent-b46a4883-fe40-4984-8d3c-fe752a8f94d7 |
+| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 1) |
+| agent_token_last | (register this turn) |
+
+### Turn 2026-05-30 (Planner plan-refresh — RETURN_BODY)
+
+| turn | 2026-05-30 |
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_RETURN_BODY opened (5 steps); STMT_BRIDGE closed in backlog |
+| verify | n/a (docs only) |
+| next | ROLE=Driver STEP=1 TRACK_RETURN_BODY |
 
 ### Turn 2026-05-30 (Driver STMT_BRIDGE step 5 — close track)
 
