@@ -6,11 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 1|
-| step_last | 1 |
-| run_tests | 774 |
-| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 2) |
-| agent_token_last | cr-agent-6d22be4a-54a7-4ba7-b658-dad86de152e7 |
+| driver_turns_since_plan | 2|
+| step_last | 2 |
+| run_tests | 776 |
+| TRACK_PLAN | TRACK_RETURN_BODY **active** (step 3) |
+| agent_token_last | cr-agent-607a1a08-2b43-4178-96bd-465fb151ba5c |
+
+### Turn 2026-05-30 (Driver RETURN_BODY step 2 — block bodies)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 2 |
+| done | gen_return_block_body_cpp via gen_stmts_cpp_with_context; +2 tests |
+| verify | 776 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_RETURN_BODY |
 
 ### Turn 2026-05-30 (Driver RETURN_BODY step 1 — leaf returns)
 
