@@ -35,6 +35,24 @@ export fn gen_stmts_cpp(statements: [Shared<SStmt>], context: CodegenContext) ->
   gen_stmts_cpp_mut(statements, codegen_context)
 end
 
+export type GenStmtsCppWithContext = GenStmtsCppWithContext {
+  statements: [Shared<CppStmt>],
+  codegen_context: CodegenContext
+}
+
+export fn gen_stmts_cpp_with_context(
+  statements: [Shared<SStmt>],
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtsCppWithContext = do
+  let mut codegen_context = context
+  const accumulated = eval_stmts_cpp_with_try(statements, codegen_context, try_counter)
+  GenStmtsCppWithContext {
+    statements: accumulated.statements,
+    codegen_context: codegen_context
+  }
+end
+
 export fn cpp_stmt_from_string_output(output: string) -> Shared<CppStmt> =
   cpp_stmt_fragment_from_string_output(output)
 

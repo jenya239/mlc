@@ -1,13 +1,13 @@
 // Return-site code generation: gen_return_body, gen_fn_body.
 // Imports gen_expr / gen_stmts_str / gen_try_unwrap from eval; not called back by eval.
 
-import { SExpr, SStmt, SExprUnit, SExprQuestion, SExprBlock, SExprIf } from '../../ir/semantic_ir'
+import { SExpr, SStmt, SExprUnit, SExprQuestion, SExprBlock, SExprIf, SExprMatch } from '../../ir/semantic_ir'
 import { CppExpr, CppStmt } from '../../cpp/cpp_ast'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
 import * as expression_output from '../expr/expr'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'
-import { cpp_stmts_from_string_output } from '../stmt_cpp'
+import { cpp_stmts_from_string_output, gen_stmts_cpp_with_context } from '../stmt_cpp'
 import * as expr_visitor_cpp from '../../expr_visitor_cpp'
 
 fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
@@ -109,9 +109,70 @@ fn gen_return_body_leaf_cpp(body_expression: Shared<SExpr>, context: CodegenCont
     end
   }
 
+fn gen_return_block_body_cpp(
+  block_statements: [Shared<SStmt>],
+  result_expression: Shared<SExpr>,
+  context: CodegenContext
+) -> [Shared<CppStmt>] = do
+  const statements_with_context = gen_stmts_cpp_with_context(block_statements, context, 0)
+  let mut output_statements: [Shared<CppStmt>] = []
+  let mut prefix_index = 0
+  while prefix_index < statements_with_context.statements.length() do
+    output_statements.push(statements_with_context.statements[prefix_index])
+    prefix_index = prefix_index + 1
+  end
+  const final_context = statements_with_context.codegen_context
+  match result_expression {
+    SExprQuestion(inner_expression, _, _) => do
+      const tail_statements = gen_try_unwrap_return_statements_cpp(inner_expression, final_context)
+      let mut tail_index = 0
+      while tail_index < tail_statements.length() do
+        output_statements.push(tail_statements[tail_index])
+        tail_index = tail_index + 1
+      end
+      output_statements
+    end,
+    SExprUnit(_, _) => output_statements,
+    SExprIf(_, _, _, _, _) => do
+      const tail_statements = gen_return_body_cpp(result_expression, final_context)
+      let mut tail_index = 0
+      while tail_index < tail_statements.length() do
+        output_statements.push(tail_statements[tail_index])
+        tail_index = tail_index + 1
+      end
+      output_statements
+    end,
+    SExprMatch(_, _, _, _) => do
+      const tail_statements = gen_return_body_cpp(result_expression, final_context)
+      let mut tail_index = 0
+      while tail_index < tail_statements.length() do
+        output_statements.push(tail_statements[tail_index])
+        tail_index = tail_index + 1
+      end
+      output_statements
+    end,
+    SExprBlock(_, _, _, _) => do
+      const tail_statements = gen_return_body_cpp(result_expression, final_context)
+      let mut tail_index = 0
+      while tail_index < tail_statements.length() do
+        output_statements.push(tail_statements[tail_index])
+        tail_index = tail_index + 1
+      end
+      output_statements
+    end,
+    _ => do
+      output_statements.push(emit_helpers.make_return_cpp_statement(
+        gen_expr_for_return_body_cpp(result_expression, final_context)))
+      output_statements
+    end
+  }
+end
+
 export fn gen_return_body_cpp(body_expression: Shared<SExpr>, context: CodegenContext) -> [Shared<CppStmt>] =
   match body_expression {
-    SExprBlock(_, _, _, _) | SExprIf(_, _, _, _, _) =>
+    SExprBlock(block_statements, result_expression, _, _) =>
+      gen_return_block_body_cpp(block_statements, result_expression, context),
+    SExprIf(_, _, _, _, _) =>
       cpp_stmts_from_string_output(gen_return_body(body_expression, context)),
     _ => gen_return_body_leaf_cpp(body_expression, context)
   }

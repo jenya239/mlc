@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) (**closed**, `7084227`)
 
-## Status: **active** (step 2 pending)
+## Status: **active** (step 3 pending)
 
 **Goal:** eliminate `cpp_stmts_from_string_output(gen_return_body(...))` in `codegen/stmt/return_body.mlc` — native `[Shared<CppStmt>]` for function/return bodies used by `decl_cpp.mlc`.
 
@@ -26,7 +26,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Leaf returns — unit, direct expr, `?` as native CppReturn/CppBlock | done |
-| 2 | `SExprBlock` return body — stmts via `gen_stmts_cpp` + trailing return | pending |
+| 2 | `SExprBlock` return body — stmts via `gen_stmts_cpp` + trailing return | done |
 | 3 | Return if/else-if chains — native CppIf (no string fragment) | pending |
 | 4 | `gen_return_body_cpp` fully native; `decl_cpp` wired; drop string round-trip | pending |
 | 5 | Audit `cpp_stmts_from_string_output` callers; close track | pending |
