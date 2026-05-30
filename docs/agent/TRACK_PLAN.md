@@ -66,7 +66,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=3** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — nested if/match arms with prefix blocks native.
+**STEP=4** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — drop `return_body_needs_string_bridge` from `function_needs_string_bridge`.
 
 ## Planner checklist (2026-05-30 plan-refresh — PREFIX_BRIDGE)
 

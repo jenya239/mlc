@@ -1,13 +1,14 @@
 // Return-site code generation: gen_return_body, gen_fn_body.
 // Imports gen_expr / gen_stmts_str / gen_try_unwrap from eval; not called back by eval.
 
-import { SExpr, SStmt, SExprUnit, SExprQuestion, SExprBlock, SExprIf, SExprMatch } from '../../ir/semantic_ir'
+import { Type } from '../../checker/registry'
+import { SExpr, SStmt, SExprUnit, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SMatchArm, Span } from '../../ir/semantic_ir'
 import { CppExpr, CppStmt } from '../../cpp/cpp_ast'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
 import * as expression_output from '../expr/expr'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'
-import { gen_stmts_cpp_with_context } from '../stmt_cpp'
+import { gen_stmts_cpp_with_context, gen_stmts_cpp, print_cpp_statements } from '../stmt_cpp'
 import * as expr_visitor_cpp from '../../expr_visitor_cpp'
 
 fn gen_return_if_stmt(expr: Shared<SExpr>, context: CodegenContext) -> string =
@@ -75,8 +76,11 @@ export fn gen_return_body(expr: Shared<SExpr>, context: CodegenContext) -> strin
 export fn gen_fn_body(body_expr: Shared<SExpr>, context: CodegenContext) -> string =
   gen_return_body(body_expr, context)
 
+fn gen_stmts_for_return_body_cpp(statements: [Shared<SStmt>], context: CodegenContext) -> string =
+  print_cpp_statements(gen_stmts_cpp(statements, context))
+
 fn gen_expr_for_return_body_cpp(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
-  expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_str)
+  expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_return_body_cpp)
 
 fn gen_try_unwrap_return_statements_cpp(
   inner_expression: Shared<SExpr>,
@@ -201,19 +205,18 @@ fn gen_return_block_body_cpp(
   }
 end
 
-fn expression_needs_string_bridge(expression: Shared<SExpr>) -> bool =
-  match expression {
-    SExprBlock(_, result_expression, _, _) =>
-      expression_needs_string_bridge(result_expression),
-    SExprIf(_, then_expression, else_expression, _, _) =>
-      expression_needs_string_bridge(then_expression) || expression_needs_string_bridge(else_expression),
-    SExprMatch(_, arms, _, _) =>
-      arms.any(arm => expression_needs_string_bridge(arm.body)),
-    _ => false
-  }
-
-export fn return_body_needs_string_bridge(body_expression: Shared<SExpr>) -> bool =
-  expression_needs_string_bridge(body_expression)
+fn gen_return_match_body_cpp(
+  subject: Shared<SExpr>,
+  arms: [Shared<SMatchArm>],
+  match_type: Shared<Type>,
+  span: Span,
+  context: CodegenContext
+) -> [Shared<CppStmt>] = do
+  let statements: [Shared<CppStmt>] = []
+  statements.push(emit_helpers.make_return_cpp_statement(
+    gen_expr_for_return_body_cpp(Shared.new(SExprMatch(subject, arms, match_type, span)), context)))
+  statements
+end
 
 export fn gen_return_body_cpp(body_expression: Shared<SExpr>, context: CodegenContext) -> [Shared<CppStmt>] =
   match body_expression {
@@ -221,5 +224,13 @@ export fn gen_return_body_cpp(body_expression: Shared<SExpr>, context: CodegenCo
       gen_return_block_body_cpp(block_statements, result_expression, context),
     SExprIf(condition, then_expression, else_expression, _, _) =>
       gen_return_if_body_cpp(condition, then_expression, else_expression, context),
+    SExprMatch(subject, arms, match_type, span) =>
+      gen_return_match_body_cpp(subject, arms, match_type, span, context),
     _ => gen_return_body_leaf_cpp(body_expression, context)
   }
+
+fn expression_needs_string_bridge(_body_expression: Shared<SExpr>) -> bool =
+  false
+
+export fn return_body_needs_string_bridge(body_expression: Shared<SExpr>) -> bool =
+  expression_needs_string_bridge(body_expression)
