@@ -11,7 +11,7 @@
 | run_tests | 778 |
 | self_host_diff | DIFF_EXIT=0 |
 | TRACK_PLAN | TRACK_PREFIX_BRIDGE step 1 done |
-| agent_token_last | cr-agent-729533ad-b637-44cc-8ea9-fea091f4cdb2 |
+| agent_token_last | cr-agent-27933e96-698a-4d6f-8939-d688d225210c |
 
 ### Turn 2026-05-30 (Driver PREFIX_BRIDGE step 1 — selective prefix bridge)
 
