@@ -36,14 +36,19 @@ export fn first_arm_needs_deref(first_arm: Shared<SMatchArm>, subject: Shared<SE
     _ => subject_needs_deref(subject, context)
   }
 
-export fn pat_bind_names(sub_patterns: [Shared<Pat>]) -> string = do
-  let parts: [string] = []; let mut index = 0
+export fn pat_binding_name_list(sub_patterns: [Shared<Pat>]) -> [string] = do
+  let parts: [string] = []
+  let mut index = 0
   while index < sub_patterns.length() do
     const bind_name = match sub_patterns[index] {
       PatIdent(name, _) => cpp_safe(name),
       _ => '__' + index.to_string()
     }
-    parts.push(bind_name); index = index + 1
+    parts.push(bind_name)
+    index = index + 1
   end
-  parts.join(', ')
+  parts
 end
+
+export fn pat_bind_names(sub_patterns: [Shared<Pat>]) -> string =
+  pat_binding_name_list(sub_patterns).join(', ')

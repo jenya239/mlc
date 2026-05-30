@@ -533,6 +533,15 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_code_not_contains('gen_stmts_cpp_as_string: let tuple pair no structured binding fragment',
     gen_stmts_str([let_tuple_pair], ctx), 'auto ['))
 
+  const tuple_wild_pat = Shared.new(PatTuple(
+    [Shared.new(PatIdent('left', span_unknown())), Shared.new(PatWild(span_unknown()))],
+    span_unknown()))
+  const let_tuple_wild = Shared.new(SStmtLetPat(
+    tuple_wild_pat, false, sid('pair'), pair_type, false, letpat_else_body, span_unknown()))
+  results.push(assert_eq_str('gen_stmts_cpp: let tuple pair wild native structured binding',
+    gen_stmts_str([let_tuple_wild], ctx),
+    '{\n  auto __lt = pair;\n  auto [left, __1] = __lt;\n}\n'))
+
   const letpat_ctor_pat = Shared.new(PatCtor('Some', [Shared.new(PatIdent("v", span_unknown()))], span_unknown()))
   const letpat_with_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), true, letpat_else_body, span_unknown()))
   const letpat_no_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), false, letpat_else_body, span_unknown()))

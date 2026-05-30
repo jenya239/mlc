@@ -9,7 +9,7 @@ import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
-import { pat_bind_names } from '../expr/match_analysis'
+import { pat_bind_names, pat_binding_name_list } from '../expr/match_analysis'
 
 fn member_access(object_name: string, field_name: string) -> Shared<CppExpr> =
   Shared.new(CppMember(emit_helpers.make_identifier_cpp_expression(object_name), field_name, false))
@@ -120,6 +120,14 @@ fn simple_tuple_ident_binding_statements(
   statements
 end
 
+fn tuple_structured_binding_statement(
+  subpatterns: [Shared<Pat>],
+  source_name: string
+) -> Shared<CppStmt> =
+  emit_helpers.make_structured_binding_cpp_statement(
+    pat_binding_name_list(subpatterns),
+    emit_helpers.make_identifier_cpp_expression(source_name))
+
 fn structured_binding_statement(binding_names: string, source_name: string) -> Shared<CppStmt> =
   emit_helpers.make_fragment_cpp_statement("auto [" + binding_names + "] = " + source_name + ";")
 
@@ -153,7 +161,7 @@ export fn gen_let_pattern_cpp_statement(
           let_pattern_block(simple_tuple_ident_binding_statements(subpatterns, '__lt'), rhs)
         else
           let_pattern_block(
-            [structured_binding_statement(pat_bind_names(subpatterns), '__lt')],
+            [tuple_structured_binding_statement(subpatterns, '__lt')],
             rhs)
         end,
       _ => do

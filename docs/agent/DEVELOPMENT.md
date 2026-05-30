@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) **open** STEP=2 — PatTuple/TPair fallback native.
+[TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) **open** STEP=3 — record-as-tuple fallback native.
 
 ## Step sizing (good vs bad)
 

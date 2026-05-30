@@ -68,7 +68,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=2** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — PatTuple/TPair non–PatIdent fallback native.
+**STEP=3** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — record-as-tuple fallback native.
 
 ## Planner checklist (2026-05-30 plan-refresh — BINDING_BRIDGE open)
 
