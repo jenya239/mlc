@@ -63,10 +63,18 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Stmt string bridges:** [TRACK_STMT_BRIDGE.md](TRACK_STMT_BRIDGE.md) — **closed** (`7084227`)
 - **Return-body bridges:** [TRACK_RETURN_BODY.md](TRACK_RETURN_BODY.md) — **closed** (step 5 audit)
 - **Prefix return-body bridge:** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — **closed** (step 5 audit)
+- **CppStmtFragment elimination:** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — **open** (stability)
 
 ## Next step (Driver)
 
-**Planner** `STEP=plan-refresh` — no open PREFIX_BRIDGE steps.
+**STEP=1** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — PatTuple structured binding native in `let_pat_cpp`.
+
+## Planner checklist (2026-05-30 plan-refresh — FRAGMENT_BRIDGE open)
+
+- [x] All prior bridge tracks closed (PREFIX_BRIDGE `174b82a`)
+- [x] Priority: stability > security > performance → FRAGMENT_BRIDGE (Phase 2 codegen)
+- [x] Deferred: template native, BOOTSTRAP, parser panic audit (security backlog)
+- [ ] Driver enqueued STEP=1
 
 ## Planner checklist (2026-05-30 plan-refresh — PREFIX_BRIDGE close)
 

@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) **closed** (step 5 audit). Next: **Planner** `STEP=plan-refresh`.
+[TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) **open** STEP=1 — PatTuple structured binding native in `let_pat_cpp`.
 
 ## Step sizing (good vs bad)
 
