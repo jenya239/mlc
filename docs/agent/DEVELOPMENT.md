@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) **open** STEP=1 — PatTuple structured binding native in `let_pat_cpp`.
+[TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) **open** STEP=2 — PatRecord/PatArray/PatCtor destructure fragments.
 
 ## Step sizing (good vs bad)
 

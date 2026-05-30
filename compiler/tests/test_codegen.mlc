@@ -9,7 +9,7 @@ import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/decl/typ
 import { gen_program } from '../codegen/module'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
-import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, span_unknown, PatUnit } from '../frontend/ast'
+import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatInt, PatWild, PatOr, PatCtor, PatIdent, PatTuple, span_unknown, PatUnit } from '../frontend/ast'
 import { SExpr, SStmt, SMatchArm, SFieldVal, SExprInt, SExprStr, SExprBool, SExprUnit, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprArray, SExprMatch, SExprRecord, SExprLambda, SExprQuestion, SExprTuple, SStmtLet, SStmtLetConst, SStmtExpr, SStmtLetPat, SStmtBreak, SStmtContinue, SStmtReturn } from '../ir/semantic_ir'
 import { SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar } from '../ir/semantic_ir'
 import { SExprWith } from '../ir/semantic_ir'
@@ -516,6 +516,18 @@ export fn codegen_tests() -> [TestResult] = do
     Shared.new(PatIdent('value', span_unknown())), false, si(7), i32_t(), false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let pat ident',
     gen_stmts_str([letpat_ident], ctx), 'auto value = 7;\n'))
+
+  const tuple_pat = Shared.new(PatTuple(
+    [Shared.new(PatIdent('left', span_unknown())), Shared.new(PatIdent('right', span_unknown()))],
+    span_unknown()))
+  const pair_type = Shared.new(TPair(Shared.new(TI32), Shared.new(TI32)))
+  const let_tuple_pair = Shared.new(SStmtLetPat(
+    tuple_pat, false, sid('pair'), pair_type, false, letpat_else_body, span_unknown()))
+  results.push(assert_eq_str('gen_stmts_cpp_as_string: let tuple pair native std::get',
+    gen_stmts_str([let_tuple_pair], ctx),
+    '{\n  auto __lt = pair;\n  auto left = std::get<0>(__lt);\n  auto right = std::get<1>(__lt);\n}\n'))
+  results.push(assert_code_not_contains('gen_stmts_cpp_as_string: let tuple pair no structured binding fragment',
+    gen_stmts_str([let_tuple_pair], ctx), 'auto ['))
 
   const letpat_ctor_pat = Shared.new(PatCtor('Some', [Shared.new(PatIdent("v", span_unknown()))], span_unknown()))
   const letpat_with_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), true, letpat_else_body, span_unknown()))

@@ -3,7 +3,7 @@
 import { Pat, PatIdent, PatTuple, PatRecord, PatArray, PatCtor } from '../../frontend/ast'
 import { SExpr } from '../../ir/semantic_ir'
 import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../../checker/registry'
-import { CppExpr, CppStmt, CppMember, CppIndex } from '../../cpp/cpp_ast'
+import { CppExpr, CppStmt, CppMember, CppIndex, CppCall, CppIdent } from '../../cpp/cpp_ast'
 import { print_expr } from '../../cpp/cpp_printer'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext, lookup_fields_for_context } from '../context'
@@ -20,6 +20,46 @@ fn index_access(object_name: string, index: i32) -> Shared<CppExpr> =
   Shared.new(CppIndex(
     emit_helpers.make_identifier_cpp_expression(object_name),
     emit_helpers.make_integer_cpp_expression(index)))
+
+fn tuple_element_access(source_name: string, element_index: i32) -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    Shared.new(CppIdent("std::get<" + element_index.to_string() + ">")),
+    [emit_helpers.make_identifier_cpp_expression(source_name)]))
+
+fn pattern_is_identifier(pat: Shared<Pat>) -> bool =
+  match pat {
+    PatIdent(_, _) => true,
+    _ => false
+  }
+
+fn tuple_subpatterns_are_simple_identifiers(subpatterns: [Shared<Pat>]) -> bool = do
+  let mut index = 0
+  let mut all_simple = true
+  while index < subpatterns.length() do
+    if !pattern_is_identifier(subpatterns[index]) then all_simple = false end
+    index = index + 1
+  end
+  all_simple
+end
+
+fn simple_tuple_ident_binding_statements(
+  subpatterns: [Shared<Pat>],
+  source_name: string
+) -> [Shared<CppStmt>] = do
+  const statements: [Shared<CppStmt>] = []
+  let mut index = 0
+  while index < subpatterns.length() do
+    match subpatterns[index] {
+      PatIdent(binding_name, _) =>
+        statements.push(emit_helpers.make_auto_cpp_statement(
+          cpp_safe(binding_name),
+          tuple_element_access(source_name, index))),
+      _ => do end
+    }
+    index = index + 1
+  end
+  statements
+end
 
 fn structured_binding_statement(binding_names: string, source_name: string) -> Shared<CppStmt> =
   emit_helpers.make_fragment_cpp_statement("auto [" + binding_names + "] = " + source_name + ";")
@@ -60,9 +100,13 @@ export fn gen_let_pattern_cpp_statement(
       emit_helpers.make_auto_cpp_statement(cpp_safe(name), rhs),
     PatTuple(subpatterns, _) => match value_type {
       TTuple(_) | TPair(_, _) =>
-        let_pattern_block(
-          [structured_binding_statement(pat_bind_names(subpatterns), '__lt')],
-          rhs),
+        if tuple_subpatterns_are_simple_identifiers(subpatterns) then
+          let_pattern_block(simple_tuple_ident_binding_statements(subpatterns, '__lt'), rhs)
+        else
+          let_pattern_block(
+            [structured_binding_statement(pat_bind_names(subpatterns), '__lt')],
+            rhs)
+        end,
       _ => do
         const record_codegen_name = match value_type {
           TNamed(record_nominal_name) => record_nominal_name,

@@ -67,7 +67,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=1** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — PatTuple structured binding native in `let_pat_cpp`.
+**STEP=2** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — PatRecord/PatArray/PatCtor destructure fragments.
 
 ## Planner checklist (2026-05-30 plan-refresh — FRAGMENT_BRIDGE open)
 

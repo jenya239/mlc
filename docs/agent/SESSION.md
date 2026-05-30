@@ -5,13 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Planner|
-| driver_turns_since_plan | 0|
-| step_last | plan-refresh|
-| run_tests | 781 |
+| role_last | Driver|
+| driver_turns_since_plan | 1|
+| step_last | 1 |
+| run_tests | 783 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_FRAGMENT_BRIDGE opened |
+| TRACK_PLAN | TRACK_FRAGMENT_BRIDGE step 1 done |
 | agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
+
+### Turn 2026-05-30 (Driver FRAGMENT_BRIDGE step 1 — PatTuple native std::get)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 1 |
+| done | simple PatTuple/PatPair → std::get CppAutoDecl; no CppStmtFragment |
+| verify | 783 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_FRAGMENT_BRIDGE |
 
 ### Turn 2026-05-30 (Planner plan-refresh — FRAGMENT_BRIDGE)
 
