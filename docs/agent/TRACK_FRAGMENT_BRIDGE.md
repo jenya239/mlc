@@ -23,7 +23,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | `let_pat_cpp` — PatTuple structured binding without `CppStmtFragment` | done |
 | 2 | `let_pat_cpp` — PatRecord / PatArray / PatCtor destructure fragments | done |
-| 3 | `mut_actual_argument` — prelude `CppAutoDecl` native (no fragment lines) | pending |
+| 3 | `mut_actual_argument` — prelude `CppAutoDecl` native (no fragment lines) | done |
 | 4 | `return_body` — `?` unwrap prelude as native `CppIf`/`CppReturn` (no fragments) | pending |
 | 5 | Audit survivors; close track | pending |
 

@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) **open** STEP=3 — mut_actual_argument prelude native.
+[TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) **open** STEP=4 — return_body `?` prelude native.
 
 ## Step sizing (good vs bad)
 

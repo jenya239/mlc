@@ -3,7 +3,6 @@
 
 import { SExpr, SStmt, sexpr_type, SExprIdent, SExprField, SExprIndex } from '../../ir/semantic_ir'
 import { CppExpr, CppCall, CppLambda, CppCapture, CppType, CppTypeName, CppStmt } from '../../cpp/cpp_ast'
-import { print_expr } from '../../cpp/cpp_printer'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
 import { sem_type_to_cpp } from '../decl/type_gen'
@@ -115,10 +114,10 @@ export fn materialize_positional_actual_arguments_cpp(
         if mut_parameter_flags[position_index] != 0 &&
           !sexpr_is_stable_reference_for_cpp_mut_parameter(positional_argument_expression) then
           const holder_variable_name = `__mut_actual_argument_holder_${position_index.to_string()}`
-          const holder_type_spelling = sem_type_to_cpp(context, sexpr_type(positional_argument_expression))
           let prelude_statements = accumulator.prelude_statements
-          prelude_statements.push(emit_helpers.make_fragment_cpp_statement(
-            `${holder_type_spelling} ${holder_variable_name} = ${print_expr(evaluated_expression)};`))
+          prelude_statements.push(emit_helpers.make_auto_cpp_statement(
+            holder_variable_name,
+            evaluated_expression))
           MutActualArgumentMaterializationOutcomeCpp {
             prelude_statements: prelude_statements,
             materialized_argument_expressions:

@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 2|
-| step_last | 2 |
-| run_tests | 788 |
+| driver_turns_since_plan | 3|
+| step_last | 3 |
+| run_tests | 789 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_FRAGMENT_BRIDGE step 2 done |
+| TRACK_PLAN | TRACK_FRAGMENT_BRIDGE step 3 done |
 | agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
+
+### Turn 2026-05-30 (Driver FRAGMENT_BRIDGE step 3 — mut_actual_argument native)
+
+| turn | 2026-05-30 |
+| role | Driver |
+| step | 3 |
+| done | mut ref holder prelude uses CppAutoDecl instead of CppStmtFragment |
+| verify | 789 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_FRAGMENT_BRIDGE |
 
 ### Turn 2026-05-30 (Driver FRAGMENT_BRIDGE step 2 — record/array/ctor native)
 

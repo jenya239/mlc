@@ -218,6 +218,10 @@ export fn codegen_tests() -> [TestResult] = do
     'mutable first positional actual argument lowers with return prelude',
     gen_expr(outer_under_mut_actual_test_expression, ctx),
     '[&]()'))
+  results.push(assert_code_contains(
+    'mutable first positional actual argument holder auto decl',
+    gen_expr(outer_under_mut_actual_test_expression, ctx),
+    'auto __mut_actual_argument_holder_0'))
 
   // --- ExprIf -------------------------------------------------------------------
 
