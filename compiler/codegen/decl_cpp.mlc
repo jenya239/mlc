@@ -59,7 +59,7 @@ fn native_fn_proto_cpp(
   const safe_name = context.resolve(name)
   const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
   const parameters = gen_parameter_proto_items(prototype_context, params)
-  Shared.new(CppFnProto(return_type_cpp, safe_name, parameters))
+  Shared.new(CppFnProto('', return_type_cpp, safe_name, parameters))
 end
 
 fn native_fn_decl_cpp(
@@ -75,7 +75,7 @@ fn native_fn_decl_cpp(
   const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
   const parameters = gen_parameter_def_items(prototype_context, params)
   const body_statements = gen_return_body_cpp(body, body_context)
-  Shared.new(CppFnDef(return_type_cpp, safe_name, parameters, body_statements))
+  Shared.new(CppFnDef('', return_type_cpp, safe_name, parameters, body_statements))
 end
 
 export fn gen_fn_proto_cpp(

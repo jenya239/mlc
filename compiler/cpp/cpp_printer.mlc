@@ -267,11 +267,11 @@ fn struct_definition(name: string, fields_code: string) -> string =
 fn struct_field_line(type_code: string, field_name: string) -> string =
   `${type_code} ${field_name};`
 
-fn function_prototype(return_type: string, name: string, parameters_code: string) -> string =
-  `${return_type} ${name}(${parameters_code}) noexcept;\n`
+fn function_prototype(template_prefix: string, return_type: string, name: string, parameters_code: string) -> string =
+  `${template_prefix}${return_type} ${name}(${parameters_code}) noexcept;\n`
 
-fn function_definition(return_type: string, name: string, parameters_code: string, body_code: string) -> string =
-  `${return_type} ${name}(${parameters_code}) noexcept{\n${body_code}\n}\n`
+fn function_definition(template_prefix: string, return_type: string, name: string, parameters_code: string, body_code: string) -> string =
+  `${template_prefix}${return_type} ${name}(${parameters_code}) noexcept{\n${body_code}\n}\n`
 
 fn namespace_block(name: string, contents_code: string) -> string =
   `namespace ${name} {\n${contents_code}\n}`
@@ -358,10 +358,11 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
       if is_angle then include_angle(path) else include_quoted(path) end,
     CppUsing(alias, type_code) => using_alias(alias, type_code),
     CppStruct(name, fields) => struct_definition(name, print_struct_fields(fields)),
-    CppFnProto(return_type, name, parameters) =>
-      function_prototype(return_type, name, print_comma_separated_strings(parameters)),
-    CppFnDef(return_type, name, parameters, body) =>
+    CppFnProto(template_prefix, return_type, name, parameters) =>
+      function_prototype(template_prefix, return_type, name, print_comma_separated_strings(parameters)),
+    CppFnDef(template_prefix, return_type, name, parameters, body) =>
       function_definition(
+        template_prefix,
         return_type,
         name,
         print_comma_separated_strings(parameters),

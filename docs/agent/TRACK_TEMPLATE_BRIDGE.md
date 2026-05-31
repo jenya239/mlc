@@ -21,7 +21,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `CppFnProto`/`CppFnDef` — add `template_prefix` field + `cpp_printer` | pending |
+| 1 | `CppFnProto`/`CppFnDef` — add `template_prefix` field + `cpp_printer` | done |
 | 2 | `native_fn_proto_cpp` — wire `template_prefix` + `type_bounds` for template fns | pending |
 | 3 | `native_fn_decl_cpp` — template fn bodies native | pending |
 | 4 | Drop template branch from `function_proto_needs_string_bridge`; keep `main()` audit | pending |

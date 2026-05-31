@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) **open** STEP=1 — CppFnProto/CppFnDef template_prefix + printer.
+[TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) **open** STEP=2 — native template fn proto.
 
 ## Step sizing (good vs bad)
 

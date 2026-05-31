@@ -184,12 +184,29 @@ export fn cpp_printer_tests() -> [TestResult] = do
     "struct Point {\n  int x;\n};"))
 
   results.push(assert_eq_str('print_decl CppFnProto',
-    print_decl(Shared.new(CppFnProto('int', 'add', ['int left', 'int right']))),
+    print_decl(Shared.new(CppFnProto('', 'int', 'add', ['int left', 'int right']))),
     'int add(int left, int right) noexcept;\n'))
 
+  results.push(assert_eq_str('print_decl CppFnProto template',
+    print_decl(Shared.new(CppFnProto(
+      "template<typename T>\n",
+      "T",
+      'identity',
+      ['T value']))),
+    'template<typename T>\nT identity(T value) noexcept;\n'))
+
   results.push(assert_eq_str('print_decl CppFnDef',
-    print_decl(Shared.new(CppFnDef('int', 'answer', [], [Shared.new(CppReturn(Shared.new(CppInt(42))))]))),
+    print_decl(Shared.new(CppFnDef('', 'int', 'answer', [], [Shared.new(CppReturn(Shared.new(CppInt(42))))]))),
     'int answer() noexcept{\n  return 42;\n}\n'))
+
+  results.push(assert_eq_str('print_decl CppFnDef template',
+    print_decl(Shared.new(CppFnDef(
+      "template<typename T>\n",
+      "T",
+      'identity',
+      ['T value'],
+      [Shared.new(CppReturn(Shared.new(CppIdent('value'))))]))),
+    'template<typename T>\nT identity(T value) noexcept{\n  return value;\n}\n'))
 
   results.push(assert_eq_str('print_decl CppNamespace',
     print_decl(Shared.new(CppNamespace('detail', [Shared.new(CppUsing('Byte', 'unsigned char'))]))),
@@ -201,7 +218,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
     'using Value = std::variant<int>;'))
 
   const header_include = Shared.new(CppInclude(true, 'vector'))
-  const source_function = Shared.new(CppFnDef('int', 'main', [], [Shared.new(CppReturn(Shared.new(CppInt(0))))]))
+  const source_function = Shared.new(CppFnDef('', 'int', 'main', [], [Shared.new(CppReturn(Shared.new(CppInt(0))))]))
   const file = Shared.new(CppFile { header: [header_include], source: [source_function] })
   results.push(assert_eq_str('print_file header and source',
     print_file(file),

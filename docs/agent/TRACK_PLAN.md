@@ -69,7 +69,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=1** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — `CppFnProto`/`CppFnDef` template_prefix + printer.
+**STEP=2** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — native template fn proto.
 
 ## Planner checklist (2026-05-30 plan-refresh — TEMPLATE_BRIDGE open)
 
