@@ -6,14 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 3|
-| step_last | 3 |
-| run_tests | 818 |
+| driver_turns_since_plan | 4|
+| step_last | 4 |
+| run_tests | 823 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_DECL_BRIDGE step 3 done |
+| TRACK_PLAN | TRACK_DECL_BRIDGE step 4 done |
 | agent_token_last | cr-agent-f03ae7d3-1b0b-4c0e-ae57-8c4442adafaa |
 
-### Turn 2026-05-31 (Driver DECL_BRIDGE step 3 — gen_trait_decl_cpp)
+### Turn 2026-05-31 (Driver DECL_BRIDGE step 4 — collect_decl_parts_cpp native 0–1)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 4 |
+| done | decl_segment_cpp; collect_native_decl_segments_cpp; wire bundle type_fwds/type_defs |
+| verify | 823 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=5 TRACK_DECL_BRIDGE |
 
 | turn | 2026-05-31 |
 | role | Driver |

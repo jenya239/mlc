@@ -1,7 +1,7 @@
 // CppDecl dual path for declaration codegen (Phase 2 step 17).
 
 import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord } from '../frontend/ast'
-import { SDecl, SExpr, SDeclFn, SExprExtern, sdecl_inner } from '../ir/semantic_ir'
+import { SDecl, SExpr, SDeclFn, SDeclType, SDeclTrait, SDeclExported, SExprExtern, sdecl_inner } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
 import { CppDecl, CppFnProto, CppFnDef, CppExpr, CppStmt, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires } from '../cpp/cpp_ast'
 import { print_decl } from '../cpp/cpp_printer'
@@ -500,19 +500,71 @@ export fn extend_cpp_forward_segment_cpp(
     _ => empty_cpp_declarations()
   }
 
+fn decl_segment_cpp(declaration: Shared<SDecl>, context: CodegenContext, phase: i32) -> [Shared<CppDecl>] =
+  match declaration {
+    SDeclType(type_name, type_params, variants, derive_traits, _) =>
+      if phase == 0 then
+        gen_type_decl_fwd_cpp(context, type_name, type_params, variants)
+      else if phase == 1 then
+        gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits)
+      else
+        empty_cpp_declarations()
+      end,
+    SDeclTrait(name, type_params, methods, _) =>
+      if phase == 0 then
+        [gen_trait_decl_cpp(context, name, type_params, methods)]
+      else
+        empty_cpp_declarations()
+      end,
+    SDeclExported(inner_declaration) =>
+      if phase == 0 then match sdecl_inner(inner_declaration) {
+        SDeclType(type_name, type_params, variants, _, _) =>
+          gen_type_decl_fwd_cpp(context, type_name, type_params, variants),
+        SDeclTrait(name, type_params, methods, _) =>
+          [gen_trait_decl_cpp(context, name, type_params, methods)],
+        _ => empty_cpp_declarations()
+      }
+      else if phase == 1 then match sdecl_inner(inner_declaration) {
+        SDeclType(type_name, type_params, variants, derive_traits, _) =>
+          gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits),
+        _ => empty_cpp_declarations()
+      }
+      else empty_cpp_declarations()
+      end,
+    _ => empty_cpp_declarations()
+  }
+
+fn collect_native_decl_segments_cpp(
+  declarations: [Shared<SDecl>],
+  context: CodegenContext,
+  phase: i32
+) -> [Shared<CppDecl>] = do
+  let mut output: [Shared<CppDecl>] = []
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    output = append_cpp_declarations(output, decl_segment_cpp(declarations[declaration_index], context, phase))
+    declaration_index = declaration_index + 1
+  end
+  output
+end
+
 export fn collect_all_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundleCpp = do
-  const string_bundle = collect_all_decl_parts(declarations, context)
+  const string_fn_protos = collect_all_decl_parts(declarations, context).fn_protos
   DeclPartsBundleCpp {
-    type_fwds: cpp_decls_from_string_parts(string_bundle.type_fwds),
-    type_defs: cpp_decls_from_string_parts(string_bundle.type_defs),
-    fn_protos: cpp_decls_from_string_parts(string_bundle.fn_protos),
+    type_fwds: collect_decl_parts_cpp(declarations, context, 0),
+    type_defs: collect_decl_parts_cpp(declarations, context, 1),
+    fn_protos: cpp_decls_from_string_parts(string_fn_protos),
     fn_defs: collect_fn_defs_cpp(declarations, context)
   }
 end
 
 export fn collect_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext, phase: i32) -> [Shared<CppDecl>] =
-  if phase == 3 then collect_fn_defs_cpp(declarations, context)
-  else cpp_decls_from_string_parts(collect_decl_parts(declarations, context, phase))
+  if phase == 0 || phase == 1 then
+    collect_native_decl_segments_cpp(declarations, context, phase)
+  else if phase == 3 then
+    collect_fn_defs_cpp(declarations, context)
+  else
+    cpp_decls_from_string_parts(collect_decl_parts(declarations, context, phase))
   end
 
 fn empty_cpp_declarations() -> [Shared<CppDecl>] = do

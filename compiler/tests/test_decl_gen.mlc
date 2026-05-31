@@ -9,12 +9,12 @@ import { transform_program } from '../checker/transform/transform_decl'
 import { create_codegen_context } from '../codegen/context'
 import { gen_extend_wrapper_protos } from '../codegen/decl/decl_extend'
 import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main, extend_method_forward_segments, extend_cpp_forward_segment, collect_all_decl_parts } from '../codegen/decl/decl'
-import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration, print_cpp_declarations, extend_method_forward_segments_cpp, gen_extend_wrapper_protos_cpp, extend_cpp_forward_segment_cpp, collect_fn_defs_cpp, main_program_parameter_items_cpp, main_set_args_preamble_cpp, gen_type_decl_fwd_cpp, gen_type_decl_body_cpp, gen_trait_decl_cpp } from '../codegen/decl_cpp'
+import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration, print_cpp_declarations, extend_method_forward_segments_cpp, gen_extend_wrapper_protos_cpp, extend_cpp_forward_segment_cpp, collect_fn_defs_cpp, collect_decl_parts_cpp, collect_all_decl_parts_cpp, main_program_parameter_items_cpp, main_set_args_preamble_cpp, gen_type_decl_fwd_cpp, gen_type_decl_body_cpp, gen_trait_decl_cpp } from '../codegen/decl_cpp'
 import { gen_type_decl_fwd_only, gen_type_decl_body_only, gen_derive_methods } from '../codegen/decl/type_gen'
 import { main_program_parameter_list } from '../codegen/expr/expr'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
-import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SExprInt, SExprBool, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SExprWhile, SMatchArm, SStmtLet, SStmtExpr, SDeclFn, SDeclType, SDeclExported, SDeclExtend, sdecl_span } from '../ir/semantic_ir'
+import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SExprInt, SExprBool, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SExprWhile, SMatchArm, SStmtLet, SStmtExpr, SDeclFn, SDeclType, SDeclTrait, SDeclExported, SDeclExtend, sdecl_span } from '../ir/semantic_ir'
 import { Type, TypeRegistry, TI32, TString, TBool, TUnit, TUnknown } from '../checker/registry'
 import { gen_return_body, gen_return_body_cpp } from '../codegen/stmt/return_body'
 import { print_cpp_statements } from '../codegen/stmt_cpp'
@@ -51,6 +51,9 @@ fn generic_param(name: string) -> Shared<Param> =
 
 fn type_decl(name: string, type_params: [string], variants: [Shared<TypeVariant>], derive_traits: [string]) -> Shared<SDecl> =
   Shared.new(SDeclType(name, type_params, variants, derive_traits, span_unknown()))
+
+fn trait_decl(name: string, type_params: [string], methods: [Shared<SDecl>]) -> Shared<SDecl> =
+  Shared.new(SDeclTrait(name, type_params, methods, span_unknown()))
 
 fn extend_decl(type_name: string, trait_name: string, methods: [Shared<SDecl>]) -> Shared<SDecl> =
   Shared.new(SDeclExtend(type_name, trait_name, methods, span_unknown()))
@@ -463,6 +466,32 @@ export fn decl_gen_tests() -> [TestResult] = do
     gen_type_decl_body_only(context, 'Color', [],
       [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')]) +
     gen_derive_methods(context, 'Color', [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], ['Display'])))
+
+  const color_sum = type_decl('Color', [],
+    [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], [])
+  const display_trait = trait_decl('Display', [], [display_method])
+
+  results.push(assert_eq_str('collect_decl_parts_cpp phase 0 type matches string',
+    print_cpp_declarations(collect_decl_parts_cpp([color_sum], context, 0)),
+    collect_decl_parts([color_sum], context, 0).join('')))
+
+  results.push(assert_eq_str('collect_decl_parts_cpp phase 1 type matches string',
+    print_cpp_declarations(collect_decl_parts_cpp([color_sum], context, 1)),
+    collect_decl_parts([color_sum], context, 1).join('')))
+
+  results.push(assert_eq_str('collect_decl_parts_cpp phase 0 trait matches string',
+    print_cpp_declarations(collect_decl_parts_cpp([display_trait], context, 0)),
+    collect_decl_parts([display_trait], context, 0).join('')))
+
+  const bundle_declarations = [color_sum, display_trait]
+  const string_bundle = collect_all_decl_parts(bundle_declarations, context)
+  const native_bundle = collect_all_decl_parts_cpp(bundle_declarations, context)
+  results.push(assert_eq_str('collect_all_decl_parts_cpp type_fwds matches string',
+    print_cpp_declarations(native_bundle.type_fwds),
+    string_bundle.type_fwds.join('')))
+  results.push(assert_eq_str('collect_all_decl_parts_cpp type_defs matches string',
+    print_cpp_declarations(native_bundle.type_defs),
+    string_bundle.type_defs.join('')))
 
   results.push(assert_eq_str('gen_decl_cpp DeclFn native return',
     print_cpp_declaration(gen_decl_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),

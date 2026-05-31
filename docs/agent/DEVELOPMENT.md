@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) **open** STEP=4 — wire collect_decl_parts_cpp phases 0–1 native.
+[TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) **open** STEP=5 — audit survivors; close track.
 
 ## Step sizing (good vs bad)
 
