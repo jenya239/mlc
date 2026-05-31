@@ -385,6 +385,13 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declaration(gen_fn_decl_cpp('identity', [], [], [iparam('value')], ti32(), make_ident('value'), context)),
     'int identity(int value) noexcept{\n  return value;\n}\n'))
 
+  results.push(assert_code_contains('gen_fn_decl_cpp: template native prefix',
+    print_cpp_declaration(gen_fn_decl_cpp('identity', ["T"], [[]], [generic_param('value')], unk(), make_ident('value'), context)),
+    'template<typename T>'))
+  results.push(assert_code_contains('gen_fn_decl_cpp: template native return',
+    print_cpp_declaration(gen_fn_decl_cpp('identity', ["T"], [[]], [generic_param('value')], unk(), make_ident('value'), context)),
+    'return value'))
+
   results.push(assert_eq_str('gen_decl_cpp DeclFn native return',
     print_cpp_declaration(gen_decl_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
       make_bin("+", make_ident('left'), make_ident('right'))), context)),

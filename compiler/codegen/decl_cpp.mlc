@@ -73,6 +73,8 @@ end
 
 fn native_fn_decl_cpp(
   name: string,
+  type_params: [string],
+  type_bounds: [[string]],
   params: [Shared<Param>],
   return_type: Shared<Type>,
   body: Shared<SExpr>,
@@ -84,7 +86,12 @@ fn native_fn_decl_cpp(
   const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
   const parameters = gen_parameter_def_items(prototype_context, params)
   const body_statements = gen_return_body_cpp(body, body_context)
-  Shared.new(CppFnDef('', return_type_cpp, safe_name, parameters, body_statements))
+  Shared.new(CppFnDef(
+    function_declaration_template_prefix(type_params, type_bounds),
+    return_type_cpp,
+    safe_name,
+    parameters,
+    body_statements))
 end
 
 export fn gen_fn_proto_cpp(
@@ -110,10 +117,10 @@ export fn gen_fn_decl_cpp(
   body: Shared<SExpr>,
   context: CodegenContext
 ) -> Shared<CppDecl> =
-  if function_proto_needs_string_bridge(name, type_params, params) then
+  if name == 'main' && params.length() == 0 then
     cpp_decl_from_string_output(gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context))
   else
-    native_fn_decl_cpp(name, params, return_type, body, context)
+    native_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context)
   end
 
 export fn gen_decl_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
