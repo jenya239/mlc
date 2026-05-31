@@ -68,11 +68,24 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Native template fn decls:** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — **closed** (`6db2014` step 5 audit)
 - **Native extend forward segments:** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — **closed** (`52f5c2f` step 5 audit)
 - **Native zero-param main():** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — **closed** (`521f574` step 5 audit)
-- **Native non-fn decls:** [TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) — **open** (stability)
+- **Native non-fn decls:** [TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) — **closed** (`9e2d47e`)
+- **Native derive methods:** [TRACK_DERIVE_BRIDGE.md](TRACK_DERIVE_BRIDGE.md) — **open** (stability)
 
 ## Next step (Driver)
 
-**STEP=3** [TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) — `gen_trait_decl_cpp` native trait concept.
+**STEP=1** [TRACK_DERIVE_BRIDGE.md](TRACK_DERIVE_BRIDGE.md) — `gen_derive_display_cpp` native Display derive.
+
+## Planner checklist (2026-05-31 plan-refresh — DECL_BRIDGE close)
+
+- [x] TRACK_DECL_BRIDGE closed (`9e2d47e`; 5/5 steps)
+- [x] module.mlc → `collect_all_decl_parts_cpp`; SDeclType/SDeclTrait phases 0–1 native
+- [x] Priority: stability > security > performance → DERIVE_BRIDGE (derive methods in type body)
+- [x] Deferred: trait struct phase 4, extend body native, string-path track, BOOTSTRAP, parser `ref mut`
+- [x] Driver enqueued STEP=1
+
+## Next step (Planner)
+
+**plan-refresh** — after DERIVE_BRIDGE close or mid-track if blocked.
 
 ## Planner checklist (2026-05-31 plan-refresh — DECL_BRIDGE open)
 

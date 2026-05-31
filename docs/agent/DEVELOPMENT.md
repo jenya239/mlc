@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-TRACK_DECL_BRIDGE **closed**. Next: **Planner** `plan-refresh` — pick track from [TRACK_PLAN.md](TRACK_PLAN.md) backlog.
+[TRACK_DERIVE_BRIDGE.md](TRACK_DERIVE_BRIDGE.md) **open** STEP=1 — `gen_derive_display_cpp`.
 
 ## Step sizing (good vs bad)
 
