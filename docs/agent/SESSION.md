@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 4|
-| step_last | 4 |
+| driver_turns_since_plan | 5|
+| step_last | 5 |
 | run_tests | 805 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_EXTEND_BRIDGE step 4 done |
+| TRACK_PLAN | TRACK_EXTEND_BRIDGE closed |
 | agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
+
+### Turn 2026-05-31 (Driver EXTEND_BRIDGE step 5 — audit; close track)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 5 |
+| done | audit; TRACK_EXTEND_BRIDGE closed |
+| verify | 805 pass (step 4 gate); docs-only step 5 |
+| next | ROLE=Planner plan-refresh |
 
 ### Turn 2026-05-31 (Driver EXTEND_BRIDGE step 4 — wire collect_fn_defs_cpp)
 

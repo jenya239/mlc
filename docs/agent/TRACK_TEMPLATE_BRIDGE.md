@@ -35,7 +35,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |---------------|-------------------------------|-------|
 | `function_proto_needs_string_bridge` | `decl_cpp.mlc` (`gen_fn_proto_cpp`, `gen_fn_decl_cpp`) | **main() only** — zero-param entry needs argc/argv + `set_args` preamble |
 | `native_fn_proto_cpp` / `native_fn_decl_cpp` | `gen_fn_*_cpp` | all non-main fns including templates |
-| `cpp_decl_from_string_output` | `decl_cpp.mlc`, `module.mlc`, `collect_fn_defs_cpp` | extend forwards; non-fn decls; main() survivor |
+| `cpp_decl_from_string_output` | `decl_cpp.mlc`, `module.mlc`, `collect_fn_defs_cpp` | non-fn decls; main(); phase-4 trait struct |
 | `gen_fn_proto` / `gen_fn_decl` (string) | `decl.mlc` via bridge for main(); parallel path for non-fn decls | main uses `main_program_parameter_list` + `user_main_arguments_copy_into_runtime_statement` |
 
 Production fn proto/def (non-main): `gen_fn_proto_cpp` / `gen_fn_decl_cpp` → `native_fn_*_cpp` with `template_prefix` when generic.
@@ -45,7 +45,7 @@ Production fn proto/def (non-main): `gen_fn_proto_cpp` / `gen_fn_decl_cpp` → `
 | Site | Use |
 |------|-----|
 | `function_proto_needs_string_bridge` | zero-param `main()` proto/body string path |
-| `cpp_decl_from_string_output` | extend forwards, non-fn decls, main() |
+| `cpp_decl_from_string_output` | non-fn decls, main(), phase-4 trait struct |
 | `gen_stmts_str` / `stmt_cpp` fragment print | string parallel path |
 | `expr_visitor_cpp.mlc` | unit-if block arm via string `gen_stmts` |
 | `let_pat.mlc` / `match_gen.mlc` | string tuple destructure |
@@ -54,7 +54,6 @@ Production fn proto/def (non-main): `gen_fn_proto_cpp` / `gen_fn_decl_cpp` → `
 ## Deferred (out of track)
 
 - Native zero-param `main()` (argc/argv proto + `set_args` preamble as `CppStmt` nodes).
-- Extend forward segments native CppDecl.
 - `gen_stmts_str` / string expr visitor fragment elimination.
 - Phase 4 `MLCC_BOOTSTRAP=1`.
 - Parser `ref mut` — [TRACK_PLAN.md](TRACK_PLAN.md) step 15.

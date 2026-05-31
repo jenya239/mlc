@@ -66,11 +66,22 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **CppStmtFragment elimination:** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — **closed** (`49b7091`)
 - **Structured binding fragments:** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — **closed** (`3904513`)
 - **Native template fn decls:** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — **closed** (`6db2014` step 5 audit)
-- **Native extend forward segments:** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — **open** (stability)
+- **Native extend forward segments:** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — **closed** (`7ab42a8` step 5 audit)
 
 ## Next step (Driver)
 
-**STEP=5** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — audit; close track.
+**plan-refresh** — pick next track from PLAN backlog (stability > security > performance).
+
+## Planner checklist (2026-05-31 plan-refresh — EXTEND_BRIDGE close)
+
+- [x] TRACK_EXTEND_BRIDGE closed (`7ab42a8`; 5/5 steps)
+- [x] Native extend forwards in `collect_fn_defs_cpp`; string path parallel in `decl.mlc`
+- [x] Deferred: main native, non-fn decl native, string-path track, BOOTSTRAP
+- [x] Planner enqueued plan-refresh
+
+## Next step (Planner)
+
+**plan-refresh** — pick next track from PLAN backlog (stability > security > performance).
 
 ## Planner checklist (2026-05-31 plan-refresh — EXTEND_BRIDGE open)
 
