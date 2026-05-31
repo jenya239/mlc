@@ -44,15 +44,37 @@ fn prototype_context_for_function(context: CodegenContext, params: [Shared<Param
   else context
   end
 
-// Survivor: zero-param main() needs argc/argv proto + set_args preamble (decl.mlc only).
-fn function_proto_needs_string_bridge(name: string, _type_params: [string], params: [Shared<Param>]) -> bool =
+// Survivor until step 3: zero-param main() decl needs set_args preamble (decl.mlc string).
+fn function_decl_needs_string_bridge(name: string, _type_params: [string], params: [Shared<Param>]) -> bool =
   name == 'main' && params.length() == 0
 
-fn function_declaration_template_prefix(type_params: [string], type_bounds: [[string]]) -> string =
-  template_prefix(type_params) + requires_clause(type_params, type_bounds)
+fn function_parameter_proto_items(
+  name: string,
+  params: [Shared<Param>],
+  prototype_context: CodegenContext
+) -> [string] =
+  if name == 'main' && params.length() == 0 then
+    main_program_parameter_items_cpp()
+  else
+    gen_parameter_proto_items(prototype_context, params)
+  end
+
+fn function_parameter_def_items(
+  name: string,
+  params: [Shared<Param>],
+  prototype_context: CodegenContext
+) -> [string] =
+  if name == 'main' && params.length() == 0 then
+    main_program_parameter_items_cpp()
+  else
+    gen_parameter_def_items(prototype_context, params)
+  end
 
 export fn main_program_parameter_items_cpp() -> [string] =
   ['int argc', 'char** argv']
+
+fn function_declaration_template_prefix(type_params: [string], type_bounds: [[string]]) -> string =
+  template_prefix(type_params) + requires_clause(type_params, type_bounds)
 
 fn native_fn_proto_cpp(
   name: string,
@@ -65,7 +87,7 @@ fn native_fn_proto_cpp(
   const prototype_context = prototype_context_for_function(context, params)
   const safe_name = context.resolve(name)
   const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
-  const parameters = gen_parameter_proto_items(prototype_context, params)
+  const parameters = function_parameter_proto_items(name, params, prototype_context)
   Shared.new(CppFnProto(
     function_declaration_template_prefix(type_params, type_bounds),
     return_type_cpp,
@@ -86,7 +108,7 @@ fn native_fn_decl_cpp(
   const prototype_context = if params.length() > 0 && params[0].name == 'self' then body_context else context end
   const safe_name = context.resolve(name)
   const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
-  const parameters = gen_parameter_def_items(prototype_context, params)
+  const parameters = function_parameter_def_items(name, params, prototype_context)
   const body_statements = gen_return_body_cpp(body, body_context)
   Shared.new(CppFnDef(
     function_declaration_template_prefix(type_params, type_bounds),
@@ -104,11 +126,7 @@ export fn gen_fn_proto_cpp(
   return_type: Shared<Type>,
   context: CodegenContext
 ) -> Shared<CppDecl> =
-  if function_proto_needs_string_bridge(name, type_params, params) then
-    cpp_decl_from_string_output(gen_fn_proto(name, type_params, type_bounds, params, return_type, context))
-  else
-    native_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)
-  end
+  native_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)
 
 export fn gen_fn_decl_cpp(
   name: string,
@@ -119,7 +137,7 @@ export fn gen_fn_decl_cpp(
   body: Shared<SExpr>,
   context: CodegenContext
 ) -> Shared<CppDecl> =
-  if function_proto_needs_string_bridge(name, type_params, params) then
+  if function_decl_needs_string_bridge(name, type_params, params) then
     cpp_decl_from_string_output(gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context))
   else
     native_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context)

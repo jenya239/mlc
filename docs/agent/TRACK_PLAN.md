@@ -71,7 +71,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=2** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — native main proto in gen_fn_*_cpp.
+**STEP=3** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — `main_set_args_preamble_cpp`.
 
 ## Planner checklist (2026-05-31 plan-refresh — MAIN_BRIDGE open)
 
