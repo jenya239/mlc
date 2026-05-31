@@ -13,10 +13,10 @@ export fn cpp_ast_tests() -> [TestResult] = do
     prog.decls.length(), 1))
 
   const field = Shared.new(CppField { typ: 'int', name: "x" })
-  const st = Shared.new(CppStruct('Point', [field]))
+  const st = Shared.new(CppStruct('', 'Point', [field]))
   const prog2 = CppProgram { decls: [st] }
   results.push(assert_true('CppStruct in program',
-    match prog2.decls[0] { CppStruct(_, _) => true, _ => false }))
+    match prog2.decls[0] { CppStruct(_, _, _) => true, _ => false }))
 
   const vector_type = Shared.new(CppTypeName('std::vector'))
   const int_type = Shared.new(CppTypeName('int'))

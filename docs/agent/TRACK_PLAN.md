@@ -72,7 +72,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=1** [TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) — `gen_type_decl_fwd_cpp` native type forward.
+**STEP=2** [TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) — `gen_type_decl_body_cpp` native type body.
 
 ## Planner checklist (2026-05-31 plan-refresh — DECL_BRIDGE open)
 

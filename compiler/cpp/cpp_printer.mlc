@@ -261,8 +261,15 @@ fn include_quoted(path: string) -> string =
 fn using_alias(alias: string, type_code: string) -> string =
   `using ${alias} = ${type_code};`
 
-fn struct_definition(name: string, fields_code: string) -> string =
-  `struct ${name} {\n${fields_code}\n};`
+fn struct_forward_declaration(template_prefix: string, name: string) -> string =
+  `${template_prefix}struct ${name};\n`
+
+fn struct_definition(template_prefix: string, name: string, fields_code: string) -> string =
+  if fields_code.length() == 0 then
+    struct_forward_declaration(template_prefix, name)
+  else
+    `${template_prefix}struct ${name} {\n${fields_code}\n};\n`
+  end
 
 fn struct_field_line(type_code: string, field_name: string) -> string =
   `${type_code} ${field_name};`
@@ -276,8 +283,8 @@ fn function_definition(template_prefix: string, return_type: string, name: strin
 fn namespace_block(name: string, contents_code: string) -> string =
   `namespace ${name} {\n${contents_code}\n}`
 
-fn variant_type_alias(name: string, types_code: string) -> string =
-  `using ${name} = std::variant<${types_code}>;`
+fn variant_type_alias(template_prefix: string, name: string, types_code: string) -> string =
+  `${template_prefix}using ${name} = std::variant<${types_code}>;\n`
 
 fn print_struct_fields(fields: [Shared<CppField>]) -> string = do
   let parts: [string] = []
@@ -294,11 +301,16 @@ fn print_variant_types(arms: [Shared<CppVariantArm>]) -> string = do
   let parts: [string] = []
   let mut arm_index = 0
   while arm_index < arms.length() do
-    const types = cpp_ast.cpp_variant_arm_types(arms[arm_index])
-    let mut type_index = 0
-    while type_index < types.length() do
-      parts.push(print_type(types[type_index]))
-      type_index = type_index + 1
+    const arm = arms[arm_index]
+    const types = cpp_ast.cpp_variant_arm_types(arm)
+    if types.length() == 0 then
+      parts.push(cpp_ast.cpp_variant_arm_name(arm))
+    else
+      let mut type_index = 0
+      while type_index < types.length() do
+        parts.push(print_type(types[type_index]))
+        type_index = type_index + 1
+      end
     end
     arm_index = arm_index + 1
   end
@@ -357,7 +369,8 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
     CppInclude(is_angle, path) =>
       if is_angle then include_angle(path) else include_quoted(path) end,
     CppUsing(alias, type_code) => using_alias(alias, type_code),
-    CppStruct(name, fields) => struct_definition(name, print_struct_fields(fields)),
+    CppStruct(template_prefix, name, fields) =>
+      struct_definition(template_prefix, name, print_struct_fields(fields)),
     CppFnProto(template_prefix, return_type, name, parameters) =>
       function_prototype(template_prefix, return_type, name, print_comma_separated_strings(parameters)),
     CppFnDef(template_prefix, return_type, name, parameters, body) =>
@@ -369,7 +382,8 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
         print_statements(body, 1)
       ),
     CppNamespace(name, declarations) => namespace_block(name, print_decls(declarations)),
-    CppVariant(name, arms) => variant_type_alias(name, print_variant_types(arms)),
+    CppVariant(template_prefix, name, arms) =>
+      variant_type_alias(template_prefix, name, print_variant_types(arms)),
     CppDeclFragment(code) => code
   }
 

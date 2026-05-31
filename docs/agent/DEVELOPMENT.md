@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) **open** STEP=1 — native type forward decls (`gen_type_decl_fwd_cpp`).
+[TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) **open** STEP=2 — `gen_type_decl_body_cpp`.
 
 ## Step sizing (good vs bad)
 

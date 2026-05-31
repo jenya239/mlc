@@ -180,8 +180,12 @@ export fn cpp_printer_tests() -> [TestResult] = do
     '#include "local.h"'))
 
   results.push(assert_eq_str('print_decl CppStruct',
-    print_decl(Shared.new(CppStruct('Point', [Shared.new(CppField { typ: "int", name: "x" })]))),
-    "struct Point {\n  int x;\n};"))
+    print_decl(Shared.new(CppStruct('', 'Point', [Shared.new(CppField { typ: "int", name: "x" })]))),
+    "struct Point {\n  int x;\n};\n"))
+
+  results.push(assert_eq_str('print_decl CppStruct forward',
+    print_decl(Shared.new(CppStruct('', 'Red', []))),
+    "struct Red;\n"))
 
   results.push(assert_eq_str('print_decl CppFnProto',
     print_decl(Shared.new(CppFnProto('', 'int', 'add', ['int left', 'int right']))),
@@ -214,8 +218,16 @@ export fn cpp_printer_tests() -> [TestResult] = do
 
   const variant_arm = Shared.new(CppVariantArm { name: 'Integer', types: [int_type] })
   results.push(assert_eq_str('print_decl CppVariant',
-    print_decl(Shared.new(CppVariant('Value', [variant_arm]))),
-    'using Value = std::variant<int>;'))
+    print_decl(Shared.new(CppVariant('', 'Value', [variant_arm]))),
+    'using Value = std::variant<int>;\n'))
+
+  const color_arms = [
+    Shared.new(CppVariantArm { name: 'Red', types: [] }),
+    Shared.new(CppVariantArm { name: 'Green', types: [] }),
+    Shared.new(CppVariantArm { name: 'Blue', types: [] })]
+  results.push(assert_eq_str('print_decl CppVariant unit arms',
+    print_decl(Shared.new(CppVariant('', 'Color', color_arms))),
+    'using Color = std::variant<Red, Green, Blue>;\n'))
 
   const header_include = Shared.new(CppInclude(true, 'vector'))
   const source_function = Shared.new(CppFnDef('', 'int', 'main', [], [Shared.new(CppReturn(Shared.new(CppInt(0))))]))

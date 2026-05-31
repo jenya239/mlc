@@ -21,7 +21,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `gen_type_decl_fwd_cpp` — native type forward (record/variant) for phase 0 | pending |
+| 1 | `gen_type_decl_fwd_cpp` — native type forward (record/variant) for phase 0 | done |
 | 2 | `gen_type_decl_body_cpp` — native type body + derive methods for phase 1 | pending |
 | 3 | `gen_trait_decl_cpp` — native trait concept/requires for phase 0 | pending |
 | 4 | Wire `collect_decl_parts_cpp` / `collect_all_decl_parts_cpp` phases 0–1 native | pending |

@@ -137,10 +137,10 @@ export fn variant_used_type_params(type_params: [string], variant: Shared<TypeVa
   type_params.filter(p => type_param_in_typeexpr_list(p, field_types))
 end
 
-fn union_string_lists(a: [string], b: [string]) -> [string] =
-  a.concat(b.filter(s => !a.any(x => x == s)))
+export fn union_string_lists(first: [string], second: [string]) -> [string] =
+  first.concat(second.filter(element => !first.any(existing => existing == element)))
 
-fn type_phantom_params_for_variants(type_params: [string], variants: [Shared<TypeVariant>]) -> [string] = do
+export fn type_phantom_params_for_variants(type_params: [string], variants: [Shared<TypeVariant>]) -> [string] = do
   const all_fields = variants.flat_map(v => variant_field_typeexprs(v))
   type_params.filter(p => !type_param_in_typeexpr_list(p, all_fields))
 end

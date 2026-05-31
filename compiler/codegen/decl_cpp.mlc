@@ -1,15 +1,15 @@
 // CppDecl dual path for declaration codegen (Phase 2 step 17).
 
-import { Param } from '../frontend/ast'
+import { Param, TypeVariant } from '../frontend/ast'
 import { SDecl, SExpr, SDeclFn, SExprExtern, sdecl_inner } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
-import { CppDecl, CppFnProto, CppFnDef, CppExpr, CppStmt, CppCall, CppBinary } from '../cpp/cpp_ast'
+import { CppDecl, CppFnProto, CppFnDef, CppExpr, CppStmt, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm } from '../cpp/cpp_ast'
 import { print_decl } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext } from './context'
 import { gen_decl, gen_proto, collect_all_decl_parts, collect_decl_parts, compute_fn_body_context } from './decl/decl'
 import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, gen_extend_wrapper_protos } from './decl/decl_extend'
-import { sem_type_to_cpp, template_prefix, requires_clause } from './decl/type_gen'
+import { sem_type_to_cpp, template_prefix, requires_clause, variant_ctor_name, variant_used_type_params, type_phantom_params_for_variants, union_string_lists, gen_type_decl_fwd_only } from './decl/type_gen'
 import { gen_return_body_cpp } from './stmt/return_body'
 import { cpp_safe } from './cpp_naming'
 
@@ -68,6 +68,68 @@ fn function_parameter_def_items(
 
 export fn main_program_parameter_items_cpp() -> [string] =
   ['int argc', 'char** argv']
+
+fn variant_forward_struct_cpp(
+  context: CodegenContext,
+  type_params: [string],
+  phantom: [string],
+  variant: Shared<TypeVariant>
+) -> Shared<CppDecl> = do
+  const variant_name = context.resolve(variant_ctor_name(variant))
+  const used = union_string_lists(variant_used_type_params(type_params, variant), phantom)
+  Shared.new(CppStruct(template_prefix(used), variant_name, []))
+end
+
+fn variant_alias_arm_cpp(
+  context: CodegenContext,
+  type_params: [string],
+  phantom: [string],
+  variant: Shared<TypeVariant>
+) -> Shared<CppVariantArm> = do
+  const variant_name = context.resolve(variant_ctor_name(variant))
+  const used = union_string_lists(variant_used_type_params(type_params, variant), phantom)
+  const type_argument_suffix = if used.length() > 0 then `<${used.join(', ')}>` else '' end
+  Shared.new(CppVariantArm { name: variant_name + type_argument_suffix, types: [] })
+end
+
+fn append_type_forward_declarations(
+  output: [Shared<CppDecl>],
+  context: CodegenContext,
+  type_name: string,
+  type_params: [string],
+  variants: [Shared<TypeVariant>]
+) -> [Shared<CppDecl>] = do
+  const phantom = type_phantom_params_for_variants(type_params, variants)
+  let mut result = output
+  let mut variant_index = 0
+  while variant_index < variants.length() do
+    result.push(variant_forward_struct_cpp(context, type_params, phantom, variants[variant_index]))
+    variant_index = variant_index + 1
+  end
+  let mut alias_arms: [Shared<CppVariantArm>] = []
+  variant_index = 0
+  while variant_index < variants.length() do
+    alias_arms.push(variant_alias_arm_cpp(context, type_params, phantom, variants[variant_index]))
+    variant_index = variant_index + 1
+  end
+  result.push(Shared.new(CppVariant(
+    template_prefix(type_params),
+    context.resolve(type_name),
+    alias_arms)))
+  result
+end
+
+export fn gen_type_decl_fwd_cpp(
+  context: CodegenContext,
+  type_name: string,
+  type_params: [string],
+  variants: [Shared<TypeVariant>]
+) -> [Shared<CppDecl>] =
+  if variants.length() == 1 then
+    []
+  else
+    append_type_forward_declarations([], context, type_name, type_params, variants)
+  end
 
 fn main_set_args_vector_argument_cpp() -> Shared<CppExpr> =
   Shared.new(CppCall(
