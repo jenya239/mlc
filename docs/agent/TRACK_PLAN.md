@@ -65,11 +65,23 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Prefix return-body bridge:** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — **closed** (step 5 audit)
 - **CppStmtFragment elimination:** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — **closed** (`49b7091`)
 - **Structured binding fragments:** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — **closed** (`3904513`)
-- **Native template fn decls:** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — **closed** (`c668bb8` step 5 audit)
+- **Native template fn decls:** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — **closed** (`6db2014` step 5 audit)
+- **Native extend forward segments:** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — **open** (stability)
 
 ## Next step (Driver)
 
-**plan-refresh** — pick next track from PLAN backlog (stability > security > performance).
+**STEP=1** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — `extend_method_forward_segments_cpp` via `gen_proto_cpp`.
+
+## Planner checklist (2026-05-31 plan-refresh — EXTEND_BRIDGE open)
+
+- [x] TRACK_TEMPLATE_BRIDGE closed (`6db2014`; 5/5 steps)
+- [x] Priority: stability > security > performance → EXTEND_BRIDGE (extend forward native decl)
+- [x] Deferred: non-fn decl native, main native, string-path track, BOOTSTRAP, parser panic audit
+- [x] Driver enqueued STEP=1
+
+## Next step (Planner)
+
+**plan-refresh** — after EXTEND_BRIDGE close or mid-track if blocked.
 
 ## Planner checklist (2026-05-30 plan-refresh — TEMPLATE_BRIDGE open)
 
