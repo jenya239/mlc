@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) **open** STEP=4 — remove `function_decl_needs_string_bridge`.
+[TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) **open** STEP=5 — audit survivors; close track.
 
 ## Step sizing (good vs bad)
 

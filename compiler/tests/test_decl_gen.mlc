@@ -414,9 +414,13 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declaration(gen_fn_proto_cpp('main', [], [], [], ti32(), context)),
     gen_fn_proto('main', [], [], [], ti32(), context)))
 
-  results.push(assert_code_contains('gen_fn_decl_cpp: main string bridge argc argv',
+  results.push(assert_code_contains('gen_fn_decl_cpp: main native argc argv',
     print_cpp_declaration(gen_fn_decl_cpp('main', [], [], [], ti32(), make_int(0), context)),
     'int argc, char** argv'))
+
+  results.push(assert_code_contains('gen_fn_decl_cpp: main native set_args preamble',
+    print_cpp_declaration(gen_fn_decl_cpp('main', [], [], [], ti32(), make_int(0), context)),
+    'mlc::io::set_args'))
 
   results.push(assert_eq_str('main_program_parameter_items_cpp matches string',
     main_program_parameter_items_cpp().join(', '),
