@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Planner|
-| driver_turns_since_plan | 1|
-| step_last | 1 |
-| run_tests | 813 |
+| driver_turns_since_plan | 2|
+| step_last | 2 |
+| run_tests | 817 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_DECL_BRIDGE step 1 done |
-| agent_token_last | cr-agent-f9c12acb-221a-4c7c-b94d-1fab760572f7 |
+| TRACK_PLAN | TRACK_DECL_BRIDGE step 2 done |
+| agent_token_last | cr-agent-d16ff7e2-cedc-4221-b93d-66d9dba235c1 |
+
+### Turn 2026-05-31 (Driver DECL_BRIDGE step 2 — gen_type_decl_body_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 2 |
+| done | gen_type_decl_body_cpp native CppStruct bodies + derive fragment |
+| verify | 817 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_DECL_BRIDGE |
 
 ### Turn 2026-05-31 (Driver DECL_BRIDGE step 1 — gen_type_decl_fwd_cpp)
 

@@ -9,8 +9,8 @@ import { transform_program } from '../checker/transform/transform_decl'
 import { create_codegen_context } from '../codegen/context'
 import { gen_extend_wrapper_protos } from '../codegen/decl/decl_extend'
 import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main, extend_method_forward_segments, extend_cpp_forward_segment, collect_all_decl_parts } from '../codegen/decl/decl'
-import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration, print_cpp_declarations, extend_method_forward_segments_cpp, gen_extend_wrapper_protos_cpp, extend_cpp_forward_segment_cpp, collect_fn_defs_cpp, main_program_parameter_items_cpp, main_set_args_preamble_cpp, gen_type_decl_fwd_cpp } from '../codegen/decl_cpp'
-import { gen_type_decl_fwd_only } from '../codegen/decl/type_gen'
+import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration, print_cpp_declarations, extend_method_forward_segments_cpp, gen_extend_wrapper_protos_cpp, extend_cpp_forward_segment_cpp, collect_fn_defs_cpp, main_program_parameter_items_cpp, main_set_args_preamble_cpp, gen_type_decl_fwd_cpp, gen_type_decl_body_cpp } from '../codegen/decl_cpp'
+import { gen_type_decl_fwd_only, gen_type_decl_body_only, gen_derive_methods } from '../codegen/decl/type_gen'
 import { main_program_parameter_list } from '../codegen/expr/expr'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
@@ -441,6 +441,24 @@ export fn decl_gen_tests() -> [TestResult] = do
       [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')])),
     gen_type_decl_fwd_only(context, 'Color', [],
       [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')])))
+
+  results.push(assert_eq_str('gen_type_decl_body_cpp: sum type unit variants match string',
+    print_cpp_declarations(gen_type_decl_body_cpp(context, 'Color', [],
+      [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], [])),
+    gen_type_decl_body_only(context, 'Color', [],
+      [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')])))
+
+  results.push(assert_code_contains('gen_type_decl_body_cpp: record struct fields',
+    print_cpp_declarations(gen_type_decl_body_cpp(context, 'Point', [],
+      [record_variant('Point', [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])], [])),
+    'int x'))
+
+  results.push(assert_eq_str('gen_type_decl_body_cpp: derive Display matches string',
+    print_cpp_declarations(gen_type_decl_body_cpp(context, 'Color', [],
+      [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], ['Display'])),
+    gen_type_decl_body_only(context, 'Color', [],
+      [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')]) +
+    gen_derive_methods(context, 'Color', [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], ['Display'])))
 
   results.push(assert_eq_str('gen_decl_cpp DeclFn native return',
     print_cpp_declaration(gen_decl_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),

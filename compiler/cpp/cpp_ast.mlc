@@ -63,7 +63,7 @@ export type CppVariantArm = CppVariantArm { name: string, types: [Shared<CppType
 export type CppDecl =
   | CppInclude(bool, string)
   | CppUsing(string, string)
-  | CppStruct(string, string, [Shared<CppField>])
+  | CppStruct(string, string, [Shared<CppField>], bool)
   | CppFnProto(string, string, string, [string])
   | CppFnDef(string, string, string, [string], [Shared<CppStmt>])
   | CppNamespace(string, [Shared<CppDecl>])

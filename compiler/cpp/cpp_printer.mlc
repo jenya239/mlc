@@ -264,9 +264,16 @@ fn using_alias(alias: string, type_code: string) -> string =
 fn struct_forward_declaration(template_prefix: string, name: string) -> string =
   `${template_prefix}struct ${name};\n`
 
-fn struct_definition(template_prefix: string, name: string, fields_code: string) -> string =
+fn print_struct_empty_definition(template_prefix: string, name: string) -> string =
+  `${template_prefix}struct ${name} {};\n`
+
+fn struct_definition(template_prefix: string, name: string, fields_code: string, forward_only: bool) -> string =
   if fields_code.length() == 0 then
-    struct_forward_declaration(template_prefix, name)
+    if forward_only then
+      struct_forward_declaration(template_prefix, name)
+    else
+      print_struct_empty_definition(template_prefix, name)
+    end
   else
     `${template_prefix}struct ${name} {\n${fields_code}\n};\n`
   end
@@ -369,8 +376,8 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
     CppInclude(is_angle, path) =>
       if is_angle then include_angle(path) else include_quoted(path) end,
     CppUsing(alias, type_code) => using_alias(alias, type_code),
-    CppStruct(template_prefix, name, fields) =>
-      struct_definition(template_prefix, name, print_struct_fields(fields)),
+    CppStruct(template_prefix, name, fields, forward_only) =>
+      struct_definition(template_prefix, name, print_struct_fields(fields), forward_only),
     CppFnProto(template_prefix, return_type, name, parameters) =>
       function_prototype(template_prefix, return_type, name, print_comma_separated_strings(parameters)),
     CppFnDef(template_prefix, return_type, name, parameters, body) =>

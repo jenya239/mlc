@@ -82,7 +82,7 @@ fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
     end
     if cpp_is_right_brace(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
   end
-  CppDeclResult { decl: Shared.new(CppStruct('', name, fields)), position: pos }
+  CppDeclResult { decl: Shared.new(CppStruct('', name, fields, false)), position: pos }
 end
 
 fn cpp_parse_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do

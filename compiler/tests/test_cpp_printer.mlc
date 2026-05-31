@@ -180,12 +180,16 @@ export fn cpp_printer_tests() -> [TestResult] = do
     '#include "local.h"'))
 
   results.push(assert_eq_str('print_decl CppStruct',
-    print_decl(Shared.new(CppStruct('', 'Point', [Shared.new(CppField { typ: "int", name: "x" })]))),
+    print_decl(Shared.new(CppStruct('', 'Point', [Shared.new(CppField { typ: "int", name: "x" })], false))),
     "struct Point {\n  int x;\n};\n"))
 
   results.push(assert_eq_str('print_decl CppStruct forward',
-    print_decl(Shared.new(CppStruct('', 'Red', []))),
+    print_decl(Shared.new(CppStruct('', 'Red', [], true))),
     "struct Red;\n"))
+
+  results.push(assert_eq_str('print_decl CppStruct empty definition',
+    print_decl(Shared.new(CppStruct('', 'Red', [], false))),
+    "struct Red {};\n"))
 
   results.push(assert_eq_str('print_decl CppFnProto',
     print_decl(Shared.new(CppFnProto('', 'int', 'add', ['int left', 'int right']))),
