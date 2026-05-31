@@ -14,8 +14,8 @@ import { CodegenContext, PrecomputedCtx, GenModuleOut,
 import { SDecl } from '../ir/semantic_ir'
 import { sem_type_to_cpp } from './decl/type_gen'
 import { cpp_safe, include_lines, using_namespace_lines, path_to_module_base } from './cpp_naming'
-import { collect_all_decl_parts, decls_have_main, DeclPartsBundle } from './decl/decl'
-import { cpp_decl_from_string_output, cpp_decls_from_string_parts, print_cpp_declarations, collect_fn_defs_cpp } from './decl_cpp'
+import { decls_have_main } from './decl/decl'
+import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, cpp_decl_from_string_output, print_cpp_declarations } from './decl_cpp'
 import { CppDecl, CppFile } from '../cpp/cpp_ast'
 import * as cpp_ast from '../cpp/cpp_ast'
 import * as expression_output from './expr/expr'
@@ -26,8 +26,7 @@ type ModuleGenerationContext = ModuleGenerationContext {
   std_includes: string,
   module_namespace: string,
   is_entry: bool,
-  decl_parts: DeclPartsBundle,
-  fn_defs_cpp: [Shared<CppDecl>],
+  decl_parts: DeclPartsBundleCpp,
   implementation_import_includes: string,
   implementation_using_namespaces: string,
   cli_wrapper: string
@@ -148,8 +147,7 @@ fn prepare_module_generation(
   const module_namespace = if base == 'main' then 'mlc_main' else base end
   const is_entry = decls_have_main(s_item.decls)
   const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(s_item.imports) + "\n"
-  const decl_parts = collect_all_decl_parts(s_item.decls, context)
-  const fn_defs_cpp = collect_fn_defs_cpp(s_item.decls, context)
+  const decl_parts = collect_all_decl_parts_cpp(s_item.decls, context)
   const guard = base.upper() + '_HPP'
   const cli_wrapper = if is_entry then
     expression_output.bootstrap_host_main_calling_namespaced_user_main(module_namespace)
@@ -161,7 +159,6 @@ fn prepare_module_generation(
     module_namespace: module_namespace,
     is_entry: is_entry,
     decl_parts: decl_parts,
-    fn_defs_cpp: fn_defs_cpp,
     implementation_import_includes: include_lines(s_item.imports),
     implementation_using_namespaces: using_namespace_lines(s_item.imports),
     cli_wrapper: cli_wrapper
@@ -189,9 +186,9 @@ fn assemble_header_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<C
     expression_output.namespace_open_line(parts.module_namespace),
     "\n"
   ])
-  declarations.concat(cpp_decls_from_string_parts(parts.decl_parts.type_fwds))
-    .concat(cpp_decls_from_string_parts(parts.decl_parts.type_defs))
-    .concat(cpp_decls_from_string_parts(parts.decl_parts.fn_protos))
+  declarations.concat(parts.decl_parts.type_fwds)
+    .concat(parts.decl_parts.type_defs)
+    .concat(parts.decl_parts.fn_protos)
     .concat(cpp_declarations_from_text_parts([
       "\n",
       expression_output.namespace_close_comment_line(parts.module_namespace),
@@ -212,7 +209,7 @@ fn assemble_source_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<C
     parts.implementation_using_namespaces,
     if parts.implementation_using_namespaces.length() > 0 then "\n" else '' end
   ])
-  declarations.concat(parts.fn_defs_cpp)
+  declarations.concat(parts.decl_parts.fn_defs)
     .concat(cpp_declarations_from_text_parts([
       "\n",
       expression_output.namespace_close_comment_line(parts.module_namespace),

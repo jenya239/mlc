@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) (**closed**, `521f574`)
 
-## Status: **open**
+## Status: **closed**
 
 **Goal:** eliminate `cpp_decl_from_string_output(gen_decl(...))` / `gen_proto(...)` for `SDeclType` and `SDeclTrait` in production bundle paths — native `CppStruct`/`CppVariant`/trait concept decls instead of string fragments.
 
@@ -25,31 +25,32 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | `gen_type_decl_body_cpp` — native type body + derive methods for phase 1 | done (`3c533da`) |
 | 3 | `gen_trait_decl_cpp` — native trait concept/requires for phase 0 | done (`8649504`) |
 | 4 | Wire `collect_decl_parts_cpp` / `collect_all_decl_parts_cpp` phases 0–1 native | done (`25feca8`) |
-| 5 | Audit survivors; close track | pending |
+| 5 | Audit survivors; close track | done |
 
-## Context
+## Step 5 audit (2026-05-31)
 
-Fn proto/def bridges closed (template, extend forwards, zero-param `main`). Remaining production string bridge for decls:
+**Production path:** `module.mlc` → `collect_all_decl_parts_cpp` → header `type_fwds`/`type_defs`/`fn_protos` native (types/traits) or string-wrapped (fn protos); source `fn_defs` via `collect_fn_defs_cpp`.
 
-- `gen_decl_cpp` / `gen_proto_cpp` → `cpp_decl_from_string_output(gen_decl|gen_proto(...))` for non-`SDeclFn`
-- `collect_decl_parts_cpp` phases 0–1 → `cpp_decls_from_string_parts(collect_decl_parts(...))`
-- `collect_all_decl_parts_cpp` → string bundle for `type_fwds` / `type_defs`
+**SDeclType / SDeclTrait:** no longer string `gen_decl`/`gen_proto` in module header assembly. Phases 0–1 native (`CppStruct`, `CppVariant`, `CppConceptRequires`).
 
-String helpers remain in `decl/type_gen.mlc`, `decl_extend.mlc` for parallel path and parity tests.
-
-## Survivors (expected after close)
+## Survivors (expected)
 
 | Site | Use |
 |------|-----|
-| `cpp_decl_from_string_output` | phase-4 trait struct, `SDeclExtend` body, `module.mlc` fragments |
+| `gen_type_decl_body_cpp` | derive methods → `cpp_decl_from_string_output(gen_derive_methods(...))` |
+| `gen_decl_cpp` / `gen_proto_cpp` | `SDeclExtend` and non-fn fallthrough (string) |
+| `collect_decl_parts_cpp` | phase 2 fn protos, phase 4 trait struct (string) |
+| `collect_fn_defs_cpp` | phase 4 trait struct via `append_string_segments` |
+| `cpp_decl_from_string_output` | guard/includes/namespace in `module.mlc`; empty extern stubs |
 | `gen_decl_extend` (string) | extend method definitions |
 | `gen_stmts_str` / `stmt_cpp` | string parallel path |
-| `decl.mlc` | string `collect_all_decl_parts` parallel bundle |
+| `decl.mlc` | string `collect_all_decl_parts` for parity / legacy |
 
 ## Deferred (out of track)
 
 - Native trait vtable struct (phase 4 `gen_trait_struct`).
 - Native `SDeclExtend` body (`gen_decl_extend` → CppDecl).
+- Native derive methods in `gen_type_decl_body_cpp`.
 - `gen_stmts_str` / expr visitor string-path elimination.
 - Phase 4 `MLCC_BOOTSTRAP=1`.
 - Parser `ref mut` — [TRACK_PLAN.md](TRACK_PLAN.md) step 15.

@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) **open** STEP=5 — audit survivors; close track.
+TRACK_DECL_BRIDGE **closed**. Next: **Planner** `plan-refresh` — pick track from [TRACK_PLAN.md](TRACK_PLAN.md) backlog.
 
 ## Step sizing (good vs bad)
 
