@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) (**closed**, `521f574`)
 
-## Status: **closed**
+## Status: **closed** (`9e2d47e`)
 
 **Goal:** eliminate `cpp_decl_from_string_output(gen_decl(...))` / `gen_proto(...)` for `SDeclType` and `SDeclTrait` in production bundle paths — native `CppStruct`/`CppVariant`/trait concept decls instead of string fragments.
 
