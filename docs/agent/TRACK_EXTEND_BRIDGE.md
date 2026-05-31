@@ -21,7 +21,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `extend_method_forward_segments_cpp` — method forward protos via `gen_proto_cpp` | pending |
+| 1 | `extend_method_forward_segments_cpp` — method forward protos via `gen_proto_cpp` | done |
 | 2 | `gen_extend_wrapper_protos_cpp` — trait wrapper forward protos native | pending |
 | 3 | `extend_cpp_forward_segment_cpp` — SDeclExtend forward bundle native | pending |
 | 4 | Wire `collect_fn_defs_cpp` — drop string append for extend forwards | pending |

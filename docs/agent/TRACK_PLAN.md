@@ -70,7 +70,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=1** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — `extend_method_forward_segments_cpp` via `gen_proto_cpp`.
+**STEP=2** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — `gen_extend_wrapper_protos_cpp`.
 
 ## Planner checklist (2026-05-31 plan-refresh — EXTEND_BRIDGE open)
 

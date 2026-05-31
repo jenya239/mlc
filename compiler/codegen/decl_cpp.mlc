@@ -141,6 +141,39 @@ export fn gen_proto_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> 
     _ => cpp_decl_from_string_output(gen_proto(declaration, context))
   }
 
+export fn extend_method_forward_segments_cpp(
+  declarations: [Shared<SDecl>],
+  context: CodegenContext
+) -> [Shared<CppDecl>] = do
+  let mut result: [Shared<CppDecl>] = []
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    match declarations[declaration_index] {
+      SDeclExtend(_, _, methods, _) => do
+        let mut method_index = 0
+        while method_index < methods.length() do
+          match methods[method_index] {
+            SDeclFn(_, _, _, _, _, body, _, _) =>
+              match body {
+                SExprExtern(_, _) => (),
+                _ => do
+                  result.push(gen_proto_cpp(methods[method_index], context))
+                  ()
+                end
+              },
+            _ => ()
+          }
+          method_index = method_index + 1
+        end
+        ()
+      end,
+      _ => do () end
+    }
+    declaration_index = declaration_index + 1
+  end
+  result
+end
+
 export fn collect_all_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundleCpp = do
   const string_bundle = collect_all_decl_parts(declarations, context)
   DeclPartsBundleCpp {
