@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) **open** STEP=3 — `extend_cpp_forward_segment_cpp`.
+[TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) **open** STEP=4 — wire `collect_fn_defs_cpp`.
 
 ## Step sizing (good vs bad)
 

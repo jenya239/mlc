@@ -206,6 +206,47 @@ export fn gen_extend_wrapper_protos_cpp(
   end
 end
 
+fn extend_forward_segment_for_extend(
+  type_name: string,
+  trait_name: string,
+  methods: [Shared<SDecl>],
+  codegen_context: CodegenContext
+) -> [Shared<CppDecl>] = do
+  const extend_context = codegen_context.for_type_body(type_name)
+  let mut result = gen_extend_wrapper_protos_cpp(type_name, trait_name, methods, codegen_context)
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SDeclFn(_, _, _, _, _, body, _, _) =>
+        match body {
+          SExprExtern(_, _) => (),
+          _ => do
+            result.push(gen_proto_cpp(methods[method_index], extend_context))
+            ()
+          end
+        },
+      _ => ()
+    }
+    method_index = method_index + 1
+  end
+  result
+end
+
+export fn extend_cpp_forward_segment_cpp(
+  declaration: Shared<SDecl>,
+  codegen_context: CodegenContext
+) -> [Shared<CppDecl>] =
+  match declaration {
+    SDeclExtend(type_name, trait_name, methods, _) =>
+      extend_forward_segment_for_extend(type_name, trait_name, methods, codegen_context),
+    SDeclExported(inner_declaration) => match sdecl_inner(inner_declaration) {
+      SDeclExtend(type_name, trait_name, methods, _) =>
+        extend_forward_segment_for_extend(type_name, trait_name, methods, codegen_context),
+      _ => empty_cpp_declarations()
+    },
+    _ => empty_cpp_declarations()
+  }
+
 export fn collect_all_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundleCpp = do
   const string_bundle = collect_all_decl_parts(declarations, context)
   DeclPartsBundleCpp {
