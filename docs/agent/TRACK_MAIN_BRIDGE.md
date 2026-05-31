@@ -23,7 +23,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | `main_program_parameter_items_cpp` — argc/argv param list for CppFnProto/CppFnDef | done |
 | 2 | `gen_fn_proto_cpp` / `gen_fn_decl_cpp` — native main proto (drop string bridge branch) | done |
-| 3 | `main_set_args_preamble_cpp` — native `mlc::io::set_args` prelude stmts | done |
+| 3 | `main_set_args_preamble_cpp` — native `mlc::io::set_args` prelude stmts | done (`25103b9`) |
 | 4 | Remove `function_proto_needs_string_bridge`; wire always-native fn proto/decl | pending |
 | 5 | Audit survivors; close track | pending |
 
