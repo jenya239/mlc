@@ -9,7 +9,7 @@ import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext } from './context'
 import { gen_fn_proto, gen_fn_decl, gen_decl, gen_proto, collect_all_decl_parts, collect_decl_parts, compute_fn_body_context, extend_method_forward_segments, extend_cpp_forward_segment } from './decl/decl'
 import { gen_parameter_proto_items, gen_parameter_def_items } from './decl/decl_extend'
-import { sem_type_to_cpp } from './decl/type_gen'
+import { sem_type_to_cpp, template_prefix, requires_clause } from './decl/type_gen'
 import { gen_return_body_cpp } from './stmt/return_body'
 
 export type DeclPartsBundleCpp = DeclPartsBundleCpp {
@@ -49,8 +49,13 @@ fn function_has_template_prefix(type_params: [string]) -> bool =
 fn function_proto_needs_string_bridge(name: string, type_params: [string], params: [Shared<Param>]) -> bool =
   function_has_template_prefix(type_params) || (name == 'main' && params.length() == 0)
 
+fn function_declaration_template_prefix(type_params: [string], type_bounds: [[string]]) -> string =
+  template_prefix(type_params) + requires_clause(type_params, type_bounds)
+
 fn native_fn_proto_cpp(
   name: string,
+  type_params: [string],
+  type_bounds: [[string]],
   params: [Shared<Param>],
   return_type: Shared<Type>,
   context: CodegenContext
@@ -59,7 +64,11 @@ fn native_fn_proto_cpp(
   const safe_name = context.resolve(name)
   const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
   const parameters = gen_parameter_proto_items(prototype_context, params)
-  Shared.new(CppFnProto('', return_type_cpp, safe_name, parameters))
+  Shared.new(CppFnProto(
+    function_declaration_template_prefix(type_params, type_bounds),
+    return_type_cpp,
+    safe_name,
+    parameters))
 end
 
 fn native_fn_decl_cpp(
@@ -86,10 +95,10 @@ export fn gen_fn_proto_cpp(
   return_type: Shared<Type>,
   context: CodegenContext
 ) -> Shared<CppDecl> =
-  if function_proto_needs_string_bridge(name, type_params, params) then
+  if name == 'main' && params.length() == 0 then
     cpp_decl_from_string_output(gen_fn_proto(name, type_params, type_bounds, params, return_type, context))
   else
-    native_fn_proto_cpp(name, params, return_type, context)
+    native_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)
   end
 
 export fn gen_fn_decl_cpp(

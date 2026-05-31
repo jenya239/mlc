@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 1|
-| step_last | 1 |
-| run_tests | 797 |
+| driver_turns_since_plan | 2|
+| step_last | 2 |
+| run_tests | 798 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_TEMPLATE_BRIDGE step 1 done |
+| TRACK_PLAN | TRACK_TEMPLATE_BRIDGE step 2 done |
 | agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
+
+### Turn 2026-05-31 (Driver TEMPLATE_BRIDGE step 2 — native template proto)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 2 |
+| done | native_fn_proto_cpp wires template_prefix+requires; gen_fn_proto_cpp native for template fns |
+| verify | 798 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_TEMPLATE_BRIDGE |
 
 ### Turn 2026-05-30 (Driver TEMPLATE_BRIDGE step 1 — template_prefix AST)
 

@@ -69,7 +69,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=2** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — native template fn proto.
+**STEP=3** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — native template fn def bodies.
 
 ## Planner checklist (2026-05-30 plan-refresh — TEMPLATE_BRIDGE open)
 

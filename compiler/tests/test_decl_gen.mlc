@@ -36,6 +36,16 @@ fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, bod
   Shared.new(SDeclFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
 end
 
+fn generic_param(name: string) -> Shared<Param> =
+  Shared.new(Param {
+    name: name,
+    is_mut: false,
+    typ: Shared.new(TyNamed("T")),
+    has_default: false,
+    default: Shared.new(ExprUnit(span_unknown())),
+    param_pattern: Shared.new(PatUnit(span_unknown()))
+  })
+
 fn type_decl(name: string, type_params: [string], variants: [Shared<TypeVariant>], derive_traits: [string]) -> Shared<SDecl> =
   Shared.new(SDeclType(name, type_params, variants, derive_traits, span_unknown()))
 
@@ -272,6 +282,10 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('gen_fn_proto_cpp matches string',
     print_cpp_declaration(gen_fn_proto_cpp('add', [], [], [iparam('left'), iparam('right')], ti32(), context)),
     gen_fn_proto('add', [], [], [iparam('left'), iparam('right')], ti32(), context)))
+
+  results.push(assert_eq_str('gen_fn_proto_cpp: template matches string',
+    print_cpp_declaration(gen_fn_proto_cpp('identity', ["T"], [[]], [generic_param('value')], unk(), context)),
+    gen_fn_proto('identity', ["T"], [[]], [generic_param('value')], unk(), context)))
 
   results.push(assert_eq_str('gen_return_body_cpp: unit body empty',
     print_cpp_statements(gen_return_body_cpp(make_unit_expr(), context)), ''))
