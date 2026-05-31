@@ -24,17 +24,16 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 1 | `CppFnProto`/`CppFnDef` — add `template_prefix` field + `cpp_printer` | done |
 | 2 | `native_fn_proto_cpp` — wire `template_prefix` + `type_bounds` for template fns | done |
 | 3 | `native_fn_decl_cpp` — template fn bodies native | done |
-| 4 | Drop template branch from `function_proto_needs_string_bridge`; keep `main()` audit | pending |
+| 4 | Drop template branch from `function_proto_needs_string_bridge`; keep `main()` audit | done |
 | 5 | `main()` native or documented survivor; audit; close track | pending |
 
 ## Context
 
 PREFIX_BRIDGE + BINDING_BRIDGE closed all non-template native paths. `function_proto_needs_string_bridge` still true when:
 
-- `type_params.length() > 0` (template functions)
-- `name == 'main' && params.length() == 0`
+- `name == 'main' && params.length() == 0` (argc/argv proto + set_args preamble)
 
-String path uses `template_prefix(type_params) + requires_clause(...)` prepended in `decl.mlc` `gen_fn_proto` / `gen_fn_decl`. Native `CppFnProto`/`CppFnDef` currently omit template prefix.
+String path uses `template_prefix(type_params) + requires_clause(...)` prepended in `decl.mlc` `gen_fn_proto` / `gen_fn_decl`. Native `CppFnProto`/`CppFnDef` now carry template prefix via `function_declaration_template_prefix`.
 
 ## Survivors (expected after close)
 

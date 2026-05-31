@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) **open** STEP=4 — drop template string bridge; main() audit.
+[TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) **open** STEP=5 — main() native or documented survivor; close track.
 
 ## Step sizing (good vs bad)
 

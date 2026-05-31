@@ -392,6 +392,10 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declaration(gen_fn_decl_cpp('identity', ["T"], [[]], [generic_param('value')], unk(), make_ident('value'), context)),
     'return value'))
 
+  results.push(assert_code_contains('gen_fn_decl_cpp: main string bridge argc argv',
+    print_cpp_declaration(gen_fn_decl_cpp('main', [], [], [], ti32(), make_int(0), context)),
+    'int argc, char** argv'))
+
   results.push(assert_eq_str('gen_decl_cpp DeclFn native return',
     print_cpp_declaration(gen_decl_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
       make_bin("+", make_ident('left'), make_ident('right'))), context)),

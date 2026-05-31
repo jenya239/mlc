@@ -69,7 +69,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=4** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — drop template string bridge; main() audit.
+**STEP=5** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — main() native or documented survivor; close track.
 
 ## Planner checklist (2026-05-30 plan-refresh — TEMPLATE_BRIDGE open)
 
