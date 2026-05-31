@@ -67,22 +67,22 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Structured binding fragments:** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — **closed** (`3904513`)
 - **Native template fn decls:** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — **closed** (`6db2014` step 5 audit)
 - **Native extend forward segments:** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — **closed** (`52f5c2f` step 5 audit)
-- **Native zero-param main():** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — **open** (stability)
-
-## Next step (Driver)
-
-**STEP=5** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — audit survivors; close track.
-
-## Planner checklist (2026-05-31 plan-refresh — MAIN_BRIDGE open)
-
-- [x] TRACK_EXTEND_BRIDGE closed (`52f5c2f`; 5/5 steps)
-- [x] Priority: stability > security > performance → MAIN_BRIDGE (native argc/argv main)
-- [x] Deferred: non-fn decl native, string-path track, BOOTSTRAP, parser panic audit
-- [x] Driver enqueued STEP=1
+- **Native zero-param main():** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — **closed** (`f2aa065` step 5 audit)
 
 ## Next step (Planner)
 
-**plan-refresh** — after MAIN_BRIDGE close or mid-track if blocked.
+**plan-refresh** — pick next track from PLAN backlog.
+
+## Planner checklist (2026-05-31 plan-refresh — MAIN_BRIDGE close)
+
+- [x] TRACK_MAIN_BRIDGE closed (`f2aa065`; 5/5 steps)
+- [x] Zero-param main native: argc/argv + set_args preamble; no fn string bridge
+- [x] String `gen_fn_proto`/`gen_fn_decl` main branch remains parallel path in `decl.mlc`
+- [x] Planner enqueued plan-refresh
+
+## Next step (Driver)
+
+**STEP=5** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — audit survivors; close track. **done**
 
 ## Planner checklist (2026-05-31 plan-refresh — EXTEND_BRIDGE close)
 
