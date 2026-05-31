@@ -8,9 +8,10 @@ import { print_decl } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext } from './context'
 import { gen_fn_proto, gen_fn_decl, gen_decl, gen_proto, collect_all_decl_parts, collect_decl_parts, compute_fn_body_context, extend_method_forward_segments, extend_cpp_forward_segment } from './decl/decl'
-import { gen_parameter_proto_items, gen_parameter_def_items } from './decl/decl_extend'
+import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, gen_extend_wrapper_protos } from './decl/decl_extend'
 import { sem_type_to_cpp, template_prefix, requires_clause } from './decl/type_gen'
 import { gen_return_body_cpp } from './stmt/return_body'
+import { cpp_safe } from './cpp_naming'
 
 export type DeclPartsBundleCpp = DeclPartsBundleCpp {
   type_fwds: [Shared<CppDecl>],
@@ -172,6 +173,37 @@ export fn extend_method_forward_segments_cpp(
     declaration_index = declaration_index + 1
   end
   result
+end
+
+export fn gen_extend_wrapper_protos_cpp(
+  type_name: string,
+  trait_name: string,
+  methods: [Shared<SDecl>],
+  context: CodegenContext
+) -> [Shared<CppDecl>] = do
+  if trait_name.length() == 0 then
+    empty_cpp_declarations()
+  else
+    let mut wrappers: [Shared<CppDecl>] = []
+    let mut method_index = 0
+    while method_index < methods.length() do
+      match methods[method_index] {
+        SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
+          const wrapper_context = context.for_type_body(type_name)
+          const method_name = extract_method_name(mangled, type_name)
+          wrappers.push(Shared.new(CppFnProto(
+            '',
+            sem_type_to_cpp(wrapper_context, return_type),
+            cpp_safe(method_name),
+            gen_parameter_proto_items(wrapper_context, params))))
+          ()
+        end,
+        _ => do () end
+      }
+      method_index = method_index + 1
+    end
+    wrappers
+  end
 end
 
 export fn collect_all_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundleCpp = do

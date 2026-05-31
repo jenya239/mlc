@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 1|
-| step_last | 1 |
-| run_tests | 802 |
+| driver_turns_since_plan | 2|
+| step_last | 2 |
+| run_tests | 803 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_EXTEND_BRIDGE step 1 done |
+| TRACK_PLAN | TRACK_EXTEND_BRIDGE step 2 done |
 | agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
+
+### Turn 2026-05-31 (Driver EXTEND_BRIDGE step 2 — gen_extend_wrapper_protos_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 2 |
+| done | gen_extend_wrapper_protos_cpp native CppFnProto; parity test |
+| verify | 803 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_EXTEND_BRIDGE |
 
 ### Turn 2026-05-31 (Driver EXTEND_BRIDGE step 1 — extend_method_forward_segments_cpp)
 
