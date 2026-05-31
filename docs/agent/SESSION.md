@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 4|
-| step_last | 4 |
-| run_tests | 808 |
+| driver_turns_since_plan | 5|
+| step_last | 5 |
+| run_tests | 809 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_MAIN_BRIDGE step 3 done (`25103b9`) |
-| agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
+| TRACK_PLAN | TRACK_MAIN_BRIDGE step 4 done |
+| agent_token_last | cr-agent-89aa266d-a817-47b4-8e2f-02091b2c9b5e |
+
+### Turn 2026-05-31 (Driver MAIN_BRIDGE step 4 — always-native fn decl)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 4 |
+| done | remove function_decl_needs_string_bridge; gen_fn_decl_cpp → native_fn_decl_cpp; commit `f2aa065` |
+| verify | 809 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=5 TRACK_MAIN_BRIDGE |
 
 ### Turn 2026-05-31 (Driver MAIN_BRIDGE step 3 — commit)
 
