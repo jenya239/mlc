@@ -5,20 +5,27 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Planner|
-| driver_turns_since_plan | 2|
-| step_last | 2 |
-| run_tests | 817 |
+| role_last | Driver|
+| driver_turns_since_plan | 3|
+| step_last | 3 |
+| run_tests | 818 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_DECL_BRIDGE step 2 done |
-| agent_token_last | cr-agent-d16ff7e2-cedc-4221-b93d-66d9dba235c1 |
+| TRACK_PLAN | TRACK_DECL_BRIDGE step 3 done |
+| agent_token_last | cr-agent-f03ae7d3-1b0b-4c0e-ae57-8c4442adafaa |
 
-### Turn 2026-05-31 (Driver DECL_BRIDGE step 2 — gen_type_decl_body_cpp)
+### Turn 2026-05-31 (Driver DECL_BRIDGE step 3 — gen_trait_decl_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 3 |
+| done | CppConceptRequires; gen_trait_decl_cpp; parity test |
+| verify | 818 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_DECL_BRIDGE |
 
 | turn | 2026-05-31 |
 | role | Driver |
 | step | 2 |
-| done | gen_type_decl_body_cpp native CppStruct bodies + derive fragment |
+| done | gen_type_decl_body_cpp; CppStruct forward_only; commit `3c533da` |
 | verify | 817 pass; self-host DIFF_EXIT=0 |
 | next | ROLE=Driver STEP=3 TRACK_DECL_BRIDGE |
 

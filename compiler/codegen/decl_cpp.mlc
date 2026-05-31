@@ -3,12 +3,13 @@
 import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord } from '../frontend/ast'
 import { SDecl, SExpr, SDeclFn, SExprExtern, sdecl_inner } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
-import { CppDecl, CppFnProto, CppFnDef, CppExpr, CppStmt, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField } from '../cpp/cpp_ast'
+import { CppDecl, CppFnProto, CppFnDef, CppExpr, CppStmt, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires } from '../cpp/cpp_ast'
 import { print_decl } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext } from './context'
 import { gen_decl, gen_proto, collect_all_decl_parts, collect_decl_parts, compute_fn_body_context } from './decl/decl'
-import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, gen_extend_wrapper_protos } from './decl/decl_extend'
+import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, gen_extend_wrapper_protos, concept_declval_arguments_for_params } from './decl/decl_extend'
+import * as expression_output from './expr/expr'
 import { sem_type_to_cpp, template_prefix, requires_clause, variant_ctor_name, variant_used_type_params, type_phantom_params_for_variants, union_string_lists, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, gen_derive_methods } from './decl/type_gen'
 import { gen_return_body_cpp } from './stmt/return_body'
 import { cpp_safe } from './cpp_naming'
@@ -227,6 +228,51 @@ export fn gen_type_decl_body_cpp(
   end
   result
 end
+
+fn trait_template_header(type_params: [string]) -> string =
+  if type_params.length() > 0 then
+    'template<typename ' + type_params[0] + ', typename Self>\n'
+  else
+    'template<typename Self>\n'
+  end
+
+fn trait_requires_expressions_cpp(
+  context: CodegenContext,
+  trait_name: string,
+  methods: [Shared<SDecl>]
+) -> [string] = do
+  const trait_context = context.for_type_body(trait_name)
+  let expressions: [string] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
+        const prefixed_callee = cpp_safe(mangled)
+        const return_cpp = sem_type_to_cpp(trait_context, return_type)
+        const declval_arguments = concept_declval_arguments_for_params(trait_context, params)
+        expressions.push(expression_output.concept_requires_expression_method_returns_convertible(
+          prefixed_callee,
+          declval_arguments,
+          return_cpp))
+      end,
+      _ => do end
+    }
+    method_index = method_index + 1
+  end
+  expressions
+end
+
+export fn gen_trait_decl_cpp(
+  context: CodegenContext,
+  trait_name: string,
+  type_params: [string],
+  methods: [Shared<SDecl>]
+) -> Shared<CppDecl> =
+  Shared.new(CppConceptRequires(
+    trait_template_header(type_params),
+    cpp_safe(trait_name),
+    'Self',
+    trait_requires_expressions_cpp(context, trait_name, methods)))
 
 fn main_set_args_vector_argument_cpp() -> Shared<CppExpr> =
   Shared.new(CppCall(

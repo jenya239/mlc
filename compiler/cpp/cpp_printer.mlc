@@ -293,6 +293,14 @@ fn namespace_block(name: string, contents_code: string) -> string =
 fn variant_type_alias(template_prefix: string, name: string, types_code: string) -> string =
   `${template_prefix}using ${name} = std::variant<${types_code}>;\n`
 
+fn concept_requires_definition(
+  template_prefix: string,
+  trait_name: string,
+  self_parameter_name: string,
+  requires_expressions: [string]
+) -> string =
+  `${template_prefix}concept ${trait_name} = requires(const ${self_parameter_name}& self) { ${requires_expressions.join('; ')}; };\n`
+
 fn print_struct_fields(fields: [Shared<CppField>]) -> string = do
   let parts: [string] = []
   let mut index = 0
@@ -391,6 +399,8 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
     CppNamespace(name, declarations) => namespace_block(name, print_decls(declarations)),
     CppVariant(template_prefix, name, arms) =>
       variant_type_alias(template_prefix, name, print_variant_types(arms)),
+    CppConceptRequires(template_prefix, trait_name, self_parameter_name, requires_expressions) =>
+      concept_requires_definition(template_prefix, trait_name, self_parameter_name, requires_expressions),
     CppDeclFragment(code) => code
   }
 

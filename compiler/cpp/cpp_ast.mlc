@@ -68,6 +68,7 @@ export type CppDecl =
   | CppFnDef(string, string, string, [string], [Shared<CppStmt>])
   | CppNamespace(string, [Shared<CppDecl>])
   | CppVariant(string, string, [Shared<CppVariantArm>])
+  | CppConceptRequires(string, string, string, [string])
   | CppDeclFragment(string)
 
 export type CppFile = CppFile { header: [Shared<CppDecl>], source: [Shared<CppDecl>] }

@@ -71,7 +71,7 @@ export fn gen_parameter_def_items(context: CodegenContext, params: [Shared<Param
   parts
 end
 
-fn concept_declval_arguments_for_params(context: CodegenContext, params: [Shared<Param>]) -> string = do
+export fn concept_declval_arguments_for_params(context: CodegenContext, params: [Shared<Param>]) -> string = do
   let parts: [string] = []
   let mut parameter_index = 0
   while parameter_index < params.length() do
