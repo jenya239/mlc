@@ -70,7 +70,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=4** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — wire `collect_fn_defs_cpp`.
+**STEP=5** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — audit; close track.
 
 ## Planner checklist (2026-05-31 plan-refresh — EXTEND_BRIDGE open)
 
