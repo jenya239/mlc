@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) **open** STEP=1 — native argc/argv main proto params.
+[TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) **open** STEP=2 — native main proto in gen_fn_*_cpp.
 
 ## Step sizing (good vs bad)
 

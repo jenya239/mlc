@@ -51,6 +51,9 @@ fn function_proto_needs_string_bridge(name: string, _type_params: [string], para
 fn function_declaration_template_prefix(type_params: [string], type_bounds: [[string]]) -> string =
   template_prefix(type_params) + requires_clause(type_params, type_bounds)
 
+export fn main_program_parameter_items_cpp() -> [string] =
+  ['int argc', 'char** argv']
+
 fn native_fn_proto_cpp(
   name: string,
   type_params: [string],
