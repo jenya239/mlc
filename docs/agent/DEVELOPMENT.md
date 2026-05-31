@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) **open** STEP=5 — main() native or documented survivor; close track.
+TRACK_TEMPLATE_BRIDGE **closed** (`c668bb8`). Next: **Planner plan-refresh** — pick track from [TRACK_PLAN.md](TRACK_PLAN.md) backlog.
 
 ## Step sizing (good vs bad)
 

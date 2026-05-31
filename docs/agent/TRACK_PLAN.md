@@ -65,11 +65,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Prefix return-body bridge:** [TRACK_PREFIX_BRIDGE.md](TRACK_PREFIX_BRIDGE.md) — **closed** (step 5 audit)
 - **CppStmtFragment elimination:** [TRACK_FRAGMENT_BRIDGE.md](TRACK_FRAGMENT_BRIDGE.md) — **closed** (`49b7091`)
 - **Structured binding fragments:** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — **closed** (`3904513`)
-- **Native template fn decls:** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — **open** (stability)
+- **Native template fn decls:** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — **closed** (`c668bb8` step 5 audit)
 
 ## Next step (Driver)
 
-**STEP=5** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — main() native or documented survivor; close track.
+**plan-refresh** — pick next track from PLAN backlog (stability > security > performance).
 
 ## Planner checklist (2026-05-30 plan-refresh — TEMPLATE_BRIDGE open)
 
