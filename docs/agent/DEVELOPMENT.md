@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-No open bridge track — **Planner** `plan-refresh` to pick next from [TRACK_PLAN.md](TRACK_PLAN.md) backlog.
+[TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) **open** STEP=1 — native type forward decls (`gen_type_decl_fwd_cpp`).
 
 ## Step sizing (good vs bad)
 

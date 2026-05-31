@@ -5,13 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Driver|
-| driver_turns_since_plan | 6|
-| step_last | 5 |
+| role_last | Planner|
+| driver_turns_since_plan | 0|
+| step_last | plan-refresh |
 | run_tests | 809 |
 | self_host_diff | DIFF_EXIT=0 (step 4 gate) |
-| TRACK_PLAN | TRACK_MAIN_BRIDGE closed |
-| agent_token_last | cr-agent-7758fc4f-32b3-487b-9ffc-21b040000fb7 |
+| TRACK_PLAN | TRACK_DECL_BRIDGE open |
+| agent_token_last | cr-agent-6042400f-5564-4fc9-a59c-7fa3ddd0ba75 |
+
+### Turn 2026-05-31 (Planner plan-refresh — DECL_BRIDGE open)
+
+| turn | 2026-05-31 |
+| role | Planner |
+| step | plan-refresh |
+| done | opened TRACK_DECL_BRIDGE (native non-fn decls); 5 steps |
+| next | ROLE=Driver STEP=1 TRACK_DECL_BRIDGE |
 
 ### Turn 2026-05-31 (Driver MAIN_BRIDGE step 5 — audit; close track)
 

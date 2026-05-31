@@ -67,11 +67,23 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Structured binding fragments:** [TRACK_BINDING_BRIDGE.md](TRACK_BINDING_BRIDGE.md) — **closed** (`3904513`)
 - **Native template fn decls:** [TRACK_TEMPLATE_BRIDGE.md](TRACK_TEMPLATE_BRIDGE.md) — **closed** (`6db2014` step 5 audit)
 - **Native extend forward segments:** [TRACK_EXTEND_BRIDGE.md](TRACK_EXTEND_BRIDGE.md) — **closed** (`52f5c2f` step 5 audit)
-- **Native zero-param main():** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — **closed** (`f2aa065` step 5 audit)
+- **Native zero-param main():** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — **closed** (`521f574` step 5 audit)
+- **Native non-fn decls:** [TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) — **open** (stability)
+
+## Next step (Driver)
+
+**STEP=1** [TRACK_DECL_BRIDGE.md](TRACK_DECL_BRIDGE.md) — `gen_type_decl_fwd_cpp` native type forward.
+
+## Planner checklist (2026-05-31 plan-refresh — DECL_BRIDGE open)
+
+- [x] TRACK_MAIN_BRIDGE closed (`521f574`; 5/5 steps)
+- [x] Priority: stability > security > performance → DECL_BRIDGE (native SDeclType/SDeclTrait phases 0–1)
+- [x] Deferred: trait struct phase 4, extend body native, string-path track, BOOTSTRAP, parser `ref mut`
+- [x] Driver enqueued STEP=1
 
 ## Next step (Planner)
 
-**plan-refresh** — pick next track from PLAN backlog.
+**plan-refresh** — after DECL_BRIDGE close or mid-track if blocked.
 
 ## Planner checklist (2026-05-31 plan-refresh — MAIN_BRIDGE close)
 
