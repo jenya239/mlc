@@ -6,12 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
 | role_last | Driver|
-| driver_turns_since_plan | 2|
-| step_last | 2 |
-| run_tests | 807 |
+| driver_turns_since_plan | 3|
+| step_last | 3 |
+| run_tests | 808 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_MAIN_BRIDGE step 2 done |
+| TRACK_PLAN | TRACK_MAIN_BRIDGE step 3 done |
 | agent_token_last | cr-agent-5bb70a59-1cf7-4aa7-a3b3-85da53784500 |
+
+### Turn 2026-05-31 (Driver MAIN_BRIDGE step 3 — main_set_args_preamble_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 3 |
+| done | main_set_args_preamble_cpp native CppCall; wired in native_fn_decl_cpp |
+| verify | 808 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_MAIN_BRIDGE |
 
 ### Turn 2026-05-31 (Driver MAIN_BRIDGE step 2 — native main proto)
 

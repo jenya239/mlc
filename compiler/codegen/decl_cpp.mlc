@@ -3,7 +3,7 @@
 import { Param } from '../frontend/ast'
 import { SDecl, SExpr, SDeclFn, SExprExtern, sdecl_inner } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
-import { CppDecl, CppFnProto, CppFnDef } from '../cpp/cpp_ast'
+import { CppDecl, CppFnProto, CppFnDef, CppExpr, CppStmt, CppCall, CppBinary } from '../cpp/cpp_ast'
 import { print_decl } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext } from './context'
@@ -73,6 +73,35 @@ fn function_parameter_def_items(
 export fn main_program_parameter_items_cpp() -> [string] =
   ['int argc', 'char** argv']
 
+fn main_set_args_vector_argument_cpp() -> Shared<CppExpr> =
+  Shared.new(CppCall(
+    emit_helpers.make_identifier_cpp_expression('std::vector<mlc::String>'),
+    [
+      Shared.new(CppBinary(
+        "+",
+        emit_helpers.make_identifier_cpp_expression('argv'),
+        emit_helpers.make_integer_cpp_expression(1))),
+      Shared.new(CppBinary(
+        "+",
+        emit_helpers.make_identifier_cpp_expression('argv'),
+        emit_helpers.make_identifier_cpp_expression('argc')))]))
+
+export fn main_set_args_preamble_cpp() -> [Shared<CppStmt>] =
+  [emit_helpers.make_expression_cpp_statement(
+    Shared.new(CppCall(
+      emit_helpers.make_identifier_cpp_expression('mlc::io::set_args'),
+      [main_set_args_vector_argument_cpp()])))]
+
+fn prepend_main_set_args_preamble(statements: [Shared<CppStmt>]) -> [Shared<CppStmt>] = do
+  let mut result = main_set_args_preamble_cpp()
+  let mut statement_index = 0
+  while statement_index < statements.length() do
+    result.push(statements[statement_index])
+    statement_index = statement_index + 1
+  end
+  result
+end
+
 fn function_declaration_template_prefix(type_params: [string], type_bounds: [[string]]) -> string =
   template_prefix(type_params) + requires_clause(type_params, type_bounds)
 
@@ -109,7 +138,13 @@ fn native_fn_decl_cpp(
   const safe_name = context.resolve(name)
   const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
   const parameters = function_parameter_def_items(name, params, prototype_context)
-  const body_statements = gen_return_body_cpp(body, body_context)
+  const return_body_statements = gen_return_body_cpp(body, body_context)
+  const body_statements =
+    if name == 'main' && params.length() == 0 then
+      prepend_main_set_args_preamble(return_body_statements)
+    else
+      return_body_statements
+    end
   Shared.new(CppFnDef(
     function_declaration_template_prefix(type_params, type_bounds),
     return_type_cpp,

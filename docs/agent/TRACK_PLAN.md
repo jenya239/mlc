@@ -71,7 +71,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 ## Next step (Driver)
 
-**STEP=3** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — `main_set_args_preamble_cpp`.
+**STEP=4** [TRACK_MAIN_BRIDGE.md](TRACK_MAIN_BRIDGE.md) — remove `function_decl_needs_string_bridge`.
 
 ## Planner checklist (2026-05-31 plan-refresh — MAIN_BRIDGE open)
 
