@@ -18,7 +18,7 @@
 | turn | 2026-05-31 |
 | role | Driver |
 | step | 1 |
-| done | gen_type_decl_fwd_cpp; CppStruct/CppVariant template_prefix + forward print |
+| done | gen_type_decl_fwd_cpp; CppStruct/CppVariant template_prefix; commit `c435cfa` |
 | verify | 813 pass; self-host DIFF_EXIT=0 |
 | next | ROLE=Driver STEP=2 TRACK_DECL_BRIDGE |
 
