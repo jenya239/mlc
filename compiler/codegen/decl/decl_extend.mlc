@@ -248,7 +248,7 @@ fn gen_extend_trait_wrappers(type_name: string, methods: [Shared<SDecl>], contex
   wrappers
 end
 
-fn gen_extend_extern_method(mangled: string, type_name: string, params: [Shared<Param>], ret_type: Shared<Type>, trait_name: string, context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string) -> string = do
+export fn gen_extend_extern_method(mangled: string, type_name: string, params: [Shared<Param>], ret_type: Shared<Type>, trait_name: string, context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string) -> string = do
   const method_name = if trait_name.length() > 0 then extract_method_name(mangled, type_name) else '' end
   if type_name == 'i32' && method_name == 'to_string' && params.length() > 0 then
     do
@@ -334,20 +334,26 @@ fn gen_extend_trait_concept_adapters(
   adapters
 end
 
+export fn gen_decl_extend_trait_suffix(
+  type_name: string,
+  trait_name: string,
+  methods: [Shared<SDecl>],
+  context: CodegenContext,
+  context_resolve_fn: (CodegenContext, string) -> string
+) -> string = do
+  const extend_context = context.for_type_body(type_name)
+  const cpp_type = type_name_to_cpp(context, type_name)
+  gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn) +
+  gen_extend_trait_concept_adapters(type_name, trait_name, methods, context, context_resolve_fn) +
+  generic_trait_static_assert_line(trait_name, type_name, methods, extend_context, cpp_type)
+end
+
 export fn gen_decl_extend(type_name: string, trait_name: string, methods: [Shared<SDecl>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SDecl>, CodegenContext) -> string) -> string = do
   const extend_context = context.for_type_body(type_name)
   const method_parts = gen_extend_method_parts(type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn)
   const methods_str = method_parts.join('')
   if trait_name.length() > 0 then
-    const trait_wrappers = gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn)
-    const trait_concept_adapters = gen_extend_trait_concept_adapters(type_name, trait_name, methods, context, context_resolve_fn)
-    const cpp_type = type_name_to_cpp(context, type_name)
-    methods_str + trait_wrappers + trait_concept_adapters + generic_trait_static_assert_line(
-      trait_name,
-      type_name,
-      methods,
-      extend_context,
-      cpp_type)
+    methods_str + gen_decl_extend_trait_suffix(type_name, trait_name, methods, context, context_resolve_fn)
   else
     methods_str
   end

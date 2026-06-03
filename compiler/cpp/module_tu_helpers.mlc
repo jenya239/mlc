@@ -1,0 +1,67 @@
+// Native C++ decl builders for module translation unit scaffolding (Phase 2).
+
+import { CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd } from './cpp_ast'
+import * as emit_helpers from './emit_helpers'
+
+fn push_parsed_include_line(declarations: [Shared<CppDecl>], line: string) -> [Shared<CppDecl>] = do
+  if line.length() >= 10
+     && line.substring(0, 10) == "#include \""
+     && line.char_at(line.length() - 1) == "\"" then
+    declarations.push(Shared.new(CppInclude(false, line.substring(10, line.length() - 11))))
+  else if line.length() >= 10
+     && line.substring(0, 10) == "#include <"
+     && line.char_at(line.length() - 1) == ">" then
+    declarations.push(Shared.new(CppInclude(true, line.substring(10, line.length() - 11))))
+  end
+  declarations
+end
+
+export fn append_cpp_declarations_from_include_text(
+  declarations: [Shared<CppDecl>],
+  include_text: string
+) -> [Shared<CppDecl>] = do
+  let mut result = declarations
+  let mut start = 0
+  let mut index = 0
+  while index < include_text.length() do
+    if include_text.char_at(index) == "\n" then
+      if index > start then
+        result = push_parsed_include_line(
+          result,
+          include_text.substring(start, index - start))
+      end
+      start = index + 1
+    end
+    index = index + 1
+  end
+  if start < include_text.length() then
+    result = push_parsed_include_line(
+      result,
+      include_text.substring(start, include_text.length() - start))
+  end
+  result
+end
+
+export fn make_include_guard_ifndef_cpp_declaration(guard_macro: string) -> Shared<CppDecl> =
+  Shared.new(CppIfndef(guard_macro))
+
+export fn make_include_guard_define_cpp_declaration(guard_macro: string) -> Shared<CppDecl> =
+  Shared.new(CppDefineMacro(guard_macro, ""))
+
+export fn make_include_guard_endif_cpp_declaration(guard_macro: string) -> Shared<CppDecl> =
+  Shared.new(CppEndif(guard_macro))
+
+export fn make_namespace_open_cpp_declaration(namespace_identifier: string) -> Shared<CppDecl> =
+  Shared.new(CppNamespaceBegin(namespace_identifier))
+
+export fn make_namespace_close_cpp_declaration(namespace_identifier: string) -> Shared<CppDecl> =
+  Shared.new(CppNamespaceEnd(namespace_identifier))
+
+export fn make_define_main_as_user_main_cpp_declaration() -> Shared<CppDecl> =
+  Shared.new(CppDefineMacro("main", "mlc_user_main"))
+
+export fn make_quoted_include_cpp_declaration(header_filename: string) -> Shared<CppDecl> =
+  Shared.new(CppInclude(false, header_filename))
+
+export fn make_blank_line_cpp_declaration() -> Shared<CppDecl> =
+  emit_helpers.make_fragment_cpp_declaration("\n")

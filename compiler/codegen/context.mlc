@@ -10,6 +10,13 @@ import { build_field_orders, build_method_owners_from_decls, build_variant_types
 import { CtorTypeInfo, build_ctor_type_infos_from_decls, build_ctor_type_info_index, lookup_ctor_type_info, lookup_ctor_type_info_indexed } from './decl/ctor_info'
 import { is_shared_type, is_shared_array_type, is_shared_map_type, array_elem_name, collect_shared_params, collect_shared_array_params, collect_array_elem_types, collect_shared_map_params, collect_value_params } from './decl/param_analysis'
 
+export type StructUsingEntry = StructUsingEntry { alias: string, type_cpp: string }
+
+export type StructUsingData = StructUsingData {
+  entries: Map<string, [StructUsingEntry]>,
+  lines: Map<string, [string]>
+}
+
 export type CodegenContext = CodegenContext {
   field_orders: [Shared<FieldOrder>],
   field_order_index: Map<string, [string]>,
@@ -28,6 +35,7 @@ export type CodegenContext = CodegenContext {
   value_params: [string],
   match_deref_params: [string],
   generic_variants: [string],
+  struct_using_entries: Map<string, [StructUsingEntry]>,
   struct_using_lines: Map<string, [string]>
 }
 export type GenStmtsResult = GenStmtsResult { parts: [string], next_try: i32 }
@@ -115,6 +123,9 @@ fn collect_pat_bind_names_for_context(pat: Shared<Pat>, mut accumulator: [string
   }
 end
 
+export fn struct_using_line_from_entry(entry: StructUsingEntry) -> string =
+  'using ' + entry.alias + ' = ' + entry.type_cpp + ';\n'
+
 extend CodegenContext {
   fn resolve(self: CodegenContext, name: string) -> string = context_resolve(self, name)
 
@@ -140,6 +151,9 @@ extend CodegenContext {
     let new_match_deref_params = self.match_deref_params; new_match_deref_params.push(name)
     CodegenContext { ...self, match_deref_params: new_match_deref_params }
   end
+
+  fn with_struct_using_data(self: CodegenContext, data: StructUsingData) -> CodegenContext =
+    CodegenContext { ...self, struct_using_entries: data.entries, struct_using_lines: data.lines }
 
   fn with_struct_using_lines(self: CodegenContext, lines: Map<string, [string]>) -> CodegenContext =
     CodegenContext { ...self, struct_using_lines: lines }
@@ -234,9 +248,16 @@ export fn create_codegen_context(prog: Program) -> CodegenContext = do
     value_params: [],
     match_deref_params: [],
     generic_variants: build_generic_variants_from_decls(prog.decls),
+    struct_using_entries: Map.new(),
     struct_using_lines: Map.new()
   }
 end
+
+export fn context_with_struct_using_data(
+  base: CodegenContext,
+  data: StructUsingData
+) -> CodegenContext =
+  base.with_struct_using_data(data)
 
 export fn context_with_struct_using_lines(
   base: CodegenContext,

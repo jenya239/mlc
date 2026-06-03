@@ -17,6 +17,7 @@ export type CppParam = CppParam { name: string, parameter_type: Shared<CppType> 
 
 export type CppStmt =
   | CppAutoDecl(string, Shared<CppExpr>)
+  | CppVarDecl(string, Shared<CppType>, Shared<CppExpr>)
   | CppConstDecl(string, Shared<CppType>, Shared<CppExpr>)
   | CppConstexprAutoDecl(string, Shared<CppExpr>)
   | CppReturn(Shared<CppExpr>)
@@ -62,13 +63,23 @@ export type CppVariantArm = CppVariantArm { name: string, types: [Shared<CppType
 
 export type CppDecl =
   | CppInclude(bool, string)
+  | CppIfndef(string)
+  | CppDefineMacro(string, string)
+  | CppEndif(string)
+  | CppUndef(string)
+  | CppNamespaceBegin(string)
+  | CppNamespaceEnd(string)
   | CppUsing(string, string)
   | CppStruct(string, string, [Shared<CppField>], bool)
   | CppFnProto(string, string, string, [string])
-  | CppFnDef(string, string, string, [string], [Shared<CppStmt>])
+  | CppFnDef(string, string, string, [string], [Shared<CppStmt>], i32)
   | CppNamespace(string, [Shared<CppDecl>])
   | CppVariant(string, string, [Shared<CppVariantArm>])
   | CppConceptRequires(string, string, string, [string])
+  | CppStaticAssert(string, [string], string)
+  | CppStdHashSpecialization(string, [Shared<CppStmt>])
+  | CppDeclSequence([Shared<CppDecl>])
+  | CppDeclEmpty
   | CppDeclFragment(string)
 
 export type CppFile = CppFile { header: [Shared<CppDecl>], source: [Shared<CppDecl>] }

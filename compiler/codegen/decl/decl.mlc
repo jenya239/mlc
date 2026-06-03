@@ -219,7 +219,7 @@ export type DeclPartsBundle = DeclPartsBundle {
   fn_defs: [string]
 }
 
-fn exported_type_names_from_decls(decls: [Shared<SDecl>]) -> [string] = do
+export fn exported_type_names_from_decls(decls: [Shared<SDecl>]) -> [string] = do
   let names: [string] = []
   let mut index = 0
   while index < decls.length() do
@@ -238,7 +238,7 @@ fn exported_type_names_from_decls(decls: [Shared<SDecl>]) -> [string] = do
   names
 end
 
-fn extend_helper_protos_for_exported_types(decls: [Shared<SDecl>], context: CodegenContext) -> [string] = do
+export fn extend_helper_protos_for_exported_types(decls: [Shared<SDecl>], context: CodegenContext) -> [string] = do
   const exported_types = exported_type_names_from_decls(decls)
   let mut result: [string] = []
   let mut index = 0

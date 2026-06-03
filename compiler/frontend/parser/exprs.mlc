@@ -1068,9 +1068,11 @@ fn parse_record_expr(parser: Parser, record_name: string, record_span: Span) -> 
   const lit_parts = parsed_lit_parts.lit_parts
   const after_record_body = parsed_lit_parts.parser
   if lit_parts.length() == 2 then
-    match lit_parts[0] {
+    const first_part = lit_parts[0]
+    const second_part = lit_parts[1]
+    match first_part {
       RecordLitSpread(base_expression) =>
-        match lit_parts[1] {
+        match second_part {
           RecordLitFields(override_fields) =>
             ExprResult {
               expr: Shared.new(ExprRecordUpdate(record_name, base_expression, override_fields, record_span)),

@@ -123,7 +123,13 @@ module MLC
             def lower_statements(block_expr, emit_return: true)
               statements = block_expr.statements.flat_map do |stmt|
                 result = lower_statement(stmt)
-                result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
+                if result.is_a?(CppAst::Nodes::Program)
+                  result.statements
+                elsif result.is_a?(Array)
+                  result
+                else
+                  [result]
+                end
               end
 
               # Skip unit literals - they represent void/no value

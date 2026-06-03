@@ -2,10 +2,10 @@
 
 import { TKind, Token, LexOut } from './ast_tokens'
 
-type LexState     = LexState     { src: string, pos: i32, line: i32, col: i32 }
-type ScanResult   = ScanResult   { state: LexState, token: Token }
-type ScanStrResult = ScanStrResult { state: LexState, token: Token, error: string }
-type SkipResult   = SkipResult   { state: LexState, error: string }
+type LexState     = { src: string, pos: i32, line: i32, col: i32 }
+type ScanResult   = { after: LexState, token: Token }
+type ScanStrResult = { after: LexState, token: Token, error: string }
+type SkipResult   = { after: LexState, error: string }
 
 fn lexer_internal_panic(message: string) -> unit = do
   println('lexer panic: ' + message)
@@ -96,12 +96,12 @@ fn scan_ident(state: LexState) -> ScanResult = do
     current = current.lex_advance()
   end
   const word = source.byte_substring(start, current.pos - start)
-  ScanResult { state: current, token: Token { kind: keyword_kind(word), line: token_line, col: token_col } }
+  ScanResult { after: current, token: Token { kind: keyword_kind(word), line: token_line, col: token_col } }
 end
 
 fn is_alpha_lower(character: string) -> bool = character >= "a" && character <= "z"
 
-type SuffixScan = SuffixScan { suffix: string, after: LexState }
+type SuffixScan = { suffix: string, after: LexState }
 
 fn try_scan_suffix(state: LexState) -> SuffixScan = do
   const numeric_type_suffixes: [string] = ['i64', 'u8', 'usize', 'f64', 'f32']
@@ -143,18 +143,18 @@ fn scan_int(state: LexState) -> ScanResult = do
       current = current.lex_advance()
     end
     const raw_float = current.src.byte_substring(int_start, current.pos - int_start)
-    const scan = try_scan_suffix(current)
-    ScanResult { state: scan.after, token: Token { kind: LFloat(raw_float), line: token_line, col: token_col } }
+    let { after } = try_scan_suffix(current)
+    ScanResult { after: after, token: Token { kind: LFloat(raw_float), line: token_line, col: token_col } }
   else
-    const scan = try_scan_suffix(current)
-    if scan.suffix == 'i64' then
-      ScanResult { state: scan.after, token: Token { kind: LI64(value.to_string()), line: token_line, col: token_col } }
-    else if scan.suffix == 'u8' then
-      ScanResult { state: scan.after, token: Token { kind: LU8(value.to_string()), line: token_line, col: token_col } }
-    else if scan.suffix == 'usize' then
-      ScanResult { state: scan.after, token: Token { kind: LUsize(value.to_string()), line: token_line, col: token_col } }
+    let { suffix, after } = try_scan_suffix(current)
+    if suffix == 'i64' then
+      ScanResult { after: after, token: Token { kind: LI64(value.to_string()), line: token_line, col: token_col } }
+    else if suffix == 'u8' then
+      ScanResult { after: after, token: Token { kind: LU8(value.to_string()), line: token_line, col: token_col } }
+    else if suffix == 'usize' then
+      ScanResult { after: after, token: Token { kind: LUsize(value.to_string()), line: token_line, col: token_col } }
     else
-      ScanResult { state: scan.after, token: Token { kind: LInt(value), line: token_line, col: token_col } }
+      ScanResult { after: after, token: Token { kind: LInt(value), line: token_line, col: token_col } }
     end
   end
 end
@@ -201,7 +201,7 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
     else LStr(joined)
     end
   ScanStrResult {
-    state: current,
+    after: current,
     token: Token { kind: token_kind, line: token_line, col: token_col },
     error
   }
@@ -275,7 +275,7 @@ fn scan_string(state: LexState) -> ScanStrResult = do
     current = current.lex_advance()
   end
   ScanStrResult {
-    state: current,
+    after: current,
     token: Token { kind: LStr(parts.join('')), line: token_line, col: token_col },
     error
   }
@@ -365,7 +365,7 @@ fn scan_template(state: LexState) -> ScanStrResult = do
   end
   parts.push(current_lit.join(''))
   ScanStrResult {
-    state: current,
+    after: current,
     token: Token { kind: LTemplate(parts), line: token_line, col: token_col },
     error
   }
@@ -397,7 +397,7 @@ fn skip_whitespace(state: LexState) -> SkipResult = do
       break
     end
   end
-  SkipResult { state: current, error: error }
+  SkipResult { after: current, error: error }
 end
 
 fn scan_op(state: LexState) -> ScanResult = do
@@ -405,31 +405,31 @@ fn scan_op(state: LexState) -> ScanResult = do
   const token_col  = state.col
   const character  = state.current()
   const next       = state.peek(1)
-  if      character == "-" && next == ">" then ScanResult { state: state.lex_advance_by(2), token: state.token(Arrow) }
-  else if character == "=" && next == ">" then ScanResult { state: state.lex_advance_by(2), token: state.token(FatArrow) }
-  else if character == "|" && next == ">" then ScanResult { state: state.lex_advance_by(2), token: state.token(Pipe) }
-  else if character == "=" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('==')) }
-  else if character == "!" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('!=')) }
-  else if character == "<" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('<=')) }
-  else if character == ">" && next == "=" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('>=')) }
-  else if character == "&" && next == "&" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('&&')) }
-  else if character == "|" && next == "|" then ScanResult { state: state.lex_advance_by(2), token: state.token(Op('||')) }
-  else if character == "=" then ScanResult { state: state.lex_advance(), token: state.token(Equal) }
-  else if character == "|" then ScanResult { state: state.lex_advance(), token: state.token(Bar) }
-  else if character == "?" then ScanResult { state: state.lex_advance(), token: state.token(Question) }
+  if      character == "-" && next == ">" then ScanResult { after: state.lex_advance_by(2), token: state.token(Arrow) }
+  else if character == "=" && next == ">" then ScanResult { after: state.lex_advance_by(2), token: state.token(FatArrow) }
+  else if character == "|" && next == ">" then ScanResult { after: state.lex_advance_by(2), token: state.token(Pipe) }
+  else if character == "=" && next == "=" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('==')) }
+  else if character == "!" && next == "=" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('!=')) }
+  else if character == "<" && next == "=" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('<=')) }
+  else if character == ">" && next == "=" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('>=')) }
+  else if character == "&" && next == "&" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('&&')) }
+  else if character == "|" && next == "|" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('||')) }
+  else if character == "=" then ScanResult { after: state.lex_advance(), token: state.token(Equal) }
+  else if character == "|" then ScanResult { after: state.lex_advance(), token: state.token(Bar) }
+  else if character == "?" then ScanResult { after: state.lex_advance(), token: state.token(Question) }
   else if character == "." && next == "." && state.peek(2) == "."
-    then ScanResult { state: state.lex_advance_by(3), token: state.token(Spread) }
-  else if character == "."  then ScanResult { state: state.lex_advance(), token: state.token(Dot) }
-  else if character == "("  then ScanResult { state: state.lex_advance(), token: state.token(LParen) }
-  else if character == ")"  then ScanResult { state: state.lex_advance(), token: state.token(RParen) }
-  else if character == "\{" then ScanResult { state: state.lex_advance(), token: state.token(LBrace) }
-  else if character == "\}" then ScanResult { state: state.lex_advance(), token: state.token(RBrace) }
-  else if character == "["  then ScanResult { state: state.lex_advance(), token: state.token(LBracket) }
-  else if character == "]"  then ScanResult { state: state.lex_advance(), token: state.token(RBracket) }
-  else if character == ","  then ScanResult { state: state.lex_advance(), token: state.token(Comma) }
-  else if character == ";"  then ScanResult { state: state.lex_advance(), token: state.token(Semicolon) }
-  else if character == ":"  then ScanResult { state: state.lex_advance(), token: state.token(Colon) }
-  else ScanResult { state: state.lex_advance(), token: state.token(Op(character)) }
+    then ScanResult { after: state.lex_advance_by(3), token: state.token(Spread) }
+  else if character == "."  then ScanResult { after: state.lex_advance(), token: state.token(Dot) }
+  else if character == "("  then ScanResult { after: state.lex_advance(), token: state.token(LParen) }
+  else if character == ")"  then ScanResult { after: state.lex_advance(), token: state.token(RParen) }
+  else if character == "\{" then ScanResult { after: state.lex_advance(), token: state.token(LBrace) }
+  else if character == "\}" then ScanResult { after: state.lex_advance(), token: state.token(RBrace) }
+  else if character == "["  then ScanResult { after: state.lex_advance(), token: state.token(LBracket) }
+  else if character == "]"  then ScanResult { after: state.lex_advance(), token: state.token(RBracket) }
+  else if character == ","  then ScanResult { after: state.lex_advance(), token: state.token(Comma) }
+  else if character == ";"  then ScanResult { after: state.lex_advance(), token: state.token(Semicolon) }
+  else if character == ":"  then ScanResult { after: state.lex_advance(), token: state.token(Colon) }
+  else ScanResult { after: state.lex_advance(), token: state.token(Op(character)) }
   end
 end
 
@@ -438,43 +438,83 @@ fn accumulate_nonempty_scan_message_into_errors(mut error_messages: [string], me
   ()
 end
 
+fn apply_skip_whitespace(state: LexState, mut error_messages: [string]) -> LexState = do
+  let { after, error } = skip_whitespace(state)
+  accumulate_nonempty_scan_message_into_errors(error_messages, error)
+  after
+end
+
+fn push_ident_scan(state: LexState, mut tokens: [Token]) -> LexState = do
+  let { after, token } = scan_ident(state)
+  tokens.push(token)
+  after
+end
+
+fn push_int_scan(state: LexState, mut tokens: [Token]) -> LexState = do
+  let { after, token } = scan_int(state)
+  tokens.push(token)
+  after
+end
+
+fn push_string_scan(state: LexState, mut tokens: [Token], mut error_messages: [string]) -> LexState = do
+  let { after, token, error } = scan_string(state)
+  tokens.push(token)
+  accumulate_nonempty_scan_message_into_errors(error_messages, error)
+  after
+end
+
+fn push_single_string_scan(state: LexState, mut tokens: [Token], mut error_messages: [string]) -> LexState = do
+  let { after, token, error } = scan_single_string(state)
+  tokens.push(token)
+  accumulate_nonempty_scan_message_into_errors(error_messages, error)
+  after
+end
+
+fn push_template_scan(state: LexState, mut tokens: [Token], mut error_messages: [string]) -> LexState = do
+  let { after, token, error } = scan_template(state)
+  tokens.push(token)
+  accumulate_nonempty_scan_message_into_errors(error_messages, error)
+  after
+end
+
+fn push_operator_scan(state: LexState, mut tokens: [Token]) -> LexState = do
+  let { after, token } = scan_op(state)
+  tokens.push(token)
+  after
+end
+
 export fn tokenize(source: string) -> LexOut = do
-  let mut state = LexState { src: source, pos: 0, line: 1, col: 1 }
+  let mut lexer_state = LexState { src: source, pos: 0, line: 1, col: 1 }
   const tokens: [Token] = []
   let mut errors: [string] = []
-  while !state.eof() do
-    const position_before_token = state.pos
-    const skip_result = skip_whitespace(state)
-    state = skip_result.state
-    accumulate_nonempty_scan_message_into_errors(errors, skip_result.error)
-    if state.eof() then break end
-    const character = state.current()
+  while !lexer_state.eof() do
+    const position_before_token = lexer_state.pos
+    lexer_state = apply_skip_whitespace(lexer_state, errors)
+    if lexer_state.eof() then break end
+    const character = lexer_state.current()
     if is_alpha(character) then
-      const result = scan_ident(state); tokens.push(result.token); state = result.state
+      lexer_state = push_ident_scan(lexer_state, tokens)
       ()
     else if is_digit(character) then
-      const result = scan_int(state); tokens.push(result.token); state = result.state
+      lexer_state = push_int_scan(lexer_state, tokens)
       ()
     else if character == "\"" then
-      const result = scan_string(state); tokens.push(result.token); state = result.state
-      accumulate_nonempty_scan_message_into_errors(errors, result.error)
+      lexer_state = push_string_scan(lexer_state, tokens, errors)
       ()
     else if character == "'" then
-      const result = scan_single_string(state); tokens.push(result.token); state = result.state
-      accumulate_nonempty_scan_message_into_errors(errors, result.error)
+      lexer_state = push_single_string_scan(lexer_state, tokens, errors)
       ()
     else if character == "`" then
-      const result = scan_template(state); tokens.push(result.token); state = result.state
-      accumulate_nonempty_scan_message_into_errors(errors, result.error)
+      lexer_state = push_template_scan(lexer_state, tokens, errors)
       ()
     else
-      const result = scan_op(state); tokens.push(result.token); state = result.state
+      lexer_state = push_operator_scan(lexer_state, tokens)
       ()
     end
-    if state.pos == position_before_token then
-      lexer_internal_panic('tokenize made no progress at byte ' + state.pos.to_string())
+    if lexer_state.pos == position_before_token then
+      lexer_internal_panic('tokenize made no progress at byte ' + lexer_state.pos.to_string())
     end
   end
-  tokens.push(state.token(Eof))
+  tokens.push(lexer_state.token(Eof))
   LexOut { tokens, errors }
 end

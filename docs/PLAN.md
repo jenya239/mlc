@@ -412,6 +412,105 @@ compiler/
 
 Это основная архитектурная работа. Делается инкрементально, без регрессий.
 
+### Phase 2.5: Языковые улучшения
+
+**Цель**: убрать boilerplate, который заметен уже в текущем коде компилятора.
+
+1. **Match по строкам** — сейчас все `keyword_kind`-функции это длинные `if/else if` цепочки. Нужно:
+   - Parser: разрешить строковые литералы как паттерны в `match`-армах.
+   - Checker: тип subject должен быть `string`; паттерны проверяются на уникальность.
+   - Codegen: генерить `if/else if` или lookup-таблицу.
+   - Пример после:
+     ```
+     fn keyword_kind(word: string) -> TKind =
+       match word {
+       | "fn"     -> KFn
+       | "type"   -> KType
+       | "let"    -> KLet
+       | _        -> KIdent(word)
+       }
+     ```
+
+2. **Match со строковыми regex-паттернами** (опционально, после п.1):
+   - Синтаксис: `| /^[0-9]+$/ -> ...` в match-армах.
+   - Codegen: вызов `std::regex_match` или `re2` в C++ выходе.
+   - Полезно для лексеров, валидации, CLI-парсеров.
+
+3. **Деструктуризация в let** — `let { st, tok } = scan(state)` — синтаксис уже в parser/checker (тесты есть), но в коде компилятора не используется. Задача: пройтись по `compiler/` и заменить `result.field` паттерн.
+
+4. **Type aliases** — `type CppExprs = [Shared<CppExpr>]`. Нужно в parser + codegen для устранения повторений длинных generic-типов.
+
+5. **ParseResult<T>** — сейчас 15 одинаковых структур `{ value: T, parser: Parser }` в `frontend/`. После generics на record — одна. Зависит от полных generics.
+
+### Phase 2.6: Структурный рефакторинг компилятора
+
+**Цель**: перейти от процедурного стиля (свободные функции `fn f(ctx, node)`) к методам через `extend` и трейты. Сделать добавление новых форм AST явным на уровне системы типов.
+
+**Контекст**: сейчас в 138 файлах компилятора только 22 использования `extend`. Основная масса кода — свободные функции. Каждый проход (names, mutations, infer, transform, codegen) содержит свой полный `match expression { ... }` на все ~25 форм AST — итого 4–5 копий одинаковой структуры.
+
+1. **Visitor-паттерн через трейт** — `ExprVisitor<Result>` уже есть в `expr_visitor.mlc`. Перевести все проходы:
+   ```
+   // Сейчас — fn infer_expr(ctx, expr) с match внутри на 25 веток
+   // После:
+   extend InferPass : ExprVisitor<InferResult> {
+     fn visit_call(self, ...) -> InferResult
+     fn visit_match(self, ...) -> InferResult
+     // компилятор скажет, если какой-то формы нет
+   }
+   extend CodegenPass : ExprVisitor<Shared<CppExpr>> { ... }
+   extend NamesPass   : ExprVisitor<NameCheckResult>  { ... }
+   ```
+   Файлы: `checker/infer/infer.mlc`, `checker/names.mlc`, `checker/check_mutations.mlc`, `transform/transform.mlc`, `codegen/eval.mlc`.
+
+2. **Методы на контексте** — перевести `fn gen_expr(context, expr)` в `extend CodegenContext { fn gen_expr(self, expr) }`. Уже начато в `context.mlc:129`, нужно распространить на весь `codegen/`.
+
+3. **Методы на типах результатов** — `extend InferResult`, `extend NameCheckResult` уже частично сделаны. Дополнить: `.and_then`, `.map_type`, `.merge_errors`.
+
+4. **Display-трейт для CppAST** — вместо `fn print_expr(expr) -> string` в `cpp_printer.mlc`:
+   ```
+   extend CppExpr : Display {
+     fn display(self) -> string = match self { ... }
+   }
+   ```
+   Это позволит `expr.display()` и использовать в string interpolation.
+
+5. **Рефакторинг checker/transform** — разбить `transform/transform.mlc` (828 строк) по форме AST по аналогии с существующими `infer_call.mlc`, `infer_match.mlc`. Один файл = одна форма или группа форм.
+
+6. **TypeRegistry → подструктуры** — разбить god-object (15+ map) на `FnIndex`, `AdtIndex`, `RecordIndex`. Каждый index — своя структура с методами.
+
+7. **Устранение сокращений** — все переменные, параметры, поля и типы должны иметь полные имена. Текущий масштаб (~1000 вхождений):
+
+   | Сокращение | Замена | Примечание |
+   |------------|--------|------------|
+   | `ctx` | `context` | переменные и типы |
+   | `expr` / `SExpr` / `CppExpr` | `expression` / `SemanticExpression` / `CppExpression` | |
+   | `decl` / `SDecl` / `CppDecl` | `declaration` / `SemanticDeclaration` / `CppDeclaration` | |
+   | `pat` / `Pat` | `pattern` / `Pattern` | |
+   | `typ` | `type_value` | `type` — ключевое слово, поэтому суффикс `_value` |
+   | `st` | `state` | |
+   | `tok` / `TKind` / `CppTKind` | `token` / `TokenKind` / `CppTokenKind` | |
+   | `stmt` / `SStmt` / `CppStmt` | `statement` / `SemanticStatement` / `CppStatement` | |
+   | `col` | `column` | |
+   | `ident` | `identifier` | |
+   | `src` | `source` | |
+   | `arg` | `argument` | |
+   | `pos` | `position` | |
+   | `val` | `value` | |
+   | `err` | `error` | |
+   | `ret` | `return_value` | |
+
+   Делать пофайлово, верифицировать selfhost diff после каждого файла.
+
+8. **Кавычки строковых литералов** — единое правило:
+   - Одинарные кавычки `'text'` — все строки без интерполяции, включая `'\n'`, `'\t'`, `'\0'`.
+   - Backticks `` `Hello ${name}` `` — только при интерполяции.
+   - Двойные кавычки — не используются.
+
+   Сейчас: 69 файлов содержат ~1602 строки с двойными кавычками там, где интерполяция не нужна. Заменить пофайлово вместе с п.7.
+
+**Верификация**: `compiler/build.sh` + selfhost diff пустой после каждого шага.
+**Ссылка**: полный анализ → `docs/CODE_REVIEW_2026_06.md`.
+
 ### Phase 3: Инструментарий
 
 **Цель**: сделать язык пригодным для использования другими.

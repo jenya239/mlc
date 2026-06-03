@@ -1,0 +1,75 @@
+// Native C++ AST codegen for trait vtable struct (phase 4).
+
+import { Param } from '../../frontend/ast'
+import { SDecl, SDeclFn } from '../../ir/semantic_ir'
+import { Type } from '../../checker/registry'
+import { CodegenContext } from '../context'
+import { sem_type_to_cpp, type_to_cpp } from './type_gen'
+import { extract_method_name } from './decl_extend'
+import { cpp_safe } from '../cpp_naming'
+import { CppDecl, CppField, CppStruct } from '../../cpp/cpp_ast'
+import * as expression_output from '../expr/expr'
+
+fn trait_method_parameter_types_cpp(context: CodegenContext, params: [Shared<Param>]) -> [string] = do
+  let parameter_types: [string] = []
+  let mut parameter_index = 0
+  while parameter_index < params.length() do
+    if params[parameter_index].name != 'self' then
+      parameter_types.push(type_to_cpp(context, params[parameter_index].typ))
+    end
+    parameter_index = parameter_index + 1
+  end
+  parameter_types
+end
+
+export fn trait_method_field_cpp(
+  context: CodegenContext,
+  method_name: string,
+  params: [Shared<Param>],
+  return_type: Shared<Type>
+) -> Shared<CppField> =
+  Shared.new(CppField {
+    typ: expression_output.cpp_std_function_type(
+      sem_type_to_cpp(context, return_type),
+      trait_method_parameter_types_cpp(context, params).join(', ')),
+    name: cpp_safe(method_name)
+  })
+
+fn trait_struct_template_prefix(type_params: [string]) -> string =
+  if type_params.length() > 0 then
+    expression_output.cpp_template_typename_header_line(type_params.join(', '))
+  else
+    ''
+  end
+
+fn trait_struct_fields_cpp(
+  trait_context: CodegenContext,
+  trait_name: string,
+  methods: [Shared<SDecl>]
+) -> [Shared<CppField>] = do
+  let fields: [Shared<CppField>] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
+        const method_name = extract_method_name(mangled, trait_name)
+        fields.push(trait_method_field_cpp(trait_context, method_name, params, return_type))
+      end,
+      _ => do end
+    }
+    method_index = method_index + 1
+  end
+  fields
+end
+
+export fn gen_trait_struct_cpp(
+  context: CodegenContext,
+  trait_name: string,
+  type_params: [string],
+  methods: [Shared<SDecl>]
+) -> Shared<CppDecl> =
+  Shared.new(CppStruct(
+    trait_struct_template_prefix(type_params),
+    expression_output.trait_vtable_struct_cpp_name(cpp_safe(trait_name)),
+    trait_struct_fields_cpp(context.for_type_body(trait_name), trait_name, methods),
+    false))

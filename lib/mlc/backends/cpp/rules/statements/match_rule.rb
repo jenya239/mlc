@@ -87,7 +87,7 @@ module MLC
               scrutinee_src = scrutinee.to_source
               is_shared = shared_type?(scrutinee_type)
               needs_star = is_shared || ::MLC::Backends::Cpp::MatchScrutineeDeref.ast_sum_needs_star?(
-                context.type_registry, scrutinee_type
+                context.type_registry, scrutinee_type, scrutinee_node: scrutinee_node
               )
               inner = is_shared ? scrutinee_type.type_args&.first : scrutinee_type
               inner_type_name = extract_type_name(inner)

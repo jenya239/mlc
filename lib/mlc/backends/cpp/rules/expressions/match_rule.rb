@@ -124,7 +124,9 @@ module MLC
 
               scrutinee_src = scrutinee.to_source
               is_shared = shared_type?(scrutinee_type)
-              needs_star = is_shared || MatchScrutineeDeref.ast_sum_needs_star?(context.type_registry, scrutinee_type)
+              needs_star = is_shared || MatchScrutineeDeref.ast_sum_needs_star?(
+                context.type_registry, scrutinee_type, scrutinee_node: scrutinee_node
+              )
               inner = is_shared ? scrutinee_type.type_args&.first : scrutinee_type
               inner_type_name = inner ? extract_type_name(inner) : nil
               is_wrapper = inner_type_name && context.cyclic_sum_types.include?(inner_type_name)
@@ -444,12 +446,12 @@ module MLC
               "#{ns}::#{case_name}"
             end
 
-            def variant_src_for(scrutinee_src, scrutinee_type)
+            def variant_src_for(scrutinee_src, scrutinee_type, scrutinee_node: nil)
               return scrutinee_src unless scrutinee_type
 
               needs_star = shared_type?(scrutinee_type) ||
                            ::MLC::Backends::Cpp::MatchScrutineeDeref.ast_sum_needs_star?(
-                             context.type_registry, scrutinee_type
+                             context.type_registry, scrutinee_type, scrutinee_node: scrutinee_node
                            )
               base = needs_star ? "(*#{scrutinee_src})" : scrutinee_src
               inner = shared_type?(scrutinee_type) ? scrutinee_type.type_args&.first : scrutinee_type
@@ -471,7 +473,7 @@ module MLC
                                MATCH_SCRUTINEE_SHARED_CALLS.include?(sn.callee.name)
                               "(*#{scrutinee_src})"
                             else
-                              variant_src_for(scrutinee_src, scrutinee_type)
+                              variant_src_for(scrutinee_src, scrutinee_type, scrutinee_node: sn)
                             end
 
               match_expr.arms.each do |arm|

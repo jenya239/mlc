@@ -2,13 +2,17 @@
 
 import { TestResult, assert_eq_str } from './test_runner'
 import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_printer'
+import * as module_tu_helpers from '../cpp/module_tu_helpers'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
          CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
-         CppReturn, CppExprStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
+         CppReturn, CppExprStmt, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
-         CppInclude, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm,
+         CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclSequence, CppDeclEmpty,
          CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
+
+fn print_declarations(declarations: [Shared<CppDecl>]) -> string =
+  declarations.map(declaration => print_decl(declaration)).join('')
 
 fn integer_type() -> Shared<CppType> =
   Shared.new(CppTypeName('int'))
@@ -141,6 +145,40 @@ export fn cpp_printer_tests() -> [TestResult] = do
     print_statement(Shared.new(CppConstDecl('limit', int_type, Shared.new(CppInt(10))))),
     'const int limit = 10;'))
 
+  results.push(assert_eq_str('print_statement CppVarDecl size_t seed',
+    print_statement(Shared.new(CppVarDecl("h", Shared.new(CppTypeName("size_t")),
+      Shared.new(CppIdent("1469598103934665603ULL"))))),
+    "size_t h = 1469598103934665603ULL;"))
+
+  results.push(assert_eq_str('print_statement hash empty return cast',
+    print_statement(Shared.new(CppReturn(Shared.new(CppCast(
+      CppCastStatic,
+      Shared.new(CppTypeName("size_t")),
+      Shared.new(CppIdent("1469598103934665603ULL"))))))),
+    "return static_cast<size_t>(1469598103934665603ULL);"))
+
+  const hash_access = Shared.new(CppMember(Shared.new(CppIdent("self")), "tag", false))
+  const hash_identifier = Shared.new(CppIdent("h"))
+  const hash_call = Shared.new(CppCall(
+    Shared.new(CppAggregateInit("std::hash<int>", [])),
+    [hash_access]))
+  const hash_plus_constant = Shared.new(CppBinary(
+    "+",
+    hash_call,
+    Shared.new(CppIdent("0x9e3779b97f4a7c15ULL"))))
+  const hash_plus_shift = Shared.new(CppBinary(
+    "+",
+    hash_plus_constant,
+    Shared.new(CppBinary("<<", hash_identifier, Shared.new(CppInt(6))))))
+  const hash_rhs = Shared.new(CppBinary(
+    "+",
+    hash_plus_shift,
+    Shared.new(CppBinary(">>", hash_identifier, Shared.new(CppInt(2))))))
+  const hash_combine = Shared.new(CppBinary("^=", hash_identifier, hash_rhs))
+  results.push(assert_eq_str('print_statement hash combine expr',
+    print_statement(Shared.new(CppExprStmt(hash_combine))),
+    "(h ^= (((std::hash<int>{}(self.tag) + 0x9e3779b97f4a7c15ULL) + (h << 6)) + (h >> 2)));"))
+
   results.push(assert_eq_str('print_statement CppConstexprAutoDecl',
     print_statement(Shared.new(CppConstexprAutoDecl('limit', Shared.new(CppInt(42))))),
     'constexpr auto limit = 42;'))
@@ -173,11 +211,35 @@ export fn cpp_printer_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('print_decl CppInclude angle',
     print_decl(Shared.new(CppInclude(true, 'vector'))),
-    '#include <vector>'))
+    '#include <vector>\n'))
 
   results.push(assert_eq_str('print_decl CppInclude quoted',
     print_decl(Shared.new(CppInclude(false, 'local.h'))),
-    '#include "local.h"'))
+    '#include "local.h"\n'))
+
+  results.push(assert_eq_str('print_decl CppIfndef',
+    print_decl(Shared.new(CppIfndef('FOO_HPP'))),
+    '#ifndef FOO_HPP\n'))
+
+  results.push(assert_eq_str('print_decl CppDefineMacro guard',
+    print_decl(Shared.new(CppDefineMacro('FOO_HPP', ''))),
+    '#define FOO_HPP\n'))
+
+  results.push(assert_eq_str('print_decl CppDefineMacro main shim',
+    print_decl(Shared.new(CppDefineMacro('main', 'mlc_user_main'))),
+    '#define main mlc_user_main\n'))
+
+  results.push(assert_eq_str('print_decl CppEndif',
+    print_decl(Shared.new(CppEndif('FOO_HPP'))),
+    '#endif // FOO_HPP\n'))
+
+  results.push(assert_eq_str('print_decl CppNamespaceBegin',
+    print_decl(Shared.new(CppNamespaceBegin('ast'))),
+    'namespace ast {\n'))
+
+  results.push(assert_eq_str('print_decl CppNamespaceEnd',
+    print_decl(Shared.new(CppNamespaceEnd('ast'))),
+    '} // namespace ast\n'))
 
   results.push(assert_eq_str('print_decl CppStruct',
     print_decl(Shared.new(CppStruct('', 'Point', [Shared.new(CppField { typ: "int", name: "x" })], false))),
@@ -204,7 +266,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
     'template<typename T>\nT identity(T value) noexcept;\n'))
 
   results.push(assert_eq_str('print_decl CppFnDef',
-    print_decl(Shared.new(CppFnDef('', 'int', 'answer', [], [Shared.new(CppReturn(Shared.new(CppInt(42))))]))),
+    print_decl(Shared.new(CppFnDef('', 'int', 'answer', [], [Shared.new(CppReturn(Shared.new(CppInt(42))))], 1))),
     'int answer() noexcept{\n  return 42;\n}\n'))
 
   results.push(assert_eq_str('print_decl CppFnDef template',
@@ -213,7 +275,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
       "T",
       'identity',
       ['T value'],
-      [Shared.new(CppReturn(Shared.new(CppIdent('value'))))]))),
+      [Shared.new(CppReturn(Shared.new(CppIdent('value'))))], 1))),
     'template<typename T>\nT identity(T value) noexcept{\n  return value;\n}\n'))
 
   results.push(assert_eq_str('print_decl CppNamespace',
@@ -233,12 +295,76 @@ export fn cpp_printer_tests() -> [TestResult] = do
     print_decl(Shared.new(CppVariant('', 'Color', color_arms))),
     'using Color = std::variant<Red, Green, Blue>;\n'))
 
+  results.push(assert_eq_str('print_decl CppStaticAssert one type argument',
+    print_decl(Shared.new(CppStaticAssert('Display', ['Color'], 'Color does not implement Display'))),
+    'static_assert(Display<Color>, "Color does not implement Display");\n'))
+
+  results.push(assert_eq_str('print_decl CppStaticAssert two type arguments',
+    print_decl(Shared.new(CppStaticAssert('ExprVisitor', ['mlc::String', 'Color'], 'Color does not implement ExprVisitor'))),
+    'static_assert(ExprVisitor<mlc::String, Color>, "Color does not implement ExprVisitor");\n'))
+
+  results.push(assert_eq_str('print_decl CppDeclSequence',
+    print_decl(Shared.new(CppDeclSequence([
+      Shared.new(CppUsing('Left', 'int')),
+      Shared.new(CppUsing('Right', 'int'))]))),
+    'using Left = int;using Right = int;'))
+
+  results.push(assert_eq_str('print_decl CppDeclEmpty',
+    print_decl(Shared.new(CppDeclEmpty)), ''))
+
+  results.push(assert_eq_str('print_decl CppStdHashSpecialization',
+    print_decl(Shared.new(CppStdHashSpecialization('Item', [Shared.new(CppReturn(Shared.new(CppInt(0))))]))),
+    'namespace std {\n' +
+    'template<>\n' +
+    'struct hash<Item> {\n' +
+    "  size_t operator()(const Item& self) const noexcept {\n" +
+    '    return 0;\n' +
+    '  }\n' +
+    '};\n' +
+    '}\n'))
+
   const header_include = Shared.new(CppInclude(true, 'vector'))
-  const source_function = Shared.new(CppFnDef('', 'int', 'main', [], [Shared.new(CppReturn(Shared.new(CppInt(0))))]))
+  const source_function = Shared.new(CppFnDef('', 'int', 'main', [], [Shared.new(CppReturn(Shared.new(CppInt(0))))], 1))
   const file = Shared.new(CppFile { header: [header_include], source: [source_function] })
   results.push(assert_eq_str('print_file header and source',
     print_file(file),
-    "#include <vector>\n\nint main() noexcept{\n  return 0;\n}\n"))
+    "#include <vector>\n\n\nint main() noexcept{\n  return 0;\n}\n"))
+
+  const guard_macro = "MODULE_HPP"
+  let mut header_declarations = [
+    module_tu_helpers.make_include_guard_ifndef_cpp_declaration(guard_macro),
+    module_tu_helpers.make_include_guard_define_cpp_declaration(guard_macro),
+    module_tu_helpers.make_blank_line_cpp_declaration(),
+    module_tu_helpers.make_quoted_include_cpp_declaration("mlc.hpp")]
+  header_declarations = module_tu_helpers.append_cpp_declarations_from_include_text(
+    header_declarations,
+    "#include <variant>\n#include \"peer.hpp\"\n")
+  header_declarations.push(module_tu_helpers.make_namespace_open_cpp_declaration("ast"))
+  header_declarations.push(module_tu_helpers.make_namespace_close_cpp_declaration("ast"))
+  header_declarations.push(module_tu_helpers.make_include_guard_endif_cpp_declaration(guard_macro))
+  results.push(assert_eq_str("module_tu_helpers header scaffolding",
+    print_declarations(header_declarations),
+    "#ifndef MODULE_HPP\n" +
+    "#define MODULE_HPP\n" +
+    "\n" +
+    "#include \"mlc.hpp\"\n" +
+    "#include <variant>\n" +
+    "#include \"peer.hpp\"\n" +
+    "namespace ast {\n" +
+    "} // namespace ast\n" +
+    "#endif // MODULE_HPP\n"))
+
+  const source_declarations = [
+    module_tu_helpers.make_define_main_as_user_main_cpp_declaration(),
+    module_tu_helpers.make_quoted_include_cpp_declaration("mod.hpp"),
+    module_tu_helpers.make_blank_line_cpp_declaration(),
+    module_tu_helpers.make_namespace_open_cpp_declaration("ast")]
+  results.push(assert_eq_str("module_tu_helpers source prologue",
+    print_declarations(source_declarations),
+    "#define main mlc_user_main\n" +
+    "#include \"mod.hpp\"\n" +
+    "\n" +
+    "namespace ast {\n"))
 
   results
 end

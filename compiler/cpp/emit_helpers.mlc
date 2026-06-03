@@ -1,6 +1,6 @@
 // Builders for leaf CppExpr / CppStmt nodes (Phase 2). No dependency on codegen/.
 
-import { CppExpr, CppInt, CppStr, CppBool, CppIdent, CppStmt, CppAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppConstexprAutoDecl, CppStructuredBinding, CppStmtFragment, CppDecl, CppDeclFragment } from './cpp_ast'
+import { CppExpr, CppInt, CppStr, CppBool, CppIdent, CppType, CppTypeName, CppStmt, CppAutoDecl, CppVarDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppConstexprAutoDecl, CppStructuredBinding, CppStmtFragment, CppDecl, CppDeclFragment } from './cpp_ast'
 
 export fn make_integer_cpp_expression(integer_value: i32) -> Shared<CppExpr> =
   Shared.new(CppInt(integer_value))
@@ -28,6 +28,16 @@ export fn make_return_cpp_statement(expression: Shared<CppExpr>) -> Shared<CppSt
 
 export fn make_expression_cpp_statement(expression: Shared<CppExpr>) -> Shared<CppStmt> =
   Shared.new(CppExprStmt(expression))
+
+export fn make_variable_cpp_statement(
+  name: string,
+  type_node: Shared<CppType>,
+  initializer: Shared<CppExpr>
+) -> Shared<CppStmt> =
+  Shared.new(CppVarDecl(name, type_node, initializer))
+
+export fn make_size_t_type() -> Shared<CppType> =
+  Shared.new(CppTypeName("size_t"))
 
 export fn make_break_cpp_statement() -> Shared<CppStmt> =
   Shared.new(CppExprStmt(make_identifier_cpp_expression("break")))

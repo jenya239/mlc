@@ -1,20 +1,24 @@
 // Unit tests for declaration code generation.
 
-import { TestResult, assert_eq_str, assert_true } from './test_runner'
-import { Program, TypeVariant, Param, FieldDef, TyI32, TyString, TyUnit, TyNamed, span_unknown, Span, ExprUnit, ExprInt, PatUnit, WhereClauseBound } from '../frontend/ast'
+import { TestResult, assert_eq_str, assert_eq_int, assert_true } from './test_runner'
+import { Program, TypeVariant, Param, FieldDef, TyI32, TyBool, TyString, TyUnit, TyNamed, span_unknown, Span, ExprUnit, ExprInt, PatUnit, WhereClauseBound } from '../frontend/ast'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
 import { transform_program } from '../checker/transform/transform_decl'
-import { create_codegen_context } from '../codegen/context'
-import { gen_extend_wrapper_protos } from '../codegen/decl/decl_extend'
-import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main, extend_method_forward_segments, extend_cpp_forward_segment, collect_all_decl_parts } from '../codegen/decl/decl'
-import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration, print_cpp_declarations, extend_method_forward_segments_cpp, gen_extend_wrapper_protos_cpp, extend_cpp_forward_segment_cpp, collect_fn_defs_cpp, collect_decl_parts_cpp, collect_all_decl_parts_cpp, main_program_parameter_items_cpp, main_set_args_preamble_cpp, gen_type_decl_fwd_cpp, gen_type_decl_body_cpp, gen_trait_decl_cpp } from '../codegen/decl_cpp'
+import { create_codegen_context, StructUsingEntry, StructUsingData, context_with_struct_using_data } from '../codegen/context'
+import { build_struct_using_data } from '../codegen/module'
+import { gen_extend_wrapper_protos, gen_decl_extend, gen_decl_extend_trait_suffix, gen_extend_extern_method } from '../codegen/decl/decl_extend'
+import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main, extend_method_forward_segments, extend_cpp_forward_segment, collect_all_decl_parts, extend_helper_protos_for_exported_types } from '../codegen/decl/decl'
+import { gen_derive_display_cpp, gen_derive_eq_cpp, gen_derive_ord_cpp, gen_derive_hash_cpp, gen_derive_methods_cpp } from '../codegen/decl/derive_methods_cpp'
+import { trait_method_field_cpp, gen_trait_struct_cpp } from '../codegen/decl/trait_struct_cpp'
+import { CppDecl, CppStruct, CppDeclSequence, CppDeclEmpty, CppUsing, CppStdHashSpecialization, CppDeclFragment, CppStmt, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor } from '../cpp/cpp_ast'
+import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration, print_cpp_declarations, extend_method_forward_segments_cpp, gen_extend_wrapper_protos_cpp, extend_cpp_forward_segment_cpp, collect_fn_defs_cpp, collect_decl_parts_cpp, collect_all_decl_parts_cpp, extend_helper_protos_for_exported_types_cpp, main_program_parameter_items_cpp, main_set_args_preamble_cpp, gen_type_decl_fwd_cpp, gen_type_decl_body_cpp, gen_trait_decl_cpp, decl_segment_cpp, gen_decl_extend_cpp, gen_decl_extend_trait_suffix_cpp, gen_extend_extern_method_cpp } from '../codegen/decl_cpp'
 import { gen_type_decl_fwd_only, gen_type_decl_body_only, gen_derive_methods } from '../codegen/decl/type_gen'
-import { main_program_parameter_list } from '../codegen/expr/expr'
+import { main_program_parameter_list, static_assert_concept_for_type_line, static_assert_concept_for_result_and_implementor_line } from '../codegen/expr/expr'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
-import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SExprInt, SExprBool, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SExprWhile, SMatchArm, SStmtLet, SStmtExpr, SDeclFn, SDeclType, SDeclTrait, SDeclExported, SDeclExtend, sdecl_span } from '../ir/semantic_ir'
+import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SExprInt, SExprBool, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SExprWhile, SExprExtern, SMatchArm, SStmtLet, SStmtExpr, SDeclFn, SDeclType, SDeclTrait, SDeclExported, SDeclExtend, SDeclAssocBind, SDeclImport, sdecl_span } from '../ir/semantic_ir'
 import { Type, TypeRegistry, TI32, TString, TBool, TUnit, TUnknown } from '../checker/registry'
 import { gen_return_body, gen_return_body_cpp } from '../codegen/stmt/return_body'
 import { print_cpp_statements } from '../codegen/stmt_cpp'
@@ -75,6 +79,114 @@ fn transformed_fn_decl_span(source: string) -> Span = transformed_decl_span(sour
 fn transformed_type_decl_span(source: string) -> Span = transformed_decl_span(source)
 fn transformed_trait_decl_span(source: string) -> Span = transformed_decl_span(source)
 fn transformed_extend_decl_span(source: string) -> Span = transformed_decl_span(source)
+
+fn cpp_decl_sequence_children(declaration: Shared<CppDecl>) -> [Shared<CppDecl>] =
+  match declaration {
+    CppDeclSequence(declarations) => declarations,
+    _ => []
+  }
+
+fn is_cpp_decl_empty(declaration: Shared<CppDecl>) -> bool =
+  match declaration {
+    CppDeclEmpty => true,
+    _ => false
+  }
+
+fn cpp_decl_is_using(declaration: Shared<CppDecl>, alias: string, type_cpp: string) -> bool =
+  match declaration {
+    CppUsing(decl_alias, decl_type) => decl_alias == alias && decl_type == type_cpp,
+    _ => false
+  }
+
+fn cpp_decl_list_contains_using(
+  declarations: [Shared<CppDecl>],
+  alias: string,
+  type_cpp: string
+) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < declarations.length() && !found do
+    found = cpp_decl_is_using(declarations[index], alias, type_cpp)
+    index = index + 1
+  end
+  found
+end
+
+fn cpp_decl_is_std_hash_specialization(declaration: Shared<CppDecl>, type_name: string) -> bool =
+  match declaration {
+    CppStdHashSpecialization(specialized_type_name, _) =>
+      specialized_type_name == type_name,
+    _ => false
+  }
+
+fn cpp_decl_is_fragment(declaration: Shared<CppDecl>) -> bool =
+  match declaration {
+    CppDeclFragment(_) => true,
+    _ => false
+  }
+
+fn cpp_stmt_is_fragment(statement: Shared<CppStmt>) -> bool =
+  match statement {
+    CppStmtFragment(_) => true,
+    _ => false
+  }
+
+fn cpp_stmt_tree_contains_fragment(statement: Shared<CppStmt>) -> bool =
+  if cpp_stmt_is_fragment(statement) then
+    true
+  else
+    match statement {
+      CppBlock(statements) => cpp_stmt_list_contains_fragment(statements),
+      CppIf(_, then_branch, else_branch) =>
+        cpp_stmt_tree_contains_fragment(then_branch) ||
+        cpp_stmt_tree_contains_fragment(else_branch),
+      CppWhile(_, body) => cpp_stmt_tree_contains_fragment(body),
+      CppFor(_, _, body) => cpp_stmt_list_contains_fragment(body),
+      _ => false
+    }
+  end
+
+fn cpp_stmt_list_contains_fragment(statements: [Shared<CppStmt>]) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < statements.length() && !found do
+    found = cpp_stmt_tree_contains_fragment(statements[index])
+    index = index + 1
+  end
+  found
+end
+
+fn cpp_std_hash_body_statements(declaration: Shared<CppDecl>) -> [Shared<CppStmt>] =
+  match declaration {
+    CppStdHashSpecialization(_, body) => body,
+    _ => []
+  }
+
+fn cpp_decl_list_hash_body_contains_fragment(declarations: [Shared<CppDecl>]) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < declarations.length() && !found do
+    const body = cpp_std_hash_body_statements(declarations[index])
+    if body.length() > 0 then
+      found = cpp_stmt_list_contains_fragment(body)
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn cpp_decl_list_contains_std_hash_specialization(
+  declarations: [Shared<CppDecl>],
+  type_name: string
+) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < declarations.length() && !found do
+    found = cpp_decl_is_std_hash_specialization(declarations[index], type_name)
+    index = index + 1
+  end
+  found
+end
 
 fn make_str_expr(text: string) -> Shared<SExpr> = Shared.new(SExprStr(text, tstr(), span_unknown()))
 
@@ -234,6 +346,20 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains('gen_trait_struct: method name',
     gen_trait_struct(context, 'Display', [], [display_method]), 'to_string'))
 
+  const trait_context = context.for_type_body('Display')
+  const display_field = trait_method_field_cpp(trait_context, 'to_string', [display_self], tstr())
+  results.push(assert_code_contains('trait_method_field_cpp: std::function',
+    print_cpp_declaration(Shared.new(CppStruct('', 'Display_vtable', [display_field], false))), 'std::function'))
+  results.push(assert_code_contains('trait_method_field_cpp: method name',
+    print_cpp_declaration(Shared.new(CppStruct('', 'Display_vtable', [display_field], false))), 'to_string'))
+  results.push(assert_eq_str('trait_method_field_cpp struct matches string gen_trait_struct',
+    print_cpp_declaration(Shared.new(CppStruct('', 'Display_vtable', [display_field], false))),
+    gen_trait_struct(context, 'Display', [], [display_method])))
+
+  results.push(assert_eq_str('gen_trait_struct_cpp matches string',
+    print_cpp_declaration(gen_trait_struct_cpp(context, 'Display', [], [display_method])),
+    gen_trait_struct(context, 'Display', [], [display_method])))
+
   const color_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Color')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
   const color_to_string = fn_decl('Color_to_string', [color_self], tstr(), make_str_expr('red'))
   const extend_display_for_color = extend_decl('Color', 'Display', [color_to_string])
@@ -257,6 +383,129 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('collect_fn_defs_cpp extend decl matches string fn_defs',
     print_cpp_declarations(collect_fn_defs_cpp([extend_display_for_color], context)),
     collect_all_decl_parts([extend_display_for_color], context).fn_defs.join('')))
+
+  const extend_context_resolve = (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name)
+  const extend_gen_decl = (decl: Shared<SDecl>, codegen_context: CodegenContext) => gen_decl(decl, codegen_context)
+  const extend_string = gen_decl_extend('Color', 'Display', [color_to_string], context, extend_context_resolve, extend_gen_decl)
+
+  results.push(assert_eq_str('gen_decl_extend_cpp matches string gen_decl_extend',
+    print_cpp_declarations(gen_decl_extend_cpp('Color', 'Display', [color_to_string], context)),
+    extend_string))
+
+  const trait_suffix_string = gen_decl_extend_trait_suffix(
+    'Color', 'Display', [color_to_string], context, extend_context_resolve)
+  results.push(assert_eq_str('gen_decl_extend_trait_suffix_cpp matches string',
+    print_cpp_declarations(gen_decl_extend_trait_suffix_cpp(
+      'Color', 'Display', [color_to_string], context, extend_context_resolve)),
+    trait_suffix_string))
+  const trait_suffix_native = gen_decl_extend_trait_suffix_cpp(
+    'Color', 'Display', [color_to_string], context, extend_context_resolve)
+  const trait_static_assert_index = trait_suffix_native.length() - 1
+  results.push(assert_eq_str('extend_trait_static_assert_decl_cpp: Display generic trait',
+    print_cpp_declaration(trait_suffix_native[trait_static_assert_index]),
+    static_assert_concept_for_type_line('Display', 'Color', 'Color does not implement Display')))
+  const color_visit = fn_decl('Color_visit', [color_self], tstr(), make_str_expr('red'))
+  const expr_visitor_suffix = gen_decl_extend_trait_suffix_cpp(
+    'Color', 'ExprVisitor', [color_visit], context, extend_context_resolve)
+  const expr_visitor_static_assert_index = expr_visitor_suffix.length() - 1
+  results.push(assert_eq_str('extend_trait_static_assert_decl_cpp: ExprVisitor two-arg',
+    print_cpp_declaration(expr_visitor_suffix[expr_visitor_static_assert_index]),
+    static_assert_concept_for_result_and_implementor_line(
+      'ExprVisitor', 'mlc::String', 'Color', 'Color does not implement ExprVisitor')))
+  results.push(assert_code_contains('gen_decl_extend_trait_suffix_cpp: trait wrapper forward',
+    print_cpp_declarations(gen_decl_extend_trait_suffix_cpp(
+      'Color', 'Display', [color_to_string], context, extend_context_resolve)),
+    'inline mlc::String to_string'))
+
+  results.push(assert_eq_str('gen_decl_cpp SDeclExtend matches string gen_decl',
+    print_cpp_declaration(gen_decl_cpp(extend_display_for_color, context)),
+    gen_decl(extend_display_for_color, context)))
+
+  const extend_display_native = gen_decl_cpp(extend_display_for_color, context)
+  const extend_display_children = cpp_decl_sequence_children(extend_display_native)
+  results.push(assert_eq_int('gen_decl_cpp SDeclExtend: CppDeclSequence child count',
+    extend_display_children.length(), 4))
+  results.push(assert_eq_str('gen_decl_cpp SDeclExtend: CppDeclSequence print parity',
+    print_cpp_declaration(extend_display_native),
+    print_cpp_declarations(extend_display_children)))
+
+  const color_bump = fn_decl('Color_bump', [color_self], ti32(), make_int(1))
+  const extend_color_only = extend_decl('Color', '', [color_bump])
+  const extend_only_string = gen_decl_extend('Color', '', [color_bump], context, extend_context_resolve, extend_gen_decl)
+  results.push(assert_eq_str('gen_decl_extend_cpp non-trait matches string',
+    print_cpp_declarations(gen_decl_extend_cpp('Color', '', [color_bump], context)),
+    extend_only_string))
+  results.push(assert_eq_str('gen_decl_cpp SDeclExtend non-trait matches string gen_decl',
+    print_cpp_declaration(gen_decl_cpp(extend_color_only, context)),
+    gen_decl(extend_color_only, context)))
+
+  const box_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Box')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
+  const item_assoc_bind = Shared.new(SDeclAssocBind('Item', ti32(), span_unknown()))
+  const bare_assoc_import = Shared.new(SDeclImport('', []))
+  const iter_next_method = fn_decl('Box_Iter_next', [box_self], ti32(), make_int(0))
+  const assoc_extend_methods = [item_assoc_bind, bare_assoc_import, iter_next_method]
+  const assoc_extend_string = gen_decl_extend('Box', 'Iter', assoc_extend_methods, context, extend_context_resolve, extend_gen_decl)
+  results.push(assert_eq_str('gen_decl_extend_cpp with assoc entries matches string',
+    print_cpp_declarations(gen_decl_extend_cpp('Box', 'Iter', assoc_extend_methods, context)),
+    assoc_extend_string))
+  results.push(assert_eq_str('gen_decl_extend_cpp assoc entries add no cpp from extend loop',
+    print_cpp_declarations(gen_decl_extend_cpp('Box', 'Iter', assoc_extend_methods, context)),
+    print_cpp_declarations(gen_decl_extend_cpp('Box', 'Iter', [iter_next_method], context))))
+
+  const box_variants = [record_variant('Box', [field_definition('val', Shared.new(TyI32))])]
+  const box_assoc_extend = extend_decl('Box', 'Iter', [item_assoc_bind])
+  const box_struct_using_data = build_struct_using_data([box_assoc_extend], context)
+  const box_struct_using_context = context_with_struct_using_data(context, box_struct_using_data)
+  const box_struct_using_entries = box_struct_using_data.entries.get('Box')
+  results.push(assert_true('build_struct_using_data: Box has Item entry',
+    box_struct_using_data.entries.has('Box')))
+  results.push(assert_eq_int('build_struct_using_data: one assoc bind entry',
+    box_struct_using_entries.length(), 1))
+  results.push(assert_eq_str('build_struct_using_data: Item alias',
+    box_struct_using_entries[0].alias, 'Item'))
+  results.push(assert_eq_str('build_struct_using_data: int type_cpp',
+    box_struct_using_entries[0].type_cpp, 'int'))
+  results.push(assert_eq_str('build_struct_using_data: lines in sync',
+    box_struct_using_data.lines.get('Box')[0], 'using Item = int;\n'))
+  const box_body_native = gen_type_decl_body_cpp(box_struct_using_context, 'Box', [], box_variants, [])
+  results.push(assert_true('gen_type_decl_body_cpp: native CppUsing Item = int',
+    cpp_decl_list_contains_using(box_body_native, 'Item', 'int')))
+  results.push(assert_eq_int('gen_type_decl_body_cpp: struct and using decl count',
+    box_body_native.length(), 2))
+  results.push(assert_code_contains('gen_type_decl_body_cpp: struct Box in print',
+    print_cpp_declarations(box_body_native), 'struct Box'))
+  results.push(assert_code_contains('gen_type_decl_body_cpp: using Item = int in print',
+    print_cpp_declarations(box_body_native), 'using Item = int;'))
+
+  const color_extend_context = context.for_type_body('Color')
+  const extend_method_native = gen_decl_extend_cpp('Color', '', [color_bump], context)
+  results.push(assert_eq_str('extend method native body matches string gen_fn_decl',
+    print_cpp_declaration(extend_method_native[0]),
+    gen_fn_decl('Color_bump', [], [], [color_self], ti32(), make_int(1), color_extend_context)))
+  results.push(assert_true('extend method native compact body not gen_fn_decl_cpp indent',
+    print_cpp_declaration(extend_method_native[0])
+      != print_cpp_declaration(gen_fn_decl_cpp('Color_bump', [], [], [color_self], ti32(), make_int(1), color_extend_context))))
+
+  const trait_extend_native = gen_decl_extend_cpp('Color', 'Display', [color_to_string], context)
+  results.push(assert_eq_str('extend trait method native body matches string gen_fn_decl',
+    print_cpp_declaration(trait_extend_native[0]),
+    gen_fn_decl('Color_to_string', [], [], [color_self], tstr(), make_str_expr('red'), color_extend_context)))
+
+  const integer_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
+  const extern_method_string = gen_extend_extern_method(
+    'i32_to_string', 'i32', [integer_self], tstr(), 'Display', context, extend_context_resolve)
+  results.push(assert_eq_str('gen_extend_extern_method_cpp matches string',
+    print_cpp_declarations(gen_extend_extern_method_cpp(
+      'i32_to_string', 'i32', [integer_self], tstr(), 'Display', context, extend_context_resolve)),
+    extern_method_string))
+  results.push(assert_code_contains('gen_extend_extern_method_cpp: runtime to_string call',
+    print_cpp_declarations(gen_extend_extern_method_cpp(
+      'i32_to_string', 'i32', [integer_self], tstr(), 'Display', context, extend_context_resolve)),
+    'mlc::to_string(self)'))
+  results.push(assert_eq_str('gen_extend_extern_method_cpp: non-i32 empty',
+    print_cpp_declarations(gen_extend_extern_method_cpp(
+      'Color_to_string', 'Color', [color_self], tstr(), 'Display', context, extend_context_resolve)),
+    ''))
 
   // --- gen_decl with SDeclExported ---------------------------------------------
 
@@ -460,12 +709,10 @@ export fn decl_gen_tests() -> [TestResult] = do
       [record_variant('Point', [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])], [])),
     'int x'))
 
-  results.push(assert_eq_str('gen_type_decl_body_cpp: derive Display matches string',
+  results.push(assert_code_contains('gen_type_decl_body_cpp: derive Display Color_to_string',
     print_cpp_declarations(gen_type_decl_body_cpp(context, 'Color', [],
       [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], ['Display'])),
-    gen_type_decl_body_only(context, 'Color', [],
-      [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')]) +
-    gen_derive_methods(context, 'Color', [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], ['Display'])))
+    'Color_to_string'))
 
   const color_sum = type_decl('Color', [],
     [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')], [])
@@ -483,6 +730,21 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declarations(collect_decl_parts_cpp([display_trait], context, 0)),
     collect_decl_parts([display_trait], context, 0).join('')))
 
+  results.push(assert_eq_str('collect_decl_parts_cpp phase 2 fn matches string',
+    print_cpp_declarations(collect_decl_parts_cpp([add_decl], context, 2)),
+    collect_decl_parts([add_decl], context, 2).join('')))
+
+  results.push(assert_eq_str('collect_decl_parts_cpp phase 4 trait matches string',
+    print_cpp_declarations(collect_decl_parts_cpp([display_trait], context, 4)),
+    collect_decl_parts([display_trait], context, 4).join('')))
+
+  results.push(assert_eq_int('collect_decl_parts_cpp unknown phase returns empty',
+    collect_decl_parts_cpp([add_decl], context, 99).length(), 0))
+
+  results.push(assert_eq_str('collect_fn_defs_cpp trait matches string fn_defs',
+    print_cpp_declarations(collect_fn_defs_cpp([display_trait], context)),
+    collect_all_decl_parts([display_trait], context).fn_defs.join('')))
+
   const bundle_declarations = [color_sum, display_trait]
   const string_bundle = collect_all_decl_parts(bundle_declarations, context)
   const native_bundle = collect_all_decl_parts_cpp(bundle_declarations, context)
@@ -492,6 +754,137 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('collect_all_decl_parts_cpp type_defs matches string',
     print_cpp_declarations(native_bundle.type_defs),
     string_bundle.type_defs.join('')))
+  results.push(assert_eq_str('collect_all_decl_parts_cpp fn_protos matches string',
+    print_cpp_declarations(native_bundle.fn_protos),
+    string_bundle.fn_protos.join('')))
+  results.push(assert_eq_str('collect_all_decl_parts_cpp fn_protos add_decl matches string',
+    print_cpp_declarations(collect_all_decl_parts_cpp([add_decl], context).fn_protos),
+    collect_all_decl_parts([add_decl], context).fn_protos.join('')))
+
+  const exported_color = Shared.new(SDeclExported(color_sum))
+  const exported_extend_bundle = [exported_color, extend_display_for_color]
+  results.push(assert_eq_str('extend_helper_protos_for_exported_types_cpp matches string',
+    print_cpp_declarations(extend_helper_protos_for_exported_types_cpp(exported_extend_bundle, context)),
+    extend_helper_protos_for_exported_types(exported_extend_bundle, context).join('')))
+  results.push(assert_eq_str('extend_helper_protos_for_exported_types_cpp skips non-exported',
+    print_cpp_declarations(extend_helper_protos_for_exported_types_cpp([color_sum, extend_display_for_color], context)),
+    extend_helper_protos_for_exported_types([color_sum, extend_display_for_color], context).join('')))
+  const extend_display_extern = extend_decl('Color', 'Display',
+    [fn_decl('Color_to_string', [color_self], tstr(), Shared.new(SExprExtern(tunit(), span_unknown())))])
+  results.push(assert_eq_str('extend_helper_protos_for_exported_types_cpp skips extern method',
+    print_cpp_declarations(extend_helper_protos_for_exported_types_cpp([exported_color, extend_display_extern], context)),
+    extend_helper_protos_for_exported_types([exported_color, extend_display_extern], context).join('')))
+  results.push(assert_eq_str('collect_all_decl_parts_cpp fn_protos exported extend matches string',
+    print_cpp_declarations(collect_all_decl_parts_cpp(exported_extend_bundle, context).fn_protos),
+    collect_all_decl_parts(exported_extend_bundle, context).fn_protos.join('')))
+
+  results.push(assert_eq_str('collect_all_decl_parts_cpp fn_defs matches string',
+    print_cpp_declarations(native_bundle.fn_defs),
+    string_bundle.fn_defs.join('')))
+
+  const point_variants = [record_variant('Point', [
+    field_definition("x", Shared.new(TyI32)),
+    field_definition("y", Shared.new(TyI32))])]
+  const color_variants = [unit_variant('Red'), unit_variant('Green'), unit_variant('Blue')]
+  const point_hash_variants = [record_variant('Point', [
+    field_definition('tag', Shared.new(TyI32)),
+    field_definition('flag', Shared.new(TyBool)),
+    field_definition('label', Shared.new(TyString))])]
+  const hue_hash_variants = [unit_variant('North'), unit_variant('South')]
+  const empty_hash_variants = [record_variant('Empty', [])]
+
+  results.push(assert_code_contains('gen_derive_display_cpp record: Point_to_string',
+    print_cpp_declarations(gen_derive_display_cpp('Point', point_variants)), 'Point_to_string'))
+
+  results.push(assert_code_contains('gen_derive_display_cpp record: mlc::to_string field',
+    print_cpp_declarations(gen_derive_display_cpp('Point', point_variants)), 'mlc::to_string(self.x)'))
+
+  results.push(assert_code_contains('gen_derive_display_cpp sum: Color_to_string',
+    print_cpp_declarations(gen_derive_display_cpp('Color', color_variants)), 'Color_to_string'))
+
+  results.push(assert_code_contains('gen_derive_display_cpp sum: Red variant',
+    print_cpp_declarations(gen_derive_display_cpp('Color', color_variants)), 'holds_alternative<Red>'))
+
+  results.push(assert_code_contains('gen_derive_eq_cpp record: operator==',
+    print_cpp_declarations(gen_derive_eq_cpp('Point', point_variants)), 'operator=='))
+
+  results.push(assert_code_contains('gen_derive_eq_cpp record: field compare',
+    print_cpp_declarations(gen_derive_eq_cpp('Point', point_variants)), 'a.x == b.x'))
+
+  results.push(assert_code_contains('gen_derive_eq_cpp sum: operator==',
+    print_cpp_declarations(gen_derive_eq_cpp('Color', color_variants)), 'operator=='))
+
+  results.push(assert_code_contains('gen_derive_eq_cpp sum: discriminant compare',
+    print_cpp_declarations(gen_derive_eq_cpp('Color', color_variants)), 'a._ == b._'))
+
+  results.push(assert_code_contains('gen_derive_ord_cpp record: operator<',
+    print_cpp_declarations(gen_derive_ord_cpp('Point', point_variants)), 'operator<'))
+
+  results.push(assert_code_contains('gen_derive_ord_cpp record: field compare',
+    print_cpp_declarations(gen_derive_ord_cpp('Point', point_variants)), 'a.x < b.x'))
+
+  results.push(assert_code_contains('gen_derive_ord_cpp sum: operator<',
+    print_cpp_declarations(gen_derive_ord_cpp('Color', color_variants)), 'operator<'))
+
+  results.push(assert_code_contains('gen_derive_ord_cpp sum: discriminant compare',
+    print_cpp_declarations(gen_derive_ord_cpp('Color', color_variants)), 'a._ < b._'))
+
+  results.push(assert_code_contains('gen_derive_hash_cpp record: struct hash',
+    print_cpp_declarations(gen_derive_hash_cpp('Point', point_hash_variants)), 'struct hash<Point>'))
+
+  results.push(assert_code_contains('gen_derive_hash_cpp record: combines i32',
+    print_cpp_declarations(gen_derive_hash_cpp('Point', point_hash_variants)), 'std::hash<int>{}(self.tag)'))
+
+  results.push(assert_code_contains('gen_derive_hash_cpp sum: holds_alternative',
+    print_cpp_declarations(gen_derive_hash_cpp('Hue', hue_hash_variants)), 'std::holds_alternative<North>'))
+
+  const hash_record_native = gen_derive_hash_cpp('Point', point_hash_variants)
+  results.push(assert_true('gen_derive_hash_cpp record: CppStdHashSpecialization',
+    cpp_decl_is_std_hash_specialization(hash_record_native[0], 'Point')))
+  results.push(assert_true('gen_derive_hash_cpp record: not CppDeclFragment',
+    !cpp_decl_is_fragment(hash_record_native[0])))
+
+  const hash_sum_native = gen_derive_hash_cpp('Hue', hue_hash_variants)
+  results.push(assert_true('gen_derive_hash_cpp sum: CppStdHashSpecialization',
+    cpp_decl_is_std_hash_specialization(hash_sum_native[0], 'Hue')))
+  results.push(assert_true('gen_derive_hash_cpp sum: not CppDeclFragment',
+    !cpp_decl_is_fragment(hash_sum_native[0])))
+
+  results.push(assert_true('gen_derive_hash_cpp record: body no CppStmtFragment',
+    !cpp_stmt_list_contains_fragment(cpp_std_hash_body_statements(hash_record_native[0]))))
+
+  results.push(assert_true('gen_derive_hash_cpp sum: body no CppStmtFragment',
+    !cpp_stmt_list_contains_fragment(cpp_std_hash_body_statements(hash_sum_native[0]))))
+
+  const empty_hash_native = gen_derive_hash_cpp('Empty', empty_hash_variants)
+  results.push(assert_true('gen_derive_hash_cpp empty record: body no CppStmtFragment',
+    !cpp_stmt_list_contains_fragment(cpp_std_hash_body_statements(empty_hash_native[0]))))
+
+  const point_hash_body = gen_type_decl_body_cpp(context, 'Point', [], point_hash_variants, ['Hash'])
+  results.push(assert_true('gen_type_decl_body_cpp record Hash: CppStdHashSpecialization',
+    cpp_decl_list_contains_std_hash_specialization(point_hash_body, 'Point')))
+
+  const hue_hash_body = gen_type_decl_body_cpp(context, 'Hue', [], hue_hash_variants, ['Hash'])
+  results.push(assert_true('gen_type_decl_body_cpp sum Hash: CppStdHashSpecialization',
+    cpp_decl_list_contains_std_hash_specialization(hue_hash_body, 'Hue')))
+
+  results.push(assert_true('gen_type_decl_body_cpp record Hash: body no CppStmtFragment',
+    !cpp_decl_list_hash_body_contains_fragment(point_hash_body)))
+
+  results.push(assert_true('gen_type_decl_body_cpp sum Hash: body no CppStmtFragment',
+    !cpp_decl_list_hash_body_contains_fragment(hue_hash_body)))
+
+  results.push(assert_code_contains('gen_derive_methods_cpp: Display and Eq',
+    print_cpp_declarations(gen_derive_methods_cpp('Point', point_variants, ['Display', 'Eq'])),
+    'Point_to_string'))
+
+  results.push(assert_code_contains('gen_derive_methods_cpp: Display and Eq operator',
+    print_cpp_declarations(gen_derive_methods_cpp('Point', point_variants, ['Display', 'Eq'])),
+    'operator=='))
+
+  results.push(assert_code_contains('gen_type_decl_body_cpp: native Hash wired',
+    print_cpp_declarations(gen_type_decl_body_cpp(context, 'Hue', [], hue_hash_variants, ['Hash'])),
+    'struct hash<Hue>'))
 
   results.push(assert_eq_str('gen_decl_cpp DeclFn native return',
     print_cpp_declaration(gen_decl_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
@@ -503,6 +896,100 @@ export fn decl_gen_tests() -> [TestResult] = do
       make_bin("+", make_ident('left'), make_ident('right'))), context)),
     gen_proto(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
       make_bin("+", make_ident('left'), make_ident('right'))), context)))
+
+  results.push(assert_eq_str('decl_segment_cpp phase 2 SDeclFn matches string',
+    print_cpp_declarations(decl_segment_cpp(add_decl, context, 2)),
+    collect_decl_parts([add_decl], context, 2).join('')))
+
+  results.push(assert_eq_str('decl_segment_cpp phase 2 SDeclExported fn matches string',
+    print_cpp_declarations(decl_segment_cpp(exported_fn, context, 2)),
+    collect_decl_parts([exported_fn], context, 2).join('')))
+
+  results.push(assert_eq_str('gen_decl_cpp SDeclType record matches native body print',
+    print_cpp_declaration(gen_decl_cpp(point_type, context)),
+    print_cpp_declarations(gen_type_decl_body_cpp(context, 'Point', [], point_variants, []))))
+
+  results.push(assert_eq_str('gen_decl_cpp SDeclType sum matches string gen_decl',
+    print_cpp_declaration(gen_decl_cpp(color_type, context)),
+    gen_decl(color_type, context)))
+
+  const color_sum_native = gen_decl_cpp(color_type, context)
+  const color_sum_children = cpp_decl_sequence_children(color_sum_native)
+  results.push(assert_eq_int('gen_decl_cpp SDeclType sum: CppDeclSequence child count',
+    color_sum_children.length(), 7))
+  results.push(assert_eq_str('gen_decl_cpp SDeclType sum: CppDeclSequence print parity',
+    print_cpp_declaration(color_sum_native),
+    print_cpp_declarations(color_sum_children)))
+
+  results.push(assert_eq_str('gen_decl_cpp SDeclTrait matches string gen_decl',
+    print_cpp_declaration(gen_decl_cpp(display_trait, context)),
+    gen_decl(display_trait, context)))
+
+  const square_decl = fn_decl('square', [iparam('value')], ti32(),
+    make_bin("*", make_ident('value'), make_ident('value')))
+
+  results.push(assert_eq_str('gen_decl_cpp SDeclExported matches unwrapped SDeclFn',
+    print_cpp_declaration(gen_decl_cpp(exported_fn, context)),
+    print_cpp_declaration(gen_decl_cpp(square_decl, context))))
+
+  results.push(assert_code_contains('gen_decl_cpp SDeclExported matches string gen_decl signature',
+    print_cpp_declaration(gen_decl_cpp(exported_fn, context)),
+    'int square(int value)'))
+
+  results.push(assert_eq_str('gen_decl_cpp SDeclImport empty',
+    print_cpp_declaration(gen_decl_cpp(Shared.new(SDeclImport('', [])), context)), ''))
+
+  results.push(assert_eq_str('gen_decl_cpp SDeclAssocBind empty',
+    print_cpp_declaration(gen_decl_cpp(Shared.new(SDeclAssocBind('Item', ti32(), span_unknown())), context)), ''))
+
+  results.push(assert_eq_str('gen_proto_cpp SDeclType empty',
+    print_cpp_declaration(gen_proto_cpp(point_type, context)), ''))
+
+  results.push(assert_eq_str('gen_proto_cpp SDeclTrait empty',
+    print_cpp_declaration(gen_proto_cpp(display_trait, context)), ''))
+
+  results.push(assert_eq_str('gen_proto_cpp SDeclExtend matches string gen_proto',
+    print_cpp_declaration(gen_proto_cpp(extend_display_for_color, context)),
+    gen_proto(extend_display_for_color, context)))
+
+  results.push(assert_eq_str('gen_proto_cpp SDeclExported matches unwrapped SDeclFn',
+    print_cpp_declaration(gen_proto_cpp(exported_fn, context)),
+    print_cpp_declaration(gen_proto_cpp(square_decl, context))))
+
+  results.push(assert_code_contains('gen_proto_cpp SDeclExported matches string gen_proto signature',
+    print_cpp_declaration(gen_proto_cpp(exported_fn, context)),
+    'int square(int value)'))
+
+  results.push(assert_eq_str('gen_proto_cpp SDeclImport empty',
+    print_cpp_declaration(gen_proto_cpp(Shared.new(SDeclImport('', [])), context)), ''))
+
+  results.push(assert_eq_str('gen_proto_cpp SDeclAssocBind empty',
+    print_cpp_declaration(gen_proto_cpp(Shared.new(SDeclAssocBind('Item', ti32(), span_unknown())), context)), ''))
+
+  const extern_fn = fn_decl('external_helper', [], tunit(), Shared.new(SExprExtern(tunit(), span_unknown())))
+  const extern_decl_native = gen_decl_cpp(extern_fn, context)
+  results.push(assert_true('gen_decl_cpp SDeclFn extern: native CppDeclEmpty',
+    is_cpp_decl_empty(extern_decl_native)))
+  results.push(assert_eq_str('gen_decl_cpp SDeclFn extern empty print',
+    print_cpp_declaration(extern_decl_native), ''))
+
+  const extern_proto_native = gen_proto_cpp(extern_fn, context)
+  results.push(assert_true('gen_proto_cpp SDeclFn extern: native CppDeclEmpty',
+    is_cpp_decl_empty(extern_proto_native)))
+  results.push(assert_eq_str('gen_proto_cpp SDeclFn extern empty print',
+    print_cpp_declaration(extern_proto_native), ''))
+
+  const extend_proto_extern_native = gen_proto_cpp(extend_display_extern, context)
+  results.push(assert_true('gen_proto_cpp SDeclExtend all-extern: native CppDeclEmpty',
+    is_cpp_decl_empty(extend_proto_extern_native)))
+  results.push(assert_eq_str('gen_proto_cpp SDeclExtend all-extern empty print',
+    print_cpp_declaration(extend_proto_extern_native), ''))
+
+  results.push(assert_true('gen_decl_cpp SDeclImport: native CppDeclEmpty',
+    is_cpp_decl_empty(gen_decl_cpp(Shared.new(SDeclImport('', [])), context))))
+
+  results.push(assert_true('gen_decl_cpp SDeclAssocBind: native CppDeclEmpty',
+    is_cpp_decl_empty(gen_decl_cpp(Shared.new(SDeclAssocBind('Item', ti32(), span_unknown())), context))))
 
   results
 end

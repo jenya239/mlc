@@ -8,11 +8,12 @@ module MLC
       module MatchScrutineeDeref
         module_function
 
-        def ast_sum_needs_star?(type_registry, type)
+        def ast_sum_needs_star?(type_registry, type, scrutinee_node: nil)
           return false if type.nil?
           return false if shared_generic?(type)
           # Generic sum types (e.g. Result<T,E>) are direct values, not shared_ptrs.
           return false if type.is_a?(MLC::SemanticIR::GenericType)
+          return false if by_value_variant_scrutinee?(scrutinee_node, type)
 
           sum_name = sum_base_name(type)
           return false unless sum_name
@@ -22,6 +23,15 @@ module MLC
 
           cpp = info.cpp_name.to_s
           cpp.start_with?("ast::")
+        end
+
+        def by_value_variant_scrutinee?(scrutinee_node, type)
+          return false unless scrutinee_node
+          return false unless type.is_a?(MLC::SemanticIR::SumType)
+
+          scrutinee_node.is_a?(MLC::SemanticIR::VarExpr) ||
+            scrutinee_node.is_a?(MLC::SemanticIR::IndexExpr) ||
+            scrutinee_node.is_a?(MLC::SemanticIR::MemberExpr)
         end
 
         def shared_generic?(type)

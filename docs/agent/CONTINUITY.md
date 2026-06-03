@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md` — paste in each enqueued message (after `AGENT_TOKEN=…`).
 
-**INSTRUCTIONS_REV:** `2026-05-28-cleaner` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-06-01-session-detail` — bump when workflow/rules change.
 
 ## Turn start (before any work)
 
@@ -156,6 +156,31 @@ Cross-cutting work: prefer WIP branch (`feat/…`), not large dirty tree on `mai
 
 SESSION хранит последние **5 turn**; старые архивируются в блок `### Archive` внизу файла (без удаления).
 
+### SESSION turn template (обязательные поля)
+
+```markdown
+### Turn YYYY-MM-DD HH:MM (Role TRACK step N — <one-line title>)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | N |
+| track   | TRACK_FOO_BRIDGE |
+| started | YYYY-MM-DD HH:MM |
+| elapsed | ~N min |
+| done    | <что конкретно изменено: файлы, функции, подход> |
+| result  | <тесты: N pass; self-host: ok/fail; diff: N lines> |
+| issues  | <проблемы и как решили, или "none"> |
+| next    | ROLE=Driver STEP=N+1 TRACK_FOO_BRIDGE |
+```
+
+**Правила:**
+- `started` — время начала этого turn (не время enqueue).
+- `elapsed` — приблизительно в минутах.
+- `done` — конкретно: "добавил `gen_foo_cpp`, убрал `CppStmtFragment` в `stmt_cpp.mlc:42`".
+- `result` — числа тестов, exit-код self-host, количество изменённых строк.
+- `issues` — всё нестандартное: retry, compile error, workaround.
+
 ## Roles
 
 | Role | Duty | Touches `compiler/`? |
@@ -196,7 +221,12 @@ Planner/Backlog **must not** edit `compiler/` or `lib/mlc/` — docs + mlc-memor
 2. Append missing sub-steps (numbered, one concern each, verify gate).
 3. Mark completed steps `done` with commit hash if missing.
 4. Update **Next step** section; do not delete deferred items.
-5. SESSION: `driver_turns_since_plan=0`; enqueue Driver.
+5. Для каждого pending шага добавь/уточни **sub-steps** — 2-4 пункта что конкретно делать (файл, функция, изменение). Пример:
+   ```
+   | 3 | Eliminate `gen_foo` string path | pending |
+   <!-- sub-steps: 1) добавить `gen_foo_cpp` в `codegen/foo.mlc`; 2) заменить вызов в `decl_cpp.mlc:42`; 3) run verify gate -->
+   ```
+6. SESSION: `driver_turns_since_plan=0`; enqueue Driver.
 
 ### Backlog turn (`STEP=backlog-review`)
 

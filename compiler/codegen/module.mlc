@@ -10,7 +10,8 @@ import { build_ctor_type_info_index } from './decl/ctor_info'
 import { CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, build_field_orders, build_variant_types_from_decls,
          build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
-         build_method_owners_from_decls } from './context'
+         build_method_owners_from_decls, StructUsingEntry, StructUsingData,
+         struct_using_line_from_entry } from './context'
 import { SDecl } from '../ir/semantic_ir'
 import { sem_type_to_cpp } from './decl/type_gen'
 import { cpp_safe, include_lines, using_namespace_lines, path_to_module_base } from './cpp_naming'
@@ -18,6 +19,7 @@ import { decls_have_main } from './decl/decl'
 import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, cpp_decl_from_string_output, print_cpp_declarations } from './decl_cpp'
 import { CppDecl, CppFile } from '../cpp/cpp_ast'
 import * as cpp_ast from '../cpp/cpp_ast'
+import * as module_tu_helpers from '../cpp/module_tu_helpers'
 import * as expression_output from './expr/expr'
 
 type ModuleGenerationContext = ModuleGenerationContext {
@@ -43,49 +45,60 @@ fn namespace_aliases_mapped(items: [SNamespaceImportAlias]) -> [NamespaceImportA
   result
 end
 
-fn build_struct_using_lines(decls: [Shared<SDecl>], context: CodegenContext) -> Map<string, [string]> = do
-  const result: Map<string, [string]> = Map.new()
-  let mut i = 0
-  while i < decls.length() do
-    match decls[i] {
+fn push_struct_using_entry(
+  entries: ref mut Map<string, [StructUsingEntry]>,
+  lines: ref mut Map<string, [string]>,
+  type_name: string,
+  entry: StructUsingEntry
+) -> unit = do
+  const existing_entries: [StructUsingEntry] =
+    if entries.has(type_name) then entries.get(type_name)
+    else do const empty: [StructUsingEntry] = []; empty end end
+  existing_entries.push(entry)
+  entries.set(type_name, existing_entries)
+  const line = struct_using_line_from_entry(entry)
+  const existing_lines: [string] =
+    if lines.has(type_name) then lines.get(type_name)
+    else do const empty: [string] = []; empty end end
+  existing_lines.push(line)
+  lines.set(type_name, existing_lines)
+end
+
+fn add_assoc_bind_struct_using(
+  entries: ref mut Map<string, [StructUsingEntry]>,
+  lines: ref mut Map<string, [string]>,
+  type_name: string,
+  methods: [Shared<SDecl>],
+  context: CodegenContext
+) -> unit = do
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SDeclAssocBind(assoc_name, bound_type, _) => do
+        const type_cpp = sem_type_to_cpp(context, bound_type)
+        push_struct_using_entry(entries, lines, type_name, StructUsingEntry { alias: assoc_name, type_cpp: type_cpp })
+        ()
+      end,
+      _ => do () end
+    }
+    method_index = method_index + 1
+  end
+end
+
+export fn build_struct_using_data(decls: [Shared<SDecl>], context: CodegenContext) -> StructUsingData = do
+  let mut entries: Map<string, [StructUsingEntry]> = Map.new()
+  let mut lines: Map<string, [string]> = Map.new()
+  let mut declaration_index = 0
+  while declaration_index < decls.length() do
+    match decls[declaration_index] {
       SDeclExtend(type_name, _, methods, _) => do
-        let mut j = 0
-        while j < methods.length() do
-          match methods[j] {
-            SDeclAssocBind(assoc_name, bound_type, _) => do
-              const line = 'using ' + assoc_name + ' = ' + sem_type_to_cpp(context, bound_type) + ';\n'
-              const existing: [string] =
-                if result.has(type_name) then result.get(type_name)
-                else do const empty: [string] = []; empty end end
-              existing.push(line)
-              result.set(type_name, existing)
-              ()
-            end,
-            _ => do () end
-          }
-          j = j + 1
-        end
+        add_assoc_bind_struct_using(entries, lines, type_name, methods, context)
         ()
       end,
       SDeclExported(inner) => do
         match inner {
           SDeclExtend(type_name, _, methods, _) => do
-            let mut j = 0
-            while j < methods.length() do
-              match methods[j] {
-                SDeclAssocBind(assoc_name, bound_type, _) => do
-                  const line = 'using ' + assoc_name + ' = ' + sem_type_to_cpp(context, bound_type) + ';\n'
-                  const existing: [string] =
-                    if result.has(type_name) then result.get(type_name)
-                    else do const empty: [string] = []; empty end end
-                  existing.push(line)
-                  result.set(type_name, existing)
-                  ()
-                end,
-                _ => do () end
-              }
-              j = j + 1
-            end
+            add_assoc_bind_struct_using(entries, lines, type_name, methods, context)
             ()
           end,
           _ => do () end
@@ -94,9 +107,9 @@ fn build_struct_using_lines(decls: [Shared<SDecl>], context: CodegenContext) -> 
       end,
       _ => do () end
     }
-    i = i + 1
+    declaration_index = declaration_index + 1
   end
-  result
+  StructUsingData { entries: entries, lines: lines }
 end
 
 export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx = do
@@ -141,9 +154,10 @@ fn prepare_module_generation(
     value_params: [],
     match_deref_params: [],
     generic_variants: precomp.generic_variants,
+    struct_using_entries: Map.new(),
     struct_using_lines: Map.new()
   }
-  const context = base_context.with_struct_using_lines(build_struct_using_lines(s_item.decls, base_context))
+  const context = base_context.with_struct_using_data(build_struct_using_data(s_item.decls, base_context))
   const module_namespace = if base == 'main' then 'mlc_main' else base end
   const is_entry = decls_have_main(s_item.decls)
   const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(s_item.imports) + "\n"
@@ -178,23 +192,23 @@ fn cpp_declarations_from_text_parts(text_parts: [string]) -> [Shared<CppDecl>] =
 end
 
 fn assemble_header_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDecl>] = do
-  let declarations = cpp_declarations_from_text_parts([
-    expression_output.include_guard_ifndef_line(parts.guard),
-    expression_output.include_guard_define_line(parts.guard),
-    "\n",
-    parts.std_includes,
-    expression_output.namespace_open_line(parts.module_namespace),
-    "\n"
-  ])
+  let mut declarations = [
+    module_tu_helpers.make_include_guard_ifndef_cpp_declaration(parts.guard),
+    module_tu_helpers.make_include_guard_define_cpp_declaration(parts.guard),
+    module_tu_helpers.make_blank_line_cpp_declaration()]
+  declarations = module_tu_helpers.append_cpp_declarations_from_include_text(
+    declarations, parts.std_includes)
+  declarations.push(module_tu_helpers.make_namespace_open_cpp_declaration(parts.module_namespace))
+  declarations.push(module_tu_helpers.make_blank_line_cpp_declaration())
+  let epilogue = [
+    module_tu_helpers.make_blank_line_cpp_declaration(),
+    module_tu_helpers.make_namespace_close_cpp_declaration(parts.module_namespace),
+    module_tu_helpers.make_blank_line_cpp_declaration(),
+    module_tu_helpers.make_include_guard_endif_cpp_declaration(parts.guard)]
   declarations.concat(parts.decl_parts.type_fwds)
     .concat(parts.decl_parts.type_defs)
     .concat(parts.decl_parts.fn_protos)
-    .concat(cpp_declarations_from_text_parts([
-      "\n",
-      expression_output.namespace_close_comment_line(parts.module_namespace),
-      "\n",
-      expression_output.include_guard_endif_comment_line(parts.guard)
-    ]))
+    .concat(epilogue)
 end
 
 fn assemble_source_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDecl>] = do

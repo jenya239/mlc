@@ -94,7 +94,23 @@ module MLC
               param = find_type_param(node.name)
               return @ir_builder.type_variable(name: node.name, constraint: param&.constraint) if param
 
+              registered = lookup_registered_type(node.name)
+              return registered if registered
+
               @ir_builder.prim_type(name: node.name)
+            end
+
+            def lookup_registered_type(name)
+              registry = @type_checker.type_registry if @type_checker.respond_to?(:type_registry)
+              return nil unless registry
+
+              info = registry.lookup(name)
+              return nil unless info
+
+              core_type = info.core_ir_type
+              return core_type if core_type.is_a?(MLC::SemanticIR::RecordType) || core_type.is_a?(MLC::SemanticIR::SumType)
+
+              nil
             end
 
             def find_type_param(name)

@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-[TRACK_DERIVE_BRIDGE.md](TRACK_DERIVE_BRIDGE.md) **open** STEP=1 — `gen_derive_display_cpp`.
+**TRACK_MODULE_TU_BRIDGE** open STEP=3 — wire `assemble_header_cpp_declarations` to native nodes.
 
 ## Step sizing (good vs bad)
 

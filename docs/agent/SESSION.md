@@ -5,13 +5,1580 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| role_last | Planner|
-| driver_turns_since_plan | 0|
-| step_last | plan-refresh |
-| run_tests | 823 |
+| driver_turns_since_plan | 3|
+| step_last | 1|
+| run_tests | 936 |
 | self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | TRACK_DERIVE_BRIDGE open STEP=1 |
-| agent_token_last | cr-agent-f03ae7d3-1b0b-4c0e-ae57-8c4442adafaa |
+| TRACK_PLAN | MODULE_TU_BRIDGE open STEP=3 |
+| agent_token_last | cr-agent-888669ae-9871-4909-beed-599545fdb369 |
+
+### Turn 2026-06-03 (Driver TRACK_MODULE_TU_BRIDGE step 2 — native decl helpers)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_MODULE_TU_BRIDGE |
+| done | module_tu_helpers; cpp_ast/preprocessor nodes; cpp_printer; golden tests |
+| result | 936 pass; DIFF_EXIT=0 |
+| issues | char_at vs string; substring length; array pass-by-value in nested fn |
+| next | ROLE=Driver STEP=3 |
+
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_MODULE_TU_BRIDGE |
+| done | 4 call sites; 5–7 text parts/TU; pipeline→gen_module; 0 TU anti-fragment tests |
+| result | 928 pass; DIFF_EXIT=0 |
+| issues | — |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-03 (Planner plan-refresh — MODULE_TU open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_MODULE_TU_BRIDGE (new) |
+| done | DERIVE_HASH_STMT closed; next = module TU native scaffolding |
+| result | 928 pass; DIFF_EXIT=0 |
+| issues | — |
+| next | ROLE=Driver STEP=1 MODULE_TU_BRIDGE |
+
+### Turn 2026-06-03 (Driver TRACK_DERIVE_HASH_STMT_BRIDGE step 5 — survivors audit, close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DERIVE_HASH_STMT_BRIDGE |
+| done | survivors audit; track closed 5/5 |
+| result | 928 pass; DIFF_EXIT=0 |
+| issues | — |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-06-03 (Driver TRACK_DERIVE_HASH_STMT_BRIDGE step 4 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DERIVE_HASH_STMT_BRIDGE |
+| done | AST anti-fragment tests record/sum/empty + gen_type_decl_body_cpp |
+| result | 928 pass; DIFF_EXIT=0 |
+| issues | — |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-03 (Driver TRACK_DERIVE_HASH_STMT_BRIDGE step 3 — wire hash_stmt_helpers)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DERIVE_HASH_STMT_BRIDGE |
+| done | derive_methods → hash_stmt_helpers; 0 fragment in hash helpers; fix module-level const parse |
+| result | 923 pass; DIFF_EXIT=0 |
+| issues | Ruby parser: top-level `const` → empty module (0 decls) |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-03 (Driver TRACK_DERIVE_HASH_STMT_BRIDGE step 2 — native stmt nodes)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DERIVE_HASH_STMT_BRIDGE |
+| done | `CppVarDecl` + printer; `hash_stmt_helpers.mlc` seed/combine/empty-return; golden tests |
+| result | 923 pass; DIFF_EXIT=0 |
+| issues | Ruby bootstrap cannot import hash_stmt_helpers in test — golden uses inline AST |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-06-02 (Driver TRACK_DERIVE_HASH_STMT_BRIDGE step 1 — audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DERIVE_HASH_STMT_BRIDGE |
+| done | 3 stmt fragments `:363-370`; callers traced; tests noted |
+| result | 920 pass; DIFF_EXIT=0 |
+| issues | seed needs typed local (not CppConstDecl/CppAutoDecl) |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-02 (Planner plan-refresh — DERIVE_HASH_STMT open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_DERIVE_HASH_STMT_BRIDGE drafted; TRACK_PLAN/DEVELOPMENT updated |
+| next | ROLE=Driver STEP=1 DERIVE_HASH_STMT_BRIDGE |
+| issues | none |
+
+### Turn 2026-06-02 (Driver TRACK_DERIVE_HASH_FRAGMENT_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DERIVE_HASH_FRAGMENT_BRIDGE |
+| done | survivors audit; `make_fragment_cpp_declaration` **0** in derive_methods_cpp; track closed 5/5 |
+| result | 920 pass; DIFF_EXIT=0 |
+| issues | 3 stmt fragments `:363-370` deferred |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_DERIVE_HASH_FRAGMENT_BRIDGE step 4 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DERIVE_HASH_FRAGMENT_BRIDGE |
+| done | record + sum Hash derive assert `CppStdHashSpecialization` not `CppDeclFragment`; wiring via `gen_type_decl_body_cpp` |
+| result | 920 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-02 (Driver TRACK_DERIVE_HASH_FRAGMENT_BRIDGE step 3 — wire native hash spec)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DERIVE_HASH_FRAGMENT_BRIDGE |
+| done | `hash_specialization_declaration` → `CppStdHashSpecialization`; dropped `print_hash_operator_body` + decl fragment |
+| result | 914 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-02 (Driver TRACK_DERIVE_HASH_FRAGMENT_BRIDGE step 2 — CppStdHashSpecialization)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DERIVE_HASH_FRAGMENT_BRIDGE |
+| done | `CppStdHashSpecialization` AST + printer + golden test |
+| result | 914 pass; DIFF_EXIT=0 |
+| issues | MLC `'>'`/`'&'` char literals — fixed with double-quoted strings |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-06-02 (Driver TRACK_DERIVE_HASH_FRAGMENT_BRIDGE step 1 — audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DERIVE_HASH_FRAGMENT_BRIDGE |
+| done | `:491-496` sole decl fragment; production path mapped; tests noted |
+| result | 913 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-02 (Planner plan-refresh — DERIVE_HASH_FRAGMENT open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_DERIVE_HASH_FRAGMENT_BRIDGE drafted; TRACK_PLAN/DEVELOPMENT updated |
+| next | ROLE=Driver STEP=1 DERIVE_HASH_FRAGMENT_BRIDGE |
+| issues | none |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_STRUCT_USING_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DECL_STRUCT_USING_BRIDGE |
+| done | survivors audit; track closed (5/5); struct_using fallback **0** |
+| result | 913 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_STRUCT_USING_BRIDGE step 4 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DECL_STRUCT_USING_BRIDGE |
+| done | `test_decl_gen.mlc`: build_struct_using_data entries/lines; native CppUsing + print asserts; export build_struct_using_data |
+| result | 913 pass; DIFF_EXIT=0 |
+| issues | TI32 → `int` not `int32_t`; native struct_using sibling decls ≠ inline string body |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_STRUCT_USING_BRIDGE step 3 — entries → CppUsing)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DECL_STRUCT_USING_BRIDGE |
+| done | `struct_using_declarations_cpp` reads `struct_using_entries`; `cpp_using_from_struct_using_entry`; removed line parse + `:192` fallback |
+| result | 904 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_STRUCT_USING_BRIDGE step 2 — structured struct_using)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DECL_STRUCT_USING_BRIDGE |
+| done | `StructUsingEntry` + `StructUsingData` in `context.mlc`; `build_struct_using_data` in `module.mlc` (`ref mut` maps); `struct_using_lines` kept in sync |
+| result | 904 pass; DIFF_EXIT=0 |
+| issues | Map pass-by-value dropped mutations — fixed with `ref mut` |
+| next | ROLE=Driver STEP=3 |
+
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DECL_STRUCT_USING_BRIDGE |
+| done | fallback `:192` + producer/consumer mapped; production fallback unreachable |
+| result | 904 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-02 (Planner plan-refresh — DECL_STRUCT_USING open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_DECL_STRUCT_USING_BRIDGE drafted; TRACK_PLAN/DEVELOPMENT updated |
+| next | ROLE=Driver STEP=1 DECL_STRUCT_USING_BRIDGE |
+| issues | none |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_EMPTY_FRAGMENT_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DECL_EMPTY_FRAGMENT_BRIDGE |
+| done | survivors audit; track closed (5/5) |
+| result | 904 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_EMPTY_FRAGMENT_BRIDGE step 4 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DECL_EMPTY_FRAGMENT_BRIDGE |
+| done | extern fn/proto + Extend all-extern CppDeclEmpty parity tests |
+| result | 904 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_EMPTY_FRAGMENT_BRIDGE step 3 — wire CppDeclEmpty)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DECL_EMPTY_FRAGMENT_BRIDGE |
+| done | 9 sites → `empty_cpp_declaration()`; no empty string fragments |
+| result | 896 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_EMPTY_FRAGMENT_BRIDGE step 2 — CppDeclEmpty)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DECL_EMPTY_FRAGMENT_BRIDGE |
+| done | `CppDeclEmpty` AST + printer + golden test |
+| result | 896 pass; DIFF_EXIT=0 |
+| issues | disk full blocked earlier gate; cleared yarn cache |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_EMPTY_FRAGMENT_BRIDGE step 1 — audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DECL_EMPTY_FRAGMENT_BRIDGE |
+| done | 9 empty fragment sites mapped; 6 existing tests; 3 gaps for step 4 |
+| result | 895 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-02 (Planner plan-refresh — DECL_EMPTY_FRAGMENT open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_DECL_EMPTY_FRAGMENT_BRIDGE drafted; TRACK_PLAN/DEVELOPMENT updated |
+| next | ROLE=Driver STEP=1 DECL_EMPTY_FRAGMENT_BRIDGE |
+| issues | none |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_MULTI_DECL_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DECL_MULTI_DECL_BRIDGE |
+| done | survivors audit; track closed (5/5) |
+| result | 895 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_MULTI_DECL_BRIDGE step 4 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DECL_MULTI_DECL_BRIDGE |
+| done | Type sum + Extend CppDeclSequence child count + print parity tests |
+| result | 895 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_MULTI_DECL_BRIDGE step 3 — wire CppDeclSequence)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DECL_MULTI_DECL_BRIDGE |
+| done | `cpp_decl_from_native_declarations` 2+ → `CppDeclSequence`; print round-trip dropped |
+| result | 891 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_MULTI_DECL_BRIDGE step 2 — CppDeclSequence)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DECL_MULTI_DECL_BRIDGE |
+| done | `CppDeclSequence` AST + printer + golden test |
+| result | 891 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_MULTI_DECL_BRIDGE step 1 — audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DECL_MULTI_DECL_BRIDGE |
+| done | helper `:956` + 3 callers mapped; length>1 cases documented |
+| result | 890 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-02 (Planner plan-refresh — DECL_MULTI_DECL open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_DECL_MULTI_DECL_BRIDGE drafted; TRACK_PLAN/DEVELOPMENT updated |
+| next | ROLE=Driver STEP=1 DECL_MULTI_DECL_BRIDGE |
+| issues | none |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_STATIC_ASSERT_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DECL_STATIC_ASSERT_BRIDGE |
+| done | survivors audit; track closed (5/5) |
+| result | 890 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_STATIC_ASSERT_BRIDGE step 4 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DECL_STATIC_ASSERT_BRIDGE |
+| done | static_assert assert_eq Display + ExprVisitor arms |
+| result | 890 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_STATIC_ASSERT_BRIDGE step 3 — native static_assert)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DECL_STATIC_ASSERT_BRIDGE |
+| done | `extend_trait_static_assert_decl_cpp` → native `CppStaticAssert`; fragment removed |
+| result | 889 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_STATIC_ASSERT_BRIDGE step 2 — CppStaticAssert AST)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DECL_STATIC_ASSERT_BRIDGE |
+| done | `CppStaticAssert` AST + printer + 2 golden tests |
+| result | 889 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_STATIC_ASSERT_BRIDGE step 1 — audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DECL_STATIC_ASSERT_BRIDGE |
+| done | 2 fragment arms mapped; string helpers + tests documented |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-02 (Planner plan-refresh — DECL_STATIC_ASSERT open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_DECL_STATIC_ASSERT_BRIDGE drafted; TRACK_PLAN/DEVELOPMENT updated |
+| next | ROLE=Driver STEP=1 DECL_STATIC_ASSERT_BRIDGE |
+| issues | none |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_FRAGMENT_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DECL_CPP_FRAGMENT_BRIDGE |
+| done | parity audit; survivors; track closed (5/5); print fix `body_statement_depth=-1` |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_FRAGMENT_BRIDGE step 4 — re-verify)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DECL_CPP_FRAGMENT_BRIDGE |
+| done | idempotent re-verify: `struct_using_declarations_cpp` + native `CppUsing`; site `:232-233` |
+| result | build_tests 881/6 fail (extend print parity, not struct_using); DIFF_EXIT=0 |
+| issues | 6 parity tests: `noexcept {` one-liner vs `noexcept{\n  return…` — steps 2–3 |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_FRAGMENT_BRIDGE step 4 — struct_using)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DECL_CPP_FRAGMENT_BRIDGE |
+| done | native `CppUsing` per struct_using line |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_FRAGMENT_BRIDGE step 3 — extern to_string)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DECL_CPP_FRAGMENT_BRIDGE |
+| done | native `CppFnDef` for i32 extern `to_string` |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_FRAGMENT_BRIDGE step 2 — inline wrappers)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DECL_CPP_FRAGMENT_BRIDGE |
+| done | native `CppFnDef` for trait wrapper + concept adapter |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_FRAGMENT_BRIDGE step 1 — reachability audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DECL_CPP_FRAGMENT_BRIDGE |
+| done | 4 non-empty sites mapped; callers + tests documented |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-02 (Planner plan-refresh — DECL_CPP_FRAGMENT_BRIDGE open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_DECL_CPP_FRAGMENT_BRIDGE drafted; TRACK_PLAN updated |
+| next | ROLE=Driver STEP=1 DECL_CPP_FRAGMENT_BRIDGE |
+| issues | none |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE |
+| done | survivors confirmed; track closed (5/5) |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE step 4 — gen_proto_cpp Extend)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE |
+| done | Extend proto arm uses `cpp_decl_from_native_declarations` |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE step 3 — Extend arm)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE |
+| done | Extend arm uses `cpp_decl_from_native_declarations` |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE step 2 — Type arm)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE |
+| done | `cpp_decl_from_native_declarations`; Type arm uses helper |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE step 1 — reachability audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE |
+| done | 3 print round-trip sites mapped; module path bypasses; return constraints documented |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-02 (Planner plan-refresh — DECL_PRINT_ROUNDTRIP_BRIDGE open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_DECL_PRINT_ROUNDTRIP_BRIDGE drafted; TRACK_PLAN updated |
+| next | ROLE=Driver STEP=1 DECL_PRINT_ROUNDTRIP_BRIDGE |
+| issues | none |
+
+### Turn 2026-06-02 (Driver TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE |
+| done | survivors confirmed; track closed (5/5) |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE step 4 — import cleanup)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE |
+| done | dropped dead imports from `decl_cpp.mlc:10` |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-02 (Driver TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE step 3 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE |
+| done | +1 unknown phase test; existing 0–4 + bundle pass |
+| result | 887 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-02 (Driver TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE step 2 — native else)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE |
+| done | else → `empty_cpp_declarations()` at `:872-873` |
+| result | 886 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-06-02 (Driver TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE step 1 — reachability audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE |
+| done | call sites mapped; production phases 0–4; else unreachable |
+| result | 886 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-02 (Planner plan-refresh — COLLECT_DECL_PARTS_CPP_BRIDGE open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_COLLECT_DECL_PARTS_CPP_BRIDGE drafted; TRACK_PLAN updated |
+| next | ROLE=Driver STEP=1 COLLECT_DECL_PARTS_CPP_BRIDGE |
+| issues | none |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+| done | survivors confirmed; track closed (5/5) |
+| result | 886 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE step 4 — call-site audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+| done | audit: no `gen_proto` in `decl_cpp.mlc`; import dropped step 2 |
+| result | 886 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE step 3 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+| done | +1 test extern skip; existing helper/bundle parity confirmed |
+| result | 886 pass; DIFF_EXIT=0 |
+| issues | disk full during gate — used TMPDIR=.tmp_verify |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE step 2 — native guard)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+| done | native SDeclFn+non-extern guard; dropped `gen_proto` import |
+| result | 885 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=3 TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE step 1 — reachability audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+| done | audit: sole direct `gen_proto` in `decl_cpp.mlc` is `:492`; mirror `extend_method_forward_segments_cpp` |
+| result | docs only; 885 pass |
+| issues | none |
+| next | ROLE=Driver STEP=2 TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+
+### Turn 2026-06-02 (Planner plan-refresh — EXTEND_HELPER_PROTO_GUARD open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE drafted (5 steps); target `decl_cpp.mlc:492` |
+| result | PROTO_CPP_CATCHALL confirmed closed; 885 pass |
+| next | ROLE=Driver STEP=1 TRACK_EXTEND_HELPER_PROTO_GUARD_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_PROTO_CPP_CATCHALL_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+| done | survivors confirmed; track closed (5/5) |
+| result | 885 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_PROTO_CPP_CATCHALL_BRIDGE step 4 — call-site audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+| done | audit: `gen_proto_cpp` no `gen_proto`; string `gen_proto` only helper guard `:492` + `decl.mlc` |
+| result | 885 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_PROTO_CPP_CATCHALL_BRIDGE step 3 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+| done | +7 parity tests in `test_decl_gen.mlc`: Type/Trait/Import/AssocBind empty; Extend/string eq; Exported unwrap |
+| result | 885 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_PROTO_CPP_CATCHALL_BRIDGE step 2 — native dispatch)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+| done | `gen_proto_cpp`: explicit Type/Trait/Import/AssocBind/Extend/Exported arms; catch-all removed |
+| result | 878 pass; DIFF_EXIT=0 |
+| issues | push in match needed `do () end` block |
+| next | ROLE=Driver STEP=3 TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_PROTO_CPP_CATCHALL_BRIDGE step 1 — reachability audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+| done | audit: catch-all = Type/Trait/Import/AssocBind/Extend/Exported; production mostly Fn arm; edge `decl_segment_cpp:794` |
+| result | docs only; 878 pass |
+| issues | none |
+| next | ROLE=Driver STEP=2 TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Planner plan-refresh — PROTO_CPP_CATCHALL open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_PROTO_CPP_CATCHALL_BRIDGE drafted (5 steps); target `gen_proto_cpp:418` |
+| result | DECL_CPP_CATCHALL confirmed closed; 878 pass |
+| next | ROLE=Driver STEP=1 TRACK_PROTO_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_CATCHALL_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DECL_CPP_CATCHALL_BRIDGE |
+| done | survivors confirmed; track closed (5/5); next: `gen_proto_cpp:418` string catch-all |
+| result | 878 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_CATCHALL_BRIDGE step 4 — call-site audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DECL_CPP_CATCHALL_BRIDGE |
+| done | audit: `gen_decl_cpp` no `gen_decl` import/call; callers `decl_segment_cpp:790`, `decl_fn_def_cpp:870/873/877`; string `gen_decl` only in `decl.mlc` |
+| result | 878 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 TRACK_DECL_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_CATCHALL_BRIDGE step 3 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DECL_CPP_CATCHALL_BRIDGE |
+| done | +7 parity tests in `test_decl_gen.mlc`: Type sum/trait/string eq; Type record native body; Exported unwrap; Import/AssocBind empty |
+| result | 878 pass; DIFF_EXIT=0 |
+| issues | record/fn formatting: record via native body print; Exported via unwrap not full string eq |
+| next | ROLE=Driver STEP=4 TRACK_DECL_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_CATCHALL_BRIDGE step 2 — native dispatch)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DECL_CPP_CATCHALL_BRIDGE |
+| done | `gen_decl_cpp`: explicit Type/Trait/Import/AssocBind/Exported arms; убран catch-all `gen_decl`; dropped `gen_decl` import |
+| result | 871 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=3 TRACK_DECL_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_DECL_CPP_CATCHALL_BRIDGE step 1 — reachability audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DECL_CPP_CATCHALL_BRIDGE |
+| done | audit: catch-all = Type/Trait/Import/AssocBind/Exported; production mostly `decl_fn_def_cpp:867` edge; module bundle bypasses |
+| result | docs only |
+| issues | none |
+| next | ROLE=Driver STEP=2 TRACK_DECL_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Planner plan-refresh — DECL_CPP_CATCHALL open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_DECL_CPP_CATCHALL_BRIDGE drafted (5 steps); target `gen_decl_cpp:398` string catch-all |
+| result | EXTEND_FALLBACK confirmed closed; 871 pass |
+| next | ROLE=Driver STEP=1 TRACK_DECL_CPP_CATCHALL_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_FALLBACK_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_EXTEND_FALLBACK_BRIDGE |
+| done | step 5 audit; track closed; survivors confirmed; TRACK_PLAN updated |
+| result | 871 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_FALLBACK_BRIDGE step 4 — call-site audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_EXTEND_FALLBACK_BRIDGE |
+| done | audit: extend loop native-only; string `gen_decl` только `decl_extend.mlc` parity + `gen_decl_cpp:398` |
+| result | 871 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 TRACK_EXTEND_FALLBACK_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_FALLBACK_BRIDGE step 3 — parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_EXTEND_FALLBACK_BRIDGE |
+| done | `test_decl_gen.mlc`: assoc bind/import + fn extend parity; assoc adds no cpp from loop (+2) |
+| result | 871 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_FALLBACK_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_FALLBACK_BRIDGE step 2 — no-op fallback)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_EXTEND_FALLBACK_BRIDGE |
+| done | `gen_decl_extend_cpp:652` `_ => do () end`; убран `gen_decl`+string в loop |
+| result | 869 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=3 TRACK_EXTEND_FALLBACK_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_FALLBACK_BRIDGE step 1 — reachability audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_EXTEND_FALLBACK_BRIDGE |
+| done | audit: extend methods not SDeclFn-only (assoc bind/import); `_` branch no-op today; assoc C++ via `module.mlc` |
+| result | docs only; no code change |
+| issues | none |
+| next | ROLE=Driver STEP=2 TRACK_EXTEND_FALLBACK_BRIDGE |
+
+### Turn 2026-06-02 (Planner plan-refresh — EXTEND_FALLBACK open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_EXTEND_FALLBACK_BRIDGE drafted (5 steps); target `gen_decl_extend_cpp:652-655` string fallback |
+| result | EXTEND_EXTERN confirmed closed; 869 pass |
+| next | ROLE=Driver STEP=1 TRACK_EXTEND_FALLBACK_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_EXTERN_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_EXTEND_EXTERN_BRIDGE |
+| done | step 5 audit; track closed; survivors confirmed; TRACK_PLAN updated |
+| result | 869 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_EXTERN_BRIDGE step 4 — call-site audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_EXTEND_EXTERN_BRIDGE |
+| done | audit: production `decl_cpp.mlc` только `gen_extend_extern_method_cpp`; string `gen_extend_extern_method` — `decl_extend.mlc` parity + tests |
+| result | 869 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=5 TRACK_EXTEND_EXTERN_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_EXTERN_BRIDGE step 3 — extern parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_EXTEND_EXTERN_BRIDGE |
+| done | `test_decl_gen.mlc`: `gen_extend_extern_method_cpp` vs string (+3: parity, mlc::to_string, non-i32 empty) |
+| result | 869 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_EXTERN_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_EXTERN_BRIDGE step 2 — wire extern native)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_EXTEND_EXTERN_BRIDGE |
+| done | `gen_decl_extend_cpp` extern → `append_cpp_declarations(..., gen_extend_extern_method_cpp(...))`; убран import `gen_extend_extern_method` |
+| result | 866 pass; DIFF_EXIT=0 |
+| issues | none |
+| next | ROLE=Driver STEP=3 TRACK_EXTEND_EXTERN_BRIDGE |
+
+### Turn 2026-06-02 (Driver TRACK_EXTEND_EXTERN_BRIDGE step 1 — gen_extend_extern_method_cpp)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_EXTEND_EXTERN_BRIDGE |
+| done | `gen_extend_extern_method_cpp` в `decl_cpp.mlc:596-621`; i32/to_string extern stub → `[Shared<CppDecl>]` через `noexcept_one_line_returning_function`; workaround: array literal ломает scope второго `const` → `push` |
+| result | 866 pass; DIFF_EXIT=0 |
+| issues | MLC checker: `const` после первого не виден в `[...]` literal |
+| next | ROLE=Driver STEP=2 TRACK_EXTEND_EXTERN_BRIDGE |
+
+### Turn 2026-06-02 (Planner plan-refresh — EXTEND_EXTERN open)
+
+| turn | 2026-06-02 |
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_EXTEND_EXTERN_BRIDGE drafted (5 steps); next: native `gen_extend_extern_method` in `gen_decl_extend_cpp` |
+| next | ROLE=Driver STEP=1 TRACK_EXTEND_EXTERN_BRIDGE |
+
+### Turn 2026-06-02 (Critic STEP=5 — EXTEND_TRAIT_SUFFIX close)
+
+| turn | 2026-06-02 |
+| role | Critic |
+| step | 5 |
+| verdict | track closed; survivors match expected |
+| verify | 866 pass; DIFF_EXIT=0 (prior turn) |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-02 (Driver STEP=4 — trait suffix call-site audit)
+
+| turn | 2026-06-02 |
+| role | Driver |
+| step | 4 |
+| done | production `gen_decl_extend_cpp` → `gen_decl_extend_trait_suffix_cpp`; string only `decl.mlc` parity + tests |
+| verify | 866 pass |
+| next | ROLE=Critic STEP=5 TRACK_EXTEND_TRAIT_SUFFIX_BRIDGE |
+
+### Turn 2026-06-02 (Driver STEP=3 — trait suffix parity tests)
+
+| turn | 2026-06-02 |
+| role | Driver |
+| step | 3 |
+| done | `test_decl_gen.mlc`: `gen_decl_extend_trait_suffix_cpp` vs string; static_assert + wrapper (+3 tests) |
+| verify | 866 pass |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_TRAIT_SUFFIX_BRIDGE |
+
+### Turn 2026-06-02 (Driver STEP=2 — trait suffix wire)
+
+| turn | 2026-06-02 |
+| role | Driver |
+| step | 2 |
+| done | `gen_decl_extend_cpp` → `append_cpp_declarations(..., gen_decl_extend_trait_suffix_cpp(...))`; dropped string import |
+| verify | 863 pass |
+| next | ROLE=Driver STEP=3 TRACK_EXTEND_TRAIT_SUFFIX_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=1 — idempotent #2)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 1 |
+| done | idempotent: `gen_decl_extend_trait_suffix_cpp` exported; wrappers/adapters/static_assert as `[Shared<CppDecl>]` |
+| verify | 863 pass |
+| next | ROLE=Driver STEP=2 TRACK_EXTEND_TRAIT_SUFFIX_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=1 — idempotent)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 1 |
+| done | idempotent: `gen_decl_extend_trait_suffix_cpp` exported; wrappers/adapters/static_assert as `[Shared<CppDecl>]` |
+| verify | 863 pass (prior turn) |
+| next | ROLE=Driver STEP=2 TRACK_EXTEND_TRAIT_SUFFIX_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=1 — trait suffix cpp)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 1 |
+| done | `gen_decl_extend_trait_suffix_cpp`: wrapper/adapter fragments + static_assert decl |
+| verify | 863 pass |
+| next | ROLE=Driver STEP=2 TRACK_EXTEND_TRAIT_SUFFIX_BRIDGE |
+
+### Turn 2026-06-01 (Planner plan-refresh — EXTEND_TRAIT_SUFFIX open)
+
+| turn | 2026-06-01 |
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_EXTEND_TRAIT_SUFFIX_BRIDGE drafted (5 steps); next: native trait suffix in `gen_decl_extend_cpp` |
+| deferred | extern stub native, non-SDeclFn fallback |
+| next | ROLE=Driver STEP=1 TRACK_EXTEND_TRAIT_SUFFIX_BRIDGE |
+
+### Turn 2026-06-01 (Critic STEP=5 — EXTEND_METHOD close confirm)
+
+| turn | 2026-06-01 |
+| role | Critic |
+| step | 5 |
+| verdict | track closed; no reopen |
+| checks | `decl_cpp:492` native path; `gen_decl` only fallback `:500`; survivors match track doc |
+| verify | 863 pass |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-01 (Driver STEP=5 — EXTEND_METHOD close)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 5 |
+| done | track closed; survivors confirmed; verify gate |
+| verify | 863 pass; build.sh ok; DIFF_EXIT=0 |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-01 (Driver STEP=4 — idempotent)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 4 |
+| done | idempotent: call-site audit done prior turn |
+| verify | 863 pass (prior turn) |
+| next | ROLE=Critic STEP=5 TRACK_EXTEND_METHOD_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=4 — extend method call-site audit)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 4 |
+| done | SDeclFn non-extern → `native_fn_decl_cpp`; no `gen_decl` on extend method path |
+| survivors | extern string stub; non-SDeclFn fallback `:500`; trait suffix string |
+| verify | 863 pass |
+| next | ROLE=Critic STEP=5 TRACK_EXTEND_METHOD_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=3 — extend method parity tests)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 3 |
+| done | `test_decl_gen.mlc`: extend method native vs `gen_fn_decl`; compact depth vs `gen_fn_decl_cpp`; trait method (+3 tests) |
+| verify | 863 pass; DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_METHOD_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=1 — idempotent)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 1 |
+| done | idempotent: `gen_decl_extend_cpp` → `native_fn_decl_cpp(..., extend_context, 0)`; `CppFnDef` + `body_statement_depth`; steps 1–2 done |
+| verify | 860 pass; DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_EXTEND_METHOD_BRIDGE |
+
+### Turn 2026-06-01 (Planner plan-refresh — EXTEND_METHOD open)
+
+| turn | 2026-06-01 |
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_EXTEND_METHOD_BRIDGE drafted (5 steps); next: native `gen_fn_decl_cpp` in `gen_decl_extend_cpp` |
+| deferred | trait suffix native, extern stub native |
+| next | ROLE=Driver STEP=1 TRACK_EXTEND_METHOD_BRIDGE |
+
+### Turn 2026-06-01 (Critic STEP=5 — idempotent)
+
+| turn | 2026-06-01 |
+| role | Critic |
+| step | 5 |
+| done | idempotent: EXTEND_BODY_BRIDGE already closed (step 5 audit prior turn) |
+| verify | 860 pass; DIFF_EXIT=0 (prior turn) |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-01 (Critic STEP=5 — EXTEND_BODY close)
+
+| turn | 2026-06-01 |
+| role | Critic |
+| step | 5 |
+| verdict | track closed; survivors match expected |
+| checks | `decl_cpp:393-395` gen_decl_extend_cpp; `decl_cpp:703-716` direct; `gen_decl_extend` only `decl.mlc:94-97` |
+| note | inner hybrid: method bodies string-wrapped gen_decl — deferred |
+| verify | 860 pass; DIFF_EXIT=0 |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-01 (Driver STEP=4 — extend parity tests)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 4 |
+| done | `test_decl_gen.mlc`: `gen_decl_extend_cpp` trait/non-trait vs string; `gen_decl_cpp SDeclExtend` vs `gen_decl` (+4 tests) |
+| verify | 860 pass; build.sh ok; DIFF_EXIT=0 |
+| next | ROLE=Critic STEP=5 TRACK_EXTEND_BODY_BRIDGE |
+
+### Turn 2026-06-01 (Critic critique-audit — EXTEND_BODY steps 1–3)
+
+| turn | 2026-06-01 |
+| role | Critic |
+| step | critique-audit |
+| verdict | steps 1–3 confirmed; no reopen |
+| checks | production: `decl_fn_def_cpp:704` → `gen_decl_extend_cpp`; `gen_decl_cpp:393` → same; string `gen_decl_extend` only `decl.mlc` |
+| note | step 1 hybrid: method bodies string-wrapped `gen_decl` (printer parity); trait suffix string; dedicated parity tests missing → STEP=4 |
+| verify | 856 pass |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_BODY_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=3 — idempotent)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 3 |
+| done | idempotent: `decl_fn_def_cpp` → `gen_decl_extend_cpp` already wired |
+| verify | 856 pass; DIFF_EXIT=0 (prior turn) |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_BODY_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=3 — decl_fn_def_cpp wire)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 3 |
+| done | `decl_fn_def_cpp` SDeclExtend → `gen_decl_extend_cpp` (direct array, not single fragment) |
+| verify | 856 pass; build.sh ok; DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_BODY_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=2 — idempotent)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 2 |
+| done | idempotent: `gen_decl_cpp` SDeclExtend → `gen_decl_extend_cpp`; 856 pass; DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_EXTEND_BODY_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=1 — idempotent)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 1 |
+| done | idempotent: BODY step 1 done; HELPER step 2 prompt stale |
+| verify | 856 pass; DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_EXTEND_BODY_BRIDGE |
+
+### Turn 2026-06-01 (Driver STEP=1 — BODY gen_decl_extend_cpp)
+
+| turn | 2026-06-01 |
+| role | Driver |
+| step | 1 |
+| done | `gen_decl_extend_cpp` + `gen_decl_extend_trait_suffix`; fixed void-block codegen |
+| note | prompt stale (HELPER step 2); HELPER track closed |
+| verify | 856 pass; build.sh ok; DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_EXTEND_BODY_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=2 — HELPER idempotent)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 2 |
+| done | idempotent: HELPER step 2 done; prompt stale (BODY header, HELPER step 2 text) |
+| verify | native wire at `decl_cpp.mlc:616`; steps 1–4 done |
+| next | ROLE=Driver STEP=5 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Planner plan-refresh #2 — mid-track)
+
+| turn | 2026-05-31 |
+| role | Planner |
+| step | plan-refresh |
+| done | no new track (STEP=5 pending); draft TRACK_EXTEND_BODY_BRIDGE |
+| next | ROLE=Driver STEP=5 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Planner plan-refresh — EXTEND_HELPER mid-track)
+
+| turn | 2026-05-31 |
+| role | Planner |
+| step | plan-refresh |
+| done | no new track; steps 1–4 done, STEP=5 pending; next candidate EXTEND_BODY_BRIDGE |
+| next | ROLE=Driver STEP=5 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=4 — idempotent)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 4 |
+| done | idempotent: step 4 audit already in TRACK; production native only |
+| verify | 856 pass; DIFF_EXIT=0 (prior turn) |
+| next | ROLE=Driver STEP=5 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=4 — call sites audit)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 4 |
+| done | audit: production native only; string helper only decl.mlc parity + tests |
+| verify | 856 pass; build.sh ok; DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=5 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Critic critique-audit #2 — EXTEND_HELPER)
+
+| turn | 2026-05-31 |
+| role | Critic |
+| step | critique-audit |
+| verdict | steps 1–3 re-confirmed; no reopen |
+| checks | `decl_cpp.mlc:616` native only; string `extend_helper` only `decl.mlc:314`; 3 parity tests present |
+| note | duplicate critic turn (orchestration loop); STEP=4 still pending |
+| next | Driver:4 already queued — no duplicate enqueue |
+
+### Turn 2026-05-31 (Meta meta-review — orchestration recovery)
+
+| turn | 2026-05-31 |
+| role | Meta |
+| step | meta-review |
+| issue | step loop: stale FN_PROTO/TRAIT prompts; duplicate enqueue blocks |
+| supervisor | ok; overnight log: Driver:3 + Critic done, verify ok |
+| action | RESEARCH recovery log; enqueue Driver:4 blocked (already queued) — no duplicate |
+| next | await queued Driver:4 (audit call sites) |
+| agent_token_last | cr-agent-9fadccf3-b90b-423f-bd90-1253801cb8dc |
+
+### Turn 2026-05-31 (Critic critique-audit — EXTEND_HELPER steps 1–3)
+
+| turn | 2026-05-31 |
+| role | Critic |
+| step | critique-audit |
+| verdict | steps 1–3 confirmed; no reopen |
+| checks | production `module.mlc`→`collect_all_decl_parts_cpp`→native helper; string only in `decl.mlc` parity; 856 pass; DIFF_EXIT=0 re-verified |
+| note | uncommitted diff mixes prior bridge WIP (derive/trait); `_ => ()` style minor |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=3 — parity tests)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 3 |
+| done | 3 parity tests: helper cpp vs string, non-exported skip, fn_protos exported extend |
+| verify | 856 pass; build.sh ok; DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=2 — wire fn_protos idempotent)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 2 |
+| done | idempotent: native `extend_helper_protos_for_exported_types_cpp` in `collect_all_decl_parts_cpp` |
+| verify | 853 pass; DIFF_EXIT=0 (prior turn) |
+| next | ROLE=Driver STEP=3 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=1 — extend_helper_protos_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 1 |
+| done | export `exported_type_names_from_decls`; `extend_helper_protos_for_exported_types_cpp` |
+| verify | 853 pass; build.sh ok; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Planner plan-refresh — EXTEND_HELPER_BRIDGE open)
+
+| turn | 2026-05-31 |
+| role | Planner |
+| step | plan-refresh |
+| done | opened TRACK_EXTEND_HELPER_BRIDGE (5 steps); FN_PROTO survivor → native helper protos |
+| next | ROLE=Driver STEP=1 TRACK_EXTEND_HELPER_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=5 — FN_PROTO idempotent)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 5 |
+| done | idempotent: TRACK_FN_PROTO_BRIDGE already closed; survivors audit in TRACK file |
+| survivors | extend_helper protos string; gen_decl_extend; decl.mlc parity; stmt string path |
+| verify | 853 pass; DIFF_EXIT=0 (prior turns) |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-31 (Driver STEP=4 — FN_PROTO idempotent)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 4 |
+| done | idempotent: `collect_all_decl_parts_cpp.fn_protos` = native phase 2 + extend_helper string append |
+| verify | tests `collect_all_decl_parts_cpp fn_protos matches string`; track closed 5/5 |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-31 (Driver STEP=3 — FN_PROTO idempotent)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 3 |
+| done | idempotent: `collect_decl_parts_cpp` phase 2 native (`phase == 0 \|\| 1 \|\| 2 \|\| 4`) |
+| verify | used in `collect_all_decl_parts_cpp.fn_protos`; test `collect_decl_parts_cpp phase 2 fn`; track closed 5/5 |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-31 (Driver STEP=2 — FN_PROTO idempotent)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 2 |
+| done | idempotent: step 2 done — `SDeclExported` phase 2 inner fn (generic/extern → gen_proto_cpp / gen_decl_cpp) |
+| verify | `test_decl_gen.mlc` `decl_segment_cpp phase 2 SDeclExported fn`; track closed 5/5 |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-31 (Driver STEP=1 — FN_PROTO idempotent)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 1 |
+| done | idempotent: step 1 already done — `decl_segment_cpp` phase 2 `SDeclFn` → `gen_proto_cpp` |
+| verify | code+tests present (`test_decl_gen.mlc` parity); track closed 5/5 |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-31 (Driver STEP=5 — TRAIT_STRUCT idempotent)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 5 |
+| done | idempotent: TRACK_TRAIT_STRUCT_BRIDGE already closed (step 5 audit) |
+| verify | production: collect_fn_defs_cpp → collect_decl_parts_cpp(...,4) → gen_trait_struct_cpp |
+| survivors | decl_extend/decl.mlc string parity; gen_decl_extend; fn_protos extend_helper; stmt string path |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-31 (Driver STEP=5 — FN_PROTO audit close)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 5 |
+| done | survivors audit; TRACK_FN_PROTO_BRIDGE closed |
+| note | prompt said TRAIT_STRUCT step 5 — track closed; idempotent skip |
+| verify | 853 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-31 (Driver STEP=4 — native fn_protos bundle)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 4 |
+| done | collect_all_decl_parts_cpp fn_protos native + extend_helper string append; 2 parity tests |
+| note | prompt said TRAIT_STRUCT step 4 — track closed; idempotent skip |
+| verify | 853 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=5 TRACK_FN_PROTO_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=3 — collect_decl_parts_cpp phase 2)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 3 |
+| done | collect_decl_parts_cpp phase 2 native; parity test add_decl |
+| note | prompt said TRAIT_STRUCT step 3 — track closed; idempotent skip |
+| verify | 851 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_FN_PROTO_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=2 — FN_PROTO SDeclExported phase 2)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 2 |
+| done | decl_segment_cpp phase 2 SDeclExported; parity test exported_fn |
+| note | prompt said TRAIT_STRUCT step 2 — track closed; idempotent skip |
+| verify | 850 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_FN_PROTO_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=1 — FN_PROTO decl_segment_cpp SDeclFn)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 1 |
+| done | decl_segment_cpp phase 2 SDeclFn → gen_proto_cpp; parity test; export decl_segment_cpp |
+| note | prompt said TRAIT_STRUCT step 1 — track closed; idempotent skip |
+| verify | 849 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_FN_PROTO_BRIDGE |
+
+### Turn 2026-05-31 (Planner plan-refresh — FN_PROTO_BRIDGE open)
+
+| turn | 2026-05-31 |
+| role | Planner |
+| step | plan-refresh |
+| done | opened TRACK_FN_PROTO_BRIDGE (5 steps); stability after all decl bridges closed |
+| next | ROLE=Driver STEP=1 TRACK_FN_PROTO_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=5 — TRAIT_STRUCT_BRIDGE audit close)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 5 |
+| done | survivors audit; removed dead append_string_segments; TRAIT_STRUCT closed; DERIVE_BRIDGE survivors fixed |
+| verify | 848 pass; self-host DIFF_EXIT=0 |
+| note | prompt said DERIVE_BRIDGE step 5 — already closed; executed TRAIT_STRUCT step 5 |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-31 (Driver STEP=4 — collect_fn_defs_cpp native phase 4)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 4 |
+| done | collect_fn_defs_cpp → collect_decl_parts_cpp phase 4; 2 parity tests (trait fn_defs, bundle fn_defs) |
+| verify | 848 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=5 TRACK_TRAIT_STRUCT_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=3 — phase 4 trait wiring)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 3 |
+| done | decl_segment_cpp + collect_decl_parts_cpp phase 4 native SDeclTrait; parity test |
+| verify | 846 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_TRAIT_STRUCT_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=2 — gen_trait_struct_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 2 |
+| done | gen_trait_struct_cpp native CppStruct; parity test vs string gen_trait_struct |
+| verify | 845 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_TRAIT_STRUCT_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=1 — trait_method_field_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 1 |
+| done | trait_struct_cpp.mlc; native CppField std::function; 3 parity tests |
+| verify | 844 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_TRAIT_STRUCT_BRIDGE |
+
+### Turn 2026-05-31 (Planner plan-refresh — TRAIT_STRUCT_BRIDGE open)
+
+| turn | 2026-05-31 |
+| role | Planner |
+| step | plan-refresh |
+| done | opened TRACK_TRAIT_STRUCT_BRIDGE (5 steps); stability priority after all bridges closed |
+| next | ROLE=Driver STEP=1 TRACK_TRAIT_STRUCT_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=5 — DERIVE_BRIDGE audit close)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 5 |
+| done | survivors audit; TRACK_DERIVE_BRIDGE closed; DECL_BRIDGE survivor row updated |
+| verify | rake test_compiler_mlc ok; 841 pass; build.sh; self-host DIFF_EXIT=0 |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-31 (Driver STEP=4 — gen_derive_hash_cpp + wiring)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 4 |
+| done | derive_methods_cpp.mlc: Hash record+sum, gen_derive_methods_cpp aggregator; decl_cpp wired; 8 tests |
+| verify | 841 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=5 TRACK_DERIVE_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=3 — gen_derive_ord_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 3 |
+| done | gen_derive_ord_cpp record+sum; lexicographic ord; 4 parity tests |
+| verify | 835 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=4 TRACK_DERIVE_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=2 — gen_derive_eq_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 2 |
+| done | gen_derive_eq_cpp record+sum; 4 parity tests |
+| verify | 831 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=3 TRACK_DERIVE_BRIDGE |
+
+### Turn 2026-05-31 (Driver STEP=1 — gen_derive_display_cpp)
+
+| turn | 2026-05-31 |
+| role | Driver |
+| step | 1 |
+| done | decl_derive_cpp.mlc; 4 parity tests; struct_using fix in decl_cpp |
+| verify | 827 pass; self-host DIFF_EXIT=0 |
+| next | ROLE=Driver STEP=2 TRACK_DERIVE_BRIDGE |
 
 ### Turn 2026-05-31 (Planner plan-refresh — DERIVE_BRIDGE open)
 
@@ -680,7 +2247,7 @@
 | turn | 2026-05-28 |
 | role | Driver |
 | instructions_rev | 2026-05-28-cleaner |
-| driver_turns_since_plan | 2 |
+| driver_turns_since_plan | 3|
 | step | 2 |
 | done | audit empty type + invalid trait corpus; commit `221fae6`; parity mlcc=1 ruby=1 via step 1 |
 | verify | 756 pass; fuzz differential ok; no compiler/** change (no self-host) |

@@ -3,8 +3,8 @@
 import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppCastKind, CppCastStatic, CppCastDynamic, CppCastReinterpret, CppCastConst,
          CppCapture, CppParam,
-         CppStmt, CppAutoDecl, CppConstDecl, CppConstexprAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppStructuredBinding, CppStmtFragment,
-         CppDecl, CppInclude, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppDeclFragment,
+         CppStmt, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppStructuredBinding, CppStmtFragment,
+         CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppUndef, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppConceptRequires, CppStaticAssert, CppStdHashSpecialization, CppDeclSequence, CppDeclEmpty, CppDeclFragment,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
          CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit,
@@ -252,11 +252,36 @@ fn constexpr_auto_declaration(name: string, initializer_code: string) -> string 
 fn const_declaration(type_code: string, name: string, initializer_code: string) -> string =
   `const ${type_code} ${name} = ${initializer_code};`
 
+fn variable_declaration(type_code: string, name: string, initializer_code: string) -> string =
+  `${type_code} ${name} = ${initializer_code};`
+
 fn include_angle(path: string) -> string =
-  `#include <${path}>`
+  `#include <${path}>\n`
 
 fn include_quoted(path: string) -> string =
-  `#include "${path}"`
+  `#include "${path}"\n`
+
+fn ifndef_directive(macro: string) -> string =
+  `#ifndef ${macro}\n`
+
+fn define_macro_directive(macro: string, value: string) -> string =
+  if value.length() == 0 then
+    `#define ${macro}\n`
+  else
+    `#define ${macro} ${value}\n`
+  end
+
+fn endif_directive(comment: string) -> string =
+  `#endif // ${comment}\n`
+
+fn undef_directive(macro: string) -> string =
+  `#undef ${macro}\n`
+
+fn namespace_begin_directive(name: string) -> string =
+  `namespace ${name} {\n`
+
+fn namespace_end_directive(name: string) -> string =
+  `} // namespace ${name}\n`
 
 fn using_alias(alias: string, type_code: string) -> string =
   `using ${alias} = ${type_code};`
@@ -284,8 +309,51 @@ fn struct_field_line(type_code: string, field_name: string) -> string =
 fn function_prototype(template_prefix: string, return_type: string, name: string, parameters_code: string) -> string =
   `${template_prefix}${return_type} ${name}(${parameters_code}) noexcept;\n`
 
+fn compact_noexcept_function_definition(
+  template_prefix: string,
+  return_type: string,
+  name: string,
+  parameters_code: string,
+  return_expression_code: string
+) -> string =
+  `${template_prefix}${return_type} ${name}(${parameters_code}) noexcept { return ${return_expression_code}; }\n`
+
 fn function_definition(template_prefix: string, return_type: string, name: string, parameters_code: string, body_code: string) -> string =
   `${template_prefix}${return_type} ${name}(${parameters_code}) noexcept{\n${body_code}\n}\n`
+
+fn print_function_definition(
+  template_prefix: string,
+  return_type: string,
+  name: string,
+  parameters_code: string,
+  body: [Shared<CppStmt>],
+  body_statement_depth: i32
+) -> string =
+  if body_statement_depth == -1 && body.length() == 1 then
+    match body[0] {
+      CppReturn(expression) =>
+        compact_noexcept_function_definition(
+          template_prefix,
+          return_type,
+          name,
+          parameters_code,
+          print_expr(expression)),
+      _ =>
+        function_definition(
+          template_prefix,
+          return_type,
+          name,
+          parameters_code,
+          print_statements(body, 1))
+    }
+  else
+    function_definition(
+      template_prefix,
+      return_type,
+      name,
+      parameters_code,
+      print_statements(body, body_statement_depth))
+  end
 
 fn namespace_block(name: string, contents_code: string) -> string =
   `namespace ${name} {\n${contents_code}\n}`
@@ -300,6 +368,29 @@ fn concept_requires_definition(
   requires_expressions: [string]
 ) -> string =
   `${template_prefix}concept ${trait_name} = requires(const ${self_parameter_name}& self) { ${requires_expressions.join('; ')}; };\n`
+
+fn static_assert_declaration(concept_cpp: string, type_arguments: [string], message: string) -> string =
+  `static_assert(${concept_cpp}<${print_comma_separated_strings(type_arguments)}>, "${message}");\n`
+
+fn print_hash_specialization_body(statements: [Shared<CppStmt>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < statements.length() do
+    parts.push('    ' + print_statement(statements[index]))
+    index = index + 1
+  end
+  parts.join("\n")
+end
+
+fn std_hash_specialization_definition(type_name: string, body_statements: [Shared<CppStmt>]) -> string =
+  "namespace std {\n" +
+  "template<>\n" +
+  "struct hash<" + type_name + "> {\n" +
+  "  size_t operator()(const " + type_name + "& self) const noexcept {\n" +
+  print_hash_specialization_body(body_statements) + "\n" +
+  "  }\n" +
+  "};\n" +
+  "}\n"
 
 fn print_struct_fields(fields: [Shared<CppField>]) -> string = do
   let parts: [string] = []
@@ -353,6 +444,8 @@ fn conditional_if_statement(
 fn print_statement_node(statement: Shared<CppStmt>, depth: i32) -> string =
   match statement {
     CppAutoDecl(name, initializer) => auto_declaration(name, print_expr(initializer)),
+    CppVarDecl(name, type_node, initializer) =>
+      variable_declaration(print_type(type_node), name, print_expr(initializer)),
     CppConstDecl(name, type_node, initializer) =>
       const_declaration(print_type(type_node), name, print_expr(initializer)),
     CppConstexprAutoDecl(name, initializer) =>
@@ -379,28 +472,50 @@ fn print_statement_node(statement: Shared<CppStmt>, depth: i32) -> string =
     CppStmtFragment(fragment) => fragment
   }
 
+fn print_decl_sequence(declarations: [Shared<CppDecl>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < declarations.length() do
+    parts.push(print_decl_node(declarations[index]))
+    index = index + 1
+  end
+  parts.join('')
+end
+
 fn print_decl_node(declaration: Shared<CppDecl>) -> string =
   match declaration {
     CppInclude(is_angle, path) =>
       if is_angle then include_angle(path) else include_quoted(path) end,
+    CppIfndef(macro) => ifndef_directive(macro),
+    CppDefineMacro(macro, value) => define_macro_directive(macro, value),
+    CppEndif(comment) => endif_directive(comment),
+    CppUndef(macro) => undef_directive(macro),
+    CppNamespaceBegin(name) => namespace_begin_directive(name),
+    CppNamespaceEnd(name) => namespace_end_directive(name),
     CppUsing(alias, type_code) => using_alias(alias, type_code),
     CppStruct(template_prefix, name, fields, forward_only) =>
       struct_definition(template_prefix, name, print_struct_fields(fields), forward_only),
     CppFnProto(template_prefix, return_type, name, parameters) =>
       function_prototype(template_prefix, return_type, name, print_comma_separated_strings(parameters)),
-    CppFnDef(template_prefix, return_type, name, parameters, body) =>
-      function_definition(
+    CppFnDef(template_prefix, return_type, name, parameters, body, body_statement_depth) =>
+      print_function_definition(
         template_prefix,
         return_type,
         name,
         print_comma_separated_strings(parameters),
-        print_statements(body, 1)
-      ),
+        body,
+        body_statement_depth),
     CppNamespace(name, declarations) => namespace_block(name, print_decls(declarations)),
     CppVariant(template_prefix, name, arms) =>
       variant_type_alias(template_prefix, name, print_variant_types(arms)),
     CppConceptRequires(template_prefix, trait_name, self_parameter_name, requires_expressions) =>
       concept_requires_definition(template_prefix, trait_name, self_parameter_name, requires_expressions),
+    CppStaticAssert(concept_cpp, type_arguments, message) =>
+      static_assert_declaration(concept_cpp, type_arguments, message),
+    CppStdHashSpecialization(type_name, body_statements) =>
+      std_hash_specialization_definition(type_name, body_statements),
+    CppDeclSequence(declarations) => print_decl_sequence(declarations),
+    CppDeclEmpty => '',
     CppDeclFragment(code) => code
   }
 
